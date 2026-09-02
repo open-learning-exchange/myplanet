@@ -162,6 +162,48 @@ void main() {
     expect(find.text('Survey could not be loaded'), findsOneWidget);
   });
 
+  testWidgets('a survey with no questions cannot be submitted', (tester) async {
+    // `ExamTakingFragment` hides the form and the submit button outright and
+    // labels the counter `no_questions`. The port offered Submit on an empty
+    // page, and `_submit`'s answered-everything guard is vacuously true for
+    // zero questions — so it created and POSTed an answer-less submission.
+    stubFetch(surveyDoc(const []));
+    await pumpScreen(tester);
+
+    expect(find.text('This survey has no questions'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Submit survey'), findsNothing);
+    expect(await submissionCount(), 0);
+  });
+
+  testWidgets('a choice question renders the choice text', (tester) async {
+    // The screen used to re-parse the fetched document because
+    // `SurveyMapper` flattened `choices` through `JsonUtils.getStringList`.
+    // With the mapper fixed it reads the rows the mapper wrote, so this pins
+    // that the label survives that route too.
+    stubFetch(surveyDoc([choiceQuestion('q1', 'Which service?', 'select')]));
+    await pumpScreen(tester);
+
+    expect(find.text('Water'), findsOneWidget);
+    expect(find.text('Power'), findsOneWidget);
+    expect(find.textContaining('{id:'), findsNothing);
+  });
+
+  testWidgets('a question labelled with `title` renders that label', (
+    tester,
+  ) async {
+    // `ExamQuestion.insertExamQuestions` reads `title`, not `header`; the
+    // screen's own parser had a body/header/title fallback chain that the
+    // mapper lacked, so removing it depended on fixing the mapper's read.
+    stubFetch(
+      surveyDoc([
+        {'id': 'q1', 'title': 'Which service?', 'type': 'input'},
+      ]),
+    );
+    await pumpScreen(tester);
+
+    expect(find.text('1. Which service?'), findsOneWidget);
+  });
+
   testWidgets('the survey renders its name, description and numbered '
       'questions', (tester) async {
     stubFetch(

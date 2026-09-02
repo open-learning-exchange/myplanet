@@ -143,4 +143,60 @@ void main() {
     expect(find.textContaining('Choices: Paris, Rome'), findsOneWidget);
     expect(find.byIcon(Icons.check_circle), findsOneWidget);
   });
+
+  testWidgets('a choice answer shows the choice label, not its JSON', (
+    tester,
+  ) async {
+    // An answer records the whole `{id, text}` object as a JSON string, the
+    // way `Answer.valueChoicesArray` reads it straight back — so both Kotlin
+    // display paths decode the label out of it
+    // (`SubmissionsRepositoryExporter.formatAnswer` does
+    // `JSONObject(choice).optString("text", choice)`). Joining the entries
+    // verbatim put raw JSON in front of the user.
+    const row = SubmissionRow(
+      id: 'submission-3',
+      userId: 'user-1',
+      type: 'survey',
+      startTime: 0,
+      lastUpdateTime: 0,
+      grade: 0,
+      status: 'complete',
+      uploaded: false,
+      isUpdated: true,
+    );
+    await tester.pumpWidget(
+      wrapScreen(
+        const SubmissionDetailScreen(submissionId: 'submission-3'),
+        overrides: [
+          submissionProvider(
+            'submission-3',
+          ).overrideWith((ref) => Stream.value(row)),
+          submissionAnswersProvider('submission-3').overrideWith(
+            (ref) => Stream.value([
+              const SubmissionAnswerRow(
+                id: 'submission-3:q-1',
+                submissionId: 'submission-3',
+                questionId: 'q-1',
+                valueChoices: [
+                  '{"id":"water","text":"Water"}',
+                  '{"id":"power","text":"Power"}',
+                ],
+                mistakes: 0,
+                isPassed: false,
+                grade: 0,
+              ),
+            ]),
+          ),
+          submissionQuestionsProvider(
+            'submission-3',
+          ).overrideWith((ref) => Stream.value(const [])),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(ListView), const Offset(0, -500));
+    await tester.pumpAndSettle();
+    expect(find.text('Water, Power'), findsOneWidget);
+  });
 }

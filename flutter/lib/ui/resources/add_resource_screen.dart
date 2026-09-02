@@ -186,17 +186,22 @@ class _AddResourceScreenState extends ConsumerState<AddResourceScreen> {
 
     if (error != null) {
       final l10n = AppLocalizations.of(context);
-      // `AddResourceActivity` annotates the title field for a title problem
-      // (`tlTitle.error`, :204-207) and toasts a failed edit (:164-167).
-      switch (error) {
-        case LocalResourceError.titleMissing:
-          setState(() => _titleError = l10n.titleIsRequired);
-        case LocalResourceError.titleAlreadyExists:
-          setState(() => _titleError = l10n.resourceTitleAlreadyExists);
-        case LocalResourceError.notFound:
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(l10n.failedToUpdateResource)));
+      // `AddResourceActivity` branches on the *mode*, not on what went wrong:
+      // a failed edit is toasted `failed_to_update_resource` (:164-167) and
+      // **any** failed create annotates the title field with
+      // `resource_title_already_exists` (:204-207) — including the ones that
+      // have nothing to do with the title, since `saveLocalResource` also
+      // fails when the picked file is missing, when storage is unavailable and
+      // on an IO or security error during the copy. Keying the message on the
+      // error kind instead read correctly for the one failure the port can
+      // currently produce and would have quietly diverged for every failure
+      // the file-copy path still owes.
+      if (_isEditMode) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.failedToUpdateResource)));
+      } else {
+        setState(() => _titleError = l10n.resourceTitleAlreadyExists);
       }
     } else {
       final l10n = AppLocalizations.of(context);

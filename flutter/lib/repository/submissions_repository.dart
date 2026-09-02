@@ -123,7 +123,12 @@ class SubmissionsRepository {
               header: Value(question.header),
               body: Value(question.body),
               type: Value(question.type),
-              choices: Value(question.choices),
+              // The labels only, matching `createExamDraft`: this column is a
+              // display list (`availableChoices`), and `SubmissionQuestions`
+              // is a preserved table whose converter cannot change here.
+              choices: Value(
+                question.choices.map((choice) => choice.text).toList(),
+              ),
               position: question.position,
             ),
         ],
@@ -529,13 +534,33 @@ class SubmissionsRepository {
           {
             if (answer.questionId != null) 'questionId': answer.questionId,
             'value': answer.valueChoices.isNotEmpty
-                ? answer.valueChoices
+                ? _answerChoices(answer.valueChoices)
                 : answer.value,
             'mistakes': answer.mistakes,
             'passed': answer.isPassed,
           },
       ],
     };
+  }
+
+  /// Port of `Answer.valueChoicesArray`, which sends each stored choice as the
+  /// object it came from (`gson.fromJson(choice, JsonObject::class.java)`) —
+  /// Planet expects `answers[].value` to be `{id, text}` objects for a choice
+  /// question, not strings. An entry that is not JSON is sent as it stands,
+  /// which is how the exam path's bare choice ids survive; Kotlin has no such
+  /// entries and would throw on one.
+  static List<Object?> _answerChoices(List<String> raw) => [
+    for (final choice in raw) _parseChoice(choice),
+  ];
+
+  static Object? _parseChoice(String raw) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map<String, dynamic>) return decoded;
+    } on FormatException {
+      // Not JSON — send the entry through untouched.
+    }
+    return raw;
   }
 
   /// `parent` and `user` are stored locally as JSON *text*, but Kotlin uploads
@@ -640,7 +665,15 @@ class SubmissionsRepository {
     if (rawChoices is List) {
       for (final choice in rawChoices) {
         if (choice is Map<String, dynamic>) {
-          choiceLabels.add(JsonUtils.getString('res', choice));
+          // `ExamAnswerUtils.choiceDisplayValue` is `text` first with `res`
+          // only as a fallback, and `ExamTakingFragment.addCompoundButton`
+          // reads `text` alone. Reading only `res` left this display column
+          // empty for every ordinary `{"id":…,"text":…}` choice, so the detail
+          // screen's "Choices:" row came out as a row of commas.
+          final text = JsonUtils.getString('text', choice);
+          choiceLabels.add(
+            text.isNotEmpty ? text : JsonUtils.getString('res', choice),
+          );
         } else if (choice != null) {
           choiceLabels.add(choice.toString());
         }

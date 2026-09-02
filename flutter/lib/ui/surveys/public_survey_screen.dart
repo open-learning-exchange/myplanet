@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/utils/json_utils.dart';
 import '../../data/local/app_database.dart';
 import '../../data/local/converters.dart';
 import '../../l10n/app_localizations.dart';
@@ -41,7 +40,7 @@ class _PublicSurveyScreenState extends ConsumerState<PublicSurveyScreen> {
   bool _loadFailed = false;
   bool _submitting = false;
   SurveyRow? _survey;
-  final List<_PublicQuestion> _questions = [];
+  final List<SurveyQuestionRow> _questions = [];
   final Map<String, TextEditingController> _textControllers = {};
   final Map<String, Set<ExamChoice>> _choiceAnswers = {};
 
@@ -76,7 +75,15 @@ class _PublicSurveyScreenState extends ConsumerState<PublicSurveyScreen> {
       return;
     }
     _survey = survey;
-    _questions.addAll(_parseQuestions(widget.surveyId, doc));
+    // `saveSurveyFromPublicApi` has just written the questions through
+    // `SurveyMapper`, so they are read back rather than parsed a second time
+    // here. The screen used to re-parse the document itself because the mapper
+    // flattened `choices` to `toString()`d maps; with that fixed the local copy
+    // was a second, divergent parser — and the divergence was load-bearing, as
+    // its question ids were keyed on the route's `surveyId` while the mapper's
+    // are keyed on the document's `_id`, so the answer map `_submit` builds
+    // could miss every row `createSurveyDraft` writes.
+    _questions.addAll(await repo.questionsFor(widget.surveyId));
     for (final question in _questions) {
       if (question.choices.isEmpty) {
         _textControllers[question.id] = TextEditingController();
@@ -112,6 +119,23 @@ class _PublicSurveyScreenState extends ConsumerState<PublicSurveyScreen> {
       return Scaffold(
         appBar: AppBar(title: Text(l10n.takeSurvey)),
         body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    // `ExamTakingFragment` hides the form and the submit button outright when
+    // the document carries no questions and labels the counter
+    // `no_questions` ("No questions available"). Without this the respondent
+    // was offered a Submit button on an empty page, and `_submit`'s
+    // answered-everything guard is vacuously true for zero questions — so it
+    // created and POSTed a submission with no answers in it.
+    if (_questions.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: Text(_survey?.name ?? l10n.takeSurvey)),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(l10n.surveyHasNoQuestions),
+          ),
+        ),
       );
     }
     return Scaffold(
@@ -192,19 +216,19 @@ class _PublicSurveyScreenState extends ConsumerState<PublicSurveyScreen> {
     for (final question in _questions) {
       if (question.choices.isEmpty) {
         answers[question.id] = SubmissionDraftAnswer(
-          questionId: question.remoteId,
+          questionId: question.questionId,
           value: _textControllers[question.id]!.text.trim(),
         );
       } else if (_isSelectMultiple(question.type)) {
         final selected = _choiceAnswers[question.id]!;
         answers[question.id] = SubmissionDraftAnswer(
-          questionId: question.remoteId,
+          questionId: question.questionId,
           choices: selected.map((c) => jsonEncode(c.toJson())).toList(),
         );
       } else {
         final selected = _choiceAnswers[question.id]!.firstOrNull;
         answers[question.id] = SubmissionDraftAnswer(
-          questionId: question.remoteId,
+          questionId: question.questionId,
           choices: selected != null
               ? [jsonEncode(selected.toJson())]
               : const [],
@@ -308,42 +332,6 @@ class _PublicSurveyScreenState extends ConsumerState<PublicSurveyScreen> {
       if (mounted) setState(() => _submitting = false);
     }
   }
-
-  List<_PublicQuestion> _parseQuestions(
-    String surveyId,
-    Map<String, dynamic> doc,
-  ) {
-    final rawQuestions = doc['questions'];
-    final questions = <_PublicQuestion>[];
-    if (rawQuestions is! List) return questions;
-    for (var index = 0; index < rawQuestions.length; index++) {
-      final raw = rawQuestions[index];
-      if (raw is! Map<String, dynamic>) continue;
-      final remoteId = JsonUtils.getString('id', raw).isNotEmpty
-          ? JsonUtils.getString('id', raw)
-          : JsonUtils.getString('_id', raw);
-      final id = remoteId.isEmpty ? '$surveyId:$index' : '$surveyId:$remoteId';
-      final body = JsonUtils.getString('body', raw);
-      final header = JsonUtils.getString('header', raw);
-      final title = JsonUtils.getString('title', raw);
-      questions.add(
-        _PublicQuestion(
-          id: id,
-          remoteId: remoteId.isEmpty ? null : remoteId,
-          body: body.isNotEmpty ? body : (header.isNotEmpty ? header : title),
-          type: JsonUtils.getString('type', raw),
-          choices: _parseChoices(raw['choices']),
-          position: index,
-        ),
-      );
-    }
-    return questions;
-  }
-
-  List<ExamChoice> _parseChoices(Object? raw) {
-    if (raw is! List) return const [];
-    return raw.map(ExamChoice.fromJson).whereType<ExamChoice>().toList();
-  }
 }
 
 /// `ExamTakingFragment.startExam` compares the question type with
@@ -353,24 +341,6 @@ class _PublicSurveyScreenState extends ConsumerState<PublicSurveyScreen> {
 /// radio buttons, so the respondent could pick exactly one, and everything else
 /// they meant to say was gone before the payload was built.
 bool _isSelectMultiple(String? type) => type?.toLowerCase() == 'selectmultiple';
-
-class _PublicQuestion {
-  _PublicQuestion({
-    required this.id,
-    this.remoteId,
-    required this.body,
-    required this.type,
-    required this.choices,
-    required this.position,
-  });
-
-  final String id;
-  final String? remoteId;
-  final String body;
-  final String type;
-  final List<ExamChoice> choices;
-  final int position;
-}
 
 class _QuestionCard extends StatelessWidget {
   const _QuestionCard({
@@ -382,7 +352,7 @@ class _QuestionCard extends StatelessWidget {
   });
 
   final int number;
-  final _PublicQuestion question;
+  final SurveyQuestionRow question;
   final TextEditingController? controller;
   final Set<ExamChoice> selected;
   final VoidCallback onChanged;
@@ -398,7 +368,7 @@ class _QuestionCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '$number. ${question.body}',
+              '$number. ${question.body ?? question.header ?? ''}',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),

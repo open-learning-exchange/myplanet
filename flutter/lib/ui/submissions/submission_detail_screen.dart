@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../data/local/app_database.dart';
+import '../../data/local/converters.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/submissions_provider.dart';
 import '../../providers/app_providers.dart';
@@ -130,7 +131,10 @@ class _AnswerTile extends StatelessWidget {
     final value = answer.value?.trim().isNotEmpty == true
         ? answer.value!
         : answer.valueChoices.isNotEmpty
-        ? answer.valueChoices.join(', ')
+        // Each entry is a `{id, text}` object stored as a JSON string, the way
+        // `Answer.valueChoicesArray` reads them back; Kotlin's own display
+        // paths decode the label out rather than printing the entry.
+        ? ExamChoice.labelsFor(answer.valueChoices)
         : l10n.noAnswer;
     final normalized = [
       answer.value,
