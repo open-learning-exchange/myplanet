@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
-import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -767,22 +766,16 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         val resolvedUser = payloadData.user
         val exam = payloadData.exam
 
-        if (!TextUtils.isEmpty(submission._id)) {
+        if (!submission._id.isNullOrEmpty()) {
             `object`.addProperty("_id", submission._id)
         }
-        if (!TextUtils.isEmpty(submission._rev)) {
+        if (!submission._rev.isNullOrEmpty()) {
             `object`.addProperty("_rev", submission._rev)
         }
         `object`.addProperty("parentId", submission.parentId)
         `object`.addProperty("type", submission.type)
 
-        if (submission.teamObject != null) {
-            val teamJson = JsonObject()
-            teamJson.addProperty("_id", submission.teamObject?._id)
-            teamJson.addProperty("name", submission.teamObject?.name)
-            teamJson.addProperty("type", submission.teamObject?.type)
-            `object`.add("team", teamJson)
-        }
+        resolveTeamJson(submission)?.let { `object`.add("team", it) }
 
         `object`.addProperty("grade", submission.grade)
         `object`.addProperty("startTime", submission.startTime)
@@ -806,7 +799,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         val freshUser = resolvedUser?.serialize()
         when {
             freshUser != null -> `object`.add("user", freshUser)
-            !TextUtils.isEmpty(submission.user) -> `object`.add("user", JsonParser.parseString(submission.user))
+            !submission.user.isNullOrEmpty() -> `object`.add("user", JsonParser.parseString(submission.user))
         }
         return `object`
     }
