@@ -59,6 +59,9 @@ class ResourceViewerViewModel @Inject constructor(
             PDDocument.load(file).use {
                 PDFTextStripper().getText(it).trim()
             }
-        } catch (e: Exception) { "" }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ""
+        }
     }
 }
