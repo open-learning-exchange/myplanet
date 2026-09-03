@@ -1169,10 +1169,7 @@
   },
   "teamMembers": "सदस्यहरू",
   "members": "सदस्यहरू",
-  "joinRequests": "[Nepali] Join requests",
-  "@joinRequests": {
-    "x-mt": true
-  },
+  "joinRequests": "सम्मिलित गर्न अनुरोधहरू",
   "noMembers": "[Nepali] No members yet",
   "@noMembers": {
     "x-mt": true
@@ -1220,10 +1217,7 @@
   "@removeFromTeam": {
     "x-mt": true
   },
-  "addResource": "[Nepali] Add resource",
-  "@addResource": {
-    "x-mt": true
-  },
+  "addResource": "स्रोत थप्नुहोस्",
   "editResource": "स्रोत सम्पादन गर्नुहोस्",
   "resourceUpdated": "स्रोत अद्यावधिक गरियो",
   "resourceAddedToTeam": "स्रोत टोलीमा थपियो",
@@ -2031,10 +2025,7 @@
   "progressFilterAll": "सबै",
   "progressFilterNotStarted": "सुरु भएको छैन",
   "progressFilterInProgress": "प्रगतिमा छ",
-  "progressFilterCompleted": "[Nepali] Completed",
-  "@progressFilterCompleted": {
-    "x-mt": true
-  },
+  "progressFilterCompleted": "पूरा भयो",
   "stepProgress": "[Nepali] {current} of {max} steps",
   "@stepProgress": {
     "x-mt": true
@@ -2290,5 +2281,7 @@
   "summaryOfAchievements": "उपलब्धिहरूको सारांश - आफ्नो उपलब्धि संक्षेपमा दिनुहोस् र सम्बन्धित सामग्री तल थप्नुहोस्",
   "myGoalsDescription": "मेरा लक्ष्यहरू - आगामी १० वर्षका लागि तपाईँका लक्ष्यहरू के हुन्?",
   "myPurposeDescription": "मेरो उद्देश्य - तपाईका शैक्षिक र व्यावसायिक महत्वाकांक्षा के हुन्?",
-  "pleaseAnswerToContinue": "कृपया जारी राख्नका लागि आफ्नो उत्तर चयन गर्नुहोस् / लेख्नुहोस्"
+  "pleaseAnswerToContinue": "कृपया जारी राख्नका लागि आफ्नो उत्तर चयन गर्नुहोस् / लेख्नुहोस्",
+  "teamDocuments": "कागजातहरू",
+  "confirmLeaveTeam": "के तपाईं यस टिमबाट बाहिर निस्कन चाहानुहुन्छ?"
 }

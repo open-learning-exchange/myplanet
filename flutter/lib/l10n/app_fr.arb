@@ -2292,7 +2292,7 @@
   "@viewResource": {
     "x-mt": true
   },
-  "view": "afficher",
+  "view": "Afficher",
   "linkNotAvailable": "Lien non disponible",
   "noRatings": "Aucune note pour l'instant",
   "@noRatings": {
@@ -2418,8 +2418,8 @@
   },
   "exportCsv": "Exporter CSV",
   "csvFileSavedSuccessfully": "fichier CSV enregistré avec succès.",
-  "failedToSaveCsvFile": "échec de l'enregistrement du fichier CSV.",
-  "exportCancelled": "exportation annulée.",
+  "failedToSaveCsvFile": "Échec de l'enregistrement du fichier CSV.",
+  "exportCancelled": "Exportation annulée.",
   "collections": "Collections",
   "filterCollections": "Filtrer les collections",
   "selectManyCollections": "Sélectionner plusieurs collections",
@@ -2500,5 +2500,7 @@
   "summaryOfAchievements": "Résumé des réalisations - Résumez brièvement votre réalisation et ajoutez les documents associés ci-dessous",
   "myGoalsDescription": "Mes Objectifs - Quels sont vos objectifs pour les 10 prochaines années ?",
   "myPurposeDescription": "Mon But - Quelles sont vos ambitions éducatives et professionnelles ?",
-  "pleaseAnswerToContinue": "Veuillez sélectionner/écrire votre réponse pour continuer"
+  "pleaseAnswerToContinue": "Veuillez sélectionner/écrire votre réponse pour continuer",
+  "teamDocuments": "Documents",
+  "confirmLeaveTeam": "Êtes-vous sûr de vouloir quitter cette équipe ?"
 }

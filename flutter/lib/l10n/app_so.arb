@@ -73,7 +73,7 @@
   "search": "Raadi",
   "sync": "Dib u hagrees",
   "cancel": "burin",
-  "settings": "Settings",
+  "settings": "Goobooyinka",
   "backgroundSync": "[Somali] Background sync",
   "@backgroundSync": {
     "x-mt": true
@@ -1169,10 +1169,7 @@
   },
   "teamMembers": "Xubinayaasha",
   "members": "Xubinayaasha",
-  "joinRequests": "[Somali] Join requests",
-  "@joinRequests": {
-    "x-mt": true
-  },
+  "joinRequests": "Su'aasha xubinaha",
   "noMembers": "[Somali] No members yet",
   "@noMembers": {
     "x-mt": true
@@ -1220,17 +1217,11 @@
   "@removeFromTeam": {
     "x-mt": true
   },
-  "addResource": "[Somali] Add resource",
-  "@addResource": {
-    "x-mt": true
-  },
+  "addResource": "Kudar Ilaha",
   "editResource": "Wax ka beddel kheyraadka",
   "resourceUpdated": "Kheyraadka waa la cusboonaysiiyay",
   "resourceAddedToTeam": "Khayraadka waxaa lagu daray kooxda",
-  "descriptionIsRequired": "[Somali] Description is required",
-  "@descriptionIsRequired": {
-    "x-mt": true
-  },
+  "descriptionIsRequired": "Sharaxaadda waa loo baahan yahay",
   "levelIsRequired": "Heerka waa loo baahan yahay",
   "subjectIsRequired": "Mawduuca waa loo baahan yahay",
   "selectFile": "[Somali] Select a file",
@@ -2034,10 +2025,7 @@
   "progressFilterAll": "Dhammaan",
   "progressFilterNotStarted": "Lama bilaaban",
   "progressFilterInProgress": "Socda",
-  "progressFilterCompleted": "[Somali] Completed",
-  "@progressFilterCompleted": {
-    "x-mt": true
-  },
+  "progressFilterCompleted": "Dhammaystay",
   "stepProgress": "[Somali] {current} of {max} steps",
   "@stepProgress": {
     "x-mt": true
@@ -2106,7 +2094,7 @@
   "@viewResource": {
     "x-mt": true
   },
-  "view": "eeg",
+  "view": "Eeg",
   "linkNotAvailable": "Xogta lama helin",
   "noRatings": "[Somali] No ratings yet",
   "@noRatings": {
@@ -2226,8 +2214,8 @@
   },
   "exportCsv": "Dhoofinta CSV",
   "csvFileSavedSuccessfully": "faylka CSV si guul leh ayaa loo keydiyay.",
-  "failedToSaveCsvFile": "waa lagu guuldareystay in la badbaadiyo faylka CSV.",
-  "exportCancelled": "dhoofinta waa la joojiyay.",
+  "failedToSaveCsvFile": "Waa lagu guuldareystay in la badbaadiyo faylka CSV.",
+  "exportCancelled": "Dhoofinta waa la joojiyay.",
   "collections": "Ururinta",
   "filterCollections": "Uruurinta shaandhaynta",
   "selectManyCollections": "Dooro Ururo Badan",
@@ -2293,5 +2281,7 @@
   "summaryOfAchievements": "Dulmar guulo - Si kooban u soo koob guushaada oo hoos ku dar agabka la xiriira",
   "myGoalsDescription": "Hadafyadayda - Waa maxay yoolalkaaga 10-ka sano ee soo socda?",
   "myPurposeDescription": "Ujeedadayda - Waa maxay himilooyinkaaga waxbarasho iyo kuwa xirfadeed?",
-  "pleaseAnswerToContinue": "Fadlan dooro / qor jawaabtaada si aad u sii wadato"
+  "pleaseAnswerToContinue": "Fadlan dooro / qor jawaabtaada si aad u sii wadato",
+  "teamDocuments": "Documents",
+  "confirmLeaveTeam": "Ma hubtaa inaad ka tashato kooxan?"
 }
