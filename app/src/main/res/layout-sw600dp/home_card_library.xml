@@ -64,26 +64,22 @@
                 android:textStyle="bold" />
         </FrameLayout>
 
-        <HorizontalScrollView
+        <ScrollView
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:contentDescription="@string/txt_myLibrary"
             android:background="@color/card_bg"
-            android:fillViewport="true"
             android:scrollbars="none">
 
             <com.google.android.flexbox.FlexboxLayout
                 android:id="@+id/flexboxLayout"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:paddingStart="@dimen/dashboard_chip_gap"
-                android:paddingTop="@dimen/dashboard_chip_gap"
-                android:paddingBottom="@dimen/dashboard_chip_gap"
-                app:alignContent="stretch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/dashboard_chip_gap"
+                app:alignContent="flex_start"
                 app:alignItems="stretch"
-                app:flexDirection="row"
-                app:flexWrap="nowrap" />
-        </HorizontalScrollView>
+                app:flexWrap="wrap" />
+        </ScrollView>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
