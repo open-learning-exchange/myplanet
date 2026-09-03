@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.teams.members
 
-import android.app.Application
 import android.view.View
 import android.widget.FrameLayout
 import androidx.test.core.app.ApplicationProvider
@@ -17,10 +16,8 @@ import org.ole.planet.myplanet.callback.OnMemberActionListener
 import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.teams.members.MembersAdapter.Companion.PAYLOAD_KEY_LOGGED_IN_USER_LEADER_CHANGED
-import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
-@Config(application = Application::class)
 class MembersAdapterTest {
 
     private lateinit var adapter: MembersAdapter

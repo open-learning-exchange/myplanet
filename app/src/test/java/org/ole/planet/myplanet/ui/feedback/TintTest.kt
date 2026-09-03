@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.feedback
 
-import android.app.Application
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import androidx.core.content.ContextCompat
@@ -10,10 +9,8 @@ import org.junit.runner.RunWith
 import org.ole.planet.myplanet.R
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
-import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(application = Application::class)
 class TintTest {
     @Test
     fun testTintIsRetained() {

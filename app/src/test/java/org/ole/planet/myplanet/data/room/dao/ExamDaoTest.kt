@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.data.room.dao
 
-import android.app.Application
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -16,7 +15,7 @@ import org.ole.planet.myplanet.model.StepExam
 import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
-@Config(sdk = [32], application = Application::class)
+@Config(sdk = [32])
 class ExamDaoTest {
     private lateinit var database: AppDatabase
     private lateinit var examDao: ExamDao

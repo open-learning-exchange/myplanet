@@ -1,15 +1,12 @@
 package org.ole.planet.myplanet.utils
 
-import android.app.Application
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import org.robolectric.annotation.Config
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
-@Config(application = Application::class)
 class DefaultDispatcherProviderTest {
 
     private val dispatcherProvider = DefaultDispatcherProvider()

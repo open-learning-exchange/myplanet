@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.services.sync
 
-import android.app.Application
 import android.content.SharedPreferences
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -43,7 +42,6 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 import retrofit2.Response
 
 /**
@@ -52,7 +50,6 @@ import retrofit2.Response
  * Robolectric supplies working `android.util.Log`/`SystemClock` shadows that syncDb relies on.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(application = Application::class)
 class TransactionSyncManagerCheckpointTest {
 
     private lateinit var transactionSyncManager: TransactionSyncManager
