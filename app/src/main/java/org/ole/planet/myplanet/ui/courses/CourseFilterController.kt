@@ -92,7 +92,7 @@ class CourseFilterController(
         onScrollToTop()
     }
 
-    fun restoreFilterState(state: FilterState, availableTags: List<TagEntity> = emptyList()) {
+    fun restoreFilterState(state: FilterState) {
         val listener = spinnerListener
         if (::spnGrade.isInitialized) spnGrade.onItemSelectedListener = null
         if (::spnSubject.isInitialized) spnSubject.onItemSelectedListener = null
@@ -104,7 +104,7 @@ class CourseFilterController(
         if (::spnSubject.isInitialized) {
             restoreSpinnerSelection(spnSubject, state.subject)
         }
-        restoreTags(state.tags, state.tagNames, availableTags)
+        restoreTags(state.tags, state.tagNames)
         progressFilter = state.progressFilter
         if (::tvSelected.isInitialized) {
             refreshTagText()
@@ -133,7 +133,7 @@ class CourseFilterController(
         }
     }
 
-    private fun restoreTags(tags: List<TagEntity>, tagNames: List<String>, availableTags: List<TagEntity>) {
+    private fun restoreTags(tags: List<TagEntity>, tagNames: List<String>) {
         searchTags.clear()
         val seenNames = HashSet<String>()
         if (tags.isNotEmpty()) {
@@ -146,9 +146,7 @@ class CourseFilterController(
         } else {
             tagNames.forEach { name ->
                 if (seenNames.add(name)) {
-                    val matchedTag = availableTags.find { it.name == name }
-                        ?: TagEntity().apply { this.name = name }
-                    searchTags.add(matchedTag)
+                    searchTags.add(TagEntity().apply { this.name = name })
                 }
             }
         }

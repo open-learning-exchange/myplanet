@@ -69,7 +69,10 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
                     childMap = state.childMap
                     val allTags = list + childMap.values.flatten()
                     val reconciledList = selectedItemsList.map { selected ->
-                        allTags.find { it == selected } ?: selected
+                        allTags.find {
+                            if (selected.id.isNotEmpty()) it.id == selected.id
+                            else !selected.name.isNullOrEmpty() && it.name == selected.name
+                        } ?: selected
                     }
                     selectedItemsList.clear()
                     selectedItemsList.addAll(reconciledList)
@@ -160,7 +163,13 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
     }
 
     override fun onCheckboxTagSelected(tag: TagEntity) {
-        val existingIndex = selectedItemsList.indexOfFirst { it == tag }
+        val existingIndex = selectedItemsList.indexOfFirst { selected ->
+            if (tag.id.isNotEmpty() && selected.id.isNotEmpty()) {
+                selected.id == tag.id
+            } else {
+                !tag.name.isNullOrEmpty() && selected.name == tag.name
+            }
+        }
         if (existingIndex >= 0) {
             selectedItemsList.removeAt(existingIndex)
         } else {
