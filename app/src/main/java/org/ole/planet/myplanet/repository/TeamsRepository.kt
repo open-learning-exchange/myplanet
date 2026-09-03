@@ -87,16 +87,16 @@ interface TeamsRepository : TeamsFinancesRepository, TeamsMembersRepository, Tea
     suspend fun updateTeam(request: TeamUpdateRequest): Result<Boolean>
     suspend fun uploadTeamImage(uri: Uri): String
     suspend fun updateTeamDetails(request: TeamDetailsUpdateRequest): Boolean
-    suspend fun getTeamTransactionsWithBalance(
+    override suspend fun getTeamTransactionsWithBalance(
         teamId: String, startDate: Long? = null,
         endDate: Long? = null, sortAscending: Boolean = false
     ): Flow<List<Transaction>>
-    suspend fun createTransaction(
+    override suspend fun createTransaction(
         teamId: String, type: String, note: String, amount: Int, date: Long,
         parentCode: String?, planetCode: String?,
         imageName: String? = null, imageData: ByteArray? = null
     ): Result<Unit>
-    suspend fun respondToMemberRequest(teamId: String, userId: String, accept: Boolean): Result<Unit>
+    override suspend fun respondToMemberRequest(teamId: String, userId: String, accept: Boolean): Result<Unit>
     suspend fun getTeamType(teamId: String): String?
     suspend fun isTeamNameExists(name: String, type: String, excludeTeamId: String? = null): Boolean
     suspend fun getTeamCreator(teamId: String): String?
