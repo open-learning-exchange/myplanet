@@ -54,9 +54,16 @@ object SecurePrefs {
         }
     }
     
+    // Best-effort cache priming: a keystore that will not initialize must not abort
+    // the caller's initialization or escape into the application scope. Real reads and
+    // writes still surface their own failures.
     fun warmUp(context: Context) {
-        if (cachedAead == null) getAead(context)
-        if (cachedSecureStore == null) getSecureStore(context)
+        try {
+            if (cachedAead == null) getAead(context)
+            if (cachedSecureStore == null) getSecureStore(context)
+        } catch (e: Exception) {
+            Log.w("SecurePrefs", "secure storage warm-up skipped", e)
+        }
     }
 
     @Suppress("DEPRECATION")
