@@ -184,8 +184,8 @@ class ProgressRepository {
         final answerCount = answerCountBySubmission[submission.id] ?? 0;
         final questionCount = questionCountByExam[exam.id] ?? 0;
         if (questionCount == 0) {
-          completed = false;
-          percentage = 0;
+          completed ??= false;
+          percentage ??= 0;
         } else {
           completed = answerCount == questionCount;
           percentage = (answerCount / questionCount) * 100;
