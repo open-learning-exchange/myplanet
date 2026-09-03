@@ -5,14 +5,15 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.Assert.assertEquals
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -21,6 +22,9 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class)
 class ResourceViewerViewModelTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var context: Context
     private lateinit var sharedPrefManager: SharedPrefManager
@@ -38,7 +42,7 @@ class ResourceViewerViewModelTest {
             authSessionUpdaterFactory = mockk(relaxed = true),
             configurationsRepository = configurationsRepository,
             sharedPrefManager = sharedPrefManager,
-            dispatcherProvider = TestDispatcherProvider(UnconfinedTestDispatcher())
+            dispatcherProvider = TestDispatcherProvider(mainDispatcherRule.testDispatcher)
         )
     }
 

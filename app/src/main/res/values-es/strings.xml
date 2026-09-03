@@ -1394,4 +1394,5 @@
     </string-array>
 
     <string name="playback_speed">Velocidad de reproducción</string>
+    <string name="playback_speed_format">%1$sx</string>
 </resources>

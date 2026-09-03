@@ -215,7 +215,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         val menuHost: MenuHost = requireActivity()
         menuHost.addMenuProvider(object : MenuProvider {
             override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
-                val speedTitle = "${viewModel.getPlaybackSpeed()}x"
+                val speedTitle = getString(R.string.playback_speed_format, viewModel.getPlaybackSpeed().toString())
                 menu.add(Menu.NONE, R.id.action_playback_speed, Menu.NONE, speedTitle).apply {
                     setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
                 }
@@ -232,8 +232,10 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     }
 
     private fun showPlaybackSpeedDialog() {
-        val speedOptions = arrayOf("0.75x", "1.0x", "1.25x", "1.5x", "2.0x")
         val speedValues = floatArrayOf(0.75f, 1.0f, 1.25f, 1.5f, 2.0f)
+        val speedOptions = speedValues
+            .map { getString(R.string.playback_speed_format, it.toString()) }
+            .toTypedArray()
         val currentSpeed = viewModel.getPlaybackSpeed()
         var selectedIndex = speedValues.indexOfFirst { kotlin.math.abs(it - currentSpeed) < 0.05f }
         if (selectedIndex == -1) selectedIndex = 1

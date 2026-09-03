@@ -1407,4 +1407,5 @@
     </string-array>
 
     <string name="playback_speed">سرعة التشغيل</string>
+    <string name="playback_speed_format">%1$sx</string>
 </resources>

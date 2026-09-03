@@ -1395,4 +1395,5 @@
     </string-array>
 
     <string name="playback_speed">Vitesse de lecture</string>
+    <string name="playback_speed_format">%1$sx</string>
 </resources>

@@ -1391,4 +1391,5 @@
     </string-array>
 
     <string name="playback_speed">प्लेब्याक गति</string>
+    <string name="playback_speed_format">%1$sx</string>
 </resources>
