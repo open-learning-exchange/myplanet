@@ -12,7 +12,8 @@ class ExamTakingFragmentTest {
             "saveCourseProgress",
             String::class.java,
             Int::class.javaPrimitiveType,
-            Boolean::class.javaPrimitiveType
+            Boolean::class.javaPrimitiveType,
+            String::class.java
         )
         assert(baseMethod != null)
         assert(Modifier.isAbstract(baseMethod.modifiers))
@@ -21,7 +22,8 @@ class ExamTakingFragmentTest {
             "saveCourseProgress",
             String::class.java,
             Int::class.javaPrimitiveType,
-            Boolean::class.javaPrimitiveType
+            Boolean::class.javaPrimitiveType,
+            String::class.java
         )
         assert(childMethod != null)
         assert(!Modifier.isAbstract(childMethod.modifiers))

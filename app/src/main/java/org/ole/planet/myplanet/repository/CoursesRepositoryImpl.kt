@@ -521,9 +521,9 @@ class CoursesRepositoryImpl @Inject constructor(
         return certificationDao.countByCourseId(courseId) > 0
     }
 
-    override suspend fun updateCourseProgress(courseId: String?, stepNum: Int, passed: Boolean) {
+    override suspend fun updateCourseProgress(courseId: String?, stepNum: Int, passed: Boolean, userId: String?) {
         if (courseId.isNullOrEmpty()) return
-        courseProgressDao.updatePassedByCourseAndStep(courseId, stepNum, passed)
+        courseProgressDao.updatePassedByCourseAndStep(courseId, stepNum, passed, userId)
     }
 
     override suspend fun getCourseStepData(stepId: String, userId: String?): CourseStepData {
