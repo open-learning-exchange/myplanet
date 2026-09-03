@@ -44,8 +44,10 @@ open class TagEntity {
         if (other !is TagEntity) return false
         return if (id.isNotEmpty() && other.id.isNotEmpty()) {
             id == other.id
-        } else {
+        } else if (id.isEmpty() && other.id.isEmpty()) {
             !name.isNullOrEmpty() && name == other.name
+        } else {
+            false
         }
     }
 
