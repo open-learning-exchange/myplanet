@@ -7,7 +7,7 @@ import com.google.gson.JsonObject
 import java.util.Date
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
-import org.ole.planet.myplanet.utils.addAppIdentity
+import org.ole.planet.myplanet.utils.addDocumentIdentity
 
 /**
  * Room replacement for the former `Personal` model. The class name is kept because
@@ -45,7 +45,7 @@ open class Personal {
             `object`.addProperty("resourceType", "Activities")
             `object`.addProperty("private", true)
             val object1 = JsonObject()
-            `object`.addAppIdentity()
+            `object`.addDocumentIdentity()
             `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
             `object`.addProperty("customDeviceName", customDeviceName)
             object1.addProperty("users", personal.userId)

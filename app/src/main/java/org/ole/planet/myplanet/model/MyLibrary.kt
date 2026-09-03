@@ -15,7 +15,7 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.Utilities
-import org.ole.planet.myplanet.utils.addAppIdentity
+import org.ole.planet.myplanet.utils.addDocumentIdentity
 
 /**
  * Room replacement for the former `MyLibrary` model (resources).
@@ -182,7 +182,7 @@ open class MyLibrary {
                 addProperty("resideOn", user?.planetCode)
                 addProperty("updatedDate", Calendar.getInstance().timeInMillis)
                 addProperty("createdDate", personal.createdDate)
-                addAppIdentity()
+                addDocumentIdentity()
                 addProperty("deviceName", NetworkUtils.getDeviceName())
                 addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
             }

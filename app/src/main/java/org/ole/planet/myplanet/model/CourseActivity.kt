@@ -5,7 +5,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.utils.NetworkUtils
-import org.ole.planet.myplanet.utils.addAppIdentity
+import org.ole.planet.myplanet.utils.addDocumentIdentity
 
 @Entity(
     tableName = "course_activity",
@@ -36,7 +36,7 @@ open class CourseActivity {
             ob.addProperty("time", courseActivity.time)
             ob.addProperty("createdOn", courseActivity.createdOn)
             ob.addProperty("parentCode", courseActivity.parentCode)
-            ob.addAppIdentity()
+            ob.addDocumentIdentity()
             ob.addProperty("deviceName", NetworkUtils.getDeviceName())
             return ob
         }

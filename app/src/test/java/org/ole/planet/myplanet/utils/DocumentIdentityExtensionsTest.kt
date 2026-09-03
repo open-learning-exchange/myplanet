@@ -22,16 +22,16 @@ class DocumentIdentityExtensionsTest {
     }
 
     @Test
-    fun addAppIdentityStampsDeviceAndAppIdentity() {
-        val json = JsonObject().addAppIdentity()
+    fun addDocumentIdentityStampsDeviceAndAppIdentity() {
+        val json = JsonObject().addDocumentIdentity()
 
         assertEquals("uniqueIdentifier", json.get("androidId").asString)
         assertEquals("myplanet", json.get("app").asString)
     }
 
     @Test
-    fun addAppIdentityUsesProvidedAndroidId() {
-        val json = JsonObject().addAppIdentity("explicitAndroidId")
+    fun addDocumentIdentityUsesProvidedAndroidId() {
+        val json = JsonObject().addDocumentIdentity("explicitAndroidId")
 
         assertEquals("explicitAndroidId", json.get("androidId").asString)
         assertEquals(APP_IDENTIFIER, json.get("app").asString)

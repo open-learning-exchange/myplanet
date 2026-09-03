@@ -6,7 +6,7 @@ import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utils.NetworkUtils
-import org.ole.planet.myplanet.utils.addAppIdentity
+import org.ole.planet.myplanet.utils.addDocumentIdentity
 
 @Entity(
     tableName = "news_log",
@@ -30,7 +30,7 @@ open class NewsLog {
             ob.addProperty("user", log.userId)
             ob.addProperty("type", log.type)
             ob.addProperty("time", log.time)
-            ob.addAppIdentity()
+            ob.addDocumentIdentity()
             ob.addProperty("deviceName", NetworkUtils.getDeviceName())
             ob.addProperty(
                 "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)
