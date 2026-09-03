@@ -1370,4 +1370,29 @@
     <string name="failed_to_update_resource">Failed to update resource</string>
     <string name="join_team_first">Please join a Team to share this chat</string>
     <string name="join_enterprise_first">Please join an Enterprise to share this chat</string>
+    <string name="item_count_pill">%d items</string>
+    <string name="view_grid">Grid view</string>
+    <string name="view_list">List view</string>
+    <string name="steps_done_of_total">%1$d of %2$d done</string>
+    <string name="course_steps_count">%d steps</string>
+    <string name="subject_label_mathematics">Mathematics</string>
+    <string name="subject_label_literacy">Literacy</string>
+    <string name="subject_label_health">Health</string>
+    <string name="subject_label_social_studies">Social Studies</string>
+    <string name="subject_label_technology">Technology</string>
+    <string name="filter_all">All</string>
+    <string name="filter_books">Books</string>
+    <string name="filter_videos">Videos</string>
+    <string name="filter_audio">Audio</string>
+    <string name="filter_pdfs">PDFs</string>
+    <string name="downloaded">Downloaded</string>
+    <string name="not_downloaded">Not Downloaded</string>
+    <string-array name="download_filter">
+        <item>All</item>
+        <item>Downloaded</item>
+        <item>Not Downloaded</item>
+    </string-array>
+
+    <string name="playback_speed">Playback Speed</string>
+    <string name="playback_speed_format">%1$sx</string>
 </resources>
