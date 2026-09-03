@@ -477,7 +477,9 @@ class UserProfileFragment : Fragment() {
     }
 
     private fun pickFromGallery() {
-        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
+        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+            type = "image/*"
+        }
         pickImageLauncher.launch(intent)
     }
 
