@@ -104,11 +104,17 @@ void main() {
   // ---------------------------------------------------------------------
   // Machine-translation marking (Phase 109).
   //
-  // ~560 keys per locale are Google-Translate output with no human review,
-  // sitting indistinguishably beside the ~250 Phase 47 strings derived from the
-  // Kotlin `values-*/strings.xml` — translations already shipping in the
-  // Android app. `"@<key>": {"x-mt": true}` in the locale file marks the
+  // 496–545 keys in Arabic, Spanish and French are Google-Translate output
+  // with no human review, sitting indistinguishably beside the strings derived
+  // from the Kotlin `values-*/strings.xml` — translations already shipping in
+  // the Android app. `"@<key>": {"x-mt": true}` in the locale file marks the
   // unreviewed ones, so a reviewer can list precisely what still needs a human.
+  //
+  // Nepali and Somali carry 26 each, and that is not because they were
+  // reviewed: the external pass never translated them at all. It emitted
+  // `[Nepali] `/`[Somali] ` plus the English for 899 keys, which Phase 118
+  // deleted (see the marker test above), leaving 26 whose machine output
+  // happened to equal the English.
   // ---------------------------------------------------------------------
 
   test('every locale marks its machine-translated strings', () {
@@ -202,6 +208,48 @@ void main() {
             'app/src/main/res/values${code == 'en' ? '' : '-$code'}/strings.xml',
       );
     }
+  });
+
+  test('no locale value is a language marker wearing a translation\'s clothes', () {
+    // The other half of the external pass's damage, and the larger half. Where
+    // the tokenisation defect broke 58 strings that tried to render data, this
+    // one filled 899 keys with the tool's own "nothing here" output: the value
+    // was `[Nepali] ` or `[Somali] ` followed by the English template verbatim,
+    // flagged `x-mt`, present in the file, and therefore *preferred over the
+    // English fallback*. A Somali user read `[Somali] Join requests` — not a
+    // translation, not even a clean untranslated string, but a bracketed tag
+    // that reads as a bug.
+    //
+    // Nothing could see it. The value is well-formed JSON with the right
+    // placeholders, `gen-l10n` compiles it, and every structural test passes:
+    // the key exists, is non-empty, and is honestly flagged unreviewed. Only
+    // reading the text finds it. Phase 114 named two instances; Phase 118
+    // counted the rest and deleted them, so those keys fall back to English —
+    // the same words, without the tag.
+    //
+    // The net is wider than the two markers that shipped, because the next tool
+    // will pick a different one: no legitimate value in any locale, the
+    // template included, opens with a bracketed word.
+    final defects = <String>[];
+    for (final code in locales) {
+      final arb = _readArb(code);
+      for (final key in _messageKeys(arb)) {
+        final value = arb[key] as String;
+        if (RegExp(r'^\s*\[[^\]]{1,20}\]').hasMatch(value)) {
+          defects.add('$code:$key opens with a marker — "$value"');
+        }
+      }
+    }
+
+    expect(
+      defects,
+      isEmpty,
+      reason:
+          'A value that only labels the language it was not translated into is '
+          'worse than no value at all: it displaces the English fallback with '
+          'the same English plus a tag. Delete the key (and its "@key" block) '
+          'so the fallback serves it, or translate it.\n${defects.join('\n')}',
+    );
   });
 
   test('the template declares no review state of its own', () {
