@@ -1238,6 +1238,28 @@
     }
   },
   "noEnrolledCourses": "You are not enrolled in any courses",
+  "stepsHeading": "Steps",
+  "courseProgressCount": "Progress {current} of {max}",
+  "@courseProgressCount": {
+    "description": "Header of the course-progress grid; port of the Kotlin `course_progress` string.",
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "percentageValue": "{value}%",
+  "@percentageValue": {
+    "description": "A percentage grid cell. `value` is already stringified, because the Kotlin `percentage` string is fed `JsonPrimitive.getAsString()` and so shows a double's fractional part verbatim.",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "mistakes": "Mistakes",
   "step": "Step",
   "untitledResourceTitle": "Untitled Resource",

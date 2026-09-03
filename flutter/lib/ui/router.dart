@@ -14,6 +14,7 @@ import 'exam/take_exam_screen.dart';
 import 'exam/user_information_screen.dart';
 import 'courses/course_detail_screen.dart';
 import 'courses/courses_screen.dart';
+import 'courses/course_progress_screen.dart';
 import 'courses/courses_progress_screen.dart';
 import 'courses/take_course_screen.dart';
 import 'dashboard/about_disclaimer_screens.dart';
@@ -94,6 +95,9 @@ class Routes {
   static const String resourceViewer = '/resources/viewer/:resourceId';
   static const String courses = '/courses';
   static const String myProgress = '/courses/progress';
+
+  /// `CourseProgressActivity`, opened from a My Progress list row.
+  static const String courseProgress = '/courses/progress/:courseId';
   static const String calendar = '/calendar';
   static const String profile = '/profile';
   static const String settings = '/profile/settings';
@@ -338,6 +342,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'progress',
                     builder: (context, state) => const CoursesProgressScreen(),
+                    routes: [
+                      GoRoute(
+                        path: ':courseId',
+                        builder: (context, state) => CourseProgressScreen(
+                          courseId: state.pathParameters['courseId']!,
+                        ),
+                      ),
+                    ],
                   ),
                   GoRoute(
                     path: ':courseId',

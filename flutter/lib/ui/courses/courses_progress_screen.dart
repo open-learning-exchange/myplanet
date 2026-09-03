@@ -41,7 +41,7 @@ class CoursesProgressScreen extends ConsumerWidget {
 
 class _CourseProgressCard extends StatelessWidget {
   const _CourseProgressCard({required this.row});
-  final CourseProgressRow row;
+  final CoursesProgressRow row;
 
   @override
   Widget build(BuildContext context) {
@@ -51,11 +51,20 @@ class _CourseProgressCard extends StatelessWidget {
     final max = row.progressMax ?? 0;
     final progress = max > 0 ? current / max : 0.0;
 
+    // `CoursesProgressAdapter.onBindViewHolder` installs the click listener
+    // **inside** `if (item.progressCurrent != null && item.progressMax != null)`
+    // — a course whose progress could not be computed is inert — and it opens
+    // `CourseProgressActivity`, the per-step grid. This used to push the course
+    // *detail* screen, which shows none of that.
+    final canOpenGrid = row.progressCurrent != null && row.progressMax != null;
+
     return Card(
       child: InkWell(
-        onTap: () => context.push(
-          '${Routes.courses}/${Uri.encodeComponent(row.courseId)}',
-        ),
+        onTap: canOpenGrid
+            ? () => context.push(
+                '${Routes.myProgress}/${Uri.encodeComponent(row.courseId)}',
+              )
+            : null,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -105,7 +114,7 @@ class _CourseProgressCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right),
+                  if (canOpenGrid) const Icon(Icons.chevron_right),
                 ],
               ),
               if (max > 0) ...[
@@ -130,7 +139,10 @@ class _CourseProgressCard extends StatelessWidget {
 
 class _StepMistakesTable extends StatelessWidget {
   const _StepMistakesTable({required this.stepMistakes, required this.l10n});
-  final Map<String, int> stepMistakes;
+
+  /// Keyed by the exam's 0-based ordinal within the course, as
+  /// `submissionMap` builds it; the row label is `key + 1`.
+  final Map<int, int> stepMistakes;
   final AppLocalizations l10n;
 
   @override
@@ -171,8 +183,8 @@ class _StepMistakesTable extends StatelessWidget {
           ),
         ),
         ...stepMistakes.entries.map((entry) {
-          // Extract step number from the exam/step ID
-          final stepNum = _extractStepNumber(entry.key);
+          // `stepView.text = "${stepKey.toInt().plus(1)}"`.
+          final stepNum = entry.key + 1;
           return Container(
             padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
             decoration: BoxDecoration(
@@ -200,14 +212,5 @@ class _StepMistakesTable extends StatelessWidget {
         }),
       ],
     );
-  }
-
-  int _extractStepNumber(String id) {
-    // Try to extract a number from the ID
-    final match = RegExp(r'(\d+)').firstMatch(id);
-    if (match != null) {
-      return int.tryParse(match.group(1)!) ?? 0;
-    }
-    return 0;
   }
 }

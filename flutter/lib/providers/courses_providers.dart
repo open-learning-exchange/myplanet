@@ -8,6 +8,7 @@ import '../core/network/network_result.dart';
 import '../core/sync/sync_result.dart';
 import '../core/utils/url_utils.dart';
 import '../data/local/app_database.dart';
+import '../repository/progress_repository.dart';
 import 'app_providers.dart';
 import 'session_provider.dart';
 import 'sync_state.dart';
@@ -361,11 +362,16 @@ final courseSyncProvider = NotifierProvider<CourseSyncNotifier, SyncUiState>(
   CourseSyncNotifier.new,
 );
 
-/// Port of `model/CoursesProgressRow` from the Kotlin app.
+/// Port of `model/CoursesProgressRow.kt`.
+///
+/// Named for the Kotlin class rather than shortened to `CourseProgressRow`,
+/// which is the drift row class for the `courses_progress` table — the two
+/// are different things and the shorter name shadowed the drift one inside
+/// this file and clashed on import anywhere both were needed.
 ///
 /// Represents a single row in the course progress list.
-class CourseProgressRow {
-  const CourseProgressRow({
+class CoursesProgressRow {
+  const CoursesProgressRow({
     required this.courseId,
     required this.courseName,
     this.progressCurrent,
@@ -379,17 +385,28 @@ class CourseProgressRow {
   final int? progressCurrent;
   final int? progressMax;
   final int? mistakes;
-  final Map<String, int>? stepMistakes;
+
+  /// Per-step mistake counts, keyed by the **0-based ordinal of the exam**
+  /// within the course (the Kotlin `stepMistake` map's key), which the row
+  /// renders as `key + 1`.
+  final Map<int, int>? stepMistakes;
 }
 
 /// Course progress data for the current user.
 ///
 /// Combines course enrollment, step completion, and exam submissions
 /// to compute progress statistics.
-final courseProgressStreamProvider = StreamProvider<List<CourseProgressRow>>((
+final courseProgressStreamProvider = StreamProvider<List<CoursesProgressRow>>((
   ref,
 ) async* {
-  final userId = ref.watch(sessionProvider).valueOrNull?.id;
+  // `ref.watch(sessionProvider).valueOrNull` — which this used to read — is
+  // `null` for the whole first pass, and a null `shelfUserId` makes
+  // `CourseDao.watchCourses` drop the shelf predicate altogether. So the first
+  // thing "My Progress" emitted was **the entire course catalogue**, every
+  // entry captioned with a progress bar, until the session resolved and the
+  // provider rebuilt. Awaiting `.future` means the shelf filter is never
+  // applied with an unknown user. Sixth instance of this shape in the port.
+  final userId = (await ref.watch(sessionProvider.future))?.id;
   final coursesRepo = ref.watch(coursesRepositoryProvider);
 
   // Watch user's courses (shelf membership)
@@ -412,47 +429,86 @@ final courseProgressStreamProvider = StreamProvider<List<CourseProgressRow>>((
 
   final db = ref.watch(appDatabaseProvider);
 
-  // Get submissions for the user — used only for the per-step mistake counts.
-  final submissions = await db.submissionDao.watchForUser(userId ?? '').first;
+  // `fetchCourseData` groups the user's exam submissions by course with
+  // `parentId.split("@").lastOrNull { courseIdsSet.contains(it) }`
+  // (`ProgressRepositoryImpl.kt:69-78`) — an exact match on one `@`-delimited
+  // segment. A `contains(courseId)` substring test, which this used to do,
+  // attributes a submission to every course whose id is a substring of the
+  // parent, and to a course whose id merely appears inside an exam id.
+  final courseIdSet = courseIds.toSet();
+  final submissions = await db.submissionDao.getExamSubmissionsByUser(userId);
   final submissionsByCourse = <String, List<SubmissionRow>>{};
   for (final sub in submissions) {
-    if (sub.parentId != null) {
-      for (final courseId in courseIds) {
-        if (sub.parentId!.contains(courseId)) {
-          submissionsByCourse.putIfAbsent(courseId, () => []).add(sub);
-        }
-      }
-    }
+    final parentId = sub.parentId;
+    if (parentId == null) continue;
+    final owner = parentId
+        .split('@')
+        .lastWhere(courseIdSet.contains, orElse: () => '');
+    if (owner.isEmpty) continue;
+    submissionsByCourse.putIfAbsent(owner, () => []).add(sub);
   }
 
-  // Calculate mistakes per course
+  // `submissionMap` keys `stepMistake` by the **index** of the exam within the
+  // course's exam list (`examIds.forEachIndexed { index, id -> ... }`), and
+  // `CoursesProgressAdapter.showStepMistakes` renders `stepKey.toInt() + 1`.
+  // The key is therefore an exam ordinal that the column header calls "Step".
+  // This used to be keyed by the raw exam id and the screen recovered a number
+  // by running a `(\d+)` regex over it — which on a real CouchDB exam id
+  // (a hex hash) yields whichever digit happens to appear first, and on an id
+  // with no digit at all yields 0 for every row.
+  final examsByCourse = <String, List<ExamRow>>{};
+  for (final exam in await db.examDao.getByCourseIds(courseIds)) {
+    final cid = exam.courseId;
+    if (cid != null) examsByCourse.putIfAbsent(cid, () => []).add(exam);
+  }
+
   final mistakesByCourse = <String, int>{};
-  final stepMistakesByCourse = <String, Map<String, int>>{};
+  final stepMistakesByCourse = <String, Map<int, int>>{};
   for (final courseId in courseIds) {
-    int totalMistakes = 0;
-    final stepMistakes = <String, int>{};
-    final subs = submissionsByCourse[courseId] ?? [];
-    for (final sub in subs) {
-      final answers = await db.submissionDao.answersFor(sub.id);
-      for (final answer in answers) {
+    final examIndex = <String, int>{};
+    final exams = examsByCourse[courseId] ?? const <ExamRow>[];
+    for (var i = 0; i < exams.length; i++) {
+      examIndex.putIfAbsent(exams[i].id, () => i);
+    }
+
+    var totalMistakes = 0;
+    Map<int, int>? lastMap;
+    for (final sub
+        in submissionsByCourse[courseId] ?? const <SubmissionRow>[]) {
+      // Kotlin rebuilds `mistakesMap` per submission and writes it to the
+      // JsonObject inside the same loop, so the map that survives is the
+      // **last** submission's while `mistakes` accumulates over all of them.
+      // Faithful, and worth flagging as a Kotlin quirk rather than a port
+      // simplification: two attempts at the same course show the per-step
+      // breakdown of only one of them.
+      final perExam = <int, int>{};
+      for (final answer in await db.submissionDao.answersFor(sub.id)) {
+        // Kotlin reaches the exam through the answer's *question* row
+        // (`questionsMap[questionId]?.examId`) and skips an answer whose exam
+        // is not one of this course's. `SubmissionAnswers.examId` carries the
+        // same value on both the local write path and the sync-in, so the
+        // join is the same one without the extra query — but the
+        // course-membership filter is not optional, and dropping it let an
+        // unrelated exam's mistakes into the total.
+        final index = examIndex[answer.examId];
+        if (index == null) continue;
         totalMistakes += answer.mistakes;
-        if (answer.examId != null) {
-          stepMistakes[answer.examId!] = answer.mistakes;
-        }
+        perExam[index] = (perExam[index] ?? 0) + answer.mistakes;
       }
+      lastMap = perExam;
     }
     mistakesByCourse[courseId] = totalMistakes;
-    if (stepMistakes.isNotEmpty) {
-      stepMistakesByCourse[courseId] = stepMistakes;
+    if (lastMap != null && lastMap.isNotEmpty) {
+      stepMistakesByCourse[courseId] = lastMap;
     }
   }
 
   // Build result rows
-  final rows = <CourseProgressRow>[];
+  final rows = <CoursesProgressRow>[];
   for (final course in myCourses) {
     final s = summary[course.id];
     rows.add(
-      CourseProgressRow(
+      CoursesProgressRow(
         courseId: course.id,
         courseName: course.courseTitle ?? 'Untitled Course',
         progressCurrent: s?.current,
@@ -465,6 +521,31 @@ final courseProgressStreamProvider = StreamProvider<List<CourseProgressRow>>((
 
   yield rows;
 });
+
+/// One course's progress grid — port of `CourseProgressViewModel.loadProgress`
+/// (`CourseProgressViewModel.kt:23-29`), which resolves the signed-in user and
+/// then calls `coursesRepository.getCourseProgress(courseId, user?._id)`.
+///
+/// `autoDispose` on purpose. The Kotlin's `loadProgress` starts with
+/// `if (_courseProgress.value != null) return`, so a given ViewModel loads
+/// once — but the ViewModel dies with the Activity, and this screen is entered
+/// afresh every time, so coming back after taking an exam re-reads. A cached
+/// `FutureProvider.family` would instead pin the first read for the process
+/// lifetime and show stale cells forever (Phase 113's defect D, on the exam
+/// join).
+///
+/// The session is awaited via `.future`, not read as `.valueOrNull`: this
+/// screen never watches `sessionProvider`, and reading it unwatched yields
+/// `null` until something else resolves it — which here would silently render
+/// a grid for "no user", i.e. every cell blank. Fifth instance of that shape
+/// in the port.
+final courseProgressGridProvider = FutureProvider.autoDispose
+    .family<CourseProgressData, String>((ref, courseId) async {
+      final user = await ref.watch(sessionProvider.future);
+      return ref
+          .watch(progressRepositoryProvider)
+          .courseProgress(courseId, user?.id);
+    });
 
 /// A course cover image fetched from the CouchDB `courses` attachment endpoint
 /// behind Basic auth — the same pattern as [profileImageProvider]. A course's
