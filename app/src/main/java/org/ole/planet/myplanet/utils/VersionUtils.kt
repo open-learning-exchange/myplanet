@@ -58,15 +58,31 @@ object VersionUtils {
     }
 
     fun compareVersions(version1: String, version2: String): Int {
-        val parts1 = version1.removeSuffix("-lite").removePrefix("v").split(".").map { it.toInt() }
-        val parts2 = version2.removePrefix("v").split(".").map { it.toInt() }
+        val parts1 = parseIntSegments(version1.removeSuffix("-lite").removePrefix("v"))
+        val parts2 = parseIntSegments(version2.removePrefix("v"))
 
-        for (i in 0 until kotlin.math.min(parts1.size, parts2.size)) {
+        for (i in 0 until minOf(parts1.size, parts2.size)) {
             if (parts1[i] != parts2[i]) {
                 return parts1[i].compareTo(parts2[i])
             }
         }
         return parts1.size.compareTo(parts2.size)
+    }
+
+    private fun parseIntSegments(version: String): IntArray {
+        if (version.isEmpty()) {
+            throw NumberFormatException(version)
+        }
+        val segments = mutableListOf<Int>()
+        var start = 0
+        while (start <= version.length) {
+            val end = version.indexOf('.', start)
+            val next = if (end == -1) version.length else end
+            segments.add(version.substring(start, next).toInt())
+            if (end == -1) break
+            start = end + 1
+        }
+        return segments.toIntArray()
     }
 
     fun parseApkVersionString(raw: String?): Int? {
