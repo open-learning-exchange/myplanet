@@ -13,7 +13,7 @@
   "@serverUrlHint": {
     "x-mt": true
   },
-  "serverPinLabel": "pin del servidor",
+  "serverPinLabel": "Pin del servidor",
   "connect": "Conectar",
   "@connect": {
     "x-mt": true
@@ -280,7 +280,7 @@
     "x-mt": true
   },
   "courses": "Cursos",
-  "myCourses": "misCursos",
+  "myCourses": "Mis cursos",
   "allCourses": "Todos los cursos",
   "@allCourses": {
     "x-mt": true
@@ -618,7 +618,7 @@
   "@refresh": {
     "x-mt": true
   },
-  "complete": "completa",
+  "complete": "Completa",
   "noMatchingSubmissions": "Ningún envío coincide con este filtro",
   "@noMatchingSubmissions": {
     "x-mt": true
@@ -2271,7 +2271,7 @@
   "@viewResource": {
     "x-mt": true
   },
-  "view": "ver",
+  "view": "Ver",
   "linkNotAvailable": "Enlace no disponible",
   "noRatings": "Aún no hay valoraciones",
   "@noRatings": {
@@ -2382,8 +2382,8 @@
   "voiceUnshared": "Eliminado de la comunidad",
   "exportCsv": "Exportar CSV",
   "csvFileSavedSuccessfully": "archivo CSV guardado con éxito.",
-  "failedToSaveCsvFile": "error al guardar el archivo CSV.",
-  "exportCancelled": "exportación cancelada.",
+  "failedToSaveCsvFile": "Error al guardar el archivo CSV.",
+  "exportCancelled": "Exportación cancelada.",
   "collections": "Colecciones",
   "filterCollections": "Filtrar colecciones",
   "selectManyCollections": "Seleccionar varias colecciones",
@@ -2496,5 +2496,7 @@
   "summaryOfAchievements": "Resumen de logros - Resume brevemente tu logro y añade los materiales relacionados a continuación",
   "myGoalsDescription": "Mis Metas - ¿Cuáles son tus metas para los próximos 10 años?",
   "myPurposeDescription": "Mi Propósito - ¿Cuáles son tus ambiciones educativas y profesionales?",
-  "pleaseAnswerToContinue": "Por favor, selecciona/escribe tu respuesta para continuar"
+  "pleaseAnswerToContinue": "Por favor, selecciona/escribe tu respuesta para continuar",
+  "teamDocuments": "Documentos",
+  "confirmLeaveTeam": "¿Estás seguro/a de que quieres abandonar este equipo?"
 }

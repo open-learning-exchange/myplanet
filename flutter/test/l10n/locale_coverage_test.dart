@@ -142,8 +142,11 @@ void main() {
     );
 
     // `login` is derived; `appTitle` may not be. Either way both must render
-    // something — 532 of the 727 keys are English-only in Somali today, and
-    // that has to read as English rather than as an empty label.
+    // something — 455 of the 870 template keys have no Somali value at all
+    // today, and that has to read as English rather than as an empty label.
+    // Phase 118 raised that number on purpose: 446 of those keys used to hold
+    // `[Somali] ` plus the English, which displaced this fallback with the same
+    // words under a tag.
     expect(l10n.login, isNotEmpty);
     expect(l10n.appTitle, isNotEmpty);
   });

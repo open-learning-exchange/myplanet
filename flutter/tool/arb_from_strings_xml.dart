@@ -46,7 +46,9 @@
 //
 // Machine-translation flags (Phase 109) survive a re-run too, and are kept
 // *honest* across one. `"@<key>": {"x-mt": true}` in a locale file marks a
-// string as unreviewed machine output; ~560 keys per locale carry it. The merge
+// string as unreviewed machine output; 496–545 keys carry it in ar/es/fr and
+// 26 in ne/so, where the external pass emitted a `[Nepali] `-style marker
+// instead of a translation and Phase 118 deleted those. The merge
 // carries those blocks over verbatim, and then reconciles them, because merely
 // preserving them is not enough:
 //
@@ -272,9 +274,9 @@ int _reconcileMachineTranslationFlags(
 
 /// Prints the strings still awaiting a human, per locale.
 ///
-/// This is the whole point of the marking: ~560 keys per locale are Google
-/// Translate output sitting indistinguishably beside translations derived from
-/// the Kotlin app. A reviewer needs to see exactly which.
+/// This is the whole point of the marking: several hundred keys per locale are
+/// Google Translate output sitting indistinguishably beside translations
+/// derived from the Kotlin app. A reviewer needs to see exactly which.
 void _reportUnreviewed(List<String> args) {
   for (final locale in args.isEmpty ? allLocales : args) {
     final file = File('lib/l10n/app_$locale.arb');

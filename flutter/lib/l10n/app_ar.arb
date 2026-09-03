@@ -2315,5 +2315,7 @@
   "summaryOfAchievements": "ملخص الإنجازات - قم بتلخيص إنجازاتك بإيجاز وأضف المواد ذات الصلة أدناه",
   "myGoalsDescription": "أهدافي - ما هي أهدافك للعشر سنوات القادمة؟",
   "myPurposeDescription": "هدفي - ما هي طموحاتك التعليمية والمهنية؟",
-  "pleaseAnswerToContinue": "يرجى تحديد / كتابة إجابتك للمتابعة"
+  "pleaseAnswerToContinue": "يرجى تحديد / كتابة إجابتك للمتابعة",
+  "teamDocuments": "الوثائق",
+  "confirmLeaveTeam": "هل أنت متأكد أنك تريد مغادرة هذا الفريق؟"
 }
