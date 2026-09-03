@@ -79,7 +79,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                     else -> "Server error: ${response.code()}"
                 }
             } catch (t: Exception) {
-                t.printStackTrace()
+                Log.e(TAG, "Health access request failed", t)
                 when (t) {
                     is UnknownHostException -> "Server not reachable"
                     is SocketTimeoutException -> "Connection timeout"
@@ -89,7 +89,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Health access initialization failed", e)
             "Health access initialization failed"
         }
     }
@@ -118,7 +118,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                         handleVersionEvaluation(cachedInfo, cachedApkVersion, callback)
                         return@launch
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Log.e(TAG, "Failed to parse cached version detail", e)
                     }
                 }
             }
@@ -158,7 +158,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
                 handleVersionEvaluation(planetInfo, apkVersion, callback)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Version check failed", e)
                 withContext(dispatcherProvider.main) {
                     callback.onError(context.getString(R.string.connection_failed), true)
                 }
@@ -260,7 +260,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
             false
         } catch (e: IOException) {
-            e.printStackTrace()
+            Log.e(TAG, "Checksum check failed", e)
             false
         }
     }
@@ -280,7 +280,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                     ?: allResults.firstOrNull()
                     ?: UrlCheckResult.Failure(url)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Configuration URL check failed", e)
                 UrlCheckResult.Failure(url)
             }
 
@@ -299,7 +299,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "getMinApk failed", e)
             ConfigurationsRepository.ConfigurationResult.Failure(context.getString(R.string.device_couldn_t_reach_local_server), url)
         }
     }
@@ -327,10 +327,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
             UrlCheckResult.Failure(currentUrl)
         } catch (e: TimeoutCancellationException) {
-            e.printStackTrace()
+            Log.e(TAG, "Configuration URL check timed out", e)
             UrlCheckResult.Failure(currentUrl)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Configuration URL check failed", e)
             UrlCheckResult.Failure(currentUrl)
         }
     }
@@ -356,10 +356,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
             null
         } catch (e: TimeoutCancellationException) {
-            e.printStackTrace()
+            Log.e(TAG, "Fetch configuration timed out", e)
             null
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Fetch configuration failed", e)
             null
         }
     }

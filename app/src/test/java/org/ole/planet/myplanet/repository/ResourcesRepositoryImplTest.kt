@@ -27,7 +27,9 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
@@ -62,6 +64,9 @@ class ResourcesRepositoryImplTest {
     private val userSessionManager: UserSessionManager = mockk(relaxed = true)
     private val configurationsRepository: ConfigurationsRepository = mockk(relaxed = true)
     private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
+
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
 
     private lateinit var repository: ResourcesRepositoryImpl
 
@@ -883,5 +888,71 @@ class ResourcesRepositoryImplTest {
             unmockkObject(MainApplication)
             unmockkObject(DownloadUtils)
         }
+    }
+
+    @Test
+    fun `saveLocalResource copies the source file into the ole directory and stores the bare filename`() = runTest {
+        val sourceFolder = temporaryFolder.newFolder("source")
+        val externalFilesDir = temporaryFolder.newFolder("external")
+        val sourceFile = File(sourceFolder, "report.pdf").apply { writeText("content") }
+
+        every { dispatcherProvider.io } returns testDispatcher
+        coEvery { myLibraryDao.countByTitle("My Report") } returns 0
+        val savedSlot = slot<MyLibrary>()
+        coEvery { myLibraryDao.upsert(capture(savedSlot)) } returns Unit
+
+        mockkObject(FileUtils)
+        every { FileUtils.getExternalFilesDir(context) } returns externalFilesDir
+        every { FileUtils.getLibraryFile(externalFilesDir, any(), "report.pdf") } answers {
+            File(externalFilesDir, "ole/${secondArg<String>()}/report.pdf")
+        }
+
+        try {
+            val result = repository.saveLocalResource(localResourceRequest(sourceFile.absolutePath))
+
+            assertTrue(result.isSuccess)
+            val saved = savedSlot.captured
+            assertEquals("report.pdf", saved.resourceLocalAddress)
+            assertEquals("report.pdf", saved.filename)
+            val destinationFile = File(externalFilesDir, "ole/${saved.id}/report.pdf")
+            assertTrue(destinationFile.exists())
+            assertEquals("content", destinationFile.readText())
+        } finally {
+            unmockkObject(FileUtils)
+        }
+    }
+
+    @Test
+    fun `saveLocalResource fails when the source file does not exist`() = runTest {
+        val missingFile = File(temporaryFolder.root, "missing.pdf")
+        coEvery { myLibraryDao.countByTitle("My Report") } returns 0
+
+        val result = repository.saveLocalResource(localResourceRequest(missingFile.absolutePath))
+
+        assertTrue(result.isFailure)
+        coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
+    }
+
+    private fun localResourceRequest(resourceUrl: String?): LocalResourceRequest {
+        return LocalResourceRequest(
+            title = "My Report",
+            addedBy = "tester",
+            author = null,
+            year = null,
+            description = null,
+            publisher = null,
+            linkToLicense = null,
+            openWith = null,
+            language = null,
+            mediaType = null,
+            resourceType = null,
+            subjects = null,
+            levels = null,
+            resourceFor = null,
+            resourceUrl = resourceUrl,
+            userId = "user-1",
+            isPrivateTeamResource = false,
+            teamId = null
+        )
     }
 }

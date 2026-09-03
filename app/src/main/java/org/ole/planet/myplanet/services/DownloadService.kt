@@ -29,6 +29,7 @@ import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Provider
 import kotlin.math.roundToInt
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -41,10 +42,7 @@ import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.repository.DownloadRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.services.DownloadWorker
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.FileUtils.availableExternalMemorySize
@@ -219,6 +217,8 @@ class DownloadService : Service() {
                 Log.d(TAG, "initDownload: $fileName already on disk, marking offline and skipping download")
                 try {
                     resourcesRepository.markResourceOfflineByUrl(url)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -248,6 +248,9 @@ class DownloadService : Service() {
             }
 
             return tryDownloadFromResult(primaryResult, url, fromSync, fileName, isAlternative = false)
+        } catch (e: CancellationException) {
+            Log.d(TAG, "initDownload: cancelled for $fileName")
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "initDownload: unexpected error for $fileName", e)
             downloadFailed("Download initialization failed: ${e.localizedMessage ?: "Unknown error"}", fromSync)
