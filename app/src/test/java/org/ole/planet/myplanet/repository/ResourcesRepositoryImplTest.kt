@@ -778,18 +778,32 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
-    fun `getMyLibIds calls getIdsForUserPattern and returns JsonArray of ids`() = runTest {
+    fun `getMyLibIds calls getRemoteIdsForUserPattern and returns JsonArray of ids`() = runTest {
         val userId = "user123"
         val expectedPattern = "%\"user123\"%"
         val expectedIds = listOf("id1", "id2")
-        coEvery { myLibraryDao.getIdsForUserPattern(expectedPattern) } returns expectedIds
+        coEvery { myLibraryDao.getRemoteIdsForUserPattern(expectedPattern) } returns expectedIds
 
         val result = repository.getMyLibIds(userId)
 
-        coVerify(exactly = 1) { myLibraryDao.getIdsForUserPattern(expectedPattern) }
+        coVerify(exactly = 1) { myLibraryDao.getRemoteIdsForUserPattern(expectedPattern) }
         assertEquals(2, result.size())
         assertEquals("id1", result.get(0).asString)
         assertEquals("id2", result.get(1).asString)
+    }
+
+    @Test
+    fun `getMyLibIds omits resources which have not been uploaded yet`() = runTest {
+        val userId = "user123"
+        val expectedPattern = "%\"user123\"%"
+        // The DAO filters rows without an `_id`, so a device-local resource never reaches the shelf
+        // and cannot leave a dangling id the server is unable to resolve.
+        coEvery { myLibraryDao.getRemoteIdsForUserPattern(expectedPattern) } returns listOf("remote1")
+
+        val result = repository.getMyLibIds(userId)
+
+        assertEquals(1, result.size())
+        assertEquals("remote1", result.get(0).asString)
     }
 
     @Test

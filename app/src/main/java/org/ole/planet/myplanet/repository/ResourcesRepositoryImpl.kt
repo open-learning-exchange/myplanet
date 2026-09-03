@@ -544,7 +544,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getMyLibIds(userId: String): JsonArray {
-        val ids = myLibraryDao.getIdsForUserPattern(userIdPattern(userId))
+        val ids = myLibraryDao.getRemoteIdsForUserPattern(userIdPattern(userId))
         val jsonArray = JsonArray()
         ids.forEach { jsonArray.add(it) }
         return jsonArray

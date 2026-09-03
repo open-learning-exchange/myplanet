@@ -162,8 +162,14 @@ interface MyLibraryDao {
     @Query("DELETE FROM my_library WHERE id IN (:ids)")
     suspend fun deleteByIds(ids: List<String>)
 
-    @Query("SELECT id FROM my_library WHERE userId LIKE :userPattern ESCAPE '\\'")
-    suspend fun getIdsForUserPattern(userPattern: String): List<String>
+    /**
+     * Shelf membership is published to the server's `shelf` doc, so it must yield CouchDB `_id`s.
+     * Resources created on the device keep a locally generated [MyLibrary.id] and only gain an
+     * `_id` once they have been uploaded, so rows without one are skipped rather than published as
+     * ids the server cannot resolve.
+     */
+    @Query("SELECT _id FROM my_library WHERE userId LIKE :userPattern ESCAPE '\\' AND _id IS NOT NULL AND _id != ''")
+    suspend fun getRemoteIdsForUserPattern(userPattern: String): List<String>
 
     @Query("SELECT resourceId, title FROM my_library WHERE resourceId IS NOT NULL")
     suspend fun getResourceTitles(): List<ResourceTitleProjection>

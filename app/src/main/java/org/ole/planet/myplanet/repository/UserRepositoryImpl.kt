@@ -1172,7 +1172,7 @@ class UserRepositoryImpl @Inject constructor(
             val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${user._id}").body()
             val myLibs = resourcesRepositoryLazy.get().getMyLibIds(user.id ?: "")
             val myCourseIds = coursesRepositoryLazy.get().getMyCourseIds(user.id ?: "")
-            val shelfData = getShelfData(user.id, jsonDoc, myLibs, myCourseIds)
+            val shelfData = getShelfData(user.id, user._id, jsonDoc, myLibs, myCourseIds)
             shelfData.addProperty("_rev", JsonUtils.getString("_rev", jsonDoc))
             apiInterface.putDoc(
                 UrlUtils.header,
@@ -1222,7 +1222,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun getShelfData(userId: String?, jsonDoc: JsonObject?, myLibs: JsonArray, myCourseIds: JsonArray): JsonObject {
+    private suspend fun getShelfData(userId: String?, shelfId: String?, jsonDoc: JsonObject?, myLibs: JsonArray, myCourseIds: JsonArray): JsonObject {
         val userMeetups = if (userId.isNullOrBlank()) {
             emptyList()
         } else {
@@ -1234,10 +1234,16 @@ class UserRepositoryImpl @Inject constructor(
         val mergedResourceIds = mergeJsonArray(myLibs, JsonUtils.getJsonArray("resourceIds", jsonDoc), removedResources)
         val mergedCourseIds = mergeJsonArray(myCourseIds, JsonUtils.getJsonArray("courseIds", jsonDoc), removedCourses)
         val `object` = JsonObject()
-        `object`.addProperty("_id", sharedPrefManager.getUserId())
+        // The doc id has to be the shelf being written, not whoever is logged in — a shared device
+        // uploads every synced user's shelf, and CouchDB rejects a PUT whose body `_id` disagrees
+        // with the URL, silently leaving those users' shelves stale.
+        `object`.addProperty("_id", shelfId ?: sharedPrefManager.getUserId())
         `object`.add("meetupIds", mergeJsonArray(myMeetups, JsonUtils.getJsonArray("meetupIds", jsonDoc), removedResources))
         `object`.add("resourceIds", mergedResourceIds)
         `object`.add("courseIds", mergedCourseIds)
+        // This PUT replaces the whole doc, so shelf fields myPlanet does not track have to be
+        // carried over or they are wiped from the web dashboard on every sync.
+        `object`.add("myTeamIds", JsonUtils.getJsonArray("myTeamIds", jsonDoc))
         return `object`
     }
 
