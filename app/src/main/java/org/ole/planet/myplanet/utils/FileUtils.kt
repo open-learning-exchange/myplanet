@@ -5,12 +5,10 @@ import android.app.usage.StorageStatsManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
-import android.database.Cursor
 import android.net.Uri
 import android.os.Environment
 import android.os.StatFs
 import android.os.storage.StorageManager
-import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.text.format.Formatter
 import android.util.Log
@@ -220,19 +218,6 @@ object FileUtils {
     }
 
 
-    fun getRealPathFromURI(context: Context, contentUri: Uri?): String? {
-        var cursor: Cursor? = null
-        return try {
-            val proj = arrayOf(MediaStore.Images.Media.DATA)
-            cursor = contentUri?.let { context.contentResolver.query(it, proj, null, null, null) }
-            val columnIndex = cursor?.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
-            cursor?.moveToFirst()
-            cursor?.getString(columnIndex ?: 0)
-        } finally {
-            cursor?.close()
-        }
-    }
-
     fun getMimeType(fileName: String?): String? {
         if (fileName.isNullOrBlank()) return null
         val ext = MimeTypeMap.getFileExtensionFromUrl(fileName)?.lowercase(Locale.getDefault())
@@ -268,26 +253,23 @@ object FileUtils {
         }
     }
 
-    fun getPathFromURI(context: Context, uri: Uri?): String? {
-        var filePath: String? = null
-        if (uri != null) {
-            when (uri.scheme) {
-                "content" -> {
-                    context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                        if (cursor.moveToFirst()) {
-                            val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)
-                            val fileName = cursor.getString(columnIndex)
-                            val cacheDir = context.cacheDir
-                            val destinationFile = File(cacheDir, fileName)
-                            copyUriToFile(context, uri, destinationFile)
-                            filePath = destinationFile.absolutePath
-                        }
-                    }
-                }
-                "file" -> filePath = uri.path
+    fun resolveUriToPath(context: Context, uri: Uri?): String? {
+        uri ?: return null
+        if (uri.scheme == "file") return uri.path
+        return try {
+            val displayName = context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val columnIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (columnIndex >= 0) cursor.getString(columnIndex) else null
+                } else null
             }
+            val destinationFile = File(context.cacheDir, displayName ?: UUID.randomUUID().toString())
+            copyUriToFile(context, uri, destinationFile)
+            destinationFile.absolutePath
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
-        return filePath
     }
 
     @Throws(Exception::class)
@@ -301,39 +283,6 @@ object FileUtils {
         intent.setDataAndType(uri, "*/*")
         intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
         return Intent.createChooser(intent, "Open folder")
-    }
-
-    fun getImagePath(context: Context, uri: Uri?): String? {
-        if (uri == null) return null
-        val projection = arrayOf(MediaStore.Images.Media._ID, MediaStore.Images.Media.DATA)
-        return try {
-            context.contentResolver.query(uri, projection, null, null, null)?.use { firstCursor ->
-                if (firstCursor.moveToFirst()) {
-                    val idIndex = firstCursor.getColumnIndex(MediaStore.Images.Media._ID)
-                    if (idIndex >= 0) {
-                        val documentId = firstCursor.getString(idIndex)
-                        val selection = "${MediaStore.Images.Media._ID} = ?"
-                        val args = arrayOf(documentId)
-                        context.contentResolver.query(
-                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                            projection,
-                            selection,
-                            args,
-                            null
-                        )?.use { cursor ->
-                            if (cursor.moveToFirst()) {
-                                val dataIndex = cursor.getColumnIndex(MediaStore.Images.Media.DATA)
-                                if (dataIndex >= 0) return cursor.getString(dataIndex)
-                            }
-                        }
-                    }
-                }
-            }
-            null
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to get image path from uri", e)
-            null
-        }
     }
 
     fun externalMemoryAvailable(): Boolean {

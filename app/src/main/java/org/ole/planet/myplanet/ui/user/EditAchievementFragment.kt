@@ -19,6 +19,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -33,6 +34,8 @@ import kotlin.Array
 import kotlin.Int
 import kotlin.String
 import kotlin.arrayOf
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -72,6 +75,8 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private var resourceArray: JsonArray? = null
     private var referenceDialog: AlertDialog? = null
 
+    private val viewModel: AchievementViewModel by viewModels()
+
     private var selectedCvUri: Uri? = null
     private var pendingCvFilename: String? = null
     private var deleteCv = false
@@ -106,10 +111,14 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setListeners()
+        achievementArray = JsonArray()
+        viewModel.loadUserAndAchievement()
         viewLifecycleOwner.lifecycleScope.launch {
-            user = userRepository.getUserModel()
-            achievementArray = JsonArray()
-            initializeData()
+            val userModel = viewModel.user.filterNotNull().first()
+            user = userModel
+            val loaded = viewModel.achievement.filterNotNull().first()
+            achievement = loaded
+            populateAchievementData()
         }
     }
 
@@ -167,20 +176,6 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
             lifecycleScope.launch {
                 val cvFilename = computeCvFilename()
-                userRepository.updateAchievement(
-                    achievementId = achievementId,
-                    header = header,
-                    goals = goals,
-                    purpose = purpose,
-                    sendToNation = sendToNation,
-                    achievements = achievementArray ?: JsonArray(),
-                    references = referenceArray ?: JsonArray(),
-                    createdOn = user?.planetCode ?: "",
-                    username = user?.name ?: "",
-                    parentCode = user?.parentCode ?: "",
-                    resumeFileName = cvFilename
-                )
-
                 val userPayload = JsonObject().apply {
                     addProperty("firstName", firstName)
                     addProperty("lastName", lastName)
@@ -188,7 +183,22 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                     if (birthPlace.isNotEmpty()) addProperty("birthPlace", birthPlace)
                     selectedDobIso?.let { addProperty("birthDate", it) }
                 }
-                userRepository.updateProfileFields(user?.id, userPayload)
+                viewModel.saveAchievement(
+                    AchievementSaveRequest(
+                        achievementId = achievementId,
+                        header = header,
+                        goals = goals,
+                        purpose = purpose,
+                        sendToNation = sendToNation,
+                        achievements = achievementArray ?: JsonArray(),
+                        references = referenceArray ?: JsonArray(),
+                        createdOn = user?.planetCode ?: "",
+                        username = user?.name ?: "",
+                        parentCode = user?.parentCode ?: "",
+                        resumeFileName = cvFilename,
+                        profileFields = userPayload,
+                    )
+                )
 
                 Utilities.toast(activity, getString(R.string.achievement_saved))
                 _binding?.btnUpdate?.isEnabled = true
@@ -398,7 +408,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     private fun showResourceListDialog(prevList: Set<String?>) {
         viewLifecycleOwner.lifecycleScope.launch {
-            val list = resourcesRepository.getAllLibraries()
+            val list = viewModel.getAllLibraries()
 
             if (isAdded) {
                 val builder = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
@@ -423,14 +433,6 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         val iso = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2)
         binding.txtDob.text = iso
         selectedDobIso = iso
-    }
-
-    private fun initializeData() {
-        val achievementId = user?.id + "@" + user?.planetCode
-        viewLifecycleOwner.lifecycleScope.launch {
-            achievement = userRepository.initializeAchievement(achievementId)
-            populateAchievementData()
-        }
     }
 
     private fun populateAchievementData() {

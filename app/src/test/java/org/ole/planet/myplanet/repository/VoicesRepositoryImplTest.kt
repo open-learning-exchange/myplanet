@@ -6,15 +6,18 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.spyk
+import io.mockk.unmockkObject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -25,6 +28,7 @@ import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.NetworkUtils
 
 @ExperimentalCoroutinesApi
 class VoicesRepositoryImplTest {
@@ -57,6 +61,13 @@ class VoicesRepositoryImplTest {
     fun setUp() {
         every { dispatcherProvider.default } returns testDispatcher
         repository = newRepository(gson)
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "uniqueIdentifier"
+    }
+
+    @After
+    fun tearDown() {
+        unmockkObject(NetworkUtils)
     }
 
     @Test
@@ -120,6 +131,8 @@ class VoicesRepositoryImplTest {
         assertEquals("Hello World", result[0].message)
         assertEquals("Hello World", result[0].newsJson.get("message").asString)
         assertNotNull(result[0].newsJson.get("user"))
+        assertEquals("uniqueIdentifier", result[0].newsJson.get("androidId").asString)
+        assertEquals("myplanet", result[0].newsJson.get("app").asString)
     }
 
     @Test
