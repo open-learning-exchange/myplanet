@@ -5,6 +5,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 
 @Entity(tableName = "exams", indices = [Index("courseId"), Index("stepId"), Index("teamId"), Index("sourceSurveyId")])
 open class StepExam(
@@ -90,6 +91,7 @@ open class StepExam(
                 `object`.addProperty("teamId", exam.teamId)
             }
             `object`.add("questions", ExamQuestion.serializeQuestions(questions))
+            `object`.addDocumentOrigin()
             return `object`
         }
     }
