@@ -10,6 +10,7 @@ import android.view.ViewGroup
 import android.widget.AbsListView
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.CheckedTextView
 import android.widget.ListView
 import android.widget.TextView
 import androidx.core.view.isGone
@@ -19,6 +20,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnFilterListener
 import org.ole.planet.myplanet.databinding.FragmentLibraryFilterBinding
+import java.util.Locale
 
 class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListener {
     private var _binding: FragmentLibraryFilterBinding? = null
@@ -124,7 +126,7 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
             selectedLang = selectedFilter?.get("languages")?.toMutableSet() ?: selectedLang
             setAdapter(binding.listLevel, levels, selectedLvls)
             setAdapter(binding.listLang, languages, selectedLang)
-            setAdapter(binding.listMedium, mediums, selectedMeds)
+            setMediumAdapter(binding.listMedium, mediums, selectedMeds)
             setAdapter(binding.listSub, subjects, selectedSubs)
         }
     }
@@ -206,5 +208,37 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
     private fun rotateDrawable(textView: TextView, rotation: Float) {
         val drawableRes = if (rotation == 180f) R.drawable.outline_keyboard_arrow_up_24 else R.drawable.down_arrow
         textView.setCompoundDrawablesWithIntrinsicBounds(0, 0, drawableRes, 0)
+    }
+
+    private fun setMediumAdapter(listView: ListView, ar: Set<String>?, selectedSet: Set<String>) {
+        val keys = ar?.let { ArrayList(it) } ?: return
+        listView.choiceMode = AbsListView.CHOICE_MODE_MULTIPLE
+
+        listView.adapter = object : ArrayAdapter<String>(requireContext(), R.layout.rowlayout, R.id.checkBoxRowLayout, keys) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = super.getView(position, convertView, parent)
+                val key = keys[position]
+                val textView = view.findViewById<CheckedTextView>(R.id.checkBoxRowLayout)
+                textView.text = getMediumDisplayName(key)
+                return view
+            }
+        }
+
+        for (i in keys.indices) {
+            listView.setItemChecked(i, selectedSet.contains(keys[i]))
+        }
+    }
+
+    private fun getMediumDisplayName(key: String): String {
+        return when (key.lowercase(Locale.ROOT)) {
+            "video" -> getString(R.string.storage_videos)
+            "audio" -> getString(R.string.storage_audio)
+            "pdf" -> getString(R.string.storage_pdfs)
+            "image" -> getString(R.string.storage_images)
+            "other" -> getString(R.string.storage_other)
+            "text/html" -> "Text / HTML"
+            "html" -> "HTML"
+            else -> key.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }
+        }
     }
 }
