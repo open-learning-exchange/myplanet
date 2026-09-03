@@ -7,5 +7,6 @@ data class CreateTeamRequest(
     val rules: String,
     val teamType: String,
     val isPublic: Boolean,
-    val category: String?
+    val category: String?,
+    val profileImage: String?
 )

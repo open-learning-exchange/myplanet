@@ -13,7 +13,6 @@ import java.util.concurrent.ConcurrentHashMap
 
 object TimeUtils {
     const val DATE_FORMAT = "dd MMM yyyy"
-
     private val defaultLocale: Locale
         get() = Locale.getDefault()
 

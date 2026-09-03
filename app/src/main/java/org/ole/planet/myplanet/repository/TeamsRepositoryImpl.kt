@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.net.Uri
 import android.os.Build
 import android.text.TextUtils
 import androidx.core.net.toUri
@@ -10,6 +11,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -39,11 +41,13 @@ import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.TeamDetails
+import org.ole.planet.myplanet.model.TeamDetailsUpdateRequest
 import org.ole.planet.myplanet.model.TeamLog
 import org.ole.planet.myplanet.model.TeamResourceDto
 import org.ole.planet.myplanet.model.TeamStatus
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.TeamTask
+import org.ole.planet.myplanet.model.TeamUpdateRequest
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
@@ -54,6 +58,7 @@ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeProvider
@@ -169,6 +174,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 parentCode = user.parentCode
                 teamPlanetCode = user.planetCode
                 updated = true
+                profileImage = request.profileImage
             }
             val membership = MyTeam().apply {
                 _id = AndroidDecrypter.generateIv()
@@ -184,6 +190,25 @@ class TeamsRepositoryImpl @Inject constructor(
             teamDao.upsertAll(listOf(team.requireRoomEntity(), membership.requireRoomEntity()))
             teamId
         }
+    }
+
+    override suspend fun uploadTeamImage(uri: Uri): String {
+        val context = MainApplication.context
+        val imageData = withContext(dispatcherProvider.io) {
+            FileUtils.readBytesFromUri(context, uri)
+        } ?: return ""
+
+        val imageName = uri.lastPathSegment
+            ?.takeIf { it.isNotBlank() && it.contains('.') }
+            ?: "team_image_${timeProvider.now()}.jpg"
+
+        val stagingFile =
+            File("${FileUtils.getOlePath(context)}team_attachments/_staging/$imageName")
+        withContext(dispatcherProvider.io) {
+            stagingFile.parentFile?.mkdirs()
+            stagingFile.writeBytes(imageData)
+        }
+        return stagingFile.absolutePath
     }
 
     override suspend fun getAllActiveTeams(): List<MyTeam> {
@@ -270,7 +295,8 @@ class TeamsRepositoryImpl @Inject constructor(
                 description = team.description,
                 services = team.services,
                 rules = team.rules,
-                teamId = team.teamId
+                teamId = team.teamId,
+                profileImage = team.profileImage,
             )
         }.sortedWith(
             compareByDescending<TeamDetails> {
@@ -853,48 +879,34 @@ class TeamsRepositoryImpl @Inject constructor(
         teamLogDao.insert(log)
     }
 
-    override suspend fun updateTeam(
-        teamId: String,
-        name: String,
-        description: String,
-        services: String,
-        rules: String,
-        updatedBy: String?,
-    ): Result<Boolean> {
+    override suspend fun updateTeam(request: TeamUpdateRequest): Result<Boolean> {
         return runCatching {
-            val team = getTeamEntityByAnyId(teamId) ?: return@runCatching false
-            team.name = name
-            team.services = services
-            team.rules = rules
-            team.description = description
-            updatedBy?.let { team.createdBy = it }
+            val team = getTeamEntityByAnyId(request.teamId) ?: return@runCatching false
+            team.name = request.name
+            team.services = request.services
+            team.rules = request.rules
+            team.description = request.description
+            request.updatedBy?.let { team.createdBy = it }
             team.limit = 12
             team.updated = true
+            team.profileImage = request.profileImage
             teamDao.upsert(team.requireRoomEntity())
             true
         }
     }
 
-    override suspend fun updateTeamDetails(
-        teamId: String,
-        name: String,
-        description: String,
-        services: String,
-        rules: String,
-        teamType: String,
-        isPublic: Boolean,
-        createdBy: String,
-    ): Boolean {
-        if (teamId.isBlank()) return false
-        val team = getTeamEntityByAnyId(teamId) ?: return false
-        team.name = name
-        team.description = description
-        team.services = services
-        team.rules = rules
-        team.teamType = teamType
-        team.isPublic = isPublic
-        team.createdBy = createdBy.takeIf { it.isNotBlank() } ?: team.createdBy
+    override suspend fun updateTeamDetails(request: TeamDetailsUpdateRequest): Boolean {
+        if (request.teamId.isBlank()) return false
+        val team = getTeamEntityByAnyId(request.teamId) ?: return false
+        team.name = request.name
+        team.description = request.description
+        team.services = request.services
+        team.rules = request.rules
+        team.teamType = request.teamType
+        team.isPublic = request.isPublic
+        team.createdBy = request.createdBy.takeIf { it.isNotBlank() } ?: team.createdBy
         team.updated = true
+        team.profileImage = request.profileImage
         teamDao.upsert(team.requireRoomEntity())
         return true
     }

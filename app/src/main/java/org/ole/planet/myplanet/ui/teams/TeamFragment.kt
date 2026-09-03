@@ -1,10 +1,12 @@
 package org.ole.planet.myplanet.ui.teams
 
+import android.net.Uri
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
@@ -12,6 +14,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.SimpleItemAnimator
+import com.bumptech.glide.Glide
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.OptIn
@@ -25,7 +28,9 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamBinding
+import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.TeamDetails
+import org.ole.planet.myplanet.model.TeamUpdateRequest
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -34,6 +39,7 @@ import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
+import java.io.File
 
 @AndroidEntryPoint
 class TeamFragment : Fragment() {
@@ -50,6 +56,7 @@ class TeamFragment : Fragment() {
     var user: UserEntity? = null
     private lateinit var teamListAdapter: TeamsAdapter
     private var conditionApplied: Boolean = false
+    private var selectedImageUri: Uri? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,7 +84,12 @@ class TeamFragment : Fragment() {
 
     fun createTeamAlert(team: TeamDetails?) {
         alertCreateTeamBinding = AlertCreateTeamBinding.inflate(LayoutInflater.from(context))
+        selectedImageUri = null
+        alertCreateTeamBinding.teamProfilePhoto.setImageResource(R.drawable.profile)
         setupTeamAlertUI(team)
+        alertCreateTeamBinding.teamProfilePhoto.setOnClickListener {
+            pickImageLauncher.launch("image/*")
+        }
 
         val builder = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
             .setTitle(String.format(getString(R.string.enter) + "%s " + getString(R.string.detail), if (type == null) getString(R.string.team) else type))
@@ -91,6 +103,15 @@ class TeamFragment : Fragment() {
             }
         }
         dialog.show()
+    }
+
+    private val pickImageLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            selectedImageUri = it
+            alertCreateTeamBinding.teamProfilePhoto.setImageURI(it)
+        }
     }
 
     private fun setupTeamAlertUI(team: TeamDetails?) {
@@ -110,6 +131,32 @@ class TeamFragment : Fragment() {
             alertCreateTeamBinding.etDescription.setText(team.description)
             alertCreateTeamBinding.etName.setText(team.name)
         }
+
+        if (!team?.profileImage.isNullOrBlank()) {
+            val file = File(team.profileImage)
+            if (file.exists()) {
+                Glide.with(requireContext())
+                    .load(file)
+                    .placeholder(R.drawable.profile)
+                    .error(R.drawable.profile)
+                    .circleCrop()
+                    .into(alertCreateTeamBinding.teamProfilePhoto)
+            } else {
+                try {
+                    val uri = Uri.parse(team.profileImage)
+                    Glide.with(requireContext())
+                        .load(uri)
+                        .placeholder(R.drawable.profile)
+                        .error(R.drawable.profile)
+                        .circleCrop()
+                        .into(alertCreateTeamBinding.teamProfilePhoto)
+                } catch (e: Exception) {
+                    alertCreateTeamBinding.teamProfilePhoto.setImageResource(R.drawable.profile)
+                }
+            }
+        } else {
+            alertCreateTeamBinding.teamProfilePhoto.setImageResource(R.drawable.profile)
+        }
     }
 
     private fun handleTeamSave(team: TeamDetails?, dialog: AlertDialog) {
@@ -128,37 +175,57 @@ class TeamFragment : Fragment() {
             name.isEmpty() -> {
                 Utilities.toast(activity, getString(R.string.name_is_required))
                 alertCreateTeamBinding.etName.error = getString(R.string.please_enter_a_name)
-            } else -> {
-            val failureMessage = getString(R.string.request_failed_please_retry)
-            val userModel = currentUser ?: run {
-                Utilities.toast(activity, failureMessage)
-                return
             }
-            viewLifecycleOwner.lifecycleScope.launch {
-                if (team == null) {
-                    createNewTeam(name, description, services, rules, selectedTeamType, userModel, dialog, failureMessage)
-                } else {
-                    updateExistingTeam(team, name, description, services, rules, userModel, dialog, failureMessage)
+
+            else -> {
+                val failureMessage = getString(R.string.request_failed_please_retry)
+                val userModel = currentUser ?: run {
+                    Utilities.toast(activity, failureMessage)
+                    return
+                }
+                viewLifecycleOwner.lifecycleScope.launch {
+                    if (team == null) {
+                        val request = CreateTeamRequest(
+                            name = name,
+                            description = description,
+                            services = services,
+                            rules = rules,
+                            teamType = selectedTeamType,
+                            isPublic = alertCreateTeamBinding.switchPublic.isChecked,
+                            category = type,
+                            profileImage = null
+                        )
+                        createNewTeam(request, userModel, dialog, failureMessage)
+                    } else {
+                        val request = TeamUpdateRequest(
+                            teamId = team._id ?: "",
+                            name = name,
+                            description = description,
+                            services = services,
+                            rules = rules,
+                            updatedBy = userModel._id,
+                            profileImage = team.profileImage
+                        )
+                        updateExistingTeam(request, dialog, failureMessage)
+                    }
                 }
             }
-        }
         }
     }
 
     private suspend fun createNewTeam(
-        name: String, description: String, services: String, rules: String,
-        selectedTeamType: String, userModel: UserEntity, dialog: AlertDialog, failureMessage: String
+        request: CreateTeamRequest,
+        userModel: UserEntity,
+        dialog: AlertDialog,
+        failureMessage: String
     ) {
-        val result = viewModel.createTeam(
-            name = name,
-            description = description,
-            services = services,
-            rules = rules,
-            teamType = selectedTeamType,
-            isPublic = alertCreateTeamBinding.switchPublic.isChecked,
-            category = type,
-            userModel = userModel
-        )
+        var imageUrl: String? = null
+        if (selectedImageUri != null) {
+            imageUrl = viewModel.uploadTeamImage(selectedImageUri!!)
+            selectedImageUri = null
+        }
+        val finalRequest = request.copy(profileImage = imageUrl)
+        val result = viewModel.createTeam(finalRequest, userModel)
         when (result) {
             is TeamActionResult.NameExists -> {
                 val duplicateMessage = if (type == "enterprise") {
@@ -171,7 +238,6 @@ class TeamFragment : Fragment() {
             }
             is TeamActionResult.Success -> {
                 binding.etSearch.visibility = View.VISIBLE
-                binding.tableTitle.visibility = View.VISIBLE
                 val successMessage = if (type == "enterprise") {
                     getString(R.string.enterprise_created)
                 } else {
@@ -188,23 +254,21 @@ class TeamFragment : Fragment() {
     }
 
     private suspend fun updateExistingTeam(
-        team: TeamDetails, name: String, description: String, services: String, rules: String,
-        userModel: UserEntity, dialog: AlertDialog, failureMessage: String
+        request: TeamUpdateRequest,
+        dialog: AlertDialog,
+        failureMessage: String
     ) {
-        val targetTeamId = team._id ?: team.teamId
-        if (targetTeamId.isNullOrBlank()) {
+        var imageUrl: String? = null
+        if (selectedImageUri != null) {
+            imageUrl = viewModel.uploadTeamImage(selectedImageUri!!)
+            selectedImageUri = null
+        }
+        if (request.teamId.isBlank()) {
             Utilities.toast(activity, failureMessage)
             return
         }
-        val result = viewModel.updateExistingTeam(
-            teamId = targetTeamId,
-            name = name,
-            description = description,
-            services = services,
-            rules = rules,
-            category = type,
-            updatedBy = userModel._id
-        )
+        val finalRequest = request.copy(profileImage = imageUrl ?: request.profileImage)
+        val result = viewModel.updateExistingTeam(finalRequest, category = type)
         when (result) {
             is TeamActionResult.NameExists -> {
                 val duplicateMessage = if (type == "enterprise") {
@@ -217,7 +281,6 @@ class TeamFragment : Fragment() {
             }
             is TeamActionResult.Success -> {
                 binding.etSearch.visibility = View.VISIBLE
-                binding.tableTitle.visibility = View.VISIBLE
                 Utilities.toast(activity, getString(R.string.team_created))
                 viewModel.loadTeams(fromDashboard, type, user?.id)
                 dialog.dismiss()
@@ -351,11 +414,9 @@ class TeamFragment : Fragment() {
             }
             binding.tvMessage.visibility = View.VISIBLE
             binding.etSearch.visibility = View.VISIBLE
-            binding.tableTitle.visibility = View.GONE
         } else {
             binding.tvMessage.visibility = View.GONE
             binding.etSearch.visibility = View.VISIBLE
-            binding.tableTitle.visibility = View.VISIBLE
         }
     }
 
