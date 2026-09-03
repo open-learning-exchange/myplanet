@@ -13,6 +13,7 @@ import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.annotation.VisibleForTesting
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.ImageViewCompat
@@ -82,7 +83,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private var layoutViewToggle: View? = null
     private var toggleGridButton: ImageButton? = null
     private var toggleListButton: ImageButton? = null
-    private lateinit var searchTags: MutableList<TagEntity>
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal var searchTags: MutableList<TagEntity> = ArrayList()
     private lateinit var adapterLibrary: ResourcesAdapter
     var userModel: UserEntity ?= null
     var map: HashMap<String?, JsonObject>? = null
@@ -101,7 +103,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private val viewModel: ResourcesViewModel by viewModels()
     @Inject
     lateinit var realtimeSyncManager: RealtimeSyncManager
-    private var selectedDownloadFilterIndex: Int = 0   // 0 = All
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal var selectedDownloadFilterIndex: Int = 0   // 0 = All
     private var lastDownloadFilterIndex: Int = 0
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
     private var refreshJob: Job? = null
@@ -125,6 +128,42 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        restoreFilterState(savedInstanceState)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        saveFilterState(outState)
+    }
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal fun saveFilterState(outState: Bundle) {
+        outState.putStringArrayList(KEY_FILTER_SUBJECTS, ArrayList(subjects))
+        outState.putStringArrayList(KEY_FILTER_LANGUAGES, ArrayList(languages))
+        outState.putStringArrayList(KEY_FILTER_LEVELS, ArrayList(levels))
+        outState.putStringArrayList(KEY_FILTER_MEDIUMS, ArrayList(mediums))
+        outState.putInt(KEY_FILTER_DOWNLOAD_INDEX, selectedDownloadFilterIndex)
+        outState.putStringArrayList(KEY_FILTER_TAG_IDS, ArrayList(searchTags.map { it.id }))
+        outState.putStringArrayList(KEY_FILTER_TAG_NAMES, ArrayList(searchTags.map { it.name.orEmpty() }))
+    }
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal fun restoreFilterState(bundle: Bundle?) {
+        bundle ?: return
+        bundle.getStringArrayList(KEY_FILTER_SUBJECTS)?.let { subjects = it.toMutableSet() }
+        bundle.getStringArrayList(KEY_FILTER_LANGUAGES)?.let { languages = it.toMutableSet() }
+        bundle.getStringArrayList(KEY_FILTER_LEVELS)?.let { levels = it.toMutableSet() }
+        bundle.getStringArrayList(KEY_FILTER_MEDIUMS)?.let { mediums = it.toMutableSet() }
+        selectedDownloadFilterIndex = bundle.getInt(KEY_FILTER_DOWNLOAD_INDEX, 0)
+        val tagIds = bundle.getStringArrayList(KEY_FILTER_TAG_IDS) ?: emptyList()
+        val tagNames = bundle.getStringArrayList(KEY_FILTER_TAG_NAMES) ?: emptyList()
+        searchTags.clear()
+        for (i in tagIds.indices) {
+            searchTags.add(TagEntity().apply {
+                id = tagIds[i]
+                name = tagNames.getOrNull(i).orEmpty()
+            })
+        }
     }
 
     override fun getLayout(): Int {
@@ -177,10 +216,20 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             adapterLibrary.setViewMode(prefManager.getLibraryViewMode())
             adapterLibrary.updateIdentity(user?.isGuest() == true, user?.name)
         }
-
         adapterLibrary.setListener(this)
 
-        val filteredList = applyFilterModels(filterLocalLibraryByTag(allResourceModels, etSearch.text?.toString()?.trim().orEmpty(), searchTags))
+        val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
+        val currentSearchTags = searchTags
+        val searchTagIds = currentSearchTags.map { it.id }.sorted()
+        lastSearchQuery = searchQuery
+        lastSearchTags = searchTagIds
+        lastSubjects = HashSet(subjects)
+        lastLevels = HashSet(levels)
+        lastLanguages = HashSet(languages)
+        lastMediums = HashSet(mediums)
+        lastDownloadFilterIndex = selectedDownloadFilterIndex
+
+        val filteredList = applyFilterModels(filterLocalLibraryByTag(allResourceModels, searchQuery, currentSearchTags))
         adapterLibrary.setLibraryList(filteredList)
 
         checkList(filteredList.size)
@@ -195,11 +244,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         toggleListButton = view.findViewById(R.id.toggle_list)
         layoutViewToggle = view.findViewById<View>(R.id.layout_view_toggle) ?: (toggleGridButton?.parent as? View)
         isMyCourseLib = arguments?.getBoolean("isMyCourseLib", false) ?: false
-        searchTags = ArrayList()
 
         initializeViews()
         setupEventListeners()
-        initArrays()
+        renderSearchTagsUi()
         hideButton()
 
         setupDownloadFilterChips()
@@ -391,7 +439,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         if (!::adapterLibrary.isInitialized || !isAdded || _binding == null) return
         val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
 
-        val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
+        val currentSearchTags = searchTags
         val searchTagIds = currentSearchTags.map { it.id }.sorted()
 
         if (searchQuery == lastSearchQuery &&
@@ -518,11 +566,11 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
                 mediums.isNotEmpty() ||
                 selectedDownloadFilterIndex != 0
 
-    private fun initArrays() {
-        subjects = HashSet()
-        languages = HashSet()
-        levels = HashSet()
-        mediums = HashSet()
+    private fun renderSearchTagsUi() {
+        if (_binding == null) return
+        tvSelected.visibility = if (searchTags.isNotEmpty()) View.VISIBLE else View.GONE
+        renderTagChips()
+        showTagText(searchTags, tvSelected)
     }
 
     private fun createAlertDialog(): AlertDialog {
@@ -587,9 +635,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
                 renderDownloadChipSelection(chipRow)
             }
             searchTags.clear()
-            flexBoxTags.removeAllViews()
+            renderSearchTagsUi()
             etSearch.setText(R.string.empty_text)
-            tvSelected.text = getString(R.string.empty_text)
             levels.clear()
             mediums.clear()
             subjects.clear()
@@ -638,13 +685,13 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     override fun onTagClicked(tag: TagEntity) {
-        tvSelected.visibility = View.VISIBLE
         if (!searchTags.any { it.name == tag.name }) searchTags.add(tag)
-        renderTagChips()
-        showTagText(searchTags, tvSelected)
-        searchJob?.cancel()
-        searchJob = viewLifecycleOwner.lifecycleScope.launch {
-            applyFiltersAndUpdateUI()
+        renderSearchTagsUi()
+        if (view != null) {
+            searchJob?.cancel()
+            searchJob = viewLifecycleOwner.lifecycleScope.launch {
+                applyFiltersAndUpdateUI()
+            }
         }
     }
 
@@ -658,11 +705,12 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
                 isCloseIconVisible = true
                 setOnCloseIconClickListener {
                     searchTags.remove(tag)
-                    renderTagChips()
-                    showTagText(searchTags, tvSelected)
-                    searchJob?.cancel()
-                    searchJob = viewLifecycleOwner.lifecycleScope.launch {
-                        applyFiltersAndUpdateUI()
+                    renderSearchTagsUi()
+                    if (view != null) {
+                        searchJob?.cancel()
+                        searchJob = viewLifecycleOwner.lifecycleScope.launch {
+                            applyFiltersAndUpdateUI()
+                        }
                     }
                 }
             }
@@ -671,35 +719,36 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     override fun onTagSelected(tag: TagEntity) {
-        tvSelected.visibility = View.VISIBLE
-        val li: MutableList<TagEntity> = ArrayList()
-        li.add(tag)
-        searchTags = li
-        tvSelected.text = getString(R.string.tag_selected, tag.name)
-        searchJob?.cancel()
-        searchJob = viewLifecycleOwner.lifecycleScope.launch {
-            applyFiltersAndUpdateUI()
+        searchTags = mutableListOf(tag)
+        renderSearchTagsUi()
+        if (view != null) {
+            searchJob?.cancel()
+            searchJob = viewLifecycleOwner.lifecycleScope.launch {
+                applyFiltersAndUpdateUI()
+            }
         }
     }
 
     override fun onOkClicked(list: List<TagEntity>?) {
         if (list?.isEmpty() == true) {
             searchTags.clear()
-            flexBoxTags.removeAllViews()
-            searchJob?.cancel()
-            searchJob = viewLifecycleOwner.lifecycleScope.launch {
-                applyFiltersAndUpdateUI()
+            renderSearchTagsUi()
+            if (view != null) {
+                searchJob?.cancel()
+                searchJob = viewLifecycleOwner.lifecycleScope.launch {
+                    applyFiltersAndUpdateUI()
+                }
             }
         } else {
             for (tag in list ?: emptyList()) {
                 if (!searchTags.any { it.name == tag.name }) searchTags.add(tag)
             }
-            tvSelected.visibility = View.VISIBLE
-            renderTagChips()
-            showTagText(searchTags, tvSelected)
-            searchJob?.cancel()
-            searchJob = viewLifecycleOwner.lifecycleScope.launch {
-                applyFiltersAndUpdateUI()
+            renderSearchTagsUi()
+            if (view != null) {
+                searchJob?.cancel()
+                searchJob = viewLifecycleOwner.lifecycleScope.launch {
+                    applyFiltersAndUpdateUI()
+                }
             }
         }
     }
@@ -719,9 +768,11 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         this.languages = languages
         this.mediums = mediums
         this.levels = levels
-        searchJob?.cancel()
-        searchJob = viewLifecycleOwner.lifecycleScope.launch {
-            applyFiltersAndUpdateUI()
+        if (view != null) {
+            searchJob?.cancel()
+            searchJob = viewLifecycleOwner.lifecycleScope.launch {
+                applyFiltersAndUpdateUI()
+            }
         }
     }
 
@@ -765,6 +816,14 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         if (::adapterLibrary.isInitialized) {
             adapterLibrary.setListener(null)
         }
+
+        lastSearchQuery = null
+        lastSearchTags = null
+        lastSubjects = null
+        lastLevels = null
+        lastLanguages = null
+        lastMediums = null
+        lastDownloadFilterIndex = -1
 
         layoutViewToggle = null
         toggleGridButton = null
@@ -971,5 +1030,15 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             chip.setTextColor(ContextCompat.getColor(requireContext(),
                 if (isSelected) R.color.chip_selected_text else R.color.daynight_textColor))
         }
+    }
+
+    companion object {
+        const val KEY_FILTER_SUBJECTS = "filter_subjects"
+        const val KEY_FILTER_LANGUAGES = "filter_languages"
+        const val KEY_FILTER_LEVELS = "filter_levels"
+        const val KEY_FILTER_MEDIUMS = "filter_mediums"
+        const val KEY_FILTER_DOWNLOAD_INDEX = "filter_download_index"
+        const val KEY_FILTER_TAG_IDS = "filter_tag_ids"
+        const val KEY_FILTER_TAG_NAMES = "filter_tag_names"
     }
 }

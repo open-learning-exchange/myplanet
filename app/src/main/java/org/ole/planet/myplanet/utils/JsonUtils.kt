@@ -100,7 +100,7 @@ object JsonUtils {
     }
 
     fun addJson(`object`: JsonObject, fieldName: String, value: JsonObject?) {
-        if (value != null && value.keySet().size > 0) `object`.add(fieldName, value)
+        if (value != null && value.keySet().isNotEmpty()) `object`.add(fieldName, value)
     }
 
     fun getInt(fieldName: String, jsonObject: JsonObject?): Int = safeGet({ 0 }) {

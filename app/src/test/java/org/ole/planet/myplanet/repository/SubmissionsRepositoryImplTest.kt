@@ -15,8 +15,11 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import javax.inject.Provider
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -110,79 +113,52 @@ class SubmissionsRepositoryImplTest {
         assertEquals(1, result.size)
     }
 
-    @Test
-    fun `getSubmissionsFlow suppresses equivalent emissions`() = runTest {
-        val subList = listOf(Submission(id = "1", lastUpdateTime = 100L))
-        val subListDup = listOf(Submission(id = "1", lastUpdateTime = 100L))
-
-        val flowEmitter = kotlinx.coroutines.flow.MutableSharedFlow<List<Submission>>(replay = 1)
+    private suspend fun TestScope.countEmissionsFor(
+        first: List<Submission>,
+        second: List<Submission>,
+    ): Int {
+        val flowEmitter = MutableSharedFlow<List<Submission>>(replay = 1)
         every { submissionDao.observeByUserId("user_123") } returns flowEmitter
 
         var emissions = 0
-        val job = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined).launch {
-            repository.getSubmissionsFlow("user_123").collect {
-                emissions++
-            }
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            repository.getSubmissionsFlow("user_123").collect { emissions++ }
         }
 
-        flowEmitter.emit(subList)
-        assertEquals(1, emissions)
+        flowEmitter.emit(first)
+        assertEquals("the first emission always reaches the collector", 1, emissions)
+        flowEmitter.emit(second)
+        return emissions
+    }
 
-        // Equivalent list should be suppressed
-        flowEmitter.emit(subListDup)
+    @Test
+    fun `getSubmissionsFlow suppresses equivalent emissions`() = runTest {
+        val emissions = countEmissionsFor(
+            listOf(Submission(id = "1", lastUpdateTime = 100L)),
+            listOf(Submission(id = "1", lastUpdateTime = 100L)),
+        )
+        // equivalent list is suppressed
         assertEquals(1, emissions)
-
-        job.cancel()
     }
 
     @Test
     fun `getSubmissionsFlow does not suppress when size changes`() = runTest {
-        val subList = listOf(Submission(id = "1", lastUpdateTime = 100L))
-        val subListDiffSize = listOf(Submission(id = "1", lastUpdateTime = 100L), Submission(id = "2", lastUpdateTime = 100L))
-
-        val flowEmitter = kotlinx.coroutines.flow.MutableSharedFlow<List<Submission>>(replay = 1)
-        every { submissionDao.observeByUserId("user_123") } returns flowEmitter
-
-        var emissions = 0
-        val job = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined).launch {
-            repository.getSubmissionsFlow("user_123").collect {
-                emissions++
-            }
-        }
-
-        flowEmitter.emit(subList)
-        assertEquals(1, emissions)
-
-        // Different size list should not be suppressed
-        flowEmitter.emit(subListDiffSize)
+        val emissions = countEmissionsFor(
+            listOf(Submission(id = "1", lastUpdateTime = 100L)),
+            listOf(Submission(id = "1", lastUpdateTime = 100L), Submission(id = "2", lastUpdateTime = 100L)),
+        )
+        // different size is not suppressed
         assertEquals(2, emissions)
-
-        job.cancel()
     }
 
     @Test
     fun `getSubmissionsFlow does not suppress when lastUpdateTime changes`() = runTest {
-        val subList = listOf(Submission(id = "1", lastUpdateTime = 100L))
-        val subListDiffTime = listOf(Submission(id = "1", lastUpdateTime = 101L))
-
-        val flowEmitter = kotlinx.coroutines.flow.MutableSharedFlow<List<Submission>>(replay = 1)
-        every { submissionDao.observeByUserId("user_123") } returns flowEmitter
-
-        var emissions = 0
-        val job = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined).launch {
-            repository.getSubmissionsFlow("user_123").collect {
-                emissions++
-            }
-        }
-
-        flowEmitter.emit(subList)
-        assertEquals(1, emissions)
-
-        // Same size but different lastUpdateTime should not be suppressed
-        flowEmitter.emit(subListDiffTime)
+        val emissions = countEmissionsFor(
+            listOf(Submission(id = "1", lastUpdateTime = 100L)),
+            listOf(Submission(id = "1", lastUpdateTime = 101L)),
+        )
+        // same size, different lastUpdateTime is not suppressed
         assertEquals(2, emissions)
-
-        job.cancel()
     }
 
     @Test
