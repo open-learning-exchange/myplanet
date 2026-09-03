@@ -24,8 +24,8 @@ class ResourceViewerActivity : AppCompatActivity() {
     @Inject
     lateinit var userRepository: UserRepository
     private val viewModel: ResourceViewerViewModel by viewModels()
-    private val ratingPrompter by lazy {
-        ResourceRatingPrompter(this, userRepository, viewModel)
+    private val exitCoordinator by lazy {
+        ResourcesExitCoordinator(this, userRepository, viewModel)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -103,7 +103,7 @@ class ResourceViewerActivity : AppCompatActivity() {
     }
 
     private fun handleBackNavigation() {
-        ratingPrompter.handleBackNavigation(
+        exitCoordinator.handleBackNavigation(
             resourceId = intent.getStringExtra("resourceId"),
             title = intent.getStringExtra("RESOURCE_TITLE"),
             isResourceFinished = currentViewerFragment()?.isResourceFinished() == true,

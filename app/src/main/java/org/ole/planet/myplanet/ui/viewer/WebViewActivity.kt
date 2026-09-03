@@ -47,8 +47,8 @@ class WebViewActivity : AppCompatActivity() {
     @Inject
     lateinit var userRepository: UserRepository
     private val viewModel: ResourceViewerViewModel by viewModels()
-    private val ratingPrompter by lazy {
-        ResourceRatingPrompter(this, userRepository, viewModel)
+    private val exitCoordinator by lazy {
+        ResourcesExitCoordinator(this, userRepository, viewModel)
     }
     private lateinit var link: String
     private val trustedHosts by lazy {
@@ -157,7 +157,7 @@ class WebViewActivity : AppCompatActivity() {
     }
 
     private fun handleBackNavigation() {
-        ratingPrompter.handleBackNavigation(
+        exitCoordinator.handleBackNavigation(
             resourceId = intent.getStringExtra("RESOURCE_ID"),
             title = activityWebViewBinding.contentWebView.webTitle.text.toString().ifBlank {
                 intent.getStringExtra("title") ?: ""

@@ -12,7 +12,7 @@ import org.ole.planet.myplanet.ui.ratings.RatingsFragment
  * [ResourceViewerActivity] and [WebViewActivity] delegate here so the prompt rules live in one
  * place.
  */
-class ResourceRatingPrompter(
+class ResourcesExitCoordinator(
     private val activity: AppCompatActivity,
     private val userRepository: UserRepository,
     private val viewModel: ResourceViewerViewModel,
