@@ -58,6 +58,7 @@ import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.toSyncDocuments
 
 @Singleton
 class TeamsRepositoryImpl @Inject constructor(
@@ -1246,17 +1247,8 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
-        val documentList = ArrayList<JsonObject>(jsonArray.size())
-        val ids = mutableListOf<String>()
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-                ids.add(id)
-            }
-        }
+        val syncDocs = jsonArray.toSyncDocuments()
+        val ids = syncDocs.map { it.first }
         val existingTeams = teamDao.getAll()
             .filter { (it._id ?: it.id) in ids }
             .associateBy { it._id ?: it.id }
@@ -1266,35 +1258,19 @@ class TeamsRepositoryImpl @Inject constructor(
         // the ~1000 docs in a heavy-table sync page would commit — and fsync — on its own,
         // turning one page into minutes of work. One transaction => one commit for the page.
         appDatabase.withTransaction {
-            documentList.forEach { jsonDoc ->
+            syncDocs.forEach { (_, jsonDoc) ->
                 insertMyTeam(jsonDoc, existingTeams)
             }
         }
     }
 
     override suspend fun bulkInsertTasksFromSync(jsonArray: JsonArray) {
-        val tasks = ArrayList<TeamTask>(jsonArray.size())
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                tasks.add(TeamTask.fromJson(jsonDoc))
-            }
-        }
+        val tasks = jsonArray.toSyncDocuments().map { (_, doc) -> TeamTask.fromJson(doc) }
         teamTaskDao.upsertAll(tasks)
     }
 
     override suspend fun bulkInsertTeamActivitiesFromSync(jsonArray: JsonArray) {
-        val documentList = ArrayList<JsonObject>(jsonArray.size())
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-            }
-        }
+        val documentList = jsonArray.toSyncDocuments().map { it.second }
         insertTeamLogs(documentList)
     }
 

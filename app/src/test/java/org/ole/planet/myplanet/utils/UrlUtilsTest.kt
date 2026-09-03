@@ -296,6 +296,59 @@ class UrlUtilsTest {
     }
 
     @Test
+    fun testBasicAuthHeader_withPaddingAndNoPadding() {
+        // "user:pass" -> "dXNlcjpwYXNz" (no padding needed)
+        val result1 = UrlUtils.basicAuthHeader("user", "pass")
+        assertEquals("Basic dXNlcjpwYXNz", result1)
+
+        // "user:password" -> "dXNlcjpwYXNzd29yZA==" (with '=' padding)
+        val result2 = UrlUtils.basicAuthHeader("user", "password")
+        assertEquals("Basic dXNlcjpwYXNzd29yZA==", result2)
+    }
+
+    @Test
+    fun testGetUserInfo_nullInput() {
+        val (user, pass) = UrlUtils.getUserInfo(null)
+        assertEquals("", user)
+        assertEquals("", pass)
+    }
+
+    @Test
+    fun testGetUserInfo_emptyInput() {
+        val (user, pass) = UrlUtils.getUserInfo("")
+        assertEquals("", user)
+        assertEquals("", pass)
+    }
+
+    @Test
+    fun testGetUserInfo_validUsernameAndPassword() {
+        val (user, pass) = UrlUtils.getUserInfo("admin:secret")
+        assertEquals("admin", user)
+        assertEquals("secret", pass)
+    }
+
+    @Test
+    fun testGetUserInfo_noColon() {
+        val (user, pass) = UrlUtils.getUserInfo("admin")
+        assertEquals("", user)
+        assertEquals("", pass)
+    }
+
+    @Test
+    fun testGetUserInfo_colonWithoutPassword() {
+        val (user, pass) = UrlUtils.getUserInfo("admin:")
+        assertEquals("", user)
+        assertEquals("", pass)
+    }
+
+    @Test
+    fun testGetUserInfo_multipleColons() {
+        val (user, pass) = UrlUtils.getUserInfo("admin:secret:extra")
+        assertEquals("admin", user)
+        assertEquals("secret", pass)
+    }
+
+    @Test
     fun `header memoizes basic auth header and invalidates when requested`() {
         every { mockSpm.getUrlUser() } returns "user1"
         every { mockSpm.getUrlPwd() } returns "pass1"

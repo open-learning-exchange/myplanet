@@ -100,7 +100,7 @@ object JsonUtils {
     }
 
     fun addJson(`object`: JsonObject, fieldName: String, value: JsonObject?) {
-        if (value != null && value.keySet().size > 0) `object`.add(fieldName, value)
+        if (value != null && value.keySet().isNotEmpty()) `object`.add(fieldName, value)
     }
 
     fun getInt(fieldName: String, jsonObject: JsonObject?): Int = safeGet({ 0 }) {
@@ -125,7 +125,7 @@ object JsonUtils {
 
     fun getJsonObject(fieldName: String, jsonObject: JsonObject?): JsonObject = safeGet({ JsonObject() }) {
         val el: JsonElement? = jsonObject?.let { getJsonElement(fieldName, it, JsonObject::class.java) }
-        if (el is JsonObject) el else JsonObject()
+        el as? JsonObject ?: JsonObject()
     }
 
     private fun getJsonElement(fieldName: String, jsonObject: JsonObject, type: Class<*>): JsonElement {
@@ -142,3 +142,10 @@ object JsonUtils {
         }
     }
 }
+
+fun JsonArray.toSyncDocuments(): List<Pair<String, JsonObject>> =
+    mapNotNull { element ->
+        val doc = JsonUtils.getJsonObject("doc", element.asJsonObject)
+        val id = JsonUtils.getString("_id", doc)
+        if (id.startsWith("_design")) null else id to doc
+    }

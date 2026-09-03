@@ -1,16 +1,29 @@
 package org.ole.planet.myplanet.repository
 
+import android.content.Context
 import io.mockk.coEvery
+import io.mockk.verify
+import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
+import java.nio.file.Files
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import org.junit.After
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.TeamDao
+import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
@@ -20,11 +33,39 @@ class EnterprisesRepositoryImplTest {
 
     private val teamDao: TeamDao = mockk(relaxed = true)
     private val timeProvider: TimeProvider = mockk(relaxed = true)
+    private val context: Context = mockk(relaxed = true)
     private val dispatcherProvider: DispatcherProvider = TestDispatcherProvider(UnconfinedTestDispatcher())
 
     private val repository = EnterprisesRepositoryImpl(
-        teamDao, timeProvider, dispatcherProvider
+        context, teamDao, timeProvider, dispatcherProvider
     )
+
+    @After
+    fun tearDown() {
+        unmockkObject(FileUtils)
+    }
+
+    @Test
+    fun `getReportsFlow delegates to observeNonArchivedReportsByTeamId`() = runTest {
+        val teamId = "team123"
+        val expectedReports = listOf(
+            MyTeam().apply {
+                _id = "report1"
+                createdDate = 2000L
+            },
+            MyTeam().apply {
+                _id = "report2"
+                createdDate = 1000L
+            }
+        )
+
+        every { teamDao.observeNonArchivedReportsByTeamId(teamId) } returns flowOf(expectedReports)
+
+        val result = repository.getReportsFlow(teamId).first()
+
+        assertEquals(expectedReports, result)
+        verify(exactly = 1) { teamDao.observeNonArchivedReportsByTeamId(teamId) }
+    }
 
     @Test
     fun `exportReportsAsCsv calculates correct profitLoss and endingBalance`() = runTest {
@@ -79,10 +120,47 @@ class EnterprisesRepositoryImplTest {
     }
 
     @Test
+    fun `addReport with image writes attachment using injected context`() = runTest {
+        val oleDir = Files.createTempDirectory("enterprises_ole").toFile()
+        mockkObject(FileUtils)
+        every { FileUtils.getOlePath(context) } returns "${oleDir.absolutePath}/"
+        every { timeProvider.now() } returns 12345L
+        coEvery { teamDao.getById(any()) } returns MyTeam().apply { _id = "report-1" }
+
+        val imageBytes = byteArrayOf(1, 2, 3, 4)
+        val report = FinanceReportParams(
+            description = "desc",
+            beginningBalance = 0,
+            sales = 0,
+            otherIncome = 0,
+            wages = 0,
+            otherExpenses = 0,
+            startDate = 0L,
+            endDate = 0L,
+            teamId = "team-1",
+            teamType = "team",
+            teamPlanetCode = "code",
+            imageName = "logo.png",
+            imageData = imageBytes,
+        )
+
+        repository.addReport(report)
+
+        // The injected context must flow into FileUtils.getOlePath (mocked above) so the
+        // attachment lands under our temp dir; the report id is a random UUID, so locate
+        // the written file by name within the ole tree.
+        val writtenFile = oleDir.walkTopDown().firstOrNull { it.name == "logo.png" }
+        assertTrue("attachment file should have been written via injected context", writtenFile != null)
+        assertArrayEquals(imageBytes, writtenFile!!.readBytes())
+
+        coVerify { teamDao.upsert(any()) }
+    }
+
+    @Test
     fun `getReportsFlow deduplicates byte-identical emissions`() = runTest {
         val r1 = report("r1", "rev1", sales = 10)
         val r2 = report("r1", "rev1", sales = 10)
-        coEvery { teamDao.observeByTeamIdAndDocType("team1", "report") } returns
+        every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
             flowOf(listOf(r1), listOf(r2))
 
         val emissions = mutableListOf<List<MyTeam>>()
@@ -95,7 +173,7 @@ class EnterprisesRepositoryImplTest {
     fun `getReportsFlow emits when a locally-edited financial field changes with rev unchanged`() = runTest {
         val before = report("r1", "rev1", sales = 10)
         val after = report("r1", "rev1", sales = 25)
-        coEvery { teamDao.observeByTeamIdAndDocType("team1", "report") } returns
+        every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
             flowOf(listOf(before), listOf(after))
 
         val emissions = mutableListOf<List<MyTeam>>()
@@ -110,7 +188,7 @@ class EnterprisesRepositoryImplTest {
     fun `getReportsFlow emits when description changes with id and rev unchanged`() = runTest {
         val before = report("r1", "rev1", description = "old")
         val after = report("r1", "rev1", description = "new")
-        coEvery { teamDao.observeByTeamIdAndDocType("team1", "report") } returns
+        every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
             flowOf(listOf(before), listOf(after))
 
         val emissions = mutableListOf<List<MyTeam>>()
@@ -125,7 +203,7 @@ class EnterprisesRepositoryImplTest {
     fun `getReportsFlow emits when a report is added`() = runTest {
         val r1 = report("r1", "rev1", createdDate = 100L)
         val r2 = report("r2", "rev2", createdDate = 200L)
-        coEvery { teamDao.observeByTeamIdAndDocType("team1", "report") } returns
+        every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
             flowOf(listOf(r1), listOf(r1, r2))
 
         val emissions = mutableListOf<List<MyTeam>>()
@@ -137,12 +215,11 @@ class EnterprisesRepositoryImplTest {
     }
 
     @Test
-    fun `getReportsFlow filters archived reports and sorts by createdDate descending`() = runTest {
-        val r1 = report("r1", "rev1", createdDate = 100L)
-        val archived = report("ra", "reva", createdDate = 300L, status = "archived")
+    fun `getReportsFlow preserves the order returned by the dao`() = runTest {
         val r2 = report("r2", "rev2", createdDate = 200L)
-        coEvery { teamDao.observeByTeamIdAndDocType("team1", "report") } returns
-            flowOf(listOf(r1, archived, r2))
+        val r1 = report("r1", "rev1", createdDate = 100L)
+        every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
+            flowOf(listOf(r2, r1))
 
         val emissions = mutableListOf<List<MyTeam>>()
         repository.getReportsFlow("team1").collect { emissions.add(it) }
