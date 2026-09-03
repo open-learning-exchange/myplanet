@@ -3,11 +3,9 @@ package org.ole.planet.myplanet.data.room.dao
 import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Transaction
-import androidx.room.Update
 import androidx.room.Upsert
 import java.util.Date
 import org.ole.planet.myplanet.model.AppNotification
-import org.ole.planet.myplanet.model.NotificationSyncUpdate
 
 @Dao
 interface NotificationDao {
@@ -56,17 +54,11 @@ interface NotificationDao {
     @Query("UPDATE notifications SET needsSync = 0, rev = COALESCE(:rev, rev) WHERE id = :id")
     suspend fun markSynced(id: String, rev: String?)
 
-    @Update(entity = AppNotification::class)
-    suspend fun updateSyncStatus(updates: List<NotificationSyncUpdate>)
-
     @Transaction
     suspend fun markSynced(syncResults: List<Pair<String, String?>>) {
-        val nonNullRevs = syncResults.filter { it.second != null }.map {
-            NotificationSyncUpdate(it.first, it.second, false)
-        }
-        if (nonNullRevs.isNotEmpty()) {
-            nonNullRevs.chunked(900).forEach {
-                updateSyncStatus(it)
+        syncResults.forEach { (id, rev) ->
+            if (rev != null) {
+                markSyncedWithRev(id, rev)
             }
         }
 
@@ -77,6 +69,9 @@ interface NotificationDao {
             }
         }
     }
+
+    @Query("UPDATE notifications SET needsSync = 0, rev = :rev WHERE id = :id")
+    suspend fun markSyncedWithRev(id: String, rev: String)
 
     @Query("UPDATE notifications SET needsSync = 0 WHERE id IN (:ids)")
     suspend fun markSyncedWithoutRev(ids: List<String>)
