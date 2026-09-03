@@ -68,9 +68,6 @@
   "resources": "موارد",
   "search": "بحث",
   "sync": "مزامنة",
-  "@sync": {
-    "x-mt": true
-  },
   "cancel": "إلغاء",
   "settings": "الإعدادات",
   "backgroundSync": "مزامنة الخلفية",
@@ -143,9 +140,6 @@
   "appTheme": "سمة التطبيق",
   "aiChat": "AI Chat",
   "syncNow": "مزامنة الآن",
-  "@syncNow": {
-    "x-mt": true
-  },
   "syncCenter": "مركز المزامنة",
   "@syncCenter": {
     "x-mt": true
@@ -264,9 +258,6 @@
   },
   "courses": "الدورات",
   "myCourses": "دوراتي",
-  "@myCourses": {
-    "x-mt": true
-  },
   "allCourses": "جميع الدورات",
   "@allCourses": {
     "x-mt": true
@@ -280,9 +271,6 @@
     "x-mt": true
   },
   "gradeLevel": "مستوى الصف",
-  "@gradeLevel": {
-    "x-mt": true
-  },
   "subjectLevel": "موضوع",
   "@subjectLevel": {
     "x-mt": true
@@ -315,18 +303,12 @@
     "x-mt": true
   },
   "username": "اسم المستخدم",
-  "@username": {
-    "x-mt": true
-  },
   "email": "البريد الإلكتروني",
   "phone": "هاتف",
   "@phone": {
     "x-mt": true
   },
   "level": "مستوى",
-  "@level": {
-    "x-mt": true
-  },
   "levels": "المستويات",
   "@levels": {
     "x-mt": true
@@ -335,9 +317,6 @@
   "languages": "اللغات",
   "gender": "الجنس",
   "dateOfBirth": "تاريخ الميلاد",
-  "@dateOfBirth": {
-    "x-mt": true
-  },
   "planetCode": "كود الكوكب",
   "@planetCode": {
     "x-mt": true
@@ -351,9 +330,6 @@
     "x-mt": true
   },
   "editProfile": "تحرير الملف الشخصي",
-  "@editProfile": {
-    "x-mt": true
-  },
   "changePhoto": "تغيير الصورة الشخصية",
   "@changePhoto": {
     "x-mt": true
@@ -367,13 +343,7 @@
     "x-mt": true
   },
   "firstName": "الاسم الأول",
-  "@firstName": {
-    "x-mt": true
-  },
   "middleName": "الاسم الأوسط",
-  "@middleName": {
-    "x-mt": true
-  },
   "lastName": "الاسم الأخير",
   "save": "حفظ",
   "profileSaved": "تم حفظ الملف الشخصي على هذا الجهاز",
@@ -516,9 +486,6 @@
     "x-mt": true
   },
   "joinRequestNotification": "طلب الانضمام",
-  "@joinRequestNotification": {
-    "x-mt": true
-  },
   "teamNotification": "تحديث الفريق",
   "@teamNotification": {
     "x-mt": true
@@ -753,9 +720,6 @@
   },
   "skip": "تخطي",
   "next": "التالي",
-  "@next": {
-    "x-mt": true
-  },
   "getStarted": "البدء",
   "welcomeToMyPlanet": "مرحبًا بكم في myPlanet",
   "learnOffline": "تعلم بدون اتصال",
@@ -800,9 +764,6 @@
     "x-mt": true
   },
   "addMeetup": "إضافة لقاء",
-  "@addMeetup": {
-    "x-mt": true
-  },
   "meetupDetails": "تفاصيل اللقاء",
   "@meetupDetails": {
     "x-mt": true
@@ -830,13 +791,7 @@
   },
   "editMeetup": "تعديل الاجتماع",
   "startTime": "وقت البدء",
-  "@startTime": {
-    "x-mt": true
-  },
   "endTime": "وقت الانتهاء",
-  "@endTime": {
-    "x-mt": true
-  },
   "none": "لا شيء",
   "daily": "يوميًا",
   "weekly": "أسبوعيًا",
@@ -873,13 +828,7 @@
     "x-mt": true
   },
   "startDate": "تاريخ البدء",
-  "@startDate": {
-    "x-mt": true
-  },
   "endDate": "تاريخ الانتهاء",
-  "@endDate": {
-    "x-mt": true
-  },
   "timeNotSet": "لم يتم ضبط الوقت",
   "@timeNotSet": {
     "x-mt": true
@@ -1125,9 +1074,6 @@
   "teamMembers": "الأعضاء",
   "members": "الأعضاء",
   "joinRequests": "طلبات الانضمام",
-  "@joinRequests": {
-    "x-mt": true
-  },
   "noMembers": "لا يوجد أعضاء حتى الآن",
   "@noMembers": {
     "x-mt": true
@@ -1175,31 +1121,13 @@
   "@removeFromTeam": {
     "x-mt": true
   },
-  "addResource": "أضف موردًا",
-  "@addResource": {
-    "x-mt": true
-  },
+  "addResource": "إضافة مصدر",
   "editResource": "تعديل المورد",
   "resourceUpdated": "تم تحديث المورد",
-  "@resourceUpdated": {
-    "x-mt": true
-  },
   "resourceAddedToTeam": "تمت إضافة المورد إلى الفريق",
-  "@resourceAddedToTeam": {
-    "x-mt": true
-  },
   "descriptionIsRequired": "الوصف مطلوب",
-  "@descriptionIsRequired": {
-    "x-mt": true
-  },
   "levelIsRequired": "المستوى مطلوب",
-  "@levelIsRequired": {
-    "x-mt": true
-  },
   "subjectIsRequired": "الموضوع مطلوب",
-  "@subjectIsRequired": {
-    "x-mt": true
-  },
   "selectFile": "حدد ملفًا",
   "@selectFile": {
     "x-mt": true
@@ -1213,9 +1141,6 @@
     "x-mt": true
   },
   "saveChanges": "حفظ التغييرات",
-  "@saveChanges": {
-    "x-mt": true
-  },
   "selectOpenWith": "اختر فتح باستخدام",
   "@selectOpenWith": {
     "x-mt": true
@@ -1229,9 +1154,6 @@
     "x-mt": true
   },
   "linkToLicense": "رابط الترخيص",
-  "@linkToLicense": {
-    "x-mt": true
-  },
   "noResourcesToAdd": "جميع الموارد المتاحة مرتبطة بالفعل",
   "@noResourcesToAdd": {
     "x-mt": true
@@ -1245,9 +1167,6 @@
     "x-mt": true
   },
   "untitledCourse": "دورة بدون عنوان",
-  "@untitledCourse": {
-    "x-mt": true
-  },
   "addCourse": "إضافة دورة",
   "@addCourse": {
     "x-mt": true
@@ -1269,9 +1188,6 @@
     "x-mt": true
   },
   "addReport": "إضافة تقرير",
-  "@addReport": {
-    "x-mt": true
-  },
   "editReport": "تحرير التقرير",
   "@editReport": {
     "x-mt": true
@@ -1280,9 +1196,6 @@
   "beginningBalance": "الرصيد الافتتاحي",
   "sales": "المبيعات",
   "otherIncome": "دخل آخر",
-  "@otherIncome": {
-    "x-mt": true
-  },
   "wages": "أجور",
   "@wages": {
     "x-mt": true
@@ -1292,9 +1205,6 @@
     "x-mt": true
   },
   "totalIncome": "إجمالي الدخل",
-  "@totalIncome": {
-    "x-mt": true
-  },
   "totalExpenses": "إجمالي المصروفات",
   "profitLoss": "الربح / الخسارة",
   "@profitLoss": {
@@ -1356,9 +1266,6 @@
     "x-mt": true
   },
   "feedbackSaved": "تم حفظ التعليقات",
-  "@feedbackSaved": {
-    "x-mt": true
-  },
   "isUrgent": "هل هذا أمر عاجل؟",
   "@isUrgent": {
     "x-mt": true
@@ -1459,13 +1366,7 @@
   "community": "المجتمع",
   "communityLeaders": "قادة المجتمع",
   "nationLeaders": "قادة الأمة",
-  "@nationLeaders": {
-    "x-mt": true
-  },
   "ourVoices": "أصواتنا",
-  "@ourVoices": {
-    "x-mt": true
-  },
   "finances": "المالية",
   "reports": "التقارير",
   "transaction": "عملية",
@@ -1491,9 +1392,6 @@
   },
   "date": "التاريخ",
   "fromDate": "من تاريخ",
-  "@fromDate": {
-    "x-mt": true
-  },
   "toDate": "إلى تاريخ",
   "reset": "إعادة ضبط",
   "@reset": {
@@ -1564,9 +1462,6 @@
     "x-mt": true
   },
   "yourAnswer": "إجابتك",
-  "@yourAnswer": {
-    "x-mt": true
-  },
   "previous": "السابق",
   "finish": "إنهاء",
   "exitExam": "الخروج من الامتحان؟",
@@ -1580,13 +1475,7 @@
   "exit": "خروج",
   "download": "تحميل",
   "downloading": "جارٍ التنزيل…",
-  "@downloading": {
-    "x-mt": true
-  },
   "downloadFailed": "فشل التنزيل.",
-  "@downloadFailed": {
-    "x-mt": true
-  },
   "resourceNotDownloaded": "هذا المورد ليس على جهازك بعد.",
   "@resourceNotDownloaded": {
     "x-mt": true
@@ -1609,23 +1498,11 @@
   },
   "showAdditionalFields": "عرض الحقول الإضافية",
   "hideAdditionalFields": "إخفاء الحقول الإضافية",
-  "@hideAdditionalFields": {
-    "x-mt": true
-  },
   "phoneNumber": "رقم الهاتف",
   "birthDate": "تاريخ الميلاد",
-  "@birthDate": {
-    "x-mt": true
-  },
   "selectDate": "حدد التاريخ",
   "male": "ذكر",
-  "@male": {
-    "x-mt": true
-  },
   "female": "أنثى",
-  "@female": {
-    "x-mt": true
-  },
   "yearOfBirth": "سنة الميلاد",
   "yearOfBirthRequired": "سنة الميلاد مطلوبة",
   "@yearOfBirthRequired": {
@@ -1678,13 +1555,7 @@
     "x-mt": true
   },
   "specialNeeds": "احتياجات خاصة",
-  "@specialNeeds": {
-    "x-mt": true
-  },
   "otherNeeds": "احتياجات أخرى",
-  "@otherNeeds": {
-    "x-mt": true
-  },
   "emergencyContact": "جهة الاتصال في حالات الطوارئ",
   "contactNumber": "رقم الاتصال",
   "@contactNumber": {
@@ -1725,9 +1596,6 @@
     "x-mt": true
   },
   "birthPlace": "مكان الميلاد",
-  "@birthPlace": {
-    "x-mt": true
-  },
   "contactName": "اسم جهة الاتصال",
   "@contactName": {
     "x-mt": true
@@ -1756,9 +1624,6 @@
   "diagnosis": "التشخيص",
   "medications": "الأدوية",
   "immunizations": "التحصينات",
-  "@immunizations": {
-    "x-mt": true
-  },
   "treatments": "العلاجات",
   "observations": "الملاحظات",
   "@observations": {
@@ -1857,9 +1722,6 @@
     "x-mt": true
   },
   "storageTotalDownloaded": "إجمالي التنزيلات",
-  "@storageTotalDownloaded": {
-    "x-mt": true
-  },
   "storageVideos": "مقاطع الفيديو",
   "storageAudio": "الصوت",
   "storagePdfs": "ملفات PDF",
@@ -1867,9 +1729,6 @@
   "storageOther": "أخرى",
   "fileCountOne": "ملف واحد",
   "storageUnknownResource": "مورد غير معروف",
-  "@storageUnknownResource": {
-    "x-mt": true
-  },
   "areYouSure": "هل أنت متأكد؟",
   "cancelAddingExamination": "هل أنت متأكد من إلغاء إضافة الامتحان؟ سيتم فقدان البيانات",
   "yesIWantToExit": "نعم، أرغب في الخروج.",
@@ -1879,10 +1738,7 @@
   "@storageDeleteSelectedConfirm": {
     "x-mt": true
   },
-  "storageSelectedCount": "{count} selected",
-  "@storageSelectedCount": {
-    "x-mt": true
-  },
+  "storageSelectedCount": "{count} محدد",
   "deleteSelected": "حذف المحدد",
   "deleteAll": "حذف الكل",
   "selectAll": "تحديد الكل",
@@ -1896,9 +1752,6 @@
     "x-mt": true
   },
   "availableSpace": "المساحة المتوفرة",
-  "@availableSpace": {
-    "x-mt": true
-  },
   "freeUpSpace": "حرر مساحة",
   "@freeUpSpace": {
     "x-mt": true
@@ -1912,9 +1765,6 @@
     "x-mt": true
   },
   "enterUsername": "أدخل اسم المستخدم",
-  "@enterUsername": {
-    "x-mt": true
-  },
   "enterPassword": "أدخل كلمة المرور",
   "@enterPassword": {
     "x-mt": true
@@ -1956,9 +1806,6 @@
     "x-mt": true
   },
   "syncCompletedChallenge": "اكتملت المزامنة",
-  "@syncCompletedChallenge": {
-    "x-mt": true
-  },
   "rememberSync": "تذكر مزامنة التطبيق المحمول.",
   "challengeDialogTitle": "التحدي اليومي",
   "@challengeDialogTitle": {
@@ -1979,9 +1826,6 @@
     "x-mt": true
   },
   "noDescriptionDefined": "هذا الفريق ليس لديه وصف محدد.",
-  "@noDescriptionDefined": {
-    "x-mt": true
-  },
   "enterpriseName": "اسم المؤسسة",
   "@enterpriseName": {
     "x-mt": true
@@ -2048,9 +1892,6 @@
   },
   "mistakes": "الأخطاء",
   "step": "خطوة",
-  "@step": {
-    "x-mt": true
-  },
   "untitledResourceTitle": "مورد بلا عنوان",
   "@untitledResourceTitle": {
     "x-mt": true
@@ -2072,9 +1913,6 @@
     "x-mt": true
   },
   "resourceType": "نوع المورد",
-  "@resourceType": {
-    "x-mt": true
-  },
   "subject": "موضوع",
   "@subject": {
     "x-mt": true
@@ -2176,30 +2014,18 @@
     "x-mt": true
   },
   "lastLogin": "آخر تسجيل دخول",
-  "@lastLogin": {
-    "x-mt": true
-  },
   "memberDetail": "تفاصيل الأعضاء",
   "@memberDetail": {
     "x-mt": true
   },
   "numberOfVisits": "عدد الزيارات",
-  "@numberOfVisits": {
-    "x-mt": true
-  },
   "noLogoutRecord": "لم يتم العثور على سجل الخروج",
   "@noLogoutRecord": {
     "x-mt": true
   },
   "totalVisits": "إجمالي الزيارات",
-  "@totalVisits": {
-    "x-mt": true
-  },
   "mostOpenedResource": "أكثر مورد تم فتحه",
   "numberOfResourcesOpened": "عدد الموارد المفتوحة",
-  "@numberOfResourcesOpened": {
-    "x-mt": true
-  },
   "resourceOpenedTimes": "{title} تم الفتح {count} مرات",
   "@resourceOpenedTimes": {
     "x-mt": true
@@ -2283,23 +2109,11 @@
     }
   },
   "textSize": "حجم النص",
-  "@textSize": {
-    "x-mt": true
-  },
   "selectTextSize": "اختر حجم النص",
   "textSizeSmall": "صغير",
-  "@textSizeSmall": {
-    "x-mt": true
-  },
   "textSizeMedium": "متوسط",
   "textSizeLarge": "كبير",
-  "@textSizeLarge": {
-    "x-mt": true
-  },
   "resetApp": "إعادة تعيين التطبيق",
-  "@resetApp": {
-    "x-mt": true
-  },
   "clearAllDataConfirm": "هل أنت متأكد أنك تريد مسح جميع البيانات؟",
   "dataCleared": "تم مسح كافة البيانات",
   "@dataCleared": {
@@ -2317,5 +2131,11 @@
   "myPurposeDescription": "هدفي - ما هي طموحاتك التعليمية والمهنية؟",
   "pleaseAnswerToContinue": "يرجى تحديد / كتابة إجابتك للمتابعة",
   "teamDocuments": "الوثائق",
-  "confirmLeaveTeam": "هل أنت متأكد أنك تريد مغادرة هذا الفريق؟"
+  "confirmLeaveTeam": "هل أنت متأكد أنك تريد مغادرة هذا الفريق؟",
+  "appVersion": "{version} الإصدار",
+  "reportDateDetails": "تم إنشاء التقرير في: {created} | تم تحديثه في: {updated}",
+  "fileNotFound": "الملف غير موجود: {fileName}",
+  "fileCountMany": "{count} ملفات",
+  "stepsHeading": "خطوات",
+  "courseProgressCount": "التقدم {current} من {max}"
 }
