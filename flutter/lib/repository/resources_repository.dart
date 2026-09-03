@@ -353,15 +353,44 @@ class ResourcesRepository {
         break;
       }
 
+      final docs = <Map<String, dynamic>>[
+        for (final row in rows)
+          if (row is Map<String, dynamic>) ?JsonUtils.getObject('doc', row),
+      ];
+      // One batched read rather than a row at a time, as the courses walk does.
+      //
+      // Without it every `existing*` argument below defaults to `const []`, and
+      // `MyLibraryMapper.fromDoc` writes that straight over the stored column:
+      // `userId: Value(existingUserIds)`. `my_library.userId` is the shelf, and
+      // it has two writers over one column — this walk and the user's own tap —
+      // so a walk that knows nothing about membership was retracting it, and
+      // one sync emptied My Library. Kotlin cannot do this: `insertMyLibrary`
+      // is handed the existing row and only ever adds (`MyLibrary.kt:122-130`,
+      // `:218-228`). The other five lists are `mergedList` in the Kotlin for the
+      // same reason, and were being dropped the same way.
+      final existingById = {
+        for (final resource in await _dao.getByIds([
+          for (final doc in docs)
+            if (JsonUtils.getString('_id', doc) case final id
+                when id.isNotEmpty)
+              id,
+        ]))
+          resource.id: resource,
+      };
+
       final companions = <MyLibraryTableCompanion>[];
-      for (final row in rows) {
-        if (row is! Map<String, dynamic>) continue;
-        final doc = JsonUtils.getObject('doc', row);
-        if (doc == null) continue;
+      for (final doc in docs) {
+        final existing = existingById[JsonUtils.getString('_id', doc)];
 
         final companion = MyLibraryMapper.fromDoc(
           doc,
           couchDbUrl: config.couchDbUrl,
+          existingUserIds: existing?.userId ?? const [],
+          existingResourceFor: existing?.resourceFor ?? const [],
+          existingSubject: existing?.subject ?? const [],
+          existingLevel: existing?.level ?? const [],
+          existingTag: existing?.tag ?? const [],
+          existingLanguages: existing?.languages ?? const [],
         );
         if (companion == null) continue;
 
