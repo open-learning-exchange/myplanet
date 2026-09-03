@@ -176,11 +176,14 @@ class UserRepository {
     return _userDao.getById(companion.id.value);
   }
 
-  /// Page size for the `tablet_users` walk. `TransactionSyncManager.syncDb`
-  /// uses its 1000-document default for this table; the port starts smaller and
-  /// lets `AdaptiveBatchProcessor` grow it, because a `_users` document can
-  /// carry a base64 profile photo in `_attachments` and a thousand of those in
-  /// one response is a large body on a weak link.
+  /// Page size for the `tablet_users` walk, and its ceiling —
+  /// `AdaptiveBatchProcessor` defaults `maxSize` to `initialSize`, so it can
+  /// only shrink from here and recover, never grow past it.
+  ///
+  /// `TransactionSyncManager.syncDb` uses its 1000-document default for this
+  /// table. The port asks for less because a `_users` document can carry a
+  /// base64 profile photo in `_attachments`, and a thousand of those in one
+  /// response is a large body on a weak link.
   static const int tabletUsersBatchSize = 100;
 
   /// Port of the `"tablet_users"` arm of `TransactionSyncManager.syncDb`
@@ -192,10 +195,13 @@ class UserRepository {
   /// team leaderboard silently drops every member it cannot resolve, and the
   /// team member list falls back to rendering `org.couchdb.user:bob`.
   ///
-  /// **Never prunes.** The Kotlin's walk issues no delete of any kind, and it
-  /// could not: this table also holds accounts registered offline that have
-  /// never reached the server, and the session itself is restored by looking
-  /// the signed-in user up here. A `deleteNotIn` would sign the user out.
+  /// **Never prunes.** Neither the Kotlin's walk nor this one deletes a row the
+  /// server no longer lists — the single delete on either path is the guest
+  /// re-key below, which removes a row it has just rewritten under a new key.
+  /// A prune could not be added: this table also holds accounts registered
+  /// offline that have never reached the server, and the session itself is
+  /// restored by looking the signed-in user up here, so a `deleteNotIn` would
+  /// sign the user out.
   Future<SyncResult> syncTabletUsers({
     required ServerConfig config,
     void Function(SyncProgress)? onProgress,
@@ -317,22 +323,61 @@ class UserRepository {
     UsersCompanion mapped,
     UserRow guest,
     String newId,
-  ) => mapped.copyWith(
-    // [UserMapper.fromDoc] keys the companion on `existing.id`, which here
-    // is still `guest_<name>`. The Kotlin assigns `this.id = id` *before*
-    // calling `applyJsonToUser` (`UserRepositoryImpl.kt:1126-1131`), so the
-    // adopted row is written under the server's id and the guest row is
-    // deleted. Leaving the guest key in place would update the guest in
-    // situ and leave the account still unresolvable by its CouchDB id.
-    id: Value(newId),
-    key: Value(guest.key),
-    iv: Value(guest.iv),
-    password: mapped.password.present ? mapped.password : Value(guest.password),
-    userImage: mapped.userImage.present
-        ? mapped.userImage
-        : Value(guest.userImage),
-    isUpdated: Value(guest.isUpdated),
-  );
+  ) {
+    // Start from the guest's own values — every column present — and overlay
+    // only the columns the document actually spoke to.
+    //
+    // [UserMapper.fromDoc] returns `Value.absent()` for a column the document
+    // omits, which means "keep what is stored" to an upsert. Here there is
+    // nothing stored to keep: the Kotlin mutates the guest entity in place
+    // (`UserRepositoryImpl.kt:1122-1128`), while the port writes a **new row
+    // under a new key**, so an absent column silently takes its default. That
+    // is why `key`/`iv` had to be carried by hand, and it is equally true of
+    // the twelve profile columns `_keepingStored` guards and of `joinDate`,
+    // `password`, `userImage` and `isUpdated`.
+    final base = guest.toCompanion(false);
+    Value<T> pick<T>(Value<T> incoming, Value<T> stored) =>
+        incoming.present ? incoming : stored;
+
+    return base.copyWith(
+      // [UserMapper.fromDoc] keys the companion on `existing.id`, which here is
+      // still `guest_<name>`. The Kotlin assigns `this.id = id` *before*
+      // calling `applyJsonToUser`, so the adopted row is written under the
+      // server's id and the guest row deleted.
+      id: Value(newId),
+      couchId: pick(mapped.couchId, base.couchId),
+      rev: pick(mapped.rev, base.rev),
+      name: pick(mapped.name, base.name),
+      rolesList: pick(mapped.rolesList, base.rolesList),
+      userAdmin: pick(mapped.userAdmin, base.userAdmin),
+      joinDate: pick(mapped.joinDate, base.joinDate),
+      firstName: pick(mapped.firstName, base.firstName),
+      lastName: pick(mapped.lastName, base.lastName),
+      middleName: pick(mapped.middleName, base.middleName),
+      email: pick(mapped.email, base.email),
+      planetCode: pick(mapped.planetCode, base.planetCode),
+      parentCode: pick(mapped.parentCode, base.parentCode),
+      phoneNumber: pick(mapped.phoneNumber, base.phoneNumber),
+      passwordScheme: pick(mapped.passwordScheme, base.passwordScheme),
+      iterations: pick(mapped.iterations, base.iterations),
+      derivedKey: pick(mapped.derivedKey, base.derivedKey),
+      salt: pick(mapped.salt, base.salt),
+      level: pick(mapped.level, base.level),
+      language: pick(mapped.language, base.language),
+      gender: pick(mapped.gender, base.gender),
+      dob: pick(mapped.dob, base.dob),
+      age: pick(mapped.age, base.age),
+      birthPlace: pick(mapped.birthPlace, base.birthPlace),
+      userImage: pick(mapped.userImage, base.userImage),
+      password: pick(mapped.password, base.password),
+      isArchived: pick(mapped.isArchived, base.isArchived),
+      // Never on a `_users` document, and losing `key`/`iv` would make every
+      // health record already encrypted with them unreadable.
+      isUpdated: base.isUpdated,
+      key: base.key,
+      iv: base.iv,
+    );
+  }
 
   /// Port of `UserRepositoryImpl.authenticateUser`.
   ///

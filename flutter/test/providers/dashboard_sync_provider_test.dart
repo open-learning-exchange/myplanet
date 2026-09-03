@@ -16,6 +16,38 @@ void main() {
       expect(state.progress, 0);
     });
 
+    test('the two load-bearing area orderings hold', () {
+      // `syncAll` iterates `DashboardSyncArea.values`, so declaration order is
+      // execution order, and two positions carry real behaviour:
+      //
+      // * `tabletUsers` before `shelf` — a shelf document is keyed by its
+      //   owner's CouchDB id, and `ShelfSyncRepository._localUserId` resolves
+      //   that to the local `users` row every reader scopes by. With no row
+      //   the stamp falls back to the raw id, which for a member registered on
+      //   this device matches nothing.
+      // * `shelf` after `resources` and `courses` — both of those prune with
+      //   `deleteNotIn`, so a stamp written before them can be deleted.
+      //
+      // The test above (`state.items.map(…) == DashboardSyncArea.values`) is
+      // tautological with respect to order: an alphabetising refactor would
+      // pass it and break both invariants silently.
+      int index(DashboardSyncArea area) =>
+          DashboardSyncArea.values.indexOf(area);
+
+      expect(
+        index(DashboardSyncArea.tabletUsers),
+        lessThan(index(DashboardSyncArea.shelf)),
+      );
+      expect(
+        index(DashboardSyncArea.resources),
+        lessThan(index(DashboardSyncArea.shelf)),
+      );
+      expect(
+        index(DashboardSyncArea.courses),
+        lessThan(index(DashboardSyncArea.shelf)),
+      );
+    });
+
     test('aggregate counts distinguish success and failure', () {
       final state = DashboardSyncState(
         items: const [

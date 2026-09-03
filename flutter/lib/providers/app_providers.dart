@@ -561,6 +561,7 @@ final ratingsRepositoryProvider = Provider<RatingsRepository>(
   (ref) => RatingsRepository(
     ref.watch(planetApiProvider),
     ref.watch(ratingDaoProvider),
+    ref.watch(userDaoProvider),
   ),
 );
 

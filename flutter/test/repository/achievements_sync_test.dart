@@ -5,6 +5,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/core/files/achievement_files.dart';
 import 'package:myplanet/core/network/network_result.dart';
+import 'package:myplanet/core/sync/sync_result.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/repository/achievements_repository.dart';
 
@@ -217,6 +218,61 @@ void main() {
       expect(await repository.pendingUploads(), hasLength(1));
     },
   );
+
+  test(
+    'opening the screen first does not make the walk skip the server ledger',
+    () async {
+      // `achievementEntryProvider` calls `getOrInitialize` on watch, so simply
+      // opening the achievements screen inserts a blank row. `uploaded`
+      // defaults to `false` — the inverse of Kotlin's `isUpdated = false` — so
+      // that blank row read as "an edit the user has not uploaded", the walk
+      // preserved it *instead of* the server's ledger, and nothing ever
+      // cleared the flag, so the screen stayed blank forever. Worse, the walk
+      // then handed the blank row a valid `_rev`, arming the next save to PUT
+      // an empty ledger over the real one.
+      await repository.getOrInitialize('org.couchdb.user:ada@gua');
+
+      stubWalk([achievementDoc('org.couchdb.user:ada@gua')]);
+      await repository.sync(config: config);
+
+      final row = await db.achievementDao.getById('org.couchdb.user:ada@gua');
+      expect(row!.purpose, 'Run the community seed bank');
+      expect(row.uploaded, isTrue);
+      expect(await repository.pendingUploads(), isEmpty);
+    },
+  );
+
+  test('a placeholder row is not queued for upload', () async {
+    // The same defect from the other side: a blank ledger nobody has edited
+    // must not reach `pendingUploads`, or Save would push it to the server.
+    await repository.getOrInitialize('org.couchdb.user:ada@gua');
+
+    expect(await repository.pendingUploads(), isEmpty);
+  });
+
+  test('one non-string scalar does not take the whole page down', () async {
+    // Kotlin's `JsonUtils.getString` coerces through `toString()`, and so does
+    // the port's — but this walk was reading `doc['parentCode'] as String?`
+    // directly, so a numeric `parentCode` threw out of the mapper, `insertDocs`
+    // never ran, the good document on the page was lost with it, and the whole
+    // achievements area reported failed.
+    stubWalk([
+      achievementDoc('org.couchdb.user:ada@gua'),
+      {...achievementDoc('org.couchdb.user:bob@gua'), 'parentCode': 123},
+    ]);
+
+    final result = await repository.sync(config: config);
+
+    expect(result, isA<SyncComplete>());
+    expect(
+      await db.achievementDao.getById('org.couchdb.user:ada@gua'),
+      isNotNull,
+    );
+    expect(
+      (await db.achievementDao.getById('org.couchdb.user:bob@gua'))!.parentCode,
+      '123',
+    );
+  });
 
   test('never prunes: a ledger the walk did not list survives', () async {
     await repository.getOrInitialize('org.couchdb.user:bob@gua');

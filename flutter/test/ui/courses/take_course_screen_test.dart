@@ -180,7 +180,7 @@ void main() {
     );
 
     // Seed an existing course rating for the signed-in user.
-    await RatingsRepository(MockPlanetApi(), db.ratingDao).submit(
+    await RatingsRepository(MockPlanetApi(), db.ratingDao, db.userDao).submit(
       type: 'course',
       itemId: 'course-1',
       title: 'Algebra',

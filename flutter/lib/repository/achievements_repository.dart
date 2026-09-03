@@ -7,6 +7,7 @@ import '../core/files/achievement_files.dart';
 import '../core/network/network_result.dart';
 import '../core/sync/sync_result.dart';
 import '../core/sync/table_walk.dart';
+import '../core/utils/json_utils.dart';
 import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
@@ -142,6 +143,16 @@ class AchievementsRepository {
         couchId: const Value(''),
         rev: const Value(''),
         resumeFileName: const Value(''),
+        // `Achievement()` starts `isUpdated = false`, and `uploaded` is the
+        // port's inverted name for it — so the placeholder must be `true`.
+        // The column's default is `false`, the wrong way round, and leaving it
+        // there made a blank row indistinguishable from an edit the user has
+        // not uploaded: the sync-in skipped the server's real ledger to
+        // "preserve" it, permanently (nothing ever sets `uploaded`), and then
+        // handed the blank row a `_rev` so the next save PUT it over the real
+        // one. Opening the achievements screen once was enough to trigger it,
+        // because `achievementEntryProvider` calls this on watch.
+        uploaded: const Value(true),
       ),
     );
     return _dao.getById(id);
@@ -182,7 +193,8 @@ class AchievementsRepository {
     if (docs.isEmpty) return 0;
     final ids = <String>[
       for (final doc in docs)
-        if (doc['_id'] case final String id when id.isNotEmpty) id,
+        if (JsonUtils.getString('_id', doc) case final id when id.isNotEmpty)
+          id,
     ];
     final pending = {
       for (final row in await _dao.getByIds(ids))
@@ -192,50 +204,59 @@ class AchievementsRepository {
     final rows = <AchievementsCompanion>[];
     final identityPatches = <(String, String)>[];
     for (final doc in docs) {
-      final id = doc['_id'];
-      if (id is! String || id.startsWith('_design')) continue;
+      final id = JsonUtils.getString('_id', doc);
+      if (id.isEmpty || id.startsWith('_design')) continue;
       // A ledger the user has edited but not yet uploaded takes only the
       // `_rev`. The Kotlin overwrites the whole row and clears `isUpdated`,
-      // which discards the edit *and* stops it uploading; and since the port's
-      // rows carry no `_rev` until a walk supplies one, the `_rev` is exactly
-      // what the pending upload needs to stop 409-ing into the outbox's
-      // permanent-failure branch. Same shape as the read state Phase 98 had to
-      // preserve.
+      // which discards the edit; and since the port's rows carry no `_rev`
+      // until a walk supplies one, the `_rev` is what a later save needs to be
+      // a PUT rather than a 409-ing POST. Same shape as the read state Phase 98
+      // had to preserve.
       if (pending.contains(id)) {
-        identityPatches.add((id, doc['_rev'] as String? ?? ''));
+        identityPatches.add((id, JsonUtils.getString('_rev', doc)));
         continue;
       }
       rows.add(
         AchievementsCompanion(
           id: Value(id),
           couchId: Value(id),
-          rev: Value(doc['_rev'] as String? ?? ''),
-          purpose: Value(doc['purpose'] as String? ?? ''),
-          goals: Value(doc['goals'] as String? ?? ''),
-          achievementsHeader: Value(doc['achievementsHeader'] as String? ?? ''),
-          sendToNation: Value(
-            doc['sendToNation'] is bool
-                ? doc['sendToNation'] as bool
-                : doc['sendToNation'] == 'true',
+          rev: Value(JsonUtils.getString('_rev', doc)),
+          purpose: Value(JsonUtils.getString('purpose', doc)),
+          goals: Value(JsonUtils.getString('goals', doc)),
+          achievementsHeader: Value(
+            JsonUtils.getString('achievementsHeader', doc),
           ),
-          dateSortOrder: Value(doc['dateSortOrder'] as String? ?? 'none'),
-          createdOn: Value(doc['createdOn'] as String? ?? ''),
-          username: Value(doc['username'] as String? ?? ''),
-          parentCode: Value(doc['parentCode'] as String? ?? ''),
+          sendToNation: Value(JsonUtils.getBool('sendToNation', doc)),
+          dateSortOrder: Value(_orDefault(doc, 'dateSortOrder', 'none')),
+          createdOn: Value(JsonUtils.getString('createdOn', doc)),
+          username: Value(JsonUtils.getString('username', doc)),
+          parentCode: Value(JsonUtils.getString('parentCode', doc)),
           achievementsJson: Value(jsonEncode(doc['achievements'] ?? [])),
           referencesJson: Value(jsonEncode(doc['references'] ?? [])),
           linksJson: Value(jsonEncode(doc['links'] ?? [])),
           otherInfoJson: Value(jsonEncode(doc['otherInfo'] ?? [])),
-          resumeFileName: Value(doc['resumeFileName'] as String? ?? ''),
+          resumeFileName: Value(JsonUtils.getString('resumeFileName', doc)),
           uploaded: const Value(true),
         ),
       );
     }
+
     await _dao.insertDocs(rows);
     for (final (id, rev) in identityPatches) {
       await _dao.recordServerRev(id, rev);
     }
     return rows.length + identityPatches.length;
+  }
+
+  /// `JsonUtils.getString` with a fallback for a key the document omits, where
+  /// the empty string is not the value the column should hold.
+  static String _orDefault(
+    Map<String, dynamic> doc,
+    String key,
+    String fallback,
+  ) {
+    final value = JsonUtils.getString(key, doc);
+    return value.isEmpty ? fallback : value;
   }
 
   /// Port of the `"achievements"` arm of `TransactionSyncManager.syncDb`
@@ -284,12 +305,10 @@ class AchievementsRepository {
   }) async {
     final started = <String>{};
     for (final doc in docs) {
-      final docId = doc['_id'];
-      if (docId is! String || docId.isEmpty || docId.startsWith('_design')) {
-        continue;
-      }
-      final resumeFileName = doc['resumeFileName'];
-      if (resumeFileName is! String || resumeFileName.isEmpty) continue;
+      final docId = JsonUtils.getString('_id', doc);
+      if (docId.isEmpty || docId.startsWith('_design')) continue;
+      final resumeFileName = JsonUtils.getString('resumeFileName', doc);
+      if (resumeFileName.isEmpty) continue;
       final attachments = doc['_attachments'];
       if (attachments is! Map || !attachments.containsKey('resume.pdf')) {
         continue;

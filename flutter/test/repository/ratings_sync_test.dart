@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/core/network/network_result.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/repository/ratings_repository.dart';
 
@@ -33,7 +34,7 @@ void main() {
   setUp(() {
     db = AppDatabase.memory();
     api = MockPlanetApi();
-    repository = RatingsRepository(api, db.ratingDao);
+    repository = RatingsRepository(api, db.ratingDao, db.userDao);
   });
 
   tearDown(() => db.close());
@@ -209,6 +210,74 @@ void main() {
     expect(pending.single.couchId, 'rating-1');
     expect(pending.single.rev, '1-abc');
   });
+
+  test('two server ratings for one item are both counted', () async {
+    // Both documents match the same unsynced local row on
+    // `(type, item, userId)`, so keying both companions on that row collapsed
+    // them: the batch's last write won and one person's rating vanished from
+    // the average. The match is consumed by the first document; the second
+    // takes its CouchDB id as its key, which is what the Kotlin stores.
+    await repository.submit(
+      type: 'resource',
+      itemId: 'resource-1',
+      title: 'Water pump manual',
+      userId: 'org.couchdb.user:ada',
+      rate: 5,
+    );
+    await repository.markUploaded(
+      (await repository.pendingUploads()).single.id,
+    );
+
+    stubWalk([
+      ratingDoc('rating-1', userId: 'org.couchdb.user:ada', rate: 5),
+      ratingDoc('rating-2', userId: 'org.couchdb.user:ada', rate: 1),
+    ]);
+    await repository.sync(config: config);
+
+    final summary = await repository.summary('resource', 'resource-1', null);
+    expect(summary.total, 2);
+    expect(summary.average, 3);
+  });
+
+  test(
+    'a member registered on this device sees their own rating as theirs',
+    () async {
+      // A rating document names its rater by CouchDB id; `submit` stores
+      // `session.user.id`, and for a member registered offline those differ.
+      // Storing the raw id hides the rating from `userRating` *and* defeats the
+      // `(type, item, userId)` match, so the walk duplicates it.
+      await db.userDao.upsert(
+        UsersCompanion.insert(
+          id: '1756900000000',
+          couchId: const Value('org.couchdb.user:ada'),
+          name: const Value('ada'),
+        ),
+      );
+      await repository.submit(
+        type: 'resource',
+        itemId: 'resource-1',
+        title: 'Water pump manual',
+        userId: '1756900000000',
+        rate: 5,
+      );
+      await repository.markUploaded(
+        (await repository.pendingUploads()).single.id,
+      );
+
+      stubWalk([
+        ratingDoc('rating-1', userId: 'org.couchdb.user:ada', rate: 5),
+      ]);
+      await repository.sync(config: config);
+
+      final summary = await repository.summary(
+        'resource',
+        'resource-1',
+        '1756900000000',
+      );
+      expect(summary.total, 1);
+      expect(summary.userRating, 5);
+    },
+  );
 
   test('never prunes: a rating the walk did not list survives', () async {
     await repository.submit(

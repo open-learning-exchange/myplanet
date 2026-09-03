@@ -24,7 +24,13 @@ void main() {
       final row = await repository.getOrInitialize('ada@earth');
       expect(row?.id, 'ada@earth');
       expect(row?.achievementsJson, '[]');
-      expect(row?.uploaded, isFalse);
+      // `Achievement()` starts `isUpdated = false`, and `uploaded` is the
+      // port's inverted name for it, so a placeholder nobody has edited is
+      // `true`. This assertion used to pin the column's default, which is the
+      // wrong way round: it made a blank row indistinguishable from an unsent
+      // edit, and the `achievements` sync-in then skipped the server's real
+      // ledger to "preserve" it — permanently, since nothing clears the flag.
+      expect(row?.uploaded, isTrue);
     },
   );
 

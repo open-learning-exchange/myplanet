@@ -14,6 +14,7 @@ void main() {
     repository = RatingsRepository(
       MockPlanetApi(),
       database.ratingDao,
+      database.userDao,
       now: () => DateTime.fromMillisecondsSinceEpoch(1234),
       createId: () => 'rating-${id++}',
     );

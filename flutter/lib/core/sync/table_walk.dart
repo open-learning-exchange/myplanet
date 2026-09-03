@@ -44,6 +44,14 @@ Future<SyncResult> walkAllDocs({
     return SyncFailed(describeNetworkFailure(countResult));
   }
 
+  // A response with no `total_rows` at all is a malformed one, not an empty
+  // database. `JsonUtils.getInt` reads both as 0, and treating them alike would
+  // put a green tick on a walk that never issued a page request — the Kotlin
+  // has no count query and would simply page. `total_rows: 0` stays a
+  // legitimate empty answer.
+  if (!countResult.data.containsKey('total_rows')) {
+    return SyncFailed('$table/_all_docs returned no total_rows');
+  }
   final totalRows = JsonUtils.getInt('total_rows', countResult.data);
   if (totalRows == 0) {
     onProgress?.call(const SyncProgress(completed: 0, total: 0));

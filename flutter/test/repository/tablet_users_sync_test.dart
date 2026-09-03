@@ -213,6 +213,51 @@ void main() {
     expect(rows.single.iv, 'guest-iv');
   });
 
+  test('an adopted guest keeps every column, not only the health key', () async {
+    // The adopted row is an INSERT under a new key, so every column
+    // `UserMapper.fromDoc` leaves `Value.absent()` — which is what a document
+    // that omits a profile field produces — silently takes its default. Kotlin
+    // mutates the guest entity in place, so `applyJsonToUser`'s keep-stored
+    // guard preserves all of them; the port has to carry them by hand.
+    await db.userDao.upsert(
+      UsersCompanion.insert(
+        id: 'guest_ada',
+        couchId: const Value('guest_ada'),
+        name: const Value('ada'),
+        firstName: const Value('Ada'),
+        level: const Value('Intermediate'),
+        language: const Value('fr'),
+        phoneNumber: const Value('555-0100'),
+        joinDate: const Value(1699999999999),
+        userImage: const Value('/tmp/pending-upload.jpg'),
+        key: const Value('guest-key'),
+        iv: const Value('guest-iv'),
+      ),
+    );
+
+    // A minimal document, as `_users` documents for a fresh account are.
+    stubWalk([
+      {
+        '_id': 'org.couchdb.user:ada',
+        '_rev': '1-abc',
+        'name': 'ada',
+        'roles': <String>['learner'],
+      },
+    ]);
+    await repository.syncTabletUsers(config: config);
+
+    final rows = await db.userDao.getAllUsers();
+    expect(rows.single.id, 'org.couchdb.user:ada');
+    expect(rows.single.firstName, 'Ada');
+    expect(rows.single.level, 'Intermediate');
+    expect(rows.single.language, 'fr');
+    expect(rows.single.phoneNumber, '555-0100');
+    expect(rows.single.joinDate, 1699999999999);
+    expect(rows.single.userImage, '/tmp/pending-upload.jpg');
+    expect(rows.single.key, 'guest-key');
+    expect(rows.single.iv, 'guest-iv');
+  });
+
   test('never prunes: an account the walk did not list survives', () async {
     // Kotlin's walk issues no delete, and it could not — this table also holds
     // accounts registered offline, and the session is restored by looking the

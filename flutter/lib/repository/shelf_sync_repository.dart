@@ -97,9 +97,11 @@ class ShelfSyncRepository {
         authHeader: authHeader,
         keys: chunk,
       );
-      if (page == null) {
-        return SyncFailed('Could not read the shelf listing from $dbUrl');
-      }
+      // A failed probe chunk is skipped, not fatal:
+      // `checkShelfBatchForDataOptimized` returns what it got and the caller
+      // carries on with the shelves that answered. Nothing is pruned here, so
+      // the cost is a shelf whose membership waits for the next sync.
+      if (page == null) continue;
       for (final doc in page) {
         if (hasShelfData(doc)) shelvesWithData.add(doc);
       }

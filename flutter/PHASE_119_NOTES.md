@@ -83,9 +83,18 @@ state) each had to stop being faithful to, and this phase makes the same call:
 - The `_rev` half is not incidental. Phase 116's D19 trap was that an
   achievement row carries no `_rev` until a walk supplies one, so its POST 409s
   and `OutboxDrainer` classifies 409 as permanent (`code < 500`) and abandons
-  the row with no snackbar and no log. Handing a pending row the `_rev` is what
-  turns its next attempt into a PUT. The same is true of ratings, whose
+  the row with no snackbar and no log. Handing the row the `_rev` is what makes
+  its **next enqueue** a PUT. The same is true of ratings, whose
   `markRatingUploaded` never records the server id at all.
+
+  **Not a retry, though — the next enqueue.** Every uploader serializes the row
+  at queue time and `OutboxDrainer` replays `row.payload` verbatim, so a `_rev`
+  stamped after a payload was queued never reaches that payload. It closes the
+  case the defect is actually about — a fresh device, where the walk runs before
+  the user has edited anything — and leaves the narrow one open: a row queued
+  offline, then synced, then drained still POSTs without its `_rev`. Closing
+  that means re-serializing at drain time or re-queueing after a sync, which is
+  the outbox's business rather than this phase's. Reported below.
 
 Mechanically, "takes only the identity columns" is an UPDATE
 (`recordServerIdentity` / `recordServerRev`), not a partial companion through
@@ -94,11 +103,16 @@ so one carrying only `id`/`couchId`/`rev` is rejected for the required columns i
 omits even though the row already exists. `OutboxDao.patch` already carries that
 warning in a comment; this is the second and third place it bites.
 
-`users` needed nothing new — `UserMapper.fromDoc` already returns
-`Value.absent()` for `key`, `iv`, `isUpdated`, `password` and an unchanged
-`userImage`, and `insertAllOnConflictUpdate` leaves absent columns out of the
-`DO UPDATE SET` list. Losing `key`/`iv` would make every health record already
-encrypted with them permanently unreadable.
+`users` needed nothing new **for the device-only columns**: `UserMapper.fromDoc`
+already returns `Value.absent()` for `key`, `iv`, `isUpdated`, `password` and an
+unchanged `userImage`, and `insertAllOnConflictUpdate` leaves absent columns out
+of the `DO UPDATE SET` list (verified against Drift, not assumed). Losing
+`key`/`iv` would make every health record already encrypted with them
+permanently unreadable.
+
+It is **not** true of the twelve guarded profile columns, and the difference is
+deliberate rather than overlooked — see *A pending profile edit does not win*
+below.
 
 ## The defects, each demonstrated failing first
 
@@ -114,10 +128,12 @@ key, so `TeamTask.fromJson` writes `status = ""`. Kotlin's own predicate is
 `status IS NULL OR status != 'archived'` (`TeamTaskDao.kt:11`, `:20`), which
 `""` satisfies. The port asked for `'active'`, which it does not.
 
-Reverting the predicate turns 2 of the 9 task tests red — *a task the server
-sent reaches the team list* and *an archived task is excluded* — while the other
-seven still pass, which is exactly what the defect looked like from outside: a
-sync reporting success over an empty list. The column is non-nullable here with
+Reverting the predicate turns 3 of the 9 task tests red — *a task the server
+sent reaches the team list*, *an archived task is excluded* and *a synced task
+the device already holds is updated, not duplicated*, the last of which also
+reads through `watchForTeam` on a `status = ''` row — while the other six still
+pass, which is exactly what the defect looked like from outside: a sync
+reporting success over an empty list. The column is non-nullable here with
 default `'active'`, so the Kotlin's `IS NULL` arm has nothing to match and is
 dropped; the walk writes the document's status verbatim, empty string included.
 
@@ -221,11 +237,39 @@ behaving differently and should not have to re-derive why.
    port's coercion tolerates it.
 7. **`ratings.user` and `ratings.createdOn` are dropped**, and **`team_tasks.sync`
    and `team_tasks.link` are dropped** — see *Reported, not fixed*.
-8. **The walks are foreground sync-centre areas.** Kotlin runs `ratings` in
+8. **A rating's rater is resolved to the local `users` row id**, the same rule
+   the shelf walk follows and for the same reason: the document names the rater
+   by CouchDB id, `submitRating` stores `session.user.id`, and for a member
+   registered on this device those differ.
+9. **A count response with no `total_rows` fails the area** rather than
+   reporting an empty success. `JsonUtils.getInt` reads a missing key and a real
+   zero alike, and a green tick over a walk that never issued a page request is
+   the worst possible outcome for this phase in particular. Kotlin has no count
+   query at all and would simply page. The port's other four count-first walks
+   still conflate the two.
+10. **The walks are foreground sync-centre areas.** Kotlin runs `ratings` in
    `HeavyTableSyncWorker` after the main sync, and the other four in phase 1 or
    3 of the sync itself. The port has no heavy-table worker; every pull is an
    area of the sync centre. The page sizes are Kotlin's (`ratings` 20, the rest
    its 1000 default reduced to an `AdaptiveBatchProcessor` seed).
+
+### A pending profile edit does not win, unlike the other three tables
+
+`applyJsonToUser`'s rule for `firstName`…`age` and `joinDate` is "a non-empty
+incoming value wins" (`UserRepositoryImpl.kt:205-256`), and the port's
+`UserMapper._keepingStored` is a faithful port of it. So the `tablet_users` walk
+reverts a profile edit made offline, where the ratings/tasks/achievements walks
+preserve theirs. Newly reachable, since before this phase the port never pulled
+`tablet_users` at all.
+
+Left faithful, for a reason that is about consequences rather than about
+fidelity alone: `UserMapper.fromDoc` leaves `isUpdated` absent, so the row stays
+dirty and the outbox entry `_queueUserUpload` made at edit time still carries
+the edited payload. The edit reaches the server; what the user sees locally is
+stale until the next pull after it lands. The other three had a strictly worse
+failure — the walk cleared the flag, so the edit was discarded *and* never
+uploaded. If a later phase decides the twelve columns should follow the same
+rule as the other three, this is the fourth instance, not a new question.
 
 ## Reported, not fixed
 
@@ -260,6 +304,22 @@ they are that walk's, not this phase's:
   the exact shape of the Phase 104 `SurveyMapper.choices` defect, and a value
   no team-id predicate can ever match.
 
+**A `_rev` stamped after a payload was queued never reaches it.** All three
+uploaders (`ratings_uploader.dart:44-60`, `achievements_uploader.dart:47-58`,
+`team_tasks_uploader.dart:21-34`) serialize at enqueue time and `OutboxDrainer`
+replays the stored body, and nothing re-queues after a sync. So a row queued
+offline and then synced still sends its original `_id`-less body, and CouchDB
+mints a second document. The fix is to re-serialize at drain time, or to sweep
+pending rows after a sync; both are outbox changes.
+
+**The shelf pull ignores `removed_log`.** `ShelfRepository.upload` subtracts it
+(`shelf_repository.dart:112-118`) — that subtraction is what makes "leave"
+stick — while the new pull re-stamps `userId` on a resource the user removed
+offline whose removal has not uploaded yet. Kotlin is identical, so this is not
+a regression; it is worth naming because `removed_log` is a preserved
+local-authority table whose stated purpose is exactly this, and only one of its
+two directions now honours it.
+
 **`TeamMapper.fromDoc` has none of `insertMyTeam`'s document rules** — no
 `status == "archived"` early return, no `membership`-supersedes-`request`
 delete, no already-a-member `request` skip (`TeamsRepositoryImpl.kt:1223-1237`).
@@ -282,9 +342,75 @@ repositories now take one; a shared `test/support/mock_planet_api.dart` holds
 the double. An unstubbed mocktail mock throws on any call, which is the right
 default: reaching the network from a local-only test should fail loudly.
 
+## A second audit, on the finished implementation
+
+Phases 110, 113 and 116 each had a second `parity-auditor` pass find real
+defects in their own green work. So did this one, and the first finding inverts
+the phase's own headline for one of the five walks. The suite was green (1978
+tests), format and analyze clean; that is not evidence.
+
+| # | defect | why the first pass missed it |
+|---|---|---|
+| 1 | **the achievements walk skipped the server ledger on any device where the screen had been opened** | the "pending edit" test used a real edit |
+| 2 | ratings: two documents for one item collapsed onto one row, dropping a rating from the average | no test sent two documents for one item |
+| 3 | ratings: the rater was matched by CouchDB id where the table stores the local row id | the shelf walk had this rule; ratings did not |
+| 4 | guest adoption carried 5 of 17 device-only columns | the guest test supplied the profile fields in the document |
+| 5 | `syncAchievements` used raw casts, so one non-string scalar lost the whole page | no test sent a malformed document |
+| 6 | a count response with no `total_rows` ticked green without a single page request | every walk test stubbed one page answering every `skip` |
+
+**Finding 1 is the one to learn from, and it is a rule this port already had.**
+`Achievements.uploaded` is the port's *inverted* name for Kotlin's `isUpdated`,
+and its column default is `false` — the wrong way round, since `Achievement()`
+starts `isUpdated = false`. `getOrInitialize` wrote no value, so a blank
+placeholder row read as "an edit the user has not uploaded". The walk then
+preserved that blank row *instead of* the server's ledger — permanently, because
+nothing ever clears the flag — and stamped it with a valid `_rev`, arming the
+next Save to PUT an empty ledger over the real one. Before this phase that PUT
+had no `_rev` and 409'd, which is what had been protecting the server copy.
+
+`achievementEntryProvider` calls `getOrInitialize` on watch, so **opening the
+achievements screen once was enough**. The preservation rule this phase adopted
+turned the exact defect it was meant to fix into a permanent one, and it did so
+by reading a column default as a user intention. *A flag whose default means
+"dirty" cannot distinguish a placeholder from an edit.*
+
+**The largest gap was in the tests, not the code.** Every `stubWalk` in the five
+new files returned the whole document set in one page and matched any `skip`, so
+nothing exercised the loop that feeds the writers: changing `skip += rows.length`
+to `skip += 1` still passed all 38. `test/core/sync/table_walk_test.dart` now
+drives the loop against a corpus that honours `limit`/`skip` — multi-page,
+short-page, `_design`-only page, error rows with no `doc`, a mid-walk failure,
+and the malformed count.
+
+The pass also corrected six factual claims in this file and in the new doc
+comments — the "`AdaptiveBatchProcessor` grows it" claim (`initialSize` is the
+ceiling, not the floor), the "no delete of any kind" claim (the guest re-key is
+a delete), a "1000 documents" figure where the page is 100, a past-tense claim
+that `CoursesRepository.sync`'s `shelfId` now has a caller (it still does not —
+the shelf walk calls `CourseMapper.fromDoc` directly), the `_rev`/retry claim
+above, and "2 of the 9 task tests" where it is 3. `UserDao.getByAnyIds` also
+gained the chunking every other id-list query in that file has; it binds each id
+twice, so it chunks at half the usual size.
+
+Two smaller behaviours changed with it: a failed shelf-probe chunk now skips that
+chunk and carries on, as `checkShelfBatchForDataOptimized` does, rather than
+failing the whole pass; and `DashboardSyncArea`'s two load-bearing orderings are
+now pinned by a test, because the existing one asserted
+`items.map(…) == DashboardSyncArea.values`, which is tautological with respect to
+order and would survive an alphabetising refactor that broke both.
+
+Things the pass checked and found sound, recorded so nobody re-derives them: the
+`teamIds`/`myTeamIds` verbatim copy, the meetups/teams arms genuinely taking no
+shelf id, the courses arm's exam/survey skip (the step→assessment join lives on
+`Exams.stepId`, not on `CourseSteps`, so the step prune cannot reach it), the
+`ratings` page size, Drift leaving `Value.absent()` columns out of
+`DO UPDATE SET`, no `deleteNotIn` reachable from any of the five, and that the
+shelf walk's sequential loop is *safer* than Kotlin's `Semaphore(6)`, which is a
+lost-update race on `my_library.userId`.
+
 ## The tests
 
-38 across five files, plus the nine constructor updates.
+51 across six files, plus the constructor updates in nine existing ones.
 
 Each document is built in the shape CouchDB actually stores — `_users` keyed
 `org.couchdb.user:<name>` with the photo as an `_attachments` entry, a task with

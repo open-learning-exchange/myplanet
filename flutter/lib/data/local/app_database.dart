@@ -911,16 +911,25 @@ class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
           ))
           .get();
 
-  /// Port of `UserDao.getUsersByAnyIds` — the batched form of [getById] the
-  /// `tablet_users` walk uses so a page of 1000 documents costs one read
-  /// rather than a thousand. Matches either identity column, as [getById]
-  /// does, because a member registered on this device keeps a locally-minted
-  /// `id` and carries the server's key in `couchId`.
+  /// Port of `UserDao.getUsersByAnyIds` — the batched form of [getById], so a
+  /// page of documents costs a handful of reads rather than one per row.
+  /// Matches either identity column, as [getById] does, because a member
+  /// registered on this device keeps a locally-minted `id` and carries the
+  /// server's key in `couchId`.
+  ///
+  /// Chunked for the same reason as [MyLibraryDao.deleteNotIn], and at half the
+  /// usual size because each id is bound twice.
   Future<List<UserRow>> getByAnyIds(List<String> ids) async {
     if (ids.isEmpty) return const [];
-    return (select(
-      users,
-    )..where((u) => u.id.isIn(ids) | u.couchId.isIn(ids))).get();
+    final rows = <UserRow>[];
+    for (final chunk in _chunked(ids, _sqliteVariableChunk ~/ 2)) {
+      rows.addAll(
+        await (select(
+          users,
+        )..where((u) => u.id.isIn(chunk) | u.couchId.isIn(chunk))).get(),
+      );
+    }
+    return rows;
   }
 
   /// Port of `UserDao.getGuestUsersByNames` — the guest rows a

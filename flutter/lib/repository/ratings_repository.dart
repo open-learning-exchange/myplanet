@@ -24,7 +24,8 @@ class RatingSummary {
 class RatingsRepository {
   RatingsRepository(
     this._api,
-    this._dao, {
+    this._dao,
+    this._userDao, {
     DateTime Function()? now,
     String Function()? createId,
   }) : _now = now ?? DateTime.now,
@@ -37,6 +38,11 @@ class RatingsRepository {
 
   final PlanetApi _api;
   final RatingDao _dao;
+
+  /// Only for the sync-in: a rating document names its rater by CouchDB id,
+  /// while every reader of this table passes `session.user.id`. See
+  /// [_localUserIds].
+  final UserDao _userDao;
   final DateTime Function() _now;
   final String Function() _createId;
 
@@ -183,6 +189,7 @@ class RatingsRepository {
       for (final row in await _dao.unsyncedLocalRatings())
         _ratingKey(row.type, row.item, row.userId): row,
     };
+    final localUserIds = await _localUserIds(docs);
 
     final companions = <RatingsCompanion>[];
     final identityPatches = <(String, String, String?)>[];
@@ -190,12 +197,18 @@ class RatingsRepository {
       final couchId = JsonUtils.getString('_id', doc);
       if (couchId.isEmpty) continue;
       final user = JsonUtils.getObject('user', doc) ?? const {};
-      final userId = JsonUtils.getString('_id', user);
+      final raterId = JsonUtils.getString('_id', user);
+      final userId = localUserIds[raterId] ?? raterId;
       final type = JsonUtils.getString('type', doc);
       final item = JsonUtils.getString('item', doc);
 
-      final existing =
-          byId[couchId] ?? unsyncedByRatingKey[_ratingKey(type, item, userId)];
+      final ratingKey = _ratingKey(type, item, userId);
+      final existing = byId[couchId] ?? unsyncedByRatingKey[ratingKey];
+      // Consumed, so a second document for the same (type, item, user) does
+      // not collapse onto the same row: it takes the CouchDB id as its key and
+      // both survive, which is what the Kotlin stores and what the average
+      // has to count.
+      if (byId[couchId] == null) unsyncedByRatingKey.remove(ratingKey);
       final rowId = existing?.id ?? couchId;
 
       if (existing != null && existing.isUpdated) {
@@ -235,6 +248,38 @@ class RatingsRepository {
       await _dao.recordServerIdentity(id, couchId, rev);
     }
     return companions.length + identityPatches.length;
+  }
+
+  /// Maps each rater's CouchDB id to the local `users` row id, for the raters
+  /// this page names.
+  ///
+  /// `insertRatingsFromSync` reads `userId` out of the embedded `user` object,
+  /// which is a CouchDB id; `submitRating` writes `user.id`, the local row id,
+  /// and every reader passes `session.user.id`. The two are the same string
+  /// for an account that first appeared server-side and **different** for a
+  /// member registered on this device, whose row keeps a locally-minted id
+  /// until its upload lands. Storing the raw id for such a member hides their
+  /// own rating from `userRating` and defeats the `(type, item, userId)` match
+  /// that stops the walk duplicating it — the same identity rule the shelf
+  /// walk follows.
+  Future<Map<String, String>> _localUserIds(
+    List<Map<String, dynamic>> docs,
+  ) async {
+    final raterIds = <String>{
+      for (final doc in docs)
+        if (JsonUtils.getObject('user', doc) case final user?)
+          if (JsonUtils.getString('_id', user) case final id when id.isNotEmpty)
+            id,
+    };
+    if (raterIds.isEmpty) return const {};
+    final rows = await _userDao.getByAnyIds(raterIds.toList(growable: false));
+    return {
+      for (final row in rows)
+        if (row.couchId case final couchId?)
+          if (raterIds.contains(couchId)) couchId: row.id,
+      for (final row in rows)
+        if (raterIds.contains(row.id)) row.id: row.id,
+    };
   }
 
   static String _ratingKey(String type, String item, String userId) =>
