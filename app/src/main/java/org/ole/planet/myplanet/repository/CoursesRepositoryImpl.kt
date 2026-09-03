@@ -248,40 +248,6 @@ class CoursesRepositoryImpl @Inject constructor(
         return myLibraryDao.getCourseResources(courseId, isOffline)
     }
 
-    internal fun matchesAllParts(title: String, parts: List<String>): Boolean {
-        return parts.all { title.contains(it) }
-    }
-
-    override suspend fun search(query: String): List<MyCourse> {
-        val allCourses = mapCourses(courseDao.getAll())
-        if (query.isEmpty()) {
-            return allCourses
-        }
-
-        val queryParts = query.split(" ").filterNot { it.isEmpty() }
-        val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
-        val normalizedQuery = Utilities.normalizeText(query)
-
-        val data = allCourses.filter { course ->
-            val title = course.courseTitleNormal ?: course.courseTitle?.let { Utilities.normalizeText(it) }
-            title != null && normalizedQueryParts.all { title.contains(it) }
-        }
-
-        val startsWithQuery = mutableListOf<MyCourse>()
-        val containsQuery = mutableListOf<MyCourse>()
-
-        for (item in data) {
-            val title = item.courseTitleNormal ?: item.courseTitle?.let { Utilities.normalizeText(it) } ?: continue
-
-            if (title.startsWith(normalizedQuery)) {
-                startsWithQuery.add(item)
-            } else if (matchesAllParts(title, normalizedQueryParts)) {
-                containsQuery.add(item)
-            }
-        }
-        return startsWithQuery + containsQuery
-    }
-
     override suspend fun filterCourses(
         searchText: String,
         gradeLevel: String,
@@ -298,15 +264,58 @@ class CoursesRepositoryImpl @Inject constructor(
             return emptyList()
         }
 
-        return mapCourses(courseDao.getAll())
+        val filteredCandidates = mapCourses(courseDao.getAll())
             .asSequence()
             .filter { !it.courseTitle.isNullOrEmpty() }
-            .filter { searchText.isEmpty() || it.courseTitle?.contains(searchText, ignoreCase = true) == true }
             .filter { gradeLevel.isEmpty() || it.gradeLevel == gradeLevel }
             .filter { subjectLevel.isEmpty() || it.subjectLevel == subjectLevel }
             .filter { courseIdsWithTags == null || courseIdsWithTags.contains(it.courseId) }
-            .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.courseTitle ?: "" })
             .toList()
+
+        val trimmedQuery = searchText.trim()
+        val titleComparator = compareBy(String.CASE_INSENSITIVE_ORDER) { it: MyCourse -> it.courseTitle.orEmpty() }
+        if (trimmedQuery.isEmpty()) {
+            return filteredCandidates.sortedWith(titleComparator)
+        }
+
+        val normalizedQueryParts = trimmedQuery.splitToSequence(" ")
+            .filter { it.isNotEmpty() }
+            .map { Utilities.normalizeText(it) }
+            .toList()
+        val normalizedQuery = Utilities.normalizeText(trimmedQuery)
+
+        val startsWithQuery = mutableListOf<MyCourse>()
+        val titleContainsQuery = mutableListOf<MyCourse>()
+        val contentContainsQuery = mutableListOf<MyCourse>()
+
+        for (item in filteredCandidates) {
+            val title = item.courseTitleNormal ?: item.courseTitle?.let { Utilities.normalizeText(it) }.orEmpty()
+
+            if (title.startsWith(normalizedQuery)) {
+                startsWithQuery.add(item)
+            } else if (normalizedQueryParts.all { title.contains(it) }) {
+                titleContainsQuery.add(item)
+            } else {
+                val description = item.description?.let { Utilities.normalizeText(it) }
+                val stepTexts = item.courseSteps?.flatMap { step ->
+                    listOfNotNull(
+                        step.stepTitle?.let { Utilities.normalizeText(it) },
+                        step.description?.let { Utilities.normalizeText(it) }
+                    )
+                }.orEmpty()
+                val matchesContent = normalizedQueryParts.all { part ->
+                    title.contains(part) ||
+                        (description != null && description.contains(part)) ||
+                        stepTexts.any { it.contains(part) }
+                }
+                if (matchesContent) {
+                    contentContainsQuery.add(item)
+                }
+            }
+        }
+        return startsWithQuery.sortedWith(titleComparator) +
+            titleContainsQuery.sortedWith(titleComparator) +
+            contentContainsQuery.sortedWith(titleComparator)
     }
 
     override suspend fun saveSearchActivity(

@@ -29,7 +29,6 @@ interface CoursesRepository {
     suspend fun leaveCourse(courseId: String, userId: String): Result<Unit>
     suspend fun leaveCourses(courseIds: List<String>, userId: String): Result<Unit>
     suspend fun isMyCourse(userId: String?, courseId: String?): Boolean
-    suspend fun search(query: String): List<MyCourse>
     suspend fun filterCourses(
         searchText: String,
         gradeLevel: String,
