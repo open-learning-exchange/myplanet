@@ -51,7 +51,7 @@ class PublicSurveyActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityPublicSurveyBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root, lightStatusBar = false)
 
         baseUrl = intent.getStringExtra(EXTRA_BASE_URL).orEmpty()
         teamId = intent.getStringExtra(EXTRA_TEAM_ID).orEmpty()

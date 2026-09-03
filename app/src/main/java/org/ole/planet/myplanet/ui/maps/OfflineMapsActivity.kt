@@ -17,7 +17,7 @@ class OfflineMapsActivity : AppCompatActivity() {
         Configuration.getInstance().load(this, PreferenceManager.getDefaultSharedPreferences(this))
         activityOfflineMapsBinding = ActivityOfflineMapsBinding.inflate(layoutInflater)
         setContentView(activityOfflineMapsBinding.root)
-        EdgeToEdgeUtils.setupEdgeToEdge(this, activityOfflineMapsBinding.root)
+        EdgeToEdgeUtils.setupEdgeToEdge(this, activityOfflineMapsBinding.root, lightStatusBar = false)
         activityOfflineMapsBinding.map.setTileSource(TileSourceFactory.MAPNIK)
         activityOfflineMapsBinding.map.zoomController.setVisibility(CustomZoomButtonsController.Visibility.SHOW_AND_FADEOUT)
         activityOfflineMapsBinding.map.setMultiTouchControls(true)

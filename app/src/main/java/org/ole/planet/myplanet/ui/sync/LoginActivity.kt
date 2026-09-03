@@ -89,7 +89,13 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdgeWithStatusBarToolbar(
+            this,
+            binding.root,
+            binding.scrollContent,
+            lightStatusBar = false,
+            lightNavigationBar = false
+        )
 
         if (mAdapter == null) {
             mAdapter = UsersAdapter(this@LoginActivity)

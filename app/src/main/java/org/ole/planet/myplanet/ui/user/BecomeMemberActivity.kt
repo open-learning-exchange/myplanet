@@ -140,7 +140,7 @@ class BecomeMemberActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         activityBecomeMemberBinding = ActivityBecomeMemberBinding.inflate(layoutInflater)
         setContentView(activityBecomeMemberBinding.root)
-        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, activityBecomeMemberBinding.root)
+        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, activityBecomeMemberBinding.root, lightStatusBar = false)
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         val languages = resources.getStringArray(R.array.language)

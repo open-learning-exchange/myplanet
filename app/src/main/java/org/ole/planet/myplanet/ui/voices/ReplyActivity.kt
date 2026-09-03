@@ -72,7 +72,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         super.onCreate(savedInstanceState)
         activityReplyBinding = ActivityReplyBinding.inflate(layoutInflater)
         setContentView(activityReplyBinding.root)
-        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, activityReplyBinding.root)
+        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, activityReplyBinding.root, lightStatusBar = false)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
         title = "Reply"

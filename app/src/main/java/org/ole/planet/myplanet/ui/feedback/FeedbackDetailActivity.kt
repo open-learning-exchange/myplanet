@@ -37,7 +37,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityFeedbackDetailBinding = ActivityFeedbackDetailBinding.inflate(layoutInflater)
         setContentView(activityFeedbackDetailBinding.root)
-        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, activityFeedbackDetailBinding.root)
+        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, activityFeedbackDetailBinding.root, lightStatusBar = false)
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         setTitle(R.string.feedback)

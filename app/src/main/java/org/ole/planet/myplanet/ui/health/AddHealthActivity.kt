@@ -30,7 +30,7 @@ class AddHealthActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityAddHealthBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, binding.root, lightStatusBar = false)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
         userId = intent.getStringExtra("userId")

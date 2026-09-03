@@ -259,7 +259,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun initViews() {
         binding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtils.setupEdgeToEdge(this, window.decorView)
+        EdgeToEdgeUtils.setupEdgeToEdgeWithStatusBarToolbar(this, binding.root, binding.appBarBell.bellToolbar, lightStatusBar = false)
         setupUI(binding.activityDashboardParentLayout, this@DashboardActivity)
         setSupportActionBar(binding.myToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(false)

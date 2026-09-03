@@ -52,7 +52,7 @@ class AddResourceActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         binding = ActivityAddResourceBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, binding.root, lightStatusBar = false)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
         resourceUrl = intent.getStringExtra("resource_local_url")

@@ -74,7 +74,7 @@
             android:id="@+id/top_bar_navigation"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/colorPrimary"
+            android:background="@color/mainColor"
             app:elevation="4dp"
             app:itemIconTint="@drawable/drawable_nav_color"
             app:itemTextColor="@drawable/drawable_nav_color"

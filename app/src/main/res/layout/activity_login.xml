@@ -5,12 +5,13 @@
     android:id="@+id/constraintLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="?attr/colorPrimary"
     tools:context=".ui.sync.LoginActivity">
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollContent"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/secondary_bg"
         android:fillViewport="true"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toTopOf="parent">

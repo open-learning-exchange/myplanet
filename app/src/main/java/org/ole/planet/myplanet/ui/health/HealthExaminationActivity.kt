@@ -70,7 +70,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
         super.onCreate(savedInstanceState)
         binding = ActivityHealthExaminationBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, binding.root, lightStatusBar = false)
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         customDiag = HashSet()
