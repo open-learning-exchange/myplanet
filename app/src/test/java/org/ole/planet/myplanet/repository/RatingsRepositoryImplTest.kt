@@ -43,7 +43,7 @@ class RatingsRepositoryImplTest {
         }
         gson = Gson()
 
-        repository = RatingsRepositoryImpl(gson, ratingDao, dispatcherProvider)
+        repository = RatingsRepositoryImpl(gson, ratingDao)
     }
 
     @Test

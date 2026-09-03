@@ -84,7 +84,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
     private var _binding: FragmentResourceViewerBinding? = null
     private val binding get() = _binding!!
-
     private var resourceId: String? = null
     private var filePath: String? = null
     private var title: String? = null
@@ -102,12 +101,12 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private lateinit var library: MyLibrary
     private var pdfText: String = ""
     private var externalFilesDir: File? = null
-
     private val viewModel: ResourceViewerViewModel by viewModels()
-
     @Inject lateinit var dispatcherProvider: DispatcherProvider
     @Inject lateinit var ttsManager: TTSManager
     private var authSessionUpdater: AuthSessionUpdater? = null
+    private var isResourceFinished: Boolean = false
+    fun isResourceFinished(): Boolean = isResourceFinished
 
     private val audioRecordListener = object : OnAudioRecordListener {
         override fun onRecordStarted() {
@@ -420,6 +419,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
                     Player.STATE_BUFFERING -> showVideoLoading(getString(R.string.video_loading_buffering))
                     Player.STATE_READY -> hideVideoLoading()
                     Player.STATE_ENDED -> {
+                        isResourceFinished = true
                         lastSavedPositionMs = 0L
                         viewModel.savePlaybackProgress(getMediaKey(), 0L)
                     }
@@ -452,7 +452,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         val fullPath = resolveAudioPath(filePath)
         exoPlayer?.release()
         exoPlayer = null
-        exoPlayer = ExoPlayer.Builder(requireContext()).build().also { player ->
+        exoPlayer = createExoPlayer().also { player ->
             playerView.player = player
             player.setPlaybackSpeed(viewModel.getPlaybackSpeed())
             player.setMediaItem(MediaItem.fromUri(fullPath))
@@ -498,6 +498,9 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         binding.fabMenu.visibility = View.VISIBLE
         val pdfFileName = binding.root.findViewById<TextView>(R.id.pdfFileName)
         pdfFileName.text = title
+
+        // PDF has only one page. Prompt upon leaving for now. Currently, cannot detect scroll-to-bottom
+        isResourceFinished = true
 
         renderPdf()
         extractPdfText()
@@ -558,6 +561,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         val imageViewer = binding.root.findViewById<ImageView>(R.id.imageViewer)
         imageFileName.text = title
 
+        isResourceFinished = true
+
         val imageFile = if (isFullPath) filePath?.let { File(it) }
                         else File(externalFilesDir, "ole/$filePath")
         Glide.with(this)
@@ -572,6 +577,9 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         val textFileTitle = binding.root.findViewById<TextView>(R.id.textFileTitle)
         val textContent = binding.root.findViewById<TextView>(R.id.textContent)
         textFileTitle.text = title
+
+        // Text has only one page. Prompt upon leaving for now. Currently, cannot detect scroll-to-bottom
+        isResourceFinished = true
 
         val file = File(externalFilesDir, "ole/$filePath")
         if (!file.exists()) return
