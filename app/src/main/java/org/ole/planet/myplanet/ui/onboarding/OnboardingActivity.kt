@@ -65,7 +65,9 @@ class OnboardingActivity : AppCompatActivity() {
         setContentView(binding.root)
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
 
-        copyAssets(this)
+        lifecycleScope.launch(dispatcherProvider.io) {
+            copyAssets(this@OnboardingActivity)
+        }
 
         val chooserUri = webLinkForAppChooser(intent)
         if (chooserUri != null) {
