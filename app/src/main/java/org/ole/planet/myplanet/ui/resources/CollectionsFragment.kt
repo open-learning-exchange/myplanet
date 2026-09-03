@@ -107,8 +107,9 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
         val filteredParentList = if (charSequence.isEmpty()) {
             list
         } else {
+            val query = charSequence.lowercase(Locale.ROOT)
             list.filter {
-                it.name?.lowercase(Locale.ROOT)?.contains(charSequence.lowercase(Locale.ROOT)) == true
+                it.name?.lowercase(Locale.ROOT)?.contains(query) == true
             }
         }
         currentTagDataList = buildTagDataList(filteredParentList)

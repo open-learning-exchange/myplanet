@@ -198,7 +198,7 @@ class VoicesRepositoryImpl @Inject constructor(
                     null
                 } ?: JsonArray()
 
-                if (array.size() > 0) {
+                if (!array.isEmpty()) {
                     val firstElement = array.get(0)
                     if (firstElement.isJsonObject) {
                         val obj = firstElement.asJsonObject
@@ -257,7 +257,7 @@ class VoicesRepositoryImpl @Inject constructor(
                     }
                 }
             }
-            if (filtered.size() == 0) {
+            if (filtered.isEmpty()) {
                 val idsToDelete = collectNewsAndReplies(newsId)
                 newsDao.deleteByIds(idsToDelete)
             } else {
@@ -458,7 +458,7 @@ class VoicesRepositoryImpl @Inject constructor(
         val viewInStr = news.viewIn
         if (!TextUtils.isEmpty(viewInStr)) {
             val ar = plainGson.fromJson(viewInStr, JsonArray::class.java)
-            if (ar.size() > 0) `object`.add("viewIn", ar)
+            if (!ar.isEmpty()) `object`.add("viewIn", ar)
         }
     }
 
@@ -482,8 +482,8 @@ class VoicesRepositoryImpl @Inject constructor(
         return newsDao.countTeamChats(teamId)
     }
 
-    override suspend fun getTeamChatViewableIds(teamIds: List<String>): List<String> {
-        return newsDao.getTeamChatViewableIds(teamIds)
+    override suspend fun countTopLevelByTeam(teamId: String): Long {
+        return newsDao.countTopLevelByTeam(teamId, teamIdPattern(teamId))
     }
 
     override suspend fun getPendingNewsLogUploads(): List<org.ole.planet.myplanet.model.NewsLog> {

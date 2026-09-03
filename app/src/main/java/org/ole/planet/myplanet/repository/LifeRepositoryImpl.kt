@@ -26,18 +26,23 @@ class LifeRepositoryImpl @Inject constructor(
     private val MY_LIFE_CACHE_PREFIX = "myLifeCache_"
     private val seedMutex = Mutex()
 
+    private fun normalizeUserId(userId: String?): String? {
+        return userId?.takeIf { it.isNotBlank() && it != "--" }
+    }
+
     override suspend fun updateVisibility(isVisible: Boolean, myLifeId: String) {
         myLifeDao.updateVisibility(myLifeId, isVisible)
         val managedLives = myLifeDao.getByIds(listOf(myLifeId))
-        val userId = managedLives.firstOrNull()?.userId ?: sharedPrefManager.getUserId()
-        if (userId.isNotEmpty()) {
-            val updatedLives = getMyLifeByUserId(userId, ensureLatest = true)
-            cacheMyLifeItems(userId, updatedLives)
-        }
+        val rawUserId = managedLives.firstOrNull()?.userId ?: sharedPrefManager.getUserId()
+        val effectiveUserId = normalizeUserId(rawUserId)
+        val updatedLives = getMyLifeByUserId(effectiveUserId)
+        cacheMyLifeItems(effectiveUserId ?: "--", updatedLives)
     }
 
     override suspend fun updateMyLifeListOrder(list: List<MyLife>) {
-        val userId = list.firstOrNull()?.userId
+        if (list.isEmpty()) return
+        val rawUserId = list.firstOrNull()?.userId ?: sharedPrefManager.getUserId()
+        val effectiveUserId = normalizeUserId(rawUserId)
         val idToIndex = buildMap(list.size) {
             list.forEachIndexed { index, item ->
                 put(item._id, index)
@@ -59,11 +64,9 @@ class LifeRepositoryImpl @Inject constructor(
 
         if (changed.isNotEmpty()) {
             myLifeDao.update(changed)
-            if (userId != null) {
-                val updatedLives = getMyLifeByUserId(userId, ensureLatest = true)
-                cacheMyLifeItems(userId, updatedLives)
-            }
         }
+        val updatedLives = getMyLifeByUserId(effectiveUserId)
+        cacheMyLifeItems(effectiveUserId ?: "--", updatedLives)
     }
 
     private fun MyLife.dedupKey(): Any {
@@ -73,18 +76,23 @@ class LifeRepositoryImpl @Inject constructor(
             ?: listOf(userId, isVisible, weight)
     }
 
-    override suspend fun getMyLifeByUserId(userId: String?, ensureLatest: Boolean): List<MyLife> {
-        val effectiveUserId = userId?.ifEmpty { null }
-        return myLifeDao.getByUserId(effectiveUserId).distinctBy { it.dedupKey() }
+    override suspend fun getMyLifeByUserId(userId: String?, defaultItems: List<MyLife>): List<MyLife> {
+        val effectiveUserId = normalizeUserId(userId)
+        val items = myLifeDao.getByUserId(effectiveUserId).distinctBy { it.dedupKey() }.sortedBy { it.weight }
+        if (items.isNotEmpty() || defaultItems.isEmpty()) {
+            return items
+        }
+        seedMyLifeIfEmpty(effectiveUserId, defaultItems)
+        return myLifeDao.getByUserId(effectiveUserId).distinctBy { it.dedupKey() }.sortedBy { it.weight }
     }
 
     private suspend fun getVisibleMyLifeByUserId(userId: String?): List<MyLife> {
-        val effectiveUserId = userId?.ifEmpty { null }
-        return myLifeDao.getVisibleByUserId(effectiveUserId).distinctBy { it.dedupKey() }
+        val effectiveUserId = normalizeUserId(userId)
+        return myLifeDao.getVisibleByUserId(effectiveUserId).distinctBy { it.dedupKey() }.sortedBy { it.weight }
     }
 
     override suspend fun getMyLifeForDashboard(userId: String, seedBase: List<MyLife>): List<MyLife> {
-        val effectiveUserId = userId.ifEmpty { null }
+        val effectiveUserId = normalizeUserId(userId)
         val visibleForUser = getVisibleMyLifeByUserId(effectiveUserId)
         if (visibleForUser.isNotEmpty()) {
             return visibleForUser
@@ -93,7 +101,8 @@ class LifeRepositoryImpl @Inject constructor(
             return emptyList()
         }
 
-        val json = sharedPrefManager.rawPreferences.getString("$MY_LIFE_CACHE_PREFIX$userId", null)
+        val cacheKey = effectiveUserId ?: "--"
+        val json = sharedPrefManager.rawPreferences.getString("$MY_LIFE_CACHE_PREFIX$cacheKey", null)
         if (json != null) {
             val cached: List<CachedMyLifeItem>? = try {
                 val type = object : TypeToken<List<CachedMyLifeItem>>() {}.type
@@ -104,21 +113,21 @@ class LifeRepositoryImpl @Inject constructor(
             if (cached != null) {
                 return cached.mapNotNull { item ->
                     if (item.isVisible) {
-                        MyLife(item.imageId, userId, item.title).apply {
+                        MyLife(item.imageId, effectiveUserId, item.title).apply {
                             isVisible = item.isVisible
                             weight = item.weight
                         }
                     } else {
                         null
                     }
-                }
+                }.sortedBy { it.weight }
             }
         }
 
         seedMyLifeIfEmpty(effectiveUserId, seedBase)
-        val seeded = getMyLifeByUserId(effectiveUserId, ensureLatest = true)
-        if (userId.isNotEmpty()) cacheMyLifeItems(userId, seeded)
-        return seeded.filter { it.isVisible }
+        val seeded = getMyLifeByUserId(effectiveUserId)
+        cacheMyLifeItems(cacheKey, seeded)
+        return seeded.filter { it.isVisible }.sortedBy { it.weight }
     }
 
     private fun cacheMyLifeItems(userId: String, items: List<MyLife>) {
@@ -127,8 +136,9 @@ class LifeRepositoryImpl @Inject constructor(
     }
 
     override suspend fun seedMyLifeIfEmpty(userId: String?, items: List<MyLife>) {
+        val effectiveUserId = normalizeUserId(userId)
         seedMutex.withLock {
-            val existing = myLifeDao.countByUserId(userId)
+            val existing = myLifeDao.countByUserId(effectiveUserId)
             if (existing == 0) {
                 var weight = 1
                 val newItems = items.map { item ->
@@ -137,7 +147,7 @@ class LifeRepositoryImpl @Inject constructor(
                         title = item.title
                         imageId = item.imageId
                         this.weight = weight++
-                        this.userId = item.userId
+                        this.userId = effectiveUserId
                         isVisible = true
                     }
                 }

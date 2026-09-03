@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.callback.OnPersonalSelectedListener
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentMyPersonalsBinding
 import org.ole.planet.myplanet.model.Personal
+import org.ole.planet.myplanet.repository.PersonalUpdate
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -122,10 +123,10 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
                 }
                 val id = personal.id ?: personal._id
                 if (id != null) {
-                    viewModel.updatePersonalResource(id) { realmPersonal ->
-                        realmPersonal.description = desc
-                        realmPersonal.title = title
-                    }
+                    viewModel.updatePersonalResource(
+                        id,
+                        PersonalUpdate(title = title, description = desc)
+                    )
                 }
             }
             .setNegativeButton(R.string.cancel, null)

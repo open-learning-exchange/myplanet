@@ -11,6 +11,7 @@ import io.mockk.unmockkObject
 import io.mockk.verify
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -295,6 +296,97 @@ class UrlUtilsTest {
     }
 
     @Test
+    fun testBasicAuthHeader_withPaddingAndNoPadding() {
+        // "user:pass" -> "dXNlcjpwYXNz" (no padding needed)
+        val result1 = UrlUtils.basicAuthHeader("user", "pass")
+        assertEquals("Basic dXNlcjpwYXNz", result1)
+
+        // "user:password" -> "dXNlcjpwYXNzd29yZA==" (with '=' padding)
+        val result2 = UrlUtils.basicAuthHeader("user", "password")
+        assertEquals("Basic dXNlcjpwYXNzd29yZA==", result2)
+    }
+
+    @Test
+    fun testGetUserInfo_nullInput() {
+        val (user, pass) = UrlUtils.getUserInfo(null)
+        assertEquals("", user)
+        assertEquals("", pass)
+    }
+
+    @Test
+    fun testGetUserInfo_emptyInput() {
+        val (user, pass) = UrlUtils.getUserInfo("")
+        assertEquals("", user)
+        assertEquals("", pass)
+    }
+
+    @Test
+    fun testGetUserInfo_validUsernameAndPassword() {
+        val (user, pass) = UrlUtils.getUserInfo("admin:secret")
+        assertEquals("admin", user)
+        assertEquals("secret", pass)
+    }
+
+    @Test
+    fun testGetUserInfo_noColon() {
+        val (user, pass) = UrlUtils.getUserInfo("admin")
+        assertEquals("", user)
+        assertEquals("", pass)
+    }
+
+    @Test
+    fun testGetUserInfo_colonWithoutPassword() {
+        val (user, pass) = UrlUtils.getUserInfo("admin:")
+        assertEquals("", user)
+        assertEquals("", pass)
+    }
+
+    @Test
+    fun testGetUserInfo_multipleColons() {
+        val (user, pass) = UrlUtils.getUserInfo("admin:secret:extra")
+        assertEquals("admin", user)
+        assertEquals("secret", pass)
+    }
+
+    @Test
+    fun `header memoizes basic auth header and invalidates when requested`() {
+        every { mockSpm.getUrlUser() } returns "user1"
+        every { mockSpm.getUrlPwd() } returns "pass1"
+
+        val firstHeader = UrlUtils.header
+        val secondHeader = UrlUtils.header
+
+        assertEquals(firstHeader, secondHeader)
+        verify(exactly = 1) { mockSpm.getUrlUser() }
+        verify(exactly = 1) { mockSpm.getUrlPwd() }
+
+        every { mockSpm.getUrlUser() } returns "user2"
+        every { mockSpm.getUrlPwd() } returns "pass2"
+
+        UrlUtils.invalidateHeaderCache()
+        val thirdHeader = UrlUtils.header
+
+        verify(exactly = 2) { mockSpm.getUrlUser() }
+        verify(exactly = 2) { mockSpm.getUrlPwd() }
+        assertNotEquals(firstHeader, thirdHeader)
+    }
+
+    @Test
+    fun `resetForTesting clears cached header`() {
+        every { mockSpm.getUrlUser() } returns "user1"
+        every { mockSpm.getUrlPwd() } returns "pass1"
+
+        val firstHeader = UrlUtils.header
+
+        UrlUtils.resetForTesting()
+        UrlUtils.init(mockSpm)
+
+        val secondHeader = UrlUtils.header
+
+        assertEquals(firstHeader, secondHeader)
+        verify(exactly = 2) { mockSpm.getUrlUser() }
+    }
+
     fun `getUrl with explicit base builds resource url without re-deriving base`() {
         unmockkObject(UrlUtils)
         val result = UrlUtils.getUrl("r1", "f1", "http://example.com/db")

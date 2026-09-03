@@ -480,6 +480,10 @@ class UserRepositoryImpl @Inject constructor(
         upsertUser(model)
     }
 
+    override suspend fun getCurrentUserId(): String? {
+        return sharedPrefManager.getUserId().takeIf { it.isNotBlank() }
+    }
+
     override suspend fun getUserModel(): UserEntity? {
         val userId = sharedPrefManager.getUserId().takeUnless { it.isBlank() } ?: return null
         return userDao.getById(userId)
@@ -1220,7 +1224,7 @@ class UserRepositoryImpl @Inject constructor(
     private fun hasShelfDataUltraFast(shelfDoc: JsonObject): Boolean {
         return listOf("resourceIds", "courseIds", "meetupIds", "teamIds").any { key ->
             shelfDoc.has(key) && shelfDoc.get(key).let { element ->
-                element.isJsonArray && element.asJsonArray.size() > 0
+                element.isJsonArray && !element.asJsonArray.isEmpty()
             }
         }
     }

@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -41,6 +42,7 @@ import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SyncRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -67,6 +69,7 @@ class SyncManager @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val timeProvider: TimeProvider,
     private val userSyncRepository: UserSyncRepository,
+    private val userRepository: UserRepository,
     private val syncRepository: SyncRepository,
     private val syncTimeLogger: SyncTimeLogger
 ) {
@@ -140,8 +143,10 @@ class SyncManager @Inject constructor(
 
             initializeSync()
 
-            // Phase 1: Sync non-library tables in parallel
-            // Note: teams, meetups, and courses base tables are synced here, then augmented by library sync
+            syncTimeLogger.startProcess("shelf_push")
+            pushCurrentUserShelf()
+            syncTimeLogger.endProcess("shelf_push")
+
             val parallelTables = listOf(
                 "tablet_users", "exams", "achievements",
                 "tags", "news", "feedback", "tasks",
@@ -168,19 +173,16 @@ class SyncManager @Inject constructor(
                 syncJobs.awaitAll()
             }
 
-            // Phase 2: Sync resources base table (must run before library to establish base records)
             _syncStatus.value = SyncStatus.Syncing(context.getString(R.string.sync_phase_resources), 2, 4)
             syncTimeLogger.startProcess("resource_sync")
             resourceTransactionSync()
             syncTimeLogger.endProcess("resource_sync")
 
-            // Phase 3: Sync library (augments courses, resources, teams, meetups with shelf data)
             _syncStatus.value = SyncStatus.Syncing(context.getString(R.string.sync_phase_library), 3, 4)
             syncTimeLogger.startProcess("library_sync")
             myLibraryTransactionSync()
             syncTimeLogger.endProcess("library_sync")
 
-            // Phase 4: Admin and finalization
             _syncStatus.value = SyncStatus.Syncing(context.getString(R.string.sync_phase_finalizing), 4, 4)
             syncTimeLogger.startProcess("admin_sync")
             loginSyncManager.syncAdmin()
@@ -251,6 +253,16 @@ class SyncManager @Inject constructor(
         create(context, R.mipmap.ic_launcher, "Syncing data", "Please wait...")
     }
 
+    private suspend fun pushCurrentUserShelf() {
+        try {
+            userRepository.getUserModel()?.let { userSyncRepository.uploadShelfData(it) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e("SyncManager", "Failed to push shelf data before sync", e)
+        }
+    }
+
     fun cancelBackgroundSync() {
         backgroundSync?.cancel()
         backgroundSync = null
@@ -273,7 +285,6 @@ class SyncManager @Inject constructor(
             var totalRows = 0
             var hadBatchFailure = false
 
-            // Get total count
             syncTimeLogger.startProcess("resource_get_total_count")
             val countApiStartTime = SystemClock.elapsedRealtime()
             ApiClient.executeWithRetryAndWrap {
@@ -300,7 +311,6 @@ class SyncManager @Inject constructor(
                 val batchStartTime = SystemClock.elapsedRealtime()
 
                 try {
-                    // Fetch batch of documents
                     val batchApiStartTime = SystemClock.elapsedRealtime()
                     var response: JsonObject? = null
                     ApiClient.executeWithRetryAndWrap {
@@ -322,11 +332,10 @@ class SyncManager @Inject constructor(
                     val rows = getJsonArray("rows", response)
                     syncTimeLogger.logApiCall("$url/resources/_all_docs (batch $batchCount)", batchApiDuration, true, rows.size())
 
-                    if (rows.size() == 0) {
+                    if (rows.isEmpty()) {
                         break
                     }
 
-                    // Parse documents
                     val parseStartTime = SystemClock.elapsedRealtime()
                     val validDocuments = mutableListOf<JsonObject>()
 
