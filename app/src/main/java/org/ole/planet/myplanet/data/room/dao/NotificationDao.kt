@@ -65,7 +65,9 @@ interface NotificationDao {
             NotificationSyncUpdate(it.first, it.second, false)
         }
         if (nonNullRevs.isNotEmpty()) {
-            updateSyncStatus(nonNullRevs)
+            nonNullRevs.chunked(900).forEach {
+                updateSyncStatus(it)
+            }
         }
 
         val nullRevs = syncResults.filter { it.second == null }.map { it.first }
