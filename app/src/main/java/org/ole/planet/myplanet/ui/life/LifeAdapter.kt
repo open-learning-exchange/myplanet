@@ -121,10 +121,20 @@ class LifeAdapter(
     }
 
     override fun onItemMoveFinished() {
-        val finalList = dragList?.toList() ?: return
+        val list = dragList ?: return
+        val updatedList = list.mapIndexed { index, item ->
+            MyLife().apply {
+                _id = item._id
+                imageId = item.imageId
+                userId = item.userId
+                title = item.title
+                isVisible = item.isVisible
+                weight = index
+            }
+        }
         dragList = null
-        reorderCallback(finalList)
-        submitList(finalList)
+        reorderCallback(updatedList)
+        submitList(updatedList)
     }
 
     internal inner class LifeViewHolder(val binding: RowLifeBinding) : RecyclerView.ViewHolder(binding.root),

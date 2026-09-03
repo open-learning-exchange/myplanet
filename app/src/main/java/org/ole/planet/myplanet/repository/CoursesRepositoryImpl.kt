@@ -47,6 +47,7 @@ import org.ole.planet.myplanet.utils.ExamAnswerUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class CoursesRepositoryImpl @Inject constructor(
     private val progressRepository: ProgressRepository,
@@ -610,14 +611,7 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
-        val documentList = ArrayList<JsonObject>(jsonArray.size())
-        for (j in jsonArray) {
-            val jsonDoc = JsonUtils.getJsonObject("doc", j.asJsonObject)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-            }
-        }
+        val documentList = jsonArray.toSyncDocuments().map { it.second }
         upsertRoomCoursesFromSync(documentList)
         MyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
     }
@@ -788,18 +782,12 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun insertCertificationsFromSync(jsonArray: JsonArray) {
-        val certifications = ArrayList<Certification>(jsonArray.size())
-        for (j in jsonArray) {
-            val jsonDoc = JsonUtils.getJsonObject("doc", j.asJsonObject)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (id.startsWith("_design")) continue
-            certifications.add(
-                Certification().apply {
-                    _id = id
-                    name = JsonUtils.getString("name", jsonDoc)
-                    setCourseIds(JsonUtils.getJsonArray("courseIds", jsonDoc))
-                }
-            )
+        val certifications = jsonArray.toSyncDocuments().map { (id, jsonDoc) ->
+            Certification().apply {
+                _id = id
+                name = JsonUtils.getString("name", jsonDoc)
+                setCourseIds(JsonUtils.getJsonArray("courseIds", jsonDoc))
+            }
         }
         certificationDao.upsertAll(certifications)
     }

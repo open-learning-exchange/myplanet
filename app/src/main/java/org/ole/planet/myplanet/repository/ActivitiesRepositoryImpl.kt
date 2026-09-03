@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.distinctByContent
 
 class ActivitiesRepositoryImpl @Inject constructor(
@@ -301,7 +302,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
         ob.addProperty("logoutTime", activity.logoutTime)
         ob.addProperty("createdOn", activity.createdOn)
         ob.addProperty("parentCode", activity.parentCode)
-        ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+        ob.addDocumentOrigin()
         ob.addProperty("deviceName", NetworkUtils.getDeviceName())
         ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
         if (activity._id != null) {
@@ -457,7 +458,7 @@ internal fun serializeResourceActivities(activity: ResourceActivity): JsonObject
     ob.addProperty("time", activity.time)
     ob.addProperty("createdOn", activity.createdOn)
     ob.addProperty("parentCode", activity.parentCode)
-    ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+    ob.addDocumentOrigin()
     ob.addProperty("deviceName", NetworkUtils.getDeviceName())
     return ob
 }
