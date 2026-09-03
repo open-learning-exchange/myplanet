@@ -58,6 +58,7 @@ import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
 @Singleton
@@ -1167,7 +1168,7 @@ class TeamsRepositoryImpl @Inject constructor(
         ob.addProperty("teamType", log.teamType)
         ob.addProperty("time", log.time)
         ob.addProperty("teamId", log.teamId)
-        ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+        ob.addDocumentOrigin()
         ob.addProperty("deviceName", NetworkUtils.getDeviceName())
         ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
         if (!TextUtils.isEmpty(log._rev)) {

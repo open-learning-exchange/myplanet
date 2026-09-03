@@ -6,12 +6,14 @@ import com.google.gson.JsonObject
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -23,6 +25,8 @@ class MeetupTest {
     @Before
     fun setup() {
         MockKAnnotations.init(this)
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "uniqueIdentifier"
     }
 
     @After
@@ -223,6 +227,8 @@ class MeetupTest {
         assertEquals("Planet", jsonObject.get("sourcePlanet").asString)
         assertEquals("true", jsonObject.get("sync").asString)
         assertEquals("data", jsonObject.getAsJsonObject("link").get("some").asString)
+        assertEquals("uniqueIdentifier", jsonObject.get("androidId").asString)
+        assertEquals("myplanet", jsonObject.get("app").asString)
     }
 
     @Test
