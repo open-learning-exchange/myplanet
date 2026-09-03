@@ -124,13 +124,13 @@ interface TeamsRepository {
     suspend fun uploadTeamImage(uri: Uri): String
     suspend fun updateTeamDetails(request: TeamDetailsUpdateRequest): Boolean
     suspend fun getTeamTransactionsWithBalance(
-        teamId: String, startDate: Long? = null,
-        endDate: Long? = null, sortAscending: Boolean = false
+        teamId: String, startDate: Long?,
+        endDate: Long?, sortAscending: Boolean
     ): Flow<List<Transaction>>
     suspend fun createTransaction(
         teamId: String, type: String, note: String, amount: Int, date: Long,
         parentCode: String?, planetCode: String?,
-        imageName: String? = null, imageData: ByteArray? = null
+        imageName: String?, imageData: ByteArray?
     ): Result<Unit>
     suspend fun respondToMemberRequest(teamId: String, userId: String, accept: Boolean): Result<Unit>
     suspend fun getTeamType(teamId: String): String?
