@@ -24,7 +24,6 @@ sealed class ProfileUpdateState {
 @HiltViewModel
 class UserProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
-    private val userSessionManager: UserSessionManager,
     private val activitiesRepository: ActivitiesRepository
 ) : ViewModel() {
 
@@ -127,7 +126,7 @@ class UserProfileViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            val fullName = userSessionManager.getUserModel()?.name ?: ""
+            val fullName = userRepository.getUserModel()?.name ?: ""
             coroutineScope {
                 val resultDeferred = async { activitiesRepository.getMostOpenedResource(fullName, UserSessionManager.KEY_RESOURCE_OPEN) }
                 val lastVisitDeferred = async { activitiesRepository.getGlobalLastVisit() }
@@ -145,7 +144,7 @@ class UserProfileViewModel @Inject constructor(
 
     fun getOfflineVisits() {
         viewModelScope.launch {
-            val user = userSessionManager.getUserModel()
+            val user = userRepository.getUserModel()
             _offlineVisits.value = user?.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0
         }
     }

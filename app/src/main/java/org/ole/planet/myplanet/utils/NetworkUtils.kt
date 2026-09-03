@@ -9,7 +9,6 @@ import android.net.NetworkCapabilities
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Build
-import android.provider.Settings
 import androidx.annotation.VisibleForTesting
 import androidx.core.net.toUri
 import dagger.hilt.android.EntryPointAccessors

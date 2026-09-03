@@ -17,7 +17,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.PersonalsRepository
-import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -29,21 +29,21 @@ class PersonalsViewModelTest {
     val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
     private lateinit var personalsRepository: PersonalsRepository
-    private lateinit var userSessionManager: UserSessionManager
+    private lateinit var userRepository: UserRepository
     private lateinit var viewModel: PersonalsViewModel
 
     @Before
     fun setup() {
         personalsRepository = mockk(relaxed = true)
-        userSessionManager = mockk(relaxed = true)
-        viewModel = PersonalsViewModel(personalsRepository, userSessionManager)
+        userRepository = mockk(relaxed = true)
+        viewModel = PersonalsViewModel(personalsRepository, userRepository)
     }
 
     @Test
     fun `personals flow emits resources for the current user id`() = runTest {
         val user = UserEntity().apply { id = "user-123" }
         val personal = Personal().apply { id = "p-1"; title = "My Personal" }
-        coEvery { userSessionManager.getUserModel() } returns user
+        coEvery { userRepository.getUserModel() } returns user
         coEvery { personalsRepository.getPersonalResources("user-123") } returns flowOf(listOf(personal))
 
         val collected = mutableListOf<List<Personal>>()
@@ -58,7 +58,7 @@ class PersonalsViewModelTest {
 
     @Test
     fun `personals flow falls back to empty list when there is no current user`() = runTest {
-        coEvery { userSessionManager.getUserModel() } returns null
+        coEvery { userRepository.getUserModel() } returns null
         coEvery { personalsRepository.getPersonalResources(null) } returns flowOf(emptyList())
 
         val collected = mutableListOf<List<Personal>>()
