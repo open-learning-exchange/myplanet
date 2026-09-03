@@ -54,22 +54,23 @@ object JsonUtils {
         return ""
     }
 
-    private fun <T> getPrimitive(fieldName: String, jsonObject: JsonObject?, default: T, extract: (JsonElement) -> T): T = safeGet({ default }) {
-        if (jsonObject?.has(fieldName) == true) {
-            val el: JsonElement = jsonObject.get(fieldName)
-            if (el is JsonNull) default else extract(el)
-        } else default
+    private fun fieldElement(fieldName: String, jsonObject: JsonObject?): JsonElement? =
+        jsonObject?.takeIf { it.has(fieldName) }?.get(fieldName)
+
+    private fun <T> getPrimitive(default: T, elementSupplier: () -> JsonElement?, extract: (JsonElement) -> T): T = safeGet({ default }) {
+        val el = elementSupplier()
+        if (el == null || el is JsonNull) default else extract(el)
     }
 
     fun getString(fieldName: String, jsonObject: JsonObject?): String =
-        getPrimitive(fieldName, jsonObject, "") { el ->
+        getPrimitive("", { fieldElement(fieldName, jsonObject) }) { el ->
             if (el.isJsonPrimitive && el.asJsonPrimitive.isString) el.asString else ""
         }
 
-    fun getString(array: JsonArray, index: Int): String = safeGet({ "" }) {
-        val el: JsonElement? = if (index in 0 until array.size()) array.get(index) else null
-        if (el == null || !el.isJsonPrimitive) "" else el.asString
-    }
+    fun getString(array: JsonArray, index: Int): String =
+        getPrimitive("", { if (index in 0 until array.size()) array.get(index) else null }) { el ->
+            if (!el.isJsonPrimitive) "" else el.asString
+        }
 
     fun getAsJsonArray(list: List<String>?): JsonArray {
         val array = JsonArray()
@@ -83,10 +84,10 @@ object JsonUtils {
         return if (arrayElement.isJsonArray) arrayElement.asJsonArray else JsonArray()
     }
 
-    fun getBoolean(fieldName: String, jsonObject: JsonObject?): Boolean = safeGet({ false }) {
-        val el: JsonElement? = jsonObject?.takeIf { it.has(fieldName) }?.get(fieldName)
-        if (el == null || !el.isJsonPrimitive) false else el.asBoolean
-    }
+    fun getBoolean(fieldName: String, jsonObject: JsonObject?): Boolean =
+        getPrimitive(false, { fieldElement(fieldName, jsonObject) }) { el ->
+            if (!el.isJsonPrimitive) false else el.asBoolean
+        }
 
     fun addString(`object`: JsonObject, fieldName: String, value: String?) {
         if (!value.isNullOrEmpty()) `object`.addProperty(fieldName, value)
@@ -108,20 +109,19 @@ object JsonUtils {
         if (value != null && value.keySet().isNotEmpty()) `object`.add(fieldName, value)
     }
 
-    fun getInt(fieldName: String, jsonObject: JsonObject?): Int = safeGet({ 0 }) {
-        val el: JsonElement? = jsonObject?.takeIf { it.has(fieldName) }?.get(fieldName)
-        if (el == null || !el.isJsonPrimitive) 0 else el.asJsonPrimitive.let { primitive ->
-            if (primitive.isNumber) primitive.asInt else primitive.asString.toIntOrNull() ?: 0
+    fun getInt(fieldName: String, jsonObject: JsonObject?): Int =
+        getPrimitive(0, { fieldElement(fieldName, jsonObject) }) { el ->
+            if (!el.isJsonPrimitive) 0 else el.asJsonPrimitive.let { primitive ->
+                if (primitive.isNumber) primitive.asInt else primitive.asString.toIntOrNull() ?: 0
+            }
         }
-    }
 
-    fun getFloat(fieldName: String, jsonObject: JsonObject?): Float = safeGet({ 0f }) {
-        if (jsonObject?.has(fieldName) != true) return@safeGet getInt(fieldName, jsonObject).toFloat()
-        val el: JsonElement = jsonObject.get(fieldName)
-        if (!el.isJsonPrimitive) 0f else el.asJsonPrimitive.let { primitive ->
-            if (primitive.isNumber) primitive.asFloat else primitive.asString.toFloatOrNull() ?: 0f
+    fun getFloat(fieldName: String, jsonObject: JsonObject?): Float =
+        getPrimitive(0f, { fieldElement(fieldName, jsonObject) }) { el ->
+            if (!el.isJsonPrimitive) 0f else el.asJsonPrimitive.let { primitive ->
+                if (primitive.isNumber) primitive.asFloat else primitive.asString.toFloatOrNull() ?: 0f
+            }
         }
-    }
 
     fun getJsonArray(fieldName: String, jsonObject: JsonObject?): JsonArray = safeGet({ JsonArray() }) {
         val array: JsonElement? = jsonObject?.let { getJsonElement(fieldName, it, JsonArray::class.java) }
@@ -140,12 +140,12 @@ object JsonUtils {
         }
     }
 
-    fun getLong(fieldName: String, jsonObject: JsonObject?): Long = safeGet({ 0L }) {
-        val el: JsonElement? = jsonObject?.takeIf { it.has(fieldName) }?.get(fieldName)
-        if (el == null || !el.isJsonPrimitive) 0L else el.asJsonPrimitive.let { primitive ->
-            if (primitive.isNumber) primitive.asLong else primitive.asString.toLongOrNull() ?: 0L
+    fun getLong(fieldName: String, jsonObject: JsonObject?): Long =
+        getPrimitive(0L, { fieldElement(fieldName, jsonObject) }) { el ->
+            if (!el.isJsonPrimitive) 0L else el.asJsonPrimitive.let { primitive ->
+                if (primitive.isNumber) primitive.asLong else primitive.asString.toLongOrNull() ?: 0L
+            }
         }
-    }
 }
 
 fun JsonArray.toSyncDocuments(): List<Pair<String, JsonObject>> =
