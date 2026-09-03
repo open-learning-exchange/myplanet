@@ -39,7 +39,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.ExamAnswerUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
-import org.ole.planet.myplanet.utils.addDocumentIdentity
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 
 class SubmissionsRepositoryImpl @Inject internal constructor(
     private val teamsRepositoryProvider: Provider<TeamsRepository>,
@@ -774,7 +774,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         `object`.addProperty("startTime", submission.startTime)
         `object`.addProperty("lastUpdateTime", submission.lastUpdateTime)
         `object`.addProperty("status", submission.status)
-        `object`.addDocumentIdentity()
+        `object`.addDocumentOrigin()
         `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
         `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
         `object`.addProperty("sender", submission.sender)
@@ -845,7 +845,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             jsonObject.addProperty("startTime", submission.startTime)
             jsonObject.addProperty("lastUpdateTime", submission.lastUpdateTime)
             jsonObject.addProperty("status", submission.status ?: "pending")
-            jsonObject.addDocumentIdentity()
+            jsonObject.addDocumentOrigin()
             jsonObject.addProperty("deviceName", NetworkUtils.getDeviceName())
             jsonObject.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
             jsonObject.addProperty("sender", submission.sender)

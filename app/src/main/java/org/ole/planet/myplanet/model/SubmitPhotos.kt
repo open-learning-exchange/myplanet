@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.model
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
-import org.ole.planet.myplanet.utils.addDocumentIdentity
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 
 @Entity(tableName = "submit_photos", indices = [androidx.room.Index("uploaded")])
 open class SubmitPhotos {
@@ -34,7 +34,7 @@ open class SubmitPhotos {
             obj.addProperty("date", submit.date)
             obj.addProperty("macAddress", submit.uniqueId)
             obj.addProperty("photoLocation", submit.photoLocation)
-            obj.addDocumentIdentity()
+            obj.addDocumentOrigin()
             return obj
         }
     }

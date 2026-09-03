@@ -12,7 +12,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.VersionUtils
-import org.ole.planet.myplanet.utils.addDocumentIdentity
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 
 class MyPlanet : Serializable {
     var planetVersion: String? = null
@@ -48,7 +48,7 @@ class MyPlanet : Serializable {
             postJSON.addProperty("createdOn", model.planetCode)
             postJSON.addProperty("version", VersionUtils.getVersionCode(context))
             postJSON.addProperty("versionName", VersionUtils.getVersionName(context))
-            postJSON.addDocumentIdentity()
+            postJSON.addDocumentOrigin()
             postJSON.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(context))
             postJSON.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
             postJSON.addProperty("deviceName", NetworkUtils.getDeviceName())
@@ -79,7 +79,7 @@ class MyPlanet : Serializable {
                 `object`.addProperty("totalUsed", if (totalUsed > 0) totalUsed else 0)
                 `object`.addProperty("version", VersionUtils.getVersionCode(context))
                 `object`.addProperty("versionName", VersionUtils.getVersionName(context))
-                `object`.addDocumentIdentity()
+                `object`.addDocumentOrigin()
                 `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
                 `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
                 `object`.addProperty("time", Date().time)

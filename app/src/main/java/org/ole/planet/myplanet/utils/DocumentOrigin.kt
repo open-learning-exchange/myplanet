@@ -10,13 +10,13 @@ import com.google.gson.JsonObject
 const val DOCUMENT_APP_IDENTIFIER = "myplanet"
 
 /**
- * Stamps the identity every document we post carries: the device it came from
- * (`androidId`) and the app that wrote it (`app`).
+ * Stamps where every document we post came from: the device that wrote it
+ * (`androidId`) and the app it was written by (`app`).
  *
  * [androidId] defaults to [NetworkUtils.getUniqueIdentifier]; pass a value only where a
  * document shape already uses a different identifier.
  */
-fun JsonObject.addDocumentIdentity(androidId: String? = NetworkUtils.getUniqueIdentifier()): JsonObject {
+fun JsonObject.addDocumentOrigin(androidId: String? = NetworkUtils.getUniqueIdentifier()): JsonObject {
     addProperty("androidId", androidId)
     addProperty("app", DOCUMENT_APP_IDENTIFIER)
     return this

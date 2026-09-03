@@ -15,7 +15,7 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
-import org.ole.planet.myplanet.utils.addDocumentIdentity
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 
 @Entity(tableName = "users", indices = [Index("_id"), Index("name"), Index("planetCode")])
 open class UserEntity(
@@ -61,7 +61,7 @@ open class UserEntity(
         jsonObject.add("roles", getRoles())
         if (_id?.isEmpty() == true) {
             jsonObject.addProperty("password", password)
-            jsonObject.addDocumentIdentity()
+            jsonObject.addDocumentOrigin()
             jsonObject.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(context))
             jsonObject.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
         } else {

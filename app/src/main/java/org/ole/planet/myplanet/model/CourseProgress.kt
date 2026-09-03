@@ -4,7 +4,7 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
-import org.ole.planet.myplanet.utils.addDocumentIdentity
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 
 @Entity(
     tableName = "course_progress",
@@ -37,7 +37,7 @@ open class CourseProgress {
             `object`.addProperty("createdOn", progress.createdOn)
             `object`.addProperty("createdDate", progress.createdDate)
             `object`.addProperty("updatedDate", progress.updatedDate)
-            `object`.addDocumentIdentity()
+            `object`.addDocumentOrigin()
             return `object`
         }
 

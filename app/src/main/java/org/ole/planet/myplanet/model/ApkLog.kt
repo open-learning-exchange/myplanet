@@ -4,7 +4,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.utils.NetworkUtils
-import org.ole.planet.myplanet.utils.addDocumentIdentity
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 
 /**
  * Room entity for crash/ANR/error logs, replacing the former APK log model. Logs are written via
@@ -37,7 +37,7 @@ open class ApkLog {
             `object`.addProperty("userId", log.userId)
             `object`.addProperty("version", log.version)
             `object`.addProperty("createdOn", log.createdOn)
-            `object`.addDocumentIdentity()
+            `object`.addDocumentOrigin()
             `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
             `object`.addProperty("customDeviceName", customDeviceName)
             `object`.addProperty("parentCode", log.parentCode)

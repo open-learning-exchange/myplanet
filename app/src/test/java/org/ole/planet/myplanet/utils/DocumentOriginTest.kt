@@ -9,7 +9,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 
-class DocumentIdentityExtensionsTest {
+class DocumentOriginTest {
     @Before
     fun setUp() {
         mockkObject(NetworkUtils)
@@ -22,16 +22,16 @@ class DocumentIdentityExtensionsTest {
     }
 
     @Test
-    fun addDocumentIdentityStampsDeviceAndAppIdentity() {
-        val json = JsonObject().addDocumentIdentity()
+    fun addDocumentOriginStampsDeviceAndApp() {
+        val json = JsonObject().addDocumentOrigin()
 
         assertEquals("uniqueIdentifier", json.get("androidId").asString)
         assertEquals("myplanet", json.get("app").asString)
     }
 
     @Test
-    fun addDocumentIdentityUsesProvidedAndroidId() {
-        val json = JsonObject().addDocumentIdentity("explicitAndroidId")
+    fun addDocumentOriginUsesProvidedAndroidId() {
+        val json = JsonObject().addDocumentOrigin("explicitAndroidId")
 
         assertEquals("explicitAndroidId", json.get("androidId").asString)
         assertEquals(DOCUMENT_APP_IDENTIFIER, json.get("app").asString)

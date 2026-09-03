@@ -58,7 +58,7 @@ import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.VersionUtils
-import org.ole.planet.myplanet.utils.addDocumentIdentity
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 
 class UserRepositoryImpl @Inject constructor(
     @param:AppPreferences private val settings: SharedPreferences,
@@ -517,7 +517,7 @@ class UserRepositoryImpl @Inject constructor(
             addProperty("gender", user.gender)
             addProperty("type", "user")
             addProperty("betaEnabled", false)
-            addDocumentIdentity()
+            addDocumentOrigin()
             addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
             addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
             val roles = JsonArray().apply { add("learner") }

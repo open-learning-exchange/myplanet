@@ -6,7 +6,7 @@ import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utils.NetworkUtils
-import org.ole.planet.myplanet.utils.addDocumentIdentity
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 
 /**
  * Room replacement for the former `Rating` model. Uploaded (Room upload path) and
@@ -54,7 +54,7 @@ open class Rating {
             ob.addProperty("planetCode", realmRating.planetCode)
             ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
             ob.addProperty("deviceName", NetworkUtils.getDeviceName())
-            ob.addDocumentIdentity()
+            ob.addDocumentOrigin()
             return ob
         }
     }
