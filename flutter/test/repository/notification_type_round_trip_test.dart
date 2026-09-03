@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
+import 'package:myplanet/providers/notifications_provider.dart';
 import 'package:myplanet/repository/notifications_repository.dart';
 import 'package:myplanet/ui/notifications/notification_destination.dart';
 import 'package:myplanet/ui/notifications/notification_grouping.dart';
@@ -165,6 +166,29 @@ void main() {
     });
     expect(row.type, 'team');
     expect(row.subType, 'join_request');
+  });
+
+  // `toggleExpansion` evaluates the unread-driven default by counting rows in
+  // the group. Against the raw type it counts none, so the first tap on an
+  // expanded group expands it again instead of collapsing it — one of two
+  // readers a repository test reaches and a screen test does not.
+  test('the group toggle default resolves the type too', () async {
+    final row = await pull({
+      '_id': 'n-join',
+      'user': 'org.couchdb.user:ada',
+      'type': 'team',
+      'message': 'bob has requested to join Team Blue',
+      'linkParams': {'activeTab': 'applicantTab'},
+      'status': 'unread',
+    });
+
+    final toggled = toggleExpansion(
+      const NotificationExpansionState(),
+      'join_request',
+      [row],
+    );
+    expect(toggled.collapsed, contains('join_request'));
+    expect(toggled.expanded, isEmpty);
   });
 
   test('a locally authored row is unaffected', () async {

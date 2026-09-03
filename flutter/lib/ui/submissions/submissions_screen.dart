@@ -231,7 +231,7 @@ class _SubmissionTile extends StatelessWidget {
         : l10n.submission;
     // `SubmissionsAdapter.updateSubmissionCount` shows `(N)` beside the title
     // when a parent has more than one attempt.
-    final title = entry.count > 1 ? '\$base (\${entry.count})' : base;
+    final title = entry.count > 1 ? '$base (${entry.count})' : base;
     final updated = row.lastUpdateTime == 0
         ? null
         : DateFormat.yMMMd().add_jm().format(

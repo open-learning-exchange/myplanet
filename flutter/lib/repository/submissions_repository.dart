@@ -730,8 +730,10 @@ class SubmissionsRepository {
   /// exactly as the Kotlin does. Without them CouchDB treats the POST as a new
   /// document, so re-uploading an existing submission would create a duplicate
   /// and [markUploaded] would then point the local row at the copy, orphaning
-  /// the original. This is reachable: [upsertDocuments] takes `isUpdated`
-  /// straight from the server document, and [pendingUploads] selects on it.
+  /// the original. `_id`/`_rev` are set by [markUploaded] and by the sync-in,
+  /// which is what makes the branch reachable — [upsertDocuments] itself always
+  /// writes `isUpdated: false`, because a document that arrived from the server
+  /// owes it nothing.
   ///
   /// Device telemetry is added by [SubmissionsUploader], where the platform
   /// seam is available. The `source`/`parentCode` planet identifiers Kotlin
@@ -758,7 +760,11 @@ class SubmissionsRepository {
       // Omitted rather than sent as null when there is nothing to send —
       // `serializeSubmission` guards both with an `if` and has no `else`
       // (`:840-857`).
-      'parent': ?_asDocument(row.parent),
+      // `!submission.parent.isNullOrEmpty()` (`:842`) — an empty blob is
+      // omitted, not sent as an empty string.
+      'parent': ?((row.parent?.isEmpty ?? true)
+          ? null
+          : _asDocument(row.parent)),
       'user': ?_userDocument(row),
       'answers': [
         for (final answer in answers)
@@ -1224,7 +1230,9 @@ String? submissionSubmitterName(SubmissionRow row) {
   try {
     final decoded = jsonDecode(user);
     if (decoded is Map<String, dynamic>) {
-      return JsonUtils.getStringOrNull('name', decoded);
+      // `takeIf { it.isNotBlank() }` — a whitespace-only name is no name.
+      final name = JsonUtils.getString('name', decoded).trim();
+      return name.isEmpty ? null : name;
     }
   } on FormatException {
     // `runCatching { ... }.getOrNull()`.
@@ -1246,8 +1254,10 @@ String? submissionDisplayTitle(SubmissionRow row) {
   try {
     final decoded = jsonDecode(parent);
     if (decoded is Map<String, dynamic>) {
-      final name = JsonUtils.getStringOrNull('name', decoded);
-      return name ?? row.type;
+      // Null rather than a rung of its own: the callers already fall back to
+      // the type and then to a localized "Submission", which is where Kotlin's
+      // `?: "Submissions"` (`SubmissionViewModel.kt:89`) lands.
+      return JsonUtils.getStringOrNull('name', decoded);
     }
   } on FormatException {
     // Not JSON — `createDraft` stores the title itself.

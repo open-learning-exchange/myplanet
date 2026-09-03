@@ -37,6 +37,41 @@ void main() {
     expect(find.byIcon(Icons.assignment_turned_in), findsOneWidget);
   });
 
+  // The duplicate removing the prune exposes: a locally authored row keeps its
+  // sha1 key after upload, so the walk re-inserts the same document under its
+  // CouchDB `_id`. Kotlin collapses the pair and badges it `(N)`
+  // (`SubmissionsAdapter.updateSubmissionCount`) rather than deleting either.
+  testWidgets('two rows for one attempt render once, badged with the count', (
+    tester,
+  ) async {
+    SubmissionRow attempt(String id, int updated) => SubmissionRow(
+      id: id,
+      parentId: 'exam-1@course-1',
+      parent: '{"_id":"exam-1","name":"Week 1 quiz"}',
+      startTime: 0,
+      lastUpdateTime: updated,
+      grade: 0,
+      status: 'complete',
+      uploaded: true,
+      isUpdated: false,
+    );
+    await tester.pumpWidget(
+      wrapScreen(
+        const SubmissionsScreen(),
+        overrides: [
+          submissionsProvider.overrideWith(
+            (ref) =>
+                Stream.value([attempt('couch-1', 20), attempt('sha1', 10)]),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Week 1 quiz (2)'), findsOneWidget);
+    expect(find.byType(ListTile), findsOneWidget);
+  });
+
   testWidgets('filters pending and complete submissions', (tester) async {
     final pending = SubmissionRow(
       id: 'pending',

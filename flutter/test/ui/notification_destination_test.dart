@@ -118,13 +118,16 @@ void main() {
         teamId: 'team-9',
       ),
     );
+    // The strip happens inside `getJoinRequestTeamId`, so
+    // `resolveAndOpenTeam`'s `?: relatedId` falls back to the id the
+    // notification carried — prefix and all, not the stripped form.
     expect(
       await resolver.resolve(
         _notification('join_request', relatedId: 'join_request_absent'),
       ),
       const NotificationDestination(
         NotificationDestinationKind.teamMembers,
-        teamId: 'absent',
+        teamId: 'join_request_absent',
       ),
     );
   });

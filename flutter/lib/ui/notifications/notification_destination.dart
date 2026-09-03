@@ -116,7 +116,10 @@ class NotificationDestinationResolver {
         final request = await _teamDao.getById(requestId);
         return NotificationDestination(
           NotificationDestinationKind.teamMembers,
-          teamId: _nonBlank(request?.teamId) ?? requestId,
+          // The strip happens *inside* `getJoinRequestTeamId`, so
+          // `resolveAndOpenTeam`'s `?: relatedId` falls back to the id the
+          // notification carried, prefix and all — not the stripped one.
+          teamId: _nonBlank(request?.teamId) ?? relatedId,
         );
       default:
         return null;

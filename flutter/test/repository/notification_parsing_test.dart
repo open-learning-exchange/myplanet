@@ -174,6 +174,23 @@ void main() {
       expect(resolveNotificationType('mystery', '3 new resources'), 'resource');
     });
 
+    // `storage` is tested before `resource` (`:359-360`), so a message naming
+    // both lands on storage.
+    test('storage is matched before resource', () {
+      expect(
+        resolveNotificationType('mystery', 'Storage low: resource sync paused'),
+        'storage',
+      );
+    });
+
+    // Kotlin returns `subType.lowercase(Locale.ROOT)` (`:342`).
+    test('a subType is lower-cased on the way out', () {
+      expect(
+        resolveNotificationType('team', 'anything', subType: 'Join_Request'),
+        'join_request',
+      );
+    });
+
     test('an unknown type with an unreadable message is "notification"', () {
       expect(resolveNotificationType('mystery', ''), 'notification');
     });

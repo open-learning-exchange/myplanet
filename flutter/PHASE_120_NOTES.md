@@ -12,8 +12,9 @@ passing its own test.
 
 Two `parity-auditor` passes at `effort: max`: one on the Kotlin ground truth
 before implementing, one on the finished diff. The first overturned two things I
-was about to do and found four defects Phase 116 does not mention; the second is
-recorded at the end.
+was about to do and found four defects Phase 116 does not mention; the second
+found a shipped rendering bug and four unguarded halves, and is recorded in
+*A second audit, on the finished implementation* at the end.
 
 ---
 
@@ -226,8 +227,10 @@ no `tasks` sync walk yet (Phase 116's D16). Also ported:
 
 Every defect was demonstrated failing on the pre-fix code.
 
-`test/repository/submissions_sync_round_trip_test.dart` — **8 of 9 failed**
-before the fix (the ninth is the self-consistent pair, and still passes):
+`test/repository/submissions_sync_round_trip_test.dart` — reverting the
+submissions half wholesale (all six reads, the writer, and the prune) turns
+**10 of its tests red**; the survivors include the self-consistent pair, which
+is the one that has to keep passing:
 
 ```
 reaches the list under the signed-in learner        Expected: ['planet-1']  Actual: []
@@ -302,7 +305,8 @@ defect. Named so the next phase can cite them.
    the bare digit `"7"`. Its own phase: it needs an HTML-capable renderer, and
    the six ARB keys it wants (`resourceNotification`, `storageNotification`,
    `taskNotification`, `joinRequestNotification`) are already taken in
-   `app_en.arb` by the *titles*.
+   `app_en.arb` by the *titles* (`resourceNotification`, `storageNotification`,
+   `taskNotification`, `joinRequestNotification`).
 4. **A quirk for whoever ports that.** `loadNotifications:78-84` partitions
    task and join-request notifications on the **stored raw** type, before
    resolution — so a `newTask` document never enters `taskNotifications`, gets
@@ -345,6 +349,104 @@ All defects, none tidying. Lane A owns the rest of `lib/repository/`; Lane C own
 | `test/ui/notification_destination_test.dart` | asserted the pre-fix null return |
 | `test/ui/notification_parser_test.dart` | **moved** to `test/repository/notification_parsing_test.dart` |
 | `test/repository/submissions_repository_test.dart` | three tests written against the non-standard document shape |
+| `test/ui/submissions_screen_test.dart` | a fixture whose `user` was a bare name, a shape no writer produces |
+| `test/repository/submissions_exporter_test.dart` | the same, plus a title guard |
 
 No schema change: `Submissions` already has every column the Kotlin pull writes
 and `Notifications` already carries `subType`. `schemaVersion` stays 45.
+
+---
+
+## A second audit, on the finished implementation
+
+Phase 116's lesson repeated: **an audit of the ground truth does not audit the
+implementation.** The diff was green — format clean, analyze clean, 1967 tests —
+and a second `parity-auditor` pass at `effort: max` aimed at my own diff found a
+shipped rendering bug and four halves that could be reverted with the suite
+still green.
+
+It first replayed every revert the fix claims to guard: each of the six wrong
+reads, the writer, both `deleteNotIn` call sites separately, the destination and
+grouping readers, `resolveType`'s final `when`, and `lowerType` — all red. Then
+it injected **new** defects into the finished code and watched the suite stay
+green. That is where everything below came from.
+
+### The one live defect
+
+```dart
+final title = entry.count > 1 ? '\$base (\${entry.count})' : base;
+```
+
+The `$` were escaped, so the tile rendered the literal `$base (${entry.count})`
+and the exam name vanished. `dart format` and `flutter analyze` are clean on it,
+and it fires on the **default** outcome of the very duplicate the collapse was
+added to hide: submit an exam, sync, and the row that should read
+`Week 1 quiz (2)` reads `$base (${entry.count})`. It shipped because no test
+rendered a `count > 1` tile — the collapse's own tests call the pure function.
+One now does, and it is red on the escaped form.
+
+### The halves that had no guard
+
+Each of these could be reverted to its pre-fix behaviour with all 1967 tests
+green, and each is something this file or a code comment calls load-bearing:
+
+| unguarded | now pinned by |
+|---|---|
+| `_userDocument` writing `membershipDoc` from `row.teamId` | a team submission serialized and pulled back, asserting `teamId` survives |
+| `_userDocument` writing `_id` **last**, so the row's normalized id beats a blob's raw `ada@lea` | the same round trip, from a synced row |
+| the row icon and title resolving the type | a screen test on a `replyMessage` row |
+| `toggleExpansion` resolving the type | a repository test on the group default |
+| `isUpdated` staying hard-`false` | a document claiming `isUpdated: true` |
+| `user._attachments` being stripped | the stored blob, asserted attachment-free |
+| `couchId` recorded on the pull | a re-serialize asserting `_id` |
+| `subType` lower-cased; `storage` matched before `resource` | two `resolveType` cases |
+| the PDF title and submitter | the exporter test, red on the reverted read |
+
+### Two corrections to the code
+
+- **The `join_request` fallback opened the wrong id.** Kotlin strips
+  `join_request_` *inside* `getJoinRequestTeamId`, so `resolveAndOpenTeam`'s
+  `?: relatedId` falls back to the id the notification carried, prefix and all.
+  The port stripped it first and fell back to the stripped form — and the new
+  test **pinned that divergence** while its comment claimed fidelity. Inert
+  today (nothing in the port writes the prefix), and now correct.
+- **`submissionSubmitterName` used `isNotEmpty` where Kotlin uses
+  `isNotBlank`**, so a `"name": "   "` printed three spaces;
+  `submissionDisplayTitle` had grown a fallback rung Kotlin does not have
+  (`row.type` where Kotlin has `?: "Submissions"`), now handed back to the
+  callers' own chain; and `'parent'` was still sent as `''` for an empty blob
+  where `:842`'s `!isNullOrEmpty()` omits the key.
+
+### Corrections to this file
+
+The audit was also aimed at these notes, and three sentences did not survive:
+the failing-first count was **8 of 9** for an earlier state of the test file
+rather than the 10-of-16 that merges; the "untouched draft" was cited as prune
+evidence when `createDraft` sets `isUpdated: true` — precisely what the old
+prune spared, so that test was vacuous and is replaced by a
+`getOrCreateSurveySubmission` row; and "six ARB keys" named four. All three are
+fixed above.
+
+### One consequence worth stating plainly
+
+Dropping the prune means the duplicate is visible to **every** reader of the
+table, not just the list. `getExamSubmissionsByUser` feeds the course-progress
+mistake total (`courses_providers.dart:507-528` accumulates over every
+submission), so a synced-back attempt now counts its mistakes twice. This is
+faithful — Kotlin's local key is a UUID, its walk never prunes, and its own
+mistake total double-counts the same way — but the port's `deleteNotIn` had been
+masking it, and only the list got a collapse. If a later phase decides Kotlin is
+wrong here, the fix belongs in the progress calculation, not in a prune.
+
+### What the audit confirmed
+
+`resolveNotificationType` is a string-for-string port of `:337-363`, checked
+mechanically arm by arm. `collapseSubmissionsByParent` matches
+`SubmissionViewModel.kt:55-73` including the count keyed to the newest row and
+the filter-then-collapse order; ties resolve the same way because
+`watchForUser` already orders `lastUpdateTime DESC` and both `reduce` and
+`maxByOrNull` are first-wins. `markSummaryAsRead` still matches the raw stored
+column, which is why the type is resolved on read and not at store time.
+`SubmissionDao.deleteNotIn` and `NotificationParser` left no orphan callers.
+Every Kotlin citation in this file was re-verified line by line, and all seven
+"Reported, not fixed" items are real.

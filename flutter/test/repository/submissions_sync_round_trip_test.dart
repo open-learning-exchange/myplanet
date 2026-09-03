@@ -178,6 +178,56 @@ void main() {
       expect(row.isUpdated, isFalse);
     });
 
+    // `isUpdated = false` is hard-coded (`:700`). Reading it from the document
+    // would let the server decide what this device still owes it — and a row
+    // that arrives claiming `isUpdated` re-uploads itself on every sync.
+    test(
+      'the server cannot mark a pulled row as still owing an upload',
+      () async {
+        await repository.upsertDocuments([
+          {...planetDocument(), 'isUpdated': true},
+        ]);
+        expect((await repository.getById('planet-1'))!.isUpdated, isFalse);
+        expect(
+          await repository.pendingUploads('org.couchdb.user:ada'),
+          isEmpty,
+        );
+      },
+    );
+
+    // `userJson.remove("_attachments")` (`:678`) — a base64 profile photo
+    // inside the blob can push one row past SQLite's cursor window, which is a
+    // crash on a later `SELECT *`, not a display problem.
+    test('strips the user attachments before storing the blob', () async {
+      await repository.upsertDocuments([
+        {
+          '_id': 'planet-1',
+          '_rev': '1-a',
+          'user': {
+            '_id': 'org.couchdb.user:ada',
+            'name': 'ada',
+            '_attachments': {'img': {}},
+          },
+        },
+      ]);
+      final stored =
+          jsonDecode((await repository.getById('planet-1'))!.user!) as Map;
+
+      expect(stored.containsKey('_attachments'), isFalse);
+      expect(stored['name'], 'ada');
+    });
+
+    // Without `couchId` a re-upload has no `_id` to PUT against, so
+    // `serialize` would POST a duplicate document.
+    test('records the CouchDB id so a re-upload updates in place', () async {
+      await repository.upsertDocuments([planetDocument()]);
+      final row = (await repository.getById('planet-1'))!;
+
+      expect(row.couchId, 'planet-1');
+      expect(row.rev, '3-ffe');
+      expect((await repository.serialize(row))['_id'], 'planet-1');
+    });
+
     test('takes its team from the embedded membership document', () async {
       await repository.upsertDocuments([planetDocument()]);
       expect((await repository.getById('planet-1'))!.teamId, 'team-9');
@@ -278,18 +328,26 @@ void main() {
       expect(await repository.getById(localId), isNotNull);
     });
 
-    test('a draft that has never been uploaded survives too', () async {
-      final localId = await repository.createDraft(
+    // The severest case, and the one `createDraft` cannot demonstrate:
+    // `getOrCreateSurveySubmission` writes `isUpdated: false` from the start
+    // (so does `_openExamSession`), which is exactly what the old prune did
+    // *not* spare. A pending survey sheet the learner has started, and an exam
+    // attempt in progress, were deleted by the next sync before any upload.
+    test('a pending sheet that was never uploaded survives too', () async {
+      final row = await repository.getOrCreateSurveySubmission(
         userId: 'org.couchdb.user:ada',
-        type: 'survey',
-        title: 'Water survey',
-        answers: const [],
+        parentId: 'survey-1',
+      );
+      expect(
+        row.isUpdated,
+        isFalse,
+        reason: 'the case the prune did not spare',
       );
 
       serve(0, const []);
       await repository.sync(config: config);
 
-      expect(await repository.getById(localId), isNotNull);
+      expect(await repository.getById(row.id), isNotNull);
     });
   });
 
