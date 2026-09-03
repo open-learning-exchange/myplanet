@@ -14,6 +14,7 @@ import 'exam/take_exam_screen.dart';
 import 'exam/user_information_screen.dart';
 import 'courses/course_detail_screen.dart';
 import 'courses/courses_screen.dart';
+import 'courses/course_progress_screen.dart';
 import 'courses/courses_progress_screen.dart';
 import 'courses/take_course_screen.dart';
 import 'dashboard/about_disclaimer_screens.dart';
@@ -347,6 +348,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'progress',
                     builder: (context, state) => const CoursesProgressScreen(),
+                    routes: [
+                      GoRoute(
+                        path: ':courseId',
+                        builder: (context, state) => CourseProgressScreen(
+                          courseId: state.pathParameters['courseId']!,
+                        ),
+                      ),
+                    ],
                   ),
                   GoRoute(
                     path: ':courseId',

@@ -21,10 +21,12 @@ import '../data/local/course_progress_mapper.dart';
 ///
 /// The "current progress" / "completed courses" calculations follow the
 /// Kotlin's `CoursesRepositoryImpl.getCourseProgress`/`getCompletedCourses`
-/// shape closely enough to share the same bugs, deliberately: a step is
-/// "current" when no progress row marks it passed, and a course is "complete"
-/// when every one of its steps is passed. Step-exam submissions are read only
-/// to display the running mistake count, matching the Kotlin grid.
+/// shape closely enough to share the same bugs, deliberately — including the
+/// inconsistency between them: a step counts as "current" as soon as a
+/// progress row exists for it, **whatever its `passed` flag**, while a course
+/// is "complete" only when every step is `passed`. Step-exam submissions are
+/// read for the share of each step exam the learner has **answered**, which is
+/// the only number the Kotlin grid renders.
 class ProgressRepository {
   ProgressRepository(
     this._api,
@@ -52,111 +54,160 @@ class ProgressRepository {
     List<String> courseIds,
   ) => _progressDao.getByUserAndCourseIds(userId, courseIds);
 
-  /// Port of `CoursesRepositoryImpl.getCourseProgress(courseId, userId)`.
+  /// Port of `CoursesRepositoryImpl.getCourseProgress(courseId, userId)`
+  /// (`CoursesRepositoryImpl.kt:424-473`) — the data behind
+  /// `CourseProgressActivity`'s per-step grid.
   ///
-  /// Returns, per step, the progress row (if any) and the running total of
-  /// exam-question mistakes the user has accrued on that step's exam. A step
-  /// with no exam contributes no mistakes; a step with an exam the user has
-  /// not attempted still appears, with `progress = null` and `mistakes = 0`.
-  Future<List<CourseStepProgress>> courseProgress(
+  /// One cell per step, in `stepIndex` order, carrying exactly what
+  /// `ProgressGridAdapter` binds: the share of the step exam's questions the
+  /// learner has answered, and whether that share is all of them. A step with
+  /// no exam, or an exam with no submission, gets a cell with **no**
+  /// percentage at all — `ProgressGridAdapter.onBindViewHolder` distinguishes
+  /// that state from "0%" by `item.has("percentage")` and paints it in the
+  /// main colour with no text.
+  ///
+  /// Deliberately *not* carried here: the per-step mistake total this method
+  /// used to return. Nothing in the Kotlin grid renders mistakes — they belong
+  /// to the My Progress **list** row (`ProgressRepositoryImpl.submissionMap` →
+  /// `CoursesProgressAdapter.showStepMistakes`), which the port already draws
+  /// from `courseProgressStreamProvider`. Returning them from here as well
+  /// would recreate the "computed and rendered nowhere" shape this method was
+  /// stuck in for three phases. Nor is `getExamObject`'s `status`, which the
+  /// Kotlin writes into the JsonObject and no view ever reads.
+  Future<CourseProgressData> courseProgress(
     String courseId,
     String? userId,
   ) async {
     final steps = await _courseDao.getSteps(courseId);
-    final progressRows = await _progressDao.getByUserAndCourse(
-      userId,
-      courseId,
-    );
-    final progressByStep = {for (final row in progressRows) row.stepNum: row};
+    // `getCourseProgress` reads `current` from the same
+    // `ProgressRepositoryImpl.getCurrentProgress` the take-course bar uses, so
+    // the ring and the bar cannot disagree.
+    final current = await getCurrentProgress(steps, userId, courseId);
+    final title = (await _courseDao.getById(courseId))?.courseTitle;
 
-    final stepExams = await _examDao.getByStepIds([
-      for (final s in steps) s.id,
-    ]);
-    final examByStep = {for (final exam in stepExams) exam.stepId: exam};
+    final stepIds = [for (final step in steps) step.id];
+    final stepExams = stepIds.isEmpty
+        ? const <ExamRow>[]
+        : await _examDao.getByStepIds(stepIds);
+    // Kotlin groups (`allExams.groupBy { it.stepId }`) rather than keying one
+    // exam per step: `adoptSurvey` copies `stepId` onto a new row, so a step
+    // can legitimately carry more than one, and `getExamObject` folds all of
+    // them into the single cell.
+    final examsByStep = <String?, List<ExamRow>>{};
+    for (final exam in stepExams) {
+      examsByStep.putIfAbsent(exam.stepId, () => <ExamRow>[]).add(exam);
+    }
+
     final examIds = [for (final exam in stepExams) exam.id];
     final questionCountByExam = <String, int>{};
-    for (final q in await _examDao.questionsForExams(examIds)) {
-      questionCountByExam[q.examId] = (questionCountByExam[q.examId] ?? 0) + 1;
+    for (final question in await _examDao.questionsForExams(examIds)) {
+      questionCountByExam[question.examId] =
+          (questionCountByExam[question.examId] ?? 0) + 1;
     }
 
-    final submissions = await _submissionDao.getExamSubmissionsByUser(userId);
-    final submissionIds = [for (final s in submissions) s.id];
-    final answers = await _submissionDao.answersForSubmissions(submissionIds);
-    final mistakesByExam = _totalMistakesByExam(submissions, answers);
+    // `submissionDao.getExamSubmissionsByUser(userId)` then
+    // `.filter { examIdsSet.contains(getParentBaseId(sub.parentId)) }` —
+    // every `exam`-typed submission of this user whose parent is one of these
+    // exams. A submission for another course's exam is dropped here.
+    final examIdSet = examIds.toSet();
+    final relevantSubmissions = <SubmissionRow>[];
+    for (final submission in await _submissionDao.getExamSubmissionsByUser(
+      userId,
+    )) {
+      if (examIdSet.contains(_examIdFromParent(submission.parentId))) {
+        relevantSubmissions.add(submission);
+      }
+    }
+    final submissionsByExam = <String, List<SubmissionRow>>{};
+    for (final submission in relevantSubmissions) {
+      final examId = _examIdFromParent(submission.parentId);
+      if (examId != null && examId.isNotEmpty) {
+        submissionsByExam
+            .putIfAbsent(examId, () => <SubmissionRow>[])
+            .add(submission);
+      }
+    }
 
-    return [
-      for (final step in steps)
-        CourseStepProgress(
-          step: step,
-          progress: progressByStep[step.stepIndex + 1],
-          questionCount: _questionCountForStep(
-            step,
-            examByStep,
-            questionCountByExam,
+    final answerCountBySubmission = <String, int>{};
+    for (final answer in await _submissionDao.answersForSubmissions([
+      for (final submission in relevantSubmissions) submission.id,
+    ])) {
+      answerCountBySubmission[answer.submissionId] =
+          (answerCountBySubmission[answer.submissionId] ?? 0) + 1;
+    }
+
+    return CourseProgressData(
+      title: title,
+      current: current,
+      max: steps.length,
+      steps: [
+        for (final step in steps)
+          _stepCell(
+            step: step,
+            exams: examsByStep[step.id] ?? const <ExamRow>[],
+            submissionsByExam: submissionsByExam,
+            questionCountByExam: questionCountByExam,
+            answerCountBySubmission: answerCountBySubmission,
           ),
-          totalMistakes: _mistakesForStep(step, examByStep, mistakesByExam),
-        ),
-    ];
+      ],
+    );
   }
 
-  Map<String, int> _totalMistakesByExam(
-    List<SubmissionRow> submissions,
-    List<SubmissionAnswerRow> answers,
-  ) {
-    // A submission's `parentId` is the exam id with `@user`/`@timestamp` style
-    // suffixes the Kotlin attaches; the leading segment is the exam id.
-    final submissionByExam = <String, List<String>>{};
-    for (final s in submissions) {
-      final examId = _examIdFromParent(s.parentId);
-      if (examId != null) {
-        submissionByExam.putIfAbsent(examId, () => <String>[]).add(s.id);
-      }
-    }
-    final bySubmission = <String, List<SubmissionAnswerRow>>{};
-    for (final a in answers) {
-      bySubmission
-          .putIfAbsent(a.submissionId, () => <SubmissionAnswerRow>[])
-          .add(a);
-    }
-    final result = <String, int>{};
-    for (final entry in submissionByExam.entries) {
-      var total = 0;
-      for (final id in entry.value) {
-        for (final a in bySubmission[id] ?? const <SubmissionAnswerRow>[]) {
-          total += a.mistakes;
+  /// Port of `CoursesRepositoryImpl.getExamObject` for one step
+  /// (`CoursesRepositoryImpl.kt:476-503`), whose write semantics are the whole
+  /// specification of a cell and are easy to get wrong:
+  ///
+  ///  * it loops exams, then that exam's submissions, writing into **one**
+  ///    JsonObject — so with several submissions the **last** wins;
+  ///  * the zero-question branch is guarded by `if (!ob.has(...))`, so it
+  ///    cannot overwrite a real percentage an earlier exam contributed, while
+  ///    the with-questions branch is unguarded and always overwrites;
+  ///  * an exam with no submission writes nothing, so a step whose only exam
+  ///    is unattempted keeps `percentage == null`.
+  ///
+  /// [CourseStepProgress.percentage] is a `num` rather than a `double` on
+  /// purpose: the zero-question branch writes the **integer** `0` and the
+  /// other a `Double`, and `ProgressGridAdapter` renders the value through
+  /// `item["percentage"].asString`, i.e. Gson's `getAsNumber().toString()`.
+  /// So an exam with no questions reads "0%" while a fully answered one reads
+  /// "100.0%". See [CourseStepProgress.percentageLabel].
+  CourseStepProgress _stepCell({
+    required CourseStepRow step,
+    required List<ExamRow> exams,
+    required Map<String, List<SubmissionRow>> submissionsByExam,
+    required Map<String, int> questionCountByExam,
+    required Map<String, int> answerCountBySubmission,
+  }) {
+    num? percentage;
+    bool? completed;
+    for (final exam in exams) {
+      for (final submission
+          in submissionsByExam[exam.id] ?? const <SubmissionRow>[]) {
+        final answerCount = answerCountBySubmission[submission.id] ?? 0;
+        final questionCount = questionCountByExam[exam.id] ?? 0;
+        if (questionCount == 0) {
+          completed ??= false;
+          percentage ??= 0;
+        } else {
+          completed = answerCount == questionCount;
+          percentage = (answerCount / questionCount) * 100;
         }
       }
-      result[entry.key] = total;
     }
-    return result;
+    return CourseStepProgress(
+      stepId: step.id,
+      percentage: percentage,
+      completed: completed,
+    );
   }
 
   /// The leading `@`-delimited segment of `parentId`, matching the Kotlin's
-  /// `split("@")[0]` used to map a submission back to its exam.
+  /// `getParentBaseId` — `if (parentId?.contains("@") == true)
+  /// parentId.split("@")[0] else parentId`.
   String? _examIdFromParent(String? parentId) {
-    if (parentId == null || parentId.isEmpty) return null;
+    if (parentId == null) return null;
     final at = parentId.indexOf('@');
-    return at <= 0 ? parentId : parentId.substring(0, at);
-  }
-
-  int _questionCountForStep(
-    CourseStepRow step,
-    Map<String?, ExamRow> examByStep,
-    Map<String, int> questionCountByExam,
-  ) {
-    final exam = examByStep[step.id];
-    if (exam == null) return 0;
-    return questionCountByExam[exam.id] ?? 0;
-  }
-
-  int _mistakesForStep(
-    CourseStepRow step,
-    Map<String?, ExamRow> examByStep,
-    Map<String, int> mistakesByExam,
-  ) {
-    final exam = examByStep[step.id];
-    if (exam == null) return 0;
-    return mistakesByExam[exam.id] ?? 0;
+    return at < 0 ? parentId : parentId.substring(0, at);
   }
 
   /// Port of `ProgressRepositoryImpl.getCompletedCourses(userId)`.
@@ -203,9 +254,13 @@ class ProgressRepository {
   ///
   /// Counts the contiguous run of steps **from step 1** that have a progress
   /// row, **ignoring `passed`** — a step the user merely opened counts as
-  /// "current". This deliberately diverges from [courseProgress], whose grid
-  /// shows `passed`; the bar measures how far the user has reached, not what
-  /// they have passed.
+  /// "current", which `ProgressRepositoryImplTest.kt:130-146` pins with two
+  /// `passed = false` rows and an expected `current` of 2. It measures how far
+  /// the learner has reached, not what they have passed, and so deliberately
+  /// disagrees with [completedCourseIds], which does require `passed`.
+  ///
+  /// [courseProgress] calls this for the header of its grid, so the ring and
+  /// the take-course bar cannot drift apart.
   Future<int> getCurrentProgress(
     List<CourseStepRow> steps,
     String? userId,
@@ -631,21 +686,75 @@ class ProgressRepository {
   }
 }
 
-/// One step's worth of progress, for the course-progress grid.
-class CourseStepProgress {
-  const CourseStepProgress({
-    required this.step,
-    required this.progress,
-    required this.questionCount,
-    required this.totalMistakes,
+/// Port of `model/CourseProgressData.kt` — everything
+/// `CourseProgressActivity.updateUI` binds.
+///
+/// The Kotlin carries [steps] as a `JsonArray` of loosely-typed objects whose
+/// *absent* keys are load-bearing (`item.has("percentage")` selects the cell's
+/// colour); [CourseStepProgress] makes that a nullable field instead.
+class CourseProgressData {
+  const CourseProgressData({
+    required this.title,
+    required this.current,
+    required this.max,
+    required this.steps,
   });
 
-  final CourseStepRow step;
-  final CourseProgressRow? progress;
-  final int questionCount;
-  final int totalMistakes;
+  final String? title;
 
-  bool get passed => progress?.passed ?? false;
+  /// The contiguous run of opened steps, from `getCurrentProgress`.
+  final int current;
+
+  /// The course's step count.
+  final int max;
+
+  final List<CourseStepProgress> steps;
+
+  /// The ring's value, as `CourseProgressActivity.updateUI` computes it:
+  /// `(current / max * 100).toInt()`, and `0` when [max] is zero rather than
+  /// a division by zero. The `toInt()` truncates — 1 of 3 steps shows 33.
+  int get ringPercent => max == 0 ? 0 : (current / max * 100).truncate();
+}
+
+/// One grid cell: the step it belongs to, and the state
+/// `ProgressGridAdapter.onBindViewHolder` reads.
+///
+/// Three distinguishable states, matching the adapter's branches exactly:
+///
+///  * [percentage] `null` — no exam, or none attempted. Painted in the main
+///    colour with **no text** (the Kotlin's `else` branch never touches
+///    `tvProgress`).
+///  * [percentage] set and [completed] true — green.
+///  * [percentage] set and [completed] false — yellow.
+class CourseStepProgress {
+  const CourseStepProgress({
+    required this.stepId,
+    required this.percentage,
+    required this.completed,
+  });
+
+  final String stepId;
+
+  /// The share of the step exam's questions answered, `null` when the Kotlin
+  /// JsonObject would carry no `percentage` key. A `num`, not a `double`,
+  /// because the zero-question branch writes an integer — see
+  /// [percentageLabel].
+  final num? percentage;
+
+  /// Whether every question of the step's exam has an answer. `null` in
+  /// lockstep with [percentage]: the Kotlin writes both keys or neither.
+  final bool? completed;
+
+  /// What `R.string.percentage` ("%s%%") is fed —
+  /// `item["percentage"].asString`, i.e. Gson's `getAsNumber().toString()`.
+  ///
+  /// Reproduced rather than tidied: a Double stringifies with its fractional
+  /// part, so a fully answered exam reads "100.0%" and two of three
+  /// "66.66666666666666%" in the shipping app. Dart's `double.toString()` is
+  /// the same shortest-round-trip algorithm as Java's `Double.toString`, and
+  /// the integer `0` of the zero-question branch prints "0". Rounding here
+  /// would make the port show numbers the Kotlin never shows.
+  String? get percentageLabel => percentage?.toString();
 }
 
 /// The list-view progress summary for one course: [max] is its step count,
