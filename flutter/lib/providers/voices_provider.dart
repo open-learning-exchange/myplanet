@@ -12,6 +12,22 @@ import 'sync_state.dart';
 
 final voiceSearchProvider = StateProvider<String>((ref) => '');
 
+/// How a `viewIn` entry names the viewer: `"<planetCode>@<parentCode>"`.
+///
+/// Port of `VoicesFragment.getUserIdentifier()` (`:157-165`), and the same
+/// string `shareToCommunity` writes into the entry it creates — which is the
+/// point. This was `user.couchId ?? user.id`, the CouchDB *user* id, so the
+/// port's reader and its own writer disagreed about the key and no shared post
+/// could ever reach the feed. The comment that justified it said `viewIn`
+/// entries carry server ids; they do, but a planet's, not a user's.
+///
+/// A blank half is kept rather than trimmed: `isVisibleToUser` treats an empty
+/// or `"@"` id as the planet-wide wildcard on both sides.
+String communityViewerIdentifier({
+  required String? planetCode,
+  required String? parentCode,
+}) => '${planetCode ?? ''}@${parentCode ?? ''}';
+
 /// The community feed for the signed-in user.
 ///
 /// Visibility depends on who is asking — `isVisibleToUser` matches the viewer
@@ -26,11 +42,11 @@ final communityFeedProvider = StreamProvider<List<NewsRow>>((ref) async* {
   final query = ref.watch(voiceSearchProvider).trim().toLowerCase();
   final repository = ref.watch(voicesRepositoryProvider);
 
-  // The feed is matched against the user's CouchDB `_id` when there is one:
-  // `viewIn` entries carry server ids, so filtering by the local row id would
-  // hide every shared post.
   await for (final rows in repository.watchCommunityFeed(
-    user.couchId ?? user.id,
+    communityViewerIdentifier(
+      planetCode: user.planetCode,
+      parentCode: user.parentCode,
+    ),
   )) {
     if (query.isEmpty) {
       yield rows;

@@ -80,7 +80,18 @@ UserRow _user({String id = 'user-1', String name = 'ada'}) => UserRow(
 
 /// Every entry `buildPages` puts behind the `isMyTeam || isPublic` branch.
 /// `Members` is deliberately absent: Kotlin shows it on both sides.
-const _gatedEntries = ['Tasks', 'Team Calendar', 'Team surveys', 'Discussions'];
+///
+/// `Leaderboard` has no Kotlin counterpart — it comes from the unmerged `14880`
+/// branch — but it belongs here for the port's own reason: `watchMembers` has
+/// no viewer predicate, so the board is a private team's roster with each
+/// member's counts beside it.
+const _gatedEntries = [
+  'Tasks',
+  'Team Calendar',
+  'Team surveys',
+  'Discussions',
+  'Leaderboard',
+];
 
 void main() {
   late _MockTeamMembershipActions actions;
