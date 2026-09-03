@@ -6,7 +6,7 @@ import androidx.room.Entity
     tableName = "rating_prompt",
     primaryKeys = ["userId", "item", "type"]
 )
-data class RatingPrompt(
+data class RatingPromptLog(
     val userId: String,
     val item: String,
     val type: String = "resource",

@@ -8,7 +8,7 @@ import javax.inject.Inject
 import kotlin.math.roundToInt
 import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.model.Rating
-import org.ole.planet.myplanet.model.RatingPrompt
+import org.ole.planet.myplanet.model.RatingPromptLog
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.JsonUtils
 
@@ -45,7 +45,7 @@ class RatingsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun setRatingPrompted(userId: String, resourceId: String) {
-        ratingDao.setRatingPrompted(RatingPrompt(userId = userId, item = resourceId, type = "resource"))
+        ratingDao.setRatingPrompted(RatingPromptLog(userId = userId, item = resourceId, type = "resource"))
     }
 
     override suspend fun getRatingSummary(

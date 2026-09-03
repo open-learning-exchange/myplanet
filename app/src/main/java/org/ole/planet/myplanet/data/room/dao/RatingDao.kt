@@ -6,7 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import org.ole.planet.myplanet.model.Rating
-import org.ole.planet.myplanet.model.RatingPrompt
+import org.ole.planet.myplanet.model.RatingPromptLog
 
 @Dao
 interface RatingDao {
@@ -43,5 +43,5 @@ interface RatingDao {
     suspend fun isRatingPrompted(userId: String, item: String, type: String = "resource"): Boolean
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun setRatingPrompted(prompt: RatingPrompt)
+    suspend fun setRatingPrompted(prompt: RatingPromptLog)
 }
