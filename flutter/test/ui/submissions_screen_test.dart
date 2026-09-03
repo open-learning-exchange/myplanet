@@ -204,10 +204,15 @@ void main() {
   testWidgets('renders submission details from the offline cache', (
     tester,
   ) async {
+    // `user` is JSON text on every write path — `gson.toJson(userJson)` on the
+    // pull, `jsonEncode` on each local write — and the screen reads the `name`
+    // out of it (`getNormalizedSubmitterName`). A bare `'Ada Learner'` here was
+    // a shape no writer produces, which is how the screen printing the whole
+    // column went unnoticed.
     final row = SubmissionRow(
       id: 'submission-2',
       type: 'exam',
-      user: 'Ada Learner',
+      user: '{"_id":"org.couchdb.user:ada","name":"Ada Learner"}',
       startTime: 0,
       lastUpdateTime: 0,
       grade: 92,

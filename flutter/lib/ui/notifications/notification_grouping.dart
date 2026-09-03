@@ -1,5 +1,6 @@
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
+import '../../repository/notifications_repository.dart';
 
 /// Port of the grouping model added to
 /// `ui/notifications/NotificationsViewModel.kt` (commit 8f4d06d5d).
@@ -57,18 +58,6 @@ class NotificationEntryItem extends NotificationListItem {
   int get hashCode => notification.hashCode;
 }
 
-/// The seven types the Kotlin groups explicitly; everything else normalizes
-/// to `notification`.
-const knownNotificationTypes = <String>{
-  'join_request',
-  'team_join',
-  'task',
-  'chat',
-  'voice_reply',
-  'resource',
-  'storage',
-};
-
 /// The Kotlin's fixed group order; unknown types follow in their insertion
 /// order.
 const notificationTypeOrder = <String>[
@@ -81,20 +70,28 @@ const notificationTypeOrder = <String>[
   'storage',
 ];
 
-/// Normalizes a stored `type` the way `buildGroupedList`'s `groupBy` does: a
-/// known type keeps its (lower-cased) value, anything else becomes
-/// `notification`.
+/// Normalizes a **resolved** `type` the way `buildNotificationGroups`'s
+/// `groupBy` does: a known type keeps its (lower-cased) value, anything else
+/// becomes `notification`.
+///
+/// Kotlin groups `Notification.type`, which `formatNotification` has already
+/// put through `resolveType` — so this must never be handed a raw server type.
+/// [notificationGroupType] is the entry point that gets that ordering right.
 String normalizeNotificationType(String type) {
   final t = type.toLowerCase();
   return knownNotificationTypes.contains(t) ? t : 'notification';
 }
 
+/// The group a stored row belongs to: resolve the server's raw type first, then
+/// normalize. Grouping the raw type instead put every server notification in
+/// "Other".
+String notificationGroupType(NotificationRow row) =>
+    normalizeNotificationType(resolvedNotificationType(row));
+
 /// The default expansion rule: a group is expanded only when it has unread
 /// items (`isGroupDefaultExpanded`).
 bool groupIsDefaultExpanded(List<NotificationRow> notifications, String type) =>
-    notifications.any(
-      (n) => normalizeNotificationType(n.type) == type && !n.isRead,
-    );
+    notifications.any((n) => notificationGroupType(n) == type && !n.isRead);
 
 /// Builds the grouped list, porting `buildGroupedList`. A group's expansion is
 /// the explicit override if present, otherwise the unread-driven default.
@@ -106,7 +103,7 @@ List<NotificationListItem> buildGroupedList(
   if (notifications.isEmpty) return const [];
   final grouped = <String, List<NotificationRow>>{};
   for (final n in notifications) {
-    (grouped[normalizeNotificationType(n.type)] ??= []).add(n);
+    (grouped[notificationGroupType(n)] ??= []).add(n);
   }
   final orderedTypes = <String>[
     for (final t in notificationTypeOrder)

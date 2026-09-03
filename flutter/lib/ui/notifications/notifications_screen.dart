@@ -7,6 +7,7 @@ import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/notifications_provider.dart';
+import '../../repository/notifications_repository.dart';
 import '../router.dart';
 import 'notification_destination.dart';
 import 'notification_grouping.dart';
@@ -218,12 +219,14 @@ class _NotificationTile extends ConsumerWidget {
       child: ListTile(
         leading: Badge(
           isLabelVisible: !notification.isRead,
-          child: CircleAvatar(child: Icon(_iconFor(notification.type))),
+          child: CircleAvatar(
+            child: Icon(_iconFor(resolvedNotificationType(notification))),
+          ),
         ),
         title: Text(
           notification.title?.trim().isNotEmpty == true
               ? notification.title!
-              : _titleFor(l10n, notification.type),
+              : _titleFor(l10n, resolvedNotificationType(notification)),
           style: TextStyle(
             fontWeight: notification.isRead
                 ? FontWeight.normal
