@@ -12,9 +12,20 @@ import 'notifications_provider.dart';
 import 'resources_providers.dart';
 import 'surveys_provider.dart';
 import 'sync_state.dart';
+import 'sync_walk_providers.dart';
 import 'teams_provider.dart';
 import 'voices_provider.dart';
 
+/// The order is the order [DashboardSyncNotifier.syncAll] runs them in, and two
+/// positions are load-bearing, matching `SyncManager.startFullSync`:
+///
+/// * [tabletUsers] before [shelf], because a shelf document is keyed by its
+///   owner's CouchDB id and the stamp has to be resolved to the local `users`
+///   row that carries it.
+/// * [shelf] last, because it augments `my_library` and `courses` rows that
+///   [resources] and [courses] write — and prune — earlier in the same pass.
+///   Kotlin runs it as phase 3, after the whole parallel set and the resources
+///   pull, for the same reason.
 enum DashboardSyncArea {
   resources,
   courses,
@@ -27,6 +38,11 @@ enum DashboardSyncArea {
   health,
   activities,
   notifications,
+  tabletUsers,
+  ratings,
+  tasks,
+  achievements,
+  shelf,
 }
 
 enum DashboardSyncStatus { waiting, running, succeeded, failed }
@@ -254,6 +270,15 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
         ref.read(activitiesSyncProvider.notifier).sync(),
       DashboardSyncArea.notifications =>
         ref.read(notificationsSyncProvider.notifier).sync(),
+      DashboardSyncArea.tabletUsers =>
+        ref.read(tabletUsersSyncProvider.notifier).sync(),
+      DashboardSyncArea.ratings =>
+        ref.read(ratingsSyncProvider.notifier).sync(),
+      DashboardSyncArea.tasks =>
+        ref.read(teamTasksSyncProvider.notifier).sync(),
+      DashboardSyncArea.achievements =>
+        ref.read(achievementsSyncProvider.notifier).sync(),
+      DashboardSyncArea.shelf => ref.read(shelfSyncProvider.notifier).sync(),
     };
 
     final result = switch (area) {
@@ -268,6 +293,11 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
       DashboardSyncArea.health => ref.read(healthSyncProvider),
       DashboardSyncArea.activities => ref.read(activitiesSyncProvider),
       DashboardSyncArea.notifications => ref.read(notificationsSyncProvider),
+      DashboardSyncArea.tabletUsers => ref.read(tabletUsersSyncProvider),
+      DashboardSyncArea.ratings => ref.read(ratingsSyncProvider),
+      DashboardSyncArea.tasks => ref.read(teamTasksSyncProvider),
+      DashboardSyncArea.achievements => ref.read(achievementsSyncProvider),
+      DashboardSyncArea.shelf => ref.read(shelfSyncProvider),
     };
 
     _replace(

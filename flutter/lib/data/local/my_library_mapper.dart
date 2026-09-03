@@ -16,6 +16,25 @@ class MyLibraryMapper {
   /// Mirrors the `titleNormal` computation. Used for accent-insensitive search.
   static String normalizeTitle(String title) => text.normalizeText(title);
 
+  /// Port of `MyLibrary.setUserId` — shelf membership is a union, so pulling a
+  /// second user's shelf does not evict the first, and a walk that knows
+  /// nothing about membership (`shelfId == null`) leaves the stored list
+  /// alone. Blank entries already persisted in the row are dropped on the way
+  /// through: `setUserId` returns early on a blank id, so `[""]` is a value the
+  /// Kotlin can never write, and it is the one value that fails the My Library
+  /// predicate *and* passes the catalog one.
+  ///
+  /// The same shape as `CourseMapper.mergeUserIds`; kept separate rather than
+  /// shared because the two mappers already carry their own copies of the
+  /// Kotlin's per-model merge and neither imports the other.
+  static List<String> mergeUserIds(List<String> existing, String? shelfId) {
+    final kept = existing.where((id) => id.isNotEmpty);
+    if (shelfId == null || shelfId.isEmpty) {
+      return {...kept}.toList(growable: false);
+    }
+    return {...kept, shelfId}.toList(growable: false);
+  }
+
   /// Returns `null` for an empty document or a `_design/*` doc, matching the
   /// filter in `ResourcesRepositoryImpl.batchInsertResources`.
   static MyLibraryTableCompanion? fromDoc(
@@ -27,6 +46,7 @@ class MyLibraryMapper {
     List<String> existingLevel = const [],
     List<String> existingTag = const [],
     List<String> existingLanguages = const [],
+    String? shelfId,
   }) {
     if (doc.isEmpty) return null;
 
@@ -69,7 +89,7 @@ class MyLibraryMapper {
       timesRated: Value(JsonUtils.getInt('timesRated', doc)),
       resourceRemoteAddress: Value(attachment?.remoteAddress),
       resourceLocalAddress: Value(attachment?.localAddress),
-      userId: Value(existingUserIds),
+      userId: Value(mergeUserIds(existingUserIds, shelfId)),
       resourceFor: Value(
         _mergedList(
           existingResourceFor,

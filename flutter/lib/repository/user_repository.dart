@@ -1,9 +1,12 @@
+import 'package:drift/drift.dart';
 import 'package:meta/meta.dart';
 
 import '../core/config/server_config.dart';
 import '../core/crypto/android_decrypter.dart';
 import '../core/crypto/health_cipher.dart';
 import '../core/network/network_result.dart';
+import '../core/sync/sync_result.dart';
+import '../core/sync/table_walk.dart';
 import '../core/utils/json_utils.dart';
 import '../core/utils/text_utils.dart';
 import '../core/utils/url_utils.dart';
@@ -172,6 +175,164 @@ class UserRepository {
     await _userDao.upsert(companion);
     return _userDao.getById(companion.id.value);
   }
+
+  /// Page size for the `tablet_users` walk. `TransactionSyncManager.syncDb`
+  /// uses its 1000-document default for this table; the port starts smaller and
+  /// lets `AdaptiveBatchProcessor` grow it, because a `_users` document can
+  /// carry a base64 profile photo in `_attachments` and a thousand of those in
+  /// one response is a large body on a weak link.
+  static const int tabletUsersBatchSize = 100;
+
+  /// Port of the `"tablet_users"` arm of `TransactionSyncManager.syncDb`
+  /// (`services/sync/TransactionSyncManager.kt:230-232`), which the Kotlin runs
+  /// in phase 1 of every full sync.
+  ///
+  /// Without it the `users` table holds only accounts that have signed in on
+  /// this device, so member detail says "Unknown member" for everyone else, the
+  /// team leaderboard silently drops every member it cannot resolve, and the
+  /// team member list falls back to rendering `org.couchdb.user:bob`.
+  ///
+  /// **Never prunes.** The Kotlin's walk issues no delete of any kind, and it
+  /// could not: this table also holds accounts registered offline that have
+  /// never reached the server, and the session itself is restored by looking
+  /// the signed-in user up here. A `deleteNotIn` would sign the user out.
+  Future<SyncResult> syncTabletUsers({
+    required ServerConfig config,
+    void Function(SyncProgress)? onProgress,
+  }) => walkAllDocs(
+    api: _api,
+    config: config,
+    table: 'tablet_users',
+    initialBatchSize: tabletUsersBatchSize,
+    onProgress: onProgress,
+    insert: insertUsersFromSync,
+  );
+
+  /// Port of `UserRepositoryImpl.insertUsersFromSync`
+  /// (`UserRepositoryImpl.kt:1061-1147`).
+  ///
+  /// Two things beyond a plain upsert, both the Kotlin's:
+  ///
+  /// * **Existing rows are resolved by either identity column** before mapping,
+  ///   so a member registered on this device keeps their locally-minted `id`
+  ///   and their `key`/`iv` rather than gaining a second row keyed by the
+  ///   CouchDB `_id`. [UserMapper.fromDoc] does the rest — every column a
+  ///   `_users` document does not carry is left `Value.absent()`, so the walk
+  ///   cannot overwrite it.
+  /// * **A guest is adopted, not duplicated.** When a document keyed
+  ///   `org.couchdb.user:<name>` has no row of its own but a guest row carries
+  ///   that name, the Kotlin re-keys the guest to the new id and deletes the
+  ///   old row. The port has to rebuild the row rather than mutate it, so the
+  ///   device-only columns are carried across by hand — dropping `key`/`iv`
+  ///   here would make anything already encrypted with them unreadable.
+  Future<int> insertUsersFromSync(List<Map<String, dynamic>> docs) async {
+    if (docs.isEmpty) return 0;
+
+    final ids = <String>{};
+    final names = <String>{};
+    for (final doc in docs) {
+      final id = JsonUtils.getString('_id', doc);
+      if (id.isNotEmpty) ids.add(id);
+      final name = JsonUtils.getString('name', doc);
+      if (name.isNotEmpty) names.add(name);
+    }
+
+    final found = [
+      ...await _userDao.getByAnyIds(ids.toList(growable: false)),
+      ...await _userDao.getGuestUsersByNames(names.toList(growable: false)),
+    ];
+
+    // Kotlin's `distinctBy { it.id }` — the two reads above overlap for a guest
+    // whose name is also one of the ids.
+    final usersById = <String, UserRow>{};
+    final guestsByName = <String, UserRow>{};
+    final seen = <String>{};
+    for (final user in found) {
+      if (!seen.add(user.id)) continue;
+      usersById[user.id] = user;
+      final couchId = user.couchId;
+      if (couchId != null) usersById[couchId] = user;
+      if ((user.name ?? '').isNotEmpty && _isGuest(couchId)) {
+        guestsByName[user.name!] = user;
+      }
+    }
+
+    final toDelete = <String>{};
+    final toUpsert = <String, UsersCompanion>{};
+
+    for (final doc in docs) {
+      final couchId = JsonUtils.getString('_id', doc);
+      final name = JsonUtils.getString('name', doc);
+      final existing = usersById[couchId];
+      final guest =
+          (existing == null &&
+              couchId.startsWith('org.couchdb.user:') &&
+              name.isNotEmpty)
+          ? guestsByName[name]
+          : null;
+
+      // One call site, and `existing:` is always passed — the mapper-preservation
+      // guard (`test/data/local/mapper_preserves_local_columns_test.dart`) is
+      // right to insist: every column a `_users` document does not carry is
+      // `Value.absent()` only because `existing` reached the mapper.
+      var companion = UserMapper.fromDoc(doc, existing: existing ?? guest);
+
+      if (guest != null) {
+        // Re-key the guest onto the account that has just appeared
+        // server-side, exactly as `applyJsonToUser` does after
+        // `this.id = id; this._id = id`.
+        companion = _adoptGuest(companion, guest, couchId);
+        toDelete.add(guest.id);
+        if ((guest.name ?? '').isNotEmpty) guestsByName.remove(guest.name);
+        usersById.remove(guest.id);
+        final guestCouchId = guest.couchId;
+        if (guestCouchId != null) usersById.remove(guestCouchId);
+      }
+
+      final rowId = companion.id.value;
+      // A guest that has just been re-keyed must not be deleted again by a
+      // later document on the same page.
+      toDelete.remove(rowId);
+      toUpsert[rowId] = companion;
+    }
+
+    if (toDelete.isNotEmpty) {
+      await _userDao.deleteByIds(toDelete.toList(growable: false));
+    }
+    await _userDao.upsertAll(toUpsert.values.toList(growable: false));
+    return toUpsert.length;
+  }
+
+  static bool _isGuest(String? couchId) =>
+      couchId?.startsWith(UserMapper.guestIdPrefix) ?? false;
+
+  /// Carries a guest row's device-only columns onto the companion that will
+  /// replace it under the server's id.
+  ///
+  /// [UserMapper.fromDoc] leaves these `Value.absent()` because a `_users`
+  /// document does not carry them, and absent means "keep what is stored" —
+  /// but the adopted row is stored under a *different* key, so there is
+  /// nothing to keep and each column would silently take its default.
+  static UsersCompanion _adoptGuest(
+    UsersCompanion mapped,
+    UserRow guest,
+    String newId,
+  ) => mapped.copyWith(
+    // [UserMapper.fromDoc] keys the companion on `existing.id`, which here
+    // is still `guest_<name>`. The Kotlin assigns `this.id = id` *before*
+    // calling `applyJsonToUser` (`UserRepositoryImpl.kt:1126-1131`), so the
+    // adopted row is written under the server's id and the guest row is
+    // deleted. Leaving the guest key in place would update the guest in
+    // situ and leave the account still unresolvable by its CouchDB id.
+    id: Value(newId),
+    key: Value(guest.key),
+    iv: Value(guest.iv),
+    password: mapped.password.present ? mapped.password : Value(guest.password),
+    userImage: mapped.userImage.present
+        ? mapped.userImage
+        : Value(guest.userImage),
+    isUpdated: Value(guest.isUpdated),
+  );
 
   /// Port of `UserRepositoryImpl.authenticateUser`.
   ///

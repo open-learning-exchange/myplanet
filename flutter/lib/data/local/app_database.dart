@@ -439,9 +439,22 @@ class TeamTaskDao extends DatabaseAccessor<AppDatabase>
     with _$TeamTaskDaoMixin {
   TeamTaskDao(super.db);
 
+  /// Port of `TeamTaskDao.getByTeamId`:
+  /// `WHERE teamId = :teamId AND (status IS NULL OR status != 'archived')`.
+  ///
+  /// **Not `status = 'active'`**, which is what this was. `TeamTask.serialize`
+  /// emits no `status` field at all, so `TeamTask.fromJson` reads the missing
+  /// key as `""` and every task the server sends arrives with an empty status.
+  /// Under the old predicate the `tasks` walk could land a full page of rows
+  /// and the screen would still be empty — the walk working and the list
+  /// blank. The column is non-nullable here (default `'active'`), so the
+  /// Kotlin's `IS NULL` arm has nothing to match and is dropped.
   Stream<List<TeamTaskRow>> watchForTeam(String teamId) =>
       (select(teamTasks)
-            ..where((t) => t.teamId.equals(teamId) & t.status.equals('active'))
+            ..where(
+              (t) =>
+                  t.teamId.equals(teamId) & t.status.equals('archived').not(),
+            )
             ..orderBy([
               (t) => OrderingTerm.asc(t.completed),
               (t) => OrderingTerm.asc(t.deadline),
@@ -455,6 +468,23 @@ class TeamTaskDao extends DatabaseAccessor<AppDatabase>
       batch((b) => b.insertAllOnConflictUpdate(teamTasks, rows));
   Future<List<TeamTaskRow>> pending() =>
       (select(teamTasks)..where((t) => t.isUpdated.equals(true))).get();
+
+  /// The local rows for a page of server documents, keyed by whichever column
+  /// carries the CouchDB id.
+  ///
+  /// A task created in this app keeps its locally-minted `task-<micros>` id
+  /// for life — `markUploaded` fills in `_id`/`_rev` and leaves `id` alone —
+  /// so a sync-in keyed on the document `_id` (which is what `TeamTask.fromJson`
+  /// does: `task.id = _id`) would insert a *second* row for a task the device
+  /// already has. Resolving through `_id` first lets the walk update the row
+  /// that exists.
+  Future<List<TeamTaskRow>> getByAnyIds(List<String> ids) async {
+    if (ids.isEmpty) return const [];
+    return (select(
+      teamTasks,
+    )..where((t) => t.id.isIn(ids) | t.docId.isIn(ids))).get();
+  }
+
   Future<void> markUploaded(String id, String docId, String rev) =>
       (update(teamTasks)..where((t) => t.id.equals(id))).write(
         TeamTasksCompanion(
@@ -462,6 +492,14 @@ class TeamTaskDao extends DatabaseAccessor<AppDatabase>
           rev: Value(rev),
           isUpdated: const Value(false),
         ),
+      );
+
+  /// Stamps the CouchDB id and rev onto a task the user has edited but not yet
+  /// uploaded, without disturbing the edit or the flag that carries it. An
+  /// UPDATE rather than an upsert, for the same reason [OutboxDao.patch] is.
+  Future<int> recordServerIdentity(String id, String docId, String? rev) =>
+      (update(teamTasks)..where((t) => t.id.equals(id))).write(
+        TeamTasksCompanion(docId: Value(docId), rev: Value(rev)),
       );
   Future<void> deleteById(String id) =>
       (delete(teamTasks)..where((t) => t.id.equals(id))).go();
@@ -872,6 +910,56 @@ class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
                 u.isUpdated.equals(true),
           ))
           .get();
+
+  /// Port of `UserDao.getUsersByAnyIds` — the batched form of [getById] the
+  /// `tablet_users` walk uses so a page of 1000 documents costs one read
+  /// rather than a thousand. Matches either identity column, as [getById]
+  /// does, because a member registered on this device keeps a locally-minted
+  /// `id` and carries the server's key in `couchId`.
+  Future<List<UserRow>> getByAnyIds(List<String> ids) async {
+    if (ids.isEmpty) return const [];
+    return (select(
+      users,
+    )..where((u) => u.id.isIn(ids) | u.couchId.isIn(ids))).get();
+  }
+
+  /// Port of `UserDao.getGuestUsersByNames` — the guest rows a
+  /// `tablet_users` page might be about to adopt. A guest is keyed
+  /// `guest_<username>` in `couchId` (`UserMapper.guestIdPrefix`), so the
+  /// prefix is what distinguishes one from a real account with the same name.
+  Future<List<UserRow>> getGuestUsersByNames(List<String> names) async {
+    if (names.isEmpty) return const [];
+    final matches = await (select(
+      users,
+    )..where((u) => u.name.isIn(names))).get();
+    // The prefix test is in Dart, not SQL: `LIKE 'guest_%'` would treat the
+    // underscore as a single-character wildcard and match `guestX…` too.
+    return [
+      for (final user in matches)
+        if (user.couchId?.startsWith('guest_') ?? false) user,
+    ];
+  }
+
+  /// Batched upsert for the `tablet_users` walk.
+  ///
+  /// Every companion comes from [UserMapper.fromDoc], which leaves the columns
+  /// a `_users` document does not carry — `key`, `iv`, `isUpdated`, and a
+  /// `userImage` holding a not-yet-uploaded local path — as `Value.absent()`.
+  /// Drift's `insertAllOnConflictUpdate` writes only the present columns, so
+  /// the walk cannot erase them. Losing `key`/`iv` would make every health
+  /// record already encrypted with them permanently unreadable.
+  Future<void> upsertAll(List<UsersCompanion> rows) async {
+    if (rows.isEmpty) return;
+    await batch((b) => b.insertAllOnConflictUpdate(users, rows));
+  }
+
+  /// Port of `UserDao.deleteByIds`, used only by the guest migration in the
+  /// `tablet_users` walk: a guest row is re-keyed to the account that has just
+  /// appeared server-side, and its old row has to go with it.
+  Future<void> deleteByIds(List<String> ids) async {
+    if (ids.isEmpty) return;
+    await (delete(users)..where((u) => u.id.isIn(ids))).go();
+  }
 
   /// Port of `UserRepositoryImpl.markUserUploaded` / `markUserRevUpdated` —
   /// records the server-assigned id/rev and clears the dirty flag so the row
@@ -1723,6 +1811,41 @@ class RatingDao extends DatabaseAccessor<AppDatabase> with _$RatingDaoMixin {
 
   Future<RatingRow?> findById(String id) =>
       (select(ratings)..where((row) => row.id.equals(id))).getSingleOrNull();
+
+  /// The local rows a page of `ratings` documents might already be about.
+  ///
+  /// Two lookups because a rating has two identities. A rating submitted on
+  /// this device is keyed by a locally-minted id and has no `_id` until a walk
+  /// supplies one, so the server's copy of it is found by `(type, item,
+  /// userId)`; a rating already synced once is found by its CouchDB id.
+  /// Without the first, the walk would insert a duplicate row alongside the
+  /// user's own and the average would count their rating twice.
+  Future<List<RatingRow>> getByCouchIds(List<String> ids) async {
+    if (ids.isEmpty) return const [];
+    return (select(
+      ratings,
+    )..where((row) => row.id.isIn(ids) | row.couchId.isIn(ids))).get();
+  }
+
+  /// Every rating this device authored that has not been given a CouchDB id
+  /// yet — the candidates for the `(type, item, userId)` match above.
+  Future<List<RatingRow>> unsyncedLocalRatings() => (select(
+    ratings,
+  )..where((row) => row.couchId.isNull() | row.couchId.equals(''))).get();
+
+  Future<void> upsertAll(List<RatingsCompanion> rows) async {
+    if (rows.isEmpty) return;
+    await batch((b) => b.insertAllOnConflictUpdate(ratings, rows));
+  }
+
+  /// Stamps the CouchDB id and rev onto a row without touching the rating the
+  /// user is still waiting to upload. An UPDATE rather than an upsert, because
+  /// `insertOnConflictUpdate` validates its companion against the insert path
+  /// and would reject one that carries only the identity columns.
+  Future<int> recordServerIdentity(String id, String couchId, String? rev) =>
+      (update(ratings)..where((row) => row.id.equals(id))).write(
+        RatingsCompanion(couchId: Value(couchId), rev: Value(rev)),
+      );
 }
 
 /// Port of `data/room/dao/RetryDao.kt`, backing [OutboxEntries].
@@ -3789,10 +3912,26 @@ class AchievementDao extends DatabaseAccessor<AppDatabase>
         ),
       );
 
+  /// The local rows a page of `achievements` documents is about, so the walk
+  /// can tell a ledger the user has edited but not yet uploaded from one it is
+  /// merely refreshing.
+  Future<List<AchievementRow>> getByIds(List<String> ids) async {
+    if (ids.isEmpty) return const [];
+    return (select(achievements)..where((a) => a.id.isIn(ids))).get();
+  }
+
   /// Port of the `bulkInsertAchievementsFromSync` upsert — a server document
   /// adopts its CouchDB id.
   Future<void> insertDocs(List<AchievementsCompanion> rows) =>
       batch((b) => b.insertAllOnConflictUpdate(achievements, rows));
+
+  /// Stamps the server `_rev` onto a ledger the user has edited but not
+  /// uploaded, leaving the edit and its pending flag alone. An UPDATE rather
+  /// than an upsert, for the same reason [OutboxDao.patch] is.
+  Future<int> recordServerRev(String id, String rev) =>
+      (update(achievements)..where((a) => a.id.equals(id))).write(
+        AchievementsCompanion(couchId: Value(id), rev: Value(rev)),
+      );
 }
 
 /// Port of `data/room/dao/UserChallengeActionsDao.kt`. One row per challenge

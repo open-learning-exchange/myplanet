@@ -1447,5 +1447,11 @@
   "resourceTitleAlreadyExists": "A resource with this title already exists",
   "failedToUpdateResource": "Failed to update resource",
   "thankYouForTakingExam": "Thank you for taking this exam! We wish you all the best.",
-  "pleaseAnswerToContinue": "Please select / write your answer to continue"
+  "pleaseAnswerToContinue": "Please select / write your answer to continue",
+  "ratings": "Ratings",
+  "syncShelfDescription": "Refresh which resources and courses are on each member's shelf",
+  "syncMembersDescription": "Refresh the member accounts registered on this planet",
+  "syncRatingsDescription": "Refresh community ratings for resources and courses",
+  "syncTasksDescription": "Refresh team tasks created on the server",
+  "syncAchievementsDescription": "Refresh achievement records and downloaded CVs"
 }

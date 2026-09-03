@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/repository/team_tasks_repository.dart';
+import '../support/mock_planet_api.dart';
 
 void main() {
   late AppDatabase database;
@@ -8,6 +9,7 @@ void main() {
   setUp(() {
     database = AppDatabase.memory();
     repository = TeamTasksRepository(
+      MockPlanetApi(),
       database.teamTaskDao,
       now: () => DateTime.fromMillisecondsSinceEpoch(500),
       createId: () => 'local-task',

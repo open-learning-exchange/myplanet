@@ -15,6 +15,7 @@ import 'package:myplanet/repository/ratings_repository.dart';
 import 'package:myplanet/ui/courses/take_course_screen.dart';
 
 import '../../support/widget_harness.dart';
+import '../../support/mock_planet_api.dart';
 
 /// Mirrors the test-session notifier in `session_provider_test.dart`: returns a
 /// fixed user (or none) without touching the database or prefs, so the
@@ -179,7 +180,7 @@ void main() {
     );
 
     // Seed an existing course rating for the signed-in user.
-    await RatingsRepository(db.ratingDao).submit(
+    await RatingsRepository(MockPlanetApi(), db.ratingDao).submit(
       type: 'course',
       itemId: 'course-1',
       title: 'Algebra',

@@ -44,6 +44,7 @@ import '../repository/life_repository.dart';
 import '../repository/resource_downloader.dart';
 import '../repository/resources_repository.dart';
 import '../repository/shelf_repository.dart';
+import '../repository/shelf_sync_repository.dart';
 import '../repository/myplanet_activities_uploader.dart';
 import '../repository/user_repository.dart';
 import '../repository/voices_repository.dart';
@@ -143,7 +144,10 @@ final teamTaskDaoProvider = Provider<TeamTaskDao>(
   (ref) => ref.watch(appDatabaseProvider).teamTaskDao,
 );
 final teamTasksRepositoryProvider = Provider<TeamTasksRepository>(
-  (ref) => TeamTasksRepository(ref.watch(teamTaskDaoProvider)),
+  (ref) => TeamTasksRepository(
+    ref.watch(planetApiProvider),
+    ref.watch(teamTaskDaoProvider),
+  ),
 );
 final teamTasksUploaderProvider = Provider<TeamTasksUploader>(
   (ref) => TeamTasksUploader(
@@ -205,7 +209,10 @@ final userChallengeActionDaoProvider = Provider<UserChallengeActionDao>(
 );
 
 final achievementsRepositoryProvider = Provider<AchievementsRepository>(
-  (ref) => AchievementsRepository(ref.watch(achievementDaoProvider)),
+  (ref) => AchievementsRepository(
+    ref.watch(planetApiProvider),
+    ref.watch(achievementDaoProvider),
+  ),
 );
 
 final achievementsUploaderProvider = Provider<AchievementsUploader>(
@@ -551,7 +558,10 @@ final personalsRepositoryProvider = Provider<PersonalsRepository>(
 );
 
 final ratingsRepositoryProvider = Provider<RatingsRepository>(
-  (ref) => RatingsRepository(ref.watch(ratingDaoProvider)),
+  (ref) => RatingsRepository(
+    ref.watch(planetApiProvider),
+    ref.watch(ratingDaoProvider),
+  ),
 );
 
 final coursesRepositoryProvider = Provider<CoursesRepository>(
@@ -647,6 +657,19 @@ final outboxDrainerProvider = Provider<OutboxDrainer>((ref) {
 /// Number of writes waiting to reach the server, for the UI to surface.
 final pendingUploadCountProvider = StreamProvider<int>(
   (ref) => ref.watch(outboxRepositoryProvider).watchPendingCount(),
+);
+
+/// The sync-in half of the shelf, added in Phase 119. Separate from
+/// [shelfRepositoryProvider] — and from `shelf_repository.dart` — because the
+/// pull needs the resource and course mappers, which import the shelf file for
+/// its `coursesType`/`resourcesType` constants.
+final shelfSyncRepositoryProvider = Provider<ShelfSyncRepository>(
+  (ref) => ShelfSyncRepository(
+    ref.watch(planetApiProvider),
+    ref.watch(myLibraryDaoProvider),
+    ref.watch(courseDaoProvider),
+    ref.watch(userDaoProvider),
+  ),
 );
 
 final shelfRepositoryProvider = Provider<ShelfRepository>(

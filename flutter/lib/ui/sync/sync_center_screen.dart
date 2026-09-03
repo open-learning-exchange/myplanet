@@ -227,4 +227,29 @@ class _SyncAreaTile extends StatelessWidget {
     description: l10n.syncNotificationsDescription,
     icon: Icons.notifications_outlined,
   ),
+  DashboardSyncArea.tabletUsers => (
+    label: l10n.members,
+    description: l10n.syncMembersDescription,
+    icon: Icons.people_outline,
+  ),
+  DashboardSyncArea.ratings => (
+    label: l10n.ratings,
+    description: l10n.syncRatingsDescription,
+    icon: Icons.star_outline,
+  ),
+  DashboardSyncArea.tasks => (
+    label: l10n.teamTasks,
+    description: l10n.syncTasksDescription,
+    icon: Icons.checklist_outlined,
+  ),
+  DashboardSyncArea.achievements => (
+    label: l10n.achievements,
+    description: l10n.syncAchievementsDescription,
+    icon: Icons.emoji_events_outlined,
+  ),
+  DashboardSyncArea.shelf => (
+    label: l10n.myLibrary,
+    description: l10n.syncShelfDescription,
+    icon: Icons.bookmark_outline,
+  ),
 };

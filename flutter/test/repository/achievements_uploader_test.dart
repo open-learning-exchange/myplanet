@@ -31,7 +31,7 @@ void main() {
   setUp(() {
     database = AppDatabase.memory();
     api = MockPlanetApi();
-    repository = AchievementsRepository(database.achievementDao);
+    repository = AchievementsRepository(api, database.achievementDao);
     outbox = OutboxRepository(database.outboxDao);
     uploader = AchievementsUploader(
       api,

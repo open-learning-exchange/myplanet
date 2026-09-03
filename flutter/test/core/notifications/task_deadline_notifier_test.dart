@@ -9,6 +9,7 @@ import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/repository/notifications_repository.dart';
 import 'package:myplanet/repository/team_tasks_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../support/mock_planet_api.dart';
 
 /// Port coverage for `TaskNotificationWorker.doWork`. The whole reason the
 /// policy is a plain Dart class is that the worker's contract — notify once,
@@ -28,7 +29,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     prefs = PlanetPrefs(await SharedPreferences.getInstance());
     db = AppDatabase.memory();
-    tasks = TeamTasksRepository(db.teamTaskDao);
+    tasks = TeamTasksRepository(MockPlanetApi(), db.teamTaskDao);
     notifications = NotificationsRepository(
       db.notificationDao,
       teamNotificationDao: db.teamNotificationDao,

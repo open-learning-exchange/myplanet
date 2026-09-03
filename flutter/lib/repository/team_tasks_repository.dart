@@ -2,12 +2,18 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 
+import '../core/config/server_config.dart';
+import '../core/sync/sync_result.dart';
+import '../core/sync/table_walk.dart';
+import '../core/utils/json_utils.dart';
+import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
 
 /// Port of the task CRUD portion of `TeamsRepositoryImpl.kt` and
 /// `TeamTask.serialize`.
 class TeamTasksRepository {
   TeamTasksRepository(
+    this._api,
     this._dao, {
     DateTime Function()? now,
     String Function()? createId,
@@ -15,6 +21,10 @@ class TeamTasksRepository {
        _createId =
            createId ?? (() => 'task-${DateTime.now().microsecondsSinceEpoch}');
 
+  /// `TransactionSyncManager.syncDb`'s default page size, which `tasks` takes.
+  static const int initialBatchSize = 100;
+
+  final PlanetApi _api;
   final TeamTaskDao _dao;
   final DateTime Function() _now;
   final String Function() _createId;
@@ -42,6 +52,120 @@ class TeamTasksRepository {
     final valid = taskIds.where((id) => id.trim().isNotEmpty).toSet().toList();
     if (valid.isEmpty) return;
     await _dao.markNotified(valid);
+  }
+
+  /// Port of the `"tasks"` arm of `TransactionSyncManager.syncDb` (`:254-256`),
+  /// run in phase 1 of every Kotlin sync.
+  ///
+  /// Without it a task created on Planet web, or by a teammate on another
+  /// handset, never arrives — the table only ever held tasks this device
+  /// authored, so the team tasks screen was a private list.
+  ///
+  /// **Never prunes.** The Kotlin issues no delete here, and `team_tasks` is a
+  /// preserved local-authority table: a task created offline lives only in this
+  /// table until the outbox drains, and it carries a locally-minted id that no
+  /// `_all_docs` keep set contains.
+  Future<SyncResult> sync({
+    required ServerConfig config,
+    void Function(SyncProgress)? onProgress,
+  }) => walkAllDocs(
+    api: _api,
+    config: config,
+    table: 'tasks',
+    initialBatchSize: initialBatchSize,
+    onProgress: onProgress,
+    insert: insertTasksFromSync,
+  );
+
+  /// Port of `TeamsRepositoryImpl.bulkInsertTasksFromSync` + `TeamTask.fromJson`
+  /// (`model/TeamTask.kt:35-54`).
+  ///
+  /// `status` is stored exactly as the document carries it, **including the
+  /// empty string** `fromJson` produces for a document that has none —
+  /// `TeamTask.serialize` emits no `status` field, so that is what a task
+  /// authored by either app actually looks like on the server. The reader is
+  /// `TeamTaskDao.watchForTeam`, which after this phase excludes only
+  /// `'archived'`, matching `TeamTaskDao.getByTeamId`.
+  ///
+  /// `link` and `sync` are dropped: the port has no column for either, and
+  /// [serialize] rebuilds both from `teamId` and the session's planet code the
+  /// way `upsertTask` does for a locally authored row.
+  ///
+  /// Two preservation rules, both about columns the server document cannot
+  /// carry:
+  ///
+  /// * `isNotified` is never written, so a re-pull cannot make the deadline
+  ///   notifier fire a second time for a task the user has already been told
+  ///   about.
+  /// * A row still flagged `isUpdated` takes only the identity columns. Its
+  ///   title, deadline, assignee and completion state are an edit the user made
+  ///   offline that has not reached the server yet; overwriting them with the
+  ///   server's older copy — and clearing the flag, as the Kotlin does — would
+  ///   discard the edit and stop it ever uploading.
+  Future<int> insertTasksFromSync(List<Map<String, dynamic>> docs) async {
+    if (docs.isEmpty) return 0;
+
+    final ids = <String>[
+      for (final doc in docs)
+        if (JsonUtils.getString('_id', doc) case final id when id.isNotEmpty)
+          id,
+    ];
+    final byId = <String, TeamTaskRow>{};
+    for (final row in await _dao.getByAnyIds(ids)) {
+      byId[row.id] = row;
+      final docId = row.docId;
+      if (docId != null && docId.isNotEmpty) byId[docId] = row;
+    }
+
+    final companions = <TeamTasksCompanion>[];
+    final identityPatches = <(String, String, String?)>[];
+
+    for (final doc in docs) {
+      final docId = JsonUtils.getString('_id', doc);
+      if (docId.isEmpty) continue;
+      final existing = byId[docId];
+      final rowId = existing?.id ?? docId;
+
+      if (existing != null && existing.isUpdated) {
+        identityPatches.add((
+          rowId,
+          docId,
+          JsonUtils.getStringOrNull('_rev', doc),
+        ));
+        continue;
+      }
+
+      final link = JsonUtils.getObject('link', doc) ?? const {};
+      final assignee = JsonUtils.getObject('assignee', doc) ?? const {};
+
+      companions.add(
+        TeamTasksCompanion(
+          id: Value(rowId),
+          docId: Value(docId),
+          rev: Value(JsonUtils.getStringOrNull('_rev', doc)),
+          title: Value(JsonUtils.getStringOrNull('title', doc)),
+          description: Value(JsonUtils.getStringOrNull('description', doc)),
+          teamId: Value(JsonUtils.getString('teams', link)),
+          // `if (user.has("_id"))` — an `assignee` serialized as the empty
+          // string for an unassigned task leaves the column alone rather than
+          // writing `""`, which the deadline query would match on.
+          assignee: assignee.containsKey('_id')
+              ? Value(JsonUtils.getStringOrNull('_id', assignee))
+              : const Value.absent(),
+          deadline: Value(JsonUtils.getLong('deadline', doc)),
+          completedTime: Value(JsonUtils.getLong('completedTime', doc)),
+          status: Value(JsonUtils.getString('status', doc)),
+          completed: Value(JsonUtils.getBool('completed', doc)),
+          isUpdated: const Value(false),
+        ),
+      );
+    }
+
+    await _dao.upsertAll(companions);
+    for (final (id, docId, rev) in identityPatches) {
+      await _dao.recordServerIdentity(id, docId, rev);
+    }
+    return companions.length + identityPatches.length;
   }
 
   Future<String?> create({

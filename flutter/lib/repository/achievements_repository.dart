@@ -2,6 +2,13 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 
+import '../core/config/server_config.dart';
+import '../core/files/achievement_files.dart';
+import '../core/network/network_result.dart';
+import '../core/sync/sync_result.dart';
+import '../core/sync/table_walk.dart';
+import '../core/utils/url_utils.dart';
+import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
 
 /// The editable state carried by one update of the achievements ledger.
@@ -42,8 +49,13 @@ class AchievementInput {
 /// JSON columns and the parsed lists is a plain helper here (the Kotlin puts
 /// it on `Achievement` and on Room's `Converters`).
 class AchievementsRepository {
-  AchievementsRepository(this._dao);
+  AchievementsRepository(this._api, this._dao);
 
+  /// `TransactionSyncManager.syncDb`'s default page size, which `achievements`
+  /// takes.
+  static const int initialBatchSize = 100;
+
+  final PlanetApi _api;
   final AchievementDao _dao;
 
   /// Port of the `"${user.id}@${user.planetCode}"` derivation both screens
@@ -167,10 +179,32 @@ class AchievementsRepository {
   /// and upserts the rest; the `isUpdated = false` reset matches the port's
   /// `uploaded = true` for sync-in rows.
   Future<int> syncAchievements(List<Map<String, dynamic>> docs) async {
+    if (docs.isEmpty) return 0;
+    final ids = <String>[
+      for (final doc in docs)
+        if (doc['_id'] case final String id when id.isNotEmpty) id,
+    ];
+    final pending = {
+      for (final row in await _dao.getByIds(ids))
+        if (!row.uploaded) row.id,
+    };
+
     final rows = <AchievementsCompanion>[];
+    final identityPatches = <(String, String)>[];
     for (final doc in docs) {
       final id = doc['_id'];
       if (id is! String || id.startsWith('_design')) continue;
+      // A ledger the user has edited but not yet uploaded takes only the
+      // `_rev`. The Kotlin overwrites the whole row and clears `isUpdated`,
+      // which discards the edit *and* stops it uploading; and since the port's
+      // rows carry no `_rev` until a walk supplies one, the `_rev` is exactly
+      // what the pending upload needs to stop 409-ing into the outbox's
+      // permanent-failure branch. Same shape as the read state Phase 98 had to
+      // preserve.
+      if (pending.contains(id)) {
+        identityPatches.add((id, doc['_rev'] as String? ?? ''));
+        continue;
+      }
       rows.add(
         AchievementsCompanion(
           id: Value(id),
@@ -198,7 +232,82 @@ class AchievementsRepository {
       );
     }
     await _dao.insertDocs(rows);
-    return rows.length;
+    for (final (id, rev) in identityPatches) {
+      await _dao.recordServerRev(id, rev);
+    }
+    return rows.length + identityPatches.length;
+  }
+
+  /// Port of the `"achievements"` arm of `TransactionSyncManager.syncDb`
+  /// (`:260-262`) together with `downloadCvAttachmentsFromBatch` (`:366-383`),
+  /// which the Kotlin runs immediately after each page.
+  ///
+  /// Phase 116 found [syncAchievements] written and never called: a second
+  /// device showed a blank ledger, and saving there POSTed a document with no
+  /// `_rev`, which CouchDB answers 409 — a status `OutboxDrainer` classifies as
+  /// permanent, so the row was abandoned with no snackbar and no log. Both ends
+  /// close together; adding only the upload would have made it worse.
+  ///
+  /// **Never prunes.** The Kotlin issues no delete, and `achievements` is a
+  /// preserved local-authority table whose rows are keyed by a derived
+  /// `"<userId>@<planetCode>"` that exists locally before it exists on the
+  /// server.
+  Future<SyncResult> sync({
+    required ServerConfig config,
+    void Function(SyncProgress)? onProgress,
+  }) => walkAllDocs(
+    api: _api,
+    config: config,
+    table: 'achievements',
+    initialBatchSize: initialBatchSize,
+    onProgress: onProgress,
+    insert: (docs) async {
+      final saved = await syncAchievements(docs);
+      await downloadCvAttachments(docs, config: config);
+      return saved;
+    },
+  );
+
+  /// Port of `TransactionSyncManager.downloadCvAttachmentsFromBatch`.
+  ///
+  /// Downloads `achievements/<docId>/resume.pdf` for every document that both
+  /// names a `resumeFileName` and actually carries the attachment, skipping
+  /// anything already on disk (`!destFile.exists()`) and de-duplicating within
+  /// the page (`inProgress.add(resumeFileName)`) — two documents can name the
+  /// same file.
+  ///
+  /// Best-effort throughout, like the Kotlin's `catch (_: Exception) { }`: a CV
+  /// that fails to download must not fail the walk that carried the ledger.
+  Future<void> downloadCvAttachments(
+    List<Map<String, dynamic>> docs, {
+    required ServerConfig config,
+  }) async {
+    final started = <String>{};
+    for (final doc in docs) {
+      final docId = doc['_id'];
+      if (docId is! String || docId.isEmpty || docId.startsWith('_design')) {
+        continue;
+      }
+      final resumeFileName = doc['resumeFileName'];
+      if (resumeFileName is! String || resumeFileName.isEmpty) continue;
+      final attachments = doc['_attachments'];
+      if (attachments is! Map || !attachments.containsKey('resume.pdf')) {
+        continue;
+      }
+      if (!started.add(resumeFileName)) continue;
+      if (await AchievementFiles.hasResume(resumeFileName)) continue;
+
+      final result = await _api.getBytes(
+        '${UrlUtils.dbUrl(config)}/achievements/$docId/resume.pdf',
+        authHeader: UrlUtils.authHeader(config),
+      );
+      if (result is NetworkSuccess<List<int>> && result.data.isNotEmpty) {
+        await AchievementFiles.write(
+          resumeFileName: resumeFileName,
+          bytes: result.data,
+        );
+      }
+    }
   }
 
   /// Port of `UserRepositoryImpl.getAchievementsForUpload`.

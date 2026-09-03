@@ -19,6 +19,7 @@ import 'package:myplanet/repository/outbox_repository.dart';
 import 'package:myplanet/ui/achievements/edit_achievement_screen.dart';
 
 import '../../support/widget_harness.dart';
+import '../../support/mock_planet_api.dart';
 
 /// The screen's own localisations, so a test never has to repeat a string the
 /// `.arb` owns.
@@ -142,7 +143,7 @@ void main() {
   });
 
   AchievementsRepository repository() =>
-      AchievementsRepository(db.achievementDao);
+      AchievementsRepository(MockPlanetApi(), db.achievementDao);
 
   Future<AchievementRow?> ledger() => db.achievementDao.getById(achievementId);
 

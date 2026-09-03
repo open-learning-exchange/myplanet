@@ -32,7 +32,7 @@ void main() {
     registerFallbackValue(<String, dynamic>{});
     registerFallbackValue(config);
     outbox = OutboxRepository(database.outboxDao);
-    repository = RatingsRepository(database.ratingDao);
+    repository = RatingsRepository(api, database.ratingDao);
     uploader = RatingsUploader(
       api,
       repository,

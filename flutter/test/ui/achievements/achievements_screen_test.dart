@@ -6,6 +6,7 @@ import 'package:myplanet/repository/achievements_repository.dart';
 import 'package:myplanet/ui/achievements/achievements_screen.dart';
 
 import '../../support/widget_harness.dart';
+import '../../support/mock_planet_api.dart';
 
 Widget harness(AchievementRow? row) {
   return wrapScreen(
@@ -32,7 +33,10 @@ void main() {
 
   testWidgets('renders goals, purpose, entries and references', (tester) async {
     final database = AppDatabase.memory();
-    final repository = AchievementsRepository(database.achievementDao);
+    final repository = AchievementsRepository(
+      MockPlanetApi(),
+      database.achievementDao,
+    );
     await repository.update(
       'ada@earth',
       const AchievementInput(

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/repository/achievements_repository.dart';
+import '../support/mock_planet_api.dart';
 
 void main() {
   late AppDatabase database;
@@ -10,7 +11,10 @@ void main() {
 
   setUp(() {
     database = AppDatabase.memory();
-    repository = AchievementsRepository(database.achievementDao);
+    repository = AchievementsRepository(
+      MockPlanetApi(),
+      database.achievementDao,
+    );
   });
   tearDown(() => database.close());
 
