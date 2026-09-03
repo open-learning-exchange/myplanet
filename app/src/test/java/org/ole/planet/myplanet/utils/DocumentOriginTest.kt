@@ -34,6 +34,6 @@ class DocumentOriginTest {
         val json = JsonObject().addDocumentOrigin("explicitAndroidId")
 
         assertEquals("explicitAndroidId", json.get("androidId").asString)
-        assertEquals(DOCUMENT_APP_IDENTIFIER, json.get("app").asString)
+        assertEquals(DOCUMENT_ORIGIN, json.get("app").asString)
     }
 }
