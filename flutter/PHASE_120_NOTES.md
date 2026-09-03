@@ -139,6 +139,15 @@ of the blob the row already carries, and falls back to the raw column for
 `getNormalizedSubmitterName` (`:316-323`) — the detail screen was printing the
 whole `user` column under "Submitted by".
 
+The PDF export had the same two reads (`submissions_exporter.dart:31,41,113`),
+and Kotlin's exporter draws `exam?.name ?: "Submission Report"`
+(`SubmissionsRepositoryExporter.kt:74`), so both helpers apply there too.
+
+Two readers were *already* decoding the column as JSON and therefore silently
+broken before this fix, and are fixed by it without touching them:
+`dashboard_providers._nameFromParentJson` (the pending-survey prompt's name) and
+`SurveysRepository.buildPublicSubmissionBody`'s respondent object.
+
 ---
 
 ## D7 — the notification type
@@ -332,6 +341,7 @@ All defects, none tidying. Lane A owns the rest of `lib/repository/`; Lane C own
 | `lib/providers/notifications_provider.dart` | the D7 reader (`toggleExpansion`'s default) |
 | `lib/ui/submissions/submissions_screen.dart` | the collapse removing the prune exposes, and the title D6 changes |
 | `lib/ui/submissions/submission_detail_screen.dart` | the same title, and "Submitted by" |
+| `lib/repository/submissions_exporter.dart` | the same two reads in the PDF export |
 | `test/ui/notification_destination_test.dart` | asserted the pre-fix null return |
 | `test/ui/notification_parser_test.dart` | **moved** to `test/repository/notification_parsing_test.dart` |
 | `test/repository/submissions_repository_test.dart` | three tests written against the non-standard document shape |

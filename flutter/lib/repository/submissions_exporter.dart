@@ -27,19 +27,17 @@ class SubmissionsExporter {
     final answersByQuestion = {
       for (final answer in answers) answer.questionId: answer,
     };
-    final document = pw.Document(
-      title: submission.parent ?? 'Submission report',
-      author: 'myPlanet',
-    );
+    // `submission.parent` is JSON text, not a title — Kotlin's exporter draws
+    // `exam?.name ?: "Submission Report"` (`SubmissionsRepositoryExporter.kt:74`)
+    // and the blob carries that same name.
+    final title = submissionDisplayTitle(submission) ?? 'Submission report';
+    final document = pw.Document(title: title, author: 'myPlanet');
     document.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(48),
         build: (_) => [
-          pw.Header(
-            level: 0,
-            child: pw.Text(submission.parent ?? 'Submission report'),
-          ),
+          pw.Header(level: 0, child: pw.Text(title)),
           _metadata(submission),
           pw.SizedBox(height: 20),
           if (questions.isEmpty && answers.isEmpty)
@@ -110,7 +108,12 @@ class SubmissionsExporter {
     columnWidths: const {0: pw.FixedColumnWidth(90)},
     children: [
       _metadataRow('Status', row.status ?? 'Pending'),
-      _metadataRow('Submitted by', row.user ?? row.userId ?? 'Unknown'),
+      // `getNormalizedSubmitterName` (`SubmissionsRepositoryImpl.kt:316-323`)
+      // — the `name` inside the JSON, never the JSON.
+      _metadataRow(
+        'Submitted by',
+        submissionSubmitterName(row) ?? row.userId ?? 'Unknown',
+      ),
       _metadataRow('Grade', '${row.grade}'),
       _metadataRow(
         'Updated',
