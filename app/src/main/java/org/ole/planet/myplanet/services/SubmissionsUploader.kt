@@ -8,9 +8,6 @@ import javax.inject.Singleton
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.SubmissionUploadExecutor
-import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 
 @Singleton

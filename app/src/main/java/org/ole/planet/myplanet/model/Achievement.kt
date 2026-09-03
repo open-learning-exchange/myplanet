@@ -1,12 +1,12 @@
 package org.ole.planet.myplanet.model
 
-import android.util.LruCache
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import java.util.Collections
 import org.ole.planet.myplanet.utils.JsonUtils
 
 @Entity(tableName = "achievements", indices = [androidx.room.Index("isUpdated")])
@@ -91,15 +91,20 @@ class Achievement {
     }
 
     companion object {
-        private val parsedJsonCache = LruCache<String, JsonElement>(1000)
+        internal const val CACHE_CAPACITY = 1000
+        internal val parsedJsonCache: MutableMap<String, JsonElement> = Collections.synchronizedMap(
+            object : LinkedHashMap<String, JsonElement>(16, 0.75f, true) {
+                override fun removeEldestEntry(eldest: Map.Entry<String, JsonElement>): Boolean = size > CACHE_CAPACITY
+            }
+        )
 
         private fun parseStringListToJsonArray(list: List<String>?): JsonArray {
             val array = JsonArray()
             for (s in list ?: emptyList()) {
-                var ob = parsedJsonCache.get(s)
+                var ob = parsedJsonCache[s]
                 if (ob == null) {
                     ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
-                    parsedJsonCache.put(s, ob)
+                    parsedJsonCache[s] = ob
                 }
                 array.add(ob?.deepCopy())
             }

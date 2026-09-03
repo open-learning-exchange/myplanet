@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.util.Base64
+import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Calendar
@@ -45,6 +46,7 @@ import org.ole.planet.myplanet.utils.ExamAnswerUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class CoursesRepositoryImpl @Inject constructor(
     private val progressRepository: ProgressRepository,
@@ -52,6 +54,7 @@ class CoursesRepositoryImpl @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     private val tagsRepository: TagsRepository,
     private val ratingsRepository: RatingsRepository,
+    private val resourcesRepository: ResourcesRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val certificationDao: CertificationDao,
     private val courseDao: CourseDao,
@@ -300,7 +303,7 @@ class CoursesRepositoryImpl @Inject constructor(
             .filter { gradeLevel.isEmpty() || it.gradeLevel == gradeLevel }
             .filter { subjectLevel.isEmpty() || it.subjectLevel == subjectLevel }
             .filter { courseIdsWithTags == null || courseIdsWithTags.contains(it.courseId) }
-            .sortedBy { it.courseTitle?.lowercase() ?: "" }
+            .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.courseTitle ?: "" })
             .toList()
     }
 
@@ -597,14 +600,7 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
-        val documentList = ArrayList<JsonObject>(jsonArray.size())
-        for (j in jsonArray) {
-            val jsonDoc = JsonUtils.getJsonObject("doc", j.asJsonObject)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-            }
-        }
+        val documentList = jsonArray.toSyncDocuments().map { it.second }
         upsertRoomCoursesFromSync(documentList)
         MyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
     }
@@ -775,18 +771,12 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun insertCertificationsFromSync(jsonArray: JsonArray) {
-        val certifications = ArrayList<Certification>(jsonArray.size())
-        for (j in jsonArray) {
-            val jsonDoc = JsonUtils.getJsonObject("doc", j.asJsonObject)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (id.startsWith("_design")) continue
-            certifications.add(
-                Certification().apply {
-                    _id = id
-                    name = JsonUtils.getString("name", jsonDoc)
-                    setCourseIds(JsonUtils.getJsonArray("courseIds", jsonDoc))
-                }
-            )
+        val certifications = jsonArray.toSyncDocuments().map { (id, jsonDoc) ->
+            Certification().apply {
+                _id = id
+                name = JsonUtils.getString("name", jsonDoc)
+                setCourseIds(JsonUtils.getJsonArray("courseIds", jsonDoc))
+            }
         }
         certificationDao.upsertAll(certifications)
     }
@@ -810,7 +800,7 @@ class CoursesRepositoryImpl @Inject constructor(
         }
 
         val correctChoiceArray = JsonUtils.getJsonArray("correctChoice", questionJson)
-        return if (correctChoiceArray.size() > 0) {
+        return if (!correctChoiceArray.isEmpty()) {
             correctChoiceArray.map { resolveChoiceValue(it.asString) }
         } else {
             val correctChoice = JsonUtils.getString("correctChoice", questionJson)
@@ -851,6 +841,16 @@ class CoursesRepositoryImpl @Inject constructor(
         }
         if (libraries.isNotEmpty()) {
             myLibraryDao.upsertAll(libraries)
+            libraries.forEach { library ->
+                if (library.mediaType == "HTML" && library.resourceLocalAddress.isNullOrBlank()) {
+                    val resourceId = library.resourceId ?: return@forEach
+                    try {
+                        resourcesRepository.reconcileHtmlResourceOffline(resourceId)
+                    } catch (e: Exception) {
+                        Log.w("CoursesRepository", "reconcileHtmlResourceOffline failed for $resourceId", e)
+                    }
+                }
+            }
         }
     }
 
@@ -862,7 +862,6 @@ class CoursesRepositoryImpl @Inject constructor(
         } else {
             courseStepDao.getByCourseIds(courseIds)
                 .groupBy { it.courseId ?: "" }
-                .mapValues { entry -> entry.value.map { it } }
         }
         return courses.map { course ->
             val courseKey = course.courseId ?: course.id
@@ -882,10 +881,10 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     private fun mergeUserIds(existingUserIds: List<String>?, newUserId: String?): List<String>? {
-        val merged = existingUserIds.orEmpty().filter { !it.isNullOrBlank() }.toMutableList()
-        if (!newUserId.isNullOrBlank() && !merged.contains(newUserId)) {
-            merged.add(newUserId)
+        val set = existingUserIds.orEmpty().filterTo(LinkedHashSet()) { it.isNotBlank() }
+        if (!newUserId.isNullOrBlank()) {
+            set.add(newUserId)
         }
-        return merged.distinct().takeIf { it.isNotEmpty() }
+        return set.toList().takeIf { it.isNotEmpty() }
     }
 }

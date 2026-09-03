@@ -20,6 +20,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.services.BroadcastService
 import org.ole.planet.myplanet.utils.SystemTimeProvider
+import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -34,7 +35,7 @@ class RetryInterceptorTest {
     @Before
     fun setUp() {
         broadcastService = mockk(relaxed = true)
-        timeProvider = SystemTimeProvider()
+        timeProvider = TestTimeProvider()
         retryInterceptor = RetryInterceptor(broadcastService, timeProvider)
         retryInterceptor.initialDelay = 10L
     }
@@ -213,8 +214,8 @@ class RetryInterceptorTest {
         every { chain.proceed(request) } returns errorResponse
         every { chain.call() } returns notCancelledCall()
 
-        // Use a longer delay to ensure the other thread has time to interrupt
-        retryInterceptor.initialDelay = 2000L
+        val systemRetryInterceptor = RetryInterceptor(broadcastService, SystemTimeProvider())
+        systemRetryInterceptor.initialDelay = 2000L
 
         val currentThread = Thread.currentThread()
         val interrupterThread = Thread {
@@ -224,7 +225,7 @@ class RetryInterceptorTest {
         interrupterThread.start()
 
         try {
-            retryInterceptor.intercept(chain)
+            systemRetryInterceptor.intercept(chain)
             fail("Expected IOException due to interruption")
         } catch (e: IOException) {
             assertEquals("Interrupted during retry delay", e.message)

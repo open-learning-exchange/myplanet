@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BasePermissionActivity
-import org.ole.planet.myplanet.callback.OnSecurityDataListener
+import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.repository.SyncRepository
@@ -124,9 +124,9 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         val urlUser: String
         val urlPwd: String
         if (url.contains("@")) {
-            val userinfo = getUserInfo(uri)
-            urlUser = userinfo[0]
-            urlPwd = userinfo[1]
+            val (u, p) = UrlUtils.getUserInfo(uri.userInfo)
+            urlUser = u
+            urlPwd = p
             couchdbURL = url
         } else if (TextUtils.isEmpty(password)) {
             showAlert(this, "", getString(R.string.pin_is_required))
@@ -161,7 +161,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         return true
     }
 
-    fun startUpload(source: String, userName: String? = null, securityCallback: OnSecurityDataListener? = null) {
+    fun startUpload(source: String, userName: String? = null, securityCallback: OnChangedListener? = null) {
         when (source) {
             "becomeMember" -> uploadMemberData(userName, securityCallback)
             "login" -> uploadLoginData()
@@ -169,7 +169,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         }
     }
 
-    private fun uploadMemberData(userName: String?, securityCallback: OnSecurityDataListener?) {
+    private fun uploadMemberData(userName: String?, securityCallback: OnChangedListener?) {
         uploadToShelfService.uploadSingleUserData(userName, object : OnSuccessListener {
             override fun onSuccess(success: String?) {
                 uploadToShelfService.uploadSingleUserHealth("org.couchdb.user:${userName}", object : OnSuccessListener {
@@ -177,7 +177,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
                         userName?.let { name ->
                             fetchAndLogUserSecurityData(name, securityCallback)
                         } ?: run {
-                            securityCallback?.onSecurityDataUpdated()
+                            securityCallback?.onChanged()
                         }
                     }
                 })
@@ -237,18 +237,12 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
 
     companion object {
         fun getUserInfo(uri: Uri): Array<String> {
-            val ar = arrayOf("", "")
-            val info =
-                uri.userInfo?.split(":".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
-            if ((info?.size ?: 0) > 1) {
-                ar[0] = "${info?.get(0)}"
-                ar[1] = "${info?.get(1)}"
-            }
-            return ar
+            val (u, p) = UrlUtils.getUserInfo(uri.userInfo)
+            return arrayOf(u, p)
         }
     }
 
-    fun fetchAndLogUserSecurityData(name: String, securityCallback: OnSecurityDataListener? = null) {
+    fun fetchAndLogUserSecurityData(name: String, securityCallback: OnChangedListener? = null) {
         lifecycleScope.launch {
             try {
                 userRepository.fetchUserSecurityData(name)
@@ -256,7 +250,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
                 e.printStackTrace()
             } finally {
                 withContext(dispatcherProvider.main) {
-                    securityCallback?.onSecurityDataUpdated()
+                    securityCallback?.onChanged()
                 }
             }
         }

@@ -67,8 +67,8 @@ class EventsRepositoryImpl @Inject constructor(
         if (meetupId.isBlank()) {
             return emptyList()
         }
-        val memberIds = meetupDao.getMembersByMeetupId(meetupId)
-            .mapNotNull { member -> member.userId?.takeUnless { it.isBlank() } }
+        val memberIds = meetupDao.getMemberUserIdsByMeetupId(meetupId)
+            .mapNotNull { it.takeUnless { id -> id.isBlank() } }
             .distinct()
         if (memberIds.isEmpty()) {
             return emptyList()

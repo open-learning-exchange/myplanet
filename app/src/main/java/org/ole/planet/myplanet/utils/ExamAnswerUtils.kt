@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.utils
 
 import androidx.annotation.VisibleForTesting
 import com.google.gson.JsonObject
-import java.util.Arrays
 import java.util.Collections
 import java.util.Locale
 import org.ole.planet.myplanet.model.ExamQuestion
@@ -69,17 +68,21 @@ object ExamAnswerUtils {
     }
 
     private fun checkSelectAnswer(ans: String, correctChoices: List<String>?): Boolean {
-        val normalizedAns = ans.lowercase(Locale.getDefault())
-        return correctChoices?.any { it.lowercase(Locale.getDefault()) == normalizedAns } == true
+        if (correctChoices == null) return false
+        val locale = Locale.getDefault()
+        val normalizedAns = ans.lowercase(locale)
+        return correctChoices.any { it.lowercase(locale) == normalizedAns }
     }
 
     private fun checkMultipleSelectAnswer(
         listAns: Map<String, String>?,
         correctChoices: List<String>?
     ): Boolean {
-        val selectedAns = listAns?.values?.map { it.lowercase(Locale.getDefault()) }?.toTypedArray()
-        val correctChoicesArray = correctChoices?.map { it.lowercase(Locale.getDefault()) }?.toTypedArray()
-        return isEqual(selectedAns, correctChoicesArray)
+        if (listAns == null || correctChoices == null) return false
+        val locale = Locale.getDefault()
+        val selectedAns = listAns.values.map { it.lowercase(locale) }.sorted()
+        val correctList = correctChoices.map { it.lowercase(locale) }.sorted()
+        return selectedAns == correctList
     }
 
     private fun checkTextAnswer(ans: String, correctChoices: List<String>?): Boolean {
@@ -89,11 +92,5 @@ object ExamAnswerUtils {
         return correctChoices.any {
             normalizedAns.contains(it.lowercase(locale))
         }
-    }
-
-    private fun isEqual(ar1: Array<String>?, ar2: Array<String>?): Boolean {
-        ar1?.let { Arrays.sort(it) }
-        ar2?.let { Arrays.sort(it) }
-        return ar1.contentEquals(ar2)
     }
 }

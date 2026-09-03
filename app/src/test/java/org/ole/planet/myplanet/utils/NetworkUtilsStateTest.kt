@@ -6,6 +6,7 @@ import androidx.test.core.app.ApplicationProvider
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
@@ -29,6 +30,12 @@ class NetworkUtilsStateTest {
     fun init() {
         hiltRule.inject()
         org.ole.planet.myplanet.MainApplication.testContext = ApplicationProvider.getApplicationContext()
+        NetworkUtils.resetForTesting()
+    }
+
+    @After
+    fun tearDown() {
+        NetworkUtils.resetForTesting()
     }
 
     @Test
@@ -41,7 +48,6 @@ class NetworkUtilsStateTest {
         NetworkUtils.startListenNetworkState()
         assertEquals(initialSize + 1, shadowConnectivityManager.networkCallbacks.size)
 
-        // Calling it again should not register duplicate callbacks
         NetworkUtils.startListenNetworkState()
         assertEquals(initialSize + 1, shadowConnectivityManager.networkCallbacks.size)
 

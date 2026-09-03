@@ -12,8 +12,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.model.ExamQuestion
-import org.ole.planet.myplanet.model.StepExam
 
 class StepExamTest {
 

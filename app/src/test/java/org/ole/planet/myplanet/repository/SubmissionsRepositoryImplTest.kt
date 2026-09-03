@@ -9,13 +9,17 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
 import javax.inject.Provider
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -28,11 +32,14 @@ import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
+import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao.UploadedPhoto
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.ExamQuestion
+import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
+import org.ole.planet.myplanet.model.TeamReference
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -106,79 +113,52 @@ class SubmissionsRepositoryImplTest {
         assertEquals(1, result.size)
     }
 
-    @Test
-    fun `getSubmissionsFlow suppresses equivalent emissions`() = runTest {
-        val subList = listOf(Submission(id = "1", lastUpdateTime = 100L))
-        val subListDup = listOf(Submission(id = "1", lastUpdateTime = 100L))
-
-        val flowEmitter = kotlinx.coroutines.flow.MutableSharedFlow<List<Submission>>(replay = 1)
+    private suspend fun TestScope.countEmissionsFor(
+        first: List<Submission>,
+        second: List<Submission>,
+    ): Int {
+        val flowEmitter = MutableSharedFlow<List<Submission>>(replay = 1)
         every { submissionDao.observeByUserId("user_123") } returns flowEmitter
 
         var emissions = 0
-        val job = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined).launch {
-            repository.getSubmissionsFlow("user_123").collect {
-                emissions++
-            }
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            repository.getSubmissionsFlow("user_123").collect { emissions++ }
         }
 
-        flowEmitter.emit(subList)
-        assertEquals(1, emissions)
+        flowEmitter.emit(first)
+        assertEquals("the first emission always reaches the collector", 1, emissions)
+        flowEmitter.emit(second)
+        return emissions
+    }
 
-        // Equivalent list should be suppressed
-        flowEmitter.emit(subListDup)
+    @Test
+    fun `getSubmissionsFlow suppresses equivalent emissions`() = runTest {
+        val emissions = countEmissionsFor(
+            listOf(Submission(id = "1", lastUpdateTime = 100L)),
+            listOf(Submission(id = "1", lastUpdateTime = 100L)),
+        )
+        // equivalent list is suppressed
         assertEquals(1, emissions)
-
-        job.cancel()
     }
 
     @Test
     fun `getSubmissionsFlow does not suppress when size changes`() = runTest {
-        val subList = listOf(Submission(id = "1", lastUpdateTime = 100L))
-        val subListDiffSize = listOf(Submission(id = "1", lastUpdateTime = 100L), Submission(id = "2", lastUpdateTime = 100L))
-
-        val flowEmitter = kotlinx.coroutines.flow.MutableSharedFlow<List<Submission>>(replay = 1)
-        every { submissionDao.observeByUserId("user_123") } returns flowEmitter
-
-        var emissions = 0
-        val job = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined).launch {
-            repository.getSubmissionsFlow("user_123").collect {
-                emissions++
-            }
-        }
-
-        flowEmitter.emit(subList)
-        assertEquals(1, emissions)
-
-        // Different size list should not be suppressed
-        flowEmitter.emit(subListDiffSize)
+        val emissions = countEmissionsFor(
+            listOf(Submission(id = "1", lastUpdateTime = 100L)),
+            listOf(Submission(id = "1", lastUpdateTime = 100L), Submission(id = "2", lastUpdateTime = 100L)),
+        )
+        // different size is not suppressed
         assertEquals(2, emissions)
-
-        job.cancel()
     }
 
     @Test
     fun `getSubmissionsFlow does not suppress when lastUpdateTime changes`() = runTest {
-        val subList = listOf(Submission(id = "1", lastUpdateTime = 100L))
-        val subListDiffTime = listOf(Submission(id = "1", lastUpdateTime = 101L))
-
-        val flowEmitter = kotlinx.coroutines.flow.MutableSharedFlow<List<Submission>>(replay = 1)
-        every { submissionDao.observeByUserId("user_123") } returns flowEmitter
-
-        var emissions = 0
-        val job = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined).launch {
-            repository.getSubmissionsFlow("user_123").collect {
-                emissions++
-            }
-        }
-
-        flowEmitter.emit(subList)
-        assertEquals(1, emissions)
-
-        // Same size but different lastUpdateTime should not be suppressed
-        flowEmitter.emit(subListDiffTime)
+        val emissions = countEmissionsFor(
+            listOf(Submission(id = "1", lastUpdateTime = 100L)),
+            listOf(Submission(id = "1", lastUpdateTime = 101L)),
+        )
+        // same size, different lastUpdateTime is not suppressed
         assertEquals(2, emissions)
-
-        job.cancel()
     }
 
     @Test
@@ -579,6 +559,263 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
+    fun `createExamSubmission persists team id through Room when local team is missing`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        coEvery { teamsRepositoryProvider.get().getTeamById("team1") } returns null
+
+        val persistedSubmissions = slot<List<Submission>>()
+        coEvery { submissionDao.upsertAll(capture(persistedSubmissions)) } returns Unit
+        val exam = StepExam().apply {
+            id = "exam_id"
+            courseId = "course_id"
+        }
+
+        repository.createExamSubmission(
+            CreateExamSubmissionRequest("user", "dob", "gender", exam, "survey", "team1")
+        )
+
+        val persisted = persistedSubmissions.captured.single()
+        assertEquals("team1", persisted.teamId)
+
+        // Reconstruct the entity as Room would: @Ignore fields are absent, while teamId survives.
+        val reconstructed = Submission().apply {
+            id = persisted.id
+            userId = persisted.userId
+            parentId = persisted.parentId
+            type = persisted.type
+            teamId = persisted.teamId
+        }
+
+        val result = repository.serializeSubmission(reconstructed, "planet", "parent", null)
+
+        val team = result.getAsJsonObject("team")
+        assertEquals("team1", team.get("_id").asString)
+        assertNull(team.get("name"))
+        assertNull(team.get("type"))
+    }
+
+    @Test
+    fun `serializeSubmission emits persisted team id when local team is missing`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        coEvery { teamsRepositoryProvider.get().getTeamById("team1") } returns null
+
+        val submission = Submission().apply {
+            id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
+            teamId = "team1"
+        }
+
+        val result = repository.serializeSubmission(submission, "planet", "parent", null)
+
+        val team = result.getAsJsonObject("team")
+        assertEquals("team1", team.get("_id").asString)
+        assertNull(team.get("name"))
+        assertNull(team.get("type"))
+    }
+
+    @Test
+    fun `serializeSubmission emits persisted team id when local team lookup throws`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        coEvery { teamsRepositoryProvider.get().getTeamById("team1") } throws IllegalStateException("lookup failed")
+
+        val submission = Submission().apply {
+            id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
+            teamId = "team1"
+        }
+
+        val result = repository.serializeSubmission(submission, "planet", "parent", null)
+
+        val team = result.getAsJsonObject("team")
+        assertEquals("team1", team.get("_id").asString)
+        assertNull(team.get("name"))
+        assertNull(team.get("type"))
+    }
+
+    @Test
+    fun `serializeSubmission enriches persisted team id with actual local metadata`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+
+        coEvery { teamsRepositoryProvider.get().getTeamById("team1") } returns MyTeam().apply {
+            _id = "team1"
+            name = "Enterprise One"
+            type = "enterprise"
+        }
+
+        val submission = Submission().apply {
+            id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
+            teamId = "team1"
+        }
+
+        val result = repository.serializeSubmission(submission, "planet", "parent", null)
+
+        val team = result.getAsJsonObject("team")
+        assertEquals("team1", team.get("_id").asString)
+        assertEquals("Enterprise One", team.get("name").asString)
+        assertEquals("enterprise", team.get("type").asString)
+    }
+
+    @Test
+    fun `serializeSubmission uses in-memory team object`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+
+        val submission = Submission().apply {
+            id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
+            teamObject = TeamReference().apply {
+                _id = "enterprise1"
+                name = "Enterprise One"
+                type = "enterprise"
+            }
+        }
+
+        val result = repository.serializeSubmission(submission, "planet", "parent", null)
+
+        val team = result.getAsJsonObject("team")
+        assertEquals("enterprise1", team.get("_id").asString)
+        assertEquals("Enterprise One", team.get("name").asString)
+        assertEquals("enterprise", team.get("type").asString)
+        coVerify(exactly = 0) { teamsRepositoryProvider.get().getTeamById(any()) }
+    }
+
+    @Test
+    fun `serializeSubmission omits the team for a submission with no team`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+
+        val submission = Submission().apply {
+            id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
+        }
+
+        val result = repository.serializeSubmission(submission, "planet", "parent", null)
+
+        assertNull(result.get("team"))
+    }
+
+    @Test
+    fun `getExamUploadPayload emits persisted team id when local team is missing`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        coEvery { teamsRepositoryProvider.get().getTeamById("team1") } returns null
+
+        val submission = Submission().apply {
+            id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "exam"
+            teamId = "team1"
+        }
+
+        val result = repository.getExamUploadPayload(submission, null)
+
+        val team = result.getAsJsonObject("team")
+        assertEquals("team1", team.get("_id").asString)
+        assertNull(team.get("name"))
+        assertNull(team.get("type"))
+    }
+
+    @Test
+    fun `getExamUploadPayload emits persisted team id when local team lookup throws`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        coEvery { teamsRepositoryProvider.get().getTeamById("team1") } throws IllegalStateException("lookup failed")
+
+        val submission = Submission().apply {
+            id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "exam"
+            teamId = "team1"
+        }
+
+        val result = repository.getExamUploadPayload(submission, null)
+
+        val team = result.getAsJsonObject("team")
+        assertEquals("team1", team.get("_id").asString)
+        assertNull(team.get("name"))
+        assertNull(team.get("type"))
+    }
+
+    @Test
+    fun `getExamUploadPayload enriches persisted team id with actual local metadata`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+
+        coEvery { teamsRepositoryProvider.get().getTeamById("team1") } returns MyTeam().apply {
+            _id = "team1"
+            name = "Enterprise One"
+            type = "enterprise"
+        }
+
+        val submission = Submission().apply {
+            id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "exam"
+            teamId = "team1"
+        }
+
+        val result = repository.getExamUploadPayload(submission, null)
+
+        val team = result.getAsJsonObject("team")
+        assertEquals("team1", team.get("_id").asString)
+        assertEquals("Enterprise One", team.get("name").asString)
+        assertEquals("enterprise", team.get("type").asString)
+    }
+
+    @Test
+    fun `getExamUploadPayload uses in-memory team object`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+
+        val submission = Submission().apply {
+            id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "exam"
+            teamObject = TeamReference().apply {
+                _id = "enterprise1"
+                name = "Enterprise One"
+                type = "enterprise"
+            }
+        }
+
+        val result = repository.getExamUploadPayload(submission, null)
+
+        val team = result.getAsJsonObject("team")
+        assertEquals("enterprise1", team.get("_id").asString)
+        assertEquals("Enterprise One", team.get("name").asString)
+        assertEquals("enterprise", team.get("type").asString)
+        coVerify(exactly = 0) { teamsRepositoryProvider.get().getTeamById(any()) }
+    }
+
+    @Test
+    fun `getExamUploadPayload omits the team for a submission with no team`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+
+        val submission = Submission().apply {
+            id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "exam"
+        }
+
+        val result = repository.getExamUploadPayload(submission, null)
+
+        assertNull(result.get("team"))
+    }
+
+    @Test
     fun `markSubmissionComplete updates submission through Room`() = runTest {
         val payload = JsonObject().apply { addProperty("name", "Learner") }
 
@@ -639,5 +876,34 @@ class SubmissionsRepositoryImplTest {
         }
         val result = repository.getNormalizedSubmitterName(submission)
         assertNull(result)
+    }
+
+    @Test
+    fun `markPhotoUploaded delegates single photo to dao`() = runTest {
+        repository.markPhotoUploaded("photo1", "rev1", "remote1")
+        coVerify { submitPhotosDao.markUploaded("photo1", "rev1", "remote1") }
+    }
+
+    @Test
+    fun `markPhotoUploaded ignores null photo id`() = runTest {
+        repository.markPhotoUploaded(null, "rev1", "remote1")
+        coVerify(exactly = 0) { submitPhotosDao.markUploaded(any(), any(), any()) }
+    }
+
+    @Test
+    fun `markPhotosUploadedBatch delegates batch to dao in one call`() = runTest {
+        val uploads = listOf(
+            UploadedPhoto("photo1", "rev1", "remote1"),
+            UploadedPhoto("photo2", "rev2", "remote2"),
+            UploadedPhoto("photo3", "rev3", "remote3")
+        )
+        repository.markPhotosUploadedBatch(uploads)
+        coVerify(exactly = 1) { submitPhotosDao.markUploadedBatch(uploads) }
+    }
+
+    @Test
+    fun `markPhotosUploadedBatch does not call dao for empty batch`() = runTest {
+        repository.markPhotosUploadedBatch(emptyList())
+        coVerify(exactly = 0) { submitPhotosDao.markUploadedBatch(any()) }
     }
 }

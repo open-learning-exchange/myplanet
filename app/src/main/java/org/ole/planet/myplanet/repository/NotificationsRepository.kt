@@ -21,7 +21,6 @@ interface NotificationsRepository {
     suspend fun getJoinRequestDetails(relatedId: String?): Pair<String, String>
     suspend fun getTaskTeamNamesByTaskIds(taskIds: List<String>): Map<String, String>
     suspend fun getJoinRequestDetailsBatch(relatedIds: List<String>): Map<String, Pair<String, String>>
-    suspend fun getTaskTeamName(taskTitle: String): String?
     suspend fun getTeamNotifications(teamIds: List<String>, userId: String): Map<String, TeamNotificationInfo>
     suspend fun updateTeamNotification(teamId: String, count: Int)
     suspend fun getTaskTeamNamesByTaskTitles(taskTitles: List<String>): Map<String, String>
@@ -30,4 +29,9 @@ interface NotificationsRepository {
     suspend fun bulkInsertFromSync(jsonArray: JsonArray)
     suspend fun insert(doc: JsonObject)
     suspend fun deleteNotifications(ids: Set<String>): Set<String>
+    fun resolveType(type: String, message: String, subType: String?): String
+
+    companion object {
+        val KNOWN_TYPES = setOf("join_request", "team_join", "task", "chat", "voice_reply", "resource", "storage")
+    }
 }

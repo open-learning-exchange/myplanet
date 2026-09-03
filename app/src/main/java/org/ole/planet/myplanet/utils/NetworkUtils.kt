@@ -9,10 +9,12 @@ import android.net.NetworkCapabilities
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Build
-import android.provider.Settings
+import androidx.annotation.VisibleForTesting
 import androidx.core.net.toUri
 import dagger.hilt.android.EntryPointAccessors
 import java.util.Locale
+import kotlin.properties.ReadOnlyProperty
+import kotlin.reflect.KProperty
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -25,32 +27,55 @@ import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 object NetworkUtils {
-    private val coreEntryPoint: CoreDependenciesEntryPoint by lazy {
+    private class ResettableCache<T : Any>(private val initializer: () -> T) : ReadOnlyProperty<Any?, T> {
+        @Volatile
+        private var cached: T? = null
+
+        override fun getValue(thisRef: Any?, property: KProperty<*>): T =
+            cached ?: synchronized(this) { cached ?: initializer().also { cached = it } }
+
+        fun reset() {
+            synchronized(this) { cached = null }
+        }
+    }
+
+    private val coreEntryPointCache = ResettableCache {
         EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
     }
 
-    // Safe because NetworkUtils is only accessed after MainApplication.onCreate sets the context
-    private val sharedPrefManager: SharedPrefManager by lazy {
-        coreEntryPoint.sharedPrefManager()
-    }
+    private val coreEntryPoint: CoreDependenciesEntryPoint by coreEntryPointCache
 
-    // Safe because NetworkUtils is only accessed after MainApplication.onCreate sets the context
-    private val coroutineScope: CoroutineScope by lazy {
-        coreEntryPoint.applicationScope()
-    }
+    private val sharedPrefManagerCache = ResettableCache { coreEntryPoint.sharedPrefManager() }
 
-    // Safe because NetworkUtils is only accessed after MainApplication.onCreate sets the context
-    private val connectivityManager: ConnectivityManager by lazy {
+    private val sharedPrefManager: SharedPrefManager by sharedPrefManagerCache
+
+    private val coroutineScopeCache = ResettableCache { coreEntryPoint.applicationScope() }
+
+    private val coroutineScope: CoroutineScope by coroutineScopeCache
+
+    private val connectivityManagerCache = ResettableCache {
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     }
 
+    private val connectivityManager: ConnectivityManager by connectivityManagerCache
+
     private val _currentNetwork = MutableStateFlow(provideDefaultCurrentNetwork())
 
-    val isNetworkConnectedFlow: StateFlow<Boolean> by lazy {
+    private val isNetworkConnectedFlowCache = ResettableCache {
         _currentNetwork
             .map { it.isConnected() }
             .stateIn(scope = coroutineScope, started = SharingStarted.WhileSubscribed(5_000), initialValue = _currentNetwork.value.isConnected())
     }
+
+    val isNetworkConnectedFlow: StateFlow<Boolean> by isNetworkConnectedFlowCache
+
+    private val resettableCaches = listOf(
+        coreEntryPointCache,
+        sharedPrefManagerCache,
+        coroutineScopeCache,
+        connectivityManagerCache,
+        isNetworkConnectedFlowCache,
+    )
 
     val isNetworkConnected: Boolean
         get() = isNetworkConnectedFlow.value
@@ -76,6 +101,18 @@ object NetworkUtils {
 
         connectivityManager.unregisterNetworkCallback(networkCallback)
         _currentNetwork.update { provideDefaultCurrentNetwork() }
+    }
+
+    @VisibleForTesting
+    internal fun resetForTesting() {
+        if (_currentNetwork.value.isListening) {
+            try {
+                connectivityManager.unregisterNetworkCallback(networkCallback)
+            } catch (e: IllegalArgumentException) {
+            }
+        }
+        _currentNetwork.value = provideDefaultCurrentNetwork()
+        resettableCaches.forEach { it.reset() }
     }
 
     private class NetworkCallback : ConnectivityManager.NetworkCallback() {
@@ -148,7 +185,7 @@ object NetworkUtils {
     }
 
     fun getCurrentNetworkId(context: Context): Int {
-        var ssid = -1
+        var networkId = -1
         val connManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connManager.activeNetwork
         val capabilities = connManager.getNetworkCapabilities(network)
@@ -163,14 +200,14 @@ object NetworkUtils {
 
             if (connectionInfo != null && !connectionInfo.ssid.isNullOrEmpty()) {
                 @Suppress("DEPRECATION")
-                ssid = connectionInfo.networkId
+                networkId = connectionInfo.networkId
             }
         }
-        return ssid
+        return networkId
     }
 
     fun getUniqueIdentifier(): String {
-        val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
+        val androidId = VersionUtils.getAndroidId(context)
         val buildId = Build.ID
         return androidId + "_" + buildId
     }
@@ -186,8 +223,7 @@ object NetworkUtils {
     }
 
     fun getCustomDeviceName(context: Context): String {
-        val spm = coreEntryPoint.sharedPrefManager()
-        return spm.getCustomDeviceName()
+        return sharedPrefManager.getCustomDeviceName()
     }
 
     fun extractProtocol(url: String): String? {
