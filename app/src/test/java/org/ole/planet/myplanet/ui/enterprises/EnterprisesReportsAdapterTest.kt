@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.enterprises
 
+import android.app.Application
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
@@ -14,8 +15,10 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ReportListItemBinding
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.ui.enterprises.EnterprisesReportsAdapter.Companion.PAYLOAD_KEY_NON_TEAM_MEMBER_CHANGED
+import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
+@Config(application = Application::class)
 class EnterprisesReportsAdapterTest {
 
     private lateinit var adapter: EnterprisesReportsAdapter

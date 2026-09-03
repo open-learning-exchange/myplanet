@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utils
 
+import android.app.Application
 import android.content.Context
 import android.os.Build
 import androidx.test.core.app.ApplicationProvider
@@ -12,7 +13,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
-@Config(sdk = [Build.VERSION_CODES.O_MR1])
+@Config(sdk = [Build.VERSION_CODES.O_MR1], application = Application::class)
 class SecurePrefsTest {
 
     private lateinit var context: Context
