@@ -173,15 +173,25 @@ final courseFilterProvider =
     );
 
 /// Offline-first course list, filtered by [courseFilterProvider].
-final coursesStreamProvider = StreamProvider<List<CourseRow>>((ref) {
+///
+/// The session is awaited, but **only** when the shelf filter is on. Read as
+/// `.valueOrNull` it is null for the first pass, and `CourseDao.watchCourses`
+/// drops the shelf predicate on a null `shelfUserId` — which is not "no
+/// courses" but *every* course, so the first frame of the My Courses tab was
+/// the whole catalogue: the same defect this phase fixed in
+/// [courseProgressStreamProvider]. Awaiting unconditionally would instead
+/// delay the catalogue view, which needs no user at all.
+final coursesStreamProvider = StreamProvider<List<CourseRow>>((ref) async* {
   final filter = ref.watch(courseFilterProvider);
-  final userId = ref.watch(sessionProvider).valueOrNull?.id;
+  final userId = filter.myCoursesOnly
+      ? (await ref.watch(sessionProvider.future))?.id
+      : null;
 
-  return ref
+  yield* ref
       .watch(coursesRepositoryProvider)
       .watchCourses(
         query: filter.query,
-        shelfUserId: filter.myCoursesOnly ? userId : null,
+        shelfUserId: userId,
         gradeLevel: filter.gradeLevel,
         subjectLevel: filter.subjectLevel,
       );
@@ -211,6 +221,13 @@ final filteredSortedCoursesProvider = StreamProvider<List<CourseRow>>((
   // Kotlin's `if (progressFilter.isEmpty() || progressMap == null) baseCourses`.
   var filtered = items;
   if (progressFilter != CourseProgressFilter.all) {
+    // Deliberately left as `.valueOrNull` — the one place in this file where
+    // awaiting the session is the *worse* option. An unresolved session here
+    // costs one frame in which every course reads "Not Started"; awaiting it
+    // makes a session that rejects (or that no test harness resolves) fail
+    // this provider and render an **empty** course list, where the Kotlin's
+    // fallback for unavailable progress is `baseCourses` — show the list
+    // unfiltered. A one-frame cosmetic flash is the cheaper failure.
     final userId = ref.watch(sessionProvider).valueOrNull?.id;
     final summary = await ref
         .watch(progressRepositoryProvider)
@@ -392,11 +409,22 @@ class CoursesProgressRow {
   final Map<int, int>? stepMistakes;
 }
 
-/// Course progress data for the current user.
+/// Course progress data for the current user — the My Progress list.
 ///
 /// Combines course enrollment, step completion, and exam submissions
 /// to compute progress statistics.
-final courseProgressStreamProvider = StreamProvider<List<CoursesProgressRow>>((
+///
+/// `autoDispose`, for the same reason [courseProgressGridProvider] is.
+/// `CoursesProgressFragment.onViewCreated:31` calls `loadCourseData()`
+/// unconditionally — it has none of `CourseProgressViewModel.loadProgress`'s
+/// `if (value != null) return` guard — and the fragment is pushed with
+/// `addToBackStack`, so leaving to take an exam destroys it and coming back
+/// re-reads. This body `yield`s once and completes, and nothing in `lib/`
+/// invalidates it, so without `autoDispose` the first read was frozen for the
+/// process lifetime: two more mistakes, and the row kept the old count while
+/// the grid it opens — which *is* autoDispose — showed the new one. Two halves
+/// of one screen disagreeing.
+final courseProgressStreamProvider = StreamProvider.autoDispose<List<CoursesProgressRow>>((
   ref,
 ) async* {
   // `ref.watch(sessionProvider).valueOrNull` — which this used to read — is

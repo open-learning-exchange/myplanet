@@ -100,9 +100,12 @@ void main() {
     await pumpScreen(tester);
     await tester.pumpAndSettle();
 
-    // Three steps, none carrying an exam: three cells, no percentage text on
-    // any of them.
-    expect(find.byType(Container).evaluate().length, greaterThanOrEqualTo(3));
+    // Three steps, none carrying an exam: exactly three cells, no percentage
+    // text on any of them. `greaterThanOrEqualTo(3)`, which this used to
+    // assert, cannot fail on the four cells an off-by-one would draw — which
+    // is the bug the test is named for. Only the cells are `Container`s; the
+    // ring is a `SizedBox` + `DecoratedBox`.
+    expect(find.byType(Container), findsNWidgets(3));
     expect(find.textContaining('%'), findsNothing);
   });
 
@@ -135,6 +138,36 @@ void main() {
     expect(
       _cellColour(tester, '100.0%'),
       const Color(0xFF4CAF50), // md_green_500
+    );
+  });
+
+  testWidgets('a partial last grid row is left-aligned, not centred', (
+    tester,
+  ) async {
+    // `GridLayoutManager(this, 4)` puts item n in span `n % 4`, so a ninth
+    // step sits in the **first** column of a new row. Rows centred inside the
+    // enclosing Column instead put it under the gap between columns 1 and 2.
+    await database.courseDao.upsertAll(
+      [CoursesCompanion.insert(id: 'c9', courseTitle: const Value('Nine'))],
+      [
+        for (var i = 0; i < 9; i++)
+          CourseStepsCompanion.insert(
+            id: 'c9:$i',
+            courseId: const Value('c9'),
+            stepIndex: Value(i),
+          ),
+      ],
+    );
+
+    await pumpScreen(tester, courseId: 'c9');
+    await tester.pumpAndSettle();
+
+    final cells = find.byType(Container);
+    expect(cells, findsNWidgets(9));
+    // The ninth cell starts at the same x as the first, not in the middle.
+    expect(
+      tester.getTopLeft(cells.at(8)).dx,
+      tester.getTopLeft(cells.at(0)).dx,
     );
   });
 
@@ -296,11 +329,61 @@ void main() {
     expect(find.text('GRID_ROUTE course-1'), findsOneWidget);
   });
 
+  testWidgets('the mistakes table lists its exams in ascending order', (
+    tester,
+  ) async {
+    // Kotlin's `mistakesMap` is a `HashMap<String, Int>` keyed by the exam
+    // ordinal as a string, round-tripped through Gson into a `LinkedTreeMap`,
+    // so the adapter walks it in bucket order — which for the keys "0".."9"
+    // is ascending. A Dart map preserves the order the answers came off
+    // `answersFor` instead, so a submission whose first answer belongs to a
+    // later exam listed its rows backwards.
+    await tester.pumpWidget(
+      wrapScreen(
+        const CoursesProgressScreen(),
+        overrides: [
+          courseProgressStreamProvider.overrideWith(
+            (ref) => Stream.value(const [
+              CoursesProgressRow(
+                courseId: 'course-1',
+                courseName: 'Ordering',
+                progressCurrent: 1,
+                progressMax: 3,
+                mistakes: 33,
+                // Built in the order the answers arrived: exam 2 first. The
+                // counts are two-digit so they cannot be confused with the
+                // step labels the assertion looks for.
+                stepMistakes: {2: 11, 0: 22},
+              ),
+            ]),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The step column reads `key + 1`, so ascending keys give 1 then 3.
+    final labels = tester
+        .widgetList<Text>(find.byType(Text))
+        .map((text) => text.data)
+        .whereType<String>()
+        .toList();
+    expect(labels, containsAllInOrder(['1', '22', '3', '11']));
+  });
+
   testWidgets('a My Progress row with no progress figures is inert', (
     tester,
   ) async {
     // `CoursesProgressAdapter` installs the click listener inside
     // `if (progressCurrent != null && progressMax != null)`.
+    //
+    // Reached only through this override: `courseProgressSummary` writes an
+    // entry for every requested id, so the real provider never produces a null
+    // pair. Kotlin's branch is dead too — its `else` writes `JsonNull` and
+    // `ProgressViewModel`'s `getAsJsonObject("progress")` would throw before
+    // the adapter saw it. Ported and covered anyway because the gate is one
+    // line and its absence is invisible; recorded here so nobody mistakes this
+    // for a live state.
     await tester.pumpWidget(
       wrapScreen(
         const CoursesProgressScreen(),

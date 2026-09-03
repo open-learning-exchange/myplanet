@@ -165,6 +165,99 @@ per-submission loop and writes it there); a step's cell falls from green
 `startExamSession(recreate = true)` deletes the previous attempt; and the
 "Step" column of the mini-table is an exam ordinal, not a step number.
 
+## The second audit, on the finished implementation
+
+Phase 113's lesson, holding for the third round: **an audit of the ground truth
+does not audit the implementation.** The first pass established the Kotlin and
+the fix was green — format clean, analyze clean, 1917 tests, CI green on
+`67a9b01`. A second pass at `effort: max`, pointed at my own diff, found nine
+more things. `_stepCell` itself survived: the reviewer could not construct data
+where it and `getExamObject` disagree, and both mutations it tried (dropping
+the `??=` guard, and `??= 0.0` for `??= 0`) were already caught by tests. It
+also verified `percentageLabel` exhaustively rather than by argument — every
+`((double) n / q) * 100` for `q` in 1..200 and `n` in 0..q+2, 20,700 values,
+through JDK 21's `Double.toString` and Dart's, with zero differences.
+
+**And it broke the branch, which is the process finding.** The reviewer
+mutation-tested by editing the shared working tree, and the commit that
+followed swept the mutation into `7144bdc` along with three of its probe files
+— the `??=` in `_stepCell` replaced by plain assignment, i.e. exactly the
+guard the phase is about, deleted. `95e0f17` restores it. Two lessons, both
+cheap: **a review pass that mutates code must do it on a copy, not the tree the
+author is committing from**, and a `git add -A` after handing the tree to
+anything else is a commit of unknown content. The suite caught it within
+minutes — the earlier "flaky" full-run failure I could not reproduce in
+isolation was this, not flakiness.
+
+| # | second-pass defect | pre-fix failure |
+|---|---|---|
+| 7 | **the My Progress list was frozen for the process lifetime.** `CoursesProgressFragment.onViewCreated:31` calls `loadCourseData()` unconditionally — it has none of `CourseProgressViewModel`'s `if (value != null) return` — and the fragment is pushed with `addToBackStack`, so leaving to take an exam and coming back re-reads. A plain `StreamProvider` that yields once and completes, with nothing invalidating it, does not. Worse for being half a pair: the grid *is* `autoDispose`, so after an exam the row said "1 mistake" while the grid it opened showed the new percentage — two halves of one screen disagreeing, and my own rationale twenty lines below was the argument against it | `re-entering My Progress re-reads rather than serving a frozen list` — `Expected: <3> Actual: <1>` |
+| 8 | **the mistakes table listed its exams in the wrong order.** Kotlin's `mistakesMap` is a `HashMap<String, Int>` keyed by the ordinal as a string, round-tripped through Gson into a `LinkedTreeMap`, so the adapter walks it in bucket order — ascending for the keys `"0".."9"`. A Dart map preserves the order the answers came off `answersFor`, so a submission whose first answer belonged to a later exam listed its rows backwards | `the mistakes table lists its exams in ascending order` — `did not find a value matching '3' following expected prior values` |
+| 9 | **a partial last grid row was centred.** `GridLayoutManager(this, 4)` puts item n in span `n % 4`, so a ninth step sits in the *first* column of its row; rows centred inside the enclosing Column put it under the gap between columns 1 and 2 | `a partial last grid row is left-aligned, not centred` — `Expected: <24.0> Actual: <126.0>` |
+| 10 | **the first frame of the My Courses tab was the whole catalogue.** `coursesStreamProvider` read the session as `.valueOrNull` and passed it as `shelfUserId`, which `watchCourses` drops when null. The same defect as #3, one provider above it in the same file — so found by this phase and fixed with it, awaiting the session **only** when the shelf filter is on so the catalogue view keeps its latency | reasoning plus #3's measured shape; the flash self-corrects on rebuild, so it has no stable assertion |
+
+### Two quirks that were right and unpinned
+
+Both of `submissionMap`'s oddities — `totalMistakes` declared outside the
+per-submission loop while `mistakesMap` is rebuilt inside it — were correctly
+reproduced and **neither was tested**. Hoisting the map (making the breakdown
+accumulate) and moving the accumulator in (making the total reset) each passed
+the entire suite. That is the shape a later reader "tidies", and my own comment
+telling them not to was the only thing standing in the way. `two attempts total
+together but only the last one breaks down` now pins both: mutation 1 gives
+`Expected: {1: 3} Actual: {0: 2, 1: 3}`, mutation 2 `Expected: <5> Actual: <3>`.
+
+### Three tests that passed without asserting what they claimed
+
+- `expect(find.byType(Container).evaluate().length, greaterThanOrEqualTo(3))`
+  for a three-step course cannot fail on the four cells an off-by-one would
+  draw, which is the bug it is named for. Now `findsNWidgets(3)`.
+- *"a zero-question exam cannot overwrite a real percentage, **in either
+  order**"* exercised one order. It now builds the rows in the other insertion
+  order too, rather than trusting an `ORDER BY`-less select.
+- *"a row with no progress figures is inert"* covers a state the real provider
+  cannot produce — `courseProgressSummary` writes an entry per requested id, so
+  the pair is never null, and Kotlin's branch is dead too (its `else` writes
+  `JsonNull`, which `getAsJsonObject("progress")` would throw on before the
+  adapter saw it). Kept, because the gate is one line and its absence is
+  invisible, with a comment saying so.
+- The mistake-keying test seeded answers with **no `questionId`** — data on
+  which Kotlin counts nothing and draws no table at all, so the fixture could
+  not demonstrate the keying it was named for. Its answers now name seeded
+  `exam_questions` rows.
+
+### One fix considered and declined
+
+`filteredSortedCoursesProvider` reads the session `.valueOrNull` too, and
+awaiting it there is the *worse* option: it costs one frame of every course
+reading "Not Started", whereas awaiting makes a session that rejects — or that
+no test harness resolves — fail the provider and render an **empty** course
+list, where Kotlin's fallback for unavailable progress is `baseCourses`, i.e.
+show the list unfiltered. Awaiting it also broke
+`the progress filter narrows the list by completion state`, which is the
+harness telling the same story. Left as it was, with the reasoning at the code.
+
+### Dead code removed
+
+`Routes.courseProgress` was declared and read by nothing — the pusher builds
+its path from the non-pattern `Routes.myProgress`, and the codebase's
+convention for a parameterised route (see `take_course_screen.dart:397`) is a
+literal with a comment warning against appending to the pattern. Removing it
+shrinks the cross-lane crossing in `router.dart` to the single nested
+`GoRoute`. `CourseStepProgress.stepId` was write-only; it is now the cell's
+`ValueKey`, which is what `ProgressGridAdapter`'s `areItemsTheSame` keys on.
+`_seedAttempt`'s `mistakes` parameter had no caller.
+
+### Left for Lane C
+
+`courseProgressCount` = "Progress {current} of {max}" has a **human**
+translation already shipping in all five Kotlin locales (`values-es:1010`
+"Progreso %1$s de %2$s"; `values-ne:1010` even reorders the placeholders, which
+ICU handles). `tool/arb_from_strings_xml.dart` skips placeholder keys outright,
+so it will never derive them and Spanish will read English forever. One key,
+five files, all in Lane C's set. `stepsHeading` the tool will pick up by exact
+English match on `steps`, and `percentageValue` is `%s%%` in every locale.
+
 ## Not a schema change
 
 No table, no converter, no index, no `schemaVersion` bump (still 45), so no
@@ -192,6 +285,13 @@ No table, no converter, no index, no `schemaVersion` bump (still 45), so no
   `grid[0].passed` as a proxy for "did `saveCourseProgress` store it" now ask
   `CourseProgressDao.findByCourseUserAndStep` directly, which is what they
   meant.
+- **One behaviour question raised and deliberately not answered here.**
+  With the shelf filter on and no signed-in user, `watchCourses(shelfUserId:
+  null)` shows the whole catalogue where Kotlin's `getMyCourses(userId ?: "")`
+  matches nothing. It is a real divergence, on the courses list rather than
+  this slice, and changing what a guest sees on the My Courses tab is a
+  decision for whoever owns that screen's behaviour, not a side effect of a
+  progress-grid phase.
 - **A note for testing `courseProgressStreamProvider`**: it is a
   `StreamProvider` over a drift `watch()` query, and `widget_harness.dart` is
   explicit that a screen test should override the provider rather than open a

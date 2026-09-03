@@ -171,9 +171,20 @@ class _StepGrid extends StatelessWidget {
         ),
       );
     }
+    // The RecyclerView is `wrap_content` and `layout_gravity="center"`, so the
+    // whole block is centred — but `GridLayoutManager` puts item n in span
+    // `n % 4`, so a final row of one cell sits in the **first column**, not
+    // the middle. Rows centred inside the enclosing Column instead put a
+    // 9th step under the gap between columns 1 and 2.
     return Padding(
       padding: const EdgeInsets.all(8),
-      child: Column(children: rows),
+      child: SizedBox(
+        width: columns * _StepCell.extent,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: rows,
+        ),
+      ),
     );
   }
 }
@@ -210,6 +221,10 @@ class _StepCell extends StatelessWidget {
   static const Color completedColor = Color(0xFF4CAF50);
   static const Color inProgressColor = Color(0xFFFFEB3B);
 
+  /// 60dp of card plus the 4dp margin on each side, matching
+  /// `row_my_progress_grid.xml`.
+  static const double extent = 68;
+
   final CourseStepProgress step;
 
   @override
@@ -227,6 +242,9 @@ class _StepCell extends StatelessWidget {
     }
 
     return Container(
+      // `ProgressGridAdapter`'s `areItemsTheSame` keys on `stepId`; using it
+      // here is what keeps the field read rather than merely carried.
+      key: ValueKey(step.stepId),
       width: 60,
       height: 60,
       margin: const EdgeInsets.all(4),

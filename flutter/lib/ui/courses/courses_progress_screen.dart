@@ -182,34 +182,45 @@ class _StepMistakesTable extends StatelessWidget {
             ],
           ),
         ),
-        ...stepMistakes.entries.map((entry) {
-          // `stepView.text = "${stepKey.toInt().plus(1)}"`.
-          final stepNum = entry.key + 1;
-          return Container(
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: theme.dividerColor, width: 1),
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(child: Text('$stepNum', textAlign: TextAlign.center)),
-                Expanded(
-                  child: Text(
-                    '${entry.value}',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: entry.value > 0
-                          ? theme.colorScheme.error
-                          : theme.colorScheme.primary,
-                    ),
+        // Kotlin's `mistakesMap` is a `HashMap<String, Int>` keyed by the
+        // exam ordinal as a string, round-tripped through Gson into a
+        // `LinkedTreeMap`, so the adapter walks it in bucket order — which for
+        // the keys "0".."9" is ascending. A Dart map literal preserves the
+        // order the answers came off `answersFor` instead, so a submission
+        // whose first answer belongs to a later exam listed its rows
+        // backwards.
+        ...(stepMistakes.entries.toList()
+              ..sort((a, b) => a.key.compareTo(b.key)))
+            .map((entry) {
+              // `stepView.text = "${stepKey.toInt().plus(1)}"`.
+              final stepNum = entry.key + 1;
+              return Container(
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(color: theme.dividerColor, width: 1),
                   ),
                 ),
-              ],
-            ),
-          );
-        }),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text('$stepNum', textAlign: TextAlign.center),
+                    ),
+                    Expanded(
+                      child: Text(
+                        '${entry.value}',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: entry.value > 0
+                              ? theme.colorScheme.error
+                              : theme.colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
       ],
     );
   }

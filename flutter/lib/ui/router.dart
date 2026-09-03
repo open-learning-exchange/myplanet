@@ -95,9 +95,6 @@ class Routes {
   static const String resourceViewer = '/resources/viewer/:resourceId';
   static const String courses = '/courses';
   static const String myProgress = '/courses/progress';
-
-  /// `CourseProgressActivity`, opened from a My Progress list row.
-  static const String courseProgress = '/courses/progress/:courseId';
   static const String calendar = '/calendar';
   static const String profile = '/profile';
   static const String settings = '/profile/settings';

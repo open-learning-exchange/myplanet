@@ -340,6 +340,24 @@ void main() {
     final data = await repository.courseProgress('course-1', 'user-1');
     expect(data.steps[1].percentage, 50.0);
     expect(data.steps[1].completed, isFalse);
+
+    // Now the reverse: the question-less exam first. `getByStepIds` has no
+    // `ORDER BY`, so this rebuilds the rows in the other insertion order
+    // rather than trusting the select. The unguarded with-questions branch
+    // overwrites, so the answer is the same — which is the point of the title.
+    await database.examDao.deleteNotIn(const []);
+    await database.examDao.upsertAll([
+      ExamsCompanion.insert(
+        id: 'exam-empty',
+        stepId: const Value('course-1:1'),
+        courseId: const Value('course-1'),
+      ),
+    ], const {});
+    await _seedStepExam(database, questionIds: ['q1', 'q2']);
+
+    final reversed = await repository.courseProgress('course-1', 'user-1');
+    expect(reversed.steps[1].percentage, 50.0);
+    expect(reversed.steps[1].completed, isFalse);
   });
 
   test('the last submission of an exam wins the cell', () async {
@@ -459,7 +477,6 @@ Future<void> _seedAttempt(
   required List<String> answeredQuestionIds,
   String examId = 'exam-1',
   String? parentId,
-  int mistakes = 0,
 }) async {
   await database.submissionDao.upsertAll(
     [
@@ -479,7 +496,6 @@ Future<void> _seedAttempt(
             submissionId: submissionId,
             examId: Value(examId),
             questionId: Value(questionId),
-            mistakes: Value(mistakes),
           ),
       ],
     },

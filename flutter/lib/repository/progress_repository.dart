@@ -21,10 +21,12 @@ import '../data/local/course_progress_mapper.dart';
 ///
 /// The "current progress" / "completed courses" calculations follow the
 /// Kotlin's `CoursesRepositoryImpl.getCourseProgress`/`getCompletedCourses`
-/// shape closely enough to share the same bugs, deliberately: a step is
-/// "current" when no progress row marks it passed, and a course is "complete"
-/// when every one of its steps is passed. Step-exam submissions are read only
-/// to display the running mistake count, matching the Kotlin grid.
+/// shape closely enough to share the same bugs, deliberately — including the
+/// inconsistency between them: a step counts as "current" as soon as a
+/// progress row exists for it, **whatever its `passed` flag**, while a course
+/// is "complete" only when every step is `passed`. Step-exam submissions are
+/// read for the share of each step exam the learner has **answered**, which is
+/// the only number the Kotlin grid renders.
 class ProgressRepository {
   ProgressRepository(
     this._api,
@@ -252,9 +254,13 @@ class ProgressRepository {
   ///
   /// Counts the contiguous run of steps **from step 1** that have a progress
   /// row, **ignoring `passed`** — a step the user merely opened counts as
-  /// "current". This deliberately diverges from [courseProgress], whose grid
-  /// shows `passed`; the bar measures how far the user has reached, not what
-  /// they have passed.
+  /// "current", which `ProgressRepositoryImplTest.kt:130-146` pins with two
+  /// `passed = false` rows and an expected `current` of 2. It measures how far
+  /// the learner has reached, not what they have passed, and so deliberately
+  /// disagrees with [completedCourseIds], which does require `passed`.
+  ///
+  /// [courseProgress] calls this for the header of its grid, so the ring and
+  /// the take-course bar cannot drift apart.
   Future<int> getCurrentProgress(
     List<CourseStepRow> steps,
     String? userId,
