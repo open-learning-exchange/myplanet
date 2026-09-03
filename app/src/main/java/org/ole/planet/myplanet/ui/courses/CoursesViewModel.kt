@@ -194,9 +194,7 @@ class CoursesViewModel @Inject constructor(
             withContext(dispatcherProvider.io) {
                 coursesRepository.removeCoursesFromShelf(courseIds, userId)
                 if (deleteProgress) {
-                    courseIds.forEach { courseId ->
-                        coursesRepository.deleteCourseProgress(courseId)
-                    }
+                    coursesRepository.deleteCoursesProgress(courseIds)
                 }
             }
             onComplete()
