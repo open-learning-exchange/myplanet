@@ -189,6 +189,21 @@ class _StepGrid extends StatelessWidget {
 /// the Kotlin resolves them from the palette and they carry the meaning here;
 /// `md_black_1000` text and `mainColor` (an alias of `colorPrimary`) map onto
 /// black and the scheme's primary.
+///
+/// One deliberate divergence: these cells are rounded, and in the shipping app
+/// they are square. `row_my_progress_grid.xml` asks for
+/// `app:cardCornerRadius="8dp"`, but the adapter paints the cell with
+/// `itemView.setBackgroundColor`, which AndroidX `CardView` does not override
+/// — so the `RoundRectDrawable` that supplies the rounded outline is replaced
+/// by a `ColorDrawable` and the radius and shadow are dead. The port draws
+/// the radius the layout asks for rather than an artefact of how the colour
+/// is applied.
+///
+/// The text is set only in the has-percentage branch, as the Kotlin does — but
+/// the Kotlin's `else` branch never *clears* `tvProgress`, which is latent
+/// there only because the grid is measured unbounded and so never recycles a
+/// holder. A rebuilt widget carries no previous text, so the port cannot
+/// resurrect it.
 class _StepCell extends StatelessWidget {
   const _StepCell({required this.step});
 

@@ -405,7 +405,8 @@ final courseProgressStreamProvider = StreamProvider<List<CoursesProgressRow>>((
   // thing "My Progress" emitted was **the entire course catalogue**, every
   // entry captioned with a progress bar, until the session resolved and the
   // provider rebuilt. Awaiting `.future` means the shelf filter is never
-  // applied with an unknown user. Sixth instance of this shape in the port.
+  // applied with an unknown user. Fifth instance of this shape in the port,
+  // and the first found in a provider rather than a screen.
   final userId = (await ref.watch(sessionProvider.future))?.id;
   final coursesRepo = ref.watch(coursesRepositoryProvider);
 
@@ -490,6 +491,12 @@ final courseProgressStreamProvider = StreamProvider<List<CoursesProgressRow>>((
         // join is the same one without the extra query — but the
         // course-membership filter is not optional, and dropping it let an
         // unrelated exam's mistakes into the total.
+        //
+        // One deliberate divergence: Kotlin drops an answer whose
+        // `questionId` no longer resolves to an `exam_questions` row, because
+        // that lookup is how it reaches the exam. Here the exam id is on the
+        // answer, so a mistake still counts when its question row has been
+        // pruned by a re-sync — which is the number the learner earned.
         final index = examIndex[answer.examId];
         if (index == null) continue;
         totalMistakes += answer.mistakes;
@@ -497,6 +504,10 @@ final courseProgressStreamProvider = StreamProvider<List<CoursesProgressRow>>((
       }
       lastMap = perExam;
     }
+    // Kotlin calls `submissionMap` only for a course with submissions, so
+    // `mistakes` is *absent* there and `CoursesProgressAdapter` falls back to
+    // `message_placeholder("0")`. Storing 0 renders the same "0"; the model
+    // differs from the Kotlin's null, the pixels do not.
     mistakesByCourse[courseId] = totalMistakes;
     if (lastMap != null && lastMap.isNotEmpty) {
       stepMistakesByCourse[courseId] = lastMap;
@@ -534,11 +545,22 @@ final courseProgressStreamProvider = StreamProvider<List<CoursesProgressRow>>((
 /// lifetime and show stale cells forever (Phase 113's defect D, on the exam
 /// join).
 ///
-/// The session is awaited via `.future`, not read as `.valueOrNull`: this
-/// screen never watches `sessionProvider`, and reading it unwatched yields
-/// `null` until something else resolves it — which here would silently render
-/// a grid for "no user", i.e. every cell blank. Fifth instance of that shape
-/// in the port.
+/// The session is awaited via `.future`, not read as `.valueOrNull`. The
+/// screen never watches `sessionProvider`, so an unwatched read yields `null`
+/// until something else resolves it, and a grid built for "no user" is not
+/// empty — it is a full grid of blank cells over a "Progress 0 of N" header,
+/// indistinguishable from a learner who has done nothing. Written this way
+/// from the start rather than fixed later; the same shape has now been found
+/// five times in this port.
+///
+/// Kotlin's `CourseProgressViewModel` passes `user?._id` here while the list's
+/// `ProgressViewModel` passes `user?.id`, and **every writer keys on `id`** —
+/// `CourseStepFragment` for progress rows, `ExamTakingFragment` for
+/// submissions. For a synced account the two are equal, but a member created
+/// offline gets a generated `id` and an empty `_id`, so the Kotlin grid reads
+/// nothing back and shows a blank grid under a list row that displayed real
+/// numbers. The port passes `id` on both paths deliberately: reproducing that
+/// would mean reproducing a lookup against a key nothing writes.
 final courseProgressGridProvider = FutureProvider.autoDispose
     .family<CourseProgressData, String>((ref, courseId) async {
       final user = await ref.watch(sessionProvider.future);

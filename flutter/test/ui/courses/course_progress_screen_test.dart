@@ -138,6 +138,25 @@ void main() {
     );
   });
 
+  testWidgets('a long percentage clips inside its 60dp cell', (tester) async {
+    // One of three answered is `33.33333333333333%` — the Kotlin renders the
+    // Double verbatim into a 60dp card at 18sp and the TextView wraps and is
+    // clipped to the card. This pins that the port does the same rather than
+    // bleeding over its neighbours: the text lays out to exactly the cell's
+    // 60x60 box (`Text`'s default `TextOverflow.clip` cuts the last line),
+    // and nothing reports an overflow.
+    await _seedCourse(database, questionIds: ['q1', 'q2', 'q3']);
+    await _seedAttempt(database, answeredQuestionIds: ['q1']);
+
+    await pumpScreen(tester);
+    await tester.pumpAndSettle();
+
+    final label = find.text('33.33333333333333%');
+    expect(label, findsOneWidget);
+    expect(tester.getSize(label), const Size(60, 60));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('an unattempted exam is blank, not 0%', (tester) async {
     await _seedCourse(database, questionIds: ['q1', 'q2']);
 
