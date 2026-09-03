@@ -59,6 +59,7 @@ import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.VersionUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
+import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class UserRepositoryImpl @Inject constructor(
     @param:AppPreferences private val settings: SharedPreferences,
@@ -1047,15 +1048,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun bulkInsertAchievementsFromSync(jsonArray: JsonArray) {
-        val achievements = ArrayList<Achievement>(jsonArray.size())
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                achievements.add(Achievement.fromJson(jsonDoc))
-            }
-        }
+        val achievements = jsonArray.toSyncDocuments().map { (_, doc) -> Achievement.fromJson(doc) }
         achievementDao.upsertAll(achievements)
     }
 
