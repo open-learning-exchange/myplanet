@@ -15,26 +15,23 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.repository.TeamsSyncRepository
-import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.repository.TeamsMembersRepository
+import org.ole.planet.myplanet.repository.UserRepository
 
 @ExperimentalCoroutinesApi
 class RequestsViewModelTest {
 
-    private lateinit var teamsRepository: TeamsRepository
-    private lateinit var teamsSyncRepository: TeamsSyncRepository
-    private lateinit var userSessionManager: UserSessionManager
-        private lateinit var viewModel: RequestsViewModel
+    private lateinit var teamsRepository: TeamsMembersRepository
+    private lateinit var userRepository: UserRepository
+    private lateinit var viewModel: RequestsViewModel
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         teamsRepository = mockk()
-        teamsSyncRepository = mockk()
-        userSessionManager = mockk()
-                viewModel = RequestsViewModel(teamsRepository, teamsSyncRepository, userSessionManager)
+        userRepository = mockk()
+        viewModel = RequestsViewModel(teamsRepository, userRepository)
     }
 
     @After
@@ -53,7 +50,7 @@ class RequestsViewModelTest {
         coEvery { teamsRepository.getJoinedMemberCount(teamId) } returns 1
 
         val currentUser = UserEntity().apply { id = "currentUser" }
-        coEvery { userSessionManager.getUserModel() } returns currentUser
+        coEvery { userRepository.getUserModel() } returns currentUser
         coEvery { teamsRepository.isTeamLeader(teamId, currentUser.id) } returns true
 
         viewModel.fetchMembers(teamId)
@@ -76,7 +73,7 @@ class RequestsViewModelTest {
 
         coEvery { teamsRepository.getRequestedMembers(teamId) } returns members
         coEvery { teamsRepository.getJoinedMemberCount(teamId) } returns 0
-        coEvery { userSessionManager.getUserModel() } returns null
+        coEvery { userRepository.getUserModel() } returns null
         coEvery { teamsRepository.isTeamLeader(teamId, null) } returns false
 
         viewModel.fetchMembers(teamId)
@@ -85,7 +82,7 @@ class RequestsViewModelTest {
         assertEquals(2, viewModel.uiState.value.members.size)
 
         coEvery { teamsRepository.respondToMemberRequest(teamId, user1.id!!, true) } returns Result.success(Unit)
-        coEvery { teamsSyncRepository.syncTeamActivities() } returns Unit
+        coEvery { teamsRepository.recordTeamActivity() } returns Unit
 
         // Setup fetchMembers for the success path
         val newMembers = listOf(user2)
@@ -115,7 +112,7 @@ class RequestsViewModelTest {
 
         coEvery { teamsRepository.getRequestedMembers(teamId) } returns members
         coEvery { teamsRepository.getJoinedMemberCount(teamId) } returns 0
-        coEvery { userSessionManager.getUserModel() } returns null
+        coEvery { userRepository.getUserModel() } returns null
         coEvery { teamsRepository.isTeamLeader(teamId, null) } returns false
 
         viewModel.fetchMembers(teamId)

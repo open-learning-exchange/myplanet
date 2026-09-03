@@ -7,7 +7,6 @@ import io.mockk.every
 import io.mockk.mockk
 import java.util.logging.Level
 import java.util.logging.Logger
-
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -71,7 +70,7 @@ class LifeRepositoryTest {
         val userId = "user123"
         coEvery { myLifeDao.getByUserId(userId) } returns emptyList()
 
-        val result = repository.getMyLifeByUserId(userId, ensureLatest = true)
+        val result = repository.getMyLifeByUserId(userId)
 
         assertEquals(0, result.size)
     }

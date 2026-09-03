@@ -18,7 +18,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
-import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -122,14 +121,10 @@ class AddResourceFragment : BottomSheetDialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val bottomSheetDialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
-        bottomSheetDialog.setOnShowListener { d: DialogInterface ->
-            val dialog = d as BottomSheetDialog
-            val bottomSheet = dialog.findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
-            bottomSheet?.let {
-                BottomSheetBehavior.from(it).state = BottomSheetBehavior.STATE_EXPANDED
-                BottomSheetBehavior.from(it).skipCollapsed = true
-                BottomSheetBehavior.from(it).setHideable(true)
-            }
+        bottomSheetDialog.behavior.apply {
+            state = BottomSheetBehavior.STATE_EXPANDED
+            skipCollapsed = true
+            isHideable = true
         }
         return bottomSheetDialog
     }
@@ -243,9 +238,8 @@ class AddResourceFragment : BottomSheetDialogFragment() {
 
     private fun handleUri(uri: Uri?, requestCode: Int) {
         val path = when (requestCode) {
-            REQUEST_CAPTURE_PICTURE, REQUEST_VIDEO_CAPTURE ->
-                FileUtils.getRealPathFromURI(requireContext(), uri)
-            REQUEST_FILE_SELECTION -> FileUtils.getPathFromURI(requireContext(), uri)
+            REQUEST_CAPTURE_PICTURE, REQUEST_VIDEO_CAPTURE, REQUEST_FILE_SELECTION ->
+                FileUtils.resolveUriToPath(requireContext(), uri)
             else -> null
         }
         processResource(path)

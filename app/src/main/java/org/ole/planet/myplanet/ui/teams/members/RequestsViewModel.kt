@@ -12,8 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsMembersRepository
-import org.ole.planet.myplanet.repository.TeamsSyncRepository
-import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.repository.UserRepository
 
 data class RequestsUiState(
     val members: List<UserEntity> = emptyList(),
@@ -24,8 +23,7 @@ data class RequestsUiState(
 @HiltViewModel
 class RequestsViewModel @Inject constructor(
     private val teamsRepository: TeamsMembersRepository,
-    private val teamsSyncRepository: TeamsSyncRepository,
-    private val userSessionManager: UserSessionManager
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RequestsUiState())
@@ -37,7 +35,7 @@ class RequestsViewModel @Inject constructor(
         viewModelScope.launch {
             val members = teamsRepository.getRequestedMembers(teamId)
             val memberCount = teamsRepository.getJoinedMemberCount(teamId)
-            val user = userSessionManager.getUserModel()
+            val user = userRepository.getUserModel()
             val isLeader = teamsRepository.isTeamLeader(teamId, user?.id)
             _uiState.value = RequestsUiState(members, isLeader, memberCount)
         }
@@ -58,7 +56,7 @@ class RequestsViewModel @Inject constructor(
             val result = teamsRepository.respondToMemberRequest(teamId, userId, isAccepted)
             if (result.isSuccess) {
                 _successAction.emit(Unit)
-                launch { teamsSyncRepository.syncTeamActivities() }
+                teamsRepository.recordTeamActivity()
             } else {
                 _uiState.value = originalState
             }

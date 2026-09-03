@@ -5,9 +5,10 @@ import com.google.gson.JsonObject
 import dagger.Lazy
 import java.util.Calendar
 import java.util.Date
+import java.util.LinkedHashSet
+import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
-import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
@@ -16,20 +17,19 @@ import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotification
 import org.ole.planet.myplanet.model.TeamNotificationInfo
-import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
+import org.ole.planet.myplanet.utils.toSyncDocuments
 
 private const val STORAGE_WARNING_AVAILABLE_PERCENT = 10
 
 class NotificationsRepositoryImpl @Inject constructor(
     private val userRepository: Lazy<UserRepository>,
-    private val teamsRepository: Lazy<TeamsRepository>,
+    private val teamsRepository: Lazy<TeamsNotificationsRepository>,
     private val timeProvider: TimeProvider,
     private val teamNotificationDao: TeamNotificationDao,
     private val notificationDao: NotificationDao,
     private val teamTaskDao: TeamTaskDao,
-    private val voicesRepository: VoicesRepository,
-    private val examDao: ExamDao
+    private val voicesRepository: VoicesRepository
 ) : NotificationsRepository {
     override suspend fun refresh() = Unit
 
@@ -113,7 +113,7 @@ class NotificationsRepositoryImpl @Inject constructor(
     override suspend fun markNotificationsAsRead(notificationIds: Set<String>): Set<String> {
         if (notificationIds.isEmpty()) return emptySet()
 
-        val existingIds = notificationDao.getByIds(notificationIds.toList()).map { it.id }
+        val existingIds = notificationDao.getIdsByIds(notificationIds.toList())
         if (existingIds.isEmpty()) return emptySet()
         notificationDao.markAsRead(existingIds, Date())
         return existingIds.toSet()
@@ -121,7 +121,7 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     override suspend fun markAllUnreadAsRead(userId: String?): Set<String> {
         val actualUserId = userId ?: return emptySet()
-        val unreadIds = notificationDao.getNotifications(actualUserId, "unread", false).map { it.id }.toSet()
+        val unreadIds = notificationDao.getUnreadIds(actualUserId).toSet()
         if (unreadIds.isEmpty()) return emptySet()
         notificationDao.markAllUnreadAsRead(actualUserId, Date())
         return unreadIds
@@ -194,9 +194,10 @@ class NotificationsRepositoryImpl @Inject constructor(
 
         val tasks = teamTaskDao.getByIds(taskIds)
 
-        val teamIds = tasks.mapNotNull { it.teamId }.filter { it.isNotEmpty() }.distinct()
+        val teamIds = LinkedHashSet<String>()
+        tasks.forEach { task -> task.teamId?.takeIf { it.isNotEmpty() }?.let { teamIds.add(it) } }
         if (teamIds.isNotEmpty()) {
-            val teamMap = teamsRepository.get().getTeamNamesByIds(teamIds)
+            val teamMap = teamsRepository.get().getTeamNamesByIds(teamIds.toList())
 
             tasks.forEach { task ->
                 val taskId = task.id
@@ -216,11 +217,12 @@ class NotificationsRepositoryImpl @Inject constructor(
 
         val joinRequests = teamsRepository.get().getJoinRequestsInfo(relatedIds)
 
-        val teamIds = joinRequests.map { it.teamId }.filter { it.isNotEmpty() }.distinct()
+        val teamIds = LinkedHashSet<String>()
+        joinRequests.forEach { jr -> jr.teamId.takeIf { it.isNotEmpty() }?.let { teamIds.add(it) } }
 
-        val teamMap = teamsRepository.get().getTeamNamesByIds(teamIds)
+        val teamMap = teamsRepository.get().getTeamNamesByIds(teamIds.toList())
 
-        val intermediateList = mutableListOf<Triple<String, String, String>>()
+        val intermediateList = ArrayList<Triple<String, String, String>>(joinRequests.size)
         joinRequests.forEach { jr ->
             val id = jr.id
             if (id.isNotEmpty()) {
@@ -230,10 +232,11 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
 
         val map = mutableMapOf<String, Pair<String, String>>()
-        val userIds = intermediateList.map { it.second }.filter { it.isNotEmpty() }.distinct()
+        val userIds = LinkedHashSet<String>()
+        intermediateList.forEach { triple -> triple.second.takeIf { it.isNotEmpty() }?.let { userIds.add(it) } }
         val userMap = mutableMapOf<String, String>()
         if (userIds.isNotEmpty()) {
-            val users = userRepository.get().getUsersByIds(userIds)
+            val users = userRepository.get().getUsersByIds(userIds.toList())
             for (user in users) {
                 user.id?.let { id ->
                     userMap[id] = user.name ?: "Unknown User"
@@ -249,21 +252,16 @@ class NotificationsRepositoryImpl @Inject constructor(
         return map
     }
 
-    override suspend fun getTaskTeamName(taskTitle: String): String? {
-        val taskObj = teamTaskDao.getByTitle(taskTitle)
-        val teamInfo = taskObj?.teamId?.let { teamsRepository.get().getTeamLabelInfo(it) }
-        return teamInfo?.name
-    }
-
     override suspend fun getTaskTeamNamesByTaskTitles(taskTitles: List<String>): Map<String, String> {
         if (taskTitles.isEmpty()) return emptyMap()
         val map = mutableMapOf<String, String>()
 
         val tasks = teamTaskDao.getByTitles(taskTitles)
 
-        val teamIds = tasks.mapNotNull { it.teamId }.filter { it.isNotEmpty() }.distinct()
+        val teamIds = LinkedHashSet<String>()
+        tasks.forEach { task -> task.teamId?.takeIf { it.isNotEmpty() }?.let { teamIds.add(it) } }
         if (teamIds.isNotEmpty()) {
-            val teamMap = teamsRepository.get().getTeamNamesByIds(teamIds)
+            val teamMap = teamsRepository.get().getTeamNamesByIds(teamIds.toList())
 
             tasks.forEach { task ->
                 val taskTitle = task.title
@@ -300,7 +298,6 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
         val notificationMap = mutableMapOf<String, TeamNotificationInfo>()
 
-        // 1. Fetch all relevant notifications in a single query
         val notificationsResult = teamNotificationDao.getByTypeAndParentIds("chat", teamIds)
         val notificationsById = mutableMapOf<String, TeamNotification>()
         notificationsResult.forEach {
@@ -309,21 +306,16 @@ class NotificationsRepositoryImpl @Inject constructor(
             }
         }
 
-        // 2. Fetch all relevant chat counts in a single query
-        val chatViewableIds = voicesRepository.getTeamChatViewableIds(teamIds)
         val chatCountsById = mutableMapOf<String, Long>()
-        chatViewableIds.forEach { viewableId ->
-            val currentCount = chatCountsById[viewableId] ?: 0
-            chatCountsById[viewableId] = currentCount + 1
+        for (teamId in teamIds) {
+            chatCountsById[teamId] = voicesRepository.countTopLevelByTeam(teamId)
         }
 
-        // 3. Fetch all relevant tasks once
         val current = timeProvider.now()
         val tomorrow = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
         val tasks = teamTaskDao.getTasksForUserBetween(userId, current, tomorrow.timeInMillis)
         val hasTask = tasks.isNotEmpty()
 
-        // 4. Combine the results in memory
         for (teamId in teamIds) {
             val notification = notificationsById[teamId]
             val chatCount = chatCountsById[teamId] ?: 0L
@@ -340,6 +332,34 @@ class NotificationsRepositoryImpl @Inject constructor(
     override suspend fun markNotificationsSynced(syncResults: List<Pair<String, String?>>) {
         if (syncResults.isEmpty()) return
         notificationDao.markSynced(syncResults)
+    }
+
+    override fun resolveType(type: String, message: String, subType: String?): String {
+        val lowerType = type.lowercase(Locale.ROOT)
+        if (lowerType in NotificationsRepository.KNOWN_TYPES) return lowerType
+        val lower = message.lowercase(Locale.ROOT)
+        if (lowerType == "team") {
+            if (subType != null) return subType.lowercase(Locale.ROOT)
+            return when {
+                lower.contains("requested to join") || lower.contains("wants to join") ||
+                    lower.contains("solicitado unirse") -> "join_request"
+                lower.contains("posted a message on") || lower.contains("posted a new voice") ||
+                    lower.contains("new voice in") || lower.contains("posted in") -> "chat"
+                else -> "team_join"
+            }
+        }
+        if (lowerType == "newtask") return "task"
+        if (lowerType == "newresource") return "resource"
+        return when {
+            lower.contains("requested to join") || lower.contains("wants to join") -> "join_request"
+            lower.contains("added you to") || lower.contains("you've been added") || lower.contains("you have been added") -> "team_join"
+            lower.contains("replied to your") || lower.contains("replied on your") || lower.contains("new reply to") -> "voice_reply"
+            lower.contains("posted a new voice") || lower.contains("new voice in") || lower.contains("posted in") -> "chat"
+            lower.contains("is due") || lower.contains("due:") -> "task"
+            lower.contains("storage") -> "storage"
+            lower.contains("resource") -> "resource"
+            else -> "notification"
+        }
     }
 
     private fun parseNotification(doc: JsonObject): AppNotification? {
@@ -363,12 +383,6 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
     }
 
-    /**
-     * Raw type "team" covers join requests, team-membership changes, and chat posts alike, and the
-     * server renders `message` in the recipient's locale, so it can't be classified reliably by
-     * sniffing English/Spanish phrases. `linkParams.activeTab == "applicantTab"` is a locale-independent
-     * signal the server sends specifically for join-request notifications; use it when present.
-     */
     private fun extractTeamSubtype(rawType: String, doc: JsonObject): String? {
         if (rawType != "team") return null
         val activeTab = doc.getAsJsonObject("linkParams")?.get("activeTab")?.asString
@@ -403,7 +417,7 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     override suspend fun deleteNotifications(ids: Set<String>): Set<String> {
         if (ids.isEmpty()) return emptySet()
-        val deletedIds = notificationDao.getByIds(ids.toList()).map { it.id }
+        val deletedIds = notificationDao.getIdsByIds(ids.toList())
         if (deletedIds.isNotEmpty()) {
             notificationDao.deleteByIds(deletedIds)
         }
@@ -411,15 +425,7 @@ class NotificationsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
-        val documentList = ArrayList<JsonObject>(jsonArray.size())
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-            }
-        }
+        val documentList = jsonArray.toSyncDocuments().map { it.second }
         val parsedList = documentList.mapNotNull { parseNotification(it) }
         val existingNotifications = if (parsedList.isNotEmpty()) {
             notificationDao.getByIds(parsedList.map { it.id }).associateBy { it.id }

@@ -185,12 +185,15 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         })
     }
 
+    private fun setStepText(currentStep: Int, totalSteps: Int) {
+        binding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", currentStep, totalSteps)
+    }
+
     private fun updateStepDisplay(position: Int) {
         if (position == 0) {
             binding.tvStep.text = "Course Details"
         } else {
-            val stepNumber = position
-            binding.tvStep.text = String.format(getString(R.string.step) + " %d/%d", stepNumber, steps.size)
+            setStepText(position, steps.size)
         }
         binding.nextStep.text = if (position == 0) getString(R.string.start) else getString(R.string.next)
         binding.courseStepProgressBar.max = steps.size
@@ -336,7 +339,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onPageScrollStateChanged(state: Int) {}
 
     private fun onClickNext() {
-        binding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", binding.viewPager2.currentItem, steps.size)
+        setStepText(binding.viewPager2.currentItem, steps.size)
         if (binding.viewPager2.currentItem >= steps.size) {
             binding.nextStep.visibility = View.GONE
             binding.finishStep.visibility = View.VISIBLE
@@ -347,7 +350,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun onClickPrevious() {
-        binding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", binding.viewPager2.currentItem - 1, steps.size)
+        setStepText(binding.viewPager2.currentItem - 1, steps.size)
         if (binding.viewPager2.currentItem - 1 == 0) {
             binding.previousStep.visibility = View.GONE
             binding.nextStep.visibility = View.VISIBLE

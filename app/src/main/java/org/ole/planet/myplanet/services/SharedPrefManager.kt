@@ -12,6 +12,7 @@ import javax.inject.Singleton
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.ListViewMode
+import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
 class SharedPrefManager @Inject constructor(
@@ -99,7 +100,7 @@ class SharedPrefManager @Inject constructor(
     }
 
     fun getSelectedTeamId(): String? {
-        return pref.getString(SELECTED_TEAM_ID, "").takeIf { !it.isNullOrEmpty() } ?: ""
+        return pref.getString(SELECTED_TEAM_ID, "") ?: ""
     }
 
     fun setSelectedTeamId(selectedTeamId: String?) {
@@ -115,7 +116,7 @@ class SharedPrefManager @Inject constructor(
     }
 
     fun getTeamName(): String? {
-        return pref.getString(TEAM_NAME, "").takeIf { !it.isNullOrEmpty() } ?: ""
+        return pref.getString(TEAM_NAME, "") ?: ""
     }
 
     fun setTeamName(teamName: String?) {
@@ -165,10 +166,16 @@ class SharedPrefManager @Inject constructor(
     fun setCouchdbUrl(url: String) = pref.edit { putString(COUCHDB_URL, url) }
 
     fun getUrlUser(): String = pref.getString(URL_USER, "") ?: ""
-    fun setUrlUser(user: String) = pref.edit { putString(URL_USER, user) }
+    fun setUrlUser(user: String) {
+        pref.edit { putString(URL_USER, user) }
+        UrlUtils.invalidateHeaderCache()
+    }
 
     fun getUrlPwd(): String = pref.getString(URL_PWD, "") ?: ""
-    fun setUrlPwd(pwd: String) = pref.edit { putString(URL_PWD, pwd) }
+    fun setUrlPwd(pwd: String) {
+        pref.edit { putString(URL_PWD, pwd) }
+        UrlUtils.invalidateHeaderCache()
+    }
 
     fun getUrlScheme(): String = pref.getString(URL_SCHEME, "") ?: ""
     fun setUrlScheme(scheme: String) = pref.edit { putString(URL_SCHEME, scheme) }
@@ -274,6 +281,19 @@ class SharedPrefManager @Inject constructor(
     fun setRawString(key: String, value: String) = pref.edit { putString(key, value) }
     fun getRawLong(key: String, default: Long = 0L): Long = pref.getLong(key, default)
     fun setRawLong(key: String, value: Long) = pref.edit { putLong(key, value) }
+
+    fun getMediaPlaybackPosition(resourceKey: String): Long = pref.getLong("media_progress_$resourceKey", 0L)
+    fun setMediaPlaybackPosition(resourceKey: String, positionMs: Long) {
+        if (positionMs <= 0L) {
+            removeKey("media_progress_$resourceKey")
+        } else {
+            pref.edit { putLong("media_progress_$resourceKey", positionMs) }
+        }
+    }
+
+    fun getMediaPlaybackSpeed(): Float = pref.getFloat("media_playback_speed", 1.0f)
+    fun setMediaPlaybackSpeed(speed: Float) = pref.edit { putFloat("media_playback_speed", speed) }
+
     fun removeKey(key: String) = pref.edit { remove(key) }
     fun clearPreferences() {
         val keysToKeep = setOf(FIRST_LAUNCH, MANUAL_CONFIG)
@@ -287,6 +307,7 @@ class SharedPrefManager @Inject constructor(
         }
         val defaultPreferences = PreferenceManager.getDefaultSharedPreferences(context)
         defaultPreferences.edit { clear() }
+        UrlUtils.invalidateHeaderCache()
     }
 
 }

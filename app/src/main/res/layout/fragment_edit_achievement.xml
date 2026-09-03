@@ -10,7 +10,7 @@
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context=".ui.userprofile.EditAchievementFragment">
+        tools:context=".ui.user.EditAchievementFragment">
 
         <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
@@ -34,6 +34,7 @@
                         android:layout_height="wrap_content"
                         android:background="?attr/colorPrimary"
                         android:theme="?attr/actionBarTheme"
+                        app:navigationContentDescription="@string/btn_back"
                         app:navigationIcon="@drawable/baseline_arrow_back_24"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toStartOf="@id/edt_achivement"

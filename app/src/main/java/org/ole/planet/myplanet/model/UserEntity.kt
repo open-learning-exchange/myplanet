@@ -15,6 +15,7 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 
 @Entity(tableName = "users", indices = [Index("_id"), Index("name"), Index("planetCode")])
 open class UserEntity(
@@ -60,7 +61,7 @@ open class UserEntity(
         jsonObject.add("roles", getRoles())
         if (_id?.isEmpty() == true) {
             jsonObject.addProperty("password", password)
-            jsonObject.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+            jsonObject.addDocumentOrigin()
             jsonObject.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(context))
             jsonObject.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
         } else {
@@ -166,12 +167,12 @@ open class UserEntity(
     }
 
     fun isManager(): Boolean {
-        val hasManagerRole = rolesList?.any { it.contains("manager", ignoreCase = true) } == true
+        val hasManagerRole = rolesList?.any { it.equals("manager", ignoreCase = true) } == true
         return hasManagerRole || userAdmin ?: false
     }
 
     fun isLeader(): Boolean {
-        return rolesList?.any { it.contains("leader", ignoreCase = true) } == true
+        return rolesList?.any { it.equals("leader", ignoreCase = true) } == true
     }
 
     fun isGuest(): Boolean {

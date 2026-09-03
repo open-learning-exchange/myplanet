@@ -18,4 +18,10 @@ interface TeamsMembersRepository {
     suspend fun getRequestedMembers(teamId: String): List<UserEntity>
     suspend fun updateTeamLeader(teamId: String, newLeaderId: String): Boolean
     suspend fun getNextLeaderCandidate(teamId: String, excludeUserId: String?): UserEntity?
+
+    /**
+     * UI-facing alias to record a team activity.
+     * The internal sync layer calls syncTeamActivities() directly.
+     */
+    suspend fun recordTeamActivity()
 }

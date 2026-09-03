@@ -31,6 +31,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 1
+          # submodules: recursive  # uncomment when a job needs .agents/skills
 
       - name: setup gradle
         uses: gradle/actions/setup-gradle@v6.3.0
@@ -43,6 +44,8 @@ jobs:
         with:
           path: |
             app/build
+            !app/build/test-results/**
+            !app/build/reports/**
             .gradle/*
             !.gradle/configuration-cache
           key: build-dir-test-${{ matrix.build }}-shard${{ matrix.shard }}-${{ github.sha }}
@@ -96,7 +99,7 @@ jobs:
 
       - name: upload test reports
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-reports-${{ matrix.build }}-shard-${{ matrix.shard }}
           overwrite: true

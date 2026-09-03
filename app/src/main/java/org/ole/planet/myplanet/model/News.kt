@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import android.text.TextUtils
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
@@ -208,7 +207,7 @@ open class News {
                             val conversationsString = conversationsElement.asString
                             try {
                                 val conversationsArray = JsonUtils.gson.fromJson(conversationsString, JsonArray::class.java)
-                                if (conversationsArray.size() > 0) {
+                                if (!conversationsArray.isEmpty()) {
                                     val conversationsList = ArrayList<HashMap<String, String>>()
                                     conversationsArray.forEach { conversationElement ->
                                         val conversationObj = conversationElement.asJsonObject
@@ -236,7 +235,7 @@ open class News {
 
         fun getViewInJson(map: HashMap<String?, String>): String {
             val viewInArray = JsonArray()
-            if (!TextUtils.isEmpty(map["viewInId"])) {
+            if (!map["viewInId"].isNullOrEmpty()) {
                 val `object` = JsonObject()
                 `object`.addProperty("_id", map["viewInId"])
                 `object`.addProperty("section", map["viewInSection"])

@@ -4,12 +4,11 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -79,7 +78,7 @@ class SurveysViewModelTest {
 
     @Test
     fun `test sorting defaults to DATE_DESC and switches sort options`() = runTest {
-        val collectJob = CoroutineScope(testDispatcher).launch { viewModel.surveys.collect {} }
+        backgroundScope.launch(testDispatcher) { viewModel.surveys.collect {} }
         val survey1 = createSurvey("1", "Zebra", 1000L, 0L)
         val survey2 = createSurvey("2", "Apple", 2000L, 0L)
         val survey3 = createSurvey("3", "Banana", 1500L, 0L)
@@ -118,12 +117,11 @@ class SurveysViewModelTest {
         assertEquals("1", currentSurveys[0].exam.id) // Zebra
         assertEquals("3", currentSurveys[1].exam.id) // Banana
         assertEquals("2", currentSurveys[2].exam.id) // Apple
-        collectJob.cancel()
     }
 
     @Test
     fun `test toggleTitleSort correctly toggles between TITLE_ASC and TITLE_DESC`() = runTest {
-        val collectJob = CoroutineScope(testDispatcher).launch { viewModel.surveys.collect {} }
+        backgroundScope.launch(testDispatcher) { viewModel.surveys.collect {} }
         val survey1 = createSurvey("1", "Zebra", 1000L, 0L)
         val survey2 = createSurvey("2", "Apple", 2000L, 0L)
 
@@ -143,12 +141,11 @@ class SurveysViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
         currentSurveys = viewModel.surveys.value
         assertEquals("1", currentSurveys[0].exam.id) // Zebra
-        collectJob.cancel()
     }
 
     @Test
     fun `test date ordering logic prioritizes adoptionDate if sourceSurveyId is not null`() = runTest {
-        val collectJob = CoroutineScope(testDispatcher).launch { viewModel.surveys.collect {} }
+        backgroundScope.launch(testDispatcher) { viewModel.surveys.collect {} }
         val survey1 = createSurvey("1", "A", 1000L, 0L, null)
         val survey2 = createSurvey("2", "B", 500L, 3000L, "src2")
         val survey3 = createSurvey("3", "C", 2000L, 0L, "src3")
@@ -162,12 +159,11 @@ class SurveysViewModelTest {
         assertEquals("2", currentSurveys[0].exam.id)
         assertEquals("3", currentSurveys[1].exam.id)
         assertEquals("1", currentSurveys[2].exam.id)
-        collectJob.cancel()
     }
 
     @Test
     fun `test normalized search behavior with diacritics and multi-tokens`() = runTest {
-        val collectJob = CoroutineScope(testDispatcher).launch { viewModel.surveys.collect {} }
+        backgroundScope.launch(testDispatcher) { viewModel.surveys.collect {} }
         val survey1 = createSurvey("1", "El niño is here", 1000L, 0L)
         val survey2 = createSurvey("2", "The dog barks", 2000L, 0L)
         val survey3 = createSurvey("3", "Café au lait", 1500L, 0L)
@@ -201,6 +197,5 @@ class SurveysViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
         assertEquals(1, viewModel.surveys.value.size)
         assertEquals("2", viewModel.surveys.value[0].exam.id)
-        collectJob.cancel()
     }
 }

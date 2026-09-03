@@ -8,6 +8,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.VersionUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 
 @Entity(
     tableName = "search_activity",
@@ -34,7 +35,7 @@ open class SearchActivity(
         obj.addProperty("type", type)
         obj.addProperty("time", time)
         obj.addProperty("user", user)
-        obj.addProperty("androidId", VersionUtils.getAndroidId(MainApplication.context))
+        obj.addDocumentOrigin(VersionUtils.getAndroidId(MainApplication.context))
         obj.addProperty(
             "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)
         )

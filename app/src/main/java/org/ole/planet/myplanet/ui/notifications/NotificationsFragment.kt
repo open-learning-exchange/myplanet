@@ -14,6 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.ArrayList
+import java.util.Locale
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.status_options
@@ -71,7 +72,7 @@ class NotificationsFragment : Fragment() {
                     isInitialSpinnerSelection = false
                     return
                 }
-                currentFilter = parent.getItemAtPosition(position).toString().lowercase()
+                currentFilter = parent.getItemAtPosition(position).toString().lowercase(Locale.ROOT)
                 viewModel.loadNotifications(userId, currentFilter, isAdmin)
             }
             override fun onNothingSelected(parent: AdapterView<*>) {}
@@ -162,7 +163,7 @@ class NotificationsFragment : Fragment() {
 
     fun refreshNotificationsList() {
         if (::adapter.isInitialized && _binding != null) {
-            currentFilter = binding.status.selectedItem.toString().lowercase()
+            currentFilter = binding.status.selectedItem.toString().lowercase(Locale.ROOT)
             viewModel.loadNotifications(userId, currentFilter, isAdmin)
         }
     }

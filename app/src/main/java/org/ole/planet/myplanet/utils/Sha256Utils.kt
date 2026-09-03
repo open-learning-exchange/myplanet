@@ -9,7 +9,7 @@ class Sha256Utils {
         private val HEX_CHARS = "0123456789abcdef".toCharArray()
     }
 
-    fun getCheckSumFromFile(file: File): String {
+    fun getCheckSumFromFile(file: File): String? {
         return try {
             val digest = MessageDigest.getInstance("SHA-512")
             FileInputStream(file).use { fis ->
@@ -27,9 +27,8 @@ class Sha256Utils {
                 result[i * 2 + 1] = HEX_CHARS[v and 0x0F]
             }
             String(result)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            ""
+        } catch (_: Exception) {
+            null
         }
     }
 }

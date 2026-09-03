@@ -1,25 +1,16 @@
 package org.ole.planet.myplanet.model
 
-import android.text.TextUtils
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import com.google.gson.stream.JsonReader
-import java.io.StringReader
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 
-/**
- * Room replacement for the former `Feedback` model. Uploaded (Room upload path) and
- * synced; persistence goes through [org.ole.planet.myplanet.data.room.dao.FeedbackDao]. The replies
- * are stored as a JSON array string in [messages]; the derived [messageList]/[message] views are
- * ignored by Room.
- */
 @Entity(tableName = "feedback", indices = [androidx.room.Index("openTime"), androidx.room.Index("owner"), androidx.room.Index("isUploaded")])
 open class Feedback {
-    // @JvmField on id/_id so Room does not see ambiguous getId/get_id accessors.
     @PrimaryKey
     @JvmField
     var id: String = ""
@@ -36,9 +27,25 @@ open class Feedback {
     var isUploaded = false
     var _rev: String? = null
     var messages: String? = null
+        set(value) {
+            field = value
+            cachedMessages = null
+        }
     var item: String? = null
     var parentCode: String? = null
     var state: String? = null
+
+    @Ignore
+    @Transient
+    private var cachedMessages: JsonArray? = null
+
+    private fun parsedMessages(): JsonArray {
+        if (messages.isNullOrEmpty()) return JsonArray()
+        cachedMessages?.let { return it }
+        val ar = JsonParser.parseString(messages).asJsonArray
+        cachedMessages = ar
+        return ar
+    }
 
     fun setMessages(messages: JsonArray?) {
         this.messages = JsonUtils.gson.toJson(messages)
@@ -47,25 +54,19 @@ open class Feedback {
     @get:Ignore
     val messageList: List<FeedbackReply>?
         get() {
-            if (TextUtils.isEmpty(messages)) return null
+            if (messages.isNullOrEmpty()) return null
             val feedbackReplies: MutableList<FeedbackReply> = ArrayList()
 
-            val stringReader = StringReader(messages)
-            val jsonReader = JsonReader(stringReader)
-
-            val e = JsonParser.parseReader(jsonReader)
-            val ar = e.asJsonArray
-            if (ar.size() > 0) {
-                for (i in 1 until ar.size()) {
-                    val ob = ar[i].asJsonObject
-                    feedbackReplies.add(
-                        FeedbackReply(
-                            ob["message"].asString,
-                            ob["user"].asString,
-                            ob["time"].asString
-                        )
+            val ar = parsedMessages()
+            for (i in 1 until ar.size()) {
+                val ob = ar[i].asJsonObject
+                feedbackReplies.add(
+                    FeedbackReply(
+                        ob["message"].asString,
+                        ob["user"].asString,
+                        ob["time"].asString
                     )
-                }
+                )
             }
             return feedbackReplies
         }
@@ -73,14 +74,10 @@ open class Feedback {
     @get:Ignore
     val message: String
         get() {
-            if (TextUtils.isEmpty(messages)) return ""
+            if (messages.isNullOrEmpty()) return ""
 
-            val stringReader = StringReader(messages)
-            val jsonReader = JsonReader(stringReader)
-
-            val e = JsonParser.parseReader(jsonReader)
-            val ar = e.asJsonArray
-            if (ar.size() > 0) {
+            val ar = parsedMessages()
+            if (!ar.isEmpty()) {
                 val ob = ar[0].asJsonObject
                 return ob["message"].asString
             }
@@ -109,6 +106,7 @@ open class Feedback {
             } catch (err: Exception) {
                 err.printStackTrace()
             }
+            `object`.addDocumentOrigin()
             return `object`
         }
     }

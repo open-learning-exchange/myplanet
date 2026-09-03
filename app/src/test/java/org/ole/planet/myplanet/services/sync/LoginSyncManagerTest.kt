@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.services.sync
 
 import android.content.Context
 import android.util.Base64
+import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
@@ -48,6 +49,10 @@ class LoginSyncManagerTest {
 
     @Before
     fun setup() {
+        mockkStatic(Log::class)
+        every { Log.e(any(), any()) } returns 0
+        every { Log.e(any(), any(), any()) } returns 0
+
         mockkStatic(Base64::class)
         every { Base64.encodeToString(any(), any()) } answers {
             JavaBase64.getEncoder().encodeToString(firstArg<ByteArray>())
@@ -155,6 +160,78 @@ class LoginSyncManagerTest {
         val jsonDoc = JsonObject()
         jsonDoc.addProperty("derived_key", "test_derived_key")
         jsonDoc.addProperty("salt", "test_salt")
+
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
+        every { AndroidDecrypter.androidDecrypter(any(), any(), any(), any()) } returns true
+        every { context.getString(R.string.user_verification_in_progress) } returns "Verification in progress"
+
+        loginSyncManager.login("testUser", "testPass", listener)
+
+        verify { listener.onSyncFailed("Verification in progress") }
+    }
+
+    @Test
+    fun `login with valid credentials and capital Manager role`() = runTest {
+        val jsonDoc = JsonObject()
+        jsonDoc.addProperty("derived_key", "test_derived_key")
+        jsonDoc.addProperty("salt", "test_salt")
+        val roles = JsonArray()
+        roles.add("Manager")
+        jsonDoc.add("roles", roles)
+
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
+
+        every { AndroidDecrypter.androidDecrypter("testUser", "testPass", "test_derived_key", "test_salt") } returns true
+        coEvery { userSyncRepository.saveUser(any(), any(), any()) } returns mockk(relaxed = true)
+
+        loginSyncManager.login("testUser", "testPass", listener)
+
+        verify { listener.onSyncStarted() }
+        verify { listener.onSyncComplete() }
+    }
+
+    @Test
+    fun `login with valid credentials and managerial role`() = runTest {
+        val jsonDoc = JsonObject()
+        jsonDoc.addProperty("derived_key", "test_derived_key")
+        jsonDoc.addProperty("salt", "test_salt")
+        val roles = JsonArray()
+        roles.add("managerial")
+        jsonDoc.add("roles", roles)
+
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
+        every { AndroidDecrypter.androidDecrypter(any(), any(), any(), any()) } returns true
+        every { context.getString(R.string.user_verification_in_progress) } returns "Verification in progress"
+
+        loginSyncManager.login("testUser", "testPass", listener)
+
+        verify { listener.onSyncFailed("Verification in progress") }
+    }
+
+    @Test
+    fun `login with valid credentials and admin without manager role`() = runTest {
+        val jsonDoc = JsonObject()
+        jsonDoc.addProperty("derived_key", "test_derived_key")
+        jsonDoc.addProperty("salt", "test_salt")
+        jsonDoc.addProperty("isUserAdmin", true)
+
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
+
+        every { AndroidDecrypter.androidDecrypter("testUser", "testPass", "test_derived_key", "test_salt") } returns true
+        coEvery { userSyncRepository.saveUser(any(), any(), any()) } returns mockk(relaxed = true)
+
+        loginSyncManager.login("testUser", "testPass", listener)
+
+        verify { listener.onSyncStarted() }
+        verify { listener.onSyncComplete() }
+    }
+
+    @Test
+    fun `login with valid credentials and null roles`() = runTest {
+        val jsonDoc = JsonObject()
+        jsonDoc.addProperty("derived_key", "test_derived_key")
+        jsonDoc.addProperty("salt", "test_salt")
+        // Note: roles property is intentionally omitted
 
         coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
         every { AndroidDecrypter.androidDecrypter(any(), any(), any(), any()) } returns true

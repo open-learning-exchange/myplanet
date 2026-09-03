@@ -15,8 +15,6 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -36,7 +34,6 @@ import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.SearchActivity
-import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -48,6 +45,7 @@ class CoursesRepositoryImplTest {
     private val submissionsRepository: SubmissionsRepository = mockk(relaxed = true)
     private val tagsRepository: TagsRepository = mockk(relaxed = true)
     private val ratingsRepository: RatingsRepository = mockk(relaxed = true)
+    private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val certificationDao: CertificationDao = mockk(relaxed = true)
     private val courseDao: CourseDao = mockk(relaxed = true)
@@ -75,6 +73,7 @@ class CoursesRepositoryImplTest {
             submissionsRepository,
             tagsRepository,
             ratingsRepository,
+            resourcesRepository,
             sharedPrefManager,
             certificationDao,
             courseDao,
@@ -152,6 +151,24 @@ class CoursesRepositoryImplTest {
 
         assertEquals(1, result.size)
         assertEquals("Basic Math 101", result[0].courseTitle)
+    }
+
+    @Test
+    fun `filterCourses sorts titles case-insensitively`() = runTest {
+        coEvery { courseDao.getAll() } returns listOf(
+            MyCourse(id = "1", courseId = "1", courseTitle = "banana", courseTitleNormal = "banana"),
+            MyCourse(id = "2", courseId = "2", courseTitle = "Apple", courseTitleNormal = "apple"),
+            MyCourse(id = "3", courseId = "3", courseTitle = "cherry", courseTitleNormal = "cherry")
+        )
+        coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
+        coEvery { tagsRepository.getLinkIdsForTagNames(any(), any()) } returns emptyList()
+
+        val result = repository.filterCourses("", "", "", emptyList())
+
+        assertEquals(3, result.size)
+        assertEquals("Apple", result[0].courseTitle)
+        assertEquals("banana", result[1].courseTitle)
+        assertEquals("cherry", result[2].courseTitle)
     }
 
     @Test
@@ -365,5 +382,41 @@ class CoursesRepositoryImplTest {
         assertEquals("step_1", result?.steps?.first()?.id)
         assertEquals(3, result?.steps?.first()?.questionCount)
         assertEquals(4.0f, result?.ratingSummary?.averageRating)
+    }
+
+    @Test
+    fun `joinCourse merges user ids deduplicating pre-existing entries and preserving order`() = runTest {
+        val existingCourse = MyCourse(
+            id = "course-123",
+            courseId = "course-123",
+            userId = listOf("user1", "", "user2", "user1")
+        )
+        coEvery { courseDao.getByCourseId("course-123") } returns existingCourse
+        val capturedCourse = slot<MyCourse>()
+        coEvery { courseDao.upsert(capture(capturedCourse)) } returns Unit
+
+        val result = repository.joinCourse("course-123", "user3")
+
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) { courseDao.upsert(any()) }
+        assertEquals(listOf("user1", "user2", "user3"), capturedCourse.captured.userId)
+    }
+
+    @Test
+    fun `markCoursesAdded merges user ids deduplicating pre-existing entries and preserving order`() = runTest {
+        val existingCourse = MyCourse(
+            id = "course-1",
+            courseId = "course-1",
+            userId = listOf("userA", "userB", "userA")
+        )
+        coEvery { courseDao.getByCourseIds(listOf("course-1")) } returns listOf(existingCourse)
+        val capturedCourses = slot<List<MyCourse>>()
+        coEvery { courseDao.upsertAll(capture(capturedCourses)) } returns Unit
+
+        val result = repository.markCoursesAdded(listOf("course-1"), "userC")
+
+        assertTrue(result.getOrDefault(false))
+        coVerify(exactly = 1) { courseDao.upsertAll(any()) }
+        assertEquals(listOf("userA", "userB", "userC"), capturedCourses.captured.first().userId)
     }
 }

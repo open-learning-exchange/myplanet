@@ -741,6 +741,7 @@
     <string name="sync_step_of">Step %1$d of %2$d</string>
     <string name="sync_items_of">%1$d / %2$d</string>
     <string name="sync_table_progress">%1$s  ·  %2$d / %3$d tables</string>
+    <string name="sync_in_progress_wait">Sync in progress. Please wait for it to finish.</string>
     <string name="sync_shelves_progress">%1$d / %2$d shelves</string>
     <string name="team_leader">Team Leader</string>
     <string name="select_resource">"Select Resource: "</string>
@@ -1027,7 +1028,7 @@
     <string name="dark_mode_follow_system">Follow System</string>
     <string name="theme_mode_light">Light</string>
     <string name="theme_mode_dark">Dark</string>
-    <string name="text_size">text size</string>
+    <string name="text_size">Text Size</string>
     <string name="select_text_size">Select Text Size</string>
     <string name="text_size_small">Small</string>
     <string name="text_size_medium">Medium</string>
@@ -1275,6 +1276,7 @@
     <string name="current_cv">Current CV/Resume: %s</string>
     <string name="select_pdf_only">Please select a PDF file</string>
     <string name="file_not_found">File not found: %s</string>
+    <string name="text_content_truncated">File is too large to display in full — showing the first part only</string>
     <string name="chat_already_shared_to_destination">This chat has already been shared to this destination</string>
     <string name="load_earlier_messages">Load earlier messages</string>
     <string name="already_shared">Already shared</string>
@@ -1383,6 +1385,13 @@
     <string name="filter_audio">Audio</string>
     <string name="filter_pdfs">PDFs</string>
     <string name="downloaded">Downloaded</string>
-    <string name="not_downloaded">Not downloaded</string>
+    <string name="not_downloaded">Not Downloaded</string>
+    <string-array name="download_filter">
+        <item>All</item>
+        <item>Downloaded</item>
+        <item>Not Downloaded</item>
+    </string-array>
 
+    <string name="playback_speed">Playback Speed</string>
+    <string name="playback_speed_format">%1$sx</string>
 </resources>

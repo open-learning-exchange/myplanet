@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.utils
 
 import android.content.Context
 import android.os.Environment
+import android.util.Log
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -28,7 +29,7 @@ object MapTileUtils {
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w("MapTileUtils", "Failed to copy map tile: $s", e)
             }
         }
     }

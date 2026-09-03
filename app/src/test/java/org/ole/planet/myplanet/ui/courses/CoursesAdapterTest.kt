@@ -2,16 +2,23 @@ package org.ole.planet.myplanet.ui.courses
 
 import android.app.Application
 import android.content.Context
+import android.widget.LinearLayout
+import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.RecyclerView
+import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.eq
 import org.mockito.Mock
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.MockitoAnnotations
 import org.ole.planet.myplanet.model.Course
+import org.ole.planet.myplanet.utils.ListViewMode
+import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -30,7 +37,7 @@ class CoursesAdapterTest {
     @Before
     fun setUp() {
         MockitoAnnotations.initMocks(this)
-        val testContext = androidx.test.core.app.ApplicationProvider.getApplicationContext<Context>()
+        val testContext = ApplicationProvider.getApplicationContext<Context>()
         testContext.setTheme(com.google.android.material.R.style.Theme_MaterialComponents)
         adapter = CoursesAdapter(testContext, false, false)
         adapter.registerAdapterDataObserver(mockObserver)
@@ -48,9 +55,9 @@ class CoursesAdapterTest {
         adapter.selectAllItems(true)
 
         assertEquals(true, adapter.areAllSelected())
-        verify(mockObserver, times(1)).onItemRangeChanged(org.mockito.ArgumentMatchers.eq(0), org.mockito.ArgumentMatchers.eq(1), org.mockito.ArgumentMatchers.any())
-        verify(mockObserver, times(0)).onItemRangeChanged(org.mockito.ArgumentMatchers.eq(1), org.mockito.ArgumentMatchers.eq(1), org.mockito.ArgumentMatchers.any())
-        verify(mockObserver, times(1)).onItemRangeChanged(org.mockito.ArgumentMatchers.eq(2), org.mockito.ArgumentMatchers.eq(1), org.mockito.ArgumentMatchers.any())
+        verify(mockObserver, times(1)).onItemRangeChanged(eq(0), eq(1), any())
+        verify(mockObserver, times(0)).onItemRangeChanged(eq(1), eq(1), any())
+        verify(mockObserver, times(1)).onItemRangeChanged(eq(2), eq(1), any())
     }
 
     @Test
@@ -65,7 +72,7 @@ class CoursesAdapterTest {
         adapter.selectAllItems(false)
 
         assertEquals(false, adapter.areAllSelected())
-        verify(mockObserver, times(2)).onItemRangeChanged(org.mockito.ArgumentMatchers.eq(0), org.mockito.ArgumentMatchers.eq(1), org.mockito.ArgumentMatchers.any())
+        verify(mockObserver, times(2)).onItemRangeChanged(eq(0), eq(1), any())
     }
 
     @Test
@@ -84,7 +91,7 @@ class CoursesAdapterTest {
         )
         adapter.submitList(courses)
 
-        adapter.setViewMode(org.ole.planet.myplanet.utils.ListViewMode.LIST)
+        adapter.setViewMode(ListViewMode.LIST)
 
         verify(mockObserver, times(1)).onItemRangeChanged(0, 1, CoursesAdapter.PAYLOAD_VIEW_MODE)
     }
@@ -106,9 +113,9 @@ class CoursesAdapterTest {
         val course = Course("1", "A", "desc", "grade", "subject", 0, 10, isMyCourse = false)
         adapter.submitList(listOf(course))
 
-        val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<Context>()
+        val context = ApplicationProvider.getApplicationContext<Context>()
         context.setTheme(com.google.android.material.R.style.Theme_MaterialComponents)
-        val parent = android.widget.LinearLayout(context)
+        val parent = LinearLayout(context)
         val holder = adapter.onCreateViewHolder(parent, adapter.getItemViewType(0)) as CoursesAdapter.GridViewHolder
         adapter.onBindViewHolder(holder, 0)
 
@@ -117,5 +124,25 @@ class CoursesAdapterTest {
 
         assertEquals(android.view.View.GONE, holder.binding.checkbox.visibility)
         assertEquals(false, holder.binding.checkbox.hasOnClickListeners())
+    }
+
+    @Test
+    fun `test onViewRecycled handles GridViewHolder and ListViewHolder with destroyed activity`() {
+        val activity = Robolectric.buildActivity(AppCompatActivity::class.java).setup().destroy().get()
+        activity.setTheme(com.google.android.material.R.style.Theme_MaterialComponents)
+
+        val destroyedActivityAdapter = CoursesAdapter(activity, false, false)
+        val course = Course("1", "A", "desc", "grade", "subject", 0, 10, isMyCourse = false)
+        destroyedActivityAdapter.submitList(listOf(course))
+
+        val parent = LinearLayout(activity)
+
+        destroyedActivityAdapter.setViewMode(ListViewMode.GRID)
+        val gridHolder = destroyedActivityAdapter.onCreateViewHolder(parent, destroyedActivityAdapter.getItemViewType(0))
+        destroyedActivityAdapter.onViewRecycled(gridHolder)
+
+        destroyedActivityAdapter.setViewMode(ListViewMode.LIST)
+        val listHolder = destroyedActivityAdapter.onCreateViewHolder(parent, destroyedActivityAdapter.getItemViewType(0))
+        destroyedActivityAdapter.onViewRecycled(listHolder)
     }
 }

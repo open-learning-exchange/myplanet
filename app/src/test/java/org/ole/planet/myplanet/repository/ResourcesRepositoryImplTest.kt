@@ -7,27 +7,42 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.slot
+import io.mockk.unmockkObject
+import io.mockk.verify
+import java.io.File
 import java.util.logging.Level
 import java.util.logging.Logger
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
+import org.ole.planet.myplanet.data.room.dao.ResourceTitleProjection
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
-import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.DownloadUtils
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -47,6 +62,11 @@ class ResourcesRepositoryImplTest {
     private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
     private val userSessionManager: UserSessionManager = mockk(relaxed = true)
+    private val configurationsRepository: ConfigurationsRepository = mockk(relaxed = true)
+    private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
+
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
 
     private lateinit var repository: ResourcesRepositoryImpl
 
@@ -68,9 +88,10 @@ class ResourcesRepositoryImplTest {
             userRepository,
             teamsRepositoryLazy,
             userSessionManager,
-            mockk(relaxed = true),
-            mockk(relaxed = true)
+            configurationsRepository,
+            dispatcherProvider
         )
+        every { dispatcherProvider.io } returns testDispatcher
     }
 
     @Test
@@ -125,6 +146,138 @@ class ResourcesRepositoryImplTest {
 
         assertEquals(mockLibrary, result)
         coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
+    }
+
+    @Test
+    fun `markResourceOfflineByUrl marks resource offline when relative path matches entry file`() = runTest {
+        val library = MyLibrary().apply {
+            id = "res1"
+            resourceId = "res1"
+            openWhichFile = "index.html"
+            resourceLocalAddress = null
+            _rev = "2-abc"
+        }
+        coEvery { myLibraryDao.getByResourceId("res1") } returns library
+        coEvery { myLibraryDao.getByLocalAddress(any()) } returns emptyList()
+
+        val url = "http://example.com/resources/res1/index.html"
+        mockkObject(FileUtils)
+        try {
+            every { FileUtils.getFileNameFromUrl(url) } returns "index.html"
+            every { FileUtils.getIdFromUrl(url) } returns "res1"
+            every { FileUtils.getResourceRelativePathFromUrl(url) } returns "index.html"
+
+            repository.markResourceOfflineByUrl(url)
+
+            assertTrue(library.resourceOffline)
+            assertEquals("2-abc", library.downloadedRev)
+            assertEquals("index.html", library.resourceLocalAddress)
+            coVerify { myLibraryDao.upsert(library) }
+        } finally {
+            unmockkObject(FileUtils)
+        }
+    }
+
+    @Test
+    fun `markResourceOfflineByUrl does not mark offline for a non-entry html asset`() = runTest {
+        val library = MyLibrary().apply {
+            id = "res1"
+            resourceId = "res1"
+            openWhichFile = "index.html"
+            resourceLocalAddress = null
+        }
+        coEvery { myLibraryDao.getByResourceId("res1") } returns library
+        coEvery { myLibraryDao.getByLocalAddress(any()) } returns emptyList()
+
+        val url = "http://example.com/resources/res1/style.css"
+        mockkObject(FileUtils)
+        try {
+            every { FileUtils.getFileNameFromUrl(url) } returns "style.css"
+            every { FileUtils.getIdFromUrl(url) } returns "res1"
+            every { FileUtils.getResourceRelativePathFromUrl(url) } returns "style.css"
+
+            repository.markResourceOfflineByUrl(url)
+
+            assertFalse(library.resourceOffline)
+            coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
+        } finally {
+            unmockkObject(FileUtils)
+        }
+    }
+
+    @Test
+    fun `reconcileHtmlResourceOffline returns early when already offline`() = runTest {
+        val library = MyLibrary().apply {
+            id = "res1"
+            resourceId = "res1"
+            resourceOffline = true
+            _rev = "3-xyz"
+            downloadedRev = "3-xyz"
+        }
+        coEvery { myLibraryDao.getByResourceId("res1") } returns library
+
+        repository.reconcileHtmlResourceOffline("res1")
+
+        coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
+    }
+
+    @Test
+    fun `reconcileHtmlResourceOffline does not mark offline when entry file is missing from disk`() = runTest {
+        val library = MyLibrary().apply {
+            id = "res1"
+            resourceId = "res1"
+            openWhichFile = "index.html"
+            resourceOffline = false
+        }
+        coEvery { myLibraryDao.getByResourceId("res1") } returns library
+
+        val baseDir = kotlin.io.path.createTempDirectory("resources-repo-test").toFile()
+        val mockContext = mockk<Context>(relaxed = true)
+        every { mockContext.getExternalFilesDir(null) } returns baseDir
+        mockkObject(MainApplication)
+        try {
+            every { MainApplication.context } returns mockContext
+
+            repository.reconcileHtmlResourceOffline("res1")
+
+            assertFalse(library.resourceOffline)
+            coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
+        } finally {
+            unmockkObject(MainApplication)
+            baseDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `reconcileHtmlResourceOffline marks offline when entry file exists on disk`() = runTest {
+        val library = MyLibrary().apply {
+            id = "res1"
+            resourceId = "res1"
+            openWhichFile = "index.html"
+            resourceOffline = false
+            _rev = "1-abc"
+        }
+        coEvery { myLibraryDao.getByResourceId("res1") } returns library
+
+        val baseDir = kotlin.io.path.createTempDirectory("resources-repo-test").toFile()
+        File(baseDir, "ole/res1").apply { mkdirs() }
+        File(baseDir, "ole/res1/index.html").writeText("<html></html>")
+        val mockContext = mockk<Context>(relaxed = true)
+        every { mockContext.getExternalFilesDir(null) } returns baseDir
+        mockkObject(MainApplication)
+        try {
+            every { MainApplication.context } returns mockContext
+
+            repository.reconcileHtmlResourceOffline("res1")
+
+            assertTrue(library.resourceOffline)
+            assertEquals("1-abc", library.downloadedRev)
+            assertEquals("index.html", library.resourceLocalAddress)
+            coVerify { myLibraryDao.upsert(library) }
+        } finally {
+            unmockkObject(MainApplication)
+            baseDir.deleteRecursively()
+        }
     }
 
     @Test
@@ -217,13 +370,13 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
-    fun `getEnrichedLibraries fetches public-not-user items when not my course lib`() = runTest {
+    fun `getResourceListModels fetches public-not-user items when not my course lib`() = runTest {
         val lib1 = MyLibrary().apply { id = "1"; resourceId = "r1"; title = "Match" }
         coEvery { myLibraryDao.getPublicNotUserPattern(any()) } returns listOf(lib1)
         coEvery { ratingsRepository.getResourceRatings(any()) } returns HashMap()
         coEvery { tagsRepository.getTagsForResources(any()) } returns emptyMap()
 
-        val result = repository.getEnrichedLibraries(false, "model123")
+        val result = repository.getResourceListModels(false, "model123")
 
         assertEquals(1, result.size)
         assertEquals("Match", result[0].library.title)
@@ -442,24 +595,78 @@ class ResourcesRepositoryImplTest {
         val result = repository.getLibraryListForUser(null)
 
         assertTrue(result.isEmpty())
-        coVerify(exactly = 0) { myLibraryDao.getPublicForUserPattern(any()) }
+        coVerify(exactly = 0) { myLibraryDao.getPublicNeedingUpdateForUserPattern(any()) }
     }
 
     @Test
-    fun `getLibraryListForUser returns filtered items`() = runTest {
+    fun `getLibraryListForUser returns items needing update from dao`() = runTest {
         val userId = "user123"
-        // Need to update is true if !resourceOffline OR (resourceLocalAddress != null && _rev != downloadedRev)
         val needsUpdateLib = MyLibrary().apply { resourceOffline = false }
-        val noUpdateLib = MyLibrary().apply { resourceOffline = true; resourceLocalAddress = null }
 
-        coEvery { myLibraryDao.getPublicForUserPattern(any()) } returns listOf(needsUpdateLib, noUpdateLib)
+        coEvery { myLibraryDao.getPublicNeedingUpdateForUserPattern(any()) } returns listOf(needsUpdateLib)
 
         val result = repository.getLibraryListForUser(userId)
 
         assertEquals(1, result.size)
         assertEquals(needsUpdateLib, result[0])
         val expectedPattern = "%\"user123\"%"
-        coVerify(exactly = 1) { myLibraryDao.getPublicForUserPattern(expectedPattern) }
+        coVerify(exactly = 1) { myLibraryDao.getPublicNeedingUpdateForUserPattern(expectedPattern) }
+    }
+
+    @Test
+    fun `countLibrariesNeedingUpdate returns 0 if userId is null`() = runTest {
+        assertEquals(0, repository.countLibrariesNeedingUpdate(null))
+        coVerify(exactly = 0) { myLibraryDao.countPublicNeedingUpdateForUserPattern(any()) }
+    }
+
+    @Test
+    fun `countLibrariesNeedingUpdate delegates to dao`() = runTest {
+        val userId = "user123"
+        val expectedPattern = "%\"user123\"%"
+        coEvery { myLibraryDao.countPublicNeedingUpdateForUserPattern(expectedPattern) } returns 3
+
+        val count = repository.countLibrariesNeedingUpdate(userId)
+
+        assertEquals(3, count)
+        coVerify(exactly = 1) { myLibraryDao.countPublicNeedingUpdateForUserPattern(expectedPattern) }
+    }
+
+    @Test
+    fun `getAllLibrariesToSync delegates directly to getSyncable`() = runTest {
+        val syncableList = listOf(MyLibrary().apply { id = "s1" })
+        coEvery { myLibraryDao.getSyncable() } returns syncableList
+
+        val result = repository.getAllLibrariesToSync()
+
+        assertEquals(syncableList, result)
+        coVerify(exactly = 1) { myLibraryDao.getSyncable() }
+    }
+
+    @Test
+    fun `getDownloadSuggestionList uses user pattern when target user is available`() = runTest {
+        val userLib = MyLibrary().apply { id = "ul1" }
+        val expectedPattern = "%\"user123\"%"
+        coEvery { myLibraryDao.getPublicNeedingUpdateForUserPattern(expectedPattern) } returns listOf(userLib)
+
+        val result = repository.getDownloadSuggestionList("user123")
+
+        assertEquals(listOf(userLib), result)
+        coVerify(exactly = 1) { myLibraryDao.getPublicNeedingUpdateForUserPattern(expectedPattern) }
+        coVerify(exactly = 0) { myLibraryDao.getPublicNeedingUpdate() }
+    }
+
+    @Test
+    fun `getDownloadSuggestionList falls back to public needing update when user pattern yields empty`() = runTest {
+        val publicLib = MyLibrary().apply { id = "pl1" }
+        val expectedPattern = "%\"user123\"%"
+        coEvery { myLibraryDao.getPublicNeedingUpdateForUserPattern(expectedPattern) } returns emptyList()
+        coEvery { myLibraryDao.getPublicNeedingUpdate() } returns listOf(publicLib)
+
+        val result = repository.getDownloadSuggestionList("user123")
+
+        assertEquals(listOf(publicLib), result)
+        coVerify(exactly = 1) { myLibraryDao.getPublicNeedingUpdateForUserPattern(expectedPattern) }
+        coVerify(exactly = 1) { myLibraryDao.getPublicNeedingUpdate() }
     }
 
     @Test
@@ -571,6 +778,37 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
+    fun `getMyLibIds calls getIdsForUserPattern and returns JsonArray of ids`() = runTest {
+        val userId = "user123"
+        val expectedPattern = "%\"user123\"%"
+        val expectedIds = listOf("id1", "id2")
+        coEvery { myLibraryDao.getIdsForUserPattern(expectedPattern) } returns expectedIds
+
+        val result = repository.getMyLibIds(userId)
+
+        coVerify(exactly = 1) { myLibraryDao.getIdsForUserPattern(expectedPattern) }
+        assertEquals(2, result.size())
+        assertEquals("id1", result.get(0).asString)
+        assertEquals("id2", result.get(1).asString)
+    }
+
+    @Test
+    fun `getResourceTitlesMap calls getResourceTitles and returns mapped titles`() = runTest {
+        val projections = listOf(
+            ResourceTitleProjection("res1", "Title 1"),
+            ResourceTitleProjection("res2", "Title 2")
+        )
+        coEvery { myLibraryDao.getResourceTitles() } returns projections
+
+        val result = repository.getResourceTitlesMap()
+
+        coVerify(exactly = 1) { myLibraryDao.getResourceTitles() }
+        assertEquals(2, result.size)
+        assertEquals("Title 1", result["res1"])
+        assertEquals("Title 2", result["res2"])
+    }
+
+    @Test
     fun `markResourceUploaded calls createLocalResourceLink when resource is private`() = runTest {
         val localId = "local1"
         val remoteId = "remote1"
@@ -600,5 +838,121 @@ class ResourcesRepositoryImplTest {
                 planetCode = "planet1"
             )
         }
+    }
+
+    @Test
+    fun `downloadFiles returns provided list directly when not null`() = runTest {
+        val scope = CoroutineScope(SupervisorJob())
+        mockkObject(MainApplication)
+        mockkObject(DownloadUtils)
+        try {
+            every { MainApplication.applicationScope } returns scope
+            coEvery { configurationsRepository.checkServerAvailability() } returns false
+            every { DownloadUtils.downloadAllFiles(any()) } returns arrayListOf("url1")
+
+            val library = MyLibrary().apply { _id = "lib1"; resourceId = "r1" }
+            val provided = listOf(library)
+
+            val result = repository.downloadFiles(provided)
+
+            assertEquals(1, result.size)
+            assertSame(library, result[0])
+            coVerify(exactly = 0) { myLibraryDao.getSyncable() }
+            verify(exactly = 1) { DownloadUtils.downloadAllFiles(provided) }
+        } finally {
+            scope.cancel()
+            unmockkObject(MainApplication)
+            unmockkObject(DownloadUtils)
+        }
+    }
+
+    @Test
+    fun `downloadFiles falls back to getAllLibrariesToSync when list is null`() = runTest {
+        val scope = CoroutineScope(SupervisorJob())
+        mockkObject(MainApplication)
+        mockkObject(DownloadUtils)
+        try {
+            every { MainApplication.applicationScope } returns scope
+            coEvery { configurationsRepository.checkServerAvailability() } returns false
+            val synced = listOf(MyLibrary().apply { _id = "synced1" })
+            coEvery { myLibraryDao.getSyncable() } returns synced
+            every { DownloadUtils.downloadAllFiles(any()) } returns arrayListOf("url2")
+
+            val result = repository.downloadFiles(null)
+
+            assertEquals(1, result.size)
+            assertEquals("synced1", result[0]._id)
+            coVerify(exactly = 1) { myLibraryDao.getSyncable() }
+        } finally {
+            scope.cancel()
+            unmockkObject(MainApplication)
+            unmockkObject(DownloadUtils)
+        }
+    }
+
+    @Test
+    fun `saveLocalResource copies the source file into the ole directory and stores the bare filename`() = runTest {
+        val sourceFolder = temporaryFolder.newFolder("source")
+        val externalFilesDir = temporaryFolder.newFolder("external")
+        val sourceFile = File(sourceFolder, "report.pdf").apply { writeText("content") }
+
+        every { dispatcherProvider.io } returns testDispatcher
+        coEvery { myLibraryDao.countByTitle("My Report") } returns 0
+        val savedSlot = slot<MyLibrary>()
+        coEvery { myLibraryDao.upsert(capture(savedSlot)) } returns Unit
+
+        mockkObject(FileUtils)
+        every { FileUtils.getExternalFilesDir(context) } returns externalFilesDir
+        every { FileUtils.getLibraryFile(externalFilesDir, any(), "report.pdf") } answers {
+            File(externalFilesDir, "ole/${secondArg<String>()}/report.pdf")
+        }
+
+        try {
+            val result = repository.saveLocalResource(localResourceRequest(sourceFile.absolutePath))
+
+            assertTrue(result.isSuccess)
+            val saved = savedSlot.captured
+            assertEquals("report.pdf", saved.resourceLocalAddress)
+            assertEquals("report.pdf", saved.filename)
+            val destinationFile = File(externalFilesDir, "ole/${saved.id}/report.pdf")
+            assertTrue(destinationFile.exists())
+            assertEquals("content", destinationFile.readText())
+        } finally {
+            unmockkObject(FileUtils)
+        }
+    }
+
+    @Test
+    fun `saveLocalResource fails when the source file does not exist`() = runTest {
+        val missingFile = File(temporaryFolder.root, "missing.pdf")
+        coEvery { myLibraryDao.countByTitle("My Report") } returns 0
+
+        val result = repository.saveLocalResource(localResourceRequest(missingFile.absolutePath))
+
+        assertTrue(result.isFailure)
+        coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
+    }
+
+    private fun localResourceRequest(resourceUrl: String?): LocalResourceRequest {
+        return LocalResourceRequest(
+            title = "My Report",
+            addedBy = "tester",
+            author = null,
+            year = null,
+            description = null,
+            publisher = null,
+            linkToLicense = null,
+            openWith = null,
+            language = null,
+            mediaType = null,
+            resourceType = null,
+            subjects = null,
+            levels = null,
+            resourceFor = null,
+            resourceUrl = resourceUrl,
+            userId = "user-1",
+            isPrivateTeamResource = false,
+            teamId = null
+        )
     }
 }

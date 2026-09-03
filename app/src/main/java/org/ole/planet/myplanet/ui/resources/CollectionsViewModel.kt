@@ -3,12 +3,12 @@ package org.ole.planet.myplanet.ui.resources
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.TagEntity
-import javax.inject.Inject
 import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
@@ -46,9 +46,12 @@ class CollectionsViewModel @Inject constructor(
             try {
                 val tagsWithChildren = tagsRepository.getTagsWithChildren(dbType)
                 val list = tagsWithChildren.keys.toList()
-                val childMap = tagsWithChildren.entries
-                    .filter { it.value.isNotEmpty() }
-                    .associate { (it.key.id ?: "") to it.value }
+                val childMap = LinkedHashMap<String, List<TagEntity>>()
+                for ((key, value) in tagsWithChildren) {
+                    if (value.isNotEmpty()) {
+                        childMap[key.id ?: ""] = value
+                    }
+                }
 
                 if (list.isEmpty() && childMap.isEmpty()) {
                     _state.value = CollectionsState.Empty

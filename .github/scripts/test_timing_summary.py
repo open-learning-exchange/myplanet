@@ -14,12 +14,25 @@ has grown past what one CI job should carry gets noticed.
 """
 import argparse
 import glob
+import math
 import os
 import sys
 import xml.etree.ElementTree as ET
 
 TOP_N = 15
 
+def _parse_time(time_str: str | None, path: str) -> float:
+    try:
+        if time_str is None:
+            return 0.0
+        val = float(time_str)
+        if not math.isfinite(val) or val < 0.0:
+            print(f"Warning: malformed time '{time_str}' in {os.path.basename(path)}, defaulting to 0.0", file=sys.stderr)
+            return 0.0
+        return val
+    except ValueError:
+        print(f"Warning: malformed time '{time_str}' in {os.path.basename(path)}, defaulting to 0.0", file=sys.stderr)
+        return 0.0
 
 def main() -> int:
     parser = argparse.ArgumentParser()
@@ -45,12 +58,12 @@ def main() -> int:
         except ET.ParseError as exc:
             print(f"Skipping unreadable result file `{path}`: {exc}", file=sys.stderr)
             continue
-        elapsed = float(root.get("time") or 0)
+        elapsed = _parse_time(root.get("time"), path)
         classes.append((elapsed, root.get("name") or "?"))
         total += elapsed
         for case in root.iter("testcase"):
             owner = (case.get("classname") or "?").rsplit(".", 1)[-1]
-            cases.append((float(case.get("time") or 0), f"{owner}.{case.get('name') or '?'}"))
+            cases.append((_parse_time(case.get("time"), path), f"{owner}.{case.get('name') or '?'}"))
 
     classes.sort(reverse=True)
     cases.sort(reverse=True)

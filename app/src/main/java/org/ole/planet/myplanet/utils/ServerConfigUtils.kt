@@ -7,7 +7,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Community
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
 
 object ServerConfigUtils {
 
@@ -70,7 +69,7 @@ object ServerConfigUtils {
     }
 
     private fun isLocalNetwork(url: String): Boolean {
-        val host = url.split(":").firstOrNull()?.split("/")?.firstOrNull() ?: url
+        val host = url.substringBefore(':').substringBefore('/')
         return host.startsWith("192.168.") ||
                 host.startsWith("10.") ||
                 host.matches(localNetworkRegex) ||
@@ -96,8 +95,8 @@ object ServerConfigUtils {
     ): String {
         val uri = url.toUri()
         val (urlUser, urlPwd, couchdbURL) = if (url.contains("@")) {
-            val userinfo = ProcessUserDataActivity.getUserInfo(uri)
-            Triple(userinfo[0], userinfo[1], url)
+            val (u, p) = UrlUtils.getUserInfo(uri.userInfo)
+            Triple(u, p, url)
         } else {
             val user = "satellite"
             val scheme = uri.scheme

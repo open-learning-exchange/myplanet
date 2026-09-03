@@ -37,11 +37,11 @@ interface VoicesRepository : VoicesEditActions {
     suspend fun deletePost(newsId: String, teamName: String)
     suspend fun addLabel(newsId: String, label: String)
     suspend fun removeLabel(newsId: String, label: String)
-    suspend fun getCommunityVoiceDates(startTime: Long, endTime: Long, userId: String?): List<String>
+    suspend fun getCommunityVoiceDateCount(startTime: Long, endTime: Long, userId: String?): Int
     suspend fun getPlanetNewsMessages(planetCode: String?): List<News>
     suspend fun insertNewsList(docs: List<JsonObject>)
     suspend fun countTeamChats(teamId: String): Long
-    suspend fun getTeamChatViewableIds(teamIds: List<String>): List<String>
+    suspend fun countTopLevelByTeam(teamId: String): Long
     suspend fun getPendingNewsLogUploads(): List<org.ole.planet.myplanet.model.NewsLog>
     suspend fun markNewsLogUploaded(localId: String, remoteId: String, rev: String): Boolean
 }

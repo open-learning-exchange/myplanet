@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -21,12 +22,14 @@ import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
     override val shouldShowDownloadDialog = false
     private var _binding: FragmentTeamCourseBinding? = null
     private val binding get() = _binding!!
     private var adapterTeamCourse: TeamCoursesAdapter? = null
+    private val viewModel: TeamCoursesViewModel by viewModels()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTeamCourseBinding.inflate(inflater, container, false)
@@ -35,29 +38,28 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setupCoursesList()
-    }
-
-    private fun setupCoursesList() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val courseIds = teamsRepository.getTeamCourseIds(teamId)
-            val courses = coursesRepository.getCoursesByIds(courseIds)
-            val teamCreator = teamsRepository.getTeamCreator(teamId)
-            val currentUserId = sharedPrefManager.getUserId().ifEmpty { "--" }
-            val canRemove = currentUserId.equals(teamCreator, ignoreCase = true)
-
-            adapterTeamCourse = TeamCoursesAdapter(requireActivity(), canRemove) { course ->
-                removeCourseFromTeam(course)
-            }
-            binding.rvCourse.layoutManager = LinearLayoutManager(activity)
-            binding.rvCourse.adapter = adapterTeamCourse
-            adapterTeamCourse?.submitList(courses)
-            showNoData(binding.tvNodata, courses.size, "teamCourses")
+        updateCoursesList()
+        collectLatestWhenStarted(viewModel.uiState) { state ->
+            state?.let { renderCourses(it) }
         }
     }
 
+    private fun renderCourses(state: TeamCoursesUiState) {
+        val safeActivity = activity ?: return
+        if (adapterTeamCourse == null) {
+            adapterTeamCourse = TeamCoursesAdapter(safeActivity, state.canRemove) { course ->
+                removeCourseFromTeam(course)
+            }
+            binding.rvCourse.layoutManager = LinearLayoutManager(safeActivity)
+            binding.rvCourse.adapter = adapterTeamCourse
+        }
+        adapterTeamCourse?.submitList(state.courses)
+        showNoData(binding.tvNodata, state.courses.size, "teamCourses")
+    }
+
     fun updateCoursesList() {
-        setupCoursesList()
+        val currentUserId = sharedPrefManager.getUserId().ifEmpty { "--" }
+        viewModel.loadCourses(teamId, currentUserId)
     }
 
     override fun onNewsItemClick(news: News?) {}
@@ -81,7 +83,7 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
     private fun removeCourseFromTeam(course: MyCourse) {
         val courseId = course.courseId ?: return
         viewLifecycleOwner.lifecycleScope.launch {
-            teamsRepository.removeCourseFromTeam(teamId, courseId)
+            viewModel.removeCourse(teamId, courseId)
                 .onSuccess {
                     if (isAdded) {
                         Utilities.toast(requireActivity(), getString(R.string.removed_from_teamcourse))
@@ -104,9 +106,7 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val existingIds = teamsRepository.getTeamCourseIds(teamId)
-                val allCourses = coursesRepository.getAllCourses()
-                val availableCourses = allCourses.filter { it.courseId !in existingIds }
+                val availableCourses = viewModel.getAvailableCourses(teamId)
 
                 if (availableCourses.isEmpty()) {
                     Utilities.toast(safeActivity, getString(R.string.no_courses))
@@ -161,7 +161,7 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
         if (courseIds.isEmpty()) return
 
         viewLifecycleOwner.lifecycleScope.launch {
-            teamsRepository.addCoursesToTeam(teamId, courseIds)
+            viewModel.addCourses(teamId, courseIds)
                 .onSuccess {
                     if (isAdded) {
                         Utilities.toast(requireActivity(), getString(R.string.added_to_my_courses))

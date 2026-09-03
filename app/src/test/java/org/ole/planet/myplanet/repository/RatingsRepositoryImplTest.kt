@@ -16,6 +16,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.data.room.dao.RatingAggregate
 import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.UserEntity
@@ -64,7 +65,8 @@ class RatingsRepositoryImplTest {
     @Test
     fun `getRatingsById returns specific aggregated rating summary`() = runTest {
         val rating = Rating().apply { id = "rating1"; type = "course"; item = "course1"; rate = 5; userId = "user1"; comment = "Great" }
-        coEvery { ratingDao.getByTypeAndItem("course", "course1") } returns listOf(rating)
+        coEvery { ratingDao.getAggregate("course", "course1") } returns RatingAggregate(1, 5.0)
+        coEvery { ratingDao.findByTypeUserItem("course", "user1", "course1") } returns rating
 
         val result = repository.getRatingsById("course", "course1", "user1")
 
@@ -100,8 +102,8 @@ class RatingsRepositoryImplTest {
     @Test
     fun `getRatingSummary returns correct summary`() = runTest {
         val userRating = Rating().apply { id = "rating1"; rate = 5; comment = "Great"; userId = "user1" }
-        val other = Rating().apply { id = "rating2"; rate = 4; userId = "user2" }
-        coEvery { ratingDao.getByTypeAndItem("course", "course1") } returns listOf(userRating, other)
+        coEvery { ratingDao.getAggregate("course", "course1") } returns RatingAggregate(2, 4.5)
+        coEvery { ratingDao.findByTypeUserItem("course", "user1", "course1") } returns userRating
 
         val summary = repository.getRatingSummary("course", "course1", "user1")
 
@@ -115,7 +117,8 @@ class RatingsRepositoryImplTest {
 
     @Test
     fun `getRatingSummary handles zero ratings correctly`() = runTest {
-        coEvery { ratingDao.getByTypeAndItem("course", "course1") } returns emptyList()
+        coEvery { ratingDao.getAggregate("course", "course1") } returns RatingAggregate(0, null)
+        coEvery { ratingDao.findByTypeUserItem("course", "user1", "course1") } returns null
 
         val summary = repository.getRatingSummary("course", "course1", "user1")
 
@@ -126,14 +129,26 @@ class RatingsRepositoryImplTest {
     }
 
     @Test
+    fun `getRatingSummary with null userId omits user lookup`() = runTest {
+        coEvery { ratingDao.getAggregate("course", "course1") } returns RatingAggregate(3, 4.0)
+
+        val summary = repository.getRatingSummary("course", "course1", null)
+
+        assertEquals(3, summary.totalRatings)
+        assertEquals(4.0f, summary.averageRating)
+        assertEquals(null, summary.userRating)
+        assertEquals(null, summary.existingRating)
+        coVerify(exactly = 0) { ratingDao.findByTypeUserItem(any(), any(), any()) }
+    }
+
+    @Test
     fun `submitRating inserts new rating if not exists`() = runTest {
         val testUser = UserEntity(id = "user1", _id = "user1", parentCode = "parent", planetCode = "planet")
-        coEvery { ratingDao.findByTypeUserItem("course", "user1", "course1") } returns null
+        val savedRating = Rating().apply { rate = 4; userId = "user1"; comment = "Nice" }
+        coEvery { ratingDao.findByTypeUserItem("course", "user1", "course1") } returnsMany listOf(null, savedRating)
         val savedSlot = slot<Rating>()
         coEvery { ratingDao.upsert(capture(savedSlot)) } returns Unit
-        coEvery { ratingDao.getByTypeAndItem("course", "course1") } returns listOf(
-            Rating().apply { rate = 4; userId = "user1" }
-        )
+        coEvery { ratingDao.getAggregate("course", "course1") } returns RatingAggregate(1, 4.0)
 
         val summary = repository.submitRating("course", "course1", "Good", testUser, 4f, "Nice")
 
@@ -152,7 +167,7 @@ class RatingsRepositoryImplTest {
         coEvery { ratingDao.findByTypeUserItem("course", "user1", "course1") } returns existingRating
         coEvery { ratingDao.findById("existing_id") } returns existingRating
         coEvery { ratingDao.update(any()) } returns Unit
-        coEvery { ratingDao.getByTypeAndItem("course", "course1") } returns listOf(existingRating)
+        coEvery { ratingDao.getAggregate("course", "course1") } returns RatingAggregate(1, 5.0)
 
         val summary = repository.submitRating("course", "course1", "Updated", testUser, 5f, "Awesome")
 

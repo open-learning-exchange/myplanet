@@ -70,6 +70,10 @@ class RetryQueueWorkerTest {
         mockkStatic(WorkManager::class)
         every { WorkManager.getInstance(any()) } returns workManagerImpl
 
+        mockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+        every { org.ole.planet.myplanet.utils.UrlUtils.getUrl() } returns "http://mock.url"
+        every { org.ole.planet.myplanet.utils.UrlUtils.header } returns "mockHeader"
+
         worker = RetryQueueWorker(context, workerParams, retryQueue, apiInterface)
 
         mockkObject(MainApplication)

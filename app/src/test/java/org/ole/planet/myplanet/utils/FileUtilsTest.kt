@@ -1,10 +1,17 @@
 package org.ole.planet.myplanet.utils
 
 import android.app.Application
+import android.content.ContentProvider
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ProviderInfo
+import android.database.Cursor
+import android.database.MatrixCursor
 import android.net.Uri
 import android.os.Environment
+import android.os.ParcelFileDescriptor
+import android.provider.OpenableColumns
 import java.io.File
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -17,6 +24,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowContentResolver
 import org.robolectric.shadows.ShadowEnvironment
 
 @RunWith(RobolectricTestRunner::class)
@@ -80,7 +88,13 @@ class FileUtilsTest {
     @Test
     fun checkFileExist_returnsFalseWhenFileDoesNotExist() {
         val url = "http://example.com/resources/123/nonexistent.txt"
+        val expectedFile = FileUtils.getSDPathFromUrl(context, url)
+        val parentDir = expectedFile.parentFile
+
         assertFalse(FileUtils.checkFileExist(context, url))
+        if (parentDir != null) {
+            assertFalse("Parent directory should not be created by existence check", parentDir.exists())
+        }
     }
 
     @Test
@@ -161,6 +175,43 @@ class FileUtilsTest {
     }
 
     @Test
+    fun findHtmlCoverImage_prefersNameHintOverLargerFile() {
+        File(tempDir, "cover.png").writeBytes(ByteArray(10))
+        File(tempDir, "photo.jpg").writeBytes(ByteArray(1000))
+
+        val cover = FileUtils.findHtmlCoverImage(tempDir)
+
+        assertEquals("cover.png", cover?.name)
+    }
+
+    @Test
+    fun findHtmlCoverImage_fallsBackToLargestImageWhenNoNameHint() {
+        File(tempDir, "photo.jpg").writeBytes(ByteArray(10))
+        File(tempDir, "banner.jpg").writeBytes(ByteArray(1000))
+
+        val cover = FileUtils.findHtmlCoverImage(tempDir)
+
+        assertEquals("banner.jpg", cover?.name)
+    }
+
+    @Test
+    fun findHtmlCoverImage_findsHintedImageNestedInSubdirectory() {
+        val assetsDir = File(tempDir, "assets").apply { mkdirs() }
+        File(assetsDir, "thumbnail.png").writeBytes(ByteArray(10))
+
+        val cover = FileUtils.findHtmlCoverImage(tempDir)
+
+        assertEquals("thumbnail.png", cover?.name)
+    }
+
+    @Test
+    fun findHtmlCoverImage_returnsNullWhenNoImagesPresent() {
+        File(tempDir, "index.html").writeText("<html></html>")
+
+        assertNull(FileUtils.findHtmlCoverImage(tempDir))
+    }
+
+    @Test
     fun getIdFromUrl_returnsCorrectId() {
         assertEquals("123", FileUtils.getIdFromUrl("http://example.com/resources/123/file.txt"))
         assertEquals("abc", FileUtils.getIdFromUrl("https://test.com/api/resources/abc/data"))
@@ -189,6 +240,68 @@ class FileUtilsTest {
 
         assertTrue(destFile.exists())
         assertEquals(content, destFile.readText())
+    }
+
+    @Test
+    fun resolveUriToPath_returnsPathDirectlyForFileScheme() {
+        val sourceFile = File(tempDir, "source.txt")
+        sourceFile.writeText("Test Content")
+        val fileUri = Uri.fromFile(sourceFile)
+
+        val resolved = FileUtils.resolveUriToPath(context, fileUri)
+
+        assertEquals(sourceFile.absolutePath, resolved)
+    }
+
+    @Test
+    fun resolveUriToPath_returnsNullForNullUri() {
+        assertNull(FileUtils.resolveUriToPath(context, null))
+    }
+
+    @Test
+    fun resolveUriToPath_copiesContentUriUsingDisplayName() {
+        val authority = "org.ole.planet.myplanet.test.fileutils"
+        val displayName = "photo.jpg"
+        val sourceBytes = "fake image bytes".toByteArray()
+        val sourceFile = File(tempDir, "provider_source.jpg").apply { writeBytes(sourceBytes) }
+        val contentUri = Uri.parse("content://$authority/$displayName")
+
+        val provider = object : ContentProvider() {
+            override fun onCreate() = true
+
+            override fun query(
+                uri: Uri,
+                projection: Array<out String>?,
+                selection: String?,
+                selectionArgs: Array<out String>?,
+                sortOrder: String?
+            ): Cursor {
+                return MatrixCursor(arrayOf(OpenableColumns.DISPLAY_NAME)).apply {
+                    addRow(arrayOf(displayName))
+                }
+            }
+
+            override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor =
+                ParcelFileDescriptor.open(sourceFile, ParcelFileDescriptor.MODE_READ_ONLY)
+
+            override fun getType(uri: Uri): String? = null
+            override fun insert(uri: Uri, values: ContentValues?): Uri? = null
+            override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?) = 0
+            override fun update(
+                uri: Uri,
+                values: ContentValues?,
+                selection: String?,
+                selectionArgs: Array<out String>?
+            ) = 0
+        }
+        val providerInfo = ProviderInfo().apply { this.authority = authority }
+        provider.attachInfo(context, providerInfo)
+        ShadowContentResolver.registerProviderInternal(authority, provider)
+
+        val resolved = FileUtils.resolveUriToPath(context, contentUri)
+
+        assertEquals(displayName, resolved?.let { File(it).name })
+        assertEquals("fake image bytes", resolved?.let { File(it).readText() })
     }
 
     @Test

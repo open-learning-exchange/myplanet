@@ -9,10 +9,10 @@ import org.ole.planet.myplanet.model.RemovedLog
 
 @Dao
 interface RemovedLogDao {
-    @Query("DELETE FROM removed_log WHERE type = :type AND userId = :userId AND docId = :docId")
+    @Query("DELETE FROM removed_log WHERE type IS :type AND userId IS :userId AND docId IS :docId")
     suspend fun deleteByTypeUserAndDoc(type: String?, userId: String?, docId: String?)
 
-    @Query("DELETE FROM removed_log WHERE type = :type AND userId = :userId AND docId IN (:docIds)")
+    @Query("DELETE FROM removed_log WHERE type = :type AND userId IS :userId AND docId IN (:docIds)")
     suspend fun deleteByTypeUserAndDocs(type: String, userId: String?, docIds: List<String>)
 
     @Transaction
@@ -22,7 +22,7 @@ interface RemovedLogDao {
         }
     }
 
-    @Query("SELECT docId FROM removed_log WHERE type = :type AND userId = :userId")
+    @Query("SELECT docId FROM removed_log WHERE type = :type AND userId IS :userId")
     suspend fun getRemovedDocIds(type: String, userId: String?): List<String?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

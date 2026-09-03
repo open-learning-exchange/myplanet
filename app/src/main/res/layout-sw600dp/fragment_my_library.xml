@@ -126,6 +126,24 @@
                 android:layout_weight="1" />
         </LinearLayout>
 
+        <HorizontalScrollView
+            android:id="@+id/scroll_chip_filter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/secondary_bg"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/chip_filter_row"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingStart="@dimen/padding_normal"
+                android:paddingTop="4dp"
+                android:paddingEnd="@dimen/padding_normal"
+                android:paddingBottom="8dp" />
+        </HorizontalScrollView>
+
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"

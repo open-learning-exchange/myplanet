@@ -21,6 +21,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnLibraryItemSelectedListener
 import org.ole.planet.myplanet.databinding.ItemLibraryGridBinding
@@ -34,6 +35,7 @@ import org.ole.planet.myplanet.utils.LibraryType
 import org.ole.planet.myplanet.utils.LibraryTypeClassifier
 import org.ole.planet.myplanet.utils.ListViewMode
 import org.ole.planet.myplanet.utils.PdfThumbnailLoader
+import org.ole.planet.myplanet.utils.StableIdGenerator
 import org.ole.planet.myplanet.utils.Utilities
 
 class ResourcesAdapter(
@@ -52,6 +54,17 @@ class ResourcesAdapter(
     private val locallyOfflineIds = mutableSetOf<String>()
     private val externalFilesDir: File? by lazy { FileUtils.getExternalFilesDir(context) }
     private var adapterScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
+    private val htmlCoverCache = mutableMapOf<String, File?>()
+
+    init {
+        setHasStableIds(true)
+    }
+
+    override fun getItemId(position: Int): Long {
+        val listModel = getItem(position)
+        val id = StableIdGenerator.generateStringId(listModel.item.id)
+        return if (id != RecyclerView.NO_ID) id else StableIdGenerator.generateFallbackId(listModel)
+    }
 
     companion object {
         const val PAYLOAD_SELECTION = "PAYLOAD_SELECTION"
@@ -173,6 +186,19 @@ class ResourcesAdapter(
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
         super.onDetachedFromRecyclerView(recyclerView)
         adapterScope.cancel()
+        htmlCoverCache.clear()
+    }
+
+    override fun onCurrentListChanged(previousList: MutableList<ResourceListModel>, currentList: MutableList<ResourceListModel>) {
+        super.onCurrentListChanged(previousList, currentList)
+        val currentMap = currentList.associateBy { it.library.id }
+        previousList.forEach { prev ->
+            val id = prev.library.id
+            val current = currentMap[id]
+            if (current == null || current.library.resourceLocalAddress != prev.library.resourceLocalAddress) {
+                htmlCoverCache.remove(id)
+            }
+        }
     }
 
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
@@ -199,6 +225,8 @@ class ResourcesAdapter(
             is ListViewHolder -> bindList(holder, model)
         }
     }
+
+    fun getLocallyOfflineIds(): Set<String> = locallyOfflineIds.toSet()
 
     override fun onBindViewHolder(
         holder: RecyclerView.ViewHolder,
@@ -295,6 +323,11 @@ class ResourcesAdapter(
                 val targetWidthPx = (coverWidthDp * context.resources.displayMetrics.density).toInt()
                 adapterScope.launch { showPdfPreview(ivPreview, ivTypeIcon, file, targetWidthPx) }
             }
+            mimeType?.contains("html") == true -> {
+                showTypeIconOnly(ivPreview, ivTypeIcon)
+                val resourceDir = File(dir, "ole/$libraryId")
+                adapterScope.launch { showHtmlPreview(ivPreview, ivTypeIcon, libraryId, resourceDir) }
+            }
             else -> {
                 showTypeIconOnly(ivPreview, ivTypeIcon)
                 null
@@ -352,6 +385,21 @@ class ResourcesAdapter(
             ivTypeIcon.visibility = View.GONE
             ivPreview.visibility = View.VISIBLE
             ivPreview.setImageBitmap(bitmap)
+        } else {
+            showTypeIconOnly(ivPreview, ivTypeIcon)
+        }
+    }
+
+    private suspend fun showHtmlPreview(ivPreview: ImageView, ivTypeIcon: ImageView, libraryId: String, resourceDir: File) {
+        val coverImage = if (htmlCoverCache.containsKey(libraryId)) {
+            htmlCoverCache.getValue(libraryId)
+        } else {
+            withContext(dispatcherProvider.io) { FileUtils.findHtmlCoverImage(resourceDir) }.also {
+                htmlCoverCache[libraryId] = it
+            }
+        }
+        if (coverImage != null) {
+            showImagePreview(ivPreview, ivTypeIcon, coverImage)
         } else {
             showTypeIconOnly(ivPreview, ivTypeIcon)
         }

@@ -5,14 +5,13 @@ import android.app.usage.StorageStatsManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
-import android.database.Cursor
 import android.net.Uri
 import android.os.Environment
 import android.os.StatFs
 import android.os.storage.StorageManager
-import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.text.format.Formatter
+import android.util.Log
 import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.core.content.FileProvider
@@ -25,9 +24,10 @@ import java.nio.charset.StandardCharsets
 import java.util.Locale
 import java.util.UUID
 import kotlin.math.roundToLong
-import org.ole.planet.myplanet.utils.TimeProvider
 
 object FileUtils {
+    private const val TAG = "FileUtils"
+
     @Volatile private var cachedExternalFilesDir: File? = null
 
     fun warmUp(context: Context) {
@@ -48,55 +48,67 @@ object FileUtils {
         return File(externalFilesDir, "ole/$libraryId/$address")
     }
 
-    private fun createFilePath(context: Context, folder: String, filename: String): File {
+    private fun resolveFilePath(context: Context, folder: String, filename: String): File {
         val baseDirectory = File(getExternalFilesDir(context), folder)
 
-        if (filename.contains("/")) {
+        return if (filename.contains("/")) {
             val subDirPath = filename.substring(0, filename.lastIndexOf('/'))
             val fullDir = File(baseDirectory, subDirPath)
-
-            try {
-                if (!fullDir.exists() && !fullDir.mkdirs()) {
-                    throw IOException("Failed to create directory: ${fullDir.absolutePath}")
-                }
-            } catch (e: IOException) {
-                e.printStackTrace()
-                throw RuntimeException("Failed to create directory: ${fullDir.absolutePath}", e)
-            }
-
             val actualFilename = filename.substring(filename.lastIndexOf('/') + 1)
-            return File(fullDir, actualFilename)
+            File(fullDir, actualFilename)
         } else {
-            try {
-                if (!baseDirectory.exists() && !baseDirectory.mkdirs()) {
-                    throw IOException("Failed to create directory: ${baseDirectory.absolutePath}")
-                }
-            } catch (e: IOException) {
-                e.printStackTrace()
-                throw RuntimeException("Failed to create directory: ${baseDirectory.absolutePath}", e)
-            }
-            return File(baseDirectory, filename)
+            File(baseDirectory, filename)
         }
     }
 
     fun getSDPathFromUrl(context: Context, url: String?): File {
-        return createFilePath(context, "/ole/${getIdFromUrl(url)}", getResourceRelativePathFromUrl(url))
+        val segments = parseUrlSegments(url)
+        return resolveFilePath(context, "/ole/${getIdFromSegments(segments)}", getResourceRelativePathFromSegments(segments))
     }
 
-    private fun getResourceRelativePathFromUrl(url: String?): String {
+    fun getResourceRelativePathFromUrl(url: String?): String {
+        return getResourceRelativePathFromSegments(parseUrlSegments(url))
+    }
+
+    private fun parseUrlSegments(url: String?): List<String>? {
         return try {
-            val segments = url?.toUri()?.pathSegments ?: return getFileNameFromUrl(url)
+            url?.toUri()?.pathSegments
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to parse path segments from url", e)
+            null
+        }
+    }
+
+    private fun getIdFromSegments(segments: List<String>?): String {
+        if (segments == null) return ""
+        val idx = segments.indexOf("resources")
+        return if (idx != -1 && idx + 1 < segments.size) segments[idx + 1] else ""
+    }
+
+    private fun getResourceRelativePathFromSegments(segments: List<String>?): String {
+        if (segments == null) return ""
+        return try {
             val idx = segments.indexOf("resources")
             if (idx != -1 && idx + 2 < segments.size) {
                 segments.subList(idx + 2, segments.size).joinToString("/") {
                     URLDecoder.decode(it, StandardCharsets.UTF_8.name())
                 }
             } else {
-                getFileNameFromUrl(url)
+                getFileNameFromSegments(segments)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
-            getFileNameFromUrl(url)
+            Log.e(TAG, "Failed to resolve resource relative path from url", e)
+            getFileNameFromSegments(segments)
+        }
+    }
+
+    private fun getFileNameFromSegments(segments: List<String>?): String {
+        val lastSegment = segments?.lastOrNull() ?: return ""
+        return try {
+            URLDecoder.decode(lastSegment, StandardCharsets.UTF_8.name())
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to decode file name from url segment", e)
+            ""
         }
     }
 
@@ -119,9 +131,24 @@ object FileUtils {
                 null
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to resolve HTML entry file", e)
             null
         }
+    }
+
+    private val previewImageExtensions = setOf("png", "jpg", "jpeg", "gif", "webp")
+    private val previewImageNameHints = listOf("cover", "thumbnail", "thumb", "screenshot", "poster")
+
+    fun findHtmlCoverImage(resourceDir: File): File? {
+        if (!resourceDir.isDirectory) return null
+        val images = resourceDir.walkTopDown()
+            .maxDepth(4)
+            .filter { it.isFile && it.extension.lowercase() in previewImageExtensions }
+            .toList()
+        if (images.isEmpty()) return null
+        return images.firstOrNull { image ->
+            previewImageNameHints.any { image.nameWithoutExtension.lowercase().contains(it) }
+        } ?: images.maxByOrNull { it.length() }
     }
 
     fun checkFileExist(context: Context, url: String?): Boolean {
@@ -137,23 +164,20 @@ object FileUtils {
 
     fun getFileNameFromUrl(url: String?): String {
         return try {
-            url?.toUri()?.lastPathSegment?.let {
-                URLDecoder.decode(it, StandardCharsets.UTF_8.name())
-            } ?: ""
+            val segments = url?.toUri()?.pathSegments
+            getFileNameFromSegments(segments)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to extract file name from url", e)
             ""
         }
     }
 
     fun getIdFromUrl(url: String?): String {
         return try {
-            url?.toUri()?.pathSegments?.let { segments ->
-                val idx = segments.indexOf("resources")
-                if (idx != -1 && idx + 1 < segments.size) segments[idx + 1] else ""
-            } ?: ""
+            val segments = url?.toUri()?.pathSegments
+            getIdFromSegments(segments)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to extract resource id from url", e)
             ""
         }
     }
@@ -179,7 +203,7 @@ object FileUtils {
             session.commit(intentSender)
             session.close()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to install APK", e)
         }
     }
 
@@ -193,19 +217,6 @@ object FileUtils {
         }
     }
 
-
-    fun getRealPathFromURI(context: Context, contentUri: Uri?): String? {
-        var cursor: Cursor? = null
-        return try {
-            val proj = arrayOf(MediaStore.Images.Media.DATA)
-            cursor = contentUri?.let { context.contentResolver.query(it, proj, null, null, null) }
-            val columnIndex = cursor?.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
-            cursor?.moveToFirst()
-            cursor?.getString(columnIndex ?: 0)
-        } finally {
-            cursor?.close()
-        }
-    }
 
     fun getMimeType(fileName: String?): String? {
         if (fileName.isNullOrBlank()) return null
@@ -242,26 +253,23 @@ object FileUtils {
         }
     }
 
-    fun getPathFromURI(context: Context, uri: Uri?): String? {
-        var filePath: String? = null
-        if (uri != null) {
-            when (uri.scheme) {
-                "content" -> {
-                    context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                        if (cursor.moveToFirst()) {
-                            val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)
-                            val fileName = cursor.getString(columnIndex)
-                            val cacheDir = context.cacheDir
-                            val destinationFile = File(cacheDir, fileName)
-                            copyUriToFile(context, uri, destinationFile)
-                            filePath = destinationFile.absolutePath
-                        }
-                    }
-                }
-                "file" -> filePath = uri.path
+    fun resolveUriToPath(context: Context, uri: Uri?): String? {
+        uri ?: return null
+        if (uri.scheme == "file") return uri.path
+        return try {
+            val displayName = context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val columnIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (columnIndex >= 0) cursor.getString(columnIndex) else null
+                } else null
             }
+            val destinationFile = File(context.cacheDir, displayName ?: UUID.randomUUID().toString())
+            copyUriToFile(context, uri, destinationFile)
+            destinationFile.absolutePath
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
-        return filePath
     }
 
     @Throws(Exception::class)
@@ -275,39 +283,6 @@ object FileUtils {
         intent.setDataAndType(uri, "*/*")
         intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
         return Intent.createChooser(intent, "Open folder")
-    }
-
-    fun getImagePath(context: Context, uri: Uri?): String? {
-        if (uri == null) return null
-        val projection = arrayOf(MediaStore.Images.Media._ID, MediaStore.Images.Media.DATA)
-        return try {
-            context.contentResolver.query(uri, projection, null, null, null)?.use { firstCursor ->
-                if (firstCursor.moveToFirst()) {
-                    val idIndex = firstCursor.getColumnIndex(MediaStore.Images.Media._ID)
-                    if (idIndex >= 0) {
-                        val documentId = firstCursor.getString(idIndex)
-                        val selection = "${MediaStore.Images.Media._ID} = ?"
-                        val args = arrayOf(documentId)
-                        context.contentResolver.query(
-                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                            projection,
-                            selection,
-                            args,
-                            null
-                        )?.use { cursor ->
-                            if (cursor.moveToFirst()) {
-                                val dataIndex = cursor.getColumnIndex(MediaStore.Images.Media.DATA)
-                                if (dataIndex >= 0) return cursor.getString(dataIndex)
-                            }
-                        }
-                    }
-                }
-            }
-            null
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
     }
 
     fun externalMemoryAvailable(): Boolean {
@@ -345,14 +320,12 @@ object FileUtils {
     fun totalAvailableMemory(context: Context): Long = getStorageStats(context).second
 
     fun totalAvailableMemoryRatio(context: Context): Long {
-        val total = totalMemoryCapacity(context)
-        val available = totalAvailableMemory(context)
+        val (total, available) = getStorageStats(context)
         return (available.toDouble() / total.toDouble() * 100).roundToLong()
     }
 
     fun availableOverTotalMemoryFormattedString(context: Context): String {
-        val available = totalAvailableMemory(context)
-        val total = totalMemoryCapacity(context)
+        val (total, available) = getStorageStats(context)
         return formatSize(context, available) + "/" + formatSize(context, total)
     }
 
@@ -389,7 +362,7 @@ object FileUtils {
             }
             context.startActivity(intent)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to open PDF", e)
             Toast.makeText(context, "Could not open PDF. File saved at: ${file.absolutePath}", Toast.LENGTH_LONG).show()
         }
     }

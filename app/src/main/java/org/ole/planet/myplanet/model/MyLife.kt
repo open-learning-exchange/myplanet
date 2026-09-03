@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import android.content.Context
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
@@ -55,14 +54,19 @@ class MyLife {
     }
 
     companion object {
-        fun defaultItems(context: Context, userId: String?): List<MyLife> = listOf(
-            MyLife("ic_myhealth", userId, context.getString(R.string.myhealth)),
-            MyLife("my_achievement", userId, context.getString(R.string.achievements)),
-            MyLife("ic_submissions", userId, context.getString(R.string.submission)),
-            MyLife("ic_my_survey", userId, context.getString(R.string.my_survey)),
-            MyLife("ic_references", userId, context.getString(R.string.references)),
-            MyLife("ic_calendar", userId, context.getString(R.string.calendar)),
-            MyLife("ic_mypersonals", userId, context.getString(R.string.mypersonals))
+        private val defaultItemPairs = listOf(
+            "ic_myhealth" to R.string.myhealth,
+            "my_achievement" to R.string.achievements,
+            "ic_submissions" to R.string.submission,
+            "ic_my_survey" to R.string.my_survey,
+            "ic_references" to R.string.references,
+            "ic_calendar" to R.string.calendar,
+            "ic_mypersonals" to R.string.mypersonals
         )
+
+        fun defaultItems(userId: String?, resolveLabel: (Int) -> String): List<MyLife> =
+            defaultItemPairs.map { (imageId, stringRes) ->
+                MyLife(imageId, userId, resolveLabel(stringRes))
+            }
     }
 }

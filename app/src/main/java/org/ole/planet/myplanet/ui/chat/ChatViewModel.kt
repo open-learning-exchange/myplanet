@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -62,9 +61,10 @@ class ChatViewModel @Inject constructor(
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal var loadedCount = 0
     private var allChats: List<ChatHistory> = emptyList()
-    private val _refreshChatSignal = MutableSharedFlow<Unit>()
+    private val _refreshChatSignal = MutableSharedFlow<Unit>(replay = 1)
     val refreshChatSignal: SharedFlow<Unit> = _refreshChatSignal.asSharedFlow()
     init {
+        _refreshChatSignal.tryEmit(Unit)
         viewModelScope.launch {
             realtimeSyncManager.updatesFor("chats")
                 .collect { update ->

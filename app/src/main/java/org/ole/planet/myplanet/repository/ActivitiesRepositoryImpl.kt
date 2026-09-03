@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
+import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.LoginActivityData
 import org.ole.planet.myplanet.model.MyPlanet
@@ -34,11 +35,13 @@ import org.ole.planet.myplanet.model.UserChallengeActions
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
+import org.ole.planet.myplanet.utils.distinctByContent
 
 class ActivitiesRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -52,7 +55,8 @@ class ActivitiesRepositoryImpl @Inject constructor(
     private val resourceActivityDao: ResourceActivityDao,
     private val offlineActivityDao: OfflineActivityDao,
     private val removedLogDao: RemovedLogDao,
-    private val searchActivityDao: SearchActivityDao
+    private val searchActivityDao: SearchActivityDao,
+    private val userDao: UserDao
 ) : ActivitiesRepository {
     override suspend fun getOfflineVisitCount(userId: String): Int {
         return offlineActivityDao.countByUserIdAndType(userId, UserSessionManager.KEY_LOGIN)
@@ -62,8 +66,9 @@ class ActivitiesRepositoryImpl @Inject constructor(
         return offlineActivityDao.countByUserNameAndType(userName, UserSessionManager.KEY_LOGIN)
     }
 
-    override suspend fun getOfflineLogins(userName: String): Flow<List<OfflineActivity>> {
+    override fun getOfflineLogins(userName: String): Flow<List<OfflineActivity>> {
         return offlineActivityDao.observeByUserNameAndType(userName, UserSessionManager.KEY_LOGIN)
+            .distinctByContent { a, b -> a.id == b.id && a.loginTime == b.loginTime }
     }
 
     override suspend fun markResourceAdded(userId: String?, resourceId: String) {
@@ -82,7 +87,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun logCourseVisit(courseId: String, title: String, userId: String) {
-        val user = userRepository.get().getUserByName(userId)
+        val user = userDao.getByName(userId)
         val parentCode = user?.parentCode
         val createdOn = user?.planetCode
 
@@ -297,11 +302,11 @@ class ActivitiesRepositoryImpl @Inject constructor(
         ob.addProperty("logoutTime", activity.logoutTime)
         ob.addProperty("createdOn", activity.createdOn)
         ob.addProperty("parentCode", activity.parentCode)
-        ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+        ob.addDocumentOrigin()
         ob.addProperty("deviceName", NetworkUtils.getDeviceName())
         ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
         if (activity._id != null) {
-            ob.addProperty("_id", activity.logoutTime)
+            ob.addProperty("_id", activity._id)
         }
         if (activity._rev != null) {
             ob.addProperty("_rev", activity._rev)
@@ -351,17 +356,26 @@ class ActivitiesRepositoryImpl @Inject constructor(
         }
         if (documentList.isEmpty()) return
 
-        val ids = documentList.map { JsonUtils.getString("_id", it) }.filter { it.isNotEmpty() }.distinct()
+        val ids = LinkedHashSet<String>()
+        val loginTimes = LinkedHashSet<Long>()
+        val userNames = LinkedHashSet<String>()
+        for (jsonDoc in documentList) {
+            val id = JsonUtils.getString("_id", jsonDoc)
+            if (id.isNotEmpty()) ids.add(id)
+            val loginTime = JsonUtils.getLong("loginTime", jsonDoc)
+            if (loginTime > 0) loginTimes.add(loginTime)
+            val userName = JsonUtils.getString("user", jsonDoc)
+            if (userName.isNotEmpty()) userNames.add(userName)
+        }
+
         val existingActivitiesMap = if (ids.isNotEmpty()) {
-            offlineActivityDao.getByRemoteIds(ids).associateBy { it._id ?: "" }.toMutableMap()
+            offlineActivityDao.getByRemoteIds(ids.toList()).associateBy { it._id ?: "" }.toMutableMap()
         } else {
             mutableMapOf()
         }
 
-        val loginTimes = documentList.map { JsonUtils.getLong("loginTime", it) }.filter { it > 0 }.distinct()
-        val userNames = documentList.map { JsonUtils.getString("user", it) }.filter { it.isNotEmpty() }.distinct()
         val fallbackActivitiesMap = if (loginTimes.isNotEmpty() && userNames.isNotEmpty()) {
-            offlineActivityDao.getByLoginTimesAndUserNames(loginTimes, userNames)
+            offlineActivityDao.getByLoginTimesAndUserNames(loginTimes.toList(), userNames.toList())
                 .associateBy { "${it.loginTime}_${it.userName}" }
                 .toMutableMap()
         } else {
@@ -444,7 +458,7 @@ internal fun serializeResourceActivities(activity: ResourceActivity): JsonObject
     ob.addProperty("time", activity.time)
     ob.addProperty("createdOn", activity.createdOn)
     ob.addProperty("parentCode", activity.parentCode)
-    ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+    ob.addDocumentOrigin()
     ob.addProperty("deviceName", NetworkUtils.getDeviceName())
     return ob
 }

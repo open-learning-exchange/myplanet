@@ -4,6 +4,7 @@ import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.every
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import java.util.UUID
@@ -14,6 +15,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.utils.NetworkUtils
 
 class StepExamTest {
 
@@ -24,6 +26,8 @@ class StepExamTest {
             val str = arg<CharSequence?>(0)
             str.isNullOrEmpty()
         }
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "uniqueIdentifier"
     }
 
     @After
@@ -122,5 +126,7 @@ class StepExamTest {
         assertEquals("survey1", json.get("sourceSurveyId").asString)
         assertEquals("team1", json.get("teamId").asString)
         assertTrue(json.has("questions"))
+        assertEquals("uniqueIdentifier", json.get("androidId").asString)
+        assertEquals("myplanet", json.get("app").asString)
     }
 }

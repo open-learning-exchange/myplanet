@@ -19,7 +19,6 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Test
@@ -64,6 +63,7 @@ class TeamsRepositoryImplTest {
     private val courseDao: CourseDao = mockk(relaxed = true)
     private val courseStepDao: CourseStepDao = mockk(relaxed = true)
     private val appDatabase: AppDatabase = mockk(relaxed = true)
+    private val userRepository: UserRepository = mockk(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -82,8 +82,6 @@ class TeamsRepositoryImplTest {
         coEvery { serverUrlMapper.processUrl(any()) } returns serverUrlMapping
         every { sharedPrefManager.getServerUrl() } returns "http://test.com"
 
-        val mockUserRepository = mockk<UserRepository>(relaxed = true)
-
         teamsRepository = TeamsRepositoryImpl(
             mockk<android.content.Context>(relaxed = true),
             activitiesRepository,
@@ -94,7 +92,7 @@ class TeamsRepositoryImplTest {
             sharedPrefManager,
             serverUrlMapper,
             dispatcherProvider,
-            mockUserRepository,
+            userRepository,
             dagger.Lazy { mockk<ResourcesRepository>(relaxed = true) },
             TestTimeProvider(),
             teamLogDao,
@@ -139,6 +137,26 @@ class TeamsRepositoryImplTest {
                 list.size == 1 && list[0].name == "Test User" && list[0].image == "http://example.com/image.png" && list[0].source == "team"
             })
         }
+    }
+
+    @Test
+    fun `test recordTeamActivity delegates to syncTeamActivities`() = runTest(testDispatcher) {
+        io.mockk.mockkObject(org.ole.planet.myplanet.MainApplication.Companion)
+        coEvery { org.ole.planet.myplanet.MainApplication.Companion.isServerReachable(any()) } returns true
+
+        coEvery { uploadManager.uploadResource(any()) } returns Unit
+        coEvery { uploadManager.uploadTeams() } returns Unit
+        coEvery { uploadManager.uploadTeamActivities() } returns Unit
+
+        teamsRepository.recordTeamActivity()
+
+        advanceUntilIdle()
+
+        coVerify { uploadManager.uploadResource(null) }
+        coVerify { uploadManager.uploadTeams() }
+        coVerify { uploadManager.uploadTeamActivities() }
+
+        io.mockk.unmockkObject(org.ole.planet.myplanet.MainApplication.Companion)
     }
 
     @Test
@@ -540,5 +558,48 @@ class TeamsRepositoryImplTest {
 
         val result = teamsRepository.getMyTeamDetailsFlow("user1", "team").first()
         assertEquals(0, result.size)
+    }
+
+    @Test
+    fun `getJoinedMembers uses getUsersByIds and preserves order including _id match`() = runTest(testDispatcher) {
+        val teamId = "team1"
+        val member1 = MyTeam().apply { userId = "user1"; isDeletePending = false }
+        val member2 = MyTeam().apply { userId = "user2"; isDeletePending = false }
+        val member3 = MyTeam().apply { userId = "user3"; isDeletePending = false }
+        val deletePendingMember = MyTeam().apply { userId = "user4"; isDeletePending = true }
+
+        coEvery { teamDao.getByTeamIdAndDocType(teamId, "membership") } returns listOf(member1, member2, deletePendingMember, member3)
+
+        val user1 = UserEntity().apply { id = "org.couchdb.user:alice"; _id = "user1"; name = "Alice" }
+        val user2 = UserEntity().apply { id = "user2"; name = "Bob" }
+        val user3 = UserEntity().apply { id = "user3"; name = "Charlie" }
+
+        coEvery { userRepository.getUsersByIds(listOf("user1", "user2", "user3")) } returns listOf(user3, user1, user2)
+
+        val result = teamsRepository.getJoinedMembers(teamId)
+
+        assertEquals(listOf(user1, user2, user3), result)
+        coVerify(exactly = 1) { userRepository.getUsersByIds(listOf("user1", "user2", "user3")) }
+        coVerify(exactly = 0) { userRepository.getUserById(any()) }
+    }
+
+    @Test
+    fun `getRequestedMembers uses getUsersByIds and preserves order including _id match`() = runTest(testDispatcher) {
+        val teamId = "team1"
+        val req1 = MyTeam().apply { userId = "user1" }
+        val req2 = MyTeam().apply { userId = "user2" }
+
+        coEvery { teamDao.getByTeamIdAndDocType(teamId, "request") } returns listOf(req1, req2)
+
+        val user1 = UserEntity().apply { id = "org.couchdb.user:alice"; _id = "user1"; name = "Alice" }
+        val user2 = UserEntity().apply { id = "user2"; name = "Bob" }
+
+        coEvery { userRepository.getUsersByIds(listOf("user1", "user2")) } returns listOf(user2, user1)
+
+        val result = teamsRepository.getRequestedMembers(teamId)
+
+        assertEquals(listOf(user1, user2), result)
+        coVerify(exactly = 1) { userRepository.getUsersByIds(listOf("user1", "user2")) }
+        coVerify(exactly = 0) { userRepository.getUserById(any()) }
     }
 }

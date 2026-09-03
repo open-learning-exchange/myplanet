@@ -16,7 +16,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
@@ -31,13 +30,12 @@ import org.robolectric.annotation.Config
 class NotificationsRepositoryImplTest {
 
     private lateinit var userRepository: dagger.Lazy<UserRepository>
-    private lateinit var teamsRepository: dagger.Lazy<TeamsRepository>
+    private lateinit var teamsRepository: dagger.Lazy<TeamsNotificationsRepository>
     private lateinit var repository: NotificationsRepositoryImpl
     private lateinit var teamNotificationDao: TeamNotificationDao
     private lateinit var notificationDao: NotificationDao
     private lateinit var teamTaskDao: TeamTaskDao
     private lateinit var voicesRepository: VoicesRepository
-    private lateinit var examDao: ExamDao
 
     @Before
     fun setUp() {
@@ -47,7 +45,6 @@ class NotificationsRepositoryImplTest {
         notificationDao = mockk(relaxed = true)
         teamTaskDao = mockk(relaxed = true)
         voicesRepository = mockk(relaxed = true)
-        examDao = mockk(relaxed = true)
         repository = NotificationsRepositoryImpl(
             userRepository,
             teamsRepository,
@@ -55,8 +52,7 @@ class NotificationsRepositoryImplTest {
             teamNotificationDao,
             notificationDao,
             teamTaskDao,
-            voicesRepository,
-            examDao,
+            voicesRepository
         )
     }
 
@@ -371,28 +367,67 @@ class NotificationsRepositoryImplTest {
     }
 
     @Test
+    fun `markNotificationsAsRead with empty set does nothing`() = runTest {
+        val result = repository.markNotificationsAsRead(emptySet())
+
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 0) { notificationDao.getIdsByIds(any()) }
+        coVerify(exactly = 0) { notificationDao.markAsRead(any<List<String>>(), any()) }
+    }
+
+    @Test
+    fun `markNotificationsAsRead marks existing notifications as read and returns ids`() = runTest {
+        val ids = setOf("id1", "id2", "id3")
+        coEvery { notificationDao.getIdsByIds(any()) } returns listOf("id1", "id2")
+        coEvery { notificationDao.markAsRead(any<List<String>>(), any()) } returns 2
+
+        val result = repository.markNotificationsAsRead(ids)
+
+        assertEquals(setOf("id1", "id2"), result)
+        coVerify { notificationDao.getIdsByIds(ids.toList()) }
+        coVerify { notificationDao.markAsRead(listOf("id1", "id2"), any()) }
+    }
+
+    @Test
+    fun `markAllUnreadAsRead with null userId returns empty set`() = runTest {
+        val result = repository.markAllUnreadAsRead(null)
+
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 0) { notificationDao.getUnreadIds(any()) }
+        coVerify(exactly = 0) { notificationDao.markAllUnreadAsRead(any(), any()) }
+    }
+
+    @Test
+    fun `markAllUnreadAsRead fetches unread ids and updates all unread`() = runTest {
+        coEvery { notificationDao.getUnreadIds("user1") } returns listOf("id1", "id2")
+        coEvery { notificationDao.markAllUnreadAsRead("user1", any()) } returns 2
+
+        val result = repository.markAllUnreadAsRead("user1")
+
+        assertEquals(setOf("id1", "id2"), result)
+        coVerify { notificationDao.getUnreadIds("user1") }
+        coVerify { notificationDao.markAllUnreadAsRead("user1", any()) }
+    }
+
+    @Test
     fun `deleteNotifications with empty set does nothing`() = runTest {
         val result = repository.deleteNotifications(emptySet())
 
         assertTrue(result.isEmpty())
-        coVerify(exactly = 0) { notificationDao.getByIds(any()) }
+        coVerify(exactly = 0) { notificationDao.getIdsByIds(any()) }
         coVerify(exactly = 0) { notificationDao.deleteByIds(any()) }
     }
 
     @Test
     fun `deleteNotifications deletes existing notifications and returns deleted ids`() = runTest {
         val ids = setOf("id1", "id2", "id3")
-        val notifications = listOf(
-            AppNotification().apply { id = "id1" },
-            AppNotification().apply { id = "id2" }
-        )
-        coEvery { notificationDao.getByIds(any()) } returns notifications
+        coEvery { notificationDao.getIdsByIds(any()) } returns listOf("id1", "id2")
         coEvery { notificationDao.deleteByIds(any()) } returns 2
 
         val result = repository.deleteNotifications(ids)
 
         assertEquals(setOf("id1", "id2"), result)
-        coVerify { notificationDao.getByIds(ids.toList()) }
+        coVerify { notificationDao.getIdsByIds(ids.toList()) }
         coVerify { notificationDao.deleteByIds(listOf("id1", "id2")) }
     }
 
@@ -464,5 +499,248 @@ class NotificationsRepositoryImplTest {
         val saved = upsertSlot.captured
         assertTrue(saved.isEmpty())
         coVerify(exactly = 0) { notificationDao.getByIds(any()) }
+    }
+
+    @Test
+    fun `getTaskTeamNamesByTaskIds maps task ids to team names and skips empty team ids`() = runTest {
+        val tasks = listOf(
+            org.ole.planet.myplanet.model.TeamTask().apply {
+                id = "task1"
+                title = "Task One"
+                teamId = "teamA"
+            },
+            org.ole.planet.myplanet.model.TeamTask().apply {
+                id = "task2"
+                title = "Task Two"
+                teamId = "teamB"
+            },
+            org.ole.planet.myplanet.model.TeamTask().apply {
+                id = "task3"
+                title = "Task Three"
+                teamId = ""
+            },
+        )
+        coEvery { teamTaskDao.getByIds(listOf("task1", "task2", "task3")) } returns tasks
+        coEvery { teamsRepository.get().getTeamNamesByIds(any()) } returns mapOf(
+            "teamA" to "Alpha Team",
+            "teamB" to "Beta Team",
+        )
+
+        val result = repository.getTaskTeamNamesByTaskIds(listOf("task1", "task2", "task3"))
+
+        assertEquals("Alpha Team", result["task1"])
+        assertEquals("Beta Team", result["task2"])
+        assertFalse(result.containsKey("task3"))
+    }
+
+    @Test
+    fun `getTaskTeamNamesByTaskIds deduplicates team ids passed to repository`() = runTest {
+        val tasks = listOf(
+            org.ole.planet.myplanet.model.TeamTask().apply {
+                id = "task1"
+                title = "Task One"
+                teamId = "teamA"
+            },
+            org.ole.planet.myplanet.model.TeamTask().apply {
+                id = "task2"
+                title = "Task Two"
+                teamId = "teamA"
+            },
+        )
+        coEvery { teamTaskDao.getByIds(listOf("task1", "task2")) } returns tasks
+        coEvery { teamsRepository.get().getTeamNamesByIds(any()) } returns mapOf("teamA" to "Alpha Team")
+
+        repository.getTaskTeamNamesByTaskIds(listOf("task1", "task2"))
+
+        coVerify { teamsRepository.get().getTeamNamesByIds(listOf("teamA")) }
+    }
+
+    @Test
+    fun `getTaskTeamNamesByTaskTitles maps task titles to team names and deduplicates team ids`() = runTest {
+        val tasks = listOf(
+            org.ole.planet.myplanet.model.TeamTask().apply {
+                id = "task1"
+                title = "Task One"
+                teamId = "teamA"
+            },
+            org.ole.planet.myplanet.model.TeamTask().apply {
+                id = "task2"
+                title = "Task Two"
+                teamId = "teamA"
+            },
+            org.ole.planet.myplanet.model.TeamTask().apply {
+                id = "task3"
+                title = "Task Three"
+                teamId = null
+            },
+        )
+        coEvery { teamTaskDao.getByTitles(listOf("Task One", "Task Two", "Task Three")) } returns tasks
+        coEvery { teamsRepository.get().getTeamNamesByIds(any()) } returns mapOf("teamA" to "Alpha Team")
+
+        val result = repository.getTaskTeamNamesByTaskTitles(listOf("Task One", "Task Two", "Task Three"))
+
+        assertEquals("Alpha Team", result["Task One"])
+        assertEquals("Alpha Team", result["Task Two"])
+        assertFalse(result.containsKey("Task Three"))
+        coVerify { teamsRepository.get().getTeamNamesByIds(listOf("teamA")) }
+    }
+
+    @Test
+    fun `getJoinRequestDetailsBatch maps related ids to requester and team names`() = runTest {
+        val joinRequests = listOf(
+            JoinRequestInfo("jr1", "teamA", "user1"),
+            JoinRequestInfo("jr2", "teamB", "user2"),
+        )
+        coEvery { teamsRepository.get().getJoinRequestsInfo(listOf("jr1", "jr2")) } returns joinRequests
+        coEvery { teamsRepository.get().getTeamNamesByIds(any()) } returns mapOf(
+            "teamA" to "Alpha Team",
+            "teamB" to "Beta Team",
+        )
+        val users = listOf(
+            org.ole.planet.myplanet.model.UserEntity(id = "user1", name = "Alice"),
+            org.ole.planet.myplanet.model.UserEntity(id = "user2", name = "Bob"),
+        )
+        coEvery { userRepository.get().getUsersByIds(any()) } returns users
+
+        val result = repository.getJoinRequestDetailsBatch(listOf("jr1", "jr2"))
+
+        assertEquals(Pair("Alice", "Alpha Team"), result["jr1"])
+        assertEquals(Pair("Bob", "Beta Team"), result["jr2"])
+    }
+
+    @Test
+    fun `getJoinRequestDetailsBatch falls back to Unknown for missing user and team`() = runTest {
+        val joinRequests = listOf(
+            JoinRequestInfo("jr1", "", ""),
+            JoinRequestInfo("jr2", "teamB", "user2"),
+        )
+        coEvery { teamsRepository.get().getJoinRequestsInfo(listOf("jr1", "jr2")) } returns joinRequests
+        coEvery { teamsRepository.get().getTeamNamesByIds(any()) } returns mapOf("teamB" to "Beta Team")
+        coEvery { userRepository.get().getUsersByIds(any()) } returns emptyList()
+
+        val result = repository.getJoinRequestDetailsBatch(listOf("jr1", "jr2"))
+
+        assertEquals(Pair("Unknown User", "Unknown Team"), result["jr1"])
+        assertEquals(Pair("Unknown User", "Beta Team"), result["jr2"])
+    }
+
+    @Test
+    fun `getJoinRequestDetailsBatch deduplicates user ids and team ids`() = runTest {
+        val joinRequests = listOf(
+            JoinRequestInfo("jr1", "teamA", "user1"),
+            JoinRequestInfo("jr2", "teamA", "user1"),
+        )
+        coEvery { teamsRepository.get().getJoinRequestsInfo(listOf("jr1", "jr2")) } returns joinRequests
+        coEvery { teamsRepository.get().getTeamNamesByIds(any()) } returns mapOf("teamA" to "Alpha Team")
+        coEvery { userRepository.get().getUsersByIds(any()) } returns listOf(
+            org.ole.planet.myplanet.model.UserEntity(id = "user1", name = "Alice"),
+        )
+
+        repository.getJoinRequestDetailsBatch(listOf("jr1", "jr2"))
+
+        coVerify { teamsRepository.get().getTeamNamesByIds(listOf("teamA")) }
+        coVerify { userRepository.get().getUsersByIds(listOf("user1")) }
+    }
+
+    @Test
+    fun `getJoinRequestDetailsBatch with empty list returns empty map`() = runTest {
+        val result = repository.getJoinRequestDetailsBatch(emptyList())
+
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 0) { teamsRepository.get().getJoinRequestsInfo(any()) }
+    }
+
+    @Test
+    fun `getTaskTeamNamesByTaskIds with empty list returns empty map`() = runTest {
+        val result = repository.getTaskTeamNamesByTaskIds(emptyList())
+
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 0) { teamTaskDao.getByIds(any()) }
+    }
+
+    @Test
+    fun `getTaskTeamNamesByTaskTitles with empty list returns empty map`() = runTest {
+        val result = repository.getTaskTeamNamesByTaskTitles(emptyList())
+
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 0) { teamTaskDao.getByTitles(any()) }
+    }
+
+    @Test
+    fun `resolveType passes through known types lowercased`() {
+        assertEquals("join_request", repository.resolveType("join_request", "anything", null))
+        assertEquals("task", repository.resolveType("Task", "anything", null))
+        assertEquals("resource", repository.resolveType("RESOURCE", "anything", null))
+    }
+
+    @Test
+    fun `resolveType classifies raw team type as join request via english message`() {
+        assertEquals(
+            "join_request",
+            repository.resolveType("team", "<b>Jane</b> has requested to join <b>\"My Team\"</b> team.", null)
+        )
+    }
+
+    @Test
+    fun `resolveType classifies raw team type as join request via spanish message`() {
+        assertEquals(
+            "join_request",
+            repository.resolveType("team", "test22012601 ha solicitado unirse a \"test GT\" team.", null)
+        )
+    }
+
+    @Test
+    fun `resolveType classifies raw team type as join request via subType regardless of message language`() {
+        assertEquals("join_request", repository.resolveType("team", "غير معروف", "join_request"))
+    }
+
+    @Test
+    fun `resolveType lowercases subType`() {
+        assertEquals("join_request", repository.resolveType("team", "غير معروف", "Join_Request"))
+    }
+
+    @Test
+    fun `resolveType classifies raw team type case insensitively`() {
+        assertEquals("team_join", repository.resolveType("Team", "Has sido eliminado de \"test GT\" team.", null))
+    }
+
+    @Test
+    fun `resolveType classifies raw newTask and newResource types case insensitively`() {
+        assertEquals("task", repository.resolveType("NEWTASK", "¿qué?", null))
+        assertEquals("resource", repository.resolveType("newresource", "¿qué?", null))
+    }
+
+    @Test
+    fun `resolveType classifies raw team type as chat for posted message`() {
+        assertEquals(
+            "chat",
+            repository.resolveType("team", "Bhushan Nim has posted a message on \"test GT\" team.", null)
+        )
+    }
+
+    @Test
+    fun `resolveType classifies unmatched raw team type as team join`() {
+        assertEquals(
+            "team_join",
+            repository.resolveType("team", "Has sido eliminado de \"test GT\" team.", null)
+        )
+    }
+
+    @Test
+    fun `resolveType classifies newTask as task`() {
+        assertEquals("task", repository.resolveType("newTask", "You were assigned a new task", null))
+    }
+
+    @Test
+    fun `resolveType classifies newResource as resource`() {
+        assertEquals("resource", repository.resolveType("newResource", "Hay nuevos recursos en la biblioteca.", null))
+    }
+
+    @Test
+    fun `resolveType falls back to message sniffing for unknown types`() {
+        assertEquals("task", repository.resolveType("other", "Report is due tomorrow", null))
+        assertEquals("storage", repository.resolveType("other", "Low storage", null))
+        assertEquals("voice_reply", repository.resolveType("other", "new reply to your voice", null))
+        assertEquals("notification", repository.resolveType("other", "unrecognized text", null))
     }
 }

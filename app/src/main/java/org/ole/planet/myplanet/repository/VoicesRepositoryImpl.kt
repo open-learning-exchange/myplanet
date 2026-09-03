@@ -4,9 +4,6 @@ import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.HashMap
 import javax.inject.Inject
@@ -24,6 +21,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 
 class VoicesRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
@@ -200,7 +198,7 @@ class VoicesRepositoryImpl @Inject constructor(
                     null
                 } ?: JsonArray()
 
-                if (array.size() > 0) {
+                if (!array.isEmpty()) {
                     val firstElement = array.get(0)
                     if (firstElement.isJsonObject) {
                         val obj = firstElement.asJsonObject
@@ -259,7 +257,7 @@ class VoicesRepositoryImpl @Inject constructor(
                     }
                 }
             }
-            if (filtered.size() == 0) {
+            if (filtered.isEmpty()) {
                 val idsToDelete = collectNewsAndReplies(newsId)
                 newsDao.deleteByIds(idsToDelete)
             } else {
@@ -300,15 +298,12 @@ class VoicesRepositoryImpl @Inject constructor(
         newsDao.upsert(news)
     }
 
-    override suspend fun getCommunityVoiceDates(startTime: Long, endTime: Long, userId: String?): List<String> {
-        val results = if (userId != null) {
-            newsDao.getInTimeRangeForUser(startTime, endTime, userId)
+    override suspend fun getCommunityVoiceDateCount(startTime: Long, endTime: Long, userId: String?): Int {
+        return if (userId != null) {
+            newsDao.countDistinctCommunityVoiceDatesForUser(startTime, endTime, userId)
         } else {
-            newsDao.getInTimeRange(startTime, endTime)
+            newsDao.countDistinctCommunityVoiceDates(startTime, endTime)
         }
-        return results.filter { isCommunitySection(it) }
-            .map { getDateFromTimestamp(it.time) }
-            .distinct()
     }
 
     override suspend fun getNewsById(id: String): News? {
@@ -351,31 +346,6 @@ class VoicesRepositoryImpl @Inject constructor(
         news.updateMessage(message)
         newsDao.upsert(news)
         return newsDao.getById(newsId)
-    }
-
-    private fun isCommunitySection(news: News): Boolean {
-        news.viewIn?.let { viewInStr ->
-            try {
-                val viewInArray = org.json.JSONArray(viewInStr)
-                for (i in 0 until viewInArray.length()) {
-                    val viewInObj = viewInArray.getJSONObject(i)
-                    if (viewInObj.optString("section") == "community") {
-                        return true
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-        return false
-    }
-
-    private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-
-    private fun getDateFromTimestamp(timestamp: Long): String {
-        return Instant.ofEpochMilli(timestamp)
-            .atZone(ZoneId.systemDefault())
-            .format(dateFormatter)
     }
 
     override suspend fun getPlanetNewsMessages(planetCode: String?): List<News> {
@@ -476,6 +446,7 @@ class VoicesRepositoryImpl @Inject constructor(
         newsObject.addProperty("updatedDate", news.newsUpdatedDate)
         newsObject.addProperty("sharedBy", news.sharedBy)
         `object`.add("news", newsObject)
+        `object`.addDocumentOrigin()
         return `object`
     }
 
@@ -487,7 +458,7 @@ class VoicesRepositoryImpl @Inject constructor(
         val viewInStr = news.viewIn
         if (!TextUtils.isEmpty(viewInStr)) {
             val ar = plainGson.fromJson(viewInStr, JsonArray::class.java)
-            if (ar.size() > 0) `object`.add("viewIn", ar)
+            if (!ar.isEmpty()) `object`.add("viewIn", ar)
         }
     }
 
@@ -511,8 +482,8 @@ class VoicesRepositoryImpl @Inject constructor(
         return newsDao.countTeamChats(teamId)
     }
 
-    override suspend fun getTeamChatViewableIds(teamIds: List<String>): List<String> {
-        return newsDao.getTeamChatViewableIds(teamIds)
+    override suspend fun countTopLevelByTeam(teamId: String): Long {
+        return newsDao.countTopLevelByTeam(teamId, teamIdPattern(teamId))
     }
 
     override suspend fun getPendingNewsLogUploads(): List<org.ole.planet.myplanet.model.NewsLog> {

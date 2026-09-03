@@ -9,6 +9,9 @@ on:
       - 'docs/**'
       - '**/*.md'
 
+permissions:
+  contents: read
+
 concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: true
@@ -17,6 +20,7 @@ jobs:
   build:
     name: myPlanet build
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -26,6 +30,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 1
+          # submodules: recursive  # uncomment when a job needs .agents/skills
 
       - name: setup gradle
         uses: gradle/actions/setup-gradle@v6.3.0

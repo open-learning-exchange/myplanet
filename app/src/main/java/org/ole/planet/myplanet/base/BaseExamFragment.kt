@@ -65,6 +65,8 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var teamId: String? = null
     internal var answerTextWatcher: TextWatcher? = null
     private var currentAnswerEditText: EditText? = null
+    private val markwon by lazy(LazyThreadSafetyMode.NONE) { Markwon.create(requireActivity()) }
+    private val markwonEditor by lazy(LazyThreadSafetyMode.NONE) { MarkwonEditor.create(markwon) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -193,10 +195,8 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         currentAnswerEditText?.removeTextChangedListener(answerTextWatcher)
         currentAnswerEditText = etAnswer
         etAnswer.visibility = View.VISIBLE
-        val markwon = Markwon.create(requireActivity())
-        val editor = MarkwonEditor.create(markwon)
         if (type.equals("textarea", ignoreCase = true)) {
-            answerTextWatcher = MarkwonEditorTextWatcher.withProcess(editor)
+            answerTextWatcher = MarkwonEditorTextWatcher.withProcess(markwonEditor)
             etAnswer.addTextChangedListener(answerTextWatcher)
         } else {
             answerTextWatcher = object : TextWatcher {

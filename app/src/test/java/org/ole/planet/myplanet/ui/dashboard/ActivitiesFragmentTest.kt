@@ -1,12 +1,15 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import java.util.Calendar
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.OfflineActivity
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 class ActivitiesFragmentTest {
 
@@ -15,6 +18,7 @@ class ActivitiesFragmentTest {
     @Before
     fun setup() {
         fragment = ActivitiesFragment()
+        fragment.dispatcherProvider = TestDispatcherProvider(UnconfinedTestDispatcher())
     }
 
     @Test
@@ -29,7 +33,7 @@ class ActivitiesFragmentTest {
     }
 
     @Test
-    fun computeMonthlyCounts_emptyList_returnsEmptyMap() {
+    fun computeMonthlyCounts_emptyList_returnsEmptyMap() = runTest {
         val startMillis = 1000L
         val endMillis = 5000L
 
@@ -39,7 +43,7 @@ class ActivitiesFragmentTest {
     }
 
     @Test
-    fun computeMonthlyCounts_filtersOutOfRangeLoginsAndGroupsCorrectly() {
+    fun computeMonthlyCounts_filtersOutOfRangeLoginsAndGroupsCorrectly() = runTest {
         val calendar = Calendar.getInstance()
 
         // Month 0 (January)

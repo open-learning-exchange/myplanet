@@ -35,7 +35,6 @@ import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.CreateTeamRequest
-import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
@@ -58,8 +57,9 @@ import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeProvider
-import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
+import org.ole.planet.myplanet.utils.toSyncDocuments
 
 @Singleton
 class TeamsRepositoryImpl @Inject constructor(
@@ -899,6 +899,10 @@ class TeamsRepositoryImpl @Inject constructor(
         return true
     }
 
+    override suspend fun recordTeamActivity() {
+        syncTeamActivities()
+    }
+
     override suspend fun syncTeamActivities() {
         val updateUrl = sharedPrefManager.getServerUrl()
         val mapping = serverUrlMapper.processUrl(updateUrl)
@@ -959,7 +963,14 @@ class TeamsRepositoryImpl @Inject constructor(
             .filter { !it.isDeletePending } // Filter so only the not pending members get query
             .mapNotNull { it.userId }
             .distinct()
-        return teamMembers.mapNotNull { userRepository.getUserById(it) }
+        if (teamMembers.isEmpty()) return emptyList()
+        val users = userRepository.getUsersByIds(teamMembers)
+        val userMap = HashMap<String, UserEntity>(users.size * 2)
+        users.forEach { user ->
+            userMap[user.id] = user
+            user._id?.let { userMap[it] = user }
+        }
+        return teamMembers.mapNotNull { userMap[it] }
     }
 
     override suspend fun getJoinedMembersWithVisitInfo(teamId: String): List<JoinedMemberData> {
@@ -1048,7 +1059,14 @@ class TeamsRepositoryImpl @Inject constructor(
         val requestedMemberIds = teamDao.getByTeamIdAndDocType(teamId, "request")
             .mapNotNull { it.userId }
             .distinct()
-        return requestedMemberIds.mapNotNull { userRepository.getUserById(it) }
+        if (requestedMemberIds.isEmpty()) return emptyList()
+        val users = userRepository.getUsersByIds(requestedMemberIds)
+        val userMap = HashMap<String, UserEntity>(users.size * 2)
+        users.forEach { user ->
+            userMap[user.id] = user
+            user._id?.let { userMap[it] = user }
+        }
+        return requestedMemberIds.mapNotNull { userMap[it] }
     }
 
     override suspend fun isTeamNameExists(name: String, type: String, excludeTeamId: String?): Boolean {
@@ -1075,11 +1093,7 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getNextLeaderCandidate(teamId: String, excludeUserId: String?): UserEntity? {
-        val members = teamDao.getByTeamIdAndDocType(teamId, "membership").filter {
-            !it.isLeader &&
-                it.status != "archived" &&
-                (excludeUserId == null || it.userId != excludeUserId)
-        }
+        val members = teamDao.getEligibleNextLeaderCandidates(teamId, excludeUserId)
         if (members.isEmpty()) return null
 
         val userIds = members.mapNotNull { it.userId }
@@ -1154,7 +1168,7 @@ class TeamsRepositoryImpl @Inject constructor(
         ob.addProperty("teamType", log.teamType)
         ob.addProperty("time", log.time)
         ob.addProperty("teamId", log.teamId)
-        ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+        ob.addDocumentOrigin()
         ob.addProperty("deviceName", NetworkUtils.getDeviceName())
         ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
         if (!TextUtils.isEmpty(log._rev)) {
@@ -1234,17 +1248,8 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
-        val documentList = ArrayList<JsonObject>(jsonArray.size())
-        val ids = mutableListOf<String>()
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-                ids.add(id)
-            }
-        }
+        val syncDocs = jsonArray.toSyncDocuments()
+        val ids = syncDocs.map { it.first }
         val existingTeams = teamDao.getAll()
             .filter { (it._id ?: it.id) in ids }
             .associateBy { it._id ?: it.id }
@@ -1254,35 +1259,19 @@ class TeamsRepositoryImpl @Inject constructor(
         // the ~1000 docs in a heavy-table sync page would commit — and fsync — on its own,
         // turning one page into minutes of work. One transaction => one commit for the page.
         appDatabase.withTransaction {
-            documentList.forEach { jsonDoc ->
+            syncDocs.forEach { (_, jsonDoc) ->
                 insertMyTeam(jsonDoc, existingTeams)
             }
         }
     }
 
     override suspend fun bulkInsertTasksFromSync(jsonArray: JsonArray) {
-        val tasks = ArrayList<TeamTask>(jsonArray.size())
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                tasks.add(TeamTask.fromJson(jsonDoc))
-            }
-        }
+        val tasks = jsonArray.toSyncDocuments().map { (_, doc) -> TeamTask.fromJson(doc) }
         teamTaskDao.upsertAll(tasks)
     }
 
     override suspend fun bulkInsertTeamActivitiesFromSync(jsonArray: JsonArray) {
-        val documentList = ArrayList<JsonObject>(jsonArray.size())
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-            }
-        }
+        val documentList = jsonArray.toSyncDocuments().map { it.second }
         insertTeamLogs(documentList)
     }
 

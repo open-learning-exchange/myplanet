@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.util.Date
 import java.util.UUID
@@ -11,6 +9,7 @@ import kotlinx.coroutines.flow.flowOf
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.model.Personal
+import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -20,7 +19,7 @@ class PersonalsRepositoryImpl @Inject constructor(
     private val personalDao: PersonalDao,
     private val apiInterface: ApiInterface,
     private val uploadRepository: UploadRepository,
-    @ApplicationContext private val context: Context
+    private val deviceNameProvider: DeviceNameProvider
 ) : PersonalsRepository {
 
     override suspend fun personalTitleExists(title: String, userId: String?): Boolean {
@@ -59,14 +58,14 @@ class PersonalsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deletePersonalResource(id: String) {
-        personalDao.deleteByDocId(id)
-        personalDao.deleteById(id)
+        personalDao.deleteByIdOrDocId(id)
     }
 
-    override suspend fun updatePersonalResource(id: String, updater: (Personal) -> Unit) {
+    override suspend fun updatePersonalResource(id: String, update: PersonalUpdate) {
         val personal = personalDao.findByDocId(id) ?: personalDao.findById(id)
         personal?.let {
-            updater(it)
+            if (update.title != null) it.title = update.title
+            if (update.description != null) it.description = update.description
             personalDao.update(it)
         }
     }
@@ -82,7 +81,7 @@ class PersonalsRepositoryImpl @Inject constructor(
     override suspend fun uploadPersonalDocument(personal: Personal): Pair<String, String>? {
         val response = apiInterface.postDoc(
             UrlUtils.header, "application/json",
-            "${UrlUtils.getUrl()}/resources", Personal.serialize(personal, context)
+            "${UrlUtils.getUrl()}/resources", Personal.serialize(personal, deviceNameProvider.getCustomDeviceName())
         )
 
         val `object` = response.body()

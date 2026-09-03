@@ -1,18 +1,17 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
-import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Provider
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -21,6 +20,7 @@ import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
+import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao.UploadedPhoto
 import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
@@ -39,6 +39,8 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.ExamAnswerUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
+import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class SubmissionsRepositoryImpl @Inject internal constructor(
     private val teamsRepositoryProvider: Provider<TeamsRepository>,
@@ -81,7 +83,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
     override fun getSubmissionsFlow(userId: String): Flow<List<Submission>> {
         return submissionDao.observeByUserId(userId).distinctUntilChanged { old, new ->
-            // Assuming any meaningful mutation bumps lastUpdateTime.
             old.size == new.size && old.zip(new).all { (o, n) -> o.id == n.id && o.lastUpdateTime == n.lastUpdateTime }
         }
     }
@@ -93,7 +94,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
     private suspend fun getExamsByIds(examIds: List<String>): List<StepExam> {
         if (examIds.isEmpty()) return emptyList()
-        return examDao.getByIds(examIds).map { it }
+        return examDao.getByIds(examIds)
     }
 
     override suspend fun getUniquePendingSurveys(userId: String?): List<Submission> {
@@ -228,7 +229,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun saveSubmission(submission: Submission) {
-        val answerEntities = submission.answers?.map { it }.orEmpty()
+        val answerEntities = submission.answers.orEmpty()
         submissionDao.upsertAll(listOf(submission))
         if (answerEntities.isNotEmpty()) {
             answerDao.upsertAll(answerEntities)
@@ -364,7 +365,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     private suspend fun getSurveysByCourseId(courseId: String): List<StepExam> {
-        return examDao.getByCourseIdAndType(courseId, "survey").map { it }
+        return examDao.getByCourseIdAndType(courseId, "survey")
     }
 
     override suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean {
@@ -426,7 +427,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 }
                 return createExamSubmission(request)
             } catch (e: Exception) {
-                // Retry local Room writes to handle potential transient SQLite constraints during rapid operations
                 e.printStackTrace()
                 lastException = e
                 retries++
@@ -437,11 +437,8 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
     override suspend fun createExamSubmission(request: CreateExamSubmissionRequest): Submission {
         val (userId, userDob, userGender, exam, type, teamId) = request
-        val team = if (!teamId.isNullOrEmpty()) {
-            teamsRepositoryProvider.get().getTeamById(teamId)
-        } else {
-            null
-        }
+        val persistedTeamId = teamId?.takeIf { it.isNotBlank() }
+        val team = persistedTeamId?.let { getTeamByIdOrNull(it) }
 
         val now = Date().time
         val submission = Submission().apply {
@@ -469,18 +466,19 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             startTime = now
             lastUpdateTime = now
             answers = mutableListOf()
+            this.teamId = persistedTeamId
 
-            if (team != null) {
+            if (persistedTeamId != null) {
                 teamObject = TeamReference().apply {
-                    _id = team._id
-                    name = team.name
-                    this.type = team.type ?: "team"
+                    _id = persistedTeamId
+                    name = team?.name
+                    this.type = team?.type
                 }
-                membershipDoc = MembershipDoc().apply { this.teamId = teamId }
+                membershipDoc = MembershipDoc().apply { this.teamId = persistedTeamId }
                 user = JsonObject().apply {
                     addProperty("age", userDob ?: "")
                     addProperty("gender", userGender ?: "")
-                    add("membershipDoc", JsonObject().apply { addProperty("teamId", teamId) })
+                    add("membershipDoc", JsonObject().apply { addProperty("teamId", persistedTeamId) })
                 }.toString()
             }
         }
@@ -601,6 +599,12 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         photoId?.let { submitPhotosDao.markUploaded(it, rev, id) }
     }
 
+    override suspend fun markPhotosUploadedBatch(uploads: List<UploadedPhoto>) {
+        if (uploads.isNotEmpty()) {
+            submitPhotosDao.markUploadedBatch(uploads)
+        }
+    }
+
     override suspend fun getPendingSubmitPhotosUploads(): List<SubmitPhotos> {
         return submitPhotosDao.getUnuploaded()
     }
@@ -636,15 +640,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
-        val documentList = ArrayList<JsonObject>(jsonArray.size())
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-            }
-        }
+        val documentList = jsonArray.toSyncDocuments().map { it.second }
         upsertRoomSubmissionsFromSync(documentList)
     }
 
@@ -663,10 +659,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             val serverStatus = JsonUtils.getString("status", submission)
             val rev = JsonUtils.getString("_rev", submission)
             val parentId = JsonUtils.getString("parentId", submission)
-            // Drop base64 `_attachments` (e.g. a profile photo) from the embedded user before
-            // persisting it as a blob; otherwise a single row can exceed SQLite's ~2MB
-            // CursorWindow limit and crash later `SELECT *` reads (SQLiteBlobTooBigException).
-            // Read membershipDoc first, then strip — the two keys are independent.
             val userJson = JsonUtils.getJsonObject("user", submission)
             val membershipJson = JsonUtils.getJsonObject("membershipDoc", userJson)
             userJson.remove("_attachments")
@@ -760,28 +752,22 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         val resolvedUser = payloadData.user
         val exam = payloadData.exam
 
-        if (!TextUtils.isEmpty(submission._id)) {
+        if (!submission._id.isNullOrEmpty()) {
             `object`.addProperty("_id", submission._id)
         }
-        if (!TextUtils.isEmpty(submission._rev)) {
+        if (!submission._rev.isNullOrEmpty()) {
             `object`.addProperty("_rev", submission._rev)
         }
         `object`.addProperty("parentId", submission.parentId)
         `object`.addProperty("type", submission.type)
 
-        if (submission.teamObject != null) {
-            val teamJson = JsonObject()
-            teamJson.addProperty("_id", submission.teamObject?._id)
-            teamJson.addProperty("name", submission.teamObject?.name)
-            teamJson.addProperty("type", submission.teamObject?.type)
-            `object`.add("team", teamJson)
-        }
+        resolveTeamJson(submission)?.let { `object`.add("team", it) }
 
         `object`.addProperty("grade", submission.grade)
         `object`.addProperty("startTime", submission.startTime)
         `object`.addProperty("lastUpdateTime", submission.lastUpdateTime)
         `object`.addProperty("status", submission.status)
-        `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+        `object`.addDocumentOrigin()
         `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
         `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
         `object`.addProperty("sender", submission.sender)
@@ -794,14 +780,41 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             val parent = gson.fromJson(submission.parent, JsonObject::class.java)
             `object`.add("parent", parent)
         }
-        // Prefer the fresh user record (attachment-free, current data) so the upload never
-        // depends on the persisted blob, whose _attachments are stripped for storage safety.
         val freshUser = resolvedUser?.serialize()
         when {
             freshUser != null -> `object`.add("user", freshUser)
-            !TextUtils.isEmpty(submission.user) -> `object`.add("user", JsonParser.parseString(submission.user))
+            !submission.user.isNullOrEmpty() -> `object`.add("user", JsonParser.parseString(submission.user))
         }
         return `object`
+    }
+
+    private suspend fun resolveTeamJson(submission: Submission): JsonObject? {
+        val teamRef = submission.teamObject
+        val teamId = teamRef?._id?.takeIf { it.isNotBlank() }
+            ?: submission.teamId?.takeIf { it.isNotBlank() }
+            ?: return null
+
+        val teamName = teamRef?.name?.takeIf { it.isNotBlank() }
+        val teamType = teamRef?.type?.takeIf { it.isNotBlank() }
+        val localTeam = if (teamName == null || teamType == null) {
+            getTeamByIdOrNull(teamId)
+        } else {
+            null
+        }
+
+        return JsonObject().apply {
+            addProperty("_id", teamId)
+            (teamName ?: localTeam?.name?.takeIf { it.isNotBlank() })?.let { addProperty("name", it) }
+            (teamType ?: localTeam?.type?.takeIf { it.isNotBlank() })?.let { addProperty("type", it) }
+        }
+    }
+
+    private suspend fun getTeamByIdOrNull(teamId: String) = try {
+        teamsRepositoryProvider.get().getTeamById(teamId)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        null
     }
 
     override suspend fun serializeSubmission(submission: Submission, source: String, parentCode: String, user: UserEntity?): JsonObject {
@@ -820,11 +833,12 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
             jsonObject.addProperty("parentId", submission.parentId ?: "")
             jsonObject.addProperty("type", submission.type ?: "survey")
+            resolveTeamJson(submission)?.let { jsonObject.add("team", it) }
             jsonObject.addProperty("grade", submission.grade)
             jsonObject.addProperty("startTime", submission.startTime)
             jsonObject.addProperty("lastUpdateTime", submission.lastUpdateTime)
             jsonObject.addProperty("status", submission.status ?: "pending")
-            jsonObject.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+            jsonObject.addDocumentOrigin()
             jsonObject.addProperty("deviceName", NetworkUtils.getDeviceName())
             jsonObject.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
             jsonObject.addProperty("sender", submission.sender)
@@ -837,8 +851,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 jsonObject.add("parent", JsonParser.parseString(submission.parent))
             }
 
-            // Prefer the fresh user record (attachment-free, current data) over the persisted
-            // blob, whose _attachments are stripped for storage safety.
             val userJson = payloadData.user?.serialize()
                 ?: submission.user?.takeIf { it.isNotEmpty() }?.let { JsonParser.parseString(it).asJsonObject }
             if (userJson != null) {

@@ -2,7 +2,7 @@ package org.ole.planet.myplanet.ui.health
 
 import android.content.DialogInterface
 import android.os.Bundle
-import android.text.TextUtils
+import android.view.ContextThemeWrapper
 import android.view.MenuItem
 import android.view.View
 import android.widget.CheckBox
@@ -13,9 +13,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.widget.doOnTextChanged
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.chip.Chip
 import dagger.hilt.android.AndroidEntryPoint
-import fisk.chipcloud.ChipCloud
-import fisk.chipcloud.ChipCloudConfig
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
@@ -27,12 +26,10 @@ import org.ole.planet.myplanet.model.Examination
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.encrypt
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateKey
-import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DimenUtils.dpToPx
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -56,15 +53,16 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
     private var customDiag: MutableSet<String?>? = null
     private var mapConditions: HashMap<String?, Boolean>? = null
     var allowSubmission = true
-    private lateinit var config: ChipCloudConfig
     private var examination: HealthExamination? = null
     private var conditionsMap: Map<String, Boolean> = emptyMap()
     private fun initViews() {
-        config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.close)
         binding.btnAddDiag.setOnClickListener {
-            customDiag?.add("${binding.etOtherDiag.text}")
-            binding.etOtherDiag.setText(R.string.empty_text)
-            showOtherDiagnosis()
+            val text = binding.etOtherDiag.text.toString().trim()
+            if (text.isNotEmpty()) {
+                customDiag?.add(text)
+                binding.etOtherDiag.setText(R.string.empty_text)
+                showOtherDiagnosis()
+            }
         }
     }
 
@@ -181,28 +179,30 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
 
     private fun showOtherDiagnosis() {
         binding.containerOtherDiagnosis.removeAllViews()
-        val chipCloud = ChipCloud(this, binding.containerOtherDiagnosis, config)
-        for (s in customDiag?: emptySet()) {
+        preloadCustomDiagnosis()
+        val chipContext = ContextThemeWrapper(this, R.style.Theme_App_Chip)
+        for (s in customDiag ?: emptySet()) {
             if (s.isNullOrBlank()) {
-                    continue
-            } else {
-                    chipCloud.addChip(s)
+                continue
             }
+            val chip = Chip(chipContext).apply {
+                text = s
+                isCloseIconVisible = true
+                setOnCloseIconClickListener {
+                    customDiag?.remove(s)
+                    showOtherDiagnosis()
+                }
+            }
+            binding.containerOtherDiagnosis.addView(chip)
         }
-        chipCloud.setDeleteListener { _: Int, s1: String? -> customDiag?.remove(s1) }
-        preloadCustomDiagnosis(chipCloud)
     }
 
-    private fun preloadCustomDiagnosis(chipCloud: ChipCloud) {
+    private fun preloadCustomDiagnosis() {
         val arr = resources.getStringArray(R.array.diagnosis_list)
         val mainList = listOf(*arr)
         if (customDiag?.isEmpty() == true && examination != null) {
             for ((s, value) in conditionsMap) {
                 if (!mainList.contains(s) && value) {
-                    chipCloud.addChip(s)
-                    chipCloud.setDeleteListener { _: Int, s1: String? ->
-                        customDiag?.remove(Constants.LABELS[s1])
-                    }
                     customDiag?.add(s)
                 }
             }
@@ -305,15 +305,15 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
     }
 
     private val hasInfo: Boolean
-        get() = !TextUtils.isEmpty("${binding.etAllergies.text}") ||
-                !TextUtils.isEmpty("${binding.etDiag.text}") ||
-                !TextUtils.isEmpty("${binding.etImmunization.text}") ||
-                !TextUtils.isEmpty("${binding.etMedications.text}") ||
-                !TextUtils.isEmpty("${binding.etObservation.text}") ||
-                !TextUtils.isEmpty("${binding.etReferrals.text}") ||
-                !TextUtils.isEmpty("${binding.etLabtest.text}") ||
-                !TextUtils.isEmpty("${binding.etTreatments.text}") ||
-                !TextUtils.isEmpty("${binding.etXray.text}")
+        get() = "${binding.etAllergies.text}".isNotBlank() ||
+                "${binding.etDiag.text}".isNotBlank() ||
+                "${binding.etImmunization.text}".isNotBlank() ||
+                "${binding.etMedications.text}".isNotBlank() ||
+                "${binding.etObservation.text}".isNotBlank() ||
+                "${binding.etReferrals.text}".isNotBlank() ||
+                "${binding.etLabtest.text}".isNotBlank() ||
+                "${binding.etTreatments.text}".isNotBlank() ||
+                "${binding.etXray.text}".isNotBlank()
     private val isValidInput: Boolean
         get() {
             val scrollView = binding.rootScrollView
