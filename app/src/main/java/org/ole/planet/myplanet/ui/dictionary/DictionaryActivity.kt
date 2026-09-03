@@ -5,17 +5,14 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import androidx.activity.viewModels
 import androidx.core.text.HtmlCompat
-import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.FragmentDictionaryBinding
 import org.ole.planet.myplanet.model.Download
-import org.ole.planet.myplanet.repository.DictionaryLoad
-import org.ole.planet.myplanet.repository.DictionaryRepository
 import org.ole.planet.myplanet.services.BroadcastService
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -27,13 +24,12 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 @AndroidEntryPoint
 class DictionaryActivity : BaseActivity() {
     @Inject
-    lateinit var dictionaryRepository: DictionaryRepository
-
-    @Inject
     override lateinit var dispatcherProvider: DispatcherProvider
 
     @Inject
     override lateinit var broadcastService: BroadcastService
+
+    private val viewModel: DictionaryViewModel by viewModels()
 
     private lateinit var fragmentDictionaryBinding: FragmentDictionaryBinding
 
@@ -46,9 +42,7 @@ class DictionaryActivity : BaseActivity() {
                 intent.getParcelableExtra("download") as? Download
             }
             if (download != null && download.fileUrl == Constants.DICTIONARY_URL && download.progress == 100) {
-                lifecycleScope.launch {
-                    loadDictionaryIfNeeded()
-                }
+                viewModel.loadDictionary()
             }
         }
     }
@@ -61,14 +55,11 @@ class DictionaryActivity : BaseActivity() {
         initActionBar()
         title = getString(R.string.dictionary)
 
-        lifecycleScope.launch {
-            val count = loadDictionaryCount()
-            fragmentDictionaryBinding.tvResult.text = getString(R.string.list_size, count)
-        }
+        viewModel.loadCount()
+        viewModel.loadDictionary()
 
-        lifecycleScope.launch {
-            loadDictionaryIfNeeded()
-        }
+        collectWhenStarted(viewModel.loadState) { state -> renderLoadState(state) }
+        collectWhenStarted(viewModel.searchState) { state -> renderSearchState(state) }
 
         registerReceiver()
     }
@@ -81,14 +72,14 @@ class DictionaryActivity : BaseActivity() {
         }
     }
 
-    private suspend fun loadDictionaryIfNeeded() {
-        when (dictionaryRepository.insertDictionaryData()) {
-            DictionaryLoad.Inserted, DictionaryLoad.AlreadyPopulated -> {
-                val count = dictionaryRepository.count()
-                fragmentDictionaryBinding.tvResult.text = getString(R.string.list_size, count)
+    private fun renderLoadState(state: DictionaryLoadState) {
+        when (state) {
+            is DictionaryLoadState.Idle -> Unit
+            is DictionaryLoadState.Populated -> {
+                fragmentDictionaryBinding.tvResult.text = getString(R.string.list_size, state.count)
                 setClickListener()
             }
-            DictionaryLoad.FileMissing -> {
+            is DictionaryLoadState.FileMissing -> {
                 val list = ArrayList<String>()
                 list.add(Constants.DICTIONARY_URL)
                 Utilities.toast(
@@ -97,7 +88,7 @@ class DictionaryActivity : BaseActivity() {
                 )
                 DownloadUtils.openDownloadService(this@DictionaryActivity, list, false)
             }
-            is DictionaryLoad.Failed -> {
+            is DictionaryLoadState.Failed -> {
                 Utilities.toast(
                     this@DictionaryActivity,
                     getString(R.string.dictionary_parsing_failed)
@@ -106,30 +97,32 @@ class DictionaryActivity : BaseActivity() {
         }
     }
 
-    private suspend fun loadDictionaryCount(): Long {
-        return dictionaryRepository.count()
+    private fun renderSearchState(state: DictionarySearchState) {
+        when (state) {
+            is DictionarySearchState.Idle -> Unit
+            is DictionarySearchState.Found -> {
+                val dict = state.entry
+                fragmentDictionaryBinding.tvResult.text = HtmlCompat.fromHtml(
+                    "Definition of '<b>" + dict.word + "</b>'<br/><br/>\n " +
+                        "<b>" + dict.definition + "\n</b><br/><br/><br/>" +
+                        "<b>Synonym : </b>" + dict.synonym + "\n<br/><br/>" +
+                        "<b>Antonoym : </b>" + dict.antonym + "\n<br/>",
+                    HtmlCompat.FROM_HTML_MODE_LEGACY
+                )
+            }
+            is DictionarySearchState.NotFound -> {
+                Utilities.toast(
+                    this@DictionaryActivity,
+                    getString(R.string.word_not_available_in_our_database)
+                )
+            }
+        }
     }
 
     private fun setClickListener() {
         fragmentDictionaryBinding.btnSearch.setOnClickListener {
             val query = fragmentDictionaryBinding.etSearch.text.toString()
-            lifecycleScope.launch {
-                val dict = dictionaryRepository.findByWord(query)
-                if (dict != null) {
-                    fragmentDictionaryBinding.tvResult.text = HtmlCompat.fromHtml(
-                        "Definition of '<b>" + dict.word + "</b>'<br/><br/>\n " +
-                            "<b>" + dict.definition + "\n</b><br/><br/><br/>" +
-                            "<b>Synonym : </b>" + dict.synonym + "\n<br/><br/>" +
-                            "<b>Antonoym : </b>" + dict.antonym + "\n<br/>",
-                        HtmlCompat.FROM_HTML_MODE_LEGACY
-                    )
-                } else {
-                    Utilities.toast(
-                        this@DictionaryActivity,
-                        getString(R.string.word_not_available_in_our_database)
-                    )
-                }
-            }
+            viewModel.searchWord(query)
         }
     }
 }
