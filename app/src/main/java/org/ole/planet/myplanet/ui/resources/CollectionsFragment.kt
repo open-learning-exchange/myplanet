@@ -67,6 +67,15 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
                 is CollectionsState.Success -> {
                     list = state.list
                     childMap = state.childMap
+                    val allTags = list + childMap.values.flatten()
+                    val reconciledList = selectedItemsList.map { selected ->
+                        allTags.find {
+                            if (selected.id.isNotEmpty()) it.id == selected.id
+                            else !selected.name.isNullOrEmpty() && it.name == selected.name
+                        } ?: selected
+                    }
+                    selectedItemsList.clear()
+                    selectedItemsList.addAll(reconciledList)
                     currentTagDataList = buildTagDataList(list)
                     adapter.submitList(currentTagDataList)
                     binding.btnOk.visibility = View.VISIBLE
@@ -119,7 +128,8 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
     private fun buildTagDataList(parents: List<TagEntity>): List<TagData> {
         val tagDataList = mutableListOf<TagData>()
         val isSelectMultiple = MainApplication.isCollectionSwitchOn
-        val selectedIds = selectedItemsList.mapNotNull { it.id }.toHashSet()
+        val selectedIds = selectedItemsList.mapNotNull { it.id.takeIf { id -> id.isNotEmpty() } }.toHashSet()
+        val selectedNames = selectedItemsList.mapNotNull { it.name }.toHashSet()
         val parentMap = HashMap<String, TagData.Parent>()
         currentTagDataList.forEach {
             if (it is TagData.Parent && !parentMap.containsKey(it.tag.id)) {
@@ -127,14 +137,14 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
             }
         }
         for (parentTag in parents) {
-            val isSelected = selectedIds.contains(parentTag.id)
+            val isSelected = selectedIds.contains(parentTag.id) || selectedNames.contains(parentTag.name)
             val parent = parentMap[parentTag.id] ?: TagData.Parent(parentTag, false, isSelected, isSelectMultiple)
 
             tagDataList.add(parent.copy(isSelected = isSelected, isSelectMultiple = isSelectMultiple))
 
             if (parent.isExpanded) {
                 childMap[parent.tag.id]?.forEach { childTag ->
-                    val isChildSelected = selectedIds.contains(childTag.id)
+                    val isChildSelected = selectedIds.contains(childTag.id) || selectedNames.contains(childTag.name)
                     tagDataList.add(TagData.Child(childTag, isChildSelected, isSelectMultiple))
                 }
             }
@@ -154,8 +164,15 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
     }
 
     override fun onCheckboxTagSelected(tag: TagEntity) {
-        if (selectedItemsList.contains(tag)) {
-            selectedItemsList.remove(tag)
+        val existingIndex = selectedItemsList.indexOfFirst { selected ->
+            if (tag.id.isNotEmpty() && selected.id.isNotEmpty()) {
+                selected.id == tag.id
+            } else {
+                !tag.name.isNullOrEmpty() && selected.name == tag.name
+            }
+        }
+        if (existingIndex >= 0) {
+            selectedItemsList.removeAt(existingIndex)
         } else {
             selectedItemsList.add(tag)
         }

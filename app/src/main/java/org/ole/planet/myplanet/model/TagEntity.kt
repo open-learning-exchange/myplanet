@@ -39,6 +39,22 @@ open class TagEntity {
         )
     }
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is TagEntity) return false
+        return if (id.isNotEmpty() && other.id.isNotEmpty()) {
+            id == other.id
+        } else if (id.isEmpty() && other.id.isEmpty()) {
+            !name.isNullOrEmpty() && name == other.name
+        } else {
+            false
+        }
+    }
+
+    override fun hashCode(): Int {
+        return if (id.isNotEmpty()) id.hashCode() else name?.hashCode() ?: 0
+    }
+
     companion object {
         fun getTagsArray(list: List<TagEntity>): JsonArray {
             val array = JsonArray()

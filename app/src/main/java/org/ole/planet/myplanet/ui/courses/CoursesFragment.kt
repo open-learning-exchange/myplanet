@@ -185,26 +185,26 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         collectLatestWhenStarted(viewModel.coursesState) { state ->
             if (!::adapterCourses.isInitialized) return@collectLatestWhenStarted
 
-                if (isMyCourseLib) {
-                    val courseIds = state.courses.map { it.courseId }
-                    resources = coursesRepository.getCourseOfflineResources(courseIds)
-                    courseLib = "courses"
-                }
+            if (isMyCourseLib) {
+                val courseIds = state.courses.map { it.courseId }
+                resources = coursesRepository.getCourseOfflineResources(courseIds)
+                courseLib = "courses"
+            }
 
-                adapterCourses.setProgressMap(state.progressMap)
-                adapterCourses.submitList(state.courses) {
-                    if (isAdded && ::selectionController.isInitialized) {
-                        selectedItems?.clear()
-                        selectionController.clearAll(adapterCourses)
-                        checkList()
-                        showNoData(tvMessage, state.courses.size, "courses")
-                        pendingScrollState?.let { saved ->
-                            recyclerView.layoutManager?.onRestoreInstanceState(saved)
-                            pendingScrollState = null
-                        }
+            adapterCourses.setProgressMap(state.progressMap)
+            adapterCourses.submitList(state.courses) {
+                if (isAdded && ::selectionController.isInitialized) {
+                    selectedItems?.clear()
+                    selectionController.clearAll(adapterCourses)
+                    checkList()
+                    showNoData(tvMessage, state.courses.size, "courses")
+                    pendingScrollState?.let { saved ->
+                        recyclerView.layoutManager?.onRestoreInstanceState(saved)
+                        pendingScrollState = null
                     }
                 }
             }
+        }
 
         realtimeSyncHelper = RealtimeSyncHelper(this, this, realtimeSyncManager)
         realtimeSyncHelper.setupRealtimeSync()
@@ -222,7 +222,12 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         )
         filterController.setup()
 
-        var lastState: FilterState? = null
+        val savedFilter = viewModel.currentFilterState
+        if (savedFilter.isActive) {
+            filterController.restoreFilterState(savedFilter)
+        }
+
+        var lastState: FilterState? = savedFilter.takeIf { it.isActive }
         var isFirstEmission = true
         collectLatestWhenStarted(filterController.filterState) { state ->
             if (isFirstEmission) {
@@ -240,7 +245,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
             lastState = state
             viewModel.filterCourses(
                 isMyCourseLib, model?.id, state.searchText, state.grade,
-                state.subject, state.tagNames, state.progressFilter
+                state.subject, state.tagNames, state.progressFilter, state.tags
             )
         }
 
@@ -623,7 +628,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         }
         if (::filterController.isInitialized) {
             val state = filterController.currentState()
-            viewModel.filterCourses(isMyCourseLib, model?.id, state.searchText, state.grade, state.subject, state.tagNames, state.progressFilter)
+            viewModel.filterCourses(isMyCourseLib, model?.id, state.searchText, state.grade, state.subject, state.tagNames, state.progressFilter, state.tags)
             scrollToTop()
         }
     }
@@ -636,5 +641,4 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
             }
         }
     }
-
 }
