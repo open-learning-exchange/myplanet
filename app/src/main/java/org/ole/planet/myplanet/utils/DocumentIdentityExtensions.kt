@@ -7,7 +7,7 @@ import com.google.gson.JsonObject
  * Planet splits activity by this field and only falls back to "has an androidId, so
  * assume myPlanet" when the field is missing, so every document we post carries it.
  */
-const val APP_IDENTIFIER = "myplanet"
+const val DOCUMENT_APP_IDENTIFIER = "myplanet"
 
 /**
  * Stamps the identity every document we post carries: the device it came from
@@ -18,6 +18,6 @@ const val APP_IDENTIFIER = "myplanet"
  */
 fun JsonObject.addDocumentIdentity(androidId: String? = NetworkUtils.getUniqueIdentifier()): JsonObject {
     addProperty("androidId", androidId)
-    addProperty("app", APP_IDENTIFIER)
+    addProperty("app", DOCUMENT_APP_IDENTIFIER)
     return this
 }

@@ -34,6 +34,6 @@ class DocumentIdentityExtensionsTest {
         val json = JsonObject().addDocumentIdentity("explicitAndroidId")
 
         assertEquals("explicitAndroidId", json.get("androidId").asString)
-        assertEquals(APP_IDENTIFIER, json.get("app").asString)
+        assertEquals(DOCUMENT_APP_IDENTIFIER, json.get("app").asString)
     }
 }
