@@ -58,6 +58,7 @@ import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.VersionUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class UserRepositoryImpl @Inject constructor(
@@ -517,7 +518,7 @@ class UserRepositoryImpl @Inject constructor(
             addProperty("gender", user.gender)
             addProperty("type", "user")
             addProperty("betaEnabled", false)
-            addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+            addDocumentOrigin()
             addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
             addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
             val roles = JsonArray().apply { add("learner") }
