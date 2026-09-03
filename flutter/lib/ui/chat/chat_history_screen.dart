@@ -45,7 +45,13 @@ class ChatHistoryScreen extends ConsumerWidget {
             tooltip: l10n.newChat,
             onPressed: () {
               ref.read(chatConversationProvider.notifier).startNewChat();
-              context.push(Routes.chat);
+              // `/life/chat/new`, not [Routes.chat]: that constant is the
+              // template `/life/chat/:chatId`, and go_router matches a
+              // placeholder against its own literal text, so pushing it opened
+              // the detail screen with `chatId: ':chatId'`. `loadChat` then
+              // searched for a conversation by that name, found none and
+              // returned, which is the only reason the new chat still worked.
+              context.push('${Routes.chatHistory}/new');
             },
           ),
         ],

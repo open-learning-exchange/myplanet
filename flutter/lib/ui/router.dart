@@ -255,14 +255,23 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
-        path: 'add',
+        // `Routes.addResource`, not the bare `'add'` this carried: a top-level
+        // route's path is its whole path. go_router normalised `'add'` to
+        // `/add` when printing the table but matched the raw pattern against
+        // the incoming location, so `'add'` matched neither `/resources/add`
+        // nor `/add` and every caller landed on the error page. The screen was
+        // unreachable in production for as long as it has existed.
+        path: Routes.addResource,
         builder: (context, state) => AddResourceScreen(
           teamId: state.uri.queryParameters['teamId'],
           editResourceId: state.uri.queryParameters['edit'],
         ),
       ),
       GoRoute(
-        path: Routes.webView.replaceFirst('/', ''),
+        // Same shape as `Routes.addResource` above: stripping the leading
+        // slash left a pattern that matched nothing, so the community services
+        // list's external links opened the error page.
+        path: Routes.webView,
         builder: (context, state) => WebViewScreen(
           url: state.uri.queryParameters['url']!,
           title: state.uri.queryParameters['title'],
@@ -566,6 +575,13 @@ final routerProvider = Provider<GoRouter>((ref) {
                     path: 'chat',
                     builder: (context, state) => const ChatHistoryScreen(),
                     routes: [
+                      // Ahead of `:chatId`, as `events/new` is ahead of
+                      // `:meetupId`: go_router takes the first match, and a
+                      // new conversation has no id to carry.
+                      GoRoute(
+                        path: 'new',
+                        builder: (context, state) => const ChatDetailScreen(),
+                      ),
                       GoRoute(
                         path: ':chatId',
                         builder: (context, state) => ChatDetailScreen(

@@ -380,6 +380,20 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
                     onTap: () =>
                         context.push('${Routes.teams}/${team.id}/members'),
                   ),
+                  // The leaderboard's screen, calculator, route and translated
+                  // `leaderboard` string all landed in Phase 73 with nothing
+                  // linking to them, so it was registered and unopenable. It
+                  // has no Kotlin counterpart on master — it comes from the
+                  // unmerged `14880` branch — so there is no tab position to
+                  // copy; next to the member list is where it belongs, and it
+                  // is ungated because it ranks the whole team either way.
+                  ListTile(
+                    leading: const Icon(Icons.leaderboard_outlined),
+                    title: Text(l10n.leaderboard),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () =>
+                        context.push('${Routes.teams}/${team.id}/leaderboard'),
+                  ),
                   if (canView) ...[
                     ListTile(
                       leading: const Icon(Icons.folder_copy_outlined),
