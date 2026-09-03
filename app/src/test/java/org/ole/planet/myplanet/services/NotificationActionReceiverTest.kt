@@ -46,14 +46,8 @@ class NotificationActionReceiverTest {
     private var mockDispatcherProvider: DispatcherProvider = mockk(relaxed = true)
     private lateinit var mockNotificationUtils: NotificationUtils.NotificationManager
 
-    private var originalScope: kotlinx.coroutines.CoroutineScope? = null
-
     @Before
     fun setUp() {
-        try {
-            originalScope = MainApplication.applicationScope
-        } catch (_: Throwable) {
-        }
         testDispatcher = StandardTestDispatcher()
         testScope = TestScope(testDispatcher)
 
@@ -89,9 +83,6 @@ class NotificationActionReceiverTest {
 
     @After
     fun tearDown() {
-        originalScope?.let { MainApplication.applicationScope = it } ?: run {
-            MainApplication.applicationScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default)
-        }
         unmockkAll()
     }
 
