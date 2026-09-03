@@ -81,7 +81,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
     override fun getSubmissionsFlow(userId: String): Flow<List<Submission>> {
         return submissionDao.observeByUserId(userId).distinctUntilChanged { old, new ->
-            // Assuming any meaningful mutation bumps lastUpdateTime.
             old.size == new.size && old.zip(new).all { (o, n) -> o.id == n.id && o.lastUpdateTime == n.lastUpdateTime }
         }
     }
@@ -426,7 +425,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 }
                 return createExamSubmission(request)
             } catch (e: Exception) {
-                // Retry local Room writes to handle potential transient SQLite constraints during rapid operations
                 e.printStackTrace()
                 lastException = e
                 retries++
@@ -466,8 +464,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             startTime = now
             lastUpdateTime = now
             answers = mutableListOf()
-            // Persist the supplied association independently because the richer team fields are
-            // ignored by Room and might be unavailable from the local team table.
             this.teamId = persistedTeamId
 
             if (persistedTeamId != null) {
@@ -669,10 +665,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             val serverStatus = JsonUtils.getString("status", submission)
             val rev = JsonUtils.getString("_rev", submission)
             val parentId = JsonUtils.getString("parentId", submission)
-            // Drop base64 `_attachments` (e.g. a profile photo) from the embedded user before
-            // persisting it as a blob; otherwise a single row can exceed SQLite's ~2MB
-            // CursorWindow limit and crash later `SELECT *` reads (SQLiteBlobTooBigException).
-            // Read membershipDoc first, then strip — the two keys are independent.
             val userJson = JsonUtils.getJsonObject("user", submission)
             val membershipJson = JsonUtils.getJsonObject("membershipDoc", userJson)
             userJson.remove("_attachments")
@@ -794,8 +786,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             val parent = gson.fromJson(submission.parent, JsonObject::class.java)
             `object`.add("parent", parent)
         }
-        // Prefer the fresh user record (attachment-free, current data) so the upload never
-        // depends on the persisted blob, whose _attachments are stripped for storage safety.
         val freshUser = resolvedUser?.serialize()
         when {
             freshUser != null -> `object`.add("user", freshUser)
@@ -804,8 +794,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return `object`
     }
 
-    // Preserve direct team association across Room round trips so team-scoped exports receive
-    // the same top-level team stamp as submissions serialized before persistence.
     private suspend fun resolveTeamJson(submission: Submission): JsonObject? {
         val teamRef = submission.teamObject
         val teamId = teamRef?._id?.takeIf { it.isNotBlank() }
@@ -869,8 +857,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 jsonObject.add("parent", JsonParser.parseString(submission.parent))
             }
 
-            // Prefer the fresh user record (attachment-free, current data) over the persisted
-            // blob, whose _attachments are stripped for storage safety.
             val userJson = payloadData.user?.serialize()
                 ?: submission.user?.takeIf { it.isNotEmpty() }?.let { JsonParser.parseString(it).asJsonObject }
             if (userJson != null) {
