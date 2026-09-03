@@ -39,7 +39,7 @@ interface RatingDao {
     @Update
     suspend fun update(item: Rating)
 
-    @Query("SELECT EXISTS(SELECT 1 FROM rating_prompt WHERE userId = :userId AND item = :item AND type = :type)")
+    @Query("SELECT EXISTS(SELECT 1 FROM rating_prompt_log WHERE userId = :userId AND item = :item AND type = :type)")
     suspend fun isRatingPrompted(userId: String, item: String, type: String = "resource"): Boolean
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

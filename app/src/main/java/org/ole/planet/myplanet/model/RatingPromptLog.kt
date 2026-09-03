@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.model
 import androidx.room.Entity
 
 @Entity(
-    tableName = "rating_prompt",
+    tableName = "rating_prompt_log",
     primaryKeys = ["userId", "item", "type"]
 )
 data class RatingPromptLog(
