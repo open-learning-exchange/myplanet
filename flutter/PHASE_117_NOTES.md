@@ -258,6 +258,18 @@ so it will never derive them and Spanish will read English forever. One key,
 five files, all in Lane C's set. `stepsHeading` the tool will pick up by exact
 English match on `steps`, and `percentageValue` is `%s%%` in every locale.
 
+> **Corrected by Phase 121, which did the work.** `values-ne`'s `course_progress`
+> does **not** reorder its placeholders — `%1$s को %2$s प्रगति` keeps ascending
+> argument order, and only moves them relative to the words, which any
+> substitution handles. The conclusion drawn from it is right and the instance
+> is not: four other Kotlin strings really do reorder
+> (`ne/download_progress`, `ne/download_progress_with_errors`,
+> `ne/steps_done_of_total`, `ar/member_description`), and those are what pin the
+> conversion. `percentageValue` was *not* derived: `%s%%` carries no word, so
+> every locale's value would be the English template, and a skeleton with no
+> letter in it also matches any unrelated key of the same shape. See
+> `PHASE_121_NOTES.md`.
+
 ## Not a schema change
 
 No table, no converter, no index, no `schemaVersion` bump (still 45), so no

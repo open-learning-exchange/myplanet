@@ -15,7 +15,8 @@ changing anything, because the number is the deliverable.
 | …of which simple `{name}` messages | 53 |
 | simple messages whose skeleton matches a Kotlin format string | 11 |
 | …rejected because the skeleton carries no word | 3 |
-| **derived** | **8 keys × 5 locales = 40 values** |
+| **derived** | **8 keys × 5 locales = 40 slots** |
+| …slots that needed writing (the rest already held the Kotlin translation) | **25** |
 
 Every one of the 92 has a human translation shipping in all five locales of the
 Android app. `tool/arb_from_strings_xml.dart` skipped any template value
@@ -73,14 +74,18 @@ strings above are.
 | ne | *absent → "Progress 3 of 8"* | `{current} को {max} प्रगति` |
 | so | *absent → "Progress 3 of 8"* | `Habka {current} ee {max}` |
 
-All eight derived keys were absent in every locale that got one, so the value
-each replaces is the English fallback — nothing was overwritten except values
-flagged `x-mt` or holding the English template verbatim.
+The eight keys are `appVersion`, `courseProgressCount`, `currentCv`,
+`errorOccurred`, `fileCountMany`, `fileNotFound`, `reportDateDetails`,
+`storageSelectedCount`. **25 of their 40 locale slots needed writing**; the
+other 15 already held the Kotlin translation byte for byte (`errorOccurred` in
+all five, and es/fr had picked several up by hand). 20 of the 25 were *absent*,
+so the value they replace is the English fallback; the other 5 held the English
+template verbatim, flagged `x-mt` — `storageSelectedCount` read "{count}
+selected" in all five locales. **Nothing was overwritten that was not flagged
+machine output or literally the English template.**
 
-The eight: `appVersion`, `courseProgressCount`, `currentCv`, `errorOccurred`,
-`fileCountMany`, `fileNotFound`, `reportDateDetails`, `storageSelectedCount`.
-Plus `stepsHeading`, Phase 117's third key, which needed no format layer — it is
-plain text and the existing English-match rule picked it up once it was asked.
+`stepsHeading`, Phase 117's third key, needed no format layer — it is plain
+text, and the existing English-match rule picked it up once it was asked.
 
 ## The guards, and the one that earned its place
 
@@ -160,8 +165,8 @@ value.
 
 ## The finding this phase did not go looking for
 
-**259 values across ar/es/fr were flagged `x-mt` while being byte-identical to
-the translation shipping in the Android app** (ar 62, es 122, fr 75). The flag
+**250 values across ar/es/fr were flagged `x-mt` while being byte-identical to
+the translation shipping in the Android app** (ar 60, es 118, fr 72). The flag
 means "unreviewed machine output, a human still has to look at this". One has —
 whatever pipeline produced this particular copy of the words, they are the words
 a translator wrote for the Kotlin app. The tool's own reconcile rule already
@@ -174,7 +179,8 @@ line to revert (`_reconcileMachineTranslationFlags`' `already` branch) if the
 reading is rejected. It is called out here rather than buried because it moves
 the human-reviewed counts more than the 33 new translations do, and a count that
 moves for two different reasons in one phase is exactly the kind of thing that
-later reads as drift.
+later reads as drift: 250 of the 261 cleared flags are this, and only 11 are
+strings the phase actually rewrote.
 
 Same shape as Phase 118's own generalisation: a report built to answer "what can
 I adopt?" cannot answer "what is already fine and mislabelled?", and this one
@@ -182,13 +188,22 @@ was invisible because the `already` verdict is the one the report does not print
 
 ## Counts, before → after
 
-| locale | values | human (unflagged) | of which new this phase |
-|---|---|---|---|
-| ar | 823 → 829 | 327 → 395 | 6 derived + 62 flags cleared |
-| es | 861 → 864 | 323 → 448 | 3 derived + 122 flags cleared |
-| fr | 861 → 864 | 316 → 394 | 3 derived + 75 flags cleared |
-| ne | 415 → 421 | 389 → 396 | 7 derived |
-| so | 415 → 421 | 389 → 396 | 7 derived |
+36 values written in all: **25 placeholder-key** (this phase's subject) and
+**11 plain-text**, from the two residue rules below. 24 of the 36 filled a key
+the locale did not have; 12 replaced a value that was flagged `x-mt` or was the
+English template.
+
+| locale | values | added | replaced | flags cleared | human (unflagged) |
+|---|---|---|---|---|---|
+| ar | 823 → 829 | 6 | 2 | 62 | 327 → 395 |
+| es | 861 → 864 | 3 | 4 | 122 | 323 → 448 |
+| fr | 861 → 864 | 3 | 4 | 75 | 316 → 394 |
+| ne | 415 → 421 | 6 | 1 | 1 | 389 → 396 |
+| so | 415 → 421 | 6 | 1 | 1 | 389 → 396 |
+
+261 flags cleared, of which **11 sit on a value this phase rewrote** and **250
+on a value that was already byte-identical to the Kotlin translation** — the
+finding below.
 
 `gen-l10n`'s untranslated report moves with them: ar 50 → 44, es/fr 12 → 9,
 ne/so 458 → 452.
