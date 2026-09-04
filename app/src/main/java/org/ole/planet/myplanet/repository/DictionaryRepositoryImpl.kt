@@ -27,8 +27,15 @@ class DictionaryRepositoryImpl @Inject constructor(
         return dictionaryDao.count()
     }
 
-    override suspend fun findByWord(word: String): DictionaryEntity? {
-        return dictionaryDao.findByWord(word)
+    override suspend fun findByWord(word: String): DictionaryWord? {
+        val entity = dictionaryDao.findByWord(word) ?: return null
+        return DictionaryWord(
+            word = entity.word,
+            meaning = entity.meaning,
+            definition = entity.definition,
+            synonym = entity.synonym,
+            antonym = entity.antonym
+        )
     }
 
     override suspend fun insertDictionaryData(): DictionaryLoad {

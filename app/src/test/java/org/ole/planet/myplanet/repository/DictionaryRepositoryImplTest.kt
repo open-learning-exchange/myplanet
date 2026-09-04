@@ -16,10 +16,12 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
+import org.ole.planet.myplanet.data.room.entity.DictionaryEntity
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
@@ -126,5 +128,40 @@ class DictionaryRepositoryImplTest {
         assertEquals(1, results.count { it is DictionaryLoad.Inserted })
         assertEquals(1, results.count { it is DictionaryLoad.AlreadyPopulated })
         coVerify(exactly = 1) { dictionaryDao.insertAll(any()) }
+    }
+
+    @Test
+    fun `findByWord maps DictionaryEntity to DictionaryWord`() = runTest(testDispatcher) {
+        val entity = DictionaryEntity(
+            id = "123",
+            word = "hello",
+            meaning = "greeting",
+            definition = "A greeting expression",
+            synonym = "hi",
+            antonym = "bye"
+        )
+        coEvery { dictionaryDao.findByWord("hello") } returns entity
+
+        val result = dictionaryRepository.findByWord("hello")
+
+        assertEquals(
+            DictionaryWord(
+                word = "hello",
+                meaning = "greeting",
+                definition = "A greeting expression",
+                synonym = "hi",
+                antonym = "bye"
+            ),
+            result
+        )
+    }
+
+    @Test
+    fun `findByWord returns null when not found`() = runTest(testDispatcher) {
+        coEvery { dictionaryDao.findByWord("unknown") } returns null
+
+        val result = dictionaryRepository.findByWord("unknown")
+
+        assertNull(result)
     }
 }
