@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.effectiveId
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
@@ -76,7 +77,7 @@ class HealthViewModel @Inject constructor(
         viewModelScope.launch {
             val currentUser = userRepository.getUserModel()
             _loggedInUser.value = currentUser
-            val uid = if (currentUser?._id.isNullOrEmpty()) currentUser?.id else currentUser?._id
+            val uid = currentUser?.effectiveId
             val normalizedId = uid?.trim()
             if (!normalizedId.isNullOrEmpty()) {
                 selectPatient(normalizedId)
