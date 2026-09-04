@@ -91,7 +91,7 @@ class NotificationsAdapter(
     ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(header: NotificationListItem.Header) {
-            binding.tvHeaderLabel.text = header.label
+            binding.tvHeaderLabel.setText(labelResFor(header.type))
             binding.ivHeaderIcon.setImageResource(iconResFor(header.type))
             if (header.unreadCount > 0) {
                 binding.tvUnreadBadge.visibility = View.VISIBLE
@@ -163,6 +163,19 @@ class NotificationsAdapter(
         }
     }
 }
+
+private val LABEL_RES_BY_TYPE = mapOf(
+    "join_request" to R.string.notif_group_join_requests,
+    "team_join" to R.string.notif_group_team_updates,
+    "task" to R.string.tasks,
+    "chat" to R.string.notif_group_new_voices,
+    "voice_reply" to R.string.notif_group_voice_replies,
+    "resource" to R.string.resources,
+    "storage" to R.string.notification_group_system
+)
+
+internal fun labelResFor(type: String): Int =
+    LABEL_RES_BY_TYPE[type.lowercase(Locale.ROOT)] ?: R.string.notification_group_other
 
 private val ICON_BY_TYPE = mapOf(
     "join_request" to R.drawable.ic_join_request,
