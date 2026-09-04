@@ -43,6 +43,7 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.services.upload.AchievementUploader
 import org.ole.planet.myplanet.services.upload.PhotoUploader
+import org.ole.planet.myplanet.services.upload.TeamsUploadRunner
 import org.ole.planet.myplanet.services.upload.UploadConfigs
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
 import org.ole.planet.myplanet.services.upload.UploadError
@@ -141,6 +142,7 @@ class UploadManagerTest {
     }
 
     private lateinit var uploadManager: UploadManager
+    private lateinit var teamsUploadRunner: TeamsUploadRunner
     private val context: Context = mockk(relaxed = true)
     private val submissionsRepository: SubmissionsRepository = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
@@ -173,6 +175,13 @@ class UploadManagerTest {
         every { Log.e(any(), any(), any()) } returns 0
 
         photoUploader = PhotoUploader(submissionsRepository, TestDispatcherProvider(testDispatcher), testScope, uploadRepository)
+        teamsUploadRunner = TeamsUploadRunner(
+            context,
+            teamsSyncRepository,
+            uploadRepository,
+            retryQueue,
+            TestDispatcherProvider(testDispatcher)
+        )
 
         uploadManager = spyk(
             UploadManager(
@@ -186,7 +195,7 @@ class UploadManagerTest {
                 voicesRepository,
                 uploadConfigs,
                 resourcesRepository,
-                teamsSyncRepository,
+                teamsUploadRunner,
                 activitiesRepository,
                 TestDispatcherProvider(testDispatcher),
                 testScope,
