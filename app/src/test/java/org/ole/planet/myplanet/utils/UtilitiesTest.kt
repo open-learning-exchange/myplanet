@@ -76,4 +76,47 @@ class UtilitiesTest {
         org.junit.Assert.assertEquals("0", Utilities.toHex(""))
         org.junit.Assert.assertEquals("", Utilities.toHex(null))
     }
+
+    @Test
+    fun `normalizeText fast path handles pure ASCII inputs correctly`() {
+        // Fast path: mixed case, empty string, digits and punctuation, plain ASCII words
+        org.junit.Assert.assertEquals("hello world", Utilities.normalizeText("Hello WORLD"))
+        org.junit.Assert.assertEquals("", Utilities.normalizeText(""))
+        org.junit.Assert.assertEquals("123!@# $%-=", Utilities.normalizeText("123!@# $%-="))
+        org.junit.Assert.assertEquals("simple test", Utilities.normalizeText("simple test"))
+    }
+
+    @Test
+    fun `normalizeText slow path produces byte-identical output to original NFD normalization`() {
+        // Helper function representing the original implementation
+        fun legacyNormalizeText(str: String): String {
+            val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
+            return java.text.Normalizer.normalize(str.lowercase(java.util.Locale.getDefault()), java.text.Normalizer.Form.NFD)
+                .replace(DIACRITICS_REGEX, "")
+        }
+
+        val testCases = listOf(
+            "Café",
+            "Niño",
+            "áéíóú",
+            "مرحبا بك",
+            "नमस्ते"
+        )
+
+        for (input in testCases) {
+            val expected = legacyNormalizeText(input)
+            val actual = Utilities.normalizeText(input)
+            org.junit.Assert.assertEquals(expected, actual)
+            org.junit.Assert.assertArrayEquals(
+                "Byte array mismatch for input: $input",
+                expected.toByteArray(Charsets.UTF_8),
+                actual.toByteArray(Charsets.UTF_8)
+            )
+        }
+
+        // Specific expected value assertions as requested
+        org.junit.Assert.assertEquals("cafe", Utilities.normalizeText("Café"))
+        org.junit.Assert.assertEquals("nino", Utilities.normalizeText("Niño"))
+        org.junit.Assert.assertEquals("aeiou", Utilities.normalizeText("áéíóú"))
+    }
 }
