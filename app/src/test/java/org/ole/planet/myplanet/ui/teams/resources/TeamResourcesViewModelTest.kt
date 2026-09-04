@@ -146,4 +146,24 @@ class TeamResourcesViewModelTest {
         assertEquals(1, result.size)
         assertEquals("Available 1", result[0].title)
     }
+
+    @Test
+    fun `loadResources executes queries concurrently`() = runTest(testDispatcher) {
+        val libraries = listOf(MyLibrary().apply { id = "r1"; title = "Resource 1" })
+        coEvery { teamsRepository.getTeamResources("team1") } coAnswers {
+            kotlinx.coroutines.delay(100)
+            libraries
+        }
+        coEvery { teamsRepository.isTeamLeader("team1", "user1") } coAnswers {
+            kotlinx.coroutines.delay(100)
+            true
+        }
+
+        viewModel.loadResources("team1", "user1")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(1, state?.resources?.size)
+        assertTrue(state?.canRemove == true)
+    }
 }

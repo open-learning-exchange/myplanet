@@ -7,6 +7,8 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -33,11 +35,18 @@ class RequestsViewModel @Inject constructor(
 
     fun fetchMembers(teamId: String) {
         viewModelScope.launch {
-            val members = teamsRepository.getRequestedMembers(teamId)
-            val memberCount = teamsRepository.getJoinedMemberCount(teamId)
-            val user = userRepository.getUserModel()
-            val isLeader = teamsRepository.isTeamLeader(teamId, user?.id)
-            _uiState.value = RequestsUiState(members, isLeader, memberCount)
+            coroutineScope {
+                val membersDeferred = async { teamsRepository.getRequestedMembers(teamId) }
+                val memberCountDeferred = async { teamsRepository.getJoinedMemberCount(teamId) }
+                val userDeferred = async { userRepository.getUserModel() }
+                val user = userDeferred.await()
+                val isLeader = teamsRepository.isTeamLeader(teamId, user?.id)
+                _uiState.value = RequestsUiState(
+                    members = membersDeferred.await(),
+                    isLeader = isLeader,
+                    memberCount = memberCountDeferred.await()
+                )
+            }
         }
     }
 
