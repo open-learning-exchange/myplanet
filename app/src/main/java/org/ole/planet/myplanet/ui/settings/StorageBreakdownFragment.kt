@@ -212,14 +212,6 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
 
         if (!oleDir.exists() || !oleDir.isDirectory) return ScanResult(0L, sizes, counts)
 
-        val extMap = buildMap {
-            categories.forEachIndexed { index, category ->
-                category.extensions.forEach { ext ->
-                    put(ext, index)
-                }
-            }
-        }
-
         var total = 0L
 
         oleDir.walkTopDown().filter { it.isFile }.forEach { file ->
@@ -227,7 +219,8 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
             val index = if (ext.isEmpty()) {
                 StorageCategories.OTHER_INDEX
             } else {
-                extMap[ext] ?: extMap[ext.lowercase()] ?: StorageCategories.OTHER_INDEX
+                val idx = StorageCategories.indexOf(ext)
+                if (idx != StorageCategories.OTHER_INDEX) idx else StorageCategories.indexOf(ext.lowercase())
             }
             val size = file.length()
             total += size
