@@ -43,8 +43,6 @@ class ServiceModuleTest {
         try {
             val scope = ServiceModule.provideApplicationScope(mockDispatcherProvider)
 
-            // Fire-and-forget background work must not escalate to the process-wide handler,
-            // which in this app persists a crash log and sends the user to the home screen.
             assertNotNull(scope.coroutineContext[CoroutineExceptionHandler])
             val failure = IllegalStateException("background work failed")
             scope.launch { throw failure }.join()

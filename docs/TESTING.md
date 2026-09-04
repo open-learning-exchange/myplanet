@@ -93,28 +93,20 @@ A controllable `TimeProvider`: `TestTimeProvider(var currentTime: Long = 0L)` wi
 
 ### The Robolectric application class
 
-`app/src/test/resources/robolectric.properties` sets `application=android.app.Application` for
-the whole `src/test/` source set. Leave it that way, and reach for
-`@Config(application = ...)` only when a test genuinely needs a different one
-(`HiltTestApplication` for `@HiltAndroidTest`).
+`app/src/test/resources/robolectric.properties` sets `application=android.app.Application`
+for the whole `src/test/` source set. Leave it that way; ask for a different one with
+`@Config(application = ...)` only when a test needs it (`HiltTestApplication` for
+`@HiltAndroidTest`).
 
-Without that default Robolectric boots the manifest's application class — the real
-`@HiltAndroidApp MainApplication` — for every test that doesn't say otherwise.
-`MainApplication.onCreate()` builds the Hilt graph, opens the Room database and then
-launches fire-and-forget coroutines on the *real* `Dispatchers.IO`/`Default` from an
-application scope nothing cancels: the deferred warm-ups, `scheduleWorkersOnStart`, and
-the ANR watchdog — which promptly "detects" an ANR, because Robolectric only pumps the
-main looper when a test asks it to. Those coroutines outlive the test class. A later
-class in the same fork that `mockkObject(MainApplication.Companion)`s and unmocks it
-turns their next companion call into `MockKException: can't find stub Companion`, which
-escapes to the global handler, where `kotlinx-coroutines-test` queues it and charges it
-to whichever test calls `runTest` next. The report then blames an unrelated class with
-`UncaughtExceptionsBeforeTest` — a flake that a rerun always "fixes". Six PRs hit it on
-2026-09-04 alone, all on shard 2, which is where most of the affected classes hash.
+Without that default, Robolectric boots the real `@HiltAndroidApp MainApplication` for
+every test that doesn't say otherwise, and its `onCreate()` launches fire-and-forget
+coroutines on the real `Dispatchers.IO`/`Default` that outlive the test class. A later
+class that `mockkObject(MainApplication.Companion)`s and unmocks it turns their next
+companion call into `MockKException`, which escapes to the global handler — where
+`kotlinx-coroutines-test` queues it and charges it to whichever test calls `runTest` next.
 
-If you see `UncaughtExceptionsBeforeTest`, the named test is the victim, not the cause:
-open the uploaded `test-reports-*` artifact and read the `Suppressed:` stack trace, which
-names the coroutine that actually threw.
+So `UncaughtExceptionsBeforeTest` names the victim, not the cause: read the `Suppressed:`
+stack trace in the uploaded `test-reports-*` artifact to find the coroutine that threw.
 
 ### Robolectric SDK levels
 

@@ -19,9 +19,6 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class TeamTaskTest {
 
-    // serialize() stamps the document origin, which reads MainApplication.context for the
-    // device id. Hand it the Robolectric context rather than relying on the real
-    // MainApplication being the test application.
     @Before
     fun setup() {
         MainApplication.testContext = ApplicationProvider.getApplicationContext<Context>()

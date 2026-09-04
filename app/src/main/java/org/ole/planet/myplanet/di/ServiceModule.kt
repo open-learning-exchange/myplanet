@@ -52,10 +52,6 @@ object ServiceModule {
     @Singleton
     @ApplicationScope
     fun provideApplicationScope(dispatcherProvider: DispatcherProvider): CoroutineScope {
-        // Everything launched here is fire-and-forget background work (logging, warm-ups,
-        // sync scheduling, network state). Without a handler a throw in any of it reaches
-        // the default uncaught-exception handler, which persists a crash log and drops the
-        // user on the home screen — losing the screen they were on over a failed log write.
         val logFailure = CoroutineExceptionHandler { _, failure ->
             Log.e(APPLICATION_SCOPE_LOG_TAG, "application scope work failed", failure)
         }
