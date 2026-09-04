@@ -438,14 +438,12 @@ class CoursesRepositoryImpl @Inject constructor(
             emptyMap()
         } else {
             questionDao.getByExamIds(examIds)
-                .map { it }
                 .groupBy { it.examId ?: "" }
                 .filterKeys { it.isNotEmpty() }
         }
 
         val examIdsSet = examIds.toSet()
         val relevantSubmissions = submissionDao.getExamSubmissionsByUser(userId)
-            .map { it }
             .filter { sub -> examIdsSet.contains(getParentBaseId(sub.parentId)) }
 
         val submissionsByExamId = relevantSubmissions.groupBy { sub ->
@@ -457,7 +455,6 @@ class CoursesRepositoryImpl @Inject constructor(
             emptyMap()
         } else {
             answerDao.getBySubmissionIds(submissionIds)
-                .map { it }
                 .groupBy { it.submissionId ?: "" }
                 .filterKeys { it.isNotEmpty() }
         }
