@@ -115,7 +115,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 false
             }
 
-            if ((questions?.size ?: 0) > 0) {
+            if (!questions.isNullOrEmpty()) {
                 if (type == "exam") {
                     val currentExam = exam
                     if (currentExam != null) {
