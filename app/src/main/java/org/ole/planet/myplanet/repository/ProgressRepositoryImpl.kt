@@ -266,11 +266,29 @@ class ProgressRepositoryImpl @Inject constructor(
         return courseProgress
     }
 
+    private data class CourseProgressSyncKeys(
+        val doc: JsonObject,
+        val docId: String,
+        val courseId: String,
+        val userId: String,
+        val stepNum: Int
+    )
+
     override suspend fun insertCourseProgressFromSync(docs: List<JsonObject>) {
-        val docIds = docs.map { JsonUtils.getString("_id", it) }.filter { it.isNotEmpty() }.distinct()
-        val courseIds = docs.map { JsonUtils.getString("courseId", it) }.filter { it.isNotEmpty() }.distinct()
-        val userIds = docs.map { JsonUtils.getString("userId", it) }.filter { it.isNotEmpty() }.distinct()
-        val stepNums = docs.map { JsonUtils.getInt("stepNum", it) }.distinct()
+        val syncKeys = docs.map { act ->
+            CourseProgressSyncKeys(
+                doc = act,
+                docId = JsonUtils.getString("_id", act),
+                courseId = JsonUtils.getString("courseId", act),
+                userId = JsonUtils.getString("userId", act),
+                stepNum = JsonUtils.getInt("stepNum", act)
+            )
+        }
+
+        val docIds = syncKeys.mapNotNullTo(LinkedHashSet()) { keys -> keys.docId.takeIf { it.isNotEmpty() } }.toList()
+        val courseIds = syncKeys.mapNotNullTo(LinkedHashSet()) { keys -> keys.courseId.takeIf { it.isNotEmpty() } }.toList()
+        val userIds = syncKeys.mapNotNullTo(LinkedHashSet()) { keys -> keys.userId.takeIf { it.isNotEmpty() } }.toList()
+        val stepNums = syncKeys.mapTo(LinkedHashSet()) { keys -> keys.stepNum }.toList()
 
         val existingProgresses = if (docIds.isNotEmpty()) {
             courseProgressDao.getByIds(docIds).associateBy { it.id }
@@ -286,19 +304,15 @@ class ProgressRepositoryImpl @Inject constructor(
 
         val localRecordsByKey = localRecords.groupBy { Triple(it.courseId, it.userId, it.stepNum) }
 
-        val progress = docs.map { act ->
-            val docId = JsonUtils.getString("_id", act)
-            val courseId = JsonUtils.getString("courseId", act)
-            val userId = JsonUtils.getString("userId", act)
-            val stepNum = JsonUtils.getInt("stepNum", act)
-            val existingProgress = existingProgresses[docId]
+        val progress = syncKeys.map { keys ->
+            val existingProgress = existingProgresses[keys.docId]
             val localRecord = if (existingProgress == null) {
-                localRecordsByKey[Triple<String?, String?, Int>(courseId, userId, stepNum)]
-                    ?.find { it._id == null || it._id == docId }
+                localRecordsByKey[Triple<String?, String?, Int>(keys.courseId, keys.userId, keys.stepNum)]
+                    ?.find { it._id == null || it._id == keys.docId }
             } else {
                 null
             }
-            courseProgressFromJson(act, existingProgress, localRecord)
+            courseProgressFromJson(keys.doc, existingProgress, localRecord)
         }
 
         if (progress.isNotEmpty()) {
