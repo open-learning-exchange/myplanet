@@ -45,4 +45,28 @@ class MyCourseTest {
         course.removeUserId("user2")
         assertEquals(listOf("user1", "user3"), course.userId)
     }
+
+    @Test
+    fun testSaveConcatenatedLinksToPrefs() {
+        val spm = io.mockk.mockk<org.ole.planet.myplanet.services.SharedPrefManager>(relaxed = true)
+        io.mockk.every { spm.getConcatenatedLinks() } returns "[\"http://example.com/link1\"]"
+
+        val capturedJson = io.mockk.slot<String>()
+        io.mockk.every { spm.setConcatenatedLinks(capture(capturedJson)) } returns Unit
+
+        MyCourse.addConcatenatedLink("http://example.com/link2")
+        MyCourse.addConcatenatedLink("http://example.com/link1")
+
+        MyCourse.saveConcatenatedLinksToPrefs(spm)
+
+        val savedSet = org.ole.planet.myplanet.utils.JsonUtils.gson.fromJson(
+            capturedJson.captured,
+            Array<String>::class.java
+        ).toHashSet()
+
+        assertEquals(
+            setOf("http://example.com/link1", "http://example.com/link2"),
+            savedSet
+        )
+    }
 }
