@@ -62,12 +62,7 @@ class PersonalsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updatePersonalResource(id: String, update: PersonalUpdate) {
-        val personal = personalDao.findByDocId(id) ?: personalDao.findById(id)
-        personal?.let {
-            if (update.title != null) it.title = update.title
-            if (update.description != null) it.description = update.description
-            personalDao.update(it)
-        }
+        personalDao.updateFields(id, update.title, update.description)
     }
 
     override suspend fun getPendingPersonalUploads(userId: String): List<Personal> {
