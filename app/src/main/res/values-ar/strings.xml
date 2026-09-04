@@ -997,6 +997,8 @@
     <string name="no_teams">الفرق غير متوفرة</string>
     <string name="no_chats">لا توجد محادثات سابقة</string>
     <string name="no_feedback">لا توجد تعليقات متاحة</string>
+    <string name="medium_text_html">نص / HTML</string>
+    <string name="medium_html">HTML</string>
     <string name="empty_text" />
     <string name="message_placeholder">%s</string>
     <string name="reports">التقارير</string>
