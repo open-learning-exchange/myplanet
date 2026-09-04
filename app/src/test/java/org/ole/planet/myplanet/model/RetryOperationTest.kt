@@ -31,6 +31,7 @@ class RetryOperationTest {
             attemptCount = 4
             maxAttempts = 5
             status = RetryOperation.STATUS_IN_PROGRESS
+            nextRetryTime = 999L
         }
         val timestamp = 1_700_000_000_000L
 
@@ -41,6 +42,7 @@ class RetryOperationTest {
         assertEquals("Fatal error", op.errorMessage)
         assertEquals(500, op.httpCode)
         assertEquals(RetryOperation.STATUS_ABANDONED, op.status)
+        assertEquals(999L, op.nextRetryTime)
     }
 
     @Test

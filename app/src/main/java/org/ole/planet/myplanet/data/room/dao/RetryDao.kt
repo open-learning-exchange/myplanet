@@ -56,7 +56,7 @@ interface RetryDao {
         "UPDATE retry_operation SET " +
             "attemptCount = attemptCount + 1, " +
             "lastAttemptTime = :timestamp, " +
-            "nextRetryTime = :timestamp + MIN(30000 * (1 << MIN(attemptCount + 1, 30)), 1800000), " +
+            "nextRetryTime = CASE WHEN attemptCount + 1 >= maxAttempts THEN nextRetryTime ELSE :timestamp + MIN(30000 * (1 << MIN(attemptCount + 1, 30)), 1800000) END, " +
             "errorMessage = :errorMessage, " +
             "httpCode = :httpCode, " +
             "status = CASE WHEN attemptCount + 1 >= maxAttempts THEN 'abandoned' ELSE 'pending' END " +
