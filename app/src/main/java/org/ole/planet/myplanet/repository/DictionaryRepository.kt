@@ -1,6 +1,12 @@
 package org.ole.planet.myplanet.repository
 
-import org.ole.planet.myplanet.data.room.entity.DictionaryEntity
+data class DictionaryWord(
+    val word: String = "",
+    val meaning: String = "",
+    val definition: String = "",
+    val synonym: String = "",
+    val antonym: String = ""
+)
 
 sealed interface DictionaryLoad {
     data object FileMissing : DictionaryLoad
@@ -11,6 +17,6 @@ sealed interface DictionaryLoad {
 
 interface DictionaryRepository {
     suspend fun count(): Long
-    suspend fun findByWord(word: String): DictionaryEntity?
+    suspend fun findByWord(word: String): DictionaryWord?
     suspend fun insertDictionaryData(): DictionaryLoad
 }
