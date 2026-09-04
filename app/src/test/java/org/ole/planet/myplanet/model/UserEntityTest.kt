@@ -13,6 +13,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -121,5 +122,23 @@ class UserEntityTest {
         val user = UserEntity()
         user.rolesList = mutableListOf("team_leader")
         assertFalse(user.isLeader())
+    }
+
+    @Test
+    fun testEffectiveIdWhenCouchIdPresent() {
+        val user = UserEntity(id = "local_123", _id = "couch_456")
+        assertEquals("couch_456", user.effectiveId)
+    }
+
+    @Test
+    fun testEffectiveIdWhenCouchIdNull() {
+        val user = UserEntity(id = "local_123", _id = null)
+        assertEquals("local_123", user.effectiveId)
+    }
+
+    @Test
+    fun testEffectiveIdWhenCouchIdEmpty() {
+        val user = UserEntity(id = "local_123", _id = "")
+        assertEquals("local_123", user.effectiveId)
     }
 }
