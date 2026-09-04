@@ -743,4 +743,180 @@ class NotificationsRepositoryImplTest {
         assertEquals("voice_reply", repository.resolveType("other", "new reply to your voice", null))
         assertEquals("notification", repository.resolveType("other", "unrecognized text", null))
     }
+
+    @Test
+    fun `updateResourceNotification returns early when userId is null`() = runTest {
+        repository.updateResourceNotification(null, 5)
+
+        coVerify(exactly = 0) { notificationDao.getById(any()) }
+        coVerify(exactly = 0) { notificationDao.upsert(any()) }
+        coVerify(exactly = 0) { notificationDao.deleteById(any()) }
+    }
+
+    @Test
+    fun `updateResourceNotification creates new notification on first run`() = runTest {
+        coEvery { notificationDao.getById("user1:resource:count") } returns null
+        val upsertSlot = slot<AppNotification>()
+        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+
+        repository.updateResourceNotification("user1", 5)
+
+        val saved = upsertSlot.captured
+        assertEquals("user1:resource:count", saved.id)
+        assertEquals("user1", saved.userId)
+        assertEquals("resource", saved.type)
+        assertEquals("5", saved.message)
+        assertEquals("5", saved.relatedId)
+        assertFalse(saved.isRead)
+    }
+
+    @Test
+    fun `updateResourceNotification when count unchanged keeps it read`() = runTest {
+        val initialDate = java.util.Date(1000000L)
+        val existing = AppNotification().apply {
+            id = "user1:resource:count"
+            userId = "user1"
+            type = "resource"
+            message = "5"
+            relatedId = "5"
+            isRead = true
+            createdAt = initialDate
+        }
+        coEvery { notificationDao.getById("user1:resource:count") } returns existing
+        val upsertSlot = slot<AppNotification>()
+        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+
+        repository.updateResourceNotification("user1", 5)
+
+        val saved = upsertSlot.captured
+        assertTrue(saved.isRead)
+        assertEquals(initialDate, saved.createdAt)
+        assertEquals("5", saved.message)
+    }
+
+    @Test
+    fun `updateResourceNotification when count changed marks unread and updates createdAt`() = runTest {
+        val initialDate = java.util.Date(1000000L)
+        val existing = AppNotification().apply {
+            id = "user1:resource:count"
+            userId = "user1"
+            type = "resource"
+            message = "5"
+            relatedId = "5"
+            isRead = true
+            createdAt = initialDate
+        }
+        coEvery { notificationDao.getById("user1:resource:count") } returns existing
+        val upsertSlot = slot<AppNotification>()
+        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+
+        repository.updateResourceNotification("user1", 10)
+
+        val saved = upsertSlot.captured
+        assertFalse(saved.isRead)
+        assertEquals("10", saved.message)
+        assertEquals("10", saved.relatedId)
+        assertTrue(saved.createdAt.after(initialDate))
+    }
+
+    @Test
+    fun `updateResourceNotification when count is zero or negative deletes existing notification`() = runTest {
+        val existing = AppNotification().apply {
+            id = "user1:resource:count"
+        }
+        coEvery { notificationDao.getById("user1:resource:count") } returns existing
+
+        repository.updateResourceNotification("user1", 0)
+
+        coVerify { notificationDao.deleteById("user1:resource:count") }
+        coVerify(exactly = 0) { notificationDao.upsert(any()) }
+    }
+
+    @Test
+    fun `updateStorageNotification returns early when userId is null`() = runTest {
+        repository.updateStorageNotification(null, 5)
+
+        coVerify(exactly = 0) { notificationDao.getById(any()) }
+        coVerify(exactly = 0) { notificationDao.upsert(any()) }
+        coVerify(exactly = 0) { notificationDao.deleteById(any()) }
+    }
+
+    @Test
+    fun `updateStorageNotification creates new notification on first run`() = runTest {
+        coEvery { notificationDao.getById("user1:storage") } returns null
+        val upsertSlot = slot<AppNotification>()
+        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+
+        repository.updateStorageNotification("user1", 8)
+
+        val saved = upsertSlot.captured
+        assertEquals("user1:storage", saved.id)
+        assertEquals("user1", saved.userId)
+        assertEquals("storage", saved.type)
+        assertEquals("8%", saved.message)
+        assertEquals("storage", saved.relatedId)
+        assertFalse(saved.isRead)
+    }
+
+    @Test
+    fun `updateStorageNotification when percent unchanged keeps it read`() = runTest {
+        val initialDate = java.util.Date(1000000L)
+        val existing = AppNotification().apply {
+            id = "user1:storage"
+            userId = "user1"
+            type = "storage"
+            message = "8%"
+            relatedId = "storage"
+            isRead = true
+            createdAt = initialDate
+        }
+        coEvery { notificationDao.getById("user1:storage") } returns existing
+        val upsertSlot = slot<AppNotification>()
+        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+
+        repository.updateStorageNotification("user1", 8)
+
+        val saved = upsertSlot.captured
+        assertTrue(saved.isRead)
+        assertEquals(initialDate, saved.createdAt)
+        assertEquals("8%", saved.message)
+    }
+
+    @Test
+    fun `updateStorageNotification when percent changed marks unread and updates createdAt`() = runTest {
+        val initialDate = java.util.Date(1000000L)
+        val existing = AppNotification().apply {
+            id = "user1:storage"
+            userId = "user1"
+            type = "storage"
+            message = "8%"
+            relatedId = "storage"
+            isRead = true
+            createdAt = initialDate
+        }
+        coEvery { notificationDao.getById("user1:storage") } returns existing
+        val upsertSlot = slot<AppNotification>()
+        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+
+        repository.updateStorageNotification("user1", 5)
+
+        val saved = upsertSlot.captured
+        assertFalse(saved.isRead)
+        assertEquals("5%", saved.message)
+        assertEquals("storage", saved.relatedId)
+        assertTrue(saved.createdAt.after(initialDate))
+    }
+
+    @Test
+    fun `updateStorageNotification when percent exceeds threshold deletes existing notification`() = runTest {
+        val existing = AppNotification().apply {
+            id = "user1:storage"
+        }
+        coEvery { notificationDao.getById("user1:storage") } returns existing
+
+        repository.updateStorageNotification("user1", 15)
+
+        coVerify { notificationDao.deleteById("user1:storage") }
+        coVerify(exactly = 0) { notificationDao.upsert(any()) }
+    }
 }
