@@ -178,6 +178,10 @@ class HealthRepositoryImpl @Inject constructor(
         return decodeHealth(healthExaminationDao.getByIdOrUserId(userId), userModel)
     }
 
+    override suspend fun getDecryptedHealth(pojo: HealthExamination?, user: UserEntity?): MyHealth? {
+        return decodeHealth(pojo, user)
+    }
+
     private fun applyUserDetails(userModel: UserEntity, userData: Map<String, Any?>) {
         userModel.apply {
             firstName = (userData["firstName"] as? String)?.trim()

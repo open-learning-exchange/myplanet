@@ -52,10 +52,9 @@ class HealthExaminationViewModelTest {
         val mockHealth = mockk<MyHealth>()
         val mockExamination = mockk<HealthExamination>()
 
-        coEvery { mockPojo.data } returns null
         coEvery { healthRepository.getHealthEntry("user_id") } returns Pair(mockUser, mockPojo)
         coEvery { userRepository.ensureUserSecurityKeys("user_id") } returns mockUser
-        coEvery { healthRepository.initHealth() } returns mockHealth
+        coEvery { healthRepository.getDecryptedHealth(mockPojo, mockUser) } returns mockHealth
         coEvery { healthRepository.getExaminationById("exam_id") } returns mockExamination
         coEvery { healthRepository.getExaminationConditions(mockExamination) } returns mapOf("Condition A" to true)
 
@@ -69,14 +68,41 @@ class HealthExaminationViewModelTest {
 
         val finalState = states.last()
 
-
-
         assertFalse(finalState.isLoading)
         assertEquals(mockUser, finalState.user)
         assertEquals(mockPojo, finalState.pojo)
         assertEquals(mockHealth, finalState.health)
         assertEquals(mockExamination, finalState.examination)
         assertEquals(mapOf("Condition A" to true), finalState.conditionsMap)
+
+        job.cancel()
+    }
+
+    @Test
+    fun loadData_decryptionFails_fallsBackToInitHealth() = runTest {
+        val mockUser = mockk<UserEntity>()
+        val mockPojo = mockk<HealthExamination>()
+        val mockHealth = mockk<MyHealth>()
+
+        coEvery { healthRepository.getHealthEntry("user_id") } returns Pair(mockUser, mockPojo)
+        coEvery { userRepository.ensureUserSecurityKeys("user_id") } returns mockUser
+        coEvery { healthRepository.getDecryptedHealth(mockPojo, mockUser) } returns null
+        coEvery { healthRepository.initHealth() } returns mockHealth
+        coEvery { healthRepository.getExaminationConditions(null) } returns emptyMap()
+
+        val states = mutableListOf<HealthExaminationState>()
+        val job = launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.state.toList(states)
+        }
+
+        viewModel.loadData("user_id", null)
+        advanceUntilIdle()
+
+        val finalState = states.last()
+
+        assertFalse(finalState.isLoading)
+        assertEquals(mockHealth, finalState.health)
+        coVerify(exactly = 1) { healthRepository.initHealth() }
 
         job.cancel()
     }
