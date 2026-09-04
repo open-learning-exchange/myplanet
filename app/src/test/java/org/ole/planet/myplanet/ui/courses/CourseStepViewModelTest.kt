@@ -17,7 +17,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.MyLibrary
@@ -41,6 +40,7 @@ class CourseStepViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
+    private val context: Context = mockk(relaxed = true)
     private val coursesRepository: CoursesRepository = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
     private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
@@ -50,22 +50,15 @@ class CourseStepViewModelTest {
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
 
     private lateinit var viewModel: CourseStepViewModel
-    private var originalContext: Context? = null
 
     @Before
     fun setUp() {
-        try {
-            originalContext = MainApplication.context
-        } catch (e: Exception) {
-            // Context not previously set
-        }
-        MainApplication.testContext = mockk<Context>(relaxed = true)
-        every { MainApplication.context.getExternalFilesDir(null) } returns null
-
+        every { context.getExternalFilesDir(null) } returns null
         every { sharedPrefManager.getCouchdbUrl() } returns "http://localhost:5984"
         UrlUtils.init(sharedPrefManager)
 
         viewModel = CourseStepViewModel(
+            context,
             coursesRepository,
             userRepository,
             resourcesRepository,
@@ -78,7 +71,6 @@ class CourseStepViewModelTest {
     @After
     fun tearDown() {
         UrlUtils.resetForTesting()
-        MainApplication.testContext = originalContext
     }
 
     @Test
@@ -115,7 +107,7 @@ class CourseStepViewModelTest {
         coEvery { coursesRepository.getCourseTitleById(courseId) } returns "Course Title"
         coEvery { configurationsRepository.checkServerAvailability() } returns false
 
-        viewModel.loadStep(stepId, 1, null)
+        viewModel.loadStep(stepId, null)
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
@@ -154,7 +146,7 @@ class CourseStepViewModelTest {
         coEvery { coursesRepository.getCourseStepData(stepId, null) } returns stepData
         coEvery { configurationsRepository.checkServerAvailability() } returns true
 
-        viewModel.loadStep(stepId, 1, null)
+        viewModel.loadStep(stepId, null)
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
@@ -186,7 +178,7 @@ class CourseStepViewModelTest {
         coEvery { coursesRepository.getCourseStepData(stepId, null) } returns stepData
         coEvery { resourcesRepository.getAllStepResources(nextStepId) } returns listOf(nextLibraryItem)
 
-        viewModel.loadStep(stepId, 1, nextStepId)
+        viewModel.loadStep(stepId, nextStepId)
         advanceUntilIdle()
 
         coVerify { resourceDownloadCoordinator.startBackgroundDownload(arrayListOf("http://localhost:5984/db/resources/res_2/file2.pdf")) }
@@ -218,7 +210,7 @@ class CourseStepViewModelTest {
         coEvery { userRepository.getUserModel() } returns user
         coEvery { coursesRepository.getCourseStepData(stepId, user.id) } returns stepData
 
-        viewModel.loadStep(stepId, 2, null)
+        viewModel.loadStep(stepId, null)
         advanceUntilIdle()
 
         viewModel.saveCourseProgress(2)
@@ -253,7 +245,7 @@ class CourseStepViewModelTest {
         coEvery { userRepository.getUserModel() } returns null
         coEvery { coursesRepository.getCourseStepData(stepId, null) } returns stepData
 
-        viewModel.loadStep(stepId, 1, null)
+        viewModel.loadStep(stepId, null)
         advanceUntilIdle()
 
         viewModel.saveCourseProgress(1)
@@ -292,7 +284,7 @@ class CourseStepViewModelTest {
         coEvery { userRepository.getUserModel() } returns null
         coEvery { coursesRepository.getCourseStepData("", null) } returns emptyStepData
 
-        viewModel.loadStep(null, 0, null)
+        viewModel.loadStep(null, null)
         advanceUntilIdle()
 
         val state = viewModel.uiState.value

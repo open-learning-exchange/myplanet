@@ -135,7 +135,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
             }
         }
 
-        viewModel.loadStep(stepId, stepNumber, nextStepId)
+        viewModel.loadStep(stepId, nextStepId)
     }
 
     private fun setupInlineResources() {
