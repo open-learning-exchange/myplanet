@@ -162,8 +162,15 @@ class UploadManagerTest {
 
     @Before
     fun setup() {
+        org.ole.planet.myplanet.MainApplication.testContext = context
         mockkStatic(Log::class)
         mockkStatic(SystemClock::class)
+        mockkStatic(android.text.TextUtils::class)
+        every { android.text.TextUtils.isEmpty(any()) } answers { firstArg<CharSequence?>().isNullOrEmpty() }
+        io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
+        every { org.ole.planet.myplanet.utils.NetworkUtils.getUniqueIdentifier() } returns "uniqueIdentifier"
+        every { org.ole.planet.myplanet.utils.NetworkUtils.getDeviceName() } returns "deviceName"
+        every { org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName(any()) } returns "customDeviceName"
         every { SystemClock.elapsedRealtime() } returns 0L
         io.mockk.mockkObject(UrlUtils)
         every { UrlUtils.header } returns "mockHeader"
@@ -199,6 +206,7 @@ class UploadManagerTest {
 
     @After
     fun tearDown() {
+        org.ole.planet.myplanet.MainApplication.testContext = null
         unmockkAll()
         io.mockk.unmockkObject(UrlUtils)
     }
@@ -392,6 +400,61 @@ class UploadManagerTest {
         advanceUntilIdle()
 
         coVerify { listener.onSuccess("No resources to upload") }
+    }
+
+    @Test
+    fun `uploadNews derives mimeType from filename and passes to header map`() = testScope.runTest {
+        io.mockk.mockkObject(org.ole.planet.myplanet.utils.FileUtils)
+        every { org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl("http://example.com/test_image.png") } returns "test_image.png"
+        every { org.ole.planet.myplanet.utils.FileUtils.getMimeType("test_image.png") } returns "image/png"
+
+        val imgObj = JsonObject().apply {
+            addProperty("fileName", "test_image.png")
+            addProperty("imageUrl", "http://example.com/test_image.png")
+        }
+        val imgJsonString = imgObj.toString()
+        every { gson.fromJson(imgJsonString, JsonObject::class.java) } returns imgObj
+
+        val newsJson = JsonObject().apply {
+            addProperty("message", "Hello World")
+        }
+        val newsItem = org.ole.planet.myplanet.repository.NewsUploadData(
+            id = "news1",
+            _id = "news1_id",
+            message = "Hello World",
+            imageUrls = listOf(imgJsonString),
+            newsJson = newsJson
+        )
+
+        coEvery { voicesRepository.getNewsForUpload() } returns listOf(newsItem)
+        coEvery { userRepository.getUserModel() } returns null
+
+        val imageResponseJson = JsonObject().apply {
+            addProperty("id", "res123")
+            addProperty("rev", "rev123")
+        }
+        coEvery { uploadRepository.postUpload("http://mock.url/resources", any()) } returns retrofit2.Response.success(imageResponseJson)
+
+        coEvery { uploadRepository.uploadResource(any(), any(), any()) } returns retrofit2.Response.success(JsonObject())
+
+        val bulkResponse = com.google.gson.JsonArray().apply {
+            add(JsonObject().apply {
+                addProperty("id", "news1_id")
+                addProperty("rev", "rev2")
+            })
+        }
+        coEvery { uploadRepository.postUploadArray("http://mock.url/news/_bulk_docs", any()) } returns retrofit2.Response.success(bulkResponse)
+
+        uploadManager.uploadNews()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            uploadRepository.uploadResource(
+                match { headers -> headers["Content-Type"] == "image/png" && headers["If-Match"] == "rev123" },
+                "http://mock.url/resources/res123/test_image.png",
+                any()
+            )
+        }
     }
 
     @Test
