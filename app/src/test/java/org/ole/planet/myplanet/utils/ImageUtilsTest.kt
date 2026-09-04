@@ -32,7 +32,17 @@ class ImageUtilsTest {
         val userImage = "http://example.com/image.jpg"
         ImageUtils.loadImage(userImage, imageView)
 
-        // Glide should set the placeholder synchronously on the main thread
+        val drawable = imageView.drawable
+        assertNotNull(drawable)
+        val shadowDrawable = shadowOf(drawable)
+        assertEquals(R.drawable.profile, shadowDrawable.createdFromResId)
+    }
+
+    @Test
+    fun testLoadImage_WithValidUrlAndSize() {
+        val userImage = "http://example.com/image.jpg"
+        ImageUtils.loadImage(userImage, imageView, 100)
+
         val drawable = imageView.drawable
         assertNotNull(drawable)
         val shadowDrawable = shadowOf(drawable)
@@ -57,5 +67,68 @@ class ImageUtilsTest {
         assertNotNull(drawable)
         val shadowDrawable = shadowOf(drawable)
         assertEquals(R.drawable.ole_logo, shadowDrawable.createdFromResId)
+    }
+
+    @Test
+    fun testLoadPlaceholderImage_WithValidUrl() {
+        val userImage = "http://example.com/image.jpg"
+        ImageUtils.loadPlaceholderImage(userImage, imageView)
+
+        val drawable = imageView.drawable
+        assertNotNull(drawable)
+        val shadowDrawable = shadowOf(drawable)
+        assertEquals(R.drawable.profile, shadowDrawable.createdFromResId)
+    }
+
+    @Test
+    fun testLoadPlaceholderImage_WithValidUrlAndSize() {
+        val userImage = "http://example.com/image.jpg"
+        ImageUtils.loadPlaceholderImage(userImage, imageView, 150)
+
+        val drawable = imageView.drawable
+        assertNotNull(drawable)
+        val shadowDrawable = shadowOf(drawable)
+        assertEquals(R.drawable.profile, shadowDrawable.createdFromResId)
+    }
+
+    @Test
+    fun testLoadPlaceholderImage_WithNullUrl() {
+        ImageUtils.loadPlaceholderImage(null, imageView)
+
+        val drawable = imageView.drawable
+        assertNotNull(drawable)
+        val shadowDrawable = shadowOf(drawable)
+        assertEquals(R.drawable.profile, shadowDrawable.createdFromResId)
+    }
+
+    @Test
+    fun testLoadProfileImage_WithValidUrl() {
+        val userImage = "http://example.com/image.jpg"
+        ImageUtils.loadProfileImage(userImage, imageView, 200)
+
+        val drawable = imageView.drawable
+        assertNotNull(drawable)
+        val shadowDrawable = shadowOf(drawable)
+        assertEquals(R.drawable.profile, shadowDrawable.createdFromResId)
+    }
+
+    @Test
+    fun testLoadProfileImage_WithNullUrl() {
+        ImageUtils.loadProfileImage(null, imageView, 200)
+
+        val drawable = imageView.drawable
+        assertNotNull(drawable)
+        val shadowDrawable = shadowOf(drawable)
+        assertEquals(R.drawable.profile, shadowDrawable.createdFromResId)
+    }
+
+    @Test
+    fun testLoadProfileImage_WithEmptyUrl() {
+        ImageUtils.loadProfileImage("", imageView, 200)
+
+        val drawable = imageView.drawable
+        assertNotNull(drawable)
+        val shadowDrawable = shadowOf(drawable)
+        assertEquals(R.drawable.profile, shadowDrawable.createdFromResId)
     }
 }
