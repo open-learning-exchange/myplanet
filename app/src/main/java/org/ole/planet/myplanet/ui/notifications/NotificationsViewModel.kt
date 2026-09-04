@@ -51,7 +51,6 @@ class NotificationsViewModel @Inject constructor(
 
     private data class NotificationGroup(
         val type: String,
-        val label: String,
         val unreadCount: Int,
         val items: List<Notification>
     )
@@ -276,7 +275,6 @@ class NotificationsViewModel @Inject constructor(
             val unreadCount = items.count { !it.isRead }
             NotificationGroup(
                 type = type,
-                label = typeLabelFor(type),
                 unreadCount = unreadCount,
                 items = items
             )
@@ -298,7 +296,7 @@ class NotificationsViewModel @Inject constructor(
                     group.type in collapsedGroups -> false
                     else -> group.unreadCount > 0
                 }
-                add(NotificationListItem.Header(group.type, group.label, group.unreadCount, isExpanded))
+                add(NotificationListItem.Header(group.type, group.unreadCount, isExpanded))
                 if (isExpanded) {
                     group.items.forEach { notification ->
                         add(NotificationListItem.Item(notification, notification.id in selectedIds, inSelectionMode))
@@ -306,17 +304,6 @@ class NotificationsViewModel @Inject constructor(
                 }
             }
         }
-    }
-
-    private fun typeLabelFor(type: String): String = when (type.lowercase(Locale.ROOT)) {
-        "join_request" -> context.getString(R.string.notif_group_join_requests)
-        "team_join" -> context.getString(R.string.notif_group_team_updates)
-        "task" -> context.getString(R.string.tasks)
-        "chat" -> context.getString(R.string.notif_group_new_voices)
-        "voice_reply" -> context.getString(R.string.notif_group_voice_replies)
-        "resource" -> context.getString(R.string.resources)
-        "storage" -> context.getString(R.string.notification_group_system)
-        else -> context.getString(R.string.notification_group_other)
     }
 
     companion object {
