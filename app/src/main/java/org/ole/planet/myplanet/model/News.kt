@@ -7,7 +7,6 @@ import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonSyntaxException
-import java.util.Date
 import java.util.UUID
 import org.ole.planet.myplanet.utils.JsonUtils
 
@@ -98,7 +97,7 @@ open class News {
     fun updateMessage(newMessage: String) {
         this.message = newMessage
         this.isEdited = true
-        this.editedTime = Date().time
+        this.editedTime = System.currentTimeMillis()
     }
 
     fun setLabels(images: JsonArray) {
@@ -164,7 +163,7 @@ open class News {
             val news = News()
             news.id = "${UUID.randomUUID()}"
             news.message = map["message"]
-            news.time = Date().time
+            news.time = System.currentTimeMillis()
             news.createdOn = user?.planetCode
             news.avatar = ""
             news.docType = "message"
@@ -191,10 +190,9 @@ open class News {
             news.user = JsonUtils.gson.toJson(user?.serialize())
             news.imageUrls = imageUrls?.toList() ?: emptyList()
 
-            if (map.containsKey("news")) {
-                val newsObj = map["news"]
+            map["news"]?.let { newsObj ->
                 try {
-                    val newsJsonString = newsObj?.replace("=", ":")
+                    val newsJsonString = newsObj.replace("=", ":")
                     val newsJson = JsonUtils.gson.fromJson(newsJsonString, JsonObject::class.java)
                     news.newsId = JsonUtils.getString("_id", newsJson)
                     news.newsRev = JsonUtils.getString("_rev", newsJson)
