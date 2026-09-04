@@ -77,10 +77,32 @@ byte-for-byte what the port uploaded for **every** task before this version. So
 no task already on a device changes shape; only a task pulled *after* the
 upgrade gains the server's own values.
 
-A preservation test covers both halves: `a team task keeps its sync and link
-across v46` (a pending task with both columns set survives `from: 45` intact)
-and `the v46 columns are added, not defaulted, on an old row` (a row with
-`NULL`s stays `NULL`, so the fallback is what runs).
+Three tests cover it, and the third exists because the first two were
+**tautological** — which is the finding of this phase's second pass, and it
+was found against green code.
+
+`a team task keeps its sync and link across v46` and `the v46 columns are
+added, not defaulted, on an old row` both pass with the entire `if (from < 46)`
+block deleted. The test database is created at the current `schemaVersion`, so
+`team_tasks` already carries both columns before `onUpgrade` runs;
+`_addColumnIfMissing` finds them present and skips, and every assertion still
+holds. They pin the *rows*, not the *ALTER*.
+
+`v46 adds sync and link to a real pre-v46 team_tasks` rebuilds the table in
+its genuine v45 shape first — the live DDL minus the two columns — then
+upgrades, and asserts the columns appear, the pre-existing row survives with
+`NULL` in both, and the new column is writable rather than merely readable.
+Deleting the migration step reddens it.
+
+The hand-written v45 column list is checked against the live table rather than
+trusted, so a column added to `TeamTasks` later without a migration step fails
+here instead of silently widening the "v45" shape to include it.
+
+**This weakness is not unique to v46.** The same shape applies to the existing
+`isNotified` (v32), `imageName` (v31) and `reactions` (v42) preservation tests:
+each asserts that a row survives, none asserts that its `ALTER` ran. Left alone
+as out of scope, and recorded so the next phase adding a column to a preserved
+table knows that copying the existing pattern gets a test that cannot fail.
 
 ## The defects, each demonstrated failing first
 
@@ -265,10 +287,10 @@ as well.
 
 ## The tests
 
-22 new, across five files: 9 in `my_library_mapper_test.dart`, 5 in
+23 new, across five files: 9 in `my_library_mapper_test.dart`, 5 in
 `team_tasks_sync_test.dart`, 3 in `ratings_sync_test.dart`, 2 in
-`ratings_uploader_test.dart`, 1 in `ratings_repository_test.dart`, and 2
-preservation tests in `migration_test.dart`. 2070 pass, up from 2048.
+`ratings_uploader_test.dart`, 1 in `ratings_repository_test.dart`, and 3
+migration tests. 2071 pass, up from 2048.
 
 Three of the nine are the pair Phase 74 and Phase 100 each shipped one half
 of: `Value.absent()` is how "the Kotlin skips this assignment" is spelled,

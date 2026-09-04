@@ -772,6 +772,102 @@ void main() {
     expect(survivor?.isNotified, isFalse);
   });
 
+  /// Rebuilds `team_tasks` in its pre-v46 shape: the live DDL with the two
+  /// new columns removed.
+  ///
+  /// Without this the v46 tests are **tautological**, and were: the test
+  /// database is created at the current `schemaVersion`, so `team_tasks`
+  /// already has `sync` and `link` before `onUpgrade` runs,
+  /// `_addColumnIfMissing` finds them present and skips, and deleting the
+  /// migration step entirely leaves every assertion green. Verified by
+  /// deleting it.
+  ///
+  /// The column list is hand-written because there is no v45 schema artefact
+  /// to read it from, so it is checked against the live table rather than
+  /// trusted — a column added to [TeamTasks] later, without a migration step,
+  /// fails here instead of silently widening the "v45" shape to include it.
+  Future<void> recreateTeamTasksWithoutV46Columns() async {
+    final live = await database
+        .customSelect("PRAGMA table_info('team_tasks')")
+        .get();
+    final liveNames = live.map((r) => r.read<String>('name')).toSet();
+    expect(
+      liveNames.difference({'sync', 'link'}),
+      {
+        'id',
+        '_id',
+        '_rev',
+        'title',
+        'description',
+        'team_id',
+        'assignee',
+        'deadline',
+        'completed_time',
+        'status',
+        'completed',
+        'is_updated',
+        'is_notified',
+      },
+      reason: 'the hand-written v45 shape below has drifted from the table',
+    );
+
+    await database.customStatement('DROP TABLE team_tasks');
+    await database.customStatement(
+      'CREATE TABLE team_tasks ('
+      'id TEXT NOT NULL, _id TEXT NULL, _rev TEXT NULL, title TEXT NULL, '
+      'description TEXT NULL, team_id TEXT NOT NULL, assignee TEXT NULL, '
+      'deadline INTEGER NOT NULL DEFAULT 0, '
+      'completed_time INTEGER NOT NULL DEFAULT 0, '
+      "status TEXT NOT NULL DEFAULT 'active', "
+      'completed INTEGER NOT NULL DEFAULT 0, '
+      'is_updated INTEGER NOT NULL DEFAULT 0, '
+      'is_notified INTEGER NOT NULL DEFAULT 0, '
+      'PRIMARY KEY (id))',
+    );
+  }
+
+  test('v46 adds sync and link to a real pre-v46 team_tasks', () async {
+    // The step is a hand-written `_addColumnIfMissing`, because `createAll`
+    // does not alter a preserved table. This is the test that fails when it
+    // is removed.
+    await database.customStatement('SELECT 1');
+    await recreateTeamTasksWithoutV46Columns();
+    await database.customStatement(
+      "INSERT INTO team_tasks (id, team_id, title, is_updated) "
+      "VALUES ('task-1', 'team-1', 'Older task', 1)",
+    );
+
+    await runUpgrade(from: 45);
+
+    final columns =
+        (await database.customSelect("PRAGMA table_info('team_tasks')").get())
+            .map((r) => r.read<String>('name'))
+            .toSet();
+    expect(columns, containsAll(['sync', 'link']));
+
+    // The row survives the ALTER, and lands with no backfill — which is what
+    // makes `TeamTasksRepository.serialize` fall back to the `upsertTask`
+    // rebuild for it.
+    final survivor = await database.teamTaskDao.getById('task-1');
+    expect(survivor?.title, 'Older task');
+    expect(survivor?.isUpdated, isTrue);
+    expect(survivor?.sync, null);
+    expect(survivor?.link, null);
+
+    // Writable, not merely readable as null.
+    await database.teamTaskDao.upsert(
+      TeamTasksCompanion.insert(
+        id: 'task-2',
+        teamId: 'team-1',
+        sync: const Value('{"type":"local","planetCode":"gua"}'),
+      ),
+    );
+    expect(
+      (await database.teamTaskDao.getById('task-2'))?.sync,
+      '{"type":"local","planetCode":"gua"}',
+    );
+  });
+
   test('a team task keeps its sync and link across v46', () async {
     // `team_tasks` is preserved, so v46's `sync`/`link` columns need the same
     // hand-written `_addColumnIfMissing` step `isNotified` needed at v32. Both
