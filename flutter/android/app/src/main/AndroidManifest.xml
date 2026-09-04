@@ -1,0 +1,121 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- The whole app is a CouchDB client; without this, release builds have no
+         network at all (the Flutter template only declares it for debug/profile). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Tablet usage telemetry (`MyPlanet.getTabletUsages`), ported through the
+         `device_stats` method channel. A privileged permission the user grants
+         in Settings rather than at runtime; without it the usage query yields
+         nothing and the `myplanet_activities` `usages` array posts empty.
+         `tools:ignore` matches the Kotlin manifest, which silences the lint
+         that flags it as protected. -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions"/>
+    <!-- Task deadline reminders (`TaskNotificationWorker`). Runtime-granted from
+         Android 13; the reminder path runs either way and the in-app
+         notification row is still written when the grant is missing. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+    <application
+        android:label="myplanet"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true"
+        android:networkSecurityConfig="@xml/network_security_config">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            <!-- Specifies an Android theme to apply to this Activity as soon as
+                 the Android process has started. This theme is visible to the user
+                 while the Flutter UI initializes. After that, this theme continues
+                 to determine the Window background behind the Flutter UI. -->
+            <meta-data
+              android:name="io.flutter.embedding.android.NormalTheme"
+              android:resource="@style/NormalTheme"
+              />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            <!-- Links are delivered by `app_links` (see DeepLinkScope), not by
+                 the engine's own routing. Both at once would race: the engine
+                 pushes a location that may carry no scheme or host, and a
+                 public-survey link's origin is the server the screen fetches
+                 from. Declared explicitly rather than left to the default so
+                 the single path is visible here. -->
+            <meta-data android:name="flutter_deeplinking_enabled" android:value="false"/>
+            <!-- Custom scheme, mirroring the Kotlin manifest's own filter.
+                 `myplanet://courses/<id>` names the section in the authority. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="myplanet"/>
+            </intent-filter>
+            <!-- Public-survey and in-app section deep links, scoped to the same
+                 Planet hosts the Kotlin app verifies in its own manifest. A
+                 wildcard host would register this app as a candidate handler for
+                 every http(s) URL on the internet whose path starts with
+                 /survey, putting it in the disambiguation chooser for unrelated
+                 sites and letting any of them drive PublicSurveyScreen's
+                 baseUrl. Note Android combines every <data> attribute across the
+                 filter, so both path prefixes apply to all eight hosts — which
+                 is how the Kotlin filter behaves too. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https" android:host="planet.learning.ole.org"/>
+                <data android:scheme="https" android:host="planet.earth.ole.org"/>
+                <data android:scheme="https" android:host="planet.somalia.ole.org"/>
+                <data android:scheme="https" android:host="planet.vi.ole.org"/>
+                <data android:scheme="https" android:host="planet.gt"/>
+                <data android:scheme="https" android:host="sanpablo.planet.gt"/>
+                <data android:scheme="https" android:host="uriur.planet.gt"/>
+                <data android:scheme="https" android:host="embakasi.planet.gt"/>
+                <data android:pathPrefix="/survey"/>
+                <data android:pathPrefix="/app/"/>
+            </intent-filter>
+            <!-- The Kotlin manifest's cleartext filter for local community
+                 servers on a LAN. Not verifiable (autoVerify needs https), and
+                 the addresses are the Kotlin's own — kept in step with it
+                 rather than invented here. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="http" android:host="192.168.48.253"/>
+                <data android:scheme="http" android:host="10.82.1.31"/>
+                <data android:scheme="http" android:host="192.168.1.73"/>
+                <data android:scheme="http" android:host="192.168.1.66"/>
+                <data android:scheme="http" android:host="192.168.1.148"/>
+                <data android:scheme="http" android:host="192.168.68.126"/>
+                <data android:pathPrefix="/survey"/>
+                <data android:pathPrefix="/app/"/>
+            </intent-filter>
+        </activity>
+        <!-- Don't delete the meta-data below.
+             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+    </application>
+    <!-- Required to query activities that can process text, see:
+         https://developer.android.com/training/package-visibility and
+         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
+
+         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+    </queries>
+</manifest>

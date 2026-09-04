@@ -1,0 +1,1514 @@
+{
+  "@@locale": "en",
+  "appTitle": "myPlanet",
+  "@appTitle": {
+    "description": "Application name, shown in the app bar and launcher."
+  },
+  "serverConfigurationTitle": "Connect to a Planet server",
+  "serverUrlLabel": "Server URL",
+  "serverUrlHint": "https://planet.example.org",
+  "serverPinLabel": "Server PIN",
+  "connect": "Connect",
+  "serverUrlNotConfigured": "Server URL not configured",
+  "deviceCouldNotReachLocalServer": "device couldn't reach the server. check if you are connected to the correct Wi-Fi network for the local server (community).",
+  "deviceCouldNotReachNationServer": "device couldn’t reach the server. check if you are connected to the internet and try again",
+  "connectionFailed": "Connection failed!",
+  "connectedToCommunity": "Connected to {code}",
+  "@connectedToCommunity": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "changeServer": "Change server",
+  "login": "Login",
+  "name": "Name",
+  "password": "password",
+  "signInOffline": "Sign in offline",
+  "invalidCredentials": "Name or password is incorrect.",
+  "userNotFound": "User not found.",
+  "missingAuthData": "Server response missing authentication data.",
+  "serverError": "Server error. Please try again later.",
+  "networkError": "Server not reachable. Check your internet connection.",
+  "emptyCredentials": "Username and password are required.",
+  "notAManager": "This account is not a manager.",
+  "savedAccounts": "Saved accounts",
+  "resources": "Resources",
+  "search": "search",
+  "sync": "Sync",
+  "cancel": "Cancel",
+  "settings": "Settings",
+  "backgroundSync": "Background sync",
+  "backgroundSyncDescription": "Send pending changes and refresh learning data while the app is closed",
+  "syncFrequency": "Sync frequency",
+  "every15Minutes": "Every 15 minutes",
+  "every30Minutes": "Every 30 minutes",
+  "everyHour": "Every hour",
+  "every6Hours": "Every 6 hours",
+  "lastBackgroundRun": "Last background run",
+  "backgroundNeverRun": "No background run has been recorded yet",
+  "backgroundSucceeded": "Completed successfully",
+  "backgroundRetryRequested": "Incomplete — Android will retry",
+  "backgroundSkipped": "Skipped",
+  "backgroundUnknown": "Unknown result",
+  "backgroundScheduleFailed": "The preference was saved, but Android could not update the schedule. It will be retried when the app restarts.",
+  "backgroundFailedSteps": "Needs retry: {steps}",
+  "@backgroundFailedSteps": {
+    "placeholders": {
+      "steps": {
+        "type": "String"
+      }
+    }
+  },
+  "logOut": "Log out",
+  "noDataAvailable": "No data available",
+  "ok": "OK",
+  "home": "Home",
+  "moreOptions": "More options",
+  "appTheme": "App theme",
+  "aiChat": "AI chat",
+  "syncNow": "Sync now",
+  "syncCenter": "Sync center",
+  "syncAll": "Sync all",
+  "syncing": "Syncing…",
+  "waiting": "Waiting",
+  "events": "Events",
+  "surveys": "Surveys",
+  "syncReady": "Ready to sync",
+  "syncForegroundNotice": "Keep myPlanet open until the sync finishes. Pending offline writes remain durable if the connection drops.",
+  "syncProgress": "Syncing {completed} of {total} areas",
+  "@syncProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "syncAllSuccessful": "All {count} areas synced successfully",
+  "@syncAllSuccessful": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncCompletedWithFailures": "Sync finished: {success} succeeded, {failed} failed",
+  "@syncCompletedWithFailures": {
+    "placeholders": {
+      "success": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
+  "itemsSynced": "{count, plural, =0{Up to date} =1{1 item synced} other{{count} items synced}}",
+  "@itemsSynced": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lastSyncTimestamp": "Last successful sync: {date}",
+  "@lastSyncTimestamp": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syncResourcesDescription": "Refresh the offline learning library",
+  "syncCoursesDescription": "Refresh courses, steps, and shelf membership",
+  "syncTeamsDescription": "Refresh teams, memberships, and enterprise data",
+  "syncEventsDescription": "Refresh meetups and attendance",
+  "syncSurveysDescription": "Refresh survey forms and assignments",
+  "syncVoicesDescription": "Refresh community discussions and replies",
+  "syncFeedbackDescription": "Refresh feedback threads and responses",
+  "syncChatDescription": "Refresh AI conversation history",
+  "syncHealthDescription": "Refresh encrypted health records",
+  "syncActivitiesDescription": "Refresh login history from the server",
+  "syncNotificationsDescription": "Refresh server notifications and upload read states",
+  "homeMyLibrary": "myLibrary",
+  "homeMyCourses": "myCourses",
+  "homeMyTeams": "myTeams",
+  "homeMyLife": "myLife",
+  "noResourcesAddedYet": "You can add resources",
+  "noCoursesJoinedYet": "You can join courses",
+  "noTeamsJoinedYet": "You can join a team",
+  "subjectLabelMathematics": "Mathematics",
+  "subjectLabelLiteracy": "Literacy",
+  "subjectLabelHealth": "Health",
+  "subjectLabelSocialStudies": "Social Studies",
+  "subjectLabelTechnology": "Technology",
+  "surveysToComplete": "You have {count, plural, =1{1 survey} other{{count} surveys}} to complete",
+  "@surveysToComplete": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lastSynced": "Last synced: {time}",
+  "@lastSynced": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "neverSynced": "Never synced",
+  "justNow": "Just now",
+  "minutesAgo": "{count, plural, =1{1 minute ago} other{{count} minutes ago}}",
+  "@minutesAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hoursAgo": "{count, plural, =1{1 hour ago} other{{count} hours ago}}",
+  "@hoursAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "daysAgo": "{count, plural, =1{1 day ago} other{{count} days ago}}",
+  "@daysAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncingResources": "Syncing resources… {completed} of {total}",
+  "@syncingResources": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "syncedResources": "{count, plural, =0{No resources synced} =1{1 resource synced} other{{count} resources synced}}",
+  "@syncedResources": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncFailed": "Sync failed: {message}",
+  "@syncFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "availableOffline": "Available offline",
+  "courses": "Courses",
+  "myCourses": "My courses",
+  "allCourses": "All courses",
+  "courseSteps": "{count, plural, =0{No steps} =1{1 step} other{{count} steps}}",
+  "@courseSteps": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stepNumber": "Step {number}",
+  "@stepNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "resourcesInStep": "{count, plural, =0{No resources} =1{1 resource} other{{count} resources}}",
+  "@resourcesInStep": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "gradeLevel": "Grade level",
+  "subjectLevel": "Subject",
+  "allLevels": "All",
+  "clearFilters": "Clear filters",
+  "joinCourse": "Add to my courses",
+  "leaveCourse": "Remove from my courses",
+  "syncedCourses": "{count, plural, =0{No courses synced} =1{1 course synced} other{{count} courses synced}}",
+  "@syncedCourses": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "courseNotFound": "Course not found",
+  "calendar": "Calendar",
+  "profile": "Profile",
+  "profileUnavailable": "Profile unavailable",
+  "username": "Username",
+  "email": "Email",
+  "phone": "Phone",
+  "level": "Level",
+  "levels": "Levels",
+  "language": "Language",
+  "languages": "Languages",
+  "gender": "Gender",
+  "dateOfBirth": "Date of birth",
+  "planetCode": "Planet code",
+  "accountDetails": "Account details",
+  "noProfileDetails": "No profile details are available.",
+  "profilePhotoFor": "Profile photo for {name}",
+  "@profilePhotoFor": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "editProfile": "Edit profile",
+  "changePhoto": "Change profile photo",
+  "photoUpdated": "Profile photo updated",
+  "photoUpdateFailed": "Could not save the photo",
+  "firstName": "First name",
+  "middleName": "Middle name",
+  "lastName": "Last name",
+  "save": "Save",
+  "profileSaved": "Profile saved on this device",
+  "invalidEmail": "Enter a valid email address",
+  "appearance": "Appearance",
+  "systemTheme": "Use device theme",
+  "lightTheme": "Light",
+  "darkTheme": "Dark",
+  "server": "Server",
+  "serverUrl": "Server URL",
+  "notConfigured": "Not configured",
+  "communityCode": "Community code",
+  "about": "About",
+  "offlineLearningApp": "Offline learning with Planet",
+  "appVersion": "Version {version}",
+  "@appVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "buildNumber": "Build {number}",
+  "@buildNumber": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "learningTools": "Learning tools",
+  "dictionary": "Dictionary",
+  "dictionaryDescription": "Search downloaded definitions offline",
+  "dictionaryUnavailable": "Dictionary unavailable",
+  "searchDictionary": "Search for a word",
+  "dictionaryWordCount": "{count, plural, =0{No downloaded words} =1{1 downloaded word} other{{count} downloaded words}}",
+  "@dictionaryWordCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "downloadDictionary": "Download dictionary",
+  "retryDownload": "Retry download",
+  "dictionaryDownloadFailed": "The dictionary could not be downloaded. Your existing offline data was not changed.",
+  "wordNotFound": "Word not available in the offline dictionary",
+  "meaning": "Meaning",
+  "synonyms": "Synonyms",
+  "antonyms": "Antonyms",
+  "notifications": "Notifications",
+  "notification": "Notification",
+  "notificationsUnavailable": "Notifications unavailable",
+  "markAllRead": "Mark all read",
+  "markAsRead": "Mark as read",
+  "@markAsRead": {
+    "description": "The per-row action on an unread notification, porting the Kotlin row's btn_mark_as_read."
+  },
+  "all": "All",
+  "read": "Read",
+  "unreadCount": "Unread ({count})",
+  "@unreadCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noNotifications": "No notifications",
+  "noUnreadNotifications": "No unread notifications",
+  "noReadNotifications": "No read notifications",
+  "delete": "Delete",
+  "deleteNotification": "Delete notification?",
+  "deleteNotificationConfirmation": "This notification will be removed from this device.",
+  "taskNotification": "Task",
+  "chatNotification": "Chat",
+  "replyNotification": "New reply",
+  "resourceNotification": "Resources",
+  "storageNotification": "Storage warning",
+  "joinRequestNotification": "Join request",
+  "teamNotification": "Team update",
+  "resourceNotificationMessage": "You have {count} resources not downloaded",
+  "@resourceNotificationMessage": {
+    "description": "The notification list's text for the offline-resource count. Port of the Kotlin `resource_notification`; the row's stored message is the bare count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskNotificationMessage": "{title} is due in {date}",
+  "@taskNotificationMessage": {
+    "description": "The notification list's text for a task deadline. Port of the Kotlin `task_notification`; the date is the substring parsed out of the stored message, not a formatted DateTime.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "storageRunningLow": "Storage running low: ",
+  "@storageRunningLow": {
+    "description": "Prefix of the low-storage notification, immediately followed by the percentage. The trailing space is deliberate and matches the Kotlin `storage_running_low`, which is Android-quoted for exactly that reason."
+  },
+  "storageAvailable": "Storage available: ",
+  "@storageAvailable": {
+    "description": "Prefix of the storage-available notification, immediately followed by the percentage. The trailing space is deliberate — see storageRunningLow."
+  },
+  "joinRequestPrefix": "Join Request:",
+  "@joinRequestPrefix": {
+    "description": "Bold prefix of a join-request notification, followed by the request sentence."
+  },
+  "userRequestedToJoinTeam": "{user} has requested to join {team}",
+  "@userRequestedToJoinTeam": {
+    "description": "Body of a join-request notification.",
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "team": {
+        "type": "String"
+      }
+    }
+  },
+  "unknownUser": "Unknown User",
+  "@unknownUser": {
+    "description": "Stand-in for a join request whose requester has no cached user document."
+  },
+  "unknownTeam": "Unknown Team",
+  "@unknownTeam": {
+    "description": "Stand-in for a join request whose team has no cached document."
+  },
+  "tasks": "Tasks",
+  "notifGroupJoinRequests": "Join Requests",
+  "notifGroupTeamUpdates": "Team Updates",
+  "notifGroupNewVoices": "New Voices",
+  "notifGroupVoiceReplies": "Voice Replies",
+  "notificationGroupSystem": "System",
+  "notificationGroupOther": "Other",
+  "myLife": "My life",
+  "myLifeUnavailable": "My life is unavailable",
+  "noLifeItems": "No My life items",
+  "shownOnDashboard": "Shown",
+  "hiddenFromDashboard": "Hidden",
+  "hideItem": "Hide {title}",
+  "@hideItem": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "showItem": "Show {title}",
+  "@showItem": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "reorderItem": "Reorder {title}",
+  "@reorderItem": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "myHealth": "My health",
+  "achievements": "Achievements",
+  "submissions": "Submissions",
+  "submission": "Submission",
+  "submissionsUnavailable": "Submissions are unavailable",
+  "noSubmissions": "No submissions yet",
+  "pending": "Pending",
+  "submissionGrade": "Grade: {grade}",
+  "@submissionGrade": {
+    "placeholders": {
+      "grade": {
+        "type": "int"
+      }
+    }
+  },
+  "refresh": "Refresh",
+  "complete": "Complete",
+  "noMatchingSubmissions": "No submissions match this filter",
+  "submissionsSynced": "{count, plural, =0{Submissions are up to date} =1{1 submission synced} other{{count} submissions synced}}",
+  "@submissionsSynced": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "submissionDetails": "Submission details",
+  "submissionNotFound": "Submission not found",
+  "unknown": "Unknown",
+  "nA": "N/A",
+  "otherDiagnosis": "Other diagnosis",
+  "add": "Add",
+  "status": "Status",
+  "lastUpdated": "Last updated",
+  "grade": "Grade",
+  "submittedBy": "Submitted by",
+  "submissionType": "Type",
+  "uploadStatus": "Upload status",
+  "uploaded": "Uploaded",
+  "answers": "Answers",
+  "answersUnavailable": "Answers are unavailable",
+  "noAnswers": "No answers were saved with this submission",
+  "noAnswer": "No answer",
+  "questionNumber": "Question {number}",
+  "@questionNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "newSubmission": "New submission",
+  "answer": "Answer",
+  "availableChoices": "Choices",
+  "exportPdf": "Export PDF",
+  "pdfExportFailed": "The PDF could not be created",
+  "pdfSaved": "PDF saved to {path}",
+  "@pdfSaved": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "mySurveys": "My surveys",
+  "references": "References",
+  "myPersonals": "My personals",
+  "featureComingSoon": "This feature is not ported yet",
+  "maps": "Maps",
+  "englishDictionary": "English dictionary",
+  "offlineMapsComingSoon": "Offline maps are not ported yet",
+  "addPersonal": "Add personal item",
+  "editPersonal": "Edit personal item",
+  "deletePersonal": "Delete personal item?",
+  "deletePersonalConfirmation": "Delete “{title}” from this device?",
+  "@deletePersonalConfirmation": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "personalsUnavailable": "Personal items are unavailable",
+  "noPersonals": "No personal items yet. Add a private note to get started.",
+  "duplicateTitle": "A personal item with this title already exists",
+  "attachFile": "Attach file",
+  "attachedFile": "Attached: {name}",
+  "@attachedFile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noFileSelected": "No file selected",
+  "removeFile": "Remove file",
+  "savedOffline": "Saved offline — pending upload",
+  "edit": "Edit",
+  "title": "Title",
+  "titleRequired": "Enter a title",
+  "rateCourse": "Rate course",
+  "rateTitle": "Rate {title}",
+  "@rateTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "ratingsUnavailable": "Ratings are unavailable",
+  "ratingSummary": "{average} from {count, plural, =1{1 rating} other{{count} ratings}}",
+  "@ratingSummary": {
+    "placeholders": {
+      "average": {
+        "type": "double",
+        "format": "compact"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ratingCompact": "{average} ({count})",
+  "@ratingCompact": {
+    "placeholders": {
+      "average": {
+        "type": "double",
+        "format": "compact"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ratingOutOfFive": "Rating: {rating} out of 5",
+  "@ratingOutOfFive": {
+    "placeholders": {
+      "rating": {
+        "type": "int"
+      }
+    }
+  },
+  "setRating": "Set rating to {rating}",
+  "@setRating": {
+    "placeholders": {
+      "rating": {
+        "type": "int"
+      }
+    }
+  },
+  "ratingRequired": "Choose a rating",
+  "commentOptional": "Comment (optional)",
+  "submitRating": "Submit rating",
+  "skip": "Skip",
+  "next": "Next",
+  "getStarted": "GET STARTED",
+  "welcomeToMyPlanet": "Welcome to myPlanet",
+  "learnOffline": "Learn Offline",
+  "openLearning": "Open Learning",
+  "unleashLearningPower": "Unleash Learning Power",
+  "onboardingWelcomeDescription": "Your gateway to limitless Learning",
+  "onboardingOfflineDescription": "Download resources for offline learning.\nAccess knowledge on the go.",
+  "onboardingOpenDescription": "Choose your interests and dive into interactive content.\nCraft your unique learning journey.",
+  "onboardingPowerDescription": "Explore a world of knowledge at your fingertips.\n\n🌍 Offline Access: Learn without borders, anytime.\n🎯 Personalized: Tailor your learning path.\n📚 Interactive: Engage with videos, books, games.\n\nBegin your limitless learning journey with myPlanet!",
+  "onboardingServerPrepHint": "Before you sign in, you'll need your Planet server address and PIN. Ask your community administrator if you don't have them yet.",
+  "pageProgress": "Page {current} of {total}",
+  "@pageProgress": {
+    "description": "Screen-reader label for the onboarding page indicator. New string with no strings.xml counterpart, so it has no existing translations — Crowdin must supply them.",
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "meetups": "Meetups",
+  "syncPendingMeetups": "Sync pending meetups",
+  "meetupsUnavailable": "Meetups are unavailable",
+  "noMeetups": "No meetups yet",
+  "dateNotSet": "Date not set",
+  "untitledMeetup": "Untitled meetup",
+  "addMeetup": "Add meetup",
+  "meetupDetails": "Meetup details",
+  "meetupNotFound": "Meetup not found",
+  "createdBy": "Created by",
+  "category": "Category",
+  "location": "Location",
+  "link": "Link",
+  "recurring": "Recurring",
+  "description": "Description",
+  "leaveMeetup": "Leave meetup",
+  "joinMeetup": "Join meetup",
+  "editMeetup": "Edit meetup",
+  "startTime": "Start time",
+  "endTime": "End time",
+  "none": "None",
+  "daily": "Daily",
+  "weekly": "Weekly",
+  "syncMeetups": "Sync meetups",
+  "searchMeetups": "Search meetups",
+  "sortMeetups": "Sort meetups",
+  "sortResources": "Sort resources",
+  "newestFirst": "Newest first",
+  "oldestFirst": "Oldest first",
+  "titleAscending": "Title A–Z",
+  "titleDescending": "Title Z–A",
+  "startDate": "Start date",
+  "endDate": "End date",
+  "timeNotSet": "Time not set",
+  "syncSurveys": "Sync surveys",
+  "searchSurveys": "Search surveys",
+  "sortSurveys": "Sort surveys",
+  "surveysUnavailable": "Surveys are unavailable",
+  "noSurveys": "No surveys available",
+  "untitledSurvey": "Untitled survey",
+  "takeSurvey": "Take survey",
+  "surveyLoadFailed": "Survey could not be loaded",
+  "surveyHasNoQuestions": "This survey has no questions",
+  "submitSurvey": "Submit survey",
+  "answerRequiredQuestions": "Answer all required questions",
+  "voices": "Voices",
+  "searchVoices": "Search voices",
+  "syncVoices": "Sync voices",
+  "noVoices": "No voices yet",
+  "voicesUnavailable": "Voices are unavailable",
+  "shareYourVoice": "Share your voice",
+  "postVoice": "Post",
+  "replyToVoice": "Reply",
+  "writeAReply": "Write a reply",
+  "repliesCount": "{count, plural, =0{No replies} =1{1 reply} other{{count} replies}}",
+  "@repliesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "edited": "Edited",
+  "editVoice": "Edit",
+  "deleteVoice": "Delete",
+  "deleteVoiceConfirm": "Delete this post and all of its replies?",
+  "voiceDeleted": "Post deleted",
+  "emptyMessageNotAllowed": "Write something first",
+  "thread": "Thread",
+  "surveySubmitFailed": "Could not save your answers",
+  "sendSurveyTo": "Select users to send survey to",
+  "sendSurvey": "Send survey",
+  "surveySentToUsers": "Survey sent to selected users",
+  "noUsersAvailable": "No users available",
+  "teams": "Teams",
+  "syncTeams": "Sync teams",
+  "searchTeams": "Search teams",
+  "teamsUnavailable": "Teams are unavailable",
+  "noTeams": "No teams available",
+  "untitledTeam": "Untitled team",
+  "teamDetails": "Team details",
+  "teamNotFound": "Team not found",
+  "publicTeam": "Public team",
+  "privateTeam": "Private team",
+  "enterprises": "Enterprises",
+  "searchEnterprises": "Search enterprises",
+  "leader": "Leader",
+  "leave": "Leave",
+  "remove": "Remove",
+  "makeLeader": "Make leader",
+  "leftTeam": "Left team",
+  "memberRemoved": "Member removed",
+  "leaderUpdated": "Leader updated",
+  "member": "Member",
+  "teamLeader": "You lead this team",
+  "teamMember": "You are a member",
+  "services": "Services",
+  "rules": "Rules",
+  "teamCourses": "Team courses",
+  "membersCount": "{count, plural, =0{No members} =1{1 member} other{{count} members}}",
+  "@membersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamTasks": "Tasks",
+  "tasksUnavailable": "Tasks are unavailable",
+  "noTeamTasks": "No tasks yet",
+  "noDeadline": "No deadline",
+  "untitledTask": "Untitled task",
+  "addTask": "Add task",
+  "editTask": "Edit task",
+  "deleteTask": "Delete task",
+  "taskTitle": "Task title",
+  "assigneeId": "Assignee ID",
+  "teamDiscussions": "Discussions",
+  "teamMembers": "Members",
+  "teamDocuments": "Documents",
+  "members": "Members",
+  "joinRequests": "Join requests",
+  "noMembers": "No members yet",
+  "membersUnavailable": "Members are unavailable",
+  "unknownMember": "Unknown member",
+  "noJoinRequests": "No pending requests",
+  "accept": "Accept",
+  "decline": "Decline",
+  "joinTeam": "Request to join",
+  "leaveTeam": "Leave team",
+  "confirmLeaveTeam": "Are you sure you want to leave this team?",
+  "requestPending": "Request pending",
+  "teamResources": "Resources",
+  "resourcesUnavailable": "Resources are unavailable",
+  "noTeamResources": "No resources linked to this team",
+  "untitledResource": "Untitled resource",
+  "removeFromTeam": "Remove from team",
+  "addResource": "Add resource",
+  "editResource": "Edit resource",
+  "resourceUpdated": "Resource updated",
+  "resourceAddedToTeam": "Resource added to team",
+  "descriptionIsRequired": "Description is required",
+  "levelIsRequired": "Level is required",
+  "subjectIsRequired": "Subject is required",
+  "selectFile": "Select a file",
+  "fileSelected": "File selected",
+  "privateResource": "Private resource",
+  "saveChanges": "Save changes",
+  "selectOpenWith": "Select open with",
+  "selectMedia": "Select media",
+  "selectResourceType": "Select resource type",
+  "linkToLicense": "Link to license",
+  "noResourcesToAdd": "All available resources are already linked",
+  "coursesUnavailable": "Courses are unavailable",
+  "noTeamCourses": "No courses linked to this team",
+  "untitledCourse": "Untitled course",
+  "addCourse": "Add course",
+  "noCoursesToAdd": "All available courses are already linked",
+  "financialReports": "Financial reports",
+  "reportsUnavailable": "Reports are unavailable",
+  "noReports": "No financial reports yet",
+  "addReport": "Add report",
+  "editReport": "Edit report",
+  "archiveReport": "Archive",
+  "beginningBalance": "Beginning balance",
+  "sales": "Sales",
+  "otherIncome": "Other income",
+  "wages": "Wages",
+  "otherExpenses": "Other expenses",
+  "totalIncome": "Total income",
+  "totalExpenses": "Total expenses",
+  "profitLoss": "Profit / loss",
+  "endingBalance": "Ending balance",
+  "negativeBalance": "The current balance is negative!",
+  "reportDateDetails": "Report created on: {created} | Updated on: {updated}",
+  "@reportDateDetails": {
+    "placeholders": {
+      "created": {
+        "type": "String"
+      },
+      "updated": {
+        "type": "String"
+      }
+    }
+  },
+  "chatHistory": "Chat History",
+  "chat": "Chat",
+  "newChat": "New chat",
+  "searchChats": "Search chats",
+  "noChats": "No chats yet",
+  "noSearchResults": "No matching chats",
+  "untitledChat": "Untitled chat",
+  "fullConversationResponse": "Full conversation response",
+  "response": "Response",
+  "chatConversation": "Conversation",
+  "newConversation": "New conversation",
+  "startConversation": "Start a new conversation",
+  "typeMessage": "Type a message…",
+  "selectAiProvider": "Select AI provider",
+  "aiProviders": "AI providers",
+  "aiProviderAvailable": "{name} (available)",
+  "@aiProviderAvailable": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderUnavailable": "{name} (unavailable)",
+  "@aiProviderUnavailable": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "feedback": "Feedback",
+  "feedbackNotFound": "Feedback not found",
+  "feedbackSaved": "Feedback saved",
+  "isUrgent": "Is this urgent?",
+  "feedbackType": "Feedback type",
+  "feedbackTypeRequired": "Please select a feedback type",
+  "yourFeedback": "Your feedback",
+  "pleaseEnterFeedback": "Please enter your feedback",
+  "question": "Question",
+  "bug": "Bug",
+  "suggestion": "Suggestion",
+  "priority": "Priority",
+  "openDate": "Open date",
+  "replies": "Replies",
+  "pleaseEnterReply": "Please enter reply",
+  "untitledFeedback": "Untitled feedback",
+  "yes": "Yes",
+  "no": "No",
+  "submit": "Submit",
+  "takeTest": "Take test",
+  "recordSurvey": "Record survey",
+  "react": "React",
+  "pickReaction": "Pick a reaction",
+  "comments": "Comments",
+  "addComment": "Add a comment",
+  "commentsCount": "{count} comments",
+  "@commentsCount": {
+    "placeholders": { "count": {"type": "int"} }
+  },
+  "noComments": "No comments yet",
+  "commentsUnavailable": "Comments are unavailable",
+  "leaderboard": "Leaderboard",
+  "allTime": "All time",
+  "thisMonth": "This month",
+  "coursesCompleted": "{completed}/{total} courses",
+  "@coursesCompleted": {
+    "placeholders": { "completed": {"type": "int"}, "total": {"type": "int"} }
+  },
+  "surveysCompleted": "{completed}/{total} surveys",
+  "@surveysCompleted": {
+    "placeholders": { "completed": {"type": "int"}, "total": {"type": "int"} }
+  },
+  "visitsCount": "{count} visits",
+  "@visitsCount": {
+    "placeholders": { "count": {"type": "int"} }
+  },
+  "leaderboardUnavailable": "The leaderboard is unavailable",
+  "error": "Error",
+  "close": "Close",
+  "filter": "Filter",
+  "type": "Type",
+  "apply": "Apply",
+  "unavailable": "unavailable",
+  "chatsUnavailable": "Chats could not be loaded",
+  "community": "Community",
+  "communityLeaders": "Community Leaders",
+  "nationLeaders": "Nation Leaders",
+  "ourVoices": "Our Voices",
+  "finances": "Finances",
+  "reports": "Reports",
+  "transaction": "Transaction",
+  "transactions": "Transactions",
+  "addTransaction": "Add Transaction",
+  "noTransactions": "No transactions yet",
+  "debit": "Debit",
+  "credit": "Credit",
+  "balance": "Balance",
+  "amount": "Amount",
+  "note": "Note",
+  "date": "Date",
+  "fromDate": "From date",
+  "toDate": "To date",
+  "reset": "Reset",
+  "noteRequired": "Note is required",
+  "amountRequired": "Amount must be greater than 0",
+  "transactionAdded": "Transaction added",
+  "addReceipt": "Add receipt",
+  "receiptSelected": "Receipt selected",
+  "noReceipt": "No receipt attached",
+  "receipt": "Receipt",
+  "viewReceipt": "View receipt",
+  "noLeadersAvailable": "No leaders available",
+  "noServicesAvailable": "No services available",
+  "noDescriptionAvailable": "No description available",
+  "takeExam": "Take exam",
+  "examLoadFailed": "Exam could not be loaded",
+  "examHasNoQuestions": "This exam has no questions",
+  "examComplete": "Exam Complete",
+  "examUnavailable": "Exam is unavailable",
+  "submitExam": "Submit exam",
+  "incorrectAnswer": "Incorrect answer, please try again",
+  "correctAnswers": "Correct",
+  "yourAnswer": "Your answer",
+  "previous": "Previous",
+  "finish": "Finish",
+  "exitExam": "Exit exam?",
+  "exitExamMessage": "Your progress will be lost.",
+  "exit": "Exit",
+  "download": "Download",
+  "downloading": "Downloading…",
+  "downloadFailed": "Download failed.",
+  "resourceNotDownloaded": "This resource is not on your device yet.",
+  "retry": "Retry",
+  "fieldRequired": "Required",
+  "examSubmitFailed": "Could not save your exam. Please try again.",
+  "yourInformation": "Your information",
+  "showAdditionalFields": "Show additional fields",
+  "hideAdditionalFields": "Hide additional fields",
+  "phoneNumber": "Phone number",
+  "birthDate": "Birth date",
+  "selectDate": "Select date",
+  "male": "Male",
+  "female": "Female",
+  "yearOfBirth": "Year of birth",
+  "yearOfBirthRequired": "Year of birth is required",
+  "invalidYear": "Please enter a valid year",
+  "yearBetween": "Year must be between {min} and {max}",
+  "@yearBetween": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "thankYouForTakingSurvey": "Thank you for taking this survey",
+  "errorSavingProfile": "Error saving profile",
+  "videoPlayer": "Video player",
+  "audioPlayer": "Audio player",
+  "fileNotFound": "File not found: {fileName}",
+  "@fileNotFound": {
+    "description": "Port of the Kotlin file_not_found, which names the file.",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "videoFileNotFound": "Video file not found locally",
+  "unableToLoadVideo": "Unable to load video",
+  "audioFileNotFound": "Audio file not found locally",
+  "unableToLoadAudio": "Unable to load audio",
+  "pdfFileNotFound": "PDF file not found locally",
+  "unableToLoadPdf": "Unable to load PDF",
+  "imageFileNotFound": "Image file not found",
+  "attachment": "Attachment",
+  "cannotOpenAttachment": "This attachment type cannot be opened here.",
+  "noContent": "No content",
+  "emptyFile": "Empty file",
+  "htmlEntryNotFound": "HTML entry file not found",
+  "errorOccurred": "Error: {error}",
+  "@errorOccurred": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "openingResource": "Opening: {title}",
+  "@openingResource": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "loadingMedia": "Loading...",
+  "resourceUnavailable": "This resource is not available for offline viewing",
+  "healthRecordNotAvailable": "Health record not available",
+  "healthRecordsRejected": "{count, plural, =1{1 health record could not be sent to the server. It is still stored on this device.} other{{count} health records could not be sent to the server. They are still stored on this device.}}",
+  "@healthRecordsRejected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "updateHealth": "Update health",
+  "addHealthRecord": "Add health record",
+  "healthProfile": "Health profile",
+  "specialNeeds": "Special needs",
+  "otherNeeds": "Other needs",
+  "emergencyContact": "Emergency contact",
+  "contactNumber": "Contact number",
+  "vitalSigns": "Vital signs",
+  "temperature": "Temperature",
+  "pulse": "Pulse",
+  "height": "Height",
+  "weight": "Weight",
+  "bloodPressure": "Blood pressure",
+  "vision": "Vision",
+  "hearing": "Hearing",
+  "examinationHistory": "Examination history",
+  "personalInformation": "Personal information",
+  "birthPlace": "Birth place",
+  "contactName": "Contact name",
+  "contactType": "Contact type",
+  "healthInformation": "Health information",
+  "requiredField": "This field is required",
+  "healthSavedSuccessfully": "Health data saved successfully",
+  "examinationDetails": "Examination details",
+  "allergies": "Allergies",
+  "diagnosis": "Diagnosis",
+  "medications": "Medications",
+  "immunizations": "Immunizations",
+  "treatments": "Treatments",
+  "observations": "Observations",
+  "referrals": "Referrals",
+  "labTests": "Lab tests",
+  "xrays": "X-rays",
+  "conditions": "Conditions",
+  "selfExamination": "Self-examination",
+  "healthRecordAdded": "Health record added successfully",
+  "unableToAddHealthRecord": "Unable to add health record.",
+  "selectHealthMember": "Select member",
+  "newPatient": "New patient",
+  "sortJoinDateDesc": "Newest first",
+  "sortJoinDateAsc": "Oldest first",
+  "sortNameAsc": "Name A–Z",
+  "sortNameDesc": "Name Z–A",
+  "searchMembers": "Search members",
+  "dismiss": "Dismiss",
+  "addMember": "Add member",
+  "invalidNumber": "Invalid number",
+  "tempRangeError": "Temperature must be between 30 and 40",
+  "pulseRangeError": "Pulse must be between 40 and 120",
+  "heightRangeError": "Height must be between 1 and 250",
+  "weightRangeError": "Weight must be between 1 and 150",
+  "bloodPressureFormatError": "Blood pressure should be systolic/diastolic",
+  "bloodPressureRangeError": "Blood pressure must be between 60/40 and 300/200",
+  "bloodPressureNotNumbers": "Systolic and diastolic must be numbers",
+  "temp": "Temp",
+  "bp": "BP",
+  "offlineMaps": "Offline Maps",
+  "centerOnDefault": "Center on default location",
+  "storage": "Storage",
+  "storageManagement": "Storage Management",
+  "storageTotalDownloaded": "Total Downloaded",
+  "storageVideos": "Videos",
+  "storageAudio": "Audio",
+  "storagePdfs": "PDFs",
+  "storageImages": "Images",
+  "storageOther": "Other",
+  "fileCountOne": "1 file",
+  "fileCountMany": "{count} files",
+  "@fileCountMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "storageUnknownResource": "Unknown resource",
+  "areYouSure": "Are you sure?",
+  "cancelAddingExamination": "Are you sure you want to cancel adding examination? The data will be lost.",
+  "yesIWantToExit": "Yes, I want to exit.",
+  "inactiveMessage": "User not activated, please contact administrator or manager to activate your account.",
+  "submitFeedback": "Submit Feedback",
+  "failedToDelete": "Failed to delete: {error}",
+  "@failedToDelete": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "storageDeleteSelectedConfirm": "Delete {count} selected items?",
+  "@storageDeleteSelectedConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "storageDeleteConfirm": "Delete all {category} files?",
+  "@storageDeleteConfirm": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "storageSelectedCount": "{count} selected",
+  "@storageSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteSelected": "Delete Selected",
+  "deleteAll": "Delete All",
+  "selectAll": "Select All",
+  "unselectAll": "Unselect All",
+  "addedToMyCourses": "{count, plural, =1{1 course added} other{{count} courses added}}",
+  "@addedToMyCourses": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "leftCourses": "{count, plural, =1{1 course removed} other{{count} courses removed}}",
+  "@leftCourses": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "coursesSelected": "{count, plural, =1{1 selected} other{{count} selected}}",
+  "@coursesSelected": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "leaveCoursesConfirm": "{count, plural, =1{Are you sure you want to remove this course?} other{Are you sure you want to remove these courses?}}",
+  "@leaveCoursesConfirm": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "noStorageUsed": "No downloaded files found",
+  "availableSpace": "Available space",
+  "freeUpSpace": "Free up space",
+  "freeUpSpaceConfirm": "This will delete all downloaded resources to free up storage space. Continue?",
+  "storageFreedSummary": "Freed {bytes}. {count, plural, =0{No files removed} =1{1 file removed} other{{count} files removed}}.",
+  "@storageFreedSummary": {
+    "placeholders": {
+      "bytes": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "freeUpSpaceFailed": "Could not free up space: {error}",
+  "@freeUpSpaceFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "enterUsername": "Enter username",
+  "enterPassword": "Enter password",
+  "retypePassword": "Retype password",
+  "becomeMember": "Become a member",
+  "toAccessThisFeatureBecomeAMember": "You are currently a guest user. To access this feature, become a member.",
+  "creatingMember": "Creating member account...",
+  "passwordsDoNotMatch": "Passwords do not match",
+  "pleaseSelectGender": "Please select gender",
+  "pleaseEnterPassword": "Please enter a password",
+  "usernameAlreadyExists": "Username already exists",
+  "usernameCannotBeEmpty": "Username cannot be empty",
+  "invalidUsername": "Invalid username",
+  "usernameMustStartWithLetterOrNumber": "Must start with letter or number",
+  "usernameOnlyLettersNumbers": "Only letters a-z, numbers and \"_\", \".\", \"-\" are allowed",
+  "usernameTaken": "username taken",
+  "memberCreatedOffline": "Member account created offline",
+  "memberCreatedOnline": "Member account created successfully",
+  "communityEarnings": "Community total earnings: **$%1$d** / 500",
+  "@communityEarnings": {
+    "placeholders": {
+      "amount": {
+        "type": "int"
+      }
+    }
+  },
+  "yourEarnings": "Your total earnings: **$%1$d** / 11",
+  "@yourEarnings": {
+    "placeholders": {
+      "amount": {
+        "type": "int"
+      }
+    }
+  },
+  "congratulations": "Congratulations! Challenge Completed",
+  "dailyVoices": "of 5 Daily Voices",
+  "voicesProgress": "{count} of 5 Daily Voices",
+  "@voicesProgress": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "progressLabel": "Progress: {percent}%",
+  "@progressLabel": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "courseNotStarted": "Course: Not started",
+  "syncCompletedChallenge": "Sync completed",
+  "rememberSync": "Remember to sync the mobile app.",
+  "perSurvey": "%1$s per survey",
+  "@perSurvey": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "challengeDialogTitle": "Daily Challenge",
+  "start": "Start",
+  "continuation": "Continue",
+  "plan": "Plan",
+  "mission": "Mission & Services",
+  "editPlan": "Edit Plan",
+  "teamPlan": "What is your team's plan?",
+  "entMission": "What is your enterprise's Mission?",
+  "entServices": "What are the Services your enterprise provides?",
+  "entRules": "What are the Rules of your enterprise?",
+  "noMissionDefined": "The enterprise has no mission & services.",
+  "noPlanDefined": "This team has no plan defined.",
+  "noDescriptionDefined": "This team has no description defined.",
+  "enterpriseName": "Enterprise name",
+  "teamName": "Team name",
+  "teamType": "Team type",
+  "local": "Local",
+  "isPublic": "Public",
+  "nameRequired": "Name is required",
+  "nameIsRequired": "Please enter a name",
+  "createdOn": "Created on",
+  "courseDetails": "Course Details",
+  "addedToCourse": "Added to your courses",
+  "removedFromCourse": "Removed from your courses",
+  "pleaseCompleteSurvey": "please complete the survey to finish the course",
+  "takeCourse": "Take Course",
+  "teamCalendar": "Team Calendar",
+  "noMeetupsOnDate": "No meetups on this date",
+  "myProgress": "My Progress",
+  "progress": "Progress",
+  "orderByTitle": "Order by Title",
+  "orderByDate": "Order by Date",
+  "progressFilterAll": "All",
+  "progressFilterNotStarted": "Not Started",
+  "progressFilterInProgress": "In Progress",
+  "progressFilterCompleted": "Completed",
+  "stepProgress": "{current} of {max} steps",
+  "@stepProgress": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "noEnrolledCourses": "You are not enrolled in any courses",
+  "stepsHeading": "Steps",
+  "courseProgressCount": "Progress {current} of {max}",
+  "@courseProgressCount": {
+    "description": "Header of the course-progress grid; port of the Kotlin `course_progress` string.",
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "percentageValue": "{value}%",
+  "@percentageValue": {
+    "description": "A percentage grid cell. `value` is already stringified, because the Kotlin `percentage` string is fed `JsonPrimitive.getAsString()` and so shows a double's fractional part verbatim.",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "mistakes": "Mistakes",
+  "step": "Step",
+  "untitledResourceTitle": "Untitled Resource",
+  "author": "Author",
+  "publisher": "Publisher",
+  "license": "License",
+  "addedBy": "Added by",
+  "resourceInformation": "Resource Information",
+  "resourceFor": "For",
+  "mediaType": "Media Type",
+  "resourceType": "Resource Type",
+  "subject": "Subject",
+  "year": "Year",
+  "timesRated": "Times Rated",
+  "addToMyLibrary": "Add to My Library",
+  "removeFromMyLibrary": "Remove from My Library",
+  "addedToMyLibrary": "Added to My Library",
+  "removedFromMyLibrary": "Removed from My Library",
+  "myLibrary": "My Library",
+  "allResources": "All Resources",
+  "viewResource": "View Resource",
+  "view": "View",
+  "linkNotAvailable": "Link not available",
+  "noRatings": "No ratings yet",
+  "@noRatings": {
+    "description": "Text shown when a resource has no ratings"
+  },
+  "basedOnRatings": "based on {count, plural, =1{1 rating} other{{count} ratings}}",
+  "@basedOnRatings": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "rating": "Rating",
+  "operationFailed": "Operation failed",
+  "filterResources": "Filter Resources",
+  "teamSurveys": "Team surveys",
+  "adoptableSurveys": "Surveys available to adopt",
+  "noAdoptableSurveys": "No surveys available to adopt",
+  "adoptSurvey": "Adopt survey",
+  "surveyAdopted": "Survey adopted",
+  "completedCourse": "completed course",
+  "userNameWithLogins": "{name} ({logins})",
+  "@userNameWithLogins": {
+    "description": "Profile name line with the offline login count, R.string.user_name",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "logins": {
+        "type": "int"
+      }
+    }
+  },
+  "remindMeLater": "Remind Me Later",
+  "remindLater": "Remind Later",
+  "setReminder": "Set Reminder",
+  "minutes": "Minutes",
+  "hours": "hours",
+  "days": "Days",
+  "reminderSurveysToComplete": "Reminder: You have {count, plural, =1{1 survey} other{{count} surveys}} to complete",
+  "@reminderSurveysToComplete": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "myActivities": "My activities",
+  "chartLabel": "No. of login",
+  "selectLanguage": "select language",
+  "english": "english",
+  "spanish": "español",
+  "somali": "somali",
+  "nepali": "नेपाली",
+  "arabic": "عربى",
+  "french": "français",
+  "activitySummary": "Activity",
+  "lastLogin": "Last login",
+  "memberDetail": "Member detail",
+  "numberOfVisits": "Number of visits",
+  "noLogoutRecord": "No logout record found",
+  "totalVisits": "Total visits",
+  "mostOpenedResource": "Most opened resource",
+  "numberOfResourcesOpened": "Number of resources opened",
+  "resourceOpenedTimes": "{title} opened {count} times",
+  "@resourceOpenedTimes": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "resourcesOpenedTimes": "{count, plural, =1{Resource opened 1 time} other{Resource opened {count} times}}",
+  "@resourcesOpenedTimes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "serverReachable": "Server reachable",
+  "serverUnreachable": "Server unreachable",
+  "serverChecking": "Checking server",
+  "gridView": "Grid view",
+  "listView": "List view",
+  "disclaimer": "Disclaimer",
+  "aboutContent": "### MyPlanet\n\nmyPlanet is a learning tool that is designed to work with Planet web application. It has been used to improve early education, secondary schools, village health, youth workforce development, and economic and community development.\n\nPlanet houses is a repository of free, open access and public domain resources to benefit all learners.\n\nmyPlanet is designed to be available to everyone, everywhere, all the time. It is portable, affordable, scalable and sustainable. It runs on any android device such as tablets and mobile phones. It functions off, as well as on, the Internet.\n\nThis application enables schools and communities to have a complete multi-media library and learning system that periodically connects with Planet. Configured devices can contain the learners' personal dashboard. This ensures learners can read books on their shelf and take courses offline - i.e without connection to a central server. Learners are encouraged to rate from one to five stars the resources they use and the courses they take. Periodically learners can sync with a server. Activity data are uploaded and new resources are downloaded in a matter of a few minutes unto myPlanet for offline use.\n\nThe dashboard also contains a record of achievements, a calendar of events, and an internal chat system for communicating with fellow members.\n\nmyPlanet has been proven highly effective in improving learning opportunities for over fifty thousand learners in more than 100 locations, in schools throughout Nepal, Ghana, Kenya, and Rwanda, with Syrian refugees in Jordan, Somali refugees in Kenya, and village health workers in Uganda.",
+  "@aboutContent": {},
+  "disclaimerContent": "# Disclaimer\n\nLast updated: January 10, 2020\n\n# Interpretation and Definitions\n\n## Interpretation\n\nThe words of which the initial letter is capitalized have meanings defined under the following conditions.\n\nThe following definitions shall have the same meaning regardless of whether they appear in singular or in plural.\n\n## Definitions\n\nFor the purposes of this Disclaimer:\n\n- **Company** (referred to as either \"the Company\", \"We\", \"Us\" or \"Our\" in this Cookies Policy) refers to myPlanet.\n- **You** means the individual accessing the Service, or the company, or other legal entity on behalf of which such individual is accessing or using the Service, as applicable.\n- **Application** means the software program provided by the Company downloaded by You on any electronic device named myPlanet.\n- **Service** refers to the Application.\n\n# Disclaimer\n\nThe information contained on the Service is for general information purposes only.\n\nThe Company assumes no responsibility for errors or omissions in the contents of the Service.\n\nIn no event shall the Company be liable for any special, direct, indirect, consequential, or incidental damages or any damages whatsoever, whether in an action of contract, negligence or other tort, arising out of or in connection with the use of the Service or the contents of the Service. The Company reserves the right to make additions, deletions, or modifications to the contents on the Service at any time without prior notice.\n\nThe Company does not warrant that the Service is free of viruses or other harmful components.\n\n# Medical Information Disclaimer\n\nThe information about health provided by the Service is not intended to diagnose, treat, cure or prevent disease. Products, services, information, and other content provided by the Service, including information linking to third-party websites are provided for informational purposes only.\n\nInformation offered by the Service is not comprehensive and does not cover all diseases, ailments, physical conditions or their treatment.\n\nIndividuals are different and may react differently to different products. Comments made on the Service by employees or other users are strictly their own personal views made in their own personal capacity and are not claims made by the Company nor do they represent the position or view of the Company.\n\nThe Company is not liable for any information provided by the Service with regard to recommendations regarding supplements for any health purposes.\n\nThe Company makes no guarantee or warranty with respect to any products or services sold. The Company is not responsible for any damages for information or services provided even if the Company has been advised of the possibility of damages.\n\n# External Links Disclaimer\n\nThe Service may contain links to external websites that are not provided or maintained by or in any way affiliated with the Company.\n\nPlease note that the Company does not guarantee the accuracy, relevance, timeliness, or completeness of any information on these external websites.\n\n# Errors and Omissions Disclaimer\n\nThe information given by the Service is for general guidance on matters of interest only. Even if the Company takes every precaution to ensure that the content of the Service is both current and accurate, errors can occur. Plus, given the changing nature of laws, rules, and regulations, there may be delays, omissions, or inaccuracies in the information contained on the Service.\n\nThe Company is not responsible for any errors or omissions, or for the results obtained from the use of this information.\n\n# Fair Use Disclaimer\n\nThe Company may use copyrighted material which has not always been specifically authorized by the copyright owner. The Company is making such material available for criticism, comment, news reporting, teaching, scholarship, or research.\n\nThe Company believes this constitutes a \"fair use\" of any such copyrighted material as provided for in section 107 of the United States Copyright law.\n\nIf You wish to use copyrighted material from the Service for your own purposes that go beyond fair use, You must obtain permission from the copyright owner.\n\n# Views Expressed Disclaimer\n\nThe Service may contain views and opinions which are those of the authors and do not necessarily reflect the official policy or position of any other author, agency, organization, employer, or company, including the Company.\n\nComments published by users are their sole responsibility and the users will take full responsibility, liability, and blame for any libel or litigation that results from something written in or as a direct result of something written in a comment. The Company is not liable for any comment published by users and reserves the right to delete any comment for any reason whatsoever.\n\n# No Responsibility Disclaimer\n\nThe information on the Service is provided with the understanding that the Company is not herein engaged in rendering legal, accounting, tax, or other professional advice and services. As such, it should not be used as a substitute for consultation with professional accounting, tax, legal, or other competent advisers.\n\nIn no event shall the Company or its suppliers be liable for any special, incidental, indirect, or consequential damages whatsoever arising out of or in connection with your access or use or inability to access or use the Service.\n\n# \"Use at Your Own Risk\" Disclaimer\n\nAll information in the Service is provided \"as is\", with no guarantee of completeness, accuracy, timeliness, or of the results obtained from the use of this information, and without warranty of any kind, express or implied, including, but not limited to warranties of performance, merchantability, and fitness for a particular purpose.\n\nThe Company will not be liable to You or anyone else for any decision made or action taken in reliance on the information given by the Service or for any consequential, special, or similar damages, even if advised of the possibility of such damages.\n\n## Contact Us\n\nIf you have any questions about this Disclaimer, You can contact Us:\n\n- By email: myplanet@ole.org\n- By visiting this page on our website: [https://ole.org/contact](https://ole.org/contact)",
+  "@disclaimerContent": {},
+  "shareWithCommunity": "Share with community",
+  "confirmShareCommunity": "Are you sure you want to share this content with the community?",
+  "voiceShared": "Post shared with community",
+  "voiceUnshared": "Removed from community",
+  "exportCsv": "Export CSV",
+  "csvFileSavedSuccessfully": "CSV file saved successfully.",
+  "failedToSaveCsvFile": "Failed to save CSV file.",
+  "exportCancelled": "Export cancelled.",
+  "collections": "Collections",
+  "filterCollections": "Filter Collections",
+  "selectManyCollections": "Select Many Collections",
+  "selected": "Selected: ",
+  "myAchievements": "My Achievements",
+  "editAchievement": "Edit Achievements",
+  "addAchievement": "Add Achievement",
+  "addAnAchievement": "Add an Achievement",
+  "addReference": "Add Reference",
+  "addAReference": "Add a Reference",
+  "selectResources": "Select resources: ",
+  "myGoals": "My Goals",
+  "myPurpose": "My Purpose",
+  "summaryOfAchievements": "Summary of achievements - Briefly summarize your achievements",
+  "myGoalsDescription": "My Goals - What are your goals for the next 10 years?",
+  "myPurposeDescription": "My Purpose - What are your educational and professional ambitions?",
+  "noGoalAdded": "No goals set yet",
+  "noPurposeAdded": "No purpose added",
+  "noAchievementAdded": "Summary of achievements",
+  "noReferencesAdded": "No references added",
+  "sendToNation": "Allow your achievements to be shared with the nation",
+  "saving": "Saving…",
+  "achievementSaved": "Achievement updated",
+  "titleIsRequired": "Title is required",
+  "selectPdfOnly": "Please select a PDF file",
+  "viewCv": "View CV/Resume",
+  "deleteCv": "Delete CV",
+  "uploadCvLabel": "Upload your CV/Resume below (PDF only)",
+  "addMaterials": "Add any materials demonstrating your achievements below",
+  "labelAddReferences": "Add any references below",
+  "cvResume": "CV / Resume",
+  "relationship": "Relationship",
+  "noFileChosen": "No file chosen",
+  "chooseFile": "Choose File",
+  "currentCv": "Current CV/Resume: {name}",
+  "update": "Update",
+  "fillRequiredFields": "Please fill required fields: {fields}",
+  "@currentCv": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@fillRequiredFields": {
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      }
+    }
+  },
+  "textSize": "Text size",
+  "selectTextSize": "Select text size",
+  "textSizeSmall": "Small",
+  "textSizeMedium": "Medium",
+  "textSizeLarge": "Large",
+  "resetApp": "Reset app",
+  "clearAllDataConfirm": "Are you sure you want to clear all data?",
+  "dataCleared": "All data cleared",
+  "dataManagement": "Data management",
+  "resourceTitleAlreadyExists": "A resource with this title already exists",
+  "failedToUpdateResource": "Failed to update resource",
+  "thankYouForTakingExam": "Thank you for taking this exam! We wish you all the best.",
+  "pleaseAnswerToContinue": "Please select / write your answer to continue",
+  "ratings": "Ratings",
+  "syncShelfDescription": "Refresh which resources and courses are on each member's shelf",
+  "syncMembersDescription": "Refresh the member accounts registered on this planet",
+  "syncRatingsDescription": "Refresh community ratings for resources and courses",
+  "syncTasksDescription": "Refresh team tasks created on the server",
+  "syncAchievementsDescription": "Refresh achievement records and downloaded CVs"
+}

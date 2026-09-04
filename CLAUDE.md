@@ -8,7 +8,7 @@
 - **Primary Language**: Kotlin (100% — no Java sources remain)
 - **Min SDK**: 26 (Android 8.0)
 - **Target SDK**: 36 (Android 16); **Compile SDK**: 37
-- **Current Version**: 0.63.42 (versionCode: 6342)
+- **Current Version**: 0.69.18 (versionCode: 6918)
 - **Build System**: Gradle 9.6.1 with Android Gradle Plugin 9.3.1
 - **Local Database**: Room (AndroidX) 2.8.4 — the only local persistence store
 - **License**: AGPL v3
@@ -16,6 +16,772 @@
 ### Build Flavors
 - **default**: Full-featured version
 - **lite**: Lightweight version with reduced features (removes `REQUEST_INSTALL_PACKAGES`; `-lite` version-name suffix)
+
+### Flutter port (in progress)
+
+**Migration progress: ≈86/100.** Report this figure whenever you report on the
+port; it is the whole migration effort on a 1-to-100 scale, not a phase count.
+The basis, so it can be argued with rather than repeated:
+
+| Dimension | State | Est. |
+|---|---|---|
+| Feature breadth | all 28 UI packages have screens (enterprises is a team *type*, not a gap — Phase 99) | ~95 |
+| Behavioural parity | the limiter, and the lowest-confidence row: **reachability** audits keep finding ported, green, *dead* code — see below | ~72 |
+| Test coverage | 2048 tests / 189 test files vs 231 Kotlin test files | ~85 |
+| Localisation | ar/es/fr ~830–864 of 879 keys but **416–470 of those are unreviewed machine translation**; ne/so 421 | ~55 |
+| Background work | WorkManager gaps closed through Phase 94, platform channels in-tree | ~95 |
+
+Breadth is measurable and depth is not — 240 hand-written Dart files against 543
+Kotlin sources mostly reflects Dart folding Fragment + ViewModel + Adapter + XML
+into one screen file, so it says little about parity. Depth is only ever revealed
+by auditing, and **every audit so far has found something**, which is why the
+parity row is an estimate rather than a measurement.
+
+**Two corrections worth keeping, because both were mine and both inflated the
+figure.** Earlier revisions of this table called `teams_provider`,
+`courses_providers` and `app_providers` untested; they are referenced by 10, 5
+and 43 test files respectively. The heuristic was matching `<basename>_test.dart`
+filenames, and it had already missed 22 chat tests in Phase 108. **Grep the test
+tree for the symbol, never the filename.** And the localisation row counted 899
+`[Language] …` strings — `"[Nepali] Join requests"` — as translations; Phase 118
+deleted them so those keys fall back to clean English, which is why ne/so read
+421 rather than ~850. A number that only ever moves up is not being measured.
+
+### Reachability: ported, tested, green, and dead
+
+The most valuable thing recent rounds established, and it is not a bug — it is a
+failure *class* that green tests structurally cannot detect. A screen test builds
+its screen directly; a repository test builds its own rows. Neither ever asks
+whether the app can reach that screen with data the server actually sends.
+
+Phase 113 found `TakeExamScreen` unreachable in production. Its route was fine,
+its screen was fine, its tests were green: a course step's exam arrives embedded
+in the course document, Kotlin's `buildCoursePayload` writes it into `exams`
+under the step's own id, and `CourseMapper` threw it away — so
+`exams.stepId == course_steps.id` could never match real synced data. Three
+phases of correct exam work (Phase 100's verification photo, Phase 106's choice
+shape, Phase 110's retry model) were guarding a button that could not appear.
+**Every fixture hand-faked the join, and that was the symptom.**
+
+Then it kept happening. Phase 116 audited port-wide and found four more
+unreachable screens plus a resources walk clearing My Library on every sync.
+Phase 119 found five sync walks Kotlin runs that the port never had — and *four
+of the five had a Dart writer already sitting uncalled*, plumbing laid for a pull
+nobody wrote. Phase 120 found a submission uploaded on one handset and pulled on
+another yields answers with no questions.
+
+So, when you touch a screen or a table, ask the three questions the guards now
+encode: **who writes this table, can the writer produce values the reader's
+predicate matches, and does anything navigate here?** The guards are
+`test/ui/route_reachability_test.dart`, `test/repository/shelf_membership_survives_sync_test.dart`,
+`test/data/local/mapper_preserves_local_columns_test.dart` and
+`test/repository/community_share_round_trip_test.dart`. A fixture that fabricates
+a join is not evidence; a document shaped like the server's is.
+
+### Rules these rounds turned into rules
+
+- **A Kotlin citation is not a Kotlin reading.** Four times a lane named the
+  right function and misread it, each caught only by a `parity-auditor` pass at
+  `effort: max`: Phase 106's cancelled-survey gate (which lost answers
+  permanently), Phase 110's select-grading verdict, Phase 117's
+  placeholder-reordering claim, and Phase 113's own first reading.
+- **An audit of the ground truth does not audit the implementation.** Phases
+  110, 113, 116 and 119 each ran a second `parity-auditor` pass aimed at their
+  own finished, already-green code, and every one found more defects — thirteen,
+  in Phase 113's case. Run both passes.
+- **A provider a screen reads but never watches is null.** Await its `.future`,
+  with the `await` *inside* the enclosing `try`, because a future can reject
+  where `valueOrNull` could not. Four independent instances in unrelated files.
+- **Never degrade a translation.** "Never overwrite a human translation" was too
+  blunt: Phase 114 replaced 39 unmarked strings that were English, `[Language]`
+  placeholders, or carried Android's XML escaping into the ARB — French had been
+  rendering `l\'appareil` since Phase 47. Repairing a broken human-derived
+  string is right; substituting one valid translation for another is not.
+- **A schema bump discards unsynced local writes**, which is why
+  `localAuthorityTables` and the hand-written `_addColumnIfMissing` step exist.
+  A Drift *converter* swap changes no DDL and needs no bump (Phase 104).
+- **Generated sources are gitignored**, so after any merge touching a Drift table
+  or converter, run `dart run build_runner build` *before* trusting
+  `flutter analyze` — stale output produces phantom type errors, 14 in one case.
+
+A Flutter/Dart port lives in **`flutter/`**, alongside — not replacing — the Kotlin app. `app/`
+is unchanged and remains the shipping app. **All 28 UI packages** have a screen, plus a durable
+write-back path. The first vertical slice ran server configuration → login → resources list;
+since then the dashboard shell, courses, calendar, first-launch onboarding, the offline user
+profile, appearance settings, the dictionary, notifications, My life, references, personals, and
+ratings, offline submissions with question-aware answer review, events/meetups, individual
+surveys, teams, chat, feedback, community, graded course exams, and the resource viewer with
+its download path, encrypted health records, the chat and feedback sync-in directions, chat
+upload, member registration, team and public survey sharing, personal-note attachments, and the
+completed home dashboard — completed-course stars, the server-reachability ring, team alert
+badges, offline-login counting with its activity chart, survey remind-later, and the language
+action — and the activity log (resource opens/downloads, course visits, completed syncs) with the
+four-database upload path that carries it and the profile stats that read it, and deep links
+(`app_links`, so a public-survey link's origin survives) with durable delivery for the anonymous
+answer sheet they collect, and profile photos with the `login_activities` sync-in (harvested from
+`flutter-openhands4`), and — harvested from `flutter-openhands7` — the About and Disclaimer
+screens, team finance/report receipt attachments in both directions, free-up-space storage
+management over a `disk_stats` method channel, and debounced username validation, have landed —
+plus voices share-to-community with the upstream `f4adebf` visibility/un-share parity, device and
+tablet-usage telemetry (`myplanet_activities`), and task deadline notifications.
+Everything below in this document describes the Kotlin app and still applies to it.
+
+See **`docs/kotlin-to-flutter-migration.md`** for scope, the technology mapping (Hilt→Riverpod,
+Room→Drift, Retrofit→Dio, strings.xml→.arb), and the open problems. The `WorkManager` gap is
+resolved for write-back: `RetryQueue`'s durability was always the SQLite table rather than the
+worker, so the queue ported directly and only the drain trigger needed replacing (`outbox` table
++ `OutboxDrainer`, drained on app resume). What remains open is background work with no user
+present — `AutoSyncWorker`'s timed sync landed in Phase 38 through the `workmanager` plugin behind
+a testable Dart seam, though that plugin's own Android side is Kotlin, and
+`TaskNotificationWorker`'s deadline notifications landed in Phase 42 on the same plugin's
+`maintenance` cadence (`TaskDeadlineNotifier` policy behind a `NotificationPresenter` seam, with
+`team_tasks.isNotified` making the reminder once-only). Phase 43 closes the final WorkManager gap:
+resource requests are persisted before the foreground attempt and handed to a network-constrained
+one-shot worker for retry and process-death recovery. Phase 44 then closed the device-identity
+serializer gap for personal, rating, submission and team uploads using the Phase 41 platform seam.
+Phase 45 hardened both: the download queue moved from a preference list to a preserved Drift table
+at schema v33, and device identity gained a UI-primed cache for headless WorkManager engines.
+Phase 46 applied that same cache to `disk_stats`, where the missing headless channel had been
+silently disabling the deadline notifier's storage-warning step — the only caller of
+`updateStorageNotification`, so the row was never written at all. **Phase 94 lands the real
+fix**: both channels moved into the in-tree `planet_platform_channels` plugin
+(`flutter/packages/`), which `GeneratedPluginRegistrant` attaches to every engine — headless
+WorkManager ones included — and `MainActivity` is a bare `FlutterActivity` again. The UI-primed
+caches stay as fallback. The same phase aligned the port's `minSdk` to the Kotlin app's 26 (it
+had silently claimed 24) and added `version_parity_test.dart`, which pins
+pubspec and the `minapk` fallback constant to `app/build.gradle` — the drift Phase 93 caught by
+hand after five missed releases. **It deliberately tolerates patch lag and fails only on a minor
+version behind**: `automerge.yml` bumps the Kotlin version on every merge (0.67.14 → 0.67.25
+within an hour), and the first cut's exact-equality rule turned every pull-request run red,
+because a PR run tests the merge with master. Do not tighten it back.
+
+Phase 96 audited the 26 upstream commits after `ba794f4bb` (master
+0.67.14 → 0.67.40) — all refactors and CI/build work, no new behavioural
+port — and closed a pre-existing gap the audit surfaced: the ranked resource
+search. The Kotlin resources screen filters with `ResourcesSearchUtils`
+(`49617105e`/`1e41d3353`), ranking titles that **start with** the whole
+query ahead of those that **contain every whitespace-separated word**; the
+port had been using a flat SQL `LIKE '%query%'` since the first resources
+slice, which can neither rank nor word-split. `MyLibraryDao.watchResources`
+drops the text-search `LIKE` (the shelf `userId` scope stays in SQL);
+`ResourcesRepository.watchResources` maps the stream through a top-level
+`searchResources` pure function ported from `searchList`, reusing
+`text_utils.normalizeText` (the single one, Phase 78). The courses analogue
+needs no port — `CoursesRepositoryImpl.search(query)` is in the interface but
+uncalled; the screen uses `filterCourses` (a plain `contains`) which the
+port already mirrors.
+
+Phase 97 deepened the same systematic Kotlin-vs-Flutter search/filter/sort
+audit and closed three more gaps. **Resource catalog visibility**:
+`getEnrichedLibraries`'s `getMyLibrary`/`getPublicNotUserPattern`/`getPublic`
+three-way split is now mirrored by `MyLibraryDao.watchResources(myLibrary:)`
+— the catalog excludes private resources (`isPrivate = 0`) and the signed-in
+user's own shelf items (`userId IS NULL OR userId NOT LIKE`, so no
+duplication between catalog and My Library), while My Library includes the
+user's private team resources (`userId LIKE`). **Survey search**:
+`SurveysViewModel.filter` is the same ranked algorithm as
+`ResourcesSearchUtils.searchList` (startsWith-before-contains-all-words,
+word-split, accent-folded, `name` only); the port's flat
+`toLowerCase().contains` on name+description is replaced by a `searchSurveys`
+pure function. **Survey sort date**: `SurveysViewModel.getSortDate` prefers
+`adoptionDate` over `createdDate` for adopted surveys (those with a
+`sourceSurveyId`); a `surveySortDate` pure function ports it. 14 new tests,
+1474 pass.
+
+Phase 98 closed the notifications domain's missing half: the **sync-in
+(pull) direction**. `TransactionSyncManager`'s `"notifications"` walk had
+never ported, so a server-side notification (join request, new task, reply)
+never reached the local cache — the bell only ever showed rows the
+**upload** direction had authored (`userId:resource:count`,
+`userId:storage`, team watermarks). The `Notifications` table gains `rev`
++ `needsSync` (schema v44, pure cache so no preservation test);
+`NotificationDao` gains `markSummaryAsRead`/`getPendingSyncNotifications`/
+`upsertAll`/`getByIds`/`deleteByIds`/`markSynced` plus the Phase 53
+`watchForUser`/`watchUnreadCount` type-error fixes. `NotificationsRepository.sync`
+ports the `_all_docs` walk and `parseNotification`; `_bulkInsertFromSync`
+preserves a locally-read row's `isRead` + `needsSync` across a re-pull (the
+same round-trip shape as Phase 56's security-data fix and Phase 74's
+reactions) so a re-sync cannot undo a read. `_design` docs are skipped
+(`!id.startsWith("_design")`, no trailing slash). Unlike every other sync
+repository this one runs **no** `deleteNotIn` — the Kotlin walk never does
+either, and a prune would evict the locally-authored count/storage rows
+that have no server document. The **read-state round-trip** closes too:
+`markNotificationAsRead` flags server-originated rows `needsSync = true`,
+and `syncNotificationReads` PUTs each pending row back with the carried
+`rev` then calls `markSynced`. A new `DashboardSyncArea.notifications` +
+`NotificationsSyncNotifier` wire the bell-list refresh into the sync
+center. **Amended on harvest**: `markAllAsRead` and `markSummaryAsRead`
+were written as two statements — set `is_read`, then set `needs_sync` on
+the server rows — but the Kotlin does both in **one** statement,
+`needsSync = CASE WHEN isFromServer = 1 THEN 1 ELSE needsSync END` under a
+single `WHERE ... AND isRead = 0`. That shared `WHERE` is the point: after
+the first update nothing marks the rows it changed, so the second could
+only re-select by `is_read = 1`, which matches everything the user has
+*ever* read — one "mark all read" tap re-queued the whole history and the
+next sync PUT every document back. **A two-part read-then-flag over the
+same rows needs one statement, or the ids captured first.**
+
+Phase 99 retires the long-standing **"27 of 28 UI packages have a
+screen"** claim, whose one gap was named as `ui/enterprises/`. The claim was
+wrong, and had been for a while: **`ui/enterprises/` is not a screen the port
+lacks, it is two screens the port files under `ui/teams/`.** Enterprises are
+not a separate feature — they are a team *type*. `TeamDetailFragment.buildPages`
+computes `isEnterprise = team?.type == "enterprise"` and swaps tabs on it
+(`MissionPage`/`PlanPage`, `FinancesPage`/`CoursesPage`, `DocumentsPage`/
+`ResourcesPage`, plus `ReportsPage` only for enterprises); the two fragments
+themselves carry **no** type branching at all, and neither does
+`BaseTeamFragment`, which only resolves the team and the user's membership.
+So `EnterprisesFinancesFragment` → `team_finances_screen.dart` and
+`EnterprisesReportsFragment` → `team_reports_screen.dart` is the whole
+mapping, and it already existed. Counting the package as missing was counting
+a Kotlin directory name rather than a screen.
+
+Auditing it field by field did surface four real gaps, all now closed.
+**The manage gate was wrong in both screens**: Kotlin's
+`canManage = if (fromCommunity) user?.isManager() == true else isMember`
+reads `isMemberFlow`, which is `TeamsRepositoryImpl.isMember` — plain
+membership. The port required `?.isLeader`, so a rank-and-file member of an
+enterprise saw no add-transaction or add-report button where the Kotlin gives
+them one; Kotlin has a separate `isTeamLeader` it deliberately does not use
+here. The `fromCommunity` branch ported alongside it (the community tabs pass
+it, and there the gate is the manager role), read only on that path so the
+team path never builds `sessionProvider`. **The report card showed 4 of the
+9 value rows** `EnterprisesReportsAdapter` binds — only the derived totals,
+none of the five figures the report was authored from
+(beginningBalance/sales/otherIncome/wages/otherExpenses), and not the
+created/updated footer; every field was already on `TeamRow`, so this was
+display-only, no schema change. **The finances summary had no
+negative-balance caution** (`balance_caution`, shown when
+`FinanceHeaderState.isCautionVisible`, i.e. `total < 0`). And the CSV
+export's default filename carried a **stray brace** —
+`'${weekday}_$month}_...'` interpolates the bare `$month` and leaves the `}`
+as literal text, so the picker offered `Thu_Aug}_20_2026` against Kotlin's
+`EEE_MMM_dd_yyyy`; the formatter is now the top-level
+`reportExportDateSuffix`, pinned by a test rather than reachable only through
+the platform save-file dialog. Two differences were found and deliberately
+**not** changed: the port's team detail lists a Finances entry gated on
+membership where Kotlin gates it on `type == "enterprise"` (a surplus, not a
+gap, and the port's detail screen is a link list rather than Kotlin's tab
+pager, so its gating is not a line-for-line port anyway); and the report
+card's `%s Financial Report` title, which needs a `teamProvider` watch — the
+Phase 75 harness trap, since `teamsRepositoryProvider` transitively reaches
+`planetPrefsProvider`.
+
+Phase 47 localised the other four languages: `tool/arb_from_strings_xml.dart` derives `app_ar.arb`,
+`app_fr.arb`, `app_ne.arb` and `app_so.arb` from the Kotlin `values-*/strings.xml` (195–196 of 727
+keys each, nothing machine-translated **as of Phase 47 — no longer true, see
+*Current l10n state* below**), which also made the language picker's four dead entries
+real — they had been setting a locale with no `.arb` to resolve to. Somali needed
+`framework_fallback_delegates.dart`, because `flutter_localizations` does not translate it and the
+locale would otherwise resolve with no `MaterialLocalizations` and crash. Directional padding and
+alignment are done; a visual RTL review in Arabic is not.
+
+**Current l10n state.** The template `app_en.arb` is 879 keys. Arabic, Spanish
+and French sit at ~830–864 of them, Nepali and Somali at 421. But coverage is the
+wrong headline: **416–470 of each of ar/es/fr's values are unreviewed machine
+translation**, marked as such by Phase 109 so a human pass can list exactly which.
+The ~250 keys derived from the Kotlin `values-*/strings.xml` are real human
+translations already shipping in the Android app, and Phases 114/118/121 have
+been recovering more of them — that recovery is strictly better than machine
+translation and should be exhausted before any more is generated.
+
+The earlier "nothing machine-translated" claim is obsolete, and so is any reading
+of the untranslated counts as a quality measure: ne/so went *up* to 458 when Phase
+118 deleted 899 `[Language] Join requests`-style strings, because falling back to
+clean English beats displaying a language tag. A confidently wrong translation can
+mislead a learner where an English fallback merely inconveniences them.
+
+Phase 48 fixed the team-finance summary so it is derived from the filtered transaction stream.
+Phase 49 made notification rows actionable rather than read-only: resources and storage warnings
+open their matching screens, while task and join-request notifications resolve their cached team
+documents before opening that team's tasks or join-requests tab. Already-read notifications remain
+actionable, matching Kotlin's click behaviour.
+
+Phase 50 closed the resource-catalog batch-selection gap. Long-press enters selection mode in both
+list and grid layouts, further taps build a multi-selection, and one add/remove action atomically
+updates every resource plus its `removed_log` entry before attempting the derived shelf upload.
+
+Phase 51 ported the certified-course-exam verification photo. A new `submit_photos` Drift table
+(schema v34, preserved in `localAuthorityTables`) holds the row; `SubmissionsRepository` authors
+and serializes it with device identity layered on at queue time; `SubmitPhotosUploader` delivers
+the durable two-step write-back through the outbox (POST doc, record id/rev, then best-effort PUT
+the JPEG bytes as a CouchDB attachment). Capture runs through a `PhotoCapture` seam
+(`image_picker` in production, faked in tests), wired into `take_exam_screen` behind
+`ProgressRepository.isCourseCertified(courseId)`; a null capture is swallowed, matching Kotlin.
+
+Phase 52 ported the mandatory-survey toast (the deferred second half of `c5141b658`): on
+finishing the MyPlanet Onboarding course, the screen checks
+`SubmissionsRepository.hasUnfinishedSurveys(courseId, userId)` — a port of the Kotlin
+`hasUnfinishedSurveys`/`hasSubmission` pair — and blocks the pop with a toast when an attached
+survey is outstanding. The `courseId`/`stepId` columns on `Surveys` (schema v35) make
+course-attached surveys queryable. The resource-sync `deleteNotIn` bug (`2ec7e3187`, #15831) is
+the second fix: a mid-walk batch failure now sets a `hadBatchFailure` flag and skips the cleanup
+(returns `SyncComplete`, not `SyncFailed`), so valid resources survive an incomplete walk.
+
+Phase 53 closed five deferred/audit items. The dashboard library-card my/call split
+(`08e18ffdc`, #15728) ships a `resourceShelfOnlyProvider` shelf toggle and a `shelfUserId`-scoped
+`watchResources` (the `isMyCourseLib` view): the card opens the user's shelf when it has items
+and the full catalog otherwise. The notification sub-destination work (`a08fc5662`) adds a
+`subType` column to `Notifications` (schema v37) and a `NotificationParser` that splits a raw
+`"team"` type (via `linkParams.activeTab` or message sniffing) into `team_join`, `chat`, and
+`voice_reply` destination kinds. Nested HTML entry files land via the `openWhichFile` column on
+`MyLibraryTable` (schema v36) and `ResourceFiles.resolveHtmlEntryFile` (path-traversal-safe).
+The voices shared-team suffix (`"| Shared from {name}"`) and the team-finances future-date cap
+(#15766) round out the batch.
+
+Phases 54–60 shift from adding screens to hardening what exists. Phase 54 landed the HTML
+resource viewer (`webview_flutter`, local files only — `loadFile`, never `loadRequest`) and
+fixed a server-url alt-credential bug; Phase 55 added team financial report CSV export.
+Phase 56 ports `aa24dfa6c` (#15836): `updateUserSecurityData` now writes `Value.absent()`
+rather than `Value(null)` when the server omits a credential, so a null-returning fetch can no
+longer wipe a stored `derived_key`/`salt` and lock the user out of offline PBKDF2 verification.
+Phases 57–58 finished localising the UI, retiring the last hardcoded strings. Phase 59 replaced
+the hardcoded version/build line with `appVersionInfoProvider` (`package_info_plus`) and
+backfilled the team detail screens with 33 widget tests — the largest untested surface. Phase 60
+extends two Phase 59 fixes from one instance to the class: three further duplicate `app_en.arb`
+keys (`justNow`, `description`, `apply`) are removed and guarded by a test that reads the ARB
+source text, because `jsonDecode` collapses a duplicate pair before any assertion can see it;
+and the `minapk` comparator in `ConfigurationsRepository` now reads the runtime version too.
+That last one matters because a failed version check returns `_UrlCheckFailure`, which is
+indistinguishable from an unreachable server — a constant nobody remembered to bump presents as
+"cannot reach the server" on the first screen. The lookup falls back to the constant on anything
+unusable (throw, empty, or the `0.0.0` placeholder), since under-reporting the version would
+fail configuration outright. Phase 61 ports the dashboard key/IV sync-in (`9f3fac1d9`): the home
+screen's session listener fires `HealthKeyIvSyncNotifier` for a non-guest user with no local
+health key, which pulls the key/IV from the user's `userdb-<hex(planetCode)>-<hex(name)>`
+database with the user's own basic-auth credentials (health-role users sweep every synced
+account), guarded against re-entry by its `SyncRunning` state. The `toHex` encoding is one
+big-endian number, not per-byte hex — `toHexString` pins the empty-string/leading-zero cases a
+naive port gets wrong. The master's progress dialog is deliberately not ported: `di` is never
+assigned there, so its show/dismiss calls are no-ops. Phase 62 ports the upload direction
+(`saveKeyIv`): `UserRepository.saveKeyIv` publishes the freshly generated key/IV to the
+user's `userdb-`+hex database during online member creation, retried 3× with the
+`changeUserSecurity` health-role grant, and `uploadNewUser` swallows its failure so the
+account still reports success. Still open: the background/outbox path for accounts created
+offline. **Ported in Phase 63.** Phase 64 ports team visit logging (`team_log` /
+`team_activities`): `TeamDetailScreen` fires `logTeamVisit` once per mount (a rebuild is
+not a revisit) via `addPostFrameCallback`, and `TeamLogUploader` carries the row to
+`team_activities` through the outbox with device identity layered on at queue time.
+Phase 65 ports search-activity logging (`search_activity` / `search_activities`), with
+one durable row per applied filter written from the courses/resources screens' `dispose`
+and carried through the outbox; Phase 66 was a pure harvest audit of the 2026-08-20→23
+upstream batch (no new port). Phase 67 ports tags and collections: the `tags` Drift table
+(schema v40, a pure CouchDB cache), `TagsRepository` with the `hadBatchFailure` cleanup
+rule, the shared `CollectionsDialog` (single/multi-select, debounced search, expand-to-
+children), and per-screen wiring — a badged collections button, selected-tag chips on
+resources, a Selected: … label on courses, any-of tag filtering on both lists, and the
+selected tag ids now captured into the search-activity filter JSON instead of Phase 65's
+empty-array placeholder.
+
+Phase 68 ports achievements: the `achievements` table (schema v41, preserved), an
+`AchievementsRepository`/`AchievementsUploader` pair on the outbox, the achievements and
+edit screens, and a CV/resume attachment written under `<base>/ole/cv/` through
+`AchievementFiles`, whose `_segment` reduces a server-supplied filename to its basename so
+a `..` cannot escape that directory. Phase 69 hardens the localisation tooling rather than
+adding a screen: `tool/arb_from_strings_xml.dart` **merges** into the existing `.arb`
+instead of regenerating it. As written in Phase 47 it rebuilt each locale file from the
+template and `strings.xml`, so the 17 keys per locale that later phases translated by hand
+— the resource viewer's per-media-type error states, which have no Kotlin counterpart to
+derive from — were deleted on any re-run, silently and with no error. The tool also emits
+literal UTF-8 now, matching how the locale files are actually committed, so a run no longer
+rewrites all four; it is idempotent, verified by running it twice. A test pins the
+hand-authored keys in all four locales so a destructive regeneration fails the suite.
+Phase 70 ports the resources list sort toggles (`14a9f14`, #15941): the Kotlin
+bottom sheet's date/title pair had no counterpart, so the port gains
+`ResourceSortState` (one direction flag per mode, like the ViewModel's), a pure
+`applyResourceSort` applied to the filtered stream at build time, a badged sort
+button opening a two-option sheet, and a scroll-to-top shared by both layouts.
+Phase 71 ports the member detail screen (`MembersDetailFragment`) and fixes the
+team members list, which had rendered each member as the raw `userId` with no
+tap target. `MemberDetailScreen` shows the profile photo, full name, leader
+badge, and labelled rows (email, DOB, language, phone, level, visits, last
+login); a `memberDetailProvider` joins the `users` row with per-team visit
+counts (`TeamLogDao.teamVisitsForUsers`/`lastTeamVisit`) and the last login
+(`activitiesRepository.lastVisit`); the list resolves real names via a new
+`userByIdProvider` and navigates to the detail route on tap.
+Phase 72 ports the add-resource screen (create + edit + file pick via
+`FilePicker`), team member leader actions (remove / make leader / leave with
+tombstone enqueue), and wires the member detail screen to voice authors and
+community leaders. The repository gains `saveLocalResource`/
+`updateLocalResource`/`resourceTitleExists`; the members list gains a
+`PopupMenuButton` overflow menu per member.
+Phase 73 ports a standalone WebView screen for external links, the
+exam/survey buttons on course steps (`CourseStepFragment`'s `btnTakeTest`/
+`btnTakeSurvey`), and the team leaderboard from the `14880` upstream branch
+(`TeamLeaderboardCalculator` + `TeamLeaderboardScreen` with all-time/this-month
+period toggle).
+
+Phase 74 adds voice emoji reactions (`reactions` on `NewsEntries`, schema v42 —
+a preserved table, so it needs the hand-written `_addColumnIfMissing` step) and
+inline comment threads on team tasks. **Neither is a Kotlin port**: both are
+open issues (#13357, #15112) whose Kotlin PRs are unmerged, so they are the
+first features here that do not advance Kotlin→Flutter parity and have no
+reference implementation to check against. Kotlin PR #13415 also keeps
+`reactions` device-local (it never serializes the field), so the port syncing
+them is ahead of that PR, not matched to it; and #15112 asks for threads on
+tasks *and* meetups, of which only tasks are wired. The phase also fixes the
+reactions round trip: `serializeNews` wrote them into the nested `news`
+sub-object while `NewsMapper.fromDoc` read the top level, so a reaction never
+reached another device and — because the mapper writes its companion on every
+pull — `Value(null)` went over the local column, erasing the user's own
+reaction on their next sync. Same shape as the Phase 56 security-data fix.
+Each side had a passing test; nothing ran the two together, which is now what
+the new coverage does.
+
+Phase 75 ports the chat full-conversation search from `ChatViewModel.searchChats`: a
+`ChatSearchMode` enum (`title`/`question`/`response`), ranked matching
+(prefix before contains, first conversation before later), recency sort by
+`max(createdDate, updatedDate)`, and accent-insensitive normalization. The
+search lives as a pure top-level `searchChatsForMode` (and
+`sortChatsByRecency`) in `lib/repository/chat_repository.dart` so the
+provider can call it without transitively watching
+`chatRepositoryProvider`/`planetPrefsProvider` (the latter is
+`UnimplementedError` in the widget-test harness). Accent folding reuses the
+existing `normalizeText` in `lib/core/utils/text_utils.dart` — see Phase 78.
+
+Phases 76–77 port the courses multi-select shelf actions (Kotlin's
+`CourseSelectionController`, plus a fix for a `ref.read` race that silently
+no-oped the whole batch) and the course cover banner with markdown descriptions
+(`CourseDetailFragment.setCourseCover`; relative image paths are fetched as
+authenticated bytes through `PlanetApi.getBytes`, because CouchDB attachments
+sit behind Basic auth and `Image.network` cannot send the header). Two
+unnumbered ports land alongside: blood-pressure validation now matches Kotlin's
+three tiers exactly (`sys` 60–300, `dis` 40–200, verified against
+`HealthExaminationActivity.validateFields`), and `PathResourceViewerScreen`
+opens a personal note's attachment by extension (`PersonalsAdapter.openResource`
+— these are not `MyLibrary` rows, so the id-based viewer cannot reach them).
+
+Phase 78 removes a duplicate `normalizeText`. Phase 75 added
+`core/utils/text_normalize.dart` with a hand-written decomposition table, whose
+header explained that Dart has no NFD normalizer — true, and already solved:
+`core/utils/text_utils.dart` had carried `normalizeText` on the `diacritic`
+package since the resource search landed, and both files documented themselves
+as the port of the same Kotlin `Utilities.normalizeText`. The two disagreed on 7
+of 15 accented samples (`Škoda` → `škoda` vs `skoda`, `Māori` → `māori` vs
+`maori`, also `Łódź`/`Çağrı`/`Ærø`), and because chat search used the new one
+while resource and course search use the old one, `skoda` found the resource
+`Škoda` but not a chat about it. The hand-written file is deleted, chat imports
+`text_utils`, and its tests move to `text_utils_test.dart` — which had no
+`normalizeText` coverage at all — with the five divergences pinned so a
+narrower reimplementation fails the suite. **When you need accent folding, use
+`text_utils.normalizeText`; do not hand-roll a table.**
+
+Phase 81 ports the challenge dialog (the December 2024 / January 2025
+campaign): a non-guest user on a participating server, between Nov 30 2024
+and Jan 16 2025, sees a dialog on dashboard load tracking three tasks
+(complete the challenge course, post five community voices, sync). The
+`user_challenge_actions` Drift table (schema v43, a preserved
+local-authority table) holds the sync-action rows;
+`ActivitiesRepository.recordSyncUserChallengeAction` writes the row when
+a manual sync starts, and `hasUserCompletedSync` counts it. The
+`ChallengeEvaluator` provider (port of `DashboardViewModel.evaluateChallengeDialog`)
+gates on guest/window/server and gathers the voice counts, course status,
+and sync state; the `ChallengeDialog` widget renders the progress bar and
+task rows and routes the action button to the course, voices, or sync
+center. The congratulations variant fires once via
+`hasShownChallengeCongratsProvider` (backed by `PlanetPrefs`). Four new
+l10n keys replace the dialog's hardcoded English strings.
+
+Phases 82–89 fill in settings, health and dashboard gaps, all Kotlin ports:
+text size and **reset app** (`SettingsActivity`), the examination detail dialog,
+the full diagnosis list with its custom-diagnosis chip cloud, the health profile
+editor, the examination exit-confirmation `PopScope`, the inactive-user
+dashboard (`rolesList.isEmpty() && userAdmin != true`), survey resume from a
+pending submission, and the resource-detail download button state. Two are worth
+knowing in detail. **Reset app** is the only destructive action in the app:
+behind a Yes/No confirmation it runs `AppDatabase.clearAllData()` (a batched
+`DELETE FROM` over `allTables`) plus `PlanetPrefs.clearAllData()`, which calls
+`_secureStorage.deleteAll()` so the password and PIN do not outlive the server
+they belong to; `onboardingComplete` is kept, and undelivered outbox rows are
+wiped along with everything else — correct here, unlike a schema bump, which is
+exactly what `localAuthorityTables` protects those rows from. **Survey resume**
+updates the existing submission row rather than inserting and keys answers
+`<submissionId>:<questionId>`, so resuming cannot produce a second submission.
+
+Phase 90 corrects two things in that batch. `saveHealthProfile` trimmed
+`emergencyContact`/`emergencyContactType` but not `emergencyContactName`,
+`specialNeeds` or `notes`, where Kotlin trims all five — so the same input
+stored differently in the two apps and a whitespace-only entry read as a real
+note. And three passages, the headline Status section among them, still called
+`ChallengeDialog` "built and called from nowhere" after Phase 81 gave it a
+caller; `CustomDropdown` genuinely is still uncalled, so only that half changed.
+
+Phase 91 gives `ResourceViewerScreen` its first tests — 1052 lines that had none,
+the port's largest untested surface for five rounds. Eight cover the load and
+missing-resource states, the title and its fallback, and every branch of the
+download prompt including the stale-offline-flag repair. **If you write tests for
+this screen, know the trap:** it resolves attachments through `ResourceFiles`
+(real `dart:io`) while a widget test's zone is fake-async, so the file futures
+never complete, the screen sits on its `CircularProgressIndicator`, and
+`pumpAndSettle` spins on that animation for its ten-minute default — a failure
+that looks exactly like a hang. Yield wall-clock time with `runAsync` and *then*
+`pump`; pumping inside `runAsync` does not work. Phase 92 closes the gap the
+four withdrawn tests were written for: the text/CSV/markdown renderers now take
+their bytes from `resourceContentReaderProvider` (a `ResourceFiles.readTextContent`
+seam) instead of calling `File.readAsString` in their own `initState`, so four
+rendering tests (plain text, the title row, the CSV table, markdown) run without a
+real read — a real file still has to exist on disk for `_getLocalFilePath` to route
+the screen into the viewer, and that file write runs inside `runAsync`. The
+video/PDF/WebView renderers need platform views no widget test can serve.
+
+Phase 95 gives `MyHealthScreen` its first 13 tests — 955 lines, the largest
+untested hand-written surface after the viewer — and they found five defects,
+four of which failed on the pre-fix code. The screen hand-rolled three helpers
+that `ui/components/profile_avatar.dart` already provides, and its copies were
+broken: the avatar passed `users.userImage` to `NetworkImage`, but that column
+holds a CouchDB **attachment name** (`UserMapper` says so where it writes it),
+not a URL, and the attachment is behind Basic auth that `Image.network` cannot
+send — so the photo could never load; and `_getInitials` did `parts[0][0]` on
+`name.split(' ')` behind an `if (parts.isEmpty)` guard that is **dead code**,
+since `''.split(' ')` is `['']`. Because the display-name fallback returns
+`user.name` untrimmed, a synced `"name": " jane "` with no first/last name threw
+`RangeError` out of `build` and took the screen down. **When you need a user's
+avatar, name, or initials, use `ProfileAvatar` / `displayName`; do not hand-roll
+them** — same shape as the Phase 78 `normalizeText` duplicate. The other three:
+a hardcoded `'Unknown'` in a file that already reads `l10n.unknown`; a
+`RefreshIndicator.onRefresh` that was an empty async body (Kotlin has no
+`SwipeRefreshLayout` here, so the gesture is the port's own and had never been
+wired); and a 140px examination-history strip that overflowed by 8px on a card
+carrying date, examiner, temperature, pulse, blood pressure *and* the has-info
+icon. Wiring the refresh exposed a sixth: the sync button called
+`ref.invalidate(patientDetailProvider)`, which reruns `_loadInitial` and
+resolves the **logged-in** user, so a health provider silently lost their
+selected patient on every sync — hence `PatientDetailNotifier.refresh()`.
+**A note for writing tests here:** the body is a `ListView(children: [...])`,
+which builds child widgets eagerly but only *mounts* those in the viewport, and
+`find.text` searches the element tree — so a card below the 600px test fold
+reports "Found 0 widgets" for content that renders fine on a device. Scroll
+first. The same phase merged 26 master commits; they are all "smoother X"
+refactors, and the two that do carry behaviour have no port counterpart (the
+PDF word-wrap the port delegates to `package:pdf`, and an image-viewer
+http/https branch `course_markdown.dart` already has). **Phase 96 audited that
+same batch independently and went further**: reading `ResourcesSearchUtils`
+as *the* resource search rather than a renamed helper, it found the ranked
+search gap this pass missed. Two audits of one batch disagreeing on what it
+implies is the useful lesson — a diff that only renames a file can still point
+at a behaviour the port never had.
+
+`TakeExamScreen` has its first tests: 16 covering the question renderers, the
+counter and title fallback, Next/Previous with the per-question answer map,
+grading and persistence of an attempt, the result dialog and its pop, the exit
+prompt, and all three verification-photo branches. They found two defects, both
+demonstrated failing on the pre-fix code.
+
+**The verification photo never reached CouchDB.** `_captureVerificationPhoto`
+wrote the JPEG with `SubmitPhotosFiles.write(photoId: submissionId, …)`, but
+`SubmitPhotosUploader._uploadAttachment` reads it back with
+`SubmitPhotosFiles.existingFileFor(photoId: row.itemId, …)` — the
+**`submit_photos` row's** id, a different sha1 (`photo:<submission>:<exam>:…`
+against `<user>:<timestamp>:<exam>`). The lookup therefore missed on every
+capture, `_uploadAttachment` returned early on its "a missing file is a no-op,
+not an error" branch, and the document uploaded without the photo a certified
+course exists to collect. Nothing failed loudly. `SubmissionsRepository`
+now exposes `photoIdFor(…)`, the derivation `addSubmissionPhoto` already used
+internally, so the screen mints the row id first, writes the bytes under it, and
+passes the same `capturedAt` back in. **When bytes and a row have to find each
+other later, one side must derive the key and hand it to the other** — the same
+shape as the Phase 74 reactions round trip, where each half passed alone and
+only the pair was wrong.
+
+**Submitting could silently discard the attempt.** `_submitExam` read the user
+as `ref.read(sessionProvider).valueOrNull`, which is `null` until something else
+resolves that provider — and this screen never watches it. The early
+`if (user == null …) return` then dropped the graded answers with no dialog, no
+snackbar and no record. In the shipping app the router's
+`ref.listen(sessionProvider, …)` keeps it resolved, so the bug is latent there;
+it is real for any caller that does not, and it made every submit path
+untestable in isolation. The screen now awaits `sessionProvider.future`, which
+is what Kotlin does (`initializeExamData` resolves its own
+`userSessionManager.getUserModel()` before the exam is usable).
+
+**A note for writing tests here:** never `pumpAndSettle` after tapping Submit.
+While `_isSubmitting` is true the button holds a `CircularProgressIndicator`,
+and that indefinite animation spins `pumpAndSettle` to its ten-minute default —
+the same failure-that-looks-like-a-hang as the resource viewer's. The photo path
+additionally needs generous `runAsync` rounds: `SubmitPhotosFiles` is real
+`dart:io`, and the write plus the row that follows it takes noticeably more
+wall-clock time than the drift reads elsewhere in the file.
+
+Also worth recording, because it is easy to assume otherwise: the exam screen
+does **not** carry the mandatory-survey block. That check lives in
+`take_course_screen.dart`'s `_onFinish`, gated on `MANDATORY_SURVEY_COURSE_ID`,
+which is where the Kotlin has it too (`TakeCourseFragment.onFinishStep`).
+Neither `ExamTakingFragment` nor `BaseExamFragment` looks at surveys at all.
+
+Phase 100 gives `TakeExamScreen` its first coverage (16 tests) and closes two
+defects they found. **The certified-course verification photo never uploaded**:
+the screen wrote the JPEG under the *submission* id while
+`SubmitPhotosUploader` reads it back with
+`SubmitPhotosFiles.existingFileFor(photoId: row.itemId)` — the `submit_photos`
+row id, a sha1 of `'photo:$submissionId:$examId:$courseId:$capturedAtMillis'`.
+The lookup missed on every capture and the attachment step took its
+"a missing file is a no-op" branch, so the document uploaded, the photo stayed
+on the device, and nothing logged an error. `SubmissionsRepository.photoIdFor`
+now exposes the derivation, and the caller mints the id, writes the bytes under
+it, and passes the **same `capturedAt`** back in — the timestamp is inside the
+hash, so a second `DateTime.now()` would re-open the gap. **Bytes on disk and
+the row that points at them need one key.** Second, `_submitExam` read the user
+with `ref.read(sessionProvider).valueOrNull` on a screen that never watches
+that provider, so it was null until something else resolved it and the early
+return discarded the graded attempt with no dialog, no snackbar and no row —
+latent only because the router holds a `ref.listen` on the session. **A
+provider a screen reads but never watches is null; await its `.future`.** On
+harvest that fix needed amending: the `await` sat outside the method's `try`,
+and a future can reject where `valueOrNull` could not, so a rejecting session
+reproduced the same silence from a new trigger.
+
+Phases 102–105 ran as **parallel lanes**: sibling sessions on their own
+branches, merged by an integrator session. The pattern works — 33 defects in one
+round — but read *Running parallel lanes* below before starting one, because two
+of this round's four problems were caused by the parallelism rather than found by
+it.
+
+Phase 102 gives `add_resource_screen` and `public_survey_screen` their first
+tests (33) and closes seven defects. **The edit screen crashed on ordinary
+server data**: `_loadExistingResource` prefilled `_language`/`_openWith`/
+`_mediaType`/`_resourceType` and handed them to `DropdownButtonFormField`, which
+asserts a non-null value matches **exactly one** item — but the option lists are
+the fixed `strings.xml` arrays while a synced row carries whatever the server
+wrote (a lowercase `mediaType`, an ISO language code). Debug: a hard assertion
+out of `build`; release: the assert is stripped and the spinner silently shows
+its hint. `_DropdownField` now drops an unknown value, as `setupHintSpinner`
+does. Also: `saveLocalResource` wrote `userId: [""]` where `MyLibrary.setUserId`
+leaves the list empty, and `[""]` fails the My Library predicate *and* passes
+the catalog one — so a just-created resource appeared in the public catalog and
+nowhere in the user's own library, the inverse of both Kotlin views. And the
+add-resource button was gated on `!_selecting && !shelfOnly` where
+`ResourcesFragment` uses `isMyCourseLib`, which *is* `shelfOnly` — the
+affordance was missing from My Library and offered in the catalog.
+
+Phase 103 gives `edit_achievement_screen` and `user_information_screen` their
+first tests (44) and closes eighteen defects. **The respondent profile used keys
+Planet does not read**: `UserSurveyProfile.toJson()` omits an empty field rather
+than sending `""`, sends a picked date as `birthDate` and a year as an `age`,
+and always includes `betaEnabled`; the port wrote `dob`, `birthYear`, empty
+strings and no `betaEnabled`, so a team survey uploaded a profile the server
+cannot parse. The public path had been *partly* rescued by a `_sanitizeRespondent`
+coercion at send time — **a sanitizer on one of two upload paths is evidence the
+producer is wrong, not that the paths differ.** Also: the additional-fields
+toggle was gated on a negated parameter read directly, so the one live caller
+rendered the year-of-birth form with no way to reach the other fields —
+**a negated parameter negates every rule that reads it, not just the one
+obviously about initial state.**
+
+Phase 104 fixes `SurveyMapper.choices`, which put choice objects through
+`JsonUtils.getStringList` and stored the Dart literal `{id: water, text: Water}`
+— losing the id an answer records *and* the label, for every consumer.
+`take_survey_screen` drew that literal as its checkbox label and stored it as
+the answer. `SurveyQuestions.choices` now uses the port's own
+`ExamChoiceListConverter`, as `ExamQuestions.choices` already did. **A Drift
+converter swap needs no schema bump** — the generated column is byte-identical,
+so there is no migration step to write; `tables.dart` documents this at the
+column. Rows an older build wrote decode as a choice whose text is that literal
+until the next sync rewrites them.
+
+Phase 105 ports the three achievement hints Kotlin shows (the port had labelled
+them `noAchievementAdded`, a *different* string, losing the guiding questions),
+gives `health_provider` its first tests, and logs the identity defect Phase 107
+takes on.
+
+**Phase 106's regression is the one to learn from.** Phase 103 gated the
+public-survey POST on the profile screen popping `true`, reasoning that Kotlin
+has nothing `complete` to upload when that dialog is cancelled. Both halves of
+that premise are false: `saveExamAnswer` marks the sheet `complete` on the last
+question *before* the dialog opens (`SubmissionsRepositoryImpl.kt:550`), Cancel
+writes nothing (`UserInformationFragment.kt:112-118`), and
+`PublicSurveyActivity` uploads from `onFragmentDetached` (`:74-80`) with no
+save-vs-cancel test. The `lastUpdateTime < launchTime` check (`:123`) is a
+**staleness filter** for an earlier run of the same survey, not a cancellation
+gate; declining only omits the `user` object from the body. The gate lost the
+answers permanently — `PublicSurveyUploader.queue` had that one caller and
+nothing rescans unsent submissions. Reverted, and both rationales that read
+`pop(false)` as "do not post" are corrected in place so the mistake is not
+re-seeded. **A Kotlin citation is not a Kotlin reading**: this one named the
+right function and misread what it does, and only a `parity-auditor` pass at
+`effort: max` caught it.
+
+**The `sessionProvider` shape is now a rule, not an anecdote.** Four independent
+instances across unrelated files — `take_exam_screen` (Phase 100),
+`add_resource_screen` (102), `public_survey_screen`'s `_submit` and `_leave`,
+and `take_survey_screen` (104/105, found separately by two lanes in one round).
+Every one: a screen calls `ref.read(someProvider).valueOrNull` without ever
+watching it, gets `null` while it loads, and silently takes a failure branch —
+latent in the app only because the router holds a `ref.listen`. **A provider a
+screen reads but never watches is null. Await its `.future`, and put the
+`await` inside the enclosing `try`, because a future can reject where
+`valueOrNull` could not.** When you touch a screen, grep it for
+`.valueOrNull` before anything else.
+
+Phases 106–121 ran as parallel lanes throughout, three or four at a time, and
+the pattern held: **the highest-yield source of work is the previous round's
+"reported, not fixed" list.** A lane that finds something outside its file set
+and writes it down precisely is handing the next lane a target rather than a
+mood, and four consecutive rounds were briefed almost entirely from those lists.
+
+The defects worth remembering, by class rather than by phase:
+
+**Data that never arrives.** Phase 113's unreachable exam screen, Phase 116's
+four more unreachable screens, Phase 119's five missing sync walks. Covered in
+*Reachability* above; it is the class that green tests cannot see.
+
+**A writer and a reader disagreeing about a key**, where each half passes its own
+test and only the pair is wrong. Phase 74's reactions (written nested, read at
+top level), Phase 100's verification photo (written under the submission id, read
+back under the row id), Phase 116's community feed identifier, Phase 120's
+submission `parent.questions`. **Test the pair, not the halves.**
+
+**A sync-in rewriting a locally-authored column.** Phase 56 (a null-returning
+fetch wiping stored credentials and locking a user out of offline login), Phase
+74 (a pull erasing the user's own reaction), Phase 98 (a re-pull undoing a read
+notification). If a table carries local-authority state, prove the round trip
+preserves it. Relatedly, `deleteNotIn` after a *partial* walk destroys data —
+Phase 52 fixed that for resources, and Phase 116 found the resources walk
+clearing My Library on every sync anyway.
+
+**Localisation.** Phase 109 added `test/l10n/placeholder_integrity_test.dart`
+after an external translator tokenised ICU placeholders and never restored them,
+leaving Arabic rendering `التقييم: __0____ من 5` in 38 strings — of which
+`flutter analyze` caught exactly one, as an unused local variable. Phases 114 and
+118 then recovered 431 human translations from the Kotlin `values-*/strings.xml`
+and deleted the 899 `[Language] …` placeholders. Phase 121 found the whole class
+those passes were blind to: `tool/arb_from_strings_xml.dart` skipped
+placeholder-carrying keys outright, so every Kotlin string with a `%s` or `%1$s`
+had a human translation the port structurally could not use. Four of them
+*reorder* their placeholders (`ne/download_progress` is
+`%2$d मध्ये %1$d …`), so a left-to-right substitution would have printed the
+numbers swapped, silently, in a sentence.
+
+### Running parallel lanes
+
+Sibling sessions on their own branches, merged by an integrator. What this round
+established, at the cost of a regression and five failing tests:
+
+- **One file, one owner.** Three rounds running, two lanes edited
+  `public_survey_screen.dart`. Git merged them cleanly every time, because the
+  hunks were textually disjoint — and once, one lane had added a *precondition*
+  to the code path the other's tests drove. **Hunk positions are not evidence
+  that two changes compose.** Partition by file, name the other lanes' files in
+  each brief, and tell a lane to stop and report rather than reach outside its
+  set.
+- **Front-load the brief.** Everything that went wrong was something learned
+  *after* spawning, and there is no session-to-session messaging here:
+  `SendMessage` cannot address these sessions and `ListAgents` lists only
+  in-process subagents. The only inbound channel is a comment on a PR the lane
+  subscribed itself to, so have each lane open a draft PR and call
+  `subscribe_pr_activity` as its first action.
+- **Pin the SDK.** `.claude/hooks/session-start.sh` provisions Flutter 3.44.8 —
+  the version `flutter.yml` pins — and regenerates the gitignored sources. Two
+  red CI runs came from a session formatting with 3.47.2, whose `dart format`
+  reformats code 3.44.8 leaves alone; `--set-exit-if-changed` then rejects a
+  change that looked correct locally. Never install or upgrade a lane's SDK.
+- **Re-run codegen after merging a Drift change.** Generated sources are
+  gitignored, so a merge that alters a table or converter leaves them stale and
+  `flutter analyze` reports type errors that are artefacts, not defects — 14 of
+  them, in one case. `dart run build_runner build` *then* analyze.
+- **Integration is the bottleneck, not lane capacity.** Each merge is codegen
+  plus the full suite plus diff review, serially, and collision pairs grow
+  quadratically. Verify a candidate lane's import graph is disjoint before
+  adding it.
 
 ### Documentation Map
 
@@ -25,7 +791,19 @@
 | `docs/DOMAIN_MODEL.md` | You need to understand the learning domain — roles, courses, teams, surveys, sync concepts |
 | `docs/CODE_STYLE_GUIDE.md` | You're writing code — naming, imports, coroutines, Room, Hilt, UI conventions |
 | `docs/TESTING.md` | You're writing or fixing tests — patterns to copy per layer |
+| `docs/kotlin-to-flutter-migration.md` | You're working on the Flutter port in `flutter/` — scope, technology mapping, ported slices, open problems |
+| `docs/PROGRESS_RATING.md` | You're reporting how far along a long port/rewrite is — the *method* behind the Migration progress table above: which dimensions to score, the eight rules that stop a summary drifting, and why breadth must never be reported under the word "parity". Project-agnostic; the live figure stays in this file |
 | `agents-summoning` skill — `.agents/skills/agents-summoning/SKILL.md` (or the `agents-summoning@summoning` plugin in a Claude Code session) | You're summoning another AI agent (`@coderabbitai` `@codex` `@copilot` `@devin` `@jules` `@openhands` `@dependabot`) on a PR or issue — who answers, how fast, with what side effects, and why a summon went silent. Dated receipts in the same skill's `NOTES.md`; connection checklists in its `references/connecting.md` |
+| `.claude/agents/*.md` | You're delegating Flutter-port work to a subagent — `parity-auditor` (is a slice really at parity?), `port-implementer` (write a slice), `harvest-triage` (which upstream commits the port must follow), `flutter-ci-green` (get the gate passing). Each pins its own model and effort |
+
+Reach for the four `.claude/agents` subagents by name when the work fits one: they carry the
+port's conventions, and each pins its own model and effort so a session need not restate either.
+`harvest-triage` is the cheap one — drop it to `model: haiku` if a batch gets large. Parity
+judgements go to `parity-auditor` at `effort: max`, never to a cheaper agent; it is where the
+drift traps and the broken round trips have actually been found. One harness caveat: a session reads
+`.claude/agents/` at **startup**, so an agent file added or pulled mid-session is not callable
+until the session restarts — `Agent type '<name>' not found` with only the built-ins listed is
+that, not a malformed definition.
 
 Reviewers speak; doers act — an unleashed doer mention (`@openhands`, `@devin`,
 `@copilot`) defaults to commits on your branch, so add "comment only" when that
@@ -360,6 +1138,40 @@ There is no generic base repository; each implementation talks to its Room DAO(s
 # Install and run on a device/emulator
 ./gradlew installDefaultDebug && adb shell am start -n org.ole.planet.myplanet/.ui.onboarding.OnboardingActivity
 ```
+
+### Flutter port toolchain
+
+**Current Drift `schemaVersion` is 45** (`flutter/lib/data/local/app_database.dart`).
+Bump it only when you have been allocated a number — parallel lanes must not each
+pick one, and a bump discards unsynced local writes on any device that has not
+synced, which is what `localAuthorityTables` and the hand-written
+`_addColumnIfMissing` step exist to limit.
+
+`.claude/hooks/session-start.sh` (a `SessionStart` hook, registered in
+`.claude/settings.json`) provisions `flutter/` on remote sessions: Flutter
+**3.44.8** — kept in step with `flutter-version:` in
+`.github/workflows/flutter.yml` — then `flutter pub get`,
+`dart run build_runner build` and `flutter gen-l10n`.
+
+Both halves matter. **The version is load-bearing**: `dart format` output
+differs between Dart releases and CI gates on `--set-exit-if-changed`, so a
+session running a newer SDK produces a diff CI rejects even though the code
+looks right locally. **And generated sources are gitignored**, so a fresh
+checkout cannot `analyze` or `test` at all until codegen has run. The hook
+reuses an SDK the image already carries before spending a clone (disk is a
+fixed per-session allowance) and retargets an existing checkout to the tag
+rather than re-downloading. It exits immediately unless `CLAUDE_CODE_REMOTE`
+is set, so local checkouts keep their own toolchain.
+
+```bash
+cd flutter
+dart format --output=none --set-exit-if-changed lib test   # the gate CI runs
+flutter analyze
+flutter test
+```
+
+If a version bump is ever needed, change it in `flutter.yml` **and** the hook;
+nothing yet pins the two together automatically.
 
 ### Branch Strategy
 
@@ -734,6 +1546,6 @@ Note: SYSTEM_ALERT_WINDOW is **not** declared (removed at some point; older docs
 
 ---
 
-**Last Updated**: 2026-08-07
-**Version**: 0.63.42
+**Last Updated**: 2026-09-02
+**Version**: 0.69.18
 **Maintainer**: Open Learning Exchange

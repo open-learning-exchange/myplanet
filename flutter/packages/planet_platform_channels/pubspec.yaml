@@ -1,0 +1,25 @@
+name: planet_platform_channels
+description: >-
+  In-tree plugin carrying the disk_stats and device_stats method channels, so
+  they are registered on every engine (including headless WorkManager ones)
+  instead of only the Activity's.
+version: 0.0.1
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.11.0 <4.0.0'
+  flutter: '>=3.3.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: org.ole.planet.myplanet.planet_platform_channels
+        pluginClass: PlanetPlatformChannelsPlugin

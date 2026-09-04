@@ -5,9 +5,17 @@ on:
     branches:
       - '**'
       - '!master'
+# Mirrors the `paths` filter in flutter.yml. The Flutter port under
+    # flutter/ cannot affect a Gradle build, so a push that touches only it
+    # (or documentation) skips this workflow instead of spending ~10 minutes
+    # rebuilding both Kotlin flavours. A push that touches app/, gradle/ or
+    # any other path still builds as before, including a mixed push.
     paths-ignore:
+      - 'flutter/**'
       - 'docs/**'
+      - '**.md'
       - '**/*.md'
+      - '.github/workflows/flutter.yml'
 
 permissions:
   contents: read

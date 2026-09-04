@@ -1,0 +1,2148 @@
+{
+  "@@locale": "ar",
+  "appTitle": "myPlanet",
+  "serverConfigurationTitle": "الاتصال بخادم الكوكب",
+  "@serverConfigurationTitle": {
+    "x-mt": true
+  },
+  "serverUrlLabel": "عنوان URL للخادم",
+  "@serverUrlLabel": {
+    "x-mt": true
+  },
+  "serverUrlHint": "https://planet.example.org",
+  "@serverUrlHint": {
+    "x-mt": true
+  },
+  "serverPinLabel": "رمز الخادم",
+  "connect": "يتصل",
+  "@connect": {
+    "x-mt": true
+  },
+  "serverUrlNotConfigured": "لم يتم تكوين عنوان URL للخادم",
+  "deviceCouldNotReachLocalServer": "لم يتمكن الجهاز من الوصول إلى الخادم. تحقق مما إذا كنت متصلاً بشبكة Wi-Fi الصحيحة للخادم المحلي (المجتمع).",
+  "deviceCouldNotReachNationServer": "لم يتمكن الجهاز من الوصول إلى الخادم. تحقق مما إذا كنت متصلاً بالإنترنت وحاول مرة أخرى.",
+  "connectionFailed": "فشل الاتصال!",
+  "changeServer": "تغيير الخادم",
+  "@changeServer": {
+    "x-mt": true
+  },
+  "login": "تسجيل الدخول",
+  "name": "الاسم",
+  "password": "كلمة المرور",
+  "signInOffline": "تسجيل الدخول حاليا",
+  "@signInOffline": {
+    "x-mt": true
+  },
+  "invalidCredentials": "الاسم أو كلمة المرور غير صحيحة.",
+  "@invalidCredentials": {
+    "x-mt": true
+  },
+  "userNotFound": "لم يتم العثور على المستخدم.",
+  "@userNotFound": {
+    "x-mt": true
+  },
+  "missingAuthData": "استجابة الخادم تفتقد بيانات المصادقة.",
+  "@missingAuthData": {
+    "x-mt": true
+  },
+  "serverError": "خطأ في الخادم. يرجى المحاولة مرة أخرى لاحقا.",
+  "@serverError": {
+    "x-mt": true
+  },
+  "networkError": "الخادم غير قابل للوصول. تحقق من اتصالك بالإنترنت.",
+  "@networkError": {
+    "x-mt": true
+  },
+  "emptyCredentials": "اسم المستخدم وكلمة المرور مطلوبة.",
+  "@emptyCredentials": {
+    "x-mt": true
+  },
+  "notAManager": "هذا الحساب ليس مديرا.",
+  "@notAManager": {
+    "x-mt": true
+  },
+  "savedAccounts": "الحسابات المحفوظة",
+  "@savedAccounts": {
+    "x-mt": true
+  },
+  "resources": "موارد",
+  "search": "بحث",
+  "sync": "مزامنة",
+  "cancel": "إلغاء",
+  "settings": "الإعدادات",
+  "backgroundSync": "مزامنة الخلفية",
+  "@backgroundSync": {
+    "x-mt": true
+  },
+  "backgroundSyncDescription": "إرسال التغييرات المعلقة وتحديث بيانات التعلم أثناء إغلاق التطبيق",
+  "@backgroundSyncDescription": {
+    "x-mt": true
+  },
+  "syncFrequency": "تردد المزامنة",
+  "@syncFrequency": {
+    "x-mt": true
+  },
+  "every15Minutes": "كل 15 دقيقة",
+  "@every15Minutes": {
+    "x-mt": true
+  },
+  "every30Minutes": "كل 30 دقيقة",
+  "@every30Minutes": {
+    "x-mt": true
+  },
+  "everyHour": "كل ساعة",
+  "@everyHour": {
+    "x-mt": true
+  },
+  "every6Hours": "كل 6 ساعات",
+  "@every6Hours": {
+    "x-mt": true
+  },
+  "lastBackgroundRun": "آخر تشغيل في الخلفية",
+  "@lastBackgroundRun": {
+    "x-mt": true
+  },
+  "backgroundNeverRun": "لم يتم تسجيل أي تشغيل في الخلفية حتى الآن",
+  "@backgroundNeverRun": {
+    "x-mt": true
+  },
+  "backgroundSucceeded": "تم الانتهاء بنجاح",
+  "@backgroundSucceeded": {
+    "x-mt": true
+  },
+  "backgroundRetryRequested": "غير مكتمل - سيعيد Android المحاولة",
+  "@backgroundRetryRequested": {
+    "x-mt": true
+  },
+  "backgroundSkipped": "تم تخطيه",
+  "@backgroundSkipped": {
+    "x-mt": true
+  },
+  "backgroundUnknown": "نتيجة غير معروفة",
+  "@backgroundUnknown": {
+    "x-mt": true
+  },
+  "backgroundScheduleFailed": "تم حفظ التفضيل، لكن لم يتمكن Android من تحديث الجدول. ستتم إعادة المحاولة عند إعادة تشغيل التطبيق.",
+  "@backgroundScheduleFailed": {
+    "x-mt": true
+  },
+  "logOut": "تسجيل الخروج",
+  "@logOut": {
+    "x-mt": true
+  },
+  "noDataAvailable": "لا توجد بيانات متاحة",
+  "ok": "موافق",
+  "home": "الرئيسية",
+  "moreOptions": "المزيد من الخيارات",
+  "@moreOptions": {
+    "x-mt": true
+  },
+  "appTheme": "سمة التطبيق",
+  "aiChat": "AI Chat",
+  "syncNow": "مزامنة الآن",
+  "syncCenter": "مركز المزامنة",
+  "@syncCenter": {
+    "x-mt": true
+  },
+  "syncAll": "مزامنة الكل",
+  "@syncAll": {
+    "x-mt": true
+  },
+  "syncing": "جارٍ المزامنة…",
+  "waiting": "منتظر",
+  "@waiting": {
+    "x-mt": true
+  },
+  "events": "الأحداث",
+  "@events": {
+    "x-mt": true
+  },
+  "surveys": "الاستبيانات",
+  "syncReady": "جاهز للمزامنة",
+  "@syncReady": {
+    "x-mt": true
+  },
+  "syncForegroundNotice": "أبقِ myPlanet مفتوحًا حتى تنتهي المزامنة. تظل عمليات الكتابة المعلقة دون اتصال دائمة في حالة انقطاع الاتصال.",
+  "@syncForegroundNotice": {
+    "x-mt": true
+  },
+  "syncProgress": "مزامنة {completed} من {total} المناطق",
+  "@syncProgress": {
+    "x-mt": true
+  },
+  "itemsSynced": "{count, plural, =0{Up to date} =1{1 item synced} other{{count} items synced}}",
+  "@itemsSynced": {
+    "x-mt": true
+  },
+  "syncResourcesDescription": "قم بتحديث مكتبة التعلم دون اتصال بالإنترنت",
+  "@syncResourcesDescription": {
+    "x-mt": true
+  },
+  "syncCoursesDescription": "قم بتحديث الدورات والخطوات وعضوية الرف",
+  "@syncCoursesDescription": {
+    "x-mt": true
+  },
+  "syncTeamsDescription": "قم بتحديث الفرق والعضويات وبيانات المؤسسة",
+  "@syncTeamsDescription": {
+    "x-mt": true
+  },
+  "syncEventsDescription": "تحديث الاجتماعات والحضور",
+  "@syncEventsDescription": {
+    "x-mt": true
+  },
+  "syncSurveysDescription": "تحديث نماذج المسح والواجبات",
+  "@syncSurveysDescription": {
+    "x-mt": true
+  },
+  "syncVoicesDescription": "تحديث مناقشات المجتمع والردود",
+  "@syncVoicesDescription": {
+    "x-mt": true
+  },
+  "syncFeedbackDescription": "تحديث المواضيع ردود الفعل والردود",
+  "@syncFeedbackDescription": {
+    "x-mt": true
+  },
+  "syncChatDescription": "قم بتحديث سجل محادثات الذكاء الاصطناعي",
+  "@syncChatDescription": {
+    "x-mt": true
+  },
+  "syncHealthDescription": "تحديث السجلات الصحية المشفرة",
+  "@syncHealthDescription": {
+    "x-mt": true
+  },
+  "syncActivitiesDescription": "تحديث سجل تسجيل الدخول من الخادم",
+  "@syncActivitiesDescription": {
+    "x-mt": true
+  },
+  "syncNotificationsDescription": "قم بتحديث إشعارات الخادم وتحميل حالات القراءة",
+  "@syncNotificationsDescription": {
+    "x-mt": true
+  },
+  "homeMyLibrary": "مكتبتي",
+  "homeMyCourses": "دوراتي",
+  "homeMyTeams": "فرقي",
+  "homeMyLife": "حياتي",
+  "noResourcesAddedYet": "يمكنك إضافة موارد",
+  "noCoursesJoinedYet": "يمكنك الانضمام إلى الدورات",
+  "noTeamsJoinedYet": "يمكنك الانضمام إلى فريق",
+  "subjectLabelMathematics": "الرياضيات",
+  "subjectLabelLiteracy": "القراءة والكتابة",
+  "subjectLabelHealth": "الصحة",
+  "subjectLabelSocialStudies": "الدراسات الاجتماعية",
+  "subjectLabelTechnology": "التكنولوجيا",
+  "surveysToComplete": "You have {count, plural, =1{1 survey} other{{count} surveys}} to complete",
+  "@surveysToComplete": {
+    "x-mt": true
+  },
+  "neverSynced": "لم يتم المزامنة أبدا",
+  "justNow": "الآن",
+  "minutesAgo": "{count, plural, =1{1 minute ago} other{{count} minutes ago}}",
+  "@minutesAgo": {
+    "x-mt": true
+  },
+  "hoursAgo": "{count, plural, =1{1 hour ago} other{{count} hours ago}}",
+  "@hoursAgo": {
+    "x-mt": true
+  },
+  "daysAgo": "{count, plural, =1{1 day ago} other{{count} days ago}}",
+  "@daysAgo": {
+    "x-mt": true
+  },
+  "syncedResources": "{count, plural, =0{No resources synced} =1{1 resource synced} other{{count} resources synced}}",
+  "@syncedResources": {
+    "x-mt": true
+  },
+  "availableOffline": "متاح حاليا",
+  "@availableOffline": {
+    "x-mt": true
+  },
+  "courses": "الدورات",
+  "myCourses": "دوراتي",
+  "allCourses": "جميع الدورات",
+  "@allCourses": {
+    "x-mt": true
+  },
+  "courseSteps": "{count, plural, =0{No steps} =1{1 step} other{{count} steps}}",
+  "@courseSteps": {
+    "x-mt": true
+  },
+  "resourcesInStep": "{count, plural, =0{No resources} =1{1 resource} other{{count} resources}}",
+  "@resourcesInStep": {
+    "x-mt": true
+  },
+  "gradeLevel": "مستوى الصف",
+  "subjectLevel": "موضوع",
+  "@subjectLevel": {
+    "x-mt": true
+  },
+  "allLevels": "الكل",
+  "clearFilters": "مسح المرشحات",
+  "@clearFilters": {
+    "x-mt": true
+  },
+  "joinCourse": "أضف إلى دوراتي",
+  "@joinCourse": {
+    "x-mt": true
+  },
+  "leaveCourse": "إزالة من دوراتي",
+  "@leaveCourse": {
+    "x-mt": true
+  },
+  "syncedCourses": "{count, plural, =0{No courses synced} =1{1 course synced} other{{count} courses synced}}",
+  "@syncedCourses": {
+    "x-mt": true
+  },
+  "courseNotFound": "لم يتم العثور على الدورة",
+  "@courseNotFound": {
+    "x-mt": true
+  },
+  "calendar": "التقويم",
+  "profile": "الملف الشخصي",
+  "profileUnavailable": "الملف الشخصي غير متاح",
+  "@profileUnavailable": {
+    "x-mt": true
+  },
+  "username": "اسم المستخدم",
+  "email": "البريد الإلكتروني",
+  "phone": "هاتف",
+  "@phone": {
+    "x-mt": true
+  },
+  "level": "مستوى",
+  "levels": "المستويات",
+  "@levels": {
+    "x-mt": true
+  },
+  "language": "اللغة",
+  "languages": "اللغات",
+  "gender": "الجنس",
+  "dateOfBirth": "تاريخ الميلاد",
+  "planetCode": "كود الكوكب",
+  "@planetCode": {
+    "x-mt": true
+  },
+  "accountDetails": "تفاصيل الحساب",
+  "@accountDetails": {
+    "x-mt": true
+  },
+  "noProfileDetails": "لا توجد تفاصيل الملف الشخصي متاحة.",
+  "@noProfileDetails": {
+    "x-mt": true
+  },
+  "editProfile": "تحرير الملف الشخصي",
+  "changePhoto": "تغيير الصورة الشخصية",
+  "@changePhoto": {
+    "x-mt": true
+  },
+  "photoUpdated": "تم تحديث صورة الملف الشخصي",
+  "@photoUpdated": {
+    "x-mt": true
+  },
+  "photoUpdateFailed": "لا يمكن حفظ الصورة",
+  "@photoUpdateFailed": {
+    "x-mt": true
+  },
+  "firstName": "الاسم الأول",
+  "middleName": "الاسم الأوسط",
+  "lastName": "الاسم الأخير",
+  "save": "حفظ",
+  "profileSaved": "تم حفظ الملف الشخصي على هذا الجهاز",
+  "@profileSaved": {
+    "x-mt": true
+  },
+  "invalidEmail": "أدخل عنوان بريد إلكتروني صالحًا",
+  "@invalidEmail": {
+    "x-mt": true
+  },
+  "appearance": "مظهر",
+  "@appearance": {
+    "x-mt": true
+  },
+  "systemTheme": "استخدام موضوع الجهاز",
+  "@systemTheme": {
+    "x-mt": true
+  },
+  "lightTheme": "فاتح",
+  "darkTheme": "داكن",
+  "server": "الخادم",
+  "@server": {
+    "x-mt": true
+  },
+  "serverUrl": "عنوان URL للخادم",
+  "@serverUrl": {
+    "x-mt": true
+  },
+  "notConfigured": "لم يتم تكوينه",
+  "@notConfigured": {
+    "x-mt": true
+  },
+  "communityCode": "رمز المجتمع",
+  "@communityCode": {
+    "x-mt": true
+  },
+  "about": "حول",
+  "offlineLearningApp": "التعلم دون اتصال بالإنترنت مع Planet",
+  "@offlineLearningApp": {
+    "x-mt": true
+  },
+  "learningTools": "أدوات التعلم",
+  "@learningTools": {
+    "x-mt": true
+  },
+  "dictionary": "القاموس",
+  "dictionaryDescription": "البحث في التعريفات التي تم تنزيلها في وضع عدم الاتصال",
+  "@dictionaryDescription": {
+    "x-mt": true
+  },
+  "dictionaryUnavailable": "القاموس غير متاح",
+  "@dictionaryUnavailable": {
+    "x-mt": true
+  },
+  "searchDictionary": "ابحث عن كلمة",
+  "@searchDictionary": {
+    "x-mt": true
+  },
+  "dictionaryWordCount": "{count, plural, =0{No downloaded words} =1{1 downloaded word} other{{count} downloaded words}}",
+  "@dictionaryWordCount": {
+    "x-mt": true
+  },
+  "downloadDictionary": "تحميل القاموس",
+  "@downloadDictionary": {
+    "x-mt": true
+  },
+  "retryDownload": "أعد محاولة التنزيل",
+  "@retryDownload": {
+    "x-mt": true
+  },
+  "dictionaryDownloadFailed": "لا يمكن تحميل القاموس. لم يتم تغيير بياناتك الحالية دون اتصال بالإنترنت.",
+  "@dictionaryDownloadFailed": {
+    "x-mt": true
+  },
+  "wordNotFound": "الكلمة غير متوفرة في القاموس غير المتصل",
+  "@wordNotFound": {
+    "x-mt": true
+  },
+  "meaning": "معنى",
+  "@meaning": {
+    "x-mt": true
+  },
+  "synonyms": "المرادفات",
+  "@synonyms": {
+    "x-mt": true
+  },
+  "antonyms": "المتضادات",
+  "@antonyms": {
+    "x-mt": true
+  },
+  "notifications": "إشعارات",
+  "@notifications": {
+    "x-mt": true
+  },
+  "notification": "إشعار",
+  "@notification": {
+    "x-mt": true
+  },
+  "notificationsUnavailable": "الإخطارات غير متاحة",
+  "@notificationsUnavailable": {
+    "x-mt": true
+  },
+  "markAllRead": "وضع علامة على كل قراءة",
+  "@markAllRead": {
+    "x-mt": true
+  },
+  "all": "الكل",
+  "read": "يقرأ",
+  "@read": {
+    "x-mt": true
+  },
+  "unreadCount": "غير مقروءة (_{count})",
+  "@unreadCount": {
+    "x-mt": true
+  },
+  "noNotifications": "لا توجد إشعارات",
+  "noUnreadNotifications": "لا توجد إشعارات غير مقروءة",
+  "noReadNotifications": "لا توجد إشعارات مقروءة",
+  "delete": "حذف",
+  "deleteNotification": "هل تريد حذف الإشعار؟",
+  "@deleteNotification": {
+    "x-mt": true
+  },
+  "deleteNotificationConfirmation": "ستتم إزالة هذا الإشعار من هذا الجهاز.",
+  "@deleteNotificationConfirmation": {
+    "x-mt": true
+  },
+  "taskNotification": "مهمة",
+  "@taskNotification": {
+    "x-mt": true
+  },
+  "chatNotification": "الدردشة",
+  "replyNotification": "رد جديد",
+  "@replyNotification": {
+    "x-mt": true
+  },
+  "resourceNotification": "موارد",
+  "storageNotification": "تحذير التخزين",
+  "@storageNotification": {
+    "x-mt": true
+  },
+  "joinRequestNotification": "طلب الانضمام",
+  "teamNotification": "تحديث الفريق",
+  "@teamNotification": {
+    "x-mt": true
+  },
+  "tasks": "المهام",
+  "notifGroupJoinRequests": "طلبات الانضمام",
+  "notifGroupTeamUpdates": "تحديثات الفريق",
+  "notifGroupNewVoices": "أصوات جديدة",
+  "notifGroupVoiceReplies": "ردود صوتية",
+  "notificationGroupSystem": "النظام",
+  "notificationGroupOther": "أخرى",
+  "myLife": "حياتي",
+  "@myLife": {
+    "x-mt": true
+  },
+  "myLifeUnavailable": "حياتي غير متوفرة",
+  "@myLifeUnavailable": {
+    "x-mt": true
+  },
+  "noLifeItems": "لا عناصر حياتي",
+  "@noLifeItems": {
+    "x-mt": true
+  },
+  "shownOnDashboard": "معروض",
+  "@shownOnDashboard": {
+    "x-mt": true
+  },
+  "hiddenFromDashboard": "مختفي",
+  "@hiddenFromDashboard": {
+    "x-mt": true
+  },
+  "myHealth": "صحتي",
+  "@myHealth": {
+    "x-mt": true
+  },
+  "achievements": "الإنجازات",
+  "@achievements": {
+    "x-mt": true
+  },
+  "submissions": "التقديمات",
+  "@submissions": {
+    "x-mt": true
+  },
+  "submission": "استسلام",
+  "@submission": {
+    "x-mt": true
+  },
+  "submissionsUnavailable": "التقديمات غير متوفرة",
+  "@submissionsUnavailable": {
+    "x-mt": true
+  },
+  "noSubmissions": "لا يوجد تقديمات حتى الآن",
+  "@noSubmissions": {
+    "x-mt": true
+  },
+  "pending": "قيد الانتظار",
+  "@pending": {
+    "x-mt": true
+  },
+  "refresh": "ينعش",
+  "@refresh": {
+    "x-mt": true
+  },
+  "complete": "اكتمل",
+  "noMatchingSubmissions": "لا توجد عمليات إرسال تتطابق مع هذا الفلتر",
+  "@noMatchingSubmissions": {
+    "x-mt": true
+  },
+  "submissionsSynced": "{count, plural, =0{Submissions are up to date} =1{1 submission synced} other{{count} submissions synced}}",
+  "@submissionsSynced": {
+    "x-mt": true
+  },
+  "submissionDetails": "تفاصيل التقديم",
+  "@submissionDetails": {
+    "x-mt": true
+  },
+  "submissionNotFound": "لم يتم العثور على الإرسال",
+  "@submissionNotFound": {
+    "x-mt": true
+  },
+  "unknown": "مجهول",
+  "@unknown": {
+    "x-mt": true
+  },
+  "nA": "N/A",
+  "otherDiagnosis": "تشخيصات أخرى",
+  "add": "إضافة",
+  "status": "الحالة",
+  "lastUpdated": "آخر تحديث",
+  "@lastUpdated": {
+    "x-mt": true
+  },
+  "grade": "درجة",
+  "@grade": {
+    "x-mt": true
+  },
+  "submittedBy": "تم الإرسال بواسطة",
+  "submissionType": "النوع",
+  "uploadStatus": "حالة التحميل",
+  "@uploadStatus": {
+    "x-mt": true
+  },
+  "uploaded": "تم الرفع",
+  "@uploaded": {
+    "x-mt": true
+  },
+  "answers": "الإجابات",
+  "@answers": {
+    "x-mt": true
+  },
+  "answersUnavailable": "الإجابات غير متوفرة",
+  "@answersUnavailable": {
+    "x-mt": true
+  },
+  "noAnswers": "لم يتم حفظ أي إجابات مع هذا الإرسال",
+  "@noAnswers": {
+    "x-mt": true
+  },
+  "noAnswer": "لا إجابة",
+  "@noAnswer": {
+    "x-mt": true
+  },
+  "newSubmission": "تقديم جديد",
+  "@newSubmission": {
+    "x-mt": true
+  },
+  "answer": "الإجابة",
+  "availableChoices": "الاختيارات",
+  "@availableChoices": {
+    "x-mt": true
+  },
+  "exportPdf": "تصدير قوات الدفاع الشعبي",
+  "@exportPdf": {
+    "x-mt": true
+  },
+  "pdfExportFailed": "لا يمكن إنشاء ملف PDF",
+  "@pdfExportFailed": {
+    "x-mt": true
+  },
+  "mySurveys": "استطلاعاتي",
+  "@mySurveys": {
+    "x-mt": true
+  },
+  "references": "المراجع",
+  "myPersonals": "شخصياتي",
+  "@myPersonals": {
+    "x-mt": true
+  },
+  "featureComingSoon": "لم يتم نقل هذه الميزة بعد",
+  "@featureComingSoon": {
+    "x-mt": true
+  },
+  "maps": "الخرائط",
+  "englishDictionary": "قاموس الإنجليزية",
+  "offlineMapsComingSoon": "لم يتم نقل الخرائط غير المتصلة بالإنترنت حتى الآن",
+  "@offlineMapsComingSoon": {
+    "x-mt": true
+  },
+  "addPersonal": "إضافة عنصر شخصي",
+  "@addPersonal": {
+    "x-mt": true
+  },
+  "editPersonal": "تحرير العنصر الشخصي",
+  "@editPersonal": {
+    "x-mt": true
+  },
+  "deletePersonal": "هل تريد حذف العنصر الشخصي؟",
+  "@deletePersonal": {
+    "x-mt": true
+  },
+  "deletePersonalConfirmation": "هل تريد حذف \"_{title}_\" من هذا الجهاز؟",
+  "@deletePersonalConfirmation": {
+    "x-mt": true
+  },
+  "personalsUnavailable": "الأغراض الشخصية غير متوفرة",
+  "@personalsUnavailable": {
+    "x-mt": true
+  },
+  "noPersonals": "لا توجد أشياء شخصية بعد. أضف ملاحظة خاصة للبدء.",
+  "@noPersonals": {
+    "x-mt": true
+  },
+  "duplicateTitle": "يوجد بالفعل عنصر شخصي بهذا العنوان",
+  "@duplicateTitle": {
+    "x-mt": true
+  },
+  "attachFile": "إرفاق الملف",
+  "@attachFile": {
+    "x-mt": true
+  },
+  "noFileSelected": "No file selected",
+  "@noFileSelected": {
+    "x-mt": true
+  },
+  "removeFile": "إزالة الملف",
+  "@removeFile": {
+    "x-mt": true
+  },
+  "savedOffline": "تم الحفظ في وضع عدم الاتصال — في انتظار التحميل",
+  "@savedOffline": {
+    "x-mt": true
+  },
+  "edit": "تحرير",
+  "title": "العنوان",
+  "titleRequired": "أدخل عنوانا",
+  "@titleRequired": {
+    "x-mt": true
+  },
+  "rateCourse": "دورة معدل",
+  "@rateCourse": {
+    "x-mt": true
+  },
+  "ratingsUnavailable": "التقييمات غير متوفرة",
+  "@ratingsUnavailable": {
+    "x-mt": true
+  },
+  "ratingSummary": "{average} from {count, plural, =1{1 rating} other{{count} ratings}}",
+  "@ratingSummary": {
+    "x-mt": true
+  },
+  "ratingRequired": "اختر التقييم",
+  "@ratingRequired": {
+    "x-mt": true
+  },
+  "commentOptional": "تعليق (اختياري)",
+  "@commentOptional": {
+    "x-mt": true
+  },
+  "submitRating": "إرسال التقييم",
+  "@submitRating": {
+    "x-mt": true
+  },
+  "skip": "تخطي",
+  "next": "التالي",
+  "getStarted": "البدء",
+  "welcomeToMyPlanet": "مرحبًا بكم في myPlanet",
+  "learnOffline": "تعلم بدون اتصال",
+  "openLearning": "فتح التعلم",
+  "unleashLearningPower": "اطلق قوة التعلم",
+  "onboardingWelcomeDescription": "بوابتك إلى تعلم لا حدود له",
+  "onboardingOfflineDescription": "قم بتنزيل الموارد للتعلم دون الاتصال بالإنترنت. \nالوصول إلى المعرفة أثناء التنقل.",
+  "@onboardingOfflineDescription": {
+    "x-mt": true
+  },
+  "onboardingOpenDescription": "اختر اهتماماتك وانغمس في المحتوى التفاعلي. \nصمم رحلتك التعليمية الفريدة.",
+  "@onboardingOpenDescription": {
+    "x-mt": true
+  },
+  "onboardingPowerDescription": "اكتشف عالم المعرفة في متناول يدك. \n\n🌍 الوصول دون اتصال بالإنترنت: تعلم بلا حدود، في أي وقت. \n🎯 مخصص: صمم مسار التعلم الخاص بك. \n📚 تفاعلي: تفاعل مع مقاطع الفيديو والكتب والألعاب. \n\nابدأ رحلتك التعليمية اللامحدودة مع myPlanet!",
+  "@onboardingPowerDescription": {
+    "x-mt": true
+  },
+  "onboardingServerPrepHint": "قبل تسجيل الدخول، ستحتاج إلى عنوان خادم Planet ورقم التعريف الشخصي (PIN). اسأل مسؤول مجتمعك إذا لم تكن تملكهما بعد.",
+  "meetups": "لقاءات",
+  "@meetups": {
+    "x-mt": true
+  },
+  "syncPendingMeetups": "مزامنة الاجتماعات المعلقة",
+  "@syncPendingMeetups": {
+    "x-mt": true
+  },
+  "meetupsUnavailable": "اللقاءات غير متوفرة",
+  "@meetupsUnavailable": {
+    "x-mt": true
+  },
+  "noMeetups": "لا توجد لقاءات حتى الآن",
+  "@noMeetups": {
+    "x-mt": true
+  },
+  "dateNotSet": "التاريخ غير محدد",
+  "@dateNotSet": {
+    "x-mt": true
+  },
+  "untitledMeetup": "لقاء بلا عنوان",
+  "@untitledMeetup": {
+    "x-mt": true
+  },
+  "addMeetup": "إضافة لقاء",
+  "meetupDetails": "تفاصيل اللقاء",
+  "@meetupDetails": {
+    "x-mt": true
+  },
+  "meetupNotFound": "لم يتم العثور على اللقاء",
+  "@meetupNotFound": {
+    "x-mt": true
+  },
+  "createdBy": "تم إنشاؤه بواسطة",
+  "category": "فئة",
+  "@category": {
+    "x-mt": true
+  },
+  "location": "الموقع",
+  "link": "الرابط",
+  "recurring": "متكرر",
+  "description": "الوصف",
+  "leaveMeetup": "مغادرة اللقاء",
+  "@leaveMeetup": {
+    "x-mt": true
+  },
+  "joinMeetup": "انضم إلى اللقاء",
+  "@joinMeetup": {
+    "x-mt": true
+  },
+  "editMeetup": "تعديل الاجتماع",
+  "startTime": "وقت البدء",
+  "endTime": "وقت الانتهاء",
+  "none": "لا شيء",
+  "daily": "يوميًا",
+  "weekly": "أسبوعيًا",
+  "syncMeetups": "مزامنة اللقاءات",
+  "@syncMeetups": {
+    "x-mt": true
+  },
+  "searchMeetups": "بحث عن اللقاءات",
+  "@searchMeetups": {
+    "x-mt": true
+  },
+  "sortMeetups": "ترتيب اللقاءات",
+  "@sortMeetups": {
+    "x-mt": true
+  },
+  "sortResources": "فرز الموارد",
+  "@sortResources": {
+    "x-mt": true
+  },
+  "newestFirst": "الأحدث أولاً",
+  "@newestFirst": {
+    "x-mt": true
+  },
+  "oldestFirst": "الأقدم أولاً",
+  "@oldestFirst": {
+    "x-mt": true
+  },
+  "titleAscending": "العنوان من الألف إلى الياء",
+  "@titleAscending": {
+    "x-mt": true
+  },
+  "titleDescending": "العنوان Z-A",
+  "@titleDescending": {
+    "x-mt": true
+  },
+  "startDate": "تاريخ البدء",
+  "endDate": "تاريخ الانتهاء",
+  "timeNotSet": "لم يتم ضبط الوقت",
+  "@timeNotSet": {
+    "x-mt": true
+  },
+  "syncSurveys": "استطلاعات المزامنة",
+  "@syncSurveys": {
+    "x-mt": true
+  },
+  "searchSurveys": "بحث المسوحات",
+  "@searchSurveys": {
+    "x-mt": true
+  },
+  "sortSurveys": "فرز الاستطلاعات",
+  "@sortSurveys": {
+    "x-mt": true
+  },
+  "surveysUnavailable": "الاستطلاعات غير متوفرة",
+  "@surveysUnavailable": {
+    "x-mt": true
+  },
+  "noSurveys": "لا توجد استطلاعات متاحة",
+  "@noSurveys": {
+    "x-mt": true
+  },
+  "untitledSurvey": "استطلاع بدون عنوان",
+  "@untitledSurvey": {
+    "x-mt": true
+  },
+  "takeSurvey": "أداء الاستبيان",
+  "surveyLoadFailed": "لا يمكن تحميل الاستطلاع",
+  "@surveyLoadFailed": {
+    "x-mt": true
+  },
+  "surveyHasNoQuestions": "هذا الاستطلاع ليس لديه أسئلة",
+  "@surveyHasNoQuestions": {
+    "x-mt": true
+  },
+  "submitSurvey": "إرسال الاستطلاع",
+  "@submitSurvey": {
+    "x-mt": true
+  },
+  "answerRequiredQuestions": "الإجابة على جميع الأسئلة المطلوبة",
+  "@answerRequiredQuestions": {
+    "x-mt": true
+  },
+  "voices": "أصوات",
+  "@voices": {
+    "x-mt": true
+  },
+  "searchVoices": "أصوات البحث",
+  "@searchVoices": {
+    "x-mt": true
+  },
+  "syncVoices": "مزامنة الأصوات",
+  "@syncVoices": {
+    "x-mt": true
+  },
+  "noVoices": "لا توجد أصوات بعد",
+  "@noVoices": {
+    "x-mt": true
+  },
+  "voicesUnavailable": "الأصوات غير متوفرة",
+  "@voicesUnavailable": {
+    "x-mt": true
+  },
+  "shareYourVoice": "شارك بصوتك",
+  "@shareYourVoice": {
+    "x-mt": true
+  },
+  "postVoice": "بريد",
+  "@postVoice": {
+    "x-mt": true
+  },
+  "replyToVoice": "الرد",
+  "writeAReply": "اكتب ردا",
+  "@writeAReply": {
+    "x-mt": true
+  },
+  "repliesCount": "{count, plural, =0{No replies} =1{1 reply} other{{count} replies}}",
+  "@repliesCount": {
+    "x-mt": true
+  },
+  "edited": "تم تحريره",
+  "@edited": {
+    "x-mt": true
+  },
+  "editVoice": "تحرير",
+  "deleteVoice": "حذف",
+  "deleteVoiceConfirm": "هل تريد حذف هذه المشاركة وجميع الردود عليها؟",
+  "@deleteVoiceConfirm": {
+    "x-mt": true
+  },
+  "voiceDeleted": "تم حذف المشاركة",
+  "@voiceDeleted": {
+    "x-mt": true
+  },
+  "emptyMessageNotAllowed": "اكتب شيئا أولا",
+  "@emptyMessageNotAllowed": {
+    "x-mt": true
+  },
+  "thread": "خيط",
+  "@thread": {
+    "x-mt": true
+  },
+  "surveySubmitFailed": "لا يمكن حفظ إجاباتك",
+  "@surveySubmitFailed": {
+    "x-mt": true
+  },
+  "sendSurveyTo": "حدد المستخدمين لإرسال الاستطلاع إليهم",
+  "@sendSurveyTo": {
+    "x-mt": true
+  },
+  "sendSurvey": "إرسال الاستبيان",
+  "surveySentToUsers": "Survey sent to selected users",
+  "@surveySentToUsers": {
+    "x-mt": true
+  },
+  "noUsersAvailable": "لا يوجد مستخدمين متاحين",
+  "@noUsersAvailable": {
+    "x-mt": true
+  },
+  "teams": "الفرق",
+  "syncTeams": "فرق المزامنة",
+  "@syncTeams": {
+    "x-mt": true
+  },
+  "searchTeams": "فرق البحث",
+  "@searchTeams": {
+    "x-mt": true
+  },
+  "teamsUnavailable": "الفرق غير متوفرة",
+  "@teamsUnavailable": {
+    "x-mt": true
+  },
+  "noTeams": "لا توجد فرق متاحة",
+  "@noTeams": {
+    "x-mt": true
+  },
+  "untitledTeam": "فريق بلا عنوان",
+  "@untitledTeam": {
+    "x-mt": true
+  },
+  "teamDetails": "تفاصيل الفريق",
+  "@teamDetails": {
+    "x-mt": true
+  },
+  "teamNotFound": "لم يتم العثور على الفريق",
+  "@teamNotFound": {
+    "x-mt": true
+  },
+  "publicTeam": "فريق عام",
+  "@publicTeam": {
+    "x-mt": true
+  },
+  "privateTeam": "فريق خاص",
+  "@privateTeam": {
+    "x-mt": true
+  },
+  "enterprises": "الشركات",
+  "searchEnterprises": "البحث عن الشركات",
+  "@searchEnterprises": {
+    "x-mt": true
+  },
+  "leader": "قائد",
+  "@leader": {
+    "x-mt": true
+  },
+  "leave": "مغادرة",
+  "remove": "إزالة",
+  "makeLeader": "جعله قائدًا",
+  "leftTeam": "غادر الفريق",
+  "memberRemoved": "تمت إزالة العضو",
+  "@memberRemoved": {
+    "x-mt": true
+  },
+  "leaderUpdated": "تم تحديث القائد",
+  "@leaderUpdated": {
+    "x-mt": true
+  },
+  "member": "عضو",
+  "@member": {
+    "x-mt": true
+  },
+  "teamLeader": "أنت تقود هذا الفريق",
+  "@teamLeader": {
+    "x-mt": true
+  },
+  "teamMember": "أنت عضو",
+  "@teamMember": {
+    "x-mt": true
+  },
+  "services": "الخدمات",
+  "rules": "قواعد",
+  "@rules": {
+    "x-mt": true
+  },
+  "teamCourses": "دورات الفريق",
+  "@teamCourses": {
+    "x-mt": true
+  },
+  "membersCount": "{count, plural, =0{No members} =1{1 member} other{{count} members}}",
+  "@membersCount": {
+    "x-mt": true
+  },
+  "teamTasks": "المهام",
+  "tasksUnavailable": "المهام غير متوفرة",
+  "@tasksUnavailable": {
+    "x-mt": true
+  },
+  "noTeamTasks": "لا توجد مهام حتى الآن",
+  "@noTeamTasks": {
+    "x-mt": true
+  },
+  "noDeadline": "لا يوجد موعد نهائي",
+  "@noDeadline": {
+    "x-mt": true
+  },
+  "untitledTask": "مهمة بلا عنوان",
+  "@untitledTask": {
+    "x-mt": true
+  },
+  "addTask": "إضافة مهمة",
+  "editTask": "تحرير المهمة",
+  "@editTask": {
+    "x-mt": true
+  },
+  "deleteTask": "حذف المهمة",
+  "@deleteTask": {
+    "x-mt": true
+  },
+  "taskTitle": "عنوان المهمة",
+  "@taskTitle": {
+    "x-mt": true
+  },
+  "assigneeId": "معرف المكلف",
+  "@assigneeId": {
+    "x-mt": true
+  },
+  "teamDiscussions": "المناقشات",
+  "@teamDiscussions": {
+    "x-mt": true
+  },
+  "teamMembers": "الأعضاء",
+  "members": "الأعضاء",
+  "joinRequests": "طلبات الانضمام",
+  "noMembers": "لا يوجد أعضاء حتى الآن",
+  "@noMembers": {
+    "x-mt": true
+  },
+  "membersUnavailable": "الأعضاء غير متوفرين",
+  "@membersUnavailable": {
+    "x-mt": true
+  },
+  "unknownMember": "عضو غير معروف",
+  "@unknownMember": {
+    "x-mt": true
+  },
+  "noJoinRequests": "لا توجد طلبات معلقة",
+  "@noJoinRequests": {
+    "x-mt": true
+  },
+  "accept": "قبول",
+  "decline": "انخفاض",
+  "@decline": {
+    "x-mt": true
+  },
+  "joinTeam": "طلب الانضمام",
+  "leaveTeam": "ترك الفريق",
+  "@leaveTeam": {
+    "x-mt": true
+  },
+  "requestPending": "الطلب معلق",
+  "@requestPending": {
+    "x-mt": true
+  },
+  "teamResources": "موارد",
+  "resourcesUnavailable": "الموارد غير متوفرة",
+  "@resourcesUnavailable": {
+    "x-mt": true
+  },
+  "noTeamResources": "لا توجد موارد مرتبطة بهذا الفريق",
+  "@noTeamResources": {
+    "x-mt": true
+  },
+  "untitledResource": "مورد بلا عنوان",
+  "@untitledResource": {
+    "x-mt": true
+  },
+  "removeFromTeam": "إزالة من الفريق",
+  "@removeFromTeam": {
+    "x-mt": true
+  },
+  "addResource": "إضافة مصدر",
+  "editResource": "تعديل المورد",
+  "resourceUpdated": "تم تحديث المورد",
+  "resourceAddedToTeam": "تمت إضافة المورد إلى الفريق",
+  "descriptionIsRequired": "الوصف مطلوب",
+  "levelIsRequired": "المستوى مطلوب",
+  "subjectIsRequired": "الموضوع مطلوب",
+  "selectFile": "حدد ملفًا",
+  "@selectFile": {
+    "x-mt": true
+  },
+  "fileSelected": "File selected",
+  "@fileSelected": {
+    "x-mt": true
+  },
+  "privateResource": "الموارد الخاصة",
+  "@privateResource": {
+    "x-mt": true
+  },
+  "saveChanges": "حفظ التغييرات",
+  "selectOpenWith": "اختر فتح باستخدام",
+  "@selectOpenWith": {
+    "x-mt": true
+  },
+  "selectMedia": "حدد الوسائط",
+  "@selectMedia": {
+    "x-mt": true
+  },
+  "selectResourceType": "حدد نوع المورد",
+  "@selectResourceType": {
+    "x-mt": true
+  },
+  "linkToLicense": "رابط الترخيص",
+  "noResourcesToAdd": "جميع الموارد المتاحة مرتبطة بالفعل",
+  "@noResourcesToAdd": {
+    "x-mt": true
+  },
+  "coursesUnavailable": "الدورات غير متوفرة",
+  "@coursesUnavailable": {
+    "x-mt": true
+  },
+  "noTeamCourses": "لا توجد دورات مرتبطة بهذا الفريق",
+  "@noTeamCourses": {
+    "x-mt": true
+  },
+  "untitledCourse": "دورة بدون عنوان",
+  "addCourse": "إضافة دورة",
+  "@addCourse": {
+    "x-mt": true
+  },
+  "noCoursesToAdd": "جميع الدورات المتاحة مرتبطة بالفعل",
+  "@noCoursesToAdd": {
+    "x-mt": true
+  },
+  "financialReports": "التقارير المالية",
+  "@financialReports": {
+    "x-mt": true
+  },
+  "reportsUnavailable": "التقارير غير متوفرة",
+  "@reportsUnavailable": {
+    "x-mt": true
+  },
+  "noReports": "لا توجد تقارير مالية حتى الآن",
+  "@noReports": {
+    "x-mt": true
+  },
+  "addReport": "إضافة تقرير",
+  "editReport": "تحرير التقرير",
+  "@editReport": {
+    "x-mt": true
+  },
+  "archiveReport": "الأرشيف",
+  "beginningBalance": "الرصيد الافتتاحي",
+  "sales": "المبيعات",
+  "otherIncome": "دخل آخر",
+  "wages": "أجور",
+  "@wages": {
+    "x-mt": true
+  },
+  "otherExpenses": "نفقات أخرى",
+  "@otherExpenses": {
+    "x-mt": true
+  },
+  "totalIncome": "إجمالي الدخل",
+  "totalExpenses": "إجمالي المصروفات",
+  "profitLoss": "الربح / الخسارة",
+  "@profitLoss": {
+    "x-mt": true
+  },
+  "endingBalance": "الرصيد النهائي",
+  "negativeBalance": "الرصيد الحالي سالب!",
+  "chatHistory": "تاريخ الدردشة",
+  "@chatHistory": {
+    "x-mt": true
+  },
+  "chat": "الدردشة",
+  "newChat": "محادثة جديدة",
+  "searchChats": "بحث في الدردشات",
+  "@searchChats": {
+    "x-mt": true
+  },
+  "noChats": "لا توجد محادثات بعد",
+  "@noChats": {
+    "x-mt": true
+  },
+  "noSearchResults": "لا توجد محادثات مطابقة",
+  "@noSearchResults": {
+    "x-mt": true
+  },
+  "untitledChat": "دردشة بلا عنوان",
+  "@untitledChat": {
+    "x-mt": true
+  },
+  "fullConversationResponse": "استجابة المحادثة الكاملة",
+  "response": "استجابة",
+  "chatConversation": "محادثة",
+  "@chatConversation": {
+    "x-mt": true
+  },
+  "newConversation": "محادثة جديدة",
+  "@newConversation": {
+    "x-mt": true
+  },
+  "startConversation": "ابدأ محادثة جديدة",
+  "@startConversation": {
+    "x-mt": true
+  },
+  "typeMessage": "اكتب رسالة...",
+  "@typeMessage": {
+    "x-mt": true
+  },
+  "selectAiProvider": "حدد مزود الذكاء الاصطناعي",
+  "@selectAiProvider": {
+    "x-mt": true
+  },
+  "aiProviders": "مزودي الذكاء الاصطناعي",
+  "@aiProviders": {
+    "x-mt": true
+  },
+  "feedback": "تغذية راجعة",
+  "feedbackNotFound": "لم يتم العثور على ردود الفعل",
+  "@feedbackNotFound": {
+    "x-mt": true
+  },
+  "feedbackSaved": "تم حفظ التعليقات",
+  "isUrgent": "هل هذا أمر عاجل؟",
+  "@isUrgent": {
+    "x-mt": true
+  },
+  "feedbackType": "نوع ردود الفعل",
+  "@feedbackType": {
+    "x-mt": true
+  },
+  "feedbackTypeRequired": "Please select a feedback type",
+  "@feedbackTypeRequired": {
+    "x-mt": true
+  },
+  "yourFeedback": "ملاحظاتك",
+  "@yourFeedback": {
+    "x-mt": true
+  },
+  "pleaseEnterFeedback": "الرجاء إدخال ملاحظاتك",
+  "@pleaseEnterFeedback": {
+    "x-mt": true
+  },
+  "question": "سؤال",
+  "bug": "خطأ",
+  "suggestion": "اقتراح",
+  "priority": "الأولوية",
+  "openDate": "تاريخ الافتتاح",
+  "replies": "الردود",
+  "@replies": {
+    "x-mt": true
+  },
+  "pleaseEnterReply": "يرجى إدخال رد",
+  "untitledFeedback": "ردود فعل بلا عنوان",
+  "@untitledFeedback": {
+    "x-mt": true
+  },
+  "yes": "نعم",
+  "no": "لا",
+  "submit": "إرسال",
+  "takeTest": "خذ الاختبار",
+  "@takeTest": {
+    "x-mt": true
+  },
+  "recordSurvey": "تسجيل الاستبيان",
+  "react": "رد فعل",
+  "@react": {
+    "x-mt": true
+  },
+  "pickReaction": "اختر رد فعل",
+  "@pickReaction": {
+    "x-mt": true
+  },
+  "comments": "تعليقات",
+  "@comments": {
+    "x-mt": true
+  },
+  "addComment": "أضف تعليقا",
+  "@addComment": {
+    "x-mt": true
+  },
+  "commentsCount": "تعليقات {count}",
+  "@commentsCount": {
+    "x-mt": true
+  },
+  "noComments": "لا توجد تعليقات حتى الآن",
+  "@noComments": {
+    "x-mt": true
+  },
+  "leaderboard": "المتصدرين",
+  "@leaderboard": {
+    "x-mt": true
+  },
+  "allTime": "كل الوقت",
+  "@allTime": {
+    "x-mt": true
+  },
+  "thisMonth": "هذا الشهر",
+  "@thisMonth": {
+    "x-mt": true
+  },
+  "error": "خطأ",
+  "@error": {
+    "x-mt": true
+  },
+  "close": "يغلق",
+  "filter": "تصفية",
+  "type": "النوع",
+  "apply": "يتقدم",
+  "@apply": {
+    "x-mt": true
+  },
+  "unavailable": "غير متاح",
+  "@unavailable": {
+    "x-mt": true
+  },
+  "chatsUnavailable": "لا يمكن تحميل الدردشات",
+  "@chatsUnavailable": {
+    "x-mt": true
+  },
+  "community": "المجتمع",
+  "communityLeaders": "قادة المجتمع",
+  "nationLeaders": "قادة الأمة",
+  "ourVoices": "أصواتنا",
+  "finances": "المالية",
+  "reports": "التقارير",
+  "transaction": "عملية",
+  "@transaction": {
+    "x-mt": true
+  },
+  "transactions": "المعاملات",
+  "@transactions": {
+    "x-mt": true
+  },
+  "addTransaction": "إضافة المعاملة",
+  "noTransactions": "لا توجد معاملات حتى الآن",
+  "@noTransactions": {
+    "x-mt": true
+  },
+  "debit": "مدين",
+  "credit": "دائن",
+  "balance": "الرصيد",
+  "amount": "المبلغ",
+  "note": "ملحوظة",
+  "@note": {
+    "x-mt": true
+  },
+  "date": "التاريخ",
+  "fromDate": "من تاريخ",
+  "toDate": "إلى تاريخ",
+  "reset": "إعادة ضبط",
+  "@reset": {
+    "x-mt": true
+  },
+  "noteRequired": "الملاحظة مطلوبة",
+  "amountRequired": "يجب أن يكون المبلغ أكبر من 0",
+  "@amountRequired": {
+    "x-mt": true
+  },
+  "transactionAdded": "تمت إضافة المعاملة",
+  "addReceipt": "أضف الإيصال",
+  "@addReceipt": {
+    "x-mt": true
+  },
+  "receiptSelected": "Receipt selected",
+  "@receiptSelected": {
+    "x-mt": true
+  },
+  "noReceipt": "لا يوجد إيصال مرفق",
+  "@noReceipt": {
+    "x-mt": true
+  },
+  "receipt": "إيصال",
+  "@receipt": {
+    "x-mt": true
+  },
+  "viewReceipt": "عرض الإيصال",
+  "@viewReceipt": {
+    "x-mt": true
+  },
+  "noLeadersAvailable": "لا يوجد قادة المتاحة",
+  "@noLeadersAvailable": {
+    "x-mt": true
+  },
+  "noServicesAvailable": "لا توجد خدمات متاحة",
+  "@noServicesAvailable": {
+    "x-mt": true
+  },
+  "noDescriptionAvailable": "لا تتوفر وصف",
+  "takeExam": "خذ الامتحان",
+  "@takeExam": {
+    "x-mt": true
+  },
+  "examLoadFailed": "لا يمكن تحميل الامتحان",
+  "@examLoadFailed": {
+    "x-mt": true
+  },
+  "examHasNoQuestions": "هذا الامتحان ليس لديه أسئلة",
+  "@examHasNoQuestions": {
+    "x-mt": true
+  },
+  "examComplete": "اكتمل الامتحان",
+  "@examComplete": {
+    "x-mt": true
+  },
+  "examUnavailable": "الامتحان غير متاح",
+  "@examUnavailable": {
+    "x-mt": true
+  },
+  "submitExam": "تقديم الامتحان",
+  "@submitExam": {
+    "x-mt": true
+  },
+  "incorrectAnswer": "إجابة غير صحيحة، يرجى المحاولة مرة أخرى",
+  "correctAnswers": "صحيح",
+  "@correctAnswers": {
+    "x-mt": true
+  },
+  "yourAnswer": "إجابتك",
+  "previous": "السابق",
+  "finish": "إنهاء",
+  "exitExam": "الخروج من الامتحان؟",
+  "@exitExam": {
+    "x-mt": true
+  },
+  "exitExamMessage": "سيتم فقدان التقدم المحرز الخاص بك.",
+  "@exitExamMessage": {
+    "x-mt": true
+  },
+  "exit": "خروج",
+  "download": "تحميل",
+  "downloading": "جارٍ التنزيل…",
+  "downloadFailed": "فشل التنزيل.",
+  "resourceNotDownloaded": "هذا المورد ليس على جهازك بعد.",
+  "@resourceNotDownloaded": {
+    "x-mt": true
+  },
+  "retry": "أعد المحاولة",
+  "@retry": {
+    "x-mt": true
+  },
+  "fieldRequired": "مطلوب",
+  "@fieldRequired": {
+    "x-mt": true
+  },
+  "examSubmitFailed": "تعذر حفظ الاختبار. يرجى المحاولة مرة أخرى.",
+  "@examSubmitFailed": {
+    "x-mt": true
+  },
+  "yourInformation": "المعلومات الخاصة بك",
+  "@yourInformation": {
+    "x-mt": true
+  },
+  "showAdditionalFields": "عرض الحقول الإضافية",
+  "hideAdditionalFields": "إخفاء الحقول الإضافية",
+  "phoneNumber": "رقم الهاتف",
+  "birthDate": "تاريخ الميلاد",
+  "selectDate": "حدد التاريخ",
+  "male": "ذكر",
+  "female": "أنثى",
+  "yearOfBirth": "سنة الميلاد",
+  "yearOfBirthRequired": "سنة الميلاد مطلوبة",
+  "@yearOfBirthRequired": {
+    "x-mt": true
+  },
+  "invalidYear": "الرجاء إدخال سنة صالحة",
+  "@invalidYear": {
+    "x-mt": true
+  },
+  "thankYouForTakingSurvey": "شكرًا لك على إجراء هذا الاستبيان",
+  "errorSavingProfile": "حدث خطأ أثناء حفظ الملف الشخصي",
+  "@errorSavingProfile": {
+    "x-mt": true
+  },
+  "videoPlayer": "مشغل الفيديو",
+  "audioPlayer": "مشغل الصوت",
+  "@audioPlayer": {
+    "x-mt": true
+  },
+  "videoFileNotFound": "ملف الفيديو غير موجود محليًا",
+  "unableToLoadVideo": "تعذر تحميل الفيديو",
+  "audioFileNotFound": "ملف الصوت غير موجود محليًا",
+  "unableToLoadAudio": "تعذر تحميل الصوت",
+  "pdfFileNotFound": "ملف PDF غير موجود محليًا",
+  "unableToLoadPdf": "تعذر تحميل PDF",
+  "imageFileNotFound": "الصورة غير موجودة",
+  "attachment": "مرفق",
+  "cannotOpenAttachment": "لا يمكن فتح هذا النوع من المرفقات هنا.",
+  "noContent": "لا يوجد محتوى",
+  "emptyFile": "ملف فارغ",
+  "htmlEntryNotFound": "ملف إدخال HTML غير موجود",
+  "errorOccurred": "خطأ: {error}",
+  "openingResource": "فتح: {title}",
+  "loadingMedia": "جار التحميل...",
+  "resourceUnavailable": "هذا المورد غير متاح للعرض في وضع عدم الاتصال",
+  "@resourceUnavailable": {
+    "x-mt": true
+  },
+  "healthRecordNotAvailable": "سجل الصحة غير متاح",
+  "updateHealth": "تحديث الصحة",
+  "@updateHealth": {
+    "x-mt": true
+  },
+  "addHealthRecord": "إضافة السجل الصحي",
+  "@addHealthRecord": {
+    "x-mt": true
+  },
+  "healthProfile": "الملف الصحي",
+  "@healthProfile": {
+    "x-mt": true
+  },
+  "specialNeeds": "احتياجات خاصة",
+  "otherNeeds": "احتياجات أخرى",
+  "emergencyContact": "جهة الاتصال في حالات الطوارئ",
+  "contactNumber": "رقم الاتصال",
+  "@contactNumber": {
+    "x-mt": true
+  },
+  "vitalSigns": "العلامات الحيوية",
+  "@vitalSigns": {
+    "x-mt": true
+  },
+  "temperature": "درجة حرارة",
+  "@temperature": {
+    "x-mt": true
+  },
+  "pulse": "نبض",
+  "@pulse": {
+    "x-mt": true
+  },
+  "height": "ارتفاع",
+  "@height": {
+    "x-mt": true
+  },
+  "weight": "وزن",
+  "@weight": {
+    "x-mt": true
+  },
+  "bloodPressure": "ضغط الدم",
+  "@bloodPressure": {
+    "x-mt": true
+  },
+  "vision": "الرؤية",
+  "hearing": "السمع",
+  "examinationHistory": "تاريخ الامتحان",
+  "@examinationHistory": {
+    "x-mt": true
+  },
+  "personalInformation": "معلومات شخصية",
+  "@personalInformation": {
+    "x-mt": true
+  },
+  "birthPlace": "مكان الميلاد",
+  "contactName": "اسم جهة الاتصال",
+  "@contactName": {
+    "x-mt": true
+  },
+  "contactType": "نوع الاتصال",
+  "@contactType": {
+    "x-mt": true
+  },
+  "healthInformation": "معلومات صحية",
+  "@healthInformation": {
+    "x-mt": true
+  },
+  "requiredField": "هذه الخانة مطلوبه",
+  "@requiredField": {
+    "x-mt": true
+  },
+  "healthSavedSuccessfully": "تم حفظ البيانات الصحية بنجاح",
+  "@healthSavedSuccessfully": {
+    "x-mt": true
+  },
+  "examinationDetails": "تفاصيل الفحص",
+  "@examinationDetails": {
+    "x-mt": true
+  },
+  "allergies": "الحساسية",
+  "diagnosis": "التشخيص",
+  "medications": "الأدوية",
+  "immunizations": "التحصينات",
+  "treatments": "العلاجات",
+  "observations": "الملاحظات",
+  "@observations": {
+    "x-mt": true
+  },
+  "referrals": "الإحالات",
+  "labTests": "اختبارات المختبر",
+  "xrays": "الأشعة السينية",
+  "conditions": "شروط",
+  "@conditions": {
+    "x-mt": true
+  },
+  "selfExamination": "الفحص الذاتي",
+  "@selfExamination": {
+    "x-mt": true
+  },
+  "healthRecordAdded": "تمت إضافة السجل الصحي بنجاح",
+  "@healthRecordAdded": {
+    "x-mt": true
+  },
+  "selectHealthMember": "اختر عضو الفريق",
+  "newPatient": "مريض جديد",
+  "@newPatient": {
+    "x-mt": true
+  },
+  "sortJoinDateDesc": "الأحدث أولاً",
+  "@sortJoinDateDesc": {
+    "x-mt": true
+  },
+  "sortJoinDateAsc": "الأقدم أولاً",
+  "@sortJoinDateAsc": {
+    "x-mt": true
+  },
+  "sortNameAsc": "الاسم من الألف إلى الياء",
+  "@sortNameAsc": {
+    "x-mt": true
+  },
+  "sortNameDesc": "الاسم Z-A",
+  "@sortNameDesc": {
+    "x-mt": true
+  },
+  "searchMembers": "أعضاء البحث",
+  "@searchMembers": {
+    "x-mt": true
+  },
+  "dismiss": "رفض",
+  "addMember": "إضافة عضو",
+  "invalidNumber": "رقم غير صالح",
+  "@invalidNumber": {
+    "x-mt": true
+  },
+  "tempRangeError": "يجب أن تكون درجة الحرارة بين 30 و 40",
+  "@tempRangeError": {
+    "x-mt": true
+  },
+  "pulseRangeError": "يجب أن يكون النبض بين 40 و120",
+  "@pulseRangeError": {
+    "x-mt": true
+  },
+  "heightRangeError": "يجب أن يكون الارتفاع بين 1 و 250",
+  "@heightRangeError": {
+    "x-mt": true
+  },
+  "weightRangeError": "يجب أن يكون الوزن بين 1 و 150",
+  "@weightRangeError": {
+    "x-mt": true
+  },
+  "bloodPressureFormatError": "يجب أن يكون ضغط الدم عبارة عن نبضي/انبساطي",
+  "bloodPressureRangeError": "يجب أن يكون ضغط الدم بين 60/40 و300/200",
+  "@bloodPressureRangeError": {
+    "x-mt": true
+  },
+  "bloodPressureNotNumbers": "يجب أن تكون القيم النبضية والانبساطية أرقام",
+  "temp": "درجة حرارة",
+  "@temp": {
+    "x-mt": true
+  },
+  "bp": "بي بي",
+  "@bp": {
+    "x-mt": true
+  },
+  "offlineMaps": "خرائط دون اتصال",
+  "@offlineMaps": {
+    "x-mt": true
+  },
+  "centerOnDefault": "توسيط على الموقع الافتراضي",
+  "@centerOnDefault": {
+    "x-mt": true
+  },
+  "storage": "تخزين",
+  "@storage": {
+    "x-mt": true
+  },
+  "storageManagement": "إدارة التخزين",
+  "@storageManagement": {
+    "x-mt": true
+  },
+  "storageTotalDownloaded": "إجمالي التنزيلات",
+  "storageVideos": "مقاطع الفيديو",
+  "storageAudio": "الصوت",
+  "storagePdfs": "ملفات PDF",
+  "storageImages": "الصور",
+  "storageOther": "أخرى",
+  "fileCountOne": "ملف واحد",
+  "storageUnknownResource": "مورد غير معروف",
+  "areYouSure": "هل أنت متأكد؟",
+  "cancelAddingExamination": "هل أنت متأكد من إلغاء إضافة الامتحان؟ سيتم فقدان البيانات",
+  "yesIWantToExit": "نعم، أرغب في الخروج.",
+  "inactiveMessage": "المستخدم غير مفعل، يرجى التواصل مع المسؤول أو المدير لتفعيل حسابك.",
+  "submitFeedback": "إرسال ملاحظات",
+  "storageDeleteSelectedConfirm": "Delete {count} selected items?",
+  "@storageDeleteSelectedConfirm": {
+    "x-mt": true
+  },
+  "storageSelectedCount": "{count} محدد",
+  "deleteSelected": "حذف المحدد",
+  "deleteAll": "حذف الكل",
+  "selectAll": "تحديد الكل",
+  "unselectAll": "إلغاء تحديد الكل",
+  "addedToMyCourses": "{count, plural, =1{تمت إضافة مقرر واحد} other{تمت إضافة {count} مقررات}}",
+  "leftCourses": "{count, plural, =1{تمت إزالة مقرر واحد} other{تمت إزالة {count} مقررات}}",
+  "coursesSelected": "{count, plural, =1{تم تحديد عنصر واحد} other{تم تحديد {count} عناصر}}",
+  "leaveCoursesConfirm": "{count, plural, =1{هل أنت متأكد أنك تريد إزالة هذا المقرر؟} other{هل أنت متأكد أنك تريد إزالة هذه المقررات؟}}",
+  "noStorageUsed": "لم يتم العثور على الملفات التي تم تنزيلها",
+  "@noStorageUsed": {
+    "x-mt": true
+  },
+  "availableSpace": "المساحة المتوفرة",
+  "freeUpSpace": "حرر مساحة",
+  "@freeUpSpace": {
+    "x-mt": true
+  },
+  "freeUpSpaceConfirm": "سيؤدي هذا إلى حذف جميع الموارد التي تم تنزيلها لتحرير مساحة التخزين. يكمل؟",
+  "@freeUpSpaceConfirm": {
+    "x-mt": true
+  },
+  "storageFreedSummary": "Freed {bytes}. {count, plural, =0{No files removed} =1{1 file removed} other{{count} files removed}}.",
+  "@storageFreedSummary": {
+    "x-mt": true
+  },
+  "enterUsername": "أدخل اسم المستخدم",
+  "enterPassword": "أدخل كلمة المرور",
+  "@enterPassword": {
+    "x-mt": true
+  },
+  "retypePassword": "أعد كتابة كلمة المرور",
+  "@retypePassword": {
+    "x-mt": true
+  },
+  "becomeMember": "أصبح عضوًا",
+  "toAccessThisFeatureBecomeAMember": "أنت حاليًا مستخدم ضيف. للوصول إلى هذه الميزة، كن عضوًا.",
+  "creatingMember": "إنشاء حساب العضو...",
+  "passwordsDoNotMatch": "كلمتا المرور غير متطابقتين",
+  "pleaseSelectGender": "يرجى تحديد الجنس",
+  "pleaseEnterPassword": "يرجى إدخال كلمة المرور",
+  "usernameAlreadyExists": "اسم المستخدم موجود بالفعل",
+  "@usernameAlreadyExists": {
+    "x-mt": true
+  },
+  "usernameCannotBeEmpty": "اسم المستخدم لا يمكن أن يكون فارغًا",
+  "invalidUsername": "اسم مستخدم غير صالح",
+  "usernameMustStartWithLetterOrNumber": "يجب أن تبدأ بحرف أو رقم",
+  "usernameOnlyLettersNumbers": "يُسمح فقط بالأحرف من a إلى z والأرقام و\"_\"، \".\"، \"-\".",
+  "@usernameOnlyLettersNumbers": {
+    "x-mt": true
+  },
+  "usernameTaken": "تم استخدام اسم المستخدم من قبل",
+  "memberCreatedOffline": "تم إنشاء حساب العضو دون اتصال",
+  "@memberCreatedOffline": {
+    "x-mt": true
+  },
+  "memberCreatedOnline": "تم إنشاء حساب العضو بنجاح",
+  "@memberCreatedOnline": {
+    "x-mt": true
+  },
+  "congratulations": "تهانينا! التحدي مكتمل",
+  "dailyVoices": "من 5 أصوات يومية",
+  "courseNotStarted": "الدورة: لم تبدأ",
+  "@courseNotStarted": {
+    "x-mt": true
+  },
+  "syncCompletedChallenge": "اكتملت المزامنة",
+  "rememberSync": "تذكر مزامنة التطبيق المحمول.",
+  "challengeDialogTitle": "التحدي اليومي",
+  "@challengeDialogTitle": {
+    "x-mt": true
+  },
+  "start": "ابدأ",
+  "continuation": "استمر",
+  "plan": "خطة",
+  "mission": "المهمة والخدمات",
+  "editPlan": "تعديل الخطة",
+  "teamPlan": "ما هو خطة فريقك؟",
+  "entMission": "ما هي مهمة المؤسسة الخاصة بك؟",
+  "entServices": "ما هي الخدمات التي تقدمها المؤسسة الخاصة بك؟",
+  "entRules": "ما هي قواعد المؤسسة الخاصة بك؟",
+  "noMissionDefined": "لا يوجد لدى المؤسسة مهمة وخدمات.",
+  "noPlanDefined": "هذا الفريق ليس لديه خطة محددة.",
+  "@noPlanDefined": {
+    "x-mt": true
+  },
+  "noDescriptionDefined": "هذا الفريق ليس لديه وصف محدد.",
+  "enterpriseName": "اسم المؤسسة",
+  "@enterpriseName": {
+    "x-mt": true
+  },
+  "teamName": "اسم الفريق",
+  "@teamName": {
+    "x-mt": true
+  },
+  "teamType": "نوع الفريق",
+  "@teamType": {
+    "x-mt": true
+  },
+  "local": "محلي",
+  "@local": {
+    "x-mt": true
+  },
+  "isPublic": "عام",
+  "nameRequired": "الاسم مطلوب",
+  "nameIsRequired": "يرجى إدخال الاسم",
+  "createdOn": "تم الإنشاء في",
+  "courseDetails": "تفاصيل الدورة",
+  "@courseDetails": {
+    "x-mt": true
+  },
+  "addedToCourse": "تمت إضافتها إلى دوراتك",
+  "@addedToCourse": {
+    "x-mt": true
+  },
+  "removedFromCourse": "تمت إزالتها من الدورات التدريبية الخاصة بك",
+  "@removedFromCourse": {
+    "x-mt": true
+  },
+  "pleaseCompleteSurvey": "يرجى إكمال الاستبيان لإنهاء الدورة",
+  "takeCourse": "خذ الدورة",
+  "@takeCourse": {
+    "x-mt": true
+  },
+  "teamCalendar": "تقويم الفريق",
+  "@teamCalendar": {
+    "x-mt": true
+  },
+  "noMeetupsOnDate": "لا يوجد لقاءات في هذا التاريخ",
+  "@noMeetupsOnDate": {
+    "x-mt": true
+  },
+  "myProgress": "تقدمي",
+  "progress": "التقدم",
+  "orderByTitle": "ترتيب حسب العنوان",
+  "orderByDate": "ترتيب حسب التاريخ",
+  "progressFilterAll": "الكل",
+  "progressFilterNotStarted": "لم يبدأ",
+  "progressFilterInProgress": "قيد التنفيذ",
+  "progressFilterCompleted": "مكتمل",
+  "@progressFilterCompleted": {
+    "x-mt": true
+  },
+  "stepProgress": "{current} من {max} الخطوات",
+  "@stepProgress": {
+    "x-mt": true
+  },
+  "noEnrolledCourses": "أنت غير مسجل في أي دورات",
+  "@noEnrolledCourses": {
+    "x-mt": true
+  },
+  "mistakes": "الأخطاء",
+  "step": "خطوة",
+  "untitledResourceTitle": "مورد بلا عنوان",
+  "@untitledResourceTitle": {
+    "x-mt": true
+  },
+  "author": "المؤلف",
+  "publisher": "الناشر",
+  "license": "الترخيص",
+  "addedBy": "أُضيف بواسطة",
+  "resourceInformation": "معلومات الموارد",
+  "@resourceInformation": {
+    "x-mt": true
+  },
+  "resourceFor": "لـ",
+  "@resourceFor": {
+    "x-mt": true
+  },
+  "mediaType": "نوع الوسائط",
+  "@mediaType": {
+    "x-mt": true
+  },
+  "resourceType": "نوع المورد",
+  "subject": "موضوع",
+  "@subject": {
+    "x-mt": true
+  },
+  "year": "السنة",
+  "timesRated": "مرات تصنيفها",
+  "@timesRated": {
+    "x-mt": true
+  },
+  "addToMyLibrary": "أضف إلى مكتبتي",
+  "@addToMyLibrary": {
+    "x-mt": true
+  },
+  "removeFromMyLibrary": "إزالة من مكتبتي",
+  "@removeFromMyLibrary": {
+    "x-mt": true
+  },
+  "addedToMyLibrary": "تمت إضافتها إلى مكتبتي",
+  "@addedToMyLibrary": {
+    "x-mt": true
+  },
+  "removedFromMyLibrary": "تمت الإزالة من مكتبتي",
+  "@removedFromMyLibrary": {
+    "x-mt": true
+  },
+  "myLibrary": "مكتبتي",
+  "@myLibrary": {
+    "x-mt": true
+  },
+  "allResources": "جميع الموارد",
+  "@allResources": {
+    "x-mt": true
+  },
+  "viewResource": "عرض الموارد",
+  "@viewResource": {
+    "x-mt": true
+  },
+  "view": "عرض",
+  "linkNotAvailable": "الرابط غير متاح",
+  "noRatings": "لا يوجد تقييمات حتى الآن",
+  "@noRatings": {
+    "x-mt": true
+  },
+  "basedOnRatings": "based on {count, plural, =1{1 rating} other{{count} ratings}}",
+  "@basedOnRatings": {
+    "x-mt": true
+  },
+  "rating": "تصنيف",
+  "@rating": {
+    "x-mt": true
+  },
+  "operationFailed": "فشلت العملية",
+  "@operationFailed": {
+    "x-mt": true
+  },
+  "filterResources": "تصفية الموارد",
+  "@filterResources": {
+    "x-mt": true
+  },
+  "teamSurveys": "استطلاعات الفريق",
+  "adoptableSurveys": "الدراسات الاستقصائية المتاحة لاعتمادها",
+  "@adoptableSurveys": {
+    "x-mt": true
+  },
+  "noAdoptableSurveys": "لا توجد استطلاعات متاحة لاعتمادها",
+  "@noAdoptableSurveys": {
+    "x-mt": true
+  },
+  "adoptSurvey": "تبنَّى الاستبيان",
+  "surveyAdopted": "اعتمد المسح",
+  "@surveyAdopted": {
+    "x-mt": true
+  },
+  "completedCourse": "دورة مكتملة",
+  "remindMeLater": "ذكرني لاحقاً",
+  "remindLater": "تذكير لاحقاً",
+  "setReminder": "تعيين تذكير",
+  "minutes": "دقائق",
+  "hours": "ساعات",
+  "days": "أيام",
+  "reminderSurveysToComplete": "Reminder: You have {count, plural, =1{1 survey} other{{count} surveys}} to complete",
+  "@reminderSurveysToComplete": {
+    "x-mt": true
+  },
+  "myActivities": "أنشطتي",
+  "@myActivities": {
+    "x-mt": true
+  },
+  "chartLabel": "عدد مرات تسجيل الدخول",
+  "selectLanguage": "اختر اللغة",
+  "english": "english",
+  "spanish": "español",
+  "somali": "somali",
+  "nepali": "नेपाली",
+  "arabic": "عربى",
+  "french": "français",
+  "activitySummary": "نشاط",
+  "@activitySummary": {
+    "x-mt": true
+  },
+  "lastLogin": "آخر تسجيل دخول",
+  "memberDetail": "تفاصيل الأعضاء",
+  "@memberDetail": {
+    "x-mt": true
+  },
+  "numberOfVisits": "عدد الزيارات",
+  "noLogoutRecord": "لم يتم العثور على سجل الخروج",
+  "@noLogoutRecord": {
+    "x-mt": true
+  },
+  "totalVisits": "إجمالي الزيارات",
+  "mostOpenedResource": "أكثر مورد تم فتحه",
+  "numberOfResourcesOpened": "عدد الموارد المفتوحة",
+  "resourceOpenedTimes": "{title} تم الفتح {count} مرات",
+  "@resourceOpenedTimes": {
+    "x-mt": true
+  },
+  "resourcesOpenedTimes": "{count, plural, =1{Resource opened 1 time} other{Resource opened {count} times}}",
+  "@resourcesOpenedTimes": {
+    "x-mt": true
+  },
+  "serverReachable": "يمكن الوصول إلى الخادم",
+  "@serverReachable": {
+    "x-mt": true
+  },
+  "serverUnreachable": "الخادم غير قابل للوصول",
+  "@serverUnreachable": {
+    "x-mt": true
+  },
+  "serverChecking": "جارٍ فحص الخادم",
+  "gridView": "عرض شبكي",
+  "listView": "عرض قائمة",
+  "disclaimer": "تنصل",
+  "aboutContent": "### ماي بلانيت \n\nmyPlanet هي أداة تعليمية مصممة للعمل مع تطبيق الويب Planet. وقد تم استخدامه لتحسين التعليم المبكر، والمدارس الثانوية، والصحة القروية، وتنمية القوى العاملة للشباب، والتنمية الاقتصادية والمجتمعية. \n\nتعد Planet Houses مستودعًا للموارد المجانية والمفتوحة ذات الملكية العامة لإفادة جميع المتعلمين. \n\nتم تصميم myPlanet ليكون متاحًا للجميع، في كل مكان، وفي كل وقت. إنها محمولة وبأسعار معقولة وقابلة للتطوير ومستدامة. يعمل على أي جهاز أندرويد مثل الأجهزة اللوحية والهواتف المحمولة. وهو يعمل خارج، وكذلك على شبكة الإنترنت. \n\nيمكّن هذا التطبيق المدارس والمجتمعات من الحصول على مكتبة كاملة متعددة الوسائط ونظام تعليمي يتصل بشكل دوري مع Planet. يمكن أن تحتوي الأجهزة التي تم تكوينها على لوحة المعلومات الشخصية للمتعلمين. ويضمن ذلك أن يتمكن المتعلمون من قراءة الكتب الموجودة على الرفوف الخاصة بهم والحصول على الدورات التدريبية دون الاتصال بالإنترنت - أي دون الاتصال بخادم مركزي. يتم تشجيع المتعلمين على تقييم الموارد التي يستخدمونها والدورات التدريبية التي يأخذونها من نجمة إلى خمس نجوم. يمكن للمتعلمين بشكل دوري المزامنة مع الخادم. يتم تحميل بيانات النشاط وتنزيل الموارد الجديدة في غضون دقائق قليلة إلى myPlanet للاستخدام دون اتصال بالإنترنت. \n\nتحتوي لوحة التحكم أيضًا على سجل الإنجازات وتقويم الأحداث ونظام الدردشة الداخلي للتواصل مع الأعضاء الآخرين. \n\nوقد أثبت موقع myPlanet فعاليته العالية في تحسين فرص التعلم لأكثر من خمسين ألف متعلم في أكثر من 100 موقع، في المدارس في جميع أنحاء نيبال وغانا وكينيا ورواندا، مع اللاجئين السوريين في الأردن، واللاجئين الصوماليين في كينيا، والعاملين الصحيين في القرى في أوغندا.",
+  "@aboutContent": {
+    "x-mt": true
+  },
+  "disclaimerContent": "# Disclaimer\n\nLast updated: January 10, 2020\n\n# Interpretation and Definitions\n\n## Interpretation\n\nThe words of which the initial letter is capitalized have meanings defined under the following conditions.\n\nThe following definitions shall have the same meaning regardless of whether they appear in singular or in plural.\n\n## Definitions\n\nFor the purposes of this Disclaimer:\n\n- **Company** (referred to as either \"the Company\", \"We\", \"Us\" or \"Our\" in this Cookies Policy) refers to myPlanet.\n- **You** means the individual accessing the Service, or the company, or other legal entity on behalf of which such individual is accessing or using the Service, as applicable.\n- **Application** means the software program provided by the Company downloaded by You on any electronic device named myPlanet.\n- **Service** refers to the Application.\n\n# Disclaimer\n\nThe information contained on the Service is for general information purposes only.\n\nThe Company assumes no responsibility for errors or omissions in the contents of the Service.\n\nIn no event shall the Company be liable for any special, direct, indirect, consequential, or incidental damages or any damages whatsoever, whether in an action of contract, negligence or other tort, arising out of or in connection with the use of the Service or the contents of the Service. The Company reserves the right to make additions, deletions, or modifications to the contents on the Service at any time without prior notice.\n\nThe Company does not warrant that the Service is free of viruses or other harmful components.\n\n# Medical Information Disclaimer\n\nThe information about health provided by the Service is not intended to diagnose, treat, cure or prevent disease. Products, services, information, and other content provided by the Service, including information linking to third-party websites are provided for informational purposes only.\n\nInformation offered by the Service is not comprehensive and does not cover all diseases, ailments, physical conditions or their treatment.\n\nIndividuals are different and may react differently to different products. Comments made on the Service by employees or other users are strictly their own personal views made in their own personal capacity and are not claims made by the Company nor do they represent the position or view of the Company.\n\nThe Company is not liable for any information provided by the Service with regard to recommendations regarding supplements for any health purposes.\n\nThe Company makes no guarantee or warranty with respect to any products or services sold. The Company is not responsible for any damages for information or services provided even if the Company has been advised of the possibility of damages.\n\n# External Links Disclaimer\n\nThe Service may contain links to external websites that are not provided or maintained by or in any way affiliated with the Company.\n\nPlease note that the Company does not guarantee the accuracy, relevance, timeliness, or completeness of any information on these external websites.\n\n# Errors and Omissions Disclaimer\n\nThe information given by the Service is for general guidance on matters of interest only. Even if the Company takes every precaution to ensure that the content of the Service is both current and accurate, errors can occur. Plus, given the changing nature of laws, rules, and regulations, there may be delays, omissions, or inaccuracies in the information contained on the Service.\n\nThe Company is not responsible for any errors or omissions, or for the results obtained from the use of this information.\n\n# Fair Use Disclaimer\n\nThe Company may use copyrighted material which has not always been specifically authorized by the copyright owner. The Company is making such material available for criticism, comment, news reporting, teaching, scholarship, or research.\n\nThe Company believes this constitutes a \"fair use\" of any such copyrighted material as provided for in section 107 of the United States Copyright law.\n\nIf You wish to use copyrighted material from the Service for your own purposes that go beyond fair use, You must obtain permission from the copyright owner.\n\n# Views Expressed Disclaimer\n\nThe Service may contain views and opinions which are those of the authors and do not necessarily reflect the official policy or position of any other author, agency, organization, employer, or company, including the Company.\n\nComments published by users are their sole responsibility and the users will take full responsibility, liability, and blame for any libel or litigation that results from something written in or as a direct result of something written in a comment. The Company is not liable for any comment published by users and reserves the right to delete any comment for any reason whatsoever.\n\n# No Responsibility Disclaimer\n\nThe information on the Service is provided with the understanding that the Company is not herein engaged in rendering legal, accounting, tax, or other professional advice and services. As such, it should not be used as a substitute for consultation with professional accounting, tax, legal, or other competent advisers.\n\nIn no event shall the Company or its suppliers be liable for any special, incidental, indirect, or consequential damages whatsoever arising out of or in connection with your access or use or inability to access or use the Service.\n\n# \"Use at Your Own Risk\" Disclaimer\n\nAll information in the Service is provided \"as is\", with no guarantee of completeness, accuracy, timeliness, or of the results obtained from the use of this information, and without warranty of any kind, express or implied, including, but not limited to warranties of performance, merchantability, and fitness for a particular purpose.\n\nThe Company will not be liable to You or anyone else for any decision made or action taken in reliance on the information given by the Service or for any consequential, special, or similar damages, even if advised of the possibility of such damages.\n\n## Contact Us\n\nIf you have any questions about this Disclaimer, You can contact Us:\n\n- By email: myplanet@ole.org\n- By visiting this page on our website: [https://ole.org/contact](https://ole.org/contact)",
+  "@disclaimerContent": {
+    "x-mt": true
+  },
+  "shareWithCommunity": "مشاركة مع المجتمع",
+  "confirmShareCommunity": "هل أنت متأكد أنك تريد مشاركة هذا المحتوى مع المجتمع؟",
+  "voiceShared": "مشاركة مشتركة مع المجتمع",
+  "@voiceShared": {
+    "x-mt": true
+  },
+  "voiceUnshared": "تمت إزالته من المجتمع",
+  "@voiceUnshared": {
+    "x-mt": true
+  },
+  "exportCsv": "تصدير CSV",
+  "csvFileSavedSuccessfully": "تم حفظ ملف CSV بنجاح.",
+  "failedToSaveCsvFile": "فشل في حفظ ملف CSV.",
+  "exportCancelled": "تم إلغاء التصدير.",
+  "collections": "المجموعات",
+  "filterCollections": "تصفية المجموعات",
+  "selectManyCollections": "اختيار العديد من المجموعات",
+  "selected": "المحدد: ",
+  "myAchievements": "إنجازاتي",
+  "editAchievement": "تحرير الإنجازات",
+  "addAchievement": "إضافة إنجاز",
+  "addAnAchievement": "إضافة إنجاز",
+  "addReference": "إضافة مرجع",
+  "addAReference": "إضافة مرجع",
+  "selectResources": "اختر الموارد: ",
+  "myGoals": "أهدافي",
+  "myPurpose": "هدفي",
+  "noGoalAdded": "لم يتم تحديد أي أهداف بعد",
+  "noPurposeAdded": "لم تتم إضافة غرض",
+  "noAchievementAdded": "ملخص الإنجازات",
+  "noReferencesAdded": "لم تتم إضافة مراجع",
+  "sendToNation": "اسمح بمشاركة إنجازاتك مع الوطن",
+  "saving": "جار الحفظ…",
+  "achievementSaved": "تم تحديث الإنجاز",
+  "titleIsRequired": "العنوان مطلوب",
+  "selectPdfOnly": "يرجى اختيار ملف PDF",
+  "viewCv": "عرض السيرة الذاتية",
+  "deleteCv": "حذف السيرة الذاتية",
+  "uploadCvLabel": "قم بتحميل سيرتك الذاتية أدناه (PDF فقط)",
+  "addMaterials": "أضف أي مواد تُظهر إنجازاتك أدناه",
+  "labelAddReferences": "أضف أي مراجع أدناه",
+  "cvResume": "السيرة الذاتية",
+  "relationship": "العلاقة",
+  "noFileChosen": "لم يتم اختيار ملف",
+  "chooseFile": "اختيار الملف",
+  "currentCv": "السيرة الذاتية الحالية: {name}",
+  "update": "تحديث",
+  "@currentCv": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "textSize": "حجم النص",
+  "selectTextSize": "اختر حجم النص",
+  "textSizeSmall": "صغير",
+  "textSizeMedium": "متوسط",
+  "textSizeLarge": "كبير",
+  "resetApp": "إعادة تعيين التطبيق",
+  "clearAllDataConfirm": "هل أنت متأكد أنك تريد مسح جميع البيانات؟",
+  "dataCleared": "تم مسح كافة البيانات",
+  "@dataCleared": {
+    "x-mt": true
+  },
+  "dataManagement": "إدارة البيانات",
+  "@dataManagement": {
+    "x-mt": true
+  },
+  "resourceTitleAlreadyExists": "يوجد مورد بهذا العنوان بالفعل",
+  "failedToUpdateResource": "فشل تحديث المورد",
+  "unableToAddHealthRecord": "غير قادر على إضافة سجل صحي",
+  "summaryOfAchievements": "ملخص الإنجازات - قم بتلخيص إنجازاتك بإيجاز وأضف المواد ذات الصلة أدناه",
+  "myGoalsDescription": "أهدافي - ما هي أهدافك للعشر سنوات القادمة؟",
+  "myPurposeDescription": "هدفي - ما هي طموحاتك التعليمية والمهنية؟",
+  "pleaseAnswerToContinue": "يرجى تحديد / كتابة إجابتك للمتابعة",
+  "teamDocuments": "الوثائق",
+  "confirmLeaveTeam": "هل أنت متأكد أنك تريد مغادرة هذا الفريق؟",
+  "appVersion": "{version} الإصدار",
+  "reportDateDetails": "تم إنشاء التقرير في: {created} | تم تحديثه في: {updated}",
+  "fileNotFound": "الملف غير موجود: {fileName}",
+  "fileCountMany": "{count} ملفات",
+  "stepsHeading": "خطوات",
+  "courseProgressCount": "التقدم {current} من {max}",
+  "resourceNotificationMessage": "لديك {count} موارد لم يتم تنزيلها",
+  "taskNotificationMessage": "{title} مستحق في {date}",
+  "storageRunningLow": "التخزين قليل:",
+  "storageAvailable": "التخزين المتاح:",
+  "joinRequestPrefix": "طلب الانضمام:",
+  "userRequestedToJoinTeam": "{user} قد طلب الانضمام إلى {team}",
+  "markAsRead": "وضع علامة كمقروء"
+}
