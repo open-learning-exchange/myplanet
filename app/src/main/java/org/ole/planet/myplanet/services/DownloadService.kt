@@ -90,6 +90,10 @@ class DownloadService : Service() {
     private var isCurrentDownloadPriority = false
     private var isQueueRunning = false
 
+    @Volatile
+    private var cachedRemainingCount = 0
+    private var areNotificationsEnabled = true
+
     private var currentJob: Job? = null
     private lateinit var broadcastService: BroadcastService
 
@@ -130,6 +134,8 @@ class DownloadService : Service() {
 
     private suspend fun processDownloadQueue() {
         Log.d(TAG, "processDownloadQueue: started")
+        DownloadUtils.createChannels(this)
+        areNotificationsEnabled = NotificationManagerCompat.from(this).areNotificationsEnabled()
         while (true) {
             val nextUrl = getNextPriorityUrl() ?: getNextPendingUrl()
 
@@ -144,8 +150,8 @@ class DownloadService : Service() {
 
             processedUrls.add(nextUrl.url)
             sessionTotalCount++
-            val remaining = getRemainingCount()
-            Log.d(TAG, "processDownloadQueue: [${sessionTotalCount}] ${nextUrl.url.substringAfterLast('/')} priority=${nextUrl.isPriority} remaining=$remaining")
+            cachedRemainingCount = getRemainingCount()
+            Log.d(TAG, "processDownloadQueue: [${sessionTotalCount}] ${nextUrl.url.substringAfterLast('/')} priority=${nextUrl.isPriority} remaining=$cachedRemainingCount")
 
             isCurrentDownloadPriority = nextUrl.isPriority
             updateNotificationForBatchDownload()
@@ -184,21 +190,23 @@ class DownloadService : Service() {
             putStringSet(PRIORITY_DOWNLOADS_KEY, remainingPriority)
             putStringSet(PENDING_DOWNLOADS_KEY, remainingPending)
         }
+        cachedRemainingCount = getRemainingCount()
     }
 
     private fun updateNotificationForBatchDownload() {
-        DownloadUtils.createChannels(this)
-        notificationBuilder = NotificationCompat.Builder(this, "DownloadChannel")
+        val builder = notificationBuilder ?: NotificationCompat.Builder(this, "DownloadChannel")
             .setContentTitle(getString(R.string.downloading_files))
-            .setContentText("Starting downloads (0/${getRemainingCount() + 1})")
             .setSmallIcon(R.drawable.ic_download)
-            .setProgress(100, 0, true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .setSilent(true)
             .setOnlyAlertOnce(true)
+            .also { notificationBuilder = it }
 
-        notificationManager?.notify(ONGOING_NOTIFICATION_ID, notificationBuilder?.build())
+        builder.setContentText("Starting downloads (0/${cachedRemainingCount + 1})")
+            .setProgress(100, 0, true)
+
+        notificationManager?.notify(ONGOING_NOTIFICATION_ID, builder.build())
     }
 
     private suspend fun initDownload(url: String, fromSync: Boolean): Boolean {
@@ -336,7 +344,7 @@ class DownloadService : Service() {
     }
 
     private fun downloadFailed(message: String, fromSync: Boolean) {
-        val remaining = getRemainingCount()
+        val remaining = cachedRemainingCount
         notificationBuilder?.apply {
             setContentText("Error: $message")
             setSubText("$sessionCompletedCount completed, $remaining remaining")
@@ -372,7 +380,7 @@ class DownloadService : Service() {
         Log.d(TAG, "downloadFile: writing $fileName to ${tempFile.absolutePath} size=${if (fileSize == -1L) "unknown" else "${fileSize}B"}")
 
         try {
-            BufferedInputStream(body.byteStream(), 1024 * 8).use { bis ->
+            BufferedInputStream(body.byteStream(), BUFFER_SIZE).use { bis ->
                 FileOutputStream(tempFile).use { output ->
                     val download = Download().apply {
                         this.fileName = getFileNameFromUrl(url)
@@ -457,9 +465,9 @@ class DownloadService : Service() {
         download.fileUrl = originalDownloadUrl.ifEmpty { url }
         sendIntent(download, fromSync)
 
-        if (NotificationManagerCompat.from(this).areNotificationsEnabled()) {
+        if (areNotificationsEnabled) {
             notificationBuilder?.apply {
-                val remaining = getRemainingCount()
+                val remaining = cachedRemainingCount
                 val progressText = if (currentFileProgress in 0..100) {
                     "$fileName ($currentFileProgress%)"
                 } else {
