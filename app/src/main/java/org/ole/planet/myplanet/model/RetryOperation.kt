@@ -42,6 +42,24 @@ open class RetryOperation {
     var modelClassName: String = ""
     var userId: String? = null
 
+    fun recordFailedAttempt(
+        errorMessage: String?,
+        httpCode: Int?,
+        timestamp: Long = System.currentTimeMillis()
+    ) {
+        attemptCount += 1
+        lastAttemptTime = timestamp
+        this.errorMessage = errorMessage
+        this.httpCode = httpCode
+
+        if (attemptCount >= maxAttempts) {
+            status = STATUS_ABANDONED
+        } else {
+            status = STATUS_PENDING
+            nextRetryTime = calculateNextRetryTime(attemptCount, timestamp)
+        }
+    }
+
     companion object {
         const val STATUS_PENDING = "pending"
         const val STATUS_IN_PROGRESS = "in_progress"
@@ -82,9 +100,9 @@ open class RetryOperation {
             }
         }
 
-        fun calculateNextRetryTime(attemptCount: Int): Long {
+        fun calculateNextRetryTime(attemptCount: Int, currentTime: Long = System.currentTimeMillis()): Long {
             val delay = minOf(BASE_DELAY_MS * (1L shl attemptCount), MAX_DELAY_MS)
-            return System.currentTimeMillis() + delay
+            return currentTime + delay
         }
     }
 }

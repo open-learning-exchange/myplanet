@@ -38,18 +38,7 @@ class RetryRepositoryImpl @Inject constructor(
         operationId: String,
         failure: RetryFailure
     ) {
-        retryDao.findById(operationId)?.let { op ->
-            op.attemptCount += 1
-            op.lastAttemptTime = timeProvider.now()
-            op.nextRetryTime = RetryOperation.calculateNextRetryTime(op.attemptCount)
-            op.errorMessage = failure.message
-            op.httpCode = failure.httpCode
-
-            if (op.attemptCount >= op.maxAttempts) {
-                op.status = RetryOperation.STATUS_ABANDONED
-            }
-            retryDao.update(op)
-        }
+        markFailed(operationId, failure.message, failure.httpCode)
     }
 
     override suspend fun markInProgress(operationId: String) {
@@ -61,20 +50,7 @@ class RetryRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markFailed(operationId: String, errorMessage: String?, httpCode: Int?) {
-        retryDao.findById(operationId)?.let { op ->
-            op.attemptCount += 1
-            op.lastAttemptTime = timeProvider.now()
-            op.errorMessage = errorMessage
-            op.httpCode = httpCode
-
-            if (op.attemptCount >= op.maxAttempts) {
-                op.status = RetryOperation.STATUS_ABANDONED
-            } else {
-                op.status = RetryOperation.STATUS_PENDING
-                op.nextRetryTime = RetryOperation.calculateNextRetryTime(op.attemptCount)
-            }
-            retryDao.update(op)
-        }
+        retryDao.recordFailedAttempt(operationId, errorMessage, httpCode, timeProvider.now())
     }
 
     override suspend fun getPending(): List<RetryOperation> {
