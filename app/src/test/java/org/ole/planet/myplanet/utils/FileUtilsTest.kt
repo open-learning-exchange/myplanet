@@ -212,6 +212,58 @@ class FileUtilsTest {
     }
 
     @Test
+    fun findHtmlCoverImage_returnsNullForNonDirectoryInput() {
+        val fileInput = File(tempDir, "file.txt").apply { writeText("hello") }
+        assertNull(FileUtils.findHtmlCoverImage(fileInput))
+
+        val nonExistent = File(tempDir, "non_existent_folder")
+        assertNull(FileUtils.findHtmlCoverImage(nonExistent))
+    }
+
+    @Test
+    fun findHtmlCoverImage_handlesCaseInsensitiveExtensionsAndHints() {
+        File(tempDir, "POSTER_IMAGE.WEBP").writeBytes(ByteArray(10))
+
+        val cover = FileUtils.findHtmlCoverImage(tempDir)
+
+        assertEquals("POSTER_IMAGE.WEBP", cover?.name)
+    }
+
+    @Test
+    fun findHtmlCoverImage_respectsMaxDepthLimit() {
+        // Depth 1: tempDir
+        // Depth 2: d1
+        // Depth 3: d1/d2
+        // Depth 4: d1/d2/d3
+        // Depth 5: d1/d2/d3/d4
+        val depth4Dir = File(tempDir, "d1/d2/d3").apply { mkdirs() }
+        val depth5Dir = File(tempDir, "d1/d2/d3/d4").apply { mkdirs() }
+
+        File(depth5Dir, "cover.png").writeBytes(ByteArray(10))
+
+        // cover.png is at depth 5, so walkTopDown().maxDepth(4) will not reach it
+        assertNull(FileUtils.findHtmlCoverImage(tempDir))
+
+        File(depth4Dir, "cover_depth4.png").writeBytes(ByteArray(10))
+        val found = FileUtils.findHtmlCoverImage(tempDir)
+        assertEquals("cover_depth4.png", found?.name)
+    }
+
+    @Test
+    fun findHtmlCoverImage_preservesWalkOrderTieBreakingForLargestFileFallback() {
+        val file1 = File(tempDir, "a_image.jpg").apply { writeBytes(ByteArray(100)) }
+        val file2 = File(tempDir, "b_image.jpg").apply { writeBytes(ByteArray(100)) }
+
+        val expectedFirstInWalk = tempDir.walkTopDown()
+            .maxDepth(4)
+            .first { it.isFile && it.extension.lowercase() in setOf("jpg") }
+
+        val cover = FileUtils.findHtmlCoverImage(tempDir)
+
+        assertEquals(expectedFirstInWalk.name, cover?.name)
+    }
+
+    @Test
     fun getIdFromUrl_returnsCorrectId() {
         assertEquals("123", FileUtils.getIdFromUrl("http://example.com/resources/123/file.txt"))
         assertEquals("abc", FileUtils.getIdFromUrl("https://test.com/api/resources/abc/data"))
