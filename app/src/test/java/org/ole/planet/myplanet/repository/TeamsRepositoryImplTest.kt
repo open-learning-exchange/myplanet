@@ -602,4 +602,55 @@ class TeamsRepositoryImplTest {
         coVerify(exactly = 1) { userRepository.getUsersByIds(listOf("user1", "user2")) }
         coVerify(exactly = 0) { userRepository.getUserById(any()) }
     }
+
+    @Test
+    fun `getJoinedMembersWithVisitInfo aggregates member visit logs correctly in single pass`() = runTest(testDispatcher) {
+        val teamId = "team1"
+        val user1 = UserEntity().apply { id = "user1"; name = "Alice" }
+        val user2 = UserEntity().apply { id = "user2"; name = "Bob" }
+        val user3 = UserEntity().apply { id = "user3"; name = "Charlie" }
+
+        val member1 = MyTeam().apply { userId = "user1"; isDeletePending = false; isLeader = true }
+        val member2 = MyTeam().apply { userId = "user2"; isDeletePending = false; isLeader = false }
+        val member3 = MyTeam().apply { userId = "user3"; isDeletePending = false; isLeader = false }
+
+        coEvery { teamDao.getByTeamIdAndDocType(teamId, "membership") } returns listOf(member1, member2, member3)
+        coEvery { userRepository.getUsersByIds(listOf("user1", "user2", "user3")) } returns listOf(user1, user2, user3)
+        every { sharedPrefManager.getCommunityLeaders() } returns ""
+
+        val log1 = TeamLog().apply { user = "Alice"; time = 1000L }
+        val log2 = TeamLog().apply { user = "Alice"; time = 3000L }
+        val log3 = TeamLog().apply { user = "Alice"; time = 2000L }
+        val logNullTime = TeamLog().apply { user = "Bob"; time = null }
+
+        coEvery { teamLogDao.getTeamVisitsForUsers(teamId, listOf("Alice", "Bob", "Charlie")) } returns listOf(log1, log2, log3, logNullTime)
+        coEvery { activitiesRepository.getLastVisit("Alice") } returns 5000L
+        coEvery { activitiesRepository.getLastVisit("Bob") } returns null
+        coEvery { activitiesRepository.getLastVisit("Charlie") } returns null
+
+        val result = teamsRepository.getJoinedMembersWithVisitInfo(teamId)
+
+        assertEquals(3, result.size)
+
+        // Leader (Alice) should be first
+        val aliceData = result[0]
+        assertEquals(user1, aliceData.user)
+        assertEquals(3L, aliceData.visitCount)
+        assertEquals(3000L, aliceData.lastVisitDate)
+        assertEquals(true, aliceData.isLeader)
+
+        // Bob: 1 log with null time
+        val bobData = result[1]
+        assertEquals(user2, bobData.user)
+        assertEquals(1L, bobData.visitCount)
+        assertEquals(0L, bobData.lastVisitDate) // null log.time resolves to 0L
+        assertEquals(false, bobData.isLeader)
+
+        // Charlie: 0 logs
+        val charlieData = result[2]
+        assertEquals(user3, charlieData.user)
+        assertEquals(0L, charlieData.visitCount)
+        assertEquals(null, charlieData.lastVisitDate)
+        assertEquals(false, charlieData.isLeader)
+    }
 }
