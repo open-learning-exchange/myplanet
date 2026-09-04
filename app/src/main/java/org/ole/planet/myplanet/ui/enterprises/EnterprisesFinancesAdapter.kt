@@ -27,7 +27,8 @@ class EnterprisesFinancesAdapter(
         areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
     )
 ) {
-    private val attachmentExistsCache = HashMap<String, Boolean>()
+    private val attachmentExistsCache = HashMap<String, Pair<Boolean, Long>>()
+    private val cacheTtlMs = 5000L
 
     override fun onCurrentListChanged(
         previousList: MutableList<Transaction>,
@@ -67,7 +68,21 @@ class EnterprisesFinancesAdapter(
 
     private fun bindFinanceImage(binding: RowFinanceBinding, item: Transaction) {
         val imageFile = MyTeam.getAttachmentFile(context, item.id, item.imageName)
-        if (imageFile != null && attachmentExistsCache.getOrPut(imageFile.absolutePath) { imageFile.exists() }) {
+        val now = System.currentTimeMillis()
+        val exists = if (imageFile != null) {
+            val cached = attachmentExistsCache[imageFile.absolutePath]
+            if (cached != null && now - cached.second < cacheTtlMs) {
+                cached.first
+            } else {
+                val freshExists = imageFile.exists()
+                attachmentExistsCache[imageFile.absolutePath] = Pair(freshExists, now)
+                freshExists
+            }
+        } else {
+            false
+        }
+
+        if (imageFile != null && exists) {
             binding.financeImage.visibility = View.VISIBLE
             Glide.with(context)
                 .load(imageFile)
@@ -79,6 +94,7 @@ class EnterprisesFinancesAdapter(
             }
         } else {
             binding.financeImage.visibility = View.GONE
+            binding.financeImage.setOnClickListener(null)
         }
     }
 

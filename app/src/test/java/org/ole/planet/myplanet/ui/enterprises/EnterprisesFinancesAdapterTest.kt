@@ -91,7 +91,7 @@ class EnterprisesFinancesAdapterTest {
             // File is deleted on disk
             imageFile.delete()
 
-            // Second bind uses cached exists value so image remains visible
+            // Second bind within TTL uses cached exists value (true) so image remains visible
             adapter.onBindViewHolder(viewHolder, 0)
             assertEquals(View.VISIBLE, viewHolder.binding.financeImage.visibility)
 
@@ -101,6 +101,45 @@ class EnterprisesFinancesAdapterTest {
                 // Cache was cleared, so disk re-check detects file is deleted and sets visibility to GONE
                 assertEquals(View.GONE, viewHolder.binding.financeImage.visibility)
             }
+        }
+    }
+
+    @Test
+    fun testBindFinanceImage_cacheExpiresAfterTtl() {
+        val teamAttachmentsDir = File(tempDir, "team_attachments/tx1").apply { mkdirs() }
+        val imageFile = File(teamAttachmentsDir, "receipt.jpg")
+
+        val transaction = Transaction(
+            id = "tx1",
+            date = System.currentTimeMillis(),
+            description = "Test transaction",
+            type = "debit",
+            amount = 100,
+            balance = 500,
+            imageName = "receipt.jpg"
+        )
+
+        adapter.submitList(listOf(transaction)) {
+            val binding = RowFinanceBinding.inflate(LayoutInflater.from(context))
+            val viewHolder = EnterprisesFinancesAdapter.FinanceViewHolder(binding)
+
+            // File doesn't exist initially -> GONE (and cached false)
+            adapter.onBindViewHolder(viewHolder, 0)
+            assertEquals(View.GONE, viewHolder.binding.financeImage.visibility)
+
+            // File appears on disk (e.g. downloaded)
+            imageFile.createNewFile()
+
+            // Immediate re-bind within TTL uses cached false -> still GONE
+            adapter.onBindViewHolder(viewHolder, 0)
+            assertEquals(View.GONE, viewHolder.binding.financeImage.visibility)
+
+            // Sleep past the 5000ms TTL
+            Thread.sleep(5100L)
+
+            // Re-bind after TTL expires re-stats disk -> VISIBLE
+            adapter.onBindViewHolder(viewHolder, 0)
+            assertEquals(View.VISIBLE, viewHolder.binding.financeImage.visibility)
         }
     }
 }
