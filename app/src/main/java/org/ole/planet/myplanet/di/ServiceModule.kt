@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.di
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import dagger.Lazy
 import dagger.Module
 import dagger.Provides
@@ -10,6 +11,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Qualifier
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -40,6 +42,8 @@ import org.ole.planet.myplanet.utils.SyncTimeLogger
 @Retention(AnnotationRetention.BINARY)
 annotation class ApplicationScope
 
+private const val APPLICATION_SCOPE_LOG_TAG = "ApplicationScope"
+
 @Module
 @InstallIn(SingletonComponent::class)
 object ServiceModule {
@@ -48,7 +52,10 @@ object ServiceModule {
     @Singleton
     @ApplicationScope
     fun provideApplicationScope(dispatcherProvider: DispatcherProvider): CoroutineScope {
-        return CoroutineScope(SupervisorJob() + dispatcherProvider.io)
+        val logFailure = CoroutineExceptionHandler { _, failure ->
+            Log.e(APPLICATION_SCOPE_LOG_TAG, "application scope work failed", failure)
+        }
+        return CoroutineScope(SupervisorJob() + dispatcherProvider.io + logFailure)
     }
 
     @Provides
