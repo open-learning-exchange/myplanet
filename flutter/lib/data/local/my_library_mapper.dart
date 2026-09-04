@@ -55,6 +55,7 @@ class MyLibraryMapper {
 
     final title = JsonUtils.getString('title', doc);
     final attachment = _primaryAttachment(doc, resourceId, couchDbUrl);
+    final isPrivate = JsonUtils.getBool('private', doc);
 
     return MyLibraryTableCompanion(
       id: Value(resourceId),
@@ -102,16 +103,64 @@ class MyLibraryMapper {
       level: Value(
         _mergedList(existingLevel, JsonUtils.getStringList('level', doc)),
       ),
-      tag: Value(_mergedList(existingTag, JsonUtils.getStringList('tag', doc))),
+      // The document key is `tags`, plural (`MyLibrary.kt:291`), even though
+      // `serializeResource` writes the key back out as `tag`
+      // (`MyLibrary.kt:100`) and the column keeps the singular name. Reading
+      // the singular key matched the writer and never the server, so the
+      // column was empty on every synced row — and `serializeResource` reads
+      // it, so an achievement's attached resource document shipped an empty
+      // tag list where the Kotlin ships the resource's tags.
+      tag: Value(
+        _mergedList(existingTag, JsonUtils.getStringList('tags', doc)),
+      ),
       languages: Value(
         _mergedList(
           existingLanguages,
           JsonUtils.getStringList('languages', doc),
         ),
       ),
-      isPrivate: Value(JsonUtils.getBool('private', doc)),
-      privateFor: Value(JsonUtils.getStringOrNull('privateFor', doc)),
+      isPrivate: Value(isPrivate),
+      privateFor: _privateFor(doc, isPrivate),
     );
+  }
+
+  /// Port of `MyLibrary.kt:292-299`.
+  ///
+  /// The stored value is a **bare team id**, pulled out of the nested
+  /// `privateFor.teams`; `MyLibrary.serialize` re-wraps it as
+  /// `{"teams": <id>}` when it uploads a private resource
+  /// (`MyLibrary.kt:174-178`), so the nesting lives in the document and never
+  /// in the column. Reading the key as a string stored the Dart literal
+  /// `{teams: team-1}` — the Phase 104 `SurveyMapper.choices` shape.
+  ///
+  /// Nothing in the port reads the column yet: Kotlin's reader is
+  /// `ResourcesRepositoryImpl.markResourceUploaded`, which creates the
+  /// team-resource link on upload, and the port has no resources uploader. So
+  /// this is prophylactic — but a stringified map is not a value a later
+  /// reader could recover a team id from, and it would be indistinguishable
+  /// from a real one.
+  ///
+  /// Three of the Kotlin's four outcomes leave the stored value alone rather
+  /// than clearing it, which is [Value.absent] here: a public document, a
+  /// document with no `privateFor` at all, and one whose `privateFor` is not
+  /// an object. The fourth — an object with no `teams` key — assigns the null
+  /// that `get("teams")?.asString` produces, so it does write.
+  static Value<String?> _privateFor(Map<String, dynamic> doc, bool isPrivate) {
+    if (!isPrivate || !doc.containsKey('privateFor')) {
+      return const Value<String?>.absent();
+    }
+    final privateFor = JsonUtils.getObject('privateFor', doc);
+    if (privateFor == null) return const Value<String?>.absent();
+    // Only a string. `JsonUtils.getString` falls through to `toString()`, so
+    // reading `teams` with it would reproduce the very defect this function
+    // exists to remove, one level down: an array `teams` would store the Dart
+    // literal `[t1, t2]`. The Kotlin instead throws out of `asString`, and
+    // `batchInsertResources`' per-document `try`/`catch` silently drops the
+    // whole resource — neither app should do either, so an unusable `teams`
+    // stores the null the Kotlin already writes for an object that has no
+    // `teams` key at all.
+    final teams = privateFor['teams'];
+    return Value(teams is String && teams.isNotEmpty ? teams : null);
   }
 
   /// Port of `MyLibrary.mergedList` — union of what is stored and what the

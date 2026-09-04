@@ -236,4 +236,97 @@ void main() {
     final rows = await repository.watchForTeam('team-1').first;
     expect(rows.map((r) => r.title), containsAll(<String>['Draft the budget']));
   });
+
+  group('sync and link (schema v46)', () {
+    // `TeamTask.fromJson` stores both verbatim as JSON strings and
+    // `TeamTask.serialize` re-emits them verbatim. `upsertTask` fills them in
+    // only when blank, and its one caller is `createTask` — so a task pulled
+    // from the server keeps the server's values through every later edit.
+
+    test('a synced task keeps the server sync and link verbatim', () async {
+      stubWalk([taskDoc('task-server-1')]);
+      await repository.sync(config: config);
+
+      final row = (await repository.watchForTeam('team-1').first).single;
+      expect(row.sync, '{"type":"local","planetCode":"gua"}');
+      expect(row.link, '{"teams":"team-1"}');
+    });
+
+    test(
+      'an edited server task uploads the authoring planet, not this one',
+      () async {
+        // The observable half. Rebuilding `sync` from the session re-stamps a
+        // task authored on another planet as locally authored here the moment
+        // the user ticks it complete.
+        stubWalk([taskDoc('task-server-1')]);
+        await repository.sync(config: config);
+        final id = (await repository.watchForTeam('team-1').first).single.id;
+        await repository.setCompleted(id, true);
+
+        final doc = TeamTasksRepository.serialize(
+          (await repository.getById(id))!,
+          planetCode: 'this-device',
+        );
+
+        expect(doc['sync'], {'type': 'local', 'planetCode': 'gua'});
+        expect(doc['link'], {'teams': 'team-1'});
+      },
+    );
+
+    test('a document with no sync stores the empty object', () async {
+      // `JsonUtils.getJsonObject` returns an empty `JsonObject` for a missing
+      // key, so `gson.toJson` of it is `"{}"` — not null, which is also why
+      // `upsertTask` would not treat it as blank.
+      final doc = taskDoc('task-server-1')..remove('sync');
+      stubWalk([doc]);
+      await repository.sync(config: config);
+
+      final row = (await repository.watchForTeam('team-1').first).single;
+      expect(row.sync, '{}');
+      expect(row.link, '{"teams":"team-1"}');
+    });
+
+    test('a task created here is stamped the way upsertTask does', () async {
+      // The port has no session inside the repository, so the fill-if-blank
+      // that `upsertTask` performs at create time happens at serialize time
+      // instead — same outcome, since nothing else reads either column.
+      final id = await repository.create(
+        teamId: 'team-9',
+        title: 'Draft the budget',
+        description: '',
+        deadline: 1800000000000,
+      );
+
+      final doc = TeamTasksRepository.serialize(
+        (await repository.getById(id!))!,
+        planetCode: 'gua',
+      );
+
+      expect(doc['link'], {'teams': 'team-9'});
+      expect(doc['sync'], {'type': 'local', 'planetCode': 'gua'});
+    });
+
+    test('a row from before v46 still uploads its rebuilt pair', () async {
+      // The migration writes no backfill, so a task already on the device
+      // carries null in both columns. `serialize` falls back to the
+      // `upsertTask` rebuild, which is byte-for-byte what the port sent for
+      // every task before this version.
+      await db.teamTaskDao.upsert(
+        TeamTasksCompanion.insert(
+          id: 'task-old-1',
+          teamId: 'team-1',
+          title: const Value('Older task'),
+          isUpdated: const Value(true),
+        ),
+      );
+
+      final doc = TeamTasksRepository.serialize(
+        (await repository.getById('task-old-1'))!,
+        planetCode: 'gua',
+      );
+
+      expect(doc['sync'], {'type': 'local', 'planetCode': 'gua'});
+      expect(doc['link'], {'teams': 'team-1'});
+    });
+  });
 }

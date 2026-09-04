@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
@@ -292,5 +294,79 @@ void main() {
     await repository.sync(config: config);
 
     expect((await repository.summary('resource', 'resource-9', null)).total, 1);
+  });
+
+  group('user and createdOn (schema v46)', () {
+    // `insertRatingsFromSync` writes both (`RatingsRepositoryImpl.kt:114-118`)
+    // and `Rating.serializeRating` re-emits them. Before v46 the port had no
+    // column for either, so the sync-in dropped them.
+
+    test('stores the rater document and createdOn off the page', () async {
+      stubWalk([ratingDoc('rating-1', userId: 'org.couchdb.user:ada')]);
+      await repository.sync(config: config);
+
+      final row = (await db.ratingDao.findById('rating-1'))!;
+      expect(row.createdOn, 'ole');
+      final user = jsonDecode(row.user!) as Map<String, dynamic>;
+      expect(user['_id'], 'org.couchdb.user:ada');
+      expect(user['name'], 'ada');
+    });
+
+    test('drops the embedded _attachments before storing', () async {
+      // `RatingsRepositoryImpl.kt:98-102`: the rater's profile photo arrives
+      // base64-encoded inside the rating document and is removed before the
+      // blob is persisted. The Kotlin's stated reason is SQLite's ~2MB
+      // CursorWindow, but the bytes are equally useless here and equally
+      // costly to carry into an upload payload.
+      stubWalk([ratingDoc('rating-1', userId: 'org.couchdb.user:ada')]);
+      await repository.sync(config: config);
+
+      final row = (await db.ratingDao.findById('rating-1'))!;
+      expect(row.user, isNot(contains('_attachments')));
+    });
+
+    test('the rater credentials never reach the local database', () async {
+      // `UserEntity.serialize()` writes `derived_key`, `salt` and
+      // `password_scheme` into every document it builds (`UserEntity.kt:66-70`)
+      // — and a plaintext `password` for a member registered offline
+      // (`:61-65`) — so a `ratings` document carries the rater's password
+      // verifier. Storing the object verbatim would keep a copy for every
+      // rater on the planet in this device's SQLite file, one per rating row,
+      // for a value nothing ever reads back.
+      final doc = ratingDoc('rating-1', userId: 'org.couchdb.user:ada');
+      doc['user'] = <String, dynamic>{
+        '_id': 'org.couchdb.user:ada',
+        'name': 'ada',
+        'derived_key': 'deadbeef',
+        'salt': 'a1b2',
+        'password_scheme': 'pbkdf2',
+        'password': 'hunter2',
+      };
+      stubWalk([doc]);
+      await repository.sync(config: config);
+
+      final stored = (await db.ratingDao.findById('rating-1'))!.user!;
+      for (final secret in [
+        'derived_key',
+        'salt',
+        'password_scheme',
+        'password',
+      ]) {
+        expect(stored, isNot(contains(secret)), reason: secret);
+      }
+      // The fields that attribute the rating still survive.
+      expect(jsonDecode(stored)['name'], 'ada');
+    });
+
+    test('a document with no user object stores an empty one', () async {
+      // `JsonUtils.getJsonObject` returns an empty object for a missing key,
+      // and `gson.toJson` of it is `"{}"`.
+      final doc = ratingDoc('rating-1', userId: 'org.couchdb.user:ada')
+        ..remove('user');
+      stubWalk([doc]);
+      await repository.sync(config: config);
+
+      expect((await db.ratingDao.findById('rating-1'))!.user, '{}');
+    });
   });
 }

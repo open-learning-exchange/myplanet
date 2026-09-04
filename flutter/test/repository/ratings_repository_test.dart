@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/repository/ratings_repository.dart';
@@ -133,4 +136,71 @@ void main() {
       expect(after.total, 3);
     },
   );
+
+  test('createdOn and parentCode come from one source', () async {
+    // `setRatingData` takes `createdOn`, `parentCode`, `planetCode` and `user`
+    // from a single `resolvedUser` (`RatingsRepositoryImpl.kt:159-162`), so
+    // `createdOn == parentCode` is an invariant there. Reading one from the
+    // caller's session and the other from the `users` row breaks it whenever
+    // the two disagree — which the `tablet_users` walk can arrange by
+    // rewriting the stored row under a session that is never re-read.
+    await database.userDao.upsert(
+      UsersCompanion.insert(
+        id: 'user-1',
+        couchId: const Value('org.couchdb.user:ada'),
+        name: const Value('ada'),
+        planetCode: const Value('gua-2'),
+        parentCode: const Value('ole-2'),
+      ),
+    );
+
+    await repository.submit(
+      type: 'course',
+      itemId: 'course-1',
+      title: 'Course',
+      userId: 'user-1',
+      rate: 4,
+      parentCode: 'ole',
+      planetCode: 'gua',
+    );
+
+    final row = (await database.ratingDao.findById('rating-0'))!;
+    expect(row.parentCode, 'ole');
+    expect(row.createdOn, 'ole', reason: 'the same source as parentCode');
+    final user = jsonDecode(row.user!) as Map<String, dynamic>;
+    expect(user['parentCode'], 'ole');
+    expect(user['planetCode'], 'gua');
+  });
+
+  test('a submitted rating snapshots its rater and parent code', () async {
+    // `RatingsRepositoryImpl.setRatingData` writes
+    // `createdOn = resolvedUser.parentCode` and
+    // `user = gson.toJson(resolvedUser.serialize())` at submit time, so the
+    // document uploads the rater as they were when they rated.
+    await database.userDao.upsert(
+      UsersCompanion.insert(
+        id: 'user-1',
+        couchId: const Value('org.couchdb.user:ada'),
+        name: const Value('ada'),
+        planetCode: const Value('gua'),
+        parentCode: const Value('ole'),
+      ),
+    );
+
+    await repository.submit(
+      type: 'course',
+      itemId: 'course-1',
+      title: 'Course',
+      userId: 'user-1',
+      rate: 4,
+      parentCode: 'ole',
+      planetCode: 'gua',
+    );
+
+    final row = (await database.ratingDao.findById('rating-0'))!;
+    expect(row.createdOn, 'ole');
+    final user = jsonDecode(row.user!) as Map<String, dynamic>;
+    expect(user['_id'], 'org.couchdb.user:ada');
+    expect(user['name'], 'ada');
+  });
 }

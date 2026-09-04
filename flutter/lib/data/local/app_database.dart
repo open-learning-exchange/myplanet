@@ -109,7 +109,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 45;
+  int get schemaVersion => 46;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -386,6 +386,25 @@ class AppDatabase extends _$AppDatabase {
           'AND EXISTS (SELECT 1 FROM health_examinations AS p '
           'WHERE p.id = health_examinations.user_id)',
         );
+      }
+
+      // `team_tasks` is preserved, so `createAll` does not alter it. v46 adds
+      // `sync` and `link`, the two JSON sub-objects `TeamTask.fromJson` stores
+      // verbatim and `TeamTask.serialize` re-emits verbatim.
+      //
+      // **No backfill, deliberately.** The server's `sync` names the planet
+      // that authored the task and nothing on an existing row records it, so
+      // there is nothing truthful to write; `link` could be reconstructed as
+      // `{"teams": <team_id>}` — that is where `fromJson` read `teamId` from —
+      // but only for rows whose `link` carried nothing else. Leaving both null
+      // costs nothing, because [TeamTasksRepository.serialize] falls back to
+      // rebuilding them exactly as `upsertTask` does, which is what the port
+      // did for every row before this version. So an existing task uploads
+      // byte-for-byte as it would have; only a task pulled *after* the upgrade
+      // gains the server's own values.
+      if (from < 46) {
+        await _addColumnIfMissing(m, teamTasks, teamTasks.sync);
+        await _addColumnIfMissing(m, teamTasks, teamTasks.link);
       }
     },
   );

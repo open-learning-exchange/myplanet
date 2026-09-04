@@ -1,4 +1,6 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/data/local/my_library_mapper.dart';
 
 void main() {
@@ -159,6 +161,121 @@ void main() {
     });
   });
 
+  group('the two keys the resources walk had wrong', () {
+    // Both reported by Phase 119 as pre-existing and inherited by the shelf
+    // walk. `MyLibrary.kt:291` reads `"tags"`, and `:294-298` reads the nested
+    // `privateFor.teams`.
+
+    test('reads the document key "tags", which is what Planet writes', () {
+      // `insertMyLibrary` reads `"tags"` into the entity field `tag`
+      // (`MyLibrary.kt:291`). The asymmetry is deliberate on the Kotlin's side:
+      // `serializeResource` writes the key back out as `"tag"`
+      // (`MyLibrary.kt:100`), so a port that reads `"tag"` matches the writer
+      // and never the server.
+      final row = MyLibraryMapper.fromDoc({
+        '_id': 'res-1',
+        'title': 'Doc',
+        'tags': ['math', 'science'],
+      }, couchDbUrl: couchDbUrl);
+
+      expect(row!.tag.value, ['math', 'science']);
+    });
+
+    test('merges "tags" into what is already stored', () {
+      final row = MyLibraryMapper.fromDoc(
+        {
+          '_id': 'res-1',
+          'title': 'Doc',
+          'tags': ['science'],
+        },
+        couchDbUrl: couchDbUrl,
+        existingTag: ['math'],
+      );
+
+      expect(row!.tag.value, ['math', 'science']);
+    });
+
+    test('stores privateFor.teams, not the nested object stringified', () {
+      // `MyLibrary.kt:294-298` extracts `privateFor.teams` as a bare id, and
+      // `serializeResource` re-wraps it as `{"teams": <id>}` on the way out.
+      // Reading the key as a string stores the Dart literal `{teams: team-1}`
+      // — the Phase 104 `SurveyMapper.choices` shape, a value no team-id
+      // predicate can match.
+      final row = MyLibraryMapper.fromDoc({
+        '_id': 'res-1',
+        'title': 'Doc',
+        'private': true,
+        'privateFor': {'teams': 'team-1'},
+      }, couchDbUrl: couchDbUrl);
+
+      expect(row!.isPrivate.value, isTrue);
+      expect(row.privateFor.value, 'team-1');
+    });
+
+    test('a public document leaves privateFor alone', () {
+      // The Kotlin assigns `privateFor` only inside `if (isPrivate &&
+      // doc.has("privateFor"))`, so a public document cannot clear the stored
+      // value. An absent companion value is how "leave alone" is spelled here.
+      final row = MyLibraryMapper.fromDoc({
+        '_id': 'res-1',
+        'title': 'Doc',
+        'private': false,
+        'privateFor': {'teams': 'team-1'},
+      }, couchDbUrl: couchDbUrl);
+
+      expect(row!.isPrivate.value, isFalse);
+      expect(row.privateFor.present, isFalse);
+    });
+
+    test(
+      'a privateFor that is not an object leaves the stored value alone',
+      () {
+        // `if (privateForElement.isJsonObject)` — a string, array or null falls
+        // through without assigning.
+        final row = MyLibraryMapper.fromDoc({
+          '_id': 'res-1',
+          'title': 'Doc',
+          'private': true,
+          'privateFor': 'team-1',
+        }, couchDbUrl: couchDbUrl);
+
+        expect(row!.privateFor.present, isFalse);
+      },
+    );
+
+    test('a non-string teams value does not stringify into the column', () {
+      // The defect this whole change exists to remove is a Dart literal in a
+      // column (`{teams: t}`, the Phase 104 `SurveyMapper.choices` shape).
+      // `JsonUtils.getString` falls through to `toString()` for any non-string,
+      // so reading one level deeper reproduces it one level down: an array
+      // `teams` would store `[t1, t2]`.
+      final row = MyLibraryMapper.fromDoc({
+        '_id': 'res-1',
+        'title': 'Doc',
+        'private': true,
+        'privateFor': {
+          'teams': ['t1', 't2'],
+        },
+      }, couchDbUrl: couchDbUrl);
+
+      expect(row!.privateFor.value, isNull);
+    });
+
+    test('a privateFor object with no teams key nulls the column', () {
+      // `privateForObj.get("teams")?.asString` is null, and the Kotlin assigns
+      // that null. This one *does* write.
+      final row = MyLibraryMapper.fromDoc({
+        '_id': 'res-1',
+        'title': 'Doc',
+        'private': true,
+        'privateFor': {'users': 'user-1'},
+      }, couchDbUrl: couchDbUrl);
+
+      expect(row!.privateFor.present, isTrue);
+      expect(row.privateFor.value, isNull);
+    });
+  });
+
   group('credentialFreeBase', () {
     test('strips the satellite credentials', () {
       // The default :443 normalizes away; the non-default case is covered below.
@@ -187,6 +304,84 @@ void main() {
     test('returns null for empty or hostless input', () {
       expect(MyLibraryMapper.credentialFreeBase(''), isNull);
       expect(MyLibraryMapper.credentialFreeBase('not a url'), isNull);
+    });
+  });
+
+  group('the absent companion value through the real upsert', () {
+    // `Value.absent()` is how "the Kotlin skips this assignment" is spelled,
+    // and it only means that if the write path honours it. The Kotlin mutates
+    // an entity in place, so leaving a field alone is genuine; here the
+    // companion goes through `MyLibraryDao.upsertAll`, which is
+    // `insertAllOnConflictUpdate`. Both halves passing alone is the failure
+    // shape Phase 74 and Phase 100 each shipped, so the pair is asserted here.
+    late AppDatabase db;
+
+    setUp(() => db = AppDatabase.memory());
+    tearDown(() => db.close());
+
+    Future<MyLibraryRow?> upsertDoc(Map<String, dynamic> doc) async {
+      final companion = MyLibraryMapper.fromDoc(doc, couchDbUrl: couchDbUrl);
+      await db.myLibraryDao.upsertAll([companion!]);
+      return db.myLibraryDao.getById('res-1');
+    }
+
+    test('a public document does not clear a stored privateFor', () async {
+      await db.myLibraryDao.upsertAll([
+        MyLibraryTableCompanion.insert(
+          id: 'res-1',
+          title: const Value('Doc'),
+          isPrivate: const Value(true),
+          privateFor: const Value('team-1'),
+        ),
+      ]);
+
+      final row = await upsertDoc({
+        '_id': 'res-1',
+        'title': 'Doc',
+        'private': false,
+      });
+
+      expect(row?.isPrivate, isFalse, reason: 'the document does set this');
+      expect(
+        row?.privateFor,
+        'team-1',
+        reason:
+            'the assignment is inside the isPrivate branch, so it is not '
+            'reached — an absent column must stay out of DO UPDATE SET',
+      );
+    });
+
+    test('a brand-new row takes the column default when absent', () async {
+      // The other half of the same question: absent on the *insert* path is
+      // the column default, which is null — the same value a fresh Kotlin
+      // entity carries when the assignment is skipped.
+      final row = await upsertDoc({
+        '_id': 'res-1',
+        'title': 'Doc',
+        'private': false,
+      });
+
+      expect(row?.privateFor, null);
+    });
+
+    test('a private document does overwrite the stored team', () async {
+      await db.myLibraryDao.upsertAll([
+        MyLibraryTableCompanion.insert(
+          id: 'res-1',
+          title: const Value('Doc'),
+          isPrivate: const Value(true),
+          privateFor: const Value('team-1'),
+        ),
+      ]);
+
+      final row = await upsertDoc({
+        '_id': 'res-1',
+        'title': 'Doc',
+        'private': true,
+        'privateFor': {'teams': 'team-2'},
+      });
+
+      expect(row?.privateFor, 'team-2');
     });
   });
 }

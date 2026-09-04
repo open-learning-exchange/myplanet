@@ -87,9 +87,13 @@ class TeamTasksRepository {
   /// `TeamTaskDao.watchForTeam`, which after this phase excludes only
   /// `'archived'`, matching `TeamTaskDao.getByTeamId`.
   ///
-  /// `link` and `sync` are dropped: the port has no column for either, and
-  /// [serialize] rebuilds both from `teamId` and the session's planet code the
-  /// way `upsertTask` does for a locally authored row.
+  /// `link` and `sync` are stored verbatim as the JSON strings
+  /// `TeamTask.fromJson` builds (`gson.toJson(JsonUtils.getJsonObject(…))`), so
+  /// a missing key lands as `"{}"` rather than null — that is what
+  /// `JsonUtils.getJsonObject` returns for a key the document does not have.
+  /// Before schema v46 the port had no column for either and [serialize]
+  /// rebuilt them, which re-stamped a task authored on another planet with
+  /// this device's planet code on its first local edit.
   ///
   /// Two preservation rules, both about columns the server document cannot
   /// carry:
@@ -156,6 +160,8 @@ class TeamTasksRepository {
           completedTime: Value(JsonUtils.getLong('completedTime', doc)),
           status: Value(JsonUtils.getString('status', doc)),
           completed: Value(JsonUtils.getBool('completed', doc)),
+          sync: Value(jsonEncode(JsonUtils.getObject('sync', doc) ?? const {})),
+          link: Value(jsonEncode(link)),
           isUpdated: const Value(false),
         ),
       );
@@ -255,9 +261,40 @@ class TeamTasksRepository {
     'completed': row.completed,
     'completedTime': row.completedTime,
     'assignee': row.assignee?.isNotEmpty == true ? {'_id': row.assignee} : '',
-    'sync': {'type': 'local', 'planetCode': ?planetCode},
-    'link': {'teams': row.teamId},
+    'sync': _storedOrRebuilt(row.sync, {
+      'type': 'local',
+      'planetCode': ?planetCode,
+    }),
+    'link': _storedOrRebuilt(row.link, {'teams': row.teamId}),
   };
+
+  /// `TeamTask.serialize` re-emits the stored `sync`/`link` verbatim
+  /// (`gson.fromJson(task.sync, JsonObject::class.java)`), and `upsertTask`
+  /// is what put a value there — but only when the column was blank, and only
+  /// for a task created in this app.
+  ///
+  /// The port performs that fill here rather than at create time, because the
+  /// repository holds no session and the planet code reaches it at upload
+  /// time. The outcome is the same: nothing else reads either column, so a
+  /// value written at create time and one computed at serialize time are
+  /// indistinguishable. It also covers a row written before schema v46, whose
+  /// columns the migration deliberately left null.
+  ///
+  /// A stored `"{}"` is *not* blank — the Kotlin's own `isNullOrBlank` check
+  /// treats it as set too — so a document that carried no `sync` uploads the
+  /// empty object rather than acquiring one.
+  static Map<String, dynamic> _storedOrRebuilt(
+    String? stored,
+    Map<String, dynamic> rebuilt,
+  ) {
+    if (stored == null || stored.trim().isEmpty) return rebuilt;
+    try {
+      final decoded = jsonDecode(stored);
+      return decoded is Map<String, dynamic> ? decoded : rebuilt;
+    } on FormatException {
+      return rebuilt;
+    }
+  }
 
   static String encodeForDebug(TeamTaskRow row) => jsonEncode(serialize(row));
 }

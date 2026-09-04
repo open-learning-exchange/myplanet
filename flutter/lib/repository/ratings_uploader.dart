@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../core/config/server_config.dart';
 import '../core/network/network_result.dart';
 import '../core/system/device_identity.dart';
@@ -86,23 +88,29 @@ class RatingsUploader {
   /// Port of `model/Rating.serializeRating`.
   Map<String, dynamic> _toDoc(RatingRow row, UserRow? user) {
     final doc = <String, dynamic>{
-      // Kotlin sends the whole serialized user document. Planet groups ratings
-      // by it, so a document without one cannot be shown back to its author or
-      // deduplicated against their next rating — it is not an optional field.
-      'user': {
-        if (user?.couchId != null) '_id': user!.couchId,
-        'name': user?.name,
-        'planetCode': user?.planetCode ?? row.planetCode,
-        'parentCode': user?.parentCode ?? row.parentCode,
-      },
+      // `serializeRating` sends the stored `rating.user` string parsed back
+      // into an object — it does not re-derive the rater. Planet groups
+      // ratings by it, so a document without one cannot be shown back to its
+      // author or deduplicated against their next rating; it is not optional.
+      //
+      // Since schema v46 both writers of the row fill the column — and
+      // `ratings` is not a preserved table, so the bump left no row behind
+      // that lacks it — the `users`-table rebuild below is **unreachable in
+      // production**. It is kept as the defence for a future writer that
+      // forgets the column, not because any path needs it today, and the test
+      // that covers it pins a row shape nothing can currently produce.
+      'user':
+          _storedRater(row.user) ??
+          RatingsRepository.raterDocument(user, row.parentCode, row.planetCode),
       'item': row.item,
       'type': row.type,
       'title': row.title,
       'time': row.time,
-      'rate': row.rate,
       // Kotlin's `createdOn` is the user's parent code, not a timestamp
-      // (`RatingsRepositoryImpl`: `createdOn = resolvedUser.parentCode`).
-      'createdOn': row.parentCode,
+      // (`RatingsRepositoryImpl`: `createdOn = resolvedUser.parentCode`), and
+      // a row pulled from the server carries whatever the document said.
+      'rate': row.rate,
+      'createdOn': row.createdOn ?? row.parentCode,
       'parentCode': row.parentCode,
       'planetCode': row.planetCode,
     };
@@ -116,5 +124,25 @@ class RatingsUploader {
       doc['comment'] = row.comment;
     }
     return doc;
+  }
+
+  /// The rater object stored on the row, or `null` when there is none to read.
+  ///
+  /// An empty object counts as none. `JsonUtils.getJsonObject` returns one for
+  /// a document with no `user` key, so `"{}"` is what such a document stores —
+  /// but that row is also `isUpdated = false` and cannot reach an upload, and
+  /// the same branch reads its `userId` out of the same empty object, so the
+  /// rebuild would name nobody either. Treating `"{}"` as none is therefore a
+  /// choice about which shape to hand a future caller, not a rescue of this
+  /// one; the Kotlin sends the empty object.
+  static Map<String, dynamic>? _storedRater(String? stored) {
+    if (stored == null || stored.trim().isEmpty) return null;
+    try {
+      final decoded = jsonDecode(stored);
+      if (decoded is! Map<String, dynamic> || decoded.isEmpty) return null;
+      return decoded;
+    } on FormatException {
+      return null;
+    }
   }
 }
