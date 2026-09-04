@@ -65,8 +65,8 @@ class UploadRepositoryImpl @Inject constructor(
     ): List<UploadedItemResult> {
         if (succeeded.isEmpty()) return emptyList()
         val existing = examDao.getByIds(succeeded.map { it.localId }).associateBy { it.id }
-        val updated = mutableListOf<StepExam>()
-        val failed = mutableListOf<UploadedItemResult>()
+        val updated = ArrayList<StepExam>(succeeded.size)
+        val failed = ArrayList<UploadedItemResult>(succeeded.size)
 
         succeeded.forEach { result ->
             val exam = existing[result.localId]
