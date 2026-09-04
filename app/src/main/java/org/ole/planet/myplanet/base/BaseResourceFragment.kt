@@ -73,6 +73,7 @@ abstract class BaseResourceFragment : Fragment() {
     internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
     private var resourceNotFoundDialog: AlertDialog? = null
     private var downloadSuggestionDialog: AlertDialog? = null
+    var hasDismissedDownloadDialog: Boolean = false
 
     private fun isFragmentActive(): Boolean {
         return isAdded && activity != null &&
@@ -144,10 +145,13 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
-    protected open fun showDownloadDialog(dbMyLibrary: List<MyLibrary?>) {
-        if (!shouldShowDownloadDialog) return
+    open fun showDownloadDialog(dbMyLibrary: List<MyLibrary?>) {
+        if (!shouldShowDownloadDialog || hasDismissedDownloadDialog) return
         if (!isAdded) return
         if (dbMyLibrary.isEmpty()) {
+            return
+        }
+        if (downloadSuggestionDialog?.isShowing == true) {
             return
         }
 
@@ -168,34 +172,39 @@ abstract class BaseResourceFragment : Fragment() {
             alertDialogBuilder.setView(convertView)
                 .setCustomTitle(titleView)
                 .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
+                    hasDismissedDownloadDialog = true
                     lifecycleScope.launch {
                         val selectedItemsList = (lv?.adapter as? CheckboxAdapter)?.selectedItemsList
                         selectedItemsList?.let {
                             addToLibrary(dbMyLibrary, ArrayList(it))
                             val selectedLibraries = it.mapNotNull { index -> dbMyLibrary.getOrNull(index) }
+                            val urls = resourcesRepository.getDownloadUrls(selectedLibraries)
                             if (resourcesRepository.downloadResources(selectedLibraries)) {
-                                val urls = selectedLibraries.mapNotNull { lib -> lib.resourceRemoteAddress }
                                 trackDownloadUrls(urls)
                                 showProgressDialog()
                             }
                         }
                     }
                 }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
+                    hasDismissedDownloadDialog = true
                     lifecycleScope.launch {
                         addAllToLibrary(dbMyLibrary)
                         val filtered = dbMyLibrary.filterNotNull()
+                        val urls = resourcesRepository.getDownloadUrls(filtered)
                         if (resourcesRepository.downloadResources(filtered)) {
-                            val urls = filtered.mapNotNull { lib -> lib.resourceRemoteAddress }
                             trackDownloadUrls(urls)
                             showProgressDialog()
                         }
                     }
-                }.setNegativeButton(R.string.txt_cancel, null)
+                }.setNegativeButton(R.string.txt_cancel) { _: DialogInterface?, _: Int ->
+                    hasDismissedDownloadDialog = true
+                }
             downloadSuggestionDialog?.dismiss()
             downloadSuggestionDialog = alertDialogBuilder.create()
             downloadSuggestionDialog?.let { dialog ->
                 createListView(dbMyLibrary, dialog)
                 dialog.setOnDismissListener {
+                    hasDismissedDownloadDialog = true
                     downloadSuggestionDialog = null
                 }
                 dialog.show()
@@ -250,8 +259,11 @@ abstract class BaseResourceFragment : Fragment() {
 
     open fun onDownloadComplete() {
         prgDialog.dismiss()
+        downloadSuggestionDialog?.dismiss()
+        downloadSuggestionDialog = null
+        hasDismissedDownloadDialog = true
 
-        if (sharedPrefManager.isAlternativeUrl()) {
+        if (::sharedPrefManager.isInitialized && sharedPrefManager.isAlternativeUrl()) {
             sharedPrefManager.setAlternativeUrl("")
             sharedPrefManager.setProcessedAlternativeUrl("")
             sharedPrefManager.setIsAlternativeUrl(false)

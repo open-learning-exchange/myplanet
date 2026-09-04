@@ -43,6 +43,7 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -667,6 +668,96 @@ class ResourcesRepositoryImplTest {
         assertEquals(listOf(publicLib), result)
         coVerify(exactly = 1) { myLibraryDao.getPublicNeedingUpdateForUserPattern(expectedPattern) }
         coVerify(exactly = 1) { myLibraryDao.getPublicNeedingUpdate() }
+    }
+
+    @Test
+    fun `getDownloadUrls returns attachment urls for html and fallback for non-html`() = runTest {
+        UrlUtils.init(sharedPrefManager)
+        every { sharedPrefManager.getUrlScheme() } returns "http"
+        every { sharedPrefManager.getUrlHost() } returns "localhost"
+        every { sharedPrefManager.isAlternativeUrl() } returns false
+        every { sharedPrefManager.getProcessedAlternativeUrl() } returns ""
+        every { sharedPrefManager.getCouchdbUrl() } returns "http://localhost:5000"
+        every { sharedPrefManager.getUrlUser() } returns ""
+        every { sharedPrefManager.getUrlPwd() } returns ""
+
+        val htmlLib = MyLibrary().apply {
+            id = "html1"
+            resourceId = "html1"
+            mediaType = "HTML"
+            resourceOffline = false
+        }
+        val nonHtmlLib = MyLibrary().apply {
+            id = "doc1"
+            resourceId = "doc1"
+            mediaType = "PDF"
+            resourceOffline = false
+            resourceRemoteAddress = "http://example.com/doc1.pdf"
+        }
+        val alreadyOfflineLib = MyLibrary().apply {
+            id = "offline1"
+            resourceId = "offline1"
+            resourceOffline = true
+            _rev = "1"
+            downloadedRev = "1"
+        }
+
+        coEvery { myLibraryDao.getByResourceId("html1") } returns MyLibrary().apply {
+            id = "html1"
+            resourceId = "html1"
+            attachments = listOf(
+                org.ole.planet.myplanet.model.Attachment().apply { name = "index.html" },
+                org.ole.planet.myplanet.model.Attachment().apply { name = "game.js" }
+            )
+        }
+
+        val urls = repository.getDownloadUrls(listOf(htmlLib, nonHtmlLib, alreadyOfflineLib))
+
+        assertEquals(3, urls.size)
+        assertTrue(urls.any { it.contains("index.html") })
+        assertTrue(urls.any { it.contains("game.js") })
+        assertTrue(urls.contains("http://example.com/doc1.pdf"))
+    }
+
+    @Test
+    fun `getDownloadSuggestionList reconciles and excludes resources already downloaded on disk`() = runTest {
+        val downloadedHtmlLib = MyLibrary().apply {
+            id = "html-downloaded"
+            resourceId = "html-downloaded"
+            mediaType = "HTML"
+            openWhichFile = "index.html"
+            resourceOffline = false
+            _rev = "rev1"
+        }
+        val pendingDocLib = MyLibrary().apply {
+            id = "doc-pending"
+            resourceId = "doc-pending"
+            mediaType = "PDF"
+            resourceOffline = false
+        }
+
+        val baseDir = kotlin.io.path.createTempDirectory("resources-repo-test-suggestion").toFile()
+        File(baseDir, "ole/html-downloaded").apply { mkdirs() }
+        File(baseDir, "ole/html-downloaded/index.html").writeText("<html></html>")
+        val mockContext = mockk<Context>(relaxed = true)
+        every { mockContext.getExternalFilesDir(null) } returns baseDir
+        mockkObject(MainApplication)
+        try {
+            every { MainApplication.context } returns mockContext
+            coEvery { myLibraryDao.getPublicNeedingUpdate() } returns listOf(downloadedHtmlLib, pendingDocLib)
+            coEvery { myLibraryDao.upsertAll(any()) } returns Unit
+
+            val result = repository.getDownloadSuggestionList(null)
+
+            assertEquals(1, result.size)
+            assertEquals("doc-pending", result[0].id)
+            assertTrue(downloadedHtmlLib.resourceOffline)
+            assertEquals("rev1", downloadedHtmlLib.downloadedRev)
+            coVerify { myLibraryDao.upsertAll(match { it.size == 1 && it[0].id == "html-downloaded" }) }
+        } finally {
+            unmockkObject(MainApplication)
+            baseDir.deleteRecursively()
+        }
     }
 
     @Test

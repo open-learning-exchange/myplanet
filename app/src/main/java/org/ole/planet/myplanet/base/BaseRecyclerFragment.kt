@@ -83,7 +83,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 recyclerView.adapter = adapter
             }
             if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
-                if (shouldShowDownloadDialog) {
+                if (shouldShowDownloadDialog && !hasDismissedDownloadDialog) {
                     resources?.let { showDownloadDialog(it) }
                 }
             }
@@ -91,7 +91,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             requireActivity().reportFullyDrawn()
 
             if (isMyCourseLib && courseLib == null && !isSurvey) {
-                if (shouldShowDownloadDialog) {
+                if (shouldShowDownloadDialog && !hasDismissedDownloadDialog) {
                     val userId = sharedPrefManager.getUserId().ifEmpty { "--" }
                     val libraryList = resourcesRepository.getLibraryListForUser(userId)
                     showDownloadDialog(libraryList)

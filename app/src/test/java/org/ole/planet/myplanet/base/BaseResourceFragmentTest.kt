@@ -22,6 +22,8 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -205,5 +207,25 @@ class BaseResourceFragmentTest {
         fragment.showNotConnectedToast()
 
         verify(exactly = 0) { Utilities.toast(any(), any()) }
+    }
+
+    @Test
+    fun `onDownloadComplete sets hasDismissedDownloadDialog to true and dismisses prgDialog`() {
+        assertFalse(fragment.hasDismissedDownloadDialog)
+
+        fragment.onDownloadComplete()
+
+        assertTrue(fragment.hasDismissedDownloadDialog)
+        verify { mockPrgDialog.dismiss() }
+    }
+
+    @Test
+    fun `showDownloadDialog returns early when hasDismissedDownloadDialog is true`() {
+        fragment.hasDismissedDownloadDialog = true
+        val sampleList = listOf(org.ole.planet.myplanet.model.MyLibrary())
+
+        fragment.showDownloadDialog(sampleList)
+
+        verify(exactly = 0) { mockActivity.layoutInflater }
     }
 }

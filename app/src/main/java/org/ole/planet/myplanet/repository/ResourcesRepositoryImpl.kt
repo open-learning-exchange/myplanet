@@ -163,9 +163,14 @@ class ResourcesRepositoryImpl @Inject constructor(
         return myLibraryDao.getById(id)
     }
 
+    private suspend fun findLibrary(id: String): MyLibrary? {
+        return myLibraryDao.getByResourceId(id)
+            ?: myLibraryDao.getByUnderscoreId(id)
+            ?: myLibraryDao.getById(id)
+    }
+
     override suspend fun getLibraryItemByResourceId(resourceId: String): MyLibrary? {
-        return myLibraryDao.getByResourceId(resourceId)
-            ?: myLibraryDao.getByUnderscoreId(resourceId)
+        return findLibrary(resourceId)
     }
 
     override suspend fun getLibraryItemsByIds(ids: Collection<String>): List<MyLibrary> {
@@ -190,9 +195,83 @@ class ResourcesRepositoryImpl @Inject constructor(
         return myLibraryDao.getByLocalAddress(localAddress)
     }
 
+    private suspend fun isDownloadedOnDisk(library: MyLibrary): Boolean {
+        val resourceId = library.resourceId?.takeIf { it.isNotBlank() } ?: library.id
+        val isHtml = library.mediaType.equals("HTML", ignoreCase = true) || !library.openWhichFile.isNullOrBlank()
+        if (isHtml) {
+            if (resourceId.isBlank()) return false
+            val entryFile = library.openWhichFile?.takeIf { it.isNotBlank() } ?: "index.html"
+            val baseDir = try {
+                MainApplication.context.getExternalFilesDir(null)?.takeIf { !it.path.isNullOrEmpty() }
+            } catch (e: Exception) {
+                null
+            } ?: try {
+                context.getExternalFilesDir(null)?.takeIf { !it.path.isNullOrEmpty() }
+            } catch (e: Exception) {
+                null
+            } ?: return false
+            val directory = File(baseDir, "ole/$resourceId")
+            return withContext(dispatcherProvider.io) {
+                FileUtils.resolveHtmlEntryFile(directory, entryFile)?.exists() == true
+            }
+        } else {
+            val url = library.resourceRemoteAddress?.takeIf { it.isNotBlank() }
+                ?: if (!library.resourceLocalAddress.isNullOrBlank()) UrlUtils.getUrl(resourceId, library.resourceLocalAddress) else null
+            if (!url.isNullOrBlank()) {
+                val exists = try {
+                    FileUtils.checkFileExist(context, url)
+                } catch (e: Exception) {
+                    false
+                }
+                if (exists) return true
+            }
+            val localAddress = library.resourceLocalAddress
+            if (!localAddress.isNullOrBlank() && resourceId.isNotBlank()) {
+                val extDir = try {
+                    (FileUtils.getExternalFilesDir(context) ?: context.getExternalFilesDir(null))?.takeIf { !it.path.isNullOrEmpty() }
+                } catch (e: Exception) {
+                    null
+                }
+                if (extDir != null) {
+                    val libFile = FileUtils.getLibraryFile(extDir, resourceId, localAddress)
+                    if (libFile.exists() && libFile.length() > 0) {
+                        return true
+                    }
+                }
+            }
+            return false
+        }
+    }
+
+    private suspend fun filterAndReconcileDownloaded(candidates: List<MyLibrary>): List<MyLibrary> {
+        val toUpdate = mutableListOf<MyLibrary>()
+        val result = mutableListOf<MyLibrary>()
+        for (library in candidates) {
+            if (library.isResourceOffline()) {
+                continue
+            }
+            if (isDownloadedOnDisk(library)) {
+                val isHtml = library.mediaType.equals("HTML", ignoreCase = true) || !library.openWhichFile.isNullOrBlank()
+                library.resourceOffline = true
+                library.downloadedRev = library._rev
+                if (isHtml && library.resourceLocalAddress.isNullOrBlank()) {
+                    library.resourceLocalAddress = library.openWhichFile?.takeIf { it.isNotBlank() } ?: "index.html"
+                }
+                toUpdate.add(library)
+            } else {
+                result.add(library)
+            }
+        }
+        if (toUpdate.isNotEmpty()) {
+            myLibraryDao.upsertAll(toUpdate)
+        }
+        return result
+    }
+
     override suspend fun getLibraryListForUser(userId: String?): List<MyLibrary> {
         if (userId == null) return emptyList()
-        return myLibraryDao.getPublicNeedingUpdateForUserPattern(userIdPattern(userId))
+        val candidates = myLibraryDao.getPublicNeedingUpdateForUserPattern(userIdPattern(userId))
+        return filterAndReconcileDownloaded(candidates)
     }
 
     override suspend fun getMyLibrary(userId: String?): List<MyLibrary> {
@@ -325,7 +404,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         userId: String,
         isAdd: Boolean,
     ): MyLibrary? {
-        myLibraryDao.getByResourceId(resourceId)?.let { library ->
+        findLibrary(resourceId)?.let { library ->
             if (isAdd) {
                 library.setUserId(userId)
             } else {
@@ -338,8 +417,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         } else {
             activitiesRepository.markResourceRemoved(userId, resourceId)
         }
-        return getLibraryItemByResourceId(resourceId)
-            ?: getLibraryItemById(resourceId)
+        return findLibrary(resourceId)
     }
 
     override suspend fun updateLibraryItem(id: String, updater: (MyLibrary) -> Unit) {
@@ -374,12 +452,21 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun reconcileHtmlResourceOffline(resourceId: String) {
-        val library = myLibraryDao.getByResourceId(resourceId) ?: return
+        val library = findLibrary(resourceId) ?: return
         if (library.isResourceOffline()) {
             return
         }
         val entryFile = library.openWhichFile?.takeIf { it.isNotBlank() } ?: "index.html"
-        val directory = File(MainApplication.context.getExternalFilesDir(null), "ole/$resourceId")
+        val baseDir = try {
+            MainApplication.context.getExternalFilesDir(null)?.takeIf { !it.path.isNullOrEmpty() }
+        } catch (e: Exception) {
+            null
+        } ?: try {
+            context.getExternalFilesDir(null)?.takeIf { !it.path.isNullOrEmpty() }
+        } catch (e: Exception) {
+            null
+        } ?: return
+        val directory = File(baseDir, "ole/$resourceId")
         val entryExists = withContext(dispatcherProvider.io) {
             FileUtils.resolveHtmlEntryFile(directory, entryFile)?.exists() == true
         }
@@ -395,17 +482,32 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     private suspend fun markResourceOfflineByResourceId(resourceId: String, relativePath: String) {
-        val library = myLibraryDao.getByResourceId(resourceId) ?: return
-        val entryFile = library.openWhichFile?.takeIf { it.isNotBlank() } ?: "index.html"
-        if (relativePath != entryFile) {
-            return
+        val library = findLibrary(resourceId) ?: return
+        val isHtml = library.mediaType.equals("HTML", ignoreCase = true) || !library.openWhichFile.isNullOrBlank()
+        if (isHtml) {
+            val entryFile = library.openWhichFile?.takeIf { it.isNotBlank() } ?: "index.html"
+            if (relativePath != entryFile) {
+                return
+            }
+            library.resourceOffline = true
+            library.downloadedRev = library._rev
+            if (library.resourceLocalAddress.isNullOrBlank()) {
+                library.resourceLocalAddress = relativePath
+            }
+            myLibraryDao.upsert(library)
+        } else {
+            val expectedFile = library.resourceLocalAddress?.takeIf { it.isNotBlank() }
+                ?: library.filename?.takeIf { it.isNotBlank() }
+            if (expectedFile != null && relativePath != expectedFile && !relativePath.endsWith("/$expectedFile")) {
+                return
+            }
+            library.resourceOffline = true
+            library.downloadedRev = library._rev
+            if (library.resourceLocalAddress.isNullOrBlank() && relativePath.isNotBlank()) {
+                library.resourceLocalAddress = relativePath
+            }
+            myLibraryDao.upsert(library)
         }
-        library.resourceOffline = true
-        library.downloadedRev = library._rev
-        if (library.resourceLocalAddress.isNullOrBlank()) {
-            library.resourceLocalAddress = relativePath
-        }
-        myLibraryDao.upsert(library)
     }
 
     override fun getRecentResources(userId: String): Flow<List<MyLibrary>> {
@@ -461,9 +563,39 @@ class ResourcesRepositoryImpl @Inject constructor(
         return array
     }
 
+    override suspend fun getDownloadUrls(resources: List<MyLibrary>): List<String> {
+        val resultUrls = mutableListOf<String>()
+        val filtered = resources.filter { !it.isResourceOffline() }
+        for (resource in filtered) {
+            val resourceId = resource.resourceId?.takeIf { it.isNotBlank() } ?: resource.id
+            val isHtml = resource.mediaType.equals("HTML", ignoreCase = true) || !resource.openWhichFile.isNullOrBlank()
+            if (isHtml && resourceId.isNotBlank()) {
+                when (val htmlUrls = getHtmlResourceDownloadUrls(resourceId)) {
+                    is ResourceUrlsResponse.Success -> {
+                        resultUrls.addAll(htmlUrls.urls)
+                    }
+                    else -> {
+                        val fallback = resource.resourceRemoteAddress?.takeIf { it.isNotBlank() }
+                            ?: if (!resource.resourceLocalAddress.isNullOrBlank()) UrlUtils.getUrl(resourceId, resource.resourceLocalAddress) else null
+                        if (fallback != null) {
+                            resultUrls.add(fallback)
+                        }
+                    }
+                }
+            } else {
+                val url = resource.resourceRemoteAddress?.takeIf { it.isNotBlank() }
+                    ?: if (!resource.resourceLocalAddress.isNullOrBlank()) UrlUtils.getUrl(resourceId, resource.resourceLocalAddress) else null
+                if (url != null) {
+                    resultUrls.add(url)
+                }
+            }
+        }
+        return resultUrls.distinct()
+    }
+
     override suspend fun downloadResources(resources: List<MyLibrary>): Boolean {
         return try {
-            val urls = resources.filter { !it.isResourceOffline() }.mapNotNull { it.resourceRemoteAddress }
+            val urls = getDownloadUrls(resources)
             if (urls.isEmpty()) {
                 return false
             }
@@ -526,12 +658,14 @@ class ResourcesRepositoryImpl @Inject constructor(
 
         if (!targetUserId.isNullOrBlank()) {
             val userLibrariesNeedingUpdate = myLibraryDao.getPublicNeedingUpdateForUserPattern(userIdPattern(targetUserId))
-            if (userLibrariesNeedingUpdate.isNotEmpty()) {
-                return userLibrariesNeedingUpdate
+            val filteredUser = filterAndReconcileDownloaded(userLibrariesNeedingUpdate)
+            if (filteredUser.isNotEmpty()) {
+                return filteredUser
             }
         }
 
-        return myLibraryDao.getPublicNeedingUpdate()
+        val allNeedingUpdate = myLibraryDao.getPublicNeedingUpdate()
+        return filterAndReconcileDownloaded(allNeedingUpdate)
     }
 
     override suspend fun removeDeletedResources(currentIds: List<String?>) {
@@ -581,13 +715,20 @@ class ResourcesRepositoryImpl @Inject constructor(
         if (resource.attachments.isNullOrEmpty()) return ResourceUrlsResponse.NoAttachments
 
         val urls = withContext(dispatcherProvider.io) {
+            val externalDir = try {
+                (FileUtils.getExternalFilesDir(context) ?: context.getExternalFilesDir(null))?.takeIf { !it.path.isNullOrEmpty() }
+            } catch (e: Exception) {
+                null
+            }
             resource.attachments?.mapNotNull { attachment ->
                 attachment.name?.let { name ->
-                    val baseDir = File(context.getExternalFilesDir(null), "ole/$resourceId")
-                    val lastSlashIndex = name.lastIndexOf('/')
-                    if (lastSlashIndex > 0) {
-                        val dirPath = name.substring(0, lastSlashIndex)
-                        File(baseDir, dirPath).mkdirs()
+                    if (externalDir != null) {
+                        val baseDir = File(externalDir, "ole/$resourceId")
+                        val lastSlashIndex = name.lastIndexOf('/')
+                        if (lastSlashIndex > 0) {
+                            val dirPath = name.substring(0, lastSlashIndex)
+                            File(baseDir, dirPath).mkdirs()
+                        }
                     }
                     UrlUtils.getUrl(resourceId, name)
                 }
@@ -705,15 +846,18 @@ class ResourcesRepositoryImpl @Inject constructor(
         return savedIds
     }
 
-    // Detects HTML resources already present on disk from a prior install/sync that never got a resourceLocalAddress.
+    // Detects HTML resources already present on disk from a prior install/sync that need reconciliation.
     private suspend fun reconcileHtmlLibraries(libraries: List<MyLibrary>) {
         libraries.forEach { library ->
-            if (library.mediaType == "HTML" && library.resourceLocalAddress.isNullOrBlank()) {
-                val resourceId = library.resourceId ?: return@forEach
-                try {
-                    reconcileHtmlResourceOffline(resourceId)
-                } catch (e: Exception) {
-                    Log.w("ResourcesRepository", "reconcileHtmlResourceOffline failed for $resourceId", e)
+            val isHtml = library.mediaType.equals("HTML", ignoreCase = true) || !library.openWhichFile.isNullOrBlank()
+            if (isHtml) {
+                val resourceId = library.resourceId?.takeIf { it.isNotBlank() } ?: library.id
+                if (resourceId.isNotBlank()) {
+                    try {
+                        reconcileHtmlResourceOffline(resourceId)
+                    } catch (e: Exception) {
+                        Log.w("ResourcesRepository", "reconcileHtmlResourceOffline failed for $resourceId", e)
+                    }
                 }
             }
         }

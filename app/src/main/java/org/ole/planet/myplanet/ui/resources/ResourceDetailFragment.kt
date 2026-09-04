@@ -58,7 +58,11 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
             val id = libraryId ?: return@launch
             try {
+                if (library.mediaType == "HTML") {
+                    resourcesRepository.reconcileHtmlResourceOffline(id)
+                }
                 val updated = resourcesRepository.setUserLibrary(id, true)
+                    ?: fetchLibrary(id)
                 if (updated != null) {
                     val changed = library.userId?.size != updated.userId?.size
                     library = updated

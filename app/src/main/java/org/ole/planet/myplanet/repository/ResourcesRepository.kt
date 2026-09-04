@@ -80,6 +80,7 @@ interface ResourcesRepository {
         subjects: List<String>?,
         levels: List<String>?
     ): Result<Unit>
+    suspend fun getDownloadUrls(resources: List<MyLibrary>): List<String>
     suspend fun downloadResources(resources: List<MyLibrary>): Boolean
     suspend fun downloadResourcesPriority(resources: List<MyLibrary>): Boolean
     suspend fun getAllLibrariesToSync(): List<MyLibrary>

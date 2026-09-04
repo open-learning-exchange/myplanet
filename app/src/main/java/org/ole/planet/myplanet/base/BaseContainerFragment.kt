@@ -122,7 +122,8 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                     val ctx = context ?: return@launch
                     val isDownloaded = withContext(dispatcherProvider.io) {
                         if (library.mediaType == "HTML") {
-                            val directory = File(ctx.getExternalFilesDir(null), "ole/${library.resourceId}")
+                            val resourceId = library.resourceId?.takeIf { it.isNotBlank() } ?: library.id
+                            val directory = File(ctx.getExternalFilesDir(null), "ole/$resourceId")
                             FileUtils.resolveHtmlEntryFile(directory, library.openWhichFile)?.exists() == true
                         } else {
                             library.isResourceOffline() || FileUtils.checkFileExist(ctx, UrlUtils.getUrl(library))
@@ -190,14 +191,14 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
     private fun openHtmlResource(items: MyLibrary) {
         viewLifecycleOwner.lifecycleScope.launch {
+            val resourceId = items.resourceId?.takeIf { it.isNotBlank() } ?: items.id
             val indexExists = withContext(dispatcherProvider.io) {
-                val directory = File(context?.getExternalFilesDir(null), "ole/${items.resourceId}")
+                val directory = File(context?.getExternalFilesDir(null), "ole/$resourceId")
                 FileUtils.resolveHtmlEntryFile(directory, items.openWhichFile)?.exists() == true
             }
 
             if (indexExists) {
-                val resourceId = items.resourceId
-                if (resourceId != null) {
+                if (resourceId.isNotBlank()) {
                     resourcesRepository.reconcileHtmlResourceOffline(resourceId)
                 }
                 resourcesRepository.trackResourceOpen(items)
@@ -210,8 +211,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 return@launch
             }
 
-            val resourceId = items.resourceId
-            if (resourceId == null) {
+            if (resourceId.isBlank()) {
                 Utilities.toast(activity, getString(R.string.resource_not_found_in_database))
                 return@launch
             }

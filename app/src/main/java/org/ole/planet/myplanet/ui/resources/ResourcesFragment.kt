@@ -180,6 +180,11 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         refreshResourcesData()
     }
 
+    override fun onDownloadComplete() {
+        super.onDownloadComplete()
+        refreshResourcesData()
+    }
+
     private fun refreshResourcesData() {
         if (!isAdded || requireActivity().isFinishing) return
         if (view == null) return

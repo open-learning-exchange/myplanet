@@ -127,7 +127,8 @@ object UrlUtils {
     }
 
     fun getUrl(library: MyLibrary?): String {
-        return getUrl(library?.resourceId, library?.resourceLocalAddress)
+        val id = library?.resourceId?.takeIf { it.isNotBlank() } ?: library?.id
+        return getUrl(id, library?.resourceLocalAddress)
     }
 
     fun getUrl(id: String?, file: String?): String {
