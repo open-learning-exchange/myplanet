@@ -49,11 +49,14 @@ class _SubmissionsScreenState extends ConsumerState<SubmissionsScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, _) => Center(child: Text(l10n.submissionsUnavailable)),
         data: (rows) {
-          final filtered = switch (_filter) {
+          // Kotlin filters first and collapses second
+          // (`SubmissionViewModel.kt:55-73`), so a completed attempt does not
+          // suppress the pending one on the Pending tab.
+          final filtered = collapseSubmissionsByParent(switch (_filter) {
             'pending' => rows.where((row) => !_isComplete(row)).toList(),
             'complete' => rows.where(_isComplete).toList(),
             _ => rows,
-          };
+          });
           return Column(
             children: [
               SingleChildScrollView(
@@ -91,7 +94,8 @@ class _SubmissionsScreenState extends ConsumerState<SubmissionsScreen> {
                           itemBuilder: (context, index) => _SubmissionTile(
                             filtered[index],
                             onTap: () => context.push(
-                              '${Routes.submissions}/${Uri.encodeComponent(filtered[index].id)}',
+                              '${Routes.submissions}/'
+                              '${Uri.encodeComponent(filtered[index].row.id)}',
                             ),
                           ),
                         ),
@@ -210,18 +214,24 @@ bool _isComplete(SubmissionRow row) =>
     }.contains(row.status?.trim().toLowerCase());
 
 class _SubmissionTile extends StatelessWidget {
-  const _SubmissionTile(this.row, {required this.onTap});
-  final SubmissionRow row;
+  const _SubmissionTile(this.entry, {required this.onTap});
+  final SubmissionListEntry entry;
   final VoidCallback onTap;
+
+  SubmissionRow get row => entry.row;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final title = row.parent?.trim().isNotEmpty == true
-        ? row.parent!
+    final parentTitle = submissionDisplayTitle(row);
+    final base = parentTitle?.trim().isNotEmpty == true
+        ? parentTitle!
         : row.type?.trim().isNotEmpty == true
         ? row.type!
         : l10n.submission;
+    // `SubmissionsAdapter.updateSubmissionCount` shows `(N)` beside the title
+    // when a parent has more than one attempt.
+    final title = entry.count > 1 ? '$base (${entry.count})' : base;
     final updated = row.lastUpdateTime == 0
         ? null
         : DateFormat.yMMMd().add_jm().format(

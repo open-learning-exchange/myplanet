@@ -2274,34 +2274,13 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
         ),
       );
 
-  /// Removes stale server-cache rows without binding an unbounded `NOT IN`.
-  Future<int> deleteNotIn(List<String> keepIds) async {
-    return transaction(() async {
-      final localIds =
-          await (selectOnly(submissions)
-                ..addColumns([submissions.id])
-                ..where(submissions.isUpdated.equals(false)))
-              .map((row) => row.read(submissions.id)!)
-              .get();
-      final keep = keepIds.toSet();
-      var deleted = 0;
-      for (final chunk in _chunked(
-        localIds.where((id) => !keep.contains(id)).toList(),
-        _sqliteVariableChunk,
-      )) {
-        await (delete(
-          submissionAnswers,
-        )..where((row) => row.submissionId.isIn(chunk))).go();
-        await (delete(
-          submissionQuestions,
-        )..where((row) => row.submissionId.isIn(chunk))).go();
-        deleted += await (delete(
-          submissions,
-        )..where((row) => row.id.isIn(chunk))).go();
-      }
-      return deleted;
-    });
-  }
+  // There is deliberately no `deleteNotIn` here. The Kotlin submissions walk
+  // never prunes (`TransactionSyncManager.syncDb`'s `"submissions"` arm only
+  // inserts), and a prune over this table is destructive rather than merely
+  // unfaithful: the keep set is CouchDB `_id`s while a locally authored row is
+  // keyed by a sha1, so `markUploaded` clearing `isUpdated` handed the
+  // learner's own attempt — and its answers — to the next sync to delete. See
+  // `SubmissionsRepository.sync`.
 }
 
 /// Port of `data/room/dao/MeetupDao.kt`.

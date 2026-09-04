@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../data/local/app_database.dart';
 import '../../data/local/converters.dart';
 import '../../l10n/app_localizations.dart';
+import '../../repository/submissions_repository.dart';
 import '../../providers/submissions_provider.dart';
 import '../../providers/app_providers.dart';
 
@@ -76,14 +77,17 @@ class _Details extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       children: [
         Text(
-          row.parent ?? row.type ?? l10n.submission,
+          submissionDisplayTitle(row) ?? row.type ?? l10n.submission,
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         const SizedBox(height: 16),
         _Detail(label: l10n.status, value: row.status ?? l10n.pending),
         _Detail(label: l10n.lastUpdated, value: updated),
         _Detail(label: l10n.grade, value: '${row.grade}'),
-        _Detail(label: l10n.submittedBy, value: row.user ?? row.userId ?? '—'),
+        _Detail(
+          label: l10n.submittedBy,
+          value: submissionSubmitterName(row) ?? row.userId ?? '—',
+        ),
         _Detail(label: l10n.submissionType, value: row.type ?? '—'),
         _Detail(
           label: l10n.uploadStatus,

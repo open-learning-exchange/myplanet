@@ -36,27 +36,37 @@ void main() {
 
   tearDown(() => database.close());
 
+  // Server-shaped: the owner is `user._id` and `uploaded` is derived from
+  // `_rev`, because that is what `upsertRoomSubmissionsFromSync` reads
+  // (`SubmissionsRepositoryImpl.kt:676-700`). Written against a top-level
+  // `userId`/`uploaded` pair, this test passed while no real document could
+  // reach the list.
   test('maps documents and watches newest submissions first', () async {
     await repository.upsertDocuments([
       {
         '_id': 'older',
-        'userId': 'user-1',
+        'user': {'_id': 'user-1'},
         'type': 'exam',
         'lastUpdateTime': 10,
         'status': 'complete',
       },
       {
         '_id': 'newer',
-        'userId': 'user-1',
+        '_rev': '2-aaa',
+        'user': {'_id': 'user-1'},
         'lastUpdateTime': '20',
-        'uploaded': true,
       },
-      {'_id': 'other-user', 'userId': 'user-2', 'lastUpdateTime': 30},
+      {
+        '_id': 'other-user',
+        'user': {'_id': 'user-2'},
+        'lastUpdateTime': 30,
+      },
     ]);
 
     final rows = await repository.watchForUser('user-1').first;
     expect(rows.map((row) => row.id), ['newer', 'older']);
     expect(rows.first.uploaded, isTrue);
+    expect(rows.last.uploaded, isFalse);
     expect(rows.last.type, 'exam');
   });
 
@@ -168,13 +178,40 @@ void main() {
     },
   );
 
-  test('rejects documents without an id', () {
+  // `if (id.isBlank()) return@forEach` (`:668`) — one unusable document must
+  // not abort the page around it. The port used to throw, which would have
+  // dropped every later document in the batch.
+  test('skips a document with no id and keeps the rest of the page', () async {
+    await repository.upsertDocuments([
+      {
+        'user': {'_id': 'user-1'},
+      },
+      {
+        '_id': 'good',
+        'user': {'_id': 'user-1'},
+      },
+    ]);
+
     expect(
-      () => repository.upsertDocuments([
-        {'userId': 'user-1'},
-      ]),
-      throwsFormatException,
+      (await repository.watchForUser('user-1').first).map((row) => row.id),
+      ['good'],
     );
+  });
+
+  // The same rule for a document CouchDB is holding an attachment for: the
+  // photo documents `UploadConfigs.SubmitPhotos` posts into this database come
+  // back through this walk, and `filterNot { it.has("_attachments") }` (`:666`)
+  // keeps them out of the submissions list.
+  test('skips a document carrying attachments', () async {
+    await repository.upsertDocuments([
+      {
+        '_id': 'photo-doc',
+        'user': {'_id': 'user-1'},
+        '_attachments': {'img': {}},
+      },
+    ]);
+
+    expect(await repository.watchForUser('user-1').first, isEmpty);
   });
 
   test(
@@ -676,7 +713,7 @@ void main() {
       await repository.upsertDocuments([
         {
           '_id': 'sub-1',
-          'userId': 'user-1',
+          'user': {'_id': 'user-1'},
           'type': 'survey',
           'parentId': 'survey-a@course-1',
           'lastUpdateTime': 100,

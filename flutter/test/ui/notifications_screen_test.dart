@@ -7,6 +7,43 @@ import 'package:myplanet/ui/notifications/notifications_screen.dart';
 import '../support/widget_harness.dart';
 
 void main() {
+  // The row's icon and title read the **resolved** type, like every other
+  // reader. A server `replyMessage` document — outside KNOWN_TYPES, reaching
+  // `voice_reply` only through its message — is the case that shows it: against
+  // the raw type it takes the default bell and the generic "Notification".
+  testWidgets('a server notification gets the icon and title of its resolved '
+      'type', (tester) async {
+    final row = NotificationRow(
+      id: 'reply-1',
+      userId: 'user-1',
+      message: 'bob replied to your voice',
+      type: 'replyMessage',
+      relatedId: 'news-3',
+      isRead: false,
+      createdAt: DateTime(2026, 8, 2, 12).millisecondsSinceEpoch,
+      priority: 0,
+      isFromServer: true,
+      needsSync: false,
+    );
+    await tester.pumpWidget(
+      wrapScreen(
+        const NotificationsScreen(),
+        overrides: [
+          notificationsProvider.overrideWith((ref) => Stream.value([row])),
+          unreadNotificationCountProvider.overrideWith(
+            (ref) => Stream.value(1),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('New reply'), findsOneWidget);
+    expect(find.text('Notification'), findsNothing);
+    expect(find.byIcon(Icons.chat_bubble_outline), findsNWidgets(2));
+    expect(find.byIcon(Icons.notifications_outlined), findsNothing);
+  });
+
   testWidgets('renders grouped unread notification with header and content', (
     tester,
   ) async {

@@ -37,6 +37,41 @@ void main() {
     expect(find.byIcon(Icons.assignment_turned_in), findsOneWidget);
   });
 
+  // The duplicate removing the prune exposes: a locally authored row keeps its
+  // sha1 key after upload, so the walk re-inserts the same document under its
+  // CouchDB `_id`. Kotlin collapses the pair and badges it `(N)`
+  // (`SubmissionsAdapter.updateSubmissionCount`) rather than deleting either.
+  testWidgets('two rows for one attempt render once, badged with the count', (
+    tester,
+  ) async {
+    SubmissionRow attempt(String id, int updated) => SubmissionRow(
+      id: id,
+      parentId: 'exam-1@course-1',
+      parent: '{"_id":"exam-1","name":"Week 1 quiz"}',
+      startTime: 0,
+      lastUpdateTime: updated,
+      grade: 0,
+      status: 'complete',
+      uploaded: true,
+      isUpdated: false,
+    );
+    await tester.pumpWidget(
+      wrapScreen(
+        const SubmissionsScreen(),
+        overrides: [
+          submissionsProvider.overrideWith(
+            (ref) =>
+                Stream.value([attempt('couch-1', 20), attempt('sha1', 10)]),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Week 1 quiz (2)'), findsOneWidget);
+    expect(find.byType(ListTile), findsOneWidget);
+  });
+
   testWidgets('filters pending and complete submissions', (tester) async {
     final pending = SubmissionRow(
       id: 'pending',
@@ -204,10 +239,15 @@ void main() {
   testWidgets('renders submission details from the offline cache', (
     tester,
   ) async {
+    // `user` is JSON text on every write path — `gson.toJson(userJson)` on the
+    // pull, `jsonEncode` on each local write — and the screen reads the `name`
+    // out of it (`getNormalizedSubmitterName`). A bare `'Ada Learner'` here was
+    // a shape no writer produces, which is how the screen printing the whole
+    // column went unnoticed.
     final row = SubmissionRow(
       id: 'submission-2',
       type: 'exam',
-      user: 'Ada Learner',
+      user: '{"_id":"org.couchdb.user:ada","name":"Ada Learner"}',
       startTime: 0,
       lastUpdateTime: 0,
       grade: 92,

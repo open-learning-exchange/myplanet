@@ -31,7 +31,7 @@ void main() {
     await repository.upsertDocuments([
       {
         '_id': 'report-1',
-        'userId': 'ada',
+        'user': {'_id': 'ada', 'name': 'Ada Lovelace'},
         'status': 'graded',
         'grade': 90,
         'answers': [
@@ -52,6 +52,31 @@ void main() {
     expect(String.fromCharCodes(bytes!.take(5)), '%PDF-');
     expect(bytes.length, greaterThan(500));
   });
+
+  // `parent` and `user` are JSON text, so drawing the columns raw put a
+  // serialized object in the report. Kotlin draws `exam?.name` and
+  // `getNormalizedSubmitterName`. The PDF is checked through the document's
+  // metadata title, which is set from the same value as the header.
+  test(
+    'the report is titled with the exam name, not the parent JSON',
+    () async {
+      await repository.upsertDocuments([
+        {
+          '_id': 'report-2',
+          'user': {'_id': 'ada', 'name': 'Ada Lovelace'},
+          'parent': {'_id': 'exam-1', 'name': 'Geography exam'},
+        },
+      ]);
+      final row = (await repository.getById('report-2'))!;
+
+      expect(submissionDisplayTitle(row), 'Geography exam');
+      expect(submissionSubmitterName(row), 'Ada Lovelace');
+
+      final bytes = await exporter.generateBytes('report-2');
+      final text = String.fromCharCodes(bytes!);
+      expect(text.contains(r'{"_id":"exam-1"'), isFalse);
+    },
+  );
 
   test('writes reports under the supplied directory', () async {
     await repository.upsertDocuments([

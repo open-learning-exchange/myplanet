@@ -168,7 +168,7 @@ class NotificationsRepository {
             return id.isNotEmpty && !id.startsWith('_design');
           })
           .toList(growable: false);
-      savedCount += await _bulkInsertFromSync(documents);
+      savedCount += await bulkInsertFromSync(documents);
       skip += rows.length;
       onProgress?.call(
         SyncProgress(completed: skip.clamp(0, total), total: total),
@@ -181,7 +181,7 @@ class NotificationsRepository {
   /// parsed documents, preserving `needsSync`/`isRead` for a row whose read
   /// state changed locally but has not been uploaded yet (a re-pull would
   /// otherwise clobber the local "read" with the server's stale "unread").
-  Future<int> _bulkInsertFromSync(List<Map<String, dynamic>> documents) async {
+  Future<int> bulkInsertFromSync(List<Map<String, dynamic>> documents) async {
     final parsed = documents
         .map(_parseNotification)
         .whereType<NotificationsCompanion>()
@@ -223,8 +223,8 @@ class NotificationsRepository {
       userId: JsonUtils.getString('user', doc),
       message: Value(message),
       type: Value(rawType),
-      subType: Value(_extractTeamSubtype(rawType, doc)),
-      relatedId: Value(_extractRelatedId(rawType, link, doc)),
+      subType: Value(extractTeamSubtype(rawType, doc)),
+      relatedId: Value(extractRelatedId(rawType, link, doc)),
       link: link == null ? const Value.absent() : Value(link),
       isRead: Value(JsonUtils.getString('status', doc) != 'unread'),
       createdAt: _notificationCreatedAt(doc),
@@ -239,51 +239,6 @@ class NotificationsRepository {
   int _notificationCreatedAt(Map<String, dynamic> doc) {
     final time = JsonUtils.getLong('time', doc);
     return time > 0 ? time : _now().millisecondsSinceEpoch;
-  }
-
-  /// Port of `NotificationsRepositoryImpl.extractTeamSubtype`.
-  String? _extractTeamSubtype(String rawType, Map<String, dynamic> doc) {
-    if (rawType != 'team') return null;
-    final linkParams = JsonUtils.getObject('linkParams', doc);
-    final activeTab = JsonUtils.getString('activeTab', linkParams);
-    return activeTab == 'applicantTab' ? 'join_request' : null;
-  }
-
-  /// Port of `NotificationsRepositoryImpl.extractRelatedId`.
-  String? _extractRelatedId(
-    String rawType,
-    String? link,
-    Map<String, dynamic> doc,
-  ) {
-    switch (rawType) {
-      case 'team':
-        return JsonUtils.getStringOrNull('item', doc);
-      case 'replyMessage':
-        return JsonUtils.getStringOrNull('replyTo', doc);
-      case 'newTask':
-        return _extractIdFromLink(link);
-      default:
-        return null;
-    }
-  }
-
-  /// Port of `NotificationsRepositoryImpl.extractIdFromLink`. Mirrors
-  /// Kotlin's `link.trim('/').split('/')`: only leading/trailing slashes are
-  /// trimmed (not whitespace), and empty mid-segments are kept, so the
-  /// `view` index lines up with the Kotlin walk exactly.
-  String? _extractIdFromLink(String? link) {
-    if (link == null || link.trim().isEmpty) return null;
-    var trimmed = link;
-    while (trimmed.startsWith('/')) {
-      trimmed = trimmed.substring(1);
-    }
-    while (trimmed.endsWith('/')) {
-      trimmed = trimmed.substring(0, trimmed.length - 1);
-    }
-    final segments = trimmed.split('/');
-    final viewIndex = segments.indexOf('view');
-    if (viewIndex < 0 || viewIndex >= segments.length - 1) return null;
-    return segments[viewIndex + 1];
   }
 
   Future<void> updateResourceNotification(String userId, int count) async {
@@ -424,4 +379,142 @@ class TeamNotificationInfo {
   final bool hasChat;
 
   bool get hasAny => hasTask || hasChat;
+}
+
+/// The seven display types `NotificationsRepository.KNOWN_TYPES` names
+/// (`NotificationsRepository.kt:35`). Everything else is either resolved onto
+/// one of them by [resolveNotificationType] or grouped as "Other".
+const Set<String> knownNotificationTypes = {
+  'join_request',
+  'team_join',
+  'task',
+  'chat',
+  'voice_reply',
+  'resource',
+  'storage',
+};
+
+/// Port of `NotificationsRepositoryImpl.resolveType`
+/// (`NotificationsRepositoryImpl.kt:337-363`).
+///
+/// The sync-in stores the server's **raw** `type` — `team`, `newTask`,
+/// `replyMessage` — exactly as Kotlin's `parseNotification` does, and Kotlin
+/// resolves it on the way out, in `NotificationsViewModel.formatNotification`
+/// (`:359`). Every reader downstream of that — the click handler
+/// (`NotificationsFragment.handleNotificationClick`), the grouping
+/// (`buildNotificationGroups`) and the row's icon/title — sees the resolved
+/// value, never the raw one. The port had this function and no caller, so all
+/// three readers switched on the raw type and a join request landed in "Other"
+/// under a generic bell, doing nothing when tapped.
+///
+/// A raw `"team"` covers join requests, membership changes and chat posts
+/// alike. The locale-independent signal is `linkParams.activeTab ==
+/// "applicantTab"` ([extractTeamSubtype], stored as `subType`); message
+/// sniffing is the fallback and degrades to `team_join`.
+///
+/// One deliberate deviation: Kotlin returns `subType.lowercase()` whenever
+/// `subType != null`, so a blank stored value would resolve to the empty
+/// string. [extractTeamSubtype] only ever produces `join_request` or null, so
+/// the case is unreachable through the pull; the non-empty guard keeps a row an
+/// older build may have left behind out of a group with no name.
+String resolveNotificationType(String type, String message, {String? subType}) {
+  final lowerType = type.toLowerCase();
+  if (knownNotificationTypes.contains(lowerType)) return lowerType;
+  final lower = message.toLowerCase();
+  if (lowerType == 'team') {
+    if (subType != null && subType.isNotEmpty) return subType.toLowerCase();
+    if (lower.contains('requested to join') ||
+        lower.contains('wants to join') ||
+        lower.contains('solicitado unirse')) {
+      return 'join_request';
+    }
+    if (lower.contains('posted a message on') ||
+        lower.contains('posted a new voice') ||
+        lower.contains('new voice in') ||
+        lower.contains('posted in')) {
+      return 'chat';
+    }
+    return 'team_join';
+  }
+  if (lowerType == 'newtask') return 'task';
+  if (lowerType == 'newresource') return 'resource';
+  if (lower.contains('requested to join') || lower.contains('wants to join')) {
+    return 'join_request';
+  }
+  if (lower.contains('added you to') ||
+      lower.contains("you've been added") ||
+      lower.contains('you have been added')) {
+    return 'team_join';
+  }
+  if (lower.contains('replied to your') ||
+      lower.contains('replied on your') ||
+      lower.contains('new reply to')) {
+    return 'voice_reply';
+  }
+  if (lower.contains('posted a new voice') ||
+      lower.contains('new voice in') ||
+      lower.contains('posted in')) {
+    return 'chat';
+  }
+  if (lower.contains('is due') || lower.contains('due:')) return 'task';
+  if (lower.contains('storage')) return 'storage';
+  if (lower.contains('resource')) return 'resource';
+  return 'notification';
+}
+
+/// [resolveNotificationType] for a stored row — the shape every reader wants.
+String resolvedNotificationType(NotificationRow row) =>
+    resolveNotificationType(row.type, row.message, subType: row.subType);
+
+/// Port of `NotificationsRepositoryImpl.extractTeamSubtype` (`:386-390`).
+///
+/// Returns `"join_request"` for a raw `"team"` notification whose
+/// `linkParams.activeTab` is `applicantTab`, otherwise null — the caller falls
+/// through to [resolveNotificationType]'s message sniffing. The `"team"` test
+/// is exact, not case-insensitive, matching the Kotlin.
+String? extractTeamSubtype(String rawType, Map<String, dynamic>? doc) {
+  if (rawType != 'team') return null;
+  final linkParams = JsonUtils.getObject('linkParams', doc);
+  final activeTab = JsonUtils.getString('activeTab', linkParams);
+  return activeTab == 'applicantTab' ? 'join_request' : null;
+}
+
+/// Port of `NotificationsRepositoryImpl.extractRelatedId` (`:392-399`).
+String? extractRelatedId(
+  String rawType,
+  String? link,
+  Map<String, dynamic>? doc,
+) {
+  switch (rawType) {
+    case 'team':
+      return JsonUtils.getStringOrNull('item', doc);
+    case 'replyMessage':
+      return JsonUtils.getStringOrNull('replyTo', doc);
+    case 'newTask':
+      return extractIdFromLink(link);
+    default:
+      return null;
+  }
+}
+
+/// Port of `NotificationsRepositoryImpl.extractIdFromLink` (`:401-406`).
+///
+/// Mirrors Kotlin's `link.trim('/').split('/')`: only leading and trailing
+/// **slashes** are trimmed — not whitespace — and empty mid-segments are kept,
+/// so the `view` index lines up with the Kotlin walk exactly. A copy of this
+/// that filtered empty segments out disagreed on `/view//abc`, where Kotlin
+/// yields the empty segment and the filtered version yields `abc`.
+String? extractIdFromLink(String? link) {
+  if (link == null || link.trim().isEmpty) return null;
+  var trimmed = link;
+  while (trimmed.startsWith('/')) {
+    trimmed = trimmed.substring(1);
+  }
+  while (trimmed.endsWith('/')) {
+    trimmed = trimmed.substring(0, trimmed.length - 1);
+  }
+  final segments = trimmed.split('/');
+  final viewIndex = segments.indexOf('view');
+  if (viewIndex < 0 || viewIndex >= segments.length - 1) return null;
+  return segments[viewIndex + 1];
 }

@@ -89,9 +89,7 @@ NotificationExpansionState toggleExpansion(
       ? true
       : state.collapsed.contains(type)
       ? false
-      : notifications.any(
-          (n) => normalizeNotificationType(n.type) == type && !n.isRead,
-        );
+      : notifications.any((n) => notificationGroupType(n) == type && !n.isRead);
   if (isExpanded) {
     return NotificationExpansionState(
       expanded: state.expanded.where((t) => t != type).toSet(),

@@ -78,16 +78,57 @@ void main() {
     );
   });
 
-  test('missing related rows do not invent a destination', () async {
+  // Kotlin's `resolveAndOpenTeam` is `resolve(relatedId) ?: relatedId`
+  // (`NotificationsFragment.kt:142-148`) — an uncached task or join request
+  // still opens the team, using the id the notification carried. The port used
+  // to return null here, so the tap did nothing; and a server task's row is
+  // never cached, because there is no `tasks` sync walk yet.
+  test('an uncached related row falls back to the id it carried', () async {
     expect(
       await resolver.resolve(_notification('task', relatedId: 'missing')),
-      isNull,
+      const NotificationDestination(
+        NotificationDestinationKind.teamTasks,
+        teamId: 'missing',
+      ),
     );
     expect(
       await resolver.resolve(
         _notification('join_request', relatedId: 'missing'),
       ),
-      isNull,
+      const NotificationDestination(
+        NotificationDestinationKind.teamMembers,
+        teamId: 'missing',
+      ),
+    );
+  });
+
+  // `getJoinRequestTeamId` strips the prefix the system-tray path adds
+  // (`NotificationsRepositoryImpl.kt:169-177`) before the lookup, and the
+  // stripped id is also what the fallback opens.
+  test('a join_request_ prefixed id is stripped before the lookup', () async {
+    await database.teamDao.upsertAll([
+      TeamsCompanion.insert(id: 'req-1', teamId: const Value('team-9')),
+    ]);
+    expect(
+      await resolver.resolve(
+        _notification('join_request', relatedId: 'join_request_req-1'),
+      ),
+      const NotificationDestination(
+        NotificationDestinationKind.teamMembers,
+        teamId: 'team-9',
+      ),
+    );
+    // The strip happens inside `getJoinRequestTeamId`, so
+    // `resolveAndOpenTeam`'s `?: relatedId` falls back to the id the
+    // notification carried — prefix and all, not the stripped form.
+    expect(
+      await resolver.resolve(
+        _notification('join_request', relatedId: 'join_request_absent'),
+      ),
+      const NotificationDestination(
+        NotificationDestinationKind.teamMembers,
+        teamId: 'join_request_absent',
+      ),
     );
   });
 

@@ -730,26 +730,42 @@ class SubmissionsRepository {
   /// exactly as the Kotlin does. Without them CouchDB treats the POST as a new
   /// document, so re-uploading an existing submission would create a duplicate
   /// and [markUploaded] would then point the local row at the copy, orphaning
-  /// the original. This is reachable: [upsertDocuments] takes `isUpdated`
-  /// straight from the server document, and [pendingUploads] selects on it.
+  /// the original. `_id`/`_rev` are set by [markUploaded] and by the sync-in,
+  /// which is what makes the branch reachable — [upsertDocuments] itself always
+  /// writes `isUpdated: false`, because a document that arrived from the server
+  /// owes it nothing.
   ///
   /// Device telemetry is added by [SubmissionsUploader], where the platform
   /// seam is available. The `source`/`parentCode` planet identifiers Kotlin
   /// also sends remain part of the community-code parity gap.
+  ///
+  /// There is deliberately **no top-level `userId`**. Kotlin's
+  /// `serializeSubmission` emits none (`SubmissionsRepositoryImpl.kt:813-862`)
+  /// and its sync-in derives the owner from `user._id`, so the key the port
+  /// used to send was one only the port could read — which is exactly why the
+  /// sync-in's matching read of it went unnoticed. See [_userDocument].
   Future<Map<String, dynamic>> serialize(SubmissionRow row) async {
     final answers = await _dao.answersFor(row.id);
     return {
       if (row.couchId != null && row.couchId!.isNotEmpty) '_id': row.couchId,
       if (row.rev != null && row.rev!.isNotEmpty) '_rev': row.rev,
-      'type': row.type,
-      'userId': row.userId,
-      'user': _asDocument(row.user),
-      'parentId': row.parentId,
-      'parent': _asDocument(row.parent),
+      // Kotlin's own defaults, `serializeSubmission:827-832`: Planet reads
+      // these unconditionally, so a null would arrive as a missing field.
+      'parentId': row.parentId ?? '',
+      'type': row.type ?? 'survey',
+      'status': row.status ?? 'pending',
       'startTime': row.startTime,
       'lastUpdateTime': row.lastUpdateTime,
-      'status': row.status,
       'grade': row.grade,
+      // Omitted rather than sent as null when there is nothing to send —
+      // `serializeSubmission` guards both with an `if` and has no `else`
+      // (`:840-857`).
+      // `!submission.parent.isNullOrEmpty()` (`:842`) — an empty blob is
+      // omitted, not sent as an empty string.
+      'parent': ?((row.parent?.isEmpty ?? true)
+          ? null
+          : _asDocument(row.parent)),
+      'user': ?_userDocument(row),
       'answers': [
         for (final answer in answers)
           {
@@ -790,6 +806,42 @@ class SubmissionsRepository {
       if (ExamChoice.decode(entry) case final choice?) choice.toJson(),
   ];
 
+  /// The `user` object Planet attributes the submission by, and the port's own
+  /// sync-in reads the owner back out of.
+  ///
+  /// Kotlin resolves the live `UserEntity` for `submission.userId` and uploads
+  /// `UserEntity.serialize()` (`SubmissionsRepositoryImpl.kt:846-857`), whose
+  /// first key is `_id`; the stored `user` blob is only its fallback. This
+  /// repository has no user lookup, so it does the reverse — the stored blob,
+  /// with `_id` supplied from the row when the blob has none. That is enough
+  /// for the round trip (`normalizeSubmissionUserId(user._id)`) and enough for
+  /// Planet to attribute the answer sheet; the fuller profile Kotlin sends is
+  /// still a gap, recorded in the phase notes.
+  ///
+  /// `membershipDoc` rides along the same way Kotlin adds it, from the row's
+  /// `teamId` — it is where the sync-in recovers `teamId` from when the
+  /// document has no `team` object, so omitting it dropped a team submission's
+  /// team on every round trip.
+  static Object? _userDocument(SubmissionRow row) {
+    final userId = row.userId;
+    final stored = _asDocument(row.user);
+    final base = <String, dynamic>{
+      if (stored is Map<String, dynamic>) ...stored,
+      // Last, so the row's normalized id wins over the raw `ada@lea` a synced
+      // blob carries — that normalized form is what `watchForUser` matches and
+      // what Kotlin's resolved `UserEntity._id` would have supplied.
+      if (userId != null && userId.isNotEmpty) '_id': userId,
+    };
+    if (base.isEmpty) return null;
+    final teamId = row.teamId;
+    if (teamId != null && teamId.isNotEmpty) {
+      // Overwrites, as `serializeSubmission:851-855` does: the row's `teamId`
+      // is the authority, not whatever an older blob happens to carry.
+      base['membershipDoc'] = {'teamId': teamId};
+    }
+    return base;
+  }
+
   /// `parent` and `user` are stored locally as JSON *text*, but Kotlin uploads
   /// them as nested objects — `object.add("parent", ...)` and
   /// `object.add("user", JsonParser.parseString(submission.user))` in
@@ -812,39 +864,91 @@ class SubmissionsRepository {
     return raw;
   }
 
-  /// Stores a CouchDB page. Answers and exam details remain with the later
-  /// surveys/exam slice; this preserves every field used by the list screen.
+  /// Port of `SubmissionsRepositoryImpl.upsertRoomSubmissionsFromSync`
+  /// (`SubmissionsRepositoryImpl.kt:662-736`).
+  ///
+  /// The columns this fills are **not** the keys the document carries at the
+  /// top level. Three of them are derived, and reading them as plain keys is
+  /// what made the port's submissions list unable to show anything the server
+  /// sent:
+  ///
+  /// * `userId` is `normalizeSubmissionUserId(user._id)` — the owner lives in
+  ///   the nested user object, and `serializeSubmission` (`:813-862`) emits no
+  ///   top-level `userId` at all. The port's own uploader used to emit one,
+  ///   which is the only reason anything ever appeared here: the pair agreed
+  ///   with itself and disagreed with Planet.
+  /// * `uploaded` is `_rev.isNotEmpty()`, not a stored flag. A document that
+  ///   came back from CouchDB has by definition been uploaded, so reading a
+  ///   top-level `uploaded` key rendered every synced submission "not turned
+  ///   in".
+  /// * `teamId` is `team._id`, falling back to `user.membershipDoc.teamId`.
+  ///
+  /// `user` and `parent` are stored as **JSON text** (`gson.toJson`). Passing
+  /// the decoded map through `JsonUtils.getStringOrNull` instead fell through
+  /// to `Map.toString()` and stored `{_id: exam-1, name: Week 1 quiz}`, which
+  /// is not JSON: `jsonDecode` threw on it wherever it was read back (silently,
+  /// in `SurveysRepository._parentSurveyId`, so team-survey adoption saw
+  /// nothing), the list drew it as a title, and a re-upload replaced Planet's
+  /// objects with the literal. Same shape as Phase 104's `SurveyMapper.choices`.
+  ///
+  /// `isUpdated` is hard-`false`: a document that arrived from the server has
+  /// nothing pending. Reading it from the document would let the server decide
+  /// what this device still owes it.
+  ///
+  /// A document carrying `_attachments` is skipped whole, and the *user*
+  /// object's `_attachments` are stripped before it is stored — a base64
+  /// profile photo inside the blob can push one row past SQLite's cursor
+  /// window. `membershipDoc` is read **before** the strip, as the Kotlin
+  /// comment insists, because the two keys are independent.
   Future<void> upsertDocuments(Iterable<Map<String, dynamic>> documents) {
     final rows = <SubmissionsCompanion>[];
     final answers = <String, List<SubmissionAnswersCompanion>>{};
     final questions = <String, List<SubmissionQuestionsCompanion>>{};
     for (final json in documents) {
-      final id =
-          JsonUtils.getStringOrNull('id', json) ??
-          JsonUtils.getStringOrNull('_id', json);
-      if (id == null || id.isEmpty) {
-        throw const FormatException('Submission is missing an id');
-      }
+      if (json.containsKey('_attachments')) continue;
+      final id = JsonUtils.getString('_id', json);
+      // Kotlin's `if (id.isBlank()) return@forEach` — one unusable document
+      // must not abort the page around it.
+      if (id.trim().isEmpty) continue;
+      final rev = JsonUtils.getString('_rev', json);
+      final parentId = JsonUtils.getString('parentId', json);
+      final userJson = JsonUtils.getObject('user', json);
+      final membershipJson = JsonUtils.getObject('membershipDoc', userJson);
+      final storedUser = userJson == null
+          ? null
+          : {
+              for (final entry in userJson.entries)
+                if (entry.key != '_attachments') entry.key: entry.value,
+            };
+      final teamJson = JsonUtils.getObject('team', json);
+      final teamId = JsonUtils.getString('_id', teamJson);
+      final parentJson = JsonUtils.getObject('parent', json);
       rows.add(
         SubmissionsCompanion.insert(
           id: id,
-          couchId: Value(JsonUtils.getStringOrNull('_id', json)),
-          rev: Value(JsonUtils.getStringOrNull('_rev', json)),
-          parentId: Value(JsonUtils.getStringOrNull('parentId', json)),
+          couchId: Value(id),
+          rev: Value(rev.isEmpty ? null : rev),
+          parentId: Value(parentId.isEmpty ? null : parentId),
           type: Value(JsonUtils.getStringOrNull('type', json)),
-          userId: Value(JsonUtils.getStringOrNull('userId', json)),
-          user: Value(JsonUtils.getStringOrNull('user', json)),
+          userId: Value(
+            normalizeSubmissionUserId(JsonUtils.getString('_id', userJson)),
+          ),
+          user: Value(storedUser == null ? null : jsonEncode(storedUser)),
           startTime: Value(JsonUtils.getLong('startTime', json)),
           lastUpdateTime: Value(JsonUtils.getLong('lastUpdateTime', json)),
           grade: Value(JsonUtils.getLong('grade', json)),
           status: Value(JsonUtils.getStringOrNull('status', json)),
-          uploaded: Value(JsonUtils.getBool('uploaded', json)),
+          uploaded: Value(rev.isNotEmpty),
           sender: Value(JsonUtils.getStringOrNull('sender', json)),
           source: Value(JsonUtils.getStringOrNull('source', json)),
           parentCode: Value(JsonUtils.getStringOrNull('parentCode', json)),
-          parent: Value(JsonUtils.getStringOrNull('parent', json)),
-          teamId: Value(JsonUtils.getStringOrNull('teamId', json)),
-          isUpdated: Value(JsonUtils.getBool('isUpdated', json)),
+          parent: Value(parentJson == null ? null : jsonEncode(parentJson)),
+          teamId: Value(
+            teamId.isNotEmpty
+                ? teamId
+                : JsonUtils.getStringOrNull('teamId', membershipJson),
+          ),
+          isUpdated: const Value(false),
         ),
       );
       final rawAnswers = json['answers'];
@@ -856,16 +960,18 @@ class SubmissionsRepository {
                 rawAnswers[index] as Map<String, dynamic>,
                 submissionId: id,
                 index: index,
-                examId: JsonUtils.getStringOrNull(
-                  'parentId',
-                  json,
-                )?.split('@').first,
+                // Deliberately the base exam id rather than Kotlin's whole
+                // `parentId`. Kotlin never joins on `Answer.examId` — it
+                // reaches the exam through the answer's question row — while
+                // the port's course-progress calc looks the answer's exam up
+                // directly (`courses_providers.dart:528`), against bare exam
+                // ids. Storing
+                // `exam-1@course-1` here would make a synced attempt's
+                // mistakes silently uncountable.
+                examId: parentId.isEmpty ? null : parentId.split('@').first,
               ),
       ];
-      final parent = json['parent'];
-      final rawQuestions = parent is Map<String, dynamic>
-          ? parent['questions']
-          : null;
+      final rawQuestions = parentJson?['questions'];
       questions[id] = [
         if (rawQuestions is List)
           for (var index = 0; index < rawQuestions.length; index++)
@@ -877,7 +983,21 @@ class SubmissionsRepository {
               ),
       ];
     }
+    if (rows.isEmpty) return Future.value();
     return _dao.upsertAll(rows, answers: answers, questions: questions);
+  }
+
+  /// Port of `SubmissionsRepositoryImpl.normalizeSubmissionUserId`
+  /// (`:741-748`). A `user._id` of `ada@lea` or
+  /// `org.couchdb.user:ada@lea` reduces to `org.couchdb.user:ada`, which is
+  /// the id the session carries; anything without an `@` is left alone.
+  static String? normalizeSubmissionUserId(String userId) {
+    if (userId.isEmpty) return null;
+    if (!userId.contains('@')) return userId;
+    final local = userId.substring(0, userId.indexOf('@'));
+    return local.startsWith('org.couchdb.user:')
+        ? local
+        : 'org.couchdb.user:$local';
   }
 
   SubmissionQuestionsCompanion _questionFromJson(
@@ -965,6 +1085,18 @@ class SubmissionsRepository {
 
   /// Pulls the complete `submissions` CouchDB table into the offline cache.
   /// Pages are committed independently, matching Kotlin's partial-sync rule.
+  ///
+  /// There is deliberately **no `deleteNotIn`**, on a complete walk or an empty
+  /// database, because the Kotlin walk has none: `TransactionSyncManager.syncDb`
+  /// (`:277`) hands each page to `bulkInsertFromSync` and never prunes, and
+  /// nothing else in the Kotlin tree deletes a stale submission on a sync.
+  /// Running one here was destructive rather than merely unfaithful. The keep
+  /// set is CouchDB `_id`s while a locally authored row is keyed by a sha1, and
+  /// `deleteNotIn` only spares `isUpdated` rows — so the moment
+  /// [markUploaded] cleared that flag, the learner's own attempt (and its
+  /// answers) became eligible for deletion by the very next sync. Same rule as
+  /// the notifications walk, for the same reason: a prune over a table with two
+  /// authors evicts the author that has no server document.
   Future<SyncResult> sync({
     required ServerConfig config,
     void Function(SyncProgress)? onProgress,
@@ -981,7 +1113,6 @@ class SubmissionsRepository {
 
     final total = JsonUtils.getInt('total_rows', countResult.data);
     if (total == 0) {
-      await _dao.deleteNotIn(const []);
       onProgress?.call(const SyncProgress(completed: 0, total: 0));
       return const SyncComplete(0);
     }
@@ -989,7 +1120,6 @@ class SubmissionsRepository {
     final sizer = AdaptiveBatchProcessor(initialSize: initialBatchSize);
     final savedIds = <String>[];
     var skip = 0;
-    var walkedEveryPage = true;
     while (skip < total) {
       final limit = sizer.currentSize;
       final stopwatch = Stopwatch()..start();
@@ -1005,10 +1135,7 @@ class SubmissionsRepository {
       sizer.recordSuccess(stopwatch.elapsedMilliseconds);
 
       final rows = pageResult.data['rows'];
-      if (rows is! List || rows.isEmpty) {
-        walkedEveryPage = false;
-        break;
-      }
+      if (rows is! List || rows.isEmpty) break;
       final docs = <Map<String, dynamic>>[];
       for (final row in rows) {
         if (row is! Map<String, dynamic>) continue;
@@ -1025,9 +1152,117 @@ class SubmissionsRepository {
       );
     }
 
-    if (walkedEveryPage) await _dao.deleteNotIn(savedIds);
     return SyncComplete(savedIds.length);
   }
+}
+
+/// One row of the submissions list: the attempt to show, and how many attempts
+/// there are for the same parent.
+class SubmissionListEntry {
+  const SubmissionListEntry(this.row, this.count);
+
+  final SubmissionRow row;
+
+  /// How many submissions share this row's `parentId`. `1` for a lone attempt.
+  final int count;
+
+  @override
+  bool operator ==(Object other) =>
+      other is SubmissionListEntry && row == other.row && count == other.count;
+
+  @override
+  int get hashCode => Object.hash(row, count);
+}
+
+/// Port of the collapse in `SubmissionViewModel.kt:67-73`:
+///
+/// ```kotlin
+/// for (group in filtered.groupBy { it.parentId }.values) {
+///     val newest = group.maxByOrNull { it.lastUpdateTime } ?: continue
+///     uniqueRawSubmissions.add(newest); submissionCountMap[newest.id] = group.size
+/// }
+/// ```
+///
+/// This is what hides a duplicate the `submissions` table genuinely holds. A
+/// locally authored submission keeps its sha1 primary key after
+/// [SubmissionsRepository.markUploaded] stamps the CouchDB id onto it, so when
+/// the walk pulls that same document back it lands as a **second** row keyed by
+/// `_id`. Kotlin has exactly the same duplicate (its local key is a UUID) and
+/// never prunes it; the list collapses it instead. The port used to hide it by
+/// deleting the local row in `deleteNotIn`, which also deleted attempts that had
+/// never been uploaded at all — see [SubmissionsRepository.sync].
+///
+/// One deliberate departure: a row with **no** `parentId` is never grouped.
+/// Kotlin's `groupBy` would fold every null together, but Kotlin has no writer
+/// that leaves it null; the port's `createDraft` (the list's own New submission
+/// button) does, and folding those would hide one ad-hoc draft behind another.
+List<SubmissionListEntry> collapseSubmissionsByParent(
+  List<SubmissionRow> rows,
+) {
+  final grouped = <String, List<SubmissionRow>>{};
+  final ungrouped = <SubmissionRow>[];
+  for (final row in rows) {
+    final parentId = row.parentId;
+    if (parentId == null || parentId.isEmpty) {
+      ungrouped.add(row);
+    } else {
+      (grouped[parentId] ??= []).add(row);
+    }
+  }
+  return [
+    for (final group in grouped.values)
+      SubmissionListEntry(
+        group.reduce((a, b) => b.lastUpdateTime > a.lastUpdateTime ? b : a),
+        group.length,
+      ),
+    for (final row in ungrouped) SubmissionListEntry(row, 1),
+  ]..sort((a, b) => b.row.lastUpdateTime.compareTo(a.row.lastUpdateTime));
+}
+
+/// Port of `SubmissionsRepositoryImpl.getNormalizedSubmitterName` (`:316-323`)
+/// — the `name` inside the stored `user` JSON, or null.
+///
+/// The detail screen used to print the `user` column itself, which is a
+/// serialized object, not a name.
+String? submissionSubmitterName(SubmissionRow row) {
+  final user = row.user;
+  if (user == null || user.trim().isEmpty) return null;
+  try {
+    final decoded = jsonDecode(user);
+    if (decoded is Map<String, dynamic>) {
+      // `takeIf { it.isNotBlank() }` — a whitespace-only name is no name.
+      final name = JsonUtils.getString('name', decoded).trim();
+      return name.isEmpty ? null : name;
+    }
+  } on FormatException {
+    // `runCatching { ... }.getOrNull()`.
+  }
+  return null;
+}
+
+/// The title the submissions list and detail screen show for a row.
+///
+/// `parent` is JSON text (`gson.toJson` on the pull, `jsonEncode` on every
+/// local write), so drawing the column raw put a serialized object on screen.
+/// Kotlin reads the exam's own `name` (`SubmissionViewModel.kt:89`,
+/// `examsMap[parentId]?.name`); the blob carries that same name, which reaches
+/// it without the extra lookup. Falls back to the raw column, which is what
+/// `createDraft` stores — a plain user-typed title, not JSON.
+String? submissionDisplayTitle(SubmissionRow row) {
+  final parent = row.parent;
+  if (parent == null || parent.trim().isEmpty) return null;
+  try {
+    final decoded = jsonDecode(parent);
+    if (decoded is Map<String, dynamic>) {
+      // Null rather than a rung of its own: the callers already fall back to
+      // the type and then to a localized "Submission", which is where Kotlin's
+      // `?: "Submissions"` (`SubmissionViewModel.kt:89`) lands.
+      return JsonUtils.getStringOrNull('name', decoded);
+    }
+  } on FormatException {
+    // Not JSON — `createDraft` stores the title itself.
+  }
+  return parent;
 }
 
 class SubmissionDraftAnswer {
