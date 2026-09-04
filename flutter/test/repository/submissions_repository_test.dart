@@ -383,6 +383,52 @@ void main() {
         );
       },
     );
+
+    /// The row above has **both** columns null, and SQL's
+    /// `FALSE AND NULL = FALSE` means either `coalesce` alone rescues it — so
+    /// removing one operand at a time left the suite green. These are the two
+    /// inputs each one actually protects, and both are writable: the sync-in
+    /// stores a null `userId` when the document's `user._id` is empty
+    /// (`normalizeSubmissionUserId`) and a null `type` when the document omits
+    /// it.
+    test('an ownerless exam attempt survives the guest test', () async {
+      await database.submissionDao.upsertAll([
+        SubmissionsCompanion.insert(
+          id: 'ownerless-exam',
+          type: const Value('exam'),
+          status: const Value('requires grading'),
+          isUpdated: const Value(true),
+        ),
+      ]);
+
+      expect(
+        (await repository.pendingUploads()).single.id,
+        'ownerless-exam',
+        reason:
+            "uncoalesced, `'exam' = 'exam' AND NULL LIKE 'guest%'` is NULL and "
+            '`NOT NULL` is NULL, so the row is dropped from the backlog',
+      );
+    });
+
+    test("a guest's typeless row survives the guest test", () async {
+      await database.submissionDao.upsertAll([
+        SubmissionsCompanion.insert(
+          id: 'typeless-guest',
+          userId: const Value('guest_ada'),
+          status: const Value('complete'),
+          isUpdated: const Value(true),
+        ),
+      ]);
+
+      expect(
+        (await repository.pendingUploads()).single.id,
+        'typeless-guest',
+        reason:
+            "uncoalesced, `NULL = 'exam' AND TRUE` is NULL and `NOT NULL` is "
+            'NULL — and this row is not a guest exam but a guest survey, which '
+            '`UploadConfigs.Submissions` does upload',
+      );
+    });
   });
 
   test('caches a synced question choice by its display label', () async {

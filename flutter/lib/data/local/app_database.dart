@@ -2293,8 +2293,11 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
           (row) =>
               row.isUpdated.equals(true) &
               isGuestExamAttempt(row).not() &
-              // `_` is a single-character wildcard in LIKE and is left as
-              // one: the sentinel always has `_<millis>` after the prefix.
+              // The `_` is LIKE's single-character wildcard, not an escaped
+              // literal, and nothing turns on that: the two patterns differ
+              // only on the bare string `public`, and no id the port mints —
+              // `org.couchdb.user:<name>`, `guest_<name>`, a millisecond
+              // string — is either one.
               owner(row).like('public_%').not(),
         ))
         .get();

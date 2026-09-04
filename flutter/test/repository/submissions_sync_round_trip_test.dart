@@ -577,6 +577,204 @@ void main() {
       expect(document['_id'], 'survey-1');
     });
 
+    /// `surveyParentDocument`'s own field list. The exam builder had one of
+    /// these from the start and the survey builder did not, which the second
+    /// audit found by reverting five of its six rules with the suite still
+    /// green — `title`, both `if`-guarded fields, `_rev`, and `header`.
+    test('a survey is `serializeExam` minus what the port cannot store', () {
+      final document = SubmissionsRepository.surveyParentDocument(
+        SurveyRow(
+          id: 'survey-1',
+          rev: '2-bbb',
+          name: 'Water',
+          description: 'How is it',
+          createdDate: 10,
+          updatedDate: 20,
+          adoptionDate: 30,
+          createdBy: 'org.couchdb.user:tutor',
+          totalMarks: 0,
+          passingPercentage: '50',
+          sourcePlanet: 'lea',
+          isFromNation: false,
+          teamId: 'team-9',
+          teamShareAllowed: false,
+          sourceSurveyId: 'survey-0',
+          courseId: 'course-1',
+        ),
+        const [
+          SurveyQuestionRow(
+            id: 'survey-1:q1',
+            surveyId: 'survey-1',
+            questionId: 'q1',
+            header: 'How is the water?',
+            body: 'Pick one',
+            type: 'select',
+            choices: [ExamChoice(id: 'c1', text: 'Clean')],
+            required: false,
+            position: 0,
+          ),
+        ],
+      );
+
+      expect(document, {
+        '_id': 'survey-1',
+        '_rev': '2-bbb',
+        'name': 'Water',
+        'description': 'How is it',
+        'passingPercentage': '50',
+        'updatedDate': 20,
+        'createdDate': 10,
+        'adoptionDate': 30,
+        'sourcePlanet': 'lea',
+        'totalMarks': 0,
+        'createdBy': 'org.couchdb.user:tutor',
+        'sourceSurveyId': 'survey-0',
+        'teamId': 'team-9',
+        'questions': [
+          {
+            // `_rawQuestionId`, not the composite row key: it is what the
+            // answer's `questionId` carries.
+            'id': 'q1',
+            'title': 'How is the water?',
+            'header': 'How is the water?',
+            'body': 'Pick one',
+            'type': 'select',
+            'choices': [
+              {'id': 'c1', 'text': 'Clean'},
+            ],
+          },
+        ],
+      });
+    });
+
+    /// An adopted survey has `rev == null`, so the unconditional form would
+    /// send `"_rev": null` inside `parent` — which is exactly what
+    /// `StepExam.kt:73-75` guards against.
+    test('a survey omits the three fields Kotlin guards with an `if`', () {
+      final document = SubmissionsRepository.surveyParentDocument(
+        SurveyRow(
+          id: 'survey-1',
+          createdDate: 0,
+          updatedDate: 0,
+          adoptionDate: 0,
+          totalMarks: 0,
+          isFromNation: false,
+          teamShareAllowed: false,
+        ),
+        const [],
+      );
+
+      expect(document.containsKey('_rev'), isFalse);
+      expect(document.containsKey('sourceSurveyId'), isFalse);
+      expect(document.containsKey('teamId'), isFalse);
+    });
+
+    /// **The two id spaces are not disjoint.**
+    /// `ExamMapper.mapStepExams` synthesizes `'$courseId-$stepId-$examKey'`
+    /// for an embedded step document with no `_id`, and
+    /// `SurveyMapper.fromCourseDoc`'s first pass uses the same
+    /// `examKey: 'exam'` — so one `steps[i].exam` yields the same id string
+    /// whichever table its `type` files it under, and flipping that `type` on
+    /// Planet leaves a copy in both. Kotlin cannot reach this: one table, one
+    /// row, `@Upsert` overwrites `type` in place. The submission's own `type`
+    /// is the disambiguator the port has, and trying `Exams` first
+    /// unconditionally uploaded the stale test to a survey's answer sheet.
+    test(
+      'a survey sheet takes the survey when both tables hold the id',
+      () async {
+        const sharedId = 'course-1-course-1:0-exam';
+        await database.examDao.upsertAll(
+          [
+            ExamsCompanion.insert(
+              id: sharedId,
+              name: const Value('Stale test'),
+              stepId: const Value('course-1:0'),
+            ),
+          ],
+          {
+            sharedId: [
+              ExamQuestionsCompanion.insert(
+                id: '$sharedId-q1',
+                examId: sharedId,
+                header: const Value('Old exam question'),
+                position: 0,
+              ),
+            ],
+          },
+        );
+        await database.surveyDao.upsertAll(
+          [
+            SurveysCompanion.insert(
+              id: sharedId,
+              name: const Value('Live survey'),
+              stepId: const Value('course-1:0'),
+            ),
+          ],
+          {
+            sharedId: [
+              SurveyQuestionsCompanion.insert(
+                id: '$sharedId:q1',
+                surveyId: sharedId,
+                questionId: const Value('q1'),
+                header: const Value('How is the water?'),
+                position: 0,
+              ),
+            ],
+          },
+        );
+        final localId = await repository.createSurveyDraft(
+          survey: (await database.surveyDao.getById(sharedId))!,
+          questions: await database.surveyDao.questionsFor(sharedId),
+          userId: 'org.couchdb.user:ada',
+        );
+
+        final payload = await repository.serialize(
+          (await repository.getById(localId))!,
+        );
+
+        final parent = payload['parent']! as Map<String, dynamic>;
+        expect(parent['name'], 'Live survey');
+        expect(
+          (parent['questions']! as List).single,
+          containsPair('title', 'How is the water?'),
+        );
+      },
+    );
+
+    /// The mirror of the above: an exam attempt takes the exam row.
+    test(
+      'an exam attempt takes the exam when both tables hold the id',
+      () async {
+        const sharedId = 'course-1-course-1:0-exam';
+        await database.surveyDao.upsertAll([
+          SurveysCompanion.insert(
+            id: sharedId,
+            name: const Value('Stale survey'),
+            stepId: const Value('course-1:0'),
+          ),
+        ], const {});
+        await database.examDao.upsertAll([
+          ExamsCompanion.insert(
+            id: sharedId,
+            name: const Value('Live test'),
+            stepId: const Value('course-1:0'),
+          ),
+        ], const {});
+        final questions = await database.examDao.questionsFor(sharedId);
+        final localId = await repository.startExamSession(
+          exam: (await database.examDao.getById(sharedId))!,
+          questions: questions,
+          userId: 'org.couchdb.user:ada',
+        );
+
+        final payload = await repository.serialize(
+          (await repository.getById(localId))!,
+        );
+
+        expect((payload['parent']! as Map)['name'], 'Live test');
+      },
+    );
+
     /// The blob is the `else if` branch (`SubmissionsRepositoryImpl.kt:842`),
     /// not the default: a device that no longer has the exam still uploads
     /// what it stored.

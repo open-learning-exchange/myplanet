@@ -320,6 +320,27 @@ pending-survey prompt; making the *reader* use the bare id leaves the port
 internally consistent but still unlike Kotlin. Guessing between those inside an
 upload-shape diff is exactly how a lane ships a regression.
 
+**0b. D1 is still open for a team-adopted survey, and the second audit
+demonstrated it.** The fix treats the stored blob as the fallback for an exam
+this device no longer has. For a team survey that is not a rare case, it is the
+case after the next sync.
+
+`SurveysRepository.adoptSurvey` mints a **local-only** id, `'${surveyId}_$teamId'`,
+with no `stepId` and no `courseId`. `SurveyDao.deleteNotIn` spares only rows with
+a `stepId`, and the exams-database walk calls it with server ids on every
+complete pass — and nothing uploads the adopted row (item 4 below), so it is
+never in that keep set. It is deleted. A member who answers a shared team survey
+offline, then syncs before the outbox drains, uploads a two-key `parent` and the
+second device renders answers with no questions: exactly the failure D1's three
+round-trip tests were written to prevent. They pass because they never prune.
+
+Kotlin cannot reach this — it stores the adopted survey as a `StepExam` and
+publishes it through `UploadConfigs.AdoptedSurveys`, so the row is in the exams
+walk's keep set on the next pull. **The root cause is item 4, not the parent
+lookup**, and the fix lives in `surveys_repository.dart` and the surveys DAO
+section of `app_database.dart` — neither of which is this lane's to edit. It
+belongs with item 4 in the same phase.
+
 1. **The stored exam blob is not Kotlin's.** `_openExamSession` writes
    `{_id,_rev,name,courseId,totalMarks}` where `createExamSubmission`
    (`SubmissionsRepositoryImpl.kt:456-464`) writes
@@ -393,4 +414,67 @@ Kotlin's `header` — having already broken fidelity for `id` on precisely that
 reasoning, emitting one and not the other was an inconsistency rather than a
 decision.
 
-**The second, on the finished diff.** Recorded below.
+**The second, on the finished diff.** Phase 120's lesson repeated: an audit of
+the ground truth does not audit the implementation. The diff was green — format
+clean, analyze clean, 2062 tests, and CI green on `c30f1e9` — which is exactly
+the state Phase 120 shipped a rendering bug in. The second pass replayed 24
+reverts and injections against the full suite and found **one live defect and
+five unguarded halves**.
+
+### The live defect it found: the parent lookup preferred the wrong table
+
+`_liveParentDocument` tried `Exams` and then `Surveys`, and the notes treated
+that order as a formality. **The two id spaces are not disjoint.**
+`ExamMapper.mapStepExams` synthesizes `'$courseId-$stepId-$examKey'` for an
+embedded step document with no `_id`, and `SurveyMapper.fromCourseDoc`'s first
+pass uses the same `examKey: 'exam'` — so one `steps[i].exam` produces the same
+id string whichever table its `type` files it under. Flip that `type` on Planet
+and the next courses walk writes the row to the other table while the first
+copy survives, because neither `deleteNotIn` prunes a row that still has a
+`stepId`.
+
+Kotlin cannot reach this: one table, one row, `@Upsert` overwrites `type` in
+place. So there is no Kotlin order to port — but there is a disambiguator the
+port has and Kotlin does not need: **the submission's own `type`**. An answer
+sheet knows whether it was answering a survey or a test. `_liveParentDocument`
+now takes it and tries that table first, defaulting to the survey side to match
+`serializeSubmission:828`'s own `submission.type ?: "survey"`. Two tests pin
+both directions; the survey one is red on the old unconditional order, uploading
+`Stale test` where the sheet answered `Live survey`.
+
+### The five unguarded halves, each now pinned
+
+Each could be reverted with all 2062 tests green, and each is something this
+file or a code comment calls load-bearing:
+
+| unguarded | now pinned by |
+|---|---|
+| the `Exams`/`Surveys` lookup order | the two collision tests above |
+| **D2's entire user-visible effect** — a Dart-side `.where((row) => row.userId == userId)` re-added in `queuePending` re-scoped the uploader with the suite green | a two-owner `queuePending` test asserting both sheets are enqueued and each document keeps its own owner |
+| `surveyParentDocument`'s field list — five of its six rules reverted green, `title` and all three `if`-guards among them | a field-for-field test, plus an `if`-guard test |
+| the `coalesce` on the guest `type` operand | a guest row with a null `type` |
+| the `coalesce` on the guest `userId` operand | an exam attempt with a null `userId` |
+
+The last two are the subtle pair. The existing test seeds a row with **both**
+columns null, and SQL's `FALSE AND NULL = FALSE` means either `coalesce` alone
+rescues it — so removing one at a time was invisible. Both of the inputs each
+one actually protects are writable by the sync-in: `normalizeSubmissionUserId`
+returns null for an empty `user._id`, and `type` comes straight from a document
+that may omit it.
+
+### Two findings recorded rather than fixed
+
+**`serialize` has a new throw surface, and it diverges from Kotlin in the
+port's favour.** Kotlin wraps the whole of `serializeSubmission` in
+`try { … } catch { printStackTrace() }` (`:812-861`) with `getPayloadData` as
+its first statement, so a Kotlin DAO failure uploads an empty `{}` document.
+The port propagates, `queuePending`'s loop aborts with the rows before it
+already enqueued, and the screen reports the failure. That is better behaviour,
+but it is not the Kotlin's, the diff widens the surface from one DAO read per
+row to three or four, and the loop now iterates the whole handset's backlog
+rather than one user's. Saying so here rather than changing it.
+
+**The `public_%` pattern's `_` is LIKE's wildcard, not an escaped literal.**
+The code comment claimed the choice was deliberate; the two patterns differ only
+on the bare string `public`, and no id the port mints is either one. The comment
+now says that instead of overstating it.

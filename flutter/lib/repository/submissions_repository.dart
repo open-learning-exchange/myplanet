@@ -815,33 +815,66 @@ class SubmissionsRepository {
   /// half passing its own test: Phase 74's reactions, Phase 100's photo id.
   ///
   /// **Kotlin keeps surveys and tests in one `exams` table; the port splits
-  /// them**, so the lookup tries [ExamDao] and then [SurveyDao] — one
-  /// `examDao.getById` in the Kotlin is two here.
+  /// them**, so one `examDao.getById` in the Kotlin is two lookups here — see
+  /// [_liveParentDocument] for why which one goes first is load-bearing.
   Future<Object?> _parentDocument(SubmissionRow row) async {
-    final live = await _liveParentDocument(row.parentId);
+    final live = await _liveParentDocument(row.parentId, row.type);
     if (live != null) return live;
     // `!submission.parent.isNullOrEmpty()` (`:842`) — an empty blob is
     // omitted, not sent as an empty string.
     return (row.parent?.isEmpty ?? true) ? null : _asDocument(row.parent);
   }
 
-  Future<Map<String, dynamic>?> _liveParentDocument(String? parentId) async {
+  /// The live parent, looked up in whichever of the two tables the submission
+  /// says it was answering, and in the other only as a fallback.
+  ///
+  /// **The two id spaces are not disjoint**, which is why the order is a
+  /// decision rather than a formality. `ExamMapper.mapStepExams` synthesizes
+  /// `'$courseId-$stepId-$examKey'` for an embedded step document with no
+  /// `_id`, and `SurveyMapper.fromCourseDoc`'s first pass uses the same
+  /// `examKey: 'exam'` — so one `steps[i].exam` produces the *same id string*
+  /// whether the document's `type` files it under [Exams] or [Surveys]. Flip
+  /// that `type` on Planet and the next courses walk writes the row to the
+  /// other table while the first one's copy survives: neither `deleteNotIn`
+  /// prunes a row that still has a `stepId`, so the loser lingers until a
+  /// later completed exams walk.
+  ///
+  /// Kotlin cannot have this problem — one `exams` table, one row, `@Upsert`
+  /// overwrites `type` in place — so there is no Kotlin order to port. The
+  /// submission's own `type` is the disambiguator the port has and Kotlin does
+  /// not need: an answer sheet knows whether it was answering a survey or a
+  /// test, and the row it should upload is the one of that kind. Trying
+  /// [Exams] first unconditionally uploaded the stale test to a survey's
+  /// answer sheet.
+  ///
+  /// `type` defaults to the survey side, matching `serializeSubmission:828`'s
+  /// own `submission.type ?: "survey"`.
+  Future<Map<String, dynamic>?> _liveParentDocument(
+    String? parentId,
+    String? type,
+  ) async {
     // `parentId.substringBefore("@")` — the parent id is `examId@courseId`
     // for a course-attached exam or survey and the bare id otherwise.
     final examId = (parentId ?? '').split('@').first;
     if (examId.isEmpty) return null;
-    final exam = await _examDao.getById(examId);
-    if (exam != null) {
-      return examParentDocument(exam, await _examDao.questionsFor(examId));
+
+    Future<Map<String, dynamic>?> fromExams() async {
+      final exam = await _examDao.getById(examId);
+      return exam == null
+          ? null
+          : examParentDocument(exam, await _examDao.questionsFor(examId));
     }
-    final survey = await _surveyDao.getById(examId);
-    if (survey != null) {
-      return surveyParentDocument(
-        survey,
-        await _surveyDao.questionsFor(examId),
-      );
+
+    Future<Map<String, dynamic>?> fromSurveys() async {
+      final survey = await _surveyDao.getById(examId);
+      return survey == null
+          ? null
+          : surveyParentDocument(survey, await _surveyDao.questionsFor(examId));
     }
-    return null;
+
+    return type == 'exam'
+        ? await fromExams() ?? await fromSurveys()
+        : await fromSurveys() ?? await fromExams();
   }
 
   /// Port of `StepExam.serializeExam` (`StepExam.kt:70-94`), field for field
