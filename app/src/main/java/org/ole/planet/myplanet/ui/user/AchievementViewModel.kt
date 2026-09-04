@@ -52,12 +52,16 @@ class AchievementViewModel @Inject constructor(
     private val _achievement = MutableStateFlow<Achievement?>(null)
     val achievement: StateFlow<Achievement?> = _achievement.asStateFlow()
 
+    private val _achievementId = MutableStateFlow<String?>(null)
+    val achievementId: StateFlow<String?> = _achievementId.asStateFlow()
+
     fun loadUserAndAchievement() {
         viewModelScope.launch {
             val userModel = userRepository.getUserModel()
             _user.value = userModel
-            val achievementId = userModel?.id + "@" + userModel?.planetCode
-            _achievement.value = userRepository.initializeAchievement(achievementId)
+            val id = userModel?.let { it.id + "@" + it.planetCode }
+            _achievementId.value = id
+            _achievement.value = id?.let { userRepository.initializeAchievement(it) }
         }
     }
 

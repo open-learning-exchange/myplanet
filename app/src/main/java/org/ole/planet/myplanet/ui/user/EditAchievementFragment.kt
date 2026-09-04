@@ -163,7 +163,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             }
 
             // ONLY continue saving if no missing fields
-            val achievementId = user?.id + "@" + user?.planetCode
+            val achievementId = viewModel.achievementId.value.takeUnless { it.isNullOrEmpty() } ?: return@setOnClickListener
             val header = binding.etAchievement.text.toString().trim()
             val goals = binding.etGoals.text.toString().trim()
             val purpose = binding.etPurpose.text.toString().trim()
