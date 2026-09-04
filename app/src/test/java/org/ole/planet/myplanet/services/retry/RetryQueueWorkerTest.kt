@@ -21,7 +21,11 @@ import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
+import com.google.gson.JsonObject
+import java.util.concurrent.atomic.AtomicInteger
+import okhttp3.ResponseBody.Companion.toResponseBody
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -30,6 +34,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.RetryOperation
+import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RetryQueueWorkerTest {
@@ -173,5 +178,114 @@ class RetryQueueWorkerTest {
         val result = worker.doWork()
 
         assertEquals(Result.retry(), result)
+    }
+
+    @Test
+    fun doWork_processesOperationsConcurrentlyBoundedToMax6() = runTest {
+        MainApplication.isSyncRunning.set(false)
+        coEvery { retryQueue.isCurrentlyProcessing() } returns false
+        coEvery { retryQueue.setProcessing(any()) } returns Unit
+        coEvery { retryQueue.cleanup() } returns Unit
+
+        val operations = (1..10).map { index ->
+            RetryOperation().apply {
+                id = "op_$index"
+                serializedPayload = "{}"
+                endpoint = "test"
+            }
+        }
+        coEvery { retryQueue.getPendingOperations() } returns operations
+        coEvery { retryQueue.markInProgress(any()) } returns Unit
+        coEvery { retryQueue.markCompleted(any()) } returns Unit
+
+        val activeRequests = AtomicInteger(0)
+        var maxConcurrent = 0
+
+        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } coAnswers {
+            val current = activeRequests.incrementAndGet()
+            synchronized(this) {
+                if (current > maxConcurrent) {
+                    maxConcurrent = current
+                }
+            }
+            delay(50)
+            activeRequests.decrementAndGet()
+            Response.success(JsonObject())
+        }
+
+        val result = worker.doWork()
+
+        assertEquals(Result.success(), result)
+        assertEquals(6, maxConcurrent)
+        coVerify(exactly = 10) { retryQueue.markCompleted(any()) }
+    }
+
+    @Test
+    fun doWork_accuratelyCountsSuccessesAndFailuresAndIsolatesSiblingFailures() = runTest {
+        MainApplication.isSyncRunning.set(false)
+        coEvery { retryQueue.isCurrentlyProcessing() } returns false
+        coEvery { retryQueue.setProcessing(any()) } returns Unit
+        coEvery { retryQueue.cleanup() } returns Unit
+
+        val ops = (1..5).map { index ->
+            RetryOperation().apply {
+                id = "op_$index"
+                dbId = "op_$index"
+                serializedPayload = "{}"
+                endpoint = "test"
+            }
+        }
+        coEvery { retryQueue.getPendingOperations() } returns ops
+        coEvery { retryQueue.markInProgress(any()) } returns Unit
+        coEvery { retryQueue.markCompleted(any()) } returns Unit
+        coEvery { retryQueue.markFailed(any(), any(), any()) } returns Unit
+
+        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } coAnswers {
+            val url = secondArg<String>() // requestUrl is 3rd param (index 2)
+            val requestUrl = arg<String>(2)
+            if (requestUrl.contains("op_2") || requestUrl.contains("op_4")) {
+                Response.error(500, "Server Error".toResponseBody(null))
+            } else {
+                Response.success(JsonObject())
+            }
+        }
+
+        val result = worker.doWork()
+
+        assertEquals(Result.success(), result)
+        coVerify(exactly = 3) { retryQueue.markCompleted(any()) }
+        coVerify(exactly = 2) { retryQueue.markFailed(any(), any(), any()) }
+    }
+
+    @Test
+    fun doWork_pausesRetryProcessingBetweenBatchesWhenSyncStarts() = runTest {
+        MainApplication.isSyncRunning.set(false)
+        coEvery { retryQueue.isCurrentlyProcessing() } returns false
+        coEvery { retryQueue.setProcessing(any()) } returns Unit
+        coEvery { retryQueue.cleanup() } returns Unit
+
+        // Create 60 items so BATCH_SIZE (50) splits into 2 batches (50 and 10)
+        val ops = (1..60).map { index ->
+            RetryOperation().apply {
+                id = "op_$index"
+                serializedPayload = "{}"
+                endpoint = "test"
+            }
+        }
+        coEvery { retryQueue.getPendingOperations() } returns ops
+        coEvery { retryQueue.markInProgress(any()) } returns Unit
+        coEvery { retryQueue.markCompleted(any()) } returns Unit
+
+        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } coAnswers {
+            // When processing batch 1, set isSyncRunning = true so second batch won't run
+            MainApplication.isSyncRunning.set(true)
+            Response.success(JsonObject())
+        }
+
+        val result = worker.doWork()
+
+        assertEquals(Result.success(), result)
+        // Only first batch of 50 operations should have completed
+        coVerify(exactly = 50) { retryQueue.markCompleted(any()) }
     }
 }
