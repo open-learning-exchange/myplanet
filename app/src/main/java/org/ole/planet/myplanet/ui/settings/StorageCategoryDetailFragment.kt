@@ -84,23 +84,26 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
             viewModel.toggleAllChecked()
         }
 
+        val olePath = FileUtils.getOlePath(requireContext())
+
         binding.deleteSelectedButton.setOnClickListener {
             val checkedCount = viewModel.uiState.value.checkedCount
             confirmDelete(checkedCount, getString(R.string.storage_delete_selected_confirm, checkedCount)) {
-                viewModel.deleteSelected()
+                viewModel.deleteSelected(olePath)
             }
         }
 
         binding.deleteAllButton.setOnClickListener {
             val count = viewModel.uiState.value.items.size
             confirmDelete(count, getString(R.string.storage_delete_confirm, categoryLabel)) {
-                viewModel.deleteAll()
+                viewModel.deleteAll(olePath)
             }
         }
 
         observeViewModel()
         val category = StorageCategories.all.getOrNull(categoryIndex)
         viewModel.loadResources(
+            olePath = olePath,
             extensions = category?.extensions ?: emptySet(),
             allKnownExtensions = StorageCategories.allKnownExtensions
         )
