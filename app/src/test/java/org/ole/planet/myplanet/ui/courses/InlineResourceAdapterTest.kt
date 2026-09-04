@@ -167,4 +167,60 @@ class InlineResourceAdapterTest {
         assertEquals(true, job?.isCancelled)
         assertNull(holder.previewJob)
     }
+
+    @Test
+    fun `isResourceOffline short-circuits and does not evaluate UrlUtils getUrl or disk check`() = runTest {
+        val resource = MyLibrary().apply {
+            id = "res3"
+            resourceLocalAddress = "sample.pdf"
+            resourceOffline = true
+        }
+
+        adapter.submitList(listOf(resource))
+        mainTestDispatcher.scheduler.advanceUntilIdle()
+
+        val parent = LinearLayout(context)
+        val holder = adapter.onCreateViewHolder(parent, 0)
+
+        // Bind holder
+        adapter.onBindViewHolder(holder, 0)
+
+        // Run main dispatcher (coroutine launches and checks resourceOffline)
+        mainTestDispatcher.scheduler.advanceUntilIdle()
+
+        // UrlUtils.getUrl should NOT be called at all because resourceOffline is true
+        coVerify(exactly = 0) { UrlUtils.getUrl(any()) }
+
+        // Download status updated to completed/downloaded
+        assertEquals(View.GONE, holder.binding.pbDownload.visibility)
+        assertEquals(View.VISIBLE, holder.binding.ivStatus.visibility)
+    }
+
+    @Test
+    fun `online resource checks file existence on IO dispatcher`() = runTest {
+        val resource = MyLibrary().apply {
+            id = "res4"
+            resourceLocalAddress = "sample.pdf"
+            resourceOffline = false
+        }
+
+        adapter.submitList(listOf(resource))
+        mainTestDispatcher.scheduler.advanceUntilIdle()
+
+        val parent = LinearLayout(context)
+        val holder = adapter.onCreateViewHolder(parent, 0)
+
+        // Immediately after bind, holder is set synchronously to loading / not-downloaded state
+        adapter.onBindViewHolder(holder, 0)
+        assertEquals(View.VISIBLE, holder.binding.pbDownload.visibility)
+        assertEquals(View.GONE, holder.binding.ivStatus.visibility)
+
+        // Advance main dispatcher -> coroutine executes up to withContext(dispatcherProvider.io)
+        mainTestDispatcher.scheduler.advanceUntilIdle()
+        coVerify(exactly = 0) { UrlUtils.getUrl(any()) }
+
+        // Advance IO dispatcher -> UrlUtils.getUrl / FileUtils.checkFileExist executes on IO
+        ioTestDispatcher.scheduler.advanceUntilIdle()
+        coVerify(exactly = 1) { UrlUtils.getUrl(resource) }
+    }
 }
