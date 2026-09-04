@@ -58,6 +58,7 @@ class AchievementViewModelTest {
 
         assertEquals("user1", viewModel.user.value?.id)
         assertEquals(achievement, viewModel.achievement.value)
+        assertEquals("user1@planet1", viewModel.achievementId.value)
     }
 
     @Test
@@ -69,6 +70,7 @@ class AchievementViewModelTest {
         viewModel.loadUserAndAchievement()
         advanceUntilIdle()
 
+        assertEquals("abc@xyz", viewModel.achievementId.value)
         coVerify(exactly = 1) { userRepository.initializeAchievement("abc@xyz") }
     }
 
@@ -82,6 +84,7 @@ class AchievementViewModelTest {
 
         assertNull(viewModel.user.value)
         assertNull(viewModel.achievement.value)
+        assertNull(viewModel.achievementId.value)
     }
 
     @Test
