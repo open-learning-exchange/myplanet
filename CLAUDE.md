@@ -19,23 +19,90 @@
 
 ### Flutter port (in progress)
 
-**Migration progress: ≈79/100.** Report this figure whenever you report on the
+**Migration progress: ≈86/100.** Report this figure whenever you report on the
 port; it is the whole migration effort on a 1-to-100 scale, not a phase count.
 The basis, so it can be argued with rather than repeated:
 
 | Dimension | State | Est. |
 |---|---|---|
 | Feature breadth | all 28 UI packages have screens (enterprises is a team *type*, not a gap — Phase 99) | ~95 |
-| Behavioural parity | the limiter, and the lowest-confidence row: audits still find real defects at 7–18 per screen pair | ~70 |
-| Test coverage | 1675 tests / 160 test files vs 231 Kotlin test files; `teams_provider`, `courses_providers`, `app_providers` still untested | ~72 |
-| Localisation | 231–256 of 858 keys per locale; the largest measurable hole, delegated externally | ~30 |
+| Behavioural parity | the limiter, and the lowest-confidence row: **reachability** audits keep finding ported, green, *dead* code — see below | ~72 |
+| Test coverage | 2048 tests / 189 test files vs 231 Kotlin test files | ~85 |
+| Localisation | ar/es/fr ~830–864 of 879 keys but **416–470 of those are unreviewed machine translation**; ne/so 421 | ~55 |
 | Background work | WorkManager gaps closed through Phase 94, platform channels in-tree | ~95 |
 
-Breadth is measurable and depth is not — 245 hand-written Dart files against 543
+Breadth is measurable and depth is not — 240 hand-written Dart files against 543
 Kotlin sources mostly reflects Dart folding Fragment + ViewModel + Adapter + XML
 into one screen file, so it says little about parity. Depth is only ever revealed
 by auditing, and **every audit so far has found something**, which is why the
 parity row is an estimate rather than a measurement.
+
+**Two corrections worth keeping, because both were mine and both inflated the
+figure.** Earlier revisions of this table called `teams_provider`,
+`courses_providers` and `app_providers` untested; they are referenced by 10, 5
+and 43 test files respectively. The heuristic was matching `<basename>_test.dart`
+filenames, and it had already missed 22 chat tests in Phase 108. **Grep the test
+tree for the symbol, never the filename.** And the localisation row counted 899
+`[Language] …` strings — `"[Nepali] Join requests"` — as translations; Phase 118
+deleted them so those keys fall back to clean English, which is why ne/so read
+421 rather than ~850. A number that only ever moves up is not being measured.
+
+### Reachability: ported, tested, green, and dead
+
+The most valuable thing recent rounds established, and it is not a bug — it is a
+failure *class* that green tests structurally cannot detect. A screen test builds
+its screen directly; a repository test builds its own rows. Neither ever asks
+whether the app can reach that screen with data the server actually sends.
+
+Phase 113 found `TakeExamScreen` unreachable in production. Its route was fine,
+its screen was fine, its tests were green: a course step's exam arrives embedded
+in the course document, Kotlin's `buildCoursePayload` writes it into `exams`
+under the step's own id, and `CourseMapper` threw it away — so
+`exams.stepId == course_steps.id` could never match real synced data. Three
+phases of correct exam work (Phase 100's verification photo, Phase 106's choice
+shape, Phase 110's retry model) were guarding a button that could not appear.
+**Every fixture hand-faked the join, and that was the symptom.**
+
+Then it kept happening. Phase 116 audited port-wide and found four more
+unreachable screens plus a resources walk clearing My Library on every sync.
+Phase 119 found five sync walks Kotlin runs that the port never had — and *four
+of the five had a Dart writer already sitting uncalled*, plumbing laid for a pull
+nobody wrote. Phase 120 found a submission uploaded on one handset and pulled on
+another yields answers with no questions.
+
+So, when you touch a screen or a table, ask the three questions the guards now
+encode: **who writes this table, can the writer produce values the reader's
+predicate matches, and does anything navigate here?** The guards are
+`test/ui/route_reachability_test.dart`, `test/repository/shelf_membership_survives_sync_test.dart`,
+`test/data/local/mapper_preserves_local_columns_test.dart` and
+`test/repository/community_share_round_trip_test.dart`. A fixture that fabricates
+a join is not evidence; a document shaped like the server's is.
+
+### Rules these rounds turned into rules
+
+- **A Kotlin citation is not a Kotlin reading.** Four times a lane named the
+  right function and misread it, each caught only by a `parity-auditor` pass at
+  `effort: max`: Phase 106's cancelled-survey gate (which lost answers
+  permanently), Phase 110's select-grading verdict, Phase 117's
+  placeholder-reordering claim, and Phase 113's own first reading.
+- **An audit of the ground truth does not audit the implementation.** Phases
+  110, 113, 116 and 119 each ran a second `parity-auditor` pass aimed at their
+  own finished, already-green code, and every one found more defects — thirteen,
+  in Phase 113's case. Run both passes.
+- **A provider a screen reads but never watches is null.** Await its `.future`,
+  with the `await` *inside* the enclosing `try`, because a future can reject
+  where `valueOrNull` could not. Four independent instances in unrelated files.
+- **Never degrade a translation.** "Never overwrite a human translation" was too
+  blunt: Phase 114 replaced 39 unmarked strings that were English, `[Language]`
+  placeholders, or carried Android's XML escaping into the ARB — French had been
+  rendering `l\'appareil` since Phase 47. Repairing a broken human-derived
+  string is right; substituting one valid translation for another is not.
+- **A schema bump discards unsynced local writes**, which is why
+  `localAuthorityTables` and the hand-written `_addColumnIfMissing` step exist.
+  A Drift *converter* swap changes no DDL and needs no bump (Phase 104).
+- **Generated sources are gitignored**, so after any merge touching a Drift table
+  or converter, run `dart run build_runner build` *before* trusting
+  `flutter analyze` — stale output produces phantom type errors, 14 in one case.
 
 A Flutter/Dart port lives in **`flutter/`**, alongside — not replacing — the Kotlin app. `app/`
 is unchanged and remains the shipping app. **All 28 UI packages** have a screen, plus a durable
@@ -202,26 +269,27 @@ Phase 75 harness trap, since `teamsRepositoryProvider` transitively reaches
 
 Phase 47 localised the other four languages: `tool/arb_from_strings_xml.dart` derives `app_ar.arb`,
 `app_fr.arb`, `app_ne.arb` and `app_so.arb` from the Kotlin `values-*/strings.xml` (195–196 of 727
-keys each, nothing machine-translated), which also made the language picker's four dead entries
+keys each, nothing machine-translated **as of Phase 47 — no longer true, see
+*Current l10n state* below**), which also made the language picker's four dead entries
 real — they had been setting a locale with no `.arb` to resolve to. Somali needed
 `framework_fallback_delegates.dart`, because `flutter_localizations` does not translate it and the
 locale would otherwise resolve with no `MaterialLocalizations` and crash. Directional padding and
 alignment are done; a visual RTL review in Arabic is not.
 
-**Current l10n state, and one open decision.** The template `app_en.arb` has
-grown to 858 keys while the five locale files sit at 231–256, so ~600 keys per
-locale fall back to English. Those Phase 47 derivations came from the Kotlin
-`strings.xml` — real human translations already shipping in the Android app —
-but the ~600 outstanding keys are port-specific and have **no Kotlin
-counterpart to derive from**, so the choice is machine translation or English
-fallback. Filling them is in progress externally, using Google Translate via
-`deep_translator`. If that lands, the "nothing machine-translated" claim above
-stops being true and the files become a silent mix of human and machine
-strings; whether to mark the machine-translated ones (an `@key` note, or an
-`x-mt` flag) so a later human pass can find them is **not yet decided**. Note
-that a confidently wrong translation can mislead a learner where an English
-fallback merely inconveniences them — which is why this is a judgement about
-users, not a mechanical gap to close.
+**Current l10n state.** The template `app_en.arb` is 879 keys. Arabic, Spanish
+and French sit at ~830–864 of them, Nepali and Somali at 421. But coverage is the
+wrong headline: **416–470 of each of ar/es/fr's values are unreviewed machine
+translation**, marked as such by Phase 109 so a human pass can list exactly which.
+The ~250 keys derived from the Kotlin `values-*/strings.xml` are real human
+translations already shipping in the Android app, and Phases 114/118/121 have
+been recovering more of them — that recovery is strictly better than machine
+translation and should be exhausted before any more is generated.
+
+The earlier "nothing machine-translated" claim is obsolete, and so is any reading
+of the untranslated counts as a quality measure: ne/so went *up* to 458 when Phase
+118 deleted 899 `[Language] Join requests`-style strings, because falling back to
+clean English beats displaying a language tag. A confidently wrong translation can
+mislead a learner where an English fallback merely inconveniences them.
 
 Phase 48 fixed the team-finance summary so it is derived from the filtered transaction stream.
 Phase 49 made notification rows actionable rather than read-only: resources and storage warnings
@@ -644,6 +712,45 @@ screen reads but never watches is null. Await its `.future`, and put the
 `valueOrNull` could not.** When you touch a screen, grep it for
 `.valueOrNull` before anything else.
 
+Phases 106–121 ran as parallel lanes throughout, three or four at a time, and
+the pattern held: **the highest-yield source of work is the previous round's
+"reported, not fixed" list.** A lane that finds something outside its file set
+and writes it down precisely is handing the next lane a target rather than a
+mood, and four consecutive rounds were briefed almost entirely from those lists.
+
+The defects worth remembering, by class rather than by phase:
+
+**Data that never arrives.** Phase 113's unreachable exam screen, Phase 116's
+four more unreachable screens, Phase 119's five missing sync walks. Covered in
+*Reachability* above; it is the class that green tests cannot see.
+
+**A writer and a reader disagreeing about a key**, where each half passes its own
+test and only the pair is wrong. Phase 74's reactions (written nested, read at
+top level), Phase 100's verification photo (written under the submission id, read
+back under the row id), Phase 116's community feed identifier, Phase 120's
+submission `parent.questions`. **Test the pair, not the halves.**
+
+**A sync-in rewriting a locally-authored column.** Phase 56 (a null-returning
+fetch wiping stored credentials and locking a user out of offline login), Phase
+74 (a pull erasing the user's own reaction), Phase 98 (a re-pull undoing a read
+notification). If a table carries local-authority state, prove the round trip
+preserves it. Relatedly, `deleteNotIn` after a *partial* walk destroys data —
+Phase 52 fixed that for resources, and Phase 116 found the resources walk
+clearing My Library on every sync anyway.
+
+**Localisation.** Phase 109 added `test/l10n/placeholder_integrity_test.dart`
+after an external translator tokenised ICU placeholders and never restored them,
+leaving Arabic rendering `التقييم: __0____ من 5` in 38 strings — of which
+`flutter analyze` caught exactly one, as an unused local variable. Phases 114 and
+118 then recovered 431 human translations from the Kotlin `values-*/strings.xml`
+and deleted the 899 `[Language] …` placeholders. Phase 121 found the whole class
+those passes were blind to: `tool/arb_from_strings_xml.dart` skipped
+placeholder-carrying keys outright, so every Kotlin string with a `%s` or `%1$s`
+had a human translation the port structurally could not use. Four of them
+*reorder* their placeholders (`ne/download_progress` is
+`%2$d मध्ये %1$d …`), so a left-to-right substitution would have printed the
+numbers swapped, silently, in a sentence.
+
 ### Running parallel lanes
 
 Sibling sessions on their own branches, merged by an integrator. What this round
@@ -1033,6 +1140,12 @@ There is no generic base repository; each implementation talks to its Room DAO(s
 ```
 
 ### Flutter port toolchain
+
+**Current Drift `schemaVersion` is 45** (`flutter/lib/data/local/app_database.dart`).
+Bump it only when you have been allocated a number — parallel lanes must not each
+pick one, and a bump discards unsynced local writes on any device that has not
+synced, which is what `localAuthorityTables` and the hand-written
+`_addColumnIfMissing` step exist to limit.
 
 `.claude/hooks/session-start.sh` (a `SessionStart` hook, registered in
 `.claude/settings.json`) provisions `flutter/` on remote sessions: Flutter
