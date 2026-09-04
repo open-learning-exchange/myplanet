@@ -67,6 +67,8 @@ class CoursesRepositoryImplTest {
 
     @Before
     fun setup() {
+        every { sharedPrefManager.getConcatenatedLinks() } returns "[]"
+        org.ole.planet.myplanet.utils.UrlUtils.init(sharedPrefManager)
         repository = CoursesRepositoryImpl(
             progressRepository,
             activitiesRepository,
@@ -419,5 +421,37 @@ class CoursesRepositoryImplTest {
         assertTrue(result.getOrDefault(false))
         coVerify(exactly = 1) { courseDao.upsertAll(any()) }
         assertEquals(listOf("userA", "userB", "userC"), capturedCourses.captured.first().userId)
+    }
+
+    @Test
+    fun `bulkInsertFromSync derives correct stepId matching expected base64 encoding`() = runTest {
+        val docWrapper = com.google.gson.JsonObject().apply {
+            addProperty("id", "course_101")
+            add("doc", com.google.gson.JsonObject().apply {
+                addProperty("_id", "course_101")
+                addProperty("courseTitle", "Test Course")
+                val steps = com.google.gson.JsonArray().apply {
+                    add(com.google.gson.JsonObject().apply {
+                        addProperty("stepTitle", "Step 1")
+                        addProperty("description", "Desc 1")
+                    })
+                }
+                add("steps", steps)
+            })
+        }
+        val syncData = com.google.gson.JsonArray().apply { add(docWrapper) }
+
+        val capturedSteps = slot<List<CourseStep>>()
+        coEvery { courseStepDao.upsertAll(capture(capturedSteps)) } returns Unit
+
+        repository.bulkInsertFromSync(syncData)
+
+        coVerify(exactly = 1) { courseStepDao.upsertAll(any()) }
+        assertEquals(1, capturedSteps.captured.size)
+
+        val stepElement = docWrapper.getAsJsonObject("doc").getAsJsonArray("steps")[0]
+        val expectedStepId = java.util.Base64.getEncoder().encodeToString(stepElement.toString().toByteArray())
+        assertEquals("eyJzdGVwVGl0bGUiOiJTdGVwIDEiLCJkZXNjcmlwdGlvbiI6IkRlc2MgMSJ9", expectedStepId)
+        assertEquals(expectedStepId, capturedSteps.captured.first().id)
     }
 }
