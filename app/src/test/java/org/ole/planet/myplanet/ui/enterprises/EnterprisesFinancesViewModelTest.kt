@@ -13,6 +13,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.ole.planet.myplanet.model.FinanceHeaderState
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
@@ -170,14 +171,20 @@ class EnterprisesFinancesViewModelTest {
             )
         } returns flowOf(mockTransactions)
 
+        val states = mutableListOf<FinanceHeaderState>()
+        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.headerState.collect { states.add(it) }
+        }
+
         viewModel.getTeamTransactions(teamId, true, null, null)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        val headerState = viewModel.headerState.first()
+        val headerState = states.last()
         assertEquals(300, headerState.debit)
         assertEquals(500, headerState.credit)
         assertEquals(200, headerState.total)
         assertEquals(false, headerState.isCautionVisible)
+        job.cancel()
     }
 
     @Test
@@ -197,13 +204,19 @@ class EnterprisesFinancesViewModelTest {
             )
         } returns flowOf(mockTransactions)
 
+        val states = mutableListOf<FinanceHeaderState>()
+        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.headerState.collect { states.add(it) }
+        }
+
         viewModel.getTeamTransactions(teamId, true, null, null)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        val headerState = viewModel.headerState.first()
+        val headerState = states.last()
         assertEquals(300, headerState.debit)
         assertEquals(100, headerState.credit)
         assertEquals(-200, headerState.total)
         assertEquals(true, headerState.isCautionVisible)
+        job.cancel()
     }
 }
