@@ -90,8 +90,8 @@ class HealthRepositoryImpl @Inject constructor(
             if (examination != null && !examination.conditions.isNullOrEmpty()) {
                 try {
                     val conditions = gson.fromJson(examination.conditions, JsonObject::class.java)
-                    for (key in conditions.keySet()) {
-                        result[key] = JsonUtils.getBoolean(key, conditions)
+                    for ((key, value) in conditions.entrySet()) {
+                        result[key] = value != null && !value.isJsonNull && value.isJsonPrimitive && value.asBoolean
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()

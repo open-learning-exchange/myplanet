@@ -345,4 +345,52 @@ class UserRepositoryImplTest {
 
         verify(exactly = 0) { sharedPrefManager.setSavedUsers(any()) }
     }
+
+    @Test
+    fun `updateProfileFields updates valid profile fields`() = runTest(testDispatcher) {
+        val user = UserEntity().apply {
+            id = "user1"
+            firstName = "OriginalFirst"
+            lastName = "OriginalLast"
+        }
+        coEvery { userDao.getById("user1") } returns user
+
+        val validPayload = JsonObject().apply {
+            addProperty("firstName", "NewFirst")
+            addProperty("lastName", "NewLast")
+            addProperty("email", "test@example.com")
+        }
+        repository.updateProfileFields("user1", validPayload)
+
+        val slot = slot<UserEntity>()
+        coVerify { userDao.upsert(capture(slot)) }
+        assertEquals("NewFirst", slot.captured.firstName)
+        assertEquals("NewLast", slot.captured.lastName)
+        assertEquals("test@example.com", slot.captured.email)
+        assertEquals(true, slot.captured.isUpdated)
+    }
+
+    @Test
+    fun `updateProfileFields handles empty objects and converts primitive values while skipping nulls`() = runTest(testDispatcher) {
+        val user = UserEntity().apply {
+            id = "user1"
+            firstName = "OriginalFirst"
+            lastName = "OriginalLast"
+        }
+        coEvery { userDao.getById("user1") } returns user
+
+        val payload = JsonObject().apply {
+            add("firstName", com.google.gson.JsonNull.INSTANCE)
+            addProperty("lastName", "UpdatedLast")
+            addProperty("age", 25)
+        }
+        repository.updateProfileFields("user1", payload)
+
+        val slot = slot<UserEntity>()
+        coVerify { userDao.upsert(capture(slot)) }
+        assertEquals("OriginalFirst", slot.captured.firstName)
+        assertEquals("UpdatedLast", slot.captured.lastName)
+        assertEquals("25", slot.captured.age)
+        assertEquals(true, slot.captured.isUpdated)
+    }
 }
