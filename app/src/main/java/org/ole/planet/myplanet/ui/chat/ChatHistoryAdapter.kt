@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.databinding.ChatShareDialogBinding
 import org.ole.planet.myplanet.databinding.GrandChildRecyclerviewDialogBinding
 import org.ole.planet.myplanet.databinding.RowChatHistoryBinding
 import org.ole.planet.myplanet.model.ChatHistory
+import org.ole.planet.myplanet.model.ChatSharePayload
 import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.News
@@ -245,25 +246,13 @@ class ChatHistoryAdapter(
         val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
         builder.setView(addNoteDialogBinding.root)
         builder.setPositiveButton(context.getString(R.string.share_chat)) { dialog, _ ->
-            val serializedConversations = chatHistory.conversations?.map { serializeConversation(it) }
-            val serializedMap = HashMap<String?, String>()
-            serializedMap["_id"] = chatHistory._id ?: ""
-            serializedMap["_rev"] = chatHistory._rev ?: ""
-            serializedMap["title"] = "${chatHistory.title}".trim()
-            serializedMap["user"] = chatHistory.user ?: ""
-            serializedMap["aiProvider"] = chatHistory.aiProvider ?: ""
-            serializedMap["createdDate"] = "${Date().time}"
-            serializedMap["updatedDate"] = "${Date().time}"
-            serializedMap["conversations"] = JsonUtils.gson.toJson(serializedConversations)
-
-            val map = HashMap<String?, String>()
-            map["message"] = "${addNoteDialogBinding.editText.text}"
-            map["viewInId"] = team?._id ?: ""
-            map["viewInSection"] = section
-            map["messageType"] = team?.teamType ?: ""
-            map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
-            map["chat"] = "true"
-            map["news"] = JsonUtils.gson.toJson(serializedMap)
+            val map = ChatSharePayload.buildShareMap(
+                chat = chatHistory,
+                note = "${addNoteDialogBinding.editText.text}",
+                team = team,
+                section = section,
+                nowMillis = Date().time
+            )
 
             onShareChat(map, chatHistory)
             dialog.dismiss()
@@ -273,13 +262,6 @@ class ChatHistoryAdapter(
         }
         val dialog = builder.create()
         dialog.show()
-    }
-
-    private fun serializeConversation(conversation: Conversation): HashMap<String?, String> {
-        val conversationMap = HashMap<String?, String>()
-        conversationMap["query"] = conversation.query ?: ""
-        conversationMap["response"] = conversation.response ?: ""
-        return conversationMap
     }
 
     private fun generateFlatList(
