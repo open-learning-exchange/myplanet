@@ -137,4 +137,30 @@ class BellDashboardViewModelTest {
 
         job.cancel()
     }
+
+    @Test
+    fun `handleDueReminders deduplicates ids in single pass preserving order and handles empty groups`() = runTest {
+        val submission1 = Submission().apply { id = "sub1"; status = "pending" }
+        val submission2 = Submission().apply { id = "sub2"; status = "pending" }
+
+        val capturedIds = mutableListOf<List<String>>()
+        every { surveysRepository.dueRemindersFlow() } returns flowOf(listOf("sub1,sub2", "sub1,", "  ", "sub2"))
+        coEvery { submissionsRepository.getSubmissionsByIds(capture(capturedIds)) } returns listOf(submission1, submission2)
+        coEvery { submissionsRepository.getSurveyTitlesFromSubmissions(any()) } returns listOf("Title")
+
+        viewModel = BellDashboardViewModel(
+            progressRepository, teamsRepository, surveysRepository,
+            submissionsRepository, userRepository, coursesRepository, timeProvider
+        )
+
+        val emitted = mutableListOf<SurveyPrompt?>()
+        val job = launch(kotlinx.coroutines.test.UnconfinedTestDispatcher(testScheduler)) { viewModel.surveyPrompt.collect { emitted.add(it) } }
+
+        advanceUntilIdle()
+
+        assertEquals(1, capturedIds.size)
+        assertEquals(listOf("sub1", "sub2"), capturedIds[0])
+
+        job.cancel()
+    }
 }
