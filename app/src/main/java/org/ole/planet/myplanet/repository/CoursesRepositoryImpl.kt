@@ -827,7 +827,7 @@ class CoursesRepositoryImpl @Inject constructor(
             pendingCourseResources.clear()
         }
 
-        val resourceIds = batch.map { JsonUtils.getString("_id", it.doc) }.filter { it.isNotBlank() }
+        val resourceIds = batch.mapNotNull { pending -> JsonUtils.getString("_id", pending.doc).takeIf { it.isNotBlank() } }
         val existingMap = if (resourceIds.isNotEmpty()) {
             resourceIds.distinct()
                 .chunked(300)
