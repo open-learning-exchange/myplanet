@@ -330,10 +330,7 @@
   "@storageDeleteSelectedConfirm": {
     "x-mt": true
   },
-  "storageSelectedCount": "{count} selected",
-  "@storageSelectedCount": {
-    "x-mt": true
-  },
+  "storageSelectedCount": "{count} छानिएको",
   "deleteSelected": "छानिएका मेटाउनुहोस्",
   "deleteAll": "सबै मेटाउनुहोस्",
   "selectAll": "सबै चयन गर्नुहोस्",
@@ -499,5 +496,11 @@
   "myPurposeDescription": "मेरो उद्देश्य - तपाईका शैक्षिक र व्यावसायिक महत्वाकांक्षा के हुन्?",
   "pleaseAnswerToContinue": "कृपया जारी राख्नका लागि आफ्नो उत्तर चयन गर्नुहोस् / लेख्नुहोस्",
   "teamDocuments": "कागजातहरू",
-  "confirmLeaveTeam": "के तपाईं यस टिमबाट बाहिर निस्कन चाहानुहुन्छ?"
+  "confirmLeaveTeam": "के तपाईं यस टिमबाट बाहिर निस्कन चाहानुहुन्छ?",
+  "appVersion": "संस्करण {version}",
+  "reportDateDetails": "{created} मा बनाइएको रिपोर्ट | {updated} मा अद्यावधिक गरिएको",
+  "fileNotFound": "फाइल फेला परेन: {fileName}",
+  "fileCountMany": "{count} फाइलहरू",
+  "stepsHeading": "चरणहरू",
+  "courseProgressCount": "{current} को {max} प्रगति"
 }

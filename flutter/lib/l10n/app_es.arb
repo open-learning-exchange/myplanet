@@ -154,9 +154,6 @@
     "x-mt": true
   },
   "syncing": "Sincronizando…",
-  "@syncing": {
-    "x-mt": true
-  },
   "waiting": "Espera",
   "@waiting": {
     "x-mt": true
@@ -343,9 +340,6 @@
   },
   "language": "Idioma",
   "languages": "Idiomas",
-  "@languages": {
-    "x-mt": true
-  },
   "gender": "Género",
   "dateOfBirth": "Fecha de nacimiento",
   "planetCode": "código de planeta",
@@ -532,33 +526,12 @@
     "x-mt": true
   },
   "tasks": "Tareas",
-  "@tasks": {
-    "x-mt": true
-  },
   "notifGroupJoinRequests": "Solicitudes de unión",
-  "@notifGroupJoinRequests": {
-    "x-mt": true
-  },
   "notifGroupTeamUpdates": "Actualizaciones del equipo",
-  "@notifGroupTeamUpdates": {
-    "x-mt": true
-  },
   "notifGroupNewVoices": "Nuevas voces",
-  "@notifGroupNewVoices": {
-    "x-mt": true
-  },
   "notifGroupVoiceReplies": "Respuestas de voz",
-  "@notifGroupVoiceReplies": {
-    "x-mt": true
-  },
   "notificationGroupSystem": "Sistema",
-  "@notificationGroupSystem": {
-    "x-mt": true
-  },
   "notificationGroupOther": "Otro",
-  "@notificationGroupOther": {
-    "x-mt": true
-  },
   "myLife": "miVida",
   "myLifeUnavailable": "mi vida no esta disponible",
   "@myLifeUnavailable": {
@@ -642,9 +615,6 @@
   "nA": "N/A",
   "otherDiagnosis": "Otros diagnósticos",
   "add": "Agregar",
-  "@add": {
-    "x-mt": true
-  },
   "status": "Estado",
   "lastUpdated": "Última actualización",
   "@lastUpdated": {
@@ -689,9 +659,6 @@
     "x-mt": true
   },
   "answer": "Respuesta",
-  "@answer": {
-    "x-mt": true
-  },
   "availableChoices": "Opciones",
   "@availableChoices": {
     "x-mt": true
@@ -859,9 +826,6 @@
     "x-mt": true
   },
   "addMeetup": "Agregar reunión",
-  "@addMeetup": {
-    "x-mt": true
-  },
   "meetupDetails": "Detalles de la reunión",
   "@meetupDetails": {
     "x-mt": true
@@ -871,21 +835,12 @@
     "x-mt": true
   },
   "createdBy": "Creado por",
-  "@createdBy": {
-    "x-mt": true
-  },
   "category": "Categoría",
   "@category": {
     "x-mt": true
   },
   "location": "Ubicación",
-  "@location": {
-    "x-mt": true
-  },
   "link": "Enlace",
-  "@link": {
-    "x-mt": true
-  },
   "recurring": "Recurrente",
   "description": "Descripción",
   "leaveMeetup": "Salir de la reunión",
@@ -897,21 +852,9 @@
     "x-mt": true
   },
   "editMeetup": "Editar reunión",
-  "@editMeetup": {
-    "x-mt": true
-  },
   "startTime": "Hora de inicio",
-  "@startTime": {
-    "x-mt": true
-  },
   "endTime": "Hora de finalización",
-  "@endTime": {
-    "x-mt": true
-  },
   "none": "Ninguno",
-  "@none": {
-    "x-mt": true
-  },
   "daily": "Diario",
   "weekly": "Semanal",
   "syncMeetups": "Sincronizar reuniones",
@@ -947,13 +890,7 @@
     "x-mt": true
   },
   "startDate": "Fecha de inicio",
-  "@startDate": {
-    "x-mt": true
-  },
   "endDate": "Fecha de finalización",
-  "@endDate": {
-    "x-mt": true
-  },
   "timeNotSet": "Hora no establecida",
   "@timeNotSet": {
     "x-mt": true
@@ -1028,9 +965,6 @@
     "x-mt": true
   },
   "replyToVoice": "Responder",
-  "@replyToVoice": {
-    "x-mt": true
-  },
   "writeAReply": "Escribe una respuesta",
   "@writeAReply": {
     "x-mt": true
@@ -1044,9 +978,6 @@
     "x-mt": true
   },
   "editVoice": "Editar",
-  "@editVoice": {
-    "x-mt": true
-  },
   "deleteVoice": "Eliminar",
   "deleteVoiceConfirm": "¿Eliminar esta publicación y todas sus respuestas?",
   "@deleteVoiceConfirm": {
@@ -1110,9 +1041,6 @@
     "x-mt": true
   },
   "enterprises": "Empresas",
-  "@enterprises": {
-    "x-mt": true
-  },
   "searchEnterprises": "Buscar empresas",
   "@searchEnterprises": {
     "x-mt": true
@@ -1123,9 +1051,6 @@
   },
   "leave": "Salir",
   "remove": "Eliminar",
-  "@remove": {
-    "x-mt": true
-  },
   "makeLeader": "Asignar como líder",
   "leftTeam": "Abandonó el equipo",
   "memberRemoved": "Miembro eliminado",
@@ -1149,9 +1074,6 @@
     "x-mt": true
   },
   "services": "Servicios",
-  "@services": {
-    "x-mt": true
-  },
   "rules": "Normas",
   "@rules": {
     "x-mt": true
@@ -1165,9 +1087,6 @@
     "x-mt": true
   },
   "teamTasks": "Tareas",
-  "@teamTasks": {
-    "x-mt": true
-  },
   "tasksUnavailable": "Las tareas no están disponibles",
   "@tasksUnavailable": {
     "x-mt": true
@@ -1185,9 +1104,6 @@
     "x-mt": true
   },
   "addTask": "Agregar tarea",
-  "@addTask": {
-    "x-mt": true
-  },
   "editTask": "Editar tarea",
   "@editTask": {
     "x-mt": true
@@ -1209,17 +1125,8 @@
     "x-mt": true
   },
   "teamMembers": "Miembros",
-  "@teamMembers": {
-    "x-mt": true
-  },
   "members": "Miembros",
-  "@members": {
-    "x-mt": true
-  },
   "joinRequests": "Solicitudes de unión",
-  "@joinRequests": {
-    "x-mt": true
-  },
   "noMembers": "Aún no hay miembros",
   "@noMembers": {
     "x-mt": true
@@ -1237,17 +1144,11 @@
     "x-mt": true
   },
   "accept": "Aceptar",
-  "@accept": {
-    "x-mt": true
-  },
   "decline": "Rechazar",
   "@decline": {
     "x-mt": true
   },
   "joinTeam": "Solicitar unirse",
-  "@joinTeam": {
-    "x-mt": true
-  },
   "leaveTeam": "dejar el equipo",
   "@leaveTeam": {
     "x-mt": true
@@ -1257,9 +1158,6 @@
     "x-mt": true
   },
   "teamResources": "Recursos",
-  "@teamResources": {
-    "x-mt": true
-  },
   "resourcesUnavailable": "Los recursos no están disponibles",
   "@resourcesUnavailable": {
     "x-mt": true
@@ -1277,26 +1175,11 @@
     "x-mt": true
   },
   "addResource": "Agregar recurso",
-  "@addResource": {
-    "x-mt": true
-  },
   "editResource": "Editar recurso",
-  "@editResource": {
-    "x-mt": true
-  },
   "resourceUpdated": "Recurso actualizado",
-  "@resourceUpdated": {
-    "x-mt": true
-  },
   "resourceAddedToTeam": "Recurso añadido al equipo",
-  "descriptionIsRequired": "Se requiere descripción",
-  "@descriptionIsRequired": {
-    "x-mt": true
-  },
+  "descriptionIsRequired": "Se requiere una descripción",
   "levelIsRequired": "Se requiere nivel",
-  "@levelIsRequired": {
-    "x-mt": true
-  },
   "subjectIsRequired": "Se requiere asignatura",
   "selectFile": "Seleccione un archivo",
   "@selectFile": {
@@ -1311,9 +1194,6 @@
     "x-mt": true
   },
   "saveChanges": "Guardar cambios",
-  "@saveChanges": {
-    "x-mt": true
-  },
   "selectOpenWith": "Seleccione abrir con",
   "@selectOpenWith": {
     "x-mt": true
@@ -1327,9 +1207,6 @@
     "x-mt": true
   },
   "linkToLicense": "Enlace a la licencia",
-  "@linkToLicense": {
-    "x-mt": true
-  },
   "noResourcesToAdd": "Todos los recursos disponibles ya están vinculados.",
   "@noResourcesToAdd": {
     "x-mt": true
@@ -1343,9 +1220,6 @@
     "x-mt": true
   },
   "untitledCourse": "Curso sin título",
-  "@untitledCourse": {
-    "x-mt": true
-  },
   "addCourse": "Agregar curso",
   "@addCourse": {
     "x-mt": true
@@ -1367,29 +1241,14 @@
     "x-mt": true
   },
   "addReport": "Agregar informe",
-  "@addReport": {
-    "x-mt": true
-  },
   "editReport": "Editar informe",
   "@editReport": {
     "x-mt": true
   },
   "archiveReport": "Archivo",
-  "@archiveReport": {
-    "x-mt": true
-  },
   "beginningBalance": "Saldo inicial",
-  "@beginningBalance": {
-    "x-mt": true
-  },
   "sales": "Ventas",
-  "@sales": {
-    "x-mt": true
-  },
   "otherIncome": "Otros ingresos",
-  "@otherIncome": {
-    "x-mt": true
-  },
   "wages": "Salarios",
   "@wages": {
     "x-mt": true
@@ -1399,38 +1258,20 @@
     "x-mt": true
   },
   "totalIncome": "Ingresos totales",
-  "@totalIncome": {
-    "x-mt": true
-  },
   "totalExpenses": "Gastos totales",
-  "@totalExpenses": {
-    "x-mt": true
-  },
   "profitLoss": "Ganancia/pérdida",
   "@profitLoss": {
     "x-mt": true
   },
   "endingBalance": "Saldo final",
-  "@endingBalance": {
-    "x-mt": true
-  },
   "negativeBalance": "¡El saldo actual es negativo!",
-  "@negativeBalance": {
-    "x-mt": true
-  },
   "reportDateDetails": "Informe creado el: {created} | Actualizado el: {updated}",
-  "@reportDateDetails": {
-    "x-mt": true
-  },
   "chatHistory": "Historial de chat",
   "@chatHistory": {
     "x-mt": true
   },
   "chat": "Chat",
   "newChat": "Nuevo chat",
-  "@newChat": {
-    "x-mt": true
-  },
   "searchChats": "Buscar chats",
   "@searchChats": {
     "x-mt": true
@@ -1449,9 +1290,6 @@
   },
   "fullConversationResponse": "Respuesta completa de la conversación",
   "response": "Respuesta",
-  "@response": {
-    "x-mt": true
-  },
   "chatConversation": "Conversación",
   "@chatConversation": {
     "x-mt": true
@@ -1484,10 +1322,7 @@
   "@aiProviderUnavailable": {
     "x-mt": true
   },
-  "feedback": "Comentario",
-  "@feedback": {
-    "x-mt": true
-  },
+  "feedback": "Comentarios",
   "feedbackNotFound": "Comentarios no encontrados",
   "@feedbackNotFound": {
     "x-mt": true
@@ -1514,18 +1349,9 @@
     "x-mt": true
   },
   "question": "Pregunta",
-  "@question": {
-    "x-mt": true
-  },
   "bug": "Error",
   "suggestion": "Sugerencia",
-  "@suggestion": {
-    "x-mt": true
-  },
   "priority": "Prioridad",
-  "@priority": {
-    "x-mt": true
-  },
   "openDate": "Fecha de apertura",
   "replies": "Respuestas",
   "@replies": {
@@ -1594,13 +1420,7 @@
   },
   "close": "Cerrar",
   "filter": "Filtrar",
-  "@filter": {
-    "x-mt": true
-  },
   "type": "Tipo",
-  "@type": {
-    "x-mt": true
-  },
   "apply": "Aplicar",
   "@apply": {
     "x-mt": true
@@ -1614,13 +1434,7 @@
     "x-mt": true
   },
   "community": "Comunidad",
-  "@community": {
-    "x-mt": true
-  },
   "communityLeaders": "Líderes comunitarios",
-  "@communityLeaders": {
-    "x-mt": true
-  },
   "nationLeaders": "Lideres de la nación",
   "ourVoices": "Nuestras voces",
   "finances": "Finanzas",
@@ -1649,9 +1463,6 @@
   "noLeadersAvailable": "No hay líderes disponibles",
   "noServicesAvailable": "No hay servicios disponibles",
   "noDescriptionAvailable": "No hay descripción disponible",
-  "@noDescriptionAvailable": {
-    "x-mt": true
-  },
   "takeExam": "tomar el examen",
   "@takeExam": {
     "x-mt": true
@@ -1682,17 +1493,8 @@
     "x-mt": true
   },
   "yourAnswer": "Tu respuesta",
-  "@yourAnswer": {
-    "x-mt": true
-  },
   "previous": "Anterior",
-  "@previous": {
-    "x-mt": true
-  },
   "finish": "Finalizar",
-  "@finish": {
-    "x-mt": true
-  },
   "exitExam": "¿Examen de salida?",
   "@exitExam": {
     "x-mt": true
@@ -1703,9 +1505,6 @@
   },
   "exit": "Salir",
   "download": "Descargar",
-  "@download": {
-    "x-mt": true
-  },
   "downloading": "Descargando....",
   "downloadFailed": "Descarga fallida.",
   "resourceNotDownloaded": "Este recurso aún no está en su dispositivo.",
@@ -1729,33 +1528,12 @@
     "x-mt": true
   },
   "showAdditionalFields": "Mostrar campos adicionales",
-  "@showAdditionalFields": {
-    "x-mt": true
-  },
   "hideAdditionalFields": "Ocultar campos adicionales",
-  "@hideAdditionalFields": {
-    "x-mt": true
-  },
   "phoneNumber": "Número de teléfono",
-  "@phoneNumber": {
-    "x-mt": true
-  },
   "birthDate": "Fecha de nacimiento",
-  "@birthDate": {
-    "x-mt": true
-  },
   "selectDate": "Seleccionar fecha",
-  "@selectDate": {
-    "x-mt": true
-  },
   "male": "Masculino",
-  "@male": {
-    "x-mt": true
-  },
   "female": "Femenino",
-  "@female": {
-    "x-mt": true
-  },
   "yearOfBirth": "Año de nacimiento",
   "yearOfBirthRequired": "Se requiere año de nacimiento",
   "@yearOfBirthRequired": {
@@ -1812,17 +1590,8 @@
     "x-mt": true
   },
   "specialNeeds": "Necesidades especiales",
-  "@specialNeeds": {
-    "x-mt": true
-  },
   "otherNeeds": "Otras necesidades",
-  "@otherNeeds": {
-    "x-mt": true
-  },
   "emergencyContact": "Contacto de emergencia",
-  "@emergencyContact": {
-    "x-mt": true
-  },
   "contactNumber": "Número de contacto",
   "@contactNumber": {
     "x-mt": true
@@ -1852,9 +1621,6 @@
     "x-mt": true
   },
   "vision": "Visión",
-  "@vision": {
-    "x-mt": true
-  },
   "hearing": "Audición",
   "examinationHistory": "historial de exámenes",
   "@examinationHistory": {
@@ -1890,17 +1656,8 @@
     "x-mt": true
   },
   "allergies": "Alergias",
-  "@allergies": {
-    "x-mt": true
-  },
   "diagnosis": "Diagnóstico",
-  "@diagnosis": {
-    "x-mt": true
-  },
   "medications": "Medicamentos",
-  "@medications": {
-    "x-mt": true
-  },
   "immunizations": "Inmunizaciones",
   "treatments": "Tratamientos",
   "observations": "Observaciones",
@@ -1908,9 +1665,6 @@
     "x-mt": true
   },
   "referrals": "Referencias",
-  "@referrals": {
-    "x-mt": true
-  },
   "labTests": "Pruebas de laboratorio",
   "xrays": "Radiografías",
   "conditions": "Condiciones",
@@ -1926,9 +1680,6 @@
     "x-mt": true
   },
   "selectHealthMember": "Seleccionar miembro",
-  "@selectHealthMember": {
-    "x-mt": true
-  },
   "newPatient": "Nuevo paciente",
   "@newPatient": {
     "x-mt": true
@@ -1955,9 +1706,6 @@
   },
   "dismiss": "Descartar",
   "addMember": "Agregar miembro",
-  "@addMember": {
-    "x-mt": true
-  },
   "invalidNumber": "Número no válido",
   "@invalidNumber": {
     "x-mt": true
@@ -2003,9 +1751,6 @@
     "x-mt": true
   },
   "storageTotalDownloaded": "Total descargado",
-  "@storageTotalDownloaded": {
-    "x-mt": true
-  },
   "storageVideos": "Videos",
   "storageAudio": "Audio",
   "@storageAudio": {
@@ -2013,21 +1758,9 @@
   },
   "storagePdfs": "PDFs",
   "storageImages": "Imágenes",
-  "@storageImages": {
-    "x-mt": true
-  },
   "storageOther": "Otro",
-  "@storageOther": {
-    "x-mt": true
-  },
   "fileCountOne": "1 archivo",
-  "@fileCountOne": {
-    "x-mt": true
-  },
   "fileCountMany": "{count} archivos",
-  "@fileCountMany": {
-    "x-mt": true
-  },
   "storageUnknownResource": "Recurso desconocido",
   "areYouSure": "¿Estás seguro?",
   "cancelAddingExamination": "¿Está seguro de que desea cancelar la adición del examen? Se perderán los datos.",
@@ -2046,19 +1779,10 @@
   "@storageDeleteConfirm": {
     "x-mt": true
   },
-  "storageSelectedCount": "{count} selected",
-  "@storageSelectedCount": {
-    "x-mt": true
-  },
+  "storageSelectedCount": "{count} seleccionado(s)",
   "deleteSelected": "Eliminar seleccionados",
   "deleteAll": "Eliminar todo",
-  "@deleteAll": {
-    "x-mt": true
-  },
   "selectAll": "Seleccionar todo",
-  "@selectAll": {
-    "x-mt": true
-  },
   "unselectAll": "Deseleccionar todo",
   "addedToMyCourses": "{count, plural, =1{1 course added} other{{count} courses added}}",
   "@addedToMyCourses": {
@@ -2097,13 +1821,7 @@
   "becomeMember": "convertirse en miembro",
   "toAccessThisFeatureBecomeAMember": "Actualmente eres un usuario invitado. Para acceder a esta función, hazte miembro.",
   "creatingMember": "Creando cuenta de miembro...",
-  "@creatingMember": {
-    "x-mt": true
-  },
   "passwordsDoNotMatch": "Las contraseñas no coinciden",
-  "@passwordsDoNotMatch": {
-    "x-mt": true
-  },
   "pleaseSelectGender": "Por favor selecciona el género",
   "pleaseEnterPassword": "Por favor ingresa una contraseña",
   "usernameAlreadyExists": "El nombre de usuario ya existe",
@@ -2138,9 +1856,6 @@
     "x-mt": true
   },
   "syncCompletedChallenge": "Sincronización completada",
-  "@syncCompletedChallenge": {
-    "x-mt": true
-  },
   "rememberSync": "Recuerda sincronizar la aplicación móvil.",
   "challengeDialogTitle": "Desafío diario",
   "@challengeDialogTitle": {
@@ -2148,9 +1863,6 @@
   },
   "start": "Iniciar",
   "continuation": "Continuar",
-  "@continuation": {
-    "x-mt": true
-  },
   "plan": "Plan",
   "mission": "Misión y Servicios",
   "editPlan": "Editar Plan",
@@ -2203,17 +1915,8 @@
     "x-mt": true
   },
   "author": "Autor",
-  "@author": {
-    "x-mt": true
-  },
   "publisher": "Editor",
-  "@publisher": {
-    "x-mt": true
-  },
   "license": "Licencia",
-  "@license": {
-    "x-mt": true
-  },
   "addedBy": "Agregado por",
   "resourceInformation": "Información de recursos",
   "@resourceInformation": {
@@ -2228,17 +1931,11 @@
     "x-mt": true
   },
   "resourceType": "Tipo de recurso",
-  "@resourceType": {
-    "x-mt": true
-  },
   "subject": "Sujeto",
   "@subject": {
     "x-mt": true
   },
   "year": "Año",
-  "@year": {
-    "x-mt": true
-  },
   "timesRated": "Veces clasificados",
   "@timesRated": {
     "x-mt": true
@@ -2338,9 +2035,6 @@
     "x-mt": true
   },
   "numberOfVisits": "Número de visitas",
-  "@numberOfVisits": {
-    "x-mt": true
-  },
   "noLogoutRecord": "No se encontró ningún registro de cierre de sesión",
   "@noLogoutRecord": {
     "x-mt": true
@@ -2366,13 +2060,7 @@
   },
   "serverChecking": "Verificando el servidor",
   "gridView": "Vista de cuadrícula",
-  "@gridView": {
-    "x-mt": true
-  },
   "listView": "Vista de lista",
-  "@listView": {
-    "x-mt": true
-  },
   "disclaimer": "Descargo de responsabilidad",
   "aboutContent": "### MyPlanet\n\nmyPlanet es una herramienta de aprendizaje diseñada para funcionar con la aplicación web de Planet. Se ha utilizado para mejorar la educación temprana, las escuelas secundarias, la salud en las aldeas, el desarrollo de la fuerza laboral juvenil, y el desarrollo económico y comunitario.\n\nPlanet alberga un repositorio de recursos gratuitos, de acceso abierto y de dominio público para beneficiar a todos los estudiantes.\n\nmyPlanet está diseñado para estar disponible para todos, en todas partes, todo el tiempo. Es portátil, asequible, escalable y sostenible. Se ejecuta en cualquier dispositivo Android, como tabletas y teléfonos móviles. Funciona tanto en línea como sin conexión a Internet.\n\nEsta aplicación permite a las escuelas y comunidades tener una biblioteca multimedia completa y un sistema de aprendizaje que se conecta periódicamente con Planet. Los dispositivos configurados pueden contener el panel personal de los estudiantes. Esto garantiza que los estudiantes puedan leer libros en su estante y tomar cursos sin conexión, es decir, sin conexión a un servidor central. Se anima a los estudiantes a calificar con una a cinco estrellas los recursos que utilizan y los cursos que toman. Periódicamente, los estudiantes pueden sincronizarse con un servidor. Los datos de actividad se cargan y se descargan nuevos recursos en cuestión de minutos en myPlanet para su uso sin conexión.\n\nEl panel también contiene un registro de logros, un calendario de eventos y un sistema de chat interno para comunicarse con otros miembros.\n\nmyPlanet ha demostrado ser altamente efectivo para mejorar las oportunidades de aprendizaje de más de cincuenta mil estudiantes en más de 100 ubicaciones, en escuelas de Nepal, Ghana, Kenya y Rwanda, con refugiados Syrian en Jordan, refugiados Somali en Kenya y trabajadores de salud en aldeas de Uganda.",
   "disclaimerContent": "# Renuncia de responsabilidad\n\nÚltima actualización: 10 de enero de 2020\n\n# Interpretación y definiciones\n\n## Interpretación\n\nLas palabras cuya inicial está en mayúscula tienen significados definidos bajo las siguientes condiciones.\n\nLas siguientes definiciones tendrán el mismo significado independientemente de si aparecen en singular o en plural.\n\n## Definiciones\n\nA los efectos de este descargo de responsabilidad:\n\n- **Compañía** (referida como \"la Compañía\", \"Nosotros\", \"Nuestro\" en esta Política de cookies) se refiere a myPlanet.\n- **Tú** significa la persona que accede al Servicio, o la empresa u otra entidad legal en nombre de la cual esa persona accede o utiliza el Servicio, según corresponda.\n- **Aplicación** significa el programa de software proporcionado por la Compañía que tú descargas en cualquier dispositivo electrónico llamado myPlanet.\n- **Servicio** se refiere a la Aplicación.\n\n# Descargo de responsabilidad\n\nLa información contenida en el Servicio se suministra únicamente con fines informativos generales.\n\nLa Compañía no asume ninguna responsabilidad por errores u omisiones en el contenido del Servicio.\n\nEn ningún caso la Compañía será responsable por daños especiales, directos, indirectos, consecuentes o incidentales o cualquier otro tipo de daños, ya sea en una acción contractual, negligencia u otro agravio, que surjan o estén relacionados con el uso del Servicio o el contenido del Servicio. La Compañía se reserva el derecho de hacer adiciones, eliminaciones o modificaciones al contenido del Servicio en cualquier momento y sin previo aviso.\n\nLa Compañía no garantiza que el Servicio esté libre de virus u otros componentes dañinos.\n\n# Descargo de responsabilidad de información médica\n\nLa información sobre salud proporcionada por el Servicio no tiene la intención de diagnosticar, tratar, curar o prevenir enfermedades. Los productos, servicios, información y otros contenidos proporcionados por el Servicio, incluida la información que enlace a sitios web de terceros, se proporcionan únicamente con fines informativos.\n\nLa información ofrecida por el Servicio no es exhaustiva y no abarca todas las enfermedades, dolencias, condiciones físicas o su tratamiento.\n\nLas personas son diferentes y pueden reaccionar de manera diferente a diferentes productos. Los comentarios realizados en el Servicio por empleados u otros usuarios son estrictamente sus propias opiniones personales expresadas en su capacidad personal y no son afirmaciones hechas por la Compañía ni representan la posición o la visión de la Compañía.\n\nLa Compañía no se hace responsable de ninguna información proporcionada por el Servicio con respecto a recomendaciones sobre suplementos para cualquier propósito de salud.\n\nLa Compañía no garantiza ni ofrece garantías con respecto a ningún producto o servicio vendido. La Compañía no es responsable de ningún daño causado por información o servicios proporcionados, incluso si se ha informado de la posibilidad de tales daños.\n\n# Descargo de responsabilidad de enlaces externos\n\nEl Servicio puede contener enlaces a sitios web externos que no son proporcionados ni mantenidos por la Compañía de ninguna manera.\n\nTen en cuenta que la Compañía no garantiza la exactitud, pertinencia, puntualidad o integridad de ninguna información en estos sitios web externos.\n\n# Descargo de responsabilidad por errores y omisiones\n\nLa información proporcionada por el Servicio es solo una guía general sobre temas de interés. Aunque la Compañía toma todas las precauciones para garantizar que el contenido del Servicio sea actual y preciso, pueden producirse errores. Además, debido a la naturaleza cambiante de las leyes, normas y regulaciones, puede haber demoras, omisiones o inexactitudes en la información contenida en el Servicio.\n\nLa Compañía no se hace responsable de ningún error u omisión, ni de los resultados obtenidos del uso de esta información.\n\n# Descargo de responsabilidad de uso justo\n\nLa Compañía puede utilizar material protegido por derechos de autor que no siempre ha sido autorizado específicamente por el propietario de los derechos de autor. La Compañía pone a disposición dicho material para crítica, comentario, informes de noticias, enseñanza, becas o investigación.\n\nLa Compañía cree que esto constituye un \"uso justo\" de cualquier material protegido por derechos de autor según lo establecido en la sección 107 de la ley de derechos de autor de Estados Unidos.\n\nSi deseas utilizar material protegido por derechos de autor del Servicio para tus propios fines que vayan más allá del uso justo, debes obtener permiso del titular de los derechos de autor.\n\n# Descargo de responsabilidad de opiniones expresadas\n\nEl Servicio puede contener opiniones y puntos de vista que son de los autores y no reflejan necesariamente la política oficial o la posición de cualquier otro autor, agencia, organización, empleador o empresa, incluida la Compañía.\n\nLos comentarios publicados por los usuarios son su única responsabilidad y los usuarios asumirán la responsabilidad total, la responsabilidad y la culpa por cualquier difamación o litigio que resulte de algo escrito en un comentario o como resultado directo de algo escrito en un comentario. La Compañía no se hace responsable de ningún comentario publicado por los usuarios y se reserva el derecho de eliminar cualquier comentario por cualquier motivo que sea.\n\n# Descargo de responsabilidad sin responsabilidad\n\nLa información del Servicio se proporciona con el entendimiento de que la Compañía no se dedica aquí a prestar asesoramiento y servicios legales, contables, fiscales u otros servicios profesionales. Como tal, no debe utilizarse como sustituto de la consulta con asesores profesionales de contabilidad, fiscalidad, legal u otros competentes.\n\nEn ningún caso, la Compañía o sus proveedores serán responsables de ningún daño especial, incidental, indirecto o consecuente que surja de o en relación con tu acceso o uso o incapacidad para acceder o usar el Servicio.\n\n# Descargo de responsabilidad de \"Uso bajo tu propio riesgo\"\n\nToda la información en el Servicio se proporciona \"tal cual\", sin garantía de integridad, exactitud, puntualidad o de los resultados obtenidos del uso de esta información, y sin garantía de ningún tipo, expresa o implícita, incluidas, entre otras, las garantías de rendimiento, comerciabilidad y idoneidad para un propósito particular.\n\nLa Compañía no será responsable ante ti ni ante ninguna otra persona por cualquier decisión tomada o acción realizada en confianza en la información proporcionada por el Servicio o por cualquier daño consecuente, especial o similar, incluso si se informa de la posibilidad de tales daños.\n\n## Contáctanos\n\nSi tienes alguna pregunta sobre este descargo de responsabilidad, puedes contactarnos:\n\n- Por correo electrónico: myplanet@ole.org\n- Visitando esta página en nuestro sitio web: [https://ole.org/contact](https://ole.org/contact)",
@@ -2390,97 +2078,43 @@
   "selected": "Seleccionado: ",
   "myAchievements": "misLogros",
   "editAchievement": "Editar logros",
-  "@editAchievement": {
-    "x-mt": true
-  },
   "addAchievement": "Agregar logro",
-  "@addAchievement": {
-    "x-mt": true
-  },
   "addAnAchievement": "Agregar un logro",
-  "@addAnAchievement": {
-    "x-mt": true
-  },
   "addReference": "Agregar referencia",
-  "@addReference": {
-    "x-mt": true
-  },
   "addAReference": "Agregar una referencia",
-  "@addAReference": {
-    "x-mt": true
-  },
   "selectResources": "Seleccionar recursos: ",
   "myGoals": "Mis Metas",
   "myPurpose": "Mi Propósito",
   "noGoalAdded": "Aún no se han establecido objetivos",
   "noPurposeAdded": "No se agregó propósito",
   "noAchievementAdded": "Resumen de logros",
-  "@noAchievementAdded": {
-    "x-mt": true
-  },
   "noReferencesAdded": "No se agregaron referencias",
-  "@noReferencesAdded": {
-    "x-mt": true
-  },
   "sendToNation": "Permite que tus logros se compartan con la nación",
   "saving": "Guardando…",
   "achievementSaved": "Logro actualizado",
-  "@achievementSaved": {
-    "x-mt": true
-  },
   "titleIsRequired": "Se requiere un título.",
   "selectPdfOnly": "Por favor selecciona un archivo PDF",
   "viewCv": "Ver CV/Currículum",
   "deleteCv": "Eliminar CV",
-  "@deleteCv": {
-    "x-mt": true
-  },
   "uploadCvLabel": "Sube tu CV/currículum a continuación (solo PDF)",
   "addMaterials": "Agrega cualquier material que demuestre tus logros a continuación",
   "labelAddReferences": "Añada referencias abajo",
   "cvResume": "CV / Currículum",
-  "@cvResume": {
-    "x-mt": true
-  },
   "relationship": "Relación",
-  "@relationship": {
-    "x-mt": true
-  },
   "noFileChosen": "Ningún archivo seleccionado",
   "chooseFile": "Elegir archivo",
-  "currentCv": "CV/Currículum vitae actual: {name}",
-  "@currentCv": {
-    "x-mt": true
-  },
+  "currentCv": "CV/Currículum actual: {name}",
   "update": "Actualizar",
-  "@update": {
-    "x-mt": true
-  },
   "fillRequiredFields": "Por favor complete los campos obligatorios: {fields}",
   "@fillRequiredFields": {
     "x-mt": true
   },
   "textSize": "Tamaño del texto",
-  "@textSize": {
-    "x-mt": true
-  },
   "selectTextSize": "Seleccionar tamaño de texto",
-  "@selectTextSize": {
-    "x-mt": true
-  },
   "textSizeSmall": "Pequeño",
-  "@textSizeSmall": {
-    "x-mt": true
-  },
   "textSizeMedium": "Mediano",
   "textSizeLarge": "Grande",
-  "@textSizeLarge": {
-    "x-mt": true
-  },
   "resetApp": "Restablecer aplicación",
-  "@resetApp": {
-    "x-mt": true
-  },
   "clearAllDataConfirm": "¿Estás seguro de que deseas borrar todos los datos?",
   "dataCleared": "Todos los datos borrados",
   "@dataCleared": {
@@ -2498,5 +2132,8 @@
   "myPurposeDescription": "Mi Propósito - ¿Cuáles son tus ambiciones educativas y profesionales?",
   "pleaseAnswerToContinue": "Por favor, selecciona/escribe tu respuesta para continuar",
   "teamDocuments": "Documentos",
-  "confirmLeaveTeam": "¿Estás seguro/a de que quieres abandonar este equipo?"
+  "confirmLeaveTeam": "¿Estás seguro/a de que quieres abandonar este equipo?",
+  "fileNotFound": "Archivo no encontrado: {fileName}",
+  "stepsHeading": "Pasos",
+  "courseProgressCount": "Progreso {current} de {max}"
 }

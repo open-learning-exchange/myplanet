@@ -72,9 +72,6 @@
   "resources": "Ressources",
   "search": "Rechercher",
   "sync": "Synchroniser",
-  "@sync": {
-    "x-mt": true
-  },
   "cancel": "Annuler",
   "settings": "Paramètres",
   "backgroundSync": "Synchronisation en arrière-plan",
@@ -149,9 +146,6 @@
     "x-mt": true
   },
   "appTheme": "Thème de l'application",
-  "@appTheme": {
-    "x-mt": true
-  },
   "aiChat": "AI Chat",
   "syncNow": "Synchroniser maintenant",
   "syncCenter": "Centre de synchronisation",
@@ -296,9 +290,6 @@
   },
   "courses": "Cours",
   "myCourses": "Mes cours",
-  "@myCourses": {
-    "x-mt": true
-  },
   "allCourses": "Tous les cours",
   "@allCourses": {
     "x-mt": true
@@ -316,9 +307,6 @@
     "x-mt": true
   },
   "gradeLevel": "Niveau scolaire",
-  "@gradeLevel": {
-    "x-mt": true
-  },
   "subjectLevel": "Sujet",
   "@subjectLevel": {
     "x-mt": true
@@ -351,18 +339,12 @@
     "x-mt": true
   },
   "username": "Nom d'utilisateur",
-  "@username": {
-    "x-mt": true
-  },
   "email": "E-mail",
   "phone": "Téléphone",
   "@phone": {
     "x-mt": true
   },
   "level": "Niveau",
-  "@level": {
-    "x-mt": true
-  },
   "levels": "Niveaux",
   "@levels": {
     "x-mt": true
@@ -371,9 +353,6 @@
   "languages": "Langues",
   "gender": "Sexe",
   "dateOfBirth": "Date de naissance",
-  "@dateOfBirth": {
-    "x-mt": true
-  },
   "planetCode": "Code de la planète",
   "@planetCode": {
     "x-mt": true
@@ -391,9 +370,6 @@
     "x-mt": true
   },
   "editProfile": "Modifier le profil",
-  "@editProfile": {
-    "x-mt": true
-  },
   "changePhoto": "Changer la photo de profil",
   "@changePhoto": {
     "x-mt": true
@@ -407,17 +383,8 @@
     "x-mt": true
   },
   "firstName": "Prénom",
-  "@firstName": {
-    "x-mt": true
-  },
   "middleName": "Deuxième prénom",
-  "@middleName": {
-    "x-mt": true
-  },
   "lastName": "Nom de famille",
-  "@lastName": {
-    "x-mt": true
-  },
   "save": "Enregistrer",
   "profileSaved": "Profil enregistré sur cet appareil",
   "@profileSaved": {
@@ -567,9 +534,6 @@
     "x-mt": true
   },
   "joinRequestNotification": "Demande d'adhésion",
-  "@joinRequestNotification": {
-    "x-mt": true
-  },
   "teamNotification": "Mise à jour de l'équipe",
   "@teamNotification": {
     "x-mt": true
@@ -673,9 +637,6 @@
   "nA": "N/A",
   "otherDiagnosis": "Autres diagnostics",
   "add": "Ajouter",
-  "@add": {
-    "x-mt": true
-  },
   "status": "Statut",
   "lastUpdated": "Dernière mise à jour",
   "@lastUpdated": {
@@ -851,9 +812,6 @@
   },
   "skip": "Passer",
   "next": "Suivant",
-  "@next": {
-    "x-mt": true
-  },
   "getStarted": "COMMENCER",
   "welcomeToMyPlanet": "Bienvenue sur myPlanet",
   "learnOffline": "Apprendre hors ligne",
@@ -902,9 +860,6 @@
     "x-mt": true
   },
   "addMeetup": "Ajouter une rencontre",
-  "@addMeetup": {
-    "x-mt": true
-  },
   "meetupDetails": "Détails du Meetup",
   "@meetupDetails": {
     "x-mt": true
@@ -914,9 +869,6 @@
     "x-mt": true
   },
   "createdBy": "Créé par",
-  "@createdBy": {
-    "x-mt": true
-  },
   "category": "Catégorie",
   "@category": {
     "x-mt": true
@@ -924,9 +876,6 @@
   "location": "Emplacement",
   "link": "Lien",
   "recurring": "Récurrent",
-  "@recurring": {
-    "x-mt": true
-  },
   "description": "Description",
   "@description": {
     "x-mt": true
@@ -941,13 +890,7 @@
   },
   "editMeetup": "Modifier la réunion",
   "startTime": "Heure de début",
-  "@startTime": {
-    "x-mt": true
-  },
   "endTime": "Heure de fin",
-  "@endTime": {
-    "x-mt": true
-  },
   "none": "Aucun",
   "daily": "Quotidien",
   "weekly": "Hebdomadaire",
@@ -984,13 +927,7 @@
     "x-mt": true
   },
   "startDate": "Date de début",
-  "@startDate": {
-    "x-mt": true
-  },
   "endDate": "Date de fin",
-  "@endDate": {
-    "x-mt": true
-  },
   "timeNotSet": "Heure non réglée",
   "@timeNotSet": {
     "x-mt": true
@@ -1020,9 +957,6 @@
     "x-mt": true
   },
   "takeSurvey": "Répondre à l'enquête",
-  "@takeSurvey": {
-    "x-mt": true
-  },
   "surveyLoadFailed": "L'enquête n'a pas pu être chargée",
   "@surveyLoadFailed": {
     "x-mt": true
@@ -1216,9 +1150,6 @@
     "x-mt": true
   },
   "addTask": "Ajouter une tâche",
-  "@addTask": {
-    "x-mt": true
-  },
   "editTask": "Modifier la tâche",
   "@editTask": {
     "x-mt": true
@@ -1241,10 +1172,7 @@
   },
   "teamMembers": "Membres",
   "members": "Membres",
-  "joinRequests": "Demandes d'adhésion",
-  "@joinRequests": {
-    "x-mt": true
-  },
+  "joinRequests": "Demandes de participation",
   "noMembers": "Pas encore de membres",
   "@noMembers": {
     "x-mt": true
@@ -1293,29 +1221,11 @@
     "x-mt": true
   },
   "addResource": "Ajouter une ressource",
-  "@addResource": {
-    "x-mt": true
-  },
   "editResource": "Modifier la ressource",
-  "@editResource": {
-    "x-mt": true
-  },
   "resourceUpdated": "Ressource mise à jour",
-  "@resourceUpdated": {
-    "x-mt": true
-  },
   "resourceAddedToTeam": "Ressource ajoutée à l'équipe",
-  "@resourceAddedToTeam": {
-    "x-mt": true
-  },
-  "descriptionIsRequired": "Une description est requise",
-  "@descriptionIsRequired": {
-    "x-mt": true
-  },
+  "descriptionIsRequired": "La description est requise",
   "levelIsRequired": "Le niveau est requis",
-  "@levelIsRequired": {
-    "x-mt": true
-  },
   "subjectIsRequired": "Le sujet est requis",
   "selectFile": "Sélectionnez un fichier",
   "@selectFile": {
@@ -1330,9 +1240,6 @@
     "x-mt": true
   },
   "saveChanges": "Enregistrer les modifications",
-  "@saveChanges": {
-    "x-mt": true
-  },
   "selectOpenWith": "Sélectionnez ouvrir avec",
   "@selectOpenWith": {
     "x-mt": true
@@ -1346,9 +1253,6 @@
     "x-mt": true
   },
   "linkToLicense": "Lien vers la licence",
-  "@linkToLicense": {
-    "x-mt": true
-  },
   "noResourcesToAdd": "Toutes les ressources disponibles sont déjà liées",
   "@noResourcesToAdd": {
     "x-mt": true
@@ -1362,9 +1266,6 @@
     "x-mt": true
   },
   "untitledCourse": "Cours sans titre",
-  "@untitledCourse": {
-    "x-mt": true
-  },
   "addCourse": "Ajouter un cours",
   "@addCourse": {
     "x-mt": true
@@ -1386,9 +1287,6 @@
     "x-mt": true
   },
   "addReport": "Ajouter un rapport",
-  "@addReport": {
-    "x-mt": true
-  },
   "editReport": "Modifier le rapport",
   "@editReport": {
     "x-mt": true
@@ -1397,9 +1295,6 @@
   "beginningBalance": "Solde de départ",
   "sales": "Ventes",
   "otherIncome": "Autres revenus",
-  "@otherIncome": {
-    "x-mt": true
-  },
   "wages": "Salaires",
   "@wages": {
     "x-mt": true
@@ -1409,29 +1304,14 @@
     "x-mt": true
   },
   "totalIncome": "Revenu total",
-  "@totalIncome": {
-    "x-mt": true
-  },
   "totalExpenses": "Dépenses totales",
-  "@totalExpenses": {
-    "x-mt": true
-  },
   "profitLoss": "Bénéfice/perte",
   "@profitLoss": {
     "x-mt": true
   },
   "endingBalance": "Solde final",
-  "@endingBalance": {
-    "x-mt": true
-  },
   "negativeBalance": "Le solde actuel est négatif !",
-  "@negativeBalance": {
-    "x-mt": true
-  },
   "reportDateDetails": "Rapport créé le : {created} | Mis à jour le : {updated}",
-  "@reportDateDetails": {
-    "x-mt": true
-  },
   "chatHistory": "Historique des discussions",
   "@chatHistory": {
     "x-mt": true
@@ -1456,9 +1336,6 @@
   },
   "fullConversationResponse": "Réponse complète de la conversation",
   "response": "Réponse",
-  "@response": {
-    "x-mt": true
-  },
   "chatConversation": "Conversation",
   "@chatConversation": {
     "x-mt": true
@@ -1522,9 +1399,6 @@
   "suggestion": "Suggestion",
   "priority": "Priorité",
   "openDate": "Date d'ouverture",
-  "@openDate": {
-    "x-mt": true
-  },
   "replies": "Réponses",
   "@replies": {
     "x-mt": true
@@ -1608,13 +1482,7 @@
   "community": "Communauté",
   "communityLeaders": "Dirigeants de communauté",
   "nationLeaders": "Dirigeants nationaux",
-  "@nationLeaders": {
-    "x-mt": true
-  },
   "ourVoices": "Nos voix",
-  "@ourVoices": {
-    "x-mt": true
-  },
   "finances": "Finances",
   "reports": "rapports",
   "transaction": "Transaction",
@@ -1745,21 +1613,9 @@
     "x-mt": true
   },
   "showAdditionalFields": "Afficher les champs supplémentaires",
-  "@showAdditionalFields": {
-    "x-mt": true
-  },
   "hideAdditionalFields": "Masquer les champs supplémentaires",
-  "@hideAdditionalFields": {
-    "x-mt": true
-  },
   "phoneNumber": "Numéro de téléphone",
-  "@phoneNumber": {
-    "x-mt": true
-  },
   "birthDate": "Date de naissance",
-  "@birthDate": {
-    "x-mt": true
-  },
   "selectDate": "Sélectionner une date",
   "male": "Homme",
   "female": "Femme",
@@ -1782,9 +1638,6 @@
     "x-mt": true
   },
   "videoPlayer": "Lecteur vidéo",
-  "@videoPlayer": {
-    "x-mt": true
-  },
   "audioPlayer": "Lecteur audio",
   "@audioPlayer": {
     "x-mt": true
@@ -1804,9 +1657,6 @@
   "errorOccurred": "Erreur : {error}",
   "openingResource": "Ouverture : {title}",
   "loadingMedia": "Chargement...",
-  "@loadingMedia": {
-    "x-mt": true
-  },
   "resourceUnavailable": "Cette ressource n'est pas disponible pour une visualisation hors ligne",
   "@resourceUnavailable": {
     "x-mt": true
@@ -1825,13 +1675,7 @@
     "x-mt": true
   },
   "specialNeeds": "Besoins spéciaux",
-  "@specialNeeds": {
-    "x-mt": true
-  },
   "otherNeeds": "Autres besoins",
-  "@otherNeeds": {
-    "x-mt": true
-  },
   "emergencyContact": "Contact d'urgence",
   "contactNumber": "Numéro de contact",
   "@contactNumber": {
@@ -1872,9 +1716,6 @@
     "x-mt": true
   },
   "birthPlace": "Lieu de naissance",
-  "@birthPlace": {
-    "x-mt": true
-  },
   "contactName": "Nom du contact",
   "@contactName": {
     "x-mt": true
@@ -1924,9 +1765,6 @@
     "x-mt": true
   },
   "selectHealthMember": "Sélectionner un membre",
-  "@selectHealthMember": {
-    "x-mt": true
-  },
   "newPatient": "Nouveau patient",
   "@newPatient": {
     "x-mt": true
@@ -1974,9 +1812,6 @@
     "x-mt": true
   },
   "bloodPressureFormatError": "La tension artérielle doit être systolique/diastolique",
-  "@bloodPressureFormatError": {
-    "x-mt": true
-  },
   "bloodPressureRangeError": "La tension artérielle doit être comprise entre 60/40 et 300/200",
   "@bloodPressureRangeError": {
     "x-mt": true
@@ -2007,23 +1842,14 @@
     "x-mt": true
   },
   "storageTotalDownloaded": "Total téléchargé",
-  "@storageTotalDownloaded": {
-    "x-mt": true
-  },
   "storageVideos": "Vidéos",
   "storageAudio": "Audio",
-  "storagePdfs": "PDFs",
+  "storagePdfs": "PDF",
   "storageImages": "Images",
   "storageOther": "Autre",
   "fileCountOne": "1 fichier",
   "fileCountMany": "{count} fichiers",
-  "@fileCountMany": {
-    "x-mt": true
-  },
   "storageUnknownResource": "Ressource inconnue",
-  "@storageUnknownResource": {
-    "x-mt": true
-  },
   "areYouSure": "Êtes-vous sûr ?",
   "cancelAddingExamination": "Voulez-vous vraiment annuler l'ajout de l'examen? Les données seront perdues.",
   "yesIWantToExit": "Oui, je veux quitter.",
@@ -2041,10 +1867,7 @@
   "@storageDeleteConfirm": {
     "x-mt": true
   },
-  "storageSelectedCount": "{count} selected",
-  "@storageSelectedCount": {
-    "x-mt": true
-  },
+  "storageSelectedCount": "{count} sélectionné(s)",
   "deleteSelected": "Supprimer la sélection",
   "deleteAll": "Tout supprimer",
   "selectAll": "Sélectionner tout",
@@ -2058,9 +1881,6 @@
     "x-mt": true
   },
   "availableSpace": "Espace disponible",
-  "@availableSpace": {
-    "x-mt": true
-  },
   "freeUpSpace": "Libérer de l'espace",
   "@freeUpSpace": {
     "x-mt": true
@@ -2127,9 +1947,6 @@
     "x-mt": true
   },
   "syncCompletedChallenge": "Synchronisation terminée",
-  "@syncCompletedChallenge": {
-    "x-mt": true
-  },
   "rememberSync": "N'oubliez pas de synchroniser l'application mobile.",
   "challengeDialogTitle": "Défi quotidien",
   "@challengeDialogTitle": {
@@ -2137,9 +1954,6 @@
   },
   "start": "Démarrer",
   "continuation": "Continuer",
-  "@continuation": {
-    "x-mt": true
-  },
   "plan": "Plan",
   "mission": "Mission et Services",
   "editPlan": "Modifier le plan",
@@ -2173,9 +1987,6 @@
   "nameRequired": "Le nom est requis",
   "nameIsRequired": "Veuillez entrer un nom",
   "createdOn": "Créé le",
-  "@createdOn": {
-    "x-mt": true
-  },
   "courseDetails": "Détails du cours",
   "@courseDetails": {
     "x-mt": true
@@ -2219,26 +2030,14 @@
   },
   "mistakes": "Erreurs",
   "step": "Étape",
-  "@step": {
-    "x-mt": true
-  },
   "untitledResourceTitle": "Ressource sans titre",
   "@untitledResourceTitle": {
     "x-mt": true
   },
   "author": "Auteur",
-  "@author": {
-    "x-mt": true
-  },
   "publisher": "Éditeur",
   "license": "Licence",
-  "@license": {
-    "x-mt": true
-  },
   "addedBy": "Ajouté par",
-  "@addedBy": {
-    "x-mt": true
-  },
   "resourceInformation": "Informations sur les ressources",
   "@resourceInformation": {
     "x-mt": true
@@ -2252,9 +2051,6 @@
     "x-mt": true
   },
   "resourceType": "Type de ressource",
-  "@resourceType": {
-    "x-mt": true
-  },
   "subject": "Sujet",
   "@subject": {
     "x-mt": true
@@ -2365,9 +2161,6 @@
     "x-mt": true
   },
   "numberOfVisits": "Nombre de visites",
-  "@numberOfVisits": {
-    "x-mt": true
-  },
   "noLogoutRecord": "Aucun enregistrement de déconnexion trouvé",
   "@noLogoutRecord": {
     "x-mt": true
@@ -2392,9 +2185,6 @@
     "x-mt": true
   },
   "serverChecking": "Vérification du serveur",
-  "@serverChecking": {
-    "x-mt": true
-  },
   "gridView": "Vue en grille",
   "listView": "Vue en liste",
   "disclaimer": "Avis de non-responsabilité",
@@ -2465,26 +2255,11 @@
     }
   },
   "textSize": "Taille du texte",
-  "@textSize": {
-    "x-mt": true
-  },
   "selectTextSize": "Sélectionner la taille du texte",
   "textSizeSmall": "Petit",
-  "@textSizeSmall": {
-    "x-mt": true
-  },
   "textSizeMedium": "Moyen",
-  "@textSizeMedium": {
-    "x-mt": true
-  },
   "textSizeLarge": "Grand",
-  "@textSizeLarge": {
-    "x-mt": true
-  },
   "resetApp": "Réinitialiser l'application",
-  "@resetApp": {
-    "x-mt": true
-  },
   "clearAllDataConfirm": "Êtes-vous sûr de vouloir effacer toutes les données ?",
   "dataCleared": "Toutes les données effacées",
   "@dataCleared": {
@@ -2502,5 +2277,8 @@
   "myPurposeDescription": "Mon But - Quelles sont vos ambitions éducatives et professionnelles ?",
   "pleaseAnswerToContinue": "Veuillez sélectionner/écrire votre réponse pour continuer",
   "teamDocuments": "Documents",
-  "confirmLeaveTeam": "Êtes-vous sûr de vouloir quitter cette équipe ?"
+  "confirmLeaveTeam": "Êtes-vous sûr de vouloir quitter cette équipe ?",
+  "fileNotFound": "Fichier introuvable : {fileName}",
+  "stepsHeading": "Étapes",
+  "courseProgressCount": "Progression {current} sur {max}"
 }

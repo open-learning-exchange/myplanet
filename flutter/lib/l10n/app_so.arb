@@ -330,10 +330,7 @@
   "@storageDeleteSelectedConfirm": {
     "x-mt": true
   },
-  "storageSelectedCount": "{count} selected",
-  "@storageSelectedCount": {
-    "x-mt": true
-  },
+  "storageSelectedCount": "{count} la doortay",
   "deleteSelected": "Tirtir Kuwa La Doortay",
   "deleteAll": "Tirtir Dhammaan",
   "selectAll": "Dhammaad Dhammaadee",
@@ -499,5 +496,11 @@
   "myPurposeDescription": "Ujeedadayda - Waa maxay himilooyinkaaga waxbarasho iyo kuwa xirfadeed?",
   "pleaseAnswerToContinue": "Fadlan dooro / qor jawaabtaada si aad u sii wadato",
   "teamDocuments": "Documents",
-  "confirmLeaveTeam": "Ma hubtaa inaad ka tashato kooxan?"
+  "confirmLeaveTeam": "Ma hubtaa inaad ka tashato kooxan?",
+  "appVersion": "Nooca {version}",
+  "reportDateDetails": "Warbixin lagu sameeyay: {created} | La cusbooneysiiyay: {updated}",
+  "fileNotFound": "Faylka lama helin: {fileName}",
+  "fileCountMany": "{count} fayl",
+  "stepsHeading": "Agoonta",
+  "courseProgressCount": "Habka {current} ee {max}"
 }

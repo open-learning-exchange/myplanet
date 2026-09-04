@@ -120,6 +120,15 @@ void main(List<String> args) {
   for (final entry in english.entries) {
     byEnglishText.putIfAbsent(entry.value.trim(), () => []).add(entry.key);
   }
+  // The same index for format strings, keyed on the literal with the holes
+  // taken out: `Progress %1$s of %2$s` and `Progress {current} of {max}` are
+  // the same message written twice, and only the literal says so.
+  final byEnglishFormat = <String, List<String>>{};
+  for (final entry in english.entries) {
+    final format = _parseAndroidFormat(entry.value.trim());
+    if (format == null || format.holes.isEmpty) continue;
+    byEnglishFormat.putIfAbsent(format.literal.trim(), () => []).add(entry.key);
+  }
 
   for (final locale in locales) {
     final path = '${resDir.path}/values-$locale/strings.xml';
@@ -135,16 +144,62 @@ void main(List<String> args) {
     for (final key in keys) {
       final templateValue = template[key];
       if (templateValue is! String) continue;
-      // ICU syntax of any kind is out of scope — see the header.
-      if (templateValue.contains('{')) continue;
-      // So is Kotlin's printf syntax. Three template keys — `communityEarnings`,
-      // `perSurvey`, `yourEarnings` — declare ICU placeholders but write their
-      // English with `%1$d`/`%1$s`, which ICU never interpolates: the generated
-      // getter takes the argument and drops it, in every language including
-      // English. Deriving a translation would spread that defect into the
-      // locale files, where the placeholder guard then fails on it. Leave them
-      // absent until `app_en.arb` is corrected to `{amount}`/`{status}`.
+      // Kotlin's printf syntax in the *template*. Three keys —
+      // `communityEarnings`, `perSurvey`, `yourEarnings` — declare ICU
+      // placeholders but write their English with `%1$d`/`%1$s`, which ICU
+      // never interpolates: the generated getter takes the argument and drops
+      // it, in every language including English. Deriving a translation would
+      // spread that defect into the locale files, where the placeholder guard
+      // then fails on it. Leave them absent until `app_en.arb` is corrected to
+      // `{amount}`/`{status}`.
       if (_printfSpecifier.hasMatch(templateValue)) continue;
+
+      // A message with ICU placeholders is derived through the format layer at
+      // the foot of this file, which lines the two notations up by argument
+      // index. Everything else is plain text and matches on the text itself.
+      if (templateValue.contains('{')) {
+        final format = _parseIcuFormat(templateValue);
+        if (format == null || format.holes.isEmpty || !format.hasWords) {
+          continue;
+        }
+        final named = byCamelCase[key] ?? const [];
+        String? fromName;
+        for (final name in named) {
+          final source = english[name];
+          final value = translated[name];
+          if (source == null || value == null) continue;
+          fromName = convertAndroidFormat(
+            templateValue: templateValue,
+            kotlinEnglish: source,
+            translation: value,
+          );
+          if (fromName != null) break;
+        }
+        if (fromName != null) {
+          derived[key] = fromName;
+          byName++;
+          continue;
+        }
+        // No name match: fall back to every Kotlin string whose English says
+        // the same thing, and require them to agree — the same unanimity rule
+        // the plain-text path uses, for the same reason.
+        final proposals = <String>{};
+        for (final name in byEnglishFormat[format.literal.trim()] ?? const []) {
+          final value = translated[name];
+          if (value == null) continue;
+          final converted = convertAndroidFormat(
+            templateValue: templateValue,
+            kotlinEnglish: english[name]!,
+            translation: value,
+          );
+          if (converted != null) proposals.add(converted);
+        }
+        if (proposals.length == 1) {
+          derived[key] = proposals.single;
+          byText++;
+        }
+        continue;
+      }
       final wanted = templateValue.trim();
 
       final named = byCamelCase[key] ?? const [];
@@ -385,6 +440,7 @@ class _Candidate {
     required this.current,
     required this.proposed,
     required this.verdict,
+    this.nameResolved = false,
   });
 
   final String key;
@@ -394,6 +450,10 @@ class _Candidate {
 
   /// `apply`, `already`, `keep-human`, `report`, or `no-unanimous`.
   final String verdict;
+
+  /// Whether the tier's candidates disagreed and the Kotlin name that
+  /// camel-cases to [key] broke the tie.
+  final bool nameResolved;
 }
 
 void _recover(List<String> args, {required bool apply}) {
@@ -426,10 +486,24 @@ void _recover(List<String> args, {required bool apply}) {
       final templateValue = template[key];
       if (templateValue is! String) continue;
       final current = arb[key] is String ? arb[key] as String : null;
-      final proposals = <String>{};
+      // Keyed by Kotlin name, because when two names disagree the name itself
+      // is the tiebreak — see below.
+      final byKotlinName = <String, String>{};
+      final isFormat = templateValue.contains('{');
       for (final name in entry.value.names) {
         final value = translated[name];
         if (value == null || value.trim().isEmpty) continue;
+        if (isFormat) {
+          // The format layer does its own guarding, and a null from it means
+          // "not unambiguous" — the candidate simply drops out.
+          final converted = convertAndroidFormat(
+            templateValue: templateValue,
+            kotlinEnglish: english[name] ?? '',
+            translation: value,
+          );
+          if (converted != null) byKotlinName[name] = converted;
+          continue;
+        }
         final proposal = _proposal(entry.value.tier, value, templateValue);
         // The template is placeholder-free by the time it gets here, but a
         // translation is a separate string and could carry syntax of its own.
@@ -441,7 +515,36 @@ void _recover(List<String> args, {required bool apply}) {
             _printfSpecifier.hasMatch(proposal)) {
           continue;
         }
-        proposals.add(proposal);
+        byKotlinName[name] = proposal;
+      }
+      // A locale entry that is still the English is an untranslated string, not
+      // a translation, and adopting one *replaces* a translation with English.
+      // `values-so` renders `settings` as "Settings"; with the namesake rule
+      // below that string would otherwise have won the tie against the real
+      // Somali `Goobooyinka` the moment anybody flagged that key.
+      byKotlinName.removeWhere(
+        (_, proposal) => proposal.trim() == templateValue.trim(),
+      );
+      var proposals = byKotlinName.values.toSet();
+      // Two Kotlin names sharing one English, translated differently. The
+      // English alone cannot choose between them — but a name that *also*
+      // camel-cases to this very ARB key is the same string identified twice,
+      // and that is more evidence, not less. `addResource` has `add_resource`
+      // and `add_res`; `joinRequests` and `notifGroupJoinRequests` share both
+      // their candidates and each picks its own namesake. Phase 118 left 25
+      // such keys unresolved for want of this rule; it settles 13 of them and
+      // leaves the rest — `progressFilterCompleted` really is a choice between
+      // `completed` and `status_completed`, with no name to break the tie.
+      var nameResolved = false;
+      if (proposals.length > 1) {
+        final namesake = {
+          for (final row in byKotlinName.entries)
+            if (_camelCase(row.key) == key) row.value,
+        };
+        if (namesake.length == 1) {
+          proposals = namesake;
+          nameResolved = true;
+        }
       }
       String verdict;
       if (!entry.value.tier.isAdoptable) {
@@ -456,6 +559,14 @@ void _recover(List<String> args, {required bool apply}) {
       } else if (proposals.length != 1) {
         verdict = 'no-unanimous';
       } else if (current == proposals.single) {
+        verdict = 'already';
+      } else if (current != null &&
+          _sameButForSpacing(current, proposals.single)) {
+        // Identical words, different space character. `app_fr.arb` writes
+        // `Rapport créé le\u{a0}: {created}` where `values-fr` writes an
+        // ordinary space — French typography puts a no-break space before a
+        // colon and the Kotlin XML does not. There is no translation to gain
+        // and a typographic nicety to lose, so this is not a candidate.
         verdict = 'already';
       } else if (current != null && current.trim() == proposals.single.trim()) {
         // Same translation, different surrounding whitespace. `selectResources`
@@ -475,6 +586,7 @@ void _recover(List<String> args, {required bool apply}) {
           current: current,
           proposed: proposals.isEmpty ? null : proposals.join(' | '),
           verdict: verdict,
+          nameResolved: nameResolved,
         ),
       );
     }
@@ -520,8 +632,30 @@ Map<String, _Match> _matchTemplateToKotlin(
   for (final key in template.keys) {
     final value = template[key];
     if (key.startsWith('@') || value is! String) continue;
-    // ICU and Kotlin's printf syntax are both out of scope — see the header.
-    if (value.contains('{') || _printfSpecifier.hasMatch(value)) continue;
+    // Kotlin's printf syntax in the template is out of scope — see the header.
+    if (_printfSpecifier.hasMatch(value)) continue;
+    // A placeholder message matches on its literal, and only exactly. The
+    // punctuation and casing tiers below reshape a value's ends, which is not
+    // safe next to a hole; nothing in the corpus needs them here.
+    if (value.contains('{')) {
+      final format = _parseIcuFormat(value);
+      if (format == null || format.holes.isEmpty || !format.hasWords) continue;
+      final literal = format.literal.trim();
+      final sameLiteral = <String>[];
+      for (final entry in english.entries) {
+        final other = _parseAndroidFormat(entry.value.trim());
+        if (other == null || other.holes.length != format.holes.length) {
+          continue;
+        }
+        if (other.literal.trim() == literal) sameLiteral.add(entry.key);
+      }
+      if (sameLiteral.isNotEmpty) {
+        matches[key] = _Match(MatchTier.exact, sameLiteral);
+      } else if (byCamelCase.containsKey(key)) {
+        matches[key] = _Match(MatchTier.nameOnly, byCamelCase[key]!);
+      }
+      continue;
+    }
 
     final exact = <String>[];
     final punctuation = <String>[];
@@ -601,6 +735,14 @@ bool _replaceable(String? current, String templateEnglish, bool isMachine) {
 }
 
 final _untranslatedMarker = RegExp(r'^\[[A-Z][A-Za-z]+\]\s');
+
+/// Whether two values are the same words differing only in which space
+/// characters they use. See the caller for why that is not worth adopting.
+bool _sameButForSpacing(String a, String b) =>
+    _ordinarySpaces(a) == _ordinarySpaces(b);
+
+String _ordinarySpaces(String value) =>
+    value.trim().replaceAll(RegExp(r'[\s\u00a0\u202f\u2009]+'), ' ');
 
 /// A trailing run of label punctuation, with the space Android puts around it.
 final _trailingLabelPunctuation = RegExp('[\\s ]*[:.…!]+[\\s ]*\$');
@@ -705,7 +847,16 @@ _AdoptCounts _adopt(
 
   final flags = _reconcileMachineTranslationFlags(merged, {
     for (final candidate in candidates)
-      if (candidate.verdict == 'apply') candidate.key,
+      // `already` counts as well as `apply`. The flag means "unreviewed machine
+      // output, a human still has to look at this", and a value byte-identical
+      // to the translation shipping in the Android app has had one — whatever
+      // pipeline produced this copy of it. 96 values across ar/es/fr were
+      // flagged that way, and the rule dropping a stale flag on an adopted
+      // value already said so; it simply never fired on the values that needed
+      // no adopting. Nothing a user sees changes: this is marking only.
+      if (candidate.verdict == 'apply' ||
+          (candidate.verdict == 'already' && candidate.match.tier.isAdoptable))
+        candidate.key,
   });
   file.writeAsStringSync('${_encodeArb(merged)}\n');
   return _AdoptCounts(values, escapes, flags);
@@ -733,7 +884,8 @@ void _printCandidates(
       // Every field on one line. A value with a newline in it would otherwise
       // split its own row in half, and this report is meant to be greppable.
       stdout.writeln(
-        '${row.key}\t${row.match.tier.name}\n'
+        '${row.key}\t${row.match.tier.name}'
+        '${row.nameResolved ? ' (name-resolved)' : ''}\n'
         '  en   ${_oneLine(template[row.key] as String?)}\n'
         '  xml  $names\n'
         '  was  ${_oneLine(row.current)}\n'
@@ -867,4 +1019,224 @@ String _escape(String value) {
   }
   buffer.write('"');
   return buffer.toString();
+}
+
+// ---------------------------------------------------------------------------
+// Placeholder keys (Phase 121).
+//
+// Everything above deliberately skipped a template value carrying an ICU
+// placeholder. That skip was never about the placeholders being untranslatable
+// — it was about not having a safe way to line two different notations up. It
+// cost a whole class: **91 of the Kotlin app's 1052 strings carry a `%s`/`%d`
+// format specifier**, and each one has a human translation shipping in all five
+// locales that the port could not read.
+//
+// The two notations differ in a way a left-to-right substitution gets wrong.
+// Android numbers its arguments (`%1$s`, `%2$s`) and a translator may reorder
+// them: `values-ne` writes `download_progress` as
+// `%2$d मध्ये %1$d फाइलहरू डाउनलोड भएका छन्` — argument 2 first. ICU names its
+// arguments instead, so the conversion has to carry each *argument index* to
+// the name that argument means, never to the name sitting in the same position.
+// [_FormatString] is that: literal segments plus the ordered ids of the holes
+// between them. Two strings describe the same message when their literals are
+// identical; zipping their hole lists gives the index → name map, which is then
+// applied to the translation wherever *its* holes fall.
+//
+// The guards, in the order they reject:
+//
+//   * **ICU plurals and selects are out of scope.** A Kotlin `%d` string is one
+//     sentence; `{count, plural, =0{…} =1{…} other{…}}` is three. Filling the
+//     `other` branch from the Kotlin and leaving `=0`/`=1` in English would put
+//     two languages inside one rendered string, which is worse than the English
+//     fallback. 23 of the template's 76 placeholder keys are plurals; they are
+//     reported and never derived.
+//   * **An unsupported conversion rejects the whole string.** `%.1f` formats a
+//     number to one decimal place and `{name}` does not, so dropping the
+//     precision would change what the number says.
+//   * **A literal with no letter in it is not evidence.** `%1$s (%2$s)` is
+//     punctuation; it is byte-identical in all five locales, so deriving from
+//     it adds a value that says nothing. Worse, it matches *any* key of that
+//     shape — `ratingCompact` ("{average} ({count})") matches Kotlin's
+//     `user_name` ("name (logins)") on it, which is a translation of different
+//     words. Requiring a letter throws the wrong match out with the useless
+//     ones.
+//   * **Every declared placeholder must survive.** A translation that drops one
+//     renders a sentence with its data missing, which is what
+//     `test/l10n/placeholder_integrity_test.dart` exists to stop.
+//
+// Matching is **exact literal only** — no punctuation or casing tier. Those
+// tiers strip trailing punctuation and give the template's back, and a hole
+// adjacent to the punctuation makes the result ambiguous for no gain: nothing
+// in the corpus matches at those tiers anyway.
+
+/// A format string reduced to its literal segments and the holes between them.
+///
+/// There is always one more segment than hole, so [parts] and [holes]
+/// interleave: `parts[0] holes[0] parts[1] holes[1] … parts[n]`.
+///
+/// For a Kotlin string a hole id is the argument index as written (`%2$s` →
+/// `'2'`, a bare `%s` → its ordinal). For an ARB message it is the placeholder
+/// name.
+class _FormatString {
+  const _FormatString(this.parts, this.holes);
+
+  final List<String> parts;
+  final List<String> holes;
+
+  /// The text with every hole removed, which is what makes the two notations
+  /// comparable.
+  String get literal => parts.join();
+
+  /// Whether the literal carries a word at all — see the header.
+  bool get hasWords => _anyLetter.hasMatch(literal);
+
+  /// The string back again, with each hole id mapped through [names] and
+  /// written in ICU form. Null when a hole has no mapping.
+  String? renderIcu(Map<String, String> names) {
+    final buffer = StringBuffer(parts.first);
+    for (var i = 0; i < holes.length; i++) {
+      final name = names[holes[i]];
+      if (name == null) return null;
+      buffer.write('{$name}');
+      buffer.write(parts[i + 1]);
+    }
+    return buffer.toString();
+  }
+}
+
+final _anyLetter = RegExp(r'\p{L}', unicode: true);
+
+/// Every printf conversion Android permits, so an unsupported one is *seen*
+/// rather than read as literal text.
+final _anySpecifier = RegExp(
+  r'%(?:(\d+)\$)?([-#+ 0,(]*\d*(?:\.\d+)?)([a-zA-Z])',
+);
+
+/// Parses an Android format string, or returns null when it is not convertible.
+///
+/// Null means "do not derive from this", never "this has no holes": a string
+/// with no specifier parses to an empty [_FormatString.holes].
+_FormatString? _parseAndroidFormat(String value) {
+  // A brace in the literal would become ICU syntax the moment the value is
+  // written into an `.arb`.
+  if (value.contains('{') || value.contains('}')) return null;
+
+  final parts = <String>[];
+  final holes = <String>[];
+  final segment = StringBuffer();
+  var explicit = false;
+  var implicit = 0;
+  var index = 0;
+  while (index < value.length) {
+    final at = value.indexOf('%', index);
+    if (at < 0) {
+      segment.write(value.substring(index));
+      break;
+    }
+    segment.write(value.substring(index, at));
+    if (value.startsWith('%%', at)) {
+      segment.write('%');
+      index = at + 2;
+      continue;
+    }
+    final match = _anySpecifier.matchAsPrefix(value, at);
+    // A lone `%`, or a conversion carrying flags/width/precision this cannot
+    // reproduce: `%.1f` says "one decimal place" and `{value}` does not.
+    if (match == null ||
+        match.group(2)!.isNotEmpty ||
+        !const ['s', 'd'].contains(match.group(3))) {
+      return null;
+    }
+    if (match.group(1) != null) {
+      explicit = true;
+      holes.add(match.group(1)!);
+    } else {
+      holes.add('${++implicit}');
+    }
+    // Android itself throws on a string that mixes the two forms.
+    if (explicit && implicit > 0) return null;
+    parts.add(segment.toString());
+    segment.clear();
+    index = match.end;
+  }
+  parts.add(segment.toString());
+  return _FormatString(parts, holes);
+}
+
+/// `{name}` occurrences in an ARB message, or null for anything more elaborate.
+///
+/// A plural or select body is rejected here rather than downstream: its braces
+/// are structure, not holes, and reducing it to a literal would compare a
+/// three-sentence message against a one-sentence Kotlin string.
+_FormatString? _parseIcuFormat(String value) {
+  final parts = <String>[];
+  final holes = <String>[];
+  var index = 0;
+  while (index < value.length) {
+    final at = value.indexOf('{', index);
+    if (at < 0) {
+      parts.add(value.substring(index));
+      index = value.length;
+      break;
+    }
+    parts.add(value.substring(index, at));
+    final close = value.indexOf('}', at);
+    if (close < 0) return null;
+    final name = value.substring(at + 1, close);
+    // `{count, plural, …}`, `{choice, select, …}`, or a nested body.
+    if (!_placeholderName.hasMatch(name)) return null;
+    holes.add(name);
+    index = close + 1;
+  }
+  if (index >= value.length && parts.length == holes.length) parts.add('');
+  if (parts.any((part) => part.contains('}'))) return null;
+  return _FormatString(parts, holes);
+}
+
+final _placeholderName = RegExp(r'^\w+$');
+
+/// The ICU form of [translation], or null when the conversion is not
+/// unambiguous.
+///
+/// [templateValue] is `app_en.arb`'s message and [kotlinEnglish] the
+/// `values/strings.xml` string it was matched to; between them they fix which
+/// argument index means which placeholder name. [translation] is that Kotlin
+/// string in some locale, free to put those arguments anywhere.
+String? convertAndroidFormat({
+  required String templateValue,
+  required String kotlinEnglish,
+  required String translation,
+}) {
+  final template = _parseIcuFormat(templateValue);
+  if (template == null || template.holes.isEmpty || !template.hasWords) {
+    return null;
+  }
+  final english = _parseAndroidFormat(kotlinEnglish.trim());
+  if (english == null) return null;
+  if (english.literal.trim() != template.literal.trim()) return null;
+  if (english.holes.length != template.holes.length) return null;
+
+  // Argument index → placeholder name, read off the two English forms. A repeat
+  // must agree with itself, and two indices may not claim one name: either
+  // would mean the literals line up by accident rather than by meaning.
+  final names = <String, String>{};
+  for (var i = 0; i < english.holes.length; i++) {
+    final existing = names[english.holes[i]];
+    if (existing != null && existing != template.holes[i]) return null;
+    if (existing == null && names.containsValue(template.holes[i])) return null;
+    names[english.holes[i]] = template.holes[i];
+  }
+
+  final localised = _parseAndroidFormat(translation.trim());
+  if (localised == null) return null;
+  final rendered = localised.renderIcu(names);
+  if (rendered == null) return null;
+
+  // Nothing may be lost: the generated getter still takes every declared
+  // argument, so a value that drops one discards it silently at render time.
+  for (final name in template.holes.toSet()) {
+    if (!rendered.contains('{$name}')) return null;
+  }
+  if (_printfSpecifier.hasMatch(rendered)) return null;
+  return rendered;
 }

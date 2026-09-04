@@ -268,12 +268,24 @@ void main() {
     // Adding a *reviewed* translation is meant to move these numbers: update
     // the map and say in the commit message who reviewed it. Adding an
     // unreviewed one means flagging it `x-mt`, which leaves them alone.
+    //
+    // Phase 121 moved all five, in two ways worth separating. 36 values across
+    // the five locales are human translations newly written from the Kotlin
+    // XML, 25 of them for keys carrying an ICU placeholder — a class the
+    // derivation tool used to skip outright. The other 250 (ar 60, es 118,
+    // fr 72) are values that were *already* byte-identical to the translation
+    // shipping in the Android app and were nonetheless flagged unreviewed
+    // machine output. The
+    // flag means "a human still has to look at this", and one has; nothing a
+    // user sees changed when they were cleared. If that reading is ever
+    // rejected, `_reconcileMachineTranslationFlags`' `already` branch is the
+    // one line to revert.
     const humanReviewed = {
-      'ar': 327,
-      'es': 323,
-      'fr': 316,
-      'ne': 389,
-      'so': 389,
+      'ar': 395,
+      'es': 448,
+      'fr': 394,
+      'ne': 396,
+      'so': 396,
     };
 
     for (final code in locales) {
