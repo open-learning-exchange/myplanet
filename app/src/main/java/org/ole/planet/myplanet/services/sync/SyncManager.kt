@@ -73,6 +73,12 @@ class SyncManager @Inject constructor(
     private val syncRepository: SyncRepository,
     private val syncTimeLogger: SyncTimeLogger
 ) {
+    private inline fun syncPerf(message: () -> String) {
+        if (Log.isLoggable("SyncPerf", Log.DEBUG)) {
+            Log.d("SyncPerf", message())
+        }
+    }
+
     private val timestampFormat = DateTimeFormatter.ofPattern("HH:mm:ss.SSS").withZone(ZoneId.systemDefault())
     private val isSyncing = AtomicBoolean(false)
     private var listener: OnSyncListener? = null
@@ -136,9 +142,11 @@ class SyncManager @Inject constructor(
         val syncStartTime = SystemClock.elapsedRealtime()
 
         syncTimeLogger.startLogging()
-        Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-        Log.d("SyncPerf", "FULL SYNC STARTED at ${timestampFormat.format(Instant.now())}")
-        Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
+        if (Log.isLoggable("SyncPerf", Log.DEBUG)) {
+            Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
+            Log.d("SyncPerf", "FULL SYNC STARTED at ${timestampFormat.format(Instant.now())}")
+            Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
+        }
         try {
 
             initializeSync()
@@ -204,17 +212,21 @@ class SyncManager @Inject constructor(
             val totalSyncTime = syncEndTime - syncStartTime
             val minutes = totalSyncTime / 60000
             val seconds = (totalSyncTime % 60000) / 1000
-            Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-            Log.d("SyncPerf", "FULL SYNC COMPLETED at ${timestampFormat.format(Instant.now())}")
-            Log.d("SyncPerf", "TOTAL SYNC TIME: ${minutes}m ${seconds}s (${totalSyncTime}ms)")
-            Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
+            if (Log.isLoggable("SyncPerf", Log.DEBUG)) {
+                Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
+                Log.d("SyncPerf", "FULL SYNC COMPLETED at ${timestampFormat.format(Instant.now())}")
+                Log.d("SyncPerf", "TOTAL SYNC TIME: ${minutes}m ${seconds}s (${totalSyncTime}ms)")
+                Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
+            }
         } catch (err: Exception) {
             val syncEndTime = SystemClock.elapsedRealtime()
             val totalSyncTime = syncEndTime - syncStartTime
-            Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-            Log.d("SyncPerf", "SYNC FAILED after ${totalSyncTime}ms")
-            Log.d("SyncPerf", "Error: ${err.message}")
-            Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
+            if (Log.isLoggable("SyncPerf", Log.DEBUG)) {
+                Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
+                Log.d("SyncPerf", "SYNC FAILED after ${totalSyncTime}ms")
+                Log.d("SyncPerf", "Error: ${err.message}")
+                Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
+            }
             Log.e("SyncManager", "Full sync failed", err)
             handleException(err.message)
         } finally {
@@ -271,7 +283,7 @@ class SyncManager @Inject constructor(
 
     private suspend fun resourceTransactionSync() {
         val resourceSyncStartTime = SystemClock.elapsedRealtime()
-        Log.d("SyncPerf", "  ▶ Starting resource sync")
+        syncPerf { "  ▶ Starting resource sync" }
 
 
         syncTimeLogger.startProcess("resource_sync_main")
@@ -302,7 +314,7 @@ class SyncManager @Inject constructor(
             var skip = 0
             var batchCount = 0
 
-            Log.d("SyncPerf", "    Resources: Found $totalRows documents to sync")
+            syncPerf { "    Resources: Found $totalRows documents to sync" }
             syncTimeLogger.logDetail("resource_sync", "Total resources: $totalRows, batch size: ${batchSizer.currentSize} (adaptive)")
 
             while (skip < totalRows || (totalRows == 0 && skip == 0)) {
@@ -379,7 +391,7 @@ class SyncManager @Inject constructor(
                     val batchEndTime = SystemClock.elapsedRealtime()
                     val batchTime = batchEndTime - batchStartTime
                     if (batchCount % 10 == 0) {
-                        Log.d("SyncPerf", "    Resources batch $batchCount: ${batchTime}ms - Progress: $skip/$totalRows (${(skip * 100 / totalRows.coerceAtLeast(1))}%)")
+                        syncPerf { "    Resources batch $batchCount: ${batchTime}ms - Progress: $skip/$totalRows (${(skip * 100 / totalRows.coerceAtLeast(1))}%)" }
                         syncTimeLogger.logDetail("resource_sync", "Batch $batchCount progress: $skip/$totalRows (${(skip * 100 / totalRows.coerceAtLeast(1))}%)")
                         sharedPrefManager.rawPreferences.edit {
                             putLong("ResourceLastSyncTime", timeProvider.now())
@@ -419,12 +431,12 @@ class SyncManager @Inject constructor(
             val resourceSyncTime = resourceSyncEndTime - resourceSyncStartTime
             val minutes = resourceSyncTime / 60000
             val seconds = (resourceSyncTime % 60000) / 1000
-            Log.d("SyncPerf", "  ✓ Resources sync completed: ${minutes}m ${seconds}s - $processedItems items")
+            syncPerf { "  ✓ Resources sync completed: ${minutes}m ${seconds}s - $processedItems items" }
         } catch (e: Exception) {
             Log.e("SyncManager", "Resource sync failed", e)
             syncTimeLogger.endProcess("resource_sync_main", processedItems)
             val resourceSyncEndTime = SystemClock.elapsedRealtime()
-            Log.d("SyncPerf", "  ✗ Resources sync failed after ${resourceSyncEndTime - resourceSyncStartTime}ms: ${e.message}")
+            syncPerf { "  ✗ Resources sync failed after ${resourceSyncEndTime - resourceSyncStartTime}ms: ${e.message}" }
         }
     }
 
@@ -502,7 +514,7 @@ class SyncManager @Inject constructor(
     private suspend fun myLibraryTransactionSync() {
 
         val librarySyncStartTime = SystemClock.elapsedRealtime()
-        Log.d("SyncPerf", "  ▶ Starting library sync")
+        syncPerf { "  ▶ Starting library sync" }
 
         syncTimeLogger.startProcess("library_sync_main")
         var processedItems = 0
@@ -513,7 +525,7 @@ class SyncManager @Inject constructor(
             val shelvesWithData = getShelvesWithDataBatchOptimized()
             val shelvesDuration = SystemClock.elapsedRealtime() - shelvesStartTime
             syncTimeLogger.endProcess("library_get_shelves", shelvesWithData.size)
-            Log.d("SyncPerf", "    Library: Found ${shelvesWithData.size} shelves with data in ${shelvesDuration}ms")
+            syncPerf { "    Library: Found ${shelvesWithData.size} shelves with data in ${shelvesDuration}ms" }
 
             if (shelvesWithData.isEmpty()) {
                 syncTimeLogger.logDetail("library_sync", "No shelves with data found, skipping library sync")
@@ -555,12 +567,12 @@ class SyncManager @Inject constructor(
             syncTimeLogger.endProcess("library_sync_main", processedItems)
 
             val totalDuration = SystemClock.elapsedRealtime() - librarySyncStartTime
-            Log.d("SyncPerf", "  ✓ Library sync completed: ${totalDuration}ms - $processedItems items from ${shelvesWithData.size} shelves")
+            syncPerf { "  ✓ Library sync completed: ${totalDuration}ms - $processedItems items from ${shelvesWithData.size} shelves" }
         } catch (e: Exception) {
             Log.e("SyncManager", "Library sync failed", e)
             syncTimeLogger.endProcess("library_sync_main", processedItems)
             val failDuration = SystemClock.elapsedRealtime() - librarySyncStartTime
-            Log.d("SyncPerf", "  ✗ Library sync failed after ${failDuration}ms: ${e.message}")
+            syncPerf { "  ✗ Library sync failed after ${failDuration}ms: ${e.message}" }
         }
     }
 }
