@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.model.SubmitPhotos
 import org.ole.planet.myplanet.model.TeamReference
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.DOCUMENT_ORIGIN
 import org.ole.planet.myplanet.utils.ExamAnswerUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -780,12 +781,76 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             val parent = gson.fromJson(submission.parent, JsonObject::class.java)
             `object`.add("parent", parent)
         }
-        val freshUser = resolvedUser?.serialize()
-        when {
-            freshUser != null -> `object`.add("user", freshUser)
-            !submission.user.isNullOrEmpty() -> `object`.add("user", JsonParser.parseString(submission.user))
-        }
+        applySubmissionAttribution(`object`, submission, resolvedUser)
         return `object`
+    }
+
+    /**
+     * Writes the submission's attribution fields.
+     *
+     * A response collected by an operator on behalf of a walk-up respondent keeps the respondent's
+     * details in [Submission.user]; the logged-in account is the collector, not the respondent, so
+     * it is emitted as `collectedBy` and never as `user`. Only a submission the account answered
+     * itself uploads the account as `user`, and then only the fields a submission needs — the
+     * account's credential material (`derived_key`, `salt`, `password_scheme`, `iterations`) must
+     * never reach the submissions database.
+     */
+    private fun applySubmissionAttribution(target: JsonObject, submission: Submission, account: UserEntity?) {
+        val storedUser = parseStoredSubmissionUser(submission)
+        val respondent = respondentJson(storedUser)
+        val isCollected = respondent != null || storedUser?.has(MEMBERSHIP_DOC_KEY) == true
+
+        val userJson = if (isCollected) {
+            submissionUserJson(storedUser) ?: JsonObject()
+        } else {
+            submissionUserJson(account?.serialize()) ?: submissionUserJson(storedUser)
+        }
+        if (userJson != null) {
+            submission.membershipDoc?.let { membership ->
+                userJson.add(MEMBERSHIP_DOC_KEY, JsonObject().apply { addProperty("teamId", membership.teamId ?: "") })
+            }
+            target.add("user", userJson)
+        }
+        respondent?.let { target.add("respondent", it) }
+        if (isCollected) {
+            collectedByJson(account)?.let { target.add("collectedBy", it) }
+        }
+        target.addProperty("channel", DOCUMENT_ORIGIN)
+    }
+
+    private fun parseStoredSubmissionUser(submission: Submission): JsonObject? {
+        val stored = submission.user?.takeIf { it.isNotBlank() } ?: return null
+        return runCatching { JsonParser.parseString(stored).asJsonObject }.getOrNull()
+    }
+
+    private fun respondentJson(storedUser: JsonObject?): JsonObject? {
+        storedUser ?: return null
+        val respondent = JsonObject()
+        RESPONDENT_FIELDS.forEach { key -> storedUser.copyNonBlank(key, respondent) }
+        return respondent.takeIf { it.size() > 0 }
+    }
+
+    private fun submissionUserJson(source: JsonObject?): JsonObject? {
+        source ?: return null
+        val projected = JsonObject()
+        SUBMISSION_USER_FIELDS.forEach { key ->
+            source.get(key)?.takeIf { !it.isJsonNull }?.let { projected.add(key, it) }
+        }
+        return projected.takeIf { it.size() > 0 }
+    }
+
+    private fun collectedByJson(account: UserEntity?): JsonObject? {
+        val source = account?.serialize() ?: return null
+        val collectedBy = JsonObject()
+        COLLECTED_BY_FIELDS.forEach { key -> source.copyNonBlank(key, collectedBy) }
+        return collectedBy.takeIf { it.size() > 0 }
+    }
+
+    private fun JsonObject.copyNonBlank(key: String, target: JsonObject) {
+        val value = get(key) ?: return
+        if (value.isJsonNull) return
+        if (value.isJsonPrimitive && value.asString.isBlank()) return
+        target.add(key, value)
     }
 
     private suspend fun resolveTeamJson(submission: Submission): JsonObject? {
@@ -851,16 +916,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 jsonObject.add("parent", JsonParser.parseString(submission.parent))
             }
 
-            val userJson = payloadData.user?.serialize()
-                ?: submission.user?.takeIf { it.isNotEmpty() }?.let { JsonParser.parseString(it).asJsonObject }
-            if (userJson != null) {
-                if (submission.membershipDoc != null) {
-                    val membershipJson = JsonObject()
-                    membershipJson.addProperty("teamId", submission.membershipDoc?.teamId ?: "")
-                    userJson.add("membershipDoc", membershipJson)
-                }
-                jsonObject.add("user", userJson)
-            }
+            applySubmissionAttribution(jsonObject, submission, payloadData.user)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -879,5 +935,16 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             val answers = answerDao.getBySubmissionId(entity.id)
             entity.apply { this.answers = answers.toMutableList(); teamId?.let { membershipDoc = MembershipDoc().apply { this.teamId = it } } }
         }
+    }
+
+    private companion object {
+        const val MEMBERSHIP_DOC_KEY = "membershipDoc"
+        val RESPONDENT_FIELDS = listOf("age", "gender", "level", "language", "birthDate")
+        val COLLECTED_BY_FIELDS = listOf("_id", "name")
+        val SUBMISSION_USER_FIELDS = listOf(
+            "_id", "name", "planetCode", "parentCode", "firstName", "middleName", "lastName",
+            "email", "language", "level", "gender", "phoneNumber", "birthDate", "age",
+            MEMBERSHIP_DOC_KEY
+        )
     }
 }

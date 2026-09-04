@@ -23,6 +23,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -539,6 +540,106 @@ class SubmissionsRepositoryImplTest {
         val result = repository.serializeSubmission(submission, "planet", "parent", freshUser)
 
         assertEquals("fresh_user", result.getAsJsonObject("user").get("_id").asString)
+    }
+
+    @Test
+    fun `serializeSubmission keeps account credential material out of the submission`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+
+        val account = mockk<UserEntity>()
+        every { account.serialize() } returns JsonObject().apply {
+            addProperty("_id", "org.couchdb.user:gg")
+            addProperty("name", "gg")
+            addProperty("derived_key", "6d250fd24fbc58596381c3a0b5e011e55b623cb7")
+            addProperty("salt", "a2b98b9b1ec4ada569badd244ab7deee")
+            addProperty("password_scheme", "pbkdf2")
+            addProperty("iterations", 10)
+            addProperty("password", "hunter2")
+            add("roles", com.google.gson.JsonArray())
+        }
+
+        val submission = Submission().apply {
+            id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
+        }
+
+        val result = repository.serializeSubmission(submission, "planet", "parent", account)
+
+        val user = result.getAsJsonObject("user")
+        assertEquals("org.couchdb.user:gg", user.get("_id").asString)
+        assertEquals("gg", user.get("name").asString)
+        listOf("derived_key", "salt", "password_scheme", "iterations", "password", "roles").forEach { key ->
+            assertFalse("$key must never reach the submissions database", user.has(key))
+        }
+        assertFalse(result.toString().contains("derived_key"))
+    }
+
+    @Test
+    fun `serializeSubmission attributes a collected response to respondent and collector`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+
+        val account = mockk<UserEntity>()
+        every { account.serialize() } returns JsonObject().apply {
+            addProperty("_id", "org.couchdb.user:gg")
+            addProperty("name", "gg")
+            addProperty("gender", "")
+            addProperty("age", "")
+            addProperty("derived_key", "6d250fd24fbc58596381c3a0b5e011e55b623cb7")
+        }
+
+        // A walk-up respondent surveyed by gg: their details are the stored blob, not gg's account.
+        val submission = Submission().apply {
+            id = "s1"; userId = "u1"; parentId = "survey1"; type = "survey"
+            user = "{\"age\":\"34\",\"gender\":\"male\",\"membershipDoc\":{\"teamId\":\"team1\"}}"
+        }
+
+        val result = repository.serializeSubmission(submission, "planet", "parent", account)
+
+        val respondent = result.getAsJsonObject("respondent")
+        assertEquals("34", respondent.get("age").asString)
+        assertEquals("male", respondent.get("gender").asString)
+
+        val collectedBy = result.getAsJsonObject("collectedBy")
+        assertEquals("org.couchdb.user:gg", collectedBy.get("_id").asString)
+        assertEquals("gg", collectedBy.get("name").asString)
+
+        // The collector is never the respondent, so the account must not surface as `user`.
+        val user = result.getAsJsonObject("user")
+        assertEquals("34", user.get("age").asString)
+        assertEquals("male", user.get("gender").asString)
+        assertFalse(user.has("_id"))
+        assertFalse(user.has("name"))
+        assertFalse(result.toString().contains("derived_key"))
+    }
+
+    @Test
+    fun `serializeSubmission leaves a self-taken submission unattributed to a collector`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+
+        val account = mockk<UserEntity>()
+        every { account.serialize() } returns JsonObject().apply {
+            addProperty("_id", "org.couchdb.user:gg")
+            addProperty("name", "gg")
+        }
+
+        val submission = Submission().apply {
+            id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "exam"
+        }
+
+        val result = repository.serializeSubmission(submission, "planet", "parent", account)
+
+        assertEquals("org.couchdb.user:gg", result.getAsJsonObject("user").get("_id").asString)
+        assertFalse(result.has("respondent"))
+        assertFalse(result.has("collectedBy"))
+        assertEquals("myplanet", result.get("channel").asString)
     }
 
     @Test
