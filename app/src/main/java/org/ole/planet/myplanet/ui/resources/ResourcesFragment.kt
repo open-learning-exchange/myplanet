@@ -406,7 +406,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     private fun setupAddToLibListener() {
         tvAddToLib.setOnClickListener {
-            if ((selectedItems?.size ?: 0) > 0) {
+            if (!selectedItems.isNullOrEmpty()) {
                 confirmation = createAlertDialog()
                 confirmation?.show()
             }
