@@ -28,6 +28,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
@@ -47,6 +48,8 @@ import java.util.TimeZone
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.language
 import org.ole.planet.myplanet.R.array.subject_level
@@ -54,6 +57,8 @@ import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
 import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
@@ -69,6 +74,8 @@ class UserProfileFragment : Fragment() {
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var timeProvider: TimeProvider
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
     private var model: UserEntity? = null
     private var editProfileDialog: Dialog? = null
     private lateinit var pickImageLauncher: ActivityResultLauncher<Intent>
@@ -85,16 +92,22 @@ class UserProfileFragment : Fragment() {
         pickImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK && result.data != null) {
                 val uri = result.data?.data ?: return@registerForActivityResult
-                photoURI  = uri
-                startIntent(photoURI)
-                val imageSize = resources.getDimensionPixelSize(R.dimen.profile_image_size)
-                ImageUtils.loadProfileImage(uri.toString(), binding.image, imageSize)
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val path = withContext(dispatcherProvider.io) {
+                        FileUtils.resolveUriToPath(requireContext().applicationContext, uri, requireContext().filesDir)
+                    }
+                    if (path != null) {
+                        startIntent(path)
+                        val imageSize = resources.getDimensionPixelSize(R.dimen.profile_image_size)
+                        ImageUtils.loadProfileImage(path, binding.image, imageSize)
+                    }
+                }
             }
         }
 
         captureImageLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { isSuccess ->
             if (isSuccess) {
-                startIntent(photoURI)
+                startIntent(photoURI?.toString())
                 binding.image.setImageURI(photoURI)
             }
         }
@@ -477,7 +490,9 @@ class UserProfileFragment : Fragment() {
     }
 
     private fun pickFromGallery() {
-        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
+        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+            type = "image/*"
+        }
         pickImageLauncher.launch(intent)
     }
 
@@ -498,8 +513,7 @@ class UserProfileFragment : Fragment() {
         photoURI?.let { captureImageLauncher.launch(it) }
     }
 
-    private fun startIntent(uri: Uri?) {
-        val path = uri?.toString()
+    private fun startIntent(path: String?) {
         viewModel.updateCurrentUserProfileImage(path)
     }
 
