@@ -1,18 +1,36 @@
 package org.ole.planet.myplanet.model
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import com.google.gson.JsonObject
 import io.mockk.every
 import io.mockk.mockk
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.MainApplication
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
 class TeamTaskTest {
+
+    // serialize() stamps the document origin, which reads MainApplication.context for the
+    // device id. Hand it the Robolectric context rather than relying on the real
+    // MainApplication being the test application.
+    @Before
+    fun setup() {
+        MainApplication.testContext = ApplicationProvider.getApplicationContext<Context>()
+    }
+
+    @After
+    fun tearDown() {
+        MainApplication.testContext = null
+    }
 
     @Test
     fun testSerialize_withUser() {
