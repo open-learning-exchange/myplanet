@@ -358,8 +358,14 @@ class VoicesRepositoryImpl @Inject constructor(
     override suspend fun insertNewsList(docs: List<JsonObject>) {
         // Pre-fetch existing rows in one query instead of a getByUnderscoreId per doc (an N+1
         // that ran serially inside the sync write lock for hundreds of news items).
-        val mappedDocs = docs.map { it to JsonUtils.getString("_id", it) }
-        val underscoreIds = mappedDocs.map { it.second }.filter { it.isNotEmpty() }
+        val underscoreIds = ArrayList<String>(docs.size)
+        val mappedDocs = docs.map { doc ->
+            val id = JsonUtils.getString("_id", doc)
+            if (id.isNotEmpty()) {
+                underscoreIds.add(id)
+            }
+            doc to id
+        }
         val existing = newsDao.getByUnderscoreIds(underscoreIds).associateBy { it._id }
         val newsList = mappedDocs.map { (doc, id) -> buildNewsFromJson(doc, id, existing) }
         newsDao.upsertAll(newsList)
