@@ -508,5 +508,6 @@
   "storageRunningLow": "स्टोरेज गम्भीर रूपमा कम:",
   "storageAvailable": "स्टोरेज उपलब्ध:",
   "joinRequestPrefix": "सामेल हुने अनुरोध:",
-  "userRequestedToJoinTeam": "{user} ले {team} मा सामेल हुन अनुरोध गरेको छ"
+  "userRequestedToJoinTeam": "{user} ले {team} मा सामेल हुन अनुरोध गरेको छ",
+  "markAsRead": "पढिएको रूपमा चिन्ह लगाउनुहोस्"
 }

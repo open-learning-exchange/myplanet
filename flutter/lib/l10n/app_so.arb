@@ -508,5 +508,6 @@
   "storageRunningLow": "Xaddida maaliyadeed waa tagaa:",
   "storageAvailable": "Xaddida maaliyadeed waa heli kara:",
   "joinRequestPrefix": "Codsi ku biirid:",
-  "userRequestedToJoinTeam": "{user} ayaa codsaday ku biirista {team}"
+  "userRequestedToJoinTeam": "{user} ayaa codsaday ku biirista {team}",
+  "markAsRead": "Calaamadee sidii la aqriyay"
 }

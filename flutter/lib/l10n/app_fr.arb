@@ -2286,5 +2286,6 @@
   "storageRunningLow": "Espace de stockage presque plein:",
   "storageAvailable": "Espace de stockage disponible:",
   "joinRequestPrefix": "Demande d'adhésion :",
-  "userRequestedToJoinTeam": "{user} a demandé à rejoindre {team}"
+  "userRequestedToJoinTeam": "{user} a demandé à rejoindre {team}",
+  "markAsRead": "Marquer comme lu"
 }

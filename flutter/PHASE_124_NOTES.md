@@ -18,14 +18,22 @@ lane ships a small HTML parser it had argued against.
 
 ## What each type formats to, and which part is the title
 
-There is **one** part. `row_notifications.xml` holds a `title` TextView and a
-`timestamp` TextView and nothing else — no per-row icon (`iconResFor` is called
-from `HeaderViewHolder`, once per *group*), no subtitle. So Kotlin's whole
+There is **one** part for the message. `row_notifications.xml` holds a `title`
+TextView and a `timestamp` TextView — plus a `CheckBox` and a *Mark as read*
+`Button`, which are affordances rather than text — and **no icon**: `iconResFor`
+is called once per *group*, from `HeaderViewHolder`. So Kotlin's whole
 notification text is the row's primary line, and the port's "type label above
 the raw message" was an invention twice over: `AppNotification.title`, which the
 port's row preferred when set, is a column **nothing in either app ever
 writes** — `parseNotification` never assigns it and `model/Notification.kt` has
 no field for it.
+
+The port keeps its per-row **icon**, which by that same citation Kotlin does not
+have. That is a deliberate addition — it makes a long list scannable — and it is
+why the type *label* was the thing removed instead: the label duplicated the
+group header outright, where the icon does not. Said plainly here because the
+first draft of these notes used the layout to justify deleting the label while
+the code two lines away kept the icon.
 
 | resolved type | text | markup |
 |---|---|---|
@@ -96,10 +104,10 @@ renders with the same single space it does in the Android app.
 
 ---
 
-## Did the Kotlin translations come across? Six of eight, yes
+## Did the Kotlin translations come across? Seven of nine, yes
 
 Keys were named so the derivation tool could match them, and
-`dart tool/arb_from_strings_xml.dart` picked up **all six that have a Kotlin
+`dart tool/arb_from_strings_xml.dart` picked up **all seven that have a Kotlin
 counterpart, in all five locales** — human translations already shipping in the
 Android app, at no cost:
 
@@ -111,6 +119,7 @@ Android app, at no cost:
 | `storageAvailable` | `storage_available` | ar es fr ne so |
 | `joinRequestPrefix` | `join_request_prefix` | ar es fr ne so |
 | `userRequestedToJoinTeam` | `user_requested_to_join_team` | ar es fr ne so |
+| `markAsRead` | `mark_as_read` | ar es fr ne so |
 | `unknownUser` | — | English fallback |
 | `unknownTeam` | — | English fallback |
 
@@ -134,7 +143,7 @@ fallback is translatable — the same correction Phase 95 made to `MyHealthScree
 hardcoded `'Unknown'`. Rendered English is identical.
 
 `test/l10n/placeholder_integrity_test.dart`'s pinned human-reviewed counts move
-by exactly 6 per locale.
+by exactly 7 per locale (`markAsRead` arrived with the second pass below).
 
 ---
 
@@ -151,11 +160,18 @@ no DAO. So:
 
 * **reachable and reformatted**: `resource` (the port's own `"7"`), `storage`
   (the port's own `"8%"`, and only ever `<= 10` — the writer *deletes* the row
-  above that, so the `<= 40` and `> 40` arms are dead);
+  above that, so the `<= 40` and `> 40` arms are dead for every message either
+  app authors);
 * **reachable and verbatim**: the server's `team`, `newTask`, `newResource`,
   `replyMessage` documents;
-* **unreachable**: the join-request lookup, which needs a row whose *raw* type
-  is `join_request`. Nothing writes one. It is ported for fidelity, and the
+* **not reachable through any writer**: the join-request lookup needs a row
+  whose *raw* type is `join_request`. Neither app authors one — `AppNotification`
+  is built in exactly the three places above, and the Dart writers are the same
+  three — but `parseNotification` stores the server's `type` verbatim and
+  `join_request` is in `KNOWN_TYPES`, so a Planet document literally typed that
+  way *would* land here. None is evidenced anywhere in the tree; the same caveat
+  applies to the storage arms above, which are dead as far as the local writer
+  goes. It is ported for fidelity, and the
   tests that exercise it drive the pure function directly rather than implying
   the feature works. Worth knowing why it would be *bad* if it fired:
   `extractRelatedId` returns null for every raw type but `team`/`replyMessage`/
@@ -211,6 +227,14 @@ Ten reverts, each demonstrated red against the finished tests.
 | a read row is un-bolded instead of dimmed | 1 |
 | the id no longer wins over the title for the team prefix | 1 |
 
+Fourteen more from the second pass, each also confirmed red: the tag-start
+guard, the numeric-entity range guard, the closing-tag underflow clamp, the
+self-closing-tag split, `flush()`'s leading-whitespace guard, `'\r'` in the
+collapsing set, the format-context provider's body, the merge order (against a
+colliding stub), the empty-`relatedId` batch filter, the unread row's opacity,
+the per-row *Mark as read* button, the *Mark all read* tab gate, the swipe
+handler, and the tile receiving an empty context instead of the watched one.
+
 The starting point was the one the brief asked for: a screen test asserting the
 bell renders `"7"` today.
 
@@ -241,8 +265,8 @@ suites disagreeing.
 | `lib/data/local/app_database.dart` | **one added method**, `TeamTaskDao.getByTitles` — the port of `TeamTaskDao.kt:44-45`, which the team-name-by-title lookup needs and the port had no equivalent for. It sits in the team-task section Lane A owns; it is additive and adjacent to `getByAnyIds`, and **no column, table or `schemaVersion` change** (still 45). |
 | `lib/providers/app_providers.dart` | +2 lines: the two DAOs the repository's new lookups need. |
 | `lib/providers/notifications_provider.dart` | `notificationFormatContextProvider`, the ViewModel-equivalent that runs the lookups. |
-| `lib/l10n/app_{en,ar,es,fr,ne,so}.arb` | 8 new keys in the template; 6 derived into each locale by the tool. |
-| `test/l10n/placeholder_integrity_test.dart` | the pinned human-reviewed counts, +6 per locale. |
+| `lib/l10n/app_{en,ar,es,fr,ne,so}.arb` | 9 new keys in the template; 7 derived into each locale by the tool. |
+| `test/l10n/placeholder_integrity_test.dart` | the pinned human-reviewed counts, +7 per locale. |
 | `test/ui/notifications_screen_test.dart` | one existing test asserted the type label the row no longer draws; rewritten around the group label and the message, keeping its point (readers use the *resolved* type). |
 | `test/repository/notifications_repository_test.dart`, `test/repository/notification_type_round_trip_test.dart`, `test/core/notifications/task_deadline_notifier_test.dart` | the repository constructor gained two required DAOs. Required, not optional-nullable: a silently-absent DAO returning no team names is exactly the class of defect this port keeps paying for. |
 
@@ -251,15 +275,31 @@ suites disagreeing.
 ## Reported, not fixed
 
 1. **The row's timestamp is still absolute.** `NotificationsAdapter`
-   (`:152-163`) shows "just now / N minutes ago / yesterday / N days ago"; the
-   port shows `DateFormat.yMMMd().add_jm()`. Same row, same adapter, and the
-   ARB already has `justNow`/`minutesAgo`/`hoursAgo`/`yesterday`/`daysAgo`. Left
-   out to keep this diff to the text; it is a small, self-contained follow-up.
-2. **Selection mode is unported.** The Kotlin row carries a checkbox and an
-   explicit *Mark as read* button, entered by long-press
+   (`:152-163`) shows "just now / N minutes ago / Yesterday / N days ago", then
+   `MMM d, yyyy` beyond a week (pinned at `NotificationsAdapterTest.kt:80-84`);
+   the port shows `DateFormat.yMMMd().add_jm()`. It is the same *class* of
+   defect as the bare `7` — a stored value drawn where Kotlin transforms it —
+   and it sits inside the very line range this fix cites, so the honest reason
+   it is not here is scope, not principle. Its impact is far smaller: legible
+   but wrong, rather than uninterpretable. Three things the follow-up needs that
+   are easy to underestimate: the ARB has `justNow`/`minutesAgo`/`hoursAgo`/
+   `daysAgo` but **no `yesterday`** (the Kotlin has it, `strings.xml:1352`,
+   translated in all five locales, so a new key plus a derivation run);
+   `relativeTimeLabel` in `ui/components/relative_time.dart` is **not** a
+   drop-in, because it ports a different Kotlin function (`TimeUtils.getRelativeTime`,
+   four buckets, no Yesterday and no absolute arm); and the >7-day format drops
+   the time of day. Note also that `markAsRead` stamps `createdAt = now`
+   (faithfully, `app_database.dart`), so a row reads "Just now" the moment it is
+   read — a quirk that only becomes visible once this lands.
+2. **Selection mode is unported.** Long-press entry, the checkbox, the bulk bar
+   and `markSelectedAsRead`/`deleteSelected`
    (`NotificationsAdapter.bind`'s `isSelectionMode` branch, `_selectedIds` in
-   the ViewModel, and `markSelectedAsRead`/`deleteSelected`). The port has
-   swipe-to-delete and tap-to-read instead. Pre-existing, not touched here.
+   the ViewModel, `NotificationsFragment.kt:84-86`). The port has
+   swipe-to-delete — its own invention; Kotlin deletes only through the bulk bar
+   — and now the per-row *Mark as read* button, which is **not** part of
+   selection mode: it lives in the non-selection branch on every unread row, and
+   the second audit was right that folding it into this item hid a real gap. It
+   is ported (see below); the rest of selection mode is not.
 3. **A tool defect in the ARB derivation, one line.** The plain-text by-name
    path writes `translated[exactNamed]?.trim()`
    (`tool/arb_from_strings_xml.dart:211`) and never calls
@@ -277,7 +317,89 @@ suites disagreeing.
    is internally inconsistent about this already — `formatStorageNotification`
    uses a Kotlin template, so its percentage is ASCII in both apps.
 5. **`getTaskTeamNamesByTaskTitles` is called unconditionally** where Kotlin
-   guards it with `if (taskTitles.isNotEmpty())` (`:107-111`). Behaviourally
-   identical — both the Kotlin impl and the port early-return on an empty list —
-   but a Kotlin test pins the *call count* (`NotificationsRepositoryImplTest.kt:666`),
-   so the two suites assert different things about the same code.
+   guards it with `if (taskTitles.isNotEmpty())` (`:107-111`). A genuine no-op:
+   both the Kotlin impl (`:256`) and the port (`notifications_repository.dart`'s
+   `if (keys.isEmpty) return const {};`) early-return, and no DAO query runs
+   either way. An earlier draft of this file cited
+   `NotificationsRepositoryImplTest.kt:666` as pinning the call count and
+   concluded the two suites disagree — that citation is about the **DAO**, in a
+   test of the repository method, and the port satisfies it too; there is no
+   `exactly = 0` assertion over the ViewModel at all. The claim is withdrawn
+   rather than quietly deleted, because "a citation is not a reading" is exactly
+   how Phase 106's regression got in.
+
+
+---
+
+## A second audit, on the finished implementation
+
+Green is not evidence. The diff was format-clean, analyze-clean and 2107 tests
+green when a second `parity-auditor` pass at `effort: max` was aimed at it — and
+it found one live defect, nine behaviours the suite could not see, and five
+claims in this file or the code comments that were wrong. Its method is the one
+that keeps working: replay every revert the fix claims to guard (all ten red),
+then **inject new defects into the finished code and watch the suite stay
+green**.
+
+### The live defect: a `<` is not always a tag
+
+```
+'Compare 3 < 5 > 1 today'  →  'Compare 3 1 today'         // ' 5 ' deleted
+'is 3 < b > 2?'            →  'is 3  2?', with ' 2?' BOLD  // '< b >' read as <b>
+```
+
+The parser scanned from `<` to the next `>` unconditionally, and trimmed the
+result before reading the tag name. An ordinary sentence with a comparison in
+it — server-authored text, the kind these arms pass through — lost its middle.
+Now a `<` opens a tag only when a tag name can follow it (a letter, or `/` and a
+letter), which is what HTML tokenization does, and the trim is gone.
+
+### Two parity gaps the fix cited and did not close
+
+Both are in `NotificationsAdapter.bind`, the function this phase ports one line
+of:
+
+* **the per-row *Mark as read* button** (`:137-141`, `row_notifications.xml:44-55`),
+  visible on every unread row outside selection mode. Without it the port's only
+  single-row read path was `onTap`, which also navigates away — so a learner
+  could not clear one notification and keep reading the list. Ported, with
+  `markAsRead` derived from the Kotlin `mark_as_read` in all five locales;
+* **Mark all read is hidden on the Read tab** — Kotlin gates it on
+  `count > 0 && currentFilter != "read"` (`NotificationsFragment.kt:101-102`)
+  where the port gated on the count alone, offering an action with nothing to
+  act on.
+
+### The nine unpinned behaviours
+
+Each could be reverted with all 2107 tests green. Now each is red.
+
+| unguarded | why it matters |
+|---|---|
+| the numeric-entity range guard | `String.fromCharCode` throws above U+10FFFF, out of `build` — the whole bell screen, the Phase 95 shape |
+| the `</b>`/`</i>` underflow clamp | a stray closing tag drove the counter negative and **every later emphasis in the row was lost** |
+| the tag name splitting on `/` | `<br/>`, the conventional spelling, silently vanished instead of breaking the line |
+| `flush()`'s leading-whitespace guard | a leading space before a tag survived into the row |
+| `'\r'` in the collapsing set | the code and its own comment disagreed about which characters collapse |
+| `notificationFormatContextProvider` | **no test at all** — the repository lookups, the context builder and the tile were each covered and nothing joined them. Phase 74's shape exactly. A screen test now drives provider → repository → DAO → row with nothing overridden between |
+| the by-title/by-id merge order | the recording stub returned disjoint keys, so no collision existed to observe; a colliding stub now pins that an id wins |
+| the empty-string `relatedId` paths | the documented `mapNotNull`-vs-`isNullOrEmpty` asymmetry had no test, and a documented quirk with no test is what a later cleanup deletes |
+| four row behaviours | the unread row's opacity, the tap, the swipe, and *Mark all read* firing |
+
+### The claims that were wrong
+
+Corrected in place above, and worth listing because each was written
+confidently: `yesterday` is **not** in the ARB (it is in the Kotlin, and the
+timestamp follow-up needs a new key); the `exactly = 0` citation was about a DAO
+in a different test at a different layer and the port already satisfies it; the
+row layout does carry a checkbox and a button, so "a title and a timestamp and
+nothing else" was wrong in a section that four pages later says the opposite;
+the port draws a per-row icon that the citation used against the type label
+rules out just as firmly; and "nothing writes a raw `join_request` row" is true
+of the writers, not of the corpus.
+
+One divergence the audit surfaced is now a *documented decision* rather than an
+accident: Kotlin's `getTeamNamesByIds` substitutes the literal `"Unknown Team"`
+for a cached team row with a null name (`TeamsRepositoryImpl.kt:433`), so it
+renders a bold **Unknown Team:** prefix; the port drops the entry and renders
+the sentence unprefixed. Saying less beats saying something wrong, and the
+comment at the lookup now says so.

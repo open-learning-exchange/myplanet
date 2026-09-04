@@ -2143,5 +2143,6 @@
   "storageRunningLow": "التخزين قليل:",
   "storageAvailable": "التخزين المتاح:",
   "joinRequestPrefix": "طلب الانضمام:",
-  "userRequestedToJoinTeam": "{user} قد طلب الانضمام إلى {team}"
+  "userRequestedToJoinTeam": "{user} قد طلب الانضمام إلى {team}",
+  "markAsRead": "وضع علامة كمقروء"
 }

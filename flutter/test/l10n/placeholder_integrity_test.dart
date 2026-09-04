@@ -289,12 +289,14 @@ void main() {
     // app. Its two remaining keys, `unknownUser`/`unknownTeam`, have no Kotlin
     // string to derive from — the Kotlin hardcodes those two in
     // `NotificationsRepositoryImpl` — so they fall back to English.
+    // Phase 124's second pass adds one more, `markAsRead` — the row's own
+    // Mark-as-read button, derived from the Kotlin `mark_as_read`.
     const humanReviewed = {
-      'ar': 401,
-      'es': 454,
-      'fr': 400,
-      'ne': 402,
-      'so': 402,
+      'ar': 402,
+      'es': 455,
+      'fr': 401,
+      'ne': 403,
+      'so': 403,
     };
 
     for (final code in locales) {

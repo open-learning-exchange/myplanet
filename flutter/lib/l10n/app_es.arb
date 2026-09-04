@@ -2141,5 +2141,6 @@
   "storageRunningLow": "Almacenamiento bajo:",
   "storageAvailable": "Almacenamiento disponible:",
   "joinRequestPrefix": "Solicitud de Unión:",
-  "userRequestedToJoinTeam": "{user} ha solicitado unirse a {team}"
+  "userRequestedToJoinTeam": "{user} ha solicitado unirse a {team}",
+  "markAsRead": "Marcar como leído"
 }
