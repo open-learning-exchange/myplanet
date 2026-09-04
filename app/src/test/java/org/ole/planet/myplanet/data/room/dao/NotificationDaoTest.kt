@@ -6,14 +6,14 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.runBlocking
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.model.AppNotification
 import org.robolectric.annotation.Config
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 
 @RunWith(AndroidJUnit4::class)
 @Config(application = android.app.Application::class)

@@ -2,8 +2,11 @@ package org.ole.planet.myplanet.data.room.dao
 
 import androidx.room.Dao
 import androidx.room.Query
+import androidx.room.RawQuery
 import androidx.room.Transaction
 import androidx.room.Upsert
+import androidx.sqlite.db.SimpleSQLiteQuery
+import androidx.sqlite.db.SupportSQLiteQuery
 import java.util.Date
 import org.ole.planet.myplanet.model.AppNotification
 
@@ -51,14 +54,29 @@ interface NotificationDao {
     @Query("SELECT * FROM notifications WHERE needsSync = 1 AND rev IS NOT NULL")
     suspend fun getPendingSyncNotifications(): List<AppNotification>
 
-    @Query("UPDATE notifications SET needsSync = 0, rev = COALESCE(:rev, rev) WHERE id = :id")
-    suspend fun markSynced(id: String, rev: String?)
-
     @Transaction
     suspend fun markSynced(syncResults: List<Pair<String, String?>>) {
-        syncResults.forEach { (id, rev) ->
-            if (rev != null) {
-                markSyncedWithRev(id, rev)
+        val nonNullRevs = syncResults.filter { it.second != null }
+        if (nonNullRevs.isNotEmpty()) {
+            nonNullRevs.chunked(450).forEach { chunk ->
+                val queryBuilder = StringBuilder("UPDATE notifications SET needsSync = 0, rev = CASE id ")
+                val args = mutableListOf<Any>()
+
+                chunk.forEach { (id, rev) ->
+                    queryBuilder.append("WHEN ? THEN ? ")
+                    args.add(id)
+                    args.add(rev!!)
+                }
+
+                queryBuilder.append("ELSE rev END WHERE id IN (")
+                chunk.forEachIndexed { index, pair ->
+                    if (index > 0) queryBuilder.append(", ")
+                    queryBuilder.append("?")
+                    args.add(pair.first)
+                }
+                queryBuilder.append(")")
+
+                executeRawUpdate(SimpleSQLiteQuery(queryBuilder.toString(), args.toTypedArray()))
             }
         }
 
@@ -70,8 +88,8 @@ interface NotificationDao {
         }
     }
 
-    @Query("UPDATE notifications SET needsSync = 0, rev = :rev WHERE id = :id")
-    suspend fun markSyncedWithRev(id: String, rev: String)
+    @RawQuery
+    suspend fun executeRawUpdate(query: SupportSQLiteQuery): Int
 
     @Query("UPDATE notifications SET needsSync = 0 WHERE id IN (:ids)")
     suspend fun markSyncedWithoutRev(ids: List<String>)
