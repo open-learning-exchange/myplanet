@@ -993,6 +993,8 @@
     <string name="no_teams">टोलीहरू उपलब्ध छैनन्</string>
     <string name="no_chats">अघिल्ला कुराकानीहरू छैनन्</string>
     <string name="no_feedback">कुनै प्रतिक्रिया उपलब्ध छैन</string>
+    <string name="medium_text_html">पाठ / HTML</string>
+    <string name="medium_html">HTML</string>
     <string name="empty_text" />
     <string name="message_placeholder">%s</string>
     <string name="reports">रिपोर्टहरू</string>

@@ -993,6 +993,8 @@
     <string name="no_teams">kooxaha aan la heli karin</string>
     <string name="no_chats">ma jiraan wada sheekaysi hore</string>
     <string name="no_feedback">wax jawaab celin ah lama hayo</string>
+    <string name="medium_text_html">Qoraal / HTML</string>
+    <string name="medium_html">HTML</string>
     <string name="empty_text" />
     <string name="message_placeholder">%s</string>
     <string name="reports">warbixino</string>
