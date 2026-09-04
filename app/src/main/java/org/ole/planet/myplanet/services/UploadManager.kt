@@ -441,7 +441,7 @@ class UploadManager @Inject constructor(
                             // Upload image file as attachment
                             val imageFile = File(getString("imageUrl", imgObject))
                             val fileName = FileUtils.getFileNameFromUrl(getString("imageUrl", imgObject))
-                            val mimeType = imageFile.toURI().toURL().openConnection().contentType
+                            val mimeType = FileUtils.getMimeType(fileName) ?: "application/octet-stream"
                             val fileBody = imageFile.asRequestBody("application/octet-stream".toMediaTypeOrNull())
 
                             uploadRepository.uploadResource(
