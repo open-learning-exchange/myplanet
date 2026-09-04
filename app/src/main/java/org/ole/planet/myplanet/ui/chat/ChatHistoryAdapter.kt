@@ -151,7 +151,7 @@ class ChatHistoryAdapter(
                 if (clickedItem.isGroup) {
                     val currentFlatList = shareTargetAdapter.currentList
                     val currentlyExpanded = currentFlatList.firstOrNull { it.isGroup && it.title == clickedItem.title }?.isExpanded ?: false
-                    val expandedGroups = currentFlatList.filter { it.isGroup && it.isExpanded }.map { it.title }.toMutableSet()
+                    val expandedGroups = currentFlatList.mapNotNullTo(mutableSetOf()) { if (it.isGroup && it.isExpanded) it.title else null }
                     if (currentlyExpanded) {
                         expandedGroups.remove(clickedItem.title)
                     } else {
