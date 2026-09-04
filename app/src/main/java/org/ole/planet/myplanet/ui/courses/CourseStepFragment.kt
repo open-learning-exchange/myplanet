@@ -10,26 +10,20 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.withResumed
-import androidx.lifecycle.withStarted
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.FragmentCourseStepBinding
 import org.ole.planet.myplanet.model.CourseStep
-import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.ConfigurationsRepository
-import org.ole.planet.myplanet.repository.ProgressRepository
-import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.components.CustomClickableSpan
 import org.ole.planet.myplanet.ui.exam.ExamTakingFragment
@@ -37,19 +31,14 @@ import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.utils.CameraUtils
 import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utils.CameraUtils.capturePhoto
-import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 import org.ole.planet.myplanet.utils.ResourcesPreviewLoader
-import org.ole.planet.myplanet.utils.UrlUtils
 
 @AndroidEntryPoint
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
-    @Inject
-    lateinit var configurationsRepository: ConfigurationsRepository
-    @Inject
-    lateinit var progressRepository: ProgressRepository
-    @Inject
-    lateinit var resourceDownloadCoordinator: ResourceDownloadCoordinator
+
+    private val viewModel: CourseStepViewModel by viewModels()
+
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null
     private var nextStepId: String? = null
@@ -60,8 +49,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     var user: UserEntity? = null
     private var stepNumber = 0
     private var courseTitle: String? = null
-    private var saveInProgress: Job? = null
-    private var loadDataJob: Job? = null
     private var inlineResourceAdapter: InlineResourceAdapter? = null
     private var userHasCourse = false
 
@@ -81,96 +68,74 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         return fragmentCourseStepBinding.root
     }
 
-    private fun launchSaveCourseProgress() {
-        if (saveInProgress?.isActive == true) return
-        val userId = user?.id
-        val planetCode = user?.planetCode
-        val parentCode = user?.parentCode
-        saveInProgress = lifecycleScope.launch {
-            progressRepository.saveCourseProgress(
-                userId,
-                planetCode,
-                parentCode,
-                step.courseId,
-                stepNumber,
-                if (stepExams.isEmpty()) true else null
-            )
-        }
-        saveInProgress?.invokeOnCompletion { saveInProgress = null }
-    }
-
-    private suspend fun loadStepData(): CourseStepData {
-        return coursesRepository.getCourseStepData(stepId ?: "", user?.id)
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        loadDataJob = viewLifecycleOwner.lifecycleScope.launch {
-            user = userRepository.getUserModel()
-            val data = loadStepData()
-            val title = data.step.courseId?.let { coursesRepository.getCourseTitleById(it) }
-            viewLifecycleOwner.lifecycle.withStarted {
-                step = data.step
-                resources = data.resources
-                stepExams = data.stepExams
-                stepSurvey = data.stepSurvey
+        setListeners()
 
-                courseTitle = title
-                userHasCourse = data.userHasCourse
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collect { state ->
+                    val loadedStep = state.step ?: return@collect
+                    step = loadedStep
+                    resources = state.resources
+                    stepExams = state.stepExams
+                    stepSurvey = state.stepSurvey
+                    courseTitle = state.courseTitle
+                    userHasCourse = state.userHasCourse
+                    user = state.user
 
-                fragmentCourseStepBinding.btnResources.text =
-                    getString(R.string.resources_size, data.resources.size)
-                hideTestIfNoQuestion(data.hasExam, data.hasSurvey, data.stepExams)
-                fragmentCourseStepBinding.tvTitle.text = step.stepTitle
-                val markdownContentWithLocalPaths = prependBaseUrlToImages(
-                    step.description,
-                    "file://${MainApplication.context.getExternalFilesDir(null)}/ole/",
-                    600, 350
-                )
+                    fragmentCourseStepBinding.btnResources.text =
+                        getString(R.string.resources_size, state.resources.size)
+                    hideTestIfNoQuestion(state.hasExam, state.hasSurvey, state.stepExams)
+                    fragmentCourseStepBinding.tvTitle.text = step.stepTitle
 
-                fragmentCourseStepBinding.description.setTextIsSelectable(true)
-                fragmentCourseStepBinding.description.customSelectionActionModeCallback = createAiSelectionCallback()
-                setMarkdownText(
-                    fragmentCourseStepBinding.description,
-                    markdownContentWithLocalPaths
-                )
+                    fragmentCourseStepBinding.description.setTextIsSelectable(true)
+                    fragmentCourseStepBinding.description.customSelectionActionModeCallback = createAiSelectionCallback()
+                    setMarkdownText(
+                        fragmentCourseStepBinding.description,
+                        state.markdownDescription
+                    )
 
-                if (!userHasCourse) {
-                    fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
-                    fragmentCourseStepBinding.btnTakeSurvey.visibility = View.GONE
-                }
+                    if (!userHasCourse) {
+                        fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
+                        fragmentCourseStepBinding.btnTakeSurvey.visibility = View.GONE
+                    }
 
-                fragmentCourseStepBinding.btnAskAi.visibility = View.VISIBLE
-                setListeners()
-                setupInlineResources()
-                autoDownloadResources()
-                prefetchNextStepResources()
+                    fragmentCourseStepBinding.btnAskAi.visibility = View.VISIBLE
+                    setupInlineResources()
 
-                val textWithSpans = fragmentCourseStepBinding.description.text
-                if (textWithSpans is Spannable) {
-                    val urlSpans =
-                        textWithSpans.getSpans(0, textWithSpans.length, URLSpan::class.java)
-                    for (urlSpan in urlSpans) {
-                        val start = textWithSpans.getSpanStart(urlSpan)
-                        val end = textWithSpans.getSpanEnd(urlSpan)
-                        val dynamicTitle = textWithSpans.subSequence(start, end).toString()
-                        textWithSpans.setSpan(
-                            CustomClickableSpan(
-                                urlSpan.url,
-                                dynamicTitle,
-                                requireActivity()
-                            ), start, end, textWithSpans.getSpanFlags(urlSpan)
-                        )
-                        textWithSpans.removeSpan(urlSpan)
+                    if (state.isDownloadingResources) {
+                        fragmentCourseStepBinding.resourceDownloadProgress.visibility = View.VISIBLE
+                    } else {
+                        fragmentCourseStepBinding.resourceDownloadProgress.visibility = View.GONE
+                    }
+
+                    val textWithSpans = fragmentCourseStepBinding.description.text
+                    if (textWithSpans is Spannable) {
+                        val urlSpans = textWithSpans.getSpans(0, textWithSpans.length, URLSpan::class.java)
+                        for (urlSpan in urlSpans) {
+                            val start = textWithSpans.getSpanStart(urlSpan)
+                            val end = textWithSpans.getSpanEnd(urlSpan)
+                            val dynamicTitle = textWithSpans.subSequence(start, end).toString()
+                            textWithSpans.setSpan(
+                                CustomClickableSpan(
+                                    urlSpan.url,
+                                    dynamicTitle,
+                                    requireActivity()
+                                ), start, end, textWithSpans.getSpanFlags(urlSpan)
+                            )
+                            textWithSpans.removeSpan(urlSpan)
+                        }
+                    }
+
+                    if (userHasCourse) {
+                        viewModel.saveCourseProgress(stepNumber)
                     }
                 }
             }
-            if (userHasCourse) {
-                viewLifecycleOwner.lifecycle.withResumed {
-                    launchSaveCourseProgress()
-                }
-            }
         }
+
+        viewModel.loadStep(stepId, nextStepId)
     }
 
     private fun setupInlineResources() {
@@ -183,59 +148,19 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         fragmentCourseStepBinding.tvResourcesHeader.visibility = View.VISIBLE
         fragmentCourseStepBinding.rvInlineResources.visibility = View.VISIBLE
 
-        inlineResourceAdapter = InlineResourceAdapter(ResourcesPreviewLoader(dispatcherProvider), dispatcherProvider) { library ->
-            openResource(library)
-        }
-        fragmentCourseStepBinding.rvInlineResources.apply {
-            layoutManager = LinearLayoutManager(requireContext())
-            adapter = inlineResourceAdapter
+        if (inlineResourceAdapter == null) {
+            inlineResourceAdapter = InlineResourceAdapter(
+                ResourcesPreviewLoader(dispatcherProvider),
+                dispatcherProvider
+            ) { library ->
+                openResource(library)
+            }
+            fragmentCourseStepBinding.rvInlineResources.apply {
+                layoutManager = LinearLayoutManager(requireContext())
+                adapter = inlineResourceAdapter
+            }
         }
         inlineResourceAdapter?.submitList(resources)
-    }
-
-    private fun autoDownloadResources() {
-        val notDownloaded = resources.filter { !it.isResourceOffline() }
-        if (notDownloaded.isEmpty()) {
-            return
-        }
-
-        fragmentCourseStepBinding.resourceDownloadProgress.visibility = View.VISIBLE
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            val serverAvailable = configurationsRepository.checkServerAvailability()
-
-            if (serverAvailable) {
-                resourcesRepository.downloadResourcesPriority(notDownloaded)
-            } else {
-                fragmentCourseStepBinding.resourceDownloadProgress.visibility = View.GONE
-            }
-        }
-    }
-
-    private fun prefetchNextStepResources() {
-        if (nextStepId == null) {
-            return
-        }
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            val nextResources = resourcesRepository.getAllStepResources(nextStepId)
-            val notDownloaded = nextResources.filter { !it.isResourceOffline() }
-            if (notDownloaded.isNotEmpty()) {
-                val urls = ArrayList(notDownloaded.map { UrlUtils.getUrl(it) })
-                if (urls.isNotEmpty()) {
-		    resourceDownloadCoordinator.startBackgroundDownload(urls)
-                }
-            }
-        }
-    }
-
-    private fun refreshInlineResources() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val updatedResources = resourcesRepository.getAllStepResources(stepId)
-            resources = updatedResources
-            inlineResourceAdapter?.submitList(updatedResources)
-            fragmentCourseStepBinding.resourceDownloadProgress.visibility = View.GONE
-        }
     }
 
     private fun hideTestIfNoQuestion(isTestPresent: Boolean, isSurveyPresent: Boolean, exams: List<StepExam>) {
@@ -264,7 +189,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         if (!isAdded || !::step.isInitialized) return
         try {
             if (visible && userHasCourse) {
-                launchSaveCourseProgress()
+                viewModel.saveCourseProgress(stepNumber)
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -336,15 +261,15 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     override fun onDownloadComplete() {
         super.onDownloadComplete()
-        refreshInlineResources()
+        viewModel.refreshInlineResources(stepId)
     }
 
     override fun onImageCapture(fileUri: String?) {}
 
     override fun onDestroyView() {
         super.onDestroyView()
-        loadDataJob?.cancel()
         CameraUtils.release()
         fragmentCourseStepBinding.rvInlineResources.adapter = null
+        inlineResourceAdapter = null
     }
 }
