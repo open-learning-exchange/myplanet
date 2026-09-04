@@ -87,36 +87,36 @@ class CommunityServicesFragment : BaseTeamFragment() {
             b.text = team.title
             b.setOnClickListener {
                 val rawRoute = team.route ?: return@setOnClickListener
-                if (rawRoute.startsWith("http://") || rawRoute.startsWith("https://")) {
-                    startActivity(Intent(requireContext(), WebViewActivity::class.java).apply {
-                        putExtra("link", rawRoute)
-                        putExtra("title", team.title)
-                    })
-                    return@setOnClickListener
-                }
-                val segments = rawRoute.split("/")
-                val teamId = if (segments.size >= 4) segments[3] else null
-                if (teamId != null) {
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        val isMyTeam = teamsRepository.isMember(user?.id, teamId)
-                        val f = TeamDetailFragment()
-                        f.arguments = Bundle().apply {
-                            putString("id", teamId)
-                            putBoolean("isMyTeam", isMyTeam)
-                        }
-                        replaceFragment(
-                            requireActivity().supportFragmentManager,
-                            R.id.fragment_container,
-                            f,
-                            addToBackStack = true,
-                            tag = ""
-                        )
+                when (val route = CommunityServiceRoute.resolve(rawRoute)) {
+                    is CommunityServiceRoute.ExternalLink -> {
+                        startActivity(Intent(requireContext(), WebViewActivity::class.java).apply {
+                            putExtra("link", route.url)
+                            putExtra("title", team.title)
+                        })
                     }
-                } else {
-                    startActivity(Intent(requireContext(), WebViewActivity::class.java).apply {
-                        putExtra("link", rawRoute)
-                        putExtra("title", team.title)
-                    })
+                    is CommunityServiceRoute.TeamLink -> {
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            val isMyTeam = teamsRepository.isMember(user?.id, route.teamId)
+                            val f = TeamDetailFragment()
+                            f.arguments = Bundle().apply {
+                                putString("id", route.teamId)
+                                putBoolean("isMyTeam", isMyTeam)
+                            }
+                            replaceFragment(
+                                requireActivity().supportFragmentManager,
+                                R.id.fragment_container,
+                                f,
+                                addToBackStack = true,
+                                tag = ""
+                            )
+                        }
+                    }
+                    is CommunityServiceRoute.Unhandled -> {
+                        startActivity(Intent(requireContext(), WebViewActivity::class.java).apply {
+                            putExtra("link", rawRoute)
+                            putExtra("title", team.title)
+                        })
+                    }
                 }
             }
             parent.addView(b)
