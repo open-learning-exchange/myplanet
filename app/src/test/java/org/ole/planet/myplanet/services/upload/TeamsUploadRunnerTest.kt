@@ -89,5 +89,62 @@ class TeamsUploadRunnerTest {
         coVerify(exactly = 1) { uploadRepository.postUploadArray("http://mock.url/teams/_bulk_docs", any()) }
         coVerify(exactly = 1) { mockRepo.markTeamsUploaded(mapOf("team1" to "rev1")) }
         coVerify(exactly = 1) { mockRepo.deleteLocalTeamRecords(listOf("team3")) }
+        coVerify(exactly = 0) { retryQueue.queueFailedOperation(uploadType = "MyTeam", error = any(), payload = any(), endpoint = "teams", httpMethod = "POST", dbId = "team2", modelClassName = "MyTeam") }
+    }
+
+    @Test
+    fun `uploadTeams keys uploadedTeams by local team id when response id differs`() = testScope.runTest {
+        val mockTeam = TeamUploadData("localTeam1", JsonObject(), false, null)
+        val mockRepo = mockk<TeamsSyncRepository>(relaxed = true)
+        every { teamsSyncRepository.get() } returns mockRepo
+        coEvery { mockRepo.getTeamsForUpload() } returns listOf(mockTeam)
+
+        val bulkResponse = com.google.gson.JsonArray().apply {
+            add(JsonObject().apply { addProperty("id", "serverGeneratedId1"); addProperty("rev", "rev1") })
+        }
+        coEvery { uploadRepository.postUploadArray(any(), any()) } returns retrofit2.Response.success(bulkResponse)
+        coEvery { mockRepo.markTeamsUploaded(any()) } returns Unit
+
+        teamsUploadRunner.uploadTeams()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { mockRepo.markTeamsUploaded(mapOf("localTeam1" to "rev1")) }
+    }
+
+    @Test
+    fun `uploadTeams handles bulk network failure`() = testScope.runTest {
+        val mockRepo = mockk<TeamsSyncRepository>(relaxed = true)
+        every { teamsSyncRepository.get() } returns mockRepo
+
+        val mockTeam = TeamUploadData("team1", JsonObject(), false, null)
+        coEvery { mockRepo.getTeamsForUpload() } returns listOf(mockTeam)
+
+        val errorBody = okhttp3.ResponseBody.create(null, "Error")
+        coEvery { uploadRepository.postUploadArray(any(), any()) } returns retrofit2.Response.error(500, errorBody)
+        coEvery { retryQueue.queueFailedOperation(any(), any(), any(), any(), any(), any(), any()) } returns Unit
+
+        teamsUploadRunner.uploadTeams()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { uploadRepository.postUploadArray("http://mock.url/teams/_bulk_docs", any()) }
+        coVerify(exactly = 1) { retryQueue.queueFailedOperation(uploadType = "MyTeam", error = any(), payload = any(), endpoint = "teams", httpMethod = "POST", dbId = "team1", modelClassName = "MyTeam") }
+    }
+
+    @Test
+    fun `uploadTeams handles bulk exception`() = testScope.runTest {
+        val mockRepo = mockk<TeamsSyncRepository>(relaxed = true)
+        every { teamsSyncRepository.get() } returns mockRepo
+
+        val mockTeam = TeamUploadData("team1", JsonObject(), false, null)
+        coEvery { mockRepo.getTeamsForUpload() } returns listOf(mockTeam)
+
+        coEvery { uploadRepository.postUploadArray(any(), any()) } throws java.io.IOException("Network down")
+        coEvery { retryQueue.queueFailedOperation(any(), any(), any(), any(), any(), any(), any()) } returns Unit
+
+        teamsUploadRunner.uploadTeams()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { uploadRepository.postUploadArray("http://mock.url/teams/_bulk_docs", any()) }
+        coVerify(exactly = 1) { retryQueue.queueFailedOperation(uploadType = "MyTeam", error = any(), payload = any(), endpoint = "teams", httpMethod = "POST", dbId = "team1", modelClassName = "MyTeam") }
     }
 }
