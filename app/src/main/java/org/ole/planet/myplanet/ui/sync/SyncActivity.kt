@@ -287,7 +287,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                         delay(500.milliseconds)
                         restartApp()
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Log.e(TAG, "Failed to clear data", e)
                         customProgressDialog.dismiss()
                         releaseBackPressGuard()
                         dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = true
@@ -342,7 +342,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 return true
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to check server reachability", e)
         }
 
         syncFailed = true
@@ -406,7 +406,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to authenticate user", e)
             false
         }
     }
@@ -584,7 +584,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to complete sync post-processing", e)
         }
     }
 
@@ -650,7 +650,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         profileDbHandler.onLoginAsync(
             callback = {},
             onError = { error ->
-                error.printStackTrace()
+                Log.e(TAG, "Failed to log in profile", error)
             }
         )
 
@@ -816,7 +816,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to continue sync process", e)
         }
     }
 
@@ -824,6 +824,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         super.onDestroy()
     }
     companion object {
+        private const val TAG = "SyncActivity"
         private const val SYNC_STATUS_SAMPLE_MS = 150L
         private val secondsAgoRegex by lazy { Regex("^\\d{1,2} seconds ago$") }
         private val urlProtocolRegex by lazy { Regex("^https?://") }
