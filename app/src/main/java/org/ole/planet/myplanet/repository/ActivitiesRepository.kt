@@ -8,6 +8,12 @@ import org.ole.planet.myplanet.model.ResourceActivity
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.UserEntity
 
+data class ProfileActivityStats(
+    val mostOpenedResource: Pair<String, Int>?,
+    val lastVisit: Long?,
+    val resourceOpenCount: Long
+)
+
 interface ActivitiesRepository {
     suspend fun getOfflineVisitCount(userId: String): Int
     suspend fun getOfflineLoginCount(userName: String): Int
@@ -20,8 +26,11 @@ interface ActivitiesRepository {
     suspend fun getGlobalLastVisit(): Long?
     suspend fun getLastVisit(userName: String): Long?
     suspend fun logResourceOpen(userName: String?, parentCode: String?, planetCode: String?, title: String?, resourceId: String?, type: String?)
+    suspend fun getResourceOpenCount(userName: String): Long
     suspend fun getResourceOpenCount(userName: String, type: String): Long
+    suspend fun getMostOpenedResource(userName: String): Pair<String, Int>?
     suspend fun getMostOpenedResource(userName: String, type: String): Pair<String, Int>?
+    suspend fun getProfileActivityStats(userName: String): ProfileActivityStats
     suspend fun recordSyncActivity(userId: String)
     suspend fun recordSyncUserChallengeAction(userId: String)
     suspend fun hasUserSyncAction(userId: String?): Boolean

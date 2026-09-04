@@ -15,8 +15,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.ProfileActivityStats
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
@@ -49,11 +49,22 @@ class UserProfileViewModelTest {
         every { mockUser.name } returns "Test User"
         coEvery { userRepository.getUserModel() } returns mockUser
 
-        coEvery { activitiesRepository.getMostOpenedResource("Test User", UserSessionManager.KEY_RESOURCE_OPEN) } returns Pair("Test Resource", 5)
-        coEvery { activitiesRepository.getGlobalLastVisit() } returns 123456789L
-        coEvery { activitiesRepository.getResourceOpenCount("Test User", UserSessionManager.KEY_RESOURCE_OPEN) } returns 10L
+        coEvery { activitiesRepository.getProfileActivityStats("Test User") } returns ProfileActivityStats(
+            mostOpenedResource = Pair("Test Resource", 5),
+            lastVisit = 123456789L,
+            resourceOpenCount = 10L
+        )
 
         viewModel = UserProfileViewModel(userRepository, activitiesRepository)
+    }
+
+    @Test
+    fun `init loads profile activity stats into state flows`() = runTest {
+        advanceUntilIdle()
+
+        assertEquals("Test Resource opened 5 times", viewModel.maxOpenedResource.value)
+        assertEquals(123456789L, viewModel.lastVisit.value)
+        assertEquals("Resource opened 10 times.", viewModel.numberOfResourceOpen.value)
     }
 
     @Test
