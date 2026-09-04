@@ -109,6 +109,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
         private const val ANR_LOG_TYPE = "anr"
         private const val LOG_TAG = "MainApplication"
+        private const val TAG = "MainApplication"
         private lateinit var instance: MainApplication
 
         @VisibleForTesting
@@ -127,7 +128,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             try {
                 return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to get Android ID", e)
             }
             return "0"
         }
@@ -290,7 +291,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         }
 
         fun handleUncaughtException(e: Throwable) {
-            e.printStackTrace()
+            Log.e(TAG, "Uncaught exception", e)
             val error = e.stackTraceToString()
             persistCriticalLog(ApkLog.ERROR_TYPE_CRASH, error)
 
@@ -348,7 +349,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to sweep pending logs", e)
         }
     }
     private fun initApp() {
@@ -426,7 +427,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                 )
                 entryPoint.retryQueue().recoverStuckOperations()
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to recover stuck operations", e)
             }
         }
         RetryQueueWorker.schedule(this)

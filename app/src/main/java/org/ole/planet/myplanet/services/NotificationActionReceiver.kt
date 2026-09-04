@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
+import android.util.Log
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.delay
@@ -18,6 +19,10 @@ import org.ole.planet.myplanet.utils.NotificationUtils
 
 @AndroidEntryPoint
 class NotificationActionReceiver : BroadcastReceiver() {
+    companion object {
+        private const val TAG = "NotificationActionReceiver"
+    }
+
     @Inject
     lateinit var notificationsRepository: NotificationsRepository
     @Inject
@@ -82,7 +87,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 notificationsRepository.markNotificationsAsRead(setOf(notificationId))
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to mark notification as read", e)
         }
 
         withContext(dispatcherProvider.main) {
@@ -98,7 +103,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 val broadcastService = getBroadcastService(context)
                 broadcastService.sendBroadcast(localBroadcastIntent)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to send local broadcast for notification read", e)
             }
 
             try {
@@ -108,7 +113,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 dashboardIntent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
                 context.startActivity(dashboardIntent)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to start DashboardActivity to refresh notification badge", e)
             }
         }
     }
