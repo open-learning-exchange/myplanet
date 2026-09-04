@@ -7,15 +7,16 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withTimeoutOrNull
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.ServerReachabilityProvider
 
 @Singleton
 class SubmissionsUploader @Inject constructor(
     private val uploadManager: UploadManager,
     private val sharedPrefManager: SharedPrefManager,
     private val serverUrlMapper: ServerUrlMapper,
-    private val submissionUploadExecutor: SubmissionUploadExecutor
+    private val submissionUploadExecutor: SubmissionUploadExecutor,
+    private val serverReachabilityProvider: ServerReachabilityProvider
 ) {
     fun checkAvailableServer(syncStartTime: Long) {
         Log.d("SubmissionsUploader", "checkAvailableServer started, syncStartTime: $syncStartTime")
@@ -32,7 +33,7 @@ class SubmissionsUploader @Inject constructor(
                 try {
                     Log.d("SubmissionsUploader", "Checking primary URL: ${mapping.primaryUrl}")
                     val result = withTimeoutOrNull(15000) {
-                        MainApplication.isServerReachable(mapping.primaryUrl)
+                        serverReachabilityProvider.isServerReachable(mapping.primaryUrl)
                     } ?: false
                     Log.d("SubmissionsUploader", "Primary check result: $result")
                     result
@@ -46,7 +47,7 @@ class SubmissionsUploader @Inject constructor(
                 try {
                     Log.d("SubmissionsUploader", "Checking alternative URL: ${mapping.alternativeUrl}")
                     val result = withTimeoutOrNull(15000) {
-                        mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
+                        mapping.alternativeUrl?.let { serverReachabilityProvider.isServerReachable(it) } == true
                     } ?: false
                     Log.d("SubmissionsUploader", "Alternative check result: $result")
                     result
