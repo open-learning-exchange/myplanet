@@ -21,6 +21,8 @@ void main() {
       teamNotificationDao: database.teamNotificationDao,
       newsDao: database.newsDao,
       teamTaskDao: database.teamTaskDao,
+      teamDao: database.teamDao,
+      userDao: database.userDao,
       now: () => DateTime.fromMillisecondsSinceEpoch(1234),
     );
   });
@@ -207,6 +209,114 @@ void main() {
     );
   });
 
+  group('the formatting lookups', () {
+    // Port of `getTaskTeamNamesByTaskIds` / `getTaskTeamNamesByTaskTitles` /
+    // `getJoinRequestDetailsBatch` / `getJoinRequestDetails` — the four calls
+    // `loadNotifications` makes before formatting a page of notifications.
+    setUp(() async {
+      await database.teamDao.upsert(
+        TeamsCompanion.insert(id: 'team-1', name: const Value('Reading Club')),
+      );
+      await database.teamTaskDao.upsert(
+        TeamTasksCompanion.insert(
+          id: 'task-1',
+          teamId: 'team-1',
+          title: const Value('Read chapter 3'),
+        ),
+      );
+    });
+
+    test('resolves a task team name by task id', () async {
+      expect(await repository.taskTeamNamesByTaskIds(['task-1']), {
+        'task-1': 'Reading Club',
+      });
+    });
+
+    test('resolves a task team name by task title', () async {
+      expect(await repository.taskTeamNamesByTaskTitles(['Read chapter 3']), {
+        'Read chapter 3': 'Reading Club',
+      });
+    });
+
+    test(
+      'a task whose team has no cached document is absent, not blank',
+      () async {
+        await database.teamTaskDao.upsert(
+          TeamTasksCompanion.insert(
+            id: 'task-2',
+            teamId: 'team-missing',
+            title: const Value('Orphan'),
+          ),
+        );
+        final names = await repository.taskTeamNamesByTaskIds([
+          'task-1',
+          'task-2',
+        ]);
+        expect(names.containsKey('task-2'), isFalse);
+        expect(names['task-1'], 'Reading Club');
+      },
+    );
+
+    test('an empty request list runs no query and returns nothing', () async {
+      expect(await repository.taskTeamNamesByTaskIds(const []), isEmpty);
+      expect(await repository.taskTeamNamesByTaskTitles(const []), isEmpty);
+      expect(await repository.joinRequestDetailsBatch(const []), isEmpty);
+    });
+
+    test('resolves a join request to its requester and team', () async {
+      await database.teamDao.upsert(
+        TeamsCompanion.insert(
+          id: 'req-1',
+          docType: const Value('request'),
+          teamId: const Value('team-1'),
+          userId: const Value('user-9'),
+        ),
+      );
+      await database.userDao.upsert(
+        UsersCompanion.insert(id: 'user-9', name: const Value('Jane')),
+      );
+
+      expect(await repository.joinRequestDetailsBatch(['req-1']), {
+        'req-1': const JoinRequestDetail(
+          requester: 'Jane',
+          team: 'Reading Club',
+        ),
+      });
+      expect(
+        await repository.joinRequestDetails('req-1'),
+        const JoinRequestDetail(requester: 'Jane', team: 'Reading Club'),
+      );
+    });
+
+    test('an unresolvable requester or team is left null for the caller to '
+        'localise', () async {
+      await database.teamDao.upsert(
+        TeamsCompanion.insert(
+          id: 'req-2',
+          docType: const Value('request'),
+          teamId: const Value('team-missing'),
+          userId: const Value('user-missing'),
+        ),
+      );
+      final details = await repository.joinRequestDetailsBatch(['req-2']);
+      // Kotlin substitutes the English "Unknown User"/"Unknown Team" here; the
+      // port leaves them null so `formatNotification` can use the ARB.
+      expect(details['req-2'], const JoinRequestDetail());
+    });
+
+    test('a null related id yields the unknown pair, as getJoinRequestInfo '
+        'returns null for it', () async {
+      expect(
+        await repository.joinRequestDetails(null),
+        const JoinRequestDetail(),
+      );
+      expect(
+        await repository.joinRequestDetails(''),
+        const JoinRequestDetail(),
+      );
+    });
+  });
+
   group('server notification sync-in', () {
     late MockPlanetApi api;
 
@@ -217,6 +327,8 @@ void main() {
         teamNotificationDao: database.teamNotificationDao,
         newsDao: database.newsDao,
         teamTaskDao: database.teamTaskDao,
+        teamDao: database.teamDao,
+        userDao: database.userDao,
         now: () => DateTime.fromMillisecondsSinceEpoch(1234),
         api: api,
       );

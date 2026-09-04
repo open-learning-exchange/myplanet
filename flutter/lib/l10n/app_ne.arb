@@ -502,5 +502,12 @@
   "fileNotFound": "फाइल फेला परेन: {fileName}",
   "fileCountMany": "{count} फाइलहरू",
   "stepsHeading": "चरणहरू",
-  "courseProgressCount": "{current} को {max} प्रगति"
+  "courseProgressCount": "{current} को {max} प्रगति",
+  "resourceNotificationMessage": "तपाईंसँग {count} स्रोतहरू डाउनलोड गरिएको छैन",
+  "taskNotificationMessage": "{title} {date} मा समाप्त हुन्छ",
+  "storageRunningLow": "स्टोरेज गम्भीर रूपमा कम:",
+  "storageAvailable": "स्टोरेज उपलब्ध:",
+  "joinRequestPrefix": "सामेल हुने अनुरोध:",
+  "userRequestedToJoinTeam": "{user} ले {team} मा सामेल हुन अनुरोध गरेको छ",
+  "markAsRead": "पढिएको रूपमा चिन्ह लगाउनुहोस्"
 }

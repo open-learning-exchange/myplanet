@@ -10,6 +10,7 @@ import '../../providers/notifications_provider.dart';
 import '../../repository/notifications_repository.dart';
 import '../router.dart';
 import 'notification_destination.dart';
+import 'notification_format.dart';
 import 'notification_grouping.dart';
 
 /// Port of `ui/notifications/NotificationsFragment.kt`.
@@ -33,7 +34,11 @@ class NotificationsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(l10n.notifications),
         actions: [
-          if (unread > 0)
+          // `count > 0 && currentFilter != "read"`
+          // (`NotificationsFragment.kt:101-102`) — offering "mark all read" on
+          // the Read tab, which the port did, is an action with nothing to act
+          // on.
+          if (unread > 0 && filter != NotificationFilter.read)
             TextButton(
               onPressed: () =>
                   ref.read(notificationActionsProvider).markAllAsRead(),
@@ -131,6 +136,13 @@ class _GroupedList extends ConsumerWidget {
       collapsedGroups: expansion.collapsed,
       expandedGroups: expansion.expanded,
     );
+    // The team names and join-request details `loadNotifications` gathers
+    // before formatting. Watched, not read: while it resolves the rows still
+    // render, just without the `<b>Team</b>:` prefix, which is what an
+    // uncached row shows in the Kotlin too.
+    final formatContext =
+        ref.watch(notificationFormatContextProvider).valueOrNull ??
+        const NotificationFormatContext.empty();
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 24),
       itemCount: grouped.length,
@@ -140,6 +152,7 @@ class _GroupedList extends ConsumerWidget {
           NotificationHeaderItem() => _GroupHeader(header: node),
           NotificationEntryItem(:final notification) => _NotificationTile(
             notification: notification,
+            formatContext: formatContext,
           ),
         };
       },
@@ -197,8 +210,12 @@ class _GroupHeader extends ConsumerWidget {
 }
 
 class _NotificationTile extends ConsumerWidget {
-  const _NotificationTile({required this.notification});
+  const _NotificationTile({
+    required this.notification,
+    required this.formatContext,
+  });
   final NotificationRow notification;
+  final NotificationFormatContext formatContext;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -216,40 +233,63 @@ class _NotificationTile extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Icon(Icons.delete_outline, color: colors.onErrorContainer),
       ),
-      child: ListTile(
-        leading: Badge(
-          isLabelVisible: !notification.isRead,
-          child: CircleAvatar(
-            child: Icon(_iconFor(resolvedNotificationType(notification))),
+      // `NotificationsAdapter.bind` dims a read row to `alpha = 0.6` rather
+      // than un-bolding its text (`:127`), and the formatted text carries its
+      // own emphasis — the join-request prefix, the task's team name — which
+      // bolding the whole line for unread would swallow.
+      child: Opacity(
+        opacity: notification.isRead ? 0.6 : 1,
+        child: ListTile(
+          // The icon is the port's own: Kotlin draws one per *group* header,
+          // not per row (`iconResFor` is called only from
+          // `HeaderViewHolder.bind`). It stays because it makes a long list
+          // scannable — but it is an addition, which is why the type *label*
+          // was the thing removed: that duplicated the group header outright.
+          leading: Badge(
+            isLabelVisible: !notification.isRead,
+            child: CircleAvatar(
+              child: Icon(_iconFor(resolvedNotificationType(notification))),
+            ),
           ),
-        ),
-        title: Text(
-          notification.title?.trim().isNotEmpty == true
-              ? notification.title!
-              : _titleFor(l10n, resolvedNotificationType(notification)),
-          style: TextStyle(
-            fontWeight: notification.isRead
-                ? FontWeight.normal
-                : FontWeight.bold,
+          // The row's one line of text, as `row_notifications.xml` has it: the
+          // rewritten message, not a type label above the raw one. The group
+          // header above already names the type, exactly as in the Kotlin — and
+          // `AppNotification.title`, which this used to prefer, is a column
+          // nothing in either app ever writes.
+          title: _FormattedNotificationText(
+            formatNotification(
+              notification,
+              l10n: l10n,
+              context: formatContext,
+            ),
           ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(notification.message),
-            const SizedBox(height: 4),
-            Text(
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
               DateFormat.yMMMd().add_jm().format(
                 DateTime.fromMillisecondsSinceEpoch(notification.createdAt),
               ),
               style: Theme.of(context).textTheme.bodySmall,
             ),
-          ],
+          ),
+          // `btn_mark_as_read`, visible on every unread row outside selection
+          // mode (`NotificationsAdapter.kt:137-141`). Without it the port's
+          // only way to mark a single row read was to tap it — which also
+          // navigates away from the list, so a learner could not clear one
+          // notification and keep reading the rest.
+          trailing: notification.isRead
+              ? null
+              : TextButton(
+                  onPressed: () => ref
+                      .read(notificationActionsProvider)
+                      .markAsRead(notification.id),
+                  child: Text(l10n.markAsRead),
+                ),
+          // Read notifications remain actionable. Kotlin marks an unread row and
+          // navigates on the same tap; making `onTap` null after that first tap
+          // prevented learners from ever reopening its destination in Flutter.
+          onTap: () => _openNotification(context, ref),
         ),
-        // Read notifications remain actionable. Kotlin marks an unread row and
-        // navigates on the same tap; making `onTap` null after that first tap
-        // prevented learners from ever reopening its destination in Flutter.
-        onTap: () => _openNotification(context, ref),
       ),
     );
   }
@@ -316,20 +356,44 @@ IconData _iconFor(String type) => switch (type.toLowerCase()) {
   _ => Icons.notifications_outlined,
 };
 
-String _titleFor(AppLocalizations l10n, String type) =>
-    switch (type.toLowerCase()) {
-      'task' => l10n.taskNotification,
-      'chat' => l10n.chatNotification,
-      'voice_reply' => l10n.replyNotification,
-      'resource' => l10n.resourceNotification,
-      'storage' => l10n.storageNotification,
-      'join_request' => l10n.joinRequestNotification,
-      'team_join' => l10n.teamNotification,
-      _ => l10n.notification,
-    };
-
-/// The group-header label, delegating to [groupLabelFor]. Differs from
-/// [_titleFor]: the grouping labels are collective ("Join Requests",
-/// "Tasks"), not the per-notification titles.
+/// The group-header label, delegating to [groupLabelFor] — collective
+/// ("Join Requests", "Tasks"), and now the only place a type is named, since
+/// the row itself carries the formatted message.
 String _groupLabel(AppLocalizations l10n, String type) =>
     groupLabelFor(l10n, type);
+
+/// Draws a [FormattedNotification]'s runs, with Kotlin's `<b>` as a bold span.
+///
+/// This is what stands in for the `TextView` the adapter hands
+/// `Html.fromHtml`'s `Spanned` to: the markup in these strings is emphasis, so
+/// a `Text.rich` reproduces it exactly without an HTML widget.
+class _FormattedNotificationText extends StatelessWidget {
+  const _FormattedNotificationText(this.formatted);
+
+  final FormattedNotification formatted;
+
+  @override
+  Widget build(BuildContext context) {
+    if (formatted.spans.length == 1 &&
+        !formatted.spans.first.bold &&
+        !formatted.spans.first.italic) {
+      return Text(formatted.text);
+    }
+    return Text.rich(
+      TextSpan(
+        children: [
+          for (final span in formatted.spans)
+            TextSpan(
+              text: span.text,
+              style: (span.bold || span.italic)
+                  ? TextStyle(
+                      fontWeight: span.bold ? FontWeight.bold : null,
+                      fontStyle: span.italic ? FontStyle.italic : null,
+                    )
+                  : null,
+            ),
+        ],
+      ),
+    );
+  }
+}

@@ -2135,5 +2135,12 @@
   "confirmLeaveTeam": "¿Estás seguro/a de que quieres abandonar este equipo?",
   "fileNotFound": "Archivo no encontrado: {fileName}",
   "stepsHeading": "Pasos",
-  "courseProgressCount": "Progreso {current} de {max}"
+  "courseProgressCount": "Progreso {current} de {max}",
+  "resourceNotificationMessage": "Tienes {count} recursos no descargados",
+  "taskNotificationMessage": "{title} vence en {date}",
+  "storageRunningLow": "Almacenamiento bajo:",
+  "storageAvailable": "Almacenamiento disponible:",
+  "joinRequestPrefix": "Solicitud de Unión:",
+  "userRequestedToJoinTeam": "{user} ha solicitado unirse a {team}",
+  "markAsRead": "Marcar como leído"
 }

@@ -36,6 +36,8 @@ void main() {
       teamNotificationDao: database.teamNotificationDao,
       newsDao: database.newsDao,
       teamTaskDao: database.teamTaskDao,
+      teamDao: database.teamDao,
+      userDao: database.userDao,
       api: MockPlanetApi(),
     );
   });

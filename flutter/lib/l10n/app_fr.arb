@@ -2280,5 +2280,12 @@
   "confirmLeaveTeam": "Êtes-vous sûr de vouloir quitter cette équipe ?",
   "fileNotFound": "Fichier introuvable : {fileName}",
   "stepsHeading": "Étapes",
-  "courseProgressCount": "Progression {current} sur {max}"
+  "courseProgressCount": "Progression {current} sur {max}",
+  "resourceNotificationMessage": "Vous avez {count} ressources non téléchargées",
+  "taskNotificationMessage": "{title} est dû le {date}",
+  "storageRunningLow": "Espace de stockage presque plein:",
+  "storageAvailable": "Espace de stockage disponible:",
+  "joinRequestPrefix": "Demande d'adhésion :",
+  "userRequestedToJoinTeam": "{user} a demandé à rejoindre {team}",
+  "markAsRead": "Marquer comme lu"
 }
