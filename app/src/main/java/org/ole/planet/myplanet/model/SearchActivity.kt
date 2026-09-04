@@ -4,10 +4,8 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
-import org.ole.planet.myplanet.utils.VersionUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 
 @Entity(
@@ -29,16 +27,14 @@ open class SearchActivity(
     var createdOn: String = "",
     var parentCode: String = ""
 ) {
-    fun serialize(): JsonObject {
+    fun serialize(androidId: String?, customDeviceName: String): JsonObject {
         val obj = JsonObject()
         obj.addProperty("text", text)
         obj.addProperty("type", type)
         obj.addProperty("time", time)
         obj.addProperty("user", user)
-        obj.addDocumentOrigin(VersionUtils.getAndroidId(MainApplication.context))
-        obj.addProperty(
-            "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)
-        )
+        obj.addDocumentOrigin(androidId)
+        obj.addProperty("customDeviceName", customDeviceName)
         obj.addProperty("deviceName", NetworkUtils.getDeviceName())
         obj.addProperty("createdOn", createdOn)
         obj.addProperty("parentCode", parentCode)
