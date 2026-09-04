@@ -97,7 +97,7 @@ class EnterprisesViewModel @Inject constructor(
         }
     }
 
-    suspend fun getReportsFlow(teamId: String): Flow<List<MyTeam>> {
+    fun getReportsFlow(teamId: String): Flow<List<MyTeam>> {
         return enterprisesRepository.getReportsFlow(teamId)
     }
 

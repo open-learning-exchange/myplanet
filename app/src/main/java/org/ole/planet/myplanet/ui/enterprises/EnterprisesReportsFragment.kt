@@ -123,11 +123,8 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
             binding.addReports.isVisible = canManage
             reportsAdapter.setNonTeamMember(!canManage)
         }
-        viewLifecycleOwner.lifecycleScope.launch {
-            val flow = viewModel.getReportsFlow(teamId)
-            collectLatestWhenStarted(flow) { reportList ->
-                updatedReportsList(reportList)
-            }
+        collectLatestWhenStarted(viewModel.getReportsFlow(teamId)) { reportList ->
+            updatedReportsList(reportList)
         }
         collectLatestWhenStarted(viewModel.reportEvent) { event ->
             when (event) {
