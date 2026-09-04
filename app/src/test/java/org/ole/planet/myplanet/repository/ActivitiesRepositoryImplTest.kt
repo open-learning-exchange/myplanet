@@ -232,6 +232,13 @@ class ActivitiesRepositoryImplTest {
     }
 
     @Test
+    fun `getResourceOpenCount without type defaults to visit`() = runTest {
+        coEvery { resourceActivityDao.countByUserAndType("john", UserSessionManager.KEY_RESOURCE_OPEN) } returns 7L
+        val result = repository.getResourceOpenCount("john")
+        assertEquals(7L, result)
+    }
+
+    @Test
     fun `getMostOpenedResource returns null when no activities`() = testScope.runTest {
         coEvery { resourceActivityDao.getByUserAndType("john", "pdf") } returns emptyList()
         val result = repository.getMostOpenedResource("john", "pdf")
@@ -251,6 +258,36 @@ class ActivitiesRepositoryImplTest {
 
         assertEquals("Res 1", result?.first)
         assertEquals(2, result?.second)
+    }
+
+    @Test
+    fun `getMostOpenedResource without type defaults to visit`() = testScope.runTest {
+        val activities = listOf(
+            ResourceActivity().apply { resourceId = "res1"; title = "Res 1" }
+        )
+        coEvery { resourceActivityDao.getByUserAndType("john", UserSessionManager.KEY_RESOURCE_OPEN) } returns activities
+
+        val result = repository.getMostOpenedResource("john")
+
+        assertEquals("Res 1", result?.first)
+        assertEquals(1, result?.second)
+    }
+
+    @Test
+    fun `getProfileActivityStats aggregates mostOpened lastVisit and openCount`() = testScope.runTest {
+        val activities = listOf(
+            ResourceActivity().apply { resourceId = "res1"; title = "Res 1" }
+        )
+        coEvery { resourceActivityDao.getByUserAndType("john", UserSessionManager.KEY_RESOURCE_OPEN) } returns activities
+        coEvery { offlineActivityDao.getGlobalLastVisit() } returns 123456L
+        coEvery { resourceActivityDao.countByUserAndType("john", UserSessionManager.KEY_RESOURCE_OPEN) } returns 3L
+
+        val stats = repository.getProfileActivityStats("john")
+
+        assertEquals("Res 1", stats.mostOpenedResource?.first)
+        assertEquals(1, stats.mostOpenedResource?.second)
+        assertEquals(123456L, stats.lastVisit)
+        assertEquals(3L, stats.resourceOpenCount)
     }
 
     @Test
