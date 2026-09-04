@@ -26,11 +26,19 @@ class SubmissionsUploader {
   static String endpointFor(ServerConfig config) =>
       '${UrlUtils.credentialFreeDbUrl(config)}/submissions';
 
+  /// Queues every submission on the handset that still owes an upload.
+  ///
+  /// [userId] is the signed-in session, recorded on the outbox row — it is
+  /// **not** a filter. Kotlin's two submission upload configs are both
+  /// handset-wide (see [SubmissionDao.pendingUploads]), and the rows go up on
+  /// the session's credentials the way `UploadCoordinator` sends them; each
+  /// row's own owner rides in the document's `user` object, which is where
+  /// Planet and the sync-in both read it from.
   Future<int> queuePending({
     required ServerConfig config,
     required String userId,
   }) async {
-    final rows = await _submissions.pendingUploads(userId);
+    final rows = await _submissions.pendingUploads();
     final identity = rows.isEmpty ? null : await _identity.read();
     for (final row in rows) {
       await _outbox.enqueue(

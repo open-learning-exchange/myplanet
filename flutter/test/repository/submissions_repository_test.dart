@@ -31,6 +31,7 @@ void main() {
       database.submissionDao,
       database.submitPhotosDao,
       database.surveyDao,
+      database.examDao,
     );
   });
 
@@ -225,7 +226,7 @@ void main() {
         now: DateTime.fromMillisecondsSinceEpoch(1000),
       );
 
-      final pending = await repository.pendingUploads('user-1');
+      final pending = await repository.pendingUploads();
       expect(pending.single.id, id);
       expect(pending.single.isUpdated, isTrue);
       final payload = await repository.serialize(pending.single);
@@ -233,6 +234,156 @@ void main() {
       expect((payload['answers'] as List).single, containsPair('value', '42'));
     },
   );
+
+  /// **A shared handset is the normal deployment for this app**, and both of
+  /// Kotlin's submission upload configs are handset-wide:
+  /// `getPendingSubmissions` (`SubmissionDao.kt:41`) and
+  /// `getPendingExamResults` (`:40`) name no user. The port scoped its one
+  /// merged query to the signed-in learner, so a sheet another member
+  /// completed before signing out could never leave the device.
+  group('the upload backlog is the handset, not the session', () {
+    test("a second learner's completed survey is still queued", () async {
+      await repository.createSurveyDraft(
+        survey: const SurveyRow(
+          id: 'survey-1',
+          name: 'Water',
+          createdDate: 0,
+          updatedDate: 0,
+          adoptionDate: 0,
+          totalMarks: 0,
+          isFromNation: false,
+          teamShareAllowed: false,
+        ),
+        questions: const [],
+        userId: 'user-2',
+      );
+
+      final pending = await repository.pendingUploads();
+
+      expect(
+        pending.map((row) => row.userId),
+        ['user-2'],
+        reason:
+            'the bulk-survey flow writes a sheet per member; scoped to the '
+            'session, only the last member signed in ever uploaded theirs',
+      );
+    });
+
+    /// The flow that actually needs the unscoping — **not** the bulk send
+    /// itself. `createBulkSurveySubmissions` writes each member's sheet
+    /// `pending` and not yet updated, and the only thing that flags one is
+    /// that member answering it while signed in; on the answering turn scoped
+    /// and unscoped agree. What differs is the next sync, which somebody else
+    /// runs.
+    test(
+      'a sheet answered before the next member signs in still goes out',
+      () async {
+        await repository.createBulkSurveySubmissions('survey-1', [
+          'user-1',
+          'user-2',
+          'user-3',
+        ]);
+        // `getOrCreateSurveySubmission` writes each sheet `pending` and not yet
+        // updated; answering one is what flags it, and each member does that on
+        // their own turn at the handset.
+        final sheets = await repository.watchForUser('user-2').first;
+        await repository.updateSurveyAnswers(
+          submissionId: sheets.single.id,
+          questions: const [],
+          answers: const {},
+        );
+
+        expect((await repository.pendingUploads()).single.userId, 'user-2');
+      },
+    );
+
+    /// `UploadConfigs.ExamResults` sets `filterGuests = true` with
+    /// `guestUserIdExtractor = { it.userId }`, and `UploadConfig.shouldFilter`
+    /// drops any `userId.startsWith("guest")`. `Submissions` sets neither, so
+    /// the filter is the exam arm's alone.
+    test("a guest's exam attempt is never queued", () async {
+      await database.submissionDao.upsertAll([
+        SubmissionsCompanion.insert(
+          id: 'guest-attempt',
+          userId: const Value('guest_ada'),
+          parentId: const Value('exam-1@course-1'),
+          type: const Value('exam'),
+          status: const Value('requires grading'),
+          isUpdated: const Value(true),
+        ),
+      ]);
+
+      expect(await repository.pendingUploads(), isEmpty);
+    });
+
+    test("a guest's completed survey is queued, as in Kotlin", () async {
+      await database.submissionDao.upsertAll([
+        SubmissionsCompanion.insert(
+          id: 'guest-survey',
+          userId: const Value('guest_ada'),
+          parentId: const Value('survey-1'),
+          type: const Value('survey'),
+          status: const Value('complete'),
+          isUpdated: const Value(true),
+        ),
+      ]);
+
+      expect(
+        (await repository.pendingUploads()).single.id,
+        'guest-survey',
+        reason:
+            '`UploadConfigs.Submissions` has no guest filter — only '
+            '`ExamResults` does',
+      );
+    });
+
+    /// **The one exclusion with no Kotlin counterpart.**
+    /// `public_survey_screen` mints a `public_<millis>` owner for a respondent
+    /// who has no account; Kotlin has no such sentinel, because
+    /// `PublicSurveyActivity` runs the ordinary exam fragment and its sheet is
+    /// authored by the signed-in user or nobody.
+    ///
+    /// That sheet is `status = 'complete'`, `isUpdated = 1`, and belongs to the
+    /// **public** endpoint — which is not a CouchDB insert. Unscoping without
+    /// this hands it to the authenticated uploader on the next `queuePending`
+    /// (`UserInformationScreen._queueUpload` calls exactly that, under the
+    /// signed-in session), and `markUploaded` then sets `uploaded` — which is
+    /// what `PublicSurveyUploader.queue` refuses to queue on. The respondent's
+    /// answers would reach the wrong database and the right one would decline
+    /// them.
+    test("an anonymous public answer sheet is not queued here", () async {
+      await database.submissionDao.upsertAll([
+        SubmissionsCompanion.insert(
+          id: 'public-sheet',
+          userId: const Value('public_1770000000000'),
+          parentId: const Value('survey-9'),
+          type: const Value('survey'),
+          status: const Value('complete'),
+          isUpdated: const Value(true),
+        ),
+      ]);
+
+      expect(await repository.pendingUploads(), isEmpty);
+    });
+
+    test(
+      'a row with no type or owner is not mistaken for a guest exam',
+      () async {
+        await database.submissionDao.upsertAll([
+          SubmissionsCompanion.insert(id: 'bare', isUpdated: const Value(true)),
+        ]);
+
+        expect(
+          (await repository.pendingUploads()).single.id,
+          'bare',
+          reason:
+              'an uncoalesced `type = \'exam\' AND userId LIKE \'guest%\'` is SQL '
+              'NULL on a null column, and NOT NULL is NULL — the row would be '
+              'dropped from the backlog rather than kept',
+        );
+      },
+    );
+  });
 
   test('caches a synced question choice by its display label', () async {
     // `ExamAnswerUtils.choiceDisplayValue` is `text` first and `res` only as
@@ -512,7 +663,7 @@ void main() {
 
       await repository.sync(config: config);
 
-      expect(await repository.pendingUploads('user-1'), hasLength(1));
+      expect(await repository.pendingUploads(), hasLength(1));
     },
   );
 

@@ -2230,11 +2230,75 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
             ..orderBy([(row) => OrderingTerm(expression: row.startTime)]))
           .get();
 
-  Future<List<SubmissionRow>> pendingUploads(String userId) =>
-      (select(submissions)..where(
-            (row) => row.userId.equals(userId) & row.isUpdated.equals(true),
-          ))
-          .get();
+  /// Everything on this handset that still owes the server an upload —
+  /// **not** just the signed-in learner's rows.
+  ///
+  /// Kotlin reaches the `submissions` endpoint through two upload configs, and
+  /// neither is scoped to a user:
+  ///
+  ///  * `UploadConfigs.Submissions` -> `SubmissionDao.getPendingSubmissions()`
+  ///    (`SubmissionDao.kt:41`), `status = 'complete' AND (isUpdated = 1 OR
+  ///    _id IS NULL OR _id = '')`;
+  ///  * `UploadConfigs.ExamResults` -> `getPendingExamResults()` (`:40`),
+  ///    `type = 'exam' AND parentId IS NOT NULL AND userId IS NOT NULL AND
+  ///    (_id IS NULL OR _id = '')`, with `filterGuests = true`
+  ///    (`UploadConfigs.kt:249-250`, `UploadConfig.shouldFilter`:
+  ///    `userId.startsWith("guest")`).
+  ///
+  /// The port had `userId = ? AND isUpdated = true`, which is the opposite
+  /// scoping. **A shared handset is the normal deployment for this app**, and
+  /// that is the flow that needs this: member A finishes a survey
+  /// (`status = 'complete'`, `isUpdated = 1`, no `_id`) and signs out without
+  /// syncing; member B signs in and syncs; arm B, being unscoped, sends A's
+  /// sheet. Under the session scope it never left the device — and nothing in
+  /// the port rescans, so never was literal.
+  ///
+  /// It is **not** the bulk-survey send that depends on this, though that is
+  /// the easy claim to make: `createBulkSurveySubmissions` writes each member's
+  /// sheet `pending` and not yet updated, and the only thing that flags one is
+  /// that member answering it while signed in. On the answering turn scoped and
+  /// unscoped agree.
+  ///
+  /// `isUpdated` stays the status gate rather than Kotlin's
+  /// `status = 'complete'`, because the port merges the two configs into one
+  /// uploader: an exam is never `complete` (it finishes at
+  /// `requires grading`), so filtering on that would strand every exam
+  /// attempt. The exam arm it stands in for is `ExamResults`, whose guest
+  /// filter is ported alongside it — a guest's attempt is answer-sheet
+  /// practice, and Kotlin does not send it. Both operands are coalesced so a
+  /// null `type` or `userId` cannot turn the test into SQL NULL and drop a row
+  /// that is nobody's guest exam.
+  ///
+  /// The one exclusion with no Kotlin counterpart is the **anonymous
+  /// public-survey answer sheet**. `public_survey_screen` mints a
+  /// `public_<millis>` owner for a respondent who has no account, a sentinel
+  /// the Kotlin has no equivalent of (`PublicSurveyActivity` runs the ordinary
+  /// exam fragment, so its sheet is authored by the signed-in user or nobody).
+  /// That sheet is `status = 'complete'`, `isUpdated = 1` and belongs to the
+  /// **public** endpoint, which is not a CouchDB insert; unscoping without this
+  /// would hand it to the authenticated uploader on the next `queuePending` —
+  /// and worse, `markUploaded` would then set `uploaded`, which is exactly what
+  /// `PublicSurveyUploader.queue` refuses to queue on. The respondent's answers
+  /// would go to the wrong database and the right one would decline them.
+  Future<List<SubmissionRow>> pendingUploads() {
+    // Coalesced: `type = 'exam' AND userId LIKE 'guest%'` is SQL NULL on a null
+    // column and `NOT NULL` is NULL, which drops a row that is nobody's guest
+    // exam rather than keeping it.
+    Expression<String> owner($SubmissionsTable row) =>
+        coalesce([row.userId, const Constant('')]);
+    Expression<bool> isGuestExamAttempt($SubmissionsTable row) =>
+        coalesce([row.type, const Constant('')]).equals('exam') &
+        owner(row).like('guest%');
+    return (select(submissions)..where(
+          (row) =>
+              row.isUpdated.equals(true) &
+              isGuestExamAttempt(row).not() &
+              // `_` is a single-character wildcard in LIKE and is left as
+              // one: the sentinel always has `_<millis>` after the prefix.
+              owner(row).like('public_%').not(),
+        ))
+        .get();
+  }
 
   Future<int> markUploaded(String id, String couchId, String rev) =>
       (update(submissions)..where((row) => row.id.equals(id))).write(

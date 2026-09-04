@@ -238,6 +238,7 @@ void main() {
         database.submissionDao,
         database.submitPhotosDao,
         database.surveyDao,
+        database.examDao,
       );
 
       final submissionId = await repository.startExamSession(

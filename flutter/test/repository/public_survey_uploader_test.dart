@@ -32,6 +32,7 @@ void main() {
       database.submissionDao,
       database.submitPhotosDao,
       database.surveyDao,
+      database.examDao,
     );
     surveys = SurveysRepository(
       api,

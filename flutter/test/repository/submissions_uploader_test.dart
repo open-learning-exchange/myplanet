@@ -35,6 +35,7 @@ void main() {
       db.submissionDao,
       db.submitPhotosDao,
       db.surveyDao,
+      db.examDao,
     );
     outbox = OutboxRepository(db.outboxDao);
     uploader = SubmissionsUploader(api, repository, outbox, testDeviceIdentity);
@@ -71,7 +72,7 @@ void main() {
     final result = await uploader.handler(operation, const {}, 'Basic test');
 
     expect(result, isA<NetworkSuccess<Map<String, dynamic>>>());
-    expect(await repository.pendingUploads('user-1'), isEmpty);
+    expect(await repository.pendingUploads(), isEmpty);
     expect((await repository.getById(id))?.couchId, 'server-id');
   });
 
@@ -92,7 +93,7 @@ void main() {
     ]);
 
     final payload = await repository.serialize(
-      (await db.submissionDao.pendingUploads('user-1')).single,
+      (await db.submissionDao.pendingUploads()).single,
     );
 
     // Kotlin's serializeSubmission adds both when present; CouchDB needs them

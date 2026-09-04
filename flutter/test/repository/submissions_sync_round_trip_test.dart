@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:drift/drift.dart' show Value, driftRuntimeOptions;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
@@ -7,6 +8,7 @@ import 'package:myplanet/core/network/network_result.dart';
 import 'package:myplanet/core/sync/sync_result.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
+import 'package:myplanet/data/local/converters.dart';
 import 'package:myplanet/repository/submissions_repository.dart';
 
 /// Upload a submission, then pull the same document back.
@@ -26,6 +28,11 @@ import 'package:myplanet/repository/submissions_repository.dart';
 class MockPlanetApi extends Mock implements PlanetApi {}
 
 void main() {
+  // The cross-device group below opens a second in-memory database on purpose:
+  // two handsets, two separate executors, which is the case drift's warning is
+  // not about.
+  driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+
   late AppDatabase database;
   late SubmissionsRepository repository;
 
@@ -36,6 +43,7 @@ void main() {
       database.submissionDao,
       database.submitPhotosDao,
       database.surveyDao,
+      database.examDao,
     );
   });
   tearDown(() => database.close());
@@ -188,10 +196,7 @@ void main() {
           {...planetDocument(), 'isUpdated': true},
         ]);
         expect((await repository.getById('planet-1'))!.isUpdated, isFalse);
-        expect(
-          await repository.pendingUploads('org.couchdb.user:ada'),
-          isEmpty,
-        );
+        expect(await repository.pendingUploads(), isEmpty);
       },
     );
 
@@ -242,6 +247,355 @@ void main() {
     });
   });
 
+  /// **The cross-device half of the round trip.** Everything above uploads and
+  /// pulls through one database; this group builds a *second* one that has
+  /// never seen the exam or the survey, which is what a real second handset
+  /// looks like before it has synced the `exams` database — and what Planet
+  /// web looks like always.
+  ///
+  /// Kotlin's `serializeSubmission` prefers the **live** exam over the stored
+  /// blob: `getPayloadData` (`SubmissionsRepositoryImpl.kt:756-761`) resolves
+  /// `examDao.getById(parentId.substringBefore("@"))` plus its questions and
+  /// emits `StepExam.serializeExam(exam, questions)`, whose `StepExam.kt:92`
+  /// adds the `questions` array. The stored blob is only the fallback for an
+  /// exam this device no longer has (`:842`).
+  ///
+  /// The port always sent the blob, which `_openExamSession` writes as
+  /// `{_id,_rev,name,courseId,totalMarks}` and `createSurveyDraft` as
+  /// `{_id,name}` — no questions at all. The port's own pull then fills
+  /// `submission_questions` from `parent['questions']`, so the answer sheet
+  /// arrived on the second device with answers and nothing to put them
+  /// against. Writer and reader disagreeing about a key, each half passing its
+  /// own test: Phase 74's reactions, Phase 100's photo id, Phase 116's feed.
+  group('a submission pulled on a device that has never seen the exam', () {
+    late AppDatabase secondDevice;
+    late SubmissionsRepository secondRepository;
+
+    setUp(() {
+      secondDevice = AppDatabase.memory();
+      secondRepository = SubmissionsRepository(
+        MockPlanetApi(),
+        secondDevice.submissionDao,
+        secondDevice.submitPhotosDao,
+        secondDevice.surveyDao,
+        secondDevice.examDao,
+      );
+    });
+    tearDown(() => secondDevice.close());
+
+    Future<ExamRow> seedExam() async {
+      await database.examDao.upsertAll(
+        [
+          ExamsCompanion.insert(
+            id: 'exam-1',
+            rev: const Value('4-eee'),
+            name: const Value('Week 1 quiz'),
+            description: const Value('The first week'),
+            courseId: const Value('course-1'),
+            totalMarks: const Value(2),
+            passingPercentage: const Value('50'),
+            createdBy: const Value('org.couchdb.user:tutor'),
+            sourcePlanet: const Value('lea'),
+            createdDate: const Value(100),
+            updatedDate: const Value(200),
+          ),
+        ],
+        {
+          'exam-1': [
+            ExamQuestionsCompanion.insert(
+              id: 'exam-1-q1',
+              examId: 'exam-1',
+              header: const Value('Capital of France?'),
+              body: const Value('Pick one'),
+              type: const Value('select'),
+              marks: const Value('1'),
+              choices: const Value([
+                ExamChoice(id: 'c1', text: 'Paris'),
+                ExamChoice(id: 'c2', text: 'Lyon'),
+              ]),
+              correctChoices: const Value(['c1']),
+              position: 0,
+            ),
+          ],
+        },
+      );
+      return (await database.examDao.getById('exam-1'))!;
+    }
+
+    test('an exam attempt keeps its questions', () async {
+      final exam = await seedExam();
+      final localId = await repository.startExamSession(
+        exam: exam,
+        questions: await database.examDao.questionsFor('exam-1'),
+        userId: 'org.couchdb.user:ada',
+      );
+      final payload = await repository.serialize(
+        (await repository.getById(localId))!,
+      );
+
+      await secondRepository.upsertDocuments([
+        asStoredByCouch(payload, id: 'couch-exam-1'),
+      ]);
+
+      final questions = await secondRepository
+          .watchQuestions('couch-exam-1')
+          .first;
+      expect(
+        questions.map((question) => question.header),
+        ['Capital of France?'],
+        reason:
+            'the upload carried the stored blob, which has no `questions` — so '
+            'the second device drew an answer sheet with no questions',
+      );
+      expect(questions.single.choices, ['Paris', 'Lyon']);
+    });
+
+    test('the answers still line up with the questions', () async {
+      final exam = await seedExam();
+      final questionRows = await database.examDao.questionsFor('exam-1');
+      final localId = await repository.startExamSession(
+        exam: exam,
+        questions: questionRows,
+        userId: 'org.couchdb.user:ada',
+      );
+      await repository.saveExamAnswer(
+        submissionId: localId,
+        question: questionRows.single,
+        answer: const ExamDraftAnswer(choiceIds: ['c1']),
+        isFinal: true,
+        isExplicitSubmission: true,
+      );
+      final payload = await repository.serialize(
+        (await repository.getById(localId))!,
+      );
+
+      await secondRepository.upsertDocuments([
+        asStoredByCouch(payload, id: 'couch-exam-1'),
+      ]);
+
+      final questions = await secondRepository
+          .watchQuestions('couch-exam-1')
+          .first;
+      final answers = await secondRepository.answersFor('couch-exam-1');
+      expect(
+        answers.single.questionId,
+        'exam-1-q1',
+        reason: 'the answer records the id of the question it was given',
+      );
+      expect(
+        questions.single.id,
+        'couch-exam-1:exam-1-q1',
+        reason:
+            'Kotlin `serializeQuestions` emits no question id, so a faithful '
+            'upload leaves the pull falling back to a positional '
+            '`<submission>-q<index>` key the answer cannot be joined to',
+      );
+    });
+
+    test('a survey submission keeps its questions', () async {
+      await database.surveyDao.upsertAll(
+        [SurveysCompanion.insert(id: 'survey-1', name: const Value('Water'))],
+        {
+          'survey-1': [
+            SurveyQuestionsCompanion.insert(
+              id: 'survey-1:q1',
+              surveyId: 'survey-1',
+              questionId: const Value('q1'),
+              header: const Value('How is the water?'),
+              type: const Value('select'),
+              choices: const Value([
+                ExamChoice(id: 'c1', text: 'Clean'),
+                ExamChoice(id: 'c2', text: 'Dirty'),
+              ]),
+              position: 0,
+            ),
+          ],
+        },
+      );
+      final localId = await repository.createSurveyDraft(
+        survey: (await database.surveyDao.getById('survey-1'))!,
+        questions: await database.surveyDao.questionsFor('survey-1'),
+        userId: 'org.couchdb.user:ada',
+      );
+      final payload = await repository.serialize(
+        (await repository.getById(localId))!,
+      );
+
+      await secondRepository.upsertDocuments([
+        asStoredByCouch(payload, id: 'couch-survey-1'),
+      ]);
+
+      final questions = await secondRepository
+          .watchQuestions('couch-survey-1')
+          .first;
+      expect(questions.map((question) => question.header), [
+        'How is the water?',
+      ]);
+      expect(questions.single.id, 'couch-survey-1:q1');
+    });
+  });
+
+  /// The `parent` object itself, field for field against
+  /// `StepExam.serializeExam` (`StepExam.kt:70-94`). The round-trip tests
+  /// above only prove the questions arrive; this one is what stops the rest of
+  /// the document being quietly dropped again.
+  group('the parent object the upload carries', () {
+    test('is `serializeExam`, minus the type the port cannot know', () {
+      final document = SubmissionsRepository.examParentDocument(
+        ExamRow(
+          id: 'exam-1',
+          rev: '4-eee',
+          name: 'Week 1 quiz',
+          description: 'The first week',
+          courseId: 'course-1',
+          stepId: 'step-1',
+          createdDate: 100,
+          updatedDate: 200,
+          adoptionDate: 300,
+          createdBy: 'org.couchdb.user:tutor',
+          totalMarks: 2,
+          passingPercentage: '50',
+          sourcePlanet: 'lea',
+          isFromNation: false,
+          teamId: 'team-9',
+          teamShareAllowed: false,
+          sourceSurveyId: 'survey-0',
+          noOfQuestions: 1,
+        ),
+        const [],
+      );
+
+      expect(document, {
+        '_id': 'exam-1',
+        '_rev': '4-eee',
+        'name': 'Week 1 quiz',
+        'description': 'The first week',
+        'passingPercentage': '50',
+        'updatedDate': 200,
+        'createdDate': 100,
+        'adoptionDate': 300,
+        'sourcePlanet': 'lea',
+        'totalMarks': 2,
+        'createdBy': 'org.couchdb.user:tutor',
+        'sourceSurveyId': 'survey-0',
+        'teamId': 'team-9',
+        'questions': <Object?>[],
+      });
+    });
+
+    test('omits the two fields Kotlin guards with an `if`', () {
+      final document = SubmissionsRepository.examParentDocument(
+        ExamRow(
+          id: 'exam-1',
+          createdDate: 0,
+          updatedDate: 0,
+          adoptionDate: 0,
+          totalMarks: 0,
+          isFromNation: false,
+          teamShareAllowed: false,
+          noOfQuestions: 0,
+        ),
+        const [],
+      );
+
+      expect(document.containsKey('_rev'), isFalse);
+      expect(document.containsKey('sourceSurveyId'), isFalse);
+      expect(document.containsKey('teamId'), isFalse);
+    });
+
+    test('carries every field `serializeQuestions` writes', () {
+      final document = SubmissionsRepository.examParentDocument(
+        ExamRow(
+          id: 'exam-1',
+          createdDate: 0,
+          updatedDate: 0,
+          adoptionDate: 0,
+          totalMarks: 0,
+          isFromNation: false,
+          teamShareAllowed: false,
+          noOfQuestions: 1,
+        ),
+        const [
+          ExamQuestionRow(
+            id: 'exam-1-q1',
+            examId: 'exam-1',
+            header: 'Capital of France?',
+            body: 'Pick one',
+            type: 'select',
+            marks: '1',
+            correctChoices: ['c1'],
+            choices: [
+              ExamChoice(id: 'c1', text: 'Paris'),
+              ExamChoice(id: 'c2', text: 'Lyon'),
+            ],
+            hasOtherOption: false,
+            scaleMax: 9,
+            position: 0,
+          ),
+        ],
+      );
+
+      expect((document['questions'] as List).single, {
+        'id': 'exam-1-q1',
+        // Neither is Kotlin's: `serializeQuestions` emits no id, and it puts
+        // the label under `header`, a key no real document has. See
+        // `examParentDocument`.
+        'title': 'Capital of France?',
+        'header': 'Capital of France?',
+        'body': 'Pick one',
+        'type': 'select',
+        'marks': '1',
+        'choices': [
+          {'id': 'c1', 'text': 'Paris'},
+          {'id': 'c2', 'text': 'Lyon'},
+        ],
+        'correctChoice': ['c1'],
+        'hasOtherOption': false,
+      });
+    });
+
+    /// The exams-database walk routes on `type == 'surveys'`, but
+    /// `SurveyMapper.fromCourseDoc`'s second pass files a course step's survey
+    /// here with no type filter — so the value is a guess for exactly the rows
+    /// the exam branch refuses to guess for, and neither side emits it.
+    test('a survey does not guess back the type the split discarded', () {
+      final document = SubmissionsRepository.surveyParentDocument(
+        SurveyRow(
+          id: 'survey-1',
+          name: 'Water',
+          createdDate: 0,
+          updatedDate: 0,
+          adoptionDate: 0,
+          totalMarks: 0,
+          isFromNation: false,
+          teamShareAllowed: false,
+        ),
+        const [],
+      );
+
+      expect(document.containsKey('type'), isFalse);
+      expect(document['_id'], 'survey-1');
+    });
+
+    /// The blob is the `else if` branch (`SubmissionsRepositoryImpl.kt:842`),
+    /// not the default: a device that no longer has the exam still uploads
+    /// what it stored.
+    test('falls back to the stored blob when the exam is gone', () async {
+      final id = await repository.createDraft(
+        userId: 'org.couchdb.user:ada',
+        type: 'survey',
+        title: 'Water survey',
+        answers: const [],
+      );
+
+      final payload = await repository.serialize(
+        (await repository.getById(id))!,
+      );
+
+      expect(payload['parent'], 'Water survey');
+    });
+  });
+
   group('the walk leaves local work alone', () {
     const config = ServerConfig(
       serverUrl: 'https://planet.example.org',
@@ -257,6 +611,7 @@ void main() {
         database.submissionDao,
         database.submitPhotosDao,
         database.surveyDao,
+        database.examDao,
       );
     });
 
