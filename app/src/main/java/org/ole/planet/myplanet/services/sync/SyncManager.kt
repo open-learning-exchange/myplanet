@@ -439,7 +439,7 @@ class SyncManager @Inject constructor(
 
     private suspend fun getShelvesWithDataBatchOptimized(): List<String> {
         val shelvesWithData = mutableListOf<String>()
-        val cachedShelves = getCachedShelvesWithData()
+        val cachedShelves = syncRepository.getCachedShelvesWithData()
         if (cachedShelves.isNotEmpty()) {
             return cachedShelves
         }
@@ -466,37 +466,12 @@ class SyncManager @Inject constructor(
             }
         }
 
-        cacheShelvesWithData(shelvesWithData)
+        syncRepository.cacheShelvesWithData(shelvesWithData)
         return shelvesWithData
     }
 
     private suspend fun checkShelfBatchForDataOptimized(shelfBatch: List<Rows>): List<String> {
         return userSyncRepository.checkShelfBatchForDataOptimized(shelfBatch.mapNotNull { it.id })
-    }
-
-    private fun getCachedShelvesWithData(): List<String> {
-        val cacheKey = "shelves_with_data"
-        val cacheTimeKey = "shelves_cache_time"
-        val cacheValidityHours = 6
-
-        val cacheTime = sharedPrefManager.getRawLong(cacheTimeKey, 0)
-        val now = timeProvider.now()
-
-        if (now - cacheTime < cacheValidityHours * 60 * 60 * 1000) {
-            val cachedData = sharedPrefManager.getRawString(cacheKey, "")
-            if (cachedData.isNotEmpty()) {
-                return cachedData.split(",").filter { it.isNotBlank() }
-            }
-        }
-        return emptyList()
-    }
-
-    private fun cacheShelvesWithData(shelves: List<String>) {
-        val cacheKey = "shelves_with_data"
-        val cacheTimeKey = "shelves_cache_time"
-
-        sharedPrefManager.setRawString(cacheKey, shelves.joinToString(","))
-        sharedPrefManager.setRawLong(cacheTimeKey, timeProvider.now())
     }
 
     private suspend fun myLibraryTransactionSync() {
