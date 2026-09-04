@@ -92,4 +92,64 @@ class EnterprisesReportsAdapterTest {
             assertEquals(context.getString(R.string.team_financial_report, "Test Team"), viewHolder.binding.tvReportTitle.text.toString())
         }
     }
+
+    @Test
+    fun testReportTotals_calculatesIncomeExpensesProfitLossAndEndingBalance() {
+        val report = MyTeam().apply {
+            sales = 500
+            otherIncome = 100
+            wages = 200
+            otherExpenses = 50
+            beginningBalance = 1000
+        }
+
+        val totals = reportTotals(report)
+
+        assertEquals(600, totals.totalIncome)
+        assertEquals(250, totals.totalExpenses)
+        assertEquals(350, totals.profitLoss)
+        assertEquals(1350, totals.endingBalance)
+    }
+
+    @Test
+    fun testReportTotals_withNegativeBeginningBalance_calculatesEndingBalanceCorrectly() {
+        val report = MyTeam().apply {
+            sales = 200
+            otherIncome = 50
+            wages = 100
+            otherExpenses = 50
+            beginningBalance = -500
+        }
+
+        val totals = reportTotals(report)
+
+        assertEquals(250, totals.totalIncome)
+        assertEquals(150, totals.totalExpenses)
+        assertEquals(100, totals.profitLoss)
+        assertEquals(-400, totals.endingBalance)
+    }
+
+    @Test
+    fun testOnBindViewHolder_bindsReportTotalsToViews() {
+        val report = MyTeam().apply {
+            _id = "report1"
+            sales = 300
+            otherIncome = 50
+            wages = 100
+            otherExpenses = 20
+            beginningBalance = -100
+        }
+
+        adapter.submitList(listOf(report)) {
+            val binding = ReportListItemBinding.inflate(LayoutInflater.from(context))
+            val viewHolder = EnterprisesReportsAdapter.ReportsViewHolder(binding)
+
+            adapter.onBindViewHolder(viewHolder, 0)
+
+            assertEquals(context.getString(R.string.number_placeholder, 350), viewHolder.binding.totalIncomeValue.text.toString())
+            assertEquals(context.getString(R.string.number_placeholder, 120), viewHolder.binding.totalExpensesValue.text.toString())
+            assertEquals(context.getString(R.string.number_placeholder, 230), viewHolder.binding.profitLossValue.text.toString())
+            assertEquals(context.getString(R.string.number_placeholder, 130), viewHolder.binding.endingBalanceValue.text.toString())
+        }
+    }
 }

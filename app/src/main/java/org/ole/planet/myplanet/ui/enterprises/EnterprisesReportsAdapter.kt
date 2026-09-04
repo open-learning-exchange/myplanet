@@ -51,21 +51,18 @@ class EnterprisesReportsAdapter(
         val report = getItem(position)
         binding.tvReportTitle.text = context.getString(R.string.team_financial_report, teamName)
         report?.let {
+            val totals = reportTotals(it)
             with(binding) {
-                val totalIncome = report.sales + report.otherIncome
-                val totalExpenses = report.wages + report.otherExpenses
-                val profitLoss = totalIncome - totalExpenses
-
                 date.text = context.getString(R.string.string_range, TimeUtils.formatDate(it.startDate, " MMM dd, yyyy"), TimeUtils.formatDate(it.endDate, "MMM dd, yyyy"))
                 beginningBalanceValue.text = context.getString(R.string.number_placeholder, it.beginningBalance)
                 salesValue.text = context.getString(R.string.number_placeholder, it.sales)
                 otherValue.text = context.getString(R.string.number_placeholder, it.otherIncome)
-                totalIncomeValue.text = context.getString(R.string.number_placeholder, totalIncome)
+                totalIncomeValue.text = context.getString(R.string.number_placeholder, totals.totalIncome)
                 personnelValue.text = context.getString(R.string.number_placeholder, it.wages)
                 nonPersonnelValue.text = context.getString(R.string.number_placeholder, it.otherExpenses)
-                totalExpensesValue.text = context.getString(R.string.number_placeholder, totalExpenses)
-                profitLossValue.text = context.getString(R.string.number_placeholder, profitLoss)
-                endingBalanceValue.text = context.getString(R.string.number_placeholder, profitLoss + it.beginningBalance)
+                totalExpensesValue.text = context.getString(R.string.number_placeholder, totals.totalExpenses)
+                profitLossValue.text = context.getString(R.string.number_placeholder, totals.profitLoss)
+                endingBalanceValue.text = context.getString(R.string.number_placeholder, totals.endingBalance)
                 tvReportDetails.text = context.getString(R.string.message_placeholder, it.description)
                 createUpdate.text = context.getString(R.string.report_date_details, TimeUtils.formatDate(it.createdDate, "MMM dd, yyyy"), TimeUtils.formatDate(it.updatedDate, "MMM dd, yyyy"))
             }
@@ -150,4 +147,24 @@ class EnterprisesReportsAdapter(
             }
         )
     }
+}
+
+internal data class ReportTotals(
+    val totalIncome: Int,
+    val totalExpenses: Int,
+    val profitLoss: Int,
+    val endingBalance: Int
+)
+
+internal fun reportTotals(report: MyTeam): ReportTotals {
+    val totalIncome = report.sales + report.otherIncome
+    val totalExpenses = report.wages + report.otherExpenses
+    val profitLoss = totalIncome - totalExpenses
+    val endingBalance = profitLoss + report.beginningBalance
+    return ReportTotals(
+        totalIncome = totalIncome,
+        totalExpenses = totalExpenses,
+        profitLoss = profitLoss,
+        endingBalance = endingBalance
+    )
 }
