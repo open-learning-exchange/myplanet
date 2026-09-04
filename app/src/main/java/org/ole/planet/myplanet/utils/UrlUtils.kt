@@ -35,7 +35,7 @@ object UrlUtils {
             ?: error("UrlUtils.init(SharedPrefManager) must be called before using UrlUtils")
     }
 
-    fun invalidateHeaderCache() {
+    fun invalidateCaches() {
         synchronized(this) {
             generation++
             cachedHeader = null
@@ -106,6 +106,11 @@ object UrlUtils {
             }
             return finalUrl
         }
+    /**
+     * Resolves and caches the CouchDB base URL.
+     * Note: The cache is keyed to the singleton [SharedPrefManager] instance. Callers
+     * passing a different instance will receive the cached value from the initial read.
+     */
     fun baseUrl(spm: SharedPrefManager): String {
         cachedBaseUrl?.let { return it }
         val currentGen: Int

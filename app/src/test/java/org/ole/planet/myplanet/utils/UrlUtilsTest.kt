@@ -363,7 +363,7 @@ class UrlUtilsTest {
         every { mockSpm.getUrlUser() } returns "user2"
         every { mockSpm.getUrlPwd() } returns "pass2"
 
-        UrlUtils.invalidateHeaderCache()
+        UrlUtils.invalidateCaches()
         val thirdHeader = UrlUtils.header
 
         verify(exactly = 2) { mockSpm.getUrlUser() }
@@ -406,7 +406,7 @@ class UrlUtilsTest {
     }
 
     @Test
-    fun `baseUrl invalidates cache when invalidateHeaderCache is called`() {
+    fun `baseUrl invalidates cache when invalidateCaches is called`() {
         unmockkObject(UrlUtils)
         val spm = mockk<SharedPrefManager>(relaxed = true)
         every { spm.isAlternativeUrl() } returns false
@@ -418,7 +418,7 @@ class UrlUtilsTest {
         assertEquals("http://example.com", firstUrl)
 
         every { spm.getCouchdbUrl() } returns "http://new-example.com"
-        UrlUtils.invalidateHeaderCache()
+        UrlUtils.invalidateCaches()
 
         val secondUrl = UrlUtils.baseUrl(spm)
         assertEquals("http://new-example.com", secondUrl)
