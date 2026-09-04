@@ -288,6 +288,38 @@ or converter changed, so no generated output moved.
 
 ## Found, not fixed
 
+**0. A live defect, found while checking my own notes, and the most severe thing
+in this file.** It is not part of either reported defect and is not fixed here.
+
+**Every port writer stores a course-attached survey's `parentId` as the bare
+survey id, and the mandatory-survey check looks for `surveyId@courseId`.** So it
+never matches, and a learner who *has* completed the attached survey is still
+told they have not.
+
+Kotlin is internally consistent: `createBulkSurveySubmissions` (`:201-228`)
+builds `"$examId@$courseId"` when the exam has a course, `createExamSubmission`
+(`:449-456`) does the same, and `hasSubmission` (`:175-190`) queries exactly
+that. The port writes the bare id from `createSurveyDraft` (`:102`),
+`getOrCreateSurveySubmission` (`:539`) and `createBulkSurveySubmissions`
+(`:522`), while `hasUnfinishedSurveys` (`:604`) — the port of `hasSubmission`,
+Phase 52 — builds `'${survey.id}@$courseId'`.
+
+Reproduced against the current head: seed a survey with `courseId: 'course-1'`,
+run `createSurveyDraft` for `user-1` (which stores `parentId: survey-1`,
+`status: complete`), then ask `hasUnfinishedSurveys('course-1', 'user-1')` —
+it answers `true`. Its two readers are `take_course_screen._onFinish`, which
+blocks the pop with the mandatory-survey toast, and `challenge_provider`, which
+counts the challenge task incomplete. So on the current build a learner cannot
+finish `MANDATORY_SURVEY_COURSE_ID` at all, however many times they answer.
+
+Left for its own phase because the fix is a design call, not a one-liner: making
+the *writers* Kotlin-shaped changes the stored `parentId` on devices in the
+field and ripples through `latestPendingByUserAndParent`,
+`_deleteExamSubmissions`, `countByUserParentAndType` and the dashboard's
+pending-survey prompt; making the *reader* use the bare id leaves the port
+internally consistent but still unlike Kotlin. Guessing between those inside an
+upload-shape diff is exactly how a lane ships a regression.
+
 1. **The stored exam blob is not Kotlin's.** `_openExamSession` writes
    `{_id,_rev,name,courseId,totalMarks}` where `createExamSubmission`
    (`SubmissionsRepositoryImpl.kt:456-464`) writes
