@@ -91,6 +91,31 @@ A controllable `TimeProvider`: `TestTimeProvider(var currentTime: Long = 0L)` wi
 
 ## How to Test Each Layer
 
+### The Robolectric application class
+
+`app/src/test/resources/robolectric.properties` sets `application=android.app.Application` for
+the whole `src/test/` source set. Leave it that way, and reach for
+`@Config(application = ...)` only when a test genuinely needs a different one
+(`HiltTestApplication` for `@HiltAndroidTest`).
+
+Without that default Robolectric boots the manifest's application class — the real
+`@HiltAndroidApp MainApplication` — for every test that doesn't say otherwise.
+`MainApplication.onCreate()` builds the Hilt graph, opens the Room database and then
+launches fire-and-forget coroutines on the *real* `Dispatchers.IO`/`Default` from an
+application scope nothing cancels: the deferred warm-ups, `scheduleWorkersOnStart`, and
+the ANR watchdog — which promptly "detects" an ANR, because Robolectric only pumps the
+main looper when a test asks it to. Those coroutines outlive the test class. A later
+class in the same fork that `mockkObject(MainApplication.Companion)`s and unmocks it
+turns their next companion call into `MockKException: can't find stub Companion`, which
+escapes to the global handler, where `kotlinx-coroutines-test` queues it and charges it
+to whichever test calls `runTest` next. The report then blames an unrelated class with
+`UncaughtExceptionsBeforeTest` — a flake that a rerun always "fixes". Six PRs hit it on
+2026-09-04 alone, all on shard 2, which is where most of the affected classes hash.
+
+If you see `UncaughtExceptionsBeforeTest`, the named test is the victim, not the cause:
+open the uploaded `test-reports-*` artifact and read the `Suppressed:` stack trace, which
+names the coroutine that actually threw.
+
 ### Robolectric SDK levels
 
 **Don't pin `@Config(sdk = [...])` unless the test is actually about that API level.** Robolectric builds one sandbox per distinct (SDK level, config) per test fork and each sandbox loads a 95-215 MB `android-all-instrumented` jar, so every extra level the suite mentions is paid again — up to `maxParallelForks` (4) times per shard. That cost shows up as a multi-second first test in the class: it was 16.0s for `TeamsRepositoryBulkInsertTransactionTest` (SDK 26) against a 0.43s average for the rest of its methods.
