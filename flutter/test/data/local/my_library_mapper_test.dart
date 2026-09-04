@@ -159,6 +159,103 @@ void main() {
     });
   });
 
+  group('the two keys the resources walk had wrong', () {
+    // Both reported by Phase 119 as pre-existing and inherited by the shelf
+    // walk. `MyLibrary.kt:291` reads `"tags"`, and `:294-298` reads the nested
+    // `privateFor.teams`.
+
+    test('reads the document key "tags", which is what Planet writes', () {
+      // `insertMyLibrary` reads `"tags"` into the entity field `tag`
+      // (`MyLibrary.kt:291`). The asymmetry is deliberate on the Kotlin's side:
+      // `serializeResource` writes the key back out as `"tag"`
+      // (`MyLibrary.kt:100`), so a port that reads `"tag"` matches the writer
+      // and never the server.
+      final row = MyLibraryMapper.fromDoc({
+        '_id': 'res-1',
+        'title': 'Doc',
+        'tags': ['math', 'science'],
+      }, couchDbUrl: couchDbUrl);
+
+      expect(row!.tag.value, ['math', 'science']);
+    });
+
+    test('merges "tags" into what is already stored', () {
+      final row = MyLibraryMapper.fromDoc(
+        {
+          '_id': 'res-1',
+          'title': 'Doc',
+          'tags': ['science'],
+        },
+        couchDbUrl: couchDbUrl,
+        existingTag: ['math'],
+      );
+
+      expect(row!.tag.value, ['math', 'science']);
+    });
+
+    test('stores privateFor.teams, not the nested object stringified', () {
+      // `MyLibrary.kt:294-298` extracts `privateFor.teams` as a bare id, and
+      // `serializeResource` re-wraps it as `{"teams": <id>}` on the way out.
+      // Reading the key as a string stores the Dart literal `{teams: team-1}`
+      // — the Phase 104 `SurveyMapper.choices` shape, a value no team-id
+      // predicate can match.
+      final row = MyLibraryMapper.fromDoc({
+        '_id': 'res-1',
+        'title': 'Doc',
+        'private': true,
+        'privateFor': {'teams': 'team-1'},
+      }, couchDbUrl: couchDbUrl);
+
+      expect(row!.isPrivate.value, isTrue);
+      expect(row.privateFor.value, 'team-1');
+    });
+
+    test('a public document leaves privateFor alone', () {
+      // The Kotlin assigns `privateFor` only inside `if (isPrivate &&
+      // doc.has("privateFor"))`, so a public document cannot clear the stored
+      // value. An absent companion value is how "leave alone" is spelled here.
+      final row = MyLibraryMapper.fromDoc({
+        '_id': 'res-1',
+        'title': 'Doc',
+        'private': false,
+        'privateFor': {'teams': 'team-1'},
+      }, couchDbUrl: couchDbUrl);
+
+      expect(row!.isPrivate.value, isFalse);
+      expect(row.privateFor.present, isFalse);
+    });
+
+    test(
+      'a privateFor that is not an object leaves the stored value alone',
+      () {
+        // `if (privateForElement.isJsonObject)` — a string, array or null falls
+        // through without assigning.
+        final row = MyLibraryMapper.fromDoc({
+          '_id': 'res-1',
+          'title': 'Doc',
+          'private': true,
+          'privateFor': 'team-1',
+        }, couchDbUrl: couchDbUrl);
+
+        expect(row!.privateFor.present, isFalse);
+      },
+    );
+
+    test('a privateFor object with no teams key nulls the column', () {
+      // `privateForObj.get("teams")?.asString` is null, and the Kotlin assigns
+      // that null. This one *does* write.
+      final row = MyLibraryMapper.fromDoc({
+        '_id': 'res-1',
+        'title': 'Doc',
+        'private': true,
+        'privateFor': {'users': 'user-1'},
+      }, couchDbUrl: couchDbUrl);
+
+      expect(row!.privateFor.present, isTrue);
+      expect(row.privateFor.value, isNull);
+    });
+  });
+
   group('credentialFreeBase', () {
     test('strips the satellite credentials', () {
       // The default :443 normalizes away; the non-default case is covered below.

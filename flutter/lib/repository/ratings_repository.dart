@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import '../core/config/server_config.dart';
@@ -99,6 +101,7 @@ class RatingsRepository {
   }) async {
     final existing = await _dao.findUserRating(type, itemId, userId);
     final id = existing?.id ?? _createId();
+    final rater = await _userDao.getById(userId);
     await _dao.upsert(
       RatingsCompanion.insert(
         id: id,
@@ -111,12 +114,41 @@ class RatingsRepository {
         comment: Value(_nullable(comment)),
         parentCode: Value(parentCode),
         planetCode: Value(planetCode),
+        // `setRatingData` writes `createdOn = resolvedUser.parentCode`. It is
+        // not a timestamp despite the name, and the column exists because the
+        // upload sends it back verbatim.
+        createdOn: Value(rater?.parentCode ?? parentCode),
+        // `user = gson.toJson(resolvedUser.serialize())` — the rater as they
+        // were at the moment they rated, snapshotted rather than re-derived
+        // at upload time, which is what the Kotlin does and what
+        // [RatingsUploader] now reads.
+        user: Value(jsonEncode(raterDocument(rater, parentCode, planetCode))),
         type: type,
         couchId: Value(existing?.couchId),
         rev: Value(existing?.rev),
       ),
     );
   }
+
+  /// The rater object a ratings document carries.
+  ///
+  /// **Deliberately narrower than `UserEntity.serialize()`**, which also
+  /// writes `derived_key`, `salt` and `password_scheme` into every document it
+  /// builds — so a Kotlin ratings document publishes the rater's password
+  /// verifier to a database any member of the planet can read. Planet groups
+  /// and attributes ratings by `_id` and `name`; none of the credential fields
+  /// is read back by either app. The same judgement `MyLibraryMapper` makes
+  /// about the satellite PIN in a resource URL.
+  static Map<String, dynamic> raterDocument(
+    UserRow? user,
+    String? parentCode,
+    String? planetCode,
+  ) => {
+    if (user?.couchId != null) '_id': user!.couchId,
+    'name': user?.name,
+    'planetCode': user?.planetCode ?? planetCode,
+    'parentCode': user?.parentCode ?? parentCode,
+  };
 
   /// Port of the `"ratings"` arm of `TransactionSyncManager.syncDb`
   /// (`:242-244`), which `HeavyTableSyncWorker` runs after a full sync
@@ -168,9 +200,19 @@ class RatingsRepository {
   ///   shape as the read state Phase 98 had to preserve and the reactions
   ///   Phase 74 did.
   ///
-  /// The document's `createdOn` and its embedded `user` object are dropped:
-  /// neither has a column on this table, and neither is read by any port
-  /// screen or by `RatingsUploader`.
+  /// The document's `createdOn` and its embedded `user` object are stored
+  /// verbatim as of schema v46, the way `RatingsRepositoryImpl.kt:114-118`
+  /// stores them — `user` as a JSON string with the base64 `_attachments`
+  /// removed first, which is what `:98-102` does and for the same reason the
+  /// bytes are worth nothing here: a profile photo re-encoded into every
+  /// rating row.
+  ///
+  /// Nothing in either app reads these two back for a *synced* row — the only
+  /// reader is `Rating.serializeRating`, which runs on `isUpdated = 1` rows
+  /// whose values `setRatingData` has just overwritten. They are stored so
+  /// that the row is a faithful copy of the document, and so the two writers
+  /// of the column agree; the user-visible half of this change is the
+  /// **upload**, which now sends the stored rater rather than rebuilding one.
   Future<int> insertRatingsFromSync(List<Map<String, dynamic>> docs) async {
     if (docs.isEmpty) return 0;
 
@@ -238,6 +280,8 @@ class RatingsRepository {
           userId: Value(userId),
           parentCode: Value(JsonUtils.getStringOrNull('parentCode', doc)),
           planetCode: Value(JsonUtils.getStringOrNull('planetCode', doc)),
+          createdOn: Value(JsonUtils.getStringOrNull('createdOn', doc)),
+          user: Value(jsonEncode({...user}..remove('_attachments'))),
           isUpdated: const Value(false),
         ),
       );

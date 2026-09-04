@@ -171,6 +171,65 @@ void main() {
     expect(user['_id'], 'org.couchdb.user:ada');
     expect(user['name'], 'ada');
   });
+
+  test('the stored rater document is what uploads, not a rebuild', () async {
+    // `Rating.serializeRating` sends `rating.user` — the JSON string the row
+    // carries — rather than re-deriving it. For a rating pulled from the
+    // server that string is the rater's own document, and the rater need not
+    // be a `users` row on this device at all.
+    await database.ratingDao.upsert(
+      RatingsCompanion.insert(
+        id: 'rating-1',
+        time: 1750000000000,
+        userId: 'org.couchdb.user:bob',
+        rate: 5,
+        item: 'resource-1',
+        type: 'resource',
+        parentCode: const Value('nation'),
+        createdOn: const Value('nation-of-record'),
+        user: const Value(
+          '{"_id":"org.couchdb.user:bob","name":"bob","planetCode":"gua"}',
+        ),
+      ),
+    );
+
+    await uploader.queuePending(config: config);
+    final entry = await database.outboxDao.findOpen(
+      RatingsUploader.type,
+      'rating-1',
+    );
+    final payload = jsonDecode(entry!.payload) as Map<String, dynamic>;
+
+    expect(payload['user'], {
+      '_id': 'org.couchdb.user:bob',
+      'name': 'bob',
+      'planetCode': 'gua',
+    });
+    // `createdOn` is not a timestamp: `setRatingData` assigns the rater's
+    // `parentCode` to it, and a synced row carries whatever the document said.
+    expect(payload['createdOn'], 'nation-of-record');
+  });
+
+  test('a row with no stored rater still names its author', () async {
+    // The fallback: `_toDoc` rebuilds from the `users` table, which is what
+    // every row did before v46.
+    await database.userDao.upsert(
+      UsersCompanion.insert(
+        id: 'user-1',
+        couchId: const Value('org.couchdb.user:ada'),
+        name: const Value('ada'),
+      ),
+    );
+    await seedPendingRating();
+
+    await uploader.queuePending(config: config);
+    final entry = await database.outboxDao.findOpen(
+      RatingsUploader.type,
+      'rating-1',
+    );
+    final user = jsonDecode(entry!.payload)['user'] as Map<String, dynamic>;
+    expect(user['_id'], 'org.couchdb.user:ada');
+  });
 }
 
 class MockPlanetApi extends Mock implements PlanetApi {}

@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/repository/ratings_repository.dart';
@@ -133,4 +136,36 @@ void main() {
       expect(after.total, 3);
     },
   );
+
+  test('a submitted rating snapshots its rater and parent code', () async {
+    // `RatingsRepositoryImpl.setRatingData` writes
+    // `createdOn = resolvedUser.parentCode` and
+    // `user = gson.toJson(resolvedUser.serialize())` at submit time, so the
+    // document uploads the rater as they were when they rated.
+    await database.userDao.upsert(
+      UsersCompanion.insert(
+        id: 'user-1',
+        couchId: const Value('org.couchdb.user:ada'),
+        name: const Value('ada'),
+        planetCode: const Value('gua'),
+        parentCode: const Value('ole'),
+      ),
+    );
+
+    await repository.submit(
+      type: 'course',
+      itemId: 'course-1',
+      title: 'Course',
+      userId: 'user-1',
+      rate: 4,
+      parentCode: 'ole',
+      planetCode: 'gua',
+    );
+
+    final row = (await database.ratingDao.findById('rating-0'))!;
+    expect(row.createdOn, 'ole');
+    final user = jsonDecode(row.user!) as Map<String, dynamic>;
+    expect(user['_id'], 'org.couchdb.user:ada');
+    expect(user['name'], 'ada');
+  });
 }

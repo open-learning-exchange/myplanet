@@ -390,6 +390,20 @@ class Ratings extends Table {
   TextColumn get planetCode => text().nullable()();
   TextColumn get type => text()();
 
+  /// Port of `Rating.createdOn` — despite the name it is not a timestamp.
+  /// `RatingsRepositoryImpl.setRatingData` assigns the rater's `parentCode`
+  /// to it, and `insertRatingsFromSync` copies the document's own value
+  /// verbatim; `Rating.serializeRating` sends it straight back out.
+  TextColumn get createdOn => text().nullable()();
+
+  /// Port of `Rating.user` — the rater's serialized user document, stored as
+  /// a JSON string exactly as the Kotlin stores it
+  /// (`gson.toJson(resolvedUser.serialize())` locally, the document's own
+  /// embedded `user` object on the way in). `serializeRating` parses it back
+  /// into the `user` field of the uploaded document, which is how Planet
+  /// attributes a rating.
+  TextColumn get user => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -771,6 +785,25 @@ class TeamTasks extends Table {
   /// neither the CouchDB document nor `TeamTask.serialize` — so a synced row
   /// arrives with it false and each device notifies its own assignee once.
   BoolColumn get isNotified => boolean().withDefault(const Constant(false))();
+
+  /// Port of `TeamTask.sync` and `TeamTask.link` — two JSON sub-objects the
+  /// Kotlin stores as strings (`gson.toJson(JsonUtils.getJsonObject(…))`) and
+  /// re-emits verbatim (`TeamTask.serialize`: `gson.fromJson(task.sync, …)`).
+  ///
+  /// They are stored rather than rebuilt because `upsertTask` fills them in
+  /// **only when blank**, and it has exactly one caller — `createTask`. So a
+  /// task that came from the server keeps the server's `sync` (whose
+  /// `planetCode` names the planet that authored it, not this device's) and
+  /// the server's `link` for the rest of its life, through every later edit.
+  /// Rebuilding them from `teamId` and the session's planet code, which is
+  /// what the port did before these columns existed, re-stamps someone else's
+  /// task as locally authored here on the first edit.
+  ///
+  /// A document with no `link`/`sync` key stores the string `"{}"`, because
+  /// `JsonUtils.getJsonObject` returns an empty object for a missing key — not
+  /// null, so `upsertTask` would not treat it as blank either.
+  TextColumn get sync => text().nullable()();
+  TextColumn get link => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

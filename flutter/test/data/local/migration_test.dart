@@ -772,6 +772,58 @@ void main() {
     expect(survivor?.isNotified, isFalse);
   });
 
+  test('a team task keeps its sync and link across v46', () async {
+    // `team_tasks` is preserved, so v46's `sync`/`link` columns need the same
+    // hand-written `_addColumnIfMissing` step `isNotified` needed at v32. Both
+    // are JSON sub-objects the server authored and nothing on the device can
+    // reconstruct — `sync.planetCode` names the planet the task came from —
+    // so losing them would silently re-stamp another planet's task as locally
+    // authored on its next upload.
+    await database.teamTaskDao.upsert(
+      TeamTasksCompanion.insert(
+        id: 'task-1',
+        teamId: 'team-1',
+        title: const Value('Submit the report'),
+        isUpdated: const Value(true),
+        sync: const Value('{"type":"local","planetCode":"gua"}'),
+        link: const Value('{"teams":"team-1"}'),
+      ),
+    );
+
+    await runUpgrade(from: 45);
+
+    final survivor = await database.teamTaskDao.getById('task-1');
+    expect(survivor?.title, 'Submit the report');
+    expect(survivor?.isUpdated, isTrue, reason: 'still owed to the server');
+    expect(survivor?.sync, '{"type":"local","planetCode":"gua"}');
+    expect(survivor?.link, '{"teams":"team-1"}');
+  });
+
+  test('the v46 columns are added, not defaulted, on an old row', () async {
+    // The migration writes no backfill: a row that predates v46 lands with
+    // null in both columns, and `TeamTasksRepository.serialize` falls back to
+    // the `upsertTask` rebuild for it — byte-for-byte what the port uploaded
+    // for every task before this version, so no existing task changes shape.
+    await database.teamTaskDao.upsert(
+      TeamTasksCompanion.insert(
+        id: 'task-old',
+        teamId: 'team-1',
+        title: const Value('Older task'),
+      ),
+    );
+    await database.customStatement(
+      'UPDATE team_tasks SET sync = NULL, link = NULL',
+    );
+
+    await runUpgrade(from: 45);
+
+    final survivor = await database.teamTaskDao.getById('task-old');
+    // `isNull` is ambiguous in this file — drift's query builder exports one
+    // too — so the bare literal stands in for it, as elsewhere here.
+    expect(survivor?.sync, null);
+    expect(survivor?.link, null);
+  });
+
   test('feedback indexes are present after an upgrade', () async {
     // The Kotlin `all: smoother model database indexing` commit (8f993472e)
     // added `openTime` and `isUploaded` indices to the feedback table. Both
