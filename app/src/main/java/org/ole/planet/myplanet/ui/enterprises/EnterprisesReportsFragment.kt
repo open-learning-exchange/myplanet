@@ -5,7 +5,6 @@ import android.app.DatePickerDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -347,27 +346,27 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                 binding.endDate.error = "end date is required"
                 false
             }
-            TextUtils.isEmpty("${binding.summary.text}") -> {
+            "${binding.summary.text}".isNullOrEmpty() -> {
                 binding.summary.error = "summary is required"
                 false
             }
-            TextUtils.isEmpty("${binding.beginningBalance.text}") -> {
+            "${binding.beginningBalance.text}".isNullOrEmpty() -> {
                 binding.beginningBalance.error = "beginning balance is required"
                 false
             }
-            TextUtils.isEmpty("${binding.sales.text}") -> {
+            "${binding.sales.text}".isNullOrEmpty() -> {
                 binding.sales.error = "sales is required"
                 false
             }
-            TextUtils.isEmpty("${binding.otherIncome.text}") -> {
+            "${binding.otherIncome.text}".isNullOrEmpty() -> {
                 binding.otherIncome.error = "other income is required"
                 false
             }
-            TextUtils.isEmpty("${binding.personnel.text}") -> {
+            "${binding.personnel.text}".isNullOrEmpty() -> {
                 binding.personnel.error = "personnel is required"
                 false
             }
-            TextUtils.isEmpty("${binding.nonPersonnel.text}") -> {
+            "${binding.nonPersonnel.text}".isNullOrEmpty() -> {
                 binding.nonPersonnel.error = "non-personnel is required"
                 false
             }

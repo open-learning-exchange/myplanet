@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.user
 
 import android.content.Context
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
@@ -62,7 +61,7 @@ class UserArrayAdapter(
         holder.binding.txtName.text = context.getString(R.string.two_strings, user.getFullName(), "(${user.name})")
         holder.binding.txtJoined.text = context.getString(R.string.joined_colon, TimeUtils.formatDate(user.joinDate))
 
-        if (!TextUtils.isEmpty(user.userImage)) {
+        if (!user.userImage.isNullOrEmpty()) {
             ImageUtils.loadProfileImage(user.userImage, holder.binding.ivUser, avatarSize)
         } else {
             holder.binding.ivUser.setImageResource(R.drawable.profile)
