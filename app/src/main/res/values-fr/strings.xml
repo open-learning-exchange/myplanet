@@ -1121,6 +1121,9 @@
     <string name="user_verification_in_progress">Vérification de l\'utilisateur en cours. Veuillez patienter pendant que nous traitons les données.</string>
     <string name="go_to_mylibrary">Aller à Ma Bibliothèque</string>
     <string name="choose_an_option">Choisissez une option</string>
+    <string name="profile_guest_banner_message">Invité — connectez-vous pour enregistrer votre profil</string>
+    <string name="profile_label_level">Niveau</string>
+    <string name="profile_activity_section">Activité</string>
     <string name="welcome">Bienvenue %1$s</string>
     <string name="edit_plan">Modifier le plan</string>
     <string name="show_additional_fields">afficher les champs supplémentaires</string>

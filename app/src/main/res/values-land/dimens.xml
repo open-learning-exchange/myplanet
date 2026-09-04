@@ -9,4 +9,9 @@
     <dimen name="dashboard_chip_gap">2dp</dimen>
     <dimen name="dashboard_page_padding">6dp</dimen>
     <dimen name="dashboard_tile_gap">4dp</dimen>
+
+    <!-- User profile — short landscape height gets a shallower banner and a smaller avatar -->
+    <dimen name="profile_banner_padding_top">12dp</dimen>
+    <dimen name="profile_banner_padding_bottom">24dp</dimen>
+    <dimen name="profile_avatar_size">64dp</dimen>
 </resources>

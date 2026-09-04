@@ -98,4 +98,12 @@
     <color name="list_status_in_progress_text">#8A6400</color>
     <color name="list_status_not_started_bg">#F4EFE6</color>
     <color name="list_status_not_started_text">#807868</color>
+
+    <!-- User profile — blue banner redesign. Translucent-white chrome painted on colorPrimary;
+         permitted by the design system as the one exception to "no new hex values". -->
+    <color name="profile_avatar_ring">#E6FFFFFF</color>
+    <color name="profile_text_on_primary_secondary">#D1FFFFFF</color>
+    <color name="profile_button_stroke_on_primary">#B3FFFFFF</color>
+    <color name="profile_button_fill_on_primary">#1FFFFFFF</color>
+    <color name="profile_guest_pill_bg">#29FFFFFF</color>
 </resources>

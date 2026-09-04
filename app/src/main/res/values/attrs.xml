@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="MaxWidthFrameLayout">
+        <!-- Optional cap; falls back to the class's default (1040dp) when unset -->
+        <attr name="maxContentWidth" format="dimension" />
+    </declare-styleable>
+</resources>

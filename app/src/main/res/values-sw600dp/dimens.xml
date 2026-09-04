@@ -3,4 +3,7 @@
     <dimen name="dashboard_chip_width">150dp</dimen>
     <dimen name="dashboard_rail_width">250dp</dimen>
     <dimen name="dashboard_page_padding">16dp</dimen>
+
+    <!-- User profile — a little more breathing room around the two-column card on tablet/foldable -->
+    <dimen name="profile_card_side_padding">16dp</dimen>
 </resources>

@@ -1120,6 +1120,9 @@
     <string name="user_verification_in_progress">Hubinta isticmaalaha ayaa socota. Fadlan sug inta aan xogta ka shaqeynayno.</string>
     <string name="go_to_mylibrary">Tag Maktabaddayda</string>
     <string name="choose_an_option">Dooro ikhtiyaar</string>
+    <string name="profile_guest_banner_message">Marti — soo gal si aad u kaydiso astaantaada</string>
+    <string name="profile_label_level">Heerka</string>
+    <string name="profile_activity_section">Firfircoonaanta</string>
     <string name="welcome">Soo dhawoow %1$s</string>
     <string name="edit_plan">Wax ka beddel qorshaha</string>
     <string name="show_additional_fields">muuji beeraha dheeraadka ah</string>
