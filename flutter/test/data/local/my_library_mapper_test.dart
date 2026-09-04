@@ -1,4 +1,6 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/data/local/my_library_mapper.dart';
 
 void main() {
@@ -284,6 +286,84 @@ void main() {
     test('returns null for empty or hostless input', () {
       expect(MyLibraryMapper.credentialFreeBase(''), isNull);
       expect(MyLibraryMapper.credentialFreeBase('not a url'), isNull);
+    });
+  });
+
+  group('the absent companion value through the real upsert', () {
+    // `Value.absent()` is how "the Kotlin skips this assignment" is spelled,
+    // and it only means that if the write path honours it. The Kotlin mutates
+    // an entity in place, so leaving a field alone is genuine; here the
+    // companion goes through `MyLibraryDao.upsertAll`, which is
+    // `insertAllOnConflictUpdate`. Both halves passing alone is the failure
+    // shape Phase 74 and Phase 100 each shipped, so the pair is asserted here.
+    late AppDatabase db;
+
+    setUp(() => db = AppDatabase.memory());
+    tearDown(() => db.close());
+
+    Future<MyLibraryRow?> upsertDoc(Map<String, dynamic> doc) async {
+      final companion = MyLibraryMapper.fromDoc(doc, couchDbUrl: couchDbUrl);
+      await db.myLibraryDao.upsertAll([companion!]);
+      return db.myLibraryDao.getById('res-1');
+    }
+
+    test('a public document does not clear a stored privateFor', () async {
+      await db.myLibraryDao.upsertAll([
+        MyLibraryTableCompanion.insert(
+          id: 'res-1',
+          title: const Value('Doc'),
+          isPrivate: const Value(true),
+          privateFor: const Value('team-1'),
+        ),
+      ]);
+
+      final row = await upsertDoc({
+        '_id': 'res-1',
+        'title': 'Doc',
+        'private': false,
+      });
+
+      expect(row?.isPrivate, isFalse, reason: 'the document does set this');
+      expect(
+        row?.privateFor,
+        'team-1',
+        reason:
+            'the assignment is inside the isPrivate branch, so it is not '
+            'reached — an absent column must stay out of DO UPDATE SET',
+      );
+    });
+
+    test('a brand-new row takes the column default when absent', () async {
+      // The other half of the same question: absent on the *insert* path is
+      // the column default, which is null — the same value a fresh Kotlin
+      // entity carries when the assignment is skipped.
+      final row = await upsertDoc({
+        '_id': 'res-1',
+        'title': 'Doc',
+        'private': false,
+      });
+
+      expect(row?.privateFor, null);
+    });
+
+    test('a private document does overwrite the stored team', () async {
+      await db.myLibraryDao.upsertAll([
+        MyLibraryTableCompanion.insert(
+          id: 'res-1',
+          title: const Value('Doc'),
+          isPrivate: const Value(true),
+          privateFor: const Value('team-1'),
+        ),
+      ]);
+
+      final row = await upsertDoc({
+        '_id': 'res-1',
+        'title': 'Doc',
+        'private': true,
+        'privateFor': {'teams': 'team-2'},
+      });
+
+      expect(row?.privateFor, 'team-2');
     });
   });
 }

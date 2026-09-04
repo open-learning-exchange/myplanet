@@ -265,10 +265,19 @@ as well.
 
 ## The tests
 
-19 new, across five files: 6 in `my_library_mapper_test.dart`, 5 in
+22 new, across five files: 9 in `my_library_mapper_test.dart`, 5 in
 `team_tasks_sync_test.dart`, 3 in `ratings_sync_test.dart`, 2 in
 `ratings_uploader_test.dart`, 1 in `ratings_repository_test.dart`, and 2
-preservation tests in `migration_test.dart`. 2067 pass, up from 2048.
+preservation tests in `migration_test.dart`. 2070 pass, up from 2048.
+
+Three of the nine are the pair Phase 74 and Phase 100 each shipped one half
+of: `Value.absent()` is how "the Kotlin skips this assignment" is spelled,
+and it only means that if the **write path** honours it. The mapper tests
+assert the companion; these drive it through the real `MyLibraryDao.upsertAll`
+and assert the row — a stored `privateFor` survives a public document, an
+absent value on the insert path takes the column default, and a private
+document does still overwrite. Turning the absent into an explicit
+`Value(null)` reddens the first of the three, so it is not tautological.
 
 Every document is built in the shape CouchDB actually stores — a task with
 `sync`/`link` sub-objects and no `status`, a rating with the rater embedded and
