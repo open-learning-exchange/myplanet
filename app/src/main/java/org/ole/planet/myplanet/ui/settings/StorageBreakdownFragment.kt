@@ -200,22 +200,37 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
         }
     }
 
-    private data class ScanResult(val totalBytes: Long, val sizes: LongArray, val counts: IntArray)
+    internal data class ScanResult(val totalBytes: Long, val sizes: LongArray, val counts: IntArray)
 
     private fun scanStorage(): ScanResult {
+        return scanStorage(File(FileUtils.getOlePath(requireContext())))
+    }
+
+    internal fun scanStorage(oleDir: File): ScanResult {
         val sizes = LongArray(categories.size)
         val counts = IntArray(categories.size)
 
-        val oleDir = File(FileUtils.getOlePath(requireContext()))
         if (!oleDir.exists() || !oleDir.isDirectory) return ScanResult(0L, sizes, counts)
+
+        val extMap = buildMap {
+            categories.forEachIndexed { index, category ->
+                category.extensions.forEach { ext ->
+                    put(ext, index)
+                }
+            }
+        }
 
         var total = 0L
 
         oleDir.walkTopDown().filter { it.isFile }.forEach { file ->
-            val ext = file.extension.lowercase()
+            val ext = file.extension
+            val index = if (ext.isEmpty()) {
+                StorageCategories.OTHER_INDEX
+            } else {
+                extMap[ext] ?: extMap[ext.lowercase()] ?: StorageCategories.OTHER_INDEX
+            }
             val size = file.length()
             total += size
-            val index = StorageCategories.indexOf(ext)
             sizes[index] += size
             counts[index]++
         }
