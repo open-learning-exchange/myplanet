@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.surveys
 
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -26,7 +25,7 @@ class SendSurveyFragment : BaseDialogFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentSendSurveyBinding = FragmentSendSurveyBinding.inflate(inflater, container, false)
-        if (TextUtils.isEmpty(id)) {
+        if (id.isNullOrEmpty()) {
             dismiss()
             return fragmentSendSurveyBinding.root
         }
