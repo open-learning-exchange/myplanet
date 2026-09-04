@@ -98,6 +98,12 @@ class Achievement {
             }
         )
 
+        /**
+         * Parses a list of JSON strings into a [JsonArray].
+         *
+         * Cached elements are returned directly without deep copying. Callers must not mutate
+         * the elements contained in the returned array.
+         */
         private fun parseStringListToJsonArray(list: List<String>?): JsonArray {
             val array = JsonArray()
             for (s in list ?: emptyList()) {
@@ -106,7 +112,7 @@ class Achievement {
                     ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
                     parsedJsonCache[s] = ob
                 }
-                array.add(ob?.deepCopy())
+                array.add(ob)
             }
             return array
         }
