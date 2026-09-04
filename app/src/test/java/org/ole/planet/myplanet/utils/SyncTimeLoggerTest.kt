@@ -61,6 +61,48 @@ class SyncTimeLoggerTest {
     }
 
     @Test
+    fun testEndProcess() {
+        mockkStatic(Log::class)
+        every { Log.isLoggable(any(), any()) } returns false
+
+        var currentTime = 1000L
+        val timeProvider = mockk<TimeProvider> {
+            every { now() } answers { currentTime }
+        }
+
+        val testDispatcher = UnconfinedTestDispatcher()
+        val logger = SyncTimeLogger(
+            timeProvider = timeProvider,
+            appScope = CoroutineScope(testDispatcher),
+            dispatcherProvider = TestDispatcherProvider(testDispatcher),
+            sharedPrefManager = mockk(relaxed = true),
+            serverUrlMapper = mockk(relaxed = true),
+            diagnosticsRepository = mockk(relaxed = true),
+            serverReachabilityProvider = mockk(relaxed = true)
+        )
+
+        logger.startLogging()
+
+        // Call endProcess for a process that was never started (missing start key)
+        currentTime = 1200L
+        logger.endProcess("nonExistentProcess", itemCount = 5)
+
+        // Call startProcess and endProcess for a valid process
+        currentTime = 1500L
+        logger.startProcess("validProcess")
+
+        currentTime = 2000L
+        logger.endProcess("validProcess", itemCount = 10)
+
+        currentTime = 2500L
+        logger.stopLogging()
+
+        val summary = logger.generateSummary()
+        assertTrue(summary.contains("validProcess"))
+        assertTrue(!summary.contains("nonExistentProcess"))
+    }
+
+    @Test
     fun testExtractProcessName() {
         assertEquals("Courses", SyncTimeLogger.extractProcessName("courses"))
         assertEquals("Courses", SyncTimeLogger.extractProcessName("api/v1/courses"))
