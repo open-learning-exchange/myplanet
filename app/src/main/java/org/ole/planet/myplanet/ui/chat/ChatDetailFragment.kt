@@ -70,6 +70,8 @@ class ChatDetailFragment : Fragment() {
     private var lastAiProvidersError: Boolean? = null
     private var lastAiProviders: Map<String, Boolean>? = null
 
+    private var cachedRawModelsString: String? = null
+    private var cachedModelsMap: Map<String, String>? = null
 
     private var isUserLoaded = false
     private var isAiUnavailable = false
@@ -594,12 +596,18 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun getModelsMap(): Map<String, String> {
-        val modelsString = sharedPrefManager.getRawString("ai_models").takeIf { it.isNotEmpty() }
-        return if (modelsString != null) {
-            JsonUtils.gson.fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type)
+        val modelsString = sharedPrefManager.getRawString("ai_models")
+        if (modelsString == cachedRawModelsString && cachedModelsMap != null) {
+            return cachedModelsMap!!
+        }
+        val parsedMap: Map<String, String> = if (modelsString.isNotEmpty()) {
+            JsonUtils.gson.fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type) ?: emptyMap()
         } else {
             emptyMap()
         }
+        cachedRawModelsString = modelsString
+        cachedModelsMap = parsedMap
+        return parsedMap
     }
 
     private fun getCachedProviderAvailability(): Map<String, Boolean>? {
@@ -687,6 +695,9 @@ class ChatDetailFragment : Fragment() {
         lastAiProvidersLoading = null
         lastAiProvidersError = null
         lastAiProviders = null
+
+        cachedRawModelsString = null
+        cachedModelsMap = null
 
         _binding = null
         super.onDestroyView()
