@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -451,12 +450,12 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     private fun addViewIn(`object`: JsonObject, news: News) {
-        if (!TextUtils.isEmpty(news.viewableId)) {
+        if (!news.viewableId.isNullOrEmpty()) {
             `object`.addProperty("viewableId", news.viewableId)
             `object`.addProperty("viewableBy", news.viewableBy)
         }
         val viewInStr = news.viewIn
-        if (!TextUtils.isEmpty(viewInStr)) {
+        if (!viewInStr.isNullOrEmpty()) {
             val ar = plainGson.fromJson(viewInStr, JsonArray::class.java)
             if (!ar.isEmpty()) `object`.add("viewIn", ar)
         }
