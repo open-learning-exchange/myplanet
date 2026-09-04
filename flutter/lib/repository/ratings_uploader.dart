@@ -93,10 +93,12 @@ class RatingsUploader {
       // ratings by it, so a document without one cannot be shown back to its
       // author or deduplicated against their next rating; it is not optional.
       //
-      // Since schema v46 both writers of the row fill the column, so the
-      // `users`-table rebuild below is a fallback rather than the path: it
-      // covers a rating whose rater is not a row on this device at all, which
-      // the stored string handles and a lookup cannot.
+      // Since schema v46 both writers of the row fill the column — and
+      // `ratings` is not a preserved table, so the bump left no row behind
+      // that lacks it — the `users`-table rebuild below is **unreachable in
+      // production**. It is kept as the defence for a future writer that
+      // forgets the column, not because any path needs it today, and the test
+      // that covers it pins a row shape nothing can currently produce.
       'user':
           _storedRater(row.user) ??
           RatingsRepository.raterDocument(user, row.parentCode, row.planetCode),
@@ -126,10 +128,13 @@ class RatingsUploader {
 
   /// The rater object stored on the row, or `null` when there is none to read.
   ///
-  /// An empty object counts as none: `JsonUtils.getJsonObject` returns one for
-  /// a document with no `user` key, so `"{}"` is what such a document stores,
-  /// and sending it would name nobody where the rebuild can still name the
-  /// signed-in user.
+  /// An empty object counts as none. `JsonUtils.getJsonObject` returns one for
+  /// a document with no `user` key, so `"{}"` is what such a document stores —
+  /// but that row is also `isUpdated = false` and cannot reach an upload, and
+  /// the same branch reads its `userId` out of the same empty object, so the
+  /// rebuild would name nobody either. Treating `"{}"` as none is therefore a
+  /// choice about which shape to hand a future caller, not a rescue of this
+  /// one; the Kotlin sends the empty object.
   static Map<String, dynamic>? _storedRater(String? stored) {
     if (stored == null || stored.trim().isEmpty) return null;
     try {

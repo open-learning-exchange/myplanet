@@ -29,16 +29,27 @@ difference is the whole reason `localAuthorityTables` exists:
 - **`rating` is not preserved**, so the upgrade drops and recreates it. Every
   local rating goes with it, including one still flagged `isUpdated`.
 
-That last loss is narrower than it sounds and **is not new to this phase** —
-every schema bump since the table existed has done it, and it is the documented
-drop-and-resync policy. Two things bound it:
+That last loss is **not new to this phase** — every schema bump since the
+table existed has done it, and it is the documented drop-and-resync policy —
+but it is worse than "the rating is gone", and the second audit pass is what
+sharpened it:
 
-- A rating already queued for upload is safe. `RatingsUploader.queuePending`
-  writes the whole serialized document into `outbox`, which **is** preserved,
-  so the upload still happens and the next `ratings` walk pulls the row back.
-- What is lost is the window between "the user tapped a star" and "a sync ran":
-  rate a resource with no connectivity, never sync, then take an app update
-  that bumps the schema, and the rating is gone with no warning.
+- A rating already queued for upload still **uploads**, because `outbox` is
+  preserved and carries the whole serialized document. What does not survive
+  is the *acknowledgement*: `RatingDao.markUploaded` is the only thing linking
+  the outbox entry back to the row, and after the drop there is no row for it
+  to update. It writes 0 rows and returns quietly.
+- So the failure is duplication, not just loss. Rate a resource offline → the
+  payload is queued → an update bumps the schema and `ratings` is dropped →
+  connectivity returns, the drain POSTs, CouchDB mints document D1, and the
+  acknowledgement lands on nothing → the user reopens the resource before the
+  first `ratings` walk, sees no stars because the local row is gone, and rates
+  again → a second row, a second POST, document D2. `_summarize` then counts
+  both: *2 ratings, average 5*. That is Phase 119's defect 3 re-created by the
+  schema bump, and it self-heals only if the walk happens to run before the
+  user re-rates.
+- The narrow window is real: between "the user tapped a star" and "a sync ran",
+  the rating is simply gone, with no warning.
 
 **Reported, not acted on:** by the port's own test — *can a sync give this
 back?* — `rating` fails it exactly as `team_tasks` does, and the two are
@@ -237,7 +248,34 @@ makes the two writers of the column agree, and that is all it does.
    only reason a column is null here is that the migration left it so.
 4. **The fill happens at serialize time, not create time** (divergence 1 under
    defect 1 above).
-5. **`Ratings.isUpdated` defaults to `true`** in the Drift table where the
+5. **The stored rater is credential-free too, not only the sent one.**
+   `insertRatingsFromSync` reduces the document's `user` object through
+   `storableRater` — `_attachments` as the Kotlin does, and `derived_key`,
+   `salt`, `password_scheme` and `password` as it does not. Storing the object
+   verbatim would keep a copy of every rater-on-the-planet's password verifier
+   in this device's database file, one per rating row, for a value nothing
+   reads back. Caught by the second audit as an inconsistency rather than a
+   bug: divergence 1 argued that these fields must not go into a *document*
+   while the same commit wrote them into a *database*, and a threat model that
+   distinguishes the two has to say why. There is no why.
+6. **An unusable `privateFor.teams` stores null rather than the value or the
+   document.** A non-string `teams` (an array, say) would stringify into the
+   column through `JsonUtils.getString` — reproducing the Phase 104 defect one
+   level below the one being fixed. The Kotlin throws out of `asString` and
+   `batchInsertResources`' per-document `try`/`catch` silently drops the whole
+   resource. Neither is right, so the port writes the null the Kotlin already
+   writes for an object with no `teams` key.
+7. **`createdOn`, `parentCode`, `planetCode` and the rater object share one
+   source.** The Kotlin builds all four from a single `resolvedUser`
+   (`RatingsRepositoryImpl.kt:159-162`), so `createdOn == parentCode` holds by
+   construction. The first cut of this phase read `createdOn` and the rater's
+   codes from the `users` row while `parentCode` came from the caller's
+   session, which breaks the invariant whenever the two disagree — and the
+   Phase 119 `tablet_users` walk can arrange exactly that, by rewriting the
+   stored row under a session object that is never re-read. The caller's
+   values now win everywhere; the row supplies only the identity the caller
+   does not carry.
+8. **`Ratings.isUpdated` defaults to `true`** in the Drift table where the
    Kotlin entity defaults to `false`. Pre-existing, not touched here, and
    latent rather than live: `insertRatingsFromSync` sets it explicitly. It is
    recorded because a future companion on a sync-in path that omits it would
@@ -270,6 +308,17 @@ makes the two writers of the column agree, and that is all it does.
   empty `row.assignee` and emits `{'_id': …}` for an assignee whose user row has
   not synced yet. Out of scope for a column phase, and it is arguably the port
   that is right — the Kotlin silently drops the assignment from the document.
+- **`RatingsUploader`'s `users`-table rebuild is unreachable.** Both writers
+  of `rating.user` fill the column, and `ratings` is not preserved, so the
+  bump leaves no row behind without one. The rebuild — and the
+  `_userDao.getById` that feeds it — is kept as a defence for a future writer
+  that forgets the column, and its test pins a row shape production can no
+  longer produce. Said plainly here because the first cut's comment claimed it
+  covered a live case, which is the Phase 106 shape: a correct mechanism read
+  backwards.
+- **The `ALTER`-blindness in the older preservation tests** — see *The
+  migration* above. `isNotified` (v32), `imageName` (v31) and `reactions`
+  (v42) each assert a row survives and none asserts its `ALTER` ran.
 - **The `_rev`-after-queue hole Phase 119 reported is still open.** Unchanged
   here: every uploader serializes at enqueue time and `OutboxDrainer` replays
   the stored body, so a row queued offline and then synced still posts without
@@ -287,10 +336,10 @@ as well.
 
 ## The tests
 
-23 new, across five files: 9 in `my_library_mapper_test.dart`, 5 in
-`team_tasks_sync_test.dart`, 3 in `ratings_sync_test.dart`, 2 in
-`ratings_uploader_test.dart`, 1 in `ratings_repository_test.dart`, and 3
-migration tests. 2071 pass, up from 2048.
+26 new, across five files: 10 in `my_library_mapper_test.dart`, 5 in
+`team_tasks_sync_test.dart`, 4 in `ratings_sync_test.dart`, 2 in
+`ratings_uploader_test.dart`, 2 in `ratings_repository_test.dart`, and 3
+migration tests. 2074 pass, up from 2048.
 
 Three of the nine are the pair Phase 74 and Phase 100 each shipped one half
 of: `Value.absent()` is how "the Kotlin skips this assignment" is spelled,

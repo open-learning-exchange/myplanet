@@ -243,6 +243,24 @@ void main() {
       },
     );
 
+    test('a non-string teams value does not stringify into the column', () {
+      // The defect this whole change exists to remove is a Dart literal in a
+      // column (`{teams: t}`, the Phase 104 `SurveyMapper.choices` shape).
+      // `JsonUtils.getString` falls through to `toString()` for any non-string,
+      // so reading one level deeper reproduces it one level down: an array
+      // `teams` would store `[t1, t2]`.
+      final row = MyLibraryMapper.fromDoc({
+        '_id': 'res-1',
+        'title': 'Doc',
+        'private': true,
+        'privateFor': {
+          'teams': ['t1', 't2'],
+        },
+      }, couchDbUrl: couchDbUrl);
+
+      expect(row!.privateFor.value, isNull);
+    });
+
     test('a privateFor object with no teams key nulls the column', () {
       // `privateForObj.get("teams")?.asString` is null, and the Kotlin assigns
       // that null. This one *does* write.

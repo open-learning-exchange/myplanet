@@ -211,8 +211,12 @@ void main() {
   });
 
   test('a row with no stored rater still names its author', () async {
-    // The fallback: `_toDoc` rebuilds from the `users` table, which is what
-    // every row did before v46.
+    // The fallback, which is what every row did before v46. It is unreachable
+    // now — both writers of the column fill it, and `ratings` is not preserved
+    // so the bump left no row behind without it — so this pins a defence
+    // rather than a live path. Kept deliberately: the column is nullable, and
+    // a future writer that forgets it should degrade to a named author rather
+    // than an anonymous document.
     await database.userDao.upsert(
       UsersCompanion.insert(
         id: 'user-1',

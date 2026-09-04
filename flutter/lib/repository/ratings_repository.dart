@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 
 import '../core/config/server_config.dart';
 import '../core/sync/sync_result.dart';
@@ -114,10 +115,16 @@ class RatingsRepository {
         comment: Value(_nullable(comment)),
         parentCode: Value(parentCode),
         planetCode: Value(planetCode),
-        // `setRatingData` writes `createdOn = resolvedUser.parentCode`. It is
-        // not a timestamp despite the name, and the column exists because the
-        // upload sends it back verbatim.
-        createdOn: Value(rater?.parentCode ?? parentCode),
+        // `setRatingData` writes `createdOn = resolvedUser.parentCode` on the
+        // line above `parentCode = resolvedUser.parentCode`
+        // (`RatingsRepositoryImpl.kt:159-160`) — one object, so the two columns
+        // are equal by construction. They must therefore share a source here
+        // too: reading `createdOn` from the `users` row while `parentCode`
+        // comes from the caller's session breaks the invariant whenever the
+        // two disagree, which the `tablet_users` walk can arrange by rewriting
+        // the stored row under a session that is never re-read. It is not a
+        // timestamp despite the name.
+        createdOn: Value(parentCode),
         // `user = gson.toJson(resolvedUser.serialize())` — the rater as they
         // were at the moment they rated, snapshotted rather than re-derived
         // at upload time, which is what the Kotlin does and what
@@ -139,6 +146,11 @@ class RatingsRepository {
   /// and attributes ratings by `_id` and `name`; none of the credential fields
   /// is read back by either app. The same judgement `MyLibraryMapper` makes
   /// about the satellite PIN in a resource URL.
+  /// The codes come from the caller rather than the row, for the same
+  /// single-source reason `createdOn` does: the Kotlin builds all four values
+  /// from one `resolvedUser`, so a document whose `user.parentCode` disagrees
+  /// with its own top-level `parentCode` is a shape neither app should
+  /// produce. The row supplies only the identity the caller does not carry.
   static Map<String, dynamic> raterDocument(
     UserRow? user,
     String? parentCode,
@@ -146,8 +158,8 @@ class RatingsRepository {
   ) => {
     if (user?.couchId != null) '_id': user!.couchId,
     'name': user?.name,
-    'planetCode': user?.planetCode ?? planetCode,
-    'parentCode': user?.parentCode ?? parentCode,
+    'planetCode': planetCode ?? user?.planetCode,
+    'parentCode': parentCode ?? user?.parentCode,
   };
 
   /// Port of the `"ratings"` arm of `TransactionSyncManager.syncDb`
@@ -201,11 +213,8 @@ class RatingsRepository {
   ///   Phase 74 did.
   ///
   /// The document's `createdOn` and its embedded `user` object are stored
-  /// verbatim as of schema v46, the way `RatingsRepositoryImpl.kt:114-118`
-  /// stores them — `user` as a JSON string with the base64 `_attachments`
-  /// removed first, which is what `:98-102` does and for the same reason the
-  /// bytes are worth nothing here: a profile photo re-encoded into every
-  /// rating row.
+  /// as of schema v46, the way `RatingsRepositoryImpl.kt:114-118` stores them
+  /// — `user` as a JSON string, reduced by [storableRater] first.
   ///
   /// Nothing in either app reads these two back for a *synced* row — the only
   /// reader is `Rating.serializeRating`, which runs on `isUpdated = 1` rows
@@ -281,7 +290,7 @@ class RatingsRepository {
           parentCode: Value(JsonUtils.getStringOrNull('parentCode', doc)),
           planetCode: Value(JsonUtils.getStringOrNull('planetCode', doc)),
           createdOn: Value(JsonUtils.getStringOrNull('createdOn', doc)),
-          user: Value(jsonEncode({...user}..remove('_attachments'))),
+          user: Value(jsonEncode(storableRater(user))),
           isUpdated: const Value(false),
         ),
       );
@@ -293,6 +302,38 @@ class RatingsRepository {
     }
     return companions.length + identityPatches.length;
   }
+
+  /// The rater object as it is stored on a synced row.
+  ///
+  /// `RatingsRepositoryImpl.kt:98-102` removes `_attachments` before
+  /// persisting, because the rater's base64 profile photo rides along inside
+  /// the rating document; the Kotlin's stated motive is SQLite's ~2MB
+  /// `CursorWindow`, and here it would simply be re-encoded into every rating
+  /// row.
+  ///
+  /// The credential fields go with it, which the Kotlin does **not** do.
+  /// `UserEntity.serialize()` writes `derived_key`, `salt` and
+  /// `password_scheme` into every document it builds (`UserEntity.kt:66-70`),
+  /// and a plaintext `password` for a member registered offline (`:61-65`), so
+  /// a `ratings` document carries the rater's password verifier. Storing it
+  /// verbatim would keep a copy for every rater on the planet in this device's
+  /// database file — one per rating row — for a value nothing reads back: the
+  /// only reader of this column is the upload, and a synced row is
+  /// `isUpdated = false` so it never reaches one, while a row the user
+  /// re-rates has its `user` overwritten by [submit] first.
+  ///
+  /// This is the same judgement [raterDocument] makes about what the port
+  /// *sends*, applied to what it *stores*. Making one and not the other was
+  /// the inconsistency a review pass caught: a threat model that distinguishes
+  /// a document from a database has to say why, and there is no why here.
+  @visibleForTesting
+  static Map<String, dynamic> storableRater(Map<String, dynamic> user) =>
+      {...user}
+        ..remove('_attachments')
+        ..remove('derived_key')
+        ..remove('salt')
+        ..remove('password_scheme')
+        ..remove('password');
 
   /// Maps each rater's CouchDB id to the local `users` row id, for the raters
   /// this page names.

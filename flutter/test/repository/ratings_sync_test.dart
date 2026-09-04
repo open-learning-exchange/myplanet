@@ -325,6 +325,39 @@ void main() {
       expect(row.user, isNot(contains('_attachments')));
     });
 
+    test('the rater credentials never reach the local database', () async {
+      // `UserEntity.serialize()` writes `derived_key`, `salt` and
+      // `password_scheme` into every document it builds (`UserEntity.kt:66-70`)
+      // — and a plaintext `password` for a member registered offline
+      // (`:61-65`) — so a `ratings` document carries the rater's password
+      // verifier. Storing the object verbatim would keep a copy for every
+      // rater on the planet in this device's SQLite file, one per rating row,
+      // for a value nothing ever reads back.
+      final doc = ratingDoc('rating-1', userId: 'org.couchdb.user:ada');
+      doc['user'] = <String, dynamic>{
+        '_id': 'org.couchdb.user:ada',
+        'name': 'ada',
+        'derived_key': 'deadbeef',
+        'salt': 'a1b2',
+        'password_scheme': 'pbkdf2',
+        'password': 'hunter2',
+      };
+      stubWalk([doc]);
+      await repository.sync(config: config);
+
+      final stored = (await db.ratingDao.findById('rating-1'))!.user!;
+      for (final secret in [
+        'derived_key',
+        'salt',
+        'password_scheme',
+        'password',
+      ]) {
+        expect(stored, isNot(contains(secret)), reason: secret);
+      }
+      // The fields that attribute the rating still survive.
+      expect(jsonDecode(stored)['name'], 'ada');
+    });
+
     test('a document with no user object stores an empty one', () async {
       // `JsonUtils.getJsonObject` returns an empty object for a missing key,
       // and `gson.toJson` of it is `"{}"`.
