@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- User profile details/edit grid column counts, overridden per size/orientation bucket -->
+    <integer name="profile_grid_columns">1</integer>
+    <integer name="profile_dialog_grid_columns">1</integer>
+</resources>

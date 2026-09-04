@@ -1125,6 +1125,10 @@
     <string name="user_verification_in_progress">User verification in progress. Please wait while we process the data.</string>
     <string name="go_to_mylibrary">Go To MyLibrary</string>
     <string name="choose_an_option">Choose an option</string>
+    <string name="profile_guest_banner_message">Guest — sign in to save your profile</string>
+    <string name="profile_secondary_line">%1$s · %2$s</string>
+    <string name="profile_label_level">Level</string>
+    <string name="profile_activity_section">Activity</string>
     <string name="welcome">Welcome %1$s</string>
     <string name="edit_plan">Edit Plan</string>
     <string name="show_additional_fields">show additional fields</string>

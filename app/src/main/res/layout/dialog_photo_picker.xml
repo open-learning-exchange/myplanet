@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_sheet_top_rounded"
+    android:orientation="vertical">
+
+    <View
+        android:layout_width="@dimen/profile_sheet_handle_width"
+        android:layout_height="@dimen/profile_sheet_handle_height"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="@dimen/padding_normal"
+        android:background="@drawable/bg_sheet_handle" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingStart="@dimen/profile_sheet_padding"
+        android:paddingTop="@dimen/padding_normal"
+        android:paddingEnd="@dimen/profile_sheet_padding"
+        android:paddingBottom="@dimen/padding_normal"
+        android:text="@string/choose_an_option"
+        android:textColor="@color/daynight_textColor"
+        android:textSize="@dimen/profile_sheet_title_text_size"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/option_capture_image"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center_vertical"
+        android:minHeight="@dimen/profile_sheet_row_min_height"
+        android:paddingStart="@dimen/profile_sheet_padding"
+        android:paddingEnd="@dimen/profile_sheet_padding"
+        android:text="@string/capture_image"
+        android:textColor="@color/daynight_textColor"
+        android:textSize="@dimen/text_size_mid" />
+
+    <TextView
+        android:id="@+id/option_select_gallery"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center_vertical"
+        android:minHeight="@dimen/profile_sheet_row_min_height"
+        android:paddingStart="@dimen/profile_sheet_padding"
+        android:paddingEnd="@dimen/profile_sheet_padding"
+        android:text="@string/select_gallery"
+        android:textColor="@color/daynight_textColor"
+        android:textSize="@dimen/text_size_mid" />
+
+    <TextView
+        android:id="@+id/option_cancel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center_vertical|end"
+        android:minHeight="@dimen/profile_touch_target_min"
+        android:paddingStart="@dimen/profile_sheet_padding"
+        android:paddingEnd="@dimen/profile_sheet_padding"
+        android:paddingBottom="@dimen/padding_normal"
+        android:text="@string/cancel"
+        android:textColor="@color/colorAccent"
+        android:textSize="@dimen/text_size_mid" />
+</LinearLayout>

@@ -34,8 +34,74 @@
     <dimen name="image_thumbnail_size_100">100dp</dimen>
     <dimen name="image_thumbnail_size_120">120dp</dimen>
     <dimen name="profile_image_size">150dp</dimen>
-    <dimen name="profile_name_text_size">18sp</dimen>
+    <dimen name="profile_name_text_size">22sp</dimen>
     <dimen name="profile_detail_text_size">16sp</dimen>
+
+    <!-- User profile — blue banner redesign -->
+    <dimen name="profile_banner_padding_top">20dp</dimen>
+    <dimen name="profile_banner_padding_bottom">44dp</dimen>
+    <dimen name="profile_banner_gap">10dp</dimen>
+    <dimen name="profile_secondary_gap">4dp</dimen>
+    <dimen name="profile_secondary_text_size">13sp</dimen>
+    <dimen name="profile_avatar_size">88dp</dimen>
+    <dimen name="profile_avatar_ring_width">3dp</dimen>
+    <dimen name="profile_fab_size">44dp</dimen>
+    <dimen name="profile_fab_ring_width">2dp</dimen>
+    <dimen name="profile_fab_icon_padding">10dp</dimen>
+    <dimen name="profile_fab_inset">-6dp</dimen>
+    <dimen name="profile_button_text_size">14sp</dimen>
+    <dimen name="profile_button_radius">8dp</dimen>
+    <dimen name="profile_touch_target_min">44dp</dimen>
+    <dimen name="profile_pill_radius">12dp</dimen>
+    <dimen name="profile_pill_text_size">12sp</dimen>
+    <dimen name="profile_pill_padding_horizontal">12dp</dimen>
+    <dimen name="profile_pill_padding_vertical">8dp</dimen>
+
+    <dimen name="profile_card_overlap_margin">-28dp</dimen>
+    <dimen name="profile_card_side_padding">12dp</dimen>
+    <dimen name="profile_card_max_width">1000dp</dimen>
+    <dimen name="profile_card_radius">12dp</dimen>
+    <dimen name="profile_card_elevation_details">2dp</dimen>
+    <dimen name="profile_card_elevation_activity">1dp</dimen>
+    <dimen name="profile_card_padding_vertical">4dp</dimen>
+    <dimen name="profile_section_label_padding_top">16dp</dimen>
+    <dimen name="profile_section_label_padding_bottom">8dp</dimen>
+    <dimen name="profile_section_gap">8dp</dimen>
+    <dimen name="profile_scroll_bottom_padding">24dp</dimen>
+
+    <dimen name="profile_row_min_height">56dp</dimen>
+    <dimen name="profile_row_padding_horizontal">16dp</dimen>
+    <dimen name="profile_row_padding_vertical">14dp</dimen>
+    <dimen name="profile_row_gap">12dp</dimen>
+    <dimen name="profile_label_column_width">104dp</dimen>
+    <dimen name="profile_label_text_size">13sp</dimen>
+    <dimen name="profile_stat_value_max_width">200dp</dimen>
+
+    <!-- Edit profile dialog -->
+    <dimen name="profile_dialog_max_width">620dp</dimen>
+    <dimen name="profile_dialog_header_padding">14dp</dimen>
+    <dimen name="profile_dialog_title_text_size">18sp</dimen>
+    <dimen name="profile_dialog_close_size">44dp</dimen>
+    <dimen name="profile_dialog_body_padding_horizontal">16dp</dimen>
+    <dimen name="profile_dialog_body_padding_top">20dp</dimen>
+    <dimen name="profile_dialog_body_padding_bottom">8dp</dimen>
+    <dimen name="profile_dialog_field_gap">16dp</dimen>
+    <dimen name="profile_dialog_field_gap_small">12dp</dimen>
+    <dimen name="profile_dialog_footer_padding">16dp</dimen>
+    <dimen name="profile_dialog_field_radius">8dp</dimen>
+    <dimen name="profile_dialog_field_stroke">1dp</dimen>
+    <dimen name="profile_dialog_field_stroke_focused">1.5dp</dimen>
+    <dimen name="profile_dialog_field_min_height">44dp</dimen>
+    <dimen name="profile_dialog_gender_row_height">44dp</dimen>
+    <dimen name="profile_dialog_label_text_size">12sp</dimen>
+
+    <!-- Photo picker bottom sheet -->
+    <dimen name="profile_sheet_corner_radius">12dp</dimen>
+    <dimen name="profile_sheet_title_text_size">16sp</dimen>
+    <dimen name="profile_sheet_row_min_height">56dp</dimen>
+    <dimen name="profile_sheet_handle_width">36dp</dimen>
+    <dimen name="profile_sheet_handle_height">4dp</dimen>
+    <dimen name="profile_sheet_padding">16dp</dimen>
 
     <dimen name="dashboard_tile_min_height">116dp</dimen>
     <dimen name="dashboard_tile_corner_radius">12dp</dimen>

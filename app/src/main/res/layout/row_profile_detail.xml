@@ -16,25 +16,22 @@
         android:paddingBottom="@dimen/profile_row_padding_vertical">
 
         <TextView
-            android:id="@+id/tv_title"
-            android:layout_width="0dp"
+            android:id="@+id/tv_label"
+            android:layout_width="@dimen/profile_label_column_width"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textColor="@color/daynight_textColor"
+            android:textColor="@color/hint_color"
             android:textSize="@dimen/text_size_mid" />
 
         <TextView
-            android:id="@+id/tv_description"
-            android:layout_width="wrap_content"
+            android:id="@+id/tv_value"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="0"
+            android:layout_weight="1"
             android:layout_marginStart="@dimen/profile_row_gap"
             android:ellipsize="end"
-            android:gravity="end"
+            android:fontFamily="sans-serif-medium"
             android:maxLines="1"
-            android:maxWidth="@dimen/profile_stat_value_max_width"
             android:textColor="@color/daynight_textColor"
-            android:textStyle="bold"
             android:textSize="@dimen/profile_detail_text_size" />
     </LinearLayout>
 

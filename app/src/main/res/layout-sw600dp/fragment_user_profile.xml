@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Structure is identical across configurations (see layout/ and layout-sw600dp/): banner
-     padding, avatar size, card side padding and the details-grid column count all come from
-     dimens/integers overridden per qualifier, so this one file already serves phone portrait,
-     phone landscape and tablet/foldable. The qualified copies exist so the intent is explicit
-     per breakpoint and to guarantee the resource lookup for @integer/profile_grid_columns etc. -->
+<!-- Structure is identical across configurations (see layout/ and layout-land/): banner padding,
+     avatar size, card side padding and the details-grid column count all come from dimens/integers
+     overridden per qualifier, so this one file already serves phone portrait, phone landscape and
+     tablet/foldable. The qualified copies exist so the intent is explicit per breakpoint and to
+     guarantee the resource lookup for @integer/profile_grid_columns etc. -->
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
