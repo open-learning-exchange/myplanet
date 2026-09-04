@@ -30,13 +30,14 @@ class LifeRepositoryImpl @Inject constructor(
         return userId?.takeIf { it.isNotBlank() && it != "--" }
     }
 
-    override suspend fun updateVisibility(isVisible: Boolean, myLifeId: String) {
+    override suspend fun updateVisibility(isVisible: Boolean, myLifeId: String): List<MyLife> {
         myLifeDao.updateVisibility(myLifeId, isVisible)
         val managedLives = myLifeDao.getByIds(listOf(myLifeId))
         val rawUserId = managedLives.firstOrNull()?.userId ?: sharedPrefManager.getUserId()
         val effectiveUserId = normalizeUserId(rawUserId)
         val updatedLives = getMyLifeByUserId(effectiveUserId)
         cacheMyLifeItems(effectiveUserId ?: "--", updatedLives)
+        return updatedLives
     }
 
     override suspend fun updateMyLifeListOrder(list: List<MyLife>) {
@@ -82,7 +83,10 @@ class LifeRepositoryImpl @Inject constructor(
         if (items.isNotEmpty() || defaultItems.isEmpty()) {
             return items
         }
-        seedMyLifeIfEmpty(effectiveUserId, defaultItems)
+        val seeded = seedMyLifeIfEmpty(effectiveUserId, defaultItems)
+        if (seeded.isNotEmpty()) {
+            return seeded
+        }
         return myLifeDao.getByUserId(effectiveUserId).distinctBy { it.dedupKey() }.sortedBy { it.weight }
     }
 
@@ -124,8 +128,9 @@ class LifeRepositoryImpl @Inject constructor(
             }
         }
 
-        seedMyLifeIfEmpty(effectiveUserId, seedBase)
-        val seeded = getMyLifeByUserId(effectiveUserId)
+        val seeded = seedMyLifeIfEmpty(effectiveUserId, seedBase).ifEmpty {
+            getMyLifeByUserId(effectiveUserId)
+        }
         cacheMyLifeItems(cacheKey, seeded)
         return seeded.filter { it.isVisible }.sortedBy { it.weight }
     }
@@ -135,9 +140,9 @@ class LifeRepositoryImpl @Inject constructor(
         sharedPrefManager.rawPreferences.edit { putString("$MY_LIFE_CACHE_PREFIX$userId", gson.toJson(cached)) }
     }
 
-    override suspend fun seedMyLifeIfEmpty(userId: String?, items: List<MyLife>) {
+    override suspend fun seedMyLifeIfEmpty(userId: String?, items: List<MyLife>): List<MyLife> {
         val effectiveUserId = normalizeUserId(userId)
-        seedMutex.withLock {
+        return seedMutex.withLock {
             val existing = myLifeDao.countByUserId(effectiveUserId)
             if (existing == 0) {
                 var weight = 1
@@ -152,6 +157,9 @@ class LifeRepositoryImpl @Inject constructor(
                     }
                 }
                 myLifeDao.insertAll(newItems)
+                newItems.distinctBy { it.dedupKey() }.sortedBy { it.weight }
+            } else {
+                emptyList()
             }
         }
     }

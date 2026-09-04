@@ -82,9 +82,8 @@ class LifeRepositoryImplTest {
         val defaultItems = listOf(
             MyLife().apply { title = "Default1"; this.userId = userId }
         )
-        val seededItem = MyLife().apply { title = "Default1"; this.userId = userId; _id = "seeded1" }
 
-        coEvery { myLifeDao.getByUserId(userId) } returnsMany listOf(emptyList(), listOf(seededItem))
+        coEvery { myLifeDao.getByUserId(userId) } returns emptyList()
         coEvery { myLifeDao.countByUserId(userId) } returns 0
 
         val result = repository.getMyLifeByUserId(userId, defaultItems)
@@ -92,6 +91,7 @@ class LifeRepositoryImplTest {
         assertEquals(1, result.size)
         assertEquals("Default1", result[0].title)
         coVerify(exactly = 1) { myLifeDao.insertAll(any()) }
+        coVerify(exactly = 1) { myLifeDao.getByUserId(userId) }
     }
 
     @Test
@@ -183,7 +183,7 @@ class LifeRepositoryImplTest {
         val insertedItemsSlot = slot<List<MyLife>>()
         coEvery { myLifeDao.insertAll(capture(insertedItemsSlot)) } returns Unit
 
-        repository.seedMyLifeIfEmpty(userId, items)
+        val seededResult = repository.seedMyLifeIfEmpty(userId, items)
 
         coVerify(exactly = 1) { myLifeDao.insertAll(any()) }
         val insertedItems = insertedItemsSlot.captured
@@ -196,6 +196,10 @@ class LifeRepositoryImplTest {
         assertTrue(insertedItems[0]._id.isNotEmpty())
         assertEquals("Title2", insertedItems[1].title)
         assertEquals(2, insertedItems[1].weight)
+
+        assertEquals(2, seededResult.size)
+        assertEquals("Title1", seededResult[0].title)
+        assertEquals("Title2", seededResult[1].title)
     }
 
     @Test
@@ -204,8 +208,9 @@ class LifeRepositoryImplTest {
         val items = listOf(MyLife().apply { title = "Title1"; this.userId = userId })
         coEvery { myLifeDao.countByUserId(userId) } returns 3
 
-        repository.seedMyLifeIfEmpty(userId, items)
+        val seededResult = repository.seedMyLifeIfEmpty(userId, items)
 
+        assertTrue(seededResult.isEmpty())
         coVerify(exactly = 0) { myLifeDao.insertAll(any()) }
     }
 
