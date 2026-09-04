@@ -100,10 +100,8 @@ open class MyCourse(
             synchronized(concatenatedLinks) {
                 linksToProcess = concatenatedLinks.toList()
             }
-            for (link in linksToProcess) {
-                existingConcatenatedLinks.add(link)
-            }
-            val jsonConcatenatedLinks = JsonUtils.gson.toJson(existingConcatenatedLinks.toList())
+            existingConcatenatedLinks.addAll(linksToProcess)
+            val jsonConcatenatedLinks = JsonUtils.gson.toJson(existingConcatenatedLinks)
             spm.setConcatenatedLinks(jsonConcatenatedLinks)
         }
 
