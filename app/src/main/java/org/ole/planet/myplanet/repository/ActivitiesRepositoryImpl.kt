@@ -434,10 +434,15 @@ class ActivitiesRepositoryImpl @Inject constructor(
 
         if (`object` != null) {
             val usages = `object`.getAsJsonArray("usages")
-            usages.addAll(MyPlanet.getTabletUsages(context, sharedPrefManager))
+            val tabletUsages = withContext(dispatcherProvider.io) {
+                MyPlanet.getTabletUsages(context, sharedPrefManager)
+            }
+            usages.addAll(tabletUsages)
             `object`.add("usages", usages)
         } else {
-            `object` = MyPlanet.getMyPlanetActivities(context, sharedPrefManager, userModel)
+            `object` = withContext(dispatcherProvider.io) {
+                MyPlanet.getMyPlanetActivities(context, sharedPrefManager, userModel)
+            }
         }
 
         apiInterface.postDoc(
