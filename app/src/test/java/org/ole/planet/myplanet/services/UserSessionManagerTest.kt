@@ -43,8 +43,6 @@ class UserSessionManagerTest {
         mockkStatic(Log::class)
         every { Log.e(any(), any(), any()) } returns 0
 
-        every { sharedPrefManager.getUserName() } returns "test_user"
-
         userSessionManager = UserSessionManager(
             context = context,
             sharedPrefManager = sharedPrefManager,
@@ -62,17 +60,11 @@ class UserSessionManagerTest {
     }
 
     @Test
-    fun `init retrieves user name successfully`() {
-        verify { sharedPrefManager.getUserName() }
-    }
-
-    @Test(expected = IllegalArgumentException::class)
-    fun `init throws IllegalArgumentException when sharedPrefManager throws`() {
-        every { sharedPrefManager.getUserName() } throws IllegalArgumentException("Mock error")
-
+    fun `constructs successfully with unstubbed SharedPrefManager mock`() {
+        val unstubbedPrefManager: SharedPrefManager = mockk()
         UserSessionManager(
             context = context,
-            sharedPrefManager = sharedPrefManager,
+            sharedPrefManager = unstubbedPrefManager,
             applicationScope = testScope,
             userRepository = userRepository,
             activitiesRepository = activitiesRepository,
