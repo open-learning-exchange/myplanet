@@ -12,6 +12,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
@@ -39,9 +40,9 @@ class LeadersViewModelTest {
 
 
     @Test
-    fun `loadLeaders parses non-empty community leaders from configurationsRepository`() = runTest {
-        val leadersJson = """{"docs":[{"_id":"leader_1","name":"Alice"}]}"""
-        every { configurationsRepository.getCommunityLeaders() } returns leadersJson
+    fun `loadLeaders fetches community leaders from configurationsRepository`() = runTest {
+        val expectedLeaders = listOf(UserEntity(id = "leader_1", name = "Alice"))
+        every { configurationsRepository.getCommunityLeaders() } returns expectedLeaders
 
         val viewModel = LeadersViewModel(configurationsRepository, dispatcherProvider)
         advanceUntilIdle()
@@ -54,13 +55,13 @@ class LeadersViewModelTest {
 
     @Test
     fun `loadLeaders returns empty list when community leaders is empty`() = runTest {
-        every { configurationsRepository.getCommunityLeaders() } returns ""
+        every { configurationsRepository.getCommunityLeaders() } returns emptyList()
 
         val viewModel = LeadersViewModel(configurationsRepository, dispatcherProvider)
         advanceUntilIdle()
 
         val result = viewModel.leaders.first()
-        assertEquals(emptyList<Any>(), result)
+        assertEquals(emptyList<UserEntity>(), result)
         verify { configurationsRepository.getCommunityLeaders() }
     }
 }
