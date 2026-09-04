@@ -463,7 +463,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun downloadResources(resources: List<MyLibrary>): Boolean {
         return try {
-            val urls = resources.filter { !it.isResourceOffline() }.mapNotNull { it.resourceRemoteAddress }
+            val urls = resources.mapNotNull { if (!it.isResourceOffline()) it.resourceRemoteAddress else null }
             if (urls.isEmpty()) {
                 return false
             }
