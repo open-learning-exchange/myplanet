@@ -16,6 +16,9 @@ object UrlUtils {
     private var cachedHeader: String? = null
 
     @Volatile
+    private var cachedBaseUrl: String? = null
+
+    @Volatile
     private var generation = 0
 
     fun init(sharedPrefManager: SharedPrefManager) {
@@ -23,6 +26,7 @@ object UrlUtils {
             generation++
             spmInstance = sharedPrefManager
             cachedHeader = null
+            cachedBaseUrl = null
         }
     }
 
@@ -35,6 +39,7 @@ object UrlUtils {
         synchronized(this) {
             generation++
             cachedHeader = null
+            cachedBaseUrl = null
         }
     }
 
@@ -44,6 +49,7 @@ object UrlUtils {
             generation++
             spmInstance = null
             cachedHeader = null
+            cachedBaseUrl = null
         }
     }
 
@@ -101,16 +107,28 @@ object UrlUtils {
             return finalUrl
         }
     fun baseUrl(spm: SharedPrefManager): String {
-        val isAlternativeUrl = spm.isAlternativeUrl()
-        var url = if (isAlternativeUrl) {
-            spm.getProcessedAlternativeUrl()
-        } else {
-            spm.getCouchdbUrl()
+        cachedBaseUrl?.let { return it }
+        val currentGen: Int
+        var rawUrl: String
+        synchronized(this) {
+            cachedBaseUrl?.let { return it }
+            currentGen = generation
+            val isAlternativeUrl = spm.isAlternativeUrl()
+            rawUrl = if (isAlternativeUrl) {
+                spm.getProcessedAlternativeUrl()
+            } else {
+                spm.getCouchdbUrl()
+            }
         }
-        if (url.endsWith("/db")) {
-            url = url.removeSuffix("/db")
+        if (rawUrl.endsWith("/db")) {
+            rawUrl = rawUrl.removeSuffix("/db")
         }
-        return url
+        synchronized(this) {
+            if (generation == currentGen) {
+                cachedBaseUrl = rawUrl
+            }
+        }
+        return rawUrl
     }
 
     fun dbUrl(spm: SharedPrefManager): String {

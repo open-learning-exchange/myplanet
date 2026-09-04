@@ -163,7 +163,10 @@ class SharedPrefManager @Inject constructor(
     fun setConfigurationId(id: String) = pref.edit { putString(CONFIGURATION_ID, id) }
 
     fun getCouchdbUrl(): String = pref.getString(COUCHDB_URL, "") ?: ""
-    fun setCouchdbUrl(url: String) = pref.edit { putString(COUCHDB_URL, url) }
+    fun setCouchdbUrl(url: String) {
+        pref.edit { putString(COUCHDB_URL, url) }
+        UrlUtils.invalidateHeaderCache()
+    }
 
     fun getUrlUser(): String = pref.getString(URL_USER, "") ?: ""
     fun setUrlUser(user: String) {
@@ -187,10 +190,16 @@ class SharedPrefManager @Inject constructor(
     fun setAlternativeUrl(url: String) = pref.edit { putString(ALTERNATIVE_URL, url) }
 
     fun getProcessedAlternativeUrl(): String = pref.getString(PROCESSED_ALTERNATIVE_URL, "") ?: ""
-    fun setProcessedAlternativeUrl(url: String) = pref.edit { putString(PROCESSED_ALTERNATIVE_URL, url) }
+    fun setProcessedAlternativeUrl(url: String) {
+        pref.edit { putString(PROCESSED_ALTERNATIVE_URL, url) }
+        UrlUtils.invalidateHeaderCache()
+    }
 
     fun isAlternativeUrl(): Boolean = pref.getBoolean(IS_ALTERNATIVE_URL, false)
-    fun setIsAlternativeUrl(value: Boolean) = pref.edit { putBoolean(IS_ALTERNATIVE_URL, value) }
+    fun setIsAlternativeUrl(value: Boolean) {
+        pref.edit { putBoolean(IS_ALTERNATIVE_URL, value) }
+        UrlUtils.invalidateHeaderCache()
+    }
 
     fun getPinnedServerUrl(): String? = pref.getString(PINNED_SERVER_URL, null)
     fun setPinnedServerUrl(url: String) = pref.edit { putString(PINNED_SERVER_URL, url) }

@@ -242,4 +242,21 @@ class SharedPrefManagerTest {
         unmockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
     }
 
+    @Test
+    fun testUrlSettersInvalidateCache() {
+        mockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+        every { org.ole.planet.myplanet.utils.UrlUtils.invalidateHeaderCache() } just Runs
+
+        sharedPrefManager.setCouchdbUrl("http://new-couch.com")
+        verify { org.ole.planet.myplanet.utils.UrlUtils.invalidateHeaderCache() }
+
+        sharedPrefManager.setProcessedAlternativeUrl("http://new-alt.com")
+        verify(exactly = 2) { org.ole.planet.myplanet.utils.UrlUtils.invalidateHeaderCache() }
+
+        sharedPrefManager.setIsAlternativeUrl(true)
+        verify(exactly = 3) { org.ole.planet.myplanet.utils.UrlUtils.invalidateHeaderCache() }
+
+        unmockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+    }
+
 }
