@@ -64,6 +64,9 @@ FormattedNotification renderNotificationHtml(String html) {
   void writeText(String text) {
     for (final rune in text.runes) {
       final char = String.fromCharCode(rune);
+      // `\r` rides along with `\n`: an XML parser normalises CRLF to LF before
+      // the converter sees the text, so a lone carriage return never reaches
+      // AOSP's collapsing at all and matching it here is the closer reading.
       if (char == ' ' || char == '\n' || char == '\r') {
         pendingWhitespace = true;
         continue;
@@ -93,13 +96,26 @@ FormattedNotification renderNotificationHtml(String html) {
     if (open > index) {
       writeText(_decodeEntities(html.substring(index, open)));
     }
+    // A `<` only opens a tag when a tag name can follow it — a letter, or a
+    // slash and then a letter. HTML tokenization emits every other `<` as
+    // text, and so must this: `"Compare 3 < 5 > 1 today"` is a plain sentence
+    // a server can send, and treating `< 5 >` as a tag deleted the ` 5 ` from
+    // the middle of the row. Worse, a trimmed `< b >` read as `<b>` and
+    // bolded the rest of the message.
+    if (!_tagStart.hasMatch(
+      html.substring(open, (open + 3).clamp(0, html.length)),
+    )) {
+      writeText(_decodeEntities('<'));
+      index = open + 1;
+      continue;
+    }
     final close = html.indexOf('>', open);
     if (close < 0) {
       // An unterminated `<` is literal text, not a tag.
       writeText(_decodeEntities(html.substring(open)));
       break;
     }
-    final raw = html.substring(open + 1, close).trim();
+    final raw = html.substring(open + 1, close);
     index = close + 1;
     if (raw.isEmpty) continue;
 
@@ -160,6 +176,10 @@ List<NotificationSpan> _trimTrailingNewlines(List<NotificationSpan> spans) {
   }
   return trimmed.isEmpty ? [const NotificationSpan('')] : trimmed;
 }
+
+/// `<` immediately followed by a tag name, or by `/` and a tag name. Anything
+/// else — `< 5`, `<3`, a bare `<` — is text.
+final RegExp _tagStart = RegExp(r'^<\/?[A-Za-z]');
 
 /// The HTML4 entities worth decoding here, plus numeric references.
 const Map<String, String> _entities = {

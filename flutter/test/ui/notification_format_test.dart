@@ -429,6 +429,47 @@ void main() {
       expect(context.joinRequestDetails['']?.requester, 'Fallback');
     });
 
+    test("an empty relatedId is queried AND takes the '' fallback", () async {
+      // `mapNotNull { it.relatedId }` filters nulls only, so `''` survives
+      // into the query list; `joinRequestsWithoutRelatedId` tests
+      // `isNullOrEmpty`, so the same row also triggers the fallback lookup.
+      // The documented asymmetry, pinned.
+      final repository = _RecordingLookups();
+      final context = await buildNotificationFormatContext([
+        row(message: 'ignored', type: 'join_request', relatedId: ''),
+      ], repository);
+      expect(repository.joinRequestBatches, [
+        [''],
+      ]);
+      expect(repository.fallbackCalls, 1);
+      // The fallback entry is written *after* the batch, so it wins the `''`
+      // key — Kotlin's `details[""] = fallbackDetail` at `:118`.
+      expect(context.joinRequestDetails['']?.requester, 'Fallback');
+    });
+
+    test('an empty relatedId on a task row is still queried', () async {
+      final repository = _RecordingLookups();
+      await buildNotificationFormatContext([
+        row(message: 'No date here', type: 'task', relatedId: ''),
+      ], repository);
+      expect(repository.taskIdLookups, [
+        [''],
+      ]);
+    });
+
+    test('a task id beats a task title of the same name', () async {
+      // The merge order: by-title first, by-id `putAll` over it (`:127-129`).
+      final repository = _CollidingLookups();
+      final context = await buildNotificationFormatContext([
+        row(
+          message: 'task-9 Thu 12, August 2027',
+          type: 'task',
+          relatedId: 'task-9',
+        ),
+      ], repository);
+      expect(context.taskTeamNames['task-9'], 'By id');
+    });
+
     test('no task or join-request row means no queries at all', () async {
       final repository = _RecordingLookups();
       final context = await buildNotificationFormatContext([
@@ -496,4 +537,18 @@ class _RecordingLookups implements NotificationsRepository {
   @override
   dynamic noSuchMethod(Invocation invocation) =>
       throw UnsupportedError('${invocation.memberName} is not used here');
+}
+
+/// A [_RecordingLookups] whose two maps collide on one key, so the merge order
+/// is observable — the plain recorder returns disjoint keys and cannot see it.
+class _CollidingLookups extends _RecordingLookups {
+  @override
+  Future<Map<String, String>> taskTeamNamesByTaskIds(
+    List<String> taskIds,
+  ) async => taskIds.isEmpty ? const {} : {'task-9': 'By id'};
+
+  @override
+  Future<Map<String, String>> taskTeamNamesByTaskTitles(
+    List<String> taskTitles,
+  ) async => taskTitles.isEmpty ? const {} : {'task-9': 'By title'};
 }

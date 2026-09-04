@@ -34,7 +34,11 @@ class NotificationsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(l10n.notifications),
         actions: [
-          if (unread > 0)
+          // `count > 0 && currentFilter != "read"`
+          // (`NotificationsFragment.kt:101-102`) — offering "mark all read" on
+          // the Read tab, which the port did, is an action with nothing to act
+          // on.
+          if (unread > 0 && filter != NotificationFilter.read)
             TextButton(
               onPressed: () =>
                   ref.read(notificationActionsProvider).markAllAsRead(),
@@ -236,6 +240,11 @@ class _NotificationTile extends ConsumerWidget {
       child: Opacity(
         opacity: notification.isRead ? 0.6 : 1,
         child: ListTile(
+          // The icon is the port's own: Kotlin draws one per *group* header,
+          // not per row (`iconResFor` is called only from
+          // `HeaderViewHolder.bind`). It stays because it makes a long list
+          // scannable — but it is an addition, which is why the type *label*
+          // was the thing removed: that duplicated the group header outright.
           leading: Badge(
             isLabelVisible: !notification.isRead,
             child: CircleAvatar(
@@ -263,6 +272,19 @@ class _NotificationTile extends ConsumerWidget {
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
+          // `btn_mark_as_read`, visible on every unread row outside selection
+          // mode (`NotificationsAdapter.kt:137-141`). Without it the port's
+          // only way to mark a single row read was to tap it — which also
+          // navigates away from the list, so a learner could not clear one
+          // notification and keep reading the rest.
+          trailing: notification.isRead
+              ? null
+              : TextButton(
+                  onPressed: () => ref
+                      .read(notificationActionsProvider)
+                      .markAsRead(notification.id),
+                  child: Text(l10n.markAsRead),
+                ),
           // Read notifications remain actionable. Kotlin marks an unread row and
           // navigates on the same tap; making `onTap` null after that first tap
           // prevented learners from ever reopening its destination in Flutter.

@@ -1,6 +1,9 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/data/local/app_database.dart';
+import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/notifications_provider.dart';
 import 'package:myplanet/ui/notifications/notification_format.dart';
 import 'package:myplanet/ui/notifications/notifications_screen.dart';
@@ -349,6 +352,234 @@ void main() {
     expect(opacity.opacity, 0.6);
   });
 
+  // The whole fill chain, with nothing overridden between the screen and the
+  // database: `notificationFormatContextProvider` → the repository lookups →
+  // the DAOs → the row. Every other test here supplies the context directly,
+  // so each half was covered and the join between them was not.
+  testWidgets('the team prefix is resolved from the database, end to end', (
+    tester,
+  ) async {
+    final database = AppDatabase.memory();
+    addTearDown(database.close);
+    await database.teamDao.upsert(
+      TeamsCompanion.insert(id: 'team-1', name: const Value('Reading Club')),
+    );
+    await database.teamTaskDao.upsert(
+      TeamTasksCompanion.insert(
+        id: 'task-9',
+        teamId: 'team-1',
+        title: const Value('Read chapter 3'),
+      ),
+    );
+
+    await tester.pumpWidget(
+      wrapScreen(
+        const NotificationsScreen(),
+        overrides: [
+          appDatabaseProvider.overrideWithValue(database),
+          notificationsProvider.overrideWith(
+            (ref) => Stream.value([
+              _row(
+                id: 'task-notif',
+                message: 'Read chapter 3 Thu 12, August 2027',
+                type: 'task',
+                relatedId: 'task-9',
+              ),
+            ]),
+          ),
+          unreadNotificationCountProvider.overrideWith(
+            (ref) => Stream.value(1),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final text = tester.widget<Text>(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Text &&
+            (widget.textSpan?.toPlainText() ?? '').startsWith('Reading Club'),
+      ),
+    );
+    expect(
+      text.textSpan!.toPlainText(),
+      'Reading Club: Read chapter 3 is due in Thu 12, August 2027',
+    );
+  });
+
+  testWidgets('an unread row is not dimmed', (tester) async {
+    await tester.pumpWidget(
+      wrapScreen(
+        const NotificationsScreen(),
+        overrides: [
+          notificationsProvider.overrideWith(
+            (ref) => Stream.value([
+              _row(id: 'unread-1', message: '7', type: 'resource'),
+            ]),
+          ),
+          unreadNotificationCountProvider.overrideWith(
+            (ref) => Stream.value(1),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final opacity = tester.widget<Opacity>(
+      find.ancestor(
+        of: find.text('You have 7 resources not downloaded'),
+        matching: find.byType(Opacity),
+      ),
+    );
+    expect(opacity.opacity, 1);
+  });
+
+  testWidgets('an unread row offers Mark as read without navigating', (
+    tester,
+  ) async {
+    // `btn_mark_as_read` (`NotificationsAdapter.kt:137-141`). The port had no
+    // per-row action at all, so the only way to mark one notification read was
+    // to tap it — which navigates away from the list.
+    final read = <String>[];
+    await tester.pumpWidget(
+      wrapScreen(
+        const NotificationsScreen(),
+        overrides: [
+          notificationsProvider.overrideWith(
+            (ref) => Stream.value([
+              _row(id: 'unread-1', message: '7', type: 'resource'),
+            ]),
+          ),
+          unreadNotificationCountProvider.overrideWith(
+            (ref) => Stream.value(1),
+          ),
+          notificationActionsProvider.overrideWithValue(
+            _RecordingActions(onRead: read.add),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Mark as read'));
+    await tester.pump();
+    expect(read, ['unread-1']);
+  });
+
+  testWidgets('a read row offers no Mark as read button', (tester) async {
+    await tester.pumpWidget(
+      wrapScreen(
+        const NotificationsScreen(),
+        overrides: [
+          notificationsProvider.overrideWith(
+            (ref) => Stream.value([
+              _row(id: 'read-1', message: '7', type: 'resource', isRead: true),
+            ]),
+          ),
+          unreadNotificationCountProvider.overrideWith(
+            (ref) => Stream.value(0),
+          ),
+          notificationExpansionProvider.overrideWith(
+            (ref) =>
+                NotificationExpansionNotifier()..toggle('resource', const []),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('You have 7 resources not downloaded'), findsOneWidget);
+    expect(find.text('Mark as read'), findsNothing);
+  });
+
+  testWidgets('Mark all read is hidden on the Read tab', (tester) async {
+    // `count > 0 && currentFilter != "read"` (`NotificationsFragment.kt:101`).
+    final markedAll = <bool>[];
+    await tester.pumpWidget(
+      wrapScreen(
+        const NotificationsScreen(),
+        overrides: [
+          notificationFilterProvider.overrideWith(
+            (ref) => NotificationFilter.read,
+          ),
+          notificationsProvider.overrideWith((ref) => Stream.value(const [])),
+          unreadNotificationCountProvider.overrideWith(
+            (ref) => Stream.value(3),
+          ),
+          notificationActionsProvider.overrideWithValue(
+            _RecordingActions(onMarkAll: () => markedAll.add(true)),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Mark all read'), findsNothing);
+  });
+
+  testWidgets('Mark all read fires on a tab that has unread rows', (
+    tester,
+  ) async {
+    final markedAll = <bool>[];
+    await tester.pumpWidget(
+      wrapScreen(
+        const NotificationsScreen(),
+        overrides: [
+          notificationsProvider.overrideWith(
+            (ref) => Stream.value([
+              _row(id: 'unread-1', message: '7', type: 'resource'),
+            ]),
+          ),
+          unreadNotificationCountProvider.overrideWith(
+            (ref) => Stream.value(1),
+          ),
+          notificationActionsProvider.overrideWithValue(
+            _RecordingActions(onMarkAll: () => markedAll.add(true)),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Mark all read'));
+    await tester.pump();
+    expect(markedAll, [true]);
+  });
+
+  testWidgets('swiping a row deletes it', (tester) async {
+    final deleted = <String>[];
+    await tester.pumpWidget(
+      wrapScreen(
+        const NotificationsScreen(),
+        overrides: [
+          notificationsProvider.overrideWith(
+            (ref) => Stream.value([
+              _row(id: 'unread-1', message: '7', type: 'resource'),
+            ]),
+          ),
+          unreadNotificationCountProvider.overrideWith(
+            (ref) => Stream.value(1),
+          ),
+          notificationActionsProvider.overrideWithValue(
+            _RecordingActions(onDelete: deleted.add),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.drag(
+      find.text('You have 7 resources not downloaded'),
+      const Offset(-500, 0),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+
+    expect(deleted, ['unread-1']);
+  });
+
   testWidgets('renders the filter-specific empty state', (tester) async {
     await tester.pumpWidget(
       wrapScreen(
@@ -391,3 +622,25 @@ NotificationRow _row({
   isFromServer: isFromServer,
   needsSync: false,
 );
+
+/// Records the row actions instead of touching a repository, so a tap on
+/// *Mark as read*, *Mark all read* or a swipe is observable.
+class _RecordingActions implements NotificationActions {
+  _RecordingActions({this.onRead, this.onDelete, this.onMarkAll});
+
+  final void Function(String id)? onRead;
+  final void Function(String id)? onDelete;
+  final void Function()? onMarkAll;
+
+  @override
+  Ref get ref => throw UnsupportedError('the fake talks to no providers');
+
+  @override
+  Future<void> markAsRead(String id) async => onRead?.call(id);
+
+  @override
+  Future<void> delete(String id) async => onDelete?.call(id);
+
+  @override
+  Future<void> markAllAsRead() async => onMarkAll?.call();
+}

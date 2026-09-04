@@ -116,6 +116,64 @@ void main() {
     expect(renderNotificationHtml('2 < 3').text, '2 < 3');
   });
 
+  test('a plain-text angle pair is text, not a tag', () {
+    // A `<` only opens a tag when a tag name can follow it. Scanning to the
+    // next `>` regardless deleted the middle of an ordinary sentence, and a
+    // trimmed `< b >` read as `<b>` and bolded everything after it.
+    expect(
+      renderNotificationHtml('Compare 3 < 5 > 1 today').text,
+      'Compare 3 < 5 > 1 today',
+    );
+    final rendered = renderNotificationHtml('is 3 < b > 2?');
+    expect(rendered.text, 'is 3 < b > 2?');
+    expect(rendered.spans.every((span) => !span.bold), isTrue);
+  });
+
+  test('a numeric entity outside the Unicode range is left as written', () {
+    // `String.fromCharCode` throws above U+10FFFF, and this renderer runs
+    // inside `build` — an unguarded one takes the whole bell screen down.
+    expect(renderNotificationHtml('x &#1114112; y').text, 'x &#1114112; y');
+    expect(renderNotificationHtml('x &#x110000; y').text, 'x &#x110000; y');
+  });
+
+  test('a stray closing tag does not disable later emphasis', () {
+    // Without the underflow clamp the counter goes negative and never
+    // recovers, so every later bold run in the row is silently lost.
+    expect(
+      renderNotificationHtml('Jane</b> replied to <b>your</b> note.').spans,
+      contains(const NotificationSpan('your', bold: true)),
+    );
+    expect(
+      renderNotificationHtml('a</i>b<i>c</i>').spans,
+      contains(const NotificationSpan('c', italic: true)),
+    );
+  });
+
+  test('a self-closing break is still a break', () {
+    expect(renderNotificationHtml('a<br/>b').text, 'a\nb');
+    expect(renderNotificationHtml('a<br />b').text, 'a\nb');
+  });
+
+  test('leading whitespace is dropped even when a tag follows it', () {
+    expect(
+      renderNotificationHtml(' <b>Jane</b> replied.').spans.first,
+      const NotificationSpan('Jane', bold: true),
+    );
+  });
+
+  test('an unclosed bold run reaches the end of the text', () {
+    expect(renderNotificationHtml('<b>Jane replied.').spans, const [
+      NotificationSpan('Jane replied.', bold: true),
+    ]);
+  });
+
+  test('a carriage return collapses with the other newlines', () {
+    // XML normalises CRLF to LF before AOSP's converter sees the text, so a
+    // lone `\r` never reaches its collapsing; matching that here is the
+    // closer reading, and this pins which way it went.
+    expect(renderNotificationHtml('a\r\rb').text, 'a b');
+  });
+
   test('a break becomes a newline and trailing ones are trimmed', () {
     expect(renderNotificationHtml('a<br>b').text, 'a\nb');
     expect(renderNotificationHtml('a<br>').text, 'a');

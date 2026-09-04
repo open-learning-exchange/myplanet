@@ -135,8 +135,9 @@ List<NotificationListItem> buildGroupedList(
 }
 
 /// The fixed group labels, porting `NotificationsViewModel.typeLabelFor`.
-/// Keyed on the normalized type; the collective labels ("Join Requests",
-/// "Tasks") differ from the per-notification titles in `NotificationsScreen`.
+/// Keyed on the normalized type. These collective labels ("Join Requests",
+/// "Tasks") are now the only place a notification's type is named: the row
+/// itself carries the formatted message, as `row_notifications.xml` does.
 String groupLabelFor(AppLocalizations l10n, String type) {
   switch (type) {
     case 'join_request':

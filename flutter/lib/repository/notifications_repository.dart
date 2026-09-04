@@ -305,6 +305,14 @@ class NotificationsRepository {
   /// A task whose team has no cached document is simply absent from the map,
   /// as in the Kotlin (`teamMap[teamId]?.let { … }`), which is what makes the
   /// prefix optional rather than showing an empty bold run.
+  ///
+  /// **One deliberate divergence.** Kotlin's map comes from
+  /// `getTeamNamesByIds`, whose `associateBy` substitutes the literal
+  /// `"Unknown Team"` for a null name (`TeamsRepositoryImpl.kt:433`), so a
+  /// cached team row with no name still produces a prefix — a bold
+  /// "Unknown Team:" ahead of the sentence. This drops the entry instead and
+  /// renders the sentence unprefixed, which says less rather than something
+  /// wrong. Pinned by a test, so the choice is visible rather than accidental.
   Future<Map<String, String>> taskTeamNamesByTaskIds(List<String> taskIds) =>
       _taskTeamNames(taskIds, keyOf: (task) => task.id);
 

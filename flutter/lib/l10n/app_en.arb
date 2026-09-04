@@ -341,6 +341,10 @@
   "notification": "Notification",
   "notificationsUnavailable": "Notifications unavailable",
   "markAllRead": "Mark all read",
+  "markAsRead": "Mark as read",
+  "@markAsRead": {
+    "description": "The per-row action on an unread notification, porting the Kotlin row's btn_mark_as_read."
+  },
   "all": "All",
   "read": "Read",
   "unreadCount": "Unread ({count})",
