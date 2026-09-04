@@ -363,7 +363,7 @@ class UrlUtilsTest {
         every { mockSpm.getUrlUser() } returns "user2"
         every { mockSpm.getUrlPwd() } returns "pass2"
 
-        UrlUtils.invalidateHeaderCache()
+        UrlUtils.invalidateCaches()
         val thirdHeader = UrlUtils.header
 
         verify(exactly = 2) { mockSpm.getUrlUser() }
@@ -385,6 +385,44 @@ class UrlUtilsTest {
 
         assertEquals(firstHeader, secondHeader)
         verify(exactly = 2) { mockSpm.getUrlUser() }
+    }
+
+    @Test
+    fun `baseUrl memoizes base url and reads SharedPreferences once`() {
+        unmockkObject(UrlUtils)
+        val spm = mockk<SharedPrefManager>(relaxed = true)
+        every { spm.isAlternativeUrl() } returns false
+        every { spm.getCouchdbUrl() } returns "http://example.com"
+        UrlUtils.resetForTesting()
+        UrlUtils.init(spm)
+
+        val firstUrl = UrlUtils.baseUrl(spm)
+        val secondUrl = UrlUtils.baseUrl(spm)
+
+        assertEquals("http://example.com", firstUrl)
+        assertEquals(firstUrl, secondUrl)
+        verify(exactly = 1) { spm.getCouchdbUrl() }
+        verify(exactly = 1) { spm.isAlternativeUrl() }
+    }
+
+    @Test
+    fun `baseUrl invalidates cache when invalidateCaches is called`() {
+        unmockkObject(UrlUtils)
+        val spm = mockk<SharedPrefManager>(relaxed = true)
+        every { spm.isAlternativeUrl() } returns false
+        every { spm.getCouchdbUrl() } returns "http://example.com"
+        UrlUtils.resetForTesting()
+        UrlUtils.init(spm)
+
+        val firstUrl = UrlUtils.baseUrl(spm)
+        assertEquals("http://example.com", firstUrl)
+
+        every { spm.getCouchdbUrl() } returns "http://new-example.com"
+        UrlUtils.invalidateCaches()
+
+        val secondUrl = UrlUtils.baseUrl(spm)
+        assertEquals("http://new-example.com", secondUrl)
+        verify(exactly = 2) { spm.getCouchdbUrl() }
     }
 
     fun `getUrl with explicit base builds resource url without re-deriving base`() {
