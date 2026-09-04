@@ -105,4 +105,62 @@ class TeamDaoTest {
 
         assertEquals(listOf("mine"), result.map { it._id })
     }
+
+    @Test
+    fun `getNonArchivedReportsByTeamId orders by createdDate descending`() = runBlocking {
+        teamDao.upsertAll(
+            listOf(
+                report("r1", createdDate = 100L),
+                report("r3", createdDate = 300L),
+                report("r2", createdDate = 200L),
+            )
+        )
+
+        val result = teamDao.getNonArchivedReportsByTeamId("team1")
+
+        assertEquals(listOf("r3", "r2", "r1"), result.map { it._id })
+    }
+
+    @Test
+    fun `getNonArchivedReportsByTeamId excludes archived reports`() = runBlocking {
+        teamDao.upsertAll(
+            listOf(
+                report("kept", createdDate = 100L),
+                report("archived", createdDate = 300L, status = "archived"),
+            )
+        )
+
+        val result = teamDao.getNonArchivedReportsByTeamId("team1")
+
+        assertEquals(listOf("kept"), result.map { it._id })
+    }
+
+    @Test
+    fun `getNonArchivedReportsByTeamId keeps reports with a null status`() = runBlocking {
+        teamDao.upsertAll(
+            listOf(
+                report("nullStatus", createdDate = 100L, status = null),
+                report("activeStatus", createdDate = 200L, status = "active"),
+            )
+        )
+
+        val result = teamDao.getNonArchivedReportsByTeamId("team1")
+
+        assertEquals(listOf("activeStatus", "nullStatus"), result.map { it._id })
+    }
+
+    @Test
+    fun `getNonArchivedReportsByTeamId excludes other teams and other docTypes`() = runBlocking {
+        teamDao.upsertAll(
+            listOf(
+                report("mine", createdDate = 100L),
+                report("otherTeam", teamId = "team2", createdDate = 200L),
+                report("transaction", createdDate = 300L, docType = "transaction"),
+            )
+        )
+
+        val result = teamDao.getNonArchivedReportsByTeamId("team1")
+
+        assertEquals(listOf("mine"), result.map { it._id })
+    }
 }
