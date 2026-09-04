@@ -80,10 +80,10 @@ class AchievementTest {
     }
 
     @Test
-    fun parseStringListToJsonArray_returnsCachedElementViaDeepCopy() {
+    fun parseStringListToJsonArray_returnsCachedElementWithoutDeepCopy() {
         // A JsonObject entry is serialized to a string, then parsed back and cached.
-        // deepCopy() produces a fresh JsonObject for each read, so repeated reads of the
-        // same cached entry are not the same instance (mutations of one won't leak to the other).
+        // Cached elements are returned directly without deepCopy(), so repeated reads
+        // return equal content and the exact same cached object instance.
         val entry = JsonObject().apply {
             addProperty("title", "cached-value")
         }
@@ -99,8 +99,8 @@ class AchievementTest {
 
         assertEquals("cached-value", first[0].asJsonObject.get("title").asString)
         assertEquals("cached-value", second[0].asJsonObject.get("title").asString)
-        // deepCopy ensures cached entries aren't shared by identity
-        assertTrue(first[0] !== second[0])
+        // Cache hit returns the exact same cached instance without deepCopy or re-parsing
+        assertTrue(first[0] === second[0])
     }
 
     @Test
@@ -164,13 +164,11 @@ class AchievementTest {
 
     @Test
     fun parsedJsonCache_isBoundedToCapacity() {
-        // deepCopy() is applied on every read, so cached and freshly parsed elements are
-        // indistinguishable through the public API. The bound is therefore verified by
-        // observing the shared process-wide cache directly. The cache is populated by
-        // parseStringListToJsonArray (reached via the achievementsArray getter, not the
-        // setter), so each distinct entry is read back to fill the cache. Pushing more than
-        // CACHE_CAPACITY distinct entries must evict the eldest and cap the size instead of
-        // growing unbounded.
+        // The bound is verified by observing the shared process-wide cache directly.
+        // The cache is populated by parseStringListToJsonArray (reached via the achievementsArray
+        // getter, not the setter), so each distinct entry is read back to fill the cache.
+        // Pushing more than CACHE_CAPACITY distinct entries must evict the eldest and cap the
+        // size instead of growing unbounded.
         Achievement.parsedJsonCache.clear()
         val achievement = Achievement().apply { _id = "bound_ach" }
         val overCapacity = Achievement.CACHE_CAPACITY + 500
