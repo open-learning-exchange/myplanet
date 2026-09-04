@@ -90,7 +90,7 @@ object VoicesActions {
         }
 
         val request = Glide.with(context)
-        val target = if (imagePath.lowercase(Locale.getDefault()).endsWith(".gif")) {
+        val target = if (imagePath.endsWith(".gif", ignoreCase = true)) {
             request.asGif().load(if (File(imagePath).exists()) File(imagePath) else imagePath)
         } else {
             request.load(if (File(imagePath).exists()) File(imagePath) else imagePath)
