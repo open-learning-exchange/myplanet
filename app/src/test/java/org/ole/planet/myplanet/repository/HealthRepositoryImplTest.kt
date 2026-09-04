@@ -208,6 +208,30 @@ class HealthRepositoryImplTest {
     }
 
     @Test
+    fun getExaminationConditions_handles_empty_object_and_null_values() = testScope.runTest {
+        // Empty object
+        val emptyExamination = HealthExamination().apply {
+            conditions = "{}"
+        }
+        val emptyResult = repository.getExaminationConditions(emptyExamination)
+        advanceUntilIdle()
+        assertTrue(emptyResult.isEmpty())
+
+        // Null, string-boolean, and non-boolean values in JSON
+        val nullValExamination = HealthExamination().apply {
+            conditions = "{\"Fever\": true, \"Cough\": null, \"Headache\": \"true\", \"Chills\": \"false\"}"
+        }
+        val nullResult = repository.getExaminationConditions(nullValExamination)
+        advanceUntilIdle()
+
+        assertEquals(4, nullResult.size)
+        assertEquals(true, nullResult["Fever"])
+        assertEquals(false, nullResult["Cough"])
+        assertEquals(true, nullResult["Headache"])
+        assertEquals(false, nullResult["Chills"])
+    }
+
+    @Test
     fun bulkInsertFromSync_inserts_non_design_docs() = testScope.runTest {
         val jsonArray = JsonArray().apply {
             add(JsonObject().apply {
