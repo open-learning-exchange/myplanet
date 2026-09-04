@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.VersionUtils
 
 @Singleton
 class UploadConfigs @Inject constructor(
@@ -53,11 +54,14 @@ class UploadConfigs @Inject constructor(
     private val diagnosticsRepository: DiagnosticsRepository,
     private val progressRepository: ProgressRepository
 ) {
+    private val androidId: String? by lazy { VersionUtils.getAndroidId(context) }
+    private val customDeviceName: String by lazy { sharedPrefManager.getCustomDeviceName() }
+
     val NewsActivities = RoomUploadConfig(
         endpoint = "myplanet_activities",
         modelClassName = "NewsLog",
         fetchPendingItems = { voicesRepository.getPendingNewsLogUploads() },
-        serializer = UploadSerializer.Simple(NewsLog::serialize),
+        serializer = UploadSerializer.Simple { log -> NewsLog.serialize(log, customDeviceName) },
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
@@ -112,7 +116,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "search_activities",
         modelClassName = "SearchActivity",
         fetchPendingItems = { activitiesRepository.getPendingSearchActivityUploads() },
-        serializer = UploadSerializer.Simple { it.serialize() },
+        serializer = UploadSerializer.Simple { it.serialize(androidId, customDeviceName) },
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
@@ -212,7 +216,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "apk_logs",
         modelClassName = "ApkLog",
         fetchPendingItems = { diagnosticsRepository.getPendingApkLogs() },
-        serializer = UploadSerializer.Simple { log -> ApkLog.serialize(log, NetworkUtils.getCustomDeviceName(context)) },
+        serializer = UploadSerializer.Simple { log -> ApkLog.serialize(log, customDeviceName) },
         idExtractor = { it.id },
         markUploaded = { results ->
             // A row is "pending" until it has a _rev; set it here. Rows that no longer exist
@@ -295,7 +299,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "ratings",
         modelClassName = "Rating",
         fetchPendingItems = { ratingsRepository.getPendingRatingUploads() },
-        serializer = UploadSerializer.Simple(org.ole.planet.myplanet.model.Rating::serializeRating),
+        serializer = UploadSerializer.Simple { rating -> org.ole.planet.myplanet.model.Rating.serializeRating(rating, customDeviceName) },
         idExtractor = { it.id },
         dbIdExtractor = { it._id }, // Enables POST/PUT logic
         markUploaded = { results ->

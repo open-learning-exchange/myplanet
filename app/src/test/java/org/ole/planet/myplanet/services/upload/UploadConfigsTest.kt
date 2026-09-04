@@ -3,41 +3,70 @@ package org.ole.planet.myplanet.services.upload
 import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.NewsLog
+import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.ResourceActivity
 import org.ole.planet.myplanet.model.SearchActivity
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.DiagnosticsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadedItemResult
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.VersionUtils
 
 class UploadConfigsTest {
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val voicesRepository: VoicesRepository = mockk(relaxed = true)
-    private val uploadConfigs = UploadConfigs(
-        context = mockk(relaxed = true),
-        voicesRepository = voicesRepository,
-        submissionsRepository = mockk(relaxed = true),
-        activitiesRepository = activitiesRepository,
-        teamsSyncRepository = mockk<Lazy<TeamsSyncRepository>>(relaxed = true),
-        sharedPrefManager = mockk(relaxed = true),
-        userRepository = mockk(relaxed = true),
-        surveysRepository = mockk(relaxed = true),
-        feedbackRepository = mockk(relaxed = true),
-        ratingsRepository = mockk(relaxed = true),
-        eventsRepository = mockk(relaxed = true),
-        resourcesRepository = mockk(relaxed = true),
-        diagnosticsRepository = mockk<DiagnosticsRepository>(relaxed = true),
-        progressRepository = mockk<ProgressRepository>(relaxed = true)
-    )
+    private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
+    private lateinit var uploadConfigs: UploadConfigs
+
+    @Before
+    fun setup() {
+        mockkObject(VersionUtils)
+        every { VersionUtils.getAndroidId(any()) } returns "test-android-id"
+
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getDeviceName() } returns "test-device-name"
+        every { NetworkUtils.getUniqueIdentifier() } returns "test-unique-id"
+
+        every { sharedPrefManager.getCustomDeviceName() } returns "test-custom-device"
+
+        uploadConfigs = UploadConfigs(
+            context = mockk(relaxed = true),
+            voicesRepository = voicesRepository,
+            submissionsRepository = mockk(relaxed = true),
+            activitiesRepository = activitiesRepository,
+            teamsSyncRepository = mockk<Lazy<TeamsSyncRepository>>(relaxed = true),
+            sharedPrefManager = sharedPrefManager,
+            userRepository = mockk(relaxed = true),
+            surveysRepository = mockk(relaxed = true),
+            feedbackRepository = mockk(relaxed = true),
+            ratingsRepository = mockk(relaxed = true),
+            eventsRepository = mockk(relaxed = true),
+            resourcesRepository = mockk(relaxed = true),
+            diagnosticsRepository = mockk<DiagnosticsRepository>(relaxed = true),
+            progressRepository = mockk<ProgressRepository>(relaxed = true)
+        )
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
+    }
 
     @Test
     fun `SearchActivity config fetches pending Room rows from DAO`() = runTest {
@@ -151,6 +180,37 @@ class UploadConfigsTest {
         val result = uploadConfigs.NewsActivities.fetchPendingItems()
 
         assertEquals(pending, result)
+    }
+
+    @Test
+    fun `NewsActivities serializer includes customDeviceName`() = runTest {
+        val newsLog = NewsLog().apply { userId = "user1"; type = "news"; time = 100L }
+        val serializer = uploadConfigs.NewsActivities.serializer as UploadSerializer.Simple
+        val json = serializer.serialize(newsLog)
+
+        assertEquals("user1", json.get("user").asString)
+        assertEquals("test-custom-device", json.get("customDeviceName").asString)
+    }
+
+    @Test
+    fun `SearchActivity serializer includes androidId and customDeviceName`() = runTest {
+        val search = SearchActivity(id = "s1", text = "query")
+        val serializer = uploadConfigs.SearchActivity.serializer as UploadSerializer.Simple
+        val json = serializer.serialize(search)
+
+        assertEquals("query", json.get("text").asString)
+        assertEquals("test-android-id", json.get("androidId").asString)
+        assertEquals("test-custom-device", json.get("customDeviceName").asString)
+    }
+
+    @Test
+    fun `Rating serializer includes customDeviceName`() = runTest {
+        val rating = Rating().apply { rate = 5; user = "{}" }
+        val serializer = uploadConfigs.Rating.serializer as UploadSerializer.Simple
+        val json = serializer.serialize(rating)
+
+        assertEquals(5, json.get("rate").asInt)
+        assertEquals("test-custom-device", json.get("customDeviceName").asString)
     }
 
 }

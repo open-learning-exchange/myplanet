@@ -10,24 +10,15 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utils.NetworkUtils
 
 class RatingTest {
-
-    @MockK
-    lateinit var mockContext: Context
 
     @Before
     fun setup() {
         MockKAnnotations.init(this)
 
-        mockkObject(MainApplication.Companion)
-        every { MainApplication.context } returns mockContext
-        every { mockContext.applicationContext } returns mockContext
-
         mockkObject(NetworkUtils)
-        every { NetworkUtils.getCustomDeviceName(any()) } answers { "customDeviceName" }
         every { NetworkUtils.getDeviceName() } answers { "deviceName" }
         every { NetworkUtils.getUniqueIdentifier() } answers { "uniqueIdentifier" }
     }
@@ -54,7 +45,7 @@ class RatingTest {
             planetCode = "test_planet_code"
         }
 
-        val serialized = Rating.serializeRating(rating)
+        val serialized = Rating.serializeRating(rating, "customDeviceName")
 
         assertEquals("test_id", serialized.get("_id").asString)
         assertEquals("test_rev", serialized.get("_rev").asString)
