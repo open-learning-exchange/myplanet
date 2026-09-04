@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import org.ole.planet.myplanet.ui.enterprises.EnterprisesFinancesViewModel.FinanceHeaderState
-
 data class Transaction(
     val id: String,
     val date: Long?,

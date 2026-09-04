@@ -13,9 +13,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.ole.planet.myplanet.model.FinanceHeaderState
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.ui.enterprises.EnterprisesFinancesViewModel.FinanceHeaderState
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)

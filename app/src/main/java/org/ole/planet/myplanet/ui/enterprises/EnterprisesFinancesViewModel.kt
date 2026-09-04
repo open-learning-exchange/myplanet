@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.model.FinanceHeaderState
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.repository.TeamsFinancesRepository
 
@@ -23,13 +24,6 @@ import org.ole.planet.myplanet.repository.TeamsFinancesRepository
 class EnterprisesFinancesViewModel @Inject constructor(
     private val teamsRepository: TeamsFinancesRepository
 ) : ViewModel() {
-
-    data class FinanceHeaderState(
-        val debit: Int = 0,
-        val credit: Int = 0,
-        val total: Int = 0,
-        val isCautionVisible: Boolean = false
-    )
 
     private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
     val transactions: StateFlow<List<Transaction>> = _transactions.asStateFlow()
