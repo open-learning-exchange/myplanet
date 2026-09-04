@@ -145,4 +145,27 @@ class TeamCoursesViewModelTest {
 
         assertEquals(1, available.size)
     }
+
+    @Test
+    fun `loadCourses preserves dependency edge when getTeamCourseIds is delayed`() = runTest(testDispatcher) {
+        val courseIds = listOf("c1", "c2")
+        val courses = listOf(
+            MyCourse(id = "c1").apply { courseId = "c1"; courseTitle = "Course 1" },
+            MyCourse(id = "c2").apply { courseId = "c2"; courseTitle = "Course 2" }
+        )
+        coEvery { teamsRepository.getTeamCourseIds("team1") } coAnswers {
+            kotlinx.coroutines.delay(100)
+            courseIds
+        }
+        coEvery { coursesRepository.getCoursesByIds(courseIds) } returns courses
+        coEvery { teamsRepository.getTeamCreator("team1") } returns "user1"
+
+        viewModel.loadCourses("team1", "user1")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(2, state?.courses?.size)
+        assertTrue(state?.canRemove == true)
+        coVerify(exactly = 1) { coursesRepository.getCoursesByIds(courseIds) }
+    }
 }

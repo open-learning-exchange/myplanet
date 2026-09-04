@@ -7,6 +7,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.MyLibrary
@@ -28,9 +30,14 @@ class TeamResourcesViewModel @Inject constructor(
 
     fun loadResources(teamId: String, userId: String?) {
         viewModelScope.launch {
-            val libraries = teamsRepository.getTeamResources(teamId)
-            val canRemove = teamsRepository.isTeamLeader(teamId, userId)
-            _uiState.value = TeamResourcesUiState(resources = libraries, canRemove = canRemove)
+            coroutineScope {
+                val librariesDeferred = async { teamsRepository.getTeamResources(teamId) }
+                val canRemoveDeferred = async { teamsRepository.isTeamLeader(teamId, userId) }
+                _uiState.value = TeamResourcesUiState(
+                    resources = librariesDeferred.await(),
+                    canRemove = canRemoveDeferred.await()
+                )
+            }
         }
     }
 

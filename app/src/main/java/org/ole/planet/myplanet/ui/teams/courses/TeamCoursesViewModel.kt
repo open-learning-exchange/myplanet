@@ -6,6 +6,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.MyCourse
@@ -28,11 +30,17 @@ class TeamCoursesViewModel @Inject constructor(
 
     fun loadCourses(teamId: String, currentUserId: String) {
         viewModelScope.launch {
-            val courseIds = teamsRepository.getTeamCourseIds(teamId)
-            val courses = coursesRepository.getCoursesByIds(courseIds)
-            val teamCreator = teamsRepository.getTeamCreator(teamId)
-            val canRemove = currentUserId.equals(teamCreator, ignoreCase = true)
-            _uiState.value = TeamCoursesUiState(courses = courses, canRemove = canRemove)
+            coroutineScope {
+                val teamCreatorDeferred = async { teamsRepository.getTeamCreator(teamId) }
+                val coursesDeferred = async {
+                    val courseIds = teamsRepository.getTeamCourseIds(teamId)
+                    coursesRepository.getCoursesByIds(courseIds)
+                }
+                val teamCreator = teamCreatorDeferred.await()
+                val canRemove = currentUserId.equals(teamCreator, ignoreCase = true)
+                val courses = coursesDeferred.await()
+                _uiState.value = TeamCoursesUiState(courses = courses, canRemove = canRemove)
+            }
         }
     }
 
