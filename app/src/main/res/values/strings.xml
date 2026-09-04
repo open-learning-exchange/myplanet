@@ -1281,6 +1281,7 @@
     <string name="load_earlier_messages">Load earlier messages</string>
     <string name="already_shared">Already shared</string>
     <string name="status_not_started">Not Started</string>
+    <string name="status_todo">To Do</string>
     <string name="status_in_progress">In Progress</string>
     <string name="status_completed">Completed</string>
     <string name="read_aloud">Read aloud</string>

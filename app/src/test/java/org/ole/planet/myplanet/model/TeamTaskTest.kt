@@ -41,6 +41,7 @@ class TeamTaskTest {
         assertEquals("Task Description", result.get("description").asString)
         assertTrue(result.get("completed").asBoolean)
         assertEquals(1620000000000L, result.get("completedTime").asLong)
+        assertEquals(TaskStatus.COMPLETED.value, result.get("status").asString)
 
         val assignee = result.getAsJsonObject("assignee")
         assertEquals("John Doe", assignee.get("userName").asString)
@@ -77,6 +78,7 @@ class TeamTaskTest {
         assertEquals("Task Description", result.get("description").asString)
         assertFalse(result.get("completed").asBoolean)
         assertEquals(0L, result.get("completedTime").asLong)
+        assertEquals(TaskStatus.TODO.value, result.get("status").asString)
 
         assertEquals("", result.get("assignee").asString)
 
@@ -85,6 +87,20 @@ class TeamTaskTest {
 
         val linkObj = result.getAsJsonObject("link")
         assertEquals("linkValue", linkObj.get("linkKey").asString)
+    }
+
+    @Test
+    fun testSerialize_inProgressStatus() {
+        val task = TeamTask().apply {
+            _id = "t1"
+            title = "In Progress Task"
+            status = TaskStatus.IN_PROGRESS.value
+            completed = false
+        }
+
+        val result = TeamTask.serialize(task, null)
+        assertEquals(TaskStatus.IN_PROGRESS.value, result.get("status").asString)
+        assertFalse(result.get("completed").asBoolean)
     }
 
     @Test

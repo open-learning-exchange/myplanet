@@ -74,6 +74,7 @@ interface TeamsRepository : TeamsFinancesRepository, TeamsMembersRepository, Tea
     suspend fun updateTask(taskId: String, title: String, description: String, deadline: Long, assigneeId: String?)
     suspend fun assignTask(taskId: String, assigneeId: String?)
     suspend fun setTaskCompletion(taskId: String, completed: Boolean)
+    suspend fun setTaskStatus(taskId: String, status: String)
     suspend fun getPendingTasksForUser(userId: String, start: Long, end: Long): List<TeamTask>
     suspend fun markTasksNotified(taskIds: Collection<String>)
     suspend fun getTasksByTeamId(teamId: String): Flow<List<TeamTask>>

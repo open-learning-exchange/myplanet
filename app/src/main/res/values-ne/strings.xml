@@ -1273,6 +1273,7 @@
     <string name="warning_icon">चेतावनी आइकन</string>
     <string name="close_banner">चेतावनी ब्यानर बन्द गर्नुहोस्</string>
     <string name="status_not_started">सुरु भएको छैन</string>
+    <string name="status_todo">गर्नुपर्ने</string>
     <string name="status_in_progress">प्रगतिमा छ</string>
     <string name="status_completed">पूरा भयो</string>
     <string name="read_aloud">स्वरमा पढ्नुहोस्</string>

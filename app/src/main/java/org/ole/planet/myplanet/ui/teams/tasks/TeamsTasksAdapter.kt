@@ -2,16 +2,21 @@ package org.ole.planet.myplanet.ui.teams.tasks
 
 import android.app.AlertDialog
 import android.content.Context
+import android.content.res.ColorStateList
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CompoundButton
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnTaskCompletedListener
 import org.ole.planet.myplanet.databinding.RowTaskBinding
+import org.ole.planet.myplanet.model.TaskStatus
 import org.ole.planet.myplanet.model.TeamTask
+import org.ole.planet.myplanet.model.effectiveStatus
+import org.ole.planet.myplanet.model.nextStatus
 import org.ole.planet.myplanet.ui.teams.tasks.TeamsTasksAdapter.TeamsTasksViewHolder
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
@@ -45,6 +50,32 @@ class TeamsTasksAdapter(
         binding.checkbox.setOnCheckedChangeListener(null)
         binding.checkbox.text = it.title
         binding.checkbox.isChecked = it.completed
+
+        val status = it.effectiveStatus()
+        val statusText = when (status) {
+            TaskStatus.COMPLETED.value -> context.getString(R.string.status_completed)
+            TaskStatus.IN_PROGRESS.value -> context.getString(R.string.status_in_progress)
+            else -> context.getString(R.string.status_todo)
+        }
+        val statusColor = when (status) {
+            TaskStatus.COMPLETED.value -> ContextCompat.getColor(context, R.color.md_green_600)
+            TaskStatus.IN_PROGRESS.value -> ContextCompat.getColor(context, R.color.md_amber_700)
+            else -> ContextCompat.getColor(context, R.color.md_blue_600)
+        }
+        binding.statusBadge.text = statusText
+        binding.statusBadge.backgroundTintList = ColorStateList.valueOf(statusColor)
+        binding.statusBadge.alpha = if (nonTeamMember) 0.6f else 1.0f
+
+        binding.statusBadge.setOnClickListener {
+            if (nonTeamMember) return@setOnClickListener
+            val adapterPosition = holder.bindingAdapterPosition
+            if (adapterPosition != RecyclerView.NO_POSITION) {
+                val task = getItem(adapterPosition)
+                val nextStatus = task.nextStatus().value
+                listener?.onStatusChange(task, nextStatus)
+            }
+        }
+
         if (!it.completed) {
             binding.deadline.text =
                 context.getString(R.string.deadline_colon, formatDate(it.deadline))
@@ -126,6 +157,7 @@ class TeamsTasksAdapter(
                         old.description == new.description &&
                         old.deadline == new.deadline &&
                         old.completed == new.completed &&
+                        old.effectiveStatus() == new.effectiveStatus() &&
                         old.assignee == new.assignee
             }
         )

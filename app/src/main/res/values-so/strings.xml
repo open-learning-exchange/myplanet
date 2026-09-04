@@ -1273,6 +1273,7 @@
     <string name="warning_icon">Astaan digacaska</string>
     <string name="close_banner">Xir digacaska astaan</string>
     <string name="status_not_started">Lama bilaaban</string>
+    <string name="status_todo">La qabanayo</string>
     <string name="status_in_progress">Socda</string>
     <string name="status_completed">Dhammaystay</string>
     <string name="read_aloud">Kor u akhri</string>

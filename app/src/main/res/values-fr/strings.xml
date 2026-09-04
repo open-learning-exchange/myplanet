@@ -1277,6 +1277,7 @@
     <string name="warning_icon">Icône d\'avertissement</string>
     <string name="close_banner">Fermer la bannière d\'avertissement</string>
     <string name="status_not_started">Non commencé</string>
+    <string name="status_todo">À faire</string>
     <string name="status_in_progress">En cours</string>
     <string name="status_completed">Terminé</string>
     <string name="read_aloud">Lire à haute voix</string>
