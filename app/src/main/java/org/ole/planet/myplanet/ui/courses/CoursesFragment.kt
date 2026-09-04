@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.courses
 import android.app.AlertDialog
 import android.content.Context
 import android.content.DialogInterface
-import android.content.res.ColorStateList
 import android.os.Bundle
 import android.os.Parcelable
 import android.view.View
@@ -13,11 +12,8 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
-import androidx.core.widget.ImageViewCompat
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
@@ -42,13 +38,12 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
+import org.ole.planet.myplanet.ui.components.ListViewModeController
 import org.ole.planet.myplanet.ui.resources.CollectionsFragment
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils
-import org.ole.planet.myplanet.utils.GridSpanCalculator
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.utils.ListViewMode
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
@@ -76,13 +71,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
 
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
 
-    private val spanUpdateRunnable = Runnable { updateGridSpanIfNeeded() }
-    private val layoutChangeListener = View.OnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
-        if (right - left != oldRight - oldLeft) {
-            recyclerView.removeCallbacks(spanUpdateRunnable)
-            recyclerView.post(spanUpdateRunnable)
-        }
-    }
+    private var viewModeController: ListViewModeController? = null
 
     override fun getLayout(): Int = R.layout.fragment_my_course
 
@@ -165,7 +154,19 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
 
         additionalSetup()
         setupMyProgressButton()
-        setupViewModeToggle()
+        viewModeController = ListViewModeController(
+            fragment = this,
+            recyclerView = recyclerView,
+            toggleGridButton = toggleGridButton,
+            toggleListButton = toggleListButton,
+            getMode = { sharedPrefManager.getCourseViewMode() },
+            setMode = { sharedPrefManager.setCourseViewMode(it) },
+            onModeChanged = { mode ->
+                if (::adapterCourses.isInitialized) {
+                    adapterCourses.setViewMode(mode)
+                }
+            }
+        ).also { it.setup() }
         setupCourseFilterChips()
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -355,64 +356,6 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         orderByTitle?.isEnabled = true
     }
 
-    private fun setupViewModeToggle() {
-        updateToggleUi(sharedPrefManager.getCourseViewMode())
-        toggleGridButton?.setOnClickListener { setViewMode(ListViewMode.GRID) }
-        toggleListButton?.setOnClickListener { setViewMode(ListViewMode.LIST) }
-        recyclerView.addOnLayoutChangeListener(layoutChangeListener)
-    }
-
-    private fun setViewMode(mode: ListViewMode) {
-        sharedPrefManager.setCourseViewMode(mode)
-        updateToggleUi(mode)
-        if (::adapterCourses.isInitialized) {
-            adapterCourses.setViewMode(mode)
-        }
-    }
-
-    private fun applyRecyclerLayoutManager(mode: ListViewMode) {
-        val currentLayoutManager = recyclerView.layoutManager
-        if (mode == ListViewMode.GRID) {
-            if (currentLayoutManager is GridLayoutManager) {
-                currentLayoutManager.spanCount = currentSpanCount()
-            } else {
-                recyclerView.layoutManager = GridLayoutManager(requireContext(), currentSpanCount())
-            }
-        } else {
-            if (currentLayoutManager !is LinearLayoutManager || currentLayoutManager is GridLayoutManager) {
-                recyclerView.layoutManager = LinearLayoutManager(requireContext())
-            }
-        }
-    }
-
-    private fun currentSpanCount(): Int {
-        val displayMetrics = requireContext().resources.displayMetrics
-        val widthPx = recyclerView.width.takeIf { it > 0 } ?: displayMetrics.widthPixels
-        val widthDp = (widthPx / displayMetrics.density).toInt()
-        return GridSpanCalculator.columnCount(widthDp)
-    }
-
-    private fun updateGridSpanIfNeeded() {
-        val layoutManager = recyclerView.layoutManager
-        if (layoutManager is GridLayoutManager) {
-            val currentSpan = currentSpanCount()
-            if (layoutManager.spanCount != currentSpan) {
-                layoutManager.spanCount = currentSpan
-            }
-        }
-    }
-
-    private fun updateToggleUi(mode: ListViewMode) {
-        val isGrid = mode == ListViewMode.GRID
-        val activeColor = ContextCompat.getColor(requireContext(), android.R.color.white)
-        val inactiveColor = ContextCompat.getColor(requireContext(), R.color.daynight_textColor)
-        toggleGridButton?.setBackgroundResource(if (isGrid) R.drawable.bg_toggle_selected else android.R.color.transparent)
-        toggleListButton?.setBackgroundResource(if (!isGrid) R.drawable.bg_toggle_selected else android.R.color.transparent)
-        toggleGridButton?.let { ImageViewCompat.setImageTintList(it, ColorStateList.valueOf(if (isGrid) activeColor else inactiveColor)) }
-        toggleListButton?.let { ImageViewCompat.setImageTintList(it, ColorStateList.valueOf(if (!isGrid) activeColor else inactiveColor)) }
-        applyRecyclerLayoutManager(mode)
-    }
-
     private fun setupCourseFilterChips() {
         val chipRow = requireView().findViewById<LinearLayout>(R.id.chip_filter_row)
         chipRow.removeAllViews()
@@ -573,10 +516,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
 
     override fun onResume() {
         super.onResume()
-        if (::recyclerView.isInitialized) {
-            recyclerView.removeCallbacks(spanUpdateRunnable)
-            recyclerView.post(spanUpdateRunnable)
-        }
+        viewModeController?.refreshSpanOnResume()
     }
 
     override fun onPause() {
@@ -600,10 +540,8 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     }
 
     override fun onDestroyView() {
-        if (::recyclerView.isInitialized) {
-            recyclerView.removeOnLayoutChangeListener(layoutChangeListener)
-            recyclerView.removeCallbacks(spanUpdateRunnable)
-        }
+        viewModeController?.teardown()
+        viewModeController = null
         if (::filterController.isInitialized) {
             filterController.detach()
         }
