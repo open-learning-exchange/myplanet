@@ -502,5 +502,11 @@
   "fileNotFound": "Faylka lama helin: {fileName}",
   "fileCountMany": "{count} fayl",
   "stepsHeading": "Agoonta",
-  "courseProgressCount": "Habka {current} ee {max}"
+  "courseProgressCount": "Habka {current} ee {max}",
+  "resourceNotificationMessage": "Waxaad haysataa {count} agab aan la soo dejisan",
+  "taskNotificationMessage": "{title} waa inuu dhamaadaa {date}",
+  "storageRunningLow": "Xaddida maaliyadeed waa tagaa:",
+  "storageAvailable": "Xaddida maaliyadeed waa heli kara:",
+  "joinRequestPrefix": "Codsi ku biirid:",
+  "userRequestedToJoinTeam": "{user} ayaa codsaday ku biirista {team}"
 }

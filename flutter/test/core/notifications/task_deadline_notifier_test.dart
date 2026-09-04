@@ -35,6 +35,8 @@ void main() {
       teamNotificationDao: db.teamNotificationDao,
       newsDao: db.newsDao,
       teamTaskDao: db.teamTaskDao,
+      teamDao: db.teamDao,
+      userDao: db.userDao,
     );
     presenter = _RecordingPresenter();
   });

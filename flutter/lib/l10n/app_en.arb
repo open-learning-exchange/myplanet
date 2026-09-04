@@ -364,6 +364,59 @@
   "storageNotification": "Storage warning",
   "joinRequestNotification": "Join request",
   "teamNotification": "Team update",
+  "resourceNotificationMessage": "You have {count} resources not downloaded",
+  "@resourceNotificationMessage": {
+    "description": "The notification list's text for the offline-resource count. Port of the Kotlin `resource_notification`; the row's stored message is the bare count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskNotificationMessage": "{title} is due in {date}",
+  "@taskNotificationMessage": {
+    "description": "The notification list's text for a task deadline. Port of the Kotlin `task_notification`; the date is the substring parsed out of the stored message, not a formatted DateTime.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "storageRunningLow": "Storage running low: ",
+  "@storageRunningLow": {
+    "description": "Prefix of the low-storage notification, immediately followed by the percentage. The trailing space is deliberate and matches the Kotlin `storage_running_low`, which is Android-quoted for exactly that reason."
+  },
+  "storageAvailable": "Storage available: ",
+  "@storageAvailable": {
+    "description": "Prefix of the storage-available notification, immediately followed by the percentage. The trailing space is deliberate — see storageRunningLow."
+  },
+  "joinRequestPrefix": "Join Request:",
+  "@joinRequestPrefix": {
+    "description": "Bold prefix of a join-request notification, followed by the request sentence."
+  },
+  "userRequestedToJoinTeam": "{user} has requested to join {team}",
+  "@userRequestedToJoinTeam": {
+    "description": "Body of a join-request notification.",
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "team": {
+        "type": "String"
+      }
+    }
+  },
+  "unknownUser": "Unknown User",
+  "@unknownUser": {
+    "description": "Stand-in for a join request whose requester has no cached user document."
+  },
+  "unknownTeam": "Unknown Team",
+  "@unknownTeam": {
+    "description": "Stand-in for a join request whose team has no cached document."
+  },
   "tasks": "Tasks",
   "notifGroupJoinRequests": "Join Requests",
   "notifGroupTeamUpdates": "Team Updates",

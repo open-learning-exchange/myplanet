@@ -16,11 +16,15 @@ class NotificationsRepository {
     required TeamNotificationDao teamNotificationDao,
     required NewsDao newsDao,
     required TeamTaskDao teamTaskDao,
+    required TeamDao teamDao,
+    required UserDao userDao,
     DateTime Function()? now,
     PlanetApi? api,
   }) : _teamNotificationDao = teamNotificationDao,
        _newsDao = newsDao,
        _teamTaskDao = teamTaskDao,
+       _teamDao = teamDao,
+       _userDao = userDao,
        _now = now ?? DateTime.now,
        _api = api;
 
@@ -33,6 +37,8 @@ class NotificationsRepository {
   final TeamNotificationDao _teamNotificationDao;
   final NewsDao _newsDao;
   final TeamTaskDao _teamTaskDao;
+  final TeamDao _teamDao;
+  final UserDao _userDao;
   final DateTime Function() _now;
   final PlanetApi? _api;
 
@@ -292,6 +298,116 @@ class NotificationsRepository {
     );
   }
 
+  /// Port of `NotificationsRepositoryImpl.getTaskTeamNamesByTaskIds`
+  /// (`:191-213`) — task id → the name of the team that task belongs to, for
+  /// the `<b>Team</b>:` prefix the task notification carries.
+  ///
+  /// A task whose team has no cached document is simply absent from the map,
+  /// as in the Kotlin (`teamMap[teamId]?.let { … }`), which is what makes the
+  /// prefix optional rather than showing an empty bold run.
+  Future<Map<String, String>> taskTeamNamesByTaskIds(List<String> taskIds) =>
+      _taskTeamNames(taskIds, keyOf: (task) => task.id);
+
+  /// Port of `getTaskTeamNamesByTaskTitles` (`:255-280`) — the same map keyed
+  /// by title, for a notification that carries no task id and can only be
+  /// matched on the title parsed out of its message.
+  Future<Map<String, String>> taskTeamNamesByTaskTitles(
+    List<String> taskTitles,
+  ) => _taskTeamNames(taskTitles, byTitle: true, keyOf: (task) => task.title);
+
+  Future<Map<String, String>> _taskTeamNames(
+    List<String> keys, {
+    bool byTitle = false,
+    required String? Function(TeamTaskRow task) keyOf,
+  }) async {
+    if (keys.isEmpty) return const {};
+    final tasks = byTitle
+        ? await _teamTaskDao.getByTitles(keys)
+        : await _teamTaskDao.getByAnyIds(keys);
+    // `teamId` is non-nullable in this schema (Kotlin's is `String?`), so the
+    // Kotlin's null test is an emptiness test here.
+    final teamIds = <String>{
+      for (final task in tasks)
+        if (task.teamId.isNotEmpty) task.teamId,
+    };
+    if (teamIds.isEmpty) return const {};
+    final teams = await _teamDao.byIds(teamIds.toList());
+    final names = <String, String>{};
+    for (final task in tasks) {
+      final key = keyOf(task);
+      final teamId = task.teamId;
+      if (key == null || key.isEmpty || teamId.isEmpty) {
+        continue;
+      }
+      final name = teams[teamId]?.name;
+      if (name != null && name.isNotEmpty) names[key] = name;
+    }
+    return names;
+  }
+
+  /// Port of `NotificationsRepositoryImpl.getJoinRequestDetailsBatch`
+  /// (`:215-253`) — request document id → (requester, team).
+  ///
+  /// The Kotlin substitutes the literal English `"Unknown User"` /
+  /// `"Unknown Team"` here; the port leaves the field null and lets the
+  /// formatter fill it from `l10n`, so the fallback is translated rather than
+  /// hardcoded (the same correction Phase 95 made to `MyHealthScreen`'s
+  /// `'Unknown'`). Nothing else reads these fields.
+  Future<Map<String, JoinRequestDetail>> joinRequestDetailsBatch(
+    List<String> relatedIds,
+  ) async {
+    if (relatedIds.isEmpty) return const {};
+    final requests = await _teamDao.byIds(relatedIds);
+    if (requests.isEmpty) return const {};
+    final teamIds = <String>{
+      for (final request in requests.values)
+        if (request.teamId != null && request.teamId!.isNotEmpty)
+          request.teamId!,
+    };
+    final teams = teamIds.isEmpty
+        ? const <String, TeamRow>{}
+        : await _teamDao.byIds(teamIds.toList());
+
+    final details = <String, JoinRequestDetail>{};
+    for (final request in requests.values) {
+      final userId = request.userId;
+      // `getUsersByIds` in one call there, `getById` per requester here: this
+      // map is at most as large as the join requests on screen, and adding a
+      // batch method to `UserDao` would reach into another lane's section of
+      // `app_database.dart` for no measurable gain.
+      final user = (userId == null || userId.isEmpty)
+          ? null
+          : await _userDao.getById(userId);
+      details[request.id] = JoinRequestDetail(
+        requester: user?.name,
+        team: teams[request.teamId]?.name,
+      );
+    }
+    return details;
+  }
+
+  /// Port of `NotificationsRepositoryImpl.getJoinRequestDetails` (`:180-189`) —
+  /// the single-row lookup `loadNotifications` uses for join requests that
+  /// carry no `relatedId` at all. Kotlin passes the null straight through to
+  /// `getJoinRequestInfo`, which returns null for a null or empty id, so the
+  /// result is the unknown pair; the same holds here.
+  Future<JoinRequestDetail> joinRequestDetails(String? relatedId) async {
+    if (relatedId == null || relatedId.isEmpty) {
+      return const JoinRequestDetail();
+    }
+    final request = await _teamDao.getById(relatedId);
+    if (request == null) return const JoinRequestDetail();
+    final userId = request.userId;
+    final user = (userId == null || userId.isEmpty)
+        ? null
+        : await _userDao.getById(userId);
+    final teamId = request.teamId;
+    final team = (teamId == null || teamId.isEmpty)
+        ? null
+        : await _teamDao.getById(teamId);
+    return JoinRequestDetail(requester: user?.name, team: team?.name);
+  }
+
   /// Port of `NotificationsRepositoryImpl.getTeamNotifications` — the chat and
   /// task alert dots the dashboard draws on each team tile.
   ///
@@ -369,6 +485,27 @@ class NotificationsRepository {
       ),
     );
   }
+}
+
+/// The `Pair<String, String>` `getJoinRequestDetails` returns — the requester's
+/// name and the team they asked to join.
+///
+/// Both are nullable where the Kotlin writes `"Unknown User"` / `"Unknown
+/// Team"`, so the fallback can be localised at the point of display.
+class JoinRequestDetail {
+  const JoinRequestDetail({this.requester, this.team});
+
+  final String? requester;
+  final String? team;
+
+  @override
+  bool operator ==(Object other) =>
+      other is JoinRequestDetail &&
+      other.requester == requester &&
+      other.team == team;
+
+  @override
+  int get hashCode => Object.hash(requester, team);
 }
 
 /// Port of `model/TeamNotificationInfo.kt`.

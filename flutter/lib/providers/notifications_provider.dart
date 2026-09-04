@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/sync/sync_result.dart';
 import '../data/local/app_database.dart';
+import '../ui/notifications/notification_format.dart';
 import '../ui/notifications/notification_grouping.dart';
 import 'app_providers.dart';
 import 'session_provider.dart';
@@ -137,3 +138,17 @@ final notificationsSyncProvider =
     NotifierProvider<NotificationsSyncNotifier, SyncUiState>(
       NotificationsSyncNotifier.new,
     );
+
+/// The team names and join-request details the notification list formats with
+/// — port of the lookup half of `NotificationsViewModel.loadNotifications`.
+///
+/// Rebuilt whenever the list changes, like the Kotlin, which re-runs the whole
+/// lookup on every `loadNotifications` call.
+final notificationFormatContextProvider =
+    FutureProvider<NotificationFormatContext>((ref) async {
+      final rows = await ref.watch(notificationsProvider.future);
+      return buildNotificationFormatContext(
+        rows,
+        ref.watch(notificationsRepositoryProvider),
+      );
+    });

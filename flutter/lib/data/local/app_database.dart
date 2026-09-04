@@ -485,6 +485,23 @@ class TeamTaskDao extends DatabaseAccessor<AppDatabase>
     )..where((t) => t.id.isIn(ids) | t.docId.isIn(ids))).get();
   }
 
+  /// Port of `TeamTaskDao.getByTitles` (`TeamTaskDao.kt:44-45`):
+  /// `SELECT * FROM team_tasks WHERE title IN (:titles)`.
+  ///
+  /// Added for the notification list's team-name prefix, which resolves a task
+  /// by its title when the notification carries no task id
+  /// (`NotificationsViewModel.formatTaskNotification`).
+  Future<List<TeamTaskRow>> getByTitles(List<String> titles) async {
+    if (titles.isEmpty) return const [];
+    final rows = <TeamTaskRow>[];
+    for (final chunk in _chunked(titles, _sqliteVariableChunk)) {
+      rows.addAll(
+        await (select(teamTasks)..where((t) => t.title.isIn(chunk))).get(),
+      );
+    }
+    return rows;
+  }
+
   Future<void> markUploaded(String id, String docId, String rev) =>
       (update(teamTasks)..where((t) => t.id.equals(id))).write(
         TeamTasksCompanion(
