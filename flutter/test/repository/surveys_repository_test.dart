@@ -37,6 +37,7 @@ void main() {
         database.submissionDao,
         database.submitPhotosDao,
         database.surveyDao,
+        database.examDao,
       ),
     );
   });
@@ -331,6 +332,7 @@ void main() {
           database.submissionDao,
           database.submitPhotosDao,
           database.surveyDao,
+          database.examDao,
         ),
         urlMapper: ServerUrlMapper(
           mappings: {'http://local.example': 'https://alt.example'},
@@ -420,6 +422,7 @@ void main() {
         database.submissionDao,
         database.submitPhotosDao,
         database.surveyDao,
+        database.examDao,
       ).markSubmissionComplete(id!, {'birthYear': '2000', 'gender': 'male'});
 
       Map<String, dynamic>? capturedBody;
@@ -497,6 +500,7 @@ void main() {
             database.submissionDao,
             database.submitPhotosDao,
             database.surveyDao,
+            database.examDao,
           ),
           urlMapper: ServerUrlMapper(
             mappings: {'http://local.example': 'https://alt.example'},

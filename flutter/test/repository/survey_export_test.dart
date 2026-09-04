@@ -29,6 +29,7 @@ void main() {
       database.submissionDao,
       database.submitPhotosDao,
       database.surveyDao,
+      database.examDao,
     );
   });
   tearDown(() => database.close());

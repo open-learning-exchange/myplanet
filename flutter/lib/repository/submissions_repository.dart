@@ -20,6 +20,7 @@ class SubmissionsRepository {
     this._dao,
     this._photosDao,
     this._surveyDao,
+    this._examDao,
   );
 
   static const int initialBatchSize = 100;
@@ -28,6 +29,14 @@ class SubmissionsRepository {
   final SubmissionDao _dao;
   final SubmitPhotosDao _photosDao;
   final SurveyDao _surveyDao;
+
+  /// Kotlin's `SubmissionsRepositoryImpl` injects `examDao` and `questionDao`
+  /// alongside its own, because [serialize] resolves the **live** exam for the
+  /// `parent` object it uploads (`getPayloadData`,
+  /// `SubmissionsRepositoryImpl.kt:756-761`). The port splits Kotlin's single
+  /// `exams` table into [Exams] and [Surveys], so the lookup needs both this
+  /// and `_surveyDao`.
+  final ExamDao _examDao;
 
   Stream<List<SubmissionRow>> watchForUser(String userId) =>
       _dao.watchForUser(userId);
@@ -586,8 +595,10 @@ class SubmissionsRepository {
     ]);
   }
 
-  Future<List<SubmissionRow>> pendingUploads(String userId) =>
-      _dao.pendingUploads(userId);
+  /// Every row on the handset that still owes the server an upload — see
+  /// [SubmissionDao.pendingUploads] for why this is not scoped to the
+  /// signed-in learner.
+  Future<List<SubmissionRow>> pendingUploads() => _dao.pendingUploads();
 
   /// Port of `SubmissionsRepositoryImpl.hasUnfinishedSurveys`. Returns true
   /// if the course has any attached survey the user has not yet submitted.
@@ -746,6 +757,7 @@ class SubmissionsRepository {
   /// sync-in's matching read of it went unnoticed. See [_userDocument].
   Future<Map<String, dynamic>> serialize(SubmissionRow row) async {
     final answers = await _dao.answersFor(row.id);
+    final parent = await _parentDocument(row);
     return {
       if (row.couchId != null && row.couchId!.isNotEmpty) '_id': row.couchId,
       if (row.rev != null && row.rev!.isNotEmpty) '_rev': row.rev,
@@ -760,11 +772,7 @@ class SubmissionsRepository {
       // Omitted rather than sent as null when there is nothing to send —
       // `serializeSubmission` guards both with an `if` and has no `else`
       // (`:840-857`).
-      // `!submission.parent.isNullOrEmpty()` (`:842`) — an empty blob is
-      // omitted, not sent as an empty string.
-      'parent': ?((row.parent?.isEmpty ?? true)
-          ? null
-          : _asDocument(row.parent)),
+      'parent': ?parent,
       'user': ?_userDocument(row),
       'answers': [
         for (final answer in answers)
@@ -785,6 +793,216 @@ class SubmissionsRepository {
       ],
     };
   }
+
+  /// The `parent` object the upload carries: the **live** exam or survey when
+  /// this device still has it, and only otherwise the blob stored on the row.
+  ///
+  /// That order is Kotlin's. `serializeSubmission` asks `getPayloadData`
+  /// (`SubmissionsRepositoryImpl.kt:756-761`) for
+  /// `examDao.getById(parentId.substringBefore("@"))` plus
+  /// `questionDao.getByExamId`, and emits
+  /// `StepExam.serializeExam(exam, questions)` when the exam is there
+  /// (`:840-841`); `submission.parent` is the `else if` for an exam this
+  /// device no longer has (`:842`).
+  ///
+  /// The port used to send the blob unconditionally, and the blob is tiny:
+  /// [_openExamSession] writes `{_id,_rev,name,courseId,totalMarks}` and
+  /// [createSurveyDraft] writes `{_id,name}`. Neither carries `questions` —
+  /// and the port's own pull fills `submission_questions` from
+  /// `parent['questions']` ([upsertDocuments]), so an answer sheet uploaded
+  /// here and pulled on a second device rendered answers with no questions to
+  /// put them against. A writer and a reader disagreeing about a key, each
+  /// half passing its own test: Phase 74's reactions, Phase 100's photo id.
+  ///
+  /// **Kotlin keeps surveys and tests in one `exams` table; the port splits
+  /// them**, so one `examDao.getById` in the Kotlin is two lookups here — see
+  /// [_liveParentDocument] for why which one goes first is load-bearing.
+  Future<Object?> _parentDocument(SubmissionRow row) async {
+    final live = await _liveParentDocument(row.parentId, row.type);
+    if (live != null) return live;
+    // `!submission.parent.isNullOrEmpty()` (`:842`) — an empty blob is
+    // omitted, not sent as an empty string.
+    return (row.parent?.isEmpty ?? true) ? null : _asDocument(row.parent);
+  }
+
+  /// The live parent, looked up in whichever of the two tables the submission
+  /// says it was answering, and in the other only as a fallback.
+  ///
+  /// **The two id spaces are not disjoint**, which is why the order is a
+  /// decision rather than a formality. `ExamMapper.mapStepExams` synthesizes
+  /// `'$courseId-$stepId-$examKey'` for an embedded step document with no
+  /// `_id`, and `SurveyMapper.fromCourseDoc`'s first pass uses the same
+  /// `examKey: 'exam'` — so one `steps[i].exam` produces the *same id string*
+  /// whether the document's `type` files it under [Exams] or [Surveys]. Flip
+  /// that `type` on Planet and the next courses walk writes the row to the
+  /// other table while the first one's copy survives: neither `deleteNotIn`
+  /// prunes a row that still has a `stepId`, so the loser lingers until a
+  /// later completed exams walk.
+  ///
+  /// Kotlin cannot have this problem — one `exams` table, one row, `@Upsert`
+  /// overwrites `type` in place — so there is no Kotlin order to port. The
+  /// submission's own `type` is the disambiguator the port has and Kotlin does
+  /// not need: an answer sheet knows whether it was answering a survey or a
+  /// test, and the row it should upload is the one of that kind. Trying
+  /// [Exams] first unconditionally uploaded the stale test to a survey's
+  /// answer sheet.
+  ///
+  /// `type` defaults to the survey side, matching `serializeSubmission:828`'s
+  /// own `submission.type ?: "survey"`.
+  Future<Map<String, dynamic>?> _liveParentDocument(
+    String? parentId,
+    String? type,
+  ) async {
+    // `parentId.substringBefore("@")` — the parent id is `examId@courseId`
+    // for a course-attached exam or survey and the bare id otherwise.
+    final examId = (parentId ?? '').split('@').first;
+    if (examId.isEmpty) return null;
+
+    Future<Map<String, dynamic>?> fromExams() async {
+      final exam = await _examDao.getById(examId);
+      return exam == null
+          ? null
+          : examParentDocument(exam, await _examDao.questionsFor(examId));
+    }
+
+    Future<Map<String, dynamic>?> fromSurveys() async {
+      final survey = await _surveyDao.getById(examId);
+      return survey == null
+          ? null
+          : surveyParentDocument(survey, await _surveyDao.questionsFor(examId));
+    }
+
+    return type == 'exam'
+        ? await fromExams() ?? await fromSurveys()
+        : await fromSurveys() ?? await fromExams();
+  }
+
+  /// Port of `StepExam.serializeExam` (`StepExam.kt:70-94`), field for field
+  /// and in its order, with two deliberate departures.
+  ///
+  /// **`type` is not emitted.** Kotlin writes `exam.type` from the single
+  /// `exams` table; the port's [Exams] has no such column, because
+  /// `ExamMapper.fromDoc` uses the document's `type` to *choose the table* and
+  /// then discards it. Adding the column is a schema change, which this round
+  /// is not this lane's to make — and the value is not recoverable from the
+  /// table anyway: a course test carries `'courses'`
+  /// (`CoursesRepositoryImpl.kt:744` keeps the document's own key), a
+  /// standalone one with no `type` becomes `'exam'` (`StepExam.kt:39`), and
+  /// nothing on [ExamRow] tells the two apart. Omitting the key leaves it
+  /// undefined on Planet rather than guessing; nothing in either tree reads a
+  /// submission's `parent.type`.
+  ///
+  /// **Each question carries its `id`, and its label under `title` as well as
+  /// `header`.** `ExamQuestion.serializeQuestions` (`ExamQuestion.kt:110-124`)
+  /// emits seven keys, no id, and the label under `header`. Both are Kotlin
+  /// quirks the port cannot afford.
+  ///
+  /// The id, because `_questionFromJson` keys the pulled row on it and falls
+  /// back to a positional `<submissionId>-q<index>`, while the answers
+  /// alongside it carry the real question id — so a faithful upload hands the
+  /// second device a question set its own answers cannot be joined to, and
+  /// that is *worse* than sending no questions at all: `submissions_exporter`
+  /// prints the answers only through its `questions.isEmpty` fallback, so
+  /// unjoinable questions print every prompt with no answer and drop the
+  /// answers entirely.
+  ///
+  /// The label, because `header` is a key no real document has. Every reader
+  /// of a question in either tree takes it from `title` — Kotlin's
+  /// `ExamQuestion.insertExamQuestions` (`:76`), `ExamMapper.parseQuestions`,
+  /// `SurveyMapper` — so the snapshot `serializeQuestions` uploads cannot be
+  /// read back by the code that reads every other copy of the same question.
+  /// Kotlin demonstrates that on itself: `SurveysRepositoryImpl.adoptSurvey`
+  /// (`:90-93`) feeds `serializeQuestions` straight into
+  /// `insertExamQuestions`, and every adopted team survey loses each
+  /// question's id *and* its label. Sending both keys costs nothing.
+  ///
+  /// Same call as Phase 120's `answers.examId`: keep the quirk unless it
+  /// breaks a reader the port has and Kotlin does not.
+  static Map<String, dynamic> examParentDocument(
+    ExamRow exam,
+    List<ExamQuestionRow> questions,
+  ) => {
+    '_id': exam.id,
+    // `if (exam._rev != null)` (`:73-75`).
+    if (exam.rev != null) '_rev': exam.rev,
+    'name': exam.name,
+    'description': exam.description,
+    'passingPercentage': exam.passingPercentage,
+    'updatedDate': exam.updatedDate,
+    'createdDate': exam.createdDate,
+    'adoptionDate': exam.adoptionDate,
+    'sourcePlanet': exam.sourcePlanet,
+    'totalMarks': exam.totalMarks,
+    'createdBy': exam.createdBy,
+    // Both conditional in the Kotlin (`:86-91`).
+    if (exam.sourceSurveyId != null) 'sourceSurveyId': exam.sourceSurveyId,
+    if (exam.teamId != null) 'teamId': exam.teamId,
+    'questions': [
+      for (final question in questions)
+        {
+          'id': question.id,
+          'title': question.header,
+          'header': question.header,
+          'body': question.body,
+          'type': question.type,
+          'marks': question.marks,
+          'choices': [for (final choice in question.choices) choice.toJson()],
+          'correctChoice': question.correctChoices,
+          'hasOtherOption': question.hasOtherOption,
+        },
+    ],
+  };
+
+  /// The same document for a row the port filed under [Surveys].
+  ///
+  /// `type` is omitted here too, and for the same reason as
+  /// [examParentDocument] rather than the one it first looks like. The
+  /// *exams-database* walk does route on `type == 'surveys'`, so a row from
+  /// that walk could recover the value — but `SurveyMapper.fromCourseDoc`'s
+  /// second pass files every `steps[i].survey` here with **no** type filter at
+  /// all, and Kotlin types one of those `"survey"`, singular. Emitting
+  /// `'surveys'` would be a guess for exactly the rows the exam branch refuses
+  /// to guess for.
+  ///
+  /// [SurveyQuestions] has no `marks`, `correctChoice` or `hasOtherOption`
+  /// column — Kotlin's one `ExamQuestion` type carries all three for a survey
+  /// too, but the port's survey pull has never stored them and there is
+  /// nothing to send. The keys are omitted rather than sent as invented
+  /// defaults; a survey question has no correct answer to lose.
+  ///
+  /// The question `id` is [_rawQuestionId], not the row's own composite key,
+  /// because that is what the answer's `questionId` carries — the same
+  /// identity rule [createSurveyDraft] uses when it keys the local
+  /// `submission_questions` rows.
+  static Map<String, dynamic> surveyParentDocument(
+    SurveyRow survey,
+    List<SurveyQuestionRow> questions,
+  ) => {
+    '_id': survey.id,
+    if (survey.rev != null) '_rev': survey.rev,
+    'name': survey.name,
+    'description': survey.description,
+    'passingPercentage': survey.passingPercentage,
+    'updatedDate': survey.updatedDate,
+    'createdDate': survey.createdDate,
+    'adoptionDate': survey.adoptionDate,
+    'sourcePlanet': survey.sourcePlanet,
+    'totalMarks': survey.totalMarks,
+    'createdBy': survey.createdBy,
+    if (survey.sourceSurveyId != null) 'sourceSurveyId': survey.sourceSurveyId,
+    if (survey.teamId != null) 'teamId': survey.teamId,
+    'questions': [
+      for (final question in questions)
+        {
+          'id': _rawQuestionId(question),
+          'title': question.header,
+          'header': question.header,
+          'body': question.body,
+          'type': question.type,
+          'choices': [for (final choice in question.choices) choice.toJson()],
+        },
+    ],
+  };
 
   /// Port of `Answer.valueChoicesArray`, which sends each stored choice as the
   /// object it came from (`gson.fromJson(choice, JsonObject::class.java)`):

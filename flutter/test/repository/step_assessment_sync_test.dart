@@ -54,6 +54,7 @@ void main() {
         db.submissionDao,
         db.submitPhotosDao,
         db.surveyDao,
+        db.examDao,
       ),
     );
   });

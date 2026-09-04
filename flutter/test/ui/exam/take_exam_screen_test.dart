@@ -742,7 +742,7 @@ void main() {
       // port stored the bare course id, so the per-step mistake counts could
       // never match their exam.
       expect(saved.single.parentId, 'exam-1@course-1');
-      expect(await db.submissionDao.pendingUploads('user-1'), hasLength(1));
+      expect(await db.submissionDao.pendingUploads(), hasLength(1));
 
       final answers = await db.select(db.submissionAnswers).get();
       expect(answers, hasLength(2));
@@ -1070,6 +1070,7 @@ void main() {
         db.submissionDao,
         db.submitPhotosDao,
         db.surveyDao,
+        db.examDao,
       );
       final flaky = _FlakySubmissionsRepository(real);
 

@@ -33,6 +33,7 @@ void main() {
       database.submissionDao,
       database.submitPhotosDao,
       database.surveyDao,
+      database.examDao,
     );
     surveys = SurveysRepository(
       api,
@@ -319,7 +320,7 @@ void main() {
         hasLength(2),
       );
       expect(
-        await submissions.pendingUploads('ada'),
+        await submissions.pendingUploads(),
         isEmpty,
         reason: 'a half-finished attempt must not go up',
       );
@@ -484,7 +485,7 @@ void main() {
       // queue selects on.
       expect(row.status, 'requires grading');
       expect(row.grade, 0, reason: 'Planet marks it, not the device');
-      expect(await submissions.pendingUploads('ada'), hasLength(1));
+      expect(await submissions.pendingUploads(), hasLength(1));
 
       final answers = await database.submissionDao.answersFor(id);
       expect(answers.every((answer) => answer.isPassed), isTrue);
@@ -512,7 +513,7 @@ void main() {
 
       expect(verdicts, [true, false]);
       expect((await database.submissionDao.getById(id))!.status, 'pending');
-      expect(await submissions.pendingUploads('ada'), isEmpty);
+      expect(await submissions.pendingUploads(), isEmpty);
     });
 
     test('the mistake counts and verdicts reach the upload payload', () async {
@@ -685,7 +686,7 @@ void main() {
       expect(jsonDecode(row!.user!)['gender'], 'female');
       // Back in the pending set, or the edit would never be sent.
       expect(row.uploaded, isFalse);
-      expect(await submissions.pendingUploads('ada'), hasLength(1));
+      expect(await submissions.pendingUploads(), hasLength(1));
     });
   });
 }

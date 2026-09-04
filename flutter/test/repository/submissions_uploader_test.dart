@@ -35,6 +35,7 @@ void main() {
       db.submissionDao,
       db.submitPhotosDao,
       db.surveyDao,
+      db.examDao,
     );
     outbox = OutboxRepository(db.outboxDao);
     uploader = SubmissionsUploader(api, repository, outbox, testDeviceIdentity);
@@ -71,8 +72,50 @@ void main() {
     final result = await uploader.handler(operation, const {}, 'Basic test');
 
     expect(result, isA<NetworkSuccess<Map<String, dynamic>>>());
-    expect(await repository.pendingUploads('user-1'), isEmpty);
+    expect(await repository.pendingUploads(), isEmpty);
     expect((await repository.getById(id))?.couchId, 'server-id');
+  });
+
+  /// **The shared handset, end to end.** `SubmissionDao.pendingUploads` is
+  /// pinned by its own tests, but until this one nothing drove `queuePending`
+  /// with more than one owner — so a Dart-side `.where((row) => row.userId ==
+  /// userId)` here would have re-scoped the uploader with the whole suite
+  /// green, reinstating exactly the defect the DAO change fixed. The
+  /// `userId` parameter is the outbox row's session tag, not a filter.
+  test('queues every owner on the handset, not just the session', () async {
+    await repository.createDraft(
+      userId: 'org.couchdb.user:ada',
+      type: 'survey',
+      title: "Ada's sheet",
+      answers: const [],
+    );
+    await repository.createDraft(
+      userId: 'org.couchdb.user:bob',
+      type: 'survey',
+      title: "Bob's sheet",
+      answers: const [],
+    );
+
+    // Bob is the one signed in and syncing; Ada answered and signed out.
+    final queued = await uploader.queuePending(
+      config: config,
+      userId: 'org.couchdb.user:bob',
+    );
+
+    expect(queued, 2);
+    final owners = [
+      for (final row in await outbox.due())
+        ((jsonDecode(row.payload) as Map<String, dynamic>)['user']
+                as Map<String, dynamic>)['_id']
+            as String,
+    ];
+    expect(
+      owners,
+      containsAll(<String>['org.couchdb.user:ada', 'org.couchdb.user:bob']),
+      reason:
+          "each document is attributed to its own owner; only the outbox row's "
+          'session tag is the signed-in user',
+    );
   });
 
   test('an already-uploaded submission is updated, not duplicated', () async {
@@ -92,7 +135,7 @@ void main() {
     ]);
 
     final payload = await repository.serialize(
-      (await db.submissionDao.pendingUploads('user-1')).single,
+      (await db.submissionDao.pendingUploads()).single,
     );
 
     // Kotlin's serializeSubmission adds both when present; CouchDB needs them
