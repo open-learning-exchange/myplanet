@@ -1,8 +1,10 @@
 package org.ole.planet.myplanet.ui.courses
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,7 +12,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.StepExam
@@ -41,6 +42,7 @@ data class CourseStepUiState(
 
 @HiltViewModel
 class CourseStepViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val coursesRepository: CoursesRepository,
     private val userRepository: UserRepository,
     private val resourcesRepository: ResourcesRepository,
@@ -55,7 +57,7 @@ class CourseStepViewModel @Inject constructor(
     private var loadDataJob: Job? = null
     private var saveInProgressJob: Job? = null
 
-    fun loadStep(stepId: String?, stepNumber: Int, nextStepId: String?) {
+    fun loadStep(stepId: String?, nextStepId: String?) {
         loadDataJob?.cancel()
         loadDataJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
@@ -64,11 +66,7 @@ class CourseStepViewModel @Inject constructor(
             val data = coursesRepository.getCourseStepData(stepId ?: "", user?.id)
             val title = data.step.courseId?.let { coursesRepository.getCourseTitleById(it) }
 
-            val baseDirPath = try {
-                MainApplication.context.getExternalFilesDir(null)?.toString()
-            } catch (e: Exception) {
-                null
-            }
+            val baseDirPath = context.getExternalFilesDir(null)?.toString()
 
             val markdownContentWithLocalPaths = MarkdownUtils.prependBaseUrlToImages(
                 data.step.description,
