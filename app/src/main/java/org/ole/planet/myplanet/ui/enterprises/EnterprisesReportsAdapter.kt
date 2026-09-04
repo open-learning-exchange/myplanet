@@ -21,7 +21,8 @@ class EnterprisesReportsAdapter(
     private val onDelete: (MyTeam) -> Unit
 ) : ListAdapter<MyTeam, EnterprisesReportsAdapter.ReportsViewHolder>(diffCallback) {
     private var nonTeamMember = false
-    private val attachmentExistsCache = HashMap<String, Boolean>()
+    private val attachmentExistsCache = HashMap<String, Pair<Boolean, Long>>()
+    private val cacheTtlMs = 5000L
 
     override fun onCurrentListChanged(
         previousList: MutableList<MyTeam>,
@@ -106,7 +107,21 @@ class EnterprisesReportsAdapter(
 
     private fun bindReportImage(binding: ReportListItemBinding, report: MyTeam) {
         val imageFile = MyTeam.getAttachmentFile(context, report._id, report.imageName)
-        if (imageFile != null && attachmentExistsCache.getOrPut(imageFile.absolutePath) { imageFile.exists() }) {
+        val now = System.currentTimeMillis()
+        val exists = if (imageFile != null) {
+            val cached = attachmentExistsCache[imageFile.absolutePath]
+            if (cached != null && now - cached.second < cacheTtlMs) {
+                cached.first
+            } else {
+                val freshExists = imageFile.exists()
+                attachmentExistsCache[imageFile.absolutePath] = Pair(freshExists, now)
+                freshExists
+            }
+        } else {
+            false
+        }
+
+        if (imageFile != null && exists) {
             binding.reportImage.visibility = View.VISIBLE
             Glide.with(context)
                 .load(imageFile)
@@ -118,6 +133,7 @@ class EnterprisesReportsAdapter(
             }
         } else {
             binding.reportImage.visibility = View.GONE
+            binding.reportImage.setOnClickListener(null)
         }
     }
 

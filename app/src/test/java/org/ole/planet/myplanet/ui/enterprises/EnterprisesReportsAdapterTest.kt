@@ -137,7 +137,7 @@ class EnterprisesReportsAdapterTest {
                 // File is deleted on disk
                 imageFile.delete()
 
-                // Second bind uses cached exists value so image remains visible
+                // Second bind within TTL uses cached exists value (true) so image remains visible
                 adapter.onBindViewHolder(viewHolder, 0)
                 assertEquals(View.VISIBLE, viewHolder.binding.reportImage.visibility)
 
@@ -147,6 +147,49 @@ class EnterprisesReportsAdapterTest {
                     // Cache was cleared, so disk re-check detects file is deleted and sets visibility to GONE
                     assertEquals(View.GONE, viewHolder.binding.reportImage.visibility)
                 }
+            }
+        } finally {
+            io.mockk.unmockkObject(org.ole.planet.myplanet.utils.FileUtils)
+            tempDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun testBindReportImage_cacheExpiresAfterTtl() {
+        val tempDir = java.io.File(context.cacheDir, "test_ole_reports_ttl_${System.currentTimeMillis()}").apply { mkdirs() }
+        io.mockk.mockkObject(org.ole.planet.myplanet.utils.FileUtils)
+        io.mockk.every { org.ole.planet.myplanet.utils.FileUtils.getOlePath(any()) } returns "${tempDir.absolutePath}/"
+
+        try {
+            val teamAttachmentsDir = java.io.File(tempDir, "team_attachments/report1").apply { mkdirs() }
+            val imageFile = java.io.File(teamAttachmentsDir, "report.jpg")
+
+            val report = MyTeam().apply {
+                _id = "report1"
+                imageName = "report.jpg"
+            }
+
+            adapter.submitList(listOf(report)) {
+                val binding = ReportListItemBinding.inflate(LayoutInflater.from(context))
+                val viewHolder = EnterprisesReportsAdapter.ReportsViewHolder(binding)
+
+                // File doesn't exist initially -> GONE (and cached false)
+                adapter.onBindViewHolder(viewHolder, 0)
+                assertEquals(View.GONE, viewHolder.binding.reportImage.visibility)
+
+                // File appears on disk (e.g. downloaded)
+                imageFile.createNewFile()
+
+                // Immediate re-bind within TTL uses cached false -> still GONE
+                adapter.onBindViewHolder(viewHolder, 0)
+                assertEquals(View.GONE, viewHolder.binding.reportImage.visibility)
+
+                // Sleep past the 5000ms TTL
+                Thread.sleep(5100L)
+
+                // Re-bind after TTL expires re-stats disk -> VISIBLE
+                adapter.onBindViewHolder(viewHolder, 0)
+                assertEquals(View.VISIBLE, viewHolder.binding.reportImage.visibility)
             }
         } finally {
             io.mockk.unmockkObject(org.ole.planet.myplanet.utils.FileUtils)
