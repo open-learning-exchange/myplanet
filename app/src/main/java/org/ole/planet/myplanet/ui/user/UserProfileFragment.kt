@@ -4,12 +4,10 @@ import android.Manifest
 import android.app.Activity.RESULT_OK
 import android.app.DatePickerDialog
 import android.app.Dialog
-import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
@@ -25,9 +23,11 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
@@ -38,6 +38,7 @@ import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.Target
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
+import java.io.File
 import java.lang.String.format
 import java.util.ArrayList
 import java.util.Calendar
@@ -47,6 +48,8 @@ import java.util.TimeZone
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.language
 import org.ole.planet.myplanet.R.array.subject_level
@@ -54,6 +57,7 @@ import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
 import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
@@ -69,6 +73,8 @@ class UserProfileFragment : Fragment() {
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var timeProvider: TimeProvider
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
     private var model: UserEntity? = null
     private var editProfileDialog: Dialog? = null
     private lateinit var pickImageLauncher: ActivityResultLauncher<Intent>
@@ -95,7 +101,8 @@ class UserProfileFragment : Fragment() {
         captureImageLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { isSuccess ->
             if (isSuccess) {
                 startIntent(photoURI)
-                binding.image.setImageURI(photoURI)
+                val imageSize = resources.getDimensionPixelSize(R.dimen.profile_image_size)
+                ImageUtils.loadProfileImage(photoURI.toString(), binding.image, imageSize)
             }
         }
 
@@ -487,15 +494,18 @@ class UserProfileFragment : Fragment() {
             requestCameraLauncher.launch(Manifest.permission.CAMERA)
             return
         }
-        val values = ContentValues().apply {
-            put(MediaStore.Images.Media.TITLE, "Photo_${UUID.randomUUID()}")
-            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/ole/photo")
+        val context = requireContext()
+        viewLifecycleOwner.lifecycleScope.launch {
+            photoURI = withContext(dispatcherProvider.io) {
+                val directory = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "ole/photo")
+                if (!directory.exists()) {
+                    directory.mkdirs()
+                }
+                val photoFile = File(directory, "Photo_${UUID.randomUUID()}.jpg")
+                FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", photoFile)
             }
+            photoURI?.let { captureImageLauncher.launch(it) }
         }
-        photoURI = requireActivity().contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-        photoURI?.let { captureImageLauncher.launch(it) }
     }
 
     private fun startIntent(uri: Uri?) {
