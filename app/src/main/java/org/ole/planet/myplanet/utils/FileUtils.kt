@@ -253,7 +253,7 @@ object FileUtils {
         }
     }
 
-    fun resolveUriToPath(context: Context, uri: Uri?): String? {
+    fun resolveUriToPath(context: Context, uri: Uri?, destinationDir: File = context.cacheDir): String? {
         uri ?: return null
         if (uri.scheme == "file") return uri.path
         return try {
@@ -263,7 +263,7 @@ object FileUtils {
                     if (columnIndex >= 0) cursor.getString(columnIndex) else null
                 } else null
             }
-            val destinationFile = File(context.cacheDir, displayName ?: UUID.randomUUID().toString())
+            val destinationFile = File(destinationDir, displayName ?: UUID.randomUUID().toString())
             copyUriToFile(context, uri, destinationFile)
             destinationFile.absolutePath
         } catch (e: Exception) {
