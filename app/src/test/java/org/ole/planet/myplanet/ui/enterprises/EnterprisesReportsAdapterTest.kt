@@ -92,4 +92,65 @@ class EnterprisesReportsAdapterTest {
             assertEquals(context.getString(R.string.team_financial_report, "Test Team"), viewHolder.binding.tvReportTitle.text.toString())
         }
     }
+
+    @Test
+    fun testBindReportImage_missingFile_visibilityGone() {
+        val report = MyTeam().apply {
+            _id = "report1"
+            imageName = "missing.jpg"
+        }
+
+        adapter.submitList(listOf(report)) {
+            val binding = ReportListItemBinding.inflate(LayoutInflater.from(context))
+            val viewHolder = EnterprisesReportsAdapter.ReportsViewHolder(binding)
+
+            adapter.onBindViewHolder(viewHolder, 0)
+
+            assertEquals(View.GONE, viewHolder.binding.reportImage.visibility)
+        }
+    }
+
+    @Test
+    fun testBindReportImage_existingFile_cachesAndInvalidatesOnListChange() {
+        val tempDir = java.io.File(context.cacheDir, "test_ole_reports_${System.currentTimeMillis()}").apply { mkdirs() }
+        io.mockk.mockkObject(org.ole.planet.myplanet.utils.FileUtils)
+        io.mockk.every { org.ole.planet.myplanet.utils.FileUtils.getOlePath(any()) } returns "${tempDir.absolutePath}/"
+
+        try {
+            val teamAttachmentsDir = java.io.File(tempDir, "team_attachments/report1").apply { mkdirs() }
+            val imageFile = java.io.File(teamAttachmentsDir, "report.jpg")
+            imageFile.createNewFile()
+
+            val report = MyTeam().apply {
+                _id = "report1"
+                imageName = "report.jpg"
+            }
+
+            adapter.submitList(listOf(report)) {
+                val binding = ReportListItemBinding.inflate(LayoutInflater.from(context))
+                val viewHolder = EnterprisesReportsAdapter.ReportsViewHolder(binding)
+
+                // First bind detects existing file and makes image visible
+                adapter.onBindViewHolder(viewHolder, 0)
+                assertEquals(View.VISIBLE, viewHolder.binding.reportImage.visibility)
+
+                // File is deleted on disk
+                imageFile.delete()
+
+                // Second bind uses cached exists value so image remains visible
+                adapter.onBindViewHolder(viewHolder, 0)
+                assertEquals(View.VISIBLE, viewHolder.binding.reportImage.visibility)
+
+                // Re-submitting list invalidates cache via onCurrentListChanged
+                adapter.submitList(listOf(report)) {
+                    adapter.onBindViewHolder(viewHolder, 0)
+                    // Cache was cleared, so disk re-check detects file is deleted and sets visibility to GONE
+                    assertEquals(View.GONE, viewHolder.binding.reportImage.visibility)
+                }
+            }
+        } finally {
+            io.mockk.unmockkObject(org.ole.planet.myplanet.utils.FileUtils)
+            tempDir.deleteRecursively()
+        }
+    }
 }
