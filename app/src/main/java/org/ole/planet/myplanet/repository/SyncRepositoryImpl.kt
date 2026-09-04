@@ -45,6 +45,15 @@ class SyncRepositoryImpl @Inject constructor(
     private val transactionSyncManager: dagger.Lazy<TransactionSyncManager>,
     private val syncTimeLogger: SyncTimeLogger
 ) : SyncRepository {
+
+    private val shelfDispatchMap: Map<String, suspend (String?, List<JsonObject>) -> Int> by lazy {
+        mapOf(
+            "resources" to { shelfId, docs -> resourcesRepository.batchInsertMyLibrary(shelfId, docs) },
+            "courses" to { shelfId, docs -> coursesRepository.batchInsertMyCourses(shelfId, docs) },
+            "meetups" to { _, docs -> eventsRepository.batchInsertMeetups(docs) },
+            "teams" to { _, docs -> teamsSyncRepository.batchInsertMyTeams(docs) }
+        )
+    }
     override fun uploadLoginData(): Flow<SyncUiState> =
         enqueueUserDataUpload("UploadUserData_Login", UserDataWorker.UPLOAD_TYPE_LOGIN)
 
@@ -185,11 +194,9 @@ class SyncRepositoryImpl @Inject constructor(
 
                 if (documentsToProcess.isNotEmpty()) {
                     val realmStartTime = SystemClock.elapsedRealtime()
-                    when (shelfData.type) {
-                        "resources" -> processedCount += resourcesRepository.batchInsertMyLibrary(shelfId, documentsToProcess)
-                        "courses" -> processedCount += coursesRepository.batchInsertMyCourses(shelfId, documentsToProcess)
-                        "meetups" -> processedCount += eventsRepository.batchInsertMeetups(documentsToProcess)
-                        "teams" -> processedCount += teamsSyncRepository.batchInsertMyTeams(documentsToProcess)
+                    val handler = shelfDispatchMap[shelfData.type]
+                    if (handler != null) {
+                        processedCount += handler(shelfId, documentsToProcess)
                     }
                     val realmDuration = SystemClock.elapsedRealtime() - realmStartTime
                     logger.logDbOperation("shelf_insert", shelfData.type, realmDuration, documentsToProcess.size)
