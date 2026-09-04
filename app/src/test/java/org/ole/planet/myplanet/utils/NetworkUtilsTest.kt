@@ -53,6 +53,58 @@ class NetworkUtilsTest {
     }
 
     @Test
+    fun getDeviceName_cachesValueAndUpdatesOnReset() {
+        ReflectionHelpers.setStaticField(Build::class.java, "MANUFACTURER", "TestBrand")
+        ReflectionHelpers.setStaticField(Build::class.java, "MODEL", "TestDevice")
+
+        val initialDeviceName = NetworkUtils.getDeviceName()
+        assertEquals("TESTBRAND TESTDEVICE", initialDeviceName)
+
+        // Mutate Build properties without calling resetForTesting
+        ReflectionHelpers.setStaticField(Build::class.java, "MANUFACTURER", "NewBrand")
+        ReflectionHelpers.setStaticField(Build::class.java, "MODEL", "NewDevice")
+
+        // Should return cached value
+        assertEquals("TESTBRAND TESTDEVICE", NetworkUtils.getDeviceName())
+
+        // After reset, recomputed value should be fetched
+        NetworkUtils.resetForTesting()
+        assertEquals("NEWBRAND NEWDEVICE", NetworkUtils.getDeviceName())
+    }
+
+    @Test
+    fun getUniqueIdentifier_cachesValueAndUpdatesOnReset() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        Settings.Secure.putString(
+            context.contentResolver,
+            Settings.Secure.ANDROID_ID,
+            "id_1"
+        )
+        ReflectionHelpers.setStaticField(Build::class.java, "ID", "build_1")
+
+        val initialUniqueId = NetworkUtils.getUniqueIdentifier()
+        assertEquals("id_1_build_1", initialUniqueId)
+
+        // Change underlying values without reset
+        Settings.Secure.putString(
+            context.contentResolver,
+            Settings.Secure.ANDROID_ID,
+            "id_2"
+        )
+        ReflectionHelpers.setStaticField(Build::class.java, "ID", "build_2")
+
+        // Should return cached value
+        assertEquals("id_1_build_1", NetworkUtils.getUniqueIdentifier())
+
+        // Reset both VersionUtils and NetworkUtils caches
+        VersionUtils.resetAndroidIdCacheForTesting()
+        NetworkUtils.resetForTesting()
+
+        assertEquals("id_2_build_2", NetworkUtils.getUniqueIdentifier())
+    }
+
+    @Test
     fun getUniqueIdentifier_returnsExpectedFormat() {
         val context = ApplicationProvider.getApplicationContext<Context>()
 
