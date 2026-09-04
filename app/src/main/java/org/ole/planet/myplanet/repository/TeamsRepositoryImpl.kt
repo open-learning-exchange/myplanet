@@ -974,13 +974,6 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getJoinedMembersWithVisitInfo(teamId: String): List<JoinedMemberData> {
-        data class MemberStats(
-            val member: UserEntity,
-            val visitCount: Long,
-            val lastVisitTimestamp: Long?,
-            val isLeader: Boolean,
-        )
-
         val members = getJoinedMembers(teamId).toMutableList()
         val communityLeadersJson = sharedPrefManager.getCommunityLeaders()
 
@@ -1027,12 +1020,23 @@ class TeamsRepositoryImpl @Inject constructor(
             emptyList()
         }
 
-        val visitCounts = logs.groupingBy { it.user }.eachCount()
-        val lastVisits = logs.groupBy { it.user }.mapValues { (_, userLogs) -> userLogs.maxOfOrNull { it.time ?: 0 } }
+        data class VisitStats(
+            var count: Long = 0L,
+            var latestVisit: Long? = null,
+        )
+
+        val visitStatsMap = HashMap<String?, VisitStats>()
+        for (log in logs) {
+            val stats = visitStatsMap.getOrPut(log.user) { VisitStats() }
+            stats.count++
+            val logTime = log.time ?: 0L
+            stats.latestVisit = stats.latestVisit?.let { maxOf(it, logTime) } ?: logTime
+        }
 
         return orderedMembers.map { member ->
-            val visitCount = visitCounts[member.name]?.toLong() ?: 0L
-            val lastVisitTimestamp = lastVisits[member.name]
+            val stats = visitStatsMap[member.name]
+            val visitCount = stats?.count ?: 0L
+            val lastVisitTimestamp = stats?.latestVisit
             val lastLogoutTimestamp = activitiesRepository.getLastVisit(member.name ?: "")
             val profileLastVisit = if (lastLogoutTimestamp != null) {
                 DATE_TIME_FORMATTER.format(Instant.ofEpochMilli(lastLogoutTimestamp))
