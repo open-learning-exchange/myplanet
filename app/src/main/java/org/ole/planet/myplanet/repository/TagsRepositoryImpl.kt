@@ -73,7 +73,7 @@ class TagsRepositoryImpl @Inject constructor(
             return emptyMap()
         }
 
-        val allTagIds = links.mapNotNull { it.tagId }.distinct()
+        val allTagIds = links.mapNotNullTo(LinkedHashSet()) { it.tagId }.toList()
         if (allTagIds.isEmpty()) {
             return emptyMap()
         }
@@ -103,7 +103,7 @@ class TagsRepositoryImpl @Inject constructor(
         if (links.isEmpty()) {
             return emptyList()
         }
-        val tagIds = links.mapNotNull { it.tagId }.distinct()
+        val tagIds = links.mapNotNullTo(LinkedHashSet()) { it.tagId }.toList()
         if (tagIds.isEmpty()) {
             return emptyList()
         }
