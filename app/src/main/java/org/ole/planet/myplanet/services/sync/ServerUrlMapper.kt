@@ -42,7 +42,7 @@ class ServerUrlMapper @Inject constructor(
             val isDefaultPort = (scheme == "http" && port == 80) || (scheme == "https" && port == 443)
             if (port != -1 && !isDefaultPort) "$scheme://$host:$port" else "$scheme://$host"
         } catch (e: Exception) {
-            Log.w(TAG, "Could not extract base url from $url", e)
+            Log.w(TAG, "Could not extract base url", e)
             null
         }
     }
