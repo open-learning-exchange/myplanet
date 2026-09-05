@@ -6,6 +6,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.unmockkAll
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -20,6 +21,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -581,6 +583,46 @@ class TeamsRepositoryImplTest {
         assertEquals(listOf(user1, user2, user3), result)
         coVerify(exactly = 1) { userRepository.getUsersByIds(listOf("user1", "user2", "user3")) }
         coVerify(exactly = 0) { userRepository.getUserById(any()) }
+    }
+
+    @Test
+    fun `requestToJoin stamps the team's planet code, not the requesting user's`() = runTest(testDispatcher) {
+        val teamId = "team1"
+        val userId = "org.couchdb.user:alice"
+        val team = MyTeam().apply {
+            _id = teamId
+            teamPlanetCode = "planet-team"
+            teamType = "local"
+        }
+
+        coEvery { teamDao.getByTeamIdUserIdAndDocType(teamId, userId, "membership") } returns null
+        coEvery { teamDao.getById(teamId) } returns team
+        val saved = slot<MyTeam>()
+        coEvery { teamDao.upsert(capture(saved)) } returns Unit
+
+        teamsRepository.requestToJoin(teamId, userId, "planet-user", null)
+
+        assertEquals("request", saved.captured.docType)
+        assertEquals("planet-team", saved.captured.teamPlanetCode)
+        assertEquals("planet-user", saved.captured.userPlanetCode)
+        assertEquals("local", saved.captured.teamType)
+        assertTrue("A request Planet can sort needs a createdDate", saved.captured.createdDate > 0)
+    }
+
+    @Test
+    fun `requestToJoin falls back to the user's planet code when the team has none`() = runTest(testDispatcher) {
+        val teamId = "team1"
+        val userId = "org.couchdb.user:alice"
+
+        coEvery { teamDao.getByTeamIdUserIdAndDocType(teamId, userId, "membership") } returns null
+        coEvery { teamDao.getById(teamId) } returns null
+        coEvery { teamDao.getByTeamId(teamId) } returns null
+        val saved = slot<MyTeam>()
+        coEvery { teamDao.upsert(capture(saved)) } returns Unit
+
+        teamsRepository.requestToJoin(teamId, userId, "planet-user", "local")
+
+        assertEquals("planet-user", saved.captured.teamPlanetCode)
     }
 
     @Test

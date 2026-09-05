@@ -181,13 +181,22 @@ open class MyTeam(
             `object`.addProperty("name", team.name)
             `object`.addProperty("userId", team.userId)
             if (team.docType != "report" && team.docType != "request") {
-                `object`.addProperty("limit", team.limit)
+                // Planet disables accepting join requests once members reach `limit`, so uploading
+                // the default 0 would lock every request out. Leave it to Planet's own default instead.
+                if (team.limit > 0) {
+                    `object`.addProperty("limit", team.limit)
+                }
                 `object`.addProperty("amount", team.amount)
                 `object`.addProperty("date", team.date)
                 `object`.addProperty("public", team.isPublic)
                 `object`.addProperty("isLeader", team.isLeader)
             }
-            if (team.docType != "request") {
+            if (team.docType == "request") {
+                // Planet sorts join requests by createdDate and shows "Requested <time> ago" from it.
+                if (team.createdDate > 0) {
+                    `object`.addProperty("createdDate", team.createdDate)
+                }
+            } else {
                 `object`.addProperty("createdDate", team.createdDate)
                 `object`.addProperty("description", team.description)
                 `object`.addProperty("beginningBalance", team.beginningBalance)

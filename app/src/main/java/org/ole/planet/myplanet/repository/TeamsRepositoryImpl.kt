@@ -164,6 +164,9 @@ class TeamsRepositoryImpl @Inject constructor(
                 description = request.description
                 createdBy = user._id
                 this.teamId = ""
+                // Planet disables "Accept" on join requests once members reach `limit`, so a team
+                // uploaded with the default 0 would never accept anyone. 12 matches Planet's default.
+                limit = DEFAULT_TEAM_LIMIT
                 isPublic = request.isPublic
                 userId = user._id
                 parentCode = user.parentCode
@@ -629,15 +632,19 @@ class TeamsRepositoryImpl @Inject constructor(
             return
         }
 
+        val team = getTeamEntityByAnyId(teamId)
         val request = MyTeam().apply {
             _id = AndroidDecrypter.generateIv()
             docType = "request"
             createdDate = Date().time
-            this.teamType = teamType
+            this.teamType = teamType ?: team?.teamType
             this.userId = userId
             this.teamId = teamId
             updated = true
-            teamPlanetCode = userPlanetCode
+            // Planet queries membership/request docs with `teamPlanetCode: team.teamPlanetCode`,
+            // so this has to be the team's planet code, not the requesting user's. They differ
+            // whenever the user belongs to another planet, and a mismatch hides the request on Planet.
+            teamPlanetCode = team?.teamPlanetCode?.takeIf { it.isNotBlank() } ?: userPlanetCode
             this.userPlanetCode = userPlanetCode
         }
         teamDao.upsert(request.requireRoomEntity())
@@ -868,7 +875,7 @@ class TeamsRepositoryImpl @Inject constructor(
             team.rules = rules
             team.description = description
             updatedBy?.let { team.createdBy = it }
-            team.limit = 12
+            team.limit = team.limit.takeIf { it > 0 } ?: DEFAULT_TEAM_LIMIT
             team.updated = true
             teamDao.upsert(team.requireRoomEntity())
             true
@@ -1361,5 +1368,8 @@ class TeamsRepositoryImpl @Inject constructor(
 
     companion object {
         private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("MMMM dd, yyyy hh:mm a", Locale.getDefault()).withZone(ZoneId.systemDefault())
+
+        /** Matches the member limit Planet stamps on teams it creates. */
+        const val DEFAULT_TEAM_LIMIT = 12
     }
 }
