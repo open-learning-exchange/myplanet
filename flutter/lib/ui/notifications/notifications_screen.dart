@@ -7,7 +7,6 @@ import '../../providers/app_providers.dart';
 import '../../providers/notifications_provider.dart';
 import '../../repository/notifications_repository.dart';
 import '../components/relative_time.dart';
-import '../router.dart';
 import 'notification_destination.dart';
 import 'notification_format.dart';
 import 'notification_grouping.dart';
@@ -452,23 +451,10 @@ class _NotificationTile extends ConsumerWidget {
       teamDao: database.teamDao,
     ).resolve(notification);
     if (destination == null || !context.mounted) return;
-    final path = switch (destination.kind) {
-      NotificationDestinationKind.resources => Routes.resources,
-      NotificationDestinationKind.storage => Routes.storageManagement,
-      NotificationDestinationKind.teamTasks =>
-        '${Routes.teams}/${destination.teamId}/tasks',
-      NotificationDestinationKind.teamMembers =>
-        '${Routes.teams}/${destination.teamId}/members?tab=requests',
-      NotificationDestinationKind.teamJoin =>
-        '${Routes.teams}/${destination.teamId}',
-      // The Flutter port has no team-chat tab yet (the upstream opens the
-      // team's ChatPage), so the team detail is the closest destination.
-      NotificationDestinationKind.teamChat =>
-        '${Routes.teams}/${destination.teamId}',
-      NotificationDestinationKind.voiceReply =>
-        '${Routes.voices}/${destination.voiceId}',
-    };
-    context.go(path);
+    // The mapping itself lives beside the resolver, so the system-tray tap
+    // reaches the same screen this row does — see
+    // `notificationDestinationLocation`.
+    context.go(notificationDestinationLocation(destination));
   }
 
   Future<bool> _confirmDelete(BuildContext context) async {

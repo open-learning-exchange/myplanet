@@ -33,10 +33,10 @@ enum NotificationPriority { defaultPriority, high }
 /// One notification to show, independent of the plugin that shows it.
 ///
 /// Field-for-field the subset of Kotlin's `NotificationConfig` that the task
-/// path sets. `bigTextStyle`, `autoCancel` and `category` are carried because
-/// the Kotlin builder applies them and they change what the user sees; the
-/// unported `silent`/`targetActivity` fields are omitted rather than carried
-/// unused.
+/// path sets. `bigTextStyle`, `autoCancel`, `actionable` and `category` are
+/// carried because the Kotlin builder applies them and they change what the
+/// user sees; the unported `silent`/`targetActivity` fields are omitted rather
+/// than carried unused.
 class NotificationConfig {
   const NotificationConfig({
     required this.id,
@@ -44,6 +44,7 @@ class NotificationConfig {
     required this.title,
     required this.message,
     required this.priority,
+    this.actionable = false,
     this.bigTextStyle = true,
     this.autoCancel = true,
     this.relatedId,
@@ -57,6 +58,11 @@ class NotificationConfig {
   final String title;
   final String message;
   final NotificationPriority priority;
+
+  /// `buildNotification`'s `if (config.actionable) addNotificationActions(…)`
+  /// (`:357-359`). Kotlin defaults it false and every `create*Notification`
+  /// factory that a user is meant to act on sets it true.
+  final bool actionable;
   final bool bigTextStyle;
   final bool autoCancel;
   final String? relatedId;
@@ -81,6 +87,10 @@ class NotificationConfig {
     priority: urgent
         ? NotificationPriority.high
         : NotificationPriority.defaultPriority,
+    // `createTaskNotification` sets `actionable = true`, so the notification
+    // carries *Mark as Read* and *View Task*. The port dropped both until
+    // Phase 130 — see `notificationActionsFor`.
+    actionable: true,
     relatedId: taskId,
   );
 }

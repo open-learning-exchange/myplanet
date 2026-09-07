@@ -95,9 +95,19 @@ class NotificationsRepository {
   /// `NotificationUtils.createSummaryNotification` (`:190`) for the tray. The
   /// tray's *Mark as Read* action button is **not** this path — it goes through
   /// `NotificationActionReceiver` (`:81`) to [markAsRead], and so does stamp.
-  /// The port has no tray handling yet, so this has no caller: it is kept (and
-  /// pinned by tests) because the screen was wired to it by mistake, and the
-  /// phase that ports tray actions needs it to be right.
+  ///
+  /// Its caller in the port is `NotificationTapHandler`'s body-tap arm
+  /// (Phase 130). Until that landed this method had none at all, which is why
+  /// Phase 127 pinned it by tests rather than deleting it — the screen had been
+  /// wired to it by mistake, and the distinction had to survive until the tray
+  /// path arrived to need it.
+  ///
+  /// One thing it does **not** do on the only notification either app raises:
+  /// anything. The tray notification's id is the *task* id, while a `task`
+  /// notification row is a synced document keyed on its own `_id`, so this
+  /// looks up an id that is not in the table. At parity, and recorded in
+  /// `PHASE_130_NOTES.md` rather than repaired — resolving `relatedId` back to
+  /// the row would be an improvement the Android app does not have.
   Future<int> markNotificationAsRead(String id, String? userId) {
     if (id.startsWith('summary_')) {
       return _dao.markSummaryAsRead(userId, id.substring('summary_'.length));
