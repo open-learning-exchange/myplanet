@@ -6,12 +6,6 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.ratings.RatingsFragment
 
-/**
- * Shared back-navigation policy for the resource viewers: when a learner leaves a finished
- * resource, prompt them to rate it once, then finish the hosting activity. Both
- * [ResourceViewerActivity] and [WebViewActivity] delegate here so the prompt rules live in one
- * place.
- */
 class ResourcesExitCoordinator(
     private val activity: AppCompatActivity,
     private val userRepository: UserRepository,
@@ -19,11 +13,6 @@ class ResourcesExitCoordinator(
 ) {
     private var handled = false
 
-    /**
-     * Call from every exit path (back press, up button, close control). Shows the rating dialog
-     * and finishes on dismiss when [isResourceFinished] and a rating is still wanted, otherwise
-     * finishes immediately.
-     */
     fun handleBackNavigation(resourceId: String?, title: String?, isResourceFinished: Boolean = true) {
         if (handled) return
 
