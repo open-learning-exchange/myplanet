@@ -4,8 +4,15 @@ Phase 124's two self-reported items, in the order it recommended: the timestamp
 first, because it is wrong on every row, and selection mode second, because it
 is additive.
 
-Two `parity-auditor` passes at `effort: max`, one on the Kotlin before any Dart
-and one on the finished diff. The first overturned a conclusion this lane had
+Two `parity-auditor` passes at `effort: max` were run, one on the Kotlin before
+any Dart and one on the finished diff. **The second did not finish** — it hung
+on a probe of its own that drove the real screen through `pumpAndSettle`, which
+is the documented trap for this port (the loading `CircularProgressIndicator`
+spins it to its ten-minute default), and it was stopped after ~50 minutes. Its
+injections up to that point were replayed by hand and are in the table below;
+two of them found tests that were not load-bearing. What a completed pass would
+still have covered — the `_selectedIds` lifecycle across a stream re-emit, and
+the two `getByIds`-then-write pairs — is named in *Reported, not fixed*. The first overturned a conclusion this lane had
 already written into a code comment, and the reason it could is worth stating
 plainly: **the lane's own first reading of the Kotlin was wrong, in exactly the
 way this document keeps warning about.** See *The reading that was wrong* below.
@@ -338,25 +345,61 @@ the screen path restamps, because the Kotlin does
     Actual: <2>                      // returned a count, not the ids that existed
 ```
 
-Confirmed red, with the output above:
+Every revert below was replayed and confirmed red, then restored.
 
 | revert | red |
 |---|---|
 | the row draws `DateFormat.yMMMd().add_jm()` again | 2 screen tests |
 | the tray path stamps `createdAt` | 2 |
 | the bulk path returns a count instead of the ids that existed | 2 |
+| the absolute arm passes no locale | 1 |
+| the absolute arm loses its unknown-locale fallback | 1 (`so` throws out of `build`) |
+| `relativeTimeLabel` left pointing at the Kotlin-named keys | 2 |
+| `markAllAsRead` stamps outside its `isRead = 0` scope | 2 |
+| the `days_ago` boundary widens from 7 days to 8 | 1 |
+| the swipe stays armed in selection mode | 1 (**after the test was fixed** — see below) |
+| the row's checkbox takes a non-null `onChanged` | 1 (**added below**) |
 
-**Still to replay** — listed so the gap is visible rather than implied, and
-being worked through with the second `parity-auditor` pass: the absolute arm
-passing no locale; the absolute arm losing its unknown-locale fallback (`so`
-throwing out of `build`); `relativeTimeLabel` left pointing at the renamed
-plural keys, which is the interesting one because it **compiles** — the old key
-generated `String minutesAgo(num count)` and the new one `String
-minutesAgo(int count)`, and `elapsed.inMinutes` satisfies both, so the
-dashboard and profile would have switched to `5 min ago` silently and
-`relativeTimeLabel(l10n, day)` would have rendered the ungrammatical `1 days
-ago` that its day bucket *can* reach where the notification row's cannot; and
-`markAllAsRead` stamping outside its `isRead = 0` scope.
+The `relativeTimeLabel` one is the one to remember, because **it compiles and
+`flutter analyze` reports no issues**: the old key generated
+`String minutesAgo(num count)` and the new one `String minutesAgo(int count)`,
+and `elapsed.inMinutes` satisfies both. Left unrepointed, the dashboard's
+last-sync strip and the profile's last-login row would have switched silently to
+`5 min ago`, and `relativeTimeLabel(l10n, day)` would have rendered the
+ungrammatical `1 days ago` — which **its** day bucket starts at, where the
+notification row's cannot reach it. A rename with no compiler error is exactly
+the shape that ships.
+
+### Two tests that were not load-bearing
+
+Green is not evidence, so each guard was re-checked by **injecting the defect it
+claims to catch**. Two survived, both in selection mode.
+
+**The swipe guard.** `swiping is disabled while selecting` asserted only that
+nothing was deleted — and nothing is deleted either way, because an armed swipe
+reaches `confirmDismiss`, opens the confirmation dialog and returns false. The
+test passed for the wrong reason. It now drags **outside** selection mode first
+as a control (the dialog appears, and is dismissed), then drags inside it and
+asserts **no dialog** — which is what distinguishes "the swipe was never armed"
+from "the swipe was armed and declined".
+
+**The checkbox.** Nothing pinned `onChanged: null`. A Checkbox with a non-null
+handler *absorbs* the tap rather than letting it reach the row, so the one
+control that looks most tappable in selection mode would have done nothing at
+all. Kotlin's `cbSelect` is `clickable="false"` `focusable="false"` and the row
+owns the click. A test now taps the checkbox and asserts the row toggled.
+
+### One injection that turned out to be a non-difference
+
+Arming `onLongPress` in selection mode leaves the suite green, and **that is
+correct** rather than a gap. With `onLongPress: null` no long-press recognizer
+is registered, so a press-and-release is recognised as a *tap* and toggles;
+armed, the long-press handler toggles. Same outcome. Android agrees —
+`setOnLongClickListener(null)` leaves the click listener active, so a long press
+there also falls through to `onClick`. The `null` is a faithful transcription of
+`NotificationsAdapter.kt:134` with no observable consequence, and the test
+written to pin it was deleted rather than kept asserting a premise that is not
+true of either app.
 
 ---
 
@@ -395,3 +438,14 @@ ago` that its day bucket *can* reach where the notification row's cannot; and
 5. **A `%d` in a relative string renders ASCII digits** where an Arabic or
    Nepali device shows its own. Explained above; `intl` cannot reproduce the
    Kotlin's per-locale choice in either direction.
+6. **The second audit pass did not complete**, so two areas are less examined
+   than the rest and are named rather than implied. First, the `_selectedIds`
+   lifecycle against a *live* stream: the tests drive selection over a
+   `Stream.value`, so nothing exercises a re-emit that removes a selected row
+   mid-selection. Kotlin's equivalent quirk is known and reproduced by
+   construction (`loadNotifications` never clears `_selectedIds`, and the port
+   holds the set outside the stream the same way), but it is reasoned, not
+   measured. Second, `markAsRead` and `deleteNotifications` both read
+   `getByIds` and then write, which is two statements where Kotlin also uses
+   two (`getIdsByIds` then the update) — so the interleaving is at parity, but
+   neither app takes a transaction and nothing here tests concurrent callers.

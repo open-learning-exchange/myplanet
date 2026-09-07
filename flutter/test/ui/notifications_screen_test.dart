@@ -1008,6 +1008,41 @@ void main() {
     ]);
   });
 
+  testWidgets('the checkbox is decoration, and the row owns the tap', (
+    tester,
+  ) async {
+    // `cbSelect` is `clickable="false"` `focusable="false"`
+    // (`row_notifications.xml:41-42`) — the row's own click listener is what
+    // toggles. A Checkbox with a non-null `onChanged` would *absorb* the tap
+    // and do nothing with it, giving the one control that looks most tappable
+    // in selection mode no effect at all.
+    await tester.pumpWidget(
+      wrapScreen(
+        const NotificationsScreen(),
+        overrides: [
+          notificationsProvider.overrideWith(
+            (ref) => Stream.value([
+              _row(id: 'n-1', message: 'first', type: 'replyMessage'),
+            ]),
+          ),
+          unreadNotificationCountProvider.overrideWith(
+            (ref) => Stream.value(1),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await enterSelection(tester, 'first');
+    await tester.tap(find.byType(Checkbox));
+    await tester.pumpAndSettle();
+
+    // The tap reached the row, which deselected the last item and left
+    // selection mode.
+    expect(find.text('Notifications'), findsOneWidget);
+    expect(find.byType(Checkbox), findsNothing);
+  });
+
   testWidgets('swiping is disabled while selecting', (tester) async {
     // The swipe is the port's own, and it yields rather than competing: Kotlin
     // disarms the row's long-press in selection mode for the same reason.
@@ -1032,10 +1067,25 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    // Swipe outside selection mode: the confirmation dialog opens. This is the
+    // control, and it is the whole point of the test below — `deleted` being
+    // empty proves nothing on its own, because `confirmDismiss` returning false
+    // also leaves it empty. The *dialog* is what distinguishes "the swipe was
+    // never armed" from "the swipe was armed and then declined".
+    await tester.drag(find.text('first'), const Offset(-500, 0));
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(deleted, isEmpty);
+
     await enterSelection(tester, 'first');
     await tester.drag(find.text('first'), const Offset(-500, 0));
     await tester.pumpAndSettle();
 
+    // Armed, the swipe would reach `confirmDismiss` and put this dialog up
+    // over a selection the user is in the middle of making.
+    expect(find.byType(AlertDialog), findsNothing);
     expect(deleted, isEmpty);
     expect(find.text('1 selected'), findsOneWidget);
   });
