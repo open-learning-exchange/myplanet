@@ -260,16 +260,16 @@
   },
   "neverSynced": "jamais synchronisé",
   "justNow": "À l'instant",
-  "minutesAgo": "{count, plural, =1{1 minute ago} other{{count} minutes ago}}",
-  "@minutesAgo": {
+  "relativeMinutesAgo": "{count, plural, =1{1 minute ago} other{{count} minutes ago}}",
+  "@relativeMinutesAgo": {
     "x-mt": true
   },
-  "hoursAgo": "{count, plural, =1{1 hour ago} other{{count} hours ago}}",
-  "@hoursAgo": {
+  "relativeHoursAgo": "{count, plural, =1{1 hour ago} other{{count} hours ago}}",
+  "@relativeHoursAgo": {
     "x-mt": true
   },
-  "daysAgo": "{count, plural, =1{1 day ago} other{{count} days ago}}",
-  "@daysAgo": {
+  "relativeDaysAgo": "{count, plural, =1{1 day ago} other{{count} days ago}}",
+  "@relativeDaysAgo": {
     "x-mt": true
   },
   "syncingResources": "Synchronisation des ressources… {completed} sur {total}",
@@ -492,10 +492,6 @@
   },
   "notificationsUnavailable": "Notifications indisponibles",
   "@notificationsUnavailable": {
-    "x-mt": true
-  },
-  "markAllRead": "Marquer tout comme lu",
-  "@markAllRead": {
     "x-mt": true
   },
   "all": "Tous",
@@ -2287,5 +2283,13 @@
   "storageAvailable": "Espace de stockage disponible:",
   "joinRequestPrefix": "Demande d'adhésion :",
   "userRequestedToJoinTeam": "{user} a demandé à rejoindre {team}",
-  "markAsRead": "Marquer comme lu"
+  "markAsRead": "Marquer comme lu",
+  "minutesAgo": "Il y a {count} min",
+  "hoursAgo": "Il y a {count} h",
+  "yesterday": "Hier",
+  "daysAgo": "Il y a {count} jour(s)",
+  "markAllAsRead": "Marquer tout comme lu",
+  "selectedCount": "{count} sélectionné(s)",
+  "markSelectedAsRead": "Marquer comme lu",
+  "cancelSelection": "Annuler la sélection"
 }

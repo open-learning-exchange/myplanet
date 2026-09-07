@@ -291,12 +291,37 @@ void main() {
     // `NotificationsRepositoryImpl` — so they fall back to English.
     // Phase 124's second pass adds one more, `markAsRead` — the row's own
     // Mark-as-read button, derived from the Kotlin `mark_as_read`.
+    //
+    // Phase 127 adds 4 per locale for the notification row's relative
+    // timestamp: `minutesAgo`, `hoursAgo`, `daysAgo` and the new `yesterday`,
+    // all four derived from the Kotlin `minutes_ago`/`hours_ago`/`days_ago`/
+    // `yesterday` and therefore human translations already shipping in the
+    // Android app. Three of them could not derive before, because those ARB
+    // keys held the port's own ICU *plurals* — a shape the tool skips for good
+    // reason — under the camelCase names of Kotlin's single-form strings. The
+    // plurals moved to `relativeMinutesAgo`/`relativeHoursAgo`/
+    // `relativeDaysAgo`, keeping their `x-mt` flags (their values were still
+    // bare English in every locale), and the Kotlin names now hold the Kotlin
+    // strings.
+    //
+    // Selection mode adds three more per locale — `selectedCount`,
+    // `markSelectedAsRead`, `cancelSelection`, from the Kotlin
+    // `selected_count`/`mark_selected_as_read`/`cancel_selection` — and repairs
+    // `markAllRead`, which was named and worded just differently enough from
+    // Kotlin's `mark_all_as_read` ("Mark all read" against "Mark all as read")
+    // that neither derivation rule could fire. Renamed to `markAllAsRead` with
+    // the Kotlin English: Nepali and Somali had no value at all, Arabic and
+    // French carried `x-mt` machine output (French's happened to equal the
+    // human translation, Arabic's did not), so all four derive now. Spanish
+    // already held the Kotlin value unflagged and is left alone — replacing one
+    // valid translation with another is not a repair. That makes es +3 where
+    // the rest are +4.
     const humanReviewed = {
-      'ar': 402,
-      'es': 455,
-      'fr': 401,
-      'ne': 403,
-      'so': 403,
+      'ar': 410,
+      'es': 462,
+      'fr': 409,
+      'ne': 411,
+      'so': 411,
     };
 
     for (final code in locales) {

@@ -1654,9 +1654,36 @@ class NotificationDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
-  /// Port of `NotificationDao.markAsRead(ids, createdAt)`. Sets `isRead`,
-  /// stamps a fresh `createdAt` (Kotlin's `Date`), and flags server-originated
-  /// rows for read-state upload via `needsSync`.
+  /// Port of `NotificationDao.markAsRead(notificationId)`
+  /// (`NotificationDao.kt:15-16`) — the **single-row** overload, whose SQL does
+  /// not mention `createdAt`:
+  ///
+  ///   `UPDATE notifications SET isRead = 1, needsSync = CASE … WHERE id = :id`
+  ///
+  /// It exists separately from [markAsRead] because the two Kotlin queries
+  /// differ in exactly that column, and the port had collapsed both onto the
+  /// stamping one. That rewrote a row's `createdAt` to now whenever a learner
+  /// tapped it or its *Mark as read* button — invisible while the row drew an
+  /// absolute date, loud once it draws a relative one (a week-old notification
+  /// reads "Just now"), and destructive either way: `watchForUser` sorts on
+  /// `createdAt DESC`, and the row's real age is gone.
+  Future<int> markOneAsRead(String id) => customUpdate(
+    'UPDATE notifications SET is_read = 1, '
+    'needs_sync = CASE WHEN is_from_server = 1 THEN 1 ELSE needs_sync END '
+    'WHERE id = ?',
+    variables: [Variable.withString(id)],
+    updates: {notifications},
+  );
+
+  /// Port of `NotificationDao.markAsRead(ids, createdAt)`
+  /// (`NotificationDao.kt:45-46`) — the **bulk** overload, which does stamp a
+  /// fresh `createdAt` (Kotlin's `Date`), and flags server-originated rows for
+  /// read-state upload via `needsSync`.
+  ///
+  /// Selection mode's "mark selected as read" is its one caller, and the stamp
+  /// is deliberate there: it moves the marked rows to the top of the list in
+  /// the Android app, so the port has to do the same or the two lists order
+  /// differently. See [markOneAsRead] for the single-row path.
   Future<int> markAsRead(Iterable<String> ids, {int? createdAt}) async {
     final values = ids.toList(growable: false);
     if (values.isEmpty) return 0;
@@ -1696,6 +1723,27 @@ class NotificationDao extends DatabaseAccessor<AppDatabase>
 
   Future<int> deleteById(String id) =>
       (delete(notifications)..where((row) => row.id.equals(id))).go();
+
+  /// Port of `NotificationDao.deleteByIds` (`NotificationDao.kt:64-65`), which
+  /// selection mode's *Delete* uses.
+  ///
+  /// A plain local `DELETE`: nothing is enqueued, no tombstone is written, and
+  /// the notifications sync-in runs no `deleteNotIn`, so a deleted
+  /// *server-originated* row comes back on the next sync. That is the Kotlin's
+  /// behaviour too — `deleteNotifications` reaches the same statement and
+  /// `UploadConfigs` mentions notifications nowhere — so it is reproduced, not
+  /// fixed.
+  Future<int> deleteByIds(Iterable<String> ids) async {
+    final values = ids.toList(growable: false);
+    if (values.isEmpty) return 0;
+    var deleted = 0;
+    for (final chunk in _chunked(values, _sqliteVariableChunk)) {
+      deleted += await (delete(
+        notifications,
+      )..where((row) => row.id.isIn(chunk))).go();
+    }
+    return deleted;
+  }
 
   /// Port of `NotificationDao.getPendingSyncNotifications` — server-originated
   /// rows flagged for read-state upload. Only rows with a server `rev` can be
