@@ -91,7 +91,7 @@ class ServerUrlMapper @Inject constructor(
             putBoolean("isAlternativeUrl", true)
             apply()
         }
-        UrlUtils.invalidateHeaderCache()
+        UrlUtils.invalidateCaches()
     }
 
     suspend fun updateServerIfNecessary(
