@@ -24,7 +24,6 @@ import com.github.chrisbanes.photoview.PhotoView
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.File
-import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnChatItemClickListener
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
@@ -34,7 +33,7 @@ import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.repository.VoicesEditActions
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
@@ -43,6 +42,7 @@ import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
+import org.ole.planet.myplanet.utils.StableIdGenerator
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.makeExpandable
 
@@ -61,7 +61,7 @@ class VoicesAdapter(
     private val onEditAction: (suspend () -> Unit) -> Unit,
     private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit),
     private val labelManager: VoicesLabelManager,
-    private val voicesRepository: VoicesRepository,
+    private val voicesEditActions: VoicesEditActions,
     private val leadersList: List<UserEntity>,
     private val setRepliedNewsIdFn: (String?) -> Unit
 ) : ListAdapter<News, RecyclerView.ViewHolder>(
@@ -80,8 +80,8 @@ class VoicesAdapter(
                 oldItem.id == newItem.id && oldItem.time == newItem.time &&
                         oldItem.isEdited == newItem.isEdited && oldItem.message == newItem.message &&
                         oldItem.userName == newItem.userName && oldItem.userId == newItem.userId &&
-                        oldItem.sharedBy == newItem.sharedBy && oldItem.labels?.toList() == newItem.labels?.toList() &&
-                        oldItem.avatar == newItem.avatar && oldItem.imageUrls?.toList() == newItem.imageUrls?.toList() &&
+                        oldItem.sharedBy == newItem.sharedBy && oldItem.labels == newItem.labels &&
+                        oldItem.avatar == newItem.avatar && oldItem.imageUrls == newItem.imageUrls &&
                         oldItem.images == newItem.images && oldItem.replyTo == newItem.replyTo
             } catch (e: Exception) {
                 false
@@ -90,10 +90,10 @@ class VoicesAdapter(
         getChangePayload = { oldItem, newItem ->
             val payloads = mutableListOf<String>()
 
-            if (oldItem.labels?.toList() != newItem.labels?.toList()) {
+            if (oldItem.labels != newItem.labels) {
                 payloads.add(PAYLOAD_LABELS_CHANGED)
             }
-            if (oldItem.imageUrls?.toList() != newItem.imageUrls?.toList() || oldItem.images != newItem.images || oldItem.parsedImageUrls != newItem.parsedImageUrls) {
+            if (oldItem.imageUrls != newItem.imageUrls || oldItem.images != newItem.images || oldItem.parsedImageUrls != newItem.parsedImageUrls) {
                 payloads.add(PAYLOAD_IMAGES_CHANGED)
             }
             if (oldItem.userId != newItem.userId || oldItem.userName != newItem.userName || oldItem.avatar != newItem.avatar) {
@@ -188,6 +188,13 @@ class VoicesAdapter(
     init {
         fetchTeamLeaderStatus()
         preParseNews(parentNews)
+        setHasStableIds(true)
+    }
+
+    override fun getItemId(position: Int): Long {
+        val item = getItem(position)
+        val id = StableIdGenerator.generateStringId(item.id)
+        return if (id != RecyclerView.NO_ID) id else StableIdGenerator.generateFallbackId(item)
     }
 
     private fun fetchTeamLeaderStatus() {
@@ -487,7 +494,7 @@ class VoicesAdapter(
                         currentUser,
                         listener,
                         holder,
-                        voicesRepository,
+                        voicesEditActions,
                         { h, updatedNews, pos ->
                             val targetNews = updatedNews ?: news
                             preParseNews(targetNews)
@@ -700,7 +707,7 @@ class VoicesAdapter(
     }
 
     private fun applyReplyCount(binding: RowNewsBinding, replyCount: Int, position: Int) {
-        binding.btnShowReply.text = String.format(Locale.getDefault(), "(%d)", replyCount)
+        binding.btnShowReply.text = context.getString(R.string.reply_count_format, replyCount)
         binding.btnShowReply.setTextColor(context.getColor(R.color.daynight_textColor))
         val visible = replyCount > 0 && !(position == 0 && parentNews != null) && canReply()
         binding.btnShowReply.visibility = if (visible) View.VISIBLE else View.GONE
@@ -759,7 +766,7 @@ class VoicesAdapter(
                         currentUser,
                         listener,
                         viewHolder,
-                        voicesRepository,
+                        voicesEditActions,
                         { _, _, _ -> },
                         onEditAction
                     )
@@ -865,14 +872,15 @@ class VoicesAdapter(
 
         val imagesToLoad = news?.parsedImagesArray ?: news?.imagesArray
         imagesToLoad?.let { imagesArray ->
-            if (imagesArray.size() > 0) {
-                if (imagesArray.size() == 1) {
+            val size = imagesArray.size()
+            if (!imagesArray.isEmpty()) {
+                if (size == 1) {
                     val ob = imagesArray[0]?.asJsonObject
                     val resourceId = JsonUtils.getString("resourceId", ob)
                     loadLibraryImage(binding, resourceId)
                 } else {
                     binding.llNewsImages.visibility = View.VISIBLE
-                    for (i in 0 until imagesArray.size()) {
+                    for (i in 0 until size) {
                         val ob = imagesArray[i]?.asJsonObject
                         val resourceId = JsonUtils.getString("resourceId", ob)
                         addLibraryImageToContainer(binding, resourceId)
@@ -883,10 +891,14 @@ class VoicesAdapter(
     }
 
 
+    private fun isGif(path: String?): Boolean {
+        return path?.endsWith(".gif", ignoreCase = true) == true
+    }
+
     private fun loadGlideImage(file: File, target: ImageView, size: Int) {
         val request = Glide.with(target.context)
         val path = file.absolutePath
-        val glideTarget = if (path.lowercase(Locale.getDefault()).endsWith(".gif")) {
+        val glideTarget = if (isGif(path)) {
             request.asGif().load(file).error(request.asGif().load(path))
         } else {
             request.load(file).error(request.load(path))
@@ -979,7 +991,7 @@ class VoicesAdapter(
 
         val request = Glide.with(photoView.context)
         val file = File(imageUrl)
-        val target = if (imageUrl.lowercase(Locale.getDefault()).endsWith(".gif")) {
+        val target = if (isGif(imageUrl)) {
             request.asGif().load(file).error(request.asGif().load(imageUrl))
         } else {
             request.load(file).error(request.load(imageUrl))

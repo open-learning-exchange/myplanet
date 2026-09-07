@@ -10,7 +10,6 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -34,7 +33,6 @@ import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TagsRepository
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
@@ -90,10 +88,10 @@ class TransactionSyncManagerCheckpointTest {
         every { UrlUtils.getUrl() } returns "http://mockurl"
         every { UrlUtils.header } returns "Basic mockHeader"
 
-        mockkObject(SyncTimeLogger)
-        every { SyncTimeLogger.logApiCall(any(), any(), any(), any()) } returns Unit
-        every { SyncTimeLogger.logRealmOperation(any(), any(), any(), any()) } returns Unit
-        every { SyncTimeLogger.logDetail(any(), any()) } returns Unit
+        val mockSyncTimeLogger = mockk<SyncTimeLogger>(relaxed = true)
+        every { mockSyncTimeLogger.logApiCall(any(), any(), any(), any()) } returns Unit
+        every { mockSyncTimeLogger.logDbOperation(any(), any(), any(), any()) } returns Unit
+        every { mockSyncTimeLogger.logDetail(any(), any()) } returns Unit
 
         every { dispatcherProvider.io } returns Dispatchers.Unconfined
         every { dispatcherProvider.main } returns Dispatchers.Unconfined
@@ -103,7 +101,6 @@ class TransactionSyncManagerCheckpointTest {
         every { prefs.edit() } returns editor
         every { editor.putInt(any(), capture(putValues)) } returns editor
         every { editor.remove(any()) } returns editor
-        every { editor.commit() } returns true
         every { editor.apply() } returns Unit
 
         transactionSyncManager = TransactionSyncManager(
@@ -127,14 +124,14 @@ class TransactionSyncManagerCheckpointTest {
             mockk<ProgressRepository>(relaxed = true),
             mockk<SurveysRepository>(relaxed = true),
             dispatcherProvider,
-            mockk<org.ole.planet.myplanet.services.UserSessionManager>(relaxed = true)
+            mockk<org.ole.planet.myplanet.services.UserSessionManager>(relaxed = true),
+            mockSyncTimeLogger
         )
     }
 
     @After
     fun tearDown() {
         unmockkObject(UrlUtils)
-        unmockkObject(SyncTimeLogger)
     }
 
     @Test

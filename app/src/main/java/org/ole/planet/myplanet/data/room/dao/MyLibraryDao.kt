@@ -79,8 +79,17 @@ interface MyLibraryDao {
     @Query("SELECT COUNT(*) FROM my_library WHERE title = :title COLLATE NOCASE")
     suspend fun countByTitle(title: String): Int
 
-    @Query("SELECT * FROM my_library WHERE resourceOffline = 0")
+    @Query(
+        "SELECT * FROM my_library " +
+            "WHERE (resourceOffline = 0 OR (resourceLocalAddress IS NOT NULL AND _rev IS NOT downloadedRev))"
+    )
     suspend fun getSyncable(): List<MyLibrary>
+
+    @Query(
+        "SELECT * FROM my_library WHERE isPrivate = 0 " +
+            "AND (resourceOffline = 0 OR (resourceLocalAddress IS NOT NULL AND _rev IS NOT downloadedRev))"
+    )
+    suspend fun getPublicNeedingUpdate(): List<MyLibrary>
 
     @Query("SELECT * FROM my_library WHERE _rev IS NULL")
     suspend fun getPendingUploads(): List<MyLibrary>
@@ -91,13 +100,28 @@ interface MyLibraryDao {
     )
     suspend fun getPrivateImagesCreatedAfter(timestamp: Long): List<MyLibrary>
 
-    // --- shelf-membership (userId JSON list) ---
-
     @Query("SELECT * FROM my_library WHERE userId LIKE :userPattern ESCAPE '\\'")
     suspend fun getForUserPattern(userPattern: String): List<MyLibrary>
 
+    @Query("SELECT * FROM my_library WHERE userId LIKE :userPattern ESCAPE '\\'")
+    fun getForUserPatternFlow(userPattern: String): Flow<List<MyLibrary>>
+
     @Query("SELECT * FROM my_library WHERE isPrivate = 0 AND userId LIKE :userPattern ESCAPE '\\'")
     suspend fun getPublicForUserPattern(userPattern: String): List<MyLibrary>
+
+    @Query(
+        "SELECT * FROM my_library WHERE isPrivate = 0 " +
+            "AND userId LIKE :userPattern ESCAPE '\\' " +
+            "AND (resourceOffline = 0 OR (resourceLocalAddress IS NOT NULL AND _rev IS NOT downloadedRev))"
+    )
+    suspend fun getPublicNeedingUpdateForUserPattern(userPattern: String): List<MyLibrary>
+
+    @Query(
+        "SELECT COUNT(*) FROM my_library WHERE isPrivate = 0 " +
+            "AND userId LIKE :userPattern ESCAPE '\\' " +
+            "AND (resourceOffline = 0 OR (resourceLocalAddress IS NOT NULL AND _rev IS NOT downloadedRev))"
+    )
+    suspend fun countPublicNeedingUpdateForUserPattern(userPattern: String): Int
 
     @Query(
         "SELECT * FROM my_library WHERE isPrivate = 0 " +
@@ -126,7 +150,8 @@ interface MyLibraryDao {
     @Query("SELECT * FROM my_library WHERE resourceId IN (:resourceIds) AND resourceOffline = 1")
     suspend fun getOfflineByResourceIds(resourceIds: List<String>): List<MyLibrary>
 
-    // --- writes ---
+    @Query("UPDATE my_library SET resourceOffline = 0 WHERE resourceId IN (:ids) AND resourceOffline = 1")
+    suspend fun markAsNotOfflineByResourceIds(ids: List<String>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(item: MyLibrary)
@@ -137,10 +162,12 @@ interface MyLibraryDao {
     @Query("DELETE FROM my_library WHERE id IN (:ids)")
     suspend fun deleteByIds(ids: List<String>)
 
-    @Query("UPDATE my_library SET resourceOffline = :isOffline")
-    suspend fun setAllOffline(isOffline: Boolean)
+    @Query("SELECT id FROM my_library WHERE userId LIKE :userPattern ESCAPE '\\'")
+    suspend fun getIdsForUserPattern(userPattern: String): List<String>
 
-    // removeDeletedResources: server-known public resources whose id fell out of the current set.
+    @Query("SELECT resourceId, title FROM my_library WHERE resourceId IS NOT NULL")
+    suspend fun getResourceTitles(): List<ResourceTitleProjection>
+
     @Query(
         "DELETE FROM my_library WHERE _rev IS NOT NULL AND _rev != '' AND isPrivate = 0 " +
             "AND resourceId NOT IN (:currentResourceIds)"
@@ -150,3 +177,8 @@ interface MyLibraryDao {
     @Query("DELETE FROM my_library WHERE _rev IS NOT NULL AND _rev != '' AND isPrivate = 0")
     suspend fun deleteAllStalePublic()
 }
+
+data class ResourceTitleProjection(
+    val resourceId: String?,
+    val title: String?
+)

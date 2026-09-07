@@ -7,16 +7,16 @@ import org.ole.planet.myplanet.model.CourseProgress
 
 @Dao
 interface CourseProgressDao {
-    @Query("SELECT * FROM course_progress WHERE userId = :userId AND courseId IN (:courseIds)")
+    @Query("SELECT * FROM course_progress WHERE userId IS :userId AND courseId IN (:courseIds)")
     suspend fun getByUserAndCourseIds(userId: String?, courseIds: List<String>): List<CourseProgress>
 
-    @Query("SELECT * FROM course_progress WHERE userId = :userId AND courseId = :courseId")
+    @Query("SELECT * FROM course_progress WHERE userId IS :userId AND courseId IS :courseId")
     suspend fun getByUserAndCourse(userId: String?, courseId: String?): List<CourseProgress>
 
-    @Query("SELECT * FROM course_progress WHERE userId = :userId")
+    @Query("SELECT * FROM course_progress WHERE userId IS :userId")
     suspend fun getByUser(userId: String?): List<CourseProgress>
 
-    @Query("SELECT * FROM course_progress WHERE courseId = :courseId AND userId = :userId AND stepNum = :stepNum LIMIT 1")
+    @Query("SELECT * FROM course_progress WHERE courseId IS :courseId AND userId IS :userId AND stepNum = :stepNum LIMIT 1")
     suspend fun findByCourseUserAndStep(courseId: String?, userId: String?, stepNum: Int): CourseProgress?
 
     @Query("SELECT * FROM course_progress WHERE id IN (:ids)")
@@ -31,8 +31,8 @@ interface CourseProgressDao {
     @Query("UPDATE course_progress SET _id = :remoteId, _rev = :rev WHERE id = :localId")
     suspend fun markUploaded(localId: String, remoteId: String, rev: String): Int
 
-    @Query("UPDATE course_progress SET passed = :passed WHERE courseId = :courseId AND stepNum = :stepNum")
-    suspend fun updatePassedByCourseAndStep(courseId: String, stepNum: Int, passed: Boolean): Int
+    @Query("UPDATE course_progress SET passed = :passed WHERE courseId = :courseId AND stepNum = :stepNum AND userId IS :userId")
+    suspend fun updatePassedByCourseAndStep(courseId: String, stepNum: Int, passed: Boolean, userId: String?): Int
 
     @Upsert
     suspend fun upsert(progress: CourseProgress)

@@ -34,7 +34,6 @@ import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
@@ -174,45 +173,23 @@ class VoicesFragment : BaseVoicesFragment() {
         val sortedList = sortNews(list)
         if (binding.rvNews.adapter == null) {
             changeLayoutManager(resources.configuration.orientation, binding.rvNews)
-            downloadResourcesForNews(sortedList)
-            setupVoicesAdapter(sortedList.filterNotNull())
+            voicesViewModel.downloadReferencedResources(sortedList)
+            setupVoicesAdapter(sortedList)
         } else {
-            (binding.rvNews.adapter as? VoicesAdapter)?.submitList(sortedList.filterNotNull()) {
+            (binding.rvNews.adapter as? VoicesAdapter)?.submitList(sortedList) {
                 if (shouldScrollToTopNextUpdate) {
                     scrollToTop()
                     shouldScrollToTopNextUpdate = false
                 }
             }
         }
-        showNoData(binding.tvMessage, sortedList.filterNotNull().size, currentEmptyStateSource)
+        showNoData(binding.tvMessage, sortedList.size, currentEmptyStateSource)
     }
 
-    private fun downloadResourcesForNews(list: List<News?>) {
-        val resourceIds = mutableSetOf<String>()
-        list.forEach { news ->
-            if ((news?.imagesArray?.size() ?: 0) > 0) {
-                val ob = news?.imagesArray?.get(0)?.asJsonObject
-                val resourceId = getString("resourceId", ob?.asJsonObject)
-                if (!resourceId.isNullOrBlank()) {
-                    resourceIds.add(resourceId)
-                }
-            }
-        }
-        viewLifecycleOwner.lifecycleScope.launch {
-            if (resourceIds.isNotEmpty()) {
-                val libraries = resourcesRepository.getLibraryItemsByIds(resourceIds)
-                resourcesRepository.downloadResources(libraries)
-            }
-        }
-    }
-
-    private fun sortNews(list: List<News?>): List<News?> {
-        val updatedListAsMutable: MutableList<News?> = list.toMutableList()
+    private fun sortNews(list: List<News?>): List<News> {
         Trace.beginSection("VoicesFragment.sort")
         return try {
-            updatedListAsMutable.sortedWith(compareByDescending { news ->
-                news?.sortDate ?: 0L
-            })
+            list.filterNotNull().sortedByDescending { it.sortDate }
         } finally {
             Trace.endSection()
         }
@@ -267,7 +244,7 @@ class VoicesFragment : BaseVoicesFragment() {
             },
             onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(viewLifecycleOwner.lifecycleScope, dispatcherProvider),
             labelManager = labelManager,
-            voicesRepository = voicesRepository,
+            voicesEditActions = voicesRepository,
             leadersList = UserEntity.parseLeadersJson(sharedPrefManager.getCommunityLeaders()),
             setRepliedNewsIdFn = { sharedPrefManager.setRepliedNewsId(it) }
         )
@@ -316,10 +293,6 @@ class VoicesFragment : BaseVoicesFragment() {
     }
 
     private val observer: AdapterDataObserver = object : AdapterDataObserver() {
-        override fun onChanged() {
-            adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, currentEmptyStateSource) }
-        }
-
         override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
             adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, currentEmptyStateSource) }
         }

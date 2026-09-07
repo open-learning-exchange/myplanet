@@ -1,11 +1,11 @@
 package org.ole.planet.myplanet.model
 
-import android.text.TextUtils
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 
 @Entity(tableName = "team_tasks", indices = [Index("teamId")])
 class TeamTask {
@@ -60,7 +60,7 @@ class TeamTask {
 
         fun serialize(task: TeamTask, user: UserEntity?): JsonObject {
             val `object` = JsonObject()
-            if (!TextUtils.isEmpty(task._id)) {
+            if (!task._id.isNullOrEmpty()) {
                 `object`.addProperty("_id", task._id)
                 `object`.addProperty("_rev", task._rev)
             }
@@ -74,6 +74,7 @@ class TeamTask {
             else `object`.addProperty("assignee", "")
             `object`.add("sync", JsonUtils.gson.fromJson(task.sync, JsonObject::class.java))
             `object`.add("link", JsonUtils.gson.fromJson(task.link, JsonObject::class.java))
+            `object`.addDocumentOrigin()
             return `object`
         }
     }

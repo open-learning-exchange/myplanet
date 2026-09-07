@@ -4,17 +4,14 @@ import com.google.gson.JsonObject
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.asRequestBody
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
-import org.ole.planet.myplanet.model.MembershipDoc
 import org.ole.planet.myplanet.model.StepExam
-import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.services.FileUploader
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
@@ -24,21 +21,8 @@ class UploadRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
     private val examDao: ExamDao,
     private val submissionDao: SubmissionDao,
-    private val answerDao: AnswerDao,
     private val dispatcherProvider: DispatcherProvider,
 ) : UploadRepository {
-
-    @Suppress("UNCHECKED_CAST")
-    override suspend fun <T : Any> queryPending(config: UploadQueryContract<T>): List<T> {
-        return when (config.queryType) {
-            UploadQueryType.AdoptedSurveys -> examDao.getPendingAdoptedSurveys()
-                .map { it } as List<T>
-
-            UploadQueryType.ExamResults -> hydrateSubmissions(submissionDao.getPendingExamResults()) as List<T>
-
-            UploadQueryType.CompletedSubmissions -> hydrateSubmissions(submissionDao.getPendingSubmissions()) as List<T>
-        }
-    }
 
     override suspend fun markUploaded(
         config: UploadUpdateContract,
@@ -76,13 +60,6 @@ class UploadRepositoryImpl @Inject constructor(
         return apiInterface.getJsonObject(UrlUtils.header, url)
     }
 
-    private suspend fun hydrateSubmissions(rows: List<Submission>): List<Submission> {
-        if (rows.isEmpty()) return emptyList()
-        val answersBySubmissionId =
-            answerDao.getBySubmissionIds(rows.map { it.id }).groupBy { it.submissionId }
-        return rows.map { row -> row.apply { answers = answersBySubmissionId[id].orEmpty().toMutableList(); teamId?.let { membershipDoc = MembershipDoc().apply { this.teamId = it } } } }
-    }
-
     private suspend fun markExamsUploaded(
         succeeded: List<UploadedItemResult>
     ): List<UploadedItemResult> {
@@ -102,7 +79,7 @@ class UploadRepositoryImpl @Inject constructor(
         }
 
         if (updated.isNotEmpty()) {
-            examDao.upsertAll(updated.mapNotNull { it })
+            examDao.upsertAll(updated)
         }
 
         return failed

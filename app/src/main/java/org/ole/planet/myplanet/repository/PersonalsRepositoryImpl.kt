@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.util.Date
 import java.util.UUID
@@ -11,15 +9,17 @@ import kotlinx.coroutines.flow.flowOf
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.model.Personal
+import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.distinctByContent
 
 class PersonalsRepositoryImpl @Inject constructor(
     private val personalDao: PersonalDao,
     private val apiInterface: ApiInterface,
     private val uploadRepository: UploadRepository,
-    @ApplicationContext private val context: Context
+    private val deviceNameProvider: DeviceNameProvider
 ) : PersonalsRepository {
 
     override suspend fun personalTitleExists(title: String, userId: String?): Boolean {
@@ -50,23 +50,19 @@ class PersonalsRepositoryImpl @Inject constructor(
         if (userId.isNullOrBlank()) {
             return flowOf(emptyList())
         }
-        return personalDao.getByUserIdFlow(userId)
+        return personalDao.getByUserIdFlow(userId).distinctByContent { a, b ->
+            // Compare CouchDB sync markers alongside fields editable locally via updatePersonalResource
+            a.id == b.id && a._rev == b._rev && a.isUploaded == b.isUploaded &&
+                a.title == b.title && a.description == b.description && a.path == b.path
+        }
     }
 
     override suspend fun deletePersonalResource(id: String) {
-        personalDao.deleteByDocId(id)
-        personalDao.deleteById(id)
+        personalDao.deleteByIdOrDocId(id)
     }
 
-    override suspend fun updatePersonalResource(id: String, updater: (Personal) -> Unit) {
-        personalDao.findByDocId(id)?.let { personal ->
-            updater(personal)
-            personalDao.update(personal)
-        }
-        personalDao.findById(id)?.let { personal ->
-            updater(personal)
-            personalDao.update(personal)
-        }
+    override suspend fun updatePersonalResource(id: String, update: PersonalUpdate) {
+        personalDao.updateFields(id, update.title, update.description)
     }
 
     override suspend fun getPendingPersonalUploads(userId: String): List<Personal> {
@@ -74,18 +70,13 @@ class PersonalsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updatePersonalAfterSync(id: String, newId: String, rev: String) {
-        personalDao.findById(id)?.let { personal ->
-            personal.isUploaded = true
-            personal._id = newId
-            personal._rev = rev
-            personalDao.update(personal)
-        }
+        personalDao.updateUploadedStatus(id, newId, rev)
     }
 
     override suspend fun uploadPersonalDocument(personal: Personal): Pair<String, String>? {
         val response = apiInterface.postDoc(
             UrlUtils.header, "application/json",
-            "${UrlUtils.getUrl()}/resources", Personal.serialize(personal, context)
+            "${UrlUtils.getUrl()}/resources", Personal.serialize(personal, deviceNameProvider.getCustomDeviceName())
         )
 
         val `object` = response.body()

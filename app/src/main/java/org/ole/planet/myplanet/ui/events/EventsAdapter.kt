@@ -52,8 +52,8 @@ class EventsAdapter(
                         when (field) {
                             "TITLE" -> binding.tvTitle.text = context.getString(R.string.message_placeholder, meetup.title)
                             "DESCRIPTION" -> binding.tvDescription.text = context.getString(R.string.message_placeholder, meetup.description)
-                            "START_DATE" -> binding.tvDateFrom.text = formatDate(meetup.startDate)
-                            "END_DATE" -> binding.tvDateTo.text = formatDate(meetup.endDate)
+                            "START_DATE" -> binding.tvDateFrom.text = dateCache.getOrPut(meetup.startDate) { formatDate(meetup.startDate) }
+                            "END_DATE" -> binding.tvDateTo.text = dateCache.getOrPut(meetup.endDate) { formatDate(meetup.endDate) }
                             "TIME" -> binding.tvTime.text = "${meetup.startTime} - ${meetup.endTime}"
                             "MEETUP_LOCATION" -> binding.tvLocation.text = context.getString(R.string.message_placeholder, meetup.meetupLocation)
                             "MEETUP_LINK" -> binding.tvLink.text = context.getString(R.string.message_placeholder, meetup.meetupLink)

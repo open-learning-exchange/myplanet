@@ -5,28 +5,27 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
-import org.ole.planet.myplanet.repository.ConfigurationsRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
 
 @AndroidEntryPoint
 class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
     private var _binding: FragmentTeamDetailBinding? = null
     private val binding get() = _binding!!
+    private val viewModel: CommunityTabViewModel by viewModels()
     private var bottomSheetBehavior: BottomSheetBehavior<View>? = null
-
-    @Inject
-    lateinit var sharedPrefManager: SharedPrefManager
-
-    @Inject
-    lateinit var configurationsRepository: ConfigurationsRepository
+    private var bottomSheetCallback: BottomSheetBehavior.BottomSheetCallback? = null
+    private var tabLayoutMediator: TabLayoutMediator? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTeamDetailBinding.inflate(inflater, container, false)
@@ -43,7 +42,7 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
             bottomSheetBehavior?.peekHeight = resources.displayMetrics.heightPixels / 7
 
             bottomSheetBehavior?.state = BottomSheetBehavior.STATE_COLLAPSED
-            bottomSheetBehavior?.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
+            bottomSheetCallback = object : BottomSheetBehavior.BottomSheetCallback() {
                 override fun onStateChanged(bottomSheet: View, newState: Int) {
                     when (newState) {
                         BottomSheetBehavior.STATE_HIDDEN -> {
@@ -58,8 +57,10 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
                     val screenHeight = resources.displayMetrics.heightPixels
                     val newHeight = (screenHeight * (0.25f + (0.75f * slideOffset))).toInt()
 
-                    bottomSheet.layoutParams.height = newHeight
-                    bottomSheet.requestLayout()
+                    if (bottomSheet.layoutParams.height != newHeight) {
+                        bottomSheet.layoutParams.height = newHeight
+                        bottomSheet.requestLayout()
+                    }
 
                     when {
                         slideOffset > 0.5f -> bottomSheetBehavior?.state = BottomSheetBehavior.STATE_EXPANDED
@@ -67,7 +68,8 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
                         slideOffset < -0.3f -> bottomSheetBehavior?.state = BottomSheetBehavior.STATE_HIDDEN
                     }
                 }
-            })
+            }
+            bottomSheetCallback?.let { bottomSheetBehavior?.addBottomSheetCallback(it) }
         }
 
         initCommunityTab()
@@ -78,30 +80,38 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
         dialog?.let { d ->
             val bottomSheet = d.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
             bottomSheet?.let {
-                it.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                it.requestLayout()
+                if (it.layoutParams.height != ViewGroup.LayoutParams.WRAP_CONTENT) {
+                    it.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                    it.requestLayout()
+                }
             }
         }
     }
 
     private fun initCommunityTab() {
         binding.llActionButtons.visibility = View.GONE
-        val sParentcode = sharedPrefManager.getParentCode()
-        val communityName = sharedPrefManager.getCommunityName()
-        val planetType = configurationsRepository.getPlanetType()
-        binding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), "$communityName@$sParentcode", true, planetType)
-        TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
-            tab.text = (binding.viewPager2.adapter as CommunityPagerAdapter).getPageTitle(position)
-        }.attach()
-        binding.title.text = communityName
-        binding.title.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
-        binding.subtitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
-        binding.subtitle.text = planetType
+        viewLifecycleOwner.lifecycleScope.launch {
+            val state = viewModel.state.filterNotNull().first()
+            binding.viewPager2.adapter = CommunityPagerAdapter(this@HomeCommunityDialogFragment, "${state.communityName}@${state.parentCode}", true, state.planetType)
+            tabLayoutMediator = TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
+                tab.text = (binding.viewPager2.adapter as CommunityPagerAdapter).getPageTitle(position)
+            }
+            tabLayoutMediator?.attach()
+            binding.title.text = state.communityName
+            binding.title.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
+            binding.subtitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
+            binding.subtitle.text = state.planetType
+        }
         binding.appBar.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        bottomSheetCallback?.let { bottomSheetBehavior?.removeBottomSheetCallback(it) }
+        bottomSheetCallback = null
+        tabLayoutMediator?.detach()
+        tabLayoutMediator = null
+        binding.viewPager2.adapter = null
         _binding = null
     }
 }

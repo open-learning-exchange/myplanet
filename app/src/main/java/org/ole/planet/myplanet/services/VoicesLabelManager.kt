@@ -4,8 +4,9 @@ import android.content.Context
 import android.view.View
 import android.widget.PopupMenu
 import androidx.appcompat.view.ContextThemeWrapper
-import fisk.chipcloud.ChipCloud
+import com.google.android.material.chip.Chip
 import java.util.Locale
+import java.util.WeakHashMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -23,6 +24,8 @@ class VoicesLabelManager(
     private val addLabelFn: suspend (String, String) -> Unit,
     private val removeLabelFn: suspend (String, String) -> Unit
 ) {
+    private val renderedStateCache = WeakHashMap<RowNewsBinding, RenderedState>()
+
     fun setupAddLabelMenu(binding: RowNewsBinding, voice: News?, canManageLabels: Boolean) {
         binding.btnAddLabel.setOnClickListener(null)
         binding.btnAddLabel.isEnabled = canManageLabels
@@ -61,38 +64,46 @@ class VoicesLabelManager(
     }
 
     fun showChips(binding: RowNewsBinding, voice: News, canManageLabels: Boolean) {
+        val labels = voice.labels ?: emptyList()
+
+        val renderedState = RenderedState(voice.id, labels, canManageLabels)
+        if (renderedStateCache[binding] == renderedState) {
+            return
+        }
+
         binding.fbChips.removeAllViews()
 
-        for (label in voice.labels ?: emptyList()) {
-            val chipConfig = Utilities.getCloudConfig().apply {
-                selectMode(if (canManageLabels) ChipCloud.SelectMode.close else ChipCloud.SelectMode.none)
-            }
-
-            val chipCloud = ChipCloud(context, binding.fbChips, chipConfig)
-            chipCloud.addChip(getLabel(label))
-
-            if (canManageLabels) {
-                chipCloud.setDeleteListener { _: Int, labelText: String? ->
-                    val selectedLabel = when {
-                        labelText == null -> null
-                        Constants.LABELS.containsKey(labelText) -> Constants.LABELS[labelText]
-                        else -> voice.labels?.firstOrNull { getLabel(it) == labelText }
-                    }
-                    val voiceId = voice.id
-                    if (selectedLabel != null && voiceId != null) {
-                        scope.launch {
-                            try {
-                                removeLabelFn(voiceId, selectedLabel)
-                            } catch (e: Exception) {
-                                e.printStackTrace()
+        if (labels.isNotEmpty()) {
+            val chipContext = ContextThemeWrapper(context, R.style.Theme_App_Chip)
+            for (label in labels) {
+                val chip = Chip(chipContext).apply {
+                    text = getLabel(label)
+                    isCloseIconVisible = canManageLabels
+                    if (canManageLabels) {
+                        setOnCloseIconClickListener {
+                            val selectedLabel = Constants.LABELS[label] ?: labels.firstOrNull { getLabel(it) == text }
+                            val voiceId = voice.id
+                            if (selectedLabel != null && voiceId != null) {
+                                scope.launch {
+                                    try {
+                                        removeLabelFn(voiceId, selectedLabel)
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                    }
+                                }
                             }
                         }
                     }
                 }
+                binding.fbChips.addView(chip)
             }
         }
+
+        renderedStateCache[binding] = renderedState
         updateAddLabelVisibility(binding, voice, canManageLabels)
     }
+
+    private data class RenderedState(val voiceId: String?, val labels: List<String>, val canManageLabels: Boolean)
 
     private fun updateAddLabelVisibility(
         binding: RowNewsBinding,
@@ -111,29 +122,28 @@ class VoicesLabelManager(
     }
 
     private fun getLabel(s: String): String {
-        for (key in Constants.LABELS.keys) {
-            if (s == Constants.LABELS[key]) {
-                return key
-            }
-        }
-        return formatLabelValue(s)
+        return reverseLabels[s] ?: formatLabelValue(s)
     }
 
     companion object {
+        private val reverseLabels by lazy { Constants.LABELS.entries.associate { it.value to it.key } }
+        private val separatorRegex by lazy { Regex("[_-]") }
+        private val whitespaceRegex by lazy { Regex("\\s+") }
+
         internal fun formatLabelValue(raw: String): String {
-            val cleaned = raw.replace("_", " ").replace("-", " ")
+            val cleaned = raw.replace(separatorRegex, " ")
             if (cleaned.isBlank()) {
                 return raw
             }
+            val locale = Locale.getDefault()
             return cleaned
                 .trim()
                 .split(whitespaceRegex)
                 .joinToString(" ") { part ->
-                    part.lowercase(Locale.getDefault()).replaceFirstChar { ch ->
-                        if (ch.isLowerCase()) ch.titlecase(Locale.getDefault()) else ch.toString()
+                    part.lowercase(locale).replaceFirstChar { ch ->
+                        if (ch.isLowerCase()) ch.titlecase(locale) else ch.toString()
                     }
                 }
         }
-        private val whitespaceRegex by lazy { Regex("\\s+") }
     }
 }

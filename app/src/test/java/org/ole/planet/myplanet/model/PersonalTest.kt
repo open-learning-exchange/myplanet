@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.model
 
-import android.content.Context
 import io.mockk.every
-import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import org.junit.After
@@ -15,11 +13,9 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 
 class PersonalTest {
 
-    private lateinit var mockContext: Context
 
     @Before
     fun setup() {
-        mockContext = mockk<Context>(relaxed = true)
 
         // FileUtils and NetworkUtils are Kotlin objects, so mockkObject (not mockkStatic)
         // is required to intercept their member functions
@@ -47,9 +43,8 @@ class PersonalTest {
 
         every { NetworkUtils.getUniqueIdentifier() } returns "unique_id"
         every { NetworkUtils.getDeviceName() } returns "device_name"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom_device_name"
 
-        val serialized = Personal.serialize(personal, mockContext)
+        val serialized = Personal.serialize(personal, "custom_device_name")
 
         assertEquals("My Personal Title", serialized.get("title").asString)
         assertTrue(serialized.has("uploadDate"))
@@ -76,9 +71,8 @@ class PersonalTest {
         every { FileUtils.getFileNameFromUrl(null) } returns ""
         every { NetworkUtils.getUniqueIdentifier() } returns "unique_id"
         every { NetworkUtils.getDeviceName() } returns "device_name"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom_device_name"
 
-        val serialized = Personal.serialize(personal, mockContext)
+        val serialized = Personal.serialize(personal, "custom_device_name")
 
         assertTrue(serialized.get("title").isJsonNull)
         assertTrue(serialized.has("uploadDate"))

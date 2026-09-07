@@ -1,18 +1,33 @@
 package org.ole.planet.myplanet.model
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import com.google.gson.JsonObject
 import io.mockk.every
 import io.mockk.mockk
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.MainApplication
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
 class TeamTaskTest {
+
+    @Before
+    fun setup() {
+        MainApplication.testContext = ApplicationProvider.getApplicationContext<Context>()
+    }
+
+    @After
+    fun tearDown() {
+        MainApplication.testContext = null
+    }
 
     @Test
     fun testSerialize_withUser() {
@@ -50,6 +65,9 @@ class TeamTaskTest {
 
         val linkObj = result.getAsJsonObject("link")
         assertEquals("linkValue", linkObj.get("linkKey").asString)
+
+        assertEquals("myplanet", result.get("app").asString)
+        assertTrue(result.has("androidId"))
     }
 
     @Test

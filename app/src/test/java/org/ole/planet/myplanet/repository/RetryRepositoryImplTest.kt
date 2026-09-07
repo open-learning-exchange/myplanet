@@ -96,45 +96,38 @@ class RetryRepositoryImplTest {
 
     @Test
     fun `markInProgress updates status`() = runTest {
-        val operation = RetryOperation().apply { status = RetryOperation.STATUS_PENDING }
-        coEvery { retryDao.findById("opId") } returns operation
+        coEvery { retryDao.markInProgress("opId") } returns 1
 
         repository.markInProgress("opId")
 
-        assertEquals(RetryOperation.STATUS_IN_PROGRESS, operation.status)
-        coVerify { retryDao.update(operation) }
+        coVerify { retryDao.markInProgress("opId") }
     }
 
     @Test
     fun `markInProgress does nothing when operation not found`() = runTest {
-        coEvery { retryDao.findById("missingId") } returns null
+        coEvery { retryDao.markInProgress("missingId") } returns 0
 
         repository.markInProgress("missingId")
 
-        coVerify(exactly = 0) { retryDao.update(any()) }
+        coVerify { retryDao.markInProgress("missingId") }
     }
 
     @Test
     fun `markCompleted updates status and timestamp`() = runTest {
-        val operation = RetryOperation().apply {
-            status = RetryOperation.STATUS_PENDING; lastAttemptTime = 0
-        }
-        coEvery { retryDao.findById("opId") } returns operation
+        coEvery { retryDao.markCompleted("opId", any()) } returns 1
 
         repository.markCompleted("opId")
 
-        assertEquals(RetryOperation.STATUS_COMPLETED, operation.status)
-        assert(operation.lastAttemptTime > 0)
-        coVerify { retryDao.update(operation) }
+        coVerify { retryDao.markCompleted("opId", timeProvider.now()) }
     }
 
     @Test
     fun `markCompleted does nothing when operation not found`() = runTest {
-        coEvery { retryDao.findById("missingId") } returns null
+        coEvery { retryDao.markCompleted("missingId", any()) } returns 0
 
         repository.markCompleted("missingId")
 
-        coVerify(exactly = 0) { retryDao.update(any()) }
+        coVerify { retryDao.markCompleted("missingId", timeProvider.now()) }
     }
 
     @Test
@@ -216,13 +209,6 @@ class RetryRepositoryImplTest {
     }
 
     @Test
-    fun `resetAllPending resets retry time`() = runTest {
-        repository.resetAllPending()
-
-        coVerify { retryDao.resetPendingRetryTime(timeProvider.now()) }
-    }
-
-    @Test
     fun `deletePendingAndAbandonedOperations delegates to dao`() = runTest {
         repository.deletePendingAndAbandonedOperations()
 
@@ -234,5 +220,25 @@ class RetryRepositoryImplTest {
         repository.recoverStuckOperations()
 
         coVerify { retryDao.recoverStuck(timeProvider.now() + 60_000) }
+    }
+
+    @Test
+    fun `safeClearQueue returns false and skips deletion while processing`() = runTest {
+        repository.setProcessing(true)
+
+        val result = repository.safeClearQueue()
+
+        assertEquals(false, result)
+        coVerify(exactly = 0) { retryDao.deletePendingAndAbandoned() }
+    }
+
+    @Test
+    fun `safeClearQueue returns true and deletes pending and abandoned when idle`() = runTest {
+        repository.setProcessing(false)
+
+        val result = repository.safeClearQueue()
+
+        assertEquals(true, result)
+        coVerify(exactly = 1) { retryDao.deletePendingAndAbandoned() }
     }
 }

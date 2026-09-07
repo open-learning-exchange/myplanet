@@ -9,15 +9,14 @@ import android.os.Looper
 import android.util.Patterns
 import android.webkit.MimeTypeMap
 import android.widget.Toast
-import androidx.core.graphics.toColorInt
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
-import fisk.chipcloud.ChipCloudConfig
 import java.math.BigInteger
 import java.text.Normalizer
 import java.util.Locale
 
 object Utilities {
+    private val mainHandler by lazy { Handler(Looper.getMainLooper()) }
     private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
 
     fun isValidEmail(target: CharSequence): Boolean {
@@ -44,7 +43,7 @@ object Utilities {
         if (Looper.myLooper() == Looper.getMainLooper()) {
             showToastIfValid(context, message, duration)
         } else {
-            Handler(Looper.getMainLooper()).post {
+            mainHandler.post {
                 showToastIfValid(context, message, duration)
             }
         }
@@ -66,15 +65,6 @@ object Utilities {
         }
     }
 
-    fun getCloudConfig(): ChipCloudConfig {
-        return ChipCloudConfig()
-            .useInsetPadding(true)
-            .checkedChipColor("#e0e0e0".toColorInt())
-            .checkedTextColor("#000000".toColorInt())
-            .uncheckedChipColor("#e0e0e0".toColorInt())
-            .uncheckedTextColor("#000000".toColorInt())
-    }
-
     fun checkNA(s: String?): String {
         return if (s.isNullOrEmpty()) "N/A" else s
     }
@@ -84,11 +74,15 @@ object Utilities {
     }
 
     fun toHex(arg: String?): String {
-        return arg?.toByteArray()?.let { String.format("%x", BigInteger(1, it)) } ?: ""
+        return arg?.toByteArray()?.let { BigInteger(1, it).toString(16) } ?: ""
     }
 
     fun normalizeText(str: String): String {
-        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
+        val lower = str.lowercase(Locale.getDefault())
+        if (lower.all { it < '\u0080' }) {
+            return lower
+        }
+        return Normalizer.normalize(lower, Normalizer.Form.NFD)
             .replace(DIACRITICS_REGEX, "")
     }
 

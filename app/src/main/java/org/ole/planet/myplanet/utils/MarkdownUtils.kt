@@ -1,23 +1,16 @@
 package org.ole.planet.myplanet.utils
 
-import android.app.Dialog
 import android.content.Context
-import android.graphics.Color
 import android.text.Layout
 import android.text.Spannable
 import android.text.TextPaint
 import android.text.method.LinkMovementMethod
 import android.text.style.AlignmentSpan
 import android.text.style.ClickableSpan
-import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
-import android.widget.ImageView
 import android.widget.TextView
-import androidx.core.graphics.drawable.toDrawable
 import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.github.chrisbanes.photoview.PhotoView
 import io.noties.markwon.AbstractMarkwonPlugin
 import io.noties.markwon.Markwon
 import io.noties.markwon.MarkwonConfiguration
@@ -34,12 +27,11 @@ import io.noties.markwon.image.glide.GlideImagesPlugin
 import io.noties.markwon.movement.MovementMethodPlugin
 import java.util.regex.Pattern
 import org.commonmark.node.Image
-import org.ole.planet.myplanet.R
 
 object MarkdownUtils {
-    private var currentZoomDialog: Dialog? = null
     @Volatile private var markwonInstance: Markwon? = null
     private val imagePattern = Pattern.compile("!\\[.*?]\\((.*?)\\)")
+    private val linkMovementMethod = CustomLinkMovementMethod()
 
     fun warmUp(context: Context) {
         if (markwonInstance == null) {
@@ -74,49 +66,17 @@ object MarkdownUtils {
     fun setMarkdownText(textView: TextView, markdown: String) {
         val markwon = create(textView.context)
         markwon.setMarkdown(textView, markdown)
-        textView.movementMethod = CustomLinkMovementMethod()
+        textView.movementMethod = linkMovementMethod
     }
 
     private class CustomImageSpan(private val theme: MarkwonTheme, private val url: String) : ClickableSpan() {
         override fun onClick(widget: View) {
-            showZoomableImage(widget.context, url)
+            ImageViewerUtils.showZoomableImage(widget.context, url)
         }
 
         override fun updateDrawState(ds: TextPaint) {
             theme.applyLinkStyle(ds)
         }
-    }
-
-    private fun showZoomableImage(context: Context, imageUrl: String) {
-        currentZoomDialog?.dismiss()
-
-        val dialog = Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
-        currentZoomDialog = dialog
-
-        val view = LayoutInflater.from(context).inflate(R.layout.dialog_zoomable_image, null)
-        val photoView = view.findViewById<PhotoView>(R.id.photoView)
-        val closeButton = view.findViewById<ImageView>(R.id.closeButton)
-
-        dialog.setContentView(view)
-        dialog.window?.setBackgroundDrawable(Color.BLACK.toDrawable())
-
-        Glide.with(photoView.context)
-            .load(imageUrl)
-            .diskCacheStrategy(DiskCacheStrategy.ALL)
-            .fitCenter()
-            .error(R.drawable.ic_loading)
-            .into(photoView)
-
-        closeButton.setOnClickListener {
-            dialog.dismiss()
-            currentZoomDialog = null
-        }
-
-        dialog.setOnDismissListener {
-            currentZoomDialog = null
-        }
-
-        dialog.show()
     }
 
     fun prependBaseUrlToImages(
@@ -125,10 +85,12 @@ object MarkdownUtils {
         width: Int = 150,
         height: Int = 100
     ): String {
-        val matcher = markdownContent?.let { imagePattern.matcher(it) }
-            ?: return markdownContent.orEmpty()
-        val result = StringBuffer()
+        val content = markdownContent ?: return markdownContent.orEmpty()
+        val matcher = imagePattern.matcher(content)
+        val result = StringBuilder()
+        var last = 0
         while (matcher.find()) {
+            result.append(content, last, matcher.start())
             val relativePath = matcher.group(1)
             val modifiedPath = if (relativePath != null && relativePath.startsWith("resources/")) {
                 relativePath.substring("resources/".length)
@@ -136,9 +98,10 @@ object MarkdownUtils {
                 relativePath
             }
             val fullUrl = baseUrl + modifiedPath
-            matcher.appendReplacement(result, "<img src=$fullUrl width=$width height=$height/>")
+            result.append("<img src=$fullUrl width=$width height=$height/>")
+            last = matcher.end()
         }
-        matcher.appendTail(result)
+        result.append(content, last, content.length)
         return result.toString()
     }
 

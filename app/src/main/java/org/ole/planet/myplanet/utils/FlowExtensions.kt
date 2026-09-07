@@ -8,6 +8,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
 fun <T> Fragment.collectWhenStarted(flow: Flow<T>, collector: suspend (T) -> Unit): Job {
@@ -15,6 +16,14 @@ fun <T> Fragment.collectWhenStarted(flow: Flow<T>, collector: suspend (T) -> Uni
         viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
             flow.collect(collector)
         }
+    }
+}
+
+inline fun <T> Flow<List<T>>.distinctByContent(
+    crossinline sameItem: (T, T) -> Boolean
+): Flow<List<T>> {
+    return distinctUntilChanged { old, new ->
+        old.size == new.size && old.indices.all { i -> sameItem(old[i], new[i]) }
     }
 }
 

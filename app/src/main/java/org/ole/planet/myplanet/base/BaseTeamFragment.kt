@@ -13,7 +13,6 @@ import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.repository.TeamsSyncRepository
 
 @AndroidEntryPoint
 abstract class BaseTeamFragment : BaseVoicesFragment() {
@@ -28,8 +27,6 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
     var team: MyTeam? = null
     @Inject
     lateinit var teamsRepository: TeamsRepository
-    @Inject
-    lateinit var teamsSyncRepository: TeamsSyncRepository
     private var loadTeamJob: Job? = null
     private val _teamFlow = MutableStateFlow<MyTeam?>(null)
     val teamFlow: StateFlow<MyTeam?> = _teamFlow.asStateFlow()
@@ -37,12 +34,16 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
     val isMemberFlow: StateFlow<Boolean> = _isMemberFlow.asStateFlow()
 
 
+    protected suspend fun ensureUserResolved(): UserEntity? {
+        return user ?: userRepository.getUserModel()?.also { user = it }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         teamId = requireArguments().getString("id", "")
 
         lifecycleScope.launch {
-            user = userRepository.getUserModel()
+            ensureUserResolved()
             loadTeamDetails()
         }
     }

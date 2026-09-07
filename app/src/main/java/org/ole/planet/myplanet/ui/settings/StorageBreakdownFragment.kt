@@ -1,12 +1,10 @@
 package org.ole.planet.myplanet.ui.settings
 
 import android.app.Dialog
-import android.content.DialogInterface
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.FrameLayout
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
@@ -52,25 +50,15 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
         var fileCount: Int = 0
     )
 
-    internal val categories = listOf(
-        CategoryData(R.string.storage_videos, setOf("mp4", "mkv", "avi", "webm", "mov", "3gp", "flv")),
-        CategoryData(R.string.storage_audio, setOf("mp3", "wav", "ogg", "m4a", "flac", "aac", "opus")),
-        CategoryData(R.string.storage_pdfs, setOf("pdf")),
-        CategoryData(R.string.storage_images, setOf("jpg", "jpeg", "png", "gif", "webp", "bmp")),
-        CategoryData(R.string.storage_other, emptySet())
-    )
+    internal val categories: List<CategoryData> = StorageCategories.all.map {
+        CategoryData(it.nameRes, it.extensions)
+    }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val dialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
-        dialog.setOnShowListener { d: DialogInterface ->
-            val sheet = (d as BottomSheetDialog)
-                .findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
-            sheet?.let {
-                BottomSheetBehavior.from(it).apply {
-                    state = BottomSheetBehavior.STATE_EXPANDED
-                    skipCollapsed = true
-                }
-            }
+        dialog.behavior.apply {
+            state = BottomSheetBehavior.STATE_EXPANDED
+            skipCollapsed = true
         }
         return dialog
     }
@@ -227,8 +215,7 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
             val ext = file.extension.lowercase()
             val size = file.length()
             total += size
-            val index = categories.indexOfFirst { it.extensions.isNotEmpty() && ext in it.extensions }
-                .let { if (it == -1) categories.lastIndex else it }
+            val index = StorageCategories.indexOf(ext)
             sizes[index] += size
             counts[index]++
         }
@@ -237,7 +224,6 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
 
     private fun populateCategoryRows() {
         binding.categoryContainer.removeAllViews()
-        val allKnownExtensions = categories.dropLast(1).flatMap { it.extensions }.toSet()
 
         categories.filter { it.fileCount > 0 }.forEach { category ->
             val itemBinding = ItemStorageCategoryBinding.inflate(
@@ -253,10 +239,10 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
                 "${FileUtils.formatSize(requireContext(), category.sizeBytes)} · $fileLabel"
 
             itemBinding.root.setOnClickListener {
+                val resolvedIndex = StorageCategories.all.indexOfFirst { it.nameRes == category.nameRes }
                 StorageCategoryDetailFragment.newInstance(
                     label = name,
-                    extensions = category.extensions.toList(),
-                    allKnownExtensions = allKnownExtensions.toList()
+                    categoryIndex = resolvedIndex
                 ).show(parentFragmentManager, "category_detail")
             }
 

@@ -52,11 +52,9 @@ open class MyCourse(
 
     fun setUserId(userId: String?) {
         if (userId.isNullOrBlank()) return
-        val current = this.userId.orEmpty().filter { !it.isNullOrBlank() }.toMutableList()
-        if (!current.contains(userId)) {
-            current.add(userId)
-        }
-        this.userId = current.distinct()
+        val set = this.userId.orEmpty().filterTo(LinkedHashSet()) { it.isNotBlank() }
+        set.add(userId)
+        this.userId = set.toList()
     }
 
     fun removeUserId(userId: String?) {
@@ -94,19 +92,18 @@ open class MyCourse(
         fun saveConcatenatedLinksToPrefs(spm: SharedPrefManager) {
             val existingJsonLinks = spm.getConcatenatedLinks()
             val existingConcatenatedLinks = if (existingJsonLinks != null) {
-                JsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toMutableSet()
+                JsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toHashSet()
             } else {
-                mutableSetOf()
+                hashSetOf()
             }
             val linksToProcess: List<String>
             synchronized(concatenatedLinks) {
                 linksToProcess = concatenatedLinks.toList()
             }
-            val existingSet = existingConcatenatedLinks.toHashSet()
             for (link in linksToProcess) {
-                existingSet.add(link)
+                existingConcatenatedLinks.add(link)
             }
-            val jsonConcatenatedLinks = JsonUtils.gson.toJson(existingSet.toList())
+            val jsonConcatenatedLinks = JsonUtils.gson.toJson(existingConcatenatedLinks.toList())
             spm.setConcatenatedLinks(jsonConcatenatedLinks)
         }
 

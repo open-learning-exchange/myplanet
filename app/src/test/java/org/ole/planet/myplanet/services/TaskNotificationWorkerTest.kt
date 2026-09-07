@@ -49,6 +49,7 @@ class TaskNotificationWorkerTest {
     private val notificationManager: NotificationUtils.NotificationManager = mockk(relaxed = true)
 
     private val baseTime = 1700000000000L
+    private lateinit var worker: TaskNotificationWorker
 
     @Before
     fun setUp() {
@@ -57,6 +58,18 @@ class TaskNotificationWorkerTest {
 
         mockkObject(NotificationUtils)
         every { NotificationUtils.getInstance(any()) } returns notificationManager
+
+        worker = TaskNotificationWorker(
+            appContext = context,
+            workerParams = workerParams,
+            userSessionManager = userSessionManager,
+            teamsRepository = teamsRepository,
+            notificationsRepository = notificationsRepository,
+            meetupDao = meetupDao,
+            teamDao = teamDao,
+            localReminderScheduler = localReminderScheduler,
+            timeProvider = timeProvider
+        )
     }
 
     @After
@@ -91,18 +104,6 @@ class TaskNotificationWorkerTest {
             meetupDao.getUpcomingMeetupsForTeamsOrUser(listOf("team_1"), "user_123", any(), any())
         } returns listOf(meetup)
 
-        val worker = TaskNotificationWorker(
-            appContext = context,
-            workerParams = workerParams,
-            userSessionManager = userSessionManager,
-            teamsRepository = teamsRepository,
-            notificationsRepository = notificationsRepository,
-            meetupDao = meetupDao,
-            teamDao = teamDao,
-            localReminderScheduler = localReminderScheduler,
-            timeProvider = timeProvider
-        )
-
         val result = worker.doWork()
 
         assertEquals(ListenableWorker.Result.success(), result)
@@ -129,21 +130,43 @@ class TaskNotificationWorkerTest {
     fun testDoWork_noLoggedInUser_returnsSuccess() = runTest {
         coEvery { userSessionManager.getUserModel() } returns null
 
-        val worker = TaskNotificationWorker(
-            appContext = context,
-            workerParams = workerParams,
-            userSessionManager = userSessionManager,
-            teamsRepository = teamsRepository,
-            notificationsRepository = notificationsRepository,
-            meetupDao = meetupDao,
-            teamDao = teamDao,
-            localReminderScheduler = localReminderScheduler,
-            timeProvider = timeProvider
-        )
-
         val result = worker.doWork()
 
         assertEquals(ListenableWorker.Result.success(), result)
         coVerify(exactly = 0) { localReminderScheduler.rescheduleAllUpcomingReminders(any()) }
+    }
+
+    @Test
+    fun `doWork collects valid task IDs during notification delivery and marks tasks notified`() = runTest {
+        val user = UserEntity().apply { id = "user_123" }
+        coEvery { userSessionManager.getUserModel() } returns user
+
+        val task1 = TeamTask().apply { id = "task_1"; title = "Task One"; deadline = baseTime + 3600000L }
+        val task2 = TeamTask().apply { id = ""; title = "Task Two with blank ID"; deadline = baseTime + 3600000L }
+        val task3 = TeamTask().apply { id = "task_3"; title = "Task Three"; deadline = baseTime + 3600000L }
+        coEvery { teamsRepository.getPendingTasksForUser(any(), any(), any()) } returns listOf(task1, task2, task3)
+
+        val result = worker.doWork()
+
+        assertEquals(ListenableWorker.Result.success(), result)
+        coVerify(exactly = 1) {
+            teamsRepository.markTasksNotified(listOf("task_1", "task_3"))
+        }
+    }
+
+    @Test
+    fun `doWork does not call markTasksNotified if no valid task IDs are found`() = runTest {
+        val user = UserEntity().apply { id = "user_123" }
+        coEvery { userSessionManager.getUserModel() } returns user
+
+        val task1 = TeamTask().apply { id = ""; title = "Task Blank"; deadline = baseTime + 3600000L }
+        coEvery { teamsRepository.getPendingTasksForUser(any(), any(), any()) } returns listOf(task1)
+
+        val result = worker.doWork()
+
+        assertEquals(ListenableWorker.Result.success(), result)
+        coVerify(exactly = 0) {
+            teamsRepository.markTasksNotified(any())
+        }
     }
 }

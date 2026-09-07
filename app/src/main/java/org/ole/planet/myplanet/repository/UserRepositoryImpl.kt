@@ -58,6 +58,8 @@ import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.VersionUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
+import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class UserRepositoryImpl @Inject constructor(
     @param:AppPreferences private val settings: SharedPreferences,
@@ -405,10 +407,10 @@ class UserRepositoryImpl @Inject constructor(
         val user = getUserByName(name) ?: return
         user._id = userId
         user._rev = rev
-        user.derived_key = derivedKey
-        user.salt = salt
-        user.password_scheme = passwordScheme
-        user.iterations = iterations
+        derivedKey?.let { user.derived_key = it }
+        salt?.let { user.salt = it }
+        passwordScheme?.let { user.password_scheme = it }
+        iterations?.let { user.iterations = it }
         user.isUpdated = false
         upsertUser(user)
     }
@@ -479,6 +481,10 @@ class UserRepositoryImpl @Inject constructor(
         upsertUser(model)
     }
 
+    override suspend fun getCurrentUserId(): String? {
+        return sharedPrefManager.getUserId().takeIf { it.isNotBlank() }
+    }
+
     override suspend fun getUserModel(): UserEntity? {
         val userId = sharedPrefManager.getUserId().takeUnless { it.isBlank() } ?: return null
         return userDao.getById(userId)
@@ -512,7 +518,7 @@ class UserRepositoryImpl @Inject constructor(
             addProperty("gender", user.gender)
             addProperty("type", "user")
             addProperty("betaEnabled", false)
-            addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+            addDocumentOrigin()
             addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
             addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
             val roles = JsonArray().apply { add("learner") }
@@ -882,6 +888,11 @@ class UserRepositoryImpl @Inject constructor(
         return activitiesRepositoryLazy.get().hasUserSyncAction(userId)
     }
 
+    override suspend fun hasActiveUserSyncAction(): Boolean {
+        val userId = getActiveUserIdSuspending()
+        return if (userId.isNotEmpty()) hasUserSyncAction(userId) else false
+    }
+
     override suspend fun initializeAchievement(achievementId: String): Achievement? {
         val existing = achievementDao.getById(achievementId)
         if (existing != null) return existing
@@ -1037,15 +1048,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun bulkInsertAchievementsFromSync(jsonArray: JsonArray) {
-        val achievements = ArrayList<Achievement>(jsonArray.size())
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                achievements.add(Achievement.fromJson(jsonDoc))
-            }
-        }
+        val achievements = jsonArray.toSyncDocuments().map { (_, doc) -> Achievement.fromJson(doc) }
         achievementDao.upsertAll(achievements)
     }
 
@@ -1214,7 +1217,7 @@ class UserRepositoryImpl @Inject constructor(
     private fun hasShelfDataUltraFast(shelfDoc: JsonObject): Boolean {
         return listOf("resourceIds", "courseIds", "meetupIds", "teamIds").any { key ->
             shelfDoc.has(key) && shelfDoc.get(key).let { element ->
-                element.isJsonArray && element.asJsonArray.size() > 0
+                element.isJsonArray && !element.asJsonArray.isEmpty()
             }
         }
     }

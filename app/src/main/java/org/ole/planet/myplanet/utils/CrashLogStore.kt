@@ -18,11 +18,26 @@ object CrashLogStore {
 
     private fun dir(context: Context): File = File(context.filesDir, DIR_NAME)
 
+    private data class ParsedLogInfo(val time: String, val type: String)
+
+    private fun parseLogFile(file: File): ParsedLogInfo? {
+        if (!file.isFile || !file.name.endsWith(FILE_EXTENSION)) return null
+        val name = file.name.removeSuffix(FILE_EXTENSION)
+        val separator = name.indexOf('_')
+        if (separator <= 0) return null
+        val time = name.substring(0, separator)
+        if (time.toLongOrNull() == null) return null
+        val type = name.substring(separator + 1)
+        return ParsedLogInfo(time, type)
+    }
+
+    private fun isValidLogFile(file: File): Boolean = parseLogFile(file) != null
+
     fun save(context: Context, type: String, error: String, timeProvider: TimeProvider): File? {
         return try {
             val logDir = dir(context)
             if (!logDir.exists() && !logDir.mkdirs()) return null
-            if ((logDir.listFiles()?.size ?: 0) >= MAX_PENDING_FILES) return null
+            if ((logDir.listFiles()?.count { isValidLogFile(it) } ?: 0) >= MAX_PENDING_FILES) return null
             val file = File(logDir, "${timeProvider.now()}_$type$FILE_EXTENSION")
             file.writeText(error)
             file
@@ -34,14 +49,10 @@ object CrashLogStore {
 
     fun loadPendingLogs(context: Context): List<PendingLog> {
         val files = dir(context).listFiles() ?: return emptyList()
-        return files.filter { it.isFile && it.name.endsWith(FILE_EXTENSION) }.mapNotNull { file ->
+        return files.mapNotNull { file ->
+            val parsed = parseLogFile(file) ?: return@mapNotNull null
             try {
-                val name = file.name.removeSuffix(FILE_EXTENSION)
-                val separator = name.indexOf('_')
-                if (separator <= 0) return@mapNotNull null
-                val time = name.substring(0, separator)
-                if (time.toLongOrNull() == null) return@mapNotNull null
-                PendingLog(file, name.substring(separator + 1), time, file.readText())
+                PendingLog(file, parsed.type, parsed.time, file.readText())
             } catch (e: Exception) {
                 e.printStackTrace()
                 null

@@ -20,6 +20,11 @@ interface MeetupDao {
     @Query("SELECT * FROM meetup WHERE meetupId = :meetupId AND userId IS NOT NULL AND userId != ''")
     suspend fun getMembersByMeetupId(meetupId: String): List<Meetup>
 
+    @Query(
+        "SELECT DISTINCT userId FROM meetup WHERE meetupId = :meetupId AND userId IS NOT NULL AND userId != ''"
+    )
+    suspend fun getMemberUserIdsByMeetupId(meetupId: String): List<String>
+
     @Query("SELECT * FROM meetup WHERE userId = :userId AND userId != ''")
     suspend fun getByUserId(userId: String): List<Meetup>
 

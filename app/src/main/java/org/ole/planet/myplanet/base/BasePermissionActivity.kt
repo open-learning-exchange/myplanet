@@ -49,16 +49,11 @@ abstract class BasePermissionActivity : AppCompatActivity() {
 
     fun getUsagesPermission(context: Context): Boolean {
         val appOps = context.getSystemService(APP_OPS_SERVICE) as AppOpsManager
-        var mode = -1
-        try {
-            val method = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                AppOpsManager::class.java.getMethod("unsafeCheckOpNoThrow", String::class.java, Int::class.javaPrimitiveType, String::class.java)
-            } else {
-                AppOpsManager::class.java.getMethod("checkOpNoThrow", String::class.java, Int::class.javaPrimitiveType, String::class.java)
-            }
-            mode = method.invoke(appOps, AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName) as Int
-        } catch (e: Exception) {
-            Log.e("BasePermissionActivity", "Error checking usages permission", e)
+        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            appOps.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName)
+        } else {
+            @Suppress("DEPRECATION")
+            appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName)
         }
 
         return if (mode == AppOpsManager.MODE_DEFAULT) {

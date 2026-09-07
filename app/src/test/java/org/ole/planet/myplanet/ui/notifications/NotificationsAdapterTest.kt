@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.notifications
 
 import android.content.Context
-import android.os.Build
 import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
@@ -20,7 +19,7 @@ import org.ole.planet.myplanet.model.NotificationListItem
 import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
-@Config(sdk = [Build.VERSION_CODES.O_MR1], application = HiltTestApplication::class)
+@Config(application = HiltTestApplication::class)
 class NotificationsAdapterTest {
 
     private lateinit var context: Context
@@ -82,5 +81,20 @@ class NotificationsAdapterTest {
         val expectedDate = Date(System.currentTimeMillis() - diff)
         val expectedString = SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(expectedDate)
         assertEquals(expectedString, bindAndGetTimestamp(diff))
+    }
+
+    @Test
+    fun `test bind updates title when formattedText changes for same notification id`() {
+        val parent = FrameLayout(context)
+        val viewHolder = adapter.onCreateViewHolder(parent, 1) as NotificationsAdapter.ItemViewHolder
+        val titleTextView = viewHolder.itemView.findViewById<TextView>(R.id.title)
+
+        val initialNotif = Notification("1", "<b>Initial</b> text", false, "test", "test", System.currentTimeMillis(), "")
+        viewHolder.bind(NotificationListItem.Item(initialNotif))
+        assertEquals("Initial text", titleTextView.text.toString())
+
+        val updatedNotif = Notification("1", "<b>Updated</b> text", false, "test", "test", System.currentTimeMillis(), "")
+        viewHolder.bind(NotificationListItem.Item(updatedNotif))
+        assertEquals("Updated text", titleTextView.text.toString())
     }
 }

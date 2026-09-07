@@ -579,6 +579,8 @@
     <string name="no_data_available_please_check_and_try_again">Ma jiro wax macluumaad, fadlan mari karo oo isku day.</string>
     <string name="no_course_matched_filter">Ma jiro kursiga laga cabsi qabo</string>
     <string name="added_to_my_library">lagu daray myLibrary</string>
+    <string name="format_added_to_mylibrary">%1$s lagu daray myLibrary</string>
+    <string name="format_removed_from_mylibrary">%1$s laga saaray myLibrary</string>
     <string name="added_to_my_courses">lagu daray myCourses</string>
     <string name="do_you_want_to_stay_online">Ma rabtid inaad joogto internetka?</string>
     <string name="device_not_connected_to_planet">Qalabka aan la xidhiidhin Geedka.</string>
@@ -615,6 +617,10 @@
     <string name="meetup_added">Ku daray la isku day</string>
     <string name="meetup_not_added">Meetup lama darin</string>
     <string name="add_transaction">Ku daray Hawlaha</string>
+    <string name="from_date">Ka bilaabata taariikhda</string>
+    <string name="to_date">Ku egtahay taariikhda</string>
+    <string name="select_from_date">Dooro ka bilaabata taariikhda</string>
+    <string name="select_to_date">Dooro ku egtahay taariikhda</string>
     <string name="note_is_required">Fariin waa loo baahan yahay</string>
     <string name="amount_is_required">Qaddarku waa loo baahan yahay</string>
     <string name="date_is_required">Taariikhdu waa loo baahan yahay</string>
@@ -734,6 +740,7 @@
     <string name="sync_step_of">Tallaabo %1$d ka mid ah %2$d</string>
     <string name="sync_items_of">%1$d / %2$d</string>
     <string name="sync_table_progress">%1$s  ·  %2$d / %3$d miisas</string>
+    <string name="sync_in_progress_wait">Dib-u-hagreeska ayaa socda. Fadlan sug ilaa ay dhammaato.</string>
     <string name="sync_shelves_progress">%1$d / %2$d raafooyin</string>
     <string name="team_leader">Xoghayaha kooxda</string>
     <string name="select_resource">Xulo khadka</string>
@@ -986,6 +993,8 @@
     <string name="no_teams">kooxaha aan la heli karin</string>
     <string name="no_chats">ma jiraan wada sheekaysi hore</string>
     <string name="no_feedback">wax jawaab celin ah lama hayo</string>
+    <string name="medium_text_html">Qoraal / HTML</string>
+    <string name="medium_html">HTML</string>
     <string name="empty_text" />
     <string name="message_placeholder">%s</string>
     <string name="reports">warbixino</string>
@@ -1258,6 +1267,7 @@
     <string name="current_cv">CV-ga hadda: %s</string>
     <string name="select_pdf_only">Fadlan dooro fayl PDF ah</string>
     <string name="file_not_found">Faylka lama helin: %s</string>
+    <string name="text_content_truncated">Faylku waa mid aad u weyn si loo muujiyo oo dhan — waxaa la muujinayaa qaybta ugu horreysa oo keliya</string>
     <string name="chat_already_shared_to_destination">Wadahadalkan hore ayaa loogu wadaagay goobtan</string>
     <string name="load_earlier_messages">Soo geli fariimaha hore</string>
     <string name="already_shared">Hore loo wadaagay</string>
@@ -1376,5 +1386,12 @@
     <string name="filter_pdfs">PDF-yo</string>
     <string name="downloaded">La soo dejiyay</string>
     <string name="not_downloaded">Lama soo dejin</string>
+    <string-array name="download_filter">
+        <item>Dhammaan</item>
+        <item>La soo dejiyay</item>
+        <item>Lama soo dejin</item>
+    </string-array>
 
+    <string name="playback_speed">Xawaaraha dib-u-daawashada</string>
+    <string name="playback_speed_format">%1$sx</string>
 </resources>

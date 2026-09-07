@@ -4,14 +4,14 @@ import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.OfflineActivity
-import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.ResourceActivity
+import org.ole.planet.myplanet.model.SearchActivity
+import org.ole.planet.myplanet.model.UserEntity
 
 interface ActivitiesRepository {
     suspend fun getOfflineVisitCount(userId: String): Int
     suspend fun getOfflineLoginCount(userName: String): Int
-    suspend fun getOfflineLogins(userName: String): Flow<List<OfflineActivity>>
+    fun getOfflineLogins(userName: String): Flow<List<OfflineActivity>>
     suspend fun markResourceAdded(userId: String?, resourceId: String)
     suspend fun markResourceRemoved(userId: String, resourceId: String)
     suspend fun logCourseVisit(courseId: String, title: String, userId: String)

@@ -184,6 +184,43 @@ class SubmissionViewModelTest {
     }
 
     @Test
+    fun testTieBreakingForEqualLastUpdateTime() = runTest(testDispatcher) {
+        // Two submissions share the newest lastUpdateTime within the same parent;
+        // the tie-breaker keeps the first one encountered in the (descending-sorted) list.
+        val s1 = createSubmission("1", "p1", "exam", "complete", 300L)
+        val s2 = createSubmission("2", "p1", "exam", "complete", 300L)
+        val s3 = createSubmission("3", "p2", "exam", "complete", 200L)
+        val subList = listOf(s1, s2, s3)
+
+        `when`(userRepository.getActiveUserIdSuspending()).thenReturn("user1")
+        `when`(userRepository.getUsersByIds(listOf("user1"))).thenReturn(emptyList())
+        `when`(submissionsRepository.getSubmissionsFlow("user1")).thenReturn(flowOf(subList))
+        `when`(submissionsRepository.getExamMap(subList)).thenReturn(emptyMap())
+        `when`(submissionsRepository.getNormalizedSubmitterName(s1)).thenReturn("John Doe")
+        `when`(submissionsRepository.getNormalizedSubmitterName(s2)).thenReturn("John Doe")
+        `when`(submissionsRepository.getNormalizedSubmitterName(s3)).thenReturn("John Doe")
+
+        viewModel = SubmissionViewModel(submissionsRepository, userRepository, testDispatcherProvider)
+        val job = launch {
+            viewModel.submissions.collect { }
+        }
+        advanceUntilIdle()
+
+        viewModel.setFilter("exam", "")
+        advanceUntilIdle()
+
+        val subs = viewModel.submissions.value
+        // p1 keeps the first-encountered newest submission ("1"), p2 keeps "3"
+        assertEquals(2, subs.size)
+        assertEquals("1", subs.find { it.id == "1" }?.id)
+        assertEquals(2, subs.find { it.id == "1" }?.submissionCount)
+        assertEquals("3", subs.find { it.id == "3" }?.id)
+        assertEquals(1, subs.find { it.id == "3" }?.submissionCount)
+
+        job.cancel()
+    }
+
+    @Test
     fun testDistinctEmissions() = runTest(testDispatcher) {
         val s1 = createSubmission("1", "p1", "exam", "complete", 100L)
         val s1_dup = createSubmission("1", "p1", "exam", "complete", 100L)

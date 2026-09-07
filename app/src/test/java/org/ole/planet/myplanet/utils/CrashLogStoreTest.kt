@@ -72,6 +72,19 @@ class CrashLogStoreTest {
     }
 
     @Test
+    fun `save ignores unrelated files when enforcing cap`() {
+        pendingDir.mkdirs()
+        repeat(19) { i ->
+            File(pendingDir, "${1000L + i}_crash.log").writeText("e$i")
+        }
+        File(pendingDir, "not-a-log.txt").writeText("junk")
+        File(pendingDir, "noseparator.log").writeText("junk")
+
+        assertNotNull(CrashLogStore.save(context, "crash", "one more fits", SystemTimeProvider()))
+        assertEquals(20, CrashLogStore.loadPendingLogs(context).size)
+    }
+
+    @Test
     fun `loadPendingLogs on missing directory returns empty list`() {
         assertTrue(CrashLogStore.loadPendingLogs(context).isEmpty())
     }

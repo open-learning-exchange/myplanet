@@ -20,12 +20,13 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.services.BroadcastService
 import org.ole.planet.myplanet.utils.SystemTimeProvider
+import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(manifest = Config.NONE, sdk = [33], application = Application::class)
+@Config(manifest = Config.NONE, application = Application::class)
 class RetryInterceptorTest {
     private lateinit var broadcastService: BroadcastService
     private lateinit var timeProvider: TimeProvider
@@ -34,7 +35,7 @@ class RetryInterceptorTest {
     @Before
     fun setUp() {
         broadcastService = mockk(relaxed = true)
-        timeProvider = SystemTimeProvider()
+        timeProvider = TestTimeProvider()
         retryInterceptor = RetryInterceptor(broadcastService, timeProvider)
         retryInterceptor.initialDelay = 10L
     }
@@ -213,8 +214,8 @@ class RetryInterceptorTest {
         every { chain.proceed(request) } returns errorResponse
         every { chain.call() } returns notCancelledCall()
 
-        // Use a longer delay to ensure the other thread has time to interrupt
-        retryInterceptor.initialDelay = 2000L
+        val systemRetryInterceptor = RetryInterceptor(broadcastService, SystemTimeProvider())
+        systemRetryInterceptor.initialDelay = 2000L
 
         val currentThread = Thread.currentThread()
         val interrupterThread = Thread {
@@ -224,7 +225,7 @@ class RetryInterceptorTest {
         interrupterThread.start()
 
         try {
-            retryInterceptor.intercept(chain)
+            systemRetryInterceptor.intercept(chain)
             fail("Expected IOException due to interruption")
         } catch (e: IOException) {
             assertEquals("Interrupted during retry delay", e.message)
@@ -258,5 +259,33 @@ class RetryInterceptorTest {
 
         verify(exactly = 1) { chain.proceed(request) }
         assertTrue("Backoff should not have slept for the full delay", elapsed < 5_000L)
+    }
+
+    @Test
+    fun testCallCancelledDuringBackoffSleep() {
+        val request = Request.Builder().url("http://example.com").build()
+        val errorResponse = createResponse(request, 500)
+
+        var callCount = 0
+        val mockCall = mockk<Call> {
+            every { isCanceled() } answers {
+                callCount++
+                // Returns true on the second check, simulating cancellation after the first sleep slice.
+                callCount > 1
+            }
+        }
+        val chain = mockk<Interceptor.Chain>()
+        every { chain.request() } returns request
+        every { chain.proceed(request) } returns errorResponse
+        every { chain.call() } returns mockCall
+
+        retryInterceptor.initialDelay = 10L // Small delay to avoid burning real wall clock time
+
+        try {
+            retryInterceptor.intercept(chain)
+            fail("Expected IOException because the call was cancelled")
+        } catch (e: IOException) {
+            assertEquals("Call cancelled during retry delay", e.message)
+        }
     }
 }

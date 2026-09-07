@@ -33,12 +33,9 @@ import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.ChatRepository
-import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.TeamUploadData
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -85,6 +82,25 @@ class UploadManagerTest {
         coVerify(exactly = 1) { mockRepo.markTeamsUploaded(mapOf("team1" to "rev1")) }
         coVerify(exactly = 1) { mockRepo.deleteLocalTeamRecords(listOf("team3")) }
         coVerify(exactly = 0) { retryQueue.queueFailedOperation(uploadType = "MyTeam", error = any(), payload = any(), endpoint = "teams", httpMethod = "POST", dbId = "team2", modelClassName = "MyTeam") }
+    }
+
+    @Test
+    fun `uploadTeams keys uploadedTeams by local team id when response id differs`() = testScope.runTest {
+        val mockTeam = TeamUploadData("localTeam1", JsonObject(), false, null)
+        val mockRepo = io.mockk.mockk<TeamsSyncRepository>(relaxed = true)
+        every { teamsSyncRepository.get() } returns mockRepo
+        coEvery { mockRepo.getTeamsForUpload() } returns listOf(mockTeam)
+
+        val bulkResponse = com.google.gson.JsonArray().apply {
+            add(JsonObject().apply { addProperty("id", "serverGeneratedId1"); addProperty("rev", "rev1") })
+        }
+        coEvery { uploadRepository.postUploadArray(any(), any()) } returns retrofit2.Response.success(bulkResponse)
+        coEvery { mockRepo.markTeamsUploaded(any()) } returns Unit
+
+        uploadManager.uploadTeams()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { mockRepo.markTeamsUploaded(mapOf("localTeam1" to "rev1")) }
     }
 
     @Test
@@ -330,7 +346,41 @@ class UploadManagerTest {
         uploadManager.uploadSubmitPhotos(listener)
         advanceUntilIdle()
 
-        coVerify { submissionsRepository.markPhotoUploaded(photoId, "rev123", "uploaded123") }
+        coVerify {
+            submissionsRepository.markPhotosUploadedBatch(
+                match { uploads ->
+                    uploads.size == 1 &&
+                        uploads[0].photoId == photoId &&
+                        uploads[0].rev == "rev123" &&
+                        uploads[0].remoteId == "uploaded123"
+                }
+            )
+        }
+        coVerify(exactly = 0) { submissionsRepository.markPhotoUploaded(any(), any(), any()) }
+    }
+
+    @Test
+    fun `uploadSubmitPhotos batches photo mark calls once per batch instead of per photo`() = testScope.runTest {
+        val photoIds = listOf("photo1", "photo2", "photo3")
+        val mockSerialized = JsonObject().apply { addProperty("test", "data") }
+        val mockPhotosList = photoIds.map { Pair(it as String?, mockSerialized) }
+
+        val mockResponseObject = JsonObject().apply {
+            addProperty("id", "uploaded123")
+            addProperty("rev", "rev123")
+        }
+
+        coEvery { submissionsRepository.getUnuploadedPhotos() } returns mockPhotosList
+        coEvery { uploadRepository.postUpload(any(), mockSerialized) } returns retrofit2.Response.success(mockResponseObject)
+        coEvery { submissionsRepository.getPhotosByIds(any()) } returns emptyList()
+
+        val listener: OnSuccessListener = mockk(relaxed = true)
+
+        uploadManager.uploadSubmitPhotos(listener)
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { submissionsRepository.markPhotosUploadedBatch(any()) }
+        coVerify(exactly = 0) { submissionsRepository.markPhotoUploaded(any(), any(), any()) }
     }
 
     @Test

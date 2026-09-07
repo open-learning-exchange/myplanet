@@ -12,12 +12,12 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.repository.FeedbackRepository
-import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.repository.UserRepository
 
 @HiltViewModel
 class FeedbackListViewModel @Inject constructor(
     private val feedbackRepository: FeedbackRepository,
-    private val userSessionManager: UserSessionManager
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val _feedbackList = MutableStateFlow<List<Feedback>>(emptyList())
@@ -32,7 +32,7 @@ class FeedbackListViewModel @Inject constructor(
     private fun loadFeedback() {
         fetchJob?.cancel()
         fetchJob = viewModelScope.launch {
-            val user = userSessionManager.getUserModel()
+            val user = userRepository.getUserModel()
             feedbackRepository.getFeedback(user).collectLatest { feedback ->
                 _feedbackList.value = feedback
             }

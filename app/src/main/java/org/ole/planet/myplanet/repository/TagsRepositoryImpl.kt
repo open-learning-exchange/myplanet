@@ -55,10 +55,11 @@ class TagsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getLinkIdsForTagNames(dbType: String, tagNames: List<String>): List<String> {
-        val matchingTagIds = tagDao.getByNames(tagNames).map { it.id }
-        if (matchingTagIds.isEmpty()) {
+        val matchingTags = tagDao.getByNames(tagNames)
+        if (matchingTags.isEmpty()) {
             return emptyList()
         }
+        val matchingTagIds = matchingTags.map { it.id }
         return tagDao.getByDbAndTagIds(dbType, matchingTagIds).mapNotNull { it.linkId }
     }
 
@@ -147,7 +148,7 @@ class TagsRepositoryImpl @Inject constructor(
             attachedTo.add(JsonUtils.getString("attachedTo", act))
         }
         tag.attachedTo = attachedTo
-        tag.isAttached = attachedTo.size > 0
+        tag.isAttached = attachedTo.isNotEmpty()
         return tag
     }
 }

@@ -57,15 +57,17 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
     private val viewModel: DashboardViewModel by viewModels()
     private val newsViewModel: NewsViewModel by viewModels()
     protected var userLibrary: List<MyLibrary> = emptyList()
+    protected var userCourses: List<MyCourse> = emptyList()
+    protected var userTeams: List<MyTeam> = emptyList()
     private var fullName: String? = null
-    private val params: FlexboxLayout.LayoutParams by lazy {
+    private fun createChipLayoutParams(): FlexboxLayout.LayoutParams =
         FlexboxLayout.LayoutParams(
             resources.getDimensionPixelSize(R.dimen.dashboard_chip_width),
             ViewGroup.LayoutParams.MATCH_PARENT
         ).apply {
+            flexShrink = 0f
             marginEnd = resources.getDimensionPixelSize(R.dimen.dashboard_chip_gap)
         }
-    }
     private var di: DialogUtils.CustomProgressDialog? = null
 
     @Inject
@@ -155,7 +157,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         if (onClick != null) {
             v.setOnClickListener { onClick() }
         }
-        flexboxLayout.addView(v, params)
+        flexboxLayout.addView(v, createChipLayoutParams())
     }
 
     private fun renderMyLibrary(dbMylibrary: List<MyLibrary>) {
@@ -193,7 +195,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
             }
 
             myLibraryItemClickAction(itemLibraryHomeBinding.title, items)
-            flexboxLayout?.addView(v, params)
+            flexboxLayout?.addView(v, createChipLayoutParams())
         }
     }
 
@@ -201,6 +203,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutCourse) ?: return
         flexboxLayout.removeAllViews()
         val filteredCourses = courses.filter { !it.courseTitle.isNullOrBlank() }
+        userCourses = filteredCourses
         setCountText(filteredCourses.size, MyCourse::class.java, requireView())
         if (filteredCourses.isEmpty()) {
             renderPlaceholder(flexboxLayout, getString(R.string.no_courses_joined_yet)) {
@@ -214,22 +217,18 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         }
         for (items in filteredCourses) {
             val dashboardItem = DashboardItem(items.courseId, items.courseTitle, null, ItemType.COURSE)
-            flexboxLayout.addView(createCourseChip(dashboardItem), params)
+            flexboxLayout.addView(createCourseChip(dashboardItem), createChipLayoutParams())
         }
     }
 
     private suspend fun renderMyTeams(teams: List<MyTeam>) {
+        userTeams = teams
         val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutTeams) ?: return
         flexboxLayout.removeAllViews()
         setCountText(teams.size, MyTeam::class.java, requireView())
         if (teams.isEmpty()) {
             renderPlaceholder(flexboxLayout, getString(R.string.no_teams_joined_yet)) {
-                val fragment = org.ole.planet.myplanet.ui.teams.TeamFragment().apply {
-                    arguments = android.os.Bundle().apply {
-                        putBoolean("fromDashboard", true)
-                    }
-                }
-                homeItemClickListener?.openMyFragment(fragment)
+                homeItemClickListener?.openCallFragment(TeamFragment())
             }
             return
         }
@@ -243,7 +242,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
             handleClick(ob._id, ob.name, TeamDetailFragment(), name)
             name.text = ob.name
             v.tag = ob._id
-            flexboxLayout.addView(v, params)
+            flexboxLayout.addView(v, createChipLayoutParams())
         }
 
         val userId = userRepository.getUserModel()?.id
@@ -256,15 +255,15 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         }
     }
 
-    private fun updateTeamNotifications(flexboxLayout: FlexboxLayout, notificationInfoMap: Map<String, TeamNotificationInfo>) {
+    private fun updateTeamNotifications(
+        flexboxLayout: FlexboxLayout,
+        notificationInfoMap: Map<String, TeamNotificationInfo>
+    ) {
         for (i in 0 until flexboxLayout.childCount) {
-            val teamView = flexboxLayout.getChildAt(i)
-            val teamId = teamView.tag as? String
-            teamId?.let { id ->
-                notificationInfoMap[id]?.let { info ->
-                    showNotificationIcons(teamView, info)
-                }
-            }
+            val child = flexboxLayout.getChildAt(i)
+            val teamId = child.tag as? String ?: continue
+            val info = notificationInfoMap[teamId] ?: continue
+            showNotificationIcons(child, info)
         }
     }
 
@@ -300,7 +299,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         }
         for (items in visibleItems) {
             val dashboardItem = DashboardItem(items._id, items.title, items.imageId, ItemType.LIFE)
-            flexboxLayout.addView(getLayout(dashboardItem, 0), params)
+            flexboxLayout.addView(getLayout(dashboardItem, 0), createChipLayoutParams())
         }
         updateMyLifeSurveyCount()
     }
@@ -349,10 +348,9 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         viewModel.loadUserContent(userId)
         observeUiState()
 
-        view.findViewById<FlexboxLayout>(R.id.flexboxLayoutCourse).flexDirection = FlexDirection.ROW
-        view.findViewById<FlexboxLayout>(R.id.flexboxLayoutTeams).flexDirection = FlexDirection.ROW
-        val myLifeFlex = view.findViewById<FlexboxLayout>(R.id.flexboxLayoutMyLife)
-        myLifeFlex.flexDirection = FlexDirection.ROW
+        view.findViewById<FlexboxLayout>(R.id.flexboxLayoutCourse)?.flexDirection = FlexDirection.ROW
+        view.findViewById<FlexboxLayout>(R.id.flexboxLayoutTeams)?.flexDirection = FlexDirection.ROW
+        view.findViewById<FlexboxLayout>(R.id.flexboxLayoutMyLife)?.flexDirection = FlexDirection.ROW
 
         collectWhenStarted(viewModel.syncKeyIdEvent) { state ->
             when (state) {

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.util.Log
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import kotlinx.coroutines.sync.Mutex
@@ -14,10 +13,6 @@ class RetryRepositoryImpl @Inject constructor(
     private val retryDao: RetryDao,
     private val timeProvider: TimeProvider
 ) : RetryRepository {
-
-    companion object {
-        private const val TAG = "RetryRepositoryImpl"
-    }
 
     private val isProcessing = AtomicBoolean(false)
     private val mutex = Mutex()
@@ -58,18 +53,11 @@ class RetryRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markInProgress(operationId: String) {
-        retryDao.findById(operationId)?.let { op ->
-            op.status = RetryOperation.STATUS_IN_PROGRESS
-            retryDao.update(op)
-        }
+        retryDao.markInProgress(operationId)
     }
 
     override suspend fun markCompleted(operationId: String) {
-        retryDao.findById(operationId)?.let { op ->
-            op.status = RetryOperation.STATUS_COMPLETED
-            op.lastAttemptTime = timeProvider.now()
-            retryDao.update(op)
-        }
+        retryDao.markCompleted(operationId, timeProvider.now())
     }
 
     override suspend fun markFailed(operationId: String, errorMessage: String?, httpCode: Int?) {
@@ -102,10 +90,6 @@ class RetryRepositoryImpl @Inject constructor(
         retryDao.deleteOldCompleted(cutoffTime)
     }
 
-    override suspend fun resetAllPending() {
-        retryDao.resetPendingRetryTime(timeProvider.now())
-    }
-
     override suspend fun getExistingOperation(itemId: String, uploadType: String): RetryOperation? {
         return retryDao.findExisting(itemId, uploadType)
     }
@@ -126,18 +110,15 @@ class RetryRepositoryImpl @Inject constructor(
 
     override suspend fun safeClearQueue(): Boolean {
         if (isProcessing.get()) {
-            Log.w(TAG, "Cannot clear queue while processing is active")
             return false
         }
 
         return mutex.withLock {
             if (isProcessing.get()) {
-                Log.w(TAG, "Cannot clear queue while processing is active")
                 return@withLock false
             }
 
             deletePendingAndAbandonedOperations()
-            Log.i(TAG, "Queue cleared successfully")
             true
         }
     }

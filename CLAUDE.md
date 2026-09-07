@@ -25,7 +25,11 @@
 | `docs/DOMAIN_MODEL.md` | You need to understand the learning domain — roles, courses, teams, surveys, sync concepts |
 | `docs/CODE_STYLE_GUIDE.md` | You're writing code — naming, imports, coroutines, Room, Hilt, UI conventions |
 | `docs/TESTING.md` | You're writing or fixing tests — patterns to copy per layer |
-| `docs/AGENT_SPELLBOOK.md` | You're summoning another AI agent (`@claude` `@coderabbit` `@codex` `@copilot` `@dependabot` `@devin` `@jules` `@openhands`) on a PR — who answers, how fast, and with what side effects. Its "The Skill Sync" section covers maintaining the shared agent skills (`merge-prepping`, `kotlin-importing`) — how one skill repo feeds Claude Code, OpenHands, and Copilot |
+| `agents-summoning` skill — `.agents/skills/agents-summoning/SKILL.md` (or the `agents-summoning@summoning` plugin in a Claude Code session) | You're summoning another AI agent (`@coderabbitai` `@codex` `@copilot` `@devin` `@jules` `@openhands` `@dependabot`) on a PR or issue — who answers, how fast, with what side effects, and why a summon went silent. Dated receipts in the same skill's `NOTES.md`; connection checklists in its `references/connecting.md` |
+
+Reviewers speak; doers act — an unleashed doer mention (`@openhands`, `@devin`,
+`@copilot`) defaults to commits on your branch, so add "comment only" when that
+isn't wanted.
 
 ---
 
@@ -39,6 +43,8 @@ myplanet/
 │   └── workflows/
 │       ├── automerge.yml      # Manually-dispatched queue drainer for `automerge`-labelled PRs
 │       ├── build.yml          # Build workflow for all branches
+│       ├── labels.yml         # Size-labels each PR on open and on every push
+│       ├── playstore.yml      # Hand-started publish of a release the Play Store quota refused
 │       ├── release.yml        # Release and Play Store publishing
 │       └── test.yml           # Unit test workflow
 ├── app/                       # Main application module
@@ -367,6 +373,8 @@ git push -u origin claude/feature-name-sessionid
 
 See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message and PR conventions.
 
+**Session opened on a branch that isn't `master`?** That's a takeover of someone else's PR branch: the web UI binds its PR panel to this session's auto-minted `claude/…` outcome branch instead, and the PR's CI failures and review comments never arrive. Call `get_session` first, then follow the `overtaking` skill — wired as a plugin in `.claude/settings.json` — to bind a session to the branch and subscribe to the PR. If the plugin didn't load (an empty `~/.claude/plugins/installed_plugins.json` is the tell), clone the marketplace repo listed there and read its `SKILL.md`.
+
 ### CI/CD Pipeline
 
 **Build Workflow** (`.github/workflows/build.yml`)
@@ -381,6 +389,7 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 - Runs `./gradlew testDefaultDebugUnitTest` — **fails the build on any unit-test failure**
 - **Two shards, prioritizing wall clock.** `app/build.gradle` `testOptions` implements `-PtestShardTotal=N -PtestShardIndex=I` (each top-level test class is hashed by class-file path into a shard; inner classes follow their outer class; an out-of-range index aborts at configuration time; shards verified disjoint and exactly covering — 174 classes = 86 + 88). CI runs `shard: [1, 2]`: measured on this branch, shards were equal-or-faster in every cache regime (warm source change ~3:03–3:37 vs ~3:57–4:14 unsharded; cold ~4:53 vs ~6:25; no-change ties at ~0:45) at the cost of a second runner per push. Drop the matrix entry to fall back to one job if runner budget outranks wall time
 - `default` flavor only (the `lite` flavor's unit tests are not run in CI)
+- Passes `-ProbolectricOffline=true`, which makes Gradle stage Robolectric's `android-all-instrumented` jars into `build/robolectric-sdks` (see `robolectricSdkJars` in `app/build.gradle`) instead of letting each test fork download them at runtime — concurrent forks fetching the same jar were poisoning one fork's Robolectric sandbox (`AndroidVersions.CURRENT` null, then `NoSuchFieldError` on framework fields) and costing a rerun. Adding a `@Config(sdk = [N])` for a new API level means adding its jar to that map
 - Both `test.yml` and `build.yml` cache `app/build` + `.gradle` per job (`actions/cache`, keyed on the SHA and falling back to the newest earlier run) and pass `cache-read-only: false` to `setup-gradle` — without the latter, `setup-gradle` keeps the Gradle home (and its local build cache) read-only off master, so no branch run could seed it and every push started cold. Measured on one branch: 6m25s cold → ~4m for a push that touches one source file → ~45s for a push that touches no Gradle inputs (workflow/doc-only), where every task, including the test task, is `FROM-CACHE`
 - `GRADLE_BUILD_CACHE_URL/USER/PASS` are currently **empty secrets**, so `settings.gradle` disables the remote cache and `GRADLE_BUILD_CACHE_PUSH` is inert; all cache hits today come from the Actions-cached Gradle home
 - No instrumented (`androidTest`) execution in CI
@@ -390,15 +399,31 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 - Builds signed APK and AAB for both flavors
 - Signs with keystore credentials via GitHub Secrets
 - Generates SHA256 checksums for integrity verification
-- Publishes to Google Play Store (internal track) with fallback retry
+- Publishes to Google Play Store (internal track) with fallback retry; a refused upload (usually `Daily save quota exceeded.`) only warns, and the warning links `playstore.yml`, which publishes that bundle later without a rebuild
 - Creates GitHub release with artifacts (tag: `v${VERSION}`)
 - Sends Discord notifications via Treehouses CLI
 
+**Playstore Workflow** (`.github/workflows/playstore.yml`)
+- Menu: `resume_automerge` (default **on** — unsticking the drain is why this gets pressed), `wait_minutes`, `dry_run`. `PLAYSTORE_TRACK`, `PLAYSTORE_DAILY_LIMIT` and `RETRY_MINUTES` are constants in the job's `env:`
+- **Never scheduled** — the *Run workflow* button (linked from the release warning and the automerge stop), `gh workflow run playstore.yml`, or a `repository_dispatch` with `event_type: playstore`, which carries no inputs and so never resumes the drain
+- If the track is behind the newest GitHub release, re-uploads that release's signed `myPlanet-lite.aab`: no rebuild, no new version code. It reads the track rather than trusting the newest `release.yml` run's warning — a track read opens an edit and deletes it unsaved, so it spends no save quota, and a release run that died before uploading leaves the same silence as one that published. The run decides two things only: wait while one is in flight, and, when the track cannot be read at all, upload blind if it warned. Logic in `.github/scripts/playstore.sh`
+- The quota is ~50 slots, each freeing 24h after its own use rather than at midnight (6514 refused 02:57 Pacific on 2026-08-18 after 10 saves that day, run 32123984765; 6714 refused on 2026-08-26 as the 51st release in its window, run 32930850241) — at ~6 min per release a drain eats it in an afternoon. `playstore-quota.sh` estimates the next slot as the oldest still held + 24h + a measured ~300s lag (6714 refused 08:11:16Z, accepted 08:12:17Z, where crisp-24h predicted 08:07:27Z); `forecast` prints the next 10 in eastern time
+
 **Automerge Workflow** (`.github/workflows/automerge.yml`)
-- Manually dispatched (`workflow_dispatch`) queue drainer for PRs labelled `automerge`
-- For each labelled PR: merges the base branch in, bumps the version, waits for build + test to pass, then squash-merges
-- Logic lives in `.github/scripts/automerge.sh`; requires `AUTOMERGE_TOKEN` (the default `GITHUB_TOKEN` can't push to the protected base branch)
-- A red workflow on the base is re-run before the drain gives up (`base_rerun_attempts`, default 1): every base commit is a PR head that build + test passed on just before the squash merge, so a failure there is treated as flaky until it reproduces
+- Manually dispatched queue drainer for PRs labelled `automerge`, ordered by priority tier then PR number: PRs also labelled `priority` (`PRIORITY_LABEL`, blank = no tier) drain first
+- Per PR: merge the base in, bump the version, wait for build + test on that prepared commit, squash-merge
+- Two ways a PR leaves the queue without stopping the drain — it loses `automerge`, gains a mark, and the queue moves on. **conflict** (`CONFLICT_LABEL`): `mergeable: CONFLICTING`, or the real `git merge` failing. **failing** (`FAILING_LABEL`, dark red): build or test red on the prepared commit, which is a verdict on that PR alone. Fix it and re-add `automerge`
+- What stops the drain instead: no verdict at all on the prepared commit (no run appeared, or the wait timed out — that says nothing about the PR), a red base, or a release that never reached the Play Store, whose stop names the next save slot and links `playstore.yml`
+- A red workflow gets one re-run before it counts, on the base and on a prepared commit alike (`retries`, default 1): each passed build + test on its own minutes earlier, so the first failure of the two together is treated as flaky until it repeats
+- Menu: `dry_run` (default `false`, so a dry run is the deliberate tick), `max_merges`, `labels` (`queue,priority,conflict,failing` in one comma-separated field — empty slot = that label goes unused, missing slot = the script's default) and `retries` (0–3). Every other setting is in the workflow's `env:`, so changing one is a reviewable diff and `playstore.yml`'s handover inherits it
+- Logic in `.github/scripts/automerge.sh`; needs `AUTOMERGE_TOKEN` (the default `GITHUB_TOKEN` cannot push to the protected base)
+
+**Labels Workflow** (`.github/workflows/labels.yml`)
+- Runs on `pull_request_target` (`opened`, `synchronize`, `reopened`, `ready_for_review`), so it re-labels on every push and works on fork and Dependabot PRs, where a `pull_request` token would be read-only. It never checks out PR code — it only reads diff numbers through the API
+- Two independent rules, both from `.github/scripts/labels.sh`:
+  - **size** from additions + deletions — `small` ≤ 60, `medium` ≤ 100, `large` ≤ 200, `enormous` above that (`SMALL_MAX`/`MEDIUM_MAX`/`LARGE_MAX`)
+  - **`less`** when the PR only removes code (0 additions, some deletions). It sits *alongside* the size label (`small` + `less`), matching how the label has been used by hand
+- Two exclusions, and both are load-bearing. `EXCLUDE_PATHS` drops `values-*/strings.xml`, because one translated string lands in all five and would count 6×. The version-only lines `automerge.sh` writes into `app/build.gradle` are discounted, because that bump takes a pure deletion from 0 additions to 2 — without the discount, draining the queue would strip `less` from exactly the PRs that earned it
 
 **Dependabot** (`.github/dependabot.yml`)
 - Daily checks for GitHub Actions updates (max 10 open PRs)

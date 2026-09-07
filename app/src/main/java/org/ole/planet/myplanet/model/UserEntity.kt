@@ -1,13 +1,11 @@
 package org.ole.planet.myplanet.model
 
-import android.util.Base64
 import androidx.core.net.toUri
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import java.io.File
 import java.io.InputStream
 import org.apache.commons.lang3.StringUtils
@@ -17,6 +15,7 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 
 @Entity(tableName = "users", indices = [Index("_id"), Index("name"), Index("planetCode")])
 open class UserEntity(
@@ -62,7 +61,7 @@ open class UserEntity(
         jsonObject.add("roles", getRoles())
         if (_id?.isEmpty() == true) {
             jsonObject.addProperty("password", password)
-            jsonObject.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+            jsonObject.addDocumentOrigin()
             jsonObject.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(context))
             jsonObject.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
         } else {
@@ -121,7 +120,7 @@ open class UserEntity(
 
             inputStream?.use {
                 val bytes = it.readBytes()
-                Base64.encodeToString(bytes, Base64.NO_WRAP)
+                java.util.Base64.getEncoder().encodeToString(bytes)
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -159,29 +158,27 @@ open class UserEntity(
 
     fun addImageUrl(jsonDoc: JsonObject?) {
         if (jsonDoc?.has("_attachments") == true) {
-            val element = JsonParser.parseString(jsonDoc["_attachments"].asJsonObject.toString())
-            val obj = element.asJsonObject
-            val entries = obj.entrySet()
-            for ((key1) in entries) {
+            val obj = jsonDoc["_attachments"].asJsonObject
+            val key1 = obj.entrySet().firstOrNull()?.key
+            if (key1 != null) {
                 userImage = UrlUtils.getUserImageUrl(id, key1)
-                break
             }
         }
     }
 
     fun isManager(): Boolean {
-        val hasManagerRole = rolesList?.any { it.contains("manager", ignoreCase = true) } == true
+        val hasManagerRole = rolesList?.any { it.equals("manager", ignoreCase = true) } == true
         return hasManagerRole || userAdmin ?: false
     }
 
     fun isLeader(): Boolean {
-        return rolesList?.any { it.contains("leader", ignoreCase = true) } == true
+        return rolesList?.any { it.equals("leader", ignoreCase = true) } == true
     }
 
     fun isGuest(): Boolean {
         val hasGuestId = _id?.startsWith("guest_") == true
-        val hasGuestRole = rolesList?.any { it?.lowercase() == "guest" } == true
-        return hasGuestId || (hasGuestRole && rolesList?.any { it?.lowercase() == "learner" } != true)
+        val hasGuestRole = rolesList?.any { it.equals("guest", ignoreCase = true) } == true
+        return hasGuestId || (hasGuestRole && rolesList?.any { it.equals("learner", ignoreCase = true) } != true)
     }
 
     override fun toString(): String {

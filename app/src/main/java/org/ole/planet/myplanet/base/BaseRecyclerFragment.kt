@@ -231,9 +231,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
         if (courseIdsToDelete.isNotEmpty()) {
             viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
-                for (courseId in courseIdsToDelete) {
-                    coursesRepository.deleteCourseProgress(courseId)
-                }
+                coursesRepository.deleteCoursesProgress(courseIdsToDelete)
             }
         }
         selectedItems?.clear()

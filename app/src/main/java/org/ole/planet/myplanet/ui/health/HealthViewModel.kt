@@ -61,7 +61,6 @@ class HealthViewModel @Inject constructor(
     fun searchPatients(query: String, sortBy: String = "joinDate", descending: Boolean = true) {
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
-            delay(300)
             val loadingJob = launch {
                 delay(100)
                 _isListLoading.value = true

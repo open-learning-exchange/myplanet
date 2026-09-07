@@ -10,8 +10,14 @@ package org.ole.planet.myplanet.utils
  */
 interface TimeProvider {
     fun now(): Long
+    fun sleep(millis: Long) {
+        Thread.sleep(millis)
+    }
 }
 
 class SystemTimeProvider : TimeProvider {
     override fun now(): Long = System.currentTimeMillis()
+    override fun sleep(millis: Long) {
+        Thread.sleep(millis)
+    }
 }

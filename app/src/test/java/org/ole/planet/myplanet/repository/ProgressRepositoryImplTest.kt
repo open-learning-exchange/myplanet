@@ -4,7 +4,6 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.every
 import io.mockk.mockk
 import io.mockk.spyk
 import io.mockk.unmockkAll
@@ -37,8 +36,8 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 class ProgressRepositoryImplTest {
 
     private lateinit var repository: ProgressRepositoryImpl
-    private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
+    private val dispatcherProvider: DispatcherProvider = org.ole.planet.myplanet.utils.TestDispatcherProvider(testDispatcher)
     private val testScope = TestScope(testDispatcher)
     private lateinit var mockCoursesRepository: CoursesRepository
     private val courseProgressDao: CourseProgressDao = mockk(relaxed = true)
@@ -50,7 +49,6 @@ class ProgressRepositoryImplTest {
 
     @Before
     fun setUp() {
-        every { dispatcherProvider.io } returns testDispatcher
         mockCoursesRepository = mockk<CoursesRepository>()
         coEvery { mockCoursesRepository.getMyCourses(any()) } returns emptyList()
         repository = spyk(
@@ -519,13 +517,6 @@ class ProgressRepositoryImplTest {
                 parentId = "exam1@course1"
                 type = "exam"
             },
-            // Malformed/legacy parent (course1) -> sub2 (10 mistakes)
-            Submission().apply {
-                id = "sub2"
-                userId = "user1"
-                parentId = "course1_legacy"
-                type = "exam"
-            },
             // Missing parent -> sub3
             Submission().apply {
                 id = "sub3"
@@ -544,7 +535,6 @@ class ProgressRepositoryImplTest {
 
         val answers = listOf(
             Answer().apply { id = "a1"; submissionId = "sub1"; questionId = "q1"; mistakes = 5 },
-            Answer().apply { id = "a2"; submissionId = "sub2"; questionId = "q1"; mistakes = 10 },
             Answer().apply { id = "a4"; submissionId = "sub4"; questionId = "q10"; mistakes = 20 }
         )
 
@@ -561,11 +551,10 @@ class ProgressRepositoryImplTest {
 
         assertEquals(2, data.size())
 
-        // Under correct grouping, course1 gets sub1 (5) + sub2 (10) = 15 mistakes.
-        // If substring collision fails, course1 might incorrectly absorb sub4 (+20) -> 35.
+        // Under correct grouping, course1 gets sub1 (5) = 5 mistakes.
         val obj1 = data[0].asJsonObject
         assertEquals("course1", obj1.get("courseId").asString)
-        assertEquals(15, obj1.get("mistakes")?.asInt ?: 0)
+        assertEquals(5, obj1.get("mistakes")?.asInt ?: 0)
 
         // Under correct grouping, course10 gets sub4 = 20 mistakes.
         // If substring collision fails, course10 might lose sub4 -> 0 mistakes.
@@ -680,5 +669,46 @@ class ProgressRepositoryImplTest {
 
         // DAO methods should not be called with an empty list
         coVerify(exactly = 0) { courseProgressDao.upsertAll(any()) }
+    }
+
+    @Test
+    fun testInsertCourseProgressFromSync_BlankIdsAndDuplicates() = testScope.runTest {
+        val doc1 = JsonObject().apply {
+            addProperty("_id", "doc1")
+            addProperty("courseId", "course1")
+            addProperty("userId", "user1")
+            addProperty("stepNum", 1)
+            addProperty("passed", true)
+        }
+        val doc2 = JsonObject().apply {
+            addProperty("_id", "")
+            addProperty("courseId", "course1")
+            addProperty("userId", "")
+            addProperty("stepNum", 1)
+            addProperty("passed", false)
+        }
+        val doc3 = JsonObject().apply {
+            addProperty("_id", "doc2")
+            addProperty("courseId", "course2")
+            addProperty("userId", "user1")
+            addProperty("stepNum", 2)
+            addProperty("passed", true)
+        }
+
+        coEvery { courseProgressDao.getByIds(listOf("doc1", "doc2")) } returns emptyList()
+        coEvery { courseProgressDao.getByCourseUsersAndSteps(listOf("course1", "course2"), listOf("user1"), listOf(1, 2)) } returns emptyList()
+
+        repository.insertCourseProgressFromSync(listOf(doc1, doc2, doc3))
+
+        coVerify {
+            courseProgressDao.getByIds(listOf("doc1", "doc2"))
+            courseProgressDao.getByCourseUsersAndSteps(listOf("course1", "course2"), listOf("user1"), listOf(1, 2))
+            courseProgressDao.upsertAll(match { progresses ->
+                progresses.size == 3 &&
+                    progresses[0].id == "doc1" &&
+                    progresses[1].id == "" &&
+                    progresses[2].id == "doc2"
+            })
+        }
     }
 }

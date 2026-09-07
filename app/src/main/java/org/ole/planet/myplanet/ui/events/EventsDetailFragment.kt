@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.HashMap
+import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddMeetupBinding
 import org.ole.planet.myplanet.databinding.FragmentEventsDetailBinding
@@ -187,7 +188,7 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
     private fun pickTime(onPicked: (String) -> Unit) {
         val cal = Calendar.getInstance()
         TimePickerDialog(requireContext(), { _, hour, minute ->
-            onPicked(String.format("%02d:%02d", hour, minute))
+            onPicked(String.format(Locale.US, "%02d:%02d", hour, minute))
         }, cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE), true).show()
     }
 

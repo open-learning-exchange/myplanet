@@ -3,17 +3,16 @@ package org.ole.planet.myplanet.model
 import android.app.usage.UsageStats
 import android.app.usage.UsageStatsManager
 import android.content.Context
-import android.os.Build
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.Serializable
 import java.util.Calendar
 import java.util.Date
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.VersionUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 
 class MyPlanet : Serializable {
     var planetVersion: String? = null
@@ -31,7 +30,7 @@ class MyPlanet : Serializable {
             val postJSON = JsonObject()
             val planet = JsonUtils.gson.fromJson(spm.getVersionDetail() ?: "", MyPlanet::class.java)
             if (planet != null) postJSON.addProperty("planetVersion", planet.planetVersion)
-            postJSON.addProperty("_id", VersionUtils.getAndroidId(MainApplication.context) + "@" + NetworkUtils.getUniqueIdentifier())
+            postJSON.addProperty("_id", VersionUtils.getAndroidId(context) + "@" + NetworkUtils.getUniqueIdentifier())
             postJSON.addProperty("last_synced", spm.getLastSync())
             postJSON.addProperty("parentCode", model.parentCode)
             postJSON.addProperty("createdOn", model.planetCode)
@@ -49,8 +48,8 @@ class MyPlanet : Serializable {
             postJSON.addProperty("createdOn", model.planetCode)
             postJSON.addProperty("version", VersionUtils.getVersionCode(context))
             postJSON.addProperty("versionName", VersionUtils.getVersionName(context))
-            postJSON.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
-            postJSON.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
+            postJSON.addDocumentOrigin()
+            postJSON.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(context))
             postJSON.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
             postJSON.addProperty("deviceName", NetworkUtils.getDeviceName())
             postJSON.addProperty("time", Date().time)
@@ -62,18 +61,16 @@ class MyPlanet : Serializable {
             val cal = Calendar.getInstance()
             cal.timeInMillis = spm.getLastUsageUploaded()
             val arr = JsonArray()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
-                val mUsageStatsManager = MainApplication.context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-                val queryUsageStats = mUsageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, cal.timeInMillis, System.currentTimeMillis())
-                for (s in queryUsageStats) {
-                    addStats(s, arr, context)
-                }
+            val mUsageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+            val queryUsageStats = mUsageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, cal.timeInMillis, System.currentTimeMillis())
+            for (s in queryUsageStats) {
+                addStats(s, arr, context)
             }
             return arr
         }
 
         private fun addStats(s: UsageStats, arr: JsonArray, context: Context) {
-            if (s.packageName == MainApplication.context.packageName) {
+            if (s.packageName == context.packageName) {
                 val `object` = JsonObject()
                 `object`.addProperty("lastTimeUsed", if (s.lastTimeUsed > 0) s.lastTimeUsed else 0)
                 `object`.addProperty("firstTimeUsed", if (s.firstTimeStamp > 0) s.lastTimeStamp else 0)
@@ -82,7 +79,7 @@ class MyPlanet : Serializable {
                 `object`.addProperty("totalUsed", if (totalUsed > 0) totalUsed else 0)
                 `object`.addProperty("version", VersionUtils.getVersionCode(context))
                 `object`.addProperty("versionName", VersionUtils.getVersionName(context))
-                `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+                `object`.addDocumentOrigin()
                 `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
                 `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
                 `object`.addProperty("time", Date().time)

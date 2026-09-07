@@ -9,7 +9,6 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import java.util.Date
 import java.util.concurrent.CancellationException
 import kotlin.coroutines.resume
 import kotlinx.coroutines.CancellableContinuation
@@ -136,7 +135,7 @@ class AutoSyncWorker @AssistedInject constructor(
                     uploadManager.uploadCrashLog()
                     uploadManager.uploadSubmissions()
                     uploadManager.uploadActivities(null)
-                    sharedPrefManager.setLastSync(Date().time)
+                    sharedPrefManager.setLastSync(timeProvider.now())
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -154,7 +153,7 @@ class AutoSyncWorker @AssistedInject constructor(
     }
 
     override fun onSuccess(success: String?) {
-        sharedPrefManager.setLastUsageUploaded(Date().time)
+        sharedPrefManager.setLastUsageUploaded(timeProvider.now())
     }
 
     private fun isAppInForeground(context: Context): Boolean {

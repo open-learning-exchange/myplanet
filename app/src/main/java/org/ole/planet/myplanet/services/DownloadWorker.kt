@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.SystemClock
+import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
@@ -58,16 +59,18 @@ class DownloadWorker @AssistedInject constructor(
             var completedCount = 0
             val results = mutableListOf<Boolean>()
 
+            val authHeader = UrlUtils.header
+
             urls.forEachIndexed { index, url ->
                 try {
-                    val success = downloadFile(url, index, urls.size)
+                    val success = downloadFile(url, authHeader, index, urls.size)
                     results.add(success)
                     completedCount++
 
                     showProgressNotification(completedCount - 1, urls.size, context.getString(R.string.downloaded_files, "$completedCount", "${urls.size}"), 100)
                     sendDownloadUpdate(url, success, completedCount >= urls.size, fromSync)
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Failed to download $url", e)
                     results.add(false)
                     completedCount++
                 }
@@ -76,22 +79,22 @@ class DownloadWorker @AssistedInject constructor(
             showCompletionNotification(completedCount, urls.size, results.any { !it })
             Result.success()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Download worker failed", e)
             Result.failure()
         }
     }
 
-    private suspend fun downloadFile(url: String, index: Int, total: Int): Boolean {
+    private suspend fun downloadFile(url: String, authHeader: String, index: Int, total: Int): Boolean {
         if (FileUtils.checkFileExist(context, url)) {
             try {
                 resourcesRepository.markResourceOfflineByUrl(url)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to mark existing resource offline: $url", e)
             }
             return true
         }
         return try {
-            val response = downloadRepository.downloadFileResponse(url, UrlUtils.header)
+            val response = downloadRepository.downloadFileResponse(url, authHeader)
             when (response) {
                 is DownloadResult.Success -> {
                     downloadFileBody(response.body, url, index, total)
@@ -102,7 +105,7 @@ class DownloadWorker @AssistedInject constructor(
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to download file: $url", e)
             false
         }
     }
@@ -110,6 +113,7 @@ class DownloadWorker @AssistedInject constructor(
     private suspend fun downloadFileBody(body: ResponseBody, url: String, index: Int, total: Int) {
         val fileSize = body.contentLength()
         val outputFile: File = FileUtils.getSDPathFromUrl(context, url)
+        outputFile.parentFile?.mkdirs()
         var totalBytes: Long = 0
         var lastUpdateTime = 0L
 
@@ -137,7 +141,7 @@ class DownloadWorker @AssistedInject constructor(
         try {
             resourcesRepository.markResourceOfflineByUrl(url)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to mark downloaded resource offline: $url", e)
         }
     }
 
@@ -181,6 +185,7 @@ class DownloadWorker @AssistedInject constructor(
     }
 
     companion object {
+        private const val TAG = "DownloadWorker"
         const val WORKER_NOTIFICATION_ID = 3
         const val COMPLETION_NOTIFICATION_ID = 4
         private const val NOTIFICATION_UPDATE_INTERVAL_MS = 500L

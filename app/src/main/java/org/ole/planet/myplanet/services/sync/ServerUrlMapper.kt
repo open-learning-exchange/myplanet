@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.services.sync
 
 import android.content.SharedPreferences
 import android.net.Uri
+import android.util.Log
 import androidx.core.net.toUri
 import java.net.HttpURLConnection
 import java.net.URL
@@ -10,6 +11,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
 class ServerUrlMapper @Inject constructor(
@@ -27,6 +29,10 @@ class ServerUrlMapper @Inject constructor(
         val extractedBaseUrl: String? = null
     )
 
+    companion object {
+        private const val TAG = "ServerUrlMapper"
+    }
+
     private fun extractBaseUrl(url: String): String? {
         return try {
             val uri = url.toUri()
@@ -36,35 +42,32 @@ class ServerUrlMapper @Inject constructor(
             val isDefaultPort = (scheme == "http" && port == 80) || (scheme == "https" && port == 443)
             if (port != -1 && !isDefaultPort) "$scheme://$host:$port" else "$scheme://$host"
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "Could not extract base url", e)
             null
         }
     }
 
     fun processUrl(url: String): UrlMapping {
         val extractedUrl = extractBaseUrl(url)
-        val alternativeUrl = extractedUrl?.let { baseUrl ->
-            serverMappings[baseUrl].also {
-            }
-        }
-        val result = UrlMapping(url, alternativeUrl, extractedUrl)
-        return result
+        val alternativeUrl = extractedUrl?.let { serverMappings[it] }
+        return UrlMapping(url, alternativeUrl, extractedUrl)
     }
 
     fun updateUrlPreferences(editor: SharedPreferences.Editor, uri: Uri, alternativeUrl: String, url: String, settings: SharedPreferences) {
+        val altUri = alternativeUrl.toUri()
         val urlUser: String
         val urlPwd: String
+        val altUserInfo = altUri.userInfo
 
-        if (alternativeUrl.contains("@")) {
-            val userinfo = getUserInfo(uri)
-            urlUser = userinfo[0]
-            urlPwd = userinfo[1]
+        if (altUserInfo != null) {
+            val (user, pwd) = UrlUtils.getUserInfo(altUserInfo)
+            urlUser = user
+            urlPwd = pwd
         } else {
             urlUser = "satellite"
             urlPwd = settings.getString("serverPin", "") ?: ""
         }
 
-        val altUri = alternativeUrl.toUri()
         val scheme = altUri.scheme
         val host = altUri.host
         val port = if (altUri.port == -1) {
@@ -73,7 +76,7 @@ class ServerUrlMapper @Inject constructor(
             altUri.port
         }
 
-        val couchdbURL = if (alternativeUrl.contains("@")) {
+        val couchdbURL = if (altUserInfo != null) {
             alternativeUrl
         } else {
             "$scheme://$urlUser:$urlPwd@$host:$port"
@@ -89,6 +92,7 @@ class ServerUrlMapper @Inject constructor(
             putBoolean("isAlternativeUrl", true)
             apply()
         }
+        UrlUtils.invalidateCaches()
     }
 
     suspend fun updateServerIfNecessary(
@@ -106,18 +110,6 @@ class ServerUrlMapper @Inject constructor(
                 updateUrlPreferences(editor, mapping.primaryUrl.toUri(), alternativeUrl, mapping.primaryUrl, settings)
             }
         }
-    }
-
-    private fun getUserInfo(uri: Uri): Array<String> {
-        val defaultInfo = arrayOf("", "")
-        val info = uri.userInfo?.split(":")?.dropLastWhile { it.isEmpty() }?.toTypedArray()
-
-        val result = if (info != null && info.size > 1) {
-            arrayOf(info[0], info[1])
-        } else {
-            defaultInfo
-        }
-        return result
     }
 
     suspend fun isUrlDirectlyReachable(url: String): Boolean {

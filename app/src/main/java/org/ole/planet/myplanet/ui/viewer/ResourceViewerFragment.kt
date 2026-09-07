@@ -12,6 +12,9 @@ import android.os.ParcelFileDescriptor
 import android.text.TextUtils
 import android.util.Rational
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
@@ -25,9 +28,13 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.registerReceiver
 import androidx.core.graphics.createBitmap
 import androidx.core.net.toUri
+import androidx.core.view.MenuHost
+import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import com.afollestad.materialdialogs.MaterialDialog
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -47,9 +54,6 @@ import androidx.media3.ui.DefaultTimeBar
 import androidx.media3.ui.PlayerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
-import com.tom_roush.pdfbox.pdmodel.PDDocument
-import com.tom_roush.pdfbox.text.PDFTextStripper
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.util.regex.Pattern
@@ -63,7 +67,6 @@ import org.ole.planet.myplanet.databinding.FragmentResourceViewerBinding
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.services.AudioRecorder
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.IntentUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils
@@ -81,7 +84,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
     private var _binding: FragmentResourceViewerBinding? = null
     private val binding get() = _binding!!
-
     private var resourceId: String? = null
     private var filePath: String? = null
     private var title: String? = null
@@ -99,12 +101,12 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private lateinit var library: MyLibrary
     private var pdfText: String = ""
     private var externalFilesDir: File? = null
-
     private val viewModel: ResourceViewerViewModel by viewModels()
-
     @Inject lateinit var dispatcherProvider: DispatcherProvider
     @Inject lateinit var ttsManager: TTSManager
     private var authSessionUpdater: AuthSessionUpdater? = null
+    private var isResourceFinished: Boolean = false
+    fun isResourceFinished(): Boolean = isResourceFinished
 
     private val audioRecordListener = object : OnAudioRecordListener {
         override fun onRecordStarted() {
@@ -117,7 +119,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             Utilities.toast(requireContext(), getString(R.string.recording_stopped))
             NotificationUtils.cancelAll(requireContext())
             if (::library.isInitialized) {
-                lifecycleScope.launch {
+                viewLifecycleOwner.lifecycleScope.launch {
                     val id = library.id ?: return@launch
                     viewModel.updateLibraryItemTranslationAudioPath(id, outputFile)
                 }
@@ -162,10 +164,16 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         return binding.root
     }
 
+    private var lastSavedPositionMs: Long = -1L
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         audioRecorder = AudioRecorder().setAudioRecordListener(audioRecordListener)
         audioRecorder.setCaller(requireActivity(), requireContext())
+
+        if (type == ResourceType.VIDEO || type == ResourceType.AUDIO) {
+            setupPlaybackSpeedMenu()
+        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             externalFilesDir = viewModel.getExternalFilesDir()
@@ -185,6 +193,64 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             ResourceType.TEXT, ResourceType.MARKDOWN, ResourceType.CSV -> setupTextViewer()
             else -> Utilities.toast(requireContext(), "Unsupported file type")
         }
+    }
+
+    private fun getMediaKey(): String = resourceId ?: filePath.orEmpty()
+
+    private fun saveCurrentPlaybackProgress() {
+        val player = exoPlayer ?: return
+        val mediaKey = getMediaKey()
+        if (mediaKey.isEmpty()) return
+        val currentPos = player.currentPosition
+        val duration = player.duration
+        val effectivePosition = ResourceViewerViewModel.calculateEffectivePlaybackPosition(currentPos, duration)
+        if (lastSavedPositionMs == -1L || Math.abs(effectivePosition - lastSavedPositionMs) >= 2000L || effectivePosition == 0L) {
+            lastSavedPositionMs = effectivePosition
+            viewModel.savePlaybackProgress(mediaKey, effectivePosition)
+        }
+    }
+
+    private fun setupPlaybackSpeedMenu() {
+        val menuHost: MenuHost = requireActivity()
+        menuHost.addMenuProvider(object : MenuProvider {
+            override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+                val speedTitle = getString(R.string.playback_speed_format, viewModel.getPlaybackSpeed().toString())
+                menu.add(Menu.NONE, R.id.action_playback_speed, Menu.NONE, speedTitle).apply {
+                    setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
+                }
+            }
+
+            override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
+                if (menuItem.itemId == R.id.action_playback_speed) {
+                    showPlaybackSpeedDialog()
+                    return true
+                }
+                return false
+            }
+        }, viewLifecycleOwner, Lifecycle.State.RESUMED)
+    }
+
+    private fun showPlaybackSpeedDialog() {
+        val speedValues = floatArrayOf(0.75f, 1.0f, 1.25f, 1.5f, 2.0f)
+        val speedOptions = speedValues
+            .map { getString(R.string.playback_speed_format, it.toString()) }
+            .toTypedArray()
+        val currentSpeed = viewModel.getPlaybackSpeed()
+        var selectedIndex = speedValues.indexOfFirst { kotlin.math.abs(it - currentSpeed) < 0.05f }
+        if (selectedIndex == -1) selectedIndex = 1
+
+        MaterialDialog.Builder(requireContext())
+            .title(R.string.playback_speed)
+            .items(*speedOptions)
+            .itemsCallbackSingleChoice(selectedIndex) { _, _, which, _ ->
+                val chosenSpeed = speedValues[which]
+                viewModel.savePlaybackSpeed(chosenSpeed)
+                exoPlayer?.setPlaybackSpeed(chosenSpeed)
+                requireActivity().invalidateOptionsMenu()
+                true
+            }
+            .positiveText(android.R.string.ok)
+            .show()
     }
 
     private fun showVideoLoading(statusText: String) {
@@ -277,6 +343,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             return
         }
 
+        exoPlayer?.release()
+        exoPlayer = null
         exoPlayer = createExoPlayer()
 
         val playerView = binding.root.findViewById<PlayerView>(R.id.video_player)
@@ -285,8 +353,13 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
         val audioSource = ProgressiveMediaSource.Factory(factory).createMediaSource(MediaItem.fromUri(fileUri))
         exoPlayer?.apply {
+            setPlaybackSpeed(viewModel.getPlaybackSpeed())
             setMediaSource(audioSource)
             prepare()
+            val savedProgress = viewModel.getPlaybackProgress(getMediaKey())
+            if (savedProgress > 0L) {
+                seekTo(savedProgress)
+            }
             playWhenReady = true
         }
     }
@@ -304,15 +377,22 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         val mediaSource: MediaSource = ProgressiveMediaSource.Factory(httpDataSourceFactory)
             .createMediaSource(MediaItem.fromUri(uri))
 
+        exoPlayer?.release()
+        exoPlayer = null
         exoPlayer = createExoPlayer()
 
         val playerView = binding.root.findViewById<PlayerView>(R.id.video_player)
         playerView.player = exoPlayer
         setupDragToPipGesture(playerView)
         exoPlayer?.apply {
+            setPlaybackSpeed(viewModel.getPlaybackSpeed())
             setMediaSource(mediaSource)
-            playWhenReady = true
             prepare()
+            val savedProgress = viewModel.getPlaybackProgress(getMediaKey())
+            if (savedProgress > 0L) {
+                seekTo(savedProgress)
+            }
+            playWhenReady = true
         }
     }
 
@@ -329,10 +409,20 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             override fun onPlayerError(error: PlaybackException) {
                 navigateBackWithError(getString(R.string.video_playback_error))
             }
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                if (!isPlaying && player.playbackState != Player.STATE_BUFFERING) {
+                    saveCurrentPlaybackProgress()
+                }
+            }
             override fun onPlaybackStateChanged(playbackState: Int) {
                 when (playbackState) {
                     Player.STATE_BUFFERING -> showVideoLoading(getString(R.string.video_loading_buffering))
                     Player.STATE_READY -> hideVideoLoading()
+                    Player.STATE_ENDED -> {
+                        isResourceFinished = true
+                        lastSavedPositionMs = 0L
+                        viewModel.savePlaybackProgress(getMediaKey(), 0L)
+                    }
                     else -> {}
                 }
             }
@@ -360,10 +450,30 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     @OptIn(UnstableApi::class)
     private fun initializeAudioPlayer(playerView: PlayerView) {
         val fullPath = resolveAudioPath(filePath)
-        exoPlayer = ExoPlayer.Builder(requireContext()).build().also { player ->
+        exoPlayer?.release()
+        exoPlayer = null
+        exoPlayer = createExoPlayer().also { player ->
             playerView.player = player
+            player.setPlaybackSpeed(viewModel.getPlaybackSpeed())
             player.setMediaItem(MediaItem.fromUri(fullPath))
+            player.addListener(object : Player.Listener {
+                override fun onIsPlayingChanged(isPlaying: Boolean) {
+                    if (!isPlaying && player.playbackState != Player.STATE_BUFFERING) {
+                        saveCurrentPlaybackProgress()
+                    }
+                }
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    if (playbackState == Player.STATE_ENDED) {
+                        lastSavedPositionMs = 0L
+                        viewModel.savePlaybackProgress(getMediaKey(), 0L)
+                    }
+                }
+            })
             player.prepare()
+            val savedProgress = viewModel.getPlaybackProgress(getMediaKey())
+            if (savedProgress > 0L) {
+                player.seekTo(savedProgress)
+            }
             player.playWhenReady = true
 
             val timeBar = playerView.findViewById<DefaultTimeBar>(androidx.media3.ui.R.id.exo_progress)
@@ -388,6 +498,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         binding.fabMenu.visibility = View.VISIBLE
         val pdfFileName = binding.root.findViewById<TextView>(R.id.pdfFileName)
         pdfFileName.text = title
+
+        isResourceFinished = true
 
         renderPdf()
         extractPdfText()
@@ -448,6 +560,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         val imageViewer = binding.root.findViewById<ImageView>(R.id.imageViewer)
         imageFileName.text = title
 
+        isResourceFinished = true
+
         val imageFile = if (isFullPath) filePath?.let { File(it) }
                         else File(externalFilesDir, "ole/$filePath")
         Glide.with(this)
@@ -457,20 +571,34 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             .into(imageViewer)
     }
 
-    private fun setupTextViewer() {
+    private suspend fun setupTextViewer() {
         binding.stubText.visibility = View.VISIBLE
         val textFileTitle = binding.root.findViewById<TextView>(R.id.textFileTitle)
         val textContent = binding.root.findViewById<TextView>(R.id.textContent)
         textFileTitle.text = title
+        isResourceFinished = true
 
         val file = File(externalFilesDir, "ole/$filePath")
-        if (file.exists()) {
-            val text = file.readText()
-            if (type == ResourceType.MARKDOWN) {
-                MarkdownUtils.setMarkdownText(textContent, text)
+        if (!file.exists()) return
+
+        val (text, truncated) = withContext(dispatcherProvider.io) {
+            val raw = file.readText()
+            if (raw.length > MAX_TEXT_VIEWER_CHARS) {
+                raw.substring(0, MAX_TEXT_VIEWER_CHARS) to true
             } else {
-                textContent.text = text
+                raw to false
             }
+        }
+
+        if (!isAdded) return
+
+        if (type == ResourceType.MARKDOWN) {
+            MarkdownUtils.setMarkdownText(textContent, text)
+        } else {
+            textContent.text = text
+        }
+        if (truncated) {
+            Utilities.toast(requireContext(), getString(R.string.text_content_truncated))
         }
     }
 
@@ -550,6 +678,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
     override fun onPause() {
         super.onPause()
+        saveCurrentPlaybackProgress()
         if (activity?.isInPictureInPictureMode != true) {
             exoPlayer?.pause()
         }
@@ -557,6 +686,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     }
 
     override fun onDestroyView() {
+        saveCurrentPlaybackProgress()
         authSessionUpdater?.stop()
         exoPlayer?.release()
         exoPlayer = null
@@ -576,6 +706,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         private const val PIP_ASPECT_RATIO_DENOMINATOR = 1000
         private const val DRAG_SLOP_DP = 24f
         private const val DRAG_THRESHOLD_DP = 150f
+        private const val MAX_TEXT_VIEWER_CHARS = 500_000
         private const val ARG_RESOURCE_ID = "resourceId"
         private const val ARG_FILE_PATH = "filePath"
         private const val ARG_TITLE = "title"

@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class HealthRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
@@ -79,15 +80,7 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
-        val examinations = ArrayList<HealthExamination>(jsonArray.size())
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                examinations.add(HealthExamination.fromJson(jsonDoc))
-            }
-        }
+        val examinations = jsonArray.toSyncDocuments().map { (_, doc) -> HealthExamination.fromJson(doc) }
         healthExaminationDao.upsertAll(examinations)
     }
 
@@ -183,6 +176,10 @@ class HealthRepositoryImpl @Inject constructor(
     override suspend fun getHealthProfile(userId: String): MyHealth? {
         val userModel = userRepository.get().getUserById(userId)
         return decodeHealth(healthExaminationDao.getByIdOrUserId(userId), userModel)
+    }
+
+    override suspend fun getDecryptedHealth(pojo: HealthExamination?, user: UserEntity?): MyHealth? {
+        return decodeHealth(pojo, user)
     }
 
     private fun applyUserDetails(userModel: UserEntity, userData: Map<String, Any?>) {

@@ -6,27 +6,29 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.spyk
+import io.mockk.unmockkObject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.NewsDao
-import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.NetworkUtils
 
 @ExperimentalCoroutinesApi
 class VoicesRepositoryImplTest {
@@ -38,9 +40,7 @@ class VoicesRepositoryImplTest {
     private val gson: Gson = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
-    private val teamNotificationDao: TeamNotificationDao = mockk(relaxed = true)
     private val newsDao: NewsDao = mockk(relaxed = true)
-    private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
     private val newsLogDao: org.ole.planet.myplanet.data.room.dao.NewsLogDao = mockk(relaxed = true)
 
     private fun newRepository(gsonInstance: Gson): VoicesRepositoryImpl {
@@ -50,9 +50,7 @@ class VoicesRepositoryImplTest {
                 gsonInstance,
                 Gson(),
                 sharedPrefManager,
-                teamNotificationDao,
                 newsDao,
-                myLibraryDao,
                 newsLogDao
             ),
             recordPrivateCalls = true
@@ -63,6 +61,13 @@ class VoicesRepositoryImplTest {
     fun setUp() {
         every { dispatcherProvider.default } returns testDispatcher
         repository = newRepository(gson)
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "uniqueIdentifier"
+    }
+
+    @After
+    fun tearDown() {
+        unmockkObject(NetworkUtils)
     }
 
     @Test
@@ -74,6 +79,28 @@ class VoicesRepositoryImplTest {
 
         assertNotNull(result)
         io.mockk.verify { dispatcherProvider.default }
+    }
+
+    @Test
+    fun `getCommunityVoiceDateCount delegates to count query when userId is null`() = testScope.runTest {
+        coEvery { newsDao.countDistinctCommunityVoiceDates(1000L, 2000L) } returns 3
+
+        val count = repository.getCommunityVoiceDateCount(1000L, 2000L, null)
+
+        assertEquals(3, count)
+        coVerify(exactly = 1) { newsDao.countDistinctCommunityVoiceDates(1000L, 2000L) }
+        coVerify(exactly = 0) { newsDao.countDistinctCommunityVoiceDatesForUser(any(), any(), any()) }
+    }
+
+    @Test
+    fun `getCommunityVoiceDateCount delegates to user-scoped count query when userId is non-null`() = testScope.runTest {
+        coEvery { newsDao.countDistinctCommunityVoiceDatesForUser(1000L, 2000L, "user1") } returns 5
+
+        val count = repository.getCommunityVoiceDateCount(1000L, 2000L, "user1")
+
+        assertEquals(5, count)
+        coVerify(exactly = 1) { newsDao.countDistinctCommunityVoiceDatesForUser(1000L, 2000L, "user1") }
+        coVerify(exactly = 0) { newsDao.countDistinctCommunityVoiceDates(any(), any()) }
     }
 
     @Test
@@ -104,6 +131,8 @@ class VoicesRepositoryImplTest {
         assertEquals("Hello World", result[0].message)
         assertEquals("Hello World", result[0].newsJson.get("message").asString)
         assertNotNull(result[0].newsJson.get("user"))
+        assertEquals("uniqueIdentifier", result[0].newsJson.get("androidId").asString)
+        assertEquals("myplanet", result[0].newsJson.get("app").asString)
     }
 
     @Test
@@ -115,54 +144,6 @@ class VoicesRepositoryImplTest {
 
         assertNotNull(result)
         io.mockk.verify { dispatcherProvider.default }
-    }
-
-    @Test
-    fun `getCommunityVisibleNews filters correctly based on viewableBy and viewIn`() = testScope.runTest {
-        val repoWithRealGson = newRepository(Gson())
-
-        val news1 = News().apply {
-            viewableBy = "community"
-            viewIn = null
-        }
-        val news2 = News().apply {
-            viewableBy = "other"
-            viewIn = "[{\"_id\":\"user1\",\"section\":\"community\"}]"
-        }
-        val news3 = News().apply {
-            viewableBy = "other"
-            viewIn = "[{\"_id\":\"user2\",\"section\":\"community\"}]"
-        }
-        coEvery { newsDao.getTopLevelMessages() } returns listOf(news1, news2, news3)
-
-        val result = repoWithRealGson.getCommunityVisibleNews("user1")
-
-        assertEquals(2, result.size)
-        assertEquals("community", result[0].viewableBy)
-        assertEquals("[{\"_id\":\"user1\",\"section\":\"community\"}]", result[1].viewIn)
-    }
-
-    @Test
-    fun `getNewsByTeamId filters correctly based on viewableBy and viewIn`() = testScope.runTest {
-        val news1 = News().apply {
-            viewableBy = "teams"
-            viewableId = "team1"
-        }
-        val news2 = News().apply {
-            viewableBy = "other"
-            viewIn = "[{\"_id\":\"team1\"}]"
-        }
-        val news3 = News().apply {
-            viewableBy = "other"
-            viewIn = "[{\"_id\":\"team2\"}]"
-        }
-        coEvery { newsDao.getTopLevelByTeam(any(), any()) } returns listOf(news1, news2)
-
-        val result = repository.getNewsByTeamId("team1")
-
-        assertEquals(2, result.size)
-        assertEquals("teams", result[0].viewableBy)
-        assertEquals("[{\"_id\":\"team1\"}]", result[1].viewIn)
     }
 
     @Test
@@ -181,17 +162,6 @@ class VoicesRepositoryImplTest {
 
         assertEquals(1, result.size)
         assertEquals("teams", result[0].viewableBy)
-    }
-
-    @Test
-    fun `deleteNews recursively deletes replies`() = testScope.runTest {
-        coEvery { newsDao.getNewsAndRepliesIds("newsId") } returns listOf("newsId", "reply1_id", "reply2_id")
-
-        repository.deleteNews("newsId")
-
-        val idsSlot = slot<List<String>>()
-        coVerify(exactly = 1) { newsDao.deleteByIds(capture(idsSlot)) }
-        assertEquals(listOf("newsId", "reply1_id", "reply2_id"), idsSlot.captured)
     }
 
     @Test

@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.Community
 
 interface CommunityRepository {

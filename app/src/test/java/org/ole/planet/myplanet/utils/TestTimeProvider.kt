@@ -4,6 +4,10 @@ package org.ole.planet.myplanet.utils
 class TestTimeProvider(var currentTime: Long = 0L) : TimeProvider {
     override fun now(): Long = currentTime
 
+    override fun sleep(millis: Long) {
+        advanceBy(millis)
+    }
+
     fun advanceBy(millis: Long) {
         currentTime += millis
     }

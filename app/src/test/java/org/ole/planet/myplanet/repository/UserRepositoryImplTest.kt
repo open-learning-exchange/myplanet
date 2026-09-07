@@ -118,6 +118,31 @@ class UserRepositoryImplTest {
     }
 
     @Test
+    fun `updateSecurityData preserves existing credentials when server response omits them`() = runTest(testDispatcher) {
+        val user = UserEntity().apply {
+            id = "123"
+            name = "john"
+            derived_key = "oldDerivedKey"
+            salt = "oldSalt"
+            password_scheme = "oldScheme"
+            iterations = "10000"
+        }
+        coEvery { userDao.getByName("john") } returns user
+        coEvery { userDao.getById("123") } returns user
+
+        repository.updateSecurityData("john", "userId", "rev", null, null, null, null)
+
+        val slot = slot<UserEntity>()
+        coVerify { userDao.upsert(capture(slot)) }
+        assertEquals("oldDerivedKey", slot.captured.derived_key)
+        assertEquals("oldSalt", slot.captured.salt)
+        assertEquals("oldScheme", slot.captured.password_scheme)
+        assertEquals("10000", slot.captured.iterations)
+        assertEquals("userId", slot.captured._id)
+        assertEquals("rev", slot.captured._rev)
+    }
+
+    @Test
     fun `getDashboardProfile uses user name if fullName is blank`() = runTest(testDispatcher) {
         val user = UserEntity().apply { name = "john"; firstName = "  "; lastName = "  " }
         val spiedRepo = spyk(repository)
@@ -292,6 +317,24 @@ class UserRepositoryImplTest {
         every { sharedPrefManager.getSavedUsers() } returns listOf(User("Full Name", "user2", "pwd", "", "member"))
         repository.resetGuestAsMember("guest1")
         verify(exactly = 0) { sharedPrefManager.setSavedUsers(any()) }
+    }
+
+    @Test
+    fun `getCurrentUserId returns sharedPrefManager userId when non-blank`() = runTest {
+        every { sharedPrefManager.getUserId() } returns "pref_user_id"
+
+        val result = repository.getCurrentUserId()
+
+        assertEquals("pref_user_id", result)
+    }
+
+    @Test
+    fun `getCurrentUserId returns null when preference is blank`() = runTest {
+        every { sharedPrefManager.getUserId() } returns "   "
+
+        val result = repository.getCurrentUserId()
+
+        assertEquals(null, result)
     }
 
     @Test

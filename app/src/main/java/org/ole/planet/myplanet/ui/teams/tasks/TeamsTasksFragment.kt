@@ -174,13 +174,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         // Handle member assignment
         alertTaskBinding.tvAssignMember.setOnClickListener {
             viewLifecycleOwner.lifecycleScope.launch {
-                val userList = teamsTasksViewModel.getJoinedMembers(teamId)
-                val filteredUserList = userList.filter { user -> user.getFullName().isNotBlank() || !user.name.isNullOrBlank() }
-
-                if (filteredUserList.isEmpty()) {
-                    Toast.makeText(context, R.string.no_members_task, Toast.LENGTH_SHORT).show()
-                    return@launch
-                }
+                val filteredUserList = loadAssignableMembers() ?: return@launch
 
                 showMemberSelectionDialog(filteredUserList) { user ->
                     selectedAssignee = user
@@ -227,11 +221,22 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         }
         alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
     }
+
+    private suspend fun loadAssignableMembers(): List<UserEntity>? {
+        val userList = teamsTasksViewModel.getJoinedMembers(teamId)
+        val filteredUserList = userList.filter { user -> user.getFullName().isNotBlank() || !user.name.isNullOrBlank() }
+        if (filteredUserList.isEmpty()) {
+            Toast.makeText(context, R.string.no_members_task, Toast.LENGTH_SHORT).show()
+            return null
+        }
+        return filteredUserList
+    }
+
     private fun showMemberSelectionDialog(filteredUserList: List<UserEntity>, onAssigneeSelected: (UserEntity) -> Unit) {
         var dialogSelectedItem: UserEntity? = filteredUserList.firstOrNull()
 
         val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
-        val adapter = UserArrayAdapter { selectedUser ->
+        val adapter = UserArrayAdapter(requireContext()) { selectedUser ->
             dialogSelectedItem = selectedUser
         }
         alertUsersSpinnerBinding.rvUser.layoutManager = LinearLayoutManager(requireContext())
@@ -354,7 +359,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         refreshJob?.cancel()
         refreshJob = viewLifecycleOwner.lifecycleScope.launch {
             val knownAssigneeIds = adapterTask.getKnownAssigneeIds()
-            val tasksSnapshot = teamViewModel.taskList.value.toList()
+            val tasksSnapshot = teamViewModel.taskList.value
 
             val (taskList, fetchedNames, currentSnapshot) = withContext(dispatcherProvider.io) {
                 val list = when (currentTab) {
@@ -370,9 +375,9 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                     return@withContext Triple(null, null, currentSnapshot)
                 }
 
-                val assigneesToFetch = list.mapNotNull { it.assignee }
-                    .filter { it.isNotBlank() && !knownAssigneeIds.contains(it) }
-                    .distinct()
+                val assigneesToFetch = list.mapNotNullTo(LinkedHashSet()) { task ->
+                    task.assignee?.takeIf { it.isNotBlank() && it !in knownAssigneeIds }
+                }
 
                 val fetchedAssigneeNames = if (assigneesToFetch.isNotEmpty()) teamsTasksViewModel.fetchAssigneeNames(assigneesToFetch) else emptyMap()
                 Triple(list, fetchedAssigneeNames, currentSnapshot)
@@ -413,18 +418,12 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val userList = teamsTasksViewModel.getJoinedMembers(teamId)
-            val filteredUserList = userList.filter { user -> user.getFullName().isNotBlank() || !user.name.isNullOrBlank() }
-
-            if (filteredUserList.isEmpty()) {
-                Toast.makeText(context, R.string.no_members_task, Toast.LENGTH_SHORT).show()
-                return@launch
-            }
+            val filteredUserList = loadAssignableMembers() ?: return@launch
 
             var dialogSelectedItem: UserEntity? = filteredUserList.firstOrNull()
 
             val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
-            val adapter = UserArrayAdapter { selectedUser ->
+            val adapter = UserArrayAdapter(requireContext()) { selectedUser ->
                 dialogSelectedItem = selectedUser
             }
             alertUsersSpinnerBinding.rvUser.layoutManager = LinearLayoutManager(requireContext())

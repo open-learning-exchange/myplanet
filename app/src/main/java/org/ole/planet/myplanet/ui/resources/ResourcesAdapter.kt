@@ -21,6 +21,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnLibraryItemSelectedListener
 import org.ole.planet.myplanet.databinding.ItemLibraryGridBinding
@@ -34,6 +35,7 @@ import org.ole.planet.myplanet.utils.LibraryType
 import org.ole.planet.myplanet.utils.LibraryTypeClassifier
 import org.ole.planet.myplanet.utils.ListViewMode
 import org.ole.planet.myplanet.utils.PdfThumbnailLoader
+import org.ole.planet.myplanet.utils.StableIdGenerator
 import org.ole.planet.myplanet.utils.Utilities
 
 class ResourcesAdapter(
@@ -52,9 +54,22 @@ class ResourcesAdapter(
     private val locallyOfflineIds = mutableSetOf<String>()
     private val externalFilesDir: File? by lazy { FileUtils.getExternalFilesDir(context) }
     private var adapterScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
+    private val htmlCoverCache = mutableMapOf<String, File?>()
+
+    init {
+        setHasStableIds(true)
+    }
+
+    override fun getItemId(position: Int): Long {
+        val listModel = getItem(position)
+        val id = StableIdGenerator.generateStringId(listModel.item.id)
+        return if (id != RecyclerView.NO_ID) id else StableIdGenerator.generateFallbackId(listModel)
+    }
 
     companion object {
         const val PAYLOAD_SELECTION = "PAYLOAD_SELECTION"
+        const val PAYLOAD_VIEW_MODE = "PAYLOAD_VIEW_MODE"
+        const val PAYLOAD_IDENTITY = "PAYLOAD_IDENTITY"
         private const val VIEW_TYPE_GRID = 0
         private const val VIEW_TYPE_LIST = 1
         private const val GRID_COVER_WIDTH_DP = 84
@@ -114,7 +129,7 @@ class ResourcesAdapter(
     fun setViewMode(mode: ListViewMode, onChanged: (() -> Unit)? = null) {
         if (viewMode != mode) {
             viewMode = mode
-            notifyItemRangeChanged(0, itemCount)
+            notifyItemRangeChanged(0, itemCount, PAYLOAD_VIEW_MODE)
         }
         onChanged?.invoke()
     }
@@ -130,7 +145,7 @@ class ResourcesAdapter(
             changed = true
         }
         if (changed) {
-            notifyItemRangeChanged(0, itemCount)
+            notifyItemRangeChanged(0, itemCount, PAYLOAD_IDENTITY)
         }
     }
 
@@ -171,6 +186,19 @@ class ResourcesAdapter(
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
         super.onDetachedFromRecyclerView(recyclerView)
         adapterScope.cancel()
+        htmlCoverCache.clear()
+    }
+
+    override fun onCurrentListChanged(previousList: MutableList<ResourceListModel>, currentList: MutableList<ResourceListModel>) {
+        super.onCurrentListChanged(previousList, currentList)
+        val currentMap = currentList.associateBy { it.library.id }
+        previousList.forEach { prev ->
+            val id = prev.library.id
+            val current = currentMap[id]
+            if (current == null || current.library.resourceLocalAddress != prev.library.resourceLocalAddress) {
+                htmlCoverCache.remove(id)
+            }
+        }
     }
 
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
@@ -198,6 +226,8 @@ class ResourcesAdapter(
         }
     }
 
+    fun getLocallyOfflineIds(): Set<String> = locallyOfflineIds.toSet()
+
     override fun onBindViewHolder(
         holder: RecyclerView.ViewHolder,
         position: Int,
@@ -209,12 +239,23 @@ class ResourcesAdapter(
         }
         val model = getItem(position) ?: return
         val flatPayloads = payloads.flatMap { it as? List<*> ?: listOf(it) }
-        if (flatPayloads.contains(PAYLOAD_SELECTION)) {
+
+        var partialHandled = false
+        if (flatPayloads.contains(PAYLOAD_SELECTION) || flatPayloads.contains(PAYLOAD_IDENTITY)) {
             when (holder) {
-                is GridViewHolder -> bindSelectionAndDownload(holder.binding.checkbox, holder.binding.ivDownloaded, model)
-                is ListViewHolder -> bindSelectionAndDownload(holder.binding.checkbox, holder.binding.ivDownloaded, model)
+                is GridViewHolder -> {
+                    bindSelectionAndDownload(holder.binding.checkbox, holder.binding.ivDownloaded, model)
+                    if (flatPayloads.contains(PAYLOAD_IDENTITY)) bindClicks(holder.itemView, holder.binding.checkbox, model)
+                }
+                is ListViewHolder -> {
+                    bindSelectionAndDownload(holder.binding.checkbox, holder.binding.ivDownloaded, model)
+                    if (flatPayloads.contains(PAYLOAD_IDENTITY)) bindClicks(holder.itemView, holder.binding.checkbox, model)
+                }
             }
-        } else {
+            partialHandled = true
+        }
+
+        if (flatPayloads.contains(PAYLOAD_VIEW_MODE) || !partialHandled) {
             super.onBindViewHolder(holder, position, payloads)
         }
     }
@@ -282,6 +323,11 @@ class ResourcesAdapter(
                 val targetWidthPx = (coverWidthDp * context.resources.displayMetrics.density).toInt()
                 adapterScope.launch { showPdfPreview(ivPreview, ivTypeIcon, file, targetWidthPx) }
             }
+            mimeType?.contains("html") == true -> {
+                showTypeIconOnly(ivPreview, ivTypeIcon)
+                val resourceDir = File(dir, "ole/$libraryId")
+                adapterScope.launch { showHtmlPreview(ivPreview, ivTypeIcon, libraryId, resourceDir) }
+            }
             else -> {
                 showTypeIconOnly(ivPreview, ivTypeIcon)
                 null
@@ -339,6 +385,21 @@ class ResourcesAdapter(
             ivTypeIcon.visibility = View.GONE
             ivPreview.visibility = View.VISIBLE
             ivPreview.setImageBitmap(bitmap)
+        } else {
+            showTypeIconOnly(ivPreview, ivTypeIcon)
+        }
+    }
+
+    private suspend fun showHtmlPreview(ivPreview: ImageView, ivTypeIcon: ImageView, libraryId: String, resourceDir: File) {
+        val coverImage = if (htmlCoverCache.containsKey(libraryId)) {
+            htmlCoverCache.getValue(libraryId)
+        } else {
+            withContext(dispatcherProvider.io) { FileUtils.findHtmlCoverImage(resourceDir) }.also {
+                htmlCoverCache[libraryId] = it
+            }
+        }
+        if (coverImage != null) {
+            showImagePreview(ivPreview, ivTypeIcon, coverImage)
         } else {
             showTypeIconOnly(ivPreview, ivTypeIcon)
         }
@@ -412,6 +473,8 @@ class ResourcesAdapter(
                 }
                 listener?.onSelectedListChange(selectedItemsMap.values.toList())
             }
+        } else {
+            checkbox.setOnClickListener(null)
         }
     }
 

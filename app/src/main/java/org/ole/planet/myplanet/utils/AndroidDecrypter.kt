@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utils
 
+import android.util.Log
 import de.rtner.security.auth.spi.PBKDF2Engine
 import de.rtner.security.auth.spi.PBKDF2Parameters
 import java.security.MessageDigest
@@ -13,6 +14,9 @@ import javax.crypto.spec.SecretKeySpec
 
 class AndroidDecrypter {
     companion object {
+        private const val TAG = "AndroidDecrypter"
+        private val HEX_CHARS = "0123456789abcdef".toCharArray()
+
         @Throws(Exception::class)
         fun encrypt(plainText: String, key: String?, iv: String?): String {
             val clean = plainText.toByteArray()
@@ -44,11 +48,13 @@ class AndroidDecrypter {
         }
 
         private fun bytesToHex(hashInBytes: ByteArray): String {
-            val sb = StringBuilder()
-            for (b in hashInBytes) {
-                sb.append(String.format("%02x", b))
+            val result = CharArray(hashInBytes.size * 2)
+            for (i in hashInBytes.indices) {
+                val v = hashInBytes[i].toInt() and 0xFF
+                result[i * 2] = HEX_CHARS[v ushr 4]
+                result[i * 2 + 1] = HEX_CHARS[v and 0x0F]
             }
-            return sb.toString()
+            return String(result)
         }
 
         fun decrypt(encrypted: String?, key: String?, initVector: String?): String? {
@@ -66,17 +72,25 @@ class AndroidDecrypter {
                 // Invariant: New-format encrypted data prepends the IV to the ciphertext.
                 // We check if the payload starts with the provided IV to decide whether to strip it.
                 // This maintains backward compatibility with legacy data containing only the ciphertext.
-                val actualEncryptedBytes = if (encryptedBytes.size >= ivBytes.size && ivBytes.contentEquals(encryptedBytes.sliceArray(0 until ivBytes.size))) {
-                    encryptedBytes.sliceArray(ivBytes.size until encryptedBytes.size)
+                val hasIvPrefix = startsWith(encryptedBytes, ivBytes)
+                val original = if (hasIvPrefix) {
+                    cipher.doFinal(encryptedBytes, ivBytes.size, encryptedBytes.size - ivBytes.size)
                 } else {
-                    encryptedBytes
+                    cipher.doFinal(encryptedBytes)
                 }
-                val original = cipher.doFinal(actualEncryptedBytes)
                 return String(original)
             } catch (ex: Exception) {
-                ex.printStackTrace()
+                Log.e(TAG, "Decryption failed", ex)
             }
             return null
+        }
+
+        private fun startsWith(array: ByteArray, prefix: ByteArray): Boolean {
+            if (array.size < prefix.size) return false
+            for (i in prefix.indices) {
+                if (array[i] != prefix[i]) return false
+            }
+            return true
         }
 
         fun androidDecrypter(usrId: String?, usrRawPwd: String?, dbPwdKeyValue: String?, dbSalt: String?): Boolean {
@@ -87,11 +101,12 @@ class AndroidDecrypter {
                 val expected = try {
                     hexStringToByteArray(dbPwdKeyValue)
                 } catch (e: Exception) {
+                    Log.e(TAG, "Failed to parse dbPwdKeyValue hex string", e)
                     return false
                 }
                 return MessageDigest.isEqual(dk, expected)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Android decrypter failed", e)
             }
             return false
         }
@@ -103,7 +118,7 @@ class AndroidDecrypter {
                 random.nextBytes(iv)
                 return bytesToHex(iv)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to generate IV", e)
             }
             return ""
         }
@@ -118,7 +133,7 @@ class AndroidDecrypter {
                 val binary = secretKey.encoded
                 return bytesToHex(binary)
             } catch (e: NoSuchAlgorithmException) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to generate key", e)
             }
             return null
         }

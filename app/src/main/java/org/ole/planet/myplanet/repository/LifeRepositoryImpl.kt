@@ -5,11 +5,9 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
-import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.services.SharedPrefManager
 
@@ -22,26 +20,35 @@ data class CachedMyLifeItem(
 class LifeRepositoryImpl @Inject constructor(
     private val myLifeDao: MyLifeDao,
     private val sharedPrefManager: SharedPrefManager,
-    private val gson: Gson,
-    @ApplicationScope private val appScope: CoroutineScope
+    private val gson: Gson
 ) : LifeRepository {
 
     private val MY_LIFE_CACHE_PREFIX = "myLifeCache_"
     private val seedMutex = Mutex()
 
-    override suspend fun updateVisibility(isVisible: Boolean, myLifeId: String) {
+    private fun normalizeUserId(userId: String?): String? {
+        return userId?.takeIf { it.isNotBlank() && it != "--" }
+    }
+
+    override suspend fun updateVisibility(isVisible: Boolean, myLifeId: String): List<MyLife> {
         myLifeDao.updateVisibility(myLifeId, isVisible)
         val managedLives = myLifeDao.getByIds(listOf(myLifeId))
-        val userId = managedLives.firstOrNull()?.userId ?: sharedPrefManager.getUserId()
-        if (userId.isNotEmpty()) {
-            val updatedLives = getMyLifeByUserId(userId, ensureLatest = true)
-            cacheMyLifeItems(userId, updatedLives)
-        }
+        val rawUserId = managedLives.firstOrNull()?.userId ?: sharedPrefManager.getUserId()
+        val effectiveUserId = normalizeUserId(rawUserId)
+        val updatedLives = getMyLifeByUserId(effectiveUserId)
+        cacheMyLifeItems(effectiveUserId ?: "--", updatedLives)
+        return updatedLives
     }
 
     override suspend fun updateMyLifeListOrder(list: List<MyLife>) {
-        val userId = list.firstOrNull()?.userId
-        val idToIndex = list.mapIndexed { index, item -> item._id to index }.toMap()
+        if (list.isEmpty()) return
+        val rawUserId = list.firstOrNull()?.userId ?: sharedPrefManager.getUserId()
+        val effectiveUserId = normalizeUserId(rawUserId)
+        val idToIndex = buildMap(list.size) {
+            list.forEachIndexed { index, item ->
+                put(item._id, index)
+            }
+        }
         val ids = idToIndex.keys.filter { it.isNotEmpty() }
         if (ids.isEmpty()) return
 
@@ -58,33 +65,48 @@ class LifeRepositoryImpl @Inject constructor(
 
         if (changed.isNotEmpty()) {
             myLifeDao.update(changed)
-            if (userId != null) {
-                val updatedLives = getMyLifeByUserId(userId, ensureLatest = true)
-                cacheMyLifeItems(userId, updatedLives)
-            }
         }
+        val updatedLives = getMyLifeByUserId(effectiveUserId)
+        cacheMyLifeItems(effectiveUserId ?: "--", updatedLives)
     }
 
     private fun MyLife.dedupKey(): Any {
         return imageId?.takeIf { it.isNotBlank() }
             ?: title?.takeIf { it.isNotBlank() }
             ?: _id.takeIf { it.isNotBlank() }
-            ?: System.identityHashCode(this)
+            ?: listOf(userId, isVisible, weight)
     }
 
-    override suspend fun getMyLifeByUserId(userId: String?, ensureLatest: Boolean): List<MyLife> {
-        val effectiveUserId = userId?.ifEmpty { null }
-        return myLifeDao.getByUserId(effectiveUserId).distinctBy { it.dedupKey() }
+    override suspend fun getMyLifeByUserId(userId: String?, defaultItems: List<MyLife>): List<MyLife> {
+        val effectiveUserId = normalizeUserId(userId)
+        val items = myLifeDao.getByUserId(effectiveUserId).distinctBy { it.dedupKey() }.sortedBy { it.weight }
+        if (items.isNotEmpty() || defaultItems.isEmpty()) {
+            return items
+        }
+        val seeded = seedMyLifeIfEmpty(effectiveUserId, defaultItems)
+        if (seeded.isNotEmpty()) {
+            return seeded
+        }
+        return myLifeDao.getByUserId(effectiveUserId).distinctBy { it.dedupKey() }.sortedBy { it.weight }
+    }
+
+    private suspend fun getVisibleMyLifeByUserId(userId: String?): List<MyLife> {
+        val effectiveUserId = normalizeUserId(userId)
+        return myLifeDao.getVisibleByUserId(effectiveUserId).distinctBy { it.dedupKey() }.sortedBy { it.weight }
     }
 
     override suspend fun getMyLifeForDashboard(userId: String, seedBase: List<MyLife>): List<MyLife> {
-        val effectiveUserId = userId.ifEmpty { null }
-        val allForUser = getMyLifeByUserId(effectiveUserId, ensureLatest = false)
-        if (allForUser.isNotEmpty()) {
-            return allForUser.filter { it.isVisible }.distinctBy { it.dedupKey() }
+        val effectiveUserId = normalizeUserId(userId)
+        val visibleForUser = getVisibleMyLifeByUserId(effectiveUserId)
+        if (visibleForUser.isNotEmpty()) {
+            return visibleForUser
+        }
+        if (myLifeDao.countByUserId(effectiveUserId) > 0) {
+            return emptyList()
         }
 
-        val json = sharedPrefManager.rawPreferences.getString("$MY_LIFE_CACHE_PREFIX$userId", null)
+        val cacheKey = effectiveUserId ?: "--"
+        val json = sharedPrefManager.rawPreferences.getString("$MY_LIFE_CACHE_PREFIX$cacheKey", null)
         if (json != null) {
             val cached: List<CachedMyLifeItem>? = try {
                 val type = object : TypeToken<List<CachedMyLifeItem>>() {}.type
@@ -93,19 +115,24 @@ class LifeRepositoryImpl @Inject constructor(
                 null
             }
             if (cached != null) {
-                return cached.filter { it.isVisible }.map { item ->
-                    MyLife(item.imageId, userId, item.title).apply {
-                        isVisible = item.isVisible
-                        weight = item.weight
+                return cached.mapNotNull { item ->
+                    if (item.isVisible) {
+                        MyLife(item.imageId, effectiveUserId, item.title).apply {
+                            isVisible = item.isVisible
+                            weight = item.weight
+                        }
+                    } else {
+                        null
                     }
-                }
+                }.sortedBy { it.weight }
             }
         }
 
-        seedMyLifeIfEmpty(effectiveUserId, seedBase)
-        val seeded = getMyLifeByUserId(effectiveUserId, ensureLatest = true)
-        if (userId.isNotEmpty()) cacheMyLifeItems(userId, seeded)
-        return seeded.filter { it.isVisible }.distinctBy { it.dedupKey() }
+        val seeded = seedMyLifeIfEmpty(effectiveUserId, seedBase).ifEmpty {
+            getMyLifeByUserId(effectiveUserId)
+        }
+        cacheMyLifeItems(cacheKey, seeded)
+        return seeded.filter { it.isVisible }.sortedBy { it.weight }
     }
 
     private fun cacheMyLifeItems(userId: String, items: List<MyLife>) {
@@ -113,9 +140,10 @@ class LifeRepositoryImpl @Inject constructor(
         sharedPrefManager.rawPreferences.edit { putString("$MY_LIFE_CACHE_PREFIX$userId", gson.toJson(cached)) }
     }
 
-    override suspend fun seedMyLifeIfEmpty(userId: String?, items: List<MyLife>) {
-        seedMutex.withLock {
-            val existing = myLifeDao.countByUserId(userId)
+    override suspend fun seedMyLifeIfEmpty(userId: String?, items: List<MyLife>): List<MyLife> {
+        val effectiveUserId = normalizeUserId(userId)
+        return seedMutex.withLock {
+            val existing = myLifeDao.countByUserId(effectiveUserId)
             if (existing == 0) {
                 var weight = 1
                 val newItems = items.map { item ->
@@ -124,11 +152,14 @@ class LifeRepositoryImpl @Inject constructor(
                         title = item.title
                         imageId = item.imageId
                         this.weight = weight++
-                        this.userId = item.userId
+                        this.userId = effectiveUserId
                         isVisible = true
                     }
                 }
                 myLifeDao.insertAll(newItems)
+                newItems.distinctBy { it.dedupKey() }.sortedBy { it.weight }
+            } else {
+                emptyList()
             }
         }
     }

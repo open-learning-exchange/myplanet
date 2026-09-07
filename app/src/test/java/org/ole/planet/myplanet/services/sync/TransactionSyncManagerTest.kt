@@ -30,7 +30,6 @@ import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TagsRepository
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
@@ -97,7 +96,8 @@ class TransactionSyncManagerTest {
             progressRepository,
             surveysRepository,
             dispatcherProvider,
-            userSessionManager
+            userSessionManager,
+            mockk(relaxed = true)
         )
     }
 

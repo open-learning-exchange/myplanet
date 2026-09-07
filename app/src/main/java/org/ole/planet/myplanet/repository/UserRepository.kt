@@ -70,6 +70,7 @@ interface UserRepository {
 
     suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String>
 
+    suspend fun getCurrentUserId(): String?
     suspend fun getUserModel(): UserEntity?
     suspend fun getUserProfile(): UserEntity?
     suspend fun getUserImageUrl(): String?
@@ -79,6 +80,7 @@ interface UserRepository {
     suspend fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): UserEntity?
     suspend fun hasAtLeastOneUser(): Boolean
     suspend fun hasUserSyncAction(userId: String?): Boolean
+    suspend fun hasActiveUserSyncAction(): Boolean
     suspend fun initializeAchievement(achievementId: String): Achievement?
     suspend fun updateAchievement(
         achievementId: String,
