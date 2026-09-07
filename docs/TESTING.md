@@ -91,6 +91,23 @@ A controllable `TimeProvider`: `TestTimeProvider(var currentTime: Long = 0L)` wi
 
 ## How to Test Each Layer
 
+### The Robolectric application class
+
+`app/src/test/resources/robolectric.properties` sets `application=android.app.Application`
+for the whole `src/test/` source set. Leave it that way; ask for a different one with
+`@Config(application = ...)` only when a test needs it (`HiltTestApplication` for
+`@HiltAndroidTest`).
+
+Without that default, Robolectric boots the real `@HiltAndroidApp MainApplication` for
+every test that doesn't say otherwise, and its `onCreate()` launches fire-and-forget
+coroutines on the real `Dispatchers.IO`/`Default` that outlive the test class. A later
+class that `mockkObject(MainApplication.Companion)`s and unmocks it turns their next
+companion call into `MockKException`, which escapes to the global handler — where
+`kotlinx-coroutines-test` queues it and charges it to whichever test calls `runTest` next.
+
+So `UncaughtExceptionsBeforeTest` names the victim, not the cause: read the `Suppressed:`
+stack trace in the uploaded `test-reports-*` artifact to find the coroutine that threw.
+
 ### Robolectric SDK levels
 
 **Don't pin `@Config(sdk = [...])` unless the test is actually about that API level.** Robolectric builds one sandbox per distinct (SDK level, config) per test fork and each sandbox loads a 95-215 MB `android-all-instrumented` jar, so every extra level the suite mentions is paid again — up to `maxParallelForks` (4) times per shard. That cost shows up as a multi-second first test in the class: it was 16.0s for `TeamsRepositoryBulkInsertTransactionTest` (SDK 26) against a 0.43s average for the rest of its methods.
