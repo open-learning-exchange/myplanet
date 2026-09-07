@@ -248,16 +248,16 @@
   "lastSynced": "Última sincronización: {time}",
   "neverSynced": "nunca sincronizado",
   "justNow": "Ahora mismo",
-  "minutesAgo": "{count, plural, =1{1 minute ago} other{{count} minutes ago}}",
-  "@minutesAgo": {
+  "relativeMinutesAgo": "{count, plural, =1{1 minute ago} other{{count} minutes ago}}",
+  "@relativeMinutesAgo": {
     "x-mt": true
   },
-  "hoursAgo": "{count, plural, =1{1 hour ago} other{{count} hours ago}}",
-  "@hoursAgo": {
+  "relativeHoursAgo": "{count, plural, =1{1 hour ago} other{{count} hours ago}}",
+  "@relativeHoursAgo": {
     "x-mt": true
   },
-  "daysAgo": "{count, plural, =1{1 day ago} other{{count} days ago}}",
-  "@daysAgo": {
+  "relativeDaysAgo": "{count, plural, =1{1 day ago} other{{count} days ago}}",
+  "@relativeDaysAgo": {
     "x-mt": true
   },
   "syncingResources": "Sincronizando recursos... {completed} de {total}",
@@ -2142,5 +2142,9 @@
   "storageAvailable": "Almacenamiento disponible:",
   "joinRequestPrefix": "Solicitud de Unión:",
   "userRequestedToJoinTeam": "{user} ha solicitado unirse a {team}",
-  "markAsRead": "Marcar como leído"
+  "markAsRead": "Marcar como leído",
+  "minutesAgo": "Hace {count} min",
+  "hoursAgo": "Hace {count} h",
+  "yesterday": "Ayer",
+  "daysAgo": "Hace {count} día(s)"
 }

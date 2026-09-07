@@ -48,6 +48,118 @@ void main() {
     expect(await repository.watch('user-1').first, isEmpty);
   });
 
+  group('the two mark-as-read paths, which Kotlin keeps separate', () {
+    // Kotlin has *two* `markAsRead` DAO queries differing in exactly one
+    // column, and two repository methods over them, and they belong to two
+    // different screens. Getting this wrong is easy: the first reading of it in
+    // this phase concluded the notifications screen must not restamp, which is
+    // the opposite of what the screen does.
+    //
+    //   * `NotificationDao.markAsRead(notificationId)` (`:15-16`) never
+    //     mentions `createdAt`. Its repository method is
+    //     `markNotificationAsRead(id, userId)`, which also handles a
+    //     `summary_`-prefixed id — and its callers are `DashboardActivity`
+    //     (`:702`) and `NotificationActionReceiver` (`:34,41,52`), i.e. the
+    //     Android tray. `summary_` ids are minted by
+    //     `NotificationUtils.createSummaryNotification` (`:190`) for the tray
+    //     and are never rows in the screen's list.
+    //   * `NotificationDao.markAsRead(ids, createdAt)` (`:45-46`) does stamp.
+    //     Its repository method is `markNotificationsAsRead(Set<String>)`, and
+    //     `NotificationsViewModel.markAsRead(id)` calls it with a **set of
+    //     one** (`:207-209`) — so the screen's row tap and its per-row
+    //     *Mark as read* button restamp `createdAt` in the Android app.
+    //
+    // That restamp is a quirk, not a bug to fix: the list is sorted
+    // `isRead ASC, createdAt DESC`, so a row jumps to the top of its group on
+    // being read, and with a relative timestamp it now reads "Just now". Both
+    // apps have to agree or the two lists order differently.
+    //
+    // The port had one method blending the two: the summary branch of the tray
+    // handler with the stamping of the screen's. The screen accidentally
+    // matched; the tray path did not, and it has no caller in the port yet
+    // (`NotificationActionReceiver` is unported), which is exactly how it went
+    // unnoticed.
+    Future<void> seed(String id, {bool fromServer = false}) =>
+        database.notificationDao.upsert(
+          NotificationsCompanion.insert(
+            id: id,
+            userId: 'user-1',
+            type: const Value('task'),
+            message: const Value('Read chapter 3 is due'),
+            createdAt: 500,
+            isFromServer: Value(fromServer),
+          ),
+        );
+
+    test(
+      'the screen path restamps createdAt, because the Kotlin does',
+      () async {
+        await seed('task-1');
+
+        final marked = await repository.markAsRead(['task-1']);
+
+        final row = (await repository.watch('user-1').first).single;
+        expect(marked, {'task-1'});
+        expect(row.isRead, isTrue);
+        expect(row.createdAt, 1234, reason: 'the injected clock, not the wall');
+      },
+    );
+
+    test(
+      'the tray path leaves createdAt alone, because that SQL has no createdAt',
+      () async {
+        await seed('task-1');
+
+        await repository.markNotificationAsRead('task-1', 'user-1');
+
+        final row = (await repository.watch('user-1').first).single;
+        expect(row.isRead, isTrue);
+        expect(row.createdAt, 500);
+      },
+    );
+
+    test('both paths still flag a server row for read-state upload', () async {
+      // The `needsSync` half of both statements has to survive: dropping it
+      // strands the read locally and the next sync pulls the row back unread.
+      await seed('screen-row', fromServer: true);
+      await seed('tray-row', fromServer: true);
+
+      await repository.markAsRead(['screen-row']);
+      await repository.markNotificationAsRead('tray-row', 'user-1');
+
+      final rows = {
+        for (final row in await repository.watch('user-1').first) row.id: row,
+      };
+      expect(rows['screen-row']!.needsSync, isTrue);
+      expect(rows['tray-row']!.needsSync, isTrue);
+    });
+
+    test('the summary path leaves createdAt alone too', () async {
+      // `markSummaryAsRead`'s SQL has no `createdAt` either, and the port's
+      // already matched. Pinned so the tray fix above cannot be "made
+      // consistent" in the wrong direction.
+      await seed('task-1');
+
+      await repository.markNotificationAsRead('summary_task', 'user-1');
+
+      expect((await repository.watch('user-1').first).single.createdAt, 500);
+    });
+
+    test('the screen path reports only the ids that existed', () async {
+      // `markNotificationsAsRead` filters through `getIdsByIds` and returns
+      // what it found (`NotificationsRepositoryImpl.kt:113-120`). The caller
+      // uses that set to update the list in place, so reporting an id that is
+      // not in the table would redraw a row the screen does not have — and
+      // `NotificationsViewModel.markAsRead` gates its whole in-memory update on
+      // `markedIds.contains(notificationId)`.
+      await seed('task-1');
+
+      expect(await repository.markAsRead(['task-1', 'ghost']), {'task-1'});
+      expect(await repository.markAsRead(const <String>[]), isEmpty);
+      expect(await repository.markAsRead(['ghost']), isEmpty);
+    });
+  });
+
   test('warns only at or below ten percent storage availability', () async {
     await repository.updateStorageNotification('user-1', 10);
     expect((await repository.watch('user-1').first).single.message, '10%');

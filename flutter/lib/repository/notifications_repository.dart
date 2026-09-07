@@ -51,20 +51,62 @@ class NotificationsRepository {
   Stream<int> watchUnreadCount(String userId, {bool isAdmin = false}) =>
       _dao.watchUnreadCount(userId, isAdmin: isAdmin);
 
-  Future<int> markAsRead(Iterable<String> ids) => _dao.markAsRead(ids);
+  /// Port of `NotificationsRepositoryImpl.markNotificationsAsRead`
+  /// (`:113-120`) — the **notifications screen's** mark-as-read, for one row or
+  /// for a selection.
+  ///
+  /// `NotificationsViewModel.markAsRead(id)` calls it with a set of one
+  /// (`:207-209`), so the per-row *Mark as read* button and a row tap come
+  /// through here too, not through [markNotificationAsRead]. That matters
+  /// because this DAO overload stamps `createdAt` and the other does not: in
+  /// the Android app a row jumps to the top of its group when read (the list is
+  /// sorted `isRead ASC, createdAt DESC`) and its timestamp reads "Just now".
+  /// A quirk, and one both apps have to share or their lists order
+  /// differently.
+  ///
+  /// Returns the ids that actually existed, which is what the Kotlin returns
+  /// and what its caller uses to update the in-memory list: an id that is not
+  /// in the table would otherwise be reported as marked and the row it names
+  /// redrawn as read. The stamped `createdAt` is the bulk DAO overload's, not
+  /// an accident — see [NotificationDao.markOneAsRead].
+  Future<Set<String>> markAsRead(Iterable<String> ids) async {
+    final wanted = ids.toList(growable: false);
+    if (wanted.isEmpty) return const {};
+    final existing = (await _dao.getByIds(wanted)).keys.toSet();
+    if (existing.isEmpty) return const {};
+    // The repository's own clock, as the Kotlin passes its own `Date()`.
+    // Reading the wall clock inside the DAO instead left the one column this
+    // path deliberately writes untestable.
+    await _dao.markAsRead(existing, createdAt: _now().millisecondsSinceEpoch);
+    return existing;
+  }
 
-  /// Port of `NotificationsRepositoryImpl.markNotificationAsRead` — a
-  /// `summary_`-prefixed id marks every notification of that type for [userId]
-  /// read (the dashboard's "mark all" by type); any other id marks a single
-  /// row. Server-originated rows are flagged for read-state upload.
+  /// Port of `NotificationsRepositoryImpl.markNotificationAsRead` (`:36-43`) —
+  /// the **tray and dashboard** handler, not the notifications screen's.
+  ///
+  /// A `summary_`-prefixed id marks every notification of that type for
+  /// [userId] read; any other id marks a single row. Server-originated rows are
+  /// flagged for read-state upload. Neither statement touches `createdAt`,
+  /// which is what separates this from [markAsRead] — see the note there.
+  ///
+  /// Its one Kotlin caller is `DashboardActivity.markDatabaseNotificationAsRead`
+  /// (`:701-703`), reached when the user taps an Android tray notification's
+  /// *body*; `summary_` ids are minted only by
+  /// `NotificationUtils.createSummaryNotification` (`:190`) for the tray. The
+  /// tray's *Mark as Read* action button is **not** this path — it goes through
+  /// `NotificationActionReceiver` (`:81`) to [markAsRead], and so does stamp.
+  /// The port has no tray handling yet, so this has no caller: it is kept (and
+  /// pinned by tests) because the screen was wired to it by mistake, and the
+  /// phase that ports tray actions needs it to be right.
   Future<int> markNotificationAsRead(String id, String? userId) {
     if (id.startsWith('summary_')) {
       return _dao.markSummaryAsRead(userId, id.substring('summary_'.length));
     }
-    return _dao.markAsRead([id]);
+    return _dao.markOneAsRead(id);
   }
 
-  Future<int> markAllAsRead(String userId) => _dao.markAllAsRead(userId);
+  Future<int> markAllAsRead(String userId) =>
+      _dao.markAllAsRead(userId, createdAt: _now().millisecondsSinceEpoch);
   Future<int> delete(String id) => _dao.deleteById(id);
 
   /// Port of `TransactionSyncManager.syncNotificationReads`.

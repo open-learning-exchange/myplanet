@@ -41,7 +41,7 @@ void main() {
     );
     expect(await database.notificationDao.watchUnreadCount('user-1').first, 2);
 
-    await database.notificationDao.markAsRead(['newer']);
+    await database.notificationDao.markAsRead(['newer'], createdAt: 555);
     expect(
       (await database.notificationDao
               .watchForUser('user-1', filter: 'read')
@@ -52,8 +52,20 @@ void main() {
     );
     expect(await database.notificationDao.watchUnreadCount('user-1').first, 1);
 
-    await database.notificationDao.markAllAsRead('user-1');
+    await database.notificationDao.markAllAsRead('user-1', createdAt: 999);
     expect(await database.notificationDao.watchUnreadCount('user-1').first, 0);
+    // `markAllUnreadAsRead(userId, createdAt)` (`NotificationDao.kt:48-49`)
+    // stamps, and now that the row renders a *relative* time the stamp is
+    // visible: everything just marked reads "Just now". `older` was already
+    // read by the line above, so it keeps its own createdAt — the `isRead = 0`
+    // scope is what stops one tap rewriting the whole history.
+    final marked = {
+      for (final row
+          in await database.notificationDao.watchForUser('user-1').first)
+        row.id: row.createdAt,
+    };
+    expect(marked['older'], 999);
+    expect(marked['newer'], 555, reason: 'already read, so out of scope');
     await database.notificationDao.deleteById('older');
     expect(
       await database.notificationDao.watchForUser('user-1').first,

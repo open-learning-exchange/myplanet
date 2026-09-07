@@ -44,16 +44,16 @@
   },
   "neverSynced": "waligeyn la isku midayn",
   "justNow": "Hadda uun",
-  "minutesAgo": "{count, plural, =1{1 minute ago} other{{count} minutes ago}}",
-  "@minutesAgo": {
+  "relativeMinutesAgo": "{count, plural, =1{1 minute ago} other{{count} minutes ago}}",
+  "@relativeMinutesAgo": {
     "x-mt": true
   },
-  "hoursAgo": "{count, plural, =1{1 hour ago} other{{count} hours ago}}",
-  "@hoursAgo": {
+  "relativeHoursAgo": "{count, plural, =1{1 hour ago} other{{count} hours ago}}",
+  "@relativeHoursAgo": {
     "x-mt": true
   },
-  "daysAgo": "{count, plural, =1{1 day ago} other{{count} days ago}}",
-  "@daysAgo": {
+  "relativeDaysAgo": "{count, plural, =1{1 day ago} other{{count} days ago}}",
+  "@relativeDaysAgo": {
     "x-mt": true
   },
   "syncedResources": "{count, plural, =0{No resources synced} =1{1 resource synced} other{{count} resources synced}}",
@@ -509,5 +509,9 @@
   "storageAvailable": "Xaddida maaliyadeed waa heli kara:",
   "joinRequestPrefix": "Codsi ku biirid:",
   "userRequestedToJoinTeam": "{user} ayaa codsaday ku biirista {team}",
-  "markAsRead": "Calaamadee sidii la aqriyay"
+  "markAsRead": "Calaamadee sidii la aqriyay",
+  "minutesAgo": "{count} daqiiqo ka hor",
+  "hoursAgo": "{count} saacad ka hor",
+  "yesterday": "Shalay",
+  "daysAgo": "{count} maalmood ka hor"
 }

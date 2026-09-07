@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
-
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/notifications_provider.dart';
 import '../../repository/notifications_repository.dart';
+import '../components/relative_time.dart';
 import '../router.dart';
 import 'notification_destination.dart';
 import 'notification_format.dart';
@@ -263,11 +262,17 @@ class _NotificationTile extends ConsumerWidget {
               context: formatContext,
             ),
           ),
+          // `NotificationsAdapter.formatRelativeTime` (`:152-163`), not the
+          // stored millisecond value formatted. `System.currentTimeMillis()` is
+          // read once per bind there and once per build here: neither app runs
+          // a ticker, so a row's timestamp text is frozen until it rebuilds.
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
-              DateFormat.yMMMd().add_jm().format(
-                DateTime.fromMillisecondsSinceEpoch(notification.createdAt),
+              notificationTimestampLabel(
+                l10n,
+                createdAtMillis: notification.createdAt,
+                now: DateTime.now().millisecondsSinceEpoch,
               ),
               style: Theme.of(context).textTheme.bodySmall,
             ),

@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/notifications_provider.dart';
@@ -598,6 +599,112 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('No unread notifications'), findsOneWidget);
+  });
+  // ------------------------------------------------------------------
+  // The row's timestamp (Phase 127 item 1).
+  //
+  // `NotificationsAdapter.formatRelativeTime` (`:152-163`) transforms
+  // `createdAt` into one of five relative strings, or an absolute `MMM d, yyyy`
+  // beyond a week. The port drew `DateFormat.yMMMd().add_jm()` for every row —
+  // the same class of defect as the bare `7` the phase before this one fixed: a
+  // stored value drawn where Kotlin transforms it.
+  //
+  // Both offsets below are computed from the wall clock so the bucket is fixed
+  // whatever day the suite runs on; the *formatter's* own boundaries are pinned
+  // exhaustively against a fixed instant in
+  // `test/ui/notification_timestamp_test.dart`.
+  // ------------------------------------------------------------------
+
+  testWidgets('a recent row reads as a relative time, not an absolute date', (
+    tester,
+  ) async {
+    final createdAt = DateTime.now()
+        .subtract(const Duration(minutes: 5))
+        .millisecondsSinceEpoch;
+    await tester.pumpWidget(
+      wrapScreen(
+        const NotificationsScreen(),
+        overrides: [
+          notificationsProvider.overrideWith(
+            (ref) => Stream.value([
+              NotificationRow(
+                id: 'reply-1',
+                userId: 'user-1',
+                message: 'bob replied to your voice',
+                type: 'replyMessage',
+                isRead: false,
+                createdAt: createdAt,
+                priority: 0,
+                isFromServer: true,
+                needsSync: false,
+              ),
+            ]),
+          ),
+          unreadNotificationCountProvider.overrideWith(
+            (ref) => Stream.value(1),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('5 min ago'), findsOneWidget);
+    // The absolute rendering the row used to draw, with its time of day, is
+    // gone for anything inside the week.
+    expect(
+      find.textContaining(
+        DateFormat.yMMMd().format(
+          DateTime.fromMillisecondsSinceEpoch(createdAt),
+        ),
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets('a row older than a week reads as a date with no time of day', (
+    tester,
+  ) async {
+    final createdAt = DateTime.now()
+        .subtract(const Duration(days: 30))
+        .millisecondsSinceEpoch;
+    await tester.pumpWidget(
+      wrapScreen(
+        const NotificationsScreen(),
+        overrides: [
+          notificationsProvider.overrideWith(
+            (ref) => Stream.value([
+              NotificationRow(
+                id: 'reply-1',
+                userId: 'user-1',
+                message: 'bob replied to your voice',
+                type: 'replyMessage',
+                isRead: false,
+                createdAt: createdAt,
+                priority: 0,
+                isFromServer: true,
+                needsSync: false,
+              ),
+            ]),
+          ),
+          unreadNotificationCountProvider.overrideWith(
+            (ref) => Stream.value(1),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final created = DateTime.fromMillisecondsSinceEpoch(createdAt);
+    expect(
+      find.text(DateFormat('MMM d, yyyy').format(created)),
+      findsOneWidget,
+    );
+    // `getDateFormatter()` is `MMM d, yyyy` and nothing else — the port's
+    // `add_jm()` appended a clock time the Kotlin never shows.
+    expect(
+      find.text(DateFormat.yMMMd().add_jm().format(created)),
+      findsNothing,
+    );
   });
 }
 

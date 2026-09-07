@@ -41,11 +41,14 @@ class NotificationActions {
 
   final Ref ref;
 
+  /// `NotificationsViewModel.markAsRead(notificationId)`
+  /// (`NotificationsViewModel.kt:207-209`), which goes to
+  /// `markNotificationsAsRead(setOf(id))` — the screen's path. The port used to
+  /// call `markNotificationAsRead`, which is the Android tray's handler
+  /// (`DashboardActivity`, `NotificationActionReceiver`); the two differ in
+  /// whether they restamp `createdAt`, and the screen's does.
   Future<void> markAsRead(String id) async {
-    final userId = ref.read(sessionProvider).valueOrNull?.id;
-    await ref
-        .read(notificationsRepositoryProvider)
-        .markNotificationAsRead(id, userId);
+    await ref.read(notificationsRepositoryProvider).markAsRead({id});
   }
 
   Future<void> markAllAsRead() async {

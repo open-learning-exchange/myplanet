@@ -164,7 +164,7 @@
   },
   "neverSynced": "Never synced",
   "justNow": "Just now",
-  "minutesAgo": "{count, plural, =1{1 minute ago} other{{count} minutes ago}}",
+  "minutesAgo": "{count} min ago",
   "@minutesAgo": {
     "placeholders": {
       "count": {
@@ -172,7 +172,7 @@
       }
     }
   },
-  "hoursAgo": "{count, plural, =1{1 hour ago} other{{count} hours ago}}",
+  "hoursAgo": "{count} hr ago",
   "@hoursAgo": {
     "placeholders": {
       "count": {
@@ -180,8 +180,33 @@
       }
     }
   },
-  "daysAgo": "{count, plural, =1{1 day ago} other{{count} days ago}}",
+  "yesterday": "Yesterday",
+  "daysAgo": "{count} days ago",
   "@daysAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relativeMinutesAgo": "{count, plural, =1{1 minute ago} other{{count} minutes ago}}",
+  "@relativeMinutesAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relativeHoursAgo": "{count, plural, =1{1 hour ago} other{{count} hours ago}}",
+  "@relativeHoursAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relativeDaysAgo": "{count, plural, =1{1 day ago} other{{count} days ago}}",
+  "@relativeDaysAgo": {
     "placeholders": {
       "count": {
         "type": "int"
