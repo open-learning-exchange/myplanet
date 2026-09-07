@@ -160,6 +160,68 @@ void main() {
     });
   });
 
+  group('the bulk delete behind selection mode', () {
+    // `NotificationsRepositoryImpl.deleteNotifications` (`:418-425`) over
+    // `NotificationDao.deleteByIds` (`:64-65`) — a plain local DELETE.
+    Future<void> seed(String id, {bool fromServer = false}) =>
+        database.notificationDao.upsert(
+          NotificationsCompanion.insert(
+            id: id,
+            userId: 'user-1',
+            type: const Value('task'),
+            message: Value('row $id'),
+            createdAt: 500,
+            isFromServer: Value(fromServer),
+          ),
+        );
+
+    test('deletes the selection and reports what existed', () async {
+      await seed('a');
+      await seed('b');
+
+      expect(await repository.deleteNotifications(['a', 'ghost']), {'a'});
+
+      expect((await repository.watch('user-1').first).map((r) => r.id), ['b']);
+    });
+
+    test('an empty or all-missing selection runs no delete', () async {
+      await seed('a');
+
+      expect(await repository.deleteNotifications(const <String>[]), isEmpty);
+      expect(await repository.deleteNotifications(['ghost']), isEmpty);
+
+      expect(await repository.watch('user-1').first, hasLength(1));
+    });
+
+    test('a deleted server notification comes back on the next sync', () async {
+      // Not a defect to fix. Nothing is enqueued, no tombstone is written, and
+      // `NotificationsRepository.sync` deliberately runs no `deleteNotIn` (the
+      // Kotlin walk does not either, and a prune would evict the
+      // locally-authored count/storage rows that have no server document). So
+      // a server-originated row the user deleted is re-pulled. Kotlin behaves
+      // identically — `UploadConfigs` mentions notifications nowhere — and this
+      // test exists so the round trip is stated rather than discovered.
+      await seed('server-1', fromServer: true);
+
+      expect(await repository.deleteNotifications(['server-1']), {'server-1'});
+      expect(await repository.watch('user-1').first, isEmpty);
+
+      // The sync-in re-upserts it, as it would for any server document.
+      await database.notificationDao.upsertAll([
+        NotificationsCompanion.insert(
+          id: 'server-1',
+          userId: 'user-1',
+          type: const Value('task'),
+          message: const Value('row server-1'),
+          createdAt: 500,
+          isFromServer: const Value(true),
+        ),
+      ]);
+
+      expect(await repository.watch('user-1').first, hasLength(1));
+    });
+  });
+
   test('warns only at or below ten percent storage availability', () async {
     await repository.updateStorageNotification('user-1', 10);
     expect((await repository.watch('user-1').first).single.message, '10%');

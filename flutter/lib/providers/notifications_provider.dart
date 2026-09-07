@@ -63,6 +63,20 @@ class NotificationActions {
   Future<void> delete(String id) async {
     await ref.read(notificationsRepositoryProvider).delete(id);
   }
+
+  /// `NotificationsViewModel.markSelectedAsRead` (`:173-191`) — the bulk bar's
+  /// *Mark read*. Empty selections are a no-op there and here.
+  Future<Set<String>> markSelectedAsRead(Set<String> ids) async {
+    if (ids.isEmpty) return const {};
+    return ref.read(notificationsRepositoryProvider).markAsRead(ids);
+  }
+
+  /// `NotificationsViewModel.deleteSelected` (`:193-205`) — the bulk bar's
+  /// *Delete*.
+  Future<Set<String>> deleteSelected(Set<String> ids) async {
+    if (ids.isEmpty) return const {};
+    return ref.read(notificationsRepositoryProvider).deleteNotifications(ids);
+  }
 }
 
 final notificationActionsProvider = Provider(NotificationActions.new);

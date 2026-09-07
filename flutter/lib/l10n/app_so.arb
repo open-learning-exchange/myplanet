@@ -513,5 +513,9 @@
   "minutesAgo": "{count} daqiiqo ka hor",
   "hoursAgo": "{count} saacad ka hor",
   "yesterday": "Shalay",
-  "daysAgo": "{count} maalmood ka hor"
+  "daysAgo": "{count} maalmood ka hor",
+  "markAllAsRead": "Calaamadee dhammaan sidii la aqriyay",
+  "selectedCount": "{count} la doortay",
+  "markSelectedAsRead": "Calaamadee akhrinta",
+  "cancelSelection": "Jooji doortashada"
 }

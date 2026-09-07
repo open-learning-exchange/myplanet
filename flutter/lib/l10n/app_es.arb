@@ -484,7 +484,7 @@
   "@notificationsUnavailable": {
     "x-mt": true
   },
-  "markAllRead": "Marcar todo como leído",
+  "markAllAsRead": "Marcar todo como leído",
   "all": "Todos",
   "read": "Leer",
   "@read": {
@@ -2146,5 +2146,8 @@
   "minutesAgo": "Hace {count} min",
   "hoursAgo": "Hace {count} h",
   "yesterday": "Ayer",
-  "daysAgo": "Hace {count} día(s)"
+  "daysAgo": "Hace {count} día(s)",
+  "selectedCount": "{count} seleccionado(s)",
+  "markSelectedAsRead": "Marcar como leído",
+  "cancelSelection": "Cancelar selección"
 }

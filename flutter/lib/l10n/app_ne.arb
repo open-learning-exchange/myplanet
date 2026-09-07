@@ -513,5 +513,9 @@
   "minutesAgo": "{count} मिनेट अघि",
   "hoursAgo": "{count} घण्टा अघि",
   "yesterday": "हिजो",
-  "daysAgo": "{count} दिन अघि"
+  "daysAgo": "{count} दिन अघि",
+  "markAllAsRead": "सबैलाई पढिएको रूपमा चिन्ह लगाउनुहोस्",
+  "selectedCount": "{count} छानिएको",
+  "markSelectedAsRead": "पढेको चिन्ह लगाउनुहोस्",
+  "cancelSelection": "चयन रद्द गर्नुहोस्"
 }

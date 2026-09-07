@@ -18,11 +18,32 @@ import 'notification_grouping.dart';
 /// grouping model added to `NotificationsViewModel` (commit 8f4d06d5d). A
 /// group is expanded by default only while it has unread items; tapping a
 /// header overrides that, and *Mark all read* collapses every group.
-class NotificationsScreen extends ConsumerWidget {
+class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NotificationsScreen> createState() =>
+      _NotificationsScreenState();
+}
+
+class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
+  /// `NotificationsViewModel._selectedIds` (`:39`). Local widget state rather
+  /// than a provider, following the port's own multi-select (Phase 50's
+  /// `resources_screen.dart:35`) — and, like the Kotlin, there is no separate
+  /// mode flag: `isSelectionMode` is `_selectedIds.isNotEmpty()` (`:44-46`).
+  final Set<String> _selectedIds = {};
+
+  bool get _selecting => _selectedIds.isNotEmpty;
+
+  /// `toggleSelection` (`:145-149`).
+  void _toggleSelection(String id) {
+    setState(() {
+      if (!_selectedIds.add(id)) _selectedIds.remove(id);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final filter = ref.watch(notificationFilterProvider);
     final notifications = ref.watch(notificationsProvider);
@@ -31,47 +52,80 @@ class NotificationsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.notifications),
+        // `ltBulkActionBar` replaces `ltTopBar` outright while selecting
+        // (`NotificationsFragment.kt:104-107`). In Kotlin that bar is a
+        // LinearLayout above the list holding the count, *Mark read*, *Delete*
+        // and a close button; here it is the AppBar, which is where the port
+        // already puts *Mark all read* and where Phase 50 put the resource
+        // catalog's equivalent.
+        leading: _selecting
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                tooltip: l10n.cancelSelection,
+                onPressed: () => setState(_selectedIds.clear),
+              )
+            : null,
+        title: Text(
+          _selecting
+              ? l10n.selectedCount(_selectedIds.length)
+              : l10n.notifications,
+        ),
         actions: [
+          if (_selecting) ...[
+            TextButton(
+              onPressed: _markSelectedAsRead,
+              child: Text(l10n.markSelectedAsRead),
+            ),
+            // No confirmation, because Kotlin's `btnBulkDelete` has none — and
+            // the row's swipe, which does confirm, is the port's own addition
+            // rather than a port of anything.
+            TextButton(onPressed: _deleteSelected, child: Text(l10n.delete)),
+          ]
           // `count > 0 && currentFilter != "read"`
           // (`NotificationsFragment.kt:101-102`) — offering "mark all read" on
           // the Read tab, which the port did, is an action with nothing to act
-          // on.
-          if (unread > 0 && filter != NotificationFilter.read)
+          // on. It sits inside `ltTopBar`, so selection mode hides it too.
+          else if (unread > 0 && filter != NotificationFilter.read)
             TextButton(
               onPressed: () =>
                   ref.read(notificationActionsProvider).markAllAsRead(),
-              child: Text(l10n.markAllRead),
+              child: Text(l10n.markAllAsRead),
             ),
         ],
       ),
       body: Column(
         children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.all(12),
-            child: SegmentedButton<NotificationFilter>(
-              segments: [
-                ButtonSegment(
-                  value: NotificationFilter.all,
-                  label: Text(l10n.all),
-                ),
-                ButtonSegment(
-                  value: NotificationFilter.unread,
-                  label: Text(l10n.unreadCount(unread)),
-                ),
-                ButtonSegment(
-                  value: NotificationFilter.read,
-                  label: Text(l10n.read),
-                ),
-              ],
-              selected: {filter},
-              onSelectionChanged: (selected) {
-                ref.read(notificationFilterProvider.notifier).state =
-                    selected.single;
-              },
+          // The all/unread/read spinner is inside `ltTopBar` too, so it goes
+          // with it. That is not only cosmetic: `loadNotifications` never
+          // clears `_selectedIds`, so a filter change during selection would
+          // leave ids selected whose rows have left the list — see the quirk
+          // reproduced in `_markSelectedAsRead`.
+          if (!_selecting)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.all(12),
+              child: SegmentedButton<NotificationFilter>(
+                segments: [
+                  ButtonSegment(
+                    value: NotificationFilter.all,
+                    label: Text(l10n.all),
+                  ),
+                  ButtonSegment(
+                    value: NotificationFilter.unread,
+                    label: Text(l10n.unreadCount(unread)),
+                  ),
+                  ButtonSegment(
+                    value: NotificationFilter.read,
+                    label: Text(l10n.read),
+                  ),
+                ],
+                selected: {filter},
+                onSelectionChanged: (selected) {
+                  ref.read(notificationFilterProvider.notifier).state =
+                      selected.single;
+                },
+              ),
             ),
-          ),
           Expanded(
             child: notifications.when(
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -79,12 +133,46 @@ class NotificationsScreen extends ConsumerWidget {
                   Center(child: Text(l10n.notificationsUnavailable)),
               data: (items) => items.isEmpty
                   ? _EmptyNotifications(filter: filter)
-                  : _GroupedList(items: items, expansion: expansion),
+                  : _GroupedList(
+                      items: items,
+                      expansion: expansion,
+                      selectedIds: _selectedIds,
+                      selecting: _selecting,
+                      onToggleSelection: _toggleSelection,
+                    ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  /// `markSelectedAsRead` (`:173-191`), which clears the selection only when
+  /// the repository reports that something was marked.
+  ///
+  /// The ids are taken from `_selectedIds` as-is, with no check that each is
+  /// still in the visible list. That is Kotlin's behaviour and it is reachable:
+  /// a group can be collapsed while its rows are selected (the header stays
+  /// selection-unaware and still toggles), so the action can act on rows the
+  /// user cannot see. The repository filters out ids that are not in the table
+  /// at all, which is a different thing.
+  Future<void> _markSelectedAsRead() async {
+    final marked = await ref
+        .read(notificationActionsProvider)
+        .markSelectedAsRead(Set.of(_selectedIds));
+    if (!mounted || marked.isEmpty) return;
+    setState(_selectedIds.clear);
+  }
+
+  /// `deleteSelected` (`:193-205`). A local delete with no tombstone, so a
+  /// server-originated notification returns on the next sync — see
+  /// `NotificationDao.deleteByIds`.
+  Future<void> _deleteSelected() async {
+    final deleted = await ref
+        .read(notificationActionsProvider)
+        .deleteSelected(Set.of(_selectedIds));
+    if (!mounted || deleted.isEmpty) return;
+    setState(_selectedIds.clear);
   }
 }
 
@@ -123,10 +211,19 @@ class _EmptyNotifications extends StatelessWidget {
 /// Renders the grouped list, porting `NotificationsAdapter`'s header/item
 /// view types. A header tap toggles that group's expansion.
 class _GroupedList extends ConsumerWidget {
-  const _GroupedList({required this.items, required this.expansion});
+  const _GroupedList({
+    required this.items,
+    required this.expansion,
+    required this.selectedIds,
+    required this.selecting,
+    required this.onToggleSelection,
+  });
 
   final List<NotificationRow> items;
   final NotificationExpansionState expansion;
+  final Set<String> selectedIds;
+  final bool selecting;
+  final void Function(String id) onToggleSelection;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -149,9 +246,15 @@ class _GroupedList extends ConsumerWidget {
         final node = grouped[index];
         return switch (node) {
           NotificationHeaderItem() => _GroupHeader(header: node),
+          // Only `NotificationListItem.Item` carries `isSelected`/
+          // `isSelectionMode` in the Kotlin model — a header is never
+          // selectable, and stays tappable-to-collapse even mid-selection.
           NotificationEntryItem(:final notification) => _NotificationTile(
             notification: notification,
             formatContext: formatContext,
+            selected: selectedIds.contains(notification.id),
+            selecting: selecting,
+            onToggleSelection: onToggleSelection,
           ),
         };
       },
@@ -212,9 +315,15 @@ class _NotificationTile extends ConsumerWidget {
   const _NotificationTile({
     required this.notification,
     required this.formatContext,
+    required this.selected,
+    required this.selecting,
+    required this.onToggleSelection,
   });
   final NotificationRow notification;
   final NotificationFormatContext formatContext;
+  final bool selected;
+  final bool selecting;
+  final void Function(String id) onToggleSelection;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -222,7 +331,14 @@ class _NotificationTile extends ConsumerWidget {
     final colors = Theme.of(context).colorScheme;
     return Dismissible(
       key: ValueKey(notification.id),
-      direction: DismissDirection.endToStart,
+      // Swipe-to-delete is the port's own affordance — Kotlin has no
+      // `ItemTouchHelper` anywhere and deletes only through the bulk bar — so
+      // it yields to selection mode rather than competing with it. Kotlin
+      // disarms the row's long-press there for the same reason: while a
+      // selection is open, the row's gestures belong to the selection.
+      direction: selecting
+          ? DismissDirection.none
+          : DismissDirection.endToStart,
       confirmDismiss: (_) => _confirmDelete(context),
       onDismissed: (_) =>
           ref.read(notificationActionsProvider).delete(notification.id),
@@ -244,12 +360,19 @@ class _NotificationTile extends ConsumerWidget {
           // `HeaderViewHolder.bind`). It stays because it makes a long list
           // scannable — but it is an addition, which is why the type *label*
           // was the thing removed: that duplicated the group header outright.
-          leading: Badge(
-            isLabelVisible: !notification.isRead,
-            child: CircleAvatar(
-              child: Icon(_iconFor(resolvedNotificationType(notification))),
-            ),
-          ),
+          // `cbSelect` (`row_notifications.xml:33-42`), visible only in
+          // selection mode. It is `clickable="false"` there — the row handles
+          // the tap — so this one is not interactive either.
+          leading: selecting
+              ? Checkbox(value: selected, onChanged: null)
+              : Badge(
+                  isLabelVisible: !notification.isRead,
+                  child: CircleAvatar(
+                    child: Icon(
+                      _iconFor(resolvedNotificationType(notification)),
+                    ),
+                  ),
+                ),
           // The row's one line of text, as `row_notifications.xml` has it: the
           // rewritten message, not a type label above the raw one. The group
           // header above already names the type, exactly as in the Kotlin — and
@@ -282,7 +405,9 @@ class _NotificationTile extends ConsumerWidget {
           // only way to mark a single row read was to tap it — which also
           // navigates away from the list, so a learner could not clear one
           // notification and keep reading the rest.
-          trailing: notification.isRead
+          // `binding.btnMarkAsRead.visibility = View.GONE` in the
+          // selection branch (`NotificationsAdapter.kt:132`).
+          trailing: notification.isRead || selecting
               ? null
               : TextButton(
                   onPressed: () => ref
@@ -290,10 +415,27 @@ class _NotificationTile extends ConsumerWidget {
                       .markAsRead(notification.id),
                   child: Text(l10n.markAsRead),
                 ),
+          // A read row keeps its tint, in both modes, so the selection
+          // affordance does not fight the read one
+          // (`NotificationsAdapter.kt:127` sets `alpha` before the branch).
+          selected: selected,
+          // In selection mode a tap toggles instead of navigating, and the
+          // long-press listener is set to null
+          // (`NotificationsAdapter.kt:133-134`); outside it, long-press is how
+          // selection starts (`:145-148`).
+          //
           // Read notifications remain actionable. Kotlin marks an unread row and
           // navigates on the same tap; making `onTap` null after that first tap
           // prevented learners from ever reopening its destination in Flutter.
-          onTap: () => _openNotification(context, ref),
+          onTap: selecting
+              ? () => onToggleSelection(notification.id)
+              : () => _openNotification(context, ref),
+          // No `isRead` gate: Kotlin arms the long-press on every row, so an
+          // already-read notification can be selected (and re-marked, which
+          // re-stamps it — its own quirk, reproduced).
+          onLongPress: selecting
+              ? null
+              : () => onToggleSelection(notification.id),
         ),
       ),
     );

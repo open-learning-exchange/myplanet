@@ -1724,6 +1724,27 @@ class NotificationDao extends DatabaseAccessor<AppDatabase>
   Future<int> deleteById(String id) =>
       (delete(notifications)..where((row) => row.id.equals(id))).go();
 
+  /// Port of `NotificationDao.deleteByIds` (`NotificationDao.kt:64-65`), which
+  /// selection mode's *Delete* uses.
+  ///
+  /// A plain local `DELETE`: nothing is enqueued, no tombstone is written, and
+  /// the notifications sync-in runs no `deleteNotIn`, so a deleted
+  /// *server-originated* row comes back on the next sync. That is the Kotlin's
+  /// behaviour too — `deleteNotifications` reaches the same statement and
+  /// `UploadConfigs` mentions notifications nowhere — so it is reproduced, not
+  /// fixed.
+  Future<int> deleteByIds(Iterable<String> ids) async {
+    final values = ids.toList(growable: false);
+    if (values.isEmpty) return 0;
+    var deleted = 0;
+    for (final chunk in _chunked(values, _sqliteVariableChunk)) {
+      deleted += await (delete(
+        notifications,
+      )..where((row) => row.id.isIn(chunk))).go();
+    }
+    return deleted;
+  }
+
   /// Port of `NotificationDao.getPendingSyncNotifications` — server-originated
   /// rows flagged for read-state upload. Only rows with a server `rev` can be
   /// PUT back (no rev means the row was authored locally, not yet on the

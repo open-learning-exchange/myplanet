@@ -303,12 +303,25 @@ void main() {
     // `relativeDaysAgo`, keeping their `x-mt` flags (their values were still
     // bare English in every locale), and the Kotlin names now hold the Kotlin
     // strings.
+    //
+    // Selection mode adds three more per locale — `selectedCount`,
+    // `markSelectedAsRead`, `cancelSelection`, from the Kotlin
+    // `selected_count`/`mark_selected_as_read`/`cancel_selection` — and repairs
+    // `markAllRead`, which was named and worded just differently enough from
+    // Kotlin's `mark_all_as_read` ("Mark all read" against "Mark all as read")
+    // that neither derivation rule could fire. Renamed to `markAllAsRead` with
+    // the Kotlin English: Nepali and Somali had no value at all, Arabic and
+    // French carried `x-mt` machine output (French's happened to equal the
+    // human translation, Arabic's did not), so all four derive now. Spanish
+    // already held the Kotlin value unflagged and is left alone — replacing one
+    // valid translation with another is not a repair. That makes es +3 where
+    // the rest are +4.
     const humanReviewed = {
-      'ar': 406,
-      'es': 459,
-      'fr': 405,
-      'ne': 407,
-      'so': 407,
+      'ar': 410,
+      'es': 462,
+      'fr': 409,
+      'ne': 411,
+      'so': 411,
     };
 
     for (final code in locales) {

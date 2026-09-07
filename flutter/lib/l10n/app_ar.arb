@@ -446,10 +446,6 @@
   "@notificationsUnavailable": {
     "x-mt": true
   },
-  "markAllRead": "وضع علامة على كل قراءة",
-  "@markAllRead": {
-    "x-mt": true
-  },
   "all": "الكل",
   "read": "يقرأ",
   "@read": {
@@ -2148,5 +2144,9 @@
   "minutesAgo": "منذ {count} دقيقة",
   "hoursAgo": "منذ {count} ساعة",
   "yesterday": "أمس",
-  "daysAgo": "منذ {count} أيام"
+  "daysAgo": "منذ {count} أيام",
+  "markAllAsRead": "وضع علامة \"مقروء\" على الجميع",
+  "selectedCount": "تم تحديد {count}",
+  "markSelectedAsRead": "تعليم كمقروء",
+  "cancelSelection": "إلغاء التحديد"
 }

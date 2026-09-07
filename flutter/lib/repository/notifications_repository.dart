@@ -109,6 +109,21 @@ class NotificationsRepository {
       _dao.markAllAsRead(userId, createdAt: _now().millisecondsSinceEpoch);
   Future<int> delete(String id) => _dao.deleteById(id);
 
+  /// Port of `NotificationsRepositoryImpl.deleteNotifications` (`:418-425`) —
+  /// selection mode's *Delete*.
+  ///
+  /// Returns the ids that existed, as the Kotlin does, for the same reason
+  /// [markAsRead] does: its caller uses the set to decide whether anything
+  /// happened.
+  Future<Set<String>> deleteNotifications(Iterable<String> ids) async {
+    final wanted = ids.toList(growable: false);
+    if (wanted.isEmpty) return const {};
+    final existing = (await _dao.getByIds(wanted)).keys.toSet();
+    if (existing.isEmpty) return const {};
+    await _dao.deleteByIds(existing);
+    return existing;
+  }
+
   /// Port of `TransactionSyncManager.syncNotificationReads`.
   ///
   /// PUTs each server-originated notification marked for read-state upload
