@@ -19,7 +19,7 @@
 
 ### Flutter port (in progress)
 
-**Migration progress: ≈86/100.** Report this figure whenever you report on the
+**Migration progress: ≈88/100.** Report this figure whenever you report on the
 port; it is the whole migration effort on a 1-to-100 scale, not a phase count.
 The basis, so it can be argued with rather than repeated:
 
@@ -27,11 +27,11 @@ The basis, so it can be argued with rather than repeated:
 |---|---|---|
 | Feature breadth | all 28 UI packages have screens (enterprises is a team *type*, not a gap — Phase 99) | ~95 |
 | Behavioural parity | the limiter, and the lowest-confidence row: **reachability** audits keep finding ported, green, *dead* code — see below | ~72 |
-| Test coverage | 2048 tests / 189 test files vs 231 Kotlin test files | ~85 |
-| Localisation | ar/es/fr ~830–864 of 879 keys but **416–470 of those are unreviewed machine translation**; ne/so 421 | ~55 |
+| Test coverage | 2265 tests / 195 test files vs 240 Kotlin test files | ~87 |
+| Localisation | ar/es/fr 843–878 of 897 keys but **416–469 of those are unreviewed machine translation**; ne/so 436 | ~55 |
 | Background work | WorkManager gaps closed through Phase 94, platform channels in-tree | ~95 |
 
-Breadth is measurable and depth is not — 240 hand-written Dart files against 543
+Breadth is measurable and depth is not — 243 hand-written Dart files against 547
 Kotlin sources mostly reflects Dart folding Fragment + ViewModel + Adapter + XML
 into one screen file, so it says little about parity. Depth is only ever revealed
 by auditing, and **every audit so far has found something**, which is why the
@@ -276,9 +276,9 @@ real — they had been setting a locale with no `.arb` to resolve to. Somali nee
 locale would otherwise resolve with no `MaterialLocalizations` and crash. Directional padding and
 alignment are done; a visual RTL review in Arabic is not.
 
-**Current l10n state.** The template `app_en.arb` is 879 keys. Arabic, Spanish
-and French sit at ~830–864 of them, Nepali and Somali at 421. But coverage is the
-wrong headline: **416–470 of each of ar/es/fr's values are unreviewed machine
+**Current l10n state.** The template `app_en.arb` is 897 keys. Arabic, Spanish
+and French sit at 843–878 of them, Nepali and Somali at 436. But coverage is the
+wrong headline: **416–469 of each of ar/es/fr's values are unreviewed machine
 translation**, marked as such by Phase 109 so a human pass can list exactly which.
 The ~250 keys derived from the Kotlin `values-*/strings.xml` are real human
 translations already shipping in the Android app, and Phases 114/118/121 have
@@ -751,6 +751,55 @@ had a human translation the port structurally could not use. Four of them
 `%2$d मध्ये %1$d …`), so a left-to-right substitution would have printed the
 numbers swapped, silently, in a sentence.
 
+Phases 122–127 continued from the reported-not-fixed lists. Three are worth
+keeping.
+
+**Phase 125 is the writer/reader key disagreement at its most expensive.** Every
+port writer stored a course-attached survey's submission `parentId` as the bare
+survey id, while `hasUnfinishedSurveys` — the gate on finishing
+`MANDATORY_SURVEY_COURSE_ID` — queried `"$surveyId@$courseId"`. The count was
+always 0, so a learner who *had* answered the attached survey was told they had
+not, **and the MyPlanet Onboarding course could not be completed at all**. Kotlin
+is internally consistent (`createBulkSurveySubmissions:201-228`,
+`createExamSubmission:449-456`, `hasSubmission:175-190` all use the compound
+key). The previous four instances of this shape lost or hid data; this one
+blocked a user outright. Found by Phase 123 while re-reading its own notes, not
+by a test.
+
+**Phase 126 is why a harvest gets a second reading.** `master` had drifted to 18
+commits — the first real backlog in many rounds. Two of them were titled
+"smoother X", the exact shape Phase 95 dismissed as refactors, and both were
+Follow: one a new sync step in the data-loss class, one a **wire-format change on
+every uploaded document** (`app=myplanet` now stamps each one, hence 152 files).
+The lane ran `harvest-triage` for the first pass and then re-read every Follow
+against the Kotlin by hand, citing Phase 95/96 as the reason. **Do that.** A
+"no counterpart" verdict on a rename is the cheapest place in this project to
+lose a behaviour.
+
+**Phase 122 mutation-tested its own migration.** Its commit
+*"make the v46 migration test able to fail"* is the practice worth copying: it
+wrote the test, noticed it passed unconditionally, and fixed the test. A
+migration test that cannot fail is worse than none, because it reads as coverage.
+
+### Harvesting master rebuilds the Kotlin app, and that is correct
+
+`build.yml` and `test.yml` carry `paths-ignore: flutter/**, docs/**, **.md`, so a
+Flutter-only push skips both and only `flutter.yml` runs. **A harvest push does
+not skip them, and should not**: merging `master` brings real changes under
+`app/` onto the branch — Phase 126's merge carried 117 of them — so both Kotlin
+flavours build and the Kotlin unit tests run. That is the filter working, not
+leaking. Expect ~10 minutes of Kotlin CI on any round that merges master, and
+none on the rounds that do not.
+
+### Dependency drift is now its own debt
+
+`flutter pub outdated` reports **89 packages** behind latest, up from 84 a few
+rounds ago. Two of them are the port's load-bearing architecture:
+`flutter_riverpod` 2.6.1 → 3.4.3 and `go_router` 14.8.1 → 18.0.1, both major
+gaps. Nothing is broken, and no round has needed to touch them — but this only
+gets harder, and when it is done it wants a phase of its own with no other lane
+running, because a Riverpod major will touch every provider in the port.
+
 ### Running parallel lanes
 
 Sibling sessions on their own branches, merged by an integrator. What this round
@@ -1141,7 +1190,7 @@ There is no generic base repository; each implementation talks to its Room DAO(s
 
 ### Flutter port toolchain
 
-**Current Drift `schemaVersion` is 45** (`flutter/lib/data/local/app_database.dart`).
+**Current Drift `schemaVersion` is 46** (`flutter/lib/data/local/app_database.dart`).
 Bump it only when you have been allocated a number — parallel lanes must not each
 pick one, and a bump discards unsynced local writes on any device that has not
 synced, which is what `localAuthorityTables` and the hand-written
