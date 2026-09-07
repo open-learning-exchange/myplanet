@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart' show Value;
+import 'package:drift/drift.dart' show CancellationException, Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/data/api/planet_api.dart';
@@ -103,19 +103,25 @@ void main() {
     );
 
     /// `name`/`type` are **omitted**, never sent as null: Kotlin guards each
-    /// with `?.let { addProperty(...) }` (`:806-808`). A null would overwrite
+    /// with `?.let { addProperty(...) }` (`:807-808`). A null would overwrite
     /// a name Planet already holds.
+    ///
+    /// The two guards are independent, so a resolved team can contribute one
+    /// key and not the other — the case an exact-equality assertion on the
+    /// all-or-nothing inputs cannot distinguish.
     test(
-      'omits a name and type it cannot resolve rather than nulling them',
+      'omits one key while keeping the other when only one resolves',
       () async {
-        final team = await teamOf(await adoptionFor('team-missing'));
-        expect((team! as Map).containsKey('name'), isFalse);
+        await seedTeam(type: '  ');
+        final team = await teamOf(await adoptionFor('team-1'));
+        expect((team! as Map)['name'], 'Water quality group');
         expect((team as Map).containsKey('type'), isFalse);
       },
     );
 
     test('omits a blank name and type the same way', () async {
-      // `takeIf { it.isNotBlank() }` (`:805-808`) — blank, not merely empty.
+      // `takeIf { it.isNotBlank() }` (`:797-798`, `:807-808`) — blank, not
+      // merely empty, so a whitespace name cannot reach the wire.
       await seedTeam(name: '   ', type: '');
       expect(await teamOf(await adoptionFor('team-1')), {'_id': 'team-1'});
     });
@@ -172,16 +178,89 @@ void main() {
       expect(await teamOf(await adoptionFor('team-1')), {'_id': 'team-1'});
     });
 
-    /// The port of Kotlin's `CancellationException` rethrow. Dart has no
-    /// cancellation exception; the hazard `on Exception` guards against is an
-    /// `Error`, which means a defect here rather than a missing row, and
-    /// reporting it as a cache miss would hide it.
+    /// Kotlin's `CancellationException` rethrow, ported literally: drift ships
+    /// a `CancellationException` that **implements `Exception`**, and the
+    /// port's production executor wraps queries in `runCancellable`, so a lone
+    /// `on Exception` would swallow a cancelled read exactly as a lone
+    /// `catch (_: Exception)` would in Kotlin.
+    test(
+      'rethrows a cancellation rather than reporting a cache miss',
+      () async {
+        repository = build(
+          teamDao: _FailingTeamDao(const CancellationException()),
+        );
+        final row = (await repository.getById(await adoptionFor('team-1')))!;
+        await expectLater(
+          repository.serialize(row),
+          throwsA(isA<CancellationException>()),
+        );
+      },
+    );
+
+    /// An `Error` propagates too, which is deliberately **stricter** than
+    /// Kotlin: reading a closed database throws Dart `StateError` where Room
+    /// throws `IllegalStateException`, which Kotlin's catch absorbs. Nothing
+    /// in `lib/` closes the database, and a defect in the caller should not
+    /// arrive as a team that merely looks missing.
     test('rethrows an Error instead of reporting a cache miss', () async {
       repository = build(teamDao: _FailingTeamDao(StateError('bad state')));
       final id = await adoptionFor('team-1');
       final row = (await repository.getById(id))!;
       await expectLater(repository.serialize(row), throwsA(isA<StateError>()));
     });
+  });
+
+  group('a survey answer sheet started from a team', () {
+    /// The arm that matters: every Kotlin site setting `isTeam = true` also
+    /// sets `type = "survey"`, so this — not `startExamSession` — is the
+    /// branch a team reaches.
+    Future<String> draftFor(String? teamId) async {
+      await database.surveyDao.upsertAll([
+        SurveysCompanion.insert(
+          id: 'survey-1',
+          name: const Value('Water quality'),
+          courseId: const Value('course-1'),
+        ),
+      ], const {});
+      final survey = (await database.surveyDao.getById('survey-1'))!;
+      return repository.createSurveyDraft(
+        survey: survey,
+        questions: const [],
+        userId: 'ada',
+        teamId: teamId,
+      );
+    }
+
+    test('persists the team id and uploads the team', () async {
+      await seedTeam();
+      final id = await draftFor('team-1');
+      expect((await repository.getById(id))!.teamId, 'team-1');
+      expect(await teamOf(id), {
+        '_id': 'team-1',
+        'name': 'Water quality group',
+        'type': 'enterprise',
+      });
+    });
+
+    test('persists it even when the team document is missing', () async {
+      final id = await draftFor('team-1');
+      expect((await repository.getById(id))!.teamId, 'team-1');
+      expect(await teamOf(id), {'_id': 'team-1'});
+    });
+
+    test(
+      'stores no team for a blank id, and none when none is given',
+      () async {
+        expect(
+          (await repository.getById(await draftFor('  ')))!.teamId,
+          isNull,
+        );
+        expect(
+          (await repository.getById(await draftFor(null)))!.teamId,
+          isNull,
+        );
+      },
+    );
   });
 
   group('an exam attempt started from a team', () {
@@ -201,11 +280,13 @@ void main() {
       });
     });
 
-    /// The `aca425a` fix, at the writer. `Submission.teamObject` is `@Ignore`d,
-    /// so the column is the only durable carrier: gating the write on a
-    /// resolved team — as the Kotlin used to — lost the attribution
-    /// permanently, and it lost it precisely on the handsets whose cache was
-    /// incomplete.
+    /// The `aca425a` fix, at the writer. `Submission.teamObject` and
+    /// `membershipDoc` are both `@Ignore`d, and the `user` blob that carried
+    /// the team id durably is overwritten by the respondent profile and
+    /// dropped on upload when the live `users` row resolves — so the column is
+    /// the only carrier that survives. Gating its write on a resolved team, as
+    /// the Kotlin used to, lost the attribution precisely on the handsets
+    /// whose cache was incomplete.
     test('persists it even when the team document is missing', () async {
       final id = await repository.startExamSession(
         exam: await seedExam(),
