@@ -382,6 +382,50 @@ Comment-only, inside the notifications DAO region, no code touched.
 
 ---
 
+## A second dead row, found by sweeping this lane's own files
+
+The phase's own theme, applied to the rest of the file it was working in: every
+public member of `NotificationsRepository` was grepped for a **call** in `lib/`
+(not a mention — see the false pass in *Failing-first evidence*). Thirteen have
+callers. One does not.
+
+**`updateResourceNotification` has no production caller, and cannot get one.**
+Six tests call it, including a round-trip test and a screen test, so it is
+ported, tested, green and dead — the exact row this phase was opened to close,
+one method further down the same file.
+
+In the Android app it is live. `DashboardViewModel.updateResourceNotification`
+(`:134-137`) reads `resourcesRepository.countLibrariesNeedingUpdate(userId)` and
+hands the count over; `checkAndCreateNewNotifications` (`:354-362`) calls it, and
+that is reached from `DashboardActivity` on dashboard load
+(`checkIfShouldShowNotifications`, `:690-698`) and again on the throttled
+focus path (`:623-630`). So the Android bell carries a *"You have N
+undownloaded resources"* row and the port's never does.
+
+It is not one missing call site. **The count has no port at all**:
+`countLibrariesNeedingUpdate` → `MyLibraryDao.countPublicNeedingUpdateForUserPattern`
+(`MyLibraryDao.kt:124`) is `isPrivate = 0 AND (userId IS NULL OR userId NOT LIKE
+:userPattern)` — the catalog predicate Phase 97 already ported for
+`watchResources`, counted rather than listed — and nothing in `flutter/lib`
+computes it under any name.
+
+Two consequences beyond the missing row. `notification_format.dart`'s `resource`
+arm reads `kotlinToIntOrNull(message)`, which only succeeds on the bare count
+this writer stores; a server-sent `newresource` notification resolves onto the
+same type but carries prose, so it falls through to the message verbatim. That
+branch — and `resourceNotificationMessage` with it — is therefore dead in
+production too, and its tests pass because they build the row directly. And the
+bell's unread count differs from the Android app's by however many resources
+need updating.
+
+Not fixed here, and deliberately: the fix needs a `resourcesRepository` count
+plus a dashboard-load hook, which lands in `lib/providers/dashboard_providers.dart`
+and `lib/repository/resources_repository.dart` — neither in this lane's file set,
+and the dashboard is a collision surface. It is a small vertical slice for
+whoever takes it, and the three pieces are named above.
+
+---
+
 ## Reported, not fixed
 
 1. **No tray gesture marks anything read**, in either app, because the
