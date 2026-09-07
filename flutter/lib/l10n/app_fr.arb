@@ -2279,8 +2279,6 @@
   "courseProgressCount": "Progression {current} sur {max}",
   "resourceNotificationMessage": "Vous avez {count} ressources non téléchargées",
   "taskNotificationMessage": "{title} est dû le {date}",
-  "storageRunningLow": "Espace de stockage presque plein:",
-  "storageAvailable": "Espace de stockage disponible:",
   "joinRequestPrefix": "Demande d'adhésion :",
   "userRequestedToJoinTeam": "{user} a demandé à rejoindre {team}",
   "markAsRead": "Marquer comme lu",
@@ -2291,5 +2289,9 @@
   "markAllAsRead": "Marquer tout comme lu",
   "selectedCount": "{count} sélectionné(s)",
   "markSelectedAsRead": "Marquer comme lu",
-  "cancelSelection": "Annuler la sélection"
+  "cancelSelection": "Annuler la sélection",
+  "storageRunningLow": "Espace de stockage presque plein: ",
+  "storageAvailable": "Espace de stockage disponible: ",
+  "playbackSpeed": "Vitesse de lecture",
+  "playbackSpeedValue": "{speed}x"
 }

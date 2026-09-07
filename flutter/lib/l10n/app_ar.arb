@@ -2136,8 +2136,6 @@
   "courseProgressCount": "التقدم {current} من {max}",
   "resourceNotificationMessage": "لديك {count} موارد لم يتم تنزيلها",
   "taskNotificationMessage": "{title} مستحق في {date}",
-  "storageRunningLow": "التخزين قليل:",
-  "storageAvailable": "التخزين المتاح:",
   "joinRequestPrefix": "طلب الانضمام:",
   "userRequestedToJoinTeam": "{user} قد طلب الانضمام إلى {team}",
   "markAsRead": "وضع علامة كمقروء",
@@ -2148,5 +2146,9 @@
   "markAllAsRead": "وضع علامة \"مقروء\" على الجميع",
   "selectedCount": "تم تحديد {count}",
   "markSelectedAsRead": "تعليم كمقروء",
-  "cancelSelection": "إلغاء التحديد"
+  "cancelSelection": "إلغاء التحديد",
+  "storageRunningLow": "التخزين قليل: ",
+  "storageAvailable": "التخزين المتاح: ",
+  "playbackSpeed": "سرعة التشغيل",
+  "playbackSpeedValue": "{speed}x"
 }

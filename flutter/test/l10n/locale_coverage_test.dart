@@ -266,6 +266,62 @@ void main() {
     }
   });
 
+  test('a deliberate trailing space survives into every locale', () {
+    // Four template strings end in a space, and every one of them is a label
+    // that a value is drawn straight after: `Storage running low: `,
+    // `Storage available: `, `Selected: `, `Select resources: `. Android's
+    // quoting exists precisely so a trailing space survives in `strings.xml`
+    // (`<string name="storage_running_low">"Storage running low: "</string>`),
+    // and all five Kotlin locales carry it.
+    //
+    // `tool/arb_from_strings_xml.dart` derived them through
+    // `translated[name]?.trim()`, so it stripped exactly the character the
+    // quoting was there to protect. `selected` and `selectResources` were
+    // repaired by hand through `--adopt`, whose `_proposal` does mirror the
+    // space; the two storage keys came through the plain-text path and lost it
+    // in all five locales.
+    //
+    // A missing space is not always visible — `formatStorageNotification`
+    // interpolates `'$runningLow $percent%'`, so its own space masks the loss,
+    // and `renderNotificationHtml` collapses the double space the Kotlin ends
+    // up with. The next consumer that concatenates without a separator gets
+    // `Almacenamiento bajo:10%`, in a string a translator cannot see is wrong.
+    // So the guard is on the derivation's output, not on one caller.
+    final template = readArb('en');
+    final labelKeys = keysOf(template).where((key) {
+      final value = template[key];
+      return value is String && value.endsWith(' ');
+    }).toList();
+    expect(
+      labelKeys,
+      isNotEmpty,
+      reason:
+          'the template has stopped carrying trailing-space labels, so '
+          'this guard now proves nothing — delete it or repoint it',
+    );
+
+    final stripped = <String>[];
+    for (final code in {...LocaleNotifier.supportedLanguageCodes, 'es'}) {
+      if (code == 'en') continue;
+      final arb = readArb(code);
+      for (final key in labelKeys) {
+        final value = arb[key];
+        // Absent is fine: the key falls back to the English, space and all.
+        if (value is! String) continue;
+        if (!value.endsWith(' ')) stripped.add('$code/$key = "$value"');
+      }
+    }
+
+    expect(
+      stripped,
+      isEmpty,
+      reason:
+          'these locale values lost the template\'s trailing space, so the '
+          'label runs into the value it prefixes:\n'
+          '${stripped.map((entry) => '  $entry').join('\n')}',
+    );
+  });
+
   test('no locale file declares the same key twice', () {
     // `gen-l10n` parses ARB as JSON, and a duplicate key is not an error there:
     // the last value silently wins and one getter is emitted. That is how
