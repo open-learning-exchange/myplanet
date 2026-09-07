@@ -7,6 +7,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 
 @Entity(tableName = "feedback", indices = [androidx.room.Index("openTime"), androidx.room.Index("owner"), androidx.room.Index("isUploaded")])
 open class Feedback {
@@ -105,6 +106,7 @@ open class Feedback {
             } catch (err: Exception) {
                 err.printStackTrace()
             }
+            `object`.addDocumentOrigin()
             return `object`
         }
     }

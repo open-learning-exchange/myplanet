@@ -87,8 +87,11 @@ class NotificationsViewModel @Inject constructor(
                 .mapNotNull { it.relatedId }
                 .distinct()
 
+            val parsedTaskDates: Map<String, Pair<String, String>?> =
+                taskNotifications.associateBy({ it.id }, { parseTaskDate(it.message) })
+
             val taskTitles = taskNotifications
-                .mapNotNull { parseTaskDate(it.message)?.first }
+                .mapNotNull { parsedTaskDates[it.id]?.first }
                 .distinct()
 
             val joinRequestIds = joinRequestNotifications
@@ -136,7 +139,7 @@ class NotificationsViewModel @Inject constructor(
             }
 
             _notifications.value = payloadNotifications.map {
-                formatNotification(it, taskTeamNames, joinRequestDetails)
+                formatNotification(it, taskTeamNames, joinRequestDetails, parsedTaskDates)
             }
             _unreadCount.value = unreadCount
         }
@@ -354,12 +357,17 @@ class NotificationsViewModel @Inject constructor(
     private fun formatNotification(
         notification: NotificationPayload,
         taskTeamNames: Map<String, String> = emptyMap(),
-        joinRequestDetails: Map<String, Pair<String, String>> = emptyMap()
+        joinRequestDetails: Map<String, Pair<String, String>> = emptyMap(),
+        parsedTaskDates: Map<String, Pair<String, String>?> = emptyMap()
     ): Notification {
         val resolvedType = notificationsRepository.resolveType(notification.type, notification.message, notification.subType)
         val formattedText = when (resolvedType) {
             "task" -> {
-                val parsedDate = parseTaskDate(notification.message)
+                val parsedDate = if (parsedTaskDates.containsKey(notification.id)) {
+                    parsedTaskDates[notification.id]
+                } else {
+                    parseTaskDate(notification.message)
+                }
                 if (parsedDate != null) {
                     formatTaskNotification(parsedDate.first, parsedDate.second, notification.relatedId, taskTeamNames)
                 } else {
@@ -380,7 +388,6 @@ class NotificationsViewModel @Inject constructor(
             }
             "join_request" -> {
                 if (!notification.type.equals("join_request", ignoreCase = true)) {
-                    // Server notification with pre-formatted message
                     notification.message
                 } else {
                     val relatedId = notification.relatedId

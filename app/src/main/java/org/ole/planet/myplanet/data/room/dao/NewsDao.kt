@@ -77,8 +77,8 @@ interface NewsDao {
     @Query("SELECT COUNT(*) FROM news WHERE viewableBy = 'teams' AND viewableId = :teamId")
     suspend fun countTeamChats(teamId: String): Long
 
-    @Query("SELECT viewableId FROM news WHERE viewableBy = 'teams' AND viewableId IN (:teamIds)")
-    suspend fun getTeamChatViewableIds(teamIds: List<String>): List<String>
+    @Query("SELECT COUNT(*) FROM news WHERE (replyTo IS NULL OR replyTo = '') AND ((viewableBy = 'teams' COLLATE NOCASE AND viewableId = :teamId COLLATE NOCASE) OR viewIn LIKE :teamPattern ESCAPE '\\')")
+    suspend fun countTopLevelByTeam(teamId: String, teamPattern: String): Long
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(news: News)

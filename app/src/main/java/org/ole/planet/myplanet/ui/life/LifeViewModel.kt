@@ -27,10 +27,16 @@ class LifeViewModel @Inject constructor(
     private val _myLifeList = MutableStateFlow<List<MyLife>>(emptyList())
     val myLifeList: StateFlow<List<MyLife>> = _myLifeList.asStateFlow()
 
+    private suspend fun resolveUserId(): String? {
+        val raw = userRepository.getCurrentUserId().orEmpty()
+            .ifEmpty { userRepository.getUserModel()?.id.orEmpty() }
+        return raw.takeIf { it.isNotBlank() && it != "--" }
+    }
+
     fun loadMyLifeList() {
         viewModelScope.launch {
             val list = withContext(dispatcherProvider.io) {
-                val userId = userRepository.getCurrentUserId()
+                val userId = resolveUserId()
                 lifeRepository.getMyLifeByUserId(userId, MyLife.defaultItems(userId, context::getString))
             }
             _myLifeList.value = list
@@ -39,14 +45,15 @@ class LifeViewModel @Inject constructor(
 
     fun updateVisibility(isVisible: Boolean, id: String) {
         viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
+            val updatedList = withContext(dispatcherProvider.io) {
                 lifeRepository.updateVisibility(isVisible, id)
             }
-            loadMyLifeList()
+            _myLifeList.value = updatedList
         }
     }
 
     fun updateMyLifeListOrder(list: List<MyLife>) {
+        _myLifeList.value = list
         viewModelScope.launch {
             withContext(dispatcherProvider.io) {
                 lifeRepository.updateMyLifeListOrder(list)

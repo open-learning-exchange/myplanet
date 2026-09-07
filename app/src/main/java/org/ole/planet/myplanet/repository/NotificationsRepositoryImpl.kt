@@ -17,8 +17,8 @@ import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotification
 import org.ole.planet.myplanet.model.TeamNotificationInfo
-import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
+import org.ole.planet.myplanet.utils.toSyncDocuments
 
 private const val STORAGE_WARNING_AVAILABLE_PERCENT = 10
 
@@ -49,59 +49,65 @@ class NotificationsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateResourceNotification(userId: String?, resourceCount: Int) {
-        userId ?: return
-
-        val notificationId = "$userId:resource:count"
-        val existingNotification = notificationDao.getById(notificationId)
-
-        if (resourceCount > 0) {
-            val previousCount = existingNotification?.message?.toIntOrNull() ?: 0
-            val countChanged = previousCount != resourceCount
-
-            val notification = existingNotification?.apply {
-                message = "$resourceCount"
-                relatedId = "$resourceCount"
-                if (countChanged) {
-                    this.isRead = false
-                    this.createdAt = Date()
-                }
-            } ?: AppNotification().apply {
-                this.id = notificationId
-                this.userId = userId
-                this.type = "resource"
-                this.message = "$resourceCount"
-                this.relatedId = "$resourceCount"
-                this.createdAt = Date()
-            }
-            notificationDao.upsert(notification)
-        } else {
-            existingNotification?.let { notificationDao.deleteById(it.id) }
-        }
+        updateCountNotification(
+            userId = userId,
+            idSuffix = "resource:count",
+            type = "resource",
+            relatedId = "$resourceCount",
+            parsePrevious = { it?.toIntOrNull() ?: 0 },
+            formatMessage = { "$it" },
+            value = resourceCount,
+            isHealthy = resourceCount <= 0
+        )
     }
 
     override suspend fun updateStorageNotification(userId: String?, availablePercent: Int) {
+        updateCountNotification(
+            userId = userId,
+            idSuffix = "storage",
+            type = "storage",
+            relatedId = "storage",
+            parsePrevious = { it?.replace("%", "")?.toIntOrNull() },
+            formatMessage = { "$it%" },
+            value = availablePercent,
+            isHealthy = availablePercent > STORAGE_WARNING_AVAILABLE_PERCENT
+        )
+    }
+
+    private suspend fun updateCountNotification(
+        userId: String?,
+        idSuffix: String,
+        type: String,
+        relatedId: String,
+        parsePrevious: (String?) -> Int?,
+        formatMessage: (Int) -> String,
+        value: Int,
+        isHealthy: Boolean
+    ) {
         userId ?: return
 
-        val notificationId = "$userId:storage"
+        val notificationId = "$userId:$idSuffix"
         val existingNotification = notificationDao.getById(notificationId)
 
-        if (availablePercent <= STORAGE_WARNING_AVAILABLE_PERCENT) {
-            val previousPercent = existingNotification?.message?.replace("%", "")?.toIntOrNull()
-            val percentChanged = previousPercent != availablePercent
+        if (!isHealthy) {
+            val previousValue = parsePrevious(existingNotification?.message)
+            val valueChanged = previousValue != value
+
+            val formattedMessage = formatMessage(value)
 
             val notification = existingNotification?.apply {
-                message = "$availablePercent%"
-                relatedId = "storage"
-                if (percentChanged) {
+                message = formattedMessage
+                this.relatedId = relatedId
+                if (valueChanged) {
                     this.isRead = false
                     this.createdAt = Date()
                 }
             } ?: AppNotification().apply {
                 this.id = notificationId
                 this.userId = userId
-                this.type = "storage"
-                this.message = "$availablePercent%"
-                this.relatedId = "storage"
+                this.type = type
+                this.message = formattedMessage
+                this.relatedId = relatedId
                 this.createdAt = Date()
             }
             notificationDao.upsert(notification)
@@ -298,7 +304,6 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
         val notificationMap = mutableMapOf<String, TeamNotificationInfo>()
 
-        // 1. Fetch all relevant notifications in a single query
         val notificationsResult = teamNotificationDao.getByTypeAndParentIds("chat", teamIds)
         val notificationsById = mutableMapOf<String, TeamNotification>()
         notificationsResult.forEach {
@@ -307,21 +312,16 @@ class NotificationsRepositoryImpl @Inject constructor(
             }
         }
 
-        // 2. Fetch all relevant chat counts in a single query
-        val chatViewableIds = voicesRepository.getTeamChatViewableIds(teamIds)
         val chatCountsById = mutableMapOf<String, Long>()
-        chatViewableIds.forEach { viewableId ->
-            val currentCount = chatCountsById[viewableId] ?: 0
-            chatCountsById[viewableId] = currentCount + 1
+        for (teamId in notificationsById.keys) {
+            chatCountsById[teamId] = voicesRepository.countTopLevelByTeam(teamId)
         }
 
-        // 3. Fetch all relevant tasks once
         val current = timeProvider.now()
         val tomorrow = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
         val tasks = teamTaskDao.getTasksForUserBetween(userId, current, tomorrow.timeInMillis)
         val hasTask = tasks.isNotEmpty()
 
-        // 4. Combine the results in memory
         for (teamId in teamIds) {
             val notification = notificationsById[teamId]
             val chatCount = chatCountsById[teamId] ?: 0L
@@ -344,9 +344,6 @@ class NotificationsRepositoryImpl @Inject constructor(
         val lowerType = type.lowercase(Locale.ROOT)
         if (lowerType in NotificationsRepository.KNOWN_TYPES) return lowerType
         val lower = message.lowercase(Locale.ROOT)
-        // Raw server type "team" covers every team-related event (message/request/added/rejected/removed) in
-        // whatever language the server rendered the message in, so classify structurally first and only fall
-        // back to English message-sniffing to pick a more specific sub-bucket when it's recognizable.
         if (lowerType == "team") {
             if (subType != null) return subType.lowercase(Locale.ROOT)
             return when {
@@ -392,12 +389,6 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
     }
 
-    /**
-     * Raw type "team" covers join requests, team-membership changes, and chat posts alike, and the
-     * server renders `message` in the recipient's locale, so it can't be classified reliably by
-     * sniffing English/Spanish phrases. `linkParams.activeTab == "applicantTab"` is a locale-independent
-     * signal the server sends specifically for join-request notifications; use it when present.
-     */
     private fun extractTeamSubtype(rawType: String, doc: JsonObject): String? {
         if (rawType != "team") return null
         val activeTab = doc.getAsJsonObject("linkParams")?.get("activeTab")?.asString
@@ -440,15 +431,7 @@ class NotificationsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
-        val documentList = ArrayList<JsonObject>(jsonArray.size())
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-            }
-        }
+        val documentList = jsonArray.toSyncDocuments().map { it.second }
         val parsedList = documentList.mapNotNull { parseNotification(it) }
         val existingNotifications = if (parsedList.isNotEmpty()) {
             notificationDao.getByIds(parsedList.map { it.id }).associateBy { it.id }

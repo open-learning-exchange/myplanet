@@ -7,7 +7,6 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.CrashLogStore
 import org.ole.planet.myplanet.utils.VersionUtils
