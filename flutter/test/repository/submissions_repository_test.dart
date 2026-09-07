@@ -32,6 +32,7 @@ void main() {
       database.submitPhotosDao,
       database.surveyDao,
       database.examDao,
+      teamDao: database.teamDao,
     );
   });
 

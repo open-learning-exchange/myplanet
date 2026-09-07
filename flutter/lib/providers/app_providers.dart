@@ -446,6 +446,7 @@ final submissionsRepositoryProvider = Provider<SubmissionsRepository>(
     ref.watch(submitPhotosDaoProvider),
     ref.watch(surveyDaoProvider),
     ref.watch(examDaoProvider),
+    teamDao: ref.watch(teamDaoProvider),
   ),
 );
 
