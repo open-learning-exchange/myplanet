@@ -226,6 +226,10 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         val savedFilter = viewModel.currentFilterState
         if (savedFilter.isActive) {
             filterController.restoreFilterState(savedFilter)
+            val chipRow = requireView().findViewById<LinearLayout>(R.id.chip_filter_row)
+            if (chipRow != null) {
+                renderCourseChipSelection(chipRow)
+            }
         }
         var lastState: FilterState? = savedFilter.takeIf { it.isActive }
 
