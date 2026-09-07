@@ -36,6 +36,7 @@ void main() {
       db.submitPhotosDao,
       db.surveyDao,
       db.examDao,
+      teamDao: db.teamDao,
     );
     outbox = OutboxRepository(db.outboxDao);
     uploader = SubmissionsUploader(api, repository, outbox, testDeviceIdentity);

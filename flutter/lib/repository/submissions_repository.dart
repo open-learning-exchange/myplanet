@@ -20,8 +20,9 @@ class SubmissionsRepository {
     this._dao,
     this._photosDao,
     this._surveyDao,
-    this._examDao,
-  );
+    this._examDao, {
+    required TeamDao teamDao,
+  }) : _teamDao = teamDao;
 
   static const int initialBatchSize = 100;
 
@@ -37,6 +38,18 @@ class SubmissionsRepository {
   /// `exams` table into [Exams] and [Surveys], so the lookup needs both this
   /// and `_surveyDao`.
   final ExamDao _examDao;
+
+  /// The team a submission is attributed to, for the `team` object every
+  /// upload carries (see [_resolveTeamJson]).
+  ///
+  /// Kotlin reaches the same row through `Provider<TeamsRepository>`, whose
+  /// one use is `getTeamById(teamId)` -> `teamDao.getById(teamId)`
+  /// (`TeamsRepositoryImpl.kt:375-378`); the lazy `Provider` wrapper is a Hilt
+  /// cycle-breaker, not behaviour, so the port injects the DAO the repository
+  /// would have delegated to. `TeamDao.getById` matches it exactly — the
+  /// document's own `_id`, never the `teamId` column that memberships,
+  /// requests and reports all carry.
+  final TeamDao _teamDao;
 
   Stream<List<SubmissionRow>> watchForUser(String userId) =>
       _dao.watchForUser(userId);
@@ -93,14 +106,35 @@ class SubmissionsRepository {
   }
 
   /// Creates the empty answer sheet used when a user starts an offline survey.
+  ///
+  /// **This is the branch of `createExamSubmission` a team can actually reach**,
+  /// and the port splitting one Kotlin writer in two is what hid that. Every
+  /// Kotlin site that sets `isTeam = true` also sets `type = "survey"` —
+  /// `SubmissionsAdapter.openSurvey` (`:114-121`) for the team's surveys tab
+  /// and `PublicSurveyActivity` (`:99-107`) for a deep link — so
+  /// `ExamTakingFragment`'s exam branch passes a `teamId` that is always null
+  /// and a graded course exam can never carry a team. [teamId] therefore
+  /// belongs here as much as on [startExamSession], with the same
+  /// blank-guarded, unconditional write.
+  ///
+  /// **No caller passes it yet** — see [startExamSession] and
+  /// `PHASE_129_NOTES.md` for the chain that has to carry it
+  /// (`TeamSurveysScreen` -> the survey route -> `TakeSurveyScreen` ->
+  /// `SurveysRepository.submitResponse`), and for the second site,
+  /// `public_survey_screen`, which already holds the team id it does not pass.
   Future<String> createSurveyDraft({
     required SurveyRow survey,
     required List<SurveyQuestionRow> questions,
     required String userId,
     Map<String, SubmissionDraftAnswer> answers = const {},
+    String? teamId,
     DateTime? now,
   }) async {
     final timestamp = (now ?? DateTime.now()).millisecondsSinceEpoch;
+    // `teamId?.takeIf { it.isNotBlank() }` (`createExamSubmission:440`).
+    final persistedTeamId = (teamId == null || teamId.trim().isEmpty)
+        ? null
+        : teamId;
     final id = sha1
         .convert(utf8.encode('$userId:$timestamp:${survey.id}'))
         .toString();
@@ -117,6 +151,7 @@ class SubmissionsRepository {
           parent: Value(jsonEncode({'_id': survey.id, 'name': survey.name})),
           userId: Value(userId),
           type: const Value('survey'),
+          teamId: Value(persistedTeamId),
           startTime: Value(timestamp),
           lastUpdateTime: Value(timestamp),
           status: const Value('complete'),
@@ -243,11 +278,43 @@ class SubmissionsRepository {
   /// `pending` status plus `isUpdated: false` is what keeps a half-finished
   /// attempt out of `pendingUploads`; Kotlin gets the same effect from
   /// `getPendingSubmissions`' `WHERE status = 'complete'` filter.
+  ///
+  /// [teamId] mirrors `createExamSubmission`'s own parameter, which
+  /// `ExamTakingFragment` fills from `if (isTeam) teamId else null` on both
+  /// its branches (`:124-125` exam, `:151-152` survey). It is stored
+  /// **whether or not the team document is on this handset**, which is the
+  /// `aca425a` fix. `Submission.teamObject` and `Submission.membershipDoc` are
+  /// both `@Ignore`d, so gating the write on a successful lookup left the
+  /// attribution nowhere durable except inside the `user` JSON blob the same
+  /// block wrote — and that blob is overwritten by the respondent profile
+  /// (`UserInformationFragment` -> `SubmissionDao.markComplete`) and dropped
+  /// on upload whenever the live `users` row resolves. The column is the only
+  /// carrier that survives both. See [_resolveTeamJson].
+  ///
+  /// **On the exam arm that parameter is dead in Kotlin too, and saying
+  /// otherwise was this phase's own mistake.** Every Kotlin site that sets
+  /// `isTeam = true` also sets `type = "survey"`
+  /// (`SubmissionsAdapter.openSurvey:114-121`, `PublicSurveyActivity:99-107`);
+  /// `CourseStepFragment`'s exam launch (`:277-289`) passes no team argument
+  /// at all, so `type` keeps `BaseExamFragment`'s `"exam"` default and a
+  /// graded course exam can never carry a team. It is kept here because this
+  /// method is `createExamSubmission`'s exam arm and dropping it would make
+  /// the port's split unable to express its own specification — but the arm a
+  /// team reaches is [createSurveyDraft], and that is where the port's gap
+  /// actually is.
+  ///
+  /// **Nothing in the port passes it on either arm yet, and that is a named
+  /// gap, not a finished feature.** `TeamSurveysScreen` pushes
+  /// `'${Routes.surveys}/${survey.id}'` with no team, so the port's answer
+  /// sheets are all team-less where Kotlin's carry the team. Closing it is
+  /// four edits outside this repository, all recorded in
+  /// `PHASE_129_NOTES.md`.
   Future<String> startExamSession({
     required ExamRow exam,
     required List<ExamQuestionRow> questions,
     required String userId,
     String? courseId,
+    String? teamId,
     DateTime? now,
   }) async {
     final resolvedCourseId = (courseId?.isNotEmpty ?? false)
@@ -267,6 +334,7 @@ class SubmissionsRepository {
           questions: questions,
           userId: userId,
           parentId: parentId,
+          teamId: teamId,
           now: now,
         );
       } on Exception catch (error) {
@@ -283,9 +351,16 @@ class SubmissionsRepository {
     required List<ExamQuestionRow> questions,
     required String userId,
     required String parentId,
+    String? teamId,
     DateTime? now,
   }) async {
     await _deleteExamSubmissions(parentId: parentId, userId: userId);
+    // `teamId?.takeIf { it.isNotBlank() }` (`createExamSubmission:440`), and
+    // written to the column **unconditionally** — see [_resolveTeamJson] and
+    // the doc comment above for why the team must not depend on the lookup.
+    final persistedTeamId = (teamId == null || teamId.trim().isEmpty)
+        ? null
+        : teamId;
     final timestamp = (now ?? DateTime.now()).millisecondsSinceEpoch;
     final id = sha1
         .convert(utf8.encode('$userId:$timestamp:${exam.id}'))
@@ -306,6 +381,7 @@ class SubmissionsRepository {
           ),
           userId: Value(userId),
           type: const Value('exam'),
+          teamId: Value(persistedTeamId),
           startTime: Value(timestamp),
           lastUpdateTime: Value(timestamp),
           // Deliberately left at 0. `createExamSubmission` never sets a
@@ -1092,13 +1168,14 @@ class SubmissionsRepository {
   /// also sends remain part of the community-code parity gap.
   ///
   /// There is deliberately **no top-level `userId`**. Kotlin's
-  /// `serializeSubmission` emits none (`SubmissionsRepositoryImpl.kt:813-862`)
+  /// `serializeSubmission` emits none (`SubmissionsRepositoryImpl.kt:820-865`)
   /// and its sync-in derives the owner from `user._id`, so the key the port
   /// used to send was one only the port could read — which is exactly why the
   /// sync-in's matching read of it went unnoticed. See [_userDocument].
   Future<Map<String, dynamic>> serialize(SubmissionRow row) async {
     final answers = await _dao.answersFor(row.id);
     final parent = await _parentDocument(row);
+    final team = await _resolveTeamJson(row);
     return {
       if (row.couchId != null && row.couchId!.isNotEmpty) '_id': row.couchId,
       if (row.rev != null && row.rev!.isNotEmpty) '_rev': row.rev,
@@ -1106,6 +1183,9 @@ class SubmissionsRepository {
       // these unconditionally, so a null would arrive as a missing field.
       'parentId': row.parentId ?? '',
       'type': row.type ?? 'survey',
+      // Straight after `type`, where both Kotlin serializers add it
+      // (`getExamUploadPayload:764`, `serializeSubmission:836`).
+      'team': ?team,
       'status': row.status ?? 'pending',
       'startTime': row.startTime,
       'lastUpdateTime': row.lastUpdateTime,
@@ -1380,9 +1460,25 @@ class SubmissionsRepository {
   /// still a gap, recorded in the phase notes.
   ///
   /// `membershipDoc` rides along the same way Kotlin adds it, from the row's
-  /// `teamId` — it is where the sync-in recovers `teamId` from when the
-  /// document has no `team` object, so omitting it dropped a team submission's
-  /// team on every round trip.
+  /// `teamId`. It used to be the *only* place a team survived an upload, and
+  /// this comment used to say so; [serialize] now emits a top-level `team`
+  /// object as well (`aca425a`), so `membershipDoc` is the fallback the
+  /// sync-in reads when `team` is absent rather than the sole carrier. The
+  /// port sends both, and the sync-in prefers `team._id` ([upsertDocuments]).
+  ///
+  /// Sending both is a **superset** on the exam arm, not a Kotlin quirk:
+  /// `serializeSubmission` merges `membershipDoc` into the user object
+  /// (`:851-856`) while `getExamUploadPayload` (`:749-790`) sends `team` and
+  /// never touches `membershipDoc`. The port has one [serialize] for both
+  /// Kotlin serializers, so an exam-typed row carries a key Kotlin's exam
+  /// path omits. Harmless — it is the same team id, in the field the port's
+  /// own sync-in already falls back to.
+  ///
+  /// It also covers the case the writer cannot: a row whose `teamId` came from
+  /// the server rather than from this device still gets its `membershipDoc`,
+  /// which is why Kotlin rebuilds the field on every read
+  /// (`hydrateSubmissions`, `SubmissionsRepositoryImpl.kt:73`) instead of
+  /// persisting it — `Submission.membershipDoc` is `@Ignore`d.
   static Object? _userDocument(SubmissionRow row) {
     final userId = row.userId;
     final stored = _asDocument(row.user);
@@ -1401,6 +1497,88 @@ class SubmissionsRepository {
       base['membershipDoc'] = {'teamId': teamId};
     }
     return base;
+  }
+
+  /// The `team` object the upload carries, or null when this submission has no
+  /// team to attribute — a port of `resolveTeamJson`
+  /// (`SubmissionsRepositoryImpl.kt:791-810`, new in `aca425a`).
+  ///
+  /// The id is the authority and the name and type are decoration: `_id` is
+  /// always written when there is an id at all, while `name` and `type` are
+  /// **omitted rather than sent as null** when the team document is not on
+  /// this handset. That asymmetry is the whole point of the upstream change.
+  /// Planet attributes a submission by `team._id`, so a document with the id
+  /// and no name is attributable and one with neither is not; the previous
+  /// Kotlin emitted the object only when the team resolved, which silently
+  /// dropped the association exactly when the local cache was incomplete —
+  /// the normal state of a handset that has not finished syncing.
+  ///
+  /// **Kotlin's `teamObject` branch has no port counterpart, and needs none.**
+  /// `resolveTeamJson` prefers `submission.teamObject?._id` over
+  /// `submission.teamId`, but `Submission.teamObject` is `@Ignore`d
+  /// (`Submission.kt:20`) — it is never persisted, and both Kotlin serializers
+  /// are reached from `UploadConfigs` with rows fetched through
+  /// `getPendingExamResults`/`getPendingSubmissionsForUpload`
+  /// (`UploadConfigs.kt:242,256`), which rehydrate `membershipDoc` and not
+  /// `teamObject`. So the field is always null on the upload path and the
+  /// `submission.teamId` fallback is the branch that runs. The port's
+  /// [serialize] likewise only ever sees a persisted [SubmissionRow].
+  Future<Map<String, dynamic>?> _resolveTeamJson(SubmissionRow row) async {
+    final teamId = row.teamId;
+    // `?.takeIf { it.isNotBlank() } ?: return null` (`:793-795`) — blank, not
+    // merely empty, so a whitespace column cannot produce `{"_id": " "}`.
+    if (teamId == null || teamId.trim().isEmpty) return null;
+
+    final team = await _teamByIdOrNull(teamId);
+    final name = team?.name;
+    final type = team?.type;
+    return {
+      '_id': teamId,
+      // The stored value, not the trimmed one: Kotlin's `takeIf` decides
+      // whether to write the string, it does not rewrite it.
+      if (name != null && name.trim().isNotEmpty) 'name': name,
+      if (type != null && type.trim().isNotEmpty) 'type': type,
+    };
+  }
+
+  /// Port of `getTeamByIdOrNull` (`SubmissionsRepositoryImpl.kt:812-818`): the
+  /// team if this handset has it, null if the lookup fails.
+  ///
+  /// A failed lookup must not fail the upload. Before `aca425a` the Kotlin
+  /// called `getTeamById` bare, so a throwing read took the whole
+  /// `createExamSubmission` down and `startExamSession`'s three retries burned
+  /// on an error retrying cannot fix.
+  ///
+  /// **Drift has a `CancellationException` and it implements `Exception`**, so
+  /// the rethrow ports literally rather than by analogy. Kotlin has to name
+  /// its own `CancellationException` for exactly this reason — a cancellation
+  /// *is* an `Exception` there, so a lone `catch (_: Exception)` would swallow
+  /// a cancelled scope and turn it into a silent null. The port's production
+  /// executor is `NativeDatabase.createInBackground`, whose isolate server
+  /// wraps every query in drift's `runCancellable`, so the same type is on the
+  /// table here; no path reaches this one-shot read from inside a cancellation
+  /// zone today, and that is not a reason to leave the hazard unhandled. An
+  /// earlier revision of this comment claimed "Dart has no cancellation
+  /// exception"; it was wrong.
+  ///
+  /// Every other `Exception` — a drift or IO failure, the thing Kotlin is
+  /// absorbing — becomes a cache miss, and the upload keeps its `team._id`.
+  ///
+  /// An `Error` propagates, which is **deliberately stricter than Kotlin** in
+  /// one case: reading a closed database throws Dart `StateError` where Room
+  /// throws `IllegalStateException`, an `Exception` that Kotlin's catch
+  /// absorbs. Nothing in `lib/` ever closes the database, so in production the
+  /// case does not arise; when it does arise it is a defect in the caller, and
+  /// reporting it as a team that is merely missing would hide it behind a
+  /// document that looks under-populated.
+  Future<TeamRow?> _teamByIdOrNull(String teamId) async {
+    try {
+      return await _teamDao.getById(teamId);
+    } on CancellationException {
+      rethrow;
+    } on Exception catch (_) {
+      return null;
+    }
   }
 
   /// `parent` and `user` are stored locally as JSON *text*, but Kotlin uploads
@@ -1434,7 +1612,7 @@ class SubmissionsRepository {
   /// sent:
   ///
   /// * `userId` is `normalizeSubmissionUserId(user._id)` — the owner lives in
-  ///   the nested user object, and `serializeSubmission` (`:813-862`) emits no
+  ///   the nested user object, and `serializeSubmission` (`:820-865`) emits no
   ///   top-level `userId` at all. The port's own uploader used to emit one,
   ///   which is the only reason anything ever appeared here: the pair agreed
   ///   with itself and disagreed with Planet.

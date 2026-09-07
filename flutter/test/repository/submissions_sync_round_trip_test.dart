@@ -44,6 +44,7 @@ void main() {
       database.submitPhotosDao,
       database.surveyDao,
       database.examDao,
+      teamDao: database.teamDao,
     );
   });
   tearDown(() => database.close());
@@ -279,6 +280,7 @@ void main() {
         secondDevice.submitPhotosDao,
         secondDevice.surveyDao,
         secondDevice.examDao,
+        teamDao: secondDevice.teamDao,
       );
     });
     tearDown(() => secondDevice.close());
@@ -810,6 +812,7 @@ void main() {
         database.submitPhotosDao,
         database.surveyDao,
         database.examDao,
+        teamDao: database.teamDao,
       );
     });
 

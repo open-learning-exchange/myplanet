@@ -116,6 +116,7 @@ void main() {
         db.submitPhotosDao,
         db.surveyDao,
         db.examDao,
+        teamDao: db.teamDao,
       ).createBulkSurveySubmissions('survey-1', const ['user-1']);
     }
 

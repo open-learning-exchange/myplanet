@@ -100,6 +100,7 @@ class _FlakySubmissionsRepository extends Fake
     required List<ExamQuestionRow> questions,
     required String userId,
     String? courseId,
+    String? teamId,
     DateTime? now,
   }) async {
     calls++;
@@ -109,6 +110,7 @@ class _FlakySubmissionsRepository extends Fake
       questions: questions,
       userId: userId,
       courseId: courseId,
+      teamId: teamId,
       now: now,
     );
   }
@@ -139,6 +141,7 @@ class _ThrowingSubmissionsRepository extends Fake
     required List<ExamQuestionRow> questions,
     required String userId,
     String? courseId,
+    String? teamId,
     DateTime? now,
   }) async => throw Exception('disk full');
 }
@@ -1071,6 +1074,7 @@ void main() {
         db.submitPhotosDao,
         db.surveyDao,
         db.examDao,
+        teamDao: db.teamDao,
       );
       final flaky = _FlakySubmissionsRepository(real);
 
