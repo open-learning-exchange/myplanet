@@ -26,7 +26,6 @@ class LifeFragment : BaseRecyclerFragment<MyLife?>(), OnStartDragListener {
     private var itemTouchHelper: ItemTouchHelper? = null
     private val viewModel: LifeViewModel by viewModels()
     private var _binding: FragmentLifeBinding? = null
-    private var isObserverAttached = false
     private val binding get() = checkNotNull(_binding)
     override fun getLayout(): Int = R.layout.fragment_life
 
@@ -42,9 +41,13 @@ class LifeFragment : BaseRecyclerFragment<MyLife?>(), OnStartDragListener {
         return view
     }
 
-    override suspend fun getAdapter(): ListAdapter<*, *> {
+    override suspend fun getAdapter(): ListAdapter<*, *> = initAdapter()
+
+    private fun initAdapter(): LifeAdapter {
         if (!::lifeAdapter.isInitialized) {
-            lifeAdapter = LifeAdapter(requireContext(), this,
+            lifeAdapter = LifeAdapter(
+                requireContext(),
+                this,
                 visibilityCallback = { myLife, isVisible ->
                     val id = myLife._id.takeIf { it.isNotBlank() }
                         ?: myLife.imageId?.takeIf { it.isNotBlank() }
@@ -66,15 +69,6 @@ class LifeFragment : BaseRecyclerFragment<MyLife?>(), OnStartDragListener {
             itemTouchHelper = ItemTouchHelper(callback)
         }
         itemTouchHelper?.attachToRecyclerView(recyclerView)
-
-        if (!isObserverAttached) {
-            collectWhenStarted(viewModel.myLifeList) { list ->
-                lifeAdapter.submitList(list)
-            }
-            viewModel.loadMyLifeList()
-            isObserverAttached = true
-        }
-
         return lifeAdapter
     }
 
@@ -84,10 +78,16 @@ class LifeFragment : BaseRecyclerFragment<MyLife?>(), OnStartDragListener {
         setupUI(binding.myLifeParentLayout, requireActivity())
         val dividerItemDecoration = DividerItemDecoration(recyclerView.context, RecyclerView.VERTICAL)
         recyclerView.addItemDecoration(dividerItemDecoration)
+
+        initAdapter()
+        collectWhenStarted(viewModel.myLifeList) { list ->
+            lifeAdapter.submitList(list)
+        }
+        viewModel.loadMyLifeList()
     }
 
     override fun onDestroyView() {
-        isObserverAttached = false
+        itemTouchHelper?.attachToRecyclerView(null)
         _binding = null
         super.onDestroyView()
     }

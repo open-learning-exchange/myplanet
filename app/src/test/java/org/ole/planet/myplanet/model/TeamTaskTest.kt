@@ -50,6 +50,9 @@ class TeamTaskTest {
 
         val linkObj = result.getAsJsonObject("link")
         assertEquals("linkValue", linkObj.get("linkKey").asString)
+
+        assertEquals("myplanet", result.get("app").asString)
+        assertTrue(result.has("androidId"))
     }
 
     @Test
