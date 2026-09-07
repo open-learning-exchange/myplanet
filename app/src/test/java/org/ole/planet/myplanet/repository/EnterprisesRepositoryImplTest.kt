@@ -86,7 +86,7 @@ class EnterprisesRepositoryImplTest {
             createdDate = 4000L
         }
 
-        coEvery { teamDao.getByTeamIdAndDocType(teamId, "report") } returns listOf(report, archivedReport)
+        coEvery { teamDao.getNonArchivedReportsByTeamId(teamId) } returns listOf(report)
 
         val result = repository.exportReportsAsCsv(teamId, "Test Team")
 
