@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.model.AppNotification
+import org.ole.planet.myplanet.model.TeamNotification
 import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -734,6 +735,35 @@ class NotificationsRepositoryImplTest {
     @Test
     fun `resolveType classifies newResource as resource`() {
         assertEquals("resource", repository.resolveType("newResource", "Hay nuevos recursos en la biblioteca.", null))
+    }
+
+    @Test
+    fun `getTeamNotifications only counts messages for teams with chat notification row`() = runTest {
+        val chatTrackedTeamId = "teamTracked"
+        val untrackedTeamId = "teamUntracked"
+        val teamIds = listOf(chatTrackedTeamId, untrackedTeamId)
+        val userId = "user1"
+
+        val chatNotification = TeamNotification().apply {
+            parentId = chatTrackedTeamId
+            type = "chat"
+            lastCount = 2
+        }
+
+        coEvery { teamNotificationDao.getByTypeAndParentIds("chat", teamIds) } returns listOf(chatNotification)
+        coEvery { voicesRepository.countTopLevelByTeam(chatTrackedTeamId) } returns 5L
+        coEvery { teamTaskDao.getTasksForUserBetween(eq(userId), any(), any()) } returns emptyList()
+
+        val result = repository.getTeamNotifications(teamIds, userId)
+
+        coVerify(exactly = 1) { voicesRepository.countTopLevelByTeam(chatTrackedTeamId) }
+        coVerify(exactly = 0) { voicesRepository.countTopLevelByTeam(untrackedTeamId) }
+
+        assertEquals(2, result.size)
+        assertTrue(result[chatTrackedTeamId]?.hasChat == true)
+        assertFalse(result[chatTrackedTeamId]?.hasTask == true)
+        assertFalse(result[untrackedTeamId]?.hasChat == true)
+        assertFalse(result[untrackedTeamId]?.hasTask == true)
     }
 
     @Test
