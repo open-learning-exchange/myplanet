@@ -1,7 +1,7 @@
 import '../prefs/planet_prefs.dart';
 import 'device_stats.dart';
 
-/// The three device fields Kotlin appends to locally-authored CouchDB docs.
+/// The device fields Kotlin appends to locally-authored CouchDB docs.
 class DeviceIdentity {
   const DeviceIdentity({
     required this.androidId,
@@ -9,12 +9,38 @@ class DeviceIdentity {
     required this.customDeviceName,
   });
 
+  /// `DOCUMENT_ORIGIN` in `utils/DocumentOrigin.kt` — the value Planet reads
+  /// to tell a document this app authored from one Planet itself wrote.
+  static const String documentOrigin = 'myplanet';
+
   final String androidId;
   final String deviceName;
   final String customDeviceName;
 
-  Map<String, dynamic> get documentFields => {
+  /// Port of `JsonObject.addDocumentOrigin` (`utils/DocumentOrigin.kt`): the
+  /// authoring device's id plus the `app` marker, and nothing else.
+  ///
+  /// Kotlin stamps *only* these two at the serializers that had no device
+  /// telemetry before `27c0470` — `CourseProgress.serializeProgress`,
+  /// `Feedback.serializeFeedback`, `Meetup.serialize`, `TeamTask.serialize`,
+  /// `StepExam.serializeExam`, `SubmitPhotos.serialize` and
+  /// `VoicesRepositoryImpl.serializeNews` — so a caller porting one of those
+  /// wants this rather than [documentFields], which would over-send the two
+  /// device names.
+  Map<String, dynamic> get originFields => {
     'androidId': androidId,
+    'app': documentOrigin,
+  };
+
+  /// The origin pair plus the two device names, for the serializers that
+  /// carried all of them before `27c0470` (`Personal.serialize`,
+  /// `Rating.serialize`, `SearchActivity.serialize`,
+  /// `TeamsRepositoryImpl.serializeTeamActivities`, `serializeSubmission`).
+  /// Those sites called `addDocumentOrigin()` in place of their existing
+  /// `addProperty("androidId", …)`, so `app` is the only field new on the
+  /// wire — which is why it belongs here and not at each call site.
+  Map<String, dynamic> get documentFields => {
+    ...originFields,
     'deviceName': deviceName,
     'customDeviceName': customDeviceName,
   };

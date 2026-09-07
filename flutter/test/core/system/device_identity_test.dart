@@ -27,6 +27,31 @@ void main() {
     stats = _Stats();
   });
 
+  test('originFields is `addDocumentOrigin`: the id plus the app marker', () {
+    const identity = DeviceIdentity(
+      androidId: 'id_build',
+      deviceName: 'TEST DEVICE',
+      customDeviceName: 'library tablet',
+    );
+
+    expect(identity.originFields, {'androidId': 'id_build', 'app': 'myplanet'});
+  });
+
+  test('documentFields carries the app marker alongside the names', () {
+    const identity = DeviceIdentity(
+      androidId: 'id_build',
+      deviceName: 'TEST DEVICE',
+      customDeviceName: 'library tablet',
+    );
+
+    expect(identity.documentFields, {
+      'androidId': 'id_build',
+      'app': 'myplanet',
+      'deviceName': 'TEST DEVICE',
+      'customDeviceName': 'library tablet',
+    });
+  });
+
   test('reads the platform identity and caches it for headless work', () async {
     when(() => stats.uniqueIdentifier()).thenAnswer((_) async => 'id_build');
     when(() => stats.deviceName()).thenAnswer((_) async => 'TEST DEVICE');

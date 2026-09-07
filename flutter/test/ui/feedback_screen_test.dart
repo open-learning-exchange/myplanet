@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myplanet/core/config/server_config.dart';
+import 'package:myplanet/core/system/device_identity.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/l10n/app_localizations.dart';
 import 'package:myplanet/providers/app_providers.dart';
@@ -191,6 +192,20 @@ Widget _wrap(
       appDatabaseProvider.overrideWith((ref) => database),
       sessionProvider.overrideWith(() => _TestSession(user)),
       serverConfigProvider.overrideWith(() => _TestServerConfig(config)),
+      // `FeedbackUploader` reads device identity at queue time to stamp the
+      // document's origin (`addDocumentOrigin`). The real source reaches the
+      // platform channel and `planetPrefs`, neither of which the harness
+      // serves, and a throw there would leave the outbox empty — which is
+      // precisely what these tests assert against.
+      deviceIdentitySourceProvider.overrideWithValue(
+        const FixedDeviceIdentitySource(
+          DeviceIdentity(
+            androidId: 'android-1',
+            deviceName: 'Pixel',
+            customDeviceName: 'ada-phone',
+          ),
+        ),
+      ),
     ],
     child: MaterialApp.router(
       routerConfig: router,

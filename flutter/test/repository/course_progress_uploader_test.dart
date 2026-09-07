@@ -10,6 +10,8 @@ import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/repository/course_progress_uploader.dart';
 import 'package:myplanet/repository/outbox_repository.dart';
 
+import 'device_identity_fixture.dart';
+
 void main() {
   late AppDatabase database;
   late MockPlanetApi api;
@@ -28,7 +30,12 @@ void main() {
     registerFallbackValue(<String, dynamic>{});
     registerFallbackValue(config);
     outbox = OutboxRepository(database.outboxDao);
-    uploader = CourseProgressUploader(api, database.courseProgressDao, outbox);
+    uploader = CourseProgressUploader(
+      api,
+      database.courseProgressDao,
+      outbox,
+      testDeviceIdentity,
+    );
   });
   tearDown(() => database.close());
 
@@ -156,6 +163,27 @@ void main() {
     expect(doc['courseId'], 'course-1');
     expect(doc['stepNum'], 1);
     expect(doc['passed'], isTrue);
+  });
+
+  test('the queued document is stamped with its origin', () async {
+    // `CourseProgress.serializeProgress` gained `addDocumentOrigin()` in
+    // `27c0470`: the id of the device that authored the row plus the `app`
+    // marker Planet uses to tell a myPlanet-authored document from a
+    // Planet-authored one. This is a *new-stamp* site — the Kotlin adds no
+    // `deviceName`/`customDeviceName` here, so neither does the port.
+    await seedPending();
+
+    await uploader.queuePending(config: config);
+    final entry = await database.outboxDao.findOpen(
+      CourseProgressUploader.type,
+      'progress-1',
+    );
+
+    final doc = jsonDecode(entry!.payload) as Map<String, dynamic>;
+    expect(doc['androidId'], 'android-id_build-id');
+    expect(doc['app'], 'myplanet');
+    expect(doc.containsKey('deviceName'), isFalse);
+    expect(doc.containsKey('customDeviceName'), isFalse);
   });
 }
 

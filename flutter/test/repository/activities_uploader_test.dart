@@ -158,6 +158,8 @@ void main() {
     expect(doc['androidId'], 'unique-id');
     expect(doc['deviceName'], 'TEST DEVICE');
     expect(doc['customDeviceName'], '');
+    // `addDocumentOrigin` stamps the app marker beside the id.
+    expect(doc['app'], 'myplanet');
     // The Kotlin's `_id` branch — which writes the logout *timestamp* as the
     // document id — is deliberately not reproduced; see the uploader.
     expect(doc.containsKey('_id'), isFalse);
@@ -290,6 +292,7 @@ void main() {
       // The Kotlin's `serializeResourceActivities` writes androidId/deviceName
       // but no customDeviceName — the resource doc matches that shape.
       'androidId': 'unique-id',
+      'app': 'myplanet',
       'deviceName': 'TEST DEVICE',
     });
   });

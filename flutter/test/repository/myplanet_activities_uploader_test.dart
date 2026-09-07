@@ -140,6 +140,36 @@ void main() {
     );
   });
 
+  test('the sync doc and every usage row name the app that wrote them', () async {
+    // `27c0470` put `addDocumentOrigin()` at two of MyPlanet.kt's serializers:
+    // `getNormalMyPlanetActivities` (the "sync" doc) and `addStats` (one
+    // foreground-usage row). Both already carried `androidId`, so `app` is the
+    // only new field. `getMyPlanetActivities` — the "usages" container — was
+    // *not* touched and carries no `androidId` at the document level, so it
+    // must not grow an `app` either.
+    stubMergeSuccess();
+    when(
+      () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer(
+      (_) async => const NetworkError<Map<String, dynamic>>(null, 'not found'),
+    );
+
+    await uploader.upload(user: user(), config: config);
+
+    final calls = verify(
+      () => api.postJsonObject(
+        MyPlanetActivitiesUploader.endpointFor(config),
+        captureAny(),
+        authHeader: any(named: 'authHeader'),
+      ),
+    ).captured;
+    final syncDoc = calls.first as Map<String, dynamic>;
+    final merged = calls.last as Map<String, dynamic>;
+    expect(syncDoc['app'], 'myplanet');
+    expect((merged['usages'] as List).single['app'], 'myplanet');
+    expect(merged.containsKey('app'), isFalse);
+  });
+
   test(
     'posts a fresh usages doc when none exists, then advances the cutoff',
     () async {

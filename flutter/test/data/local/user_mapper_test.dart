@@ -122,6 +122,27 @@ void main() {
       expect(doc.containsKey('password_scheme'), isFalse);
     });
 
+    test('a new account names the app that authored it', () {
+      // `UserEntity.serialize`'s creation branch called
+      // `addProperty("androidId", …)` before `27c0470` and
+      // `addDocumentOrigin()` after, so `app` is the field new on the wire.
+      // The port omits the `androidId`/`uniqueAndroidId`/`customDeviceName`
+      // trio here by an older deliberate decision (see `toDoc`), which this
+      // does not reverse.
+      final doc = UserMapper.toDoc(user(password: 'plain-secret'));
+
+      expect(doc['app'], 'myplanet');
+      expect(doc.containsKey('androidId'), isFalse);
+    });
+
+    test('an existing account is not re-stamped', () {
+      // `addDocumentOrigin()` sits inside `if (_id?.isEmpty() == true)`, so an
+      // update carries no origin — the creating device already recorded it.
+      final doc = UserMapper.toDoc(user(couchId: 'org.couchdb.user:ada'));
+
+      expect(doc.containsKey('app'), isFalse);
+    });
+
     test('iterations falls back to 10 when blank or non-numeric', () {
       expect(UserMapper.toDoc(user(iterations: ''))['iterations'], 10);
       expect(

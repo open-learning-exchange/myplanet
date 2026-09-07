@@ -1,6 +1,7 @@
 import '../core/config/server_config.dart';
 import '../core/network/network_result.dart';
 import '../core/prefs/planet_prefs.dart';
+import '../core/system/device_identity.dart';
 import '../core/system/device_stats.dart';
 import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
@@ -182,7 +183,7 @@ class ActivitiesUploader {
     'logoutTime': row.logoutTime,
     'createdOn': row.createdOn,
     'parentCode': row.parentCode,
-    'androidId': device.androidId,
+    ...device.originFields,
     'deviceName': device.deviceName,
     'customDeviceName': device.customDeviceName,
   };
@@ -202,7 +203,7 @@ class ActivitiesUploader {
     'time': row.time,
     'createdOn': row.createdOn,
     'parentCode': row.parentCode,
-    'androidId': device.androidId,
+    ...device.originFields,
     'deviceName': device.deviceName,
   };
 
@@ -219,7 +220,7 @@ class ActivitiesUploader {
     'time': row.time,
     'createdOn': row.createdOn,
     'parentCode': row.parentCode,
-    'androidId': device.androidId,
+    ...device.originFields,
     'deviceName': device.deviceName,
   };
 }
@@ -239,4 +240,15 @@ class DeviceTelemetry {
 
   /// `NetworkUtils.getCustomDeviceName` — the user-editable label, or empty.
   final String customDeviceName;
+
+  /// Port of `JsonObject.addDocumentOrigin` (`utils/DocumentOrigin.kt`), the
+  /// same pair [DeviceIdentity.originFields] emits: the device id plus the
+  /// `app` marker. `27c0470` replaced the bare `addProperty("androidId", …)`
+  /// in `serializeLoginActivities`, `serializeResourceActivities` and
+  /// `CourseActivity.serialize` with `addDocumentOrigin()`, so `app` is the
+  /// one field new on the wire for all three documents below.
+  Map<String, dynamic> get originFields => {
+    'androidId': androidId,
+    'app': DeviceIdentity.documentOrigin,
+  };
 }
