@@ -77,8 +77,7 @@ class _NotificationTapScopeState extends ConsumerState<NotificationTapScope> {
           ),
         ),
       );
-      final launch = await source.launchTap();
-      if (launch != null) await _handle(launch);
+      // MUTATION A: the cold-start tap is never asked for.
     } catch (error, stack) {
       // A platform channel failure must not take startup down with it.
       FlutterError.reportError(
@@ -95,7 +94,8 @@ class _NotificationTapScopeState extends ConsumerState<NotificationTapScope> {
     if (!mounted) return;
     final location = await ref.read(notificationTapHandlerProvider).handle(tap);
     if (!mounted || location == null) return;
-    ref.read(routerProvider).go(location);
+    // MUTATION B: the navigation is dropped.
+    location.length;
   }
 
   @override
