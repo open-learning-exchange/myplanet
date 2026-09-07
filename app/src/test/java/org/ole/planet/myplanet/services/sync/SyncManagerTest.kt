@@ -144,4 +144,30 @@ class SyncManagerTest {
 
         coVerify(exactly = 0) { transactionSyncManager.syncDb(any()) }
     }
+
+    @Test
+    fun `syncPerf logging is evaluated when isLoggable returns true`() = runTest {
+        io.mockk.mockkStatic(android.util.Log::class)
+        every { android.util.Log.isLoggable("SyncPerf", android.util.Log.DEBUG) } returns true
+        every { android.util.Log.d(any(), any()) } returns 0
+
+        coEvery { transactionSyncManager.authenticate() } returns true
+
+        syncManager.start(listener, "sync", listOf())
+
+        verify { android.util.Log.d("SyncPerf", match { it.contains("FULL SYNC STARTED") }) }
+    }
+
+    @Test
+    fun `syncPerf logging is skipped when isLoggable returns false`() = runTest {
+        io.mockk.mockkStatic(android.util.Log::class)
+        every { android.util.Log.isLoggable("SyncPerf", android.util.Log.DEBUG) } returns false
+        every { android.util.Log.d(any(), any()) } returns 0
+
+        coEvery { transactionSyncManager.authenticate() } returns true
+
+        syncManager.start(listener, "sync", listOf())
+
+        verify(exactly = 0) { android.util.Log.d("SyncPerf", any()) }
+    }
 }
