@@ -94,6 +94,15 @@ class CoursesRepositoryImplTest {
     }
 
     @Test
+    fun testUpdateCourseProgressScopesUpdateToTheGivenUser() = runTest {
+        coEvery { courseProgressDao.updatePassedByCourseAndStep(any(), any(), any(), any()) } returns 1
+
+        repository.updateCourseProgress("course1", 2, true, "user-a")
+
+        coVerify { courseProgressDao.updatePassedByCourseAndStep("course1", 2, true, "user-a") }
+    }
+
+    @Test
     fun testNormalizeText() {
         assertEquals("hello world", Utilities.normalizeText("HELLO World"))
         assertEquals("cafe", Utilities.normalizeText("Café"))
