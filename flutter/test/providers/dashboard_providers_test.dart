@@ -96,6 +96,39 @@ void main() {
       expect(pending.single.name, 'Individual');
       expect(pending.single.submissionId, 'sub-1');
     });
+
+    test('resolves a course-attached survey through the composite key', () async {
+      // Phase 125. A course-attached survey's `parentId` is
+      // `"$surveyId@$courseId"` — what `createBulkSurveySubmissions` now writes
+      // and what Kotlin has always written. `getUniquePendingSurveys` dedupes
+      // and resolves by `examIdFromParentId()`
+      // (`SubmissionsRepositoryImpl.kt:108-121`), never by the whole column.
+      // Keying on the raw value sent the composite to `getByIds`, which matched
+      // nothing, so the prompt silently dropped every pending survey belonging
+      // to a course — pre-fix this failed with `Actual: []`.
+      await db.surveyDao.upsertAll([
+        SurveysCompanion.insert(
+          id: 'survey-1',
+          courseId: const Value('course-1'),
+          name: const Value('Onboarding'),
+        ),
+      ], const {});
+      await db.submissionDao.upsertAll([
+        submission('sub-1', 'survey-1@course-1'),
+        // Two sheets for the same survey still dedupe to one, which they only
+        // do if both strip to the same key.
+        submission('sub-2', 'survey-1@course-1'),
+      ]);
+
+      final pending = await container.read(
+        pendingSurveysProvider('user-1').future,
+      );
+
+      expect(pending, hasLength(1));
+      expect(pending.single.surveyId, 'survey-1');
+      expect(pending.single.name, 'Onboarding');
+      expect(pending.single.submissionId, 'sub-1');
+    });
   });
 
   group('myTeamsStreamProvider', () {

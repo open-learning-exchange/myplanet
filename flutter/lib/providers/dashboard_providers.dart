@@ -9,6 +9,7 @@ import '../core/network/network_result.dart';
 import '../core/utils/url_utils.dart';
 import '../data/local/app_database.dart';
 import '../repository/notifications_repository.dart';
+import '../repository/submissions_repository.dart';
 import 'app_providers.dart';
 
 /// The home dashboard's card data, replacing `DashboardViewModel.loadUserContent`
@@ -181,10 +182,17 @@ final pendingSurveysProvider =
           .pendingSurveySubmissions(userId);
 
       // One submission per survey, first (oldest) wins — LinkedHashMap order,
-      // as the Kotlin's dedupe does.
+      // as the Kotlin's dedupe does. The key is the **stripped** parent id:
+      // `getUniquePendingSurveys` dedupes and resolves by
+      // `examIdFromParentId()` (`SubmissionsRepositoryImpl.kt:108-121`), never
+      // by the whole column, because a course-attached survey's `parentId` is
+      // `"$surveyId@$courseId"` (Phase 125). Reading it raw sent the composite
+      // to `getByIds`, which matched nothing, so the prompt silently dropped
+      // every pending survey belonging to a course.
       final bySurveyId = <String, SubmissionRow>{};
       for (final submission in submissions) {
-        final surveyId = submission.parentId ?? '';
+        final surveyId =
+            SubmissionsRepository.parentBaseId(submission.parentId) ?? '';
         if (surveyId.isEmpty) continue;
         bySurveyId.putIfAbsent(surveyId, () => submission);
       }

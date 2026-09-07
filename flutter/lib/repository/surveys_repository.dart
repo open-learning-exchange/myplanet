@@ -225,8 +225,12 @@ class SurveysRepository {
   }) async {
     final submission = await _submissions.getById(submissionId);
     if (submission == null) return null;
-    final surveyId = submission.parentId;
-    if (surveyId == null) return null;
+    // `examIdFromParentId()` — a course-attached survey's `parentId` is
+    // `"$surveyId@$courseId"` (Phase 125), and the whole value is not a survey
+    // id. Reading it raw found no questions, so resuming a pending sheet for a
+    // course survey replaced its answers with an empty set.
+    final surveyId = SubmissionsRepository.parentBaseId(submission.parentId);
+    if (surveyId == null || surveyId.isEmpty) return null;
     final questions = await _dao.questionsFor(surveyId);
     await _submissions.updateSurveyAnswers(
       submissionId: submissionId,

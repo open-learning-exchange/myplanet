@@ -12,6 +12,8 @@ import 'package:myplanet/providers/courses_providers.dart';
 import 'package:myplanet/providers/ratings_provider.dart';
 import 'package:myplanet/providers/session_provider.dart';
 import 'package:myplanet/repository/ratings_repository.dart';
+import 'package:myplanet/repository/submissions_repository.dart';
+import 'package:myplanet/repository/surveys_repository.dart';
 import 'package:myplanet/ui/courses/take_course_screen.dart';
 
 import '../../support/widget_harness.dart';
@@ -274,6 +276,107 @@ void main() {
       findsOneWidget,
     );
     expect(find.byType(AlertDialog), findsNothing);
+  });
+
+  testWidgets('a completed attached survey lets the course finish', (
+    tester,
+  ) async {
+    // **The round trip, at the screen the learner actually taps.** Phase 125.
+    //
+    // Pre-fix this test failed with the toast still on screen and no rating
+    // dialog: `createSurveyDraft` stored `parentId: 'survey-mandatory'` while
+    // `hasUnfinishedSurveys` counted `'survey-mandatory@<course>'`, so the
+    // MyPlanet Onboarding course could not be finished however many times the
+    // learner answered its survey.
+    //
+    // The submission is authored by the production writer through
+    // `SurveysRepository.submitResponse`, not inserted by hand — a fixture
+    // that writes the key itself is what let the defect survive four phases of
+    // green tests.
+    final db = AppDatabase.memory();
+    addTearDown(db.close);
+    await db.surveyDao.upsertAll([
+      SurveysCompanion.insert(
+        id: 'survey-mandatory',
+        courseId: const Value(mandatoryCourseId),
+        name: const Value('Onboarding survey'),
+      ),
+    ], {});
+    final api = MockPlanetApi();
+    final submissions = SubmissionsRepository(
+      api,
+      db.submissionDao,
+      db.submitPhotosDao,
+      db.surveyDao,
+      db.examDao,
+    );
+    final answered = await SurveysRepository(
+      api,
+      db.surveyDao,
+      db.examDao,
+      submissions,
+    ).submitResponse('survey-mandatory', 'user-1', const {});
+    expect(answered, isNotNull);
+
+    await tester.pumpWidget(
+      wrapScreen(
+        Builder(
+          builder: (context) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final router = GoRouter.of(context);
+              final location = router
+                  .routerDelegate
+                  .currentConfiguration
+                  .last
+                  .matchedLocation;
+              if (location != '/take') {
+                router.push('/take');
+              }
+            });
+            return const Scaffold(body: Text('ROOT_PAGE'));
+          },
+        ),
+        pushTargets: {
+          '/take': (context) =>
+              const TakeCourseScreen(courseId: mandatoryCourseId),
+        },
+        overrides: [
+          sessionProvider.overrideWith(() => _TestSessionNotifier(_user())),
+          courseProvider(mandatoryCourseId).overrideWith(
+            (ref) => Stream.value(
+              buildCourseRow(id: mandatoryCourseId, courseTitle: 'Onboarding'),
+            ),
+          ),
+          courseStepsProvider(mandatoryCourseId).overrideWith(
+            (ref) => Stream.value([buildStepRow(id: 's1', stepTitle: 'First')]),
+          ),
+          appDatabaseProvider.overrideWith((ref) {
+            ref.onDispose(db.close);
+            return db;
+          }),
+          ratingSummaryProvider((
+            type: 'course',
+            itemId: mandatoryCourseId,
+          )).overrideWith(
+            (ref) => Stream.value(
+              const RatingSummary(average: 0, total: 0, userRating: null),
+            ),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Finish'));
+    await tester.pumpAndSettle();
+
+    // No toast, and the finish reached the rating dialog it is gated in front
+    // of — the learner's answer counted.
+    expect(
+      find.text('please complete the survey to finish the course'),
+      findsNothing,
+    );
+    expect(find.byType(AlertDialog), findsOneWidget);
   });
 
   /// Fills an in-memory database from a real-shaped course document through

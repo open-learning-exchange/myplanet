@@ -108,7 +108,12 @@ class SubmissionsRepository {
       [
         SubmissionsCompanion.insert(
           id: id,
-          parentId: Value(survey.id),
+          // `"$surveyId@$courseId"` for a course-attached survey, as
+          // `createExamSubmission` writes it — see [examParentId]. Storing the
+          // bare id here is what made the mandatory-survey gate unsatisfiable.
+          parentId: Value(
+            examParentId(examId: survey.id, courseId: survey.courseId),
+          ),
           parent: Value(jsonEncode({'_id': survey.id, 'name': survey.name})),
           userId: Value(userId),
           type: const Value('survey'),
@@ -344,12 +349,45 @@ class SubmissionsRepository {
   /// (`SubmissionsRepositoryImpl.kt:449-456`) and `deleteExamSubmissions`
   /// searches by (`:344-350`).
   ///
+  /// **This is the key for a survey as much as for an exam.** Kotlin has one
+  /// `exams` table and one writer: `createExamSubmission` is what
+  /// `ExamTakingFragment` reaches for whether the step carries an exam or a
+  /// survey (`type` is the only difference), and `createBulkSurveySubmissions`
+  /// (`:201-206`) resolves `examDao.getById(examId)?.courseId` to build the
+  /// same string. `hasSubmission` (`:174-190`) then queries exactly it. The
+  /// port had split the two apart: every survey writer stored the bare id
+  /// while [hasUnfinishedSurveys] looked for the composite, so a learner who
+  /// *had* answered a course-attached survey was still told they had not — and
+  /// since that check is what gates finishing `MANDATORY_SURVEY_COURSE_ID`,
+  /// the onboarding course could not be completed at all. Phase 125.
+  ///
   /// The port used to store the bare `courseId` here, which
   /// `ProgressRepository._examIdFromParent` reads as the exam id — it takes
   /// the leading `@`-delimited segment — so the per-step mistake counts could
   /// never find their exam even once `mistakes` was populated.
   static String examParentId({required String examId, String? courseId}) =>
       (courseId?.isNotEmpty ?? false) ? '$examId@$courseId' : examId;
+
+  /// The exam/survey id inside a `parentId` — Kotlin's
+  /// `Submission.examIdFromParentId()`, `parentId?.substringBefore("@")`
+  /// (`SubmissionsRepositoryImpl.kt:64-66`).
+  ///
+  /// Every Kotlin reader that needs to map a submission back to its exam goes
+  /// through this rather than comparing the whole column: `getUniquePendingSurveys`
+  /// (`:108-121`), `getSurveyTitlesFromSubmissions` (`:129-139`), `getExamMap`
+  /// (`:146`) and `ProgressRepositoryImpl.getParentBaseId`. Only two readers in
+  /// either tree compare the whole value — `hasSubmission`'s count, which builds
+  /// the composite itself, and `SurveysRepositoryImpl.findExistingAdoption`
+  /// (`:205-207`), whose rows are written with the bare id on purpose.
+  ///
+  /// `substringBefore` returns the whole string when the delimiter is absent,
+  /// so a bare id passes through unchanged — which is what makes this safe on
+  /// rows an older build of the port wrote.
+  static String? parentBaseId(String? parentId) {
+    if (parentId == null) return null;
+    final at = parentId.indexOf('@');
+    return at < 0 ? parentId : parentId.substring(0, at);
+  }
 
   /// Records one answer and returns whether it was **correct** — the verdict
   /// `updateAnsDb` hands back to `btnNext`/`btnSubmit`, which is what makes a
@@ -511,16 +549,23 @@ class SubmissionsRepository {
 
   /// Creates empty pending survey submissions for each selected user.
   /// Port of `SubmissionsRepositoryImpl.createBulkSurveySubmissions`.
+  ///
+  /// The course id is resolved **once**, before the per-user loop, exactly as
+  /// the Kotlin does (`:201-206`: `val courseId = examDao.getById(examId)?.courseId`
+  /// then one `parentId` for the whole batch). Passing the bare `surveyId`
+  /// through, as this used to, wrote a key [hasUnfinishedSurveys] cannot match.
   Future<void> createBulkSurveySubmissions(
     String surveyId,
     List<String> userIds, {
     DateTime? now,
     String Function()? createId,
   }) async {
+    final courseId = (await _surveyDao.getById(surveyId))?.courseId;
+    final parentId = examParentId(examId: surveyId, courseId: courseId);
     for (final userId in userIds) {
       await getOrCreateSurveySubmission(
         userId: userId,
-        parentId: surveyId,
+        parentId: parentId,
         now: now,
         createId: createId,
       );
@@ -528,6 +573,11 @@ class SubmissionsRepository {
   }
 
   /// Port of `SubmissionsRepositoryImpl.getOrCreateSubmission`.
+  ///
+  /// [parentId] is taken whole, as Kotlin's is: `getOrCreateSubmission`
+  /// (`:624-642`) stores its argument unchanged and leaves building the
+  /// `"$examId@$courseId"` shape to the caller. Callers must pass what
+  /// [examParentId] returns, not a bare survey id.
   Future<SubmissionRow> getOrCreateSurveySubmission({
     required String userId,
     required String parentId,
@@ -563,6 +613,17 @@ class SubmissionsRepository {
   Future<List<SubmissionRow>> submissionsForUserWithoutTeam(String userId) =>
       _dao.byUserWithoutTeam(userId);
 
+  /// The team-survey adoption marker. **Its `parentId` is deliberately the
+  /// bare survey id** and must stay that way: `createMappedSubmission`
+  /// (`SurveysRepositoryImpl.kt:210-241`) writes `parentId = examId` with no
+  /// course suffix, and `findExistingAdoption` (`:205-207`) recognises the row
+  /// by comparing the whole column to that bare id. Running it through
+  /// [examParentId] like the answer-sheet writers would make every adoption
+  /// invisible to its own lookup, and re-adopt on every load.
+  ///
+  /// It follows that a bare-id, `type = 'survey'` row is not *always* a
+  /// stale answer sheet, which is why [repairCourseSurveyParentIds] skips
+  /// `status = ''`.
   Future<void> createSurveyAdoptionSubmission({
     required String id,
     required String surveyId,
@@ -600,16 +661,116 @@ class SubmissionsRepository {
   /// signed-in learner.
   Future<List<SubmissionRow>> pendingUploads() => _dao.pendingUploads();
 
+  /// Rewrites a course-attached survey's answer sheets from the bare survey id
+  /// to `"$surveyId@$courseId"`, and returns how many rows it changed.
+  ///
+  /// This is the field-data half of the Phase 125 fix. Correcting the writers
+  /// leaves every row an earlier build already stored keyed the old way, and
+  /// **those rows do not heal on their own**: the port uploads a submission
+  /// with whatever `parentId` the row carries, and [upsertDocuments] writes
+  /// `parentId` straight back from the document, so a pull re-asserts the bare
+  /// id rather than correcting it. Left alone, a learner who has already
+  /// answered the mandatory survey would be told to answer it again — which is
+  /// the entire bug, survived once more, plus a duplicate answer sheet in the
+  /// reporting the survey exists to produce.
+  ///
+  /// It is **not** a schema migration and needs no `schemaVersion`: no DDL
+  /// changes, `parentId` has always been on the table, and a bump would be the
+  /// wrong tool anyway — `submissions` is in `localAuthorityTables`, so an
+  /// upgrade preserves exactly the rows that need repairing and repairs none
+  /// of them.
+  ///
+  /// Two rows it must not touch, both `type = 'survey'` with a bare id:
+  ///
+  /// * **the adoption marker** (`status = ''`), whose bare id is Kotlin's and
+  ///   is how `findExistingAdoption` finds it — see
+  ///   [createSurveyAdoptionSubmission];
+  /// * a submission for a survey with no `courseId`, whose bare id is already
+  ///   what [examParentId] would produce.
+  ///
+  /// Idempotent: after the first pass no row matches the bare id any more.
+  Future<int> repairCourseSurveyParentIds(String courseId) async {
+    if (courseId.isEmpty) return 0;
+    final surveys = await _surveyDao.getByCourseId(courseId);
+    var repaired = 0;
+    for (final survey in surveys) {
+      final target = examParentId(examId: survey.id, courseId: survey.courseId);
+      // A survey with no `courseId` of its own keys to the bare id already.
+      if (target == survey.id) continue;
+      // Built here rather than in `SubmissionDao` for the same reason
+      // `_deleteExamSubmissions` is: `app_database.dart` belongs to another
+      // lane this round. It should move there.
+      repaired +=
+          await (_dao.update(_dao.submissions)..where(
+                (row) =>
+                    row.parentId.equals(survey.id) &
+                    row.type.equals('survey') &
+                    row.status.isNotValue(''),
+              ))
+              .write(SubmissionsCompanion(parentId: Value(target)));
+    }
+    return repaired;
+  }
+
   /// Port of `SubmissionsRepositoryImpl.hasUnfinishedSurveys`. Returns true
   /// if the course has any attached survey the user has not yet submitted.
   ///
   /// Also aliased as `hasPendingSurvey` — the challenge dialog's name for the
   /// same check. The Kotlin has both methods; they are identical.
+  ///
+  /// [repairCourseSurveyParentIds] runs first. This is the one read in either
+  /// tree whose predicate is the whole `parentId`, so it is the one read that
+  /// a stale bare-id row can answer wrongly — and it runs at exactly the
+  /// moment the answer matters, when the learner taps Finish. Kotlin needs no
+  /// such call because it never wrote the bare id.
+  ///
+  /// **A deliberate deviation, found by the Phase 125 ground-truth audit and
+  /// worth knowing before anyone "fixes" this method toward Kotlin.** This gate
+  /// is live in the port and almost certainly dead in the shipping Kotlin app.
+  /// `getSurveysByCourseId` filters `examDao.getByCourseIdAndType(courseId,
+  /// "survey")` — **singular** — while `StepExam.type` is the embedded
+  /// document's own `type` (`CoursesRepositoryImpl.kt:744`:
+  /// `if (examJson.has("type")) … else examKey`), which for a survey is
+  /// `"surveys"`. Every other Kotlin reader uses the plural: the Take Survey
+  /// button itself is `getByStepIdAndType(stepId, "surveys")` (`:531`), the
+  /// surveys list is `getByType("surveys")`, and `ExamDao`'s defaults are
+  /// `"surveys"`. So the two queries are mutually exclusive and at most one of
+  /// the button and this block can ever see a given survey: a document carrying
+  /// `type: "surveys"` gets a button and never blocks, a document carrying no
+  /// `type` blocks forever with no button that could satisfy it.
+  ///
+  /// The port cannot reproduce that split even if it wanted to: `Surveys` has
+  /// no `type` column, because `ExamMapper.fromDoc` uses the document's `type`
+  /// to *choose the table* and then discards it. Its reader is
+  /// `SurveyDao.getByCourseId` with no type filter, so it finds the survey the
+  /// button opens — which is the behaviour the Kotlin feature was written to
+  /// have. Making the writers agree with it (Phase 125) is therefore internal
+  /// consistency, not restored parity, and the composite key is still the right
+  /// one to converge on: it is what Kotlin uploads, what Planet joins on, and
+  /// what the port's own exam path has always written.
+  ///
+  /// Two things the audit established that keep this reader safe, both pinned
+  /// by tests in `mandatory_survey_round_trip_test.dart`:
+  ///
+  /// * Kotlin's `createMappedSurvey` copies the source survey's `courseId` and
+  ///   `stepId` into an adopted team clone (`SurveysRepositoryImpl.kt:181-182`),
+  ///   so a Kotlin course step can serve a clone and this block would demand
+  ///   every team's copy. The port's `adoptSurvey` omits both columns, and that
+  ///   omission is what makes an unfiltered `getByCourseId` correct here.
+  /// * `countByUserParentAndType` is status-blind, as Kotlin's is
+  ///   (`SubmissionDao.kt:23`) — a sheet the learner has merely *opened*
+  ///   satisfies the gate. That is also why the adoption marker, which is
+  ///   `type = 'survey'` with a bare id, must never be repaired into this key.
   Future<bool> hasUnfinishedSurveys(String courseId, String? userId) async {
     if (courseId.isEmpty || (userId ?? '').isEmpty) return false;
+    await repairCourseSurveyParentIds(courseId);
     final surveys = await _surveyDao.getByCourseId(courseId);
     for (final survey in surveys) {
-      final parentId = '${survey.id}@$courseId';
+      // Routed through the writers' own derivation so the two cannot drift
+      // apart again. `courseId` is non-empty by the guard above and equal to
+      // `survey.courseId` by the query that produced the row, so this is
+      // `hasSubmission`'s literal `"$stepExamId@$courseId"`.
+      final parentId = examParentId(examId: survey.id, courseId: courseId);
       final count = await _dao.countByUserParentAndType(
         userId!,
         parentId,
@@ -854,8 +1015,10 @@ class SubmissionsRepository {
     String? type,
   ) async {
     // `parentId.substringBefore("@")` — the parent id is `examId@courseId`
-    // for a course-attached exam or survey and the bare id otherwise.
-    final examId = (parentId ?? '').split('@').first;
+    // for a course-attached exam or survey and the bare id otherwise. Routed
+    // through [parentBaseId] so there is one derivation, not a re-implemented
+    // split per reader.
+    final examId = parentBaseId(parentId) ?? '';
     if (examId.isEmpty) return null;
 
     Future<Map<String, dynamic>?> fromExams() async {
