@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
+import org.ole.planet.myplanet.data.room.dao.ResourceOpenCount
 import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.OfflineActivity
@@ -233,19 +234,15 @@ class ActivitiesRepositoryImplTest {
 
     @Test
     fun `getMostOpenedResource returns null when no activities`() = testScope.runTest {
-        coEvery { resourceActivityDao.getByUserAndType("john", "pdf") } returns emptyList()
+        coEvery { resourceActivityDao.getMostOpenedResource("john", "pdf") } returns null
         val result = repository.getMostOpenedResource("john", "pdf")
         assertNull(result)
     }
 
     @Test
     fun `getMostOpenedResource returns correct pair`() = testScope.runTest {
-        val activities = listOf(
-            ResourceActivity().apply { resourceId = "res1"; title = "Res 1" },
-            ResourceActivity().apply { resourceId = "res1"; title = "Res 1" },
-            ResourceActivity().apply { resourceId = "res2"; title = "Res 2" }
-        )
-        coEvery { resourceActivityDao.getByUserAndType("john", "pdf") } returns activities
+        val countObj = ResourceOpenCount("Res 1", 2)
+        coEvery { resourceActivityDao.getMostOpenedResource("john", "pdf") } returns countObj
 
         val result = repository.getMostOpenedResource("john", "pdf")
 

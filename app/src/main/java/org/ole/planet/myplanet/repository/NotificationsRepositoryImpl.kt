@@ -313,7 +313,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
 
         val chatCountsById = mutableMapOf<String, Long>()
-        for (teamId in teamIds) {
+        for (teamId in notificationsById.keys) {
             chatCountsById[teamId] = voicesRepository.countTopLevelByTeam(teamId)
         }
 
