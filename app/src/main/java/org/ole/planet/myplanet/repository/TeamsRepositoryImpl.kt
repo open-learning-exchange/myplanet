@@ -49,6 +49,7 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.services.reminders.LocalReminderScheduler
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -79,6 +80,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val courseDao: CourseDao,
     private val courseStepDao: CourseStepDao,
     private val appDatabase: AppDatabase,
+    private val localReminderScheduler: LocalReminderScheduler,
 ) : TeamsRepository, TeamsSyncRepository {
     override fun getTasksFlow(userId: String?): Flow<List<TeamTask>> {
         return teamTaskDao.getOpenTasksForUser(userId).flowOn(dispatcherProvider.default)
@@ -821,6 +823,7 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun deleteTask(taskId: String) {
         teamTaskDao.deleteById(taskId)
+        localReminderScheduler.cancelTaskReminder(taskId)
     }
 
     private suspend fun upsertTask(task: TeamTask) {
@@ -844,6 +847,7 @@ class TeamsRepositoryImpl @Inject constructor(
         deadline: Long,
         teamId: String,
         assigneeId: String?,
+        reminderAdvanceMinutes: String?,
     ) {
         val teamTask = TeamTask().apply {
             id = UUID.randomUUID().toString()
@@ -852,10 +856,12 @@ class TeamsRepositoryImpl @Inject constructor(
             this.deadline = deadline
             this.teamId = teamId
             assignee = assigneeId
+            this.reminderAdvanceMinutes = reminderAdvanceMinutes
             isUpdated = true
             status = "active"
         }
         upsertTask(teamTask)
+        localReminderScheduler.scheduleTaskReminder(teamTask)
     }
 
     override suspend fun updateTask(
@@ -864,14 +870,20 @@ class TeamsRepositoryImpl @Inject constructor(
         description: String,
         deadline: Long,
         assigneeId: String?,
+        reminderAdvanceMinutes: String?,
     ) {
         teamTaskDao.getById(taskId)?.let { task ->
             task.title = title
             task.description = description
             task.deadline = deadline
             task.assignee = assigneeId
+            if (reminderAdvanceMinutes != null) {
+                task.reminderAdvanceMinutes = reminderAdvanceMinutes
+            }
             task.isUpdated = true
             teamTaskDao.upsert(task)
+            localReminderScheduler.cancelTaskReminder(taskId)
+            localReminderScheduler.scheduleTaskReminder(task)
         }
     }
 
@@ -880,6 +892,8 @@ class TeamsRepositoryImpl @Inject constructor(
             task.assignee = assigneeId
             task.isUpdated = true
             teamTaskDao.upsert(task)
+            localReminderScheduler.cancelTaskReminder(taskId)
+            localReminderScheduler.scheduleTaskReminder(task)
         }
     }
 
@@ -889,6 +903,11 @@ class TeamsRepositoryImpl @Inject constructor(
             task.completedTime = if (completed) Date().time else 0
             task.isUpdated = true
             teamTaskDao.upsert(task)
+            if (completed) {
+                localReminderScheduler.cancelTaskReminder(taskId)
+            } else {
+                localReminderScheduler.scheduleTaskReminder(task)
+            }
         }
     }
 
@@ -1328,6 +1347,12 @@ class TeamsRepositoryImpl @Inject constructor(
             }
         }
         teamTaskDao.upsertAll(tasks)
+        val currentUserId = userSessionManager.getUserModel()?.id
+        if (!currentUserId.isNullOrBlank()) {
+            tasks.filter { it.assignee == currentUserId && !it.completed }.forEach {
+                localReminderScheduler.scheduleTaskReminder(it)
+            }
+        }
     }
 
     override suspend fun bulkInsertTeamActivitiesFromSync(jsonArray: JsonArray) {

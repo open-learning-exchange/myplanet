@@ -26,6 +26,8 @@ class ReminderAlarmReceiver : BroadcastReceiver() {
         const val EXTRA_TEAM_ID = "extra_team_id"
         const val EXTRA_DEADLINE = "extra_deadline"
         const val EXTRA_MESSAGE = "extra_message"
+        const val EXTRA_ADVANCE_MINUTES = "extra_advance_minutes"
+        const val EXTRA_ASSIGNEE_NAME = "extra_assignee_name"
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -52,10 +54,16 @@ class ReminderAlarmReceiver : BroadcastReceiver() {
             }
             ACTION_TASK_REMINDER -> {
                 val deadline = intent.getStringExtra(EXTRA_DEADLINE) ?: ""
-                val config = NotificationUtils.createTaskNotification(
+                val advanceMinutes = intent.getIntExtra(EXTRA_ADVANCE_MINUTES, 0)
+                val assigneeName = intent.getStringExtra(EXTRA_ASSIGNEE_NAME)
+                val teamId = intent.getStringExtra(EXTRA_TEAM_ID)
+                val config = NotificationUtils.createTaskReminderNotification(
                     taskId = id,
                     taskTitle = title,
                     deadline = deadline,
+                    advanceMinutes = advanceMinutes,
+                    assigneeName = assigneeName,
+                    teamId = teamId,
                     timeProvider = timeProvider
                 )
                 notificationManager.showNotification(config)

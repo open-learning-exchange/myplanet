@@ -64,6 +64,7 @@ class TeamsRepositoryImplTest {
     private val courseDao: CourseDao = mockk(relaxed = true)
     private val courseStepDao: CourseStepDao = mockk(relaxed = true)
     private val appDatabase: AppDatabase = mockk(relaxed = true)
+    private val localReminderScheduler: org.ole.planet.myplanet.services.reminders.LocalReminderScheduler = mockk(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -104,6 +105,7 @@ class TeamsRepositoryImplTest {
             courseDao,
             courseStepDao,
             appDatabase,
+            localReminderScheduler,
         )
     }
 
@@ -330,5 +332,33 @@ class TeamsRepositoryImplTest {
         io.mockk.unmockkStatic(android.text.TextUtils::class)
         io.mockk.unmockkObject(NetworkUtils)
         io.mockk.unmockkObject(org.ole.planet.myplanet.MainApplication.Companion)
+    }
+
+    @Test
+    fun `createTask persists task and schedules reminder`() = runTest(testDispatcher) {
+        teamsRepository.createTask("Task A", "Desc A", 50000L, "team_1", "user_1", "10,60")
+
+        coVerify {
+            teamTaskDao.upsert(match {
+                it.title == "Task A" &&
+                it.description == "Desc A" &&
+                it.deadline == 50000L &&
+                it.assignee == "user_1" &&
+                it.reminderAdvanceMinutes == "10,60"
+            })
+            localReminderScheduler.scheduleTaskReminder(match {
+                it.title == "Task A" && it.reminderAdvanceMinutes == "10,60"
+            })
+        }
+    }
+
+    @Test
+    fun `deleteTask deletes from dao and cancels reminder`() = runTest(testDispatcher) {
+        teamsRepository.deleteTask("task_to_delete")
+
+        coVerify {
+            teamTaskDao.deleteById("task_to_delete")
+            localReminderScheduler.cancelTaskReminder("task_to_delete")
+        }
     }
 }

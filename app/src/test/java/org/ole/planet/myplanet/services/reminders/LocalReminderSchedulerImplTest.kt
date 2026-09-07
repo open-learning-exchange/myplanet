@@ -44,6 +44,7 @@ class LocalReminderSchedulerImplTest {
     private val teamTaskDao: TeamTaskDao = mockk(relaxed = true)
     private val teamDao: TeamDao = mockk(relaxed = true)
     private val courseDao: CourseDao = mockk(relaxed = true)
+    private val userDao: org.ole.planet.myplanet.data.room.dao.UserDao = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
     private val dispatcherProvider: DispatcherProvider = mockk {
         every { io } returns testDispatcher
@@ -70,6 +71,7 @@ class LocalReminderSchedulerImplTest {
             teamTaskDao = teamTaskDao,
             teamDao = teamDao,
             courseDao = courseDao,
+            userDao = userDao,
             dispatcherProvider = dispatcherProvider
         )
     }
@@ -158,6 +160,59 @@ class LocalReminderSchedulerImplTest {
             alarmManager.setExactAndAllowWhileIdle(
                 AlarmManager.RTC_WAKEUP,
                 task.deadline,
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun testScheduleTaskReminder_withAdvanceIntervals_schedulesMultipleAlarms() = runTest(testDispatcher) {
+        val task = TeamTask().apply {
+            id = "task_multi"
+            title = "Project deadline"
+            deadline = baseTime + (2 * 60 * 60 * 1000L) // 2 hours from now
+            reminderAdvanceMinutes = "10,60"
+            completed = false
+            teamId = "team_1"
+        }
+
+        scheduler.scheduleTaskReminder(task)
+
+        // 60 minutes before
+        verify {
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                task.deadline - (60 * 60 * 1000L),
+                any()
+            )
+        }
+        // 10 minutes before
+        verify {
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                task.deadline - (10 * 60 * 1000L),
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun testScheduleTaskReminder_immediateFallback_whenAdvanceInPastButDeadlineFuture() = runTest(testDispatcher) {
+        val task = TeamTask().apply {
+            id = "task_urgent"
+            title = "Urgent task"
+            deadline = baseTime + (3 * 60 * 1000L) // 3 minutes from now
+            reminderAdvanceMinutes = "10" // 10 min before is in the past
+            completed = false
+        }
+
+        scheduler.scheduleTaskReminder(task)
+
+        // Falls back to now + 1000L
+        verify {
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                baseTime + 1000L,
                 any()
             )
         }

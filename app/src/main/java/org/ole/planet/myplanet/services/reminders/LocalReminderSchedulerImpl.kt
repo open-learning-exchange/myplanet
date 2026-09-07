@@ -13,6 +13,7 @@ import org.ole.planet.myplanet.data.room.dao.CourseDao
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
+import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.TeamTask
@@ -28,6 +29,7 @@ class LocalReminderSchedulerImpl @Inject constructor(
     private val teamTaskDao: TeamTaskDao,
     private val teamDao: TeamDao,
     private val courseDao: CourseDao,
+    private val userDao: UserDao,
     private val dispatcherProvider: DispatcherProvider
 ) : LocalReminderScheduler {
 
@@ -82,20 +84,58 @@ class LocalReminderSchedulerImpl @Inject constructor(
 
     override suspend fun scheduleTaskReminder(task: TeamTask) {
         if (task.deadline <= 0 || task.completed) return
-        val triggerTime = task.deadline
-        if (triggerTime <= timeProvider.now()) return
+        val now = timeProvider.now()
+        if (task.deadline <= now) return
 
+        val advanceList = parseAdvanceMinutes(task.reminderAdvanceMinutes)
+        if (advanceList.isEmpty()) return
+
+        val assigneeUser = task.assignee?.let { userDao.getById(it) }
+        val assigneeName = assigneeUser?.getFullName()?.ifBlank { assigneeUser.name } ?: ""
+
+        val positiveAdvances = advanceList.filter { it > 0 }.sorted()
+        var scheduledFutureAdvance = false
+
+        positiveAdvances.forEach { advanceMinutes ->
+            val advanceMillis = advanceMinutes * 60 * 1000L
+            val triggerTime = task.deadline - advanceMillis
+            if (triggerTime > now) {
+                scheduledFutureAdvance = true
+                scheduleSingleTaskAlarm(task, triggerTime, advanceMinutes, assigneeName)
+            }
+        }
+
+        if (!scheduledFutureAdvance && positiveAdvances.isNotEmpty()) {
+            val closestAdvance = positiveAdvances.minOrNull()
+            if (closestAdvance != null) {
+                scheduleSingleTaskAlarm(task, now + 1000L, closestAdvance, assigneeName)
+            }
+        }
+
+        if (advanceList.contains(0) && task.deadline > now) {
+            scheduleSingleTaskAlarm(task, task.deadline, 0, assigneeName)
+        }
+    }
+
+    private fun scheduleSingleTaskAlarm(
+        task: TeamTask,
+        triggerTime: Long,
+        advanceMinutes: Int,
+        assigneeName: String
+    ) {
         val intent = Intent(context, ReminderAlarmReceiver::class.java).apply {
             action = ReminderAlarmReceiver.ACTION_TASK_REMINDER
             putExtra(ReminderAlarmReceiver.EXTRA_EVENT_ID, task.id)
             putExtra(ReminderAlarmReceiver.EXTRA_TITLE, task.title ?: "Team Task")
             putExtra(ReminderAlarmReceiver.EXTRA_DEADLINE, TimeUtils.formatDate(task.deadline))
             putExtra(ReminderAlarmReceiver.EXTRA_TEAM_ID, task.teamId ?: "")
+            putExtra(ReminderAlarmReceiver.EXTRA_ADVANCE_MINUTES, advanceMinutes)
+            putExtra(ReminderAlarmReceiver.EXTRA_ASSIGNEE_NAME, assigneeName)
         }
 
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            ("task_" + task.id).hashCode(),
+            ("task_" + task.id + "_" + advanceMinutes).hashCode(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -103,17 +143,35 @@ class LocalReminderSchedulerImpl @Inject constructor(
         scheduleAlarm(triggerTime, pendingIntent)
     }
 
+    private fun parseAdvanceMinutes(reminderAdvanceMinutes: String?): List<Int> {
+        if (reminderAdvanceMinutes.isNullOrBlank()) return listOf(0)
+        return reminderAdvanceMinutes.split(",")
+            .mapNotNull { it.trim().toIntOrNull() }
+            .distinct()
+            .ifEmpty { listOf(0) }
+    }
+
     override suspend fun cancelTaskReminder(taskId: String) {
         val intent = Intent(context, ReminderAlarmReceiver::class.java).apply {
             action = ReminderAlarmReceiver.ACTION_TASK_REMINDER
         }
-        val pendingIntent = PendingIntent.getBroadcast(
+        val possibleAdvances = listOf(0, 5, 10, 15, 30, 60, 120, 1440)
+        possibleAdvances.forEach { advanceMinutes ->
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                ("task_" + taskId + "_" + advanceMinutes).hashCode(),
+                intent,
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            )
+            pendingIntent?.let { cancelAlarm(it) }
+        }
+        val legacyPendingIntent = PendingIntent.getBroadcast(
             context,
             ("task_" + taskId).hashCode(),
             intent,
             PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
         )
-        pendingIntent?.let { cancelAlarm(it) }
+        legacyPendingIntent?.let { cancelAlarm(it) }
     }
 
     override suspend fun scheduleCourseReminder(course: MyCourse, triggerTime: Long) {

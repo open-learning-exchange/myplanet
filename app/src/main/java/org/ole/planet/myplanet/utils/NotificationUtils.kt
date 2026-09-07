@@ -144,6 +144,62 @@ object NotificationUtils {
         )
     }
 
+    fun createTaskReminderNotification(
+        taskId: String,
+        taskTitle: String,
+        deadline: String,
+        advanceMinutes: Int = 0,
+        assigneeName: String? = null,
+        teamId: String? = null,
+        timeProvider: TimeProvider
+    ): NotificationConfig {
+        val title = if (advanceMinutes > 0) {
+            if (!assigneeName.isNullOrBlank()) {
+                "⏰ Task Reminder ($assigneeName)"
+            } else {
+                "⏰ Task Deadline Reminder"
+            }
+        } else {
+            if (!assigneeName.isNullOrBlank()) {
+                "⏰ Task Due ($assigneeName)"
+            } else {
+                "⏰ Task Due Now"
+            }
+        }
+
+        val message = if (advanceMinutes > 0) {
+            val timeText = if (advanceMinutes >= 1440) {
+                val days = advanceMinutes / 1440
+                "$days day${if (days > 1) "s" else ""}"
+            } else if (advanceMinutes >= 60) {
+                val hours = advanceMinutes / 60
+                "$hours hour${if (hours > 1) "s" else ""}"
+            } else {
+                "$advanceMinutes minutes"
+            }
+            "$taskTitle\nDue in $timeText ($deadline)"
+        } else {
+            "$taskTitle\nDue: $deadline"
+        }
+
+        val extrasMap = mutableMapOf("taskId" to taskId)
+        if (!teamId.isNullOrBlank()) {
+            extrasMap["teamId"] = teamId
+        }
+
+        return NotificationConfig(
+            id = "task_reminder_${taskId}_$advanceMinutes",
+            type = TYPE_TASK,
+            title = title,
+            message = message,
+            priority = NotificationCompat.PRIORITY_HIGH,
+            category = NotificationCompat.CATEGORY_REMINDER,
+            actionable = true,
+            extras = extrasMap,
+            relatedId = taskId
+        )
+    }
+
     fun createMeetupNotification(
         meetupId: String,
         meetupTitle: String,
@@ -364,7 +420,7 @@ object NotificationUtils {
             val activeNotifications = notificationManager.activeNotifications
             val isAlreadyShowing = activeNotifications.any { it.id == notificationId }
             
-            if (isAlreadyShowing) {
+            if (!isReminderType(config.type) && isAlreadyShowing) {
                 return null
             }
 
@@ -378,6 +434,9 @@ object NotificationUtils {
                 val notification = buildNotification(config)
                 notificationManager.notify(notificationId, notification)
                 markNotificationAsShown(config.id)
+                if (ActivityTracker.isAppInForeground) {
+                    InAppNotificationHelper.showInAppNotification(context, config)
+                }
                 true
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -409,6 +468,9 @@ object NotificationUtils {
 
             if (!config.silent) {
                 builder.setDefaults(NotificationCompat.DEFAULT_ALL)
+                val defaultSoundUri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
+                builder.setSound(defaultSoundUri)
+                builder.setVibrate(longArrayOf(0, 500, 250, 500))
             }
 
             if (config.bigTextStyle) {

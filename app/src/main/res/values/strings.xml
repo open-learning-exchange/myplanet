@@ -1383,5 +1383,15 @@
     <string name="task_deadline_reminders_summary">Get notified when team tasks are due</string>
     <string name="course_reminders">Course &amp; Study Reminders</string>
     <string name="course_reminders_summary">Receive offline reminders for course schedules</string>
-
+    <string name="remind_before_deadline">Remind before deadline</string>
+    <string name="reminder_at_deadline">At deadline</string>
+    <string name="reminder_5_min">5 minutes before</string>
+    <string name="reminder_10_min">10 minutes before</string>
+    <string name="reminder_15_min">15 minutes before</string>
+    <string name="reminder_30_min">30 minutes before</string>
+    <string name="reminder_1_hour">1 hour before</string>
+    <string name="reminder_2_hours">2 hours before</string>
+    <string name="reminder_1_day">1 day before</string>
+    <string name="no_reminder">No reminder</string>
+    <string name="reminders_selected">%d reminders set</string>
 </resources>

@@ -82,15 +82,22 @@ class TeamsTasksViewModel @Inject constructor(
         return _deadline.value ?: Calendar.getInstance()
     }
 
-    fun createOrUpdateTask(task: String, desc: String, teamTask: TeamTask?, teamId: String, assigneeId: String?) {
+    fun createOrUpdateTask(
+        task: String,
+        desc: String,
+        teamTask: TeamTask?,
+        teamId: String,
+        assigneeId: String?,
+        reminderAdvanceMinutes: String? = null
+    ) {
         viewModelScope.launch {
             val deadlineMillis = getDeadlineMillis()
             if (teamTask == null) {
-                teamsRepository.createTask(task, desc, deadlineMillis, teamId, assigneeId)
+                teamsRepository.createTask(task, desc, deadlineMillis, teamId, assigneeId, reminderAdvanceMinutes)
                 _taskActionEvents.send(TaskActionEvent.TaskCreatedOrUpdated(true, assigneeId))
             } else {
                 teamTask.id?.let {
-                    teamsRepository.updateTask(it, task, desc, deadlineMillis, assigneeId)
+                    teamsRepository.updateTask(it, task, desc, deadlineMillis, assigneeId, reminderAdvanceMinutes)
                     _taskActionEvents.send(TaskActionEvent.TaskCreatedOrUpdated(false, assigneeId))
                 }
             }

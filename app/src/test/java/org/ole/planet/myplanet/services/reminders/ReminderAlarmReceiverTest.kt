@@ -92,8 +92,33 @@ class ReminderAlarmReceiverTest {
             notificationManager.showNotification(
                 match { config ->
                     config.type == NotificationUtils.TYPE_TASK &&
-                        config.id == "task_789" &&
+                        config.id == "task_reminder_task_789_0" &&
                         config.message.contains("Submit Homework")
+                }
+            )
+        }
+    }
+
+    @Test
+    fun testOnReceive_advanceTaskReminder_showsNotificationWithAdvanceInfo() {
+        val intent = Intent(ReminderAlarmReceiver.ACTION_TASK_REMINDER).apply {
+            putExtra(ReminderAlarmReceiver.EXTRA_EVENT_ID, "task_789")
+            putExtra(ReminderAlarmReceiver.EXTRA_TITLE, "Submit Homework")
+            putExtra(ReminderAlarmReceiver.EXTRA_DEADLINE, "2026-08-20")
+            putExtra(ReminderAlarmReceiver.EXTRA_TEAM_ID, "team_456")
+            putExtra(ReminderAlarmReceiver.EXTRA_ADVANCE_MINUTES, 10)
+            putExtra(ReminderAlarmReceiver.EXTRA_ASSIGNEE_NAME, "Alice")
+        }
+
+        receiver.onReceive(context, intent)
+
+        verify {
+            notificationManager.showNotification(
+                match { config ->
+                    config.type == NotificationUtils.TYPE_TASK &&
+                        config.id == "task_reminder_task_789_10" &&
+                        config.title.contains("Alice") &&
+                        config.message.contains("Due in 10 minutes")
                 }
             )
         }

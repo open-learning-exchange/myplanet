@@ -122,6 +122,55 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
             datePickerDialog.show()
         }
 
+        val reminderOptionLabels = arrayOf(
+            getString(R.string.reminder_at_deadline),
+            getString(R.string.reminder_5_min),
+            getString(R.string.reminder_10_min),
+            getString(R.string.reminder_15_min),
+            getString(R.string.reminder_30_min),
+            getString(R.string.reminder_1_hour),
+            getString(R.string.reminder_2_hours),
+            getString(R.string.reminder_1_day)
+        )
+        val reminderMinutesValues = intArrayOf(0, 5, 10, 15, 30, 60, 120, 1440)
+        val selectedReminderIndices = BooleanArray(reminderOptionLabels.size)
+
+        if (t != null && !t.reminderAdvanceMinutes.isNullOrBlank()) {
+            val savedAdvances = t.reminderAdvanceMinutes.orEmpty().split(",").mapNotNull { it.trim().toIntOrNull() }
+            reminderMinutesValues.forEachIndexed { index, min ->
+                selectedReminderIndices[index] = savedAdvances.contains(min)
+            }
+        } else {
+            selectedReminderIndices[0] = true
+        }
+
+        fun updateReminderUI() {
+            val selectedLabels = reminderOptionLabels.filterIndexed { index, _ -> selectedReminderIndices[index] }
+            if (selectedLabels.isEmpty()) {
+                alertTaskBinding.tvReminder.text = getString(R.string.no_reminder)
+                alertTaskBinding.tvReminder.setTextColor(requireContext().getColor(R.color.hint_color))
+            } else {
+                alertTaskBinding.tvReminder.text = selectedLabels.joinToString(", ")
+                alertTaskBinding.tvReminder.setTextColor(requireContext().getColor(R.color.daynight_textColor))
+            }
+        }
+        updateReminderUI()
+
+        alertTaskBinding.tvReminder.setOnClickListener {
+            val tempChecked = selectedReminderIndices.clone()
+            AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
+                .setTitle(R.string.remind_before_deadline)
+                .setMultiChoiceItems(reminderOptionLabels, tempChecked) { _, which, isChecked ->
+                    tempChecked[which] = isChecked
+                }
+                .setPositiveButton(R.string.ok) { _, _ ->
+                    System.arraycopy(tempChecked, 0, selectedReminderIndices, 0, tempChecked.size)
+                    updateReminderUI()
+                }
+                .setNegativeButton(R.string.cancel, null)
+                .show()
+        }
+
         // Handle member assignment
         alertTaskBinding.tvAssignMember.setOnClickListener {
             viewLifecycleOwner.lifecycleScope.launch {
@@ -170,7 +219,9 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                 isValid = false
             }
             if (isValid) {
-                createOrUpdateTask(task, desc, t, selectedAssignee?.id)
+                val selectedMinutes = reminderMinutesValues.filterIndexed { index, _ -> selectedReminderIndices[index] }
+                val reminderAdvanceStr = if (selectedMinutes.isNotEmpty()) selectedMinutes.joinToString(",") else null
+                createOrUpdateTask(task, desc, t, selectedAssignee?.id, reminderAdvanceStr)
                 alertDialog.dismiss()
             }
         }
@@ -211,12 +262,18 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         alertTaskBinding.tvAssignMember.setTextColor(requireContext().getColor(R.color.daynight_textColor))
     }
 
-    private fun createOrUpdateTask(task: String, desc: String, teamTask: TeamTask?, assigneeId: String? = null) {
+    private fun createOrUpdateTask(
+        task: String,
+        desc: String,
+        teamTask: TeamTask?,
+        assigneeId: String? = null,
+        reminderAdvanceMinutes: String? = null
+    ) {
         if (teamsTasksViewModel.deadline.value == null) {
             Utilities.toast(activity, getString(R.string.deadline_is_required))
             return
         }
-        teamsTasksViewModel.createOrUpdateTask(task, desc, teamTask, teamId, assigneeId)
+        teamsTasksViewModel.createOrUpdateTask(task, desc, teamTask, teamId, assigneeId, reminderAdvanceMinutes)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

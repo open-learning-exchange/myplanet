@@ -91,6 +91,51 @@ class NotificationUtilsTest {
     }
 
     @Test
+    fun testCreateTaskReminderNotification_AdvanceWithAssignee() {
+        val taskId = "task_adv_1"
+        val taskTitle = "Final Project"
+        val deadline = "2026-09-10 15:00"
+        val config = NotificationUtils.createTaskReminderNotification(
+            taskId = taskId,
+            taskTitle = taskTitle,
+            deadline = deadline,
+            advanceMinutes = 60,
+            assigneeName = "John Doe",
+            timeProvider = timeProvider
+        )
+
+        assertEquals("task_reminder_task_adv_1_60", config.id)
+        assertEquals(NotificationUtils.TYPE_TASK, config.type)
+        assertEquals("⏰ Task Reminder (John Doe)", config.title)
+        assertTrue(config.message.contains(taskTitle))
+        assertTrue(config.message.contains("Due in 1 hour"))
+        assertTrue(config.message.contains(deadline))
+        assertEquals(NotificationCompat.PRIORITY_HIGH, config.priority)
+    }
+
+    @Test
+    fun testCreateTaskReminderNotification_AtDeadlineNoAssignee() {
+        val taskId = "task_adv_2"
+        val taskTitle = "Self Task"
+        val deadline = "2026-09-10 15:00"
+        val config = NotificationUtils.createTaskReminderNotification(
+            taskId = taskId,
+            taskTitle = taskTitle,
+            deadline = deadline,
+            advanceMinutes = 0,
+            assigneeName = null,
+            timeProvider = timeProvider
+        )
+
+        assertEquals("task_reminder_task_adv_2_0", config.id)
+        assertEquals(NotificationUtils.TYPE_TASK, config.type)
+        assertEquals("⏰ Task Due Now", config.title)
+        assertTrue(config.message.contains(taskTitle))
+        assertTrue(config.message.contains("Due: $deadline"))
+        assertEquals(NotificationCompat.PRIORITY_HIGH, config.priority)
+    }
+
+    @Test
     fun testCreateMeetupNotification() {
         val meetupId = "meetup_123"
         val meetupTitle = "Weekly Sync"
