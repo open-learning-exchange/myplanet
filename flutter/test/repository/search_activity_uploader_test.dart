@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
+import 'package:myplanet/core/system/device_stats.dart';
 import 'package:myplanet/core/network/network_result.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
@@ -38,6 +39,7 @@ void main() {
       database.searchActivityDao,
       outbox,
       testDeviceIdentity,
+      _FakeDeviceStats(),
     );
     registerFallbackValue(<String, dynamic>{});
   });
@@ -106,7 +108,10 @@ void main() {
       expect(payload['user'], 'ada');
       expect(payload['createdOn'], 'earth');
       expect(payload['parentCode'], 'sol');
-      expect(payload['androidId'], 'android-id_build-id');
+      // The bare ANDROID_ID, not the `androidId_buildId` composite this
+      // assertion used to expect — see `serialize`'s doc comment. The old
+      // expectation was pinning the divergence rather than the Kotlin.
+      expect(payload['androidId'], 'android-id');
       expect(payload['deviceName'], 'TEST DEVICE');
       expect(payload['customDeviceName'], 'classroom tablet');
       final filter = payload['filter'] as Map<String, dynamic>;
@@ -242,4 +247,63 @@ void main() {
     expect(filter['mediaType'], ['video']);
     expect(filter['tags'], isEmpty);
   });
+
+  test(
+    'the queued search carries the bare ANDROID_ID, not the composite',
+    () async {
+      // `SearchActivity.serialize` is the single `addDocumentOrigin` call site
+      // that passes the id explicitly —
+      // `addDocumentOrigin(VersionUtils.getAndroidId(context))`, the bare
+      // `Settings.Secure.ANDROID_ID` — where every other site takes the default
+      // `NetworkUtils.getUniqueIdentifier()`, the `androidId + "_" + Build.ID`
+      // composite. Spreading `documentFields` here sent the composite, so one
+      // handset appeared to Planet as two devices depending on which document it
+      // was aggregating.
+      await repository.saveResourceSearch(
+        userName: 'ada',
+        searchText: 'water',
+        planetCode: 'earth',
+        parentCode: 'sol',
+      );
+
+      await uploader.queuePending(config: config, userId: 'u-1');
+
+      final due = await database.outboxDao.due(
+        DateTime.now().millisecondsSinceEpoch + 1000,
+      );
+      final payload = jsonDecode(due.single.payload) as Map<String, dynamic>;
+      expect(payload['androidId'], 'android-id');
+      // The two device names still come from the identity, as Kotlin's own
+      // `addProperty` calls right after `addDocumentOrigin` do.
+      expect(payload['deviceName'], testDeviceFields['deviceName']);
+      expect(payload['customDeviceName'], testDeviceFields['customDeviceName']);
+      expect(payload['app'], 'myplanet');
+    },
+  );
+}
+
+/// `androidId()` is the bare `Settings.Secure.ANDROID_ID`; `uniqueIdentifier()`
+/// is the `androidId + "_" + Build.ID` composite. The two differ here on
+/// purpose: `SearchActivity.serialize` is the only Kotlin site that sends the
+/// bare one.
+class _FakeDeviceStats implements DeviceStats {
+  @override
+  Future<String> androidId() async => 'android-id';
+
+  @override
+  Future<String> uniqueIdentifier() async => 'android-id_build-id';
+
+  @override
+  Future<String> deviceName() async => 'TEST DEVICE';
+
+  @override
+  Future<int> versionCode() async => 6918;
+
+  @override
+  Future<String?> versionName() async => '0.69.18';
+
+  @override
+  Future<List<TabletUsageStats>> tabletUsageStats({
+    required int sinceMillis,
+  }) async => const [];
 }

@@ -186,9 +186,53 @@ the top-level **survey submission** document is covered centrally, because
 `submissions_uploader.dart` spreads `documentFields` over
 `SubmissionsRepository.serialize`'s output.
 
+A hazard the change exposed, worth knowing in production terms: adding the
+identity read to `FeedbackUploader` turned `feedback_screen_test.dart` red on
+all three of its outbox assertions, because that harness uses the real
+`feedbackUploaderProvider`, `deviceIdentitySourceProvider` reaches the platform
+channel, `read()` threw, and `FeedbackCreateNotifier.submit`'s `catch` swallowed
+it — so a *saved* feedback reported as failed and unqueued. Fixed in the test
+with `FixedDeviceIdentitySource`, matching `take_exam_screen_test`. **The same
+hazard already existed at the eight pre-existing `documentFields` sites**
+(personals, submissions, ratings, teams, search activity, team log, submit
+photos), so the shape was kept rather than a swallow invented at one of
+thirteen. In production `PlatformDeviceIdentitySource.read()` falls back to the
+primed preference cache and only rethrows when both values are empty, so this
+is a narrow window — but if it should be swallowed, it should be swallowed at
+all thirteen, which is a decision for a slice and not for a harvest lane.
+
 **Failing-first** per behaviour, in `device_identity_test.dart`,
 `user_mapper_test.dart`, `user_repository_test.dart` and each touched uploader's
 test; 41 net new tests across the phase, 2212 passing.
+
+### The search-activity device id, found while porting the stamp
+
+`SearchActivity.serialize` is the **one** `addDocumentOrigin` call site in the
+whole Kotlin tree that passes the argument explicitly:
+`addDocumentOrigin(VersionUtils.getAndroidId(context))`, the bare
+`Settings.Secure.ANDROID_ID`. Every other site takes the parameter's default,
+`NetworkUtils.getUniqueIdentifier()`, which is `androidId + "_" + Build.ID`.
+Extracting the helper is what made that visible — before `27c0470` the
+difference was two unrelated-looking lines in two files.
+
+The port's `search_activity_uploader.dart` spread `documentFields`, whose
+`androidId` is the composite (`device_stats.dart` documents that), so **search
+activities reported a different device id than the app they replace** — one
+handset appearing to Planet as two devices depending on which document it was
+aggregating. `serialize` now takes the bare id from `DeviceStats.androidId()`
+and overrides that one field, leaving both device names on the identity as
+Kotlin's own `addProperty` calls right after `addDocumentOrigin` do.
+
+The existing test asserted `'android-id_build-id'` — it was pinning the
+divergence rather than the Kotlin, so that expectation is corrected in place
+with a comment saying why, which is the only honest way to change a green
+assertion. The new test fails on the pre-fix code with
+`Expected: 'android-id' / Actual: 'android-id_build-id'`.
+
+Deliberately **not** changed on the same argument: `submit_photos_uploader.dart`
+over-sends both device names where Kotlin's `SubmitPhotos.serialize` stamps
+origin only. That one is a *superset* of the Kotlin document rather than a
+different value for the same key, so nothing on the server can misread it.
 
 ## `fdf474d` — why My Life needs no port
 
@@ -271,6 +315,26 @@ class Phase 121 found `tool/arb_from_strings_xml.dart` skips outright.
 
 ### Pre-existing gaps this batch pointed at
 
+* **A locally created resource never leaves the handset.** The largest find of
+  the round, and reachability-class: Kotlin's `UploadConfigs.getResourcesConfig`
+  fetches `getPendingResourceUploads()`, serializes each with
+  `MyLibrary.serialize`, POSTs to `resources` and adopts the returned id/rev.
+  The port has **no `resources` outbox type and no equivalent path at all** —
+  `add_resource_screen` (Phase 102, 33 tests) writes the `my_library` row,
+  `saveLocalResource` marks it offline and adds it to the shelf, and the shelf
+  push then uploads an id pointing at a document the server does not have.
+  Every layer is green and tested; nothing carries the document. The three
+  questions the guards encode answer badly here: the writer is the add-resource
+  screen, the reader is the server, and no writer connects them.
+  **No schema bump needed** — Kotlin's pending query is
+  `SELECT * FROM my_library WHERE _rev IS NULL`, and `MyLibraryTable.rev` is
+  already nullable, so a locally created row is identifiable exactly as Kotlin
+  identifies it. This wants its own slice: an uploader, an outbox type, and the
+  `markResourceUploaded` id/rev adoption.
+* **`ApkLog.serialize`, `NewsLog.serialize` and `UploadManager.createImage` have
+  no Dart counterpart** (crash/ANR logs, voice-view logging, and the profile
+  image POST respectively). Noted rather than investigated; each is a separate
+  question from this batch.
 * **`CoursesRepositoryImpl.deleteCourseProgress`/`deleteCoursesProgress` has no
   Dart counterpart.** Surfaced by reading around `9ff1273`, whose own diff is
   only a batching change. `setShelfMembership(joined: false)` in the port flips

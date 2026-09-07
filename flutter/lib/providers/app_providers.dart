@@ -191,6 +191,7 @@ final searchActivityUploaderProvider = Provider<SearchActivityUploader>(
     ref.watch(searchActivityDaoProvider),
     ref.watch(outboxRepositoryProvider),
     ref.watch(deviceIdentitySourceProvider),
+    ref.watch(deviceStatsProvider),
   ),
 );
 
