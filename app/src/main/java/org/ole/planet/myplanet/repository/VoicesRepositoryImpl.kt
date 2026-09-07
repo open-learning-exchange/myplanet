@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 
 class VoicesRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
@@ -445,6 +446,7 @@ class VoicesRepositoryImpl @Inject constructor(
         newsObject.addProperty("updatedDate", news.newsUpdatedDate)
         newsObject.addProperty("sharedBy", news.sharedBy)
         `object`.add("news", newsObject)
+        `object`.addDocumentOrigin()
         return `object`
     }
 

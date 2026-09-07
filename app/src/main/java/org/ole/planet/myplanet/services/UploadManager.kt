@@ -47,6 +47,7 @@ import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 
 private inline fun <T> Iterable<T>.processInBatches(action: (List<T>) -> Unit) {
     chunked(BATCH_SIZE).forEach(action)
@@ -136,7 +137,7 @@ class UploadManager @Inject constructor(
         user?.parentCode?.let { `object`.addProperty("resideOn", it) }
         user?.planetCode?.let { `object`.addProperty("sourcePlanet", it) }
         val object1 = JsonObject()
-        `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+        `object`.addDocumentOrigin()
         `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
         `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
         `object`.add("privateFor", object1)

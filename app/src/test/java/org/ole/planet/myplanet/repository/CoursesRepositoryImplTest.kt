@@ -88,8 +88,18 @@ class CoursesRepositoryImplTest {
             myLibraryDao,
             userRepository,
             dispatcherProvider,
-            realtimeSyncManager
+        realtimeSyncManager,
+        mockk(relaxed = true)
         )
+    }
+
+    @Test
+    fun testUpdateCourseProgressScopesUpdateToTheGivenUser() = runTest {
+        coEvery { courseProgressDao.updatePassedByCourseAndStep(any(), any(), any(), any()) } returns 1
+
+        repository.updateCourseProgress("course1", 2, true, "user-a")
+
+        coVerify { courseProgressDao.updatePassedByCourseAndStep("course1", 2, true, "user-a") }
     }
 
     @Test
