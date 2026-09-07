@@ -238,9 +238,8 @@ class AddResourceFragment : BottomSheetDialogFragment() {
 
     private fun handleUri(uri: Uri?, requestCode: Int) {
         val path = when (requestCode) {
-            REQUEST_CAPTURE_PICTURE, REQUEST_VIDEO_CAPTURE ->
-                FileUtils.getRealPathFromURI(requireContext(), uri)
-            REQUEST_FILE_SELECTION -> FileUtils.getPathFromURI(requireContext(), uri)
+            REQUEST_CAPTURE_PICTURE, REQUEST_VIDEO_CAPTURE, REQUEST_FILE_SELECTION ->
+                FileUtils.resolveUriToPath(requireContext(), uri)
             else -> null
         }
         processResource(path)
