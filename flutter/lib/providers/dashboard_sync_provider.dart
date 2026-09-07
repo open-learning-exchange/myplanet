@@ -142,6 +142,8 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
     // checkbox reads it via `hasUserCompletedSync`.
     await ref.read(activityLogProvider).recordSyncChallengeAction();
 
+    await pushCurrentUserShelf();
+
     for (final area in DashboardSyncArea.values) {
       await _syncArea(area);
     }
@@ -158,6 +160,49 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
     await _queueSearchActivities();
 
     state = state.copyWith(running: false, finishedAt: DateTime.now());
+  }
+
+  /// Port of `SyncManager.pushCurrentUserShelf`, which `startFullSync` runs
+  /// *before* the parallel pull phase begins (upstream `9255eac`).
+  ///
+  /// The ordering is the whole point, and it is the opposite end of the pass
+  /// from [DashboardSyncArea.shelf]: that area *pulls* the shelf document and
+  /// therefore has to run last, after `resources` and `courses` have written
+  /// and pruned the rows it stamps. This pushes the local shelf *first*, so a
+  /// course or resource the user added or removed since the last sync reaches
+  /// the server before the pull that would otherwise read the server's older
+  /// copy back over it. Without it the only push was the one the add/remove
+  /// UI fires inline (`ResourceShelfActions.setMemberships`,
+  /// `CourseDetailScreen._setMembership`), which is lost if that attempt was
+  /// offline — nothing rescanned it, and the next sync pulled the stale
+  /// server document instead.
+  ///
+  /// Kotlin catches `Exception` (rethrowing `CancellationException`), logs and
+  /// continues, so a shelf push that cannot reach the server must not stop the
+  /// sync. `upload` also reports a reachability failure as a returned
+  /// `SyncFailed` rather than a throw; both mean the same thing here, so the
+  /// result is deliberately not inspected.
+  ///
+  /// The session is awaited rather than read: Kotlin resolves its own user
+  /// (`userRepository.getUserModel()`) before deciding whether to push, and
+  /// `ref.read(sessionProvider).valueOrNull` is null on any pass that reaches
+  /// this before something else has resolved it — which would silently skip
+  /// the push. The `await` sits inside the `try` because the future can reject
+  /// where `valueOrNull` could not.
+  Future<void> pushCurrentUserShelf() async {
+    final config = ref.read(serverConfigProvider);
+    if (config == null) return;
+    try {
+      final user = await ref.read(sessionProvider.future);
+      if (user == null) return;
+      final shelfDocId = user.couchId;
+      if (shelfDocId == null || shelfDocId.isEmpty) return;
+      await ref
+          .read(shelfRepositoryProvider)
+          .upload(config: config, userId: user.id, shelfDocId: shelfDocId);
+    } catch (_) {
+      // Deliberately ignored — see above.
+    }
   }
 
   Future<void> retry(DashboardSyncArea area) async {

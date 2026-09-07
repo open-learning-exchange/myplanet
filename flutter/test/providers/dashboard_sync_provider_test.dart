@@ -1,5 +1,18 @@
+import 'package:drift/drift.dart' show Value;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:myplanet/core/config/server_config.dart';
+import 'package:myplanet/core/sync/sync_result.dart';
+import 'package:myplanet/data/api/planet_api.dart';
+import 'package:myplanet/data/local/app_database.dart';
+import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/dashboard_sync_provider.dart';
+import 'package:myplanet/providers/session_provider.dart';
+import 'package:myplanet/repository/shelf_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../support/widget_harness.dart';
 
 void main() {
   group('DashboardSyncState', () {
@@ -95,6 +108,8 @@ void main() {
     });
   });
 
+  group('shelf push before the pull phase', _shelfPushTests);
+
   group('DashboardSyncItem', () {
     test('copyWith keeps its area and supports clearing an error', () {
       const failed = DashboardSyncItem(
@@ -128,4 +143,173 @@ void main() {
       expect(complete.status, DashboardSyncStatus.succeeded);
     });
   });
+}
+
+/// `syncAll`'s shelf push, ported from `SyncManager.pushCurrentUserShelf`
+/// (upstream `9255eac`).
+///
+/// The pass is driven for real here rather than asserted structurally: the
+/// defect this covers is not "the push is wrong", it is "the push is not
+/// called", which only running `syncAll` can show. The sixteen table pulls are
+/// left to fail — `planetApiProvider` is a bare mock, so each one throws on its
+/// first call and `SyncNotifier.sync` records it as errored — because what is
+/// under test is the step that runs *before* them.
+void _shelfPushTests() {
+  const config = ServerConfig(
+    serverUrl: 'https://planet.example.org',
+    pin: '1234',
+    couchDbUrl: 'https://satellite:1234@planet.example.org:443',
+  );
+
+  late AppDatabase db;
+
+  setUpAll(() => registerFallbackValue(config));
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    db = AppDatabase.memory();
+  });
+  tearDown(() => db.close());
+
+  Future<ProviderContainer> containerFor({
+    required MockShelfRepository shelf,
+    String? couchId = 'org.couchdb.user:ada',
+    ServerConfig? serverConfig = config,
+  }) async {
+    final container = ProviderContainer(
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        planetApiProvider.overrideWithValue(_UnusablePlanetApi()),
+        shelfRepositoryProvider.overrideWithValue(shelf),
+        serverConfigProvider.overrideWith(
+          () => _TestServerConfigNotifier(serverConfig),
+        ),
+        sessionProvider.overrideWith(
+          () => _TestSessionNotifier(
+            buildUserRow(id: 'user-ada').copyWith(couchId: Value(couchId)),
+          ),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+    return container;
+  }
+
+  test('syncAll pushes the local shelf before the first table pull', () async {
+    final shelf = MockShelfRepository();
+    final container = await containerFor(shelf: shelf);
+    List<DashboardSyncStatus>? statusesAtPushTime;
+    List<Object?>? pushedWith;
+    when(
+      () => shelf.upload(
+        config: any(named: 'config'),
+        userId: any(named: 'userId'),
+        shelfDocId: any(named: 'shelfDocId'),
+      ),
+    ).thenAnswer((invocation) async {
+      pushedWith = [
+        invocation.namedArguments[const Symbol('config')],
+        invocation.namedArguments[const Symbol('userId')],
+        invocation.namedArguments[const Symbol('shelfDocId')],
+      ];
+      statusesAtPushTime = container
+          .read(dashboardSyncProvider)
+          .items
+          .map((item) => item.status)
+          .toList(growable: false);
+      return const SyncComplete(1);
+    });
+
+    await container.read(dashboardSyncProvider.notifier).syncAll();
+
+    expect(pushedWith, [
+      config,
+      'user-ada',
+      'org.couchdb.user:ada',
+    ], reason: 'syncAll never pushed the shelf');
+    // Every area still waiting when the push ran is the ordering assertion:
+    // Kotlin runs `pushCurrentUserShelf()` before the parallel table set, so a
+    // shelf change made since the last sync reaches the server before the pull
+    // that would otherwise read the server's older copy back over it.
+    expect(statusesAtPushTime, isNotNull);
+    expect(
+      statusesAtPushTime,
+      everyElement(DashboardSyncStatus.waiting),
+      reason: 'the shelf push must run before any area starts',
+    );
+  });
+
+  test('a failing shelf push does not stop the sync', () async {
+    final shelf = MockShelfRepository();
+    final container = await containerFor(shelf: shelf);
+    when(
+      () => shelf.upload(
+        config: any(named: 'config'),
+        userId: any(named: 'userId'),
+        shelfDocId: any(named: 'shelfDocId'),
+      ),
+    ).thenThrow(StateError('offline'));
+
+    await container.read(dashboardSyncProvider.notifier).syncAll();
+
+    // Kotlin logs and continues; the pass must still reach its terminal state.
+    final state = container.read(dashboardSyncProvider);
+    expect(state.running, isFalse);
+    expect(state.finishedAt, isNotNull);
+    expect(state.completedCount, DashboardSyncArea.values.length);
+  });
+
+  test('a user with no CouchDB id is not pushed', () async {
+    final shelf = MockShelfRepository();
+    final container = await containerFor(shelf: shelf, couchId: null);
+
+    await container.read(dashboardSyncProvider.notifier).pushCurrentUserShelf();
+
+    verifyNever(
+      () => shelf.upload(
+        config: any(named: 'config'),
+        userId: any(named: 'userId'),
+        shelfDocId: any(named: 'shelfDocId'),
+      ),
+    );
+  });
+
+  test('no configured server means no push', () async {
+    final shelf = MockShelfRepository();
+    final container = await containerFor(shelf: shelf, serverConfig: null);
+
+    await container.read(dashboardSyncProvider.notifier).pushCurrentUserShelf();
+
+    verifyNever(
+      () => shelf.upload(
+        config: any(named: 'config'),
+        userId: any(named: 'userId'),
+        shelfDocId: any(named: 'shelfDocId'),
+      ),
+    );
+  });
+}
+
+class MockShelfRepository extends Mock implements ShelfRepository {}
+
+/// Every call throws, which is what keeps the sixteen table pulls off the
+/// network: `SyncNotifier.sync` catches it and records the area as errored.
+class _UnusablePlanetApi extends Mock implements PlanetApi {}
+
+class _TestServerConfigNotifier extends ServerConfigNotifier {
+  _TestServerConfigNotifier(this._config);
+
+  final ServerConfig? _config;
+
+  @override
+  ServerConfig? build() => _config;
+}
+
+class _TestSessionNotifier extends SessionNotifier {
+  _TestSessionNotifier(this._user);
+
+  final UserRow? _user;
+
+  @override
+  Future<UserRow?> build() async => _user;
 }
