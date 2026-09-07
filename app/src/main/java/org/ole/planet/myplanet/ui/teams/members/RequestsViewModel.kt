@@ -7,12 +7,14 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsMembersRepository
-import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.repository.UserRepository
 
 data class RequestsUiState(
     val members: List<UserEntity> = emptyList(),
@@ -23,7 +25,7 @@ data class RequestsUiState(
 @HiltViewModel
 class RequestsViewModel @Inject constructor(
     private val teamsRepository: TeamsMembersRepository,
-    private val userSessionManager: UserSessionManager
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RequestsUiState())
@@ -33,11 +35,18 @@ class RequestsViewModel @Inject constructor(
 
     fun fetchMembers(teamId: String) {
         viewModelScope.launch {
-            val members = teamsRepository.getRequestedMembers(teamId)
-            val memberCount = teamsRepository.getJoinedMemberCount(teamId)
-            val user = userSessionManager.getUserModel()
-            val isLeader = teamsRepository.isTeamLeader(teamId, user?.id)
-            _uiState.value = RequestsUiState(members, isLeader, memberCount)
+            coroutineScope {
+                val membersDeferred = async { teamsRepository.getRequestedMembers(teamId) }
+                val memberCountDeferred = async { teamsRepository.getJoinedMemberCount(teamId) }
+                val userDeferred = async { userRepository.getUserModel() }
+                val user = userDeferred.await()
+                val isLeader = teamsRepository.isTeamLeader(teamId, user?.id)
+                _uiState.value = RequestsUiState(
+                    members = membersDeferred.await(),
+                    isLeader = isLeader,
+                    memberCount = memberCountDeferred.await()
+                )
+            }
         }
     }
 

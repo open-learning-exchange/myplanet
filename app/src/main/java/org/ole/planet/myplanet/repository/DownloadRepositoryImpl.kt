@@ -5,6 +5,7 @@ import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.DownloadResult
@@ -58,6 +59,8 @@ class DownloadRepositoryImpl @Inject constructor(
 
                 return@withContext DownloadResult.Error(errorMessage, response.code())
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: UnknownHostException) {
             return@withContext DownloadResult.Error("Server not reachable. Check internet connection.")
         } catch (e: SocketTimeoutException) {

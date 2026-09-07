@@ -15,8 +15,6 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -36,7 +34,6 @@ import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.SearchActivity
-import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -91,8 +88,18 @@ class CoursesRepositoryImplTest {
             myLibraryDao,
             userRepository,
             dispatcherProvider,
-            realtimeSyncManager
+        realtimeSyncManager,
+        mockk(relaxed = true)
         )
+    }
+
+    @Test
+    fun testUpdateCourseProgressScopesUpdateToTheGivenUser() = runTest {
+        coEvery { courseProgressDao.updatePassedByCourseAndStep(any(), any(), any(), any()) } returns 1
+
+        repository.updateCourseProgress("course1", 2, true, "user-a")
+
+        coVerify { courseProgressDao.updatePassedByCourseAndStep("course1", 2, true, "user-a") }
     }
 
     @Test

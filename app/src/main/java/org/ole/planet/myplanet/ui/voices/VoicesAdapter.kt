@@ -873,7 +873,7 @@ class VoicesAdapter(
         val imagesToLoad = news?.parsedImagesArray ?: news?.imagesArray
         imagesToLoad?.let { imagesArray ->
             val size = imagesArray.size()
-            if (!imagesArray.isEmpty) {
+            if (!imagesArray.isEmpty()) {
                 if (size == 1) {
                     val ob = imagesArray[0]?.asJsonObject
                     val resourceId = JsonUtils.getString("resourceId", ob)

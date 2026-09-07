@@ -124,9 +124,9 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         val urlUser: String
         val urlPwd: String
         if (url.contains("@")) {
-            val userinfo = getUserInfo(uri)
-            urlUser = userinfo[0]
-            urlPwd = userinfo[1]
+            val (u, p) = UrlUtils.getUserInfo(uri.userInfo)
+            urlUser = u
+            urlPwd = p
             couchdbURL = url
         } else if (TextUtils.isEmpty(password)) {
             showAlert(this, "", getString(R.string.pin_is_required))
@@ -237,14 +237,8 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
 
     companion object {
         fun getUserInfo(uri: Uri): Array<String> {
-            val ar = arrayOf("", "")
-            val info =
-                uri.userInfo?.split(":".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
-            if ((info?.size ?: 0) > 1) {
-                ar[0] = "${info?.get(0)}"
-                ar[1] = "${info?.get(1)}"
-            }
-            return ar
+            val (u, p) = UrlUtils.getUserInfo(uri.userInfo)
+            return arrayOf(u, p)
         }
     }
 

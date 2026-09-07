@@ -5,6 +5,8 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -185,6 +187,57 @@ class NotificationsViewModelTest {
         assertEquals("o1", notifs[1].id)
         assertEquals("j1", notifs[2].id)
         assertEquals("t2", notifs[3].id)
+    }
+
+    @Test
+    fun testParseTaskDateRunsOncePerTaskNotification() = runTest(testDispatcher) {
+        val task1 = notification(id = "t1", type = "task", isRead = false, message = "Submit report Mon 12, Jan 2024")
+        val task2 = notification(id = "t2", type = "task", isRead = false, message = "Review code Fri 7, Feb 2025")
+        // A task whose message has no date: the cache stores null, so a `?:` fallback would re-parse. This case must
+        // still parse exactly once.
+        val task3 = notification(id = "t3", type = "task", isRead = false, message = "Complete as soon as possible")
+
+        mockkObject(NotificationsViewModel.Companion)
+        try {
+            every {
+                NotificationsViewModel.parseTaskDate(any())
+            } answers { callOriginal() }
+
+            loadNotifications(task1, task2, task3)
+
+            // One parse per task notification — reused for both the team-name title lookup and rendering — including
+            // the dateless message, whose cached null must not trigger a second parse.
+            verify(exactly = 1) { NotificationsViewModel.parseTaskDate(task1.message) }
+            verify(exactly = 1) { NotificationsViewModel.parseTaskDate(task2.message) }
+            verify(exactly = 1) { NotificationsViewModel.parseTaskDate(task3.message) }
+        } finally {
+            unmockkObject(NotificationsViewModel.Companion)
+        }
+    }
+
+    @Test
+    fun testLoadNotificationsParallelLookups() = runTest(testDispatcher) {
+        val taskWithId = notification(id = "t1", type = "task", isRead = false, message = "Task By Id Mon 12, Jan 2024").copy(relatedId = "rel_task_1")
+        val taskWithTitleOnly = notification(id = "t2", type = "task", isRead = false, message = "Task By Title Mon 12, Jan 2024").copy(relatedId = null)
+        val joinReq = notification(id = "j1", type = "join_request", isRead = false, message = "Join Req").copy(relatedId = "rel_join_1")
+
+        coEvery { repository.getNotifications(USER_ID, FILTER_ALL, false) } returns listOf(taskWithId, taskWithTitleOnly, joinReq)
+        coEvery { repository.getTaskTeamNamesByTaskIds(listOf("rel_task_1")) } returns mapOf("rel_task_1" to "Alpha Team")
+        coEvery { repository.getTaskTeamNamesByTaskTitles(listOf("Task By Id", "Task By Title")) } returns mapOf("Task By Title" to "Beta Team")
+        coEvery { repository.getJoinRequestDetailsBatch(listOf("rel_join_1")) } returns mapOf("rel_join_1" to Pair("Alice", "Gamma Team"))
+        coEvery { repository.getUnreadCount(USER_ID, false) } returns 3
+
+        viewModel.loadNotifications(USER_ID, FILTER_ALL)
+        advanceUntilIdle()
+
+        assertEquals(3, viewModel.unreadCount.value)
+        val notifications = viewModel.notifications.value
+        assertEquals(3, notifications.size)
+
+        coVerify { repository.getTaskTeamNamesByTaskIds(listOf("rel_task_1")) }
+        coVerify { repository.getTaskTeamNamesByTaskTitles(listOf("Task By Id", "Task By Title")) }
+        coVerify { repository.getJoinRequestDetailsBatch(listOf("rel_join_1")) }
+        coVerify { repository.getUnreadCount(USER_ID, false) }
     }
 
     @Test

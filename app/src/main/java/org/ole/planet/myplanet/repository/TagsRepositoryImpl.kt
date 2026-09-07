@@ -148,7 +148,7 @@ class TagsRepositoryImpl @Inject constructor(
             attachedTo.add(JsonUtils.getString("attachedTo", act))
         }
         tag.attachedTo = attachedTo
-        tag.isAttached = attachedTo.size > 0
+        tag.isAttached = attachedTo.isNotEmpty()
         return tag
     }
 }

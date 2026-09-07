@@ -561,7 +561,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
 
         if (question?.hasOtherOption == true) {
-            if (choices.size() > 0 && choices[0].isJsonObject) {
+            if (!choices.isEmpty() && choices[0].isJsonObject) {
                 val otherChoice = JsonUtils.gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
 
                 addCompoundButton(otherChoice, isRadio, oldAnswer)
@@ -843,9 +843,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         _binding = null
     }
 
-    override fun saveCourseProgress(courseId: String?, stepNum: Int, isGraded: Boolean) {
+    override fun saveCourseProgress(courseId: String?, stepNum: Int, isGraded: Boolean, userId: String?) {
         viewLifecycleOwner.lifecycleScope.launch {
-            coursesRepository.updateCourseProgress(courseId, stepNum, isGraded)
+            coursesRepository.updateCourseProgress(courseId, stepNum, isGraded, userId)
         }
     }
 }

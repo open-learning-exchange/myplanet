@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserDataWorker
 import org.ole.planet.myplanet.services.sync.AdaptiveBatchProcessor
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
@@ -31,6 +32,7 @@ import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utils.JsonUtils.gson
 import org.ole.planet.myplanet.utils.SyncTimeLogger
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
@@ -43,7 +45,9 @@ class SyncRepositoryImpl @Inject constructor(
     private val eventsRepository: EventsSyncWriter,
     private val teamsSyncRepository: TeamsSyncRepository,
     private val transactionSyncManager: dagger.Lazy<TransactionSyncManager>,
-    private val syncTimeLogger: SyncTimeLogger
+    private val syncTimeLogger: SyncTimeLogger,
+    private val sharedPrefManager: SharedPrefManager,
+    private val timeProvider: TimeProvider
 ) : SyncRepository {
     override fun uploadLoginData(): Flow<SyncUiState> =
         enqueueUserDataUpload("UploadUserData_Login", UserDataWorker.UPLOAD_TYPE_LOGIN)
@@ -104,7 +108,7 @@ class SyncRepositoryImpl @Inject constructor(
             coroutineScope {
                 val dataJobs = Constants.shelfDataList.mapNotNull { shelfData ->
                     val array = getJsonArray(shelfData.key, shelfDoc)
-                    if (array.size() > 0) {
+                    if (!array.isEmpty()) {
                         async(dispatcherProvider.io) {
                             processShelfDataOptimizedSync(shelfId, shelfData, shelfDoc)
                         }
@@ -126,7 +130,7 @@ class SyncRepositoryImpl @Inject constructor(
 
         try {
             val array = getJsonArray(shelfData.key, shelfDoc)
-            if (array.size() == 0) return 0
+            if (array.isEmpty()) return 0
 
             val validIds = mutableListOf<String>()
             for (element in array) {
@@ -172,7 +176,7 @@ class SyncRepositoryImpl @Inject constructor(
                 val responseRows = getJsonArray("rows", response)
                 logger.logApiCall("${UrlUtils.getUrl()}/${shelfData.type}/_all_docs (shelf batch $batchNum)", apiDuration, true, responseRows.size())
 
-                if (responseRows.size() == 0) continue
+                if (responseRows.isEmpty()) continue
 
                 val documentsToProcess = mutableListOf<JsonObject>()
                 for (rowElement in responseRows) {
@@ -215,5 +219,29 @@ class SyncRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             SyncUiState.Error(e.message)
         }
+    }
+
+    override fun getCachedShelvesWithData(): List<String> {
+        val cacheTime = sharedPrefManager.getRawLong(CACHE_KEY_SHELVES_CACHE_TIME, 0)
+        val now = timeProvider.now()
+
+        if (now - cacheTime < CACHE_VALIDITY_HOURS * 60 * 60 * 1000) {
+            val cachedData = sharedPrefManager.getRawString(CACHE_KEY_SHELVES_WITH_DATA, "")
+            if (cachedData.isNotEmpty()) {
+                return cachedData.split(",").filter { it.isNotBlank() }
+            }
+        }
+        return emptyList()
+    }
+
+    override fun cacheShelvesWithData(shelves: List<String>) {
+        sharedPrefManager.setRawString(CACHE_KEY_SHELVES_WITH_DATA, shelves.joinToString(","))
+        sharedPrefManager.setRawLong(CACHE_KEY_SHELVES_CACHE_TIME, timeProvider.now())
+    }
+
+    private companion object {
+        const val CACHE_KEY_SHELVES_WITH_DATA = "shelves_with_data"
+        const val CACHE_KEY_SHELVES_CACHE_TIME = "shelves_cache_time"
+        const val CACHE_VALIDITY_HOURS = 6
     }
 }

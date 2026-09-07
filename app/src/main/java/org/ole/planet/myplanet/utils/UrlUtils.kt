@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.utils
 
-import android.util.Base64
 import android.util.Log
+import java.util.Base64
 import androidx.annotation.VisibleForTesting
 import androidx.core.net.toUri
 import java.net.URLEncoder
@@ -16,6 +16,9 @@ object UrlUtils {
     private var cachedHeader: String? = null
 
     @Volatile
+    private var cachedBaseUrl: String? = null
+
+    @Volatile
     private var generation = 0
 
     fun init(sharedPrefManager: SharedPrefManager) {
@@ -23,6 +26,7 @@ object UrlUtils {
             generation++
             spmInstance = sharedPrefManager
             cachedHeader = null
+            cachedBaseUrl = null
         }
     }
 
@@ -31,10 +35,11 @@ object UrlUtils {
             ?: error("UrlUtils.init(SharedPrefManager) must be called before using UrlUtils")
     }
 
-    fun invalidateHeaderCache() {
+    fun invalidateCaches() {
         synchronized(this) {
             generation++
             cachedHeader = null
+            cachedBaseUrl = null
         }
     }
 
@@ -44,6 +49,7 @@ object UrlUtils {
             generation++
             spmInstance = null
             cachedHeader = null
+            cachedBaseUrl = null
         }
     }
 
@@ -71,7 +77,7 @@ object UrlUtils {
 
     fun basicAuthHeader(username: String, password: String): String {
         val credentials = "$username:$password".toByteArray()
-        return "Basic ${Base64.encodeToString(credentials, Base64.NO_WRAP)}"
+        return "Basic ${Base64.getEncoder().encodeToString(credentials)}"
     }
 
     val hostUrl: String
@@ -100,17 +106,34 @@ object UrlUtils {
             }
             return finalUrl
         }
+    /**
+     * Resolves and caches the CouchDB base URL.
+     * Note: The cache is keyed to the singleton [SharedPrefManager] instance. Callers
+     * passing a different instance will receive the cached value from the initial read.
+     */
     fun baseUrl(spm: SharedPrefManager): String {
-        val isAlternativeUrl = spm.isAlternativeUrl()
-        var url = if (isAlternativeUrl) {
-            spm.getProcessedAlternativeUrl()
-        } else {
-            spm.getCouchdbUrl()
+        cachedBaseUrl?.let { return it }
+        val currentGen: Int
+        var rawUrl: String
+        synchronized(this) {
+            cachedBaseUrl?.let { return it }
+            currentGen = generation
+            val isAlternativeUrl = spm.isAlternativeUrl()
+            rawUrl = if (isAlternativeUrl) {
+                spm.getProcessedAlternativeUrl()
+            } else {
+                spm.getCouchdbUrl()
+            }
         }
-        if (url.endsWith("/db")) {
-            url = url.removeSuffix("/db")
+        if (rawUrl.endsWith("/db")) {
+            rawUrl = rawUrl.removeSuffix("/db")
         }
-        return url
+        synchronized(this) {
+            if (generation == currentGen) {
+                cachedBaseUrl = rawUrl
+            }
+        }
+        return rawUrl
     }
 
     fun dbUrl(spm: SharedPrefManager): String {
@@ -183,5 +206,14 @@ object UrlUtils {
     fun getApkUpdateUrl(path: String?): String {
         val url = baseUrl(spm())
         return "$url$path"
+    }
+
+    fun getUserInfo(userInfo: String?): Pair<String, String> {
+        val info = userInfo?.split(":")?.dropLastWhile { it.isEmpty() }
+        return if (info != null && info.size > 1) {
+            Pair(info[0], info[1])
+        } else {
+            Pair("", "")
+        }
     }
 }

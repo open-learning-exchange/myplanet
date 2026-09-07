@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.model.AppNotification
+import org.ole.planet.myplanet.model.TeamNotification
 import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -502,6 +503,171 @@ class NotificationsRepositoryImplTest {
     }
 
     @Test
+    fun `getTaskTeamNamesByTaskIds maps task ids to team names and skips empty team ids`() = runTest {
+        val tasks = listOf(
+            org.ole.planet.myplanet.model.TeamTask().apply {
+                id = "task1"
+                title = "Task One"
+                teamId = "teamA"
+            },
+            org.ole.planet.myplanet.model.TeamTask().apply {
+                id = "task2"
+                title = "Task Two"
+                teamId = "teamB"
+            },
+            org.ole.planet.myplanet.model.TeamTask().apply {
+                id = "task3"
+                title = "Task Three"
+                teamId = ""
+            },
+        )
+        coEvery { teamTaskDao.getByIds(listOf("task1", "task2", "task3")) } returns tasks
+        coEvery { teamsRepository.get().getTeamNamesByIds(any()) } returns mapOf(
+            "teamA" to "Alpha Team",
+            "teamB" to "Beta Team",
+        )
+
+        val result = repository.getTaskTeamNamesByTaskIds(listOf("task1", "task2", "task3"))
+
+        assertEquals("Alpha Team", result["task1"])
+        assertEquals("Beta Team", result["task2"])
+        assertFalse(result.containsKey("task3"))
+    }
+
+    @Test
+    fun `getTaskTeamNamesByTaskIds deduplicates team ids passed to repository`() = runTest {
+        val tasks = listOf(
+            org.ole.planet.myplanet.model.TeamTask().apply {
+                id = "task1"
+                title = "Task One"
+                teamId = "teamA"
+            },
+            org.ole.planet.myplanet.model.TeamTask().apply {
+                id = "task2"
+                title = "Task Two"
+                teamId = "teamA"
+            },
+        )
+        coEvery { teamTaskDao.getByIds(listOf("task1", "task2")) } returns tasks
+        coEvery { teamsRepository.get().getTeamNamesByIds(any()) } returns mapOf("teamA" to "Alpha Team")
+
+        repository.getTaskTeamNamesByTaskIds(listOf("task1", "task2"))
+
+        coVerify { teamsRepository.get().getTeamNamesByIds(listOf("teamA")) }
+    }
+
+    @Test
+    fun `getTaskTeamNamesByTaskTitles maps task titles to team names and deduplicates team ids`() = runTest {
+        val tasks = listOf(
+            org.ole.planet.myplanet.model.TeamTask().apply {
+                id = "task1"
+                title = "Task One"
+                teamId = "teamA"
+            },
+            org.ole.planet.myplanet.model.TeamTask().apply {
+                id = "task2"
+                title = "Task Two"
+                teamId = "teamA"
+            },
+            org.ole.planet.myplanet.model.TeamTask().apply {
+                id = "task3"
+                title = "Task Three"
+                teamId = null
+            },
+        )
+        coEvery { teamTaskDao.getByTitles(listOf("Task One", "Task Two", "Task Three")) } returns tasks
+        coEvery { teamsRepository.get().getTeamNamesByIds(any()) } returns mapOf("teamA" to "Alpha Team")
+
+        val result = repository.getTaskTeamNamesByTaskTitles(listOf("Task One", "Task Two", "Task Three"))
+
+        assertEquals("Alpha Team", result["Task One"])
+        assertEquals("Alpha Team", result["Task Two"])
+        assertFalse(result.containsKey("Task Three"))
+        coVerify { teamsRepository.get().getTeamNamesByIds(listOf("teamA")) }
+    }
+
+    @Test
+    fun `getJoinRequestDetailsBatch maps related ids to requester and team names`() = runTest {
+        val joinRequests = listOf(
+            JoinRequestInfo("jr1", "teamA", "user1"),
+            JoinRequestInfo("jr2", "teamB", "user2"),
+        )
+        coEvery { teamsRepository.get().getJoinRequestsInfo(listOf("jr1", "jr2")) } returns joinRequests
+        coEvery { teamsRepository.get().getTeamNamesByIds(any()) } returns mapOf(
+            "teamA" to "Alpha Team",
+            "teamB" to "Beta Team",
+        )
+        val users = listOf(
+            org.ole.planet.myplanet.model.UserEntity(id = "user1", name = "Alice"),
+            org.ole.planet.myplanet.model.UserEntity(id = "user2", name = "Bob"),
+        )
+        coEvery { userRepository.get().getUsersByIds(any()) } returns users
+
+        val result = repository.getJoinRequestDetailsBatch(listOf("jr1", "jr2"))
+
+        assertEquals(Pair("Alice", "Alpha Team"), result["jr1"])
+        assertEquals(Pair("Bob", "Beta Team"), result["jr2"])
+    }
+
+    @Test
+    fun `getJoinRequestDetailsBatch falls back to Unknown for missing user and team`() = runTest {
+        val joinRequests = listOf(
+            JoinRequestInfo("jr1", "", ""),
+            JoinRequestInfo("jr2", "teamB", "user2"),
+        )
+        coEvery { teamsRepository.get().getJoinRequestsInfo(listOf("jr1", "jr2")) } returns joinRequests
+        coEvery { teamsRepository.get().getTeamNamesByIds(any()) } returns mapOf("teamB" to "Beta Team")
+        coEvery { userRepository.get().getUsersByIds(any()) } returns emptyList()
+
+        val result = repository.getJoinRequestDetailsBatch(listOf("jr1", "jr2"))
+
+        assertEquals(Pair("Unknown User", "Unknown Team"), result["jr1"])
+        assertEquals(Pair("Unknown User", "Beta Team"), result["jr2"])
+    }
+
+    @Test
+    fun `getJoinRequestDetailsBatch deduplicates user ids and team ids`() = runTest {
+        val joinRequests = listOf(
+            JoinRequestInfo("jr1", "teamA", "user1"),
+            JoinRequestInfo("jr2", "teamA", "user1"),
+        )
+        coEvery { teamsRepository.get().getJoinRequestsInfo(listOf("jr1", "jr2")) } returns joinRequests
+        coEvery { teamsRepository.get().getTeamNamesByIds(any()) } returns mapOf("teamA" to "Alpha Team")
+        coEvery { userRepository.get().getUsersByIds(any()) } returns listOf(
+            org.ole.planet.myplanet.model.UserEntity(id = "user1", name = "Alice"),
+        )
+
+        repository.getJoinRequestDetailsBatch(listOf("jr1", "jr2"))
+
+        coVerify { teamsRepository.get().getTeamNamesByIds(listOf("teamA")) }
+        coVerify { userRepository.get().getUsersByIds(listOf("user1")) }
+    }
+
+    @Test
+    fun `getJoinRequestDetailsBatch with empty list returns empty map`() = runTest {
+        val result = repository.getJoinRequestDetailsBatch(emptyList())
+
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 0) { teamsRepository.get().getJoinRequestsInfo(any()) }
+    }
+
+    @Test
+    fun `getTaskTeamNamesByTaskIds with empty list returns empty map`() = runTest {
+        val result = repository.getTaskTeamNamesByTaskIds(emptyList())
+
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 0) { teamTaskDao.getByIds(any()) }
+    }
+
+    @Test
+    fun `getTaskTeamNamesByTaskTitles with empty list returns empty map`() = runTest {
+        val result = repository.getTaskTeamNamesByTaskTitles(emptyList())
+
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 0) { teamTaskDao.getByTitles(any()) }
+    }
+
+    @Test
     fun `resolveType passes through known types lowercased`() {
         assertEquals("join_request", repository.resolveType("join_request", "anything", null))
         assertEquals("task", repository.resolveType("Task", "anything", null))
@@ -527,6 +693,22 @@ class NotificationsRepositoryImplTest {
     @Test
     fun `resolveType classifies raw team type as join request via subType regardless of message language`() {
         assertEquals("join_request", repository.resolveType("team", "غير معروف", "join_request"))
+    }
+
+    @Test
+    fun `resolveType lowercases subType`() {
+        assertEquals("join_request", repository.resolveType("team", "غير معروف", "Join_Request"))
+    }
+
+    @Test
+    fun `resolveType classifies raw team type case insensitively`() {
+        assertEquals("team_join", repository.resolveType("Team", "Has sido eliminado de \"test GT\" team.", null))
+    }
+
+    @Test
+    fun `resolveType classifies raw newTask and newResource types case insensitively`() {
+        assertEquals("task", repository.resolveType("NEWTASK", "¿qué?", null))
+        assertEquals("resource", repository.resolveType("newresource", "¿qué?", null))
     }
 
     @Test
@@ -556,10 +738,215 @@ class NotificationsRepositoryImplTest {
     }
 
     @Test
+    fun `getTeamNotifications only counts messages for teams with chat notification row`() = runTest {
+        val chatTrackedTeamId = "teamTracked"
+        val untrackedTeamId = "teamUntracked"
+        val teamIds = listOf(chatTrackedTeamId, untrackedTeamId)
+        val userId = "user1"
+
+        val chatNotification = TeamNotification().apply {
+            parentId = chatTrackedTeamId
+            type = "chat"
+            lastCount = 2
+        }
+
+        coEvery { teamNotificationDao.getByTypeAndParentIds("chat", teamIds) } returns listOf(chatNotification)
+        coEvery { voicesRepository.countTopLevelByTeam(chatTrackedTeamId) } returns 5L
+        coEvery { teamTaskDao.getTasksForUserBetween(eq(userId), any(), any()) } returns emptyList()
+
+        val result = repository.getTeamNotifications(teamIds, userId)
+
+        coVerify(exactly = 1) { voicesRepository.countTopLevelByTeam(chatTrackedTeamId) }
+        coVerify(exactly = 0) { voicesRepository.countTopLevelByTeam(untrackedTeamId) }
+
+        assertEquals(2, result.size)
+        assertTrue(result[chatTrackedTeamId]?.hasChat == true)
+        assertFalse(result[chatTrackedTeamId]?.hasTask == true)
+        assertFalse(result[untrackedTeamId]?.hasChat == true)
+        assertFalse(result[untrackedTeamId]?.hasTask == true)
+    }
+
+    @Test
     fun `resolveType falls back to message sniffing for unknown types`() {
         assertEquals("task", repository.resolveType("other", "Report is due tomorrow", null))
         assertEquals("storage", repository.resolveType("other", "Low storage", null))
         assertEquals("voice_reply", repository.resolveType("other", "new reply to your voice", null))
         assertEquals("notification", repository.resolveType("other", "unrecognized text", null))
+    }
+
+    @Test
+    fun `updateResourceNotification returns early when userId is null`() = runTest {
+        repository.updateResourceNotification(null, 5)
+
+        coVerify(exactly = 0) { notificationDao.getById(any()) }
+        coVerify(exactly = 0) { notificationDao.upsert(any()) }
+        coVerify(exactly = 0) { notificationDao.deleteById(any()) }
+    }
+
+    @Test
+    fun `updateResourceNotification creates new notification on first run`() = runTest {
+        coEvery { notificationDao.getById("user1:resource:count") } returns null
+        val upsertSlot = slot<AppNotification>()
+        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+
+        repository.updateResourceNotification("user1", 5)
+
+        val saved = upsertSlot.captured
+        assertEquals("user1:resource:count", saved.id)
+        assertEquals("user1", saved.userId)
+        assertEquals("resource", saved.type)
+        assertEquals("5", saved.message)
+        assertEquals("5", saved.relatedId)
+        assertFalse(saved.isRead)
+    }
+
+    @Test
+    fun `updateResourceNotification when count unchanged keeps it read`() = runTest {
+        val initialDate = java.util.Date(1000000L)
+        val existing = AppNotification().apply {
+            id = "user1:resource:count"
+            userId = "user1"
+            type = "resource"
+            message = "5"
+            relatedId = "5"
+            isRead = true
+            createdAt = initialDate
+        }
+        coEvery { notificationDao.getById("user1:resource:count") } returns existing
+        val upsertSlot = slot<AppNotification>()
+        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+
+        repository.updateResourceNotification("user1", 5)
+
+        val saved = upsertSlot.captured
+        assertTrue(saved.isRead)
+        assertEquals(initialDate, saved.createdAt)
+        assertEquals("5", saved.message)
+    }
+
+    @Test
+    fun `updateResourceNotification when count changed marks unread and updates createdAt`() = runTest {
+        val initialDate = java.util.Date(1000000L)
+        val existing = AppNotification().apply {
+            id = "user1:resource:count"
+            userId = "user1"
+            type = "resource"
+            message = "5"
+            relatedId = "5"
+            isRead = true
+            createdAt = initialDate
+        }
+        coEvery { notificationDao.getById("user1:resource:count") } returns existing
+        val upsertSlot = slot<AppNotification>()
+        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+
+        repository.updateResourceNotification("user1", 10)
+
+        val saved = upsertSlot.captured
+        assertFalse(saved.isRead)
+        assertEquals("10", saved.message)
+        assertEquals("10", saved.relatedId)
+        assertTrue(saved.createdAt.after(initialDate))
+    }
+
+    @Test
+    fun `updateResourceNotification when count is zero or negative deletes existing notification`() = runTest {
+        val existing = AppNotification().apply {
+            id = "user1:resource:count"
+        }
+        coEvery { notificationDao.getById("user1:resource:count") } returns existing
+
+        repository.updateResourceNotification("user1", 0)
+
+        coVerify { notificationDao.deleteById("user1:resource:count") }
+        coVerify(exactly = 0) { notificationDao.upsert(any()) }
+    }
+
+    @Test
+    fun `updateStorageNotification returns early when userId is null`() = runTest {
+        repository.updateStorageNotification(null, 5)
+
+        coVerify(exactly = 0) { notificationDao.getById(any()) }
+        coVerify(exactly = 0) { notificationDao.upsert(any()) }
+        coVerify(exactly = 0) { notificationDao.deleteById(any()) }
+    }
+
+    @Test
+    fun `updateStorageNotification creates new notification on first run`() = runTest {
+        coEvery { notificationDao.getById("user1:storage") } returns null
+        val upsertSlot = slot<AppNotification>()
+        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+
+        repository.updateStorageNotification("user1", 8)
+
+        val saved = upsertSlot.captured
+        assertEquals("user1:storage", saved.id)
+        assertEquals("user1", saved.userId)
+        assertEquals("storage", saved.type)
+        assertEquals("8%", saved.message)
+        assertEquals("storage", saved.relatedId)
+        assertFalse(saved.isRead)
+    }
+
+    @Test
+    fun `updateStorageNotification when percent unchanged keeps it read`() = runTest {
+        val initialDate = java.util.Date(1000000L)
+        val existing = AppNotification().apply {
+            id = "user1:storage"
+            userId = "user1"
+            type = "storage"
+            message = "8%"
+            relatedId = "storage"
+            isRead = true
+            createdAt = initialDate
+        }
+        coEvery { notificationDao.getById("user1:storage") } returns existing
+        val upsertSlot = slot<AppNotification>()
+        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+
+        repository.updateStorageNotification("user1", 8)
+
+        val saved = upsertSlot.captured
+        assertTrue(saved.isRead)
+        assertEquals(initialDate, saved.createdAt)
+        assertEquals("8%", saved.message)
+    }
+
+    @Test
+    fun `updateStorageNotification when percent changed marks unread and updates createdAt`() = runTest {
+        val initialDate = java.util.Date(1000000L)
+        val existing = AppNotification().apply {
+            id = "user1:storage"
+            userId = "user1"
+            type = "storage"
+            message = "8%"
+            relatedId = "storage"
+            isRead = true
+            createdAt = initialDate
+        }
+        coEvery { notificationDao.getById("user1:storage") } returns existing
+        val upsertSlot = slot<AppNotification>()
+        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+
+        repository.updateStorageNotification("user1", 5)
+
+        val saved = upsertSlot.captured
+        assertFalse(saved.isRead)
+        assertEquals("5%", saved.message)
+        assertEquals("storage", saved.relatedId)
+        assertTrue(saved.createdAt.after(initialDate))
+    }
+
+    @Test
+    fun `updateStorageNotification when percent exceeds threshold deletes existing notification`() = runTest {
+        val existing = AppNotification().apply {
+            id = "user1:storage"
+        }
+        coEvery { notificationDao.getById("user1:storage") } returns existing
+
+        repository.updateStorageNotification("user1", 15)
+
+        coVerify { notificationDao.deleteById("user1:storage") }
+        coVerify(exactly = 0) { notificationDao.upsert(any()) }
     }
 }

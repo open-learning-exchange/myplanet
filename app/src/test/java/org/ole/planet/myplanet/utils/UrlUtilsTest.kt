@@ -296,6 +296,59 @@ class UrlUtilsTest {
     }
 
     @Test
+    fun testBasicAuthHeader_withPaddingAndNoPadding() {
+        // "user:pass" -> "dXNlcjpwYXNz" (no padding needed)
+        val result1 = UrlUtils.basicAuthHeader("user", "pass")
+        assertEquals("Basic dXNlcjpwYXNz", result1)
+
+        // "user:password" -> "dXNlcjpwYXNzd29yZA==" (with '=' padding)
+        val result2 = UrlUtils.basicAuthHeader("user", "password")
+        assertEquals("Basic dXNlcjpwYXNzd29yZA==", result2)
+    }
+
+    @Test
+    fun testGetUserInfo_nullInput() {
+        val (user, pass) = UrlUtils.getUserInfo(null)
+        assertEquals("", user)
+        assertEquals("", pass)
+    }
+
+    @Test
+    fun testGetUserInfo_emptyInput() {
+        val (user, pass) = UrlUtils.getUserInfo("")
+        assertEquals("", user)
+        assertEquals("", pass)
+    }
+
+    @Test
+    fun testGetUserInfo_validUsernameAndPassword() {
+        val (user, pass) = UrlUtils.getUserInfo("admin:secret")
+        assertEquals("admin", user)
+        assertEquals("secret", pass)
+    }
+
+    @Test
+    fun testGetUserInfo_noColon() {
+        val (user, pass) = UrlUtils.getUserInfo("admin")
+        assertEquals("", user)
+        assertEquals("", pass)
+    }
+
+    @Test
+    fun testGetUserInfo_colonWithoutPassword() {
+        val (user, pass) = UrlUtils.getUserInfo("admin:")
+        assertEquals("", user)
+        assertEquals("", pass)
+    }
+
+    @Test
+    fun testGetUserInfo_multipleColons() {
+        val (user, pass) = UrlUtils.getUserInfo("admin:secret:extra")
+        assertEquals("admin", user)
+        assertEquals("secret", pass)
+    }
+
+    @Test
     fun `header memoizes basic auth header and invalidates when requested`() {
         every { mockSpm.getUrlUser() } returns "user1"
         every { mockSpm.getUrlPwd() } returns "pass1"
@@ -310,7 +363,7 @@ class UrlUtilsTest {
         every { mockSpm.getUrlUser() } returns "user2"
         every { mockSpm.getUrlPwd() } returns "pass2"
 
-        UrlUtils.invalidateHeaderCache()
+        UrlUtils.invalidateCaches()
         val thirdHeader = UrlUtils.header
 
         verify(exactly = 2) { mockSpm.getUrlUser() }
@@ -334,6 +387,45 @@ class UrlUtilsTest {
         verify(exactly = 2) { mockSpm.getUrlUser() }
     }
 
+    @Test
+    fun `baseUrl memoizes base url and reads SharedPreferences once`() {
+        unmockkObject(UrlUtils)
+        val spm = mockk<SharedPrefManager>(relaxed = true)
+        every { spm.isAlternativeUrl() } returns false
+        every { spm.getCouchdbUrl() } returns "http://example.com"
+        UrlUtils.resetForTesting()
+        UrlUtils.init(spm)
+
+        val firstUrl = UrlUtils.baseUrl(spm)
+        val secondUrl = UrlUtils.baseUrl(spm)
+
+        assertEquals("http://example.com", firstUrl)
+        assertEquals(firstUrl, secondUrl)
+        verify(exactly = 1) { spm.getCouchdbUrl() }
+        verify(exactly = 1) { spm.isAlternativeUrl() }
+    }
+
+    @Test
+    fun `baseUrl invalidates cache when invalidateCaches is called`() {
+        unmockkObject(UrlUtils)
+        val spm = mockk<SharedPrefManager>(relaxed = true)
+        every { spm.isAlternativeUrl() } returns false
+        every { spm.getCouchdbUrl() } returns "http://example.com"
+        UrlUtils.resetForTesting()
+        UrlUtils.init(spm)
+
+        val firstUrl = UrlUtils.baseUrl(spm)
+        assertEquals("http://example.com", firstUrl)
+
+        every { spm.getCouchdbUrl() } returns "http://new-example.com"
+        UrlUtils.invalidateCaches()
+
+        val secondUrl = UrlUtils.baseUrl(spm)
+        assertEquals("http://new-example.com", secondUrl)
+        verify(exactly = 2) { spm.getCouchdbUrl() }
+    }
+
+    @Test
     fun `getUrl with explicit base builds resource url without re-deriving base`() {
         unmockkObject(UrlUtils)
         val result = UrlUtils.getUrl("r1", "f1", "http://example.com/db")

@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 
 class VoicesRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
@@ -95,7 +96,6 @@ class VoicesRepositoryImpl @Inject constructor(
             false
         }
     }
-
 
     private fun teamIdPattern(teamId: String): String {
         val escaped = teamId
@@ -197,7 +197,7 @@ class VoicesRepositoryImpl @Inject constructor(
                     null
                 } ?: JsonArray()
 
-                if (array.size() > 0) {
+                if (!array.isEmpty()) {
                     val firstElement = array.get(0)
                     if (firstElement.isJsonObject) {
                         val obj = firstElement.asJsonObject
@@ -256,7 +256,7 @@ class VoicesRepositoryImpl @Inject constructor(
                     }
                 }
             }
-            if (filtered.size() == 0) {
+            if (filtered.isEmpty()) {
                 val idsToDelete = collectNewsAndReplies(newsId)
                 newsDao.deleteByIds(idsToDelete)
             } else {
@@ -276,7 +276,6 @@ class VoicesRepositoryImpl @Inject constructor(
         return newsDao.getReplyCount(newsId)
     }
 
-    // Gathers a post and all of its (recursive) replies for deletion.
     private suspend fun collectNewsAndReplies(newsId: String): List<String> {
         return newsDao.getNewsAndRepliesIds(newsId)
     }
@@ -355,10 +354,14 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun insertNewsList(docs: List<JsonObject>) {
-        // Pre-fetch existing rows in one query instead of a getByUnderscoreId per doc (an N+1
-        // that ran serially inside the sync write lock for hundreds of news items).
-        val mappedDocs = docs.map { it to JsonUtils.getString("_id", it) }
-        val underscoreIds = mappedDocs.map { it.second }.filter { it.isNotEmpty() }
+        val underscoreIds = ArrayList<String>(docs.size)
+        val mappedDocs = docs.map { doc ->
+            val id = JsonUtils.getString("_id", doc)
+            if (id.isNotEmpty()) {
+                underscoreIds.add(id)
+            }
+            doc to id
+        }
         val existing = newsDao.getByUnderscoreIds(underscoreIds).associateBy { it._id }
         val newsList = mappedDocs.map { (doc, id) -> buildNewsFromJson(doc, id, existing) }
         newsDao.upsertAll(newsList)
@@ -445,6 +448,7 @@ class VoicesRepositoryImpl @Inject constructor(
         newsObject.addProperty("updatedDate", news.newsUpdatedDate)
         newsObject.addProperty("sharedBy", news.sharedBy)
         `object`.add("news", newsObject)
+        `object`.addDocumentOrigin()
         return `object`
     }
 
@@ -456,7 +460,7 @@ class VoicesRepositoryImpl @Inject constructor(
         val viewInStr = news.viewIn
         if (!TextUtils.isEmpty(viewInStr)) {
             val ar = plainGson.fromJson(viewInStr, JsonArray::class.java)
-            if (ar.size() > 0) `object`.add("viewIn", ar)
+            if (!ar.isEmpty()) `object`.add("viewIn", ar)
         }
     }
 
@@ -480,8 +484,8 @@ class VoicesRepositoryImpl @Inject constructor(
         return newsDao.countTeamChats(teamId)
     }
 
-    override suspend fun getTeamChatViewableIds(teamIds: List<String>): List<String> {
-        return newsDao.getTeamChatViewableIds(teamIds)
+    override suspend fun countTopLevelByTeam(teamId: String): Long {
+        return newsDao.countTopLevelByTeam(teamId, teamIdPattern(teamId))
     }
 
     override suspend fun getPendingNewsLogUploads(): List<org.ole.planet.myplanet.model.NewsLog> {

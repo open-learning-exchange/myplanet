@@ -12,12 +12,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.repository.FeedbackRepository
-import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.repository.UserRepository
 
 @HiltViewModel
 class FeedbackComposerViewModel @Inject constructor(
     private val feedbackRepository: FeedbackRepository,
-    private val userSessionManager: UserSessionManager
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     sealed interface SubmitEvent {
@@ -35,7 +35,7 @@ class FeedbackComposerViewModel @Inject constructor(
         viewModelScope.launch {
             _isSubmitting.value = true
             try {
-                val user = userSessionManager.getUserModel()?.name ?: ""
+                val user = userRepository.getUserModel()?.name ?: ""
                 feedbackRepository.createAndSaveFeedback(user, urgent, type, message, item, state)
                 _events.send(SubmitEvent.Saved)
             } catch (e: Exception) {

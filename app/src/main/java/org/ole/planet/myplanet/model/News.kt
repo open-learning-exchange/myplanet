@@ -110,16 +110,6 @@ open class News {
     }
 
     @get:Ignore
-    val messageWithoutMarkdown: String?
-        get() {
-            var ms = message
-            for (ob in imagesArray) {
-                ms = ms?.replace(JsonUtils.getString("markdown", ob.asJsonObject), "")
-            }
-            return ms
-        }
-
-    @get:Ignore
     val isCommunityNews: Boolean
         get() {
             val array = JsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
@@ -207,7 +197,7 @@ open class News {
                             val conversationsString = conversationsElement.asString
                             try {
                                 val conversationsArray = JsonUtils.gson.fromJson(conversationsString, JsonArray::class.java)
-                                if (conversationsArray.size() > 0) {
+                                if (!conversationsArray.isEmpty()) {
                                     val conversationsList = ArrayList<HashMap<String, String>>()
                                     conversationsArray.forEach { conversationElement ->
                                         val conversationObj = conversationElement.asJsonObject

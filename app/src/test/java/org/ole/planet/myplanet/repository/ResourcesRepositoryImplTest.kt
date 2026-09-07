@@ -17,11 +17,11 @@ import java.util.logging.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -29,12 +29,14 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
-import org.ole.planet.myplanet.data.room.dao.ResourceTitleProjection
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
+import org.ole.planet.myplanet.data.room.dao.ResourceTitleProjection
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.SearchActivity
@@ -64,6 +66,9 @@ class ResourcesRepositoryImplTest {
     private val userSessionManager: UserSessionManager = mockk(relaxed = true)
     private val configurationsRepository: ConfigurationsRepository = mockk(relaxed = true)
     private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
+
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
 
     private lateinit var repository: ResourcesRepositoryImpl
 
@@ -857,6 +862,7 @@ class ResourcesRepositoryImplTest {
             coVerify(exactly = 0) { myLibraryDao.getSyncable() }
             verify(exactly = 1) { DownloadUtils.downloadAllFiles(provided) }
         } finally {
+            scope.cancel()
             unmockkObject(MainApplication)
             unmockkObject(DownloadUtils)
         }
@@ -880,6 +886,7 @@ class ResourcesRepositoryImplTest {
             assertEquals("synced1", result[0]._id)
             coVerify(exactly = 1) { myLibraryDao.getSyncable() }
         } finally {
+            scope.cancel()
             unmockkObject(MainApplication)
             unmockkObject(DownloadUtils)
         }
@@ -907,39 +914,68 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
-    fun `saveLocalResource clears in-memory resource list cache`() = runTest {
-        val lib = MyLibrary().apply { id = "1"; resourceId = "r1"; title = "Cached Lib" }
-        coEvery { myLibraryDao.getPublic() } returns listOf(lib)
-        coEvery { tagsRepository.getTagsForResources(any()) } returns emptyMap()
-        coEvery { myLibraryDao.countByTitle(any()) } returns 0
-        coEvery { myLibraryDao.upsert(any()) } returns Unit
+    fun `saveLocalResource copies the source file into the ole directory and stores the bare filename`() = runTest {
+        val sourceFolder = temporaryFolder.newFolder("source")
+        val externalFilesDir = temporaryFolder.newFolder("external")
+        val sourceFile = File(sourceFolder, "report.pdf").apply { writeText("content") }
 
-        repository.getResourceListModels(false, null)
-        assertNotNull(repository.getCachedResourceListModels(false, null))
+        every { dispatcherProvider.io } returns testDispatcher
+        coEvery { myLibraryDao.countByTitle("My Report") } returns 0
+        val savedSlot = slot<MyLibrary>()
+        coEvery { myLibraryDao.upsert(capture(savedSlot)) } returns Unit
 
-        val request = LocalResourceRequest(
-            title = "New Resource",
-            addedBy = "user1",
-            author = "Author",
-            year = "2026",
-            description = "Desc",
-            publisher = "Pub",
-            linkToLicense = "License",
-            openWith = "open",
-            language = "en",
-            mediaType = "pdf",
-            resourceType = "book",
-            subjects = emptyList(),
-            levels = emptyList(),
-            resourceFor = emptyList(),
-            resourceUrl = null,
-            userId = "user1",
+        mockkObject(FileUtils)
+        every { FileUtils.getExternalFilesDir(context) } returns externalFilesDir
+        every { FileUtils.getLibraryFile(externalFilesDir, any(), "report.pdf") } answers {
+            File(externalFilesDir, "ole/${secondArg<String>()}/report.pdf")
+        }
+
+        try {
+            val result = repository.saveLocalResource(localResourceRequest(sourceFile.absolutePath))
+
+            assertTrue(result.isSuccess)
+            val saved = savedSlot.captured
+            assertEquals("report.pdf", saved.resourceLocalAddress)
+            assertEquals("report.pdf", saved.filename)
+            val destinationFile = File(externalFilesDir, "ole/${saved.id}/report.pdf")
+            assertTrue(destinationFile.exists())
+            assertEquals("content", destinationFile.readText())
+        } finally {
+            unmockkObject(FileUtils)
+        }
+    }
+
+    @Test
+    fun `saveLocalResource fails when the source file does not exist`() = runTest {
+        val missingFile = File(temporaryFolder.root, "missing.pdf")
+        coEvery { myLibraryDao.countByTitle("My Report") } returns 0
+
+        val result = repository.saveLocalResource(localResourceRequest(missingFile.absolutePath))
+
+        assertTrue(result.isFailure)
+        coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
+    }
+
+    private fun localResourceRequest(resourceUrl: String?): LocalResourceRequest {
+        return LocalResourceRequest(
+            title = "My Report",
+            addedBy = "tester",
+            author = null,
+            year = null,
+            description = null,
+            publisher = null,
+            linkToLicense = null,
+            openWith = null,
+            language = null,
+            mediaType = null,
+            resourceType = null,
+            subjects = null,
+            levels = null,
+            resourceFor = null,
+            resourceUrl = resourceUrl,
+            userId = "user-1",
             isPrivateTeamResource = false,
             teamId = null
         )
-        val result = repository.saveLocalResource(request)
-        assertTrue(result.isSuccess)
-
-        assertNull(repository.getCachedResourceListModels(false, null))
     }
 }

@@ -5,15 +5,19 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import io.mockk.every
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.utils.NetworkUtils
 
 class FeedbackTest {
 
@@ -24,6 +28,8 @@ class FeedbackTest {
             val str = firstArg<CharSequence?>()
             str == null || str.length == 0
         }
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "uniqueIdentifier"
     }
 
     @After
@@ -62,6 +68,15 @@ class FeedbackTest {
     }
 
     @Test
+    fun testMessageListEmptyArray() {
+        val feedback = Feedback()
+        feedback.messages = "[]"
+        val list = feedback.messageList
+        assertNotNull(list)
+        assertTrue(list!!.isEmpty())
+    }
+
+    @Test
     fun testMessageListWithElements() {
         val feedback = Feedback()
         val messageString = """
@@ -90,6 +105,13 @@ class FeedbackTest {
         assertEquals("", feedback.message)
 
         feedback.messages = null
+        assertEquals("", feedback.message)
+    }
+
+    @Test
+    fun testMessageEmptyArray() {
+        val feedback = Feedback()
+        feedback.messages = "[]"
         assertEquals("", feedback.message)
     }
 
@@ -145,6 +167,8 @@ class FeedbackTest {
         val messagesArray = serialized.get("messages").asJsonArray
         assertEquals(1, messagesArray.size())
         assertEquals("Test message", messagesArray[0].asJsonObject.get("message").asString)
+        assertEquals("uniqueIdentifier", serialized.get("androidId").asString)
+        assertEquals("myplanet", serialized.get("app").asString)
     }
 
     @Test

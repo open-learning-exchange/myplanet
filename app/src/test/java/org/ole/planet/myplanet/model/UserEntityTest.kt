@@ -8,6 +8,7 @@ import io.mockk.unmockkAll
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -17,7 +18,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.Utilities
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -36,7 +36,7 @@ class UserEntityTest {
             null
         }
         Dispatchers.setMain(Dispatchers.Unconfined)
-        MainApplication.applicationScope = CoroutineScope(Dispatchers.Unconfined)
+        MainApplication.applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
         mockkObject(Utilities)
         every { Utilities.toast(any(), any()) } returns Unit
         try {
