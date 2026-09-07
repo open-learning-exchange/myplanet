@@ -12,7 +12,7 @@ import 'package:myplanet/repository/submissions_repository.dart';
 
 class MockPlanetApi extends Mock implements PlanetApi {}
 
-/// Phase 128 — `CourseStepFragment.hideTestIfNoQuestion` (`:241-262`) and the
+/// Phase 128 — `CourseStepFragment.hideTestIfNoQuestion` (`:241-260`) and the
 /// read it hangs off, `SubmissionsRepositoryImpl.hasSubmission` (`:176-192`).
 ///
 /// This is the only **user-visible** reader in either tree whose predicate is
@@ -182,21 +182,76 @@ void main() {
       );
     });
 
-    test('does not confuse the two types', () async {
+    test('does not confuse the two types when they share an id', () async {
       // Kotlin scopes the count by `type` as well as `parentId`
-      // (`SubmissionDao.kt:23`). The exam and the survey on this step have
-      // different ids, but a step whose exam and survey share an id is
-      // reachable — `_liveParentDocument`'s comment says the two id spaces are
-      // not disjoint — so the type clause is load-bearing, not decoration.
-      await takeExam();
+      // (`SubmissionDao.kt:23`), and that clause only *matters* where the two
+      // id spaces overlap — which they do: `_liveParentDocument`'s comment
+      // says so, and `collectRoomExam` mints an embedded assessment's id from
+      // the document's own `_id`, so one document can name both.
+      //
+      // **The first cut of this test asked about `'exam-1'` with
+      // `type: 'survey'` and was vacuous**: `hasSubmission` short-circuits on
+      // `surveyQuestions` being empty for an exam id and never issues the
+      // count, so deleting `submissions.type.equals(type)` from
+      // `countByUserParentAndType` left all 13 tests green. Its own comment
+      // named the shared-id case and then did not build it. This one does, so
+      // both question tables answer non-zero and the `type` clause is the only
+      // thing left deciding.
+      await seed({
+        '_id': 'course-2',
+        'courseTitle': 'Shared ids',
+        'steps': [
+          {
+            'stepTitle': 'Only',
+            'exam': {
+              '_id': 'both-1',
+              'type': 'courses',
+              'name': 'Test',
+              'questions': [
+                {'id': 'q1', 'title': 'One?', 'type': 'input'},
+              ],
+            },
+            'survey': {
+              '_id': 'both-1',
+              'type': 'surveys',
+              'name': 'Survey',
+              'questions': [
+                {'id': 's1', 'title': 'How?', 'type': 'input'},
+              ],
+            },
+          },
+        ],
+      });
+      final exam = (await database.examDao.getById('both-1'))!;
+      await submissions.startExamSession(
+        exam: exam,
+        questions: await database.examDao.questionsFor('both-1'),
+        userId: 'user-1',
+        courseId: 'course-2',
+      );
+
+      // Both tables have a question for this id, so neither call short-circuits.
+      expect(await database.examDao.questionsFor('both-1'), isNotEmpty);
+      expect(await database.surveyDao.questionsFor('both-1'), isNotEmpty);
+
       expect(
         await submissions.hasSubmission(
-          stepExamId: 'exam-1',
-          courseId: 'course-1',
+          stepExamId: 'both-1',
+          courseId: 'course-2',
+          userId: 'user-1',
+          type: 'exam',
+        ),
+        isTrue,
+      );
+      expect(
+        await submissions.hasSubmission(
+          stepExamId: 'both-1',
+          courseId: 'course-2',
           userId: 'user-1',
           type: 'survey',
         ),
         isFalse,
+        reason: 'an exam attempt is not an answered survey',
       );
     });
 
@@ -219,6 +274,13 @@ void main() {
       // tile reads *take* rather than *retake*, so a guest browsing a joined
       // course, or a step whose `courseId` never synced, is offered a first
       // attempt.
+      //
+      // **This test alone does not pin the guard**, and saying so is the
+      // point: with the guard deleted every branch below still answers false
+      // by another route (an empty id matches no question row, and
+      // `examParentId(examId: 'exam-1', courseId: '')` is the bare id, which
+      // no submission here carries). The test that *does* pin it is the next
+      // one.
       for (final blank in [null, '']) {
         expect(
           await submissions.hasSubmission(
@@ -249,6 +311,58 @@ void main() {
         );
       }
     });
+
+    test(
+      'a blank course id is false even where the bare key would match',
+      () async {
+        // **The guard's semantics, not its null-safety.** A survey with no
+        // `courseId` keys its submissions on the bare id ([examParentId]), so a
+        // blank `courseId` argument produces a `parentId` that *does* match a
+        // real row — the one case where dropping the blank-course guard changes
+        // the answer rather than throwing. Kotlin answers false (`:182-184`)
+        // before it can build any key at all.
+        final mapped = SurveyMapper.fromDoc({
+          '_id': 'loose-1',
+          'type': 'surveys',
+          'name': 'Loose',
+          'questions': [
+            {'id': 's1', 'title': 'How?', 'type': 'input'},
+          ],
+        })!;
+        await database.surveyDao.upsertAll(
+          [mapped.survey],
+          {mapped.survey.id.value: mapped.questions},
+        );
+        final survey = (await database.surveyDao.getById('loose-1'))!;
+        expect(survey.courseId, isNull);
+        await submissions.createSurveyDraft(
+          survey: survey,
+          questions: await database.surveyDao.questionsFor('loose-1'),
+          userId: 'user-1',
+        );
+        // The writer stored the bare id, which is what makes a blank-course
+        // argument dangerous rather than merely useless.
+        expect(
+          (await database.submissionDao.getSurveySubmissionsByUser(
+            'user-1',
+          )).single.parentId,
+          'loose-1',
+        );
+
+        for (final blank in ['', '   ']) {
+          expect(
+            await submissions.hasSubmission(
+              stepExamId: 'loose-1',
+              courseId: blank,
+              userId: 'user-1',
+              type: 'survey',
+            ),
+            isFalse,
+            reason: 'Kotlin is isNullOrBlank, not isEmpty',
+          );
+        }
+      },
+    );
 
     test(
       'is false while the exam has no questions, submission or not',
@@ -344,15 +458,27 @@ void main() {
         // `hasSubmission(stepExams[0].id, …)` against
         // `getString(R.string.take_test, exams.size)`.
         //
-        // **The state is port-only, and the test says so rather than
-        // pretending otherwise.** Kotlin cannot reach a two-exam step: a step
-        // document carries one `exam` object, read with `getAsJsonObject`, and
-        // `bulkInsertExamsFromSync` calls `insertCourseStepsExams("", "", doc,
-        // "")` so the standalone walk leaves `stepId` null. `ExamMapper.fromDoc`
-        // *does* write a document's own `stepId`, which is the route below. So
-        // this pins fidelity to what the Kotlin says, on a shape only the port
-        // can produce — worth having, because the alternative reading ("any
-        // exam counts") is the one a reimplementer would choose.
+        // **No server can send the document below, and the test says so
+        // rather than implying otherwise.** Kotlin cannot reach a two-exam
+        // step: a step document carries one `exam` object, read with
+        // `getAsJsonObject`, and `bulkInsertExamsFromSync` calls
+        // `insertCourseStepsExams("", "", doc, "")`, so the standalone walk
+        // leaves `stepId` null. `ExamMapper.fromDoc` *does* write a document's
+        // own `stepId` — but the value this fixture puts there is
+        // `CourseMapper.stepIdFor`'s `'$courseId:$stepIndex'`, the port's own
+        // **local positional key**, which the migration doc records as a
+        // deliberate deviation precisely because it is never a server value.
+        // So no CouchDB `exams` document can carry it, and the state is
+        // unreachable in both apps.
+        //
+        // The test is kept anyway, and this comment is why: it pins
+        // `exams.first` against the tempting "any exam counts" reading — which
+        // is what a reimplementer would choose, and what the revert of this
+        // rule reds. What it is *not* is evidence that a learner can meet this
+        // state. The first draft of this comment claimed the port could reach
+        // it; the implementation audit caught that, and it is the Phase
+        // 113/125 fabricated-join shape moved from `parentId` to
+        // `exams.stepId`.
         final stepId = CourseMapper.stepIdFor('course-1', 0);
         final second = ExamMapper.fromDoc({
           '_id': 'exam-2',

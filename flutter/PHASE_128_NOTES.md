@@ -1,11 +1,27 @@
 # Phase 128 — the step tile's *Redo survey* / *Retake test* labels
 
+> ## Integrator: one action is required before this merges
+>
+> **Run `dart tool/arb_from_strings_xml.dart` (Lane C's file) and bump
+> `humanReviewed` in `test/l10n/placeholder_integrity_test.dart` by +5 per
+> locale: ar 410→415, es 462→467, fr 409→414, ne 411→416, so 411→416.**
+>
+> This diff adds three user-facing strings to `app_en.arb` and, as merged,
+> **an Arabic, Spanish, French, Nepali or Somali learner sees `redo survey`
+> and `take test [1]` in English** on a screen where the Android app has
+> always shown their own language. The 15 human translations already exist in
+> `values-*/strings.xml`; I verified the derivation picks up all of them and
+> then reverted the five locale files, because Lane C owns them and is editing
+> them this round. This is the only respect in which the branch is *worse*
+> than the Kotlin app, and it is one command. The run also delivers two keys
+> that are not mine — see the l10n section.
+
 Lane A of a three-lane round. One missing feature, named by Phase 125 as its
 own successor (`PHASE_125_NOTES.md` §"Found, not fixed" item 1) and correctly
 so: this is **the only user-visible Kotlin reader of the composite survey
 `parentId`**, and Phase 125's writer fix is its precondition.
 
-`CourseStepFragment.hideTestIfNoQuestion` (`:241-261`) picks each assessment
+`CourseStepFragment.hideTestIfNoQuestion` (`:241-260`) picks each assessment
 button's wording off `CourseStepData.hasExam`/`hasSurvey`, which are
 `submissionsRepository.hasSubmission(stepExams[0].id, step.courseId, userId,
 "exam"/"survey")` (`CoursesRepositoryImpl.kt:537-546`). The port hardcoded
@@ -26,6 +42,7 @@ parity, not internal consistency.
 |---|---|
 | exam on the step, no attempt by this user | **take test [N]** |
 | exam on the step, an attempt exists for `stepExams[0]` | **Retake Test [N]** |
+| exam opened and abandoned with **no answer given** | **take test [N]** in the port, `Retake Test [N]` in Kotlin — see below |
 | exam on the step, its questions have not synced yet | **take test [N]** — the `countByExamId == 0` guard |
 | exam present, attempt belongs to another user | **take test [N]** |
 | survey on the step, no answer sheet | **Record survey** |
@@ -47,9 +64,23 @@ read as untaken rather than blocking anything. That is why the
 deliberately is **not** ported in `hasUnfinishedSurveys`, where it would invert
 into "a question-less survey blocks the course forever".
 
-The label is also status-blind, as Kotlin's `countByUserParentAndType` is
-(`SubmissionDao.kt:23`): merely *opening* an exam attempt makes the tile read
-"Retake". Faithful.
+The label is status-blind, as Kotlin's `countByUserParentAndType` is
+(`SubmissionDao.kt:23`): a submission of **any** status satisfies it, graded or
+not, uploaded or not. Faithful.
+
+**What is not faithful — and my first draft of this file claimed it was — is
+"merely opening an exam makes the tile read Retake".** That is true of Kotlin,
+whose `createExamSubmission` writes a `pending` row from `initializeExamData`
+before the first question is drawn. The port's `_ensureSession` is called from
+one place, `_saveCurrentAnswer`, so the row appears on the learner's **first
+answer**. `take_exam_screen.dart` documents that deviation deliberately —
+"abandoning an exam without answering anything leaves no row behind" — so the
+divergence is pre-existing and intended, not new here. But it changes the
+label: a learner who opens the test, answers nothing and backs out sees
+*Retake Test [1]* on Kotlin and *take test [1]* in the port. Only the first
+open differs; after any answered attempt the two agree. Nothing tests it,
+because both test files call `startExamSession` directly rather than driving
+the screen. Found by the implementation audit.
 
 ## The `%d` count keys derived their translations — all three, all five locales
 
@@ -98,7 +129,12 @@ Three consequences I did **not** act on:
 * **`takeTest` could not simply have grown a `{count}`.** ar/es/fr carry values
   for it with no placeholder, so declaring one would generate a getter taking an
   argument those three locales silently drop — the Phase 109 defect class, and
-  `placeholder_integrity_test`'s second test would fail on it.
+  `placeholder_integrity_test`'s second test would fail on it. One correction
+  to my own framing: all three of those values are flagged `x-mt`, unreviewed
+  machine translation, so the cost of *deleting* the key is lower than the
+  paragraph above implies — three machine strings and their flags, not three
+  human translations. `recordSurvey`'s five values are unflagged and genuinely
+  are human.
 * **`recordSurvey` is "Record survey" where Kotlin is "Record Survey"**, which
   is why it derived by *shared English* rather than by name in the first place.
   It already has five human translations and I left it alone: replacing one
@@ -161,7 +197,7 @@ right" cannot tell them apart.
 
 | # | defect | revert replayed | pre-fix failure |
 |---|---|---|---|
-| 1 | **a learner who has taken the test is still told to take it** | both tiles' labels back to `l10n.takeTest` / `l10n.recordSurvey` | `Expected: exactly one matching candidate / Actual: Found 0 widgets with text "Retake Test [1]"` — 5 tests red |
+| 1 | **a learner who has taken the test is still told to take it** | both tiles' labels back to `l10n.takeTest` / `l10n.recordSurvey` | `Expected: exactly one matching candidate / Actual: Found 0 widgets with text "Retake Test [1]"` — **6** tests red |
 | 1b | the same for the survey half | as above | `Found 0 widgets with text "redo survey"` |
 | 1c | the label carried no count | as above | `Found 0 widgets with text "take test [1]"` |
 | 2 | **a survey's question count read `ExamQuestions`** (Kotlin's single table, copied literally) | the `type == 'survey'` table choice | `Expected: true / Actual: <false>` in the repository, and `Found 0 widgets with text "redo survey"` at the screen — 4 tests red |
@@ -169,11 +205,42 @@ right" cannot tell them apart.
 | 4 | a second exam's submission swapped the label | `exams.first` widened to "any exam" | `Expected: false / Actual: <true>` |
 | 5 | **the label could not change within a session** | `pushAndRefresh` back to a bare `context.push` | `Expected: exactly one matching candidate / Actual: Found 0 widgets with text "Retake Test [1]"` |
 
-Two tests are **guards, not failing-first evidence**, and are labelled so rather
-than counted above: "does not confuse the two types" and "is false for another
-user" pin `countByUserParentAndType`'s existing `type`/`userId` clauses, which
-predate this diff — reverting them means deleting an argument pass-through,
-which proves nothing about a decision anyone might make.
+**Three more rows the implementation audit added, two of which were tests of
+mine that read as coverage and were not.** It replayed the reverts itself; I
+reproduced each before and after fixing.
+
+| # | defect | revert replayed | pre-fix failure |
+|---|---|---|---|
+| 6 | the `type` clause in `countByUserParentAndType` was **unpinned** | `submissions.type.equals(type)` deleted | was `All tests passed`; now `Expected: false` |
+| 7 | the blank-**course** guard was unpinned *semantically* | `course.isEmpty` dropped from the guard | was a `Null check operator used on a null value` from `userId!`; now `Expected: false` |
+
+Row 6: "does not confuse the two types" asked about `'exam-1'` with
+`type: 'survey'`, which short-circuits on `surveyQuestions` being empty and
+never issues the count — so deleting the `type` clause left all 13 tests green.
+Its own comment named the shared-id case and did not build it. It now seeds a
+document whose `steps[0].exam._id` and `steps[0].survey._id` are the same
+string, so both question tables answer non-zero and the `type` clause is the
+only thing left deciding.
+
+Row 7: the blank-guard test detected the guard's deletion as a *crash*, from
+`userId!`, not as a wrong answer — so it pinned the `!` and not the semantics.
+The guard now binds all three arguments to locals (no `!`), and a new test
+seeds a survey with **no `courseId`**, whose writer stores the bare id, so a
+blank `courseId` argument produces a `parentId` that *does* match a real row —
+the one case where dropping the guard changes the answer. The same change makes
+the guard `isNullOrBlank` rather than `isEmpty`, which is what its own doc
+comment had claimed all along; whitespace is now pinned too.
+
+One test remains a **guard, not evidence**, and is labelled so: the original
+blank-id sweep, which without the guard still answers false by other routes.
+Conversely "is false for another user" *is* failing-first evidence — deleting
+`submissions.userId.equals(userId)` reds it and reds the screen test beside it
+— so the previous draft of this file under-claimed it while over-claiming its
+neighbour.
+
+"Redo survey still opens the survey screen" adds little over its sibling plus
+the pre-existing route test: with one survey on the step it cannot distinguish
+`surveys.first` from any other selector.
 
 Defect 5 is the one the ground-truth audit found and it is the most important
 of the five, because without it the other four guard a label the learner cannot
@@ -220,8 +287,13 @@ expectations move from `Take test` to `take test [1]`.
 |---|---|
 | between `_repairSurveyParentId` and `hasUnfinishedSurveys` | **added** `hasSubmission` (+ its doc comment). Nothing else in the file is modified — no line of `createExamSubmission`, `serializeSubmission`, the team-object block, or any other write-path method is touched. |
 
-Lane B owns the write path in the same file. `git diff` on it shows exactly one
-insertion hunk.
+Lane B owns the write path in the same file. **`git diff` on it shows five
+hunks, not one** — the 100-line insertion plus four one-line comment edits
+(the stale-citation corrections in the neighbouring `examParentId` and
+`hasUnfinishedSurveys` docs). An earlier draft of this section said "exactly
+one insertion hunk", which told the integrator there were no other conflict
+surfaces in a file partitioned between two lanes. There are four, each one
+line of comment.
 
 ## Files touched outside the read path
 
@@ -247,12 +319,23 @@ several exams". It cannot, in Kotlin: `steps[i].exam` is read with
 `getAsJsonObject` so it is one object per step, and the standalone `exams` walk
 calls `insertCourseStepsExams("", "", jsonDoc, "")` whose `checkIdsAndInsert`
 skips blank ids, leaving `stepId` null — so nothing Planet sends produces two
-rows sharing a `stepId`. The **port** can: `ExamMapper.fromDoc` writes a
-document's own `stepId` (`_presentOrAbsent`), which is a Phase 110 deviation
-made on purpose. So the `exams.first`-decides quirk is ported for fidelity to
-what the Kotlin *says*, on a state only the port can reach, and the test that
-pins it says so rather than implying a Kotlin scenario. The list shape is still
-right — it is what `getByStepIdAndType` returns and where the `1` comes from.
+rows sharing a `stepId`.
+
+**And the implementation audit went one further: no server can reach it in the
+port either.** I had written that `ExamMapper.fromDoc` writes a document's own
+`stepId`, which is true — but the value my fixture puts there is
+`CourseMapper.stepIdFor`'s `'$courseId:$stepIndex'`, the port's **local
+positional key**, recorded in the migration doc as a deliberate deviation
+precisely because it is never a server value. No CouchDB `exams` document can
+carry it. So the two-exam state is unreachable in both apps, and my fixture is
+a document shaped like nothing Planet sends — the Phase 113/125 fabricated-join
+shape, moved from `parentId` to `exams.stepId`.
+
+The test stays, with its comment corrected to say that: it pins `exams.first`
+against the tempting "any exam counts" reading, which is what a reimplementer
+would choose and what the revert reds. It is not evidence a learner can meet
+the state. The list shape is still right — it is what `getByStepIdAndType`
+returns and where the `1` comes from.
 
 **`hideTestIfNoQuestion` reads no question count.** The name promises the guard
 is about questions; it hides on *list emptiness* and the only question count in
@@ -331,13 +414,61 @@ routing. **Integrator: that list is the place for it, and this file is not the
 lane's to edit.** The text is the "What the ground-truth audit overturned"
 section above.
 
-**6. Stale Kotlin line citations are widespread, and I fixed only my own
+**6. A course-step survey does not return the learner to the step, so half of
+the refresh fix is dead.** `TakeSurveyScreen`'s submit ends with
+`context.go('${Routes.submissions}/<id>')` — `go`, not `pop` — so answering the
+survey unmounts `TakeCourseScreen`, the tile's `await context.push(…)` never
+resolves into a live element, and `refreshAssessment` short-circuits on
+`context.mounted`. The label is correct once the learner navigates back into
+the course (the screen is rebuilt), but Kotlin puts them back on the step:
+`openSurvey` → `BaseExamFragment.continueExam` takes the `isTeam == false`
+branch, shows the thank-you dialog, and its Finish calls
+`FragmentNavigator.popBackStack`. The exam path already matches
+(`take_exam_screen.dart` pops). **The commit message for `140704d` said
+"returning from the exam *or survey* re-reads the assessment"; the survey half
+was false and is now stated honestly at the code.** Fixing it means changing
+`take_survey_screen.dart`'s exit, which four other entry points share — outside
+this lane's file set and a much larger behavioural call than a label. The
+`refreshAssessment` call stays on the survey tile because it is correct for the
+back-out case and a no-op otherwise. No test covers the survey refresh path;
+the one that looks like it does stubs the route with a `Text` widget, so the
+real screen's `context.go` is never exercised.
+
+**7. The two entry points into the same step exam now disagree.**
+`course_detail_screen.dart` renders `l10n.takeExam` — "Take exam", no count, no
+retake — for the same step this tile now renders as `take test [1]` /
+`Retake Test [1]`. That screen's own comment already says it "carries none of
+`CourseStepFragment`'s gating"; this diff *widens* a gap it did not create.
+Closing it means giving that screen the whole assessment read, which is a new
+feature for a screen whose Kotlin counterpart shows a download dialog rather
+than a test button — so it is a phase, not a follow-up line.
+
+**8. Stale Kotlin line citations are widespread, and I fixed only my own
 region.** The ground-truth audit found them in `exam_mapper.dart` (three),
 `survey_mapper.dart` (one), `app_database.dart` (one, an
 `ExamDao.getByStepIdAndType(stepId, "survey")` that is actually the plural) and
 in `examParentId`'s doc (`createExamSubmission` is `:446-453`, not `:449-456`).
 I corrected the citations inside `hasUnfinishedSurveys`' doc, since leaving them
 wrong next to the function I had just ported correctly would be worse; the rest
-belong to other lanes' files or to the write path. Given that misreading a
-correctly-named function is this project's most expensive recurring failure, a
-pass that just fixes citations would be cheap and worth a lane.
+belong to other lanes' files or to the write path. The implementation audit
+added `normalizeSubmissionUserId` (`:727-734`, cited `:741-748`),
+`serializeSubmission` (`:820`, cited `:813-862`) and
+`mandatory_survey_round_trip_test.dart:433`'s `:181-183`, and caught **three
+that this phase itself wrote wrong**: `hideTestIfNoQuestion` is `:241-260`, not
+`:241-261` (`:261` is blank, `:262` starts the next method) — I had made that
+off-by-one twice, once from the brief and once by miscounting an `awk` window —
+the survey block is `:252-259`, and `createBulkSurveySubmissions`' key is
+`:203-208`. All fixed. Given that misreading a correctly-named function is this
+project's most expensive recurring failure, a pass that just fixes citations
+would be cheap and worth a lane.
+
+**9. I pushed `140704d` without running the full suite after the last code
+change, and it was red.** I ran the whole suite, then added the refresh fix,
+then ran only the two files I had touched, then pushed. `route_reachability_test`
+was failing the entire time — the port's own guard, on my own new navigation —
+and CI told me rather than my own gate. The brief says run the full gate before
+every push, and "the two files I touched" is not that: a static-analysis guard
+lives in a file no feature change ever touches. Recorded because the failure
+mode is structural, not a slip: **the tests most likely to catch a new
+navigation, a new ARB key or a new provider are precisely the ones outside the
+diff.**

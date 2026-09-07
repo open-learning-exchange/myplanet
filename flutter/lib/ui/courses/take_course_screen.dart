@@ -466,7 +466,7 @@ class _StepContent extends ConsumerWidget {
               child: ListTile(
                 leading: const Icon(Icons.assignment_outlined),
                 // `redo_survey` once answered, `record_survey` otherwise
-                // (`CourseStepFragment.kt:252-260`). Unlike the test label
+                // (`CourseStepFragment.kt:252-259`). Unlike the test label
                 // this one carries no count, though Kotlin shows the button
                 // off the same non-empty list.
                 title: Text(
@@ -481,6 +481,20 @@ class _StepContent extends ConsumerWidget {
                 // being a pattern rather than a base, an unmatchable route: a
                 // course-step survey has no `teamId`, so the interpolation
                 // left an empty segment too.
+                // **The refresh here only fires on a back-out, and that is a
+                // gap rather than a design.** `TakeSurveyScreen`'s submit ends
+                // with `context.go('${Routes.submissions}/<id>')`, not a pop,
+                // so answering the survey unmounts this screen and the `await`
+                // never resolves into a live element — `refreshAssessment`
+                // short-circuits on `context.mounted`. Kotlin *does* return:
+                // `openSurvey` → `BaseExamFragment.continueExam` shows the
+                // thank-you dialog and its Finish calls
+                // `FragmentNavigator.popBackStack`, landing back on the step
+                // with the label now reading *redo survey*. Making the port
+                // match means changing that screen's exit, which four other
+                // entry points share — outside this phase's diff, recorded in
+                // PHASE_128_NOTES.md. The call stays because it is correct for
+                // the back-out case and a no-op otherwise.
                 onTap: () async {
                   await context.push('${Routes.surveys}/${surveys.first.id}');
                   refreshAssessment();

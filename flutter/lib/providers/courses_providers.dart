@@ -315,10 +315,18 @@ final stepExamProvider = FutureProvider.autoDispose.family<ExamRow?, String>((
 /// [stepExamProvider] is this list's head, and it is what most callers want;
 /// the *list* exists because the step tile's label carries `exams.size`
 /// (`CourseStepFragment.kt:244-250`, `getString(R.string.take_test,
-/// exams.size)`). Kotlin's `type = "courses"` filter is the port's choice of
-/// table: `ExamMapper.fromDoc` reads a document's `type` to decide whether the
-/// row lands in [Exams] or [Surveys] and then discards it, so `examDao` is
-/// already the `"courses"`-typed half.
+/// exams.size)`).
+///
+/// **[Exams] is not the `type = "courses"` half — it is the
+/// not-`"surveys"` half**, and the difference is a real one this doc used to
+/// get wrong. `ExamMapper.fromDoc` routes on `type == 'surveys'` and files
+/// *everything else* as an exam (`exam_mapper.dart`, "everything else is an
+/// exam"), so `examDao` is a **superset** of Kotlin's `"courses"`: a
+/// `steps[i].exam` carrying no `type` at all lands here and gets a button,
+/// where Kotlin files it as `"exam"` — a value no Kotlin query selects — and
+/// shows nothing. That is Phase 113's deliberate deviation, and since this
+/// list's `length` is now rendered to the learner and its `first` decides the
+/// wording, it is the assumption both rest on.
 final stepExamsProvider = FutureProvider.autoDispose
     .family<List<ExamRow>, String>((ref, stepId) async {
       final db = ref.watch(appDatabaseProvider);
@@ -348,7 +356,7 @@ typedef StepAssessment = ({
 
 /// Port of the assessment fields `CoursesRepositoryImpl.getCourseStepData`
 /// computes (`:529-556`), feeding `CourseStepFragment.hideTestIfNoQuestion`
-/// (`:241-261`).
+/// (`:241-260`).
 ///
 /// The lists drive **visibility** and the count in the label; the booleans
 /// drive the label's *wording*. Nothing here reads a question count, despite

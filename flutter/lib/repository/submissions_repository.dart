@@ -757,7 +757,7 @@ class SubmissionsRepository {
   /// (`:537-546`), which calls it twice — once with `"exam"` and once with
   /// `"survey"` — to produce `CourseStepData.hasExam`/`hasSurvey`. Those two
   /// booleans have exactly one use: `CourseStepFragment.hideTestIfNoQuestion`
-  /// (`:241-261`) swaps the step tile's button labels off them, `take_test` →
+  /// (`:241-260`) swaps the step tile's button labels off them, `take_test` →
   /// `retake_test` and `record_survey` → `redo_survey`. So this is the only
   /// **user-visible** reader in either tree whose predicate is the whole
   /// composite `parentId` — and unlike [hasUnfinishedSurveys], whose Kotlin
@@ -789,10 +789,15 @@ class SubmissionsRepository {
   /// keeps every exam and survey in one `exams` table distinguished by `type`.
   /// The port split both pairs — [Exams]/[Surveys] and
   /// [ExamQuestions]/[SurveyQuestions] — so the count has to pick its table
-  /// from [type], the same value Kotlin would have found in the `exams` row's
-  /// `type` column. `"survey"` reads [SurveyQuestions]; anything else reads
-  /// [ExamQuestions], since `"exam"` is the only other type this method is
-  /// ever called with.
+  /// from [type]. **No Kotlin line authorises that branch**: it is a forced
+  /// deviation, and copying the Kotlin literally (always [ExamQuestions])
+  /// reads as *not taken* on every survey ever answered.
+  ///
+  /// The discriminator is the **submission**'s type, `'survey'` singular —
+  /// what both callers pass and what the `submissions.type` column holds. It
+  /// is deliberately not the *exam row's* type, which for a survey document is
+  /// `'surveys'` plural; a future caller forwarding a document's own type
+  /// would fall through to [ExamQuestions] silently.
   ///
   /// The `parentId` is [examParentId]'s, i.e. Kotlin's
   /// `"$stepExamId@$courseId"` (`:190`) — the composite key Phase 125 made
@@ -804,20 +809,57 @@ class SubmissionsRepository {
     required String? userId,
     required String type,
   }) async {
-    final examId = stepExamId ?? '';
-    if (examId.isEmpty || (courseId ?? '').isEmpty || (userId ?? '').isEmpty) {
-      return false;
-    }
-    final questions = type == 'survey'
-        ? (await _surveyDao.questionsFor(examId)).length
-        : (await _examDao.questionsFor(examId)).length;
-    if (questions == 0) return false;
+    // `isNullOrBlank`, not `isEmpty`: Kotlin's guard rejects a whitespace-only
+    // argument too (`:182-184`), and the first cut of this diverged from its
+    // own doc comment on exactly that. Binding all three to locals also keeps
+    // the `!` out of the count call, so deleting the guard changes the
+    // *answer* rather than throwing a null-check error — which is what makes
+    // the guard testable.
+    final examId = (stepExamId ?? '').trim();
+    final course = (courseId ?? '').trim();
+    final user = (userId ?? '').trim();
+    if (examId.isEmpty || course.isEmpty || user.isEmpty) return false;
+    if (await _questionCount(examId, type) == 0) return false;
     final count = await _dao.countByUserParentAndType(
-      userId!,
-      examParentId(examId: examId, courseId: courseId),
+      user,
+      examParentId(examId: examId, courseId: course),
       type,
     );
     return count > 0;
+  }
+
+  /// `SELECT COUNT(*)`, the shape of Kotlin's `QuestionDao.countByExamId`
+  /// (`QuestionDao.kt:13`) — deliberately not `questionsFor(id).length`.
+  ///
+  /// Fetching the rows in order to count them decodes every question's
+  /// `choices` blob through `ExamChoiceListConverter`, whose `jsonDecode` is
+  /// unguarded, so one malformed blob would throw out of a **label** read.
+  /// [hasSubmission] feeds a single `AsyncValue` covering both step tiles, so
+  /// that throw would take the survey tile down with the exam one — a bad row
+  /// on one question hiding the buttons. A `COUNT(*)` decodes nothing.
+  ///
+  /// Built here rather than on the DAOs for the same reason
+  /// [_repairSurveyParentId]'s `UPDATE` is: `app_database.dart` belongs to
+  /// another lane this round. Both should move there.
+  Future<int> _questionCount(String examId, String type) async {
+    if (type == 'survey') {
+      final table = _surveyDao.surveyQuestions;
+      final total = table.id.count();
+      final row =
+          await (_surveyDao.selectOnly(table)
+                ..addColumns([total])
+                ..where(table.surveyId.equals(examId)))
+              .getSingle();
+      return row.read(total) ?? 0;
+    }
+    final table = _examDao.examQuestions;
+    final total = table.id.count();
+    final row =
+        await (_examDao.selectOnly(table)
+              ..addColumns([total])
+              ..where(table.examId.equals(examId)))
+            .getSingle();
+    return row.read(total) ?? 0;
   }
 
   /// Port of `SubmissionsRepositoryImpl.hasUnfinishedSurveys`. Returns true
