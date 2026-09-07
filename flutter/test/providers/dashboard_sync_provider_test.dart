@@ -151,9 +151,17 @@ void main() {
 /// The pass is driven for real here rather than asserted structurally: the
 /// defect this covers is not "the push is wrong", it is "the push is not
 /// called", which only running `syncAll` can show. The sixteen table pulls are
-/// left to fail — `planetApiProvider` is a bare mock, so each one throws on its
-/// first call and `SyncNotifier.sync` records it as errored — because what is
-/// under test is the step that runs *before* them.
+/// left to fail, because what is under test is the step that runs *before*
+/// them.
+///
+/// What stops them reaching the network is worth stating precisely, because
+/// the obvious explanation is wrong: mocktail's default for an unstubbed call
+/// is to **return null**, not to throw. The pulls die on the implicit-downcast
+/// `TypeError` that null produces where a `Future<NetworkResult<…>>` is
+/// declared, which `SyncNotifier.sync`'s `catch (error)` records as errored.
+/// So this only works while every mocked member returns a non-nullable type —
+/// a `void` or nullable-returning one would quietly hand back null and let the
+/// code under test carry on past where it looks like it stops.
 void _shelfPushTests() {
   const config = ServerConfig(
     serverUrl: 'https://planet.example.org',

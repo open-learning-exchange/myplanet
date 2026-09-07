@@ -63,6 +63,10 @@ int playbackSpeedIndex(double currentSpeed) {
 
 /// The `SharedPrefManager` half of the same feature, behind a seam so the
 /// players take a store rather than reaching for preferences themselves.
+///
+/// The preference names match Kotlin's for legibility, not for interchange —
+/// `shared_preferences` namespaces and type-encodes its entries differently,
+/// so the two apps cannot read each other's. See [PlanetPrefs.mediaPlaybackPosition].
 class MediaPlaybackStore {
   const MediaPlaybackStore(this._prefs);
 

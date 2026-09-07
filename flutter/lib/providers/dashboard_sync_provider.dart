@@ -137,12 +137,16 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
       clearFinishedAt: true,
     );
 
+    // First, as `startFullSync` has it -- and before the challenge write
+    // below, which reads the session with `.valueOrNull`: resolving
+    // `sessionProvider` here means that read finds a value rather than the
+    // null it would otherwise see on the first pass.
+    await pushCurrentUserShelf();
+
     // `DashboardElementActivity.logSyncInSharedPrefs` records the challenge
     // action right before the sync starts -- the challenge dialog's "sync"
     // checkbox reads it via `hasUserCompletedSync`.
     await ref.read(activityLogProvider).recordSyncChallengeAction();
-
-    await pushCurrentUserShelf();
 
     for (final area in DashboardSyncArea.values) {
       await _syncArea(area);

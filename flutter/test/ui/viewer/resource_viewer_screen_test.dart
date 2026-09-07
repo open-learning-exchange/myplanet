@@ -341,6 +341,7 @@ void main() {
     Future<SharedPreferences> pumpMediaViewer(
       WidgetTester tester, {
       String filename = 'lesson.mp4',
+      String? mediaType = 'video',
       Map<String, Object> initialPrefs = const {},
     }) async {
       SharedPreferences.setMockInitialValues(initialPrefs);
@@ -348,9 +349,11 @@ void main() {
       await tester.runAsync(
         () => writeAttachment('res-1', filename, 'not really a video'),
       );
-      // `_getResourceType` routes video on `mediaType`/`resourceType`, never on
-      // the extension, so a bare `.mp4` filename would fall through to text.
-      await seedResource(filename: filename, mediaType: 'video', offline: true);
+      await seedResource(
+        filename: filename,
+        mediaType: mediaType,
+        offline: true,
+      );
       await tester.pumpWidget(
         wrapScreen(
           const ResourceViewerScreen(resourceId: 'res-1'),
@@ -372,6 +375,33 @@ void main() {
 
       // `setupPlaybackSpeedMenu` renders the current speed as the item's own
       // title, so the label doubles as the indicator.
+      expect(find.text('1.0x'), findsOneWidget);
+    });
+
+    testWidgets('an mp3 with an unrecognised media type still offers speed', (
+      tester,
+    ) async {
+      // The port's own add-resource form writes `mediaType` from
+      // `['Text', 'Graphic/Pictures', 'Audio/Music/Book', 'Video']`, none of
+      // which the old exact-equality check matched — so a resource created in
+      // this app routed to the *text* viewer and the playback features, gated
+      // on the video/audio types, were dead for it. Kotlin's
+      // `ResourceOpener.resolveType` routes on the extension and never looks
+      // at `mediaType` at all.
+      await pumpMediaViewer(
+        tester,
+        filename: 'lecture.mp3',
+        mediaType: 'Audio/Music/Book',
+      );
+
+      expect(find.text('1.0x'), findsOneWidget);
+    });
+
+    testWidgets('an mp4 with no media type at all still offers speed', (
+      tester,
+    ) async {
+      await pumpMediaViewer(tester, filename: 'lesson.mp4', mediaType: null);
+
       expect(find.text('1.0x'), findsOneWidget);
     });
 

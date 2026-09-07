@@ -76,6 +76,40 @@ Future<bool> executeBackgroundTask(String taskName) async {
       syncSteps: config == null
           ? const []
           : [
+              // First, as `SyncManager.startFullSync` has it: the shelf is
+              // *pushed* before the pull phase, so a course or resource added
+              // or removed since the last sync reaches the server before the
+              // walks that would otherwise read the server's older copy back
+              // over it. Kotlin reaches this from both of `syncManager.start`'s
+              // callers — `SyncActivity` and `AutoSyncWorker` — so a port that
+              // has it only in the sync centre leaves the offline-then-closed
+              // case, which is the one the step exists for, unfixed.
+              //
+              // A failure is swallowed by returning true rather than
+              // requesting a retry: Kotlin logs and continues, and a shelf that
+              // cannot reach the server must not stop the pulls or re-run the
+              // whole task.
+              BackgroundSyncStep('shelf_push', () async {
+                final userId = prefs.loggedInUserId;
+                if (userId == null) return true;
+                try {
+                  final user = await container
+                      .read(userDaoProvider)
+                      .getById(userId);
+                  final shelfDocId = user?.couchId;
+                  if (shelfDocId == null || shelfDocId.isEmpty) return true;
+                  await container
+                      .read(shelfRepositoryProvider)
+                      .upload(
+                        config: config,
+                        userId: userId,
+                        shelfDocId: shelfDocId,
+                      );
+                } catch (_) {
+                  // Deliberately ignored — see above.
+                }
+                return true;
+              }),
               BackgroundSyncStep(
                 'resources',
                 () async => completed(

@@ -99,8 +99,15 @@ class PlanetPrefs {
 
   /// `SharedPrefManager.getMediaPlaybackPosition` keys its per-resource entry
   /// `media_progress_<resourceKey>`; the speed is one global entry. Both names
-  /// are the Kotlin ones so a device that has run both apps reads the same
-  /// values back.
+  /// are the Kotlin ones, for the same reason `_keyLanguage` and `_keyLastSync`
+  /// are — one name for one concept across the two trees, so a reader
+  /// comparing them does not have to translate.
+  ///
+  /// It does **not** mean the two apps share the values, and they cannot:
+  /// `shared_preferences` prefixes every key it writes with `flutter.` and
+  /// keeps them in its own `FlutterSharedPreferences` store rather than the
+  /// Kotlin app's `Constants.PREFS_NAME` file, and even in one file Kotlin
+  /// writes the speed with `putFloat` where this writes a double.
   static const String _keyMediaProgressPrefix = 'media_progress_';
   static const String _keyMediaPlaybackSpeed = 'media_playback_speed';
 

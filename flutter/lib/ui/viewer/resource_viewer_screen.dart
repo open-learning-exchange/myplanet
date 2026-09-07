@@ -102,13 +102,50 @@ class _ResourceViewerScreenState extends ConsumerState<ResourceViewerScreen> {
     }
   }
 
+  /// Which viewer a resource opens in.
+  ///
+  /// **The extension decides first.** `ResourceOpener.resolveType`
+  /// (`ResourceOpener.kt:15-28`) is the only production path from a resource
+  /// list into the Kotlin viewer, and it looks at nothing else: it derives a
+  /// MIME type from the file extension (`Utilities.getMimeType` →
+  /// `MimeTypeMap.getMimeTypeFromExtension`) and matches `video`, `audio`,
+  /// `pdf`, `image` on it, then `txt`/`md`/`csv` on the raw extension.
+  /// `mediaType` and `resourceType` are never consulted.
+  ///
+  /// The port used to check those two columns *instead*, by exact equality,
+  /// and carried no media extensions at all — so an `.mp3` or `.mp4` whose
+  /// `mediaType` was not literally `audio`/`video` fell through to
+  /// [ResourceType.text] and was rendered by the text viewer. That was not a
+  /// niche server row: the port's own add-resource form offers
+  /// `'Audio/Music/Book'` and `'Graphic/Pictures'`
+  /// (`add_resource_screen.dart`), neither of which matches, so a resource
+  /// created in this app could not be played by it — and the playback-position
+  /// and speed features, which are gated on these two types, were dead for
+  /// every one of them.
+  ///
+  /// The column checks are kept *after* the extension ones as a deliberate
+  /// superset: a synced row that says `mediaType: video` but carries no usable
+  /// extension opens in the video viewer here where Kotlin would give up with
+  /// [ResourceType.unknown]. That is more useful and cannot misroute anything
+  /// the extension already answered for.
   ResourceType _getResourceType() {
     final mediaType = _resource?.mediaType?.toLowerCase() ?? '';
     final resourceType = _resource?.resourceType?.toLowerCase() ?? '';
     final filename = _resource?.filename?.toLowerCase() ?? '';
+    bool hasExtension(Set<String> extensions) =>
+        extensions.any((extension) => filename.endsWith('.$extension'));
 
+    // Port-only, and first because it is not an extension question: an HTML
+    // resource's entry file may be nested (`openWhichFile`), which
+    // `ResourceFiles.resolveHtmlEntryFile` resolves.
     if (mediaType == 'html' || resourceType == 'html') {
       return ResourceType.html;
+    }
+    if (hasExtension(_videoExtensions)) {
+      return ResourceType.video;
+    }
+    if (hasExtension(_audioExtensions)) {
+      return ResourceType.audio;
     }
     if (mediaType == 'video' || resourceType == 'video') {
       return ResourceType.video;
@@ -404,10 +441,18 @@ enum ResourceType {
 }
 
 /// The `ResourceViewerFragment` playback-progress listener, shared by the video
-/// and audio players because Kotlin installs the same three hooks on both
+/// and audio players because Kotlin installs the same hooks on both
 /// (`onIsPlayingChanged`, `STATE_ENDED`, and the `onPause`/`onDestroyView`
 /// pair).
-class _MediaProgressTracker {
+///
+/// `onPause` is the one that matters most and the one a Flutter port most
+/// easily loses: backgrounding an Android app produces no `isPlaying`
+/// transition — `video_player`'s platform side has no lifecycle handling at
+/// all — so without [didChangeAppLifecycleState] a viewer sent to the
+/// background and then reclaimed by the OS never saves, and the resource
+/// reopens at the beginning. That is the commonest way of leaving a video, not
+/// an edge case.
+class _MediaProgressTracker with WidgetsBindingObserver {
   _MediaProgressTracker({
     required this.store,
     required this.mediaKey,
@@ -431,11 +476,16 @@ class _MediaProgressTracker {
   /// `seekTo` after it, because a seek on an uninitialised player is dropped.
   Future<void> attach(VideoPlayerController controller) async {
     _controller = controller;
+    WidgetsBinding.instance.addObserver(this);
     await controller.setPlaybackSpeed(speed.value);
     speed.addListener(_applySpeed);
     final saved = store.positionFor(mediaKey);
     if (saved > 0) {
-      _lastSavedMs = saved;
+      // Deliberately does *not* seed `_lastSavedMs`. Kotlin leaves
+      // `lastSavedPositionMs` at its `-1L` sentinel through a restore, so the
+      // first save after resuming always lands however little the position has
+      // moved. Seeding it here would throttle a resume-then-leave-quickly away
+      // and keep the older position.
       await controller.seekTo(Duration(milliseconds: saved));
     }
     controller.addListener(_onValueChanged);
@@ -490,8 +540,21 @@ class _MediaProgressTracker {
     store.savePosition(mediaKey, effective);
   }
 
+  /// `onPause`. Kotlin also pauses the player here when not in
+  /// picture-in-picture; the port has no PiP path, so the pause is
+  /// unconditional and left to the platform.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden) {
+      save();
+    }
+  }
+
   void detach() {
     save();
+    WidgetsBinding.instance.removeObserver(this);
     speed.removeListener(_applySpeed);
     _controller?.removeListener(_onValueChanged);
     _controller = null;
@@ -504,6 +567,37 @@ class _MediaProgressTracker {
 /// `MenuItem` with `SHOW_AS_ACTION_ALWAYS`), so the label doubles as the
 /// indicator; the dialog is a single-choice list confirmed with OK, and only
 /// then is the choice applied.
+/// The extensions `MimeTypeMap` maps to a `video/*` or `audio/*` MIME type and
+/// that a device in this deployment realistically carries. Kotlin gets this
+/// list from the platform; enumerating it is the port's equivalent, and
+/// `path_resource_viewer_screen.dart` routes personal-note attachments the
+/// same way.
+const Set<String> _videoExtensions = {
+  'mp4',
+  'm4v',
+  'mkv',
+  'webm',
+  'mov',
+  'avi',
+  '3gp',
+  'mpeg',
+  'mpg',
+};
+
+const Set<String> _audioExtensions = {
+  'mp3',
+  'm4a',
+  'aac',
+  'wav',
+  'ogg',
+  'oga',
+  'opus',
+  'flac',
+  'mid',
+  'midi',
+  'amr',
+};
+
 class _PlaybackSpeedAction extends StatelessWidget {
   const _PlaybackSpeedAction({required this.speed, required this.onSelected});
 

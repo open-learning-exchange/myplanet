@@ -1514,7 +1514,7 @@
   "playbackSpeed": "Playback Speed",
   "playbackSpeedValue": "{speed}x",
   "@playbackSpeedValue": {
-    "description": "Port of the Kotlin `playback_speed_format` (%1$s x), which formats a speed multiplier for the viewer's toolbar action and its option list. The value is pre-formatted so 1.0 reads as 1.0x rather than 1x.",
+    "description": "Port of the Kotlin `playback_speed_format` (%1$sx), which formats a speed multiplier for the viewer's toolbar action and its option list. The value is pre-formatted so 1.0 reads as 1.0x rather than 1x.",
     "placeholders": {
       "speed": {
         "type": "String",

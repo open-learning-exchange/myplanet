@@ -347,6 +347,106 @@ class Phase 121 found `tool/arb_from_strings_xml.dart` skips outright.
   `customDeviceName`); the port spreads the full `documentFields`. Pre-existing,
   harmless, not changed in this phase.
 
+## The second audit pass, and what it found in my own green code
+
+Run per the standing rule (Phases 110/113/116/119 each found real defects this
+way). It found nine things in code that was already committed, formatted,
+analysed and passing. Seven are fixed; two are recorded below for the
+integrator.
+
+**The resume position was lost on the commonest way of leaving a video.**
+Kotlin saves in `onPause` *and* `onDestroyView` — two save points. The port had
+one and a half: `dispose`, plus a save on a pause *transition*. Backgrounding an
+Android app produces no `isPlaying` transition — `video_player`'s platform side
+has no lifecycle handling at all — so pressing Home and letting the OS reclaim
+the process saved nothing and the video reopened at 0:00. `_MediaProgressTracker`
+is now a `WidgetsBindingObserver` and saves on `paused`/`inactive`/`hidden`.
+This is the finding that most justifies the pass: the feature worked in every
+test and failed on the most ordinary user action there is.
+
+**The ported feature was unreachable for audio, and I had recorded only half of
+why.** The note above said `_getResourceType` routes on `mediaType` "never on
+the extension" and called it out of scope. Both halves were wrong.
+`ResourceOpener.resolveType` — the only production path from a resource list
+into the Kotlin viewer — routes on the **extension** via
+`Utilities.getMimeType`, and never consults `mediaType` or `resourceType` at
+all. And the failing case is not a niche server row: the port's own
+add-resource form offers `'Audio/Music/Book'` and `'Graphic/Pictures'`, so an
+mp3 created *in this app* routed to the text viewer, where the playback
+features — gated on the video/audio types — could not appear. Extension
+routing now comes first, with the column checks kept after it as a deliberate
+superset. Two tests, both failing pre-fix with `Found 0 widgets with text
+"1.0x"`.
+
+**`_lastSavedMs` was seeded on restore, and the comment four lines above said it
+was not.** Kotlin leaves `lastSavedPositionMs` at `-1L` through a restore, so
+the first save after resuming always lands; seeding it threw away a
+resume-then-leave-quickly (stored 60000, watched to 61500, wrote nothing).
+Bounded at 2 s of staleness so not data loss, but a divergence whose own comment
+claimed the opposite. Seeding removed.
+
+**Two claims of mine were false and are corrected.** The commit message and two
+doc comments said the Kotlin preference key names let "a device that has run
+both apps read the same values". That cannot happen three independent ways:
+`shared_preferences` prefixes every key with `flutter.`, keeps them in its own
+`FlutterSharedPreferences` store rather than the Kotlin app's
+`Constants.PREFS_NAME` file, and encodes the speed as a double where Kotlin
+writes a `putFloat`. Matching the names is still right — it is the convention
+`_keyLanguage` and `_keyLastSync` already follow — but for legibility, not
+interchange. And the `@playbackSpeedValue` description wrote the Kotlin format
+as `%1$s x`; it is `%1$sx`.
+
+**The shelf push reached one of Kotlin's two entry points.** `startFullSync` is
+called from `SyncActivity` *and* `AutoSyncWorker`; the port's `syncAll` has one
+caller, the sync centre. So the offline-then-app-closed case — precisely the one
+the step exists for — was still unfixed. `background_entrypoint.dart`'s
+`syncSteps` now opens with a `shelf_push` step, swallowing failure by returning
+`true` as Kotlin logs and continues.
+
+**Two smaller corrections.** The push now runs *before*
+`recordSyncChallengeAction`, where Kotlin has it, which also resolves
+`sessionProvider` before that method reads it with `.valueOrNull` — closing a
+latent null for free. And the test comment claiming a bare mocktail mock
+"throws on its first call" was wrong: mocktail returns **null** by default, and
+what actually stops the pulls is the implicit-downcast `TypeError` that null
+produces where a non-nullable `Future` is declared. Same outcome, wrong
+mechanism, and the difference matters — a `void` or nullable-returning mocked
+member would hand back null and let the code carry on past where the comment
+promises it stops.
+
+### From the audit, reported not fixed
+
+* **`PathResourceViewerScreen` got neither half of `ae20602`.** Kotlin gates the
+  speed menu and the position save on `type == VIDEO || AUDIO`, not on having a
+  `resourceId` — `getMediaKey()` is `resourceId ?: filePath.orEmpty()` — so a
+  personal note's `.mp3` resumes and honours the chosen speed in the Kotlin app.
+  The port's equivalent screen has neither. `_MediaProgressTracker` is reusable
+  as-is with the file path as the key; it is a second screen's worth of wiring,
+  which is a slice rather than a harvest follow.
+* **Two undocumented improvements in the shelf payload, now on the hot path.**
+  `shelf_repository.dart` writes `'_id': shelfDocId` (the CouchDB id) where
+  Kotlin's `getShelfData` writes the *local row* id, and omits `_rev` on a 404
+  where Kotlin writes `_rev: ""`. Both make the port succeed where Kotlin fails
+  — for a member registered on this device the two ids differ, so Kotlin PUTs a
+  body whose `_id` disagrees with its URL. Neither is in
+  `docs/kotlin-to-flutter-migration.md`'s deviations list, and this phase is
+  what makes that matter: before it, `upload` fired only on an add/remove tap,
+  and it now fires on every sync for every user. Worth folding into that
+  document, which no lane owns this round.
+* **`_MediaProgressTracker` has no direct coverage and cannot get any.** It is a
+  private class inside the screen file, and in every widget test
+  `VideoPlayerController.file(...).initialize()` rejects, so `attach` is never
+  reached — which is how the two defects above got through green. The
+  extraction this phase did stopped one layer short: a narrow interface over
+  `position`/`duration`/`isPlaying`/`isBuffering`/`isCompleted` would make the
+  wiring testable. Recorded as the next obvious step rather than done here,
+  because it changes the shape of a screen two other lanes may be reading.
+
+One pre-existing wrinkle this phase aggravates: `_initPlayer` assigns
+`_controller` only inside `if (mounted)`, so a widget unmounted during
+`initialize()` leaks the controller, and `attach` adds two awaits to that
+window. Left alone — the fix belongs with the extraction above, not bolted on.
+
 ## Dependency drift
 
 `flutter pub outdated` reports **103 packages** with a newer version available
