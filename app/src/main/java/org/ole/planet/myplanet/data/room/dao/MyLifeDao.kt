@@ -9,13 +9,13 @@ import org.ole.planet.myplanet.model.MyLife
 
 @Dao
 interface MyLifeDao {
-    @Query("SELECT * FROM my_life WHERE (:userId IS NULL OR userId IS NULL OR userId = :userId) ORDER BY weight")
+    @Query("SELECT * FROM my_life WHERE (:userId IS NULL AND (userId IS NULL OR userId = '' OR userId = '--')) OR (:userId IS NOT NULL AND userId = :userId) ORDER BY weight ASC")
     suspend fun getByUserId(userId: String?): List<MyLife>
 
-    @Query("SELECT * FROM my_life WHERE (:userId IS NULL OR userId IS NULL OR userId = :userId) AND isVisible = 1 ORDER BY weight")
+    @Query("SELECT * FROM my_life WHERE ((:userId IS NULL AND (userId IS NULL OR userId = '' OR userId = '--')) OR (:userId IS NOT NULL AND userId = :userId)) AND isVisible = 1 ORDER BY weight ASC")
     suspend fun getVisibleByUserId(userId: String?): List<MyLife>
 
-    @Query("SELECT COUNT(*) FROM my_life WHERE (:userId IS NULL OR userId IS NULL OR userId = :userId)")
+    @Query("SELECT COUNT(*) FROM my_life WHERE (:userId IS NULL AND (userId IS NULL OR userId = '' OR userId = '--')) OR (:userId IS NOT NULL AND userId = :userId)")
     suspend fun countByUserId(userId: String?): Int
 
     @Query("SELECT * FROM my_life WHERE _id IN (:ids)")

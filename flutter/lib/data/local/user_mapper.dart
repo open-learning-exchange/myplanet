@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 
+import '../../core/system/device_identity.dart';
 import '../../core/utils/json_utils.dart';
 import 'app_database.dart';
 
@@ -202,12 +203,21 @@ class UserMapper {
   /// Kotlin includes them only on the creation branch, and Planet ignores them
   /// for account creation, so omitting them changes no document the server
   /// reads.
+  ///
+  /// The `app` marker `27c0470` added is *not* omitted, and sits in the same
+  /// creation branch the Kotlin puts it in: `addDocumentOrigin()` replaced
+  /// that branch's `addProperty("androidId", …)`, so `app` is the only field
+  /// new on the wire there, and it is the field Planet reads to tell a
+  /// myPlanet-authored document from a Planet-authored one
+  /// (`utils/DocumentOrigin.kt`, issue #16665). Sending it needs no device
+  /// identity, so the divergence above stands unchanged.
   static Map<String, dynamic> toDoc(UserRow user, {List<int>? imageBytes}) {
     final doc = <String, dynamic>{
       'name': user.name,
       'roles': user.rolesList,
       if (user.couchId == null || user.couchId!.isEmpty) ...{
         'password': user.password,
+        'app': DeviceIdentity.documentOrigin,
       } else ...{
         'derived_key': user.derivedKey,
         'salt': user.salt,

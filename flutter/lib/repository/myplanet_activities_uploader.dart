@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../core/config/server_config.dart';
 import '../core/network/network_result.dart';
 import '../core/prefs/planet_prefs.dart';
+import '../core/system/device_identity.dart';
 import '../core/system/device_stats.dart';
 import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
@@ -177,6 +178,9 @@ class MyPlanetActivitiesUploader {
       'version': versionCode,
       'versionName': versionName,
       'androidId': androidId,
+      // `addDocumentOrigin()` replaced this doc's bare `androidId` property in
+      // `27c0470`, so `app` is the only field new on the wire.
+      'app': DeviceIdentity.documentOrigin,
       'uniqueAndroidId': uniqueAndroidId,
       'customDeviceName': _prefs.customDeviceName,
       'deviceName': deviceName,
@@ -232,6 +236,11 @@ class MyPlanetActivitiesUploader {
     'version': u.version,
     'versionName': u.versionName,
     'androidId': androidId,
+    // `addStats` is the second of MyPlanet.kt's two `addDocumentOrigin()`
+    // sites (`27c0470`): each usage *row* is stamped, while
+    // `getMyPlanetActivities` — the `usages` container — is not, and carries
+    // no `androidId` at the document level either.
+    'app': DeviceIdentity.documentOrigin,
     'customDeviceName': _prefs.customDeviceName,
     'deviceName': deviceName,
     'time': u.time,

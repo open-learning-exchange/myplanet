@@ -5,6 +5,8 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -185,6 +187,32 @@ class NotificationsViewModelTest {
         assertEquals("o1", notifs[1].id)
         assertEquals("j1", notifs[2].id)
         assertEquals("t2", notifs[3].id)
+    }
+
+    @Test
+    fun testParseTaskDateRunsOncePerTaskNotification() = runTest(testDispatcher) {
+        val task1 = notification(id = "t1", type = "task", isRead = false, message = "Submit report Mon 12, Jan 2024")
+        val task2 = notification(id = "t2", type = "task", isRead = false, message = "Review code Fri 7, Feb 2025")
+        // A task whose message has no date: the cache stores null, so a `?:` fallback would re-parse. This case must
+        // still parse exactly once.
+        val task3 = notification(id = "t3", type = "task", isRead = false, message = "Complete as soon as possible")
+
+        mockkObject(NotificationsViewModel.Companion)
+        try {
+            every {
+                NotificationsViewModel.parseTaskDate(any())
+            } answers { callOriginal() }
+
+            loadNotifications(task1, task2, task3)
+
+            // One parse per task notification — reused for both the team-name title lookup and rendering — including
+            // the dateless message, whose cached null must not trigger a second parse.
+            verify(exactly = 1) { NotificationsViewModel.parseTaskDate(task1.message) }
+            verify(exactly = 1) { NotificationsViewModel.parseTaskDate(task2.message) }
+            verify(exactly = 1) { NotificationsViewModel.parseTaskDate(task3.message) }
+        } finally {
+            unmockkObject(NotificationsViewModel.Companion)
+        }
     }
 
     @Test

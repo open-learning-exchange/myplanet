@@ -7,7 +7,6 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.FinanceReportParams
@@ -87,12 +86,7 @@ class EnterprisesRepositoryImpl @Inject constructor(
     }
 
     override fun getReportsFlow(teamId: String): Flow<List<MyTeam>> {
-        return teamDao.observeByTeamIdAndDocType(teamId, "report")
-            .map { entities ->
-                entities.filter {
-                    it.status != "archived"
-                }.sortedByDescending { it.createdDate }
-            }
+        return teamDao.observeNonArchivedReportsByTeamId(teamId)
             .distinctByContent { old, new ->
                 old._id == new._id && old._rev == new._rev && old.status == new.status &&
                     old.description == new.description && old.beginningBalance == new.beginningBalance &&

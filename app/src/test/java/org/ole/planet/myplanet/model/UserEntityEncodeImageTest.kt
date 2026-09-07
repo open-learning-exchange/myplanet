@@ -20,7 +20,6 @@ import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.model.UserEntity
 
 class UserEntityEncodeImageTest {
 

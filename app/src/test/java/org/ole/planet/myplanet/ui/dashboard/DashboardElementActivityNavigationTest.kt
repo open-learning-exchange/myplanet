@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.dashboard
 
 import android.os.Bundle
 import android.widget.FrameLayout
-import androidx.fragment.app.Fragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.testing.HiltAndroidRule

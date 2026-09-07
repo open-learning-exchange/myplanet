@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
@@ -7,6 +9,8 @@ import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/repository/outbox_repository.dart';
 import 'package:myplanet/repository/voices_repository.dart';
 import 'package:myplanet/repository/voices_uploader.dart';
+
+import 'device_identity_fixture.dart';
 
 class MockPlanetApi extends Mock implements PlanetApi {}
 
@@ -34,7 +38,7 @@ void main() {
       createId: () => 'local-${++idCounter}',
     );
     outbox = OutboxRepository(database.outboxDao);
-    uploader = VoicesUploader(api, voices, outbox);
+    uploader = VoicesUploader(api, voices, outbox, testDeviceIdentity);
   });
   tearDown(() => database.close());
 
@@ -51,6 +55,21 @@ void main() {
     await seedPost();
     await uploader.queuePending(config: config, userId: 'user-1');
     expect((await outbox.due()).single.endpoint, isNot(contains('1234')));
+  });
+
+  test('the queued post is stamped with its origin', () async {
+    // `VoicesRepositoryImpl.serializeNews` gained `addDocumentOrigin()` in
+    // `27c0470`, and it stamps the *outer* document, not the nested `news`
+    // sub-object — the distinction Phase 74's reactions bug turned on.
+    await seedPost();
+    await uploader.queuePending(config: config, userId: 'user-1');
+
+    final doc =
+        jsonDecode((await outbox.due()).single.payload) as Map<String, dynamic>;
+    expect(doc['androidId'], 'android-id_build-id');
+    expect(doc['app'], 'myplanet');
+    expect(doc.containsKey('deviceName'), isFalse);
+    expect(doc.containsKey('customDeviceName'), isFalse);
   });
 
   test('queues once and adopts the CouchDB identity on success', () async {

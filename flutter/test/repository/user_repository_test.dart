@@ -492,6 +492,35 @@ void main() {
       },
     );
 
+    test('the created document names the app that authored it', () async {
+      // `UserRepositoryImpl.createMember` swapped its bare
+      // `addProperty("androidId", …)` for `addDocumentOrigin()` in `27c0470`,
+      // so `app` is the field new on the wire.
+      await seedLocalUser();
+      when(() => api.putJsonObject(any(), any())).thenAnswer(
+        (_) async => NetworkSuccess({
+          'id': 'org.couchdb.user:newmember',
+          'rev': '1-abc',
+          'ok': true,
+        }),
+      );
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer((_) async => NetworkError(404, 'missing'));
+
+      await repository.uploadNewUser(
+        localId: '12345',
+        config: config,
+        username: 'newmember',
+        password: 'secret',
+      );
+
+      final body =
+          verify(() => api.putJsonObject(any(), captureAny())).captured.first
+              as Map<String, dynamic>;
+      expect(body['app'], 'myplanet');
+    });
+
     test('returns false when the PUT fails', () async {
       await seedLocalUser();
 

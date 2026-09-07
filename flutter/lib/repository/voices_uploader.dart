@@ -1,5 +1,6 @@
 import '../core/config/server_config.dart';
 import '../core/network/network_result.dart';
+import '../core/system/device_identity.dart';
 import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import 'outbox_drainer.dart';
@@ -12,7 +13,7 @@ import 'voices_repository.dart';
 /// A post is an append: it exists only on this device until it is delivered, so
 /// a push lost to a dead network is lost outright unless the outbox remembers.
 class VoicesUploader {
-  VoicesUploader(this._api, this._voices, this._outbox);
+  VoicesUploader(this._api, this._voices, this._outbox, this._identity);
 
   /// The `uploadType` these operations carry in the outbox.
   static const String type = 'voices';
@@ -20,6 +21,7 @@ class VoicesUploader {
   final PlanetApi _api;
   final VoicesRepository _voices;
   final OutboxRepository _outbox;
+  final DeviceIdentitySource _identity;
 
   /// Credential-free: this string is persisted in `outbox.endpoint`, and that
   /// table survives schema upgrades. The PIN travels as the `Authorization`
@@ -32,18 +34,31 @@ class VoicesUploader {
   /// Safe to call repeatedly: [OutboxRepository.enqueue] keys on
   /// `(uploadType, itemId)`, so a post already queued has its payload refreshed
   /// rather than being posted twice.
+  ///
+  /// `VoicesRepositoryImpl.serializeNews` gained `addDocumentOrigin()` in
+  /// `27c0470`, a pure addition — `androidId` and `app` are both new on the
+  /// wire, with no device name ([DeviceIdentity.originFields], not
+  /// `documentFields`). It stamps the **outer** document, not the nested
+  /// `news` sub-object: the Kotlin calls it on `` `object` ``, and Phase 74's
+  /// reactions bug is what a writer choosing the wrong level costs. The
+  /// identity read is guarded on an empty list so a pass with nothing to send
+  /// makes no platform-channel call.
   Future<int> queuePending({
     required ServerConfig config,
     String? userId,
   }) async {
     final endpoint = endpointFor(config);
     final pending = await _voices.pendingUploads();
+    final identity = pending.isEmpty ? null : await _identity.read();
     for (final row in pending) {
       await _outbox.enqueue(
         uploadType: type,
         itemId: row.id,
         endpoint: endpoint,
-        payload: VoicesRepository.serialize(row),
+        payload: {
+          ...VoicesRepository.serialize(row),
+          ...identity!.originFields,
+        },
         userId: userId,
       );
     }

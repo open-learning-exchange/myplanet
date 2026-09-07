@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
@@ -7,6 +9,8 @@ import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/repository/events_repository.dart';
 import 'package:myplanet/repository/events_uploader.dart';
 import 'package:myplanet/repository/outbox_repository.dart';
+
+import 'device_identity_fixture.dart';
 
 class MockPlanetApi extends Mock implements PlanetApi {}
 
@@ -31,7 +35,7 @@ void main() {
       createId: () => 'local-1',
     );
     outbox = OutboxRepository(database.outboxDao);
-    uploader = EventsUploader(api, events, outbox);
+    uploader = EventsUploader(api, events, outbox, testDeviceIdentity);
   });
   tearDown(() => database.close());
 
@@ -97,6 +101,32 @@ void main() {
     await uploader.queuePending(config: config, userId: 'user-1');
     final stored = (await outbox.due()).single;
     expect(stored.endpoint, isNot(contains('1234')));
+  });
+
+  test('the queued meetup is stamped with its origin', () async {
+    // `Meetup.serialize` gained `addDocumentOrigin()` in `27c0470` — a
+    // new-stamp site, so `androidId` and `app` are both new on the wire and
+    // no device name accompanies them.
+    await events.create(
+      title: 'Meetup',
+      description: '',
+      startDate: 0,
+      endDate: 0,
+      startTime: '',
+      endTime: '',
+      location: '',
+      link: '',
+      recurring: 'none',
+      creator: 'Ada',
+    );
+    await uploader.queuePending(config: config, userId: 'user-1');
+
+    final doc =
+        jsonDecode((await outbox.due()).single.payload) as Map<String, dynamic>;
+    expect(doc['androidId'], 'android-id_build-id');
+    expect(doc['app'], 'myplanet');
+    expect(doc.containsKey('deviceName'), isFalse);
+    expect(doc.containsKey('customDeviceName'), isFalse);
   });
 
   test('a success without id/rev fails rather than dropping the row', () async {

@@ -3,16 +3,15 @@ package org.ole.planet.myplanet.ui.sync
 import android.app.Application
 import android.content.Context
 import android.widget.LinearLayout
-import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.model.ServerAddress
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import org.ole.planet.myplanet.model.ServerAddress
 
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class, sdk = [34])

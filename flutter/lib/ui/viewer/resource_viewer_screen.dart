@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
@@ -14,6 +15,7 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/activities_provider.dart';
 import '../../providers/app_providers.dart';
 import '../../repository/resource_downloader.dart';
+import 'media_playback.dart';
 
 /// Port of `ui/viewer/ResourceViewerActivity.kt` and `ui/viewer/ResourceViewerFragment.kt`.
 ///
@@ -29,6 +31,10 @@ class ResourceViewerScreen extends ConsumerStatefulWidget {
 }
 
 class _ResourceViewerScreenState extends ConsumerState<ResourceViewerScreen> {
+  /// Shared with the active player so a speed chosen in the toolbar applies to
+  /// the media already playing, as `showPlaybackSpeedDialog`'s
+  /// `exoPlayer?.setPlaybackSpeed(chosenSpeed)` does.
+  final ValueNotifier<double> _playbackSpeed = ValueNotifier<double>(1.0);
   MyLibraryRow? _resource;
   bool _loading = true;
   String? _error;
@@ -41,6 +47,12 @@ class _ResourceViewerScreenState extends ConsumerState<ResourceViewerScreen> {
   void initState() {
     super.initState();
     _loadResource();
+  }
+
+  @override
+  void dispose() {
+    _playbackSpeed.dispose();
+    super.dispose();
   }
 
   Future<void> _loadResource() async {
@@ -62,6 +74,14 @@ class _ResourceViewerScreenState extends ConsumerState<ResourceViewerScreen> {
             .markNotDownloaded(widget.resourceId);
       }
       if (!mounted) return;
+      // Read only for the two types that have a player. `planetPrefsProvider`
+      // is deliberately un-overridden in the widget-test harness, so reading
+      // the store for a text or image resource would throw out of a screen
+      // that has no use for it — the Phase 75 trap.
+      final type = _getResourceType();
+      if (type == ResourceType.video || type == ResourceType.audio) {
+        _playbackSpeed.value = ref.read(mediaPlaybackStoreProvider).speed;
+      }
       setState(() {
         _localPath = path;
         _loading = false;
@@ -82,13 +102,50 @@ class _ResourceViewerScreenState extends ConsumerState<ResourceViewerScreen> {
     }
   }
 
+  /// Which viewer a resource opens in.
+  ///
+  /// **The extension decides first.** `ResourceOpener.resolveType`
+  /// (`ResourceOpener.kt:15-28`) is the only production path from a resource
+  /// list into the Kotlin viewer, and it looks at nothing else: it derives a
+  /// MIME type from the file extension (`Utilities.getMimeType` →
+  /// `MimeTypeMap.getMimeTypeFromExtension`) and matches `video`, `audio`,
+  /// `pdf`, `image` on it, then `txt`/`md`/`csv` on the raw extension.
+  /// `mediaType` and `resourceType` are never consulted.
+  ///
+  /// The port used to check those two columns *instead*, by exact equality,
+  /// and carried no media extensions at all — so an `.mp3` or `.mp4` whose
+  /// `mediaType` was not literally `audio`/`video` fell through to
+  /// [ResourceType.text] and was rendered by the text viewer. That was not a
+  /// niche server row: the port's own add-resource form offers
+  /// `'Audio/Music/Book'` and `'Graphic/Pictures'`
+  /// (`add_resource_screen.dart`), neither of which matches, so a resource
+  /// created in this app could not be played by it — and the playback-position
+  /// and speed features, which are gated on these two types, were dead for
+  /// every one of them.
+  ///
+  /// The column checks are kept *after* the extension ones as a deliberate
+  /// superset: a synced row that says `mediaType: video` but carries no usable
+  /// extension opens in the video viewer here where Kotlin would give up with
+  /// [ResourceType.unknown]. That is more useful and cannot misroute anything
+  /// the extension already answered for.
   ResourceType _getResourceType() {
     final mediaType = _resource?.mediaType?.toLowerCase() ?? '';
     final resourceType = _resource?.resourceType?.toLowerCase() ?? '';
     final filename = _resource?.filename?.toLowerCase() ?? '';
+    bool hasExtension(Set<String> extensions) =>
+        extensions.any((extension) => filename.endsWith('.$extension'));
 
+    // Port-only, and first because it is not an extension question: an HTML
+    // resource's entry file may be nested (`openWhichFile`), which
+    // `ResourceFiles.resolveHtmlEntryFile` resolves.
     if (mediaType == 'html' || resourceType == 'html') {
       return ResourceType.html;
+    }
+    if (hasExtension(_videoExtensions)) {
+      return ResourceType.video;
+    }
+    if (hasExtension(_audioExtensions)) {
+      return ResourceType.audio;
     }
     if (mediaType == 'video' || resourceType == 'video') {
       return ResourceType.video;
@@ -232,17 +289,34 @@ class _ResourceViewerScreenState extends ConsumerState<ResourceViewerScreen> {
       );
     }
 
+    final type = _getResourceType();
     return Scaffold(
       appBar: AppBar(
         title: Text(_resource!.title ?? l10n.untitledResourceTitle),
+        // `setupPlaybackSpeedMenu` adds the item only for VIDEO and AUDIO, and
+        // the port additionally waits for the file: with nothing playing there
+        // is no player to apply a speed to.
+        actions: [
+          if (_localPath != null &&
+              (type == ResourceType.video || type == ResourceType.audio))
+            _PlaybackSpeedAction(
+              speed: _playbackSpeed,
+              onSelected: _setPlaybackSpeed,
+            ),
+        ],
       ),
       // Nothing can render until the attachment is on disk. Previously every
       // viewer was built regardless and each showed its own "not downloaded"
       // message, with no way to actually get the file.
       body: _localPath == null
           ? _buildDownloadPrompt(context)
-          : _buildViewer(context, _getResourceType()),
+          : _buildViewer(context, type),
     );
+  }
+
+  Future<void> _setPlaybackSpeed(double speed) async {
+    _playbackSpeed.value = speed;
+    await ref.read(mediaPlaybackStoreProvider).saveSpeed(speed);
   }
 
   Widget _buildDownloadPrompt(BuildContext context) {
@@ -306,11 +380,15 @@ class _ResourceViewerScreenState extends ConsumerState<ResourceViewerScreen> {
         return _VideoViewer(
           resource: _resource!,
           getLocalFilePath: _getLocalFilePath,
+          playbackStore: ref.read(mediaPlaybackStoreProvider),
+          playbackSpeed: _playbackSpeed,
         );
       case ResourceType.audio:
         return _AudioViewer(
           resource: _resource!,
           getLocalFilePath: _getLocalFilePath,
+          playbackStore: ref.read(mediaPlaybackStoreProvider),
+          playbackSpeed: _playbackSpeed,
         );
       case ResourceType.pdf:
         return _PdfViewer(
@@ -362,11 +440,240 @@ enum ResourceType {
   unknown,
 }
 
+/// The `ResourceViewerFragment` playback-progress listener, shared by the video
+/// and audio players because Kotlin installs the same hooks on both
+/// (`onIsPlayingChanged`, `STATE_ENDED`, and the `onPause`/`onDestroyView`
+/// pair).
+///
+/// `onPause` is the one that matters most and the one a Flutter port most
+/// easily loses: backgrounding an Android app produces no `isPlaying`
+/// transition — `video_player`'s platform side has no lifecycle handling at
+/// all — so without [didChangeAppLifecycleState] a viewer sent to the
+/// background and then reclaimed by the OS never saves, and the resource
+/// reopens at the beginning. That is the commonest way of leaving a video, not
+/// an edge case.
+class _MediaProgressTracker with WidgetsBindingObserver {
+  _MediaProgressTracker({
+    required this.store,
+    required this.mediaKey,
+    required this.speed,
+  });
+
+  final MediaPlaybackStore store;
+  final String mediaKey;
+  final ValueListenable<double> speed;
+
+  VideoPlayerController? _controller;
+
+  /// Kotlin's `lastSavedPositionMs`, whose `-1L` sentinel means "nothing
+  /// written yet" and is what lets the first pause always persist.
+  int? _lastSavedMs;
+  bool _wasPlaying = false;
+
+  /// Applies the stored speed and resumes where the resource was left.
+  ///
+  /// Order matters and matches Kotlin: `setPlaybackSpeed` before `prepare`, the
+  /// `seekTo` after it, because a seek on an uninitialised player is dropped.
+  Future<void> attach(VideoPlayerController controller) async {
+    _controller = controller;
+    WidgetsBinding.instance.addObserver(this);
+    await controller.setPlaybackSpeed(speed.value);
+    speed.addListener(_applySpeed);
+    final saved = store.positionFor(mediaKey);
+    if (saved > 0) {
+      // Deliberately does *not* seed `_lastSavedMs`. Kotlin leaves
+      // `lastSavedPositionMs` at its `-1L` sentinel through a restore, so the
+      // first save after resuming always lands however little the position has
+      // moved. Seeding it here would throttle a resume-then-leave-quickly away
+      // and keep the older position.
+      await controller.seekTo(Duration(milliseconds: saved));
+    }
+    controller.addListener(_onValueChanged);
+  }
+
+  void _applySpeed() {
+    _controller?.setPlaybackSpeed(speed.value);
+  }
+
+  void _onValueChanged() {
+    final controller = _controller;
+    if (controller == null) return;
+    final value = controller.value;
+    // `Player.STATE_ENDED` clears the entry outright so the next open starts
+    // from the beginning rather than the final frame.
+    if (value.isCompleted) {
+      _wasPlaying = false;
+      if (_lastSavedMs != 0) {
+        _lastSavedMs = 0;
+        store.savePosition(mediaKey, 0);
+      }
+      return;
+    }
+    // `onIsPlayingChanged(false)` — a transition, not a state, so a rebuild
+    // while already paused must not re-save. Buffering is excluded because the
+    // player reports not-playing while it fills, and saving there would record
+    // a position the user never paused at.
+    if (_wasPlaying && !value.isPlaying && !value.isBuffering) {
+      save();
+    }
+    _wasPlaying = value.isPlaying;
+  }
+
+  /// `saveCurrentPlaybackProgress`. Deliberately not awaited by its callers:
+  /// one of them is `dispose`, and Kotlin's equivalent is a fire-and-forget
+  /// preference edit in `onDestroyView`.
+  void save() {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) return;
+    if (mediaKey.isEmpty) return;
+    final effective = effectivePlaybackPosition(
+      controller.value.position.inMilliseconds,
+      controller.value.duration.inMilliseconds,
+    );
+    if (!shouldPersistPlaybackPosition(
+      lastSavedMs: _lastSavedMs,
+      effectiveMs: effective,
+    )) {
+      return;
+    }
+    _lastSavedMs = effective;
+    store.savePosition(mediaKey, effective);
+  }
+
+  /// `onPause`. Kotlin also pauses the player here when not in
+  /// picture-in-picture; the port has no PiP path, so the pause is
+  /// unconditional and left to the platform.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden) {
+      save();
+    }
+  }
+
+  void detach() {
+    save();
+    WidgetsBinding.instance.removeObserver(this);
+    speed.removeListener(_applySpeed);
+    _controller?.removeListener(_onValueChanged);
+    _controller = null;
+  }
+}
+
+/// Port of `setupPlaybackSpeedMenu` and `showPlaybackSpeedDialog`.
+///
+/// Kotlin renders the current speed as the toolbar item's own title (a
+/// `MenuItem` with `SHOW_AS_ACTION_ALWAYS`), so the label doubles as the
+/// indicator; the dialog is a single-choice list confirmed with OK, and only
+/// then is the choice applied.
+/// The extensions `MimeTypeMap` maps to a `video/*` or `audio/*` MIME type and
+/// that a device in this deployment realistically carries. Kotlin gets this
+/// list from the platform; enumerating it is the port's equivalent, and
+/// `path_resource_viewer_screen.dart` routes personal-note attachments the
+/// same way.
+const Set<String> _videoExtensions = {
+  'mp4',
+  'm4v',
+  'mkv',
+  'webm',
+  'mov',
+  'avi',
+  '3gp',
+  'mpeg',
+  'mpg',
+};
+
+const Set<String> _audioExtensions = {
+  'mp3',
+  'm4a',
+  'aac',
+  'wav',
+  'ogg',
+  'oga',
+  'opus',
+  'flac',
+  'mid',
+  'midi',
+  'amr',
+};
+
+class _PlaybackSpeedAction extends StatelessWidget {
+  const _PlaybackSpeedAction({required this.speed, required this.onSelected});
+
+  final ValueListenable<double> speed;
+  final Future<void> Function(double speed) onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return ValueListenableBuilder<double>(
+      valueListenable: speed,
+      builder: (context, current, _) => TextButton(
+        onPressed: () => _show(context, current),
+        child: Text(l10n.playbackSpeedValue(_format(current))),
+      ),
+    );
+  }
+
+  /// Kotlin passes `speed.toString()` to `playback_speed_format`, which for a
+  /// Kotlin `Float` prints `1.0` and `0.75`. Dart's `double.toString()` agrees
+  /// on both, so the rendered label matches without a NumberFormat.
+  static String _format(double speed) => speed.toString();
+
+  Future<void> _show(BuildContext context, double current) async {
+    final l10n = AppLocalizations.of(context);
+    final chosen = await showDialog<double>(
+      context: context,
+      builder: (context) {
+        var selected = playbackSpeeds[playbackSpeedIndex(current)];
+        return StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            title: Text(l10n.playbackSpeed),
+            content: RadioGroup<double>(
+              groupValue: selected,
+              onChanged: (value) => setState(() => selected = value!),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final option in playbackSpeeds)
+                    RadioListTile<double>(
+                      value: option,
+                      title: Text(l10n.playbackSpeedValue(_format(option))),
+                    ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(l10n.cancel),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(selected),
+                child: Text(l10n.ok),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (chosen != null) await onSelected(chosen);
+  }
+}
+
 class _VideoViewer extends StatefulWidget {
-  const _VideoViewer({required this.resource, required this.getLocalFilePath});
+  const _VideoViewer({
+    required this.resource,
+    required this.getLocalFilePath,
+    required this.playbackStore,
+    required this.playbackSpeed,
+  });
 
   final MyLibraryRow resource;
   final Future<String?> Function() getLocalFilePath;
+  final MediaPlaybackStore playbackStore;
+  final ValueListenable<double> playbackSpeed;
 
   @override
   State<_VideoViewer> createState() => _VideoViewerState();
@@ -374,6 +681,11 @@ class _VideoViewer extends StatefulWidget {
 
 class _VideoViewerState extends State<_VideoViewer> {
   VideoPlayerController? _controller;
+  late final _MediaProgressTracker _progress = _MediaProgressTracker(
+    store: widget.playbackStore,
+    mediaKey: widget.resource.id,
+    speed: widget.playbackSpeed,
+  );
   bool _loading = true;
   String? _error;
   bool _fileMissing = false;
@@ -399,6 +711,7 @@ class _VideoViewerState extends State<_VideoViewer> {
 
       final controller = VideoPlayerController.file(File(path));
       await controller.initialize();
+      await _progress.attach(controller);
 
       if (mounted) {
         setState(() {
@@ -418,6 +731,9 @@ class _VideoViewerState extends State<_VideoViewer> {
 
   @override
   void dispose() {
+    // Before the controller is released: `onDestroyView` saves, then calls
+    // `exoPlayer?.release()`.
+    _progress.detach();
     _controller?.dispose();
     super.dispose();
   }
@@ -506,10 +822,17 @@ class _PlayPauseOverlayState extends State<PlayPauseOverlay> {
 }
 
 class _AudioViewer extends StatefulWidget {
-  const _AudioViewer({required this.resource, required this.getLocalFilePath});
+  const _AudioViewer({
+    required this.resource,
+    required this.getLocalFilePath,
+    required this.playbackStore,
+    required this.playbackSpeed,
+  });
 
   final MyLibraryRow resource;
   final Future<String?> Function() getLocalFilePath;
+  final MediaPlaybackStore playbackStore;
+  final ValueListenable<double> playbackSpeed;
 
   @override
   State<_AudioViewer> createState() => _AudioViewerState();
@@ -517,6 +840,11 @@ class _AudioViewer extends StatefulWidget {
 
 class _AudioViewerState extends State<_AudioViewer> {
   VideoPlayerController? _controller;
+  late final _MediaProgressTracker _progress = _MediaProgressTracker(
+    store: widget.playbackStore,
+    mediaKey: widget.resource.id,
+    speed: widget.playbackSpeed,
+  );
   bool _loading = true;
   String? _error;
   bool _fileMissing = false;
@@ -543,6 +871,7 @@ class _AudioViewerState extends State<_AudioViewer> {
       // VideoPlayerController can also play audio
       final controller = VideoPlayerController.file(File(path));
       await controller.initialize();
+      await _progress.attach(controller);
 
       if (mounted) {
         setState(() {
@@ -562,6 +891,9 @@ class _AudioViewerState extends State<_AudioViewer> {
 
   @override
   void dispose() {
+    // Before the controller is released: `onDestroyView` saves, then calls
+    // `exoPlayer?.release()`.
+    _progress.detach();
     _controller?.dispose();
     super.dispose();
   }

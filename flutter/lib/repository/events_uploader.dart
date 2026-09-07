@@ -1,5 +1,6 @@
 import '../core/config/server_config.dart';
 import '../core/network/network_result.dart';
+import '../core/system/device_identity.dart';
 import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import 'events_repository.dart';
@@ -8,12 +9,13 @@ import 'outbox_repository.dart';
 
 /// Durable meetup upload, replacing the meetups branch of `UploadManager`.
 class EventsUploader {
-  EventsUploader(this._api, this._events, this._outbox);
+  EventsUploader(this._api, this._events, this._outbox, this._identity);
 
   static const type = 'meetups';
   final PlanetApi _api;
   final EventsRepository _events;
   final OutboxRepository _outbox;
+  final DeviceIdentitySource _identity;
 
   /// Credential-free: this string is persisted in `outbox.endpoint`, a table
   /// that deliberately survives schema upgrades. The PIN travels as the
@@ -21,17 +23,28 @@ class EventsUploader {
   static String endpointFor(ServerConfig config) =>
       '${UrlUtils.credentialFreeDbUrl(config)}/meetups';
 
+  /// Queues every meetup that has not reached the server.
+  ///
+  /// `Meetup.serialize` gained `addDocumentOrigin()` in `27c0470`, a pure
+  /// addition — `androidId` and `app` are both new on the wire, with no
+  /// device name ([DeviceIdentity.originFields], not `documentFields`). The
+  /// identity read is guarded on an empty list so a pass with nothing to send
+  /// makes no platform-channel call.
   Future<int> queuePending({
     required ServerConfig config,
     String? userId,
   }) async {
     final rows = await _events.pendingUploads();
+    final identity = rows.isEmpty ? null : await _identity.read();
     for (final row in rows) {
       await _outbox.enqueue(
         uploadType: type,
         itemId: row.id,
         endpoint: endpointFor(config),
-        payload: EventsRepository.serialize(row),
+        payload: {
+          ...EventsRepository.serialize(row),
+          ...identity!.originFields,
+        },
         userId: userId,
       );
     }

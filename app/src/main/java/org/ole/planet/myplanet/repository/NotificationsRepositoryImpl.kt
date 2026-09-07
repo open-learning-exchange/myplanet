@@ -17,8 +17,8 @@ import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotification
 import org.ole.planet.myplanet.model.TeamNotificationInfo
-import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
+import org.ole.planet.myplanet.utils.toSyncDocuments
 
 private const val STORAGE_WARNING_AVAILABLE_PERCENT = 10
 
@@ -425,15 +425,7 @@ class NotificationsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
-        val documentList = ArrayList<JsonObject>(jsonArray.size())
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-            }
-        }
+        val documentList = jsonArray.toSyncDocuments().map { it.second }
         val parsedList = documentList.mapNotNull { parseNotification(it) }
         val existingNotifications = if (parsedList.isNotEmpty()) {
             notificationDao.getByIds(parsedList.map { it.id }).associateBy { it.id }

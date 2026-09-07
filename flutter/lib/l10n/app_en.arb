@@ -1545,5 +1545,16 @@
   "syncMembersDescription": "Refresh the member accounts registered on this planet",
   "syncRatingsDescription": "Refresh community ratings for resources and courses",
   "syncTasksDescription": "Refresh team tasks created on the server",
-  "syncAchievementsDescription": "Refresh achievement records and downloaded CVs"
+  "syncAchievementsDescription": "Refresh achievement records and downloaded CVs",
+  "playbackSpeed": "Playback Speed",
+  "playbackSpeedValue": "{speed}x",
+  "@playbackSpeedValue": {
+    "description": "Port of the Kotlin `playback_speed_format` (%1$sx), which formats a speed multiplier for the viewer's toolbar action and its option list. The value is pre-formatted so 1.0 reads as 1.0x rather than 1x.",
+    "placeholders": {
+      "speed": {
+        "type": "String",
+        "example": "1.25"
+      }
+    }
+  }
 }

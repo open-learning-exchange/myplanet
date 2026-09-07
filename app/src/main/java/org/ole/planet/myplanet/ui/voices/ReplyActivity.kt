@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -35,13 +34,10 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
-import org.ole.planet.myplanet.ui.voices.VoicesActions
-import org.ole.planet.myplanet.ui.voices.VoicesViewModel
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
-import org.ole.planet.myplanet.utils.FileUtils.getImagePath
-import org.ole.planet.myplanet.utils.FileUtils.getRealPathFromURI
+import org.ole.planet.myplanet.utils.FileUtils.resolveUriToPath
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 
@@ -219,10 +215,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
             return
         }
 
-        var path: String? = getRealPathFromURI(this, url)
-        if (TextUtils.isEmpty(path)) {
-            path = getImagePath(this, url)
-        }
+        val path: String? = resolveUriToPath(this, url)
 
         if (path == null) {
             return

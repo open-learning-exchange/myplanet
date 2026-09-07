@@ -154,6 +154,7 @@ final teamTasksUploaderProvider = Provider<TeamTasksUploader>(
     ref.watch(planetApiProvider),
     ref.watch(teamTasksRepositoryProvider),
     ref.watch(outboxRepositoryProvider),
+    ref.watch(deviceIdentitySourceProvider),
   ),
 );
 
@@ -190,6 +191,7 @@ final searchActivityUploaderProvider = Provider<SearchActivityUploader>(
     ref.watch(searchActivityDaoProvider),
     ref.watch(outboxRepositoryProvider),
     ref.watch(deviceIdentitySourceProvider),
+    ref.watch(deviceStatsProvider),
   ),
 );
 
@@ -236,6 +238,7 @@ final eventsUploaderProvider = Provider<EventsUploader>(
     ref.watch(planetApiProvider),
     ref.watch(eventsRepositoryProvider),
     ref.watch(outboxRepositoryProvider),
+    ref.watch(deviceIdentitySourceProvider),
   ),
 );
 
@@ -426,6 +429,7 @@ final feedbackUploaderProvider = Provider<FeedbackUploader>(
     ref.watch(feedbackRepositoryProvider),
     ref.watch(feedbackDaoProvider),
     ref.watch(outboxRepositoryProvider),
+    ref.watch(deviceIdentitySourceProvider),
   ),
 );
 
@@ -594,6 +598,7 @@ final voicesUploaderProvider = Provider<VoicesUploader>(
     ref.watch(planetApiProvider),
     ref.watch(voicesRepositoryProvider),
     ref.watch(outboxRepositoryProvider),
+    ref.watch(deviceIdentitySourceProvider),
   ),
 );
 
@@ -775,6 +780,7 @@ final courseProgressUploaderProvider = Provider<CourseProgressUploader>(
     ref.watch(planetApiProvider),
     ref.watch(courseProgressDaoProvider),
     ref.watch(outboxRepositoryProvider),
+    ref.watch(deviceIdentitySourceProvider),
   ),
 );
 

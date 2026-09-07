@@ -8,7 +8,9 @@ import 'package:myplanet/core/files/resource_files.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/l10n/app_localizations.dart';
 import 'package:myplanet/providers/app_providers.dart';
+import 'package:myplanet/core/prefs/planet_prefs.dart';
 import 'package:myplanet/ui/viewer/resource_viewer_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/widget_harness.dart';
 
@@ -326,6 +328,133 @@ void main() {
       // raw "# Heading" markup.
       expect(find.text('# Heading'), findsNothing);
       expect(find.text('Heading'), findsOneWidget);
+    });
+  });
+  group('playback speed toolbar action', () {
+    /// Pumps the viewer for a media resource whose attachment exists on disk,
+    /// with a real (mock-backed) [PlanetPrefs] so the store can be read.
+    ///
+    /// `_VideoViewer` still cannot initialise — `video_player` wants a texture
+    /// no widget test can provide — but the failure is caught into the screen's
+    /// error state and the app bar, which is what these tests are about, builds
+    /// either way.
+    Future<SharedPreferences> pumpMediaViewer(
+      WidgetTester tester, {
+      String filename = 'lesson.mp4',
+      String? mediaType = 'video',
+      Map<String, Object> initialPrefs = const {},
+    }) async {
+      SharedPreferences.setMockInitialValues(initialPrefs);
+      final prefs = await SharedPreferences.getInstance();
+      await tester.runAsync(
+        () => writeAttachment('res-1', filename, 'not really a video'),
+      );
+      await seedResource(
+        filename: filename,
+        mediaType: mediaType,
+        offline: true,
+      );
+      await tester.pumpWidget(
+        wrapScreen(
+          const ResourceViewerScreen(resourceId: 'res-1'),
+          overrides: [
+            appDatabaseProvider.overrideWith((ref) => db),
+            serverConfigProvider.overrideWith(() => _TestServerConfig(server)),
+            planetPrefsProvider.overrideWithValue(PlanetPrefs(prefs)),
+          ],
+        ),
+      );
+      await settleViewer(tester);
+      return prefs;
+    }
+
+    testWidgets('a video resource offers the stored playback speed', (
+      tester,
+    ) async {
+      await pumpMediaViewer(tester);
+
+      // `setupPlaybackSpeedMenu` renders the current speed as the item's own
+      // title, so the label doubles as the indicator.
+      expect(find.text('1.0x'), findsOneWidget);
+    });
+
+    testWidgets('an mp3 with an unrecognised media type still offers speed', (
+      tester,
+    ) async {
+      // The port's own add-resource form writes `mediaType` from
+      // `['Text', 'Graphic/Pictures', 'Audio/Music/Book', 'Video']`, none of
+      // which the old exact-equality check matched — so a resource created in
+      // this app routed to the *text* viewer and the playback features, gated
+      // on the video/audio types, were dead for it. Kotlin's
+      // `ResourceOpener.resolveType` routes on the extension and never looks
+      // at `mediaType` at all.
+      await pumpMediaViewer(
+        tester,
+        filename: 'lecture.mp3',
+        mediaType: 'Audio/Music/Book',
+      );
+
+      expect(find.text('1.0x'), findsOneWidget);
+    });
+
+    testWidgets('an mp4 with no media type at all still offers speed', (
+      tester,
+    ) async {
+      await pumpMediaViewer(tester, filename: 'lesson.mp4', mediaType: null);
+
+      expect(find.text('1.0x'), findsOneWidget);
+    });
+
+    testWidgets('a text resource offers no speed action', (tester) async {
+      // `setupPlaybackSpeedMenu` is gated on `type == VIDEO || type == AUDIO`.
+      await pumpViewerWithContent(tester, content: 'plain', filename: 'a.txt');
+
+      expect(find.textContaining('x'), findsNothing);
+    });
+
+    testWidgets('the stored speed is what the action shows', (tester) async {
+      await pumpMediaViewer(
+        tester,
+        initialPrefs: const {'media_playback_speed': 1.5},
+      );
+
+      expect(find.text('1.5x'), findsOneWidget);
+    });
+
+    testWidgets('choosing a speed persists it and updates the label', (
+      tester,
+    ) async {
+      final prefs = await pumpMediaViewer(tester);
+
+      await tester.tap(find.text('1.0x'));
+      await tester.pumpAndSettle();
+      // Kotlin's dialog is a single-choice list confirmed with OK: the choice
+      // is applied by `itemsCallbackSingleChoice`, which fires on the positive
+      // button, not on selection.
+      expect(find.text('Playback Speed'), findsOneWidget);
+      await tester.tap(find.text('1.25x'));
+      await tester.pump();
+      expect(prefs.getDouble('media_playback_speed'), isNull);
+
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
+      expect(prefs.getDouble('media_playback_speed'), 1.25);
+      expect(find.text('1.25x'), findsOneWidget);
+    });
+
+    testWidgets('cancelling the dialog changes nothing', (tester) async {
+      final prefs = await pumpMediaViewer(tester);
+
+      await tester.tap(find.text('1.0x'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('1.5x'));
+      await tester.pump();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(prefs.getDouble('media_playback_speed'), isNull);
+      expect(find.text('1.0x'), findsOneWidget);
     });
   });
 }

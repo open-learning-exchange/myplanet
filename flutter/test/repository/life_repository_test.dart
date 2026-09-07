@@ -45,4 +45,43 @@ void main() {
       isEmpty,
     );
   });
+
+  test('a guest-bucket row is not visible to a signed-in user', () async {
+    // Why upstream `fdf474d` needs no port. Kotlin's `MyLifeDao` predicate used
+    // to be `(:userId IS NULL OR userId IS NULL OR userId = :userId)`, which
+    // for a *real* id also matched rows with a null `userId` — so a signed-in
+    // user saw the shared/guest rows as well as their own. That commit
+    // tightened it to an exact match for a real id and a
+    // null/empty/`"--"` bucket for no user, and added a `normalizeUserId`
+    // collapsing all three placeholder shapes.
+    //
+    // The port never had the loose predicate — `MyLifeDao.watchForUser` has
+    // always been `row.userId.equals(userId)` — and it cannot produce the
+    // placeholders either: `"--"` is a Kotlin *preferences* sentinel
+    // (`sharedPrefManager.getUserId().ifEmpty { "--" }`), while a guest here
+    // carries a real `guest_<username>` row id. This pins the reader's half of
+    // that: even with the placeholder rows present, they stay out.
+    await repository.seed('user-1');
+    await database.myLifeDao.seedIfEmpty('--', [
+      MyLifeEntriesCompanion.insert(
+        id: '--:health',
+        feature: 'health',
+        userId: '--',
+        weight: 0,
+      ),
+    ]);
+    await database.myLifeDao.seedIfEmpty('', [
+      MyLifeEntriesCompanion.insert(
+        id: ':health',
+        feature: 'health',
+        userId: '',
+        weight: 0,
+      ),
+    ]);
+
+    final rows = await repository.watch('user-1').first;
+
+    expect(rows.map((row) => row.userId), everyElement('user-1'));
+    expect(rows, hasLength(LifeRepository.defaultFeatures.length));
+  });
 }

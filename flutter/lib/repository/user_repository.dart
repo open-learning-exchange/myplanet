@@ -7,6 +7,7 @@ import '../core/crypto/health_cipher.dart';
 import '../core/network/network_result.dart';
 import '../core/sync/sync_result.dart';
 import '../core/sync/table_walk.dart';
+import '../core/system/device_identity.dart';
 import '../core/utils/json_utils.dart';
 import '../core/utils/text_utils.dart';
 import '../core/utils/url_utils.dart';
@@ -713,6 +714,15 @@ class UserRepository {
   /// Builds the CouchDB user document for a new member.
   ///
   /// Matches the shape `UserEntity.serialize()` produces when `_id` is empty.
+  /// Port of `UserRepositoryImpl.createMember`'s document body.
+  ///
+  /// `app` is the origin marker `27c0470` added there
+  /// (`utils/DocumentOrigin.kt`): the call replaced an existing
+  /// `addProperty("androidId", …)`, so `app` is the only field new on the
+  /// wire. The `androidId`/`uniqueAndroidId`/`customDeviceName` trio stays
+  /// omitted here for the same reason `UserMapper.toDoc` omits it — this
+  /// builder holds no device-identity seam, and Planet ignores those three on
+  /// account creation.
   Map<String, dynamic> _buildNewUserDoc({
     required String username,
     required String password,
@@ -722,6 +732,7 @@ class UserRepository {
     return {
       'name': username,
       'password': password,
+      'app': DeviceIdentity.documentOrigin,
       'type': 'user',
       'roles': <String>[],
       'isUserAdmin': false,

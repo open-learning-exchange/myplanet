@@ -2,20 +2,20 @@ package org.ole.planet.myplanet
 
 import android.content.Context
 import android.net.TrafficStats
+import com.sun.net.httpserver.HttpServer
 import dagger.hilt.android.EntryPointAccessors
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
+import java.net.InetSocketAddress
+import java.util.Collections
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import com.sun.net.httpserver.HttpServer
-import java.net.InetSocketAddress
-import java.util.Collections
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

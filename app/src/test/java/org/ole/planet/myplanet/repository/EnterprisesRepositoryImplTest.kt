@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import io.mockk.coEvery
+import io.mockk.verify
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
@@ -9,6 +10,7 @@ import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import java.nio.file.Files
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -41,6 +43,28 @@ class EnterprisesRepositoryImplTest {
     @After
     fun tearDown() {
         unmockkObject(FileUtils)
+    }
+
+    @Test
+    fun `getReportsFlow delegates to observeNonArchivedReportsByTeamId`() = runTest {
+        val teamId = "team123"
+        val expectedReports = listOf(
+            MyTeam().apply {
+                _id = "report1"
+                createdDate = 2000L
+            },
+            MyTeam().apply {
+                _id = "report2"
+                createdDate = 1000L
+            }
+        )
+
+        every { teamDao.observeNonArchivedReportsByTeamId(teamId) } returns flowOf(expectedReports)
+
+        val result = repository.getReportsFlow(teamId).first()
+
+        assertEquals(expectedReports, result)
+        verify(exactly = 1) { teamDao.observeNonArchivedReportsByTeamId(teamId) }
     }
 
     @Test
@@ -136,7 +160,7 @@ class EnterprisesRepositoryImplTest {
     fun `getReportsFlow deduplicates byte-identical emissions`() = runTest {
         val r1 = report("r1", "rev1", sales = 10)
         val r2 = report("r1", "rev1", sales = 10)
-        coEvery { teamDao.observeByTeamIdAndDocType("team1", "report") } returns
+        every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
             flowOf(listOf(r1), listOf(r2))
 
         val emissions = mutableListOf<List<MyTeam>>()
@@ -149,7 +173,7 @@ class EnterprisesRepositoryImplTest {
     fun `getReportsFlow emits when a locally-edited financial field changes with rev unchanged`() = runTest {
         val before = report("r1", "rev1", sales = 10)
         val after = report("r1", "rev1", sales = 25)
-        coEvery { teamDao.observeByTeamIdAndDocType("team1", "report") } returns
+        every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
             flowOf(listOf(before), listOf(after))
 
         val emissions = mutableListOf<List<MyTeam>>()
@@ -164,7 +188,7 @@ class EnterprisesRepositoryImplTest {
     fun `getReportsFlow emits when description changes with id and rev unchanged`() = runTest {
         val before = report("r1", "rev1", description = "old")
         val after = report("r1", "rev1", description = "new")
-        coEvery { teamDao.observeByTeamIdAndDocType("team1", "report") } returns
+        every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
             flowOf(listOf(before), listOf(after))
 
         val emissions = mutableListOf<List<MyTeam>>()
@@ -179,7 +203,7 @@ class EnterprisesRepositoryImplTest {
     fun `getReportsFlow emits when a report is added`() = runTest {
         val r1 = report("r1", "rev1", createdDate = 100L)
         val r2 = report("r2", "rev2", createdDate = 200L)
-        coEvery { teamDao.observeByTeamIdAndDocType("team1", "report") } returns
+        every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
             flowOf(listOf(r1), listOf(r1, r2))
 
         val emissions = mutableListOf<List<MyTeam>>()
@@ -191,12 +215,11 @@ class EnterprisesRepositoryImplTest {
     }
 
     @Test
-    fun `getReportsFlow filters archived reports and sorts by createdDate descending`() = runTest {
-        val r1 = report("r1", "rev1", createdDate = 100L)
-        val archived = report("ra", "reva", createdDate = 300L, status = "archived")
+    fun `getReportsFlow preserves the order returned by the dao`() = runTest {
         val r2 = report("r2", "rev2", createdDate = 200L)
-        coEvery { teamDao.observeByTeamIdAndDocType("team1", "report") } returns
-            flowOf(listOf(r1, archived, r2))
+        val r1 = report("r1", "rev1", createdDate = 100L)
+        every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
+            flowOf(listOf(r2, r1))
 
         val emissions = mutableListOf<List<MyTeam>>()
         repository.getReportsFlow("team1").collect { emissions.add(it) }

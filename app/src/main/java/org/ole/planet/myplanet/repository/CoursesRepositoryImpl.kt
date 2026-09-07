@@ -9,6 +9,7 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import androidx.room.withTransaction
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.room.dao.AnswerDao
@@ -46,6 +47,7 @@ import org.ole.planet.myplanet.utils.ExamAnswerUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class CoursesRepositoryImpl @Inject constructor(
     private val progressRepository: ProgressRepository,
@@ -68,7 +70,8 @@ class CoursesRepositoryImpl @Inject constructor(
     private val myLibraryDao: MyLibraryDao,
     private val userRepository: dagger.Lazy<UserRepository>,
     private val dispatcherProvider: DispatcherProvider,
-    private val realtimeSyncManager: RealtimeSyncManager
+    private val realtimeSyncManager: RealtimeSyncManager,
+    private val appDatabase: org.ole.planet.myplanet.data.room.AppDatabase
 ) : CoursesRepository {
 
     private val pendingCourseResources =
@@ -586,27 +589,29 @@ class CoursesRepositoryImpl @Inject constructor(
         return tagsRepository.getTagsForCourses(courseIds)
     }
 
-    override suspend fun deleteCourseProgress(courseId: String?) {
-        val examIds = courseId?.let { examDao.getByCourseId(it).map { exam -> exam.id } }.orEmpty()
+    override suspend fun deleteCoursesProgress(courseIds: List<String>) {
+        if (courseIds.isEmpty()) return
+        val examIds = courseIds.chunked(900).flatMap { chunk ->
+            examDao.getByCourseIds(chunk).map { it.id }
+        }
         if (examIds.isNotEmpty()) {
-            val submissions = submissionDao.getUnuploadedNonSurveyByParentIds(examIds)
+            val submissions = examIds.chunked(900).flatMap { chunk ->
+                submissionDao.getUnuploadedNonSurveyByParentIds(chunk)
+            }
             val submissionIds = submissions.map { it.id }
             if (submissionIds.isNotEmpty()) {
-                answerDao.deleteBySubmissionIds(submissionIds)
-                submissionDao.deleteByIds(submissionIds)
+                appDatabase.withTransaction {
+                    submissionIds.chunked(900).forEach { chunk ->
+                        answerDao.deleteBySubmissionIds(chunk)
+                        submissionDao.deleteByIds(chunk)
+                    }
+                }
             }
         }
     }
 
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
-        val documentList = ArrayList<JsonObject>(jsonArray.size())
-        for (j in jsonArray) {
-            val jsonDoc = JsonUtils.getJsonObject("doc", j.asJsonObject)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-            }
-        }
+        val documentList = jsonArray.toSyncDocuments().map { it.second }
         upsertRoomCoursesFromSync(documentList)
         MyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
     }
@@ -777,18 +782,12 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun insertCertificationsFromSync(jsonArray: JsonArray) {
-        val certifications = ArrayList<Certification>(jsonArray.size())
-        for (j in jsonArray) {
-            val jsonDoc = JsonUtils.getJsonObject("doc", j.asJsonObject)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (id.startsWith("_design")) continue
-            certifications.add(
-                Certification().apply {
-                    _id = id
-                    name = JsonUtils.getString("name", jsonDoc)
-                    setCourseIds(JsonUtils.getJsonArray("courseIds", jsonDoc))
-                }
-            )
+        val certifications = jsonArray.toSyncDocuments().map { (id, jsonDoc) ->
+            Certification().apply {
+                _id = id
+                name = JsonUtils.getString("name", jsonDoc)
+                setCourseIds(JsonUtils.getJsonArray("courseIds", jsonDoc))
+            }
         }
         certificationDao.upsertAll(certifications)
     }

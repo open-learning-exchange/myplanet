@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -9,6 +11,8 @@ import 'package:myplanet/data/local/feedback_mapper.dart';
 import 'package:myplanet/repository/feedback_repository_impl.dart';
 import 'package:myplanet/repository/feedback_uploader.dart';
 import 'package:myplanet/repository/outbox_repository.dart';
+
+import 'device_identity_fixture.dart';
 
 void main() {
   late AppDatabase database;
@@ -32,6 +36,7 @@ void main() {
       FeedbackRepositoryImpl(feedbackDao: database.feedbackDao, planetApi: api),
       database.feedbackDao,
       outbox,
+      testDeviceIdentity,
     );
   });
   tearDown(() => database.close());
@@ -157,6 +162,25 @@ void main() {
     // without `_rev` it is rejected as a conflict.
     expect(payload['_id'], 'feedback-1');
     expect(payload['_rev'], '1-a');
+  });
+
+  test('the queued feedback is stamped with its origin', () async {
+    // `Feedback.serializeFeedback` gained `addDocumentOrigin()` in `27c0470`
+    // — a new-stamp site, so both `androidId` and `app` are new on the wire
+    // and no device name accompanies them.
+    await seedPending();
+
+    await uploader.queuePending(config: config, userId: 'ada');
+    final entry = await database.outboxDao.findOpen(
+      FeedbackUploader.type,
+      'feedback-1',
+    );
+
+    final doc = jsonDecode(entry!.payload) as Map<String, dynamic>;
+    expect(doc['androidId'], 'android-id_build-id');
+    expect(doc['app'], 'myplanet');
+    expect(doc.containsKey('deviceName'), isFalse);
+    expect(doc.containsKey('customDeviceName'), isFalse);
   });
 
   test('stale cleanup spares feedback that never uploaded', () async {
