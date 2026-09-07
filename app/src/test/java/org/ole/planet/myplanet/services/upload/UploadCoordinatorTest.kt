@@ -448,17 +448,17 @@ class UploadCoordinatorTest {
         )
 
         val items = listOf(
-            sampleItem("local-1"),
-            sampleItem("local-2"),
-            sampleItem("local-3"),
-            sampleItem("local-4")
+            Submission(id = "local-1"),
+            Submission(id = "local-2"),
+            Submission(id = "local-3"),
+            Submission(id = "local-4")
         )
 
         coEvery { uploadRepository.postUpload(any(), match { it.get("localId")?.asString in listOf("local-1", "local-2") }) } returns errorResponse(500)
         coEvery { uploadRepository.postUpload(any(), match { it.get("localId")?.asString == "local-3" }) } returns successResponse("remote-3", "rev-3")
         coEvery { uploadRepository.postUpload(any(), match { it.get("localId")?.asString == "local-4" }) } returns successResponse("remote-4", "rev-4")
 
-        val config = legacyConfig(items).copy(batchSize = 2)
+        val config = submissionConfig(items).copy(batchSize = 2)
         val result = uploadCoordinator.upload(config)
         advanceUntilIdle()
 
@@ -472,7 +472,7 @@ class UploadCoordinatorTest {
                 uploadType = "Submission",
                 error = match { it.itemId == "local-1" },
                 payload = match { it.get("localId")?.asString == "local-1" },
-                endpoint = "samples",
+                endpoint = "submissions",
                 httpMethod = "POST",
                 dbId = null,
                 modelClassName = "Submission"
@@ -483,7 +483,7 @@ class UploadCoordinatorTest {
                 uploadType = "Submission",
                 error = match { it.itemId == "local-2" },
                 payload = match { it.get("localId")?.asString == "local-2" },
-                endpoint = "samples",
+                endpoint = "submissions",
                 httpMethod = "POST",
                 dbId = null,
                 modelClassName = "Submission"
@@ -511,11 +511,11 @@ class UploadCoordinatorTest {
             dispatcherProvider = TestDispatcherProvider(testDispatcher)
         )
 
-        val items = listOf(sampleItem("local-1"), sampleItem("local-2"))
+        val items = listOf(Submission(id = "local-1"), Submission(id = "local-2"))
         coEvery { uploadRepository.postUpload(any(), any()) } returns errorResponse(404)
         coEvery { uploadRepository.markUploaded(any(), any()) } returns emptyList()
 
-        val config = legacyConfig(items)
+        val config = submissionConfig(items)
         uploadCoordinator.upload(config)
         advanceUntilIdle()
 
@@ -533,11 +533,11 @@ class UploadCoordinatorTest {
             dispatcherProvider = TestDispatcherProvider(testDispatcher)
         )
 
-        val items = listOf(sampleItem("local-1"), sampleItem("local-2"))
+        val items = listOf(Submission(id = "local-1"), Submission(id = "local-2"))
         coEvery { uploadRepository.postUpload(any(), any()) } returns errorResponse(500)
         coEvery { uploadRepository.markUploaded(any(), any()) } returns emptyList()
 
-        val config = legacyConfig(items)
+        val config = submissionConfig(items)
         uploadCoordinator.upload(config)
         advanceUntilIdle()
 
@@ -546,7 +546,7 @@ class UploadCoordinatorTest {
                 uploadType = "Submission",
                 error = any(),
                 payload = any(),
-                endpoint = "samples",
+                endpoint = "submissions",
                 httpMethod = "POST",
                 dbId = null,
                 modelClassName = "Submission"
@@ -578,12 +578,11 @@ class UploadCoordinatorTest {
         markUploaded = { _: List<UploadedItemResult> -> emptyList() }
     )
 
-    @Suppress("UNCHECKED_CAST")
-    private fun legacyConfig(items: List<SampleItem>) = UploadConfig<SampleItem>(
-        modelClass = Submission::class as kotlin.reflect.KClass<SampleItem>,
-        endpoint = "samples",
+    private fun submissionConfig(items: List<Submission>) = UploadConfig<Submission>(
+        modelClass = Submission::class,
+        endpoint = "submissions",
         fetchPendingItems = { items },
-        serializer = UploadSerializer.Simple { it.payload },
+        serializer = UploadSerializer.Simple { JsonObject().apply { addProperty("localId", it.id) } },
         idExtractor = { it.id },
         dbIdExtractor = null
     )
