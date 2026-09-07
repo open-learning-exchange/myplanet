@@ -155,8 +155,40 @@ getter (`androidId` + `app`) — the direct analogue of `addDocumentOrigin`, whi
 is what the new-stamp uploaders spread, since spreading the full
 `documentFields` there would send two fields Kotlin does not.
 
-See the merged section below for the file-by-file record and the failing-first
-evidence.
+Ported: `device_identity.dart` (the `originFields`/`documentFields` split),
+`DeviceTelemetry` in `activities_uploader.dart` (the port's second, parallel
+identity mechanism, covering the three activity documents), and
+`course_progress_uploader.dart`, `feedback_uploader.dart`,
+`events_uploader.dart`, `team_tasks_uploader.dart`, `voices_uploader.dart` for
+the new-stamp sites — each now takes a `DeviceIdentitySource` and reads it once
+per `queuePending`, guarded on an empty pending list so a pass with nothing to
+send makes no platform-channel call, as `personals_uploader.dart` does.
+`myplanet_activities_uploader.dart` gets `app` at both of `MyPlanet.kt`'s two
+sites (each usage *row* is stamped; the `usages` container is not, and carries
+no document-level `androidId` either).
+
+`user_mapper.dart` and `user_repository.dart` gain `app` on the account-creation
+branch **only**. Their pre-existing divergence — the port omits
+`androidId`/`uniqueAndroidId`/`customDeviceName` there, because neither builder
+holds a device-identity seam and Planet ignores the three on account creation —
+is deliberately left as it was; `app` needs no seam, so adding it widens
+nothing.
+
+`submit_photos_uploader.dart` needed no change: it already spreads
+`documentFields`, so it picked `app` up centrally (and it over-sends both device
+names relative to Kotlin, which is the pre-existing item recorded below).
+
+Two paths checked and confirmed to need nothing. The **public-survey** POST is
+not a CouchDB document: `SurveysRepositoryImpl.submitPublicSurveyTo` builds
+`{answers, user}` for `/api/public/surveys/…/submissions` and calls no
+`addDocumentOrigin`, so `buildPublicSubmissionBody` is correct unstamped. And
+the top-level **survey submission** document is covered centrally, because
+`submissions_uploader.dart` spreads `documentFields` over
+`SubmissionsRepository.serialize`'s output.
+
+**Failing-first** per behaviour, in `device_identity_test.dart`,
+`user_mapper_test.dart`, `user_repository_test.dart` and each touched uploader's
+test; 41 net new tests across the phase, 2212 passing.
 
 ## `fdf474d` — why My Life needs no port
 
@@ -210,6 +242,21 @@ Real behaviour changes, verified in the diff, all inside `SubmissionsRepositoryI
    `submission.teamId`, back-fills a blank `name`/`type` from the local team,
    and **omits the key entirely** when it cannot resolve one rather than writing
    a null.
+
+4. **One `27c0470` site lands here too: the nested `parent`.**
+   `StepExam.serializeExam` is a **new-stamp** site, and two of its three
+   Kotlin callers are `SubmissionsRepositoryImpl` embedding it as a
+   submission's `parent` sub-object (`:778`, `:849`) — so after `27c0470` a
+   submission's nested `parent` carries `androidId` and `app`, a quirk of the
+   serializer being shared with the `exams`-database upload
+   (`UploadConfigs.kt:192`). The port's counterpart is
+   `SubmissionsRepository.examParentDocument`, which is in Lane A's file and
+   was therefore not touched. It wants `DeviceIdentity.originFields` — the
+   origin pair only, no device names — which means `examParentDocument` needs a
+   `DeviceIdentity` passed in, since it is `static` and holds no seam. The
+   top-level submission document already picked `app` up centrally through
+   `submissions_uploader.dart`'s `documentFields`, so this is the nested object
+   alone.
 
 ### To Lane C — `lib/l10n/`
 
