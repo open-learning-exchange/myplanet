@@ -181,6 +181,113 @@ void main() {
     });
   });
 
+  group('plain text', () {
+    // Not a placeholder concern, but the same file: this is where the tool's
+    // derivation rules are tested, and the plain-text rules turned out to
+    // disagree with the recovery path about one character.
+    //
+    // Android's quoting is how a trailing space survives in `strings.xml`, and
+    // four template strings rely on it — every one a label a value is drawn
+    // straight after. The two plain-text rules wrote `translated[name]?.trim()`
+    // and stripped it; `--adopt`'s `_proposal` mirrors it. So `selected` and
+    // `select_resources`, repaired by hand, kept their space while
+    // `storage_running_low` and `storage_available`, derived by the tool, lost
+    // it in all five locales.
+
+    test('a trailing space the template carries is kept', () {
+      // The real Arabic value, read from the XML rather than written here, so
+      // this cannot pass against a stale copy. `"التخزين قليل: "` — Android's
+      // quotes are the XML's, the space inside them is the string's.
+      final arabic = _kotlin('ar', 'storage_running_low');
+      expect(arabic, endsWith(' '), reason: 'the XML premise of this test');
+      expect(
+        derivePlainTextValue(
+          templateEnglish: 'Storage running low: ',
+          translation: arabic,
+        ),
+        endsWith(' '),
+      );
+    });
+
+    test('a translation that never had the space is given it', () {
+      // `values-ar/select_resources` is unquoted and so carries no trailing
+      // space at all, where the other four locales do. The template's space is
+      // the one that matters — it is the app's own layout decision — so the
+      // mirror adds it rather than trusting each translator to have kept it.
+      // This is why the fix is a mirror and not a "don't trim".
+      expect(_kotlin('ar', 'select_resources'), isNot(endsWith(' ')));
+      expect(
+        derivePlainTextValue(
+          templateEnglish: 'Select resources: ',
+          translation: _kotlin('ar', 'select_resources'),
+        ),
+        'اختر الموارد: ',
+      );
+    });
+
+    test('a template with no trailing space still gets a trimmed value', () {
+      // The mirror is one-directional: it never *removes* whitespace the
+      // template does not ask for, and the surrounding trim still runs. A
+      // regression that mirrored in both directions would start writing
+      // trailing spaces into 890 ordinary strings.
+      expect(
+        derivePlainTextValue(
+          templateEnglish: 'Delete',
+          translation: '  Supprimer  ',
+        ),
+        'Supprimer',
+      );
+    });
+
+    test('the format path mirrors a trailing space too', () {
+      // The fourth derivation path, and the one the phase's own fix did *not*
+      // cover until the second audit pass pointed at it. No template value
+      // carrying a placeholder ends in a space today, so this is a guard on a
+      // shape rather than on live data — which is the point: the plain-text
+      // fix's dartdoc claimed no further rule could disagree, and this one
+      // could.
+      expect(
+        convertAndroidFormat(
+          templateValue: 'Searching in {folder}: ',
+          kotlinEnglish: r'Searching in %1$s: ',
+          translation: r'Recherche dans %1$s :',
+        ),
+        'Recherche dans {folder} : ',
+      );
+      // And still one-directional: a template with no trailing space is
+      // unaffected, which the group's other tests would catch but not state.
+      expect(
+        convertAndroidFormat(
+          templateValue: 'Searching in {folder}',
+          kotlinEnglish: r'Searching in %1$s',
+          translation: r'Recherche dans %1$s ',
+        ),
+        'Recherche dans {folder}',
+      );
+    });
+
+    test('a blank or absent translation derives nothing', () {
+      // Both plain-text rules carried an `isNotEmpty` guard before this
+      // function existed, and it is load-bearing: writing `""` into a locale
+      // file displaces the English fallback with nothing at all, which
+      // `locale_coverage_test`'s non-empty check would then fail on.
+      expect(
+        derivePlainTextValue(templateEnglish: 'Delete', translation: null),
+        isNull,
+      );
+      expect(
+        derivePlainTextValue(templateEnglish: 'Delete', translation: '   '),
+        isNull,
+      );
+      // Including when the template ends in a space — the mirror must not
+      // turn nothing into a lone space.
+      expect(
+        derivePlainTextValue(templateEnglish: 'Selected: ', translation: ''),
+        isNull,
+      );
+    });
+  });
+
   group('what shipped', () {
     // The derived values, pinned against the Kotlin XML rather than copied
     // here: the claim is that the `.arb` tracks the Android app's translations,

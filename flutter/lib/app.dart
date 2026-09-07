@@ -6,6 +6,7 @@ import 'l10n/app_localizations.dart';
 import 'l10n/framework_fallback_delegates.dart';
 import 'providers/settings_provider.dart';
 import 'ui/deep_link_scope.dart';
+import 'ui/notification_tap_scope.dart';
 import 'ui/outbox_drain_scope.dart';
 import 'ui/router.dart';
 
@@ -49,9 +50,10 @@ class MyPlanetApp extends ConsumerWidget {
         ),
       ),
       themeMode: themeMode,
-      // Both wrap the whole navigator so they follow the app's lifecycle
-      // rather than any one screen's: the drain on resume, and the deep-link
-      // listener for the launch link and anything that arrives afterwards.
+      // All three wrap the whole navigator so they follow the app's lifecycle
+      // rather than any one screen's: the drain on resume, the deep-link
+      // listener for the launch link and anything that arrives afterwards, and
+      // the same pair of cases for a tap on a system notification.
       // The `MediaQuery` override applies `LocaleUtils.setTextScale` — the
       // Kotlin recreates the activity to re-`Configuration.fontScale`; here
       // rebuilding this builder on a `textScaleProvider` change does the same.
@@ -60,7 +62,11 @@ class MyPlanetApp extends ConsumerWidget {
           context,
         ).copyWith(textScaler: TextScaler.linear(textScale)),
         child: OutboxDrainScope(
-          child: DeepLinkScope(child: child ?? const SizedBox.shrink()),
+          child: DeepLinkScope(
+            child: NotificationTapScope(
+              child: child ?? const SizedBox.shrink(),
+            ),
+          ),
         ),
       ),
     );

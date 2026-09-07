@@ -1680,10 +1680,12 @@ class NotificationDao extends DatabaseAccessor<AppDatabase>
   /// fresh `createdAt` (Kotlin's `Date`), and flags server-originated rows for
   /// read-state upload via `needsSync`.
   ///
-  /// Selection mode's "mark selected as read" is its one caller, and the stamp
-  /// is deliberate there: it moves the marked rows to the top of the list in
-  /// the Android app, so the port has to do the same or the two lists order
-  /// differently. See [markOneAsRead] for the single-row path.
+  /// Two callers, both stamping deliberately: selection mode's "mark selected
+  /// as read", and the tray's *Mark as Read* / *View Task* action buttons
+  /// (`NotificationActionReceiver.kt:81` calls the same bulk overload). The
+  /// stamp moves the marked rows to the top of the list in the Android app, so
+  /// the port has to do the same or the two lists order differently. See
+  /// [markOneAsRead] for the single-row path, which is the tray *body* tap.
   Future<int> markAsRead(Iterable<String> ids, {int? createdAt}) async {
     final values = ids.toList(growable: false);
     if (values.isEmpty) return 0;

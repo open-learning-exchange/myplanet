@@ -208,8 +208,11 @@ void main(List<String> args) {
         orElse: () => '',
       );
       if (exactNamed.isNotEmpty) {
-        final value = translated[exactNamed]?.trim();
-        if (value != null && value.isNotEmpty) {
+        final value = derivePlainTextValue(
+          templateEnglish: templateValue,
+          translation: translated[exactNamed],
+        );
+        if (value != null) {
           derived[key] = value;
           byName++;
           continue;
@@ -219,11 +222,16 @@ void main(List<String> args) {
       final sameText = byEnglishText[wanted] ?? const [];
       if (sameText.isEmpty) continue;
       final candidates = sameText
-          .map((name) => translated[name]?.trim())
-          .where((value) => value != null && value.isNotEmpty)
+          .map(
+            (name) => derivePlainTextValue(
+              templateEnglish: templateValue,
+              translation: translated[name],
+            ),
+          )
+          .whereType<String>()
           .toSet();
       if (candidates.length == 1) {
-        derived[key] = candidates.single!;
+        derived[key] = candidates.single;
         byText++;
       }
     }
@@ -711,12 +719,45 @@ String _proposal(MatchTier tier, String translation, String templateEnglish) {
 
 final _endsWithWordCharacter = RegExp(r'[\p{L}\p{N}]$', unicode: true);
 
+/// The value to write for a plain-text key, or null when there is nothing
+/// usable to write.
+///
+/// This is the whole of what the two plain-text derivation rules do with a
+/// candidate translation, and it exists as one exported function because both
+/// of them used to do it *slightly* differently from the recovery path: they
+/// wrote `translated[name]?.trim()`, and `--adopt`'s [_proposal] mirrors the
+/// template's trailing space.
+///
+/// That divergence cost the port a character in ten places. `storage_running_low`
+/// and `storage_available` are `"Storage running low: "` / `"Storage available: "`
+/// in `values/strings.xml` and carry the same trailing space in all five
+/// translated locales; the by-name rule trimmed it out of every one of them,
+/// while `selected` and `select_resources` — repaired by hand through `--adopt`
+/// — kept theirs. Same four labels, same deliberate space, two derivation paths
+/// disagreeing about it. `test/l10n/locale_coverage_test.dart` now guards the
+/// output rather than the path, so a third rule cannot reintroduce it.
+///
+/// A translation that is blank once trimmed is *no* translation and returns
+/// null, which is what the `isNotEmpty` guards these two rules already carried
+/// were for.
+String? derivePlainTextValue({
+  required String templateEnglish,
+  required String? translation,
+}) {
+  final value = translation?.trim();
+  if (value == null || value.isEmpty) return null;
+  return _mirrorTrailingSpace(value, templateEnglish);
+}
+
 /// Keeps a trailing space the template carries deliberately.
 ///
 /// `selected` is `"Selected: "` in both `app_en.arb` and the Kotlin XML, where
 /// Android's quoting exists precisely to protect that space — it is a label
 /// prefix, and the value is drawn straight after it. Trimming the translation
 /// would close the gap in every language but English.
+///
+/// A *leading* space is not mirrored, and no template carries one; if one ever
+/// does, this is the function to extend rather than a third one to add.
 String _mirrorTrailingSpace(String value, String templateEnglish) =>
     templateEnglish.endsWith(' ') && !value.endsWith(' ') ? '$value ' : value;
 
@@ -1238,5 +1279,14 @@ String? convertAndroidFormat({
     if (!rendered.contains('{$name}')) return null;
   }
   if (_printfSpecifier.hasMatch(rendered)) return null;
-  return rendered;
+  // The same mirror the plain-text rules get through [derivePlainTextValue].
+  // `translation.trim()` above strips a deliberate trailing space exactly as
+  // `translated[name]?.trim()` used to, and this is a *fourth* derivation path
+  // — so "one function, no third rule can disagree" was true of the plain-text
+  // rules and not of this one. Unreachable today (no `app_en.arb` value
+  // containing a placeholder ends in a space) and closed anyway, because the
+  // guard that would catch it — `locale_coverage_test`'s check over every
+  // template key ending in a space — would then fail with no way for the tool
+  // to produce a passing value, pointing at the test rather than at the gap.
+  return _mirrorTrailingSpace(rendered, templateValue);
 }

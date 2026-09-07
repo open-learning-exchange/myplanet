@@ -180,4 +180,65 @@ void main() {
     );
     expect(await resolver.resolve(_notification('voice_reply')), isNull);
   });
+
+  test('a bell row and a tray tap on the same notification agree', () async {
+    // The claim Phase 130's whole design rests on: one mapping, two callers.
+    // A tray tap has no row, so it goes through `resolveFor(type:, relatedId:)`
+    // while the bell row goes through `resolve(row)` — and if those two ever
+    // diverge, the same notification opens two different screens depending on
+    // where the user tapped it. That is the shape `CLAUDE.md` records four
+    // times over ("a writer and a reader disagreeing about a key, where each
+    // half passes its own test and only the pair is wrong"), so the pair is
+    // what this tests.
+    //
+    // It is also the guard against re-inlining: if someone puts a second
+    // switch back into `notifications_screen.dart` and lets it drift, nothing
+    // else here would notice.
+    await database.teamTaskDao.upsertAll([
+      TeamTasksCompanion.insert(
+        id: 'task-42',
+        teamId: 'team-9',
+        title: const Value('Read chapter 3'),
+      ),
+    ]);
+    await database.teamDao.upsertAll([
+      TeamsCompanion.insert(id: 'request-7', teamId: const Value('team-3')),
+    ]);
+
+    // Every type the resolver answers for, with the `relatedId` shape each one
+    // carries in production.
+    const cases = {
+      'resource': null,
+      'storage': null,
+      'task': 'task-42',
+      'join_request': 'request-7',
+      'team_join': 'team-9',
+      'chat': 'team-9',
+      'voice_reply': 'news-5',
+    };
+
+    for (final entry in cases.entries) {
+      final fromRow = await resolver.resolve(
+        _notification(entry.key, relatedId: entry.value),
+      );
+      final fromTray = await resolver.resolveFor(
+        type: entry.key,
+        relatedId: entry.value,
+      );
+      expect(
+        fromTray,
+        fromRow,
+        reason: 'the two entry points disagree about "${entry.key}"',
+      );
+      expect(
+        fromRow,
+        isNotNull,
+        reason: 'this case proves nothing if both resolve to null',
+      );
+      expect(
+        notificationDestinationLocation(fromTray!),
+        notificationDestinationLocation(fromRow!),
+      );
+    }
+  });
 }

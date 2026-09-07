@@ -316,12 +316,21 @@ void main() {
     // already held the Kotlin value unflagged and is left alone — replacing one
     // valid translation with another is not a repair. That makes es +3 where
     // the rest are +4.
+    //
+    // Phase 130 adds two per locale, both incidental to its trailing-space fix
+    // and both real: `playbackSpeed` and `playbackSpeedValue` derive from the
+    // Kotlin `playback_speed`/`playback_speed_format` and had simply never been
+    // through the tool — the phase that added the English keys did not re-run
+    // it. `playbackSpeedValue` is `{speed}x` in all five locales, identical to
+    // the English because the Kotlin string is `%1$sx` in all five: a
+    // multiplier suffix nobody translates. That is the translation, not a
+    // missing one.
     const humanReviewed = {
-      'ar': 410,
-      'es': 462,
-      'fr': 409,
-      'ne': 411,
-      'so': 411,
+      'ar': 412,
+      'es': 464,
+      'fr': 411,
+      'ne': 413,
+      'so': 413,
     };
 
     for (final code in locales) {

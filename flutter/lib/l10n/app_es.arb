@@ -2138,8 +2138,6 @@
   "courseProgressCount": "Progreso {current} de {max}",
   "resourceNotificationMessage": "Tienes {count} recursos no descargados",
   "taskNotificationMessage": "{title} vence en {date}",
-  "storageRunningLow": "Almacenamiento bajo:",
-  "storageAvailable": "Almacenamiento disponible:",
   "joinRequestPrefix": "Solicitud de Unión:",
   "userRequestedToJoinTeam": "{user} ha solicitado unirse a {team}",
   "markAsRead": "Marcar como leído",
@@ -2149,5 +2147,9 @@
   "daysAgo": "Hace {count} día(s)",
   "selectedCount": "{count} seleccionado(s)",
   "markSelectedAsRead": "Marcar como leído",
-  "cancelSelection": "Cancelar selección"
+  "cancelSelection": "Cancelar selección",
+  "storageRunningLow": "Almacenamiento bajo: ",
+  "storageAvailable": "Almacenamiento disponible: ",
+  "playbackSpeed": "Velocidad de reproducción",
+  "playbackSpeedValue": "{speed}x"
 }
