@@ -435,9 +435,23 @@ void main() {
   Future<void> pumpSeededStep(
     WidgetTester tester, {
     required bool joined,
+    Future<void> Function(AppDatabase db, SubmissionsRepository submissions)?
+    afterSeed,
   }) async {
     final db = await seedStepAssessments();
     addTearDown(db.close);
+    if (afterSeed != null) {
+      await afterSeed(
+        db,
+        SubmissionsRepository(
+          MockPlanetApi(),
+          db.submissionDao,
+          db.submitPhotosDao,
+          db.surveyDao,
+          db.examDao,
+        ),
+      );
+    }
     final steps = await db.courseDao.getSteps('course-1');
     await pumpScreen(
       tester,
@@ -484,7 +498,10 @@ void main() {
       // a database filled by the mappers the courses walk now runs.
       await pumpSeededStep(tester, joined: true);
 
-      expect(find.text('Take test'), findsOneWidget);
+      // The label is Kotlin's `take_test`, "take test [%d]", where `%d` is
+      // `exams.size` — not the count-less "Take test" the port used to
+      // hardcode. Phase 128.
+      expect(find.text('take test [1]'), findsOneWidget);
       expect(find.text('Record survey'), findsOneWidget);
 
       // **Rendering is not reachability**, which is what the first cut of this
@@ -492,7 +509,7 @@ void main() {
       // *pattern* — `Routes.exam` is `/courses/exam/:examId`, so the push was
       // `/courses/exam/:examId/exam-1` — which matches no route and drops the
       // learner on go_router's error page.
-      await tester.tap(find.text('Take test'));
+      await tester.tap(find.text('take test [1]'));
       await tester.pumpAndSettle();
       expect(find.text('EXAM_ROUTE exam-1'), findsOneWidget);
     },
@@ -516,7 +533,167 @@ void main() {
     // `CourseStepFragment.onViewCreated` hides both after
     // `hideTestIfNoQuestion` has shown them, when `!userHasCourse`.
     await pumpSeededStep(tester, joined: false);
-    expect(find.text('Take test'), findsNothing);
+    expect(find.text('take test [1]'), findsNothing);
     expect(find.text('Record survey'), findsNothing);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Phase 128 — `hideTestIfNoQuestion`'s label swap
+  // ---------------------------------------------------------------------------
+  //
+  // `CourseStepFragment.hideTestIfNoQuestion` (`:241-262`) picks each button's
+  // wording off `getCourseStepData`'s `hasExam`/`hasSurvey`, which are
+  // `hasSubmission(stepExams[0].id, step.courseId, userId, "exam"/"survey")`
+  // on the composite `parentId`. The port hardcoded `l10n.takeTest` and
+  // `l10n.recordSurvey`, so a learner who had already sat the test was invited
+  // to take it for the first time, every time.
+  //
+  // Both submissions here are authored by the production writer against rows
+  // the mappers produced from a document shaped like the server's, so the key
+  // the writer stores and the key this reader asks for are the same value for
+  // the same reason they are in the field.
+
+  testWidgets('the test tile says Retake once the learner has an attempt', (
+    tester,
+  ) async {
+    // Pre-fix: `Expected: exactly one matching candidate / Actual: zero` for
+    // "Retake Test [1]", with "Take test" on screen instead.
+    await pumpSeededStep(
+      tester,
+      joined: true,
+      afterSeed: (db, submissions) async {
+        final exam = (await db.examDao.getById('exam-1'))!;
+        await submissions.startExamSession(
+          exam: exam,
+          questions: await db.examDao.questionsFor('exam-1'),
+          userId: 'user-1',
+          courseId: 'course-1',
+        );
+      },
+    );
+
+    expect(find.text('Retake Test [1]'), findsOneWidget);
+    expect(find.text('take test [1]'), findsNothing);
+    // The survey is untouched, so its own label must not have moved with it.
+    expect(find.text('Record survey'), findsOneWidget);
+  });
+
+  testWidgets('the survey tile says Redo once the sheet exists', (
+    tester,
+  ) async {
+    // The half that Phase 125's writer fix is the precondition for: before it
+    // the sheet carried the bare `survey-1` and this reader's
+    // `survey-1@course-1` could never match, so the label could not have
+    // swapped however many times the learner answered.
+    await pumpSeededStep(
+      tester,
+      joined: true,
+      afterSeed: (db, submissions) async {
+        final survey = (await db.surveyDao.getByCourseId('course-1')).single;
+        await submissions.createSurveyDraft(
+          survey: survey,
+          questions: await db.surveyDao.questionsFor('survey-1'),
+          userId: 'user-1',
+        );
+      },
+    );
+
+    expect(find.text('redo survey'), findsOneWidget);
+    expect(find.text('Record survey'), findsNothing);
+    expect(find.text('take test [1]'), findsOneWidget);
+  });
+
+  testWidgets('Redo survey still opens the survey screen', (tester) async {
+    // A swapped label is not a swapped destination. `btnTakeSurvey`'s listener
+    // is set once and reads `stepSurvey[0].id` either way.
+    await pumpSeededStep(
+      tester,
+      joined: true,
+      afterSeed: (db, submissions) async {
+        final survey = (await db.surveyDao.getByCourseId('course-1')).single;
+        await submissions.createSurveyDraft(
+          survey: survey,
+          questions: await db.surveyDao.questionsFor('survey-1'),
+          userId: 'user-1',
+        );
+      },
+    );
+
+    await tester.tap(find.text('redo survey'));
+    await tester.pumpAndSettle();
+    expect(find.text('SURVEY_ROUTE survey-1'), findsOneWidget);
+  });
+
+  testWidgets('the label refreshes when the learner returns from the exam', (
+    tester,
+  ) async {
+    // **The reachability question, for a label whose only trigger is a
+    // submission made on another screen.** Kotlin recomputes on every view
+    // creation: `btnTakeTest` → `openCallFragment` →
+    // `FragmentNavigator.replaceFragment(addToBackStack = true)` is a
+    // `replace()`, so popping back recreates `CourseStepFragment`,
+    // `onViewCreated` runs again and `getCourseStepData` re-queries.
+    //
+    // `context.push` does not: it leaves `TakeCourseScreen` mounted, so
+    // `_StepContent` keeps its listener, the `autoDispose` family member is
+    // never disposed and its future never re-runs. Pre-fix this was
+    // `Expected: exactly one matching candidate / Actual: Found 0 widgets with
+    // text "Retake Test [1]"` — the swap this whole phase exists for could not
+    // be observed without leaving the course and re-entering it.
+    late AppDatabase database;
+    late SubmissionsRepository submissions;
+    await pumpSeededStep(
+      tester,
+      joined: true,
+      afterSeed: (db, repo) async {
+        database = db;
+        submissions = repo;
+      },
+    );
+
+    expect(find.text('take test [1]'), findsOneWidget);
+    await tester.tap(find.text('take test [1]'));
+    await tester.pumpAndSettle();
+    expect(find.text('EXAM_ROUTE exam-1'), findsOneWidget);
+
+    // The learner sits the exam on the pushed screen.
+    final exam = (await database.examDao.getById('exam-1'))!;
+    await submissions.startExamSession(
+      exam: exam,
+      questions: await database.examDao.questionsFor('exam-1'),
+      userId: 'user-1',
+      courseId: 'course-1',
+    );
+
+    // …and comes back to the step.
+    GoRouter.of(tester.element(find.text('EXAM_ROUTE exam-1'))).pop();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Retake Test [1]'), findsOneWidget);
+    expect(find.text('take test [1]'), findsNothing);
+  });
+
+  testWidgets('an attempt by another learner does not swap the label', (
+    tester,
+  ) async {
+    // `countByUserParentAndType` is user-scoped (`SubmissionDao.kt:23`), so a
+    // shared handset must not tell the signed-in learner they have already
+    // sat a test somebody else sat.
+    await pumpSeededStep(
+      tester,
+      joined: true,
+      afterSeed: (db, submissions) async {
+        final exam = (await db.examDao.getById('exam-1'))!;
+        await submissions.startExamSession(
+          exam: exam,
+          questions: await db.examDao.questionsFor('exam-1'),
+          userId: 'someone-else',
+          courseId: 'course-1',
+        );
+      },
+    );
+
+    expect(find.text('take test [1]'), findsOneWidget);
+    expect(find.text('Retake Test [1]'), findsNothing);
   });
 }

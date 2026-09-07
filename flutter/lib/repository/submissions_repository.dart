@@ -354,7 +354,7 @@ class SubmissionsRepository {
   /// `ExamTakingFragment` reaches for whether the step carries an exam or a
   /// survey (`type` is the only difference), and `createBulkSurveySubmissions`
   /// (`:201-206`) resolves `examDao.getById(examId)?.courseId` to build the
-  /// same string. `hasSubmission` (`:174-190`) then queries exactly it. The
+  /// same string. `hasSubmission` (`:176-192`) then queries exactly it. The
   /// port had split the two apart: every survey writer stored the bare id
   /// while [hasUnfinishedSurveys] looked for the composite, so a learner who
   /// *had* answered a course-attached survey was still told they had not — and
@@ -748,6 +748,78 @@ class SubmissionsRepository {
         .write(SubmissionsCompanion(parentId: Value(target)));
   }
 
+  /// Port of `SubmissionsRepositoryImpl.hasSubmission`
+  /// (`SubmissionsRepositoryImpl.kt:176-192`) — whether [userId] has any
+  /// submission of [type] for the exam or survey [stepExamId] within
+  /// [courseId].
+  ///
+  /// Its one Kotlin caller is `CoursesRepositoryImpl.getCourseStepData`
+  /// (`:537-546`), which calls it twice — once with `"exam"` and once with
+  /// `"survey"` — to produce `CourseStepData.hasExam`/`hasSurvey`. Those two
+  /// booleans have exactly one use: `CourseStepFragment.hideTestIfNoQuestion`
+  /// (`:241-261`) swaps the step tile's button labels off them, `take_test` →
+  /// `retake_test` and `record_survey` → `redo_survey`. So this is the only
+  /// **user-visible** reader in either tree whose predicate is the whole
+  /// composite `parentId` — and unlike [hasUnfinishedSurveys], whose Kotlin
+  /// original is almost certainly dead (see its doc), this one works in the
+  /// shipping Android app: `getCourseStepData` reads the *plural*-typed rows
+  /// (`getByStepIdAndType(stepId, "surveys")`, `:534`), which is what a survey
+  /// document actually carries.
+  ///
+  /// **Every guard inverts into a label here**, which is the opposite of how
+  /// the same guards read at [hasUnfinishedSurveys]' call site, so they are
+  /// worth stating one at a time:
+  ///
+  /// * a blank exam id, course id or user id returns false → the tile says
+  ///   *take* / *record*. A guest browsing a joined course therefore never
+  ///   sees "Retake", and a step whose `courseId` never synced never does
+  ///   either. Kotlin's guard is `isNullOrBlank` on all three (`:182-184`).
+  /// * **`questionDao.countByExamId(stepExamId) == 0` returns false**
+  ///   (`:186-188`) — an exam whose questions have not synced yet reads as
+  ///   *not taken* however many submissions the learner has. Kotlin's comment
+  ///   for this is `getCourseStepData`'s own sibling rule (`:97`: a step with
+  ///   no exam is passed by reaching it), and here it reads sanely: do not
+  ///   claim an attempt for an exam we cannot show. This is the one guard
+  ///   [hasUnfinishedSurveys] deliberately does **not** port, because there it
+  ///   inverts into "a question-less survey blocks the course forever".
+  ///
+  /// **The question count is the one place the port cannot copy the Kotlin
+  /// literally.** Kotlin keeps every question, exam and survey alike, in one
+  /// `exam_questions` table keyed by `examId` (`QuestionDao.kt:13`), because it
+  /// keeps every exam and survey in one `exams` table distinguished by `type`.
+  /// The port split both pairs — [Exams]/[Surveys] and
+  /// [ExamQuestions]/[SurveyQuestions] — so the count has to pick its table
+  /// from [type], the same value Kotlin would have found in the `exams` row's
+  /// `type` column. `"survey"` reads [SurveyQuestions]; anything else reads
+  /// [ExamQuestions], since `"exam"` is the only other type this method is
+  /// ever called with.
+  ///
+  /// The `parentId` is [examParentId]'s, i.e. Kotlin's
+  /// `"$stepExamId@$courseId"` (`:190`) — the composite key Phase 125 made
+  /// every port writer agree on, and the reason this label swap could not have
+  /// been ported before it.
+  Future<bool> hasSubmission({
+    required String? stepExamId,
+    required String? courseId,
+    required String? userId,
+    required String type,
+  }) async {
+    final examId = stepExamId ?? '';
+    if (examId.isEmpty || (courseId ?? '').isEmpty || (userId ?? '').isEmpty) {
+      return false;
+    }
+    final questions = type == 'survey'
+        ? (await _surveyDao.questionsFor(examId)).length
+        : (await _examDao.questionsFor(examId)).length;
+    if (questions == 0) return false;
+    final count = await _dao.countByUserParentAndType(
+      userId!,
+      examParentId(examId: examId, courseId: courseId),
+      type,
+    );
+    return count > 0;
+  }
+
   /// Port of `SubmissionsRepositoryImpl.hasUnfinishedSurveys`. Returns true
   /// if the course has any attached survey the user has not yet submitted.
   ///
@@ -768,7 +840,7 @@ class SubmissionsRepository {
   /// document's own `type` (`CoursesRepositoryImpl.kt:744`:
   /// `if (examJson.has("type")) … else examKey`), which for a survey is
   /// `"surveys"`. Every other Kotlin reader uses the plural: the Take Survey
-  /// button itself is `getByStepIdAndType(stepId, "surveys")` (`:531`), the
+  /// button itself is `getByStepIdAndType(stepId, "surveys")` (`:534`), the
   /// surveys list is `getByType("surveys")`, and `ExamDao`'s defaults are
   /// `"surveys"`. So the two queries are mutually exclusive and at most one of
   /// the button and this block can ever see a given survey: a document carrying
@@ -812,7 +884,7 @@ class SubmissionsRepository {
   /// **Two further deviations from `hasSubmission`, both deliberate.**
   ///
   /// 1. The blank-user guard below returns `false`. Kotlin has no guard in
-  ///    `hasUnfinishedSurveys`; it lives in `hasSubmission` (`:181-183`), which
+  ///    `hasUnfinishedSurveys`; it lives in `hasSubmission` (`:182-184`), which
   ///    returns `false` for a blank `userId` and so inverts to *unfinished* —
   ///    Kotlin **blocks** a null user on a course that has surveys. Reachable
   ///    here through `challenge_provider`, which passes a nullable id. Blocking
@@ -820,7 +892,7 @@ class SubmissionsRepository {
   ///    the Kotlin behaviour is unobservable anyway (its survey list is always
   ///    empty, above). The blank-*course* half is not a divergence at all:
   ///    `getByCourseIdAndType("", …)` matches nothing either.
-  /// 2. `questionDao.countByExamId(stepExamId) == 0 → false` (`:185-187`) is
+  /// 2. `questionDao.countByExamId(stepExamId) == 0 → false` (`:186-188`) is
   ///    **not** ported. In `getCourseStepData` that rule reads sanely — do not
   ///    claim a submission exists for an exam whose questions have not synced.
   ///    Here it inverts into "a question-less survey blocks the course

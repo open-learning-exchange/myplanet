@@ -304,16 +304,108 @@ final stepExamProvider = FutureProvider.autoDispose.family<ExamRow?, String>((
   ref,
   stepId,
 ) async {
-  final db = ref.watch(appDatabaseProvider);
-  final rows = await db.examDao.getByStepIds([stepId]);
+  final rows = await ref.watch(stepExamsProvider(stepId).future);
   return rows.isEmpty ? null : rows.first;
 });
+
+/// Every exam attached to a course step — the port of `getCourseStepData`'s
+/// `stepExams`, which is `examDao.getByStepIdAndType(stepId, "courses")`
+/// (`CoursesRepositoryImpl.kt:533`).
+///
+/// [stepExamProvider] is this list's head, and it is what most callers want;
+/// the *list* exists because the step tile's label carries `exams.size`
+/// (`CourseStepFragment.kt:244-250`, `getString(R.string.take_test,
+/// exams.size)`). Kotlin's `type = "courses"` filter is the port's choice of
+/// table: `ExamMapper.fromDoc` reads a document's `type` to decide whether the
+/// row lands in [Exams] or [Surveys] and then discards it, so `examDao` is
+/// already the `"courses"`-typed half.
+final stepExamsProvider = FutureProvider.autoDispose
+    .family<List<ExamRow>, String>((ref, stepId) async {
+      final db = ref.watch(appDatabaseProvider);
+      return db.examDao.getByStepIds([stepId]);
+    });
 
 /// The surveys attached to a course step. Drives the "Take survey" button.
 final stepSurveysProvider = FutureProvider.autoDispose
     .family<List<SurveyRow>, String>((ref, stepId) async {
       final db = ref.watch(appDatabaseProvider);
       return db.surveyDao.getByStepId(stepId);
+    });
+
+/// What [stepAssessmentProvider] is keyed on — `getCourseStepData`'s two
+/// arguments plus the step's own course, which Kotlin reads off the step row it
+/// has already loaded (`CoursesRepositoryImpl.kt:530`, `:538`).
+typedef StepAssessmentKey = ({String stepId, String? courseId, String? userId});
+
+/// The assessment half of Kotlin's `CourseStepData`: both lists, plus the two
+/// booleans that decide whether the step tile says *take* or *retake*.
+typedef StepAssessment = ({
+  List<ExamRow> exams,
+  List<SurveyRow> surveys,
+  bool hasExam,
+  bool hasSurvey,
+});
+
+/// Port of the assessment fields `CoursesRepositoryImpl.getCourseStepData`
+/// computes (`:529-556`), feeding `CourseStepFragment.hideTestIfNoQuestion`
+/// (`:241-261`).
+///
+/// The lists drive **visibility** and the count in the label; the booleans
+/// drive the label's *wording*. Nothing here reads a question count, despite
+/// `hideTestIfNoQuestion`'s name: that count lives inside
+/// [SubmissionsRepository.hasSubmission] and decides the *wording*, never
+/// whether a button appears. The name is a fossil.
+///
+/// Kotlin's two booleans are
+/// `hasSubmission(stepExams[0].id, step.courseId, userId, "exam")` and the same
+/// for `stepSurvey[0].id` with `"survey"` — so with two exams on one step the
+/// label counts both and only the **first** one's submission decides whether it
+/// reads "Retake". That is Kotlin's quirk, ported rather than corrected, and
+/// the state it applies to is **port-only**: Kotlin cannot produce a step with
+/// two exams (one `steps[i].exam` object per step, read with `getAsJsonObject`,
+/// and the standalone `exams` walk passes `("", "", doc, "")` so it never sets
+/// `stepId`), while `ExamMapper.fromDoc` does write a document's own `stepId`.
+/// So this is fidelity to what the Kotlin *says*, not to a state it reaches.
+///
+/// One deliberate improvement on the Kotlin, preserved here rather than
+/// introduced: the exam tile opens `exams.first.id`, the same row `hasExam`
+/// interrogated. Kotlin's `btnTakeTest` routes through
+/// `BaseExamFragment.initExam` → `ExamDao.getFirstByStepId`, which is
+/// `WHERE stepId = ? LIMIT 1` with **no type filter**, so on a step carrying
+/// both an exam and a survey it can open the survey row the label never asked
+/// about. Label and destination cannot disagree in the port.
+///
+/// A step with no exams (or no surveys) short-circuits to `false` without a
+/// query, as `getCourseStepData` does (`:537`, `:542`) — which matters because
+/// `hasSubmission`'s guards would answer `false` anyway and this keeps the
+/// reason legible.
+final stepAssessmentProvider = FutureProvider.autoDispose
+    .family<StepAssessment, StepAssessmentKey>((ref, key) async {
+      final exams = await ref.watch(stepExamsProvider(key.stepId).future);
+      final surveys = await ref.watch(stepSurveysProvider(key.stepId).future);
+      final submissions = ref.watch(submissionsRepositoryProvider);
+      final hasExam =
+          exams.isNotEmpty &&
+          await submissions.hasSubmission(
+            stepExamId: exams.first.id,
+            courseId: key.courseId,
+            userId: key.userId,
+            type: 'exam',
+          );
+      final hasSurvey =
+          surveys.isNotEmpty &&
+          await submissions.hasSubmission(
+            stepExamId: surveys.first.id,
+            courseId: key.courseId,
+            userId: key.userId,
+            type: 'survey',
+          );
+      return (
+        exams: exams,
+        surveys: surveys,
+        hasExam: hasExam,
+        hasSurvey: hasSurvey,
+      );
     });
 
 /// Distinct grade levels present locally, for the filter spinner.

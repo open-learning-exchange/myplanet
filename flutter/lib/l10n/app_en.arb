@@ -905,7 +905,16 @@
   "no": "No",
   "submit": "Submit",
   "takeTest": "Take test",
+  "takeTestCount": "take test [{count}]",
+  "@takeTestCount": {
+    "placeholders": { "count": {"type": "int"} }
+  },
+  "retakeTestCount": "Retake Test [{count}]",
+  "@retakeTestCount": {
+    "placeholders": { "count": {"type": "int"} }
+  },
   "recordSurvey": "Record survey",
+  "redoSurvey": "redo survey",
   "react": "React",
   "pickReaction": "Pick a reaction",
   "comments": "Comments",

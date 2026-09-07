@@ -148,6 +148,7 @@ class _CourseContent extends ConsumerWidget {
               stepNumber: index + 1,
               totalSteps: steps.length,
               isMyCourse: isMyCourse,
+              userId: userId,
             ),
           ),
         ),
@@ -173,7 +174,7 @@ class _CourseContent extends ConsumerWidget {
   /// than creating duplicates.
   ///
   /// `passed` is `if (stepExams.isEmpty()) true else null`
-  /// (`CourseStepFragment.kt:97`): a step with no test is passed by reaching
+  /// (`CourseStepFragment.kt:96`): a step with no test is passed by reaching
   /// it, and a step with one waits for the exam to grade it. The port passed
   /// `null` unconditionally, because until Phase 113 nothing could tell the two
   /// apart — `stepExams` is `getByStepIdAndType(stepId, "courses")`, the join
@@ -184,7 +185,7 @@ class _CourseContent extends ConsumerWidget {
     final userId = this.userId;
     if (userId == null) return;
 
-    final exam = await ref.read(stepExamProvider(steps[index].id).future);
+    final exams = await ref.read(stepExamsProvider(steps[index].id).future);
 
     await ref
         .read(progressRepositoryProvider)
@@ -193,7 +194,7 @@ class _CourseContent extends ConsumerWidget {
           courseId: course.id,
           userId: userId,
           stepNum: index + 1,
-          passed: exam == null ? true : null,
+          passed: exams.isEmpty ? true : null,
         );
     final config = ref.read(serverConfigProvider);
     if (config != null) {
@@ -327,6 +328,7 @@ class _StepContent extends ConsumerWidget {
     required this.stepNumber,
     required this.totalSteps,
     required this.isMyCourse,
+    required this.userId,
   });
 
   final CourseStepRow step;
@@ -339,16 +341,48 @@ class _StepContent extends ConsumerWidget {
   /// browsing.
   final bool isMyCourse;
 
+  /// The signed-in user, or null for a guest. `getCourseStepData` takes
+  /// `user?.id` and hands it to `hasSubmission`, which answers `false` — i.e.
+  /// *not yet taken* — for a blank one.
+  final String? userId;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final exam = isMyCourse
-        ? ref.watch(stepExamProvider(step.id)).valueOrNull
+    // One read for both buttons' visibility, counts and labels — the port of
+    // `getCourseStepData` feeding `hideTestIfNoQuestion`.
+    final assessmentKey = (
+      stepId: step.id,
+      courseId: step.courseId,
+      userId: userId,
+    );
+    final assessment = isMyCourse
+        ? ref.watch(stepAssessmentProvider(assessmentKey)).valueOrNull
         : null;
-    final surveys = isMyCourse
-        ? ref.watch(stepSurveysProvider(step.id)).valueOrNull
-        : null;
+
+    /// Re-reads the step's assessment state after the learner comes back from
+    /// an exam or a survey, which is the only thing that can change either
+    /// label.
+    ///
+    /// **Kotlin gets this for free and the port does not.** `btnTakeTest`
+    /// calls `openCallFragment` (`CourseStepFragment.kt:282`), which is
+    /// `FragmentNavigator.replaceFragment(…, addToBackStack = true)` — a
+    /// `replace()`, so popping back **recreates** `CourseStepFragment`,
+    /// `onViewCreated` runs again and `getCourseStepData` re-queries. A
+    /// `context.push` leaves this screen mounted: the widget keeps its
+    /// listener, so the `autoDispose` family member is never disposed and its
+    /// future never re-runs. Without this the label could not change until the
+    /// learner left the course entirely and came back — a swap whose only
+    /// trigger is a submission made on the screen it pushes.
+    Future<void> pushAndRefresh(String location) async {
+      await context.push(location);
+      if (!context.mounted) return;
+      ref.invalidate(stepAssessmentProvider(assessmentKey));
+    }
+
+    final exams = assessment?.exams ?? const <ExamRow>[];
+    final surveys = assessment?.surveys ?? const <SurveyRow>[];
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -388,11 +422,21 @@ class _StepContent extends ConsumerWidget {
             const SizedBox(height: 8),
           ],
           // Take Test button — port of CourseStepFragment's btnTakeTest
-          if (exam != null) ...[
+          if (assessment != null && exams.isNotEmpty) ...[
             Card(
               child: ListTile(
                 leading: const Icon(Icons.quiz_outlined),
-                title: Text(l10n.takeTest),
+                // `hideTestIfNoQuestion` (`CourseStepFragment.kt:244-250`):
+                // `retake_test` once the learner has a submission for
+                // `stepExams[0]`, `take_test` otherwise — and both carry
+                // `exams.size`, the whole list, not the one exam the button
+                // opens. The port had hardcoded the count-less `take test`,
+                // so a step already passed still invited a first attempt.
+                title: Text(
+                  assessment.hasExam
+                      ? l10n.retakeTestCount(exams.length)
+                      : l10n.takeTestCount(exams.length),
+                ),
                 trailing: const Icon(Icons.chevron_right),
                 // `Routes.exam` is the *pattern* `/courses/exam/:examId`;
                 // appending the id to it produced
@@ -400,8 +444,8 @@ class _StepContent extends ConsumerWidget {
                 // dropped the learner on go_router's error page. The exam
                 // screen wants the step and course as query parameters, as
                 // `CourseStepFragment` passes `stepId`/`stepNum`.
-                onTap: () => context.push(
-                  '/courses/exam/${exam.id}'
+                onTap: () => pushAndRefresh(
+                  '/courses/exam/${exams.first.id}'
                   '?stepId=${step.id}&courseId=${step.courseId ?? ''}',
                 ),
               ),
@@ -409,11 +453,17 @@ class _StepContent extends ConsumerWidget {
             const SizedBox(height: 8),
           ],
           // Take Survey button — port of CourseStepFragment's btnTakeSurvey
-          if (surveys != null && surveys.isNotEmpty) ...[
+          if (assessment != null && surveys.isNotEmpty) ...[
             Card(
               child: ListTile(
                 leading: const Icon(Icons.assignment_outlined),
-                title: Text(l10n.recordSurvey),
+                // `redo_survey` once answered, `record_survey` otherwise
+                // (`CourseStepFragment.kt:252-260`). Unlike the test label
+                // this one carries no count, though Kotlin shows the button
+                // off the same non-empty list.
+                title: Text(
+                  assessment.hasSurvey ? l10n.redoSurvey : l10n.recordSurvey,
+                ),
                 trailing: const Icon(Icons.chevron_right),
                 // Kotlin's `btnTakeSurvey` calls
                 // `SubmissionsAdapter.openSurvey(…, stepSurvey[0].id, …)`,
@@ -424,7 +474,7 @@ class _StepContent extends ConsumerWidget {
                 // course-step survey has no `teamId`, so the interpolation
                 // left an empty segment too.
                 onTap: () =>
-                    context.push('${Routes.surveys}/${surveys.first.id}'),
+                    pushAndRefresh('${Routes.surveys}/${surveys.first.id}'),
               ),
             ),
           ],
