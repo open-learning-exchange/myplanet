@@ -361,9 +361,9 @@ class _StepContent extends ConsumerWidget {
         ? ref.watch(stepAssessmentProvider(assessmentKey)).valueOrNull
         : null;
 
-    /// Re-reads the step's assessment state after the learner comes back from
-    /// an exam or a survey, which is the only thing that can change either
-    /// label.
+    /// Re-reads the step's assessment state, which each tile calls after the
+    /// screen it pushed has popped — the only thing that can change either
+    /// label is a submission made over there.
     ///
     /// **Kotlin gets this for free and the port does not.** `btnTakeTest`
     /// calls `openCallFragment` (`CourseStepFragment.kt:282`), which is
@@ -375,8 +375,13 @@ class _StepContent extends ConsumerWidget {
     /// future never re-runs. Without this the label could not change until the
     /// learner left the course entirely and came back — a swap whose only
     /// trigger is a submission made on the screen it pushes.
-    Future<void> pushAndRefresh(String location) async {
-      await context.push(location);
+    ///
+    /// The `await context.push(…)` deliberately stays at each `onTap` with its
+    /// route written out, rather than being folded in here behind a `location`
+    /// parameter: `test/ui/route_reachability_test.dart` scans these call sites
+    /// statically and a variable target is a navigation it cannot read. It
+    /// caught exactly that when this was written the other way round.
+    void refreshAssessment() {
       if (!context.mounted) return;
       ref.invalidate(stepAssessmentProvider(assessmentKey));
     }
@@ -444,10 +449,13 @@ class _StepContent extends ConsumerWidget {
                 // dropped the learner on go_router's error page. The exam
                 // screen wants the step and course as query parameters, as
                 // `CourseStepFragment` passes `stepId`/`stepNum`.
-                onTap: () => pushAndRefresh(
-                  '/courses/exam/${exams.first.id}'
-                  '?stepId=${step.id}&courseId=${step.courseId ?? ''}',
-                ),
+                onTap: () async {
+                  await context.push(
+                    '/courses/exam/${exams.first.id}'
+                    '?stepId=${step.id}&courseId=${step.courseId ?? ''}',
+                  );
+                  refreshAssessment();
+                },
               ),
             ),
             const SizedBox(height: 8),
@@ -473,8 +481,10 @@ class _StepContent extends ConsumerWidget {
                 // being a pattern rather than a base, an unmatchable route: a
                 // course-step survey has no `teamId`, so the interpolation
                 // left an empty segment too.
-                onTap: () =>
-                    pushAndRefresh('${Routes.surveys}/${surveys.first.id}'),
+                onTap: () async {
+                  await context.push('${Routes.surveys}/${surveys.first.id}');
+                  refreshAssessment();
+                },
               ),
             ),
           ],

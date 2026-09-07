@@ -5,10 +5,10 @@ own successor (`PHASE_125_NOTES.md` §"Found, not fixed" item 1) and correctly
 so: this is **the only user-visible Kotlin reader of the composite survey
 `parentId`**, and Phase 125's writer fix is its precondition.
 
-`CourseStepFragment.hideTestIfNoQuestion` (`:241-262`) picks each assessment
+`CourseStepFragment.hideTestIfNoQuestion` (`:241-261`) picks each assessment
 button's wording off `CourseStepData.hasExam`/`hasSurvey`, which are
 `submissionsRepository.hasSubmission(stepExams[0].id, step.courseId, userId,
-"exam"/"survey")` (`CoursesRepositoryImpl.kt:536-546`). The port hardcoded
+"exam"/"survey")` (`CoursesRepositoryImpl.kt:537-546`). The port hardcoded
 `l10n.takeTest` and `l10n.recordSurvey`, so **a learner who had already sat the
 test was invited to take it for the first time, every time** — and the count
 Kotlin puts in that label was absent entirely.
@@ -149,6 +149,9 @@ else null`.
 
 `_StepContent` now takes `userId`. It watches one provider where it used to
 watch two, and the two tiles read their visibility, count and wording off it.
+Both tiles' `onTap` awaits its `context.push` and then calls a local
+`refreshAssessment` — see defect 5 below for why that is not optional, and why
+the `push` literal has to stay at the call site.
 
 ## Each defect, with failing-first evidence
 
@@ -164,12 +167,40 @@ right" cannot tell them apart.
 | 2 | **a survey's question count read `ExamQuestions`** (Kotlin's single table, copied literally) | the `type == 'survey'` table choice | `Expected: true / Actual: <false>` in the repository, and `Found 0 widgets with text "redo survey"` at the screen — 4 tests red |
 | 3 | an exam whose questions have not synced claims an attempt | the `questions == 0` guard | `Expected: false / Actual: <true>` |
 | 4 | a second exam's submission swapped the label | `exams.first` widened to "any exam" | `Expected: false / Actual: <true>` |
+| 5 | **the label could not change within a session** | `pushAndRefresh` back to a bare `context.push` | `Expected: exactly one matching candidate / Actual: Found 0 widgets with text "Retake Test [1]"` |
 
 Two tests are **guards, not failing-first evidence**, and are labelled so rather
 than counted above: "does not confuse the two types" and "is false for another
 user" pin `countByUserParentAndType`'s existing `type`/`userId` clauses, which
 predate this diff — reverting them means deleting an argument pass-through,
 which proves nothing about a decision anyone might make.
+
+Defect 5 is the one the ground-truth audit found and it is the most important
+of the five, because without it the other four guard a label the learner cannot
+watch change. **Kotlin recreates the fragment and the port does not.**
+`btnTakeTest` calls `openCallFragment` (`CourseStepFragment.kt:282`) →
+`FragmentNavigator.replaceFragment(…, addToBackStack = true)`, a `replace()`
+transaction, so popping back rebuilds `CourseStepFragment`, `onViewCreated`
+runs again and `getCourseStepData` re-queries. `context.push` leaves
+`TakeCourseScreen` mounted, so `_StepContent` keeps its listener, the
+`autoDispose` family member is never disposed and its future never re-runs — the
+label stayed on *take test [1]* until the learner left the course entirely.
+The fix awaits the pop and invalidates.
+
+**And the port's own reachability guard caught the first version of that fix.**
+Folding `await context.push(location)` into a helper made the navigation
+unreadable, and `test/ui/route_reachability_test.dart` failed with
+`[_NavSite:take_course_screen.dart:379 -> location]` — its message offers a
+`declared` exception map and that would have been the wrong door to take. The
+route literals stay at each `onTap` and only the invalidate is factored out.
+Phase 116 wrote that guard after finding four unreachable screens; this is the
+first time it has fired on a *new* navigation rather than an audit.
+
+That is the same argument `stepExamProvider`'s own doc comment already makes one
+level down ("a step opened before the sync wrote its exam answered `null` for
+the rest of the process"), unsatisfied one level up. **When a screen's state
+depends on something another screen writes, `autoDispose` is not the refresh —
+the pop is.**
 
 `test/repository/step_tile_label_test.dart` is new (13 tests) and named for the
 shape rather than the file, like `mandatory_survey_round_trip_test.dart`. Its
@@ -178,7 +209,8 @@ because the rest of the file proves nothing if they did not — Phase 113's exac
 failure. **No fixture hand-writes a `parentId`**: every submission is authored
 by `startExamSession` or `createSurveyDraft` against rows
 `ExamMapper.fromCourseDoc` / `SurveyMapper.fromCourseDoc` produced from a
-document shaped like the server's. `take_course_screen_test.dart` gains 5.
+document shaped like the server's. `take_course_screen_test.dart` gains 5, and three of its existing
+expectations move from `Take test` to `take test [1]`.
 
 ## `submissions_repository.dart` — which regions this lane touched
 
@@ -204,19 +236,69 @@ No overlap with Lane C (`lib/ui/notifications/`, the five locale files,
 `tool/arb_from_strings_xml.dart`, `test/l10n/`) except the two hand-offs named
 under the derivation section, which are reports rather than edits.
 
+## What the ground-truth audit overturned
+
+Three things I had wrong or would have got wrong, all found by a
+`parity-auditor` pass at `effort: max` before the implementation was finished.
+
+**A two-exam step is port-only, so the `[%d]` is structurally `[1]` in the
+Android app.** I justified the list-returning provider by "a step can carry
+several exams". It cannot, in Kotlin: `steps[i].exam` is read with
+`getAsJsonObject` so it is one object per step, and the standalone `exams` walk
+calls `insertCourseStepsExams("", "", jsonDoc, "")` whose `checkIdsAndInsert`
+skips blank ids, leaving `stepId` null — so nothing Planet sends produces two
+rows sharing a `stepId`. The **port** can: `ExamMapper.fromDoc` writes a
+document's own `stepId` (`_presentOrAbsent`), which is a Phase 110 deviation
+made on purpose. So the `exams.first`-decides quirk is ported for fidelity to
+what the Kotlin *says*, on a state only the port can reach, and the test that
+pins it says so rather than implying a Kotlin scenario. The list shape is still
+right — it is what `getByStepIdAndType` returns and where the `1` comes from.
+
+**`hideTestIfNoQuestion` reads no question count.** The name promises the guard
+is about questions; it hides on *list emptiness* and the only question count in
+the whole feed is inside `hasSubmission`, where it changes the label's **wording**
+and never a button's presence — the inversion of what the name says. The Dart
+provider is named for what it computes.
+
+**Kotlin's Take Test button can open a row its own label never interrogated, and
+the port is already better.** `hasExam` asks about `stepExams[0]`, selected by
+`stepId = ? AND type = 'courses'`; the button routes through
+`BaseExamFragment.initExam` → `ExamDao.getFirstByStepId`, which is
+`WHERE stepId = ? LIMIT 1` with **no type filter** — so on a step carrying both
+an exam and a survey it can open the survey row. The port pushes
+`exams.first.id`, the same row the label read, so label and destination cannot
+disagree. That property predates this phase; this diff preserves it
+deliberately rather than by accident, and it is now documented at the provider.
+
+Two more worth recording because they explain the Kotlin's odd surface:
+`type = "courses"` is **never assigned anywhere in the Kotlin tree** — it is the
+server's value copied verbatim, and the in-tree *fallbacks* are `"exam"` and
+`"survey"` singular, which no Kotlin query ever selects. And
+`CourseStepFragment.onCreateView` (`:79-80`) forces both buttons VISIBLE with
+their XML defaults, so between view creation and the data arriving Kotlin shows
+the literal string `take test [%d]` — percent-d and all — and `Take Survey`, a
+*third* string that is not part of this swap. Pre-load flicker; deliberately not
+ported.
+
 ## Found, not fixed
 
-**1. `resourcesInStep` counts a different thing from Kotlin's `btnResources`,
-and reads differently too.** Kotlin sets
-`getString(R.string.resources_size, data.resources.size)` — "Resources [%d]" on
-`myLibraryDao.getByStepId(stepId)`, the rows actually on the device. The port
-renders `l10n.resourcesInStep(step.noOfResources)`, an ICU plural ("No
-resources" / "1 resource" / "{count} resources") on the **step document's own
-declared count**. Those disagree whenever a step's resources have not all
-synced, which is the normal case on a fresh install, and the plural means the
-key can never derive a translation from the Kotlin XML (the tool skips plurals
-for good reason). Same tile, one line above the two this phase fixed;
-deliberately out of scope because it is a second feature, not this label swap.
+**1. The resources tile above the two this phase fixed is the port's own
+affordance, and it has a chevron that does nothing.** `take_course_screen.dart`
+renders `ListTile(… trailing: Icon(Icons.chevron_right))` with **no `onTap`** —
+same in `course_detail_screen.dart`. Kotlin's live analogue is
+`BaseContainerFragment.setResourceButton`, reached from
+`CourseDetailFragment`, and it opens a **download dialog**.
+`CourseStepFragment`'s own `btnResources` is **dead code** on two independent
+counts (it sits inside `legacy_buttons_container`, declared
+`android:visibility="gone"` with nothing anywhere making it visible, and
+`setListeners` sets the button GONE at `:292`), so the number Kotlin computes
+at `:121-122` is never rendered. My first draft of this item claimed the port
+diverged from a live Kotlin count; it does not, because there is no live Kotlin
+count. What remains true and worth logging: the port's
+`l10n.resourcesInStep(step.noOfResources)` is an **ICU plural**, which
+`tool/arb_from_strings_xml.dart` skips for good reason, so that key can never
+derive a translation from the Kotlin XML — and the chevron promises a
+navigation nothing implements.
 
 **2. `takeTest` is a dead ARB key.** See the l10n section — removing it needs
 Lane C's files.
@@ -229,11 +311,33 @@ is a `> 0` count — but it would double it in the list and the exporter, and th
 machinery to prevent it (`SubmissionDao.getByIdOrRemoteId`) is still sitting
 unused by the walk.
 
-**4. Nothing invalidates `stepAssessmentProvider` when an attempt is made.**
-`autoDispose` is what makes the label refresh: the learner leaves the step to
-sit the exam, the provider's last listener goes, and re-entering re-reads. That
-is the same argument `stepExamProvider`'s own doc makes and it is load-bearing
-here for a new reason — a `PageView` keeps its neighbours alive, so a learner
-who returns to the *same* step without the page being disposed could see a stale
-label. I did not reproduce it and it needs a widget test that drives the real
-exam screen, which no test in the port does yet.
+**4. `TakeCourseFragment.changeNextButtonState` is unported** — the next-step
+lock for `MANDATORY_SURVEY_COURSE_ID` (`TakeCourseFragment.kt:315-338`), which
+refuses Next with `please_complete_test`/`please_complete_survey`. It reads the
+**same** `CourseStepData` this phase now reads, but off
+`stepExams.isNotEmpty()`/`stepSurvey.isNotEmpty()` rather than
+`hasExam`/`hasSurvey`, and the port's `_NavigationBar` has no equivalent. A
+separate gap, not made worse by this diff — but the next lane to touch this
+screen has the provider it would need already in place.
+
+**5. Kotlin's Take Test button can open a row its own label never asked about,
+and none of the port's type-routing deviations are in
+`docs/kotlin-to-flutter-migration.md`.** Both are recorded in the code (see the
+`stepAssessmentProvider` doc); neither is in the migration doc's *Faithful
+quirks / deliberate deviations* list, which still carries four quirks and six
+deviations, none of them Phase 113's `exam`/`survey` table routing. This phase's
+count, the buttons' presence and the take-vs-retake wording all rest on that
+routing. **Integrator: that list is the place for it, and this file is not the
+lane's to edit.** The text is the "What the ground-truth audit overturned"
+section above.
+
+**6. Stale Kotlin line citations are widespread, and I fixed only my own
+region.** The ground-truth audit found them in `exam_mapper.dart` (three),
+`survey_mapper.dart` (one), `app_database.dart` (one, an
+`ExamDao.getByStepIdAndType(stepId, "survey")` that is actually the plural) and
+in `examParentId`'s doc (`createExamSubmission` is `:446-453`, not `:449-456`).
+I corrected the citations inside `hasUnfinishedSurveys`' doc, since leaving them
+wrong next to the function I had just ported correctly would be worse; the rest
+belong to other lanes' files or to the write path. Given that misreading a
+correctly-named function is this project's most expensive recurring failure, a
+pass that just fixes citations would be cheap and worth a lane.
