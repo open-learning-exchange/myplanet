@@ -179,13 +179,30 @@ class NotificationTapHandler {
     // bell is a live drift stream that needs no explicit refresh.
     if (tap.actionId == NotificationTapActions.markAsRead) return null;
 
-    final database = ref.read(appDatabaseProvider);
-    final destination = await NotificationDestinationResolver(
-      taskDao: database.teamTaskDao,
-      teamDao: database.teamDao,
-    ).resolveFor(type: payload.type, relatedId: payload.relatedId);
-    if (destination == null) return null;
-    return notificationDestinationLocation(destination);
+    // Its own guard, not the read-mark's. `resolveFor` reads two DAOs, and
+    // Kotlin's equivalent lookups sit inside `viewModelScope.launch` blocks
+    // whose failure leaves the fragment alone rather than crashing it
+    // (`resolveAndOpenTeam`, `handleTaskNavigation`). A tap that cannot resolve
+    // its destination should navigate nowhere, not throw out of the stream
+    // listener that delivered it.
+    try {
+      final database = ref.read(appDatabaseProvider);
+      final destination = await NotificationDestinationResolver(
+        taskDao: database.teamTaskDao,
+        teamDao: database.teamDao,
+      ).resolveFor(type: payload.type, relatedId: payload.relatedId);
+      if (destination == null) return null;
+      return notificationDestinationLocation(destination);
+    } catch (error, stack) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stack,
+          library: 'notification tap',
+        ),
+      );
+      return null;
+    }
   }
 }
 

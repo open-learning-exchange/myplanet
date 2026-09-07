@@ -63,7 +63,20 @@ class _NotificationTapScopeState extends ConsumerState<NotificationTapScope> {
       // Listening before awaiting the launch tap, as `DeepLinkScope` does: a
       // tap arriving in that window would otherwise be dropped, and a
       // broadcast stream does not replay it.
-      _subscription = source.taps().listen(_handle);
+      _subscription = source.taps().listen(
+        _handle,
+        // `_handle` is async, so an exception inside it would become an
+        // unhandled async error rather than reaching here — which is why
+        // `NotificationTapHandler.handle` guards both of its halves itself.
+        // This covers the other side: an error the *source* emits.
+        onError: (Object error, StackTrace stack) => FlutterError.reportError(
+          FlutterErrorDetails(
+            exception: error,
+            stack: stack,
+            library: 'notification taps',
+          ),
+        ),
+      );
       final launch = await source.launchTap();
       if (launch != null) await _handle(launch);
     } catch (error, stack) {

@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart' hide isNull, isNotNull;
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/core/notifications/notification_config.dart';
@@ -128,7 +129,12 @@ void main() {
     prefs = PlanetPrefs(await SharedPreferences.getInstance());
     database = AppDatabase.memory();
   });
-  tearDown(() => database.close());
+  tearDown(() async {
+    // One test closes it mid-run to drive the resolver's failure path.
+    try {
+      await database.close();
+    } catch (_) {}
+  });
 
   group('the notification body', () {
     test('reaches the tasks page of the task’s team', () async {
@@ -346,6 +352,37 @@ void main() {
       );
       expect(row.createdAt, rowCreatedAt);
     });
+  });
+
+  group('a failure in one half does not cost the other', () {
+    test(
+      'a database the resolver cannot read navigates nowhere, quietly',
+      () async {
+        // Kotlin's lookups sit inside `viewModelScope.launch` blocks whose
+        // failure leaves the fragment alone. Here the listener that delivered the
+        // tap is a stream subscription, and an exception out of `handle` would be
+        // an unhandled async error — so the resolve has its own guard.
+        await insertNotification(id: 'task-42');
+        final container = containerFor(current: user());
+
+        // Captured rather than left to print: swallowing the failure silently
+        // would be the wrong outcome too, so this asserts it was reported.
+        final reported = <Object>[];
+        final previous = FlutterError.onError;
+        FlutterError.onError = (details) => reported.add(details.exception);
+        addTearDown(() => FlutterError.onError = previous);
+
+        // Closed under the handler's feet, which is what a disposed graph or a
+        // corrupt database file looks like from here.
+        await database.close();
+
+        expect(
+          await container.read(notificationTapHandlerProvider).handle(tapFor()),
+          isNull,
+        );
+        expect(reported, isNotEmpty, reason: 'the failure went unreported');
+      },
+    );
   });
 
   group('which field the destination is resolved from', () {
