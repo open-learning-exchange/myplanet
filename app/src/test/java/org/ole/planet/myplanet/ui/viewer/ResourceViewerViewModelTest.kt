@@ -2,14 +2,23 @@ package org.ole.planet.myplanet.ui.viewer
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
+import io.mockk.unmockkAll
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
+import org.ole.planet.myplanet.repository.RatingSummary
+import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.MainDispatcherRule
@@ -26,6 +35,7 @@ class ResourceViewerViewModelTest {
     private lateinit var context: Context
     private lateinit var sharedPrefManager: SharedPrefManager
     private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
+    private val ratingsRepository: RatingsRepository = mockk(relaxed = true)
     private val configurationsRepository: ConfigurationsRepository = mockk(relaxed = true)
     private lateinit var viewModel: ResourceViewerViewModel
 
@@ -37,10 +47,16 @@ class ResourceViewerViewModelTest {
             context = context,
             resourcesRepository = resourcesRepository,
             authSessionUpdaterFactory = mockk(relaxed = true),
+            ratingsRepository = ratingsRepository,
             configurationsRepository = configurationsRepository,
             sharedPrefManager = sharedPrefManager,
             dispatcherProvider = TestDispatcherProvider(mainDispatcherRule.testDispatcher)
         )
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
     }
 
     @Test
@@ -93,5 +109,56 @@ class ResourceViewerViewModelTest {
 
         viewModel.savePlaybackSpeed(0.75f)
         assertEquals(0.75f, viewModel.getPlaybackSpeed(), 0.001f)
+    }
+
+    @Test
+    fun `showRatingDialog returns false for already rated users`() = runTest {
+        val userId = "123"
+        val resourceId = "resourceId123"
+
+        coEvery { ratingsRepository.isRatingPrompted(userId, resourceId) } returns false
+        coEvery { ratingsRepository.getRatingSummary("resource", resourceId, userId) } returns
+            RatingSummary(
+                userRating = 4,
+                existingRating = null,
+                averageRating = 0f,
+                totalRatings = 0
+            )
+
+        val result = viewModel.shouldShowResourceRatingDialog(userId, resourceId)
+
+        assertFalse(result)
+    }
+
+    @Test
+    fun `showRatingDialog returns true for never rated users`() = runTest {
+        val userId = "123"
+        val resourceId = "resourceId123"
+
+        coEvery { ratingsRepository.isRatingPrompted(userId, resourceId) } returns false
+        coEvery { ratingsRepository.getRatingSummary("resource", resourceId, userId) } returns
+            RatingSummary(
+                userRating = null,
+                existingRating = null,
+                averageRating = 0f,
+                totalRatings = 0
+            )
+
+        val result = viewModel.shouldShowResourceRatingDialog(userId, resourceId)
+
+        assertTrue(result)
+    }
+
+    @Test
+    fun `showRatingDialog returns false for already prompted users`() = runTest {
+        val userId = "123"
+        val resourceId = "resourceId123"
+
+        coEvery { ratingsRepository.isRatingPrompted(userId, resourceId) } returns true
+
+        val result = viewModel.shouldShowResourceRatingDialog(userId, resourceId)
+
+        assertFalse(result)
+        coVerify(exactly = 0) { ratingsRepository.getRatingSummary(any(), any(), any()) }
     }
 }
