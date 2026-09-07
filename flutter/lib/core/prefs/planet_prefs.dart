@@ -97,6 +97,13 @@ class PlanetPrefs {
   /// `MaterialApp.router` builder.
   static const String _keyTextScale = 'textScale';
 
+  /// `SharedPrefManager.getMediaPlaybackPosition` keys its per-resource entry
+  /// `media_progress_<resourceKey>`; the speed is one global entry. Both names
+  /// are the Kotlin ones so a device that has run both apps reads the same
+  /// values back.
+  static const String _keyMediaProgressPrefix = 'media_progress_';
+  static const String _keyMediaPlaybackSpeed = 'media_playback_speed';
+
   /// `OnboardingActivity.DEEP_LINK_SECTION_KEY` / `DEEP_LINK_ID_KEY`. A section
   /// link that arrives before sign-in is stored under these and applied by the
   /// dashboard afterwards, so the link survives the login it triggered.
@@ -442,6 +449,35 @@ class PlanetPrefs {
 
   Future<void> setTextScale(double value) =>
       _prefs.setDouble(_keyTextScale, value);
+
+  /// `SharedPrefManager.getMediaPlaybackPosition` / `setMediaPlaybackPosition`.
+  ///
+  /// A non-positive position *removes* the key rather than storing a zero, as
+  /// the Kotlin does: an absent entry and a stored 0 both mean "start from the
+  /// beginning", and not accumulating one dead key per resource ever watched to
+  /// the end is the reason it deletes.
+  int mediaPlaybackPosition(String resourceKey) =>
+      _prefs.getInt('$_keyMediaProgressPrefix$resourceKey') ?? 0;
+
+  Future<void> setMediaPlaybackPosition(
+    String resourceKey,
+    int positionMs,
+  ) async {
+    final key = '$_keyMediaProgressPrefix$resourceKey';
+    if (positionMs <= 0) {
+      await _prefs.remove(key);
+    } else {
+      await _prefs.setInt(key, positionMs);
+    }
+  }
+
+  /// `SharedPrefManager.getMediaPlaybackSpeed` / `setMediaPlaybackSpeed`. One
+  /// speed for all media, defaulting to 1.0 — Kotlin stores a `Float`.
+  double get mediaPlaybackSpeed =>
+      _prefs.getDouble(_keyMediaPlaybackSpeed) ?? 1.0;
+
+  Future<void> setMediaPlaybackSpeed(double speed) =>
+      _prefs.setDouble(_keyMediaPlaybackSpeed, speed);
 
   /// Requested automatic-sync cadence. Android WorkManager enforces a
   /// 15-minute floor; older Kotlin preferences below that are clamped by the
