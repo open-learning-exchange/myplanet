@@ -138,6 +138,13 @@ class NotificationDestinationResolver {
           // The tray path is the one case where the row *is* there:
           // `TaskDeadlineNotifier` selects the task out of `team_tasks` to
           // notify about it, so a tray tap resolves a real team id.
+          //
+          // Same value as the Kotlin, different source, and worth saying so
+          // before someone "aligns" it: both Kotlin paths read the `"teams"`
+          // field out of the task's `link` JSON, where the port reads the
+          // `teamId` column — which `TeamTaskMapper` populates from exactly
+          // that field. Changing this to parse `link` would move the tray path
+          // with it for no gain.
           teamId: _nonBlank(task?.teamId) ?? id,
         );
       case 'join_request':

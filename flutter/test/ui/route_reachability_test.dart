@@ -219,6 +219,66 @@ void main() {
     );
   });
 
+  test('every notification type the port declares has a resolver arm', () async {
+    // `NotificationTypes` is the set of `NotificationUtils.TYPE_*` values the
+    // port produces, and `resolveFor`'s `default: return null` swallows
+    // anything it has no arm for — silently, which is the failure class this
+    // whole file guards.
+    //
+    // The risk is not theoretical. The resolver is a port of the bell row's
+    // click handler (`NotificationsFragment.handleNotificationClick`), which
+    // has **no** `survey` or `course` arm, and those are two of Kotlin's six
+    // `TYPE_*` values. Add a survey tray notification and its payload decodes
+    // cleanly, its type is `'survey'`, and the tap does nothing — with the
+    // tray-tap test below still green, because that one drives only
+    // `NotificationConfig.task`.
+    //
+    // Dart has no reflection over static constants, so the hand-written list
+    // is reconciled against the source file: a constant added there and not
+    // here fails first, with a message saying to add it.
+    const declared = <String>{NotificationTypes.task};
+    final inSource = RegExp(r"static const \w+ = '([^']*)';")
+        .allMatches(
+          _stripComments(
+            File(
+              'lib/core/notifications/notification_config.dart',
+            ).readAsStringSync(),
+          ).split('class NotificationTypes').last,
+        )
+        .map((match) => match.group(1)!)
+        .toSet();
+    expect(
+      inSource,
+      declared,
+      reason:
+          'NotificationTypes gained or lost a constant; add it to this test so '
+          'its resolver arm is checked',
+    );
+
+    final database = container.read(appDatabaseProvider);
+    final resolver = NotificationDestinationResolver(
+      taskDao: database.teamTaskDao,
+      teamDao: database.teamDao,
+    );
+    for (final type in declared) {
+      // A non-blank relatedId, because several arms require one and returning
+      // null for a blank id is deliberate rather than a missing arm.
+      final destination = await resolver.resolveFor(
+        type: type,
+        relatedId: 'related-1',
+      );
+      expect(
+        destination,
+        isNotNull,
+        reason:
+            'the port can raise a "$type" notification and the resolver has no '
+            'arm for it, so tapping one does nothing',
+      );
+      final location = notificationDestinationLocation(destination!);
+      expect(_matches(router, _normalize(location)), isTrue, reason: location);
+    }
+  });
+
   test(
     'a system-tray tap on the notification the port raises navigates',
     () async {
@@ -340,7 +400,11 @@ void main() {
     );
     expect(
       presenter,
-      contains('onDidReceiveNotificationResponse:'),
+      // The *value*, not the parameter name. `onDidReceiveNotificationResponse:
+      // null,` contains the name and drops every tap that arrives while the app
+      // is running — the second audit pass injected exactly that and watched
+      // this rule stay green.
+      contains('onDidReceiveNotificationResponse: _responses.add'),
       reason: 'the plugin has nowhere to deliver a tap',
     );
     expect(
@@ -359,6 +423,25 @@ void main() {
             'however correct the handler behind it is',
       );
     }
+
+    // A fourth link, and the least obvious one: `initialize` is where the
+    // plugin accepts the response handler, and the only thing that reaches it
+    // in the UI isolate is `main.dart` asking for the notification permission.
+    // Move that request to a screen — a plausible refactor, since that is where
+    // a permission prompt usually belongs — and every warm tap is dropped for
+    // the whole process, with nothing else here to notice. (The *launch* tap
+    // survives: `getNotificationAppLaunchDetails` goes through the handler
+    // Android registers in `onAttachedToEngine`, independent of Dart's
+    // `initialize`.)
+    expect(
+      _stripComments(File('lib/main.dart').readAsStringSync()),
+      // The *call*, not the declaration — which is still in the file after the
+      // call is removed, and is what a first cut of this assertion matched.
+      contains('unawaited(_requestNotificationPermission());'),
+      reason:
+          'nothing else in the UI isolate calls the presenter, so without this '
+          'the plugin is never initialized and no running-app tap is delivered',
+    );
   });
 
   test('every deep-link section resolves to a registered route', () {

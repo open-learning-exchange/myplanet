@@ -239,6 +239,33 @@ void main() {
       );
     });
 
+    test('the format path mirrors a trailing space too', () {
+      // The fourth derivation path, and the one the phase's own fix did *not*
+      // cover until the second audit pass pointed at it. No template value
+      // carrying a placeholder ends in a space today, so this is a guard on a
+      // shape rather than on live data — which is the point: the plain-text
+      // fix's dartdoc claimed no further rule could disagree, and this one
+      // could.
+      expect(
+        convertAndroidFormat(
+          templateValue: 'Searching in {folder}: ',
+          kotlinEnglish: r'Searching in %1$s: ',
+          translation: r'Recherche dans %1$s :',
+        ),
+        'Recherche dans {folder} : ',
+      );
+      // And still one-directional: a template with no trailing space is
+      // unaffected, which the group's other tests would catch but not state.
+      expect(
+        convertAndroidFormat(
+          templateValue: 'Searching in {folder}',
+          kotlinEnglish: r'Searching in %1$s',
+          translation: r'Recherche dans %1$s ',
+        ),
+        'Recherche dans {folder}',
+      );
+    });
+
     test('a blank or absent translation derives nothing', () {
       // Both plain-text rules carried an `isNotEmpty` guard before this
       // function existed, and it is load-bearing: writing `""` into a locale

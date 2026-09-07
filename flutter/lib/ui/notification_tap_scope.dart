@@ -25,10 +25,22 @@ import 'router.dart';
 /// `InheritedGoRouter` the router delegate inserts.
 ///
 /// There is no de-duplication between [NotificationTapSource.launchTap] and
-/// the stream, because the plugin does not double-deliver: `initialize`'s own
-/// documentation splits them ("fired when the user selects a notification …
-/// [while the] application was running. To handle when a notification launched
-/// an application, use `getNotificationAppLaunchDetails`").
+/// the stream, and the reason is **not** the one `initialize`'s dartdoc
+/// suggests. The Android side does not honour that split as a guarantee:
+/// `onNewIntent` both invokes `didReceiveNotificationResponse` *and* calls
+/// `mainActivity.setIntent(intent)`, and `getNotificationAppLaunchDetails`
+/// re-reads that intent on every call — so a tap already delivered through the
+/// callback keeps being reported as a launch tap for the rest of the process.
+///
+/// What makes this safe is narrower: [_start] runs **once**, from `initState`'s
+/// post-frame callback, so `launchTap` is asked exactly once per mount. That is
+/// a live trap rather than a theoretical one, because the sibling scope in this
+/// directory does the thing that would break it — `OutboxDrainScope` re-runs on
+/// `AppLifecycleState.resumed`. Adding a resume hook here (the obvious fix for
+/// "the app was backgrounded when the tap arrived") would replay the last tap
+/// on every foreground: yanking the user back to the tasks page and re-running
+/// the read-mark, `createdAt` restamp included. **If a resume hook ever lands,
+/// de-duplicate on the payload first.**
 class NotificationTapScope extends ConsumerStatefulWidget {
   const NotificationTapScope({required this.child, super.key});
 

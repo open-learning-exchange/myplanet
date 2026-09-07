@@ -60,9 +60,13 @@ class LocalNotificationsTapSource implements NotificationTapSource {
 ///     notifications (`ServerReachabilityWorker.kt:132-138`) reach
 ///     `handleNotificationIntent` and fall through both its branches, i.e. a
 ///     plain app launch;
-///   * a *dismissal*, which the plugin reports through the same callback and
-///     Android's `PendingIntent` machinery never delivers at all — a swipe-away
-///     is not a tap and must not mark anything read;
+///   * a *dismissal*. The plugin's `ActionBroadcastReceiver` does forward one
+///     through this same callback, but only when `dismissIsolate` is set on the
+///     notification, and [LocalNotificationsPresenter] never sets it — so no
+///     dismissal reaches here today and this arm is defensive. Kept because the
+///     cost of being wrong is asymmetric: a swipe-away treated as a tap marks a
+///     notification read that the user deliberately ignored, and on the
+///     stamping path reorders their whole list to say so;
 ///   * an action id this build does not know, for the same upgrade reason.
 NotificationTap? notificationTapFrom(NotificationResponse? response) {
   if (response == null) return null;

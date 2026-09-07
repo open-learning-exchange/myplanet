@@ -37,11 +37,24 @@ abstract final class NotificationTapActions {
 
 /// What the OS hands back when a notification is tapped.
 ///
-/// Kotlin puts three extras on both of its intents — `notification_type`,
-/// `notification_id`, `related_id` (`NotificationUtils.kt:60-62`,
-/// `:401-406`, `:413-424`) — where the plugin gives one opaque `payload`
-/// string. The JSON below uses the Kotlin's own extra names so the two are
-/// readable side by side.
+/// Kotlin uses two intents and they do **not** carry the same extras, which is
+/// worth stating because an earlier draft of this comment claimed they did.
+/// `createNotificationIntent` (`:413-424`, the body tap) puts
+/// `notification_type`, `notification_id`, `from_notification` and
+/// `config.extras`; `createOpenPendingIntent` (`:400-411`, the action button)
+/// puts `notification_type`, `notification_id` and `related_id` — and only that
+/// one carries `related_id` at all. The body branch reads the *extras* instead
+/// (`surveyId`, `taskId`), which for the task factory happen to hold the same
+/// string as `relatedId`.
+///
+/// The port carries `related_id` on both, because it resolves both through one
+/// resolver (see `NotificationDestinationResolver.resolveFor`) and the extras
+/// Kotlin's body branch reads are discarded by every fragment it hands them to.
+/// Not equivalent in general: `createStorageWarningNotification(percent,
+/// customId)` sets `id = customId`, `relatedId = "storage"` and **no** extras.
+///
+/// The plugin gives one opaque `payload` string, so the JSON below uses the
+/// Kotlin's own extra names to keep the two readable side by side.
 class NotificationTapPayload {
   const NotificationTapPayload({
     required this.type,
@@ -152,11 +165,16 @@ class NotificationAction {
 
   final String id;
 
-  /// The Kotlin's own hardcoded English. `addNotificationActions` passes string
-  /// literals, not `getString(R.string...)`, so there is nothing translated to
-  /// port — and the producer runs in a background isolate with no
-  /// `BuildContext` to resolve an `.arb` lookup against. Same reasoning as
-  /// [NotificationConfig.task]'s title and body.
+  /// The Kotlin's own hardcoded English. `addNotificationActions`
+  /// (`NotificationUtils.kt:379,383`) passes string *literals*, not
+  /// `getString(R.string...)`, so there is nothing translated to port. Same
+  /// reasoning as [NotificationConfig.task]'s title and body.
+  ///
+  /// Not because a background isolate cannot localise — it can, with
+  /// `AppLocalizations.delegate.load(locale)` and no `BuildContext`. An earlier
+  /// draft said otherwise and it is worth correcting, because the port *does*
+  /// carry a translated `markAsRead` for the bell screen and the next reader
+  /// will reach for it. The behaviour is right; only the reason was wrong.
   final String title;
 
   @override

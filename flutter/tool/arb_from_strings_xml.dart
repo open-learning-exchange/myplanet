@@ -1279,5 +1279,14 @@ String? convertAndroidFormat({
     if (!rendered.contains('{$name}')) return null;
   }
   if (_printfSpecifier.hasMatch(rendered)) return null;
-  return rendered;
+  // The same mirror the plain-text rules get through [derivePlainTextValue].
+  // `translation.trim()` above strips a deliberate trailing space exactly as
+  // `translated[name]?.trim()` used to, and this is a *fourth* derivation path
+  // — so "one function, no third rule can disagree" was true of the plain-text
+  // rules and not of this one. Unreachable today (no `app_en.arb` value
+  // containing a placeholder ends in a space) and closed anyway, because the
+  // guard that would catch it — `locale_coverage_test`'s check over every
+  // template key ending in a space — would then fail with no way for the tool
+  // to produce a passing value, pointing at the test rather than at the gap.
+  return _mirrorTrailingSpace(rendered, templateValue);
 }

@@ -304,7 +304,13 @@ that added the English keys did not re-run it. `playbackSpeedValue` is `{speed}x
 in all five locales because the Kotlin string is `%1$sx` in all five: a
 multiplier suffix nobody translates. That is the translation, not a missing one.
 `placeholder_integrity_test.dart`'s pinned counts move +2 per locale: ar 412,
-es 464, fr 411, ne 413, so 413.
+es 464, fr 411, ne 413, so 413. So the ARB diff is **six** keys per locale, not
+four: two re-derived and two newly added. One caveat, since this document has
+been wrong about l10n measurement before: `playbackSpeedValue` raises the
+"human reviewed" count without adding any translated *text*, because the value
+is identical in all six files. It is a real translation of a string nobody
+translates, and it is also exactly the kind of number that makes a coverage
+figure look better than it is.
 
 ---
 
@@ -357,14 +363,25 @@ Thirteen injections, thirteen red:
 | an unknown action id is accepted | 1 |
 | an empty action id is read as an unknown action | 1 |
 | the resolver is fed the notification id instead of `relatedId` | **0 at first** — see below |
+| the two entry points made to disagree about a destination | 4 |
+| the cold-start tap is never asked for (**shipped by accident, see above**) | 3 |
+| the resolved location is computed and thrown away (**shipped**) | 3 |
+| the tap stream is never subscribed to | 3 |
+| the launch tap is awaited before the subscription is taken | 1 |
+| the response handler is nulled (green before the fix) | 1 |
+| the permission request leaves `main()` (green before the fix, twice) | 1 |
+| a `NotificationTypes` constant with no resolver arm | 1 |
+| the format path stops mirroring the trailing space | 1 |
 
-**The one that found a gap.** Feeding the resolver `notificationId` instead of
-`relatedId` left the whole suite green, because the task factory sets both to
-the same string and it is the only producer. The two are not interchangeable:
-`handleNotificationIntent`'s `auto_navigate` branch reads `related_id`, and
-`createStorageWarningNotification(percent, customId)` sets `id = customId` with
-`relatedId = "storage"`. A test with a `voice_reply` payload whose two fields
-differ now separates them, and the injection goes red.
+**Three found gaps rather than confirming guards**, which is the point of doing
+them. Feeding the resolver `notificationId` instead of `relatedId` left the
+whole suite green, because the task factory sets both to the same string and it
+is the only producer; the two are not interchangeable
+(`createStorageWarningNotification(percent, customId)` sets `id = customId` with
+`relatedId = "storage"`), so a `voice_reply` payload whose fields differ now
+separates them. And the response-handler and permission-request assertions were
+each green under their own defect until narrowed from a *name* to a *value* —
+the second one twice. See *What the second audit pass found* above.
 
 Also demonstrated red for item 2: the unit tests on `derivePlainTextValue` with
 `_mirrorTrailingSpace` removed, and the file-level guard after re-deriving with
@@ -379,6 +396,112 @@ One, listed as the rule requires. `lib/data/local/app_database.dart`'s
 caller"; the tray action buttons are now a second caller and the comment would
 have misled the next reader about which of the two statements the tray uses.
 Comment-only, inside the notifications DAO region, no code touched.
+
+---
+
+## What the second audit pass found in this phase's own green code
+
+Seven items, and the pattern `CLAUDE.md` records held again: **an audit of the
+ground truth does not audit the implementation.** Everything below was green,
+formatted and analyzed when the pass started.
+
+**The one that matters, and it arrived by accident.** The pass mutation-tested
+`notification_tap_scope.dart` — deleting the `launchTap()` call, then the
+`go(location)` call — and **all 2301 tests stayed green.** Nothing mounted
+`NotificationTapScope`, so the two lines that connect the whole chain to the app
+were the one part of it with no guard: every other link had one, including a
+source-text rule asserting the scope is *mounted* in `app.dart`. What the
+mounted widget then does was unchecked. With the first mutation a learner taps a
+deadline reminder on a closed app and lands on `/` — the cold-start case is the
+*only* one that matters for a reminder raised by a headless worker — and CI is
+green.
+
+That is this phase's own subject one layer up, and it cost something to learn:
+the mutations were in the working tree when a `git add -A` ran, so `452b9b6`
+shipped them and `11d19d9` restored them. **Do not `git add -A` while a
+background agent has the tree.** `test/ui/notification_tap_scope_test.dart` now
+covers the scope with six tests, following `deep_link_scope_test.dart` (mounted
+inside `MaterialApp.router`'s `builder`, because that context is above the
+`InheritedGoRouter` and `GoRouter.of` would throw there). Both shipped mutations
+go red, as do "never subscribes" and "awaits the launch tap before
+subscribing".
+
+**Two guards that passed for the wrong reason**, both in the source-text rule,
+both now fixed and re-injected:
+
+* `contains('onDidReceiveNotificationResponse:')` matched the parameter *name*,
+  so `onDidReceiveNotificationResponse: null` — which drops every tap that
+  arrives while the app is running — left it green. It asserts the value now.
+* Nothing checked that anything calls the presenter in the UI isolate. The
+  response handler is registered by `initialize`, and the only thing that
+  reaches it is `main.dart` asking for the notification permission — move that
+  request to a screen, a plausible refactor, and `taps()` is dead for the whole
+  process while `launchTap()` keeps working (Android registers *that* handler in
+  `onAttachedToEngine`, independent of Dart's `initialize`). A rule now pins the
+  call. Its first cut matched the function's own *declaration*, which survives
+  the call's removal, so the injection stayed green until it was narrowed to
+  `unawaited(_requestNotificationPermission());`. **Two of this phase's
+  source-text assertions matched a name where they meant a value** — that is the
+  failure mode of the technique, and the reason each one has to be injected
+  against.
+
+**A type nothing can reach.** `resolveFor` has no `survey` or `course` arm —
+they are two of Kotlin's six `TYPE_*` values and the bell-row handler this
+resolver was ported from has neither. Add a survey tray notification and its
+payload decodes cleanly, its type is `'survey'`, and `default: return null`
+swallows it, with the tray-tap test still green because it drives only
+`NotificationConfig.task`. A rule now walks every `NotificationTypes` constant
+through `resolveFor` and requires a destination, reconciling its list against
+the source file so a constant added there and not here fails first.
+
+**Three comments that stated something false**, each corrected in place rather
+than deleted, because each will otherwise be cited:
+
+* *The two Kotlin intents do not carry the same extras.* This lane's comment
+  said they did. `createNotificationIntent` (the body tap) puts
+  `notification_type`, `notification_id`, `from_notification` and
+  `config.extras`; only `createOpenPendingIntent` carries `related_id` at all,
+  and the body branch reads the extras instead. Benign for the task factory,
+  where `extras["taskId"]` and `relatedId` are the same string, and not in
+  general — `createStorageWarningNotification` sets `relatedId = "storage"` and
+  no extras.
+* *"The plugin does not double-deliver" is true, but not for the reason given.*
+  Android's `onNewIntent` both invokes the callback *and* calls
+  `setIntent`, and `getNotificationAppLaunchDetails` re-reads that intent every
+  time — so a tap already delivered is reported as a launch tap for the rest of
+  the process. What makes the port safe is narrower: `_start` runs once, from
+  `initState`. That is a live trap, because `OutboxDrainScope` in the same
+  directory re-runs on `AppLifecycleState.resumed`; adding the same hook here
+  would replay the last tap on every foreground, restamp included. Now
+  documented as such, with "de-duplicate on the payload first" attached.
+* *A background isolate can localise.* The hardcoded English action titles are
+  right because `addNotificationActions` passes literals, not `getString` — but
+  the second half of the rationale, "no `BuildContext` for an `.arb` lookup",
+  is false: `AppLocalizations.delegate.load(locale)` needs none. Worth
+  correcting because the port *does* carry a translated `markAsRead` for the
+  bell screen and the next reader will reach for it.
+
+**A fourth derivation path the trailing-space fix missed.** `derivePlainTextValue`
+unified the two *plain-text* rules, and its dartdoc claimed no third rule could
+disagree. True of a third plain-text rule; the ICU path is a fourth, and
+`convertAndroidFormat` still did `_parseAndroidFormat(translation.trim())`.
+Unreachable today — no `app_en.arb` value containing a `{` ends in a space — and
+closed anyway, because the guard that *would* catch it scans every
+trailing-space template key, so the red would have pointed at the test rather
+than at the missing mirror. `convertAndroidFormat` mirrors now, with a test on
+the shape rather than on live data.
+
+**And one thing the pass confirmed rather than overturned**, which is worth
+recording because it was the design's biggest unknown: `notificationTapFrom`
+drops nothing Android actually delivers. `extractNotificationResponseMap` reads
+`actionId` from an intent extra the content intent never sets, so a body tap's
+`actionId` is genuinely null and never empty; the three response types are as
+assumed. The dismissal arm is unreachable for a different reason than the
+comment claimed — the plugin only attaches a delete intent when
+`dismissIsolate` is set, which the presenter never does — so the guard is
+defensive, and kept, with the sentence fixed.
+
+All six divergences this lane claimed were challenged and all six held.
 
 ---
 
