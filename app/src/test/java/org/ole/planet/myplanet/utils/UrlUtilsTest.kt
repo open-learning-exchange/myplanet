@@ -425,6 +425,7 @@ class UrlUtilsTest {
         verify(exactly = 2) { spm.getCouchdbUrl() }
     }
 
+    @Test
     fun `getUrl with explicit base builds resource url without re-deriving base`() {
         unmockkObject(UrlUtils)
         val result = UrlUtils.getUrl("r1", "f1", "http://example.com/db")
