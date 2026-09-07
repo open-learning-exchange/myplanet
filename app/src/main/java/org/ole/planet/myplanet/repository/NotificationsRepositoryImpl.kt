@@ -49,59 +49,65 @@ class NotificationsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateResourceNotification(userId: String?, resourceCount: Int) {
-        userId ?: return
-
-        val notificationId = "$userId:resource:count"
-        val existingNotification = notificationDao.getById(notificationId)
-
-        if (resourceCount > 0) {
-            val previousCount = existingNotification?.message?.toIntOrNull() ?: 0
-            val countChanged = previousCount != resourceCount
-
-            val notification = existingNotification?.apply {
-                message = "$resourceCount"
-                relatedId = "$resourceCount"
-                if (countChanged) {
-                    this.isRead = false
-                    this.createdAt = Date()
-                }
-            } ?: AppNotification().apply {
-                this.id = notificationId
-                this.userId = userId
-                this.type = "resource"
-                this.message = "$resourceCount"
-                this.relatedId = "$resourceCount"
-                this.createdAt = Date()
-            }
-            notificationDao.upsert(notification)
-        } else {
-            existingNotification?.let { notificationDao.deleteById(it.id) }
-        }
+        updateCountNotification(
+            userId = userId,
+            idSuffix = "resource:count",
+            type = "resource",
+            relatedId = "$resourceCount",
+            parsePrevious = { it?.toIntOrNull() ?: 0 },
+            formatMessage = { "$it" },
+            value = resourceCount,
+            isHealthy = resourceCount <= 0
+        )
     }
 
     override suspend fun updateStorageNotification(userId: String?, availablePercent: Int) {
+        updateCountNotification(
+            userId = userId,
+            idSuffix = "storage",
+            type = "storage",
+            relatedId = "storage",
+            parsePrevious = { it?.replace("%", "")?.toIntOrNull() },
+            formatMessage = { "$it%" },
+            value = availablePercent,
+            isHealthy = availablePercent > STORAGE_WARNING_AVAILABLE_PERCENT
+        )
+    }
+
+    private suspend fun updateCountNotification(
+        userId: String?,
+        idSuffix: String,
+        type: String,
+        relatedId: String,
+        parsePrevious: (String?) -> Int?,
+        formatMessage: (Int) -> String,
+        value: Int,
+        isHealthy: Boolean
+    ) {
         userId ?: return
 
-        val notificationId = "$userId:storage"
+        val notificationId = "$userId:$idSuffix"
         val existingNotification = notificationDao.getById(notificationId)
 
-        if (availablePercent <= STORAGE_WARNING_AVAILABLE_PERCENT) {
-            val previousPercent = existingNotification?.message?.replace("%", "")?.toIntOrNull()
-            val percentChanged = previousPercent != availablePercent
+        if (!isHealthy) {
+            val previousValue = parsePrevious(existingNotification?.message)
+            val valueChanged = previousValue != value
+
+            val formattedMessage = formatMessage(value)
 
             val notification = existingNotification?.apply {
-                message = "$availablePercent%"
-                relatedId = "storage"
-                if (percentChanged) {
+                message = formattedMessage
+                this.relatedId = relatedId
+                if (valueChanged) {
                     this.isRead = false
                     this.createdAt = Date()
                 }
             } ?: AppNotification().apply {
                 this.id = notificationId
                 this.userId = userId
-                this.type = "storage"
-                this.message = "$availablePercent%"
-                this.relatedId = "storage"
+                this.type = type
+                this.message = formattedMessage
+                this.relatedId = relatedId
                 this.createdAt = Date()
             }
             notificationDao.upsert(notification)
