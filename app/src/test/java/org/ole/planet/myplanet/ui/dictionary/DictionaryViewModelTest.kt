@@ -15,9 +15,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.room.entity.DictionaryEntity
 import org.ole.planet.myplanet.repository.DictionaryLoad
 import org.ole.planet.myplanet.repository.DictionaryRepository
+import org.ole.planet.myplanet.repository.DictionaryWord
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DictionaryViewModelTest {
@@ -102,7 +102,7 @@ class DictionaryViewModelTest {
 
     @Test
     fun `searchWord emits Found when entry exists`() = runTest(testDispatcher) {
-        val entry = DictionaryEntity(word = "hello", definition = "greeting", synonym = "hi", antonym = "bye")
+        val entry = DictionaryWord(word = "hello", definition = "greeting", synonym = "hi", antonym = "bye")
         coEvery { dictionaryRepository.findByWord("hello") } returns entry
 
         viewModel.searchWord("hello")
