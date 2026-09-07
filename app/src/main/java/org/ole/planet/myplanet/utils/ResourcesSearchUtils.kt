@@ -22,8 +22,9 @@ object ResourcesSearchUtils {
         secondarySelectors: List<(T) -> String?> = emptyList()
     ): List<T> {
         val trimmedQuery = query.trim()
+        if (trimmedQuery.isEmpty()) return list
+
         val comparator = compareBy<T, String>(String.CASE_INSENSITIVE_ORDER) { primarySelector(it).orEmpty() }
-        if (trimmedQuery.isEmpty()) return list.sortedWith(comparator)
 
         val normalizedQueryParts = trimmedQuery.splitToSequence(" ")
             .filter { it.isNotEmpty() }

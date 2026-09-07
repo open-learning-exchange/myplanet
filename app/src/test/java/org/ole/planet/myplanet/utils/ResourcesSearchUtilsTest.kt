@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.utils
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Test
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.ResourceItem
@@ -58,9 +59,9 @@ class ResourcesSearchUtilsTest {
 
         val resultEmpty = ResourcesSearchUtils.searchLocalModels(models, "")
         assertEquals(3, resultEmpty.size)
-        assertEquals("Apple Juice", resultEmpty[0].item.title)
-        assertEquals("Apple Pie Recipe", resultEmpty[1].item.title)
-        assertEquals("Banana Bread", resultEmpty[2].item.title)
+        assertEquals("Apple Pie Recipe", resultEmpty[0].item.title)
+        assertEquals("Banana Bread", resultEmpty[1].item.title)
+        assertEquals("Apple Juice", resultEmpty[2].item.title)
 
         val resultApple = ResourcesSearchUtils.searchLocalModels(models, "apple")
         assertEquals(2, resultApple.size)
@@ -136,6 +137,25 @@ class ResourcesSearchUtilsTest {
         // Bucket 2 (title contains "Physics"): sorted alphabetically
         assertEquals("4", result[2].id) // Modern Physics Alpha
         assertEquals("3", result[3].id) // Modern Physics Zeta
+    }
+
+    @Test
+    fun testSearchListPreservesOrderWhenQueryIsEmpty() {
+        data class TestItem(val id: String, val title: String)
+
+        val item1 = TestItem("1", "Zeta")
+        val item2 = TestItem("2", "Alpha")
+        val item3 = TestItem("3", "Beta")
+
+        val list = listOf(item1, item2, item3)
+
+        val result = ResourcesSearchUtils.searchList(
+            list = list,
+            query = "   ",
+            primarySelector = { it.title }
+        )
+
+        assertSame(list, result)
     }
 
     @Test
