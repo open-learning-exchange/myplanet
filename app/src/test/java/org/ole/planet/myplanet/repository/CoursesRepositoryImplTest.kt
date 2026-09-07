@@ -88,7 +88,8 @@ class CoursesRepositoryImplTest {
             myLibraryDao,
             userRepository,
             dispatcherProvider,
-            realtimeSyncManager
+        realtimeSyncManager,
+        mockk(relaxed = true)
         )
     }
 

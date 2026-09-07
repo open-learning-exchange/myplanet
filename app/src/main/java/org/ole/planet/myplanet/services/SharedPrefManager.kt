@@ -281,6 +281,19 @@ class SharedPrefManager @Inject constructor(
     fun setRawString(key: String, value: String) = pref.edit { putString(key, value) }
     fun getRawLong(key: String, default: Long = 0L): Long = pref.getLong(key, default)
     fun setRawLong(key: String, value: Long) = pref.edit { putLong(key, value) }
+
+    fun getMediaPlaybackPosition(resourceKey: String): Long = pref.getLong("media_progress_$resourceKey", 0L)
+    fun setMediaPlaybackPosition(resourceKey: String, positionMs: Long) {
+        if (positionMs <= 0L) {
+            removeKey("media_progress_$resourceKey")
+        } else {
+            pref.edit { putLong("media_progress_$resourceKey", positionMs) }
+        }
+    }
+
+    fun getMediaPlaybackSpeed(): Float = pref.getFloat("media_playback_speed", 1.0f)
+    fun setMediaPlaybackSpeed(speed: Float) = pref.edit { putFloat("media_playback_speed", speed) }
+
     fun removeKey(key: String) = pref.edit { remove(key) }
     fun clearPreferences() {
         val keysToKeep = setOf(FIRST_LAUNCH, MANUAL_CONFIG)
