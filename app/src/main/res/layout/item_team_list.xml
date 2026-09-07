@@ -9,13 +9,15 @@
 
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
-        android:layout_height="110dp"
+        android:layout_height="wrap_content"
+        android:maxHeight="120dp"
+        android:minHeight="85dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:cardCornerRadius="20dp"
-        android:layout_marginTop="5dp"
-        android:layout_marginStart="15dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginStart="10dp"
         android:layout_marginEnd="15dp"
         android:elevation="20dp"
         app:cardBackgroundColor="@color/card_bg">
@@ -68,19 +70,9 @@
                     android:orientation="horizontal">
 
                     <TextView
-                        android:id="@+id/created"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="@dimen/_2dp"
-                        android:text="06/01/2009"
-                        android:textColor="@color/daynight_textColor"
-                        app:layout_constraintTop_toBottomOf="@id/name" />
-
-                    <TextView
                         android:id="@+id/type"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="5dp"
                         android:text="Local"
                         android:textColor="@color/daynight_textColor" />
 
@@ -100,37 +92,40 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Description"
-                    android:maxLines="2"
+                    android:maxLines="3"
                     android:minLines="1"
                     android:ellipsize="end"
                     android:textColor="@color/daynight_textColor" />
 
             </LinearLayout>
 
-            <ImageView
-                android:id="@+id/join_leave"
-                android:layout_width="30dp"
-                android:layout_height="25dp"
-                app:cornerRadius="25dp"
-                android:backgroundTint="@color/daynight_white_grey"
-                app:layout_constraintStart_toStartOf="@id/btn_feedback"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="@id/btn_feedback"
-                app:tint="@color/daynight_textColor" />
-
-            <ImageView
-                android:id="@+id/btn_feedback"
+            <LinearLayout
                 android:layout_width="wrap_content"
-                android:layout_height="40dp"
-                android:layout_marginStart="8dp"
-                android:background="?attr/selectableItemBackground"
-                android:padding="8dp"
-                android:src="@drawable/ic_feedback"
+                android:layout_height="wrap_content"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toTopOf="@id/join_leave"
-                app:tint="@color/daynight_textColor" />
+                app:layout_constraintStart_toEndOf="@id/teamInfo"
+                android:orientation="vertical"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <ImageView
+                    android:id="@+id/btn_feedback"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="8dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_feedback"
+                    app:tint="@color/daynight_textColor" />
+
+                <ImageView
+                    android:id="@+id/join_leave"
+                    android:layout_width="30dp"
+                    android:layout_height="25dp"
+                    app:cornerRadius="25dp"
+                    android:backgroundTint="@color/daynight_white_grey"
+                    app:tint="@color/daynight_textColor" />
+            </LinearLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.cardview.widget.CardView>
