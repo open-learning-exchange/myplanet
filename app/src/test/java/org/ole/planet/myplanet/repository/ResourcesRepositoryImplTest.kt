@@ -54,7 +54,6 @@ class ResourcesRepositoryImplTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
-    private val ratingsRepository: RatingsRepository = mockk(relaxed = true)
     private val tagsRepository: TagsRepository = mockk(relaxed = true)
     private val searchActivityDao: SearchActivityDao = mockk(relaxed = true)
     private val resourceActivityDao: ResourceActivityDao = mockk(relaxed = true)
@@ -80,7 +79,6 @@ class ResourcesRepositoryImplTest {
             context,
             activitiesRepository,
             sharedPrefManager,
-            ratingsRepository,
             tagsRepository,
             searchActivityDao,
             resourceActivityDao,
@@ -375,7 +373,6 @@ class ResourcesRepositoryImplTest {
     fun `getResourceListModels fetches public-not-user items when not my course lib`() = runTest {
         val lib1 = MyLibrary().apply { id = "1"; resourceId = "r1"; title = "Match" }
         coEvery { myLibraryDao.getPublicNotUserPattern(any()) } returns listOf(lib1)
-        coEvery { ratingsRepository.getResourceRatings(any()) } returns HashMap()
         coEvery { tagsRepository.getTagsForResources(any()) } returns emptyMap()
 
         val result = repository.getResourceListModels(false, "model123")
@@ -911,6 +908,149 @@ class ResourcesRepositoryImplTest {
 
         repository.clearResourceListCache()
         assertNull(repository.getCachedResourceListModels(false, null))
+    }
+
+    @Test
+    fun `saveLocalResource clears in-memory resource list cache`() = runTest {
+        val lib = MyLibrary().apply { id = "1"; resourceId = "r1"; title = "Cached Lib" }
+        coEvery { myLibraryDao.getPublic() } returns listOf(lib)
+        coEvery { tagsRepository.getTagsForResources(any()) } returns emptyMap()
+        coEvery { myLibraryDao.countByTitle(any()) } returns 0
+        coEvery { myLibraryDao.upsert(any()) } returns Unit
+
+        repository.getResourceListModels(false, null)
+        assertNotNull(repository.getCachedResourceListModels(false, null))
+
+        val sourceFolder = temporaryFolder.newFolder("source_cache_test")
+        val externalFilesDir = temporaryFolder.newFolder("external_cache_test")
+        val sourceFile = File(sourceFolder, "report.pdf").apply { writeText("content") }
+
+        every { dispatcherProvider.io } returns testDispatcher
+        mockkObject(FileUtils)
+        every { FileUtils.getExternalFilesDir(context) } returns externalFilesDir
+        every { FileUtils.getLibraryFile(externalFilesDir, any(), "report.pdf") } answers {
+            File(externalFilesDir, "ole/${secondArg<String>()}/report.pdf")
+        }
+
+        try {
+            val result = repository.saveLocalResource(localResourceRequest(sourceFile.absolutePath))
+            assertTrue(result.isSuccess)
+            assertNull(repository.getCachedResourceListModels(false, null))
+        } finally {
+            unmockkObject(FileUtils)
+        }
+    }
+
+    @Test
+    fun `updateUserLibrary clears in-memory resource list cache`() = runTest {
+        val lib = MyLibrary().apply { id = "1"; resourceId = "r1"; title = "Cached Lib" }
+        coEvery { myLibraryDao.getPublic() } returns listOf(lib)
+        coEvery { tagsRepository.getTagsForResources(any()) } returns emptyMap()
+        coEvery { myLibraryDao.getByResourceId("r1") } returns lib
+        coEvery { myLibraryDao.upsert(any()) } returns Unit
+
+        repository.getResourceListModels(false, null)
+        assertNotNull(repository.getCachedResourceListModels(false, null))
+
+        repository.updateUserLibrary("r1", "user1", true)
+
+        assertNull(repository.getCachedResourceListModels(false, null))
+    }
+
+    @Test
+    fun `updateLibraryItem clears in-memory resource list cache`() = runTest {
+        val lib = MyLibrary().apply { id = "1"; resourceId = "r1"; title = "Cached Lib" }
+        coEvery { myLibraryDao.getPublic() } returns listOf(lib)
+        coEvery { tagsRepository.getTagsForResources(any()) } returns emptyMap()
+        coEvery { myLibraryDao.getById("1") } returns lib
+        coEvery { myLibraryDao.upsert(any()) } returns Unit
+
+        repository.getResourceListModels(false, null)
+        assertNotNull(repository.getCachedResourceListModels(false, null))
+
+        repository.updateLibraryItem("1") { it.title = "Updated" }
+
+        assertNull(repository.getCachedResourceListModels(false, null))
+    }
+
+    @Test
+    fun `markResourceOfflineByLocalAddress clears in-memory resource list cache`() = runTest {
+        val lib = MyLibrary().apply { id = "1"; resourceId = "r1"; title = "Cached Lib" }
+        coEvery { myLibraryDao.getPublic() } returns listOf(lib)
+        coEvery { tagsRepository.getTagsForResources(any()) } returns emptyMap()
+        coEvery { myLibraryDao.getByLocalAddress("sample.pdf") } returns listOf(lib)
+        coEvery { myLibraryDao.upsertAll(any()) } returns Unit
+
+        repository.getResourceListModels(false, null)
+        assertNotNull(repository.getCachedResourceListModels(false, null))
+
+        val url = "http://example.com/db/sample.pdf"
+        mockkObject(FileUtils)
+        try {
+            every { FileUtils.getFileNameFromUrl(url) } returns "sample.pdf"
+            every { FileUtils.getIdFromUrl(url) } returns ""
+            every { FileUtils.getResourceRelativePathFromUrl(url) } returns ""
+
+            repository.markResourceOfflineByUrl(url)
+
+            assertNull(repository.getCachedResourceListModels(false, null))
+        } finally {
+            unmockkObject(FileUtils)
+        }
+    }
+
+    @Test
+    fun `markResourceOfflineByResourceId clears in-memory resource list cache`() = runTest {
+        val lib = MyLibrary().apply { id = "1"; resourceId = "r1"; title = "Cached Lib"; openWhichFile = "index.html" }
+        coEvery { myLibraryDao.getPublic() } returns listOf(lib)
+        coEvery { tagsRepository.getTagsForResources(any()) } returns emptyMap()
+        coEvery { myLibraryDao.getByResourceId("r1") } returns lib
+        coEvery { myLibraryDao.upsert(any()) } returns Unit
+
+        repository.getResourceListModels(false, null)
+        assertNotNull(repository.getCachedResourceListModels(false, null))
+
+        val url = "http://example.com/db/r1/index.html"
+        mockkObject(FileUtils)
+        try {
+            every { FileUtils.getFileNameFromUrl(url) } returns ""
+            every { FileUtils.getIdFromUrl(url) } returns "r1"
+            every { FileUtils.getResourceRelativePathFromUrl(url) } returns "index.html"
+
+            repository.markResourceOfflineByUrl(url)
+
+            assertNull(repository.getCachedResourceListModels(false, null))
+        } finally {
+            unmockkObject(FileUtils)
+        }
+    }
+
+    @Test
+    fun `reconcileHtmlResourceOffline clears in-memory resource list cache`() = runTest {
+        val externalFiles = temporaryFolder.newFolder("external_cache_test")
+        val oleDir = File(externalFiles, "ole/r1").apply { mkdirs() }
+        File(oleDir, "index.html").writeText("html content")
+
+        val lib = MyLibrary().apply { id = "1"; resourceId = "r1"; title = "Cached Lib"; openWhichFile = "index.html"; resourceOffline = false }
+        coEvery { myLibraryDao.getPublic() } returns listOf(lib)
+        coEvery { tagsRepository.getTagsForResources(any()) } returns emptyMap()
+        coEvery { myLibraryDao.getByResourceId("r1") } returns lib
+        coEvery { myLibraryDao.upsert(any()) } returns Unit
+
+        mockkObject(MainApplication)
+        every { MainApplication.context } returns context
+        every { context.getExternalFilesDir(null) } returns externalFiles
+
+        try {
+            repository.getResourceListModels(false, null)
+            assertNotNull(repository.getCachedResourceListModels(false, null))
+
+            repository.reconcileHtmlResourceOffline("r1")
+
+            assertNull(repository.getCachedResourceListModels(false, null))
+        } finally {
+            unmockkObject(MainApplication)
+        }
     }
 
     @Test

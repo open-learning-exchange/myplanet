@@ -45,7 +45,6 @@ class ResourcesRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val activitiesRepository: ActivitiesRepository,
     private val sharedPrefManager: SharedPrefManager,
-    private val ratingsRepository: RatingsRepository,
     private val tagsRepository: TagsRepository,
     private val searchActivityDao: SearchActivityDao,
     private val resourceActivityDao: ResourceActivityDao,
@@ -333,6 +332,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                 library.removeUserId(userId)
             }
             myLibraryDao.upsert(library)
+            clearResourceListCache()
         }
         if (isAdd) {
             activitiesRepository.markResourceAdded(userId, resourceId)
@@ -347,6 +347,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         val item = myLibraryDao.getById(id) ?: return
         updater(item)
         myLibraryDao.upsert(item)
+        clearResourceListCache()
     }
 
     override suspend fun markResourceOfflineByUrl(url: String) {
@@ -371,6 +372,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
         if (results.isNotEmpty()) {
             myLibraryDao.upsertAll(results)
+            clearResourceListCache()
         }
     }
 
@@ -393,6 +395,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             library.resourceLocalAddress = entryFile
         }
         myLibraryDao.upsert(library)
+        clearResourceListCache()
     }
 
     private suspend fun markResourceOfflineByResourceId(resourceId: String, relativePath: String) {
@@ -407,6 +410,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             library.resourceLocalAddress = relativePath
         }
         myLibraryDao.upsert(library)
+        clearResourceListCache()
     }
 
     override fun getRecentResources(userId: String): Flow<List<MyLibrary>> {
