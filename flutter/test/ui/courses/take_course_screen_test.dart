@@ -450,6 +450,7 @@ void main() {
           db.submitPhotosDao,
           db.surveyDao,
           db.examDao,
+          teamDao: db.teamDao,
         ),
       );
     }
