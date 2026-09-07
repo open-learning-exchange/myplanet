@@ -292,4 +292,148 @@ void main() {
       expect(SubmissionsRepository.parentBaseId('@course-1'), '');
     });
   });
+
+  test('a synced adoption marker is not repaired into the gate key', () async {
+    // **The live defect the second audit found in the repair itself**, and it
+    // arrives by a route the locally-authored case cannot show.
+    //
+    // An adoption marker is `status = ''` on the device that wrote it, and
+    // `createSurveyAdoptionSubmission` also sets `isUpdated: true` — so the
+    // generic `pendingUploads` sweep uploads it. `serialize` sends
+    // `'status': ''`, and the pull reads it back through
+    // `JsonUtils.getStringOrNull`, which maps the empty string to **null**
+    // (`json_utils.dart:19-22`). So every marker that has round-tripped, and
+    // every marker a Kotlin handset in the same deployment published, carries
+    // `status = NULL` rather than `''`.
+    //
+    // The guard was `row.status.isNotValue('')`, and drift's `isNotValue`
+    // emits SQL `IS NOT`, not `!=` (`expression.dart:118-120` -> `:148-154`).
+    // `NULL IS NOT ''` is **true**, so the guard admitted exactly the rows it
+    // existed to skip: the marker was rewritten to `survey-1@course-1`, the
+    // status-blind count accepted it, and the learner's Finish sailed past a
+    // survey they had never answered. Kotlin's own predicate is
+    // `it.status.orEmpty().isEmpty()` (`SurveysRepositoryImpl.kt:203-207`) —
+    // negating that needs `coalesce(status, '') != ''`, which is the idiom
+    // `pendingUploads` already uses for the same reason.
+    //
+    // In a real deployment this is the repair's *most likely* match, not a
+    // corner case: a bare-id answer sheet can only come from a pre-Phase-125
+    // port build, while a bare-id adoption marker is written on purpose by
+    // every Kotlin handset there is.
+    await submissions.upsertDocuments([
+      {
+        '_id': 'adopt-doc-1',
+        '_rev': '1-a',
+        'parentId': 'survey-1',
+        'type': 'survey',
+        'status': '',
+        'user': {'_id': 'org.couchdb.user:ada'},
+      },
+    ]);
+    final synced = await submissions.getById('adopt-doc-1');
+    expect(synced!.status, isNull, reason: 'the pull nulls an empty status');
+
+    expect(
+      await submissions.hasUnfinishedSurveys(
+        'course-1',
+        'org.couchdb.user:ada',
+      ),
+      isTrue,
+      reason: 'nothing has been answered; the marker is not an answer sheet',
+    );
+    expect(
+      (await submissions.getById('adopt-doc-1'))!.parentId,
+      'survey-1',
+      reason: '`findExistingAdoption` looks this up by the bare id',
+    );
+  });
+
+  test(
+    're-sending a survey does not duplicate a legacy pending sheet',
+    () async {
+      // Finding 2 of the implementation audit, and a gap the writer fix itself
+      // opened. `getOrCreateSurveySubmission`'s existence check is
+      // `latestPendingByUserAndParent`, which compares the **whole** `parentId`.
+      // Pre-fix the writer and that lookup agreed on the bare key; with the
+      // writer corrected and no repair, a legacy bare-id pending sheet is
+      // invisible to it and the member gets a second sheet for one survey.
+      await submissions.createBulkSurveySubmissions('survey-1', const [
+        'user-1',
+      ]);
+      final first = (await database.submissionDao.getSurveySubmissionsByUser(
+        'user-1',
+      )).single;
+      await (database.update(database.submissions)
+            ..where((row) => row.id.equals(first.id)))
+          .write(const SubmissionsCompanion(parentId: Value('survey-1')));
+
+      await submissions.createBulkSurveySubmissions('survey-1', const [
+        'user-1',
+      ]);
+
+      final rows = await database.submissionDao.getSurveySubmissionsByUser(
+        'user-1',
+      );
+      expect(rows, hasLength(1), reason: 'one survey, one pending sheet');
+      expect(rows.single.id, first.id, reason: 'the existing sheet was reused');
+      expect(rows.single.parentId, 'survey-1@course-1');
+    },
+  );
+
+  test('the repair only touches survey-typed rows for this course', () async {
+    // Findings 4 and 5: three clauses that were each revertible with the whole
+    // suite green. The exam row matters because the two id spaces are not
+    // disjoint — `_liveParentDocument`'s own comment says so — and an exam
+    // attempt's key is the exam path's to write.
+    await database.submissionDao.upsertAll([
+      SubmissionsCompanion.insert(
+        id: 'exam-attempt',
+        userId: const Value('user-1'),
+        parentId: const Value('survey-1'),
+        type: const Value('exam'),
+        status: const Value('requires grading'),
+      ),
+      SubmissionsCompanion.insert(
+        id: 'other-course-sheet',
+        userId: const Value('user-1'),
+        parentId: const Value('survey-elsewhere'),
+        type: const Value('survey'),
+        status: const Value('complete'),
+      ),
+    ]);
+
+    expect(await submissions.repairCourseSurveyParentIds('course-1'), 0);
+    expect((await submissions.getById('exam-attempt'))!.parentId, 'survey-1');
+    expect(
+      (await submissions.getById('other-course-sheet'))!.parentId,
+      'survey-elsewhere',
+    );
+  });
+
+  test('the repair keys a course-less survey bare when handed one', () async {
+    // The `target == survey.id` branch. It is unreachable through
+    // `repairCourseSurveyParentIds`, whose rows are selected by an exact
+    // `courseId` match, and reachable through `createBulkSurveySubmissions`,
+    // which repairs whatever survey it was handed.
+    await database.surveyDao.upsertAll([
+      SurveysCompanion.insert(id: 'standalone', name: const Value('Loose')),
+    ], {});
+    await submissions.createBulkSurveySubmissions('standalone', const [
+      'user-1',
+    ]);
+    final rows = await database.submissionDao.getSurveySubmissionsByUser(
+      'user-1',
+    );
+    expect(rows.single.parentId, 'standalone');
+  });
+
+  test('a null user does not block a course that has surveys', () async {
+    // A deliberate divergence, and it was unpinned: the existing coverage
+    // asserts a null user against a database with **no** surveys, where Kotlin
+    // agrees. Kotlin's guard is inside `hasSubmission` (`:181-183`) and inverts
+    // to *unfinished*, so Kotlin blocks here. Blocking a learner whose id we do
+    // not have cannot be satisfied by answering.
+    expect(await submissions.hasUnfinishedSurveys('course-1', null), isFalse);
+    expect(await submissions.hasUnfinishedSurveys('course-1', ''), isFalse);
+  });
 }

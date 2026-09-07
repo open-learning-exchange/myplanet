@@ -52,8 +52,9 @@ The adoption marker is the one row that must keep the bare id.
 (`:205-207`) recognises it by comparing the whole column, so routing it through
 `examParentId` would make every adoption invisible to its own lookup and
 re-adopt on each load. It follows that a bare-id `type = 'survey'` row is not
-always a stale answer sheet — which is what the repair's `status != ''` clause
-is for, and it is not theoretical: see *the reverts* below.
+always a stale answer sheet — which is what the repair's status clause is for,
+and it is not theoretical: replaying its removal spuriously unblocks the course,
+and the *first cut of that clause was itself a live defect*. See below.
 
 `hasUnfinishedSurveys` now derives its key through `examParentId` too rather
 than interpolating its own string, so the two cannot drift apart again.
@@ -86,8 +87,11 @@ repairing and repairs none of them. `schemaVersion` stays 46 and no generated
 output moved.
 
 Two rows it must not touch, both `type = 'survey'` with a bare id: the adoption
-marker (`status = ''`), above; and a submission for a survey with no `courseId`,
-whose bare id is already what `examParentId` produces. Both are pinned.
+marker, above; and a submission for a survey with no `courseId`, whose bare id
+is already what `examParentId` produces. Both are pinned. It also skips
+`exam`-typed rows, which matters because the two id spaces are not disjoint —
+`_liveParentDocument`'s own comment says so — and an exam attempt's key belongs
+to the exam path.
 
 Calling a write from inside a boolean read is the one thing here I would rather
 not have done. The alternatives were worse: a migration step needs a schema
@@ -100,7 +104,7 @@ learner taps Finish.
 
 ## The completed-survey-to-finished-course round trip
 
-`test/repository/mandatory_survey_round_trip_test.dart` — 11 tests, named for
+`test/repository/mandatory_survey_round_trip_test.dart` — 16 tests, named for
 the shape rather than the file, alongside the port's other reachability guards.
 Every survey row comes out of `SurveyMapper.fromCourseDoc` reading a course
 document shaped like the server's, and every submission is authored by the
@@ -123,23 +127,35 @@ and post-fix the finish reaches the rating dialog it is gated in front of.
 
 ## Each defect, with failing-first evidence
 
-Every row below was demonstrated red by replaying the exact revert it guards.
 
-| # | defect | pre-fix failure |
-|---|---|---|
-| 1 | a learner who answered the attached survey is still blocked | `hasUnfinishedSurveys` → `Expected: false / Actual: true` |
-| 1 | the same, at the screen | the toast on a Finish tap after answering |
-| 1 | the sheet's key | `Expected: 'survey-1@course-1' / Actual: 'survey-1'` |
-| 1 | `createBulkSurveySubmissions`' key | `Expected: 'survey-1@course-1' / Actual: 'survey-1'` |
-| 2 | a bare-id sheet an earlier build wrote (the repair) | `Expected: false / Actual: true` |
-| 3 | `updateSurveyResponse` read the whole `parentId` as a survey id | with the writers fixed and this reader raw: `Expected: ['It was fine'] / Actual: []` — resuming a pending sheet found no questions and wrote **no answers at all** |
-| 4 | the dashboard pending-survey prompt keyed on the raw value | `Expected: length of <1> / Actual: []` — the prompt silently dropped every pending survey belonging to a course |
-| 5 | the repair without its `status != ''` clause | `Expected: true / Actual: false` — it rewrote the **adoption marker** into the composite key, which then satisfied the status-blind count and **spuriously unblocked the course** |
+Each row names the revert it was replayed against, because **which** revert
+matters: the writer fix and the repair are defence in depth for the same
+symptom, so a test that only asserts "the course can be finished" cannot tell
+them apart.
 
-Defect 5 is the one worth remembering: the guard I added on the audit's
-reasoning turned out to be load-bearing when replayed. `countByUserParentAndType`
-has no status filter (Kotlin's `SubmissionDao.kt:23` has none either), so any
-row that reaches the composite key counts as a completed survey.
+| # | defect | revert replayed | pre-fix failure |
+|---|---|---|---|
+| 1 | a learner who answered the attached survey is still blocked | the whole diff (the pre-fix head) | `hasUnfinishedSurveys` → `Expected: false / Actual: true` |
+| 1 | the same, at the screen | the whole diff | the toast on a Finish tap after answering |
+| 1 | the sheet's key | `createSurveyDraft`'s key alone | `Expected: 'survey-1@course-1' / Actual: 'survey-1'` |
+| 1 | `createBulkSurveySubmissions`' key | the bulk writer alone | `Expected: 'survey-1@course-1' / Actual: 'survey-1'` |
+| 2 | a bare-id sheet an earlier build wrote | the repair call | `Expected: false / Actual: true` |
+| 3 | `updateSurveyResponse` read the whole `parentId` as a survey id | that reader alone, writers left fixed | `Expected: ['It was fine'] / Actual: []` — resuming a pending sheet found no questions and wrote **no answers at all** |
+| 4 | the dashboard prompt keyed on the raw value | that reader alone, writers left fixed | `Expected: length of <1> / Actual: []` — the prompt silently dropped every pending survey belonging to a course |
+| 5 | the repair rewrote the **adoption marker** | the `status` clause | `Expected: true / Actual: false` — the marker reached the composite key, the status-blind count accepted it, and the course was **spuriously unblocked** |
+| 6 | the repair rewrote an **exam** attempt sharing a survey's id | the `type` clause | `Expected: 0 / Actual: 1` |
+| 7 | re-sending a survey duplicated a legacy pending sheet | the bulk pre-loop repair | `Expected: length of <1> / Actual: [2 rows]` |
+
+**Two rows are the whole diff rather than one rule, and that is a real
+limitation, not shorthand.** Reverting `createSurveyDraft`'s key alone leaves
+2189 of 2190 tests green, because `repairCourseSurveyParentIds` heals the bare
+id at read time — so both headline behavioural tests, including the screen one,
+still pass. They discriminate *writer OR repair*, not the writer. The writer is
+pinned by the two key assertions and nothing else. The first draft of these
+notes claimed every row had been demonstrated red against the exact rule it
+guards; the implementation audit caught that, and it was wrong for the screen
+row. Next lane: revert a survey writer and you get one repository failure and
+green at every screen.
 
 Readers I checked and left alone because they are already right:
 `progress_repository._examIdFromParent` and `courses_providers`'
@@ -200,7 +216,136 @@ port's own exam path has always written. Documented at the code, at
 and I have not put it there — that file is not this lane's to edit. Integrator:
 the paragraph above is the text.
 
+## The second audit found a live defect in my own repair
+
+An audit of the ground truth does not audit the implementation. The diff was
+green — format clean, analyze clean, 2184 tests, CI green on `62ecebc` — which
+is exactly the state Phase 120 and Phase 123 shipped defects in. The second
+`parity-auditor` pass found one live defect, four unguarded halves and two
+overstated claims.
+
+### The live defect: `isNotValue('')` is `IS NOT`, not `!=`
+
+The repair's guard was `row.status.isNotValue('')`, meant to negate Kotlin's
+`it.status.orEmpty().isEmpty()` (`SurveysRepositoryImpl.kt:203-207`). Drift's
+`isNotValue` emits the SQL infix operator **`IS NOT`**
+(`drift-2.34.3/.../expression.dart:118-120` → `:148-154`), and `NULL IS NOT ''`
+is **true** — so the guard admitted every null-status row, which is exactly the
+class it existed to exclude.
+
+**And a marker reaches null status by an ordinary route.**
+`createSurveyAdoptionSubmission` writes `status: ''` *and* `isUpdated: true`, so
+the generic `pendingUploads` sweep uploads it (Phase 123's item 4 is right that
+`UploadConfigs.AdoptedSurveys` is unported, but the generic sweep still carries
+the row); `serialize` sends `'status': ''`; and `upsertDocuments` reads it back
+through `JsonUtils.getStringOrNull`, which maps the empty string to **null**
+(`json_utils.dart:19-22`). So every marker that has round-tripped, and every
+marker a Kotlin handset in the same deployment published, arrives with
+`status = NULL`.
+
+The consequence is the harm this phase exists to prevent, caused by the fix: the
+marker was rewritten to `survey-1@course-1`, the status-blind count accepted it,
+and a learner's Finish sailed past a survey they had never answered. Reproduced
+against the then-current head:
+
+```
+Expected: true
+  Actual: <false>
+nothing has been answered; the marker is not an answer sheet
+```
+
+**In a real mixed fleet this is the repair's *most likely* match, not a corner
+case.** A bare-id *answer sheet* can only come from a pre-Phase-125 build of an
+unshipped port, or from Kotlin's `exams.courseId` race (item 3 below). A bare-id
+*adoption marker* is written that way on purpose by every Kotlin handset there
+is. The load-bearing half of the discriminator was the half that failed.
+
+Now `coalesce([status, '']).equals('').not()` — the same idiom, for the same
+reason, as `SubmissionDao.pendingUploads`' coalesced guest operands. **A drift
+`isNotValue` is `IS NOT`; when you mean `orEmpty().isEmpty()`, coalesce.**
+
+### The unguarded halves, and one more defect they exposed
+
+| finding | now |
+|---|---|
+| a null-status bare-id row was untested | the reproduction above, as a test |
+| **`createBulkSurveySubmissions` duplicated a legacy pending sheet** | `_repairSurveyParentId` runs before the loop; test red on its removal |
+| `row.type.equals('survey')` was revertible with the suite green | an `exam` attempt sharing a survey's id; red on its removal |
+| the null-user divergence was pinned only against a course with *no* surveys, where Kotlin agrees | pinned against a course that has one |
+| the writer fix is masked by the repair at every screen | said plainly above, rather than over-claimed |
+
+The duplicate is a defect the writer fix itself opened, and worth stating:
+`getOrCreateSurveySubmission`'s existence check is
+`latestPendingByUserAndParent`, a comparison of the **whole** `parentId`.
+Pre-Phase-125 the writer and that lookup agreed on the bare key. With the writer
+corrected and no repair, a legacy bare-id pending sheet is invisible to it, so
+re-sending the survey gives the member a *second* sheet: their prompt dedupes to
+the older one, they answer it, and the leftover row re-offers the same survey
+until they answer it twice — two answer sheets uploaded for one survey.
+
+`if (target == survey.id) continue;` was dead when the repair was only reachable
+by `courseId` (every row `getByCourseId` returns has a non-empty `courseId` by
+exact equality, so the target can never equal the bare id). It is live now that
+`createBulkSurveySubmissions` hands it an arbitrary survey, and pinned. Two
+clauses remain non-discriminating and are kept for clarity rather than
+behaviour: the `courseId.isEmpty` early return (an empty `courseId` selects no
+rows anyway) and, strictly, the dead-branch short-circuit when reached by
+course — both are early-outs for an identical result, not guards.
+
+### Two claims of mine it overstated
+
+**"The port cannot reproduce that split."** It cannot on `type` — `Surveys` has
+no `type` column. But the gate reads `courseId` and the button reads `stepId`,
+and `SurveyMapper.fromDoc` writes each independently with `_presentOrAbsent`
+(`survey_mapper.dart:93-94`), so a document carrying `courseId` and no `stepId`
+lands found-by-the-gate and offered-by-no-button: the same shape I attributed to
+Kotlin alone. Kotlin genuinely cannot do it (`StepExam.insertCourseStepsExams`
+never reads either key from the document, `StepExam.kt:36-58`). Corrected at the
+code.
+
+**A test that seeds its own key.** The dashboard test hand-wrote
+`'survey-1@course-1'` — the fixture shape these notes criticise two paragraphs
+in. It now drives `createBulkSurveySubmissions`, so it covers the pair. Writing
+it that way exposed a second flaw of mine: the leftover bare-id row I had added
+*rescued* the assertion, so the test passed with the reader reverted. It is now
+two tests — one with only the composite row, which discriminates the reader
+(`Actual: []` on its revert), and one with both, which pins the
+prompt-once-not-twice guarantee and is honestly labelled as not failing-first
+evidence.
+
+### Recorded, not changed
+
+**The repair never reaches Planet.** It writes only `parentId` and leaves
+`isUpdated` alone, so an already-uploaded row is repaired locally while the
+CouchDB document keeps the bare key permanently — every other device needs its
+own local repair. A payload already snapshotted into the outbox by `queuePending`
+also POSTs the bare key. Re-queueing *would* be safe (`serialize` emits
+`_id`/`_rev` when present, so CouchDB updates in place rather than duplicating),
+and I am still not doing it: silently rewriting historical server documents on a
+Finish tap is a bigger action than unblocking a learner, and Kotlin never
+rewrites an uploaded `parentId` either. What needed correcting is the
+justification — "the port uploads whatever `parentId` the row carries" is true
+of the *general* case and precisely not of the already-uploaded rows the repair
+fixes. The residue is real: Planet keeps a bare-id document its own joins may
+not match to the survey.
+
+**Confirmed at parity, stated because a clean result is useful.** The audit
+independently checked every writer of a submission `parentId` (five; none
+missed), every reader (my list of three was complete — it found no fourth, and
+confirmed `submissions_exporter.dart`, `submission_detail_screen.dart`,
+`submissions_screen.dart`, `user_information_screen.dart` and
+`public_survey_uploader.dart` never read it), that composite is what Kotlin
+uploads for the same row, that the repair causes no stream churn when it no-ops
+(`UpdateStatement` notifies only `if (rows > 0)`), that calling it from a
+boolean read breaks neither caller, and that both paths the fix serves are
+reachable — the step's Take Survey tile into `submitResponse`, and the home
+prompt's stripped `surveyId` into `updateSurveyResponse`. Neither fix guards a
+dead path.
+
 ## Divergences from `hasSubmission` kept deliberately
+
+These are now documented at the code as well as here — the implementation
+audit noted that only (c) had made it into the doc comment.
 
 1. **The null-user guard.** Kotlin has none in `hasUnfinishedSurveys`; the
    guard is inside `hasSubmission`, which returns `false` for a blank `userId`,

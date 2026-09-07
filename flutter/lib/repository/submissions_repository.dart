@@ -560,8 +560,17 @@ class SubmissionsRepository {
     DateTime? now,
     String Function()? createId,
   }) async {
-    final courseId = (await _surveyDao.getById(surveyId))?.courseId;
-    final parentId = examParentId(examId: surveyId, courseId: courseId);
+    final survey = await _surveyDao.getById(surveyId);
+    final parentId = examParentId(examId: surveyId, courseId: survey?.courseId);
+    // The existence check below is `latestPendingByUserAndParent`, a comparison
+    // of the **whole** `parentId` — so a pending sheet an earlier build stored
+    // under the bare id would not be found, and re-sending the survey would
+    // give the member a *second* pending sheet. Their dashboard prompt dedupes
+    // to the older one, they answer it, and the leftover row re-offers the same
+    // survey until they answer it twice. Repairing first is what keeps the
+    // writer and its own lookup on one key; pre-Phase-125 they agreed on the
+    // bare one, so this gap is the writer fix's to close.
+    if (survey != null) await _repairSurveyParentId(survey);
     for (final userId in userIds) {
       await getOrCreateSurveySubmission(
         userId: userId,
@@ -682,34 +691,61 @@ class SubmissionsRepository {
   ///
   /// Two rows it must not touch, both `type = 'survey'` with a bare id:
   ///
-  /// * **the adoption marker** (`status = ''`), whose bare id is Kotlin's and
-  ///   is how `findExistingAdoption` finds it — see
+  /// * **the adoption marker**, whose bare id is Kotlin's and is how
+  ///   `findExistingAdoption` finds it — see
   ///   [createSurveyAdoptionSubmission];
   /// * a submission for a survey with no `courseId`, whose bare id is already
-  ///   what [examParentId] would produce.
+  ///   what [examParentId] would produce. Reachable through
+  ///   [_repairSurveyParentId]'s other caller, which is handed an arbitrary
+  ///   survey rather than one selected by `courseId`.
   ///
   /// Idempotent: after the first pass no row matches the bare id any more.
   Future<int> repairCourseSurveyParentIds(String courseId) async {
     if (courseId.isEmpty) return 0;
-    final surveys = await _surveyDao.getByCourseId(courseId);
     var repaired = 0;
-    for (final survey in surveys) {
-      final target = examParentId(examId: survey.id, courseId: survey.courseId);
-      // A survey with no `courseId` of its own keys to the bare id already.
-      if (target == survey.id) continue;
-      // Built here rather than in `SubmissionDao` for the same reason
-      // `_deleteExamSubmissions` is: `app_database.dart` belongs to another
-      // lane this round. It should move there.
-      repaired +=
-          await (_dao.update(_dao.submissions)..where(
-                (row) =>
-                    row.parentId.equals(survey.id) &
-                    row.type.equals('survey') &
-                    row.status.isNotValue(''),
-              ))
-              .write(SubmissionsCompanion(parentId: Value(target)));
+    for (final survey in await _surveyDao.getByCourseId(courseId)) {
+      repaired += await _repairSurveyParentId(survey);
     }
     return repaired;
+  }
+
+  /// One survey's share of [repairCourseSurveyParentIds].
+  ///
+  /// **The status test is `coalesce(status, '') != ''`, not `status IS NOT ''`,
+  /// and the difference was a live defect.** Kotlin's predicate is
+  /// `it.status.orEmpty().isEmpty()` (`SurveysRepositoryImpl.kt:203-207`), so
+  /// negating it has to treat a null status and an empty one alike. Drift's
+  /// `isNotValue` emits SQL `IS NOT` rather than `!=`
+  /// (`expression.dart:118-120` → `:148-154`), and `NULL IS NOT ''` is **true**
+  /// — so the first cut of this admitted exactly the rows it existed to skip.
+  ///
+  /// A marker reaches null status by an ordinary route, not a corner case.
+  /// [createSurveyAdoptionSubmission] writes `status: ''` **and**
+  /// `isUpdated: true`, so the generic `pendingUploads` sweep uploads it;
+  /// [serialize] sends `'status': ''`; and [upsertDocuments] reads it back
+  /// through `JsonUtils.getStringOrNull`, which maps the empty string to null
+  /// (`json_utils.dart:19-22`). Every marker that has round-tripped — and
+  /// every marker a Kotlin handset in the same deployment published, since
+  /// Kotlin writes them bare on purpose — arrives with `status = NULL`. In a
+  /// real mixed fleet that is the repair's *most likely* match, where a bare-id
+  /// answer sheet can only come from a pre-Phase-125 build.
+  ///
+  /// `coalesce` on the status is the same idiom, for the same reason, as
+  /// `SubmissionDao.pendingUploads`' coalesced guest operands.
+  Future<int> _repairSurveyParentId(SurveyRow survey) async {
+    final target = examParentId(examId: survey.id, courseId: survey.courseId);
+    // A survey with no `courseId` of its own keys to the bare id already.
+    if (target == survey.id) return 0;
+    // Built here rather than in `SubmissionDao` for the same reason
+    // `_deleteExamSubmissions` is: `app_database.dart` belongs to another
+    // lane this round. It should move there.
+    return (_dao.update(_dao.submissions)..where(
+          (row) =>
+              row.parentId.equals(survey.id) &
+              row.type.equals('survey') &
+              coalesce([row.status, const Constant('')]).equals('').not(),
+        ))
+        .write(SubmissionsCompanion(parentId: Value(target)));
   }
 
   /// Port of `SubmissionsRepositoryImpl.hasUnfinishedSurveys`. Returns true
@@ -739,15 +775,26 @@ class SubmissionsRepository {
   /// `type: "surveys"` gets a button and never blocks, a document carrying no
   /// `type` blocks forever with no button that could satisfy it.
   ///
-  /// The port cannot reproduce that split even if it wanted to: `Surveys` has
-  /// no `type` column, because `ExamMapper.fromDoc` uses the document's `type`
-  /// to *choose the table* and then discards it. Its reader is
+  /// The port cannot reproduce that split *on `type`*: `Surveys` has no `type`
+  /// column, because `ExamMapper.fromDoc` uses the document's `type` to
+  /// *choose the table* and then discards it. Its reader is
   /// `SurveyDao.getByCourseId` with no type filter, so it finds the survey the
   /// button opens — which is the behaviour the Kotlin feature was written to
   /// have. Making the writers agree with it (Phase 125) is therefore internal
   /// consistency, not restored parity, and the composite key is still the right
   /// one to converge on: it is what Kotlin uploads, what Planet joins on, and
   /// what the port's own exam path has always written.
+  ///
+  /// It can reproduce the *shape* by another route, though, so this is not a
+  /// class of bug the port has escaped. The gate reads `courseId` and the
+  /// button reads `stepId`, and `SurveyMapper.fromDoc` writes each
+  /// independently with `_presentOrAbsent` (`survey_mapper.dart:93-94`) — so a
+  /// document carrying `courseId` and no `stepId` lands with a course join and
+  /// no step join: found here, offered by no button. Kotlin genuinely cannot do
+  /// that, since `StepExam.insertCourseStepsExams` never reads either key from
+  /// the document (`StepExam.kt:36-58`) and the exams walk passes
+  /// `("", "", doc, "")`. Whether it is live depends on Planet's document
+  /// shape, which nothing in this tree settles.
   ///
   /// Two things the audit established that keep this reader safe, both pinned
   /// by tests in `mandatory_survey_round_trip_test.dart`:
@@ -761,6 +808,25 @@ class SubmissionsRepository {
   ///   (`SubmissionDao.kt:23`) — a sheet the learner has merely *opened*
   ///   satisfies the gate. That is also why the adoption marker, which is
   ///   `type = 'survey'` with a bare id, must never be repaired into this key.
+  ///
+  /// **Two further deviations from `hasSubmission`, both deliberate.**
+  ///
+  /// 1. The blank-user guard below returns `false`. Kotlin has no guard in
+  ///    `hasUnfinishedSurveys`; it lives in `hasSubmission` (`:181-183`), which
+  ///    returns `false` for a blank `userId` and so inverts to *unfinished* —
+  ///    Kotlin **blocks** a null user on a course that has surveys. Reachable
+  ///    here through `challenge_provider`, which passes a nullable id. Blocking
+  ///    a learner whose id we do not have cannot be satisfied by answering, and
+  ///    the Kotlin behaviour is unobservable anyway (its survey list is always
+  ///    empty, above). The blank-*course* half is not a divergence at all:
+  ///    `getByCourseIdAndType("", …)` matches nothing either.
+  /// 2. `questionDao.countByExamId(stepExamId) == 0 → false` (`:185-187`) is
+  ///    **not** ported. In `getCourseStepData` that rule reads sanely — do not
+  ///    claim a submission exists for an exam whose questions have not synced.
+  ///    Here it inverts into "a question-less survey blocks the course
+  ///    forever", and because the short-circuit precedes the count, no
+  ///    submission can ever satisfy it. Porting it would reintroduce the exact
+  ///    user-blocking bug this phase removes, for a survey nobody can answer.
   Future<bool> hasUnfinishedSurveys(String courseId, String? userId) async {
     if (courseId.isEmpty || (userId ?? '').isEmpty) return false;
     await repairCourseSurveyParentIds(courseId);

@@ -4,6 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/dashboard_providers.dart';
+import 'package:myplanet/repository/submissions_repository.dart';
+
+import '../support/mock_planet_api.dart';
 
 void main() {
   late AppDatabase db;
@@ -97,15 +100,9 @@ void main() {
       expect(pending.single.submissionId, 'sub-1');
     });
 
-    test('resolves a course-attached survey through the composite key', () async {
-      // Phase 125. A course-attached survey's `parentId` is
-      // `"$surveyId@$courseId"` — what `createBulkSurveySubmissions` now writes
-      // and what Kotlin has always written. `getUniquePendingSurveys` dedupes
-      // and resolves by `examIdFromParentId()`
-      // (`SubmissionsRepositoryImpl.kt:108-121`), never by the whole column.
-      // Keying on the raw value sent the composite to `getByIds`, which matched
-      // nothing, so the prompt silently dropped every pending survey belonging
-      // to a course — pre-fix this failed with `Actual: []`.
+    /// Seeds one pending sheet for a course-attached survey **through the
+    /// production writer**, so the key under test is the one the app mints.
+    Future<void> sendCourseSurvey() async {
       await db.surveyDao.upsertAll([
         SurveysCompanion.insert(
           id: 'survey-1',
@@ -113,12 +110,26 @@ void main() {
           name: const Value('Onboarding'),
         ),
       ], const {});
-      await db.submissionDao.upsertAll([
-        submission('sub-1', 'survey-1@course-1'),
-        // Two sheets for the same survey still dedupe to one, which they only
-        // do if both strip to the same key.
-        submission('sub-2', 'survey-1@course-1'),
-      ]);
+      await SubmissionsRepository(
+        MockPlanetApi(),
+        db.submissionDao,
+        db.submitPhotosDao,
+        db.surveyDao,
+        db.examDao,
+      ).createBulkSurveySubmissions('survey-1', const ['user-1']);
+    }
+
+    test('resolves a course-attached survey through the composite key', () async {
+      // Phase 125, and the **pair**: the writer that mints the key and the
+      // reader that has to strip it. A course-attached survey's `parentId` is
+      // `"$surveyId@$courseId"`, and `getUniquePendingSurveys` dedupes and
+      // resolves by `examIdFromParentId()`
+      // (`SubmissionsRepositoryImpl.kt:108-121`), never by the whole column.
+      // Keying on the raw value sent the composite to `getByIds`, which
+      // matched nothing, so the prompt silently dropped every pending survey
+      // belonging to a course. Demonstrated red by reverting this reader alone
+      // with the writers left correct: `Expected: length of <1> / Actual: []`.
+      await sendCourseSurvey();
 
       final pending = await container.read(
         pendingSurveysProvider('user-1').future,
@@ -127,7 +138,25 @@ void main() {
       expect(pending, hasLength(1));
       expect(pending.single.surveyId, 'survey-1');
       expect(pending.single.name, 'Onboarding');
-      expect(pending.single.submissionId, 'sub-1');
+    });
+
+    test('a leftover bare-id sheet folds into the same prompt entry', () async {
+      // The shape a pre-Phase-125 build, or a Kotlin handset that lost
+      // `exams.courseId`, leaves behind: two pending sheets for one survey
+      // under two different keys. The learner must be prompted once, not
+      // twice. A behavioural guarantee rather than failing-first evidence —
+      // the raw reader also yields one entry here, because the bare row
+      // resolves while the composite one does not, which is exactly why the
+      // test above deliberately seeds no legacy row.
+      await sendCourseSurvey();
+      await db.submissionDao.upsertAll([submission('legacy', 'survey-1')]);
+
+      final pending = await container.read(
+        pendingSurveysProvider('user-1').future,
+      );
+
+      expect(pending, hasLength(1));
+      expect(pending.single.surveyId, 'survey-1');
     });
   });
 
