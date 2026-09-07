@@ -499,7 +499,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         val pdfFileName = binding.root.findViewById<TextView>(R.id.pdfFileName)
         pdfFileName.text = title
 
-        // PDF has only one page. Prompt upon leaving for now. Currently, cannot detect scroll-to-bottom
         isResourceFinished = true
 
         renderPdf()
@@ -577,8 +576,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         val textFileTitle = binding.root.findViewById<TextView>(R.id.textFileTitle)
         val textContent = binding.root.findViewById<TextView>(R.id.textContent)
         textFileTitle.text = title
-
-        // Text has only one page. Prompt upon leaving for now. Currently, cannot detect scroll-to-bottom
         isResourceFinished = true
 
         val file = File(externalFilesDir, "ole/$filePath")
