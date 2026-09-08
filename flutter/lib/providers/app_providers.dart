@@ -16,6 +16,7 @@ import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
 import '../repository/achievements_repository.dart';
 import '../repository/achievements_uploader.dart';
+import '../repository/adopted_surveys_uploader.dart';
 import '../repository/activities_repository.dart';
 import '../repository/activities_uploader.dart';
 import '../repository/chat_repository.dart';
@@ -230,6 +231,20 @@ final eventsRepositoryProvider = Provider<EventsRepository>(
   (ref) => EventsRepository(
     ref.watch(planetApiProvider),
     ref.watch(meetupDaoProvider),
+  ),
+);
+
+/// The missing half of the team-survey adoption path — see
+/// [AdoptedSurveysUploader]. Its sweep runs from
+/// `DashboardSyncNotifier.queuePendingSubmissions` and the headless
+/// `sweepPendingSubmissions`, immediately ahead of the submissions sweep, which
+/// is where Kotlin has it (`SubmissionsUploader.kt:83-84`).
+final adoptedSurveysUploaderProvider = Provider<AdoptedSurveysUploader>(
+  (ref) => AdoptedSurveysUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(surveyDaoProvider),
+    ref.watch(outboxRepositoryProvider),
+    ref.watch(deviceIdentitySourceProvider),
   ),
 );
 
@@ -637,6 +652,9 @@ final outboxDrainerProvider = Provider<OutboxDrainer>((ref) {
           .watch(submitPhotosUploaderProvider)
           .handler,
       EventsUploader.type: ref.watch(eventsUploaderProvider).handler,
+      AdoptedSurveysUploader.type: ref
+          .watch(adoptedSurveysUploaderProvider)
+          .handler,
       VoicesUploader.type: ref.watch(voicesUploaderProvider).handler,
       TeamTasksUploader.type: ref.watch(teamTasksUploaderProvider).handler,
       TeamLogUploader.type: ref.watch(teamLogUploaderProvider).handler,

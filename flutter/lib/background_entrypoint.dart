@@ -300,6 +300,18 @@ Future<void> sweepPendingSubmissions(
   required String? userId,
 }) async {
   try {
+    // Immediately ahead of the submissions sweep, which is exactly where
+    // Kotlin has it: `SubmissionsUploader.uploadSubmissionsWithTiming` calls
+    // `uploadAdoptedSurveys()` then `uploadSubmissions(...)`
+    // (`SubmissionsUploader.kt:83-84`), and `UserDataWorker:47-48` runs the
+    // same pair in the same order. The order is load-bearing for the port in a
+    // way it is not for Kotlin: the drain that follows records each clone's
+    // rev before the surveys pull's `deleteNotIn` runs, so the clone is either
+    // named by the walk or still `rev IS NULL` and spared. Either way it
+    // survives — see [SurveyDao.deleteNotIn].
+    await container
+        .read(adoptedSurveysUploaderProvider)
+        .queuePending(config: config, userId: userId);
     await container
         .read(submissionsUploaderProvider)
         .queuePending(config: config, userId: userId);

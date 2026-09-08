@@ -1070,12 +1070,41 @@ class SubmissionsRepository {
       // survey that is itself an adopted copy arrives with `courseId`,
       // `stepId` and `sourceSurveyId` — it has a Take Survey button and a
       // working retake label, and skipping it let a learner finish
-      // `MANDATORY_SURVEY_COURSE_ID` having answered nothing. Kotlin's own
-      // test for a locally minted clone is the conjunction
-      // `sourceSurveyId IS NOT NULL AND _rev IS NULL` (`ExamDao.kt:21`, the
-      // upload sweep), and `adoptSurvey` writing `rev: Value(null)`
-      // explicitly is what makes the second half exact here.
-      if (survey.sourceSurveyId != null && survey.rev == null) continue;
+      // `MANDATORY_SURVEY_COURSE_ID` having answered nothing.
+      //
+      // **The second half is `stepId`, not `rev`, and the difference is a
+      // user-blocking bug.** Phase 136 wrote `rev == null` from `ExamDao.kt:21`
+      // — Kotlin's *upload sweep* — and it was exact only for as long as
+      // nothing ever published a clone. Phase 138 publishes it, and the moment
+      // `AdoptedSurveysUploader` records the rev this guard stops firing: the
+      // clone still carries the source's `courseId`, so `getByCourseId` hands
+      // it to every learner on the course, and nobody outside the adopting
+      // team has — or can have — a sheet keyed `"<cloneId>@<courseId>"`. On
+      // `MANDATORY_SURVEY_COURSE_ID` that is Phase 125's outcome reached by a
+      // new route: the course becomes uncompletable for everyone outside
+      // whichever team adopted its survey.
+      //
+      // `stepId` asks the question the guard actually means — *does the
+      // courses walk own this row's course join?* A server-authored
+      // course-step survey always gets one from `SurveyMapper._build`
+      // (positional, never blank); a clone never has one, deliberately, and
+      // `releaseStepJoinsForCourse` can only null it *together with*
+      // `courseId`, which drops the row out of this query altogether. So the
+      // conjunction keeps both properties without depending on publication
+      // state, and it is a **prune**-time discriminator that `rev` remains
+      // correct for (`SurveyDao.deleteNotIn`) but a **gate**-time one it never
+      // was.
+      //
+      // Kotlin needs no such guard and cannot be read for one:
+      // `getSurveysByCourseId` filters `getByCourseIdAndType(courseId,
+      // "survey")` — **singular** (`SubmissionsRepositoryImpl.kt:367-379`) —
+      // while a clone copies the source's `type`
+      // (`SurveysRepositoryImpl.kt:180`) and every list adoption is reachable
+      // from queries `type = "surveys"` (`ExamDao.kt:29-31`). A Kotlin clone is
+      // never in that result set at all. This is a port-invented guard on
+      // port-invented breadth, which is exactly why it must not borrow its
+      // predicate from a Kotlin query written for another purpose.
+      if (survey.sourceSurveyId != null && survey.stepId == null) continue;
       // Routed through the writers' own derivation so the two cannot drift
       // apart again. `courseId` is non-empty by the guard above and equal to
       // `survey.courseId` by the query that produced the row, so this is

@@ -316,6 +316,15 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
       // reached here first. The `await` is inside the `try` because the future
       // can reject where `valueOrNull` could not.
       final user = await ref.read(sessionProvider.future);
+      // Ahead of the submissions sweep, as `SubmissionsUploader.kt:83-84` has
+      // it — and, unlike in Kotlin, ahead of the surveys pull below, which is
+      // what keeps `SurveyDao.deleteNotIn` from destroying a team's adopted
+      // clone: the drain two lines down records the clone's rev, so by the
+      // time the prune runs the walk names it. A drain that fails leaves
+      // `rev IS NULL`, which that prune spares.
+      await ref
+          .read(adoptedSurveysUploaderProvider)
+          .queuePending(config: config, userId: user?.id);
       await ref
           .read(submissionsUploaderProvider)
           .queuePending(config: config, userId: user?.id);
