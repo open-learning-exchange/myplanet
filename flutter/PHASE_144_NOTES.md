@@ -17,8 +17,8 @@ the one to read first.
 | A team post carries `''`, not the author's planet code | `voices_provider.dart` | two port writers disagreeing about one field |
 | `authorJson` drops a null-valued key instead of writing `null` | `voices_repository.dart` | faithfulness to Gson's `serializeNulls` |
 
-**25 new tests** across three new files and two existing ones, counted from the
-runner. **19 mutations, 19 caught** — the list is at the bottom. Two
+**26 new tests** across three new files and two existing ones, counted from the
+runner. **20 mutations, 20 caught** — the list is at the bottom. Two
 `parity-auditor` passes at `effort: max` ran, one on the Kotlin ground truth
 before implementing and one on the finished green code.
 
@@ -45,6 +45,16 @@ locally composed post has no `viewableBy`. **The post the user just wrote was
 listed by nobody**: not in this app's community feed, and not on Planet, because
 `serialize` omits the `viewIn` key entirely for an empty list, so the uploaded
 document had no audience at all and a pull-back could not repair it.
+
+**Two other readers key on the same entry, and both were wrong for a
+port-composed post.** `VoicesAdapter.canShare` is
+`news?.isCommunityNews != true` (`VoicesAdapter.kt:699`), so the port was
+offering a "share to community" action on a post Kotlin already treats as being
+*in* the community. And `getCommunityVoiceDates` — the challenge dialog's "post
+five community voices" counter from Phase 81 — filters on the same predicate,
+so **a user could post five voices from the port's own community screen and the
+challenge would still read zero**. Neither was reachable from the defect's own
+symptom; both are now pinned by *a composed post counts as a community voice*.
 
 This is the Phase 113 shape exactly — *can the writer produce values the
 reader's predicate matches?* — and the tell was the same one: every existing
@@ -288,7 +298,7 @@ Each names the file, the change, and why it was not made here.
 
 ## Mutations run
 
-Each was applied alone to green code and reverted; all 19 were caught, and the
+Each was applied alone to green code and reverted; all 20 were caught, and the
 test that caught each is named. Two of them exist because the mutation found a
 claim nothing pinned (13 and 14/15), which is the Phase 122 practice.
 

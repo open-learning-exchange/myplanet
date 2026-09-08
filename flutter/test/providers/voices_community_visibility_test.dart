@@ -165,6 +165,42 @@ void main() {
     ]);
   });
 
+  test('a composed post counts as a community voice', () async {
+    // Two other readers key on the same `viewIn` community entry, and both
+    // were wrong for a port-composed post before the writer was fixed.
+    //
+    // `getCommunityVoiceDates` is the challenge dialog's "post five community
+    // voices" counter (Phase 81, port of `getCommunityVoiceDates`), and it
+    // filters on `isCommunityNews` — so a user could post five voices from the
+    // port's own community screen and the challenge would still read zero.
+    //
+    // The other is `VoicesAdapter.canShare`, which is
+    // `news?.isCommunityNews != true` (`VoicesAdapter.kt:699`): the port was
+    // offering a "share to community" action on a post that Kotlin already
+    // treats as being in the community. `voices_screen.dart:121` reads it.
+    final container = await containerFor(
+      user: ada.copyWith(
+        planetCode: const Value('learning'),
+        parentCode: const Value('earth'),
+      ),
+    );
+    final repository = container.read(voicesRepositoryProvider);
+
+    final id = await container
+        .read(voicesActionsProvider)
+        .createPost('The well is dry');
+
+    expect(
+      await repository.getCommunityVoiceDates(0, 1 << 62, null),
+      hasLength(1),
+      reason: 'the challenge task could not be completed from this screen',
+    );
+    expect(
+      VoicesRepository.isCommunityNews((await repository.getById(id!))!),
+      isTrue,
+    );
+  });
+
   test('a team post carries no planet code it cannot know', () async {
     // `TeamsVoicesFragment.kt:78` writes `team?.teamPlanetCode ?: ""` — the
     // **team's** planet, not the author's. The port's `Teams` table has no
