@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -178,6 +177,10 @@ class HealthRepositoryImpl @Inject constructor(
         return decodeHealth(healthExaminationDao.getByIdOrUserId(userId), userModel)
     }
 
+    override suspend fun getDecryptedHealth(pojo: HealthExamination?, user: UserEntity?): MyHealth? {
+        return decodeHealth(pojo, user)
+    }
+
     private fun applyUserDetails(userModel: UserEntity, userData: Map<String, Any?>) {
         userModel.apply {
             firstName = (userData["firstName"] as? String)?.trim()
@@ -214,7 +217,7 @@ class HealthRepositoryImpl @Inject constructor(
         }
 
         val myHealth = decodeHealth(healthPojo, userModel) ?: MyHealth()
-        if (TextUtils.isEmpty(myHealth.userKey)) {
+        if (myHealth.userKey.isNullOrEmpty()) {
             myHealth.userKey = AndroidDecrypter.generateKey()
         }
 
