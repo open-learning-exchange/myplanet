@@ -110,7 +110,10 @@ class CourseFilterController(
     }
 
     private fun setupClearTagsButton() {
-        rootView.findViewById<View>(R.id.btn_clear_tags).setOnClickListener { clearAll() }
+        rootView.findViewById<View>(R.id.btn_clear_tags)?.setOnClickListener {
+            rootView.findViewById<View>(R.id.card_filter)?.visibility = View.GONE
+            clearAll()
+        }
     }
 
     fun addTag(tag: TagEntity) {
