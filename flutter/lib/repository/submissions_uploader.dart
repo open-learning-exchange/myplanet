@@ -34,9 +34,18 @@ class SubmissionsUploader {
   /// the session's credentials the way `UploadCoordinator` sends them; each
   /// row's own owner rides in the document's `user` object, which is where
   /// Planet and the sync-in both read it from.
+  ///
+  /// It is nullable for the same reason it is not a filter. Kotlin's sweep
+  /// takes no user at all — `uploadManager.uploadSubmissions()` is a bare call
+  /// from `AutoSyncWorker:136`, `UserDataWorker:48` and
+  /// `ServerReachabilityWorker:196` — so the sync-path safety net has to be
+  /// able to run on a handset whose session has gone, which is precisely the
+  /// handset with somebody else's finished sheet stranded on it. The column is
+  /// nullable and nothing reads it back (`tables.dart:368`), so a null tag
+  /// costs the row nothing.
   Future<int> queuePending({
     required ServerConfig config,
-    required String userId,
+    required String? userId,
   }) async {
     final rows = await _submissions.pendingUploads();
     final identity = rows.isEmpty ? null : await _identity.read();

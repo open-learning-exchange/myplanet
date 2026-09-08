@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../repository/personals_uploader.dart';
+import '../repository/submissions_uploader.dart';
 import 'app_providers.dart';
 import 'activities_provider.dart';
 import 'session_provider.dart';
@@ -143,6 +145,10 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
     // null it would otherwise see on the first pass.
     await pushCurrentUserShelf();
 
+    // Beside the shelf push and for the same reason: a push belongs ahead of
+    // the pulls. See [queuePendingSubmissions].
+    await queuePendingSubmissions();
+
     // `DashboardElementActivity.logSyncInSharedPrefs` records the challenge
     // action right before the sync starts -- the challenge dialog's "sync"
     // checkbox reads it via `hasUserCompletedSync`.
@@ -204,6 +210,108 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
       await ref
           .read(shelfRepositoryProvider)
           .upload(config: config, userId: user.id, shelfDocId: shelfDocId);
+    } catch (_) {
+      // Deliberately ignored — see above.
+    }
+  }
+
+  /// Port of `uploadManager.uploadSubmissions()` as the sync path's safety net.
+  ///
+  /// **Kotlin reaches the server for a finished answer sheet twice.** Once from
+  /// the profile dialog's dismissal (`UserInformationFragment:303` →
+  /// `SubmissionsUploader:84`), and once from
+  /// `uploadManager.uploadSubmissions()`, which `AutoSyncWorker:136`,
+  /// `UserDataWorker:48` and `ServerReachabilityWorker:196` run with no
+  /// precondition on the sheet or the user. A missed dismissal therefore costs
+  /// nothing there: the next sync sweeps it up.
+  ///
+  /// `UserDataWorker:48` is what puts this in *this* method rather than only in
+  /// the headless path. It is not a background job in the sense the name
+  /// suggests: the dashboard's sync button reaches
+  /// `SyncActivity.continueSyncProcess` with `forceSync`, which fires
+  /// `isServerReachable(url, "upload")` **and** `startUpload("")`
+  /// (`SyncActivity:813-815`) — the pull and, through `uploadBulkData()`, that
+  /// worker. `SyncManager.startFullSync` itself sweeps nothing; the manual
+  /// sweep is a sibling job launched beside it, which is exactly the relation
+  /// this method has to the areas below.
+  ///
+  /// The port had only *write-time* call sites, so it had no net at all. A
+  /// sheet whose one enqueue call never ran — process death on "Your
+  /// information", the `if (!mounted) return` before the push, a queue call
+  /// that threw on an exam attempt — stayed on the handset as a `complete`,
+  /// `isUpdated`, `!uploaded` row with no outbox row, and stayed there until
+  /// the same user happened to finish some *other* submission, because
+  /// `queuePending` is an unscoped sweep that then rescues it incidentally.
+  /// The answers were never lost, but for a field survey an indefinitely
+  /// deferred delivery is the same outcome.
+  ///
+  /// Five things about the shape, each a reading of the Kotlin rather than a
+  /// guess at it:
+  ///
+  /// * **Unscoped.** `SubmissionDao.getPendingSubmissions` (`SubmissionDao:41`)
+  ///   carries no `userId` predicate and `uploadSubmissions()` takes no user —
+  ///   the owner is resolved per row (`UploadConfigs:258`), so the session is
+  ///   only the outbox row's tag. Hence the nullable `userId`.
+  /// * **Ungated.** Unlike [_uploadMyPlanetActivities] and
+  ///   [_queueSearchActivities], this does *not* wait for `successCount > 0`.
+  ///   The manual sweep runs concurrently with the pull and inspects nothing
+  ///   about it, and `ServerReachabilityWorker` sweeps with no pull at all. A
+  ///   failed pull pass is not a reason to leave a finished sheet on the
+  ///   device.
+  /// * **Its own `try`, not a shared one.** `AutoSyncWorker:121-138` runs the
+  ///   sweep as the sixteenth statement of one sequential `try`, so an earlier
+  ///   upload throwing skips it silently — `uploadAchievement`, `uploadNews`
+  ///   and `uploadTeams` each fetch outside their own guard and can. That is a
+  ///   Kotlin weakness rather than a behaviour to reproduce;
+  ///   `UserDataWorker`'s per-step `runCatching` is the shape to follow, and
+  ///   it is this one.
+  /// * **Ahead of the pulls.** Nothing in this pass pulls `submissions`, so
+  ///   ordering is free here — but the headless path does pull them, and
+  ///   Kotlin puts its submissions pull in `HeavyTableSyncWorker`, which
+  ///   `startFullSync` only *schedules* at its end (`SyncManager:209`).
+  ///   Sweep-then-pull is therefore the Kotlin order as well as the safe one,
+  ///   and both port paths agree on it.
+  /// * **Drained, not merely queued.** Kotlin's sweep *posts*; `queuePending`
+  ///   only queues, and the drain trigger is app resume. Every write-time call
+  ///   site pairs the two (`submissions_screen:186-193`), so this does too —
+  ///   scoped to the one `uploadType` with `onlyTypes`, so a sweep cannot turn
+  ///   into a whole-queue flush that nothing asked for.
+  ///
+  /// **It cannot double-post, and the protection is not new.** Kotlin's only
+  /// defence is exclusion from that same predicate: `SubmissionDao:44` sets
+  /// `_id`, `_rev` and `isUpdated = 0` after a successful send, and
+  /// [SubmissionsUploader.handler]'s `markUploaded` is the port of exactly
+  /// that statement. The port adds one Kotlin lacks —
+  /// `OutboxRepository.enqueue` keys on `(uploadType, itemId)`, so a sweep
+  /// that overlaps a write-time enqueue refreshes the queued row instead of
+  /// adding a second one, and `OutboxDrainer`'s single-flight guard plus its
+  /// status-scoped claim keep two drains off one row.
+  ///
+  /// Swallowed for the reason the neighbouring steps are, and it is not
+  /// hypothetical: `queuePending` reads device identity before it enqueues
+  /// anything, and `PlatformDeviceIdentitySource.read` rethrows on a handset
+  /// with no channel and no primed cache. A sheet that cannot be queued must
+  /// not flip the sync to failed — no Kotlin caller of `uploadSubmissions`
+  /// reports a failure of it, and `UploadManager:236-252` swallows every
+  /// exception before they could see one.
+  Future<void> queuePendingSubmissions() async {
+    final config = ref.read(serverConfigProvider);
+    if (config == null) return;
+    try {
+      // Awaited rather than read: this notifier never watches
+      // `sessionProvider`, so `.valueOrNull` would be null on any pass that
+      // reached here first. The `await` is inside the `try` because the future
+      // can reject where `valueOrNull` could not.
+      final user = await ref.read(sessionProvider.future);
+      await ref
+          .read(submissionsUploaderProvider)
+          .queuePending(config: config, userId: user?.id);
+      await ref
+          .read(outboxDrainerProvider)
+          .drain(
+            authHeader: PersonalsUploader.authHeaderFor(config),
+            onlyTypes: const {SubmissionsUploader.type},
+          );
     } catch (_) {
       // Deliberately ignored — see above.
     }
