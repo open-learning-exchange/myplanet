@@ -23,6 +23,10 @@ import org.ole.planet.myplanet.databinding.FragmentLibraryFilterBinding
 import java.util.Locale
 
 class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListener {
+    enum class FilterCategory {
+        SUBJECTS, LANGUAGES, MEDIUMS, LEVELS, NONE
+    }
+
     private var _binding: FragmentLibraryFilterBinding? = null
     private val binding get() = _binding!!
     var languages: Set<String>? = null
@@ -30,14 +34,15 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
     var mediums: Set<String>? = null
     var levels: Set<String>? = null
     private var filterListener: OnFilterListener? = null
-    private var selectedLang: MutableSet<String> = HashSet()
-    private var selectedSubs: MutableSet<String> = HashSet()
-    private var selectedMeds: MutableSet<String> = HashSet()
-    private var selectedLvls: MutableSet<String> = HashSet()
-    private var isSubjectsExpanded = false
-    private var isLanguagesExpanded = false
-    private var isMediumsExpanded = false
-    private var isLevelsExpanded = false
+    internal var selectedLang: MutableSet<String> = HashSet()
+    internal var selectedSubs: MutableSet<String> = HashSet()
+    internal var selectedMeds: MutableSet<String> = HashSet()
+    internal var selectedLvls: MutableSet<String> = HashSet()
+    internal var isSubjectsExpanded = false
+    internal var isLanguagesExpanded = false
+    internal var isMediumsExpanded = false
+    internal var isLevelsExpanded = false
+    internal var activeCategory: FilterCategory = FilterCategory.NONE
 
     fun setListener(listener: OnFilterListener?) {
         this.filterListener = listener
@@ -51,36 +56,16 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
         binding.listSub.onItemClickListener = this
         binding.ivClose.setOnClickListener { dismiss() }
         binding.subjectsLayout.setOnClickListener {
-            toggleSection(
-                binding.expandableLayoutSubjects,
-                binding.listSub,
-                binding.subjectsLayout
-            )
-            isSubjectsExpanded = !isSubjectsExpanded
+            onSectionHeaderClicked(FilterCategory.SUBJECTS)
         }
         binding.languagesLayout.setOnClickListener {
-            toggleSection(
-                binding.expandableLayoutLanguages,
-                binding.listLang,
-                binding.languagesLayout
-            )
-            isLanguagesExpanded = !isLanguagesExpanded
+            onSectionHeaderClicked(FilterCategory.LANGUAGES)
         }
         binding.mediumsLayout.setOnClickListener {
-            toggleSection(
-                binding.expandableLayoutMediums,
-                binding.listMedium,
-                binding.mediumsLayout
-            )
-            isMediumsExpanded = !isMediumsExpanded
+            onSectionHeaderClicked(FilterCategory.MEDIUMS)
         }
         binding.levelsLayout.setOnClickListener {
-            toggleSection(
-                binding.expandableLayoutLevels,
-                binding.listLevel,
-                binding.levelsLayout
-            )
-            isLevelsExpanded = !isLevelsExpanded
+            onSectionHeaderClicked(FilterCategory.LEVELS)
         }
         return binding.root
     }
@@ -124,6 +109,39 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
             selectedSubs = selectedFilter?.get("subjects")?.toMutableSet() ?: selectedSubs
             selectedMeds = selectedFilter?.get("mediums")?.toMutableSet() ?: selectedMeds
             selectedLang = selectedFilter?.get("languages")?.toMutableSet() ?: selectedLang
+
+            activeCategory = when {
+                selectedSubs.isNotEmpty() -> {
+                    selectedLang.clear()
+                    selectedMeds.clear()
+                    selectedLvls.clear()
+                    FilterCategory.SUBJECTS
+                }
+                selectedLang.isNotEmpty() -> {
+                    selectedSubs.clear()
+                    selectedMeds.clear()
+                    selectedLvls.clear()
+                    FilterCategory.LANGUAGES
+                }
+                selectedMeds.isNotEmpty() -> {
+                    selectedSubs.clear()
+                    selectedLang.clear()
+                    selectedLvls.clear()
+                    FilterCategory.MEDIUMS
+                }
+                selectedLvls.isNotEmpty() -> {
+                    selectedSubs.clear()
+                    selectedLang.clear()
+                    selectedMeds.clear()
+                    FilterCategory.LEVELS
+                }
+                else -> FilterCategory.NONE
+            }
+
+            if (selectedFilter != null && (selectedFilter.values.count { it.isNotEmpty() } > 1)) {
+                filterListener?.filter(selectedSubs, selectedLang, selectedMeds, selectedLvls)
+            }
+
             setAdapter(binding.listLevel, levels, selectedLvls)
             setAdapter(binding.listLang, languages, selectedLang)
             setAdapter(binding.listMedium, mediums, selectedMeds, ::getMediumDisplayName)
@@ -146,40 +164,181 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
             }
         }
         for (i in arr.indices) {
-                listView.setItemChecked(i, set.contains(arr[i]))
+            listView.setItemChecked(i, set.contains(arr[i]))
         }
     }
 
-    override fun onItemClick(adapterView: AdapterView<*>, view: View, i: Int, l: Long) {
-        if (filterListener != null) {
-            val s = adapterView.getItemAtPosition(i) as String
-            when (adapterView.id) {
-                R.id.list_lang -> { addToList(s, selectedLang) }
-                R.id.list_sub -> addToList(s, selectedSubs)
-                R.id.list_level -> addToList(s, selectedLvls)
-                R.id.list_medium -> addToList(s, selectedMeds)
+    private fun onSectionHeaderClicked(category: FilterCategory) {
+        val isCurrentlyExpanded = isSectionExpanded(category)
+        if (isCurrentlyExpanded) {
+            collapseCategorySection(category)
+        } else {
+            if (activeCategory != category && activeCategory != FilterCategory.NONE) {
+                resetFilters(category)
             }
-            filterListener?.filter(selectedSubs, selectedLang, selectedMeds, selectedLvls)
+            activeCategory = category
+            collapseAllSectionsExcept(category)
+            expandCategorySection(category)
         }
+    }
+
+    private fun isSectionExpanded(category: FilterCategory): Boolean = when (category) {
+        FilterCategory.SUBJECTS -> isSubjectsExpanded
+        FilterCategory.LANGUAGES -> isLanguagesExpanded
+        FilterCategory.MEDIUMS -> isMediumsExpanded
+        FilterCategory.LEVELS -> isLevelsExpanded
+        FilterCategory.NONE -> false
+    }
+
+    private fun collapseCategorySection(category: FilterCategory) {
+        when (category) {
+            FilterCategory.SUBJECTS -> {
+                if (!binding.expandableLayoutSubjects.isGone) {
+                    collapse(binding.expandableLayoutSubjects, binding.subjectsLayout)
+                }
+                isSubjectsExpanded = false
+            }
+            FilterCategory.LANGUAGES -> {
+                if (!binding.expandableLayoutLanguages.isGone) {
+                    collapse(binding.expandableLayoutLanguages, binding.languagesLayout)
+                }
+                isLanguagesExpanded = false
+            }
+            FilterCategory.MEDIUMS -> {
+                if (!binding.expandableLayoutMediums.isGone) {
+                    collapse(binding.expandableLayoutMediums, binding.mediumsLayout)
+                }
+                isMediumsExpanded = false
+            }
+            FilterCategory.LEVELS -> {
+                if (!binding.expandableLayoutLevels.isGone) {
+                    collapse(binding.expandableLayoutLevels, binding.levelsLayout)
+                }
+                isLevelsExpanded = false
+            }
+            FilterCategory.NONE -> {}
+        }
+    }
+
+    private fun expandCategorySection(category: FilterCategory) {
+        when (category) {
+            FilterCategory.SUBJECTS -> {
+                expand(binding.expandableLayoutSubjects, binding.listSub, binding.subjectsLayout)
+                isSubjectsExpanded = true
+            }
+            FilterCategory.LANGUAGES -> {
+                expand(binding.expandableLayoutLanguages, binding.listLang, binding.languagesLayout)
+                isLanguagesExpanded = true
+            }
+            FilterCategory.MEDIUMS -> {
+                expand(binding.expandableLayoutMediums, binding.listMedium, binding.mediumsLayout)
+                isMediumsExpanded = true
+            }
+            FilterCategory.LEVELS -> {
+                expand(binding.expandableLayoutLevels, binding.listLevel, binding.levelsLayout)
+                isLevelsExpanded = true
+            }
+            FilterCategory.NONE -> {}
+        }
+    }
+
+    private fun collapseAllSectionsExcept(keepCategory: FilterCategory) {
+        if (keepCategory != FilterCategory.SUBJECTS && isSubjectsExpanded) {
+            collapseCategorySection(FilterCategory.SUBJECTS)
+        }
+        if (keepCategory != FilterCategory.LANGUAGES && isLanguagesExpanded) {
+            collapseCategorySection(FilterCategory.LANGUAGES)
+        }
+        if (keepCategory != FilterCategory.MEDIUMS && isMediumsExpanded) {
+            collapseCategorySection(FilterCategory.MEDIUMS)
+        }
+        if (keepCategory != FilterCategory.LEVELS && isLevelsExpanded) {
+            collapseCategorySection(FilterCategory.LEVELS)
+        }
+    }
+
+    private fun resetFilters(keepCategory: FilterCategory) {
+        if (keepCategory != FilterCategory.SUBJECTS) {
+            selectedSubs.clear()
+            clearListViewChoices(binding.listSub)
+        }
+        if (keepCategory != FilterCategory.LANGUAGES) {
+            selectedLang.clear()
+            clearListViewChoices(binding.listLang)
+        }
+        if (keepCategory != FilterCategory.MEDIUMS) {
+            selectedMeds.clear()
+            clearListViewChoices(binding.listMedium)
+        }
+        if (keepCategory != FilterCategory.LEVELS) {
+            selectedLvls.clear()
+            clearListViewChoices(binding.listLevel)
+        }
+        filterListener?.filter(selectedSubs, selectedLang, selectedMeds, selectedLvls)
+    }
+
+    private fun clearListViewChoices(listView: ListView) {
+        listView.clearChoices()
+        for (i in 0 until listView.count) {
+            listView.setItemChecked(i, false)
+        }
+        (listView.adapter as? ArrayAdapter<*>)?.notifyDataSetChanged()
+    }
+
+    override fun onItemClick(adapterView: AdapterView<*>, view: View, i: Int, l: Long) {
+        if (filterListener == null) return
+        val s = adapterView.getItemAtPosition(i) as String
+        val clickedCategory = when (adapterView.id) {
+            R.id.list_lang -> FilterCategory.LANGUAGES
+            R.id.list_sub -> FilterCategory.SUBJECTS
+            R.id.list_level -> FilterCategory.LEVELS
+            R.id.list_medium -> FilterCategory.MEDIUMS
+            else -> return
+        }
+
+        if (activeCategory != clickedCategory && activeCategory != FilterCategory.NONE) {
+            resetFilters(clickedCategory)
+        }
+        activeCategory = clickedCategory
+
+        val isSelected = when (clickedCategory) {
+            FilterCategory.LANGUAGES -> {
+                addToList(s, selectedLang)
+                selectedLang.contains(s)
+            }
+            FilterCategory.SUBJECTS -> {
+                addToList(s, selectedSubs)
+                selectedSubs.contains(s)
+            }
+            FilterCategory.LEVELS -> {
+                addToList(s, selectedLvls)
+                selectedLvls.contains(s)
+            }
+            FilterCategory.MEDIUMS -> {
+                addToList(s, selectedMeds)
+                selectedMeds.contains(s)
+            }
+            FilterCategory.NONE -> false
+        }
+
+        (adapterView as? ListView)?.setItemChecked(i, isSelected)
+
+        if (selectedSubs.isEmpty() && selectedLang.isEmpty() && selectedMeds.isEmpty() && selectedLvls.isEmpty()) {
+            activeCategory = FilterCategory.NONE
+        }
+
+        filterListener?.filter(selectedSubs, selectedLang, selectedMeds, selectedLvls)
     }
 
     private fun addToList(s: String, list: MutableSet<String>) {
         if (list.contains(s)) list.remove(s) else list.add(s)
     }
 
-    private fun toggleSection(section: View, listView: ListView, headerTextView: TextView) {
-        if (section.isGone) {
-            expand(section, listView, headerTextView)
-        } else {
-            collapse(section, headerTextView)
-        }
-    }
-
     private fun expand(view: View, listView: ListView, headerTextView: TextView) {
-        val count = listView.adapter.count
+        val count = listView.adapter?.count ?: 0
         val itemHeight = 100
         val topPadding = 80
-        val targetHeight = if(count < 6){
+        val targetHeight = if (count < 6) {
             count * itemHeight + topPadding
         } else {
             5 * itemHeight + topPadding
