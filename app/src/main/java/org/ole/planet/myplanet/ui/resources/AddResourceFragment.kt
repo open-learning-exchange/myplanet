@@ -35,12 +35,14 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnAudioRecordListener
 import org.ole.planet.myplanet.databinding.AlertSoundRecorderBinding
 import org.ole.planet.myplanet.databinding.FragmentAddResourceBinding
 import org.ole.planet.myplanet.services.AudioRecorder
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -62,6 +64,8 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     private var teamId: String? = null
     @Inject
     lateinit var userSessionManager: UserSessionManager
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
 
     private val viewModel: AddResourceViewModel by viewModels()
 
@@ -237,12 +241,15 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     }
 
     private fun handleUri(uri: Uri?, requestCode: Int) {
-        val path = when (requestCode) {
-            REQUEST_CAPTURE_PICTURE, REQUEST_VIDEO_CAPTURE, REQUEST_FILE_SELECTION ->
-                FileUtils.resolveUriToPath(requireContext(), uri)
-            else -> null
+        val context = requireContext().applicationContext
+        viewLifecycleOwner.lifecycleScope.launch {
+            val path = when (requestCode) {
+                REQUEST_CAPTURE_PICTURE, REQUEST_VIDEO_CAPTURE, REQUEST_FILE_SELECTION ->
+                    withContext(dispatcherProvider.io) { FileUtils.resolveUriToPath(context, uri) }
+                else -> null
+            }
+            processResource(path)
         }
-        processResource(path)
     }
 
     private fun processResource(path: String?) {
