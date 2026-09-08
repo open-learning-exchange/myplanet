@@ -51,4 +51,21 @@ interface RetryDao {
 
     @Query("UPDATE retry_operation SET status = 'completed', lastAttemptTime = :timestamp WHERE id = :id")
     suspend fun markCompleted(id: String, timestamp: Long): Int
+
+    @Query(
+        "UPDATE retry_operation SET " +
+            "attemptCount = attemptCount + 1, " +
+            "lastAttemptTime = :timestamp, " +
+            "nextRetryTime = CASE WHEN attemptCount + 1 >= maxAttempts THEN nextRetryTime ELSE :timestamp + MIN(30000 * (1 << MIN(attemptCount + 1, 30)), 1800000) END, " +
+            "errorMessage = :errorMessage, " +
+            "httpCode = :httpCode, " +
+            "status = CASE WHEN attemptCount + 1 >= maxAttempts THEN 'abandoned' ELSE 'pending' END " +
+            "WHERE id = :id"
+    )
+    suspend fun recordFailedAttempt(
+        id: String,
+        errorMessage: String?,
+        httpCode: Int?,
+        timestamp: Long
+    ): Int
 }
