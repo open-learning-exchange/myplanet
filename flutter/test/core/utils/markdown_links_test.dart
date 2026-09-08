@@ -42,7 +42,7 @@ void main() {
       const markdown = '![](img/a.png)';
       expect(
         prependBaseUrlToImages(markdown, 'file:///ole/'),
-        '<img src=file:///ole/img/a.png width=150 height=100/>',
+        '<img src="file:///ole/img/a.png" width=150 height=100/>',
       );
     });
 
@@ -55,7 +55,7 @@ void main() {
           width: 600,
           height: 350,
         ),
-        '<img src=file:///ole/img/a.png width=600 height=350/>',
+        '<img src="file:///ole/img/a.png" width=600 height=350/>',
       );
     });
 
@@ -63,7 +63,17 @@ void main() {
       const markdown = '![](resources/c/cover.jpg)';
       expect(
         prependBaseUrlToImages(markdown, 'file:///ole/'),
-        '<img src=file:///ole/c/cover.jpg width=150 height=100/>',
+        '<img src="file:///ole/c/cover.jpg" width=150 height=100/>',
+      );
+    });
+
+    // Upstream `9e402fb` added the quotes precisely so a path containing a
+    // space cannot run into the following `width=` attribute.
+    test('quotes the src so a path with spaces stays one attribute', () {
+      const markdown = '![alt text](my image filename.png)';
+      expect(
+        prependBaseUrlToImages(markdown, 'file:///ole/'),
+        '<img src="file:///ole/my image filename.png" width=150 height=100/>',
       );
     });
 
@@ -76,8 +86,8 @@ void main() {
       const markdown = '![](a.png)![](b.png)';
       expect(
         prependBaseUrlToImages(markdown, 'file:///ole/'),
-        '<img src=file:///ole/a.png width=150 height=100/>'
-        '<img src=file:///ole/b.png width=150 height=100/>',
+        '<img src="file:///ole/a.png" width=150 height=100/>'
+        '<img src="file:///ole/b.png" width=150 height=100/>',
       );
     });
   });

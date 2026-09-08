@@ -26,7 +26,7 @@ List<String> extractImageLinks(String? text) {
 
 /// Port of `MarkdownUtils.prependBaseUrlToImages`.
 ///
-/// Rewrites each `![alt](path)` to `<img src=$baseUrl$path width height/>`,
+/// Rewrites each `![alt](path)` to `<img src="$baseUrl$path" width height/>`,
 /// stripping a leading `resources/` from the path first — the server stores
 /// resource attachments under `/<db>/resources/<id>/<file>`, but the markdown
 /// author writes the path as `resources/…`, so the prefix would double up.
@@ -34,6 +34,15 @@ List<String> extractImageLinks(String? text) {
 /// The Kotlin feeds a `file://<externalFilesDir>/ole/` [baseUrl] so the
 /// rendered image reads a locally downloaded copy; the same rewrite works for
 /// any base. Returns the empty string for `null` input, matching the Kotlin.
+///
+/// The `src` value is **quoted**, following upstream `9e402fb`: unquoted, a
+/// path containing a space runs into the following `width=` attribute and the
+/// tag is mis-parsed.
+///
+/// Nothing in `lib/` calls this yet — see `PHASE_142_NOTES.md`. The port's
+/// `CourseMarkdownBody` renders `![alt](path)` spans directly and resolves
+/// relative paths as authenticated bytes, so it never needs the rewrite; the
+/// Kotlin uses it in four places.
 String prependBaseUrlToImages(
   String? markdownContent,
   String baseUrl, {
@@ -46,6 +55,6 @@ String prependBaseUrlToImages(
     final stripped = relativePath.startsWith('resources/')
         ? relativePath.substring('resources/'.length)
         : relativePath;
-    return '<img src=$baseUrl$stripped width=$width height=$height/>';
+    return '<img src="$baseUrl$stripped" width=$width height=$height/>';
   });
 }
