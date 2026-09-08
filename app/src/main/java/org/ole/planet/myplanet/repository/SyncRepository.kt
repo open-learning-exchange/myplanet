@@ -7,6 +7,8 @@ interface SyncRepository {
     fun uploadBulkData(): Flow<SyncUiState>
     suspend fun processShelfParallel(shelfId: String): Int
     suspend fun syncDashboardKeyId(role: String?): SyncUiState
+    fun getCachedShelvesWithData(): List<String>
+    fun cacheShelvesWithData(shelves: List<String>)
 }
 
 sealed class SyncUiState {

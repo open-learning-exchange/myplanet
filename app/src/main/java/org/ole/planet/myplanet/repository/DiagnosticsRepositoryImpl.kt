@@ -1,18 +1,15 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import javax.inject.Inject
+import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.CrashLogStore
-import org.ole.planet.myplanet.utils.VersionUtils
 
 class DiagnosticsRepositoryImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val apkLogDao: ApkLogDao,
     private val userRepository: UserRepository,
     private val sharedPrefManager: SharedPrefManager
@@ -62,7 +59,7 @@ class DiagnosticsRepositoryImpl @Inject constructor(
             val log = buildApkLog(
                 resolveParentCode(model),
                 resolvePlanetCode(model),
-                VersionUtils.getVersionName(context),
+                BuildConfig.VERSION_NAME,
                 model?.id,
                 time,
                 type,
@@ -80,7 +77,7 @@ class DiagnosticsRepositoryImpl @Inject constructor(
         if (pendingLogs.isEmpty()) return true
         return try {
             val model = userRepository.getUserModel()
-            val versionName = VersionUtils.getVersionName(context)
+            val versionName = BuildConfig.VERSION_NAME
             val parentCode = resolveParentCode(model)
             val planetCode = resolvePlanetCode(model)
 
