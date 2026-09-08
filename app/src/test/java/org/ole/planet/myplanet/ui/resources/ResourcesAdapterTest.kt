@@ -56,7 +56,7 @@ class ResourcesAdapterTest {
         )
         val library = MyLibrary().apply { id = "1" }
         val resources = listOf(
-            ResourceListModel(library, item, null, emptyList())
+            ResourceListModel(library, item, emptyList())
         )
         adapter.setLibraryList(resources)
 
@@ -74,7 +74,7 @@ class ResourcesAdapterTest {
         )
         val library = MyLibrary().apply { id = "1" }
         val resources = listOf(
-            ResourceListModel(library, item, null, emptyList())
+            ResourceListModel(library, item, emptyList())
         )
         adapter.setLibraryList(resources)
 
@@ -91,7 +91,7 @@ class ResourcesAdapterTest {
             filename = "file"
         )
         val library = MyLibrary().apply { id = "1" }
-        val resourceListModel = ResourceListModel(library, item, null, emptyList())
+        val resourceListModel = ResourceListModel(library, item, emptyList())
         val resources = listOf(resourceListModel)
         adapter.setLibraryList(resources)
 
