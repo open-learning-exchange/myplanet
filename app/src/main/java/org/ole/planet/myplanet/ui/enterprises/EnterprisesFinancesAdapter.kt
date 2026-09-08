@@ -17,10 +17,13 @@ import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.ImageViewerUtils
+import org.ole.planet.myplanet.utils.SystemTimeProvider
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
 class EnterprisesFinancesAdapter(
     private val context: Context,
+    private val timeProvider: TimeProvider = SystemTimeProvider(),
 ) : ListAdapter<Transaction, EnterprisesFinancesAdapter.FinanceViewHolder>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
@@ -68,7 +71,7 @@ class EnterprisesFinancesAdapter(
 
     private fun bindFinanceImage(binding: RowFinanceBinding, item: Transaction) {
         val imageFile = MyTeam.getAttachmentFile(context, item.id, item.imageName)
-        val now = System.currentTimeMillis()
+        val now = timeProvider.now()
         val exists = if (imageFile != null) {
             val cached = attachmentExistsCache[imageFile.absolutePath]
             if (cached != null && now - cached.second < cacheTtlMs) {

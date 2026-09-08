@@ -17,6 +17,7 @@ import org.junit.runner.RunWith
 import org.ole.planet.myplanet.databinding.RowFinanceBinding
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.TestTimeProvider
 import java.io.File
 
 @RunWith(AndroidJUnit4::class)
@@ -25,6 +26,7 @@ class EnterprisesFinancesAdapterTest {
     private lateinit var adapter: EnterprisesFinancesAdapter
     private lateinit var context: Context
     private lateinit var tempDir: File
+    private lateinit var timeProvider: TestTimeProvider
 
     @Before
     fun setUp() {
@@ -33,7 +35,8 @@ class EnterprisesFinancesAdapterTest {
         tempDir = File(context.cacheDir, "test_ole_${System.currentTimeMillis()}").apply { mkdirs() }
         mockkObject(FileUtils)
         every { FileUtils.getOlePath(any()) } returns "${tempDir.absolutePath}/"
-        adapter = EnterprisesFinancesAdapter(context)
+        timeProvider = TestTimeProvider(currentTime = 1000L)
+        adapter = EnterprisesFinancesAdapter(context, timeProvider)
     }
 
     @After
@@ -134,8 +137,8 @@ class EnterprisesFinancesAdapterTest {
             adapter.onBindViewHolder(viewHolder, 0)
             assertEquals(View.GONE, viewHolder.binding.financeImage.visibility)
 
-            // Sleep past the 5000ms TTL
-            Thread.sleep(5100L)
+            // Advance time past the 5000ms TTL deterministically without Thread.sleep
+            timeProvider.advanceBy(5001L)
 
             // Re-bind after TTL expires re-stats disk -> VISIBLE
             adapter.onBindViewHolder(viewHolder, 0)

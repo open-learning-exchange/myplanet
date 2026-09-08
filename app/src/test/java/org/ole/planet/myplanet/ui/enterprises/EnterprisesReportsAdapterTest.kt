@@ -20,12 +20,14 @@ class EnterprisesReportsAdapterTest {
 
     private lateinit var adapter: EnterprisesReportsAdapter
     private lateinit var context: Context
+    private lateinit var timeProvider: org.ole.planet.myplanet.utils.TestTimeProvider
 
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
         context.setTheme(AppCompatR.style.Theme_AppCompat)
-        adapter = EnterprisesReportsAdapter(context, "Test Team", {}, {})
+        timeProvider = org.ole.planet.myplanet.utils.TestTimeProvider(currentTime = 1000L)
+        adapter = EnterprisesReportsAdapter(context, "Test Team", {}, {}, timeProvider)
     }
 
     @Test
@@ -244,8 +246,8 @@ class EnterprisesReportsAdapterTest {
                 adapter.onBindViewHolder(viewHolder, 0)
                 assertEquals(View.GONE, viewHolder.binding.reportImage.visibility)
 
-                // Sleep past the 5000ms TTL
-                Thread.sleep(5100L)
+                // Advance time past the 5000ms TTL deterministically without Thread.sleep
+                timeProvider.advanceBy(5001L)
 
                 // Re-bind after TTL expires re-stats disk -> VISIBLE
                 adapter.onBindViewHolder(viewHolder, 0)

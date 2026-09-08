@@ -12,13 +12,16 @@ import org.ole.planet.myplanet.databinding.ReportListItemBinding
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.ImageViewerUtils
+import org.ole.planet.myplanet.utils.SystemTimeProvider
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 
 class EnterprisesReportsAdapter(
     private val context: Context,
     private val teamName: String?,
     private val onEdit: (MyTeam) -> Unit,
-    private val onDelete: (MyTeam) -> Unit
+    private val onDelete: (MyTeam) -> Unit,
+    private val timeProvider: TimeProvider = SystemTimeProvider(),
 ) : ListAdapter<MyTeam, EnterprisesReportsAdapter.ReportsViewHolder>(diffCallback) {
     private var nonTeamMember = false
     private val attachmentExistsCache = HashMap<String, Pair<Boolean, Long>>()
@@ -104,7 +107,7 @@ class EnterprisesReportsAdapter(
 
     private fun bindReportImage(binding: ReportListItemBinding, report: MyTeam) {
         val imageFile = MyTeam.getAttachmentFile(context, report._id, report.imageName)
-        val now = System.currentTimeMillis()
+        val now = timeProvider.now()
         val exists = if (imageFile != null) {
             val cached = attachmentExistsCache[imageFile.absolutePath]
             if (cached != null && now - cached.second < cacheTtlMs) {
