@@ -1063,6 +1063,33 @@ String likeEscapedUserPattern(String userId) {
 /// [likeEscapedUserPattern] escapes the id and drift's `escapeChar` writes
 /// the matching `ESCAPE` clause, binding the pattern as a variable rather
 /// than splicing it into the SQL.
+/// A `LIKE '%<text>%'` that matches [text] **literally**, escaping LIKE's own
+/// metacharacters.
+///
+/// Kotlin's course search is not a `LIKE` at all: `CourseDao` carries no title
+/// query and `CoursesRepositoryImpl.filterCourses` (`:304`) filters in memory
+/// with `courseTitle?.contains(searchText, ignoreCase = true)`. `contains` is
+/// a literal substring test, so a learner typing `intro_a` in Kotlin matches
+/// only a course actually containing `intro_a`. The port pushed the filter
+/// into SQL and, unescaped, `_` became "any character" and `%` "anything at
+/// all" — so `intro_a` also matched `IntroXA`, and a lone `%` matched every
+/// course. This is the one site in the class where the port *invented* the
+/// `LIKE`, which is why matching Kotlin means escaping rather than copying an
+/// unescaped pattern.
+Expression<bool> _literalContains(
+  GeneratedColumn<String> column,
+  String text,
+) => column.like(likeEscapedLiteral(text), escapeChar: r'\');
+
+/// The escape half of [_literalContains], exposed for tests.
+String likeEscapedLiteral(String text) {
+  final escaped = text
+      .replaceAll('\\', '\\\\')
+      .replaceAll('%', '\\%')
+      .replaceAll('_', '\\_');
+  return '%$escaped%';
+}
+
 Expression<bool> _shelfMembership(
   GeneratedColumn<String> userIdColumn,
   String userId,
@@ -1445,7 +1472,7 @@ class CourseDao extends DatabaseAccessor<AppDatabase> with _$CourseDaoMixin {
 
     final trimmed = query?.trim().toLowerCase();
     if (trimmed != null && trimmed.isNotEmpty) {
-      statement.where((c) => c.courseTitleNormal.like('%$trimmed%'));
+      statement.where((c) => _literalContains(c.courseTitleNormal, trimmed));
     }
     if (shelfUserId != null && shelfUserId.isNotEmpty) {
       statement.where((c) => _shelfMembership(c.userId, shelfUserId));
@@ -3406,10 +3433,16 @@ class CourseProgressDao extends DatabaseAccessor<AppDatabase>
   /// DAO (`CourseProgressDao.kt:10-20`), not `=`. The port had them as
   /// `equals(userId ?? '')`, which coerces a null argument into the empty
   /// string: it then matched rows whose `userId` is literally `''` and no row
-  /// whose `userId` is NULL — where Kotlin matches exactly the NULL rows. A
-  /// synced document that omits `userId` writes one of those NULL rows
-  /// (`CourseProgressMapper.fromDoc` passes `getStringOrNull`), so the two
-  /// apps disagreed about which rows a null-user query returns.
+  /// whose `userId` is NULL — where Kotlin matches exactly the NULL rows.
+  /// `ProgressRepositoryImpl.saveCourseProgress` (`:234`) writes NULL for a
+  /// null argument, so those rows exist.
+  ///
+  /// Not to be justified by the *synced* case, which is where this comment
+  /// first pointed: a document omitting `userId` gives the port NULL
+  /// (`CourseProgressMapper.fromDoc` passes `getStringOrNull`) but gives
+  /// Kotlin `''` (`ProgressRepositoryImpl.kt:260` uses `JsonUtils.getString`),
+  /// so on that input `IS` makes the port *diverge* until the mapper is
+  /// aligned. Recorded in `PHASE_135_NOTES.md`.
   /// `equalsNullable` is drift's spelling of `IS`: `IS NULL` for a null
   /// argument, `=` otherwise.
   Future<List<CourseProgressRow>> getByUserAndCourseIds(

@@ -208,6 +208,67 @@ void main() {
     });
   });
 
+  /// The four user-scoped reads Kotlin spells `userId IS :userId`
+  /// (`CourseProgressDao.kt:10-20`). Reverting them to `equals(userId ?? '')`
+  /// left the whole suite green except for one test that only failed
+  /// incidentally, so nothing pinned them — these do.
+  ///
+  /// A NULL-`userId` row is what `ProgressRepositoryImpl.saveCourseProgress`
+  /// (`:234`) writes for a null argument.
+  group('the null-safe user predicates', () {
+    setUp(() async {
+      await seedCourse('course-1', stepCount: 2);
+      await db.courseProgressDao.upsert(
+        CourseProgressCompanion.insert(
+          id: 'nobody',
+          courseId: const Value('course-1'),
+          userId: const Value(null),
+          stepNum: const Value(1),
+        ),
+      );
+      await db.courseProgressDao.upsert(
+        CourseProgressCompanion.insert(
+          id: 'empty-string',
+          courseId: const Value('course-1'),
+          userId: const Value(''),
+          stepNum: const Value(2),
+        ),
+      );
+    });
+
+    test(
+      'getByUser(null) returns the NULL rows, not the empty-string ones',
+      () async {
+        final rows = await db.courseProgressDao.getByUser(null);
+        expect(rows.map((r) => r.id), ['nobody']);
+      },
+    );
+
+    test('getByUserAndCourse(null, …) is null-safe on both columns', () async {
+      final rows = await db.courseProgressDao.getByUserAndCourse(
+        null,
+        'course-1',
+      );
+      expect(rows.map((r) => r.id), ['nobody']);
+    });
+
+    test('getByUserAndCourseIds(null, …) is null-safe', () async {
+      final rows = await db.courseProgressDao.getByUserAndCourseIds(null, [
+        'course-1',
+      ]);
+      expect(rows.map((r) => r.id), ['nobody']);
+    });
+
+    test('findByCourseUserAndStep(…, null, …) is null-safe', () async {
+      final row = await db.courseProgressDao.findByCourseUserAndStep(
+        'course-1',
+        null,
+        1,
+      );
+      expect(row?.id, 'nobody');
+    });
+  });
+
   /// Phase 133 reported that "in the port a course containing any exam step
   /// can never complete, and the completed-course stars can never light for
   /// it", calling it possibly the most expensive reachability row found so

@@ -982,22 +982,33 @@ void main() {
         'course', (tester) async {
       await seedTwoQuestionExam(courseId: 'course-1');
       await seedCourseWithGradedPeer();
-      // Step 1 of the same course, so a write against the wrong step number
-      // would land on the step-2 rows instead.
+      // A passed row on step **1** as well, so this test fails for the
+      // property it names rather than by accident. Asserting only that the
+      // step-2 rows are untouched would also hold if the derivation produced
+      // `0` — `WHERE stepNum = 0` matches nothing — so an off-by-one would
+      // slip through. It has to be observable that step 1 is the row written.
+      await db.courseProgressDao.upsert(
+        CourseProgressCompanion.insert(
+          id: 'progress-user-1-step-1',
+          courseId: const Value('course-1'),
+          userId: const Value('user-1'),
+          stepNum: const Value(1),
+          passed: const Value(true),
+        ),
+      );
       await pumpExam(tester, courseId: 'course-1', stepId: 'course-1:0');
 
       await finishExam(tester);
 
-      expect(await passedFor('user-1'), isTrue);
-      expect(await passedFor('other-user'), isTrue);
       final step1 = await db.courseProgressDao.findByCourseUserAndStep(
         'course-1',
         'user-1',
         1,
       );
-      // Kotlin runs the `UPDATE` and inserts nothing, so a step the learner
-      // never opened still has no row.
-      expect(step1, isNull);
+      expect(step1?.passed, isFalse);
+      // And the step-2 rows, which a wrong number would have hit.
+      expect(await passedFor('user-1'), isTrue);
+      expect(await passedFor('other-user'), isTrue);
     });
 
     testWidgets('an exam with no course writes no progress', (tester) async {

@@ -43,15 +43,19 @@ void main() {
     ),
   ]);
 
-  Future<void> course(String id, {required List<String> userId}) =>
-      db.courseDao.upsertAll([
-        CoursesCompanion.insert(
-          id: id,
-          userId: Value(userId),
-          courseTitle: Value(id),
-          courseTitleNormal: Value(id),
-        ),
-      ], const []);
+  Future<void> course(
+    String id, {
+    required List<String> userId,
+    String? title,
+  }) => db.courseDao.upsertAll([
+    CoursesCompanion.insert(
+      id: id,
+      userId: Value(userId),
+      courseTitle: Value(title ?? id),
+      // `CourseMapper` writes the diacritic-folded, lowercased title here.
+      courseTitleNormal: Value((title ?? id).toLowerCase()),
+    ),
+  ], const []);
 
   Future<void> seedResources() async {
     await resource('mine', userId: const [escaped]);
@@ -128,6 +132,37 @@ void main() {
       expect((await db.myLibraryDao.resourcesOnShelf('a%')).map((r) => r.id), [
         'mine',
       ]);
+    });
+  });
+
+  group('the course title search', () {
+    // Kotlin's course search is not a `LIKE` at all: `CourseDao` has no title
+    // query and `CoursesRepositoryImpl.filterCourses` (`:304`) filters in
+    // memory with `courseTitle?.contains(searchText, ignoreCase = true)` — a
+    // literal substring test. The port pushed the filter into SQL, so it is
+    // the one site in this class where the port *invented* the `LIKE` and
+    // matching Kotlin means escaping rather than copying an unescaped pattern.
+    setUp(() async {
+      await course('underscore', userId: const [escaped], title: 'Intro_A');
+      await course('collider', userId: const [escaped], title: 'IntroXA');
+    });
+
+    Future<Iterable<String>> search(String query) async =>
+        (await db.courseDao.watchCourses(query: query).first).map((c) => c.id);
+
+    test(
+      'an underscore in the query is literal, as Kotlin\'s contains is',
+      () async {
+        expect(await search('intro_a'), ['underscore']);
+      },
+    );
+
+    test('a bare percent matches nothing rather than everything', () async {
+      expect(await search('%'), isEmpty);
+    });
+
+    test('an ordinary query still matches', () async {
+      expect((await search('intro')).length, 2);
     });
   });
 

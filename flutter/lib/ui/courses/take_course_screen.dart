@@ -107,7 +107,7 @@ class _TakeCourseScreenState extends ConsumerState<TakeCourseScreen> {
   }
 }
 
-class _CourseContent extends ConsumerWidget {
+class _CourseContent extends ConsumerStatefulWidget {
   const _CourseContent({
     required this.course,
     required this.steps,
@@ -125,12 +125,93 @@ class _CourseContent extends ConsumerWidget {
   final VoidCallback onCourseUpdated;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isMyCourse = userId != null && course.userId.contains(userId!);
+  ConsumerState<_CourseContent> createState() => _CourseContentState();
+}
 
+class _CourseContentState extends ConsumerState<_CourseContent> {
+  /// The step index whose `course_progress` row has already been recorded for
+  /// this mount, so a rebuild is not a re-visit.
+  int? _recordedStep;
+
+  /// **Stateful for one reason: the step the learner *lands on* has to be
+  /// recorded, and a page-change callback never fires for it.**
+  ///
+  /// Kotlin records the row twice over, neither requiring a page change:
+  /// `CourseStepFragment.onViewCreated` runs `launchSaveCourseProgress()`
+  /// inside `withResumed` (`:168-172`), and `setMenuVisibility` runs it again
+  /// when the pager brings a step into view (`:262-268`). Both are gated on
+  /// `userHasCourse`, which is `isMyCourse(userId, step.courseId)`.
+  ///
+  /// The port drove `_recordProgress` from `goToStep` alone —
+  /// `PageView.onPageChanged` plus the Previous/Next buttons — and
+  /// `onPageChanged` does not fire for the initial page. Kotlin's pager has a
+  /// course-cover page at position 0, so its first *step* is always arrived
+  /// at; this `PageView` opens directly on step 1. Nothing recorded step 1
+  /// until the learner navigated away and back, which made three readers wrong
+  /// (`getCurrentProgress` and `courseProgressSummary` under-report by one
+  /// step, `completedCourseIds` cannot see the step at all) and meant a
+  /// **one-step course could never complete**, since the write that would pass
+  /// its only step never ran. It also silently no-op'd the exam-finish write
+  /// this phase added, whose `UPDATE` needs the row to exist.
+  @override
+  void initState() {
+    super.initState();
+    _recordCurrentStep();
+  }
+
+  /// Unconditional, not gated on `currentStep` having changed, and that is
+  /// load-bearing. `userId` comes from the parent's
+  /// `ref.watch(sessionProvider).valueOrNull?.id`, so it is **null on the
+  /// first frame** — `_isMyCourse` is false, `initState`'s attempt bails, and
+  /// the rebuild that carries the resolved session does not change
+  /// `currentStep`. A `currentStep`-only gate therefore recorded nothing at
+  /// all, which is how the first cut of this fix still failed its own test.
+  /// [_recordCurrentStep] is idempotent instead: it sets `_recordedStep` only
+  /// *after* the membership gate passes, so a bail leaves the attempt to be
+  /// retried on the next rebuild.
+  @override
+  void didUpdateWidget(_CourseContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _recordCurrentStep();
+  }
+
+  // The methods below this class's `build` were written against
+  // `_CourseContent`'s own fields; these keep them reading the same way now
+  // that the fields live on `widget`.
+  CourseRow get course => widget.course;
+  List<CourseStepRow> get steps => widget.steps;
+  String? get userId => widget.userId;
+  VoidCallback get onCourseUpdated => widget.onCourseUpdated;
+
+  bool get _isMyCourse =>
+      widget.userId != null && widget.course.userId.contains(widget.userId!);
+
+  void _recordCurrentStep() {
+    // `userHasCourse` gates both Kotlin triggers: browsing a course you have
+    // not joined leaves no progress rows behind.
+    if (!_isMyCourse) return;
+    final index = widget.currentStep;
+    if (index < 0 || index >= widget.steps.length) return;
+    if (_recordedStep == index) return;
+    _recordedStep = index;
+    // After the frame, like `withResumed` — `initState` is too early to touch
+    // providers, and the row is not needed to draw anything.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _recordProgress(ref, index);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentStep = widget.currentStep;
+    final onStepChanged = widget.onStepChanged;
+    final isMyCourse = _isMyCourse;
+
+    // The recording moved to [_recordCurrentStep], which covers this and the
+    // step the screen opens on alike.
     void goToStep(int index) {
       onStepChanged(index);
-      _recordProgress(ref, index);
     }
 
     return Column(
