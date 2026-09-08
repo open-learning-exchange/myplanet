@@ -364,6 +364,23 @@ class AppDatabase extends _$AppDatabase {
         //    nothing — `x || NULL` is NULL, so the id equality already fails for
         //    either — and are kept to say plainly that this repair is about a
         //    team adoption and nothing else.
+        //
+        // **One row satisfies all of it without being local work, and it is
+        // accepted rather than predicated away.** A clone another handset
+        // published, attached to a course step on Planet, has its
+        // authoritative `_rev` clobbered to NULL by the courses walk
+        // (`SurveyMapper._build` assigns `rev` unconditionally and a course
+        // sub-object carries none — the two-writer conflict Phase 138
+        // recorded); once the course document stops naming it,
+        // `releaseStepJoinsForCourse` nulls `stepId` too, and every conjunct
+        // holds. `rev` is the only column that records "the server has this",
+        // and it is exactly the column those two writers disagree about, so
+        // there is no local discriminator left: `courseId IS NULL` would miss
+        // a genuine clone of a course-attached survey, since `adoptSurvey`
+        // copies `courseId`. The cost is bounded and self-clearing — the POST
+        // takes a 409 and `AdoptedSurveysUploader._adoptExistingDocument`
+        // records the winning rev and clears the flag, once. Pinned as a pair
+        // in `survey_clone_survives_schema_bump_test.dart`.
         if (from < 47) {
           await _addColumnIfMissing(m, surveys, surveys.needsSync);
           await customStatement(

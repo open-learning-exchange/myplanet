@@ -17,8 +17,8 @@ prevented it. That is the round's lesson and it is in *Job 2* below.
    in the plan itself**, corrected my intended answer to the v47 question, and
    named two stale claims elsewhere in the tree.
 3. Implement, each defect demonstrated failing first.
-4. **Fourteen mutations**, each applied alone to green code and reverted.
-   Thirteen redded immediately; one survived and is written up below, because a
+4. **Fifteen mutations**, each applied alone to green code and reverted.
+   Fourteen redded immediately; one survived and is written up below, because a
    surviving mutation is the only kind worth reporting.
 5. A second `parity-auditor` pass at `effort: max` aimed at the finished,
    already-green code.
@@ -108,6 +108,22 @@ WHERE source_survey_id IS NOT NULL
   AND step_id IS NULL
   AND id = source_survey_id || '_' || team_id
 ```
+
+**One row satisfies every conjunct without being local work**, found by the
+implementation audit and accepted rather than predicated away. A clone another
+handset published, attached to a course step on Planet, has its authoritative
+`_rev` clobbered to NULL by the courses walk — `SurveyMapper._build` assigns
+`rev` unconditionally and a course sub-object carries none, which is Phase
+138's unfixed two-writer conflict — and once the course stops naming it,
+`releaseStepJoinsForCourse` nulls `stepId` as well. There is no local
+discriminator left, because `rev` is the only column that records "the server
+has this" and it is exactly the column those two writers disagree about;
+`courseId IS NULL` would miss a genuine clone of a course-attached survey, since
+`adoptSurvey` copies `courseId`. The cost is bounded and self-clearing: the POST
+takes a 409 and Phase 138's `_adoptExistingDocument` records the winning rev and
+clears the flag. One POST and one GET, once, after which the row rejoins the
+prune — **pinned as a pair**, not asserted, because each half passing alone is
+the shape this project keeps getting wrong.
 
 Two conjuncts are deliberately redundant (`x || NULL` is NULL, so the id
 equality already fails without a `source_survey_id` or a `team_id`) and are kept
@@ -246,7 +262,7 @@ effect at the *next* bump, whoever spends it. **48 is free.**
 
 ## The mutation that survived
 
-Thirteen of fourteen redded on the first try. The other one: removing `AND step_id IS NULL`
+Fourteen of fifteen redded on the first try. The other one: removing `AND step_id IS NULL`
 from the backfill broke nothing, because every step-joined row in my fixture
 also lacked a `source_survey_id`, so the id-shape clause already excluded it.
 
@@ -321,13 +337,12 @@ conjunct to delete.
    `rev: Value(...)` unconditionally, so a course document's embedded copy
    clobbers the `exams` walk's authoritative `_rev` with NULL, where
    `ExamMapper.fromDoc` uses `_presentOrAbsent` for exactly this hazard.
-   `survey_mapper.dart` is outside this lane's set. It matters more after this
-   phase than before it: the backfill's `_rev IS NULL` conjunct now reads that
-   column on the upgrade path. It is safe as written — the id-shape and
-   `step_id` conjuncts carry the identification, and the phase's own fixture
-   pins the one row where a NULL `rev` from the courses walk would otherwise
-   have mattered — but a round that changes `SurveyMapper`'s rev handling should
-   re-read the backfill.
+   `survey_mapper.dart` is outside this lane's set. **It is now load-bearing
+   where it was not**: it is the sole reason the v47 backfill has a reachable
+   misfire at all (see *Job 2*), and fixing it — `_presentOrAbsent` for `rev`,
+   as `ExamMapper.fromDoc` already does — would close that misfire as a side
+   effect rather than needing a predicate change here. That makes it the
+   highest-value item on this list.
 7. **The `submissions` sweep's `parentId` shape is worth one more look.** Not
    touched, and not obviously wrong; noted because Phase 125 found the compound
    `'$surveyId@$courseId'` key disagreement the expensive way and this phase's
