@@ -102,7 +102,23 @@ a join is not evidence; a document shaped like the server's is.
   string is right; substituting one valid translation for another is not.
 - **A schema bump discards unsynced local writes**, which is why
   `localAuthorityTables` and the hand-written `_addColumnIfMissing` step exist.
-  A Drift *converter* swap changes no DDL and needs no bump (Phase 104).
+  A Drift *converter* swap changes no DDL and needs no bump (Phase 104). The
+  preserved set is **27 tables**, not the handful the docs used to imply, and
+  the membership test is ***can a sync restore this?*** — not *is it local?*
+  **Preservation has a price, and Phase 143 is why it is written down:**
+  `createAll` does not *alter* a preserved table, so every new column on one
+  needs a hand-written `_addColumnIfMissing` step, and forgetting it **does not
+  fail loudly** — the column is simply absent on every existing install and
+  every query naming it breaks. `migration_test.dart`'s frozen-DDL guard exists
+  to make that failure loud; keep it able to fail.
+- **A fix that relocates a data loss reads exactly like a fix that removes
+  one.** Phase 143 was briefed to preserve the two survey tables and found that
+  preservation alone would have moved the loss from the upgrade to the first
+  sync after it: a clone adopted on a pre-v47 build gets `needsSync = false`
+  from the new column's default, which makes it invisible to the publish query
+  *and* outside the prune's spare clause. The question that separated the two
+  was **what is this row's state _after_ the migration**, not whether it
+  survived.
 - **Generated sources are gitignored**, so after any merge touching a Drift table
   or converter, run `dart run build_runner build` *before* trusting
   `flutter analyze` — stale output produces phantom type errors, 14 in one case.
@@ -1323,7 +1339,7 @@ There is no generic base repository; each implementation talks to its Room DAO(s
 
 ### Flutter port toolchain
 
-**Current Drift `schemaVersion` is 46** (`flutter/lib/data/local/app_database.dart`).
+**Current Drift `schemaVersion` is 47** (`flutter/lib/data/local/app_database.dart`).
 Bump it only when you have been allocated a number — parallel lanes must not each
 pick one, and a bump discards unsynced local writes on any device that has not
 synced, which is what `localAuthorityTables` and the hand-written
