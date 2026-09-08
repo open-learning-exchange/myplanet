@@ -251,9 +251,27 @@ class _PublicSurveyScreenState extends ConsumerState<PublicSurveyScreen> {
             questions: questions,
             userId: userId,
             answers: answers,
+            // `PublicSurveyActivity` launches the sheet with
+            // `isTeam = true` and the link's team id (`:99-107`), so
+            // `createExamSubmission` stamps the column here too — this is the
+            // second of Kotlin's two team-carrying sites, not an extra. The
+            // id was already in hand two statements from the call, and
+            // `UserInformationScreen(teamId: …)` below has been passing it
+            // all along.
+            teamId: widget.teamId,
           );
 
       if (!mounted) return;
+      // Unconditionally, where `take_survey_screen` gates the same push on
+      // `survey?.isFromNation != true` — and the asymmetry is deliberate.
+      // Kotlin's else arm for a nation survey is `navigateToSurveyList`
+      // (`BaseExamFragment:167-174`), which inside `PublicSurveyActivity`
+      // replaces the container with `addToBackStack = false`: neither the
+      // back-stack listener (`:65-69`) nor `onFragmentDetached` (`:74-80`)
+      // then fires, so the answers are never POSTed at all. Porting the gate
+      // here would mean porting that, and the deep link's whole purpose is to
+      // deliver the answers. The team path has no such coupling, so it takes
+      // the arm as written.
       await Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => UserInformationScreen(

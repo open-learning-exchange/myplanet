@@ -199,11 +199,18 @@ class SurveysRepository {
     }
   }
 
+  /// [teamId] is the team the sheet is being answered for, forwarded verbatim
+  /// to `createSurveyDraft` — which blank-guards it, as
+  /// `createExamSubmission:440` does. This is the single link between
+  /// `TakeSurveyScreen` and the writer, so a team survey's attribution either
+  /// travels through here or is lost; `TakeSurveyScreen.teamId` documents where
+  /// the value comes from and why the resume path has none.
   Future<String?> submitResponse(
     String surveyId,
     String userId,
-    Map<String, SubmissionDraftAnswer> answers,
-  ) async {
+    Map<String, SubmissionDraftAnswer> answers, {
+    String? teamId,
+  }) async {
     final survey = await _dao.getById(surveyId);
     if (survey == null) return null;
     final questions = await _dao.questionsFor(surveyId);
@@ -212,6 +219,7 @@ class SurveysRepository {
       questions: questions,
       userId: userId,
       answers: answers,
+      teamId: teamId,
     );
   }
 

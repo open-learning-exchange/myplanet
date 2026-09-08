@@ -56,15 +56,56 @@ class TeamSurveysScreen extends ConsumerWidget {
                       icon: const Icon(Icons.send),
                       onPressed: () => showDialog<void>(
                         context: context,
-                        builder: (context) => SendSurveyScreen(
-                          surveyId: survey.sourceSurveyId ?? survey.id,
-                        ),
+                        // The survey on the card, never its source. Kotlin
+                        // hands the bound exam straight through —
+                        // `listener?.sendSurvey(current.exam)`
+                        // (`SurveysAdapter:63-66`) ->
+                        // `b.putString("surveyId", current?.id)`
+                        // (`DashboardActivity:1008-1014`) ->
+                        // `createBulkSurveySubmissions` — and an adopted team
+                        // survey always has a `sourceSurveyId`, so preferring
+                        // it sent every member a sheet keyed to the
+                        // *un-adopted original*, so their answers filed
+                        // against the source survey rather than against the
+                        // team's own copy — mis-attributed at the parent id,
+                        // which is what identifies a survey's responses.
+                        // `surveys_screen.dart` already passes `row.id`.
+                        //
+                        // Note what this does *not* fix, because an earlier
+                        // draft of this comment claimed it did:
+                        // `getOrCreateSurveySubmission` writes neither a
+                        // `teamId` column nor a `parent` document
+                        // (`submissions_repository.dart:683-695`), and the
+                        // team's two readers need one or the other —
+                        // `submissionsForTeam` is `byTeam` on the column and
+                        // `_teamSubmissionSurveyIds` reads `parent._id`. So a
+                        // bulk-created sheet is invisible to both under
+                        // either id. This is right because Kotlin does it,
+                        // not because it makes those readers work.
+                        builder: (context) =>
+                            SendSurveyScreen(surveyId: survey.id),
                       ),
                     ),
                     const Icon(Icons.chevron_right),
                   ],
                 ),
-                onTap: () => context.push('${Routes.surveys}/${survey.id}'),
+                // The team travels with the tap. `TeamPagerAdapter` puts
+                // `isTeam`/`teamId` into the surveys tab's arguments
+                // (`:89-93`) and every sheet opened from it is attributed to
+                // the team; the port pushed the bare survey route, so the
+                // whole chain below — route, screen, `createSurveyDraft` —
+                // had a `teamId` nothing ever filled.
+                //
+                // Written as a literal rather than through a helper on
+                // purpose: `route_reachability_test`'s scanner reads
+                // `'${Routes.x}/…'` literals out of `lib/` and skips
+                // `router.dart`, so moving this into a builder there would
+                // make the one navigation this phase adds the one navigation
+                // that guard cannot see.
+                onTap: () => context.push(
+                  '${Routes.surveys}/${survey.id}'
+                  '?teamId=${Uri.encodeQueryComponent(teamId)}',
+                ),
               ),
             ),
             const SizedBox(height: 16),

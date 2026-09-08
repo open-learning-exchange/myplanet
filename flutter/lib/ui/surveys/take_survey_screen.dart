@@ -9,6 +9,7 @@ import '../../providers/app_providers.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/surveys_provider.dart';
 import '../../repository/submissions_repository.dart';
+import '../exam/user_information_screen.dart';
 import '../router.dart';
 
 /// Offline survey-taking form, replacing the survey mode of
@@ -17,10 +18,32 @@ class TakeSurveyScreen extends ConsumerStatefulWidget {
   const TakeSurveyScreen({
     required this.surveyId,
     this.submissionId,
+    this.teamId,
     super.key,
   });
   final String surveyId;
   final String? submissionId;
+
+  /// The team this sheet is being answered for, or null for a personal one.
+  ///
+  /// Kotlin's pair of fragment arguments (`isTeam` plus the id, read at
+  /// `BaseExamFragment:77-78`) collapses to one nullable value here, and
+  /// `ExamTakingFragment` hands it to `CreateExamSubmissionRequest` as
+  /// `if (isTeam) teamId else null` (`:151-152`) — so a null or blank value
+  /// means "no team", and the repository's own blank guard is what enforces
+  /// that rather than a check here.
+  ///
+  /// Only `${Routes.surveys}/:surveyId?teamId=` fills it, from
+  /// `TeamSurveysScreen`. It is deliberately **not** carried into the resume
+  /// path (`updateSurveyResponse`), and Kotlin agrees twice over: with a team
+  /// it never resumes at all — `if (sub == null || isTeam)` recreates the
+  /// sheet (`ExamTakingFragment:150-153`, `recreate = isTeam`) and the
+  /// resume-or-restart branch below it is unreachable while `isTeam` is true —
+  /// and every site that opens a *pending* sheet passes
+  /// `isMySurvey = true, isTeam = false, teamId = ""`
+  /// (`BellDashboardFragment:256`, `SubmissionsAdapter:98`). A resumed row
+  /// already carries whatever team it was created with.
+  final String? teamId;
 
   @override
   ConsumerState<TakeSurveyScreen> createState() => _TakeSurveyScreenState();
@@ -175,6 +198,7 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
     // the form permanently unusable with no message — the user's answers are
     // still on screen but there is no way to send them.
     String? id;
+    var askWhoTheyAre = false;
     try {
       // `ref.read(sessionProvider).valueOrNull` is null until something else
       // resolves that provider, and this screen never watches it: the early
@@ -187,15 +211,68 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
       // the failure path rather than reintroducing the silence.
       final user = await ref.read(sessionProvider.future);
       if (user == null) throw StateError('no signed-in user');
+      // `BaseExamFragment.continueExam:127-131` sends the last question of a
+      // *team* survey to `showUserInfoDialog` instead of the thank-you
+      // dialog, and `showUserInfoDialog:153-164` opens the respondent form
+      // unless the survey came from the nation — in which case it marks the
+      // sheet complete and leaves. `exam?.isFromNation != true` is reproduced
+      // literally, null included: a survey row that has not loaded takes the
+      // ask-them branch there too.
+      //
+      // Awaited rather than read off the `AsyncValue` this screen watches:
+      // the title falls back to a label while the survey loads, so the form
+      // can be submitted before it resolves, and `.valueOrNull` would read
+      // null and decide the gate on a value it does not have yet. The await
+      // is inside the `try` because the future can reject.
+      final survey = await ref.read(surveyProvider(widget.surveyId).future);
+      // `!isMySurvey && exam?.isFromNation != true` (`:154-155`) — both
+      // halves. A resumed sheet is Kotlin's `isMySurvey`, and it takes the
+      // else arm: mark complete and leave, without asking. No pusher produces
+      // a `?submission=` *and* a `?teamId=` today, so this half is latent —
+      // but a gate that is a line-for-line port cannot drift into the case
+      // later, and `updateSurveyResponse` deliberately carries no team, so
+      // without it a resumed sheet would be asked for a profile it could not
+      // attribute.
+      askWhoTheyAre =
+          widget.submissionId == null &&
+          (widget.teamId ?? '').trim().isNotEmpty &&
+          survey?.isFromNation != true;
       final repo = ref.read(surveysRepositoryProvider);
       id = widget.submissionId != null
           ? await repo.updateSurveyResponse(
               widget.submissionId!,
               answers: answers,
             )
-          : await repo.submitResponse(widget.surveyId, user.id, answers);
+          : await repo.submitResponse(
+              widget.surveyId,
+              user.id,
+              answers,
+              teamId: widget.teamId,
+            );
       final config = ref.read(serverConfigProvider);
-      if (id != null && config != null) {
+      // Not before the profile step, which is the order Kotlin uses: the
+      // upload is `UserInformationFragment.onDismiss`'s job, *after* the
+      // dialog.
+      //
+      // The reason that always holds is duplication, not loss, and an
+      // earlier draft of this comment had it the other way round. Queueing
+      // here enqueues a payload serialized before `markSubmissionComplete`
+      // writes the profile; if the outbox drains before the respondent
+      // saves — an app background/foreground cycle mid-form is enough — the
+      // sheet is POSTed once without the profile, `markComplete` then puts
+      // the row back in `pendingUploads` (`app_database.dart`'s
+      // `markComplete` sets `uploaded: false, isUpdated: true`, and says so),
+      // and the pop's queue POSTs it **again**. Two documents on the server
+      // for one answer sheet, where Kotlin posts one. That is worse for a
+      // survey's results than a late delivery, which is what the old comment
+      // wrongly claimed was at stake here.
+      //
+      // The cost of this order is recorded in `PHASE_132_NOTES.md` under
+      // *Reported, not fixed*: nothing in the port sweeps `pendingUploads` on
+      // sync, so a sheet whose profile step is interrupted by process death
+      // waits for the user's next submission. Kotlin's safety net is
+      // `uploadSubmissions()` running unconditionally from `AutoSyncWorker`.
+      if (id != null && config != null && !askWhoTheyAre) {
         await ref
             .read(submissionsUploaderProvider)
             .queuePending(config: config, userId: user.id);
@@ -210,7 +287,43 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
     }
     if (!mounted) return;
     setState(() => submitting = false);
-    if (id != null) context.go('${Routes.submissions}/$id');
+    if (id == null) return;
+    if (askWhoTheyAre) {
+      // Kotlin shows this over the exhausted question screen
+      // (`childFragmentManager`) and, when it dismisses — Save or Cancel
+      // alike — `onDismiss` uploads, thanks the respondent and pops the
+      // survey off the back stack. The screen owns the first two; this owns
+      // the pop, so the respondent lands back on the team's surveys tab
+      // rather than on a submission detail they did not ask for.
+      //
+      // `Navigator.push` rather than the `Routes.userInfo` route, matching
+      // `public_survey_screen`: Kotlin's is a dialog over this screen, not a
+      // destination, and pushing a location would put it in the history.
+      await Navigator.of(context).push(
+        MaterialPageRoute<bool>(
+          builder: (_) => UserInformationScreen(
+            submissionId: id!,
+            teamId: widget.teamId,
+            // Kotlin's `shouldHideElements` is `exam?.isFromNation != true`,
+            // which this branch has already established is true, and this
+            // parameter is its negation.
+            showAdditionalFields: false,
+          ),
+        ),
+      );
+      if (!mounted) return;
+      // `FragmentNavigator.popBackStack`. A team survey is always reached by
+      // a push from the team's surveys tab, so there is something to pop;
+      // the fallback covers a `go` — Kotlin's own dead `isFromNation` arm
+      // lands on the survey list too (`navigateToSurveyList`).
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go(Routes.surveys);
+      }
+      return;
+    }
+    context.go('${Routes.submissions}/$id');
   }
 }
 

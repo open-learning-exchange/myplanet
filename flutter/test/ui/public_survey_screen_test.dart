@@ -339,17 +339,20 @@ void main() {
   });
 
   group('submitting', () {
-    /// Answers the one text question, submits, and dismisses the respondent
-    /// information screen the way a respondent who declines it would.
     /// Answers the one question, submits, and completes the respondent
-    /// profile step the way a respondent does.
+    /// profile step the way a respondent who fills it in does.
     ///
-    /// The profile step has to be *saved*, not backed out of: a dismissed
-    /// dialog leaves `uploadCompletedSubmission` nothing to POST, which is why
-    /// the screen returns early on anything but a `true` pop. Backing out —
-    /// which this helper used to do — therefore stopped sending the answer
-    /// sheet at all, and the five tests that go through here have been failing
-    /// on it. Never `pumpAndSettle` after Save: the button holds a
+    /// **The screen does not read the pop result**, and this comment used to
+    /// say it did — the Phase 106 rationale, surviving here after the code it
+    /// justified was reverted. `PublicSurveyActivity` uploads from
+    /// `onFragmentDetached` (`:74-80`) with no save-vs-cancel test, and the
+    /// sheet is already `status = "complete"` before the profile step opens.
+    /// Declining only omits the `user` object. So these tests save because
+    /// saving is the path with a profile to assert on, not because backing out
+    /// would stop the post; `'declining the profile step still posts the
+    /// answers'` covers the other half.
+    ///
+    /// Never `pumpAndSettle` after Save: the button holds a
     /// `CircularProgressIndicator` while it works.
     Future<void> completeProfileStep(WidgetTester tester) async {
       expect(find.text('Your information'), findsOneWidget);
@@ -371,6 +374,60 @@ void main() {
       await tapSubmit(tester);
       await completeProfileStep(tester);
     }
+
+    testWidgets('the answer sheet carries the link\'s team', (tester) async {
+      // Phase 132. `PublicSurveyActivity` launches the sheet with
+      // `isTeam = true` and the deep link's team id (`:99-107`), so
+      // `createExamSubmission` stamps `teamId`; the port had the value in
+      // `widget.teamId` two statements from the `createSurveyDraft` call and
+      // passed it only to the profile screen. Planet attributes a submission
+      // by its team, so an unstamped sheet is filed against nobody.
+      stubPost(succeeds: true);
+      stubFetch(surveyDoc([textQuestion('q1', 'What do you need?')]));
+      await pumpScreen(tester);
+
+      await answerAndSubmit(tester);
+
+      final submission = (await db.select(db.submissions).get()).single;
+      expect(submission.teamId, 'team-1');
+    });
+
+    testWidgets('declining the profile step still posts the answers', (
+      tester,
+    ) async {
+      // The Phase 106 regression, pinned. Gating the POST on the profile
+      // screen popping `true` lost the answers permanently —
+      // `PublicSurveyUploader.queue` had that one caller and nothing rescans
+      // unsent submissions. Kotlin uploads from `onFragmentDetached`
+      // (`PublicSurveyActivity:74-80`) with no save-vs-cancel test, and Cancel
+      // writes nothing at all (`UserInformationFragment:112-118`). The revert
+      // left no test behind, so nothing but a comment stopped it coming back.
+      stubPost(succeeds: true);
+      stubFetch(surveyDoc([textQuestion('q1', 'What do you need?')]));
+      await pumpScreen(tester);
+
+      await tester.enterText(find.byType(TextField), 'Clean water');
+      await tester.pump();
+      await tapSubmit(tester);
+
+      expect(find.text('Your information'), findsOneWidget);
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Cancel'));
+      for (var i = 0; i < 12; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final submission = (await db.select(db.submissions).get()).single;
+      expect(
+        submission.uploaded,
+        isTrue,
+        reason:
+            'the answers were never sent after the profile step was '
+            'declined',
+      );
+      // And the sheet still carries the team it was answered for.
+      expect(submission.teamId, 'team-1');
+    });
 
     testWidgets('a delivered answer sheet is thanked for and marked sent', (
       tester,
