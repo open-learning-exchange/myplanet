@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.MyPlanet
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.Constants
@@ -401,8 +402,8 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         return sharedPrefManager.getCommunityName()
     }
 
-    override fun getCommunityLeaders(): String {
-        return sharedPrefManager.getCommunityLeaders()
+    override fun getCommunityLeaders(): List<UserEntity> {
+        return UserEntity.parseLeadersJson(sharedPrefManager.getCommunityLeaders())
     }
 
     override fun clearPreferences() {

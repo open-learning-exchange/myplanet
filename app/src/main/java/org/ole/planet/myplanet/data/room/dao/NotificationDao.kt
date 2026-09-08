@@ -2,8 +2,11 @@ package org.ole.planet.myplanet.data.room.dao
 
 import androidx.room.Dao
 import androidx.room.Query
+import androidx.room.RawQuery
 import androidx.room.Transaction
 import androidx.room.Upsert
+import androidx.sqlite.db.SimpleSQLiteQuery
+import androidx.sqlite.db.SupportSQLiteQuery
 import java.util.Date
 import org.ole.planet.myplanet.model.AppNotification
 
@@ -51,13 +54,48 @@ interface NotificationDao {
     @Query("SELECT * FROM notifications WHERE needsSync = 1 AND rev IS NOT NULL")
     suspend fun getPendingSyncNotifications(): List<AppNotification>
 
-    @Query("UPDATE notifications SET needsSync = 0, rev = COALESCE(:rev, rev) WHERE id = :id")
-    suspend fun markSynced(id: String, rev: String?)
+    @RawQuery
+    suspend fun markSyncedNonNullRevsRaw(query: SupportSQLiteQuery): Int
+
+    @Query("UPDATE notifications SET needsSync = 0 WHERE id IN (:ids)")
+    suspend fun markSyncedNullRevs(ids: List<String>): Int
 
     @Transaction
     suspend fun markSynced(syncResults: List<Pair<String, String?>>) {
-        syncResults.forEach { (id, rev) ->
-            markSynced(id, rev)
+        if (syncResults.isEmpty()) return
+
+        val nullRevs = ArrayList<String>()
+        val nonNullRevs = ArrayList<Pair<String, String>>()
+        for ((id, rev) in syncResults) {
+            if (rev != null) {
+                nonNullRevs.add(id to rev)
+            } else {
+                nullRevs.add(id)
+            }
+        }
+
+        if (nullRevs.isNotEmpty()) {
+            nullRevs.chunked(900).forEach { chunk ->
+                markSyncedNullRevs(chunk)
+            }
+        }
+
+        if (nonNullRevs.isNotEmpty()) {
+            nonNullRevs.chunked(250).forEach { chunk ->
+                val whenClauses = StringBuilder()
+                val bindArgs = ArrayList<Any>(chunk.size * 3)
+                for ((id, rev) in chunk) {
+                    whenClauses.append(" WHEN ? THEN ?")
+                    bindArgs.add(id)
+                    bindArgs.add(rev)
+                }
+                for ((id, _) in chunk) {
+                    bindArgs.add(id)
+                }
+                val inPlaceholders = chunk.joinToString(",") { "?" }
+                val sql = "UPDATE notifications SET needsSync = 0, rev = CASE id$whenClauses END WHERE id IN ($inPlaceholders)"
+                markSyncedNonNullRevsRaw(SimpleSQLiteQuery(sql, bindArgs.toTypedArray()))
+            }
         }
     }
 

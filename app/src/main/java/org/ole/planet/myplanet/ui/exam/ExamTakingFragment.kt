@@ -843,9 +843,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         _binding = null
     }
 
-    override fun saveCourseProgress(courseId: String?, stepNum: Int, isGraded: Boolean) {
+    override fun saveCourseProgress(courseId: String?, stepNum: Int, isGraded: Boolean, userId: String?) {
         viewLifecycleOwner.lifecycleScope.launch {
-            coursesRepository.updateCourseProgress(courseId, stepNum, isGraded)
+            coursesRepository.updateCourseProgress(courseId, stepNum, isGraded, userId)
         }
     }
 }
