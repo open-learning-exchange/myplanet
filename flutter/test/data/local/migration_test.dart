@@ -1251,11 +1251,17 @@ void main() {
   ///
   /// Checked against the live table before the literals are installed, the way
   /// [recreateTeamTasksWithoutV46Columns] checks its own hand-written shape.
-  /// There is no v34 schema artefact to read, so a *renamed or removed*
-  /// `Surveys` column would otherwise slip past the `containsAll` assertions
-  /// below — those catch an addition, not a rename. Exact equality here means a
-  /// new column fails at the fixture, before the outcome assertion, which is
-  /// the earliest and clearest place to be told a step is owed.
+  /// There is no v34 schema artefact to read, so this is the only thing keeping
+  /// the literals honest.
+  ///
+  /// Exact equality, so a new column fails **at the fixture** rather than at
+  /// the outcome — the earliest and clearest place to be told a step is owed.
+  /// (A rename would red the `containsAll` assertions anyway, since the new
+  /// name is absent after the upgrade; a removal would not, but an extra column
+  /// on an upgraded table is harmless, because drift maps by name. So the value
+  /// here is the early, specific failure, not catching a case the outcome
+  /// assertions miss — an earlier revision of this comment claimed the latter
+  /// and was wrong on both halves.)
   const frozenSurveyColumns = {
     'id',
     '_rev',
@@ -1275,10 +1281,40 @@ void main() {
   };
   const migratedSurveyColumns = {'course_id', 'step_id', 'needs_sync'};
 
+  Future<String> liveDdl(String table) async {
+    final row = await database
+        .customSelect(
+          "SELECT sql FROM sqlite_master WHERE type = 'table' "
+          "AND name = '$table'",
+        )
+        .getSingle();
+    return row.read<String>('sql');
+  }
+
   Future<Set<String>> columnsOf(String table) async {
     final rows = await database.customSelect('PRAGMA table_info($table)').get();
     return rows.map((row) => row.read<String>('name')).toSet();
   }
+
+  /// The adoption marker `SurveysRepository.adoptSurvey` writes beside every
+  /// clone, via `createSurveyAdoptionSubmission`: `parentId` is the **source**
+  /// survey's id and `teamId` the team. The v47 backfill requires it, because
+  /// the clone id shape alone is not authorship — a publicly shared clone is
+  /// served back under the same id (see `app_database.dart`'s backfill, and
+  /// `survey_clone_survives_schema_bump_test.dart`, which drives that path
+  /// through the production `saveSurveyFromPublicApi` rather than a literal).
+  ///
+  /// Written by hand here because this file has no repository harness. The
+  /// production-driven version of the positive case lives in that other file;
+  /// what this fixture is for is the **negative** set.
+  Future<void> insertAdoptionMarker({
+    required String sourceId,
+    required String teamId,
+  }) => database.customStatement(
+    'INSERT INTO submissions (id, parent_id, team_id, type, status) '
+    "VALUES ('${sourceId}_${teamId}_adoption', '$sourceId', '$teamId', "
+    "'survey', '')",
+  );
 
   /// Replaces the freshly-created tables with a frozen historical shape, the
   /// way an on-device upgrade would find them. Dropping a table drops its
@@ -1291,6 +1327,25 @@ void main() {
       await columnsOf('surveys'),
       frozenSurveyColumns.union(migratedSurveyColumns),
       reason: 'the frozen literals below have drifted from the live table',
+    );
+    // The name set is not enough: a column whose *type* changed keeps its name,
+    // no `_addColumnIfMissing` step can ALTER a type, and every other
+    // assertion in this file would stay green while an upgraded device carried
+    // the old type and a fresh one the new. So compare the DDL text drift
+    // actually emits, which is what these literals claim to be.
+    expect(
+      await liveDdl('surveys'),
+      surveysDdlBeforeV47.replaceFirst(
+        ', PRIMARY KEY ("id"))',
+        ', "needs_sync" INTEGER NOT NULL DEFAULT 0 '
+            'CHECK ("needs_sync" IN (0, 1)), PRIMARY KEY ("id"))',
+      ),
+      reason: 'the frozen surveys DDL no longer matches what drift creates',
+    );
+    expect(
+      await liveDdl('survey_questions'),
+      surveyQuestionsDdlFrozen,
+      reason: 'the frozen survey_questions DDL no longer matches drift',
     );
     await database.customStatement('DROP TABLE surveys');
     await database.customStatement('DROP TABLE survey_questions');
@@ -1309,6 +1364,7 @@ void main() {
       "VALUES ('survey-1_team-1', 'Water needs - Team One', "
       "'survey-1', 'team-1')",
     );
+    await insertAdoptionMarker(sourceId: 'survey-1', teamId: 'team-1');
     await database.customStatement(
       "INSERT INTO survey_questions (id, survey_id, header, position) "
       "VALUES ('survey-1_team-1:q1', 'survey-1_team-1', 'How was it?', 0)",
@@ -1382,6 +1438,10 @@ void main() {
       "('survey-3_team-1', 'Published clone on a step', NULL, 'survey-3', "
       "'team-1', 'course-1:0', 'course-1')",
     );
+    // Only the first row gets a marker — this device adopted that one and
+    // nothing else. Its absence is what excludes every other row that happens
+    // to share the id shape.
+    await insertAdoptionMarker(sourceId: 'survey-1', teamId: 'team-1');
   }
 
   test(

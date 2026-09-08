@@ -518,6 +518,14 @@ class Meetups extends Table {
 }
 
 /// Port of survey-shaped rows from `model/StepExam.kt` (`exams` database).
+///
+/// **Preserved across a schema bump** — see
+/// [AppDatabase.localAuthorityTables] for why, and note the consequence before
+/// adding a column here: `createAll` does not ALTER a preserved table, so a new
+/// column needs a hand-written `_addColumnIfMissing` step in `onUpgrade`, and
+/// it must run *before* `createAll` if any `@TableIndex` names it (a bare
+/// `CREATE INDEX` on a missing column aborts the whole upgrade).
+/// `migration_test.dart`'s frozen-DDL fixture fails until the step exists.
 @DataClassName('SurveyRow')
 @TableIndex(name: 'surveys_created_date', columns: {#createdDate})
 @TableIndex(name: 'surveys_course_id', columns: {#courseId})
@@ -574,6 +582,12 @@ class Surveys extends Table {
 }
 
 /// Questions embedded in an `exams` CouchDB survey document.
+///
+/// **Preserved across a schema bump**, with [Surveys] and for the same reason:
+/// an adopted team clone's questions exist nowhere else until the clone
+/// publishes. The two must stay preserved together — preserving only one
+/// orphans the other. Adding a column here needs a hand-written
+/// `_addColumnIfMissing` step; see [Surveys] above.
 @DataClassName('SurveyQuestionRow')
 @TableIndex(name: 'survey_questions_survey', columns: {#surveyId, #position})
 class SurveyQuestions extends Table {

@@ -1,6 +1,7 @@
 import 'package:drift/native.dart';
 import 'dart:convert';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
@@ -174,42 +175,178 @@ void main() {
     },
   );
 
-  /// The one row the v47 backfill flags that this device did **not** author,
-  /// and why it is accepted rather than predicated away.
+  /// A survey another planet shared publicly must never be flagged, and this
+  /// is the row that made the first cut of the backfill unsafe.
   ///
-  /// The backfill identifies its own work by the port's deterministic clone id
-  /// (`'<sourceSurveyId>_<teamId>'`, which Kotlin's `UUID.randomUUID()` cannot
-  /// collide with). A row can satisfy that *and* `_rev IS NULL` *and*
-  /// `step_id IS NULL` without being local work, through one route:
+  /// A public survey link is `/survey/<teamId>/<surveyId>` and the `surveyId`
+  /// in it *is* a team's adopted clone — so the document
+  /// `saveSurveyFromPublicApi` stores carries the clone's own id,
+  /// `sourceSurveyId` and `teamId` (`AdoptedSurveysUploader.documentFor` ->
+  /// `SubmissionsRepository.surveyParentDocument`, which emits `_rev` only
+  /// `if (survey.rev != null)`). Whether the row ends up with a NULL `rev`
+  /// therefore depends on what a *remote* Planet chooses to send back, which
+  /// this repository cannot check — and that is the argument on its own: a
+  /// predicate whose safety rests on a server including a field is not safe.
   ///
-  ///  1. another handset at v47+ publishes the clone, so the document exists;
-  ///  2. it is attached to a course step on Planet, and this handset's courses
-  ///     walk writes the row back — `SurveyMapper._build` assigns `rev`
-  ///     unconditionally and a course sub-object carries no `_rev`, so the
-  ///     authoritative revision is clobbered to NULL (the two-writer conflict
-  ///     Phase 138 recorded and did not fix);
-  ///  3. the course document stops naming it, and
-  ///     `releaseStepJoinsForCourse` nulls `stepId` **and** `courseId`;
-  ///  4. *then* this handset upgrades off its pre-v47 build.
+  /// The harm was not the bounded, self-clearing kind either. The document
+  /// lives on the **link's origin** planet, while
+  /// `AdoptedSurveysUploader.endpointFor` POSTs to the **configured** server,
+  /// which has no document under that id — so the POST *succeeds*, and a
+  /// survey this device never authored is created in the user's own `exams`
+  /// database under their credentials, stamped with this handset's origin
+  /// fields. That is the leak `Surveys.needsSync` was introduced to close,
+  /// reopened for one upgrade by the migration that installs the column.
   ///
-  /// **`rev` is the only column that records "the server has this", and it is
-  /// exactly the column those two writers disagree about** — so there is no
-  /// local discriminator left to add. Narrowing on `courseId` would miss a
-  /// genuine clone of a course-attached survey (`adoptSurvey` copies
-  /// `courseId`), and requiring the adoption-marker submission would miss a
-  /// clone adopted with no `userId`.
+  /// Closed by requiring the **adoption marker** `adoptSurvey` writes
+  /// alongside the clone (`createSurveyAdoptionSubmission`: `parentId` is the
+  /// *source* id, `teamId` the team). It is positive evidence of an action
+  /// *this device took*, in a preserved table, which is what the v45 health
+  /// repair's `EXISTS` conjunct is too — and unlike `rev` it has one writer.
   ///
-  /// So it is left, because the cost is bounded and self-clearing: the POST
-  /// takes a 409, and Phase 138's `_adoptExistingDocument` GETs the winning
-  /// document, records its rev and clears the flag. One POST and one GET,
-  /// once — after which the row rejoins the prune. Pinned as a **pair** rather
-  /// than asserted, because each half passing alone is the shape this project
-  /// keeps getting wrong.
+  /// The document is not hand-written: it goes through the production
+  /// `saveSurveyFromPublicApi`, because the first cut's negative fixtures were
+  /// hand-written `INSERT`s and that is precisely why they missed this.
+  test('a publicly shared clone from another planet is never flagged', () async {
+    final saved = await surveys.saveSurveyFromPublicApi({
+      '_id': 'survey-7_team-7',
+      'type': 'surveys',
+      'name': 'Borehole survey - Team Seven',
+      // Absent, as `surveyParentDocument` emits it only for a non-null rev and
+      // as `Surveys.rev`'s own doc-comment says every public-API survey is.
+      'sourceSurveyId': 'survey-7',
+      'teamId': 'team-7',
+      'questions': [
+        {'id': 'q1', 'title': 'Is the pump working?', 'type': 'input'},
+      ],
+    });
+    expect(saved, isNotNull);
+    expect(saved!.rev, equals(null), reason: 'the premise of the leak');
+    expect(saved.needsSync, isFalse);
+    expect(saved.stepId, equals(null));
+
+    // And the harder one: another team's public clone of the **same source
+    // survey this device did adopt**. A marker for `survey-1` exists (from
+    // `setUp`), so matching the marker on `parentId` alone would flag this —
+    // two teams adopting one shared survey is the ordinary case, not a corner.
+    // It is the `teamId` half of the marker match that excludes it.
+    final otherTeam = await surveys.saveSurveyFromPublicApi({
+      '_id': 'survey-1_team-5',
+      'type': 'surveys',
+      'name': 'Water needs - Team Five',
+      'sourceSurveyId': 'survey-1',
+      'teamId': 'team-5',
+      'questions': [
+        {'id': 's1', 'title': 'How was it?', 'type': 'input'},
+      ],
+    });
+    expect(otherTeam, isNotNull);
+
+    await runUpgrade(from: 46);
+
+    expect(
+      (await database.surveyDao.pendingAdoptedSurveys()).map((row) => row.id),
+      isNot(contains('survey-7_team-7')),
+      reason:
+          "this handset never adopted for team-7, so there is no marker "
+          'and no claim to publish the document',
+    );
+    expect(
+      (await database.surveyDao.pendingAdoptedSurveys()).map((row) => row.id),
+      isNot(contains('survey-1_team-5')),
+      reason: 'the marker is for team-1; team-5 adopted on its own handset',
+    );
+    // The genuine clone from `setUp`, which does have a marker, is untouched.
+    expect(
+      (await database.surveyDao.pendingAdoptedSurveys()).map((row) => row.id),
+      contains(cloneId),
+    );
+  });
+
+  /// `Surveys.needsSync` is preserved across a re-pull by **omission**, and
+  /// nothing pinned that until now.
+  ///
+  /// Neither `SurveyMapper` writer mentions the column, so
+  /// `insertOnConflictUpdate` writes only the columns the companion carries and
+  /// leaves the stored flag alone. That is the whole mechanism — there is no
+  /// `existing…` parameter here, so the static guard in
+  /// `mapper_preserves_local_columns_test.dart` cannot see it, and the 409
+  /// tests do not re-pull.
+  ///
+  /// It matters more now that `surveys` is preserved: if a later round
+  /// "completes" the mapper with `needsSync: Value(false)` — the natural thing
+  /// to do when filling in a companion — an unpublished clone would drop out of
+  /// `pendingAdoptedSurveys` on the next walk that names its id and never
+  /// publish. Same shape as Phase 56's credentials, Phase 74's reactions and
+  /// Phase 98's read flag: a sync-in writing over a column the server knows
+  /// nothing about.
+  ///
+  /// The document here is the one that reaches this handset in the two-leader
+  /// case `_adoptExistingDocument` exists for: another leader adopted the same
+  /// source for the same team and published first, so the walk delivers a
+  /// document under the port's deterministic clone id while this device's own
+  /// row is still pending.
+  test('a re-pull under the clone id leaves needsSync alone', () async {
+    final before = (await database.surveyDao.getById(cloneId))!;
+    expect(before.needsSync, isTrue, reason: 'adoptSurvey sets the flag');
+
+    final mapped = SurveyMapper.fromDoc({
+      '_id': cloneId,
+      '_rev': '1-otherleader',
+      'type': 'surveys',
+      'name': 'Water needs - Team One',
+      'teamId': 'team-1',
+      'sourceSurveyId': 'survey-1',
+      'questions': [
+        {'id': 's1', 'title': 'How was it?', 'type': 'input'},
+      ],
+    })!;
+    await database.surveyDao.upsertAll(
+      [mapped.survey],
+      {mapped.survey.id.value: mapped.questions},
+    );
+
+    final after = (await database.surveyDao.getById(cloneId))!;
+    expect(
+      after.rev,
+      '1-otherleader',
+      reason: 'the walk is authoritative for the columns it does carry',
+    );
+    expect(
+      after.needsSync,
+      isTrue,
+      reason:
+          'and must not touch the one it does not — the row stays this '
+          "device's to reconcile, which the 409 arm then does",
+    );
+    expect(
+      (await database.surveyDao.pendingAdoptedSurveys()).map((row) => row.id),
+      contains(cloneId),
+    );
+  });
+
+  /// The other route to a row that looks like local work, and it is closed by
+  /// the same conjunct as the public-API one.
+  ///
+  /// A clone another handset published, which Planet then attached to a course
+  /// step, arrives with the clone's own id and `sourceSurveyId` and with `rev`
+  /// **NULL** — `SurveyMapper._build` assigns `rev` unconditionally and a
+  /// course document's embedded survey is a sub-object carrying no `_rev` of
+  /// its own (the two-writer conflict Phase 138 recorded and did not fix).
+  /// Once the course stops naming it, `releaseStepJoinsForCourse` nulls
+  /// `stepId` **and** `courseId`. Every conjunct but the marker then holds.
+  ///
+  /// Which is the point worth keeping: `rev` cannot carry this weight, because
+  /// it is the one column two sync walks disagree about the ownership of. The
+  /// adoption marker can, because it has exactly one writer.
+  ///
+  /// And where the marker *is* present, flagging is right rather than wrong:
+  /// both leaders genuinely adopted, the port's deterministic id makes them
+  /// converge on one document by design, and the 409 arm reconciles them —
+  /// which the second half of this test drives, so the mitigation is pinned
+  /// alongside the exclusion rather than assumed.
   test(
-    'a flagged row the server already has is resolved by the 409 arm',
+    'a step-released clone is flagged only if this device adopted it',
     () async {
-      // Step 3's outcome, written straight into the table: the shape a pre-v47
-      // database actually holds when it reaches step 4.
       await database.customStatement('DELETE FROM surveys');
       await database.customStatement(
         'INSERT INTO surveys (id, name, _rev, source_survey_id, team_id, '
@@ -221,12 +358,49 @@ void main() {
       await runUpgrade(from: 46);
 
       expect(
-        (await database.surveyDao.pendingAdoptedSurveys()).map((row) => row.id),
-        ['survey-3_team-9'],
-        reason: 'the misfire is real; what follows is why it is accepted',
+        await database.surveyDao.pendingAdoptedSurveys(),
+        isEmpty,
+        reason: 'no marker for team-9: this handset never adopted survey-3',
       );
 
-      // Drain it. The document exists, so the POST conflicts.
+      // Now the marker a real local adoption leaves — written by the
+      // production `adoptSurvey`, not by hand. This is the convergence case
+      // exactly: the source survey is on the device and the other handset's
+      // clone already sits under the deterministic id, so `adoptedTeamSurvey`
+      // finds it and mints no second clone — but the marker is still written,
+      // because that half is gated only on the user.
+      await database.surveyDao.upsertAll([
+        SurveysCompanion.insert(
+          id: 'survey-3',
+          name: const Value('Borehole survey'),
+          teamShareAllowed: const Value(true),
+        ),
+      ], const {});
+      await surveys.adoptSurvey(
+        surveyId: 'survey-3',
+        userId: 'user-1',
+        userName: 'Ada',
+        teamId: 'team-9',
+        isTeam: true,
+        teamName: 'Team Nine',
+      );
+      expect(
+        (await database.surveyDao.getById('survey-3_team-9'))!.needsSync,
+        isFalse,
+        reason:
+            'no second clone was minted, so the flag is still the pulled '
+            "row's — which is what makes the backfill the thing under test",
+      );
+
+      await runUpgrade(from: 46);
+
+      expect(
+        (await database.surveyDao.pendingAdoptedSurveys()).map((row) => row.id),
+        contains('survey-3_team-9'),
+        reason: 'with the marker it is this device\'s to reconcile',
+      );
+
+      // And reconciling it is a 409, because the other handset published first.
       expect(await uploader.queuePending(config: config, userId: 'user-1'), 1);
       final operation = (await outbox.due()).single;
       when(
@@ -262,7 +436,7 @@ void main() {
 
       final row = (await database.surveyDao.getById('survey-3_team-9'))!;
       expect(row.rev, '4-winner');
-      expect(row.needsSync, isFalse, reason: 'the flag must not persist');
+      expect(row.needsSync, isFalse);
       expect(
         await database.surveyDao.pendingAdoptedSurveys(),
         isEmpty,

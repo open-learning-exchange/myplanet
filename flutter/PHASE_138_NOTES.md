@@ -364,6 +364,17 @@ predicate. No `_addColumnIfMissing` step: `surveys` is not in
 `if (from < 47)` branch is present and deliberately empty, so the next reader
 sees the version was considered rather than forgotten.
 
+> **Superseded by Phase 143.** `surveys` and `survey_questions` *are* in
+> `localAuthorityTables` now — which is the item this phase filed under
+> *Reported, not fixed* below, and it is closed. So `createAll` no longer
+> alters either table: the `from < 47` branch is not empty (it adds
+> `needs_sync` by hand and backfills the flag for clones this device can prove
+> it authored), and **any future column on either table needs its own
+> `_addColumnIfMissing` step**, before `createAll` if an index names it. The
+> paragraph above is the migration instruction a lane reading about
+> `Surveys.needsSync` would follow, which is why it is corrected here rather
+> than only in the later notes.
+
 **Nine existing `SurveyRow(...)` fixtures in seven test files gained
 `needsSync: false`** — a non-nullable Drift column is a required argument on the
 row class. Three are under `test/ui/`, which is the nearest this lane came to
@@ -396,6 +407,12 @@ Gate green: `dart format` clean, `flutter analyze` clean, **2479 tests pass**
 ## Reported, not fixed
 
 ### A schema bump still destroys an unpublished clone, and `submissions` outlives it
+
+> **Closed by Phase 143.** Both tables are preserved; the v35 and v47 columns
+> have hand-written steps that run before `createAll`; and the leak this
+> section's author worried about is handled by requiring the adoption marker
+> rather than by trusting the clone id. Left in place because the reasoning
+> below is what the next round was briefed from.
 
 **The one this phase creates the expectation for and does not close.** `surveys`
 and `survey_questions` are **not** in `localAuthorityTables`, while

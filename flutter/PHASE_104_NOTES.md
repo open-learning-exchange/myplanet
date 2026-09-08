@@ -39,7 +39,12 @@ type: DriftSqlType.string, defaultValue: Constant('[]'))` before and after, so
 the DDL is byte-identical and no migration step exists to write. Rows an
 earlier build wrote decode as a choice whose text is that flattened literal —
 not a crash — until the next surveys sync rewrites them; `survey_questions` is
-a pure cache and is not in `localAuthorityTables`. Nothing else under
+a pure cache and is not in `localAuthorityTables`. **The second half is false
+since Phase 143**: it is preserved now, because the same table stores an
+adopted team survey clone's questions, which exist nowhere else until the
+clone publishes. The converter argument is unaffected — a converter swap still
+changes no DDL — but a *column* added here now needs a hand-written
+`_addColumnIfMissing` step. Nothing else under
 `lib/data/local/` changed shape.
 
 ### What each consumer was doing with the corrupted value

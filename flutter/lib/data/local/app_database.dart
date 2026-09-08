@@ -340,14 +340,23 @@ class AppDatabase extends _$AppDatabase {
         // deletes it and its questions and orphans the members' answer sheets.
         //
         // So the flag is backfilled for the rows this device can *positively*
-        // identify as its own, which the port can do and Kotlin cannot: the
-        // port's clone id is deterministic — `'${surveyId}_$teamId'`
-        // (`SurveysRepository.adoptSurvey`, whose one production caller passes no
-        // `createId`) — where Kotlin mints `UUID.randomUUID()`
-        // (`SurveysRepositoryImpl.kt:85`). Phase 138 rejected `_rev IS NULL` as
-        // an authorship test and was right to; the id equality is the
-        // discriminator here, and the rev clause only keeps an already-published
-        // clone from being re-queued.
+        // identify as its own. Two facts do that together, and the second is
+        // the load-bearing one:
+        //
+        //  * the port's clone id is deterministic — `'${surveyId}_$teamId'`
+        //    (`SurveysRepository.adoptSurvey`, whose one production caller
+        //    passes no `createId`) — where Kotlin mints `UUID.randomUUID()`
+        //    (`SurveysRepositoryImpl.kt:86`), so the shape is at least
+        //    *recognisable*; and
+        //  * `adoptSurvey` leaves an **adoption marker** submission beside the
+        //    clone, which is the actual evidence of local authorship.
+        //
+        // The id shape alone is not authorship, and the first cut of this
+        // backfill assumed it was — see the `EXISTS` conjunct below for the
+        // document that shape belongs to and what POSTing it would have done.
+        // Phase 138 rejected `_rev IS NULL` as an authorship test and was right
+        // to; the rev clause here only keeps an already-published clone from
+        // being re-queued.
         //
         // Every conjunct earns its place, and two are deliberately redundant:
         //
@@ -389,7 +398,10 @@ class AppDatabase extends _$AppDatabase {
             'AND team_id IS NOT NULL '
             'AND _rev IS NULL '
             'AND step_id IS NULL '
-            "AND id = source_survey_id || '_' || team_id",
+            "AND id = source_survey_id || '_' || team_id "
+            'AND EXISTS (SELECT 1 FROM submissions AS marker '
+            'WHERE marker.parent_id = surveys.source_survey_id '
+            'AND marker.team_id = surveys.team_id)',
           );
         }
       }
@@ -3060,13 +3072,21 @@ class SurveyDao extends DatabaseAccessor<AppDatabase> with _$SurveyDaoMixin {
   /// table; the port's split puts the whole query here, and the `exams` table
   /// needs no counterpart because `adoptSurvey` writes only to [Surveys].
   ///
-  /// **Both clauses matter, and the second is the load-bearing one.**
+  /// **The port asks neither of Kotlin's clauses, and that is the point.**
   /// `sourceSurveyId` is not a local-authorship marker: the courses walk reads
   /// it straight off a server-embedded survey (`survey_mapper.dart:163-167`),
-  /// so an adopted copy that Planet itself published carries it too. Only
-  /// `rev IS NULL` separates "this device minted it and nobody else has it"
-  /// from "the server sent it" — the same conjunction Phase 136 had to restore
-  /// in `hasUnfinishedSurveys` after shipping half of it.
+  /// so an adopted copy Planet itself published carries it too. And `rev IS
+  /// NULL` cannot stand in for "nobody else has it" here the way it does in
+  /// Kotlin, because the port's mappers use `getStringOrNull`: absent becomes
+  /// NULL, which is true of every course-embedded and every public-API survey.
+  /// Phase 138 found that predicate POSTing another team's private copy under
+  /// the signed-in user's credentials, which is why [Surveys.needsSync] exists
+  /// and why the body below is one clause on a flag with one writer.
+  ///
+  /// (An earlier revision of this comment ended "Only `rev IS NULL` separates
+  /// this device minted it from the server sent it" — arguing for the very
+  /// predicate the column beneath it was introduced to replace, directly above
+  /// a body that does not use it.)
   Future<List<SurveyRow>> pendingAdoptedSurveys() =>
       (select(surveys)..where((row) => row.needsSync.equals(true))).get();
 
@@ -3115,10 +3135,13 @@ class SurveyDao extends DatabaseAccessor<AppDatabase> with _$SurveyDaoMixin {
   /// insert-only — `bulkInsertExamsFromSync` upserts and nothing in the tree
   /// ever deletes from that table.
   ///
-  /// The exemption is scoped to `rev IS NULL` rather than to every clone, so it
-  /// lapses the moment [markUploaded] runs: once the document exists, the walk
-  /// that names it keeps it and a walk that stops naming it is reporting a
-  /// deletion this prune should honour.
+  /// The exemption is scoped to `needsSync` rather than to every clone, so it
+  /// lapses the moment [markUploaded] runs — that call clears the flag as it
+  /// records the rev: once the document exists, the walk that names it keeps it
+  /// and a walk that stops naming it is reporting a deletion this prune should
+  /// honour. (This said "scoped to `rev IS NULL`" until Phase 143; the body has
+  /// been `stepId IS NULL AND needsSync = 0` since Phase 138 shipped the flag,
+  /// so the file carried two descriptions of one predicate.)
   Future<int> deleteNotIn(List<String> ids) => transaction(() async {
     final keep = ids.toSet();
     final all =

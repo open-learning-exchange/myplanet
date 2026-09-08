@@ -17,9 +17,9 @@ prevented it. That is the round's lesson and it is in *Job 2* below.
    in the plan itself**, corrected my intended answer to the v47 question, and
    named two stale claims elsewhere in the tree.
 3. Implement, each defect demonstrated failing first.
-4. **Fifteen mutations**, each applied alone to green code and reverted.
-   Fourteen redded immediately; one survived and is written up below, because a
-   surviving mutation is the only kind worth reporting.
+4. **Nineteen mutations**, each applied alone to green code and reverted.
+   Seventeen redded immediately; **two survived**, and both are written up
+   below, because a surviving mutation is the only kind worth reporting.
 5. A second `parity-auditor` pass at `effort: max` aimed at the finished,
    already-green code.
 
@@ -109,21 +109,69 @@ WHERE source_survey_id IS NOT NULL
   AND id = source_survey_id || '_' || team_id
 ```
 
-**One row satisfies every conjunct without being local work**, found by the
-implementation audit and accepted rather than predicated away. A clone another
-handset published, attached to a course step on Planet, has its authoritative
-`_rev` clobbered to NULL by the courses walk — `SurveyMapper._build` assigns
-`rev` unconditionally and a course sub-object carries none, which is Phase
-138's unfixed two-writer conflict — and once the course stops naming it,
-`releaseStepJoinsForCourse` nulls `stepId` as well. There is no local
-discriminator left, because `rev` is the only column that records "the server
-has this" and it is exactly the column those two writers disagree about;
-`courseId IS NULL` would miss a genuine clone of a course-attached survey, since
-`adoptSurvey` copies `courseId`. The cost is bounded and self-clearing: the POST
-takes a 409 and Phase 138's `_adoptExistingDocument` records the winning rev and
-clears the flag. One POST and one GET, once, after which the row rejoins the
-prune — **pinned as a pair**, not asserted, because each half passing alone is
-the shape this project keeps getting wrong.
+### The first cut of that predicate was a data leak, and I argued my way past it once
+
+**The most important thing in this phase, and it took two audit passes plus a
+retraction to land.**
+
+The implementation audit found that the id shape is *not* authorship. A team's
+clone that is shared **publicly** is served back under that very id by
+`/api/public/surveys/<teamId>/<surveyId>` — the deep link's `surveyId` *is* the
+clone — and `saveSurveyFromPublicApi` stores it with `sourceSurveyId`, `teamId`,
+no `stepId`, and a `rev` that is NULL whenever the remote Planet omits `_rev`
+(`surveyParentDocument` emits `_rev` only for a non-null rev, and `Surveys.rev`'s
+own doc-comment states every public-API survey has none). All five conjuncts.
+
+**And the harm was not the bounded kind.** The document lives on the *link's
+origin* planet while `AdoptedSurveysUploader.endpointFor` POSTs to the
+*configured* server, which has no document under that id — so the POST
+**succeeds**, publishing a survey this device never authored into the user's own
+`exams` database, under their credentials, stamped with this handset's origin
+fields. Verbatim the leak `Surveys.needsSync` was introduced to close, reopened
+for one upgrade by the migration that installs the column.
+
+I had already met a *different* row with the same shape — a published clone
+Planet attached to a course step, whose `rev` the courses walk clobbers — and
+**written it up as an accepted misfire**, reasoning that the 409 arm makes it
+self-clearing. That reasoning was sound for that row and wrong as a policy, and
+the public-API row is the one it does not cover. The retraction is the lesson:
+***"this misfire is harmless" is a claim about one producer, and there is always
+another producer.*** The right question was never "how bad is this misfire" but
+"what evidence do I actually have that this row is mine".
+
+There is such evidence, and it is local, single-writer and already preserved:
+`adoptSurvey` writes an **adoption marker** submission beside every clone
+(`createSurveyAdoptionSubmission` — `parentId` is the *source* id, `teamId` the
+team). So the predicate gains an `EXISTS` conjunct, which is what the v45 health
+repair's own decisive conjunct is too:
+
+```sql
+  AND EXISTS (SELECT 1 FROM submissions AS marker
+              WHERE marker.parent_id = surveys.source_survey_id
+                AND marker.team_id   = surveys.team_id)
+```
+
+**`rev` could never have carried this weight**, and that is the general point:
+it is the one column two sync walks disagree about the ownership of (Phase 138's
+unfixed `surveys.rev` item), so a predicate leaning on it inherits that
+ambiguity. The marker has exactly one writer.
+
+The conjunct closes **both** routes, which is how you can tell it is the right
+shape rather than a patch: where the marker is present on the course-step row,
+both leaders genuinely adopted, the deterministic ids converge *by design*, and
+the 409 arm reconciles them — so the mitigation I over-generalised turns out to
+be exactly right for the case it actually covers. And it fails safe in its one
+wrong direction: `adoptSurvey` writes the clone before returning early on an
+empty `userId`, so such a clone has no marker and is not flagged, leaving it
+unpublished — the state it was already in — rather than publishing something
+foreign.
+
+**Both halves of the marker match are load-bearing, and one was pinned by
+nothing** until a mutation said so. Dropping `marker.team_id = surveys.team_id`
+broke no test, because no fixture had the ordinary case: two teams adopt the same
+shared survey, and one of them shares its clone publicly. A marker for that
+source exists, so a `parentId`-only match flags the *other team's* document. Now
+pinned.
 
 Two conjuncts are deliberately redundant (`x || NULL` is NULL, so the id
 equality already fails without a `source_survey_id` or a `team_id`) and are kept
@@ -187,8 +235,25 @@ column removed, codegen re-run, suite green.
 The literals also carry the drift guard the `team_tasks` precedent has and my
 first cut lacked: `frozenSurveyColumns` and `migratedSurveyColumns` are checked
 for **exact equality** against the live table before the literal is installed,
-so a *renamed or removed* column fails at the fixture. The `containsAll`
-assertions catch an addition; only this catches a rename.
+so a new column fails at the *fixture* rather than at the outcome — the earliest
+and clearest place to be told a step is owed.
+
+**And the column *names* were not enough**, which the implementation audit
+caught with a case I had not thought of: a column whose **type** changes keeps
+its name, no `_addColumnIfMissing` step can ALTER a type, and every assertion in
+the file stays green while an upgraded device carries `TEXT` and a fresh one
+`INTEGER`. So the fixture now compares the **DDL text** SQLite actually holds
+against the frozen literal — which is what those literals claim to be, and the
+claim was previously unchecked. Verified by changing `passingPercentage` from
+`text()` to `integer()`, re-running codegen, and watching it red with
+*"the frozen surveys DDL no longer matches what drift creates"*.
+
+My justification comment for the exact-equality check was also simply wrong, in
+both halves, and is corrected in place: a *rename* does **not** slip past
+`containsAll` (the new name is absent after the upgrade, so it reds anyway), and
+a *removal* does slip past but is harmless, because drift maps columns by name
+and an extra column on an upgraded table is ignored. The check's real value is
+the early, specific failure — not catching a case the outcome assertions miss.
 
 ## Job 5 — the three DAO queries other lanes reported as blocked on this file
 
@@ -260,9 +325,13 @@ the version increases — so a bump would drop the caches for no reason and
 discard unsynced writes in every non-preserved table. The preservation takes
 effect at the *next* bump, whoever spends it. **48 is free.**
 
-## The mutation that survived
+## The two mutations that survived
 
-Fourteen of fifteen redded on the first try. The other one: removing `AND step_id IS NULL`
+Seventeen of nineteen redded on the first try. Both survivors were the same
+lesson from opposite ends — a conjunct nothing pinned — and neither was dead
+code once I looked for the row that needed it.
+
+**First:** removing `AND step_id IS NULL`
 from the backfill broke nothing, because every step-joined row in my fixture
 also lacked a `source_survey_id`, so the id-shape clause already excluded it.
 
@@ -276,12 +345,34 @@ satisfies the id shape *and* the rev clause, and `step_id IS NULL` is the only
 thing stopping the backfill re-publishing a document the server already has.
 That row is now in the fixture, and the mutation reds.
 
+**Second**, and after the marker conjunct landed: dropping
+`marker.team_id = surveys.team_id` from it broke nothing. The fixtures had no
+case where a marker exists for the source survey but for a *different* team —
+which is the ordinary situation, not a corner: two teams adopt the same shared
+survey, and one shares its clone publicly. A `parentId`-only match then flags
+the other team's document, which is the leak again by a shorter route. Now
+pinned, through the production `saveSurveyFromPublicApi`.
+
 **A surviving mutation is a question about the predicate, not just about the
-test.** The answer here was a fixture row; it could as easily have been a
-conjunct to delete.
+test.** Both times the answer was a fixture row rather than a conjunct to
+delete — and both times the missing row was one a *producer-driven* fixture
+would have had. The first cut's negative set was six hand-written
+`INSERT INTO surveys` statements described in the comment as "shapes taken from
+their producers, not invented"; they were reasoned from each producer's first
+write and stopped there. That is this project's own "a fixture that fabricates a
+join is not evidence" rule, applied to the negative set, and it is the reason
+the public-API leak survived my first implementation *and* my first mutation
+round.
 
 ## Reported, not fixed
 
+0. **`docs/kotlin-to-flutter-migration.md` and `CLAUDE.md` both list four
+   preserved tables against the real 27.** Pre-existing staleness rather than
+   something this phase broke, but the migration doc's *preserved-table test*
+   section is the one a lane is told to read before touching this set, and it
+   names `outbox`, `my_personal`, `removed_log` and `my_life` only. Lane A owns
+   `docs/kotlin-to-flutter-migration.md` this round and `CLAUDE.md` is nobody's,
+   so both are reported. One line each would do it.
 1. **`lib/repository/submissions_repository.dart:2140-2143` is now false.** Its
    `AnswerShape.forQuestion` doc-comment says closing the `hasOtherOption` gap
    needs a column on `survey_questions`, "That table is not in
@@ -320,10 +411,20 @@ conjunct to delete.
    them — the bump used to sweep them and no longer does. Concrete input: delete
    a course carrying a step survey on Planet; the courses walk's `deleteNotIn`
    removes the course row and the `surveys`/`survey_questions` rows persist
-   across every future sync and every future bump. Not a correctness defect (the
-   rows are unreachable from the UI once the step tile is gone) but it is
-   unbounded, and it is the argument for giving `releaseStepJoinsForCourse` a
-   whole-table sweep rather than a per-page one.
+   across every future sync and every future bump.
+   **My first write-up called these rows "unreachable from the UI once the step
+   tile is gone", and the implementation audit showed that is false.**
+   `surveysProvider` filters `watchAll()` through
+   `SurveysRepository.individualSurveys()`, whose predicate is
+   `!row.teamShareAllowed && (row.teamId ?? '').isEmpty` — **no `stepId` or
+   `courseId` test at all** — so an orphaned step survey with no team is listed
+   at `/life/surveys` and is tappable, forever. The *visibility* matches Kotlin
+   (`ExamDao.getByType("surveys")` has no filter either), but Kotlin's Room bump
+   drops the table and self-cleans where the port's no longer does. So this is
+   a user-visible accretion, not a hidden one, and it is the argument for giving
+   `releaseStepJoinsForCourse` a whole-table sweep rather than a per-page one.
+   Corrected here because the sentence I got wrong is the one that decided this
+   was not worth fixing.
 5. **Two self-healing paths lost their second line of defence.**
    `SurveysRepository.sync` runs `deleteNotIn` only
    `if (total == 0 || complete)` (`surveys_repository.dart:402-405`), so on a
@@ -343,7 +444,31 @@ conjunct to delete.
    as `ExamMapper.fromDoc` already does — would close that misfire as a side
    effect rather than needing a predicate change here. That makes it the
    highest-value item on this list.
-7. **The `submissions` sweep's `parentId` shape is worth one more look.** Not
+7. **`survey_clone_survives_schema_bump_test.dart`'s `from: 47` default means
+   its three original tests exercise no migration step.** `to` is
+   `schemaVersion`, which is 47, so no `from <` branch fires: those three cover
+   the `localAuthorityTables` membership change, the index drop-and-rebuild and
+   `createAll` not clobbering a preserved table — and would stay green if every
+   step this phase adds were deleted. That is deliberate (they are the
+   *preservation* tests, and the newer tests in the same file use `from: 46`),
+   but `migration_test.dart`'s frozen fixtures are the only thing that will
+   catch a forgotten step on the **next** bump. Worth knowing before trusting
+   the file's name.
+8. **`getPlanetMessages` folds the argument with Dart's Unicode-aware
+   `toLowerCase()` and the column with SQLite's ASCII-only `LOWER()`.** So a
+   planet code containing a non-ASCII letter matches in Kotlin
+   (`COLLATE NOCASE` on both sides) and not in the port. The idiom is
+   pre-existing throughout `NewsDao` (three other queries do the same), so this
+   is inherited rather than introduced, and unreachable while planet codes are
+   ASCII. Fixing it properly means `COLLATE NOCASE` in raw SQL rather than
+   `lower()`.
+9. **`NewsDao.getPlanetMessages` takes a non-nullable `String` with no
+   empty-string guard**, matching Kotlin, where
+   `VoicesRepository.planetNewsMessages(String? planetCode)` returns `const []`
+   for null-or-empty. That guard is the port's own. Whoever does the call-site
+   swap must keep it — a naive `getPlanetMessages(planetCode!)` turns a null
+   into a crash.
+10. **The `submissions` sweep's `parentId` shape is worth one more look.** Not
    touched, and not obviously wrong; noted because Phase 125 found the compound
    `'$surveyId@$courseId'` key disagreement the expensive way and this phase's
    fixtures now depend on that shape in two files.
