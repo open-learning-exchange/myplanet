@@ -250,6 +250,13 @@ to allocate.
   `hasOtherOption` column on `survey_questions`, which is not a preserved
   table, so `createAll` rebuilds it and the cost is a schema bump with no
   hand-written step.
+  **False since Phase 143**, which added `surveys` and `survey_questions` to
+  `localAuthorityTables` so an adopted-but-unpublished team survey clone
+  survives a bump. `createAll` no longer alters either table: a new column on
+  `survey_questions` needs its own `_addColumnIfMissing` step, and
+  `migration_test.dart`'s frozen-DDL guard fails until it has one. Corrected
+  here rather than only in the later notes, because this is the sentence a
+  lane taking `hasOtherOption` would read.
 - **`createDraft` bypasses `AnswerShape`** and writes its entries verbatim. It
   has no question rows and so cannot resolve a label, and no Kotlin
   counterpart — nothing in Kotlin creates a submission whose `parent` is a bare

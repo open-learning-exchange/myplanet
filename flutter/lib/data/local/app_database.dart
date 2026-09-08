@@ -126,7 +126,7 @@ class AppDatabase extends _$AppDatabase {
   /// a join the shelf has not yet pushed. Preserving it leaves stale server
   /// rows behind, which the next sync prunes through `deleteNotIn` — a cost
   /// worth paying to keep un-uploaded meetups. [Surveys] and [SurveyQuestions]
-  /// carry no local writes at all and are dropped with the rest.
+  /// are the same hybrid for the same reason — see their entry below.
   ///
   /// [NewsEntries] is the same hybrid: a post or reply composed offline exists
   /// only in this table until the outbox delivers it and it adopts a CouchDB
@@ -229,6 +229,44 @@ class AppDatabase extends _$AppDatabase {
     // counterpart exists — so a schema bump would silently discard the
     // user's completed-challenge state.
     'user_challenge_actions',
+    // Mixed, and the mixture is the whole argument. Almost every row is the
+    // `exams` cache, but `SurveysRepository.adoptSurvey` mints a team's
+    // private clone of a shared survey locally — a row the server has never
+    // seen, carrying [Surveys.needsSync] until `AdoptedSurveysUploader`
+    // publishes it — and writes its question set alongside. By the operative
+    // test (*can a sync restore this?*, not *is it local?*) the answer splits
+    // exactly there: a published clone comes back on the next `exams` walk, an
+    // unpublished one exists nowhere else.
+    //
+    // Phase 138 spared that clone from [SurveyDao.deleteNotIn] and left the
+    // identical loss reachable by an upgrade: `submissions`,
+    // `submission_answers` and `submission_questions` are all preserved, so
+    // dropping these two destroyed the survey and **kept** the members'
+    // answer sheets. Preserving them takes the `teams` route — keep the whole
+    // table, let the next walk's `deleteNotIn` evict the stale cache half,
+    // which it already does for the question rows in the same transaction.
+    //
+    // The price is that `createAll` cannot ALTER a preserved table, so every
+    // future column on either one needs a hand-written [_addColumnIfMissing]
+    // step below — and for `surveys` that step must run *before* `createAll`.
+    // See the reconciliation block for why, and
+    // `migration_test.dart`'s frozen-DDL guard for what fails if it is
+    // forgotten.
+    //
+    // A second, smaller price: a **step-joined** row is now unbounded.
+    // [SurveyDao.deleteNotIn] only ever considers rows with `stepId IS NULL`,
+    // and a step join is released only by
+    // [SurveyDao.releaseStepJoinsForCourse], which the courses walk calls for
+    // the course documents on the current page. A course deleted server-side
+    // is on no page, so nothing nulls its surveys' `stepId` and the prune can
+    // never reach them — the bump used to sweep them and no longer does. They
+    // are unreachable from the UI (the step tile is gone with the course), so
+    // this is accretion rather than a correctness defect; recorded because it
+    // is new, and because it is the argument for giving
+    // `releaseStepJoinsForCourse` a whole-table sweep rather than a per-page
+    // one.
+    'surveys',
+    'survey_questions',
   };
 
   @override
@@ -250,6 +288,100 @@ class AppDatabase extends _$AppDatabase {
           await customStatement('DROP INDEX IF EXISTS ${entity.entityName}');
         }
       }
+
+      // Preserved-table columns an *index* names have to be reconciled here,
+      // before `createAll` — not with the rest of the hand-written steps
+      // below.
+      //
+      // `createAll` emits `CREATE TABLE IF NOT EXISTS`, which no-ops on a
+      // preserved table, but a **bare** `CREATE INDEX` (drift's generated
+      // `Index` carries the literal statement; see `createIndex`). The indexes
+      // were all just dropped, so every one is recreated — and
+      // `surveys_course_id` names `course_id`, which `surveys` only gained at
+      // v35. On a device older than that the preserved table has no such
+      // column and the `CREATE INDEX` aborts the whole upgrade. Adding the
+      // column first is the fix; ordering, not the statement, was the bug.
+      //
+      // No other preserved table is exposed to this: of the columns added by
+      // hand below, none of `chat_history.is_uploaded`, `users.is_updated`,
+      // `users.age`, `users.birth_place`, `teams.image_name`,
+      // `team_tasks.is_notified`, `team_tasks.sync`, `team_tasks.link` or
+      // `news.reactions` appears in a `@TableIndex`. Check that before adding
+      // a step after `createAll`.
+
+      // Both blocks below run before `createAll`, so neither may assume
+      // `surveys` exists: an upgrade from a version predating the table would
+      // find nothing to alter or update, and `createAll` is about to build it
+      // complete. [_addColumnIfMissing] tolerates that on its own; the raw
+      // `UPDATE` in the second block does not, which is what this guards.
+      if (await _tableExists('surveys')) {
+        // v35 added `courseId` and `stepId` to `Surveys`, with the
+        // `surveys_course_id` index on the first, so course-attached surveys
+        // could be modelled. Both are nullable with no backfill to do: a row
+        // written before v35 belonged to no course document, which is what NULL
+        // says.
+        if (from < 35) {
+          await _addColumnIfMissing(m, surveys, surveys.courseId);
+          await _addColumnIfMissing(m, surveys, surveys.stepId);
+        }
+
+        // v47 added `Surveys.needsSync`, the local-authorship flag an adopted
+        // team clone is published on. The column default is `false`, which is
+        // right for every row the server sent — marking those pending would POST
+        // the whole survey cache to `exams` under the user's credentials, the
+        // leak [Surveys.needsSync] exists to prevent.
+        //
+        // **But the default alone would defer this phase's data loss rather than
+        // prevent it.** Preserving the table saves a clone adopted on a pre-v47
+        // build from the bump, and then `needsSync = false` puts it in the worst
+        // of both states: invisible to [SurveyDao.pendingAdoptedSurveys], so it
+        // never publishes, and outside [SurveyDao.deleteNotIn]'s spare clause
+        // (`stepId IS NULL AND needsSync = 0`), so the very next surveys walk
+        // deletes it and its questions and orphans the members' answer sheets.
+        //
+        // So the flag is backfilled for the rows this device can *positively*
+        // identify as its own, which the port can do and Kotlin cannot: the
+        // port's clone id is deterministic — `'${surveyId}_$teamId'`
+        // (`SurveysRepository.adoptSurvey`, whose one production caller passes no
+        // `createId`) — where Kotlin mints `UUID.randomUUID()`
+        // (`SurveysRepositoryImpl.kt:85`). Phase 138 rejected `_rev IS NULL` as
+        // an authorship test and was right to; the id equality is the
+        // discriminator here, and the rev clause only keeps an already-published
+        // clone from being re-queued.
+        //
+        // Every conjunct earns its place, and two are deliberately redundant:
+        //
+        //  * `id = source_survey_id || '_' || team_id` — the identification.
+        //    Only `adoptSurvey` mints that shape. A Kotlin-authored clone is a
+        //    UUID and fails it.
+        //  * `_rev IS NULL` — a clone [SurveyDao.markUploaded] has recorded is a
+        //    cache row again, and re-flagging it would POST a second copy.
+        //  * `step_id IS NULL` — `adoptSurvey` withholds `stepId` deliberately
+        //    (see the call), and this is what excludes a course-embedded survey,
+        //    whose `_rev` is NULL for a reason that has nothing to do with
+        //    authorship (a sub-object carries none).
+        //  * `source_survey_id IS NOT NULL` and `team_id IS NOT NULL` add
+        //    nothing — `x || NULL` is NULL, so the id equality already fails for
+        //    either — and are kept to say plainly that this repair is about a
+        //    team adoption and nothing else.
+        if (from < 47) {
+          await _addColumnIfMissing(m, surveys, surveys.needsSync);
+          await customStatement(
+            'UPDATE surveys SET needs_sync = 1 '
+            'WHERE source_survey_id IS NOT NULL '
+            'AND team_id IS NOT NULL '
+            'AND _rev IS NULL '
+            'AND step_id IS NULL '
+            "AND id = source_survey_id || '_' || team_id",
+          );
+        }
+      }
+
+      // `SurveyQuestions` has never gained or lost a column. The `choices`
+      // converter swap (Phase 104) changed the Dart type and not the DDL —
+      // `TEXT NOT NULL DEFAULT '[]'` before and after — so it needs no step,
+      // and `survey_id`/`position` are structural, present in every shape the
+      // table has ever had. A future column here needs a step of its own.
 
       // Recreates the dropped caches and anything newly added. Note this does
       // not *alter* a preserved table, so changing the shape of one of
@@ -406,23 +538,18 @@ class AppDatabase extends _$AppDatabase {
         await _addColumnIfMissing(m, teamTasks, teamTasks.sync);
         await _addColumnIfMissing(m, teamTasks, teamTasks.link);
       }
-
-      // v47 adds `Surveys.needsSync`, the local-authorship flag an adopted
-      // team clone is published on. No hand-written step: `surveys` is not in
-      // [_localAuthorityTables], so it is dropped above and `createAll`
-      // recreates it with the column. Which also means the bump itself
-      // destroys an unpublished clone — pre-existing for this table and
-      // recorded in the phase notes, not something this column changes.
-      //
-      // The default is `false`, which is correct for every row a re-sync
-      // refills: a survey the server sent is not this device's to publish.
-      if (from < 47) {
-        // Deliberately empty. Kept as an explicit branch so the next reader
-        // sees that v47 was considered here and needs nothing, rather than
-        // wondering whether a step was forgotten.
-      }
     },
   );
+
+  /// Whether the running database has a table of this name.
+  ///
+  /// `PRAGMA table_info` returns no rows for a table SQLite does not have, and
+  /// SQLite has no zero-column table, so an empty result is the test. Needed by
+  /// the reconciliation steps that run *before* `createAll` — see there.
+  Future<bool> _tableExists(String name) async {
+    final rows = await customSelect('PRAGMA table_info($name)').get();
+    return rows.isNotEmpty;
+  }
 
   /// Adds [column] to [table] unless the running database already has it.
   ///
@@ -431,6 +558,12 @@ class AppDatabase extends _$AppDatabase {
   /// `ALTER TABLE ADD COLUMN` on a database that already has it is an error,
   /// hence the check — an upgrade that spans several versions would otherwise
   /// abort partway.
+  ///
+  /// An absent table is also a no-op, which is what makes a call safe *before*
+  /// `createAll` — `PRAGMA table_info` on a table SQLite does not have returns
+  /// no rows, and `createAll` is about to create it complete. Without this an
+  /// upgrade from a version predating the table would `ALTER` something that
+  /// does not exist and abort.
   Future<void> _addColumnIfMissing(
     Migrator m,
     TableInfo<Table, dynamic> table,
@@ -439,6 +572,7 @@ class AppDatabase extends _$AppDatabase {
     final existing = await customSelect(
       'PRAGMA table_info(${table.actualTableName})',
     ).get();
+    if (existing.isEmpty) return;
     final names = existing.map((row) => row.read<String>('name')).toSet();
     if (names.contains(column.name)) return;
     await m.addColumn(table, column);
@@ -2418,6 +2552,57 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
     return row.read(count) ?? 0;
   }
 
+  /// Port of `SubmissionDao.countCompletedByUserAndExamId`
+  /// (`SubmissionDao.kt:24`), which `SubmissionsRepositoryImpl.isStepCompleted`
+  /// reads to decide whether a course step's assessment has been answered:
+  ///
+  /// ```sql
+  /// SELECT COUNT(*) FROM submissions WHERE userId IS :userId
+  ///   AND parentId LIKE '%' || :examId || '%' AND status != 'pending'
+  /// ```
+  ///
+  /// Three things about it are deliberate, and each was got wrong in a draft
+  /// somewhere:
+  ///
+  ///  * **No `type` predicate.** Kotlin's count has none, so a *survey*
+  ///    submission whose `parentId` contains the exam id satisfies it. The
+  ///    port's caller picks its table by type and then filtered in Dart, which
+  ///    is stricter than Kotlin; taking the query as written closes that
+  ///    divergence rather than preserving it.
+  ///  * **The `LIKE` pattern is not escaped.** Kotlin concatenates the raw exam
+  ///    id, so `%` and `_` inside one are wildcards and the match is
+  ///    ASCII-case-insensitive. Escaping would make the port *stricter* than
+  ///    Kotlin — the opposite of the looseness a `contains` was chosen to
+  ///    preserve. Unreachable in practice while `parentId` is minted from the
+  ///    same `exam.id` through `examParentId`, which is why it is a comment and
+  ///    not a defect.
+  ///  * **A NULL `status` does not count.** `NOT (status = 'pending')` is NULL
+  ///    for a NULL status, and `WHERE NULL` excludes the row — the same
+  ///    three-valued outcome `status != 'pending'` gives. A Dart
+  ///    `status != 'pending'` filter would have counted it.
+  ///
+  /// `userId IS :userId` is null-safe, so a null argument matches the rows with
+  /// no user rather than nothing at all.
+  Future<int> countCompletedByUserAndExamId(
+    String? userId,
+    String examId,
+  ) async {
+    final count = submissions.id.count();
+    final userMatch = userId == null
+        ? submissions.userId.isNull()
+        : submissions.userId.equals(userId);
+    final row =
+        await (selectOnly(submissions)
+              ..addColumns([count])
+              ..where(
+                userMatch &
+                    submissions.parentId.like('%$examId%') &
+                    submissions.status.equals('pending').not(),
+              ))
+            .getSingle();
+    return row.read(count) ?? 0;
+  }
+
   /// Port of `AnswerDao.getBySubmissionIds` — every answer for [submissionIds]
   /// in one read, so the progress calc totalises mistakes without N queries.
   Future<List<SubmissionAnswerRow>> answersForSubmissions(
@@ -3256,6 +3441,27 @@ class NewsDao extends DatabaseAccessor<AppDatabase> with _$NewsDaoMixin {
       (select(newsEntries)
             ..where((r) => r.replyTo.lower().equals(newsId.toLowerCase()))
             ..orderBy([(r) => OrderingTerm.desc(r.time)]))
+          .get();
+
+  /// Port of `NewsDao.getByNewsId` (`NewsDao.kt:74`),
+  /// `WHERE newsId = :chatId` — every `news` row carrying a chat's id.
+  /// Case-**sensitive**: that query has no `COLLATE NOCASE`, unlike the
+  /// `docType` ones below it. `VoicesRepository.isAlreadyShared` walked
+  /// `getAll()` and filtered in Dart for want of this.
+  Future<List<NewsRow>> getByNewsId(String chatId) =>
+      (select(newsEntries)..where((r) => r.newsId.equals(chatId))).get();
+
+  /// Port of `NewsDao.getPlanetMessages` (`NewsDao.kt:57-58`),
+  /// `WHERE docType = 'message' COLLATE NOCASE AND createdOn = :planetCode
+  /// COLLATE NOCASE`. Both comparisons are folded with `lower()`, the idiom the
+  /// rest of this DAO uses for `COLLATE NOCASE` — equivalent for ASCII, which
+  /// is all NOCASE itself folds.
+  Future<List<NewsRow>> getPlanetMessages(String planetCode) =>
+      (select(newsEntries)..where(
+            (r) =>
+                r.docType.lower().equals('message') &
+                r.createdOn.lower().equals(planetCode.toLowerCase()),
+          ))
           .get();
 
   /// Case-sensitive, unlike [replies] — `getDirectReplies` omits the

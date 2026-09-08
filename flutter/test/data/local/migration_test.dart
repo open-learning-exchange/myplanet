@@ -1136,6 +1136,8 @@ void main() {
       'search_activity',
       'achievements',
       'user_challenge_actions',
+      'surveys',
+      'survey_questions',
     };
     expect(
       AppDatabase.localAuthorityTables,
@@ -1144,16 +1146,356 @@ void main() {
     );
   });
 
-  test('a survey cache is dropped, carrying no local writes', () async {
+  // `surveys` and `survey_questions` used to be dropped here, and the test
+  // above this one asserted it. They are preserved now — an adopted team
+  // survey clone that has not published exists nowhere else — so the rule the
+  // rest of the file pins applies instead: the row survives the bump, and the
+  // next walk's `deleteNotIn` evicts the stale cache half.
+  //
+  // The clone path itself is driven end-to-end through the production
+  // `adoptSurvey` in `survey_clone_survives_schema_bump_test.dart`; these two
+  // cover the DAO-level shape and the upgrade path's column reconciliation.
+  test(
+    'a survey the server sent survives the bump, walk-pruned after',
+    () async {
+      await database.surveyDao.upsertAll(
+        [SurveysCompanion.insert(id: 'survey-1', name: const Value('Survey'))],
+        const {
+          'survey-1': [
+            SurveyQuestionsCompanion(
+              id: Value('survey-1:q1'),
+              surveyId: Value('survey-1'),
+              header: Value('How was it?'),
+              position: Value(0),
+            ),
+          ],
+        },
+      );
+      // `isNull`/`isNotNull` are ambiguous here — drift exports its own.
+      expect(await database.surveyDao.getById('survey-1'), isA<SurveyRow>());
+
+      await runUpgrade();
+
+      expect(
+        await database.surveyDao.getById('survey-1'),
+        isA<SurveyRow>(),
+        reason: 'the migration no longer decides which survey rows are stale',
+      );
+      expect(await database.surveyDao.questionsFor('survey-1'), hasLength(1));
+
+      // The walk does, and it takes the question rows in the same transaction.
+      await database.surveyDao.deleteNotIn(const []);
+
+      expect(await database.surveyDao.getById('survey-1'), equals(null));
+      expect(await database.surveyDao.questionsFor('survey-1'), isEmpty);
+    },
+  );
+
+  /// The `surveys` and `survey_questions` DDL **frozen** at v47, the last
+  /// version that shipped before either table became preserved, minus the
+  /// columns later versions added.
+  ///
+  /// **Do not update these literals when a column is added to either table.**
+  /// They are the fixture that makes a forgotten [_addColumnIfMissing] step
+  /// fail loudly: a new Drift column absent from this text and absent from the
+  /// migration is absent from `PRAGMA table_info` after the upgrade, and the
+  /// two tests below say so. Keeping the literal in step with the table would
+  /// turn them into coverage that cannot fail — the thing Phase 122 fixed by
+  /// hand and Phase 134 found again.
+  ///
+  /// `_rev` is quoted because it is a drift-named column; the rest matches what
+  /// `Migrator.createTable` emits, `CHECK` constraints included, so a device
+  /// that upgrades is indistinguishable from one created fresh.
+  const surveysDdlBeforeV35 =
+      'CREATE TABLE "surveys" ("id" TEXT NOT NULL, "_rev" TEXT NULL, '
+      '"name" TEXT NULL, "description" TEXT NULL, '
+      '"created_date" INTEGER NOT NULL DEFAULT 0, '
+      '"updated_date" INTEGER NOT NULL DEFAULT 0, '
+      '"adoption_date" INTEGER NOT NULL DEFAULT 0, '
+      '"created_by" TEXT NULL, "total_marks" INTEGER NOT NULL DEFAULT 0, '
+      '"passing_percentage" TEXT NULL, "source_planet" TEXT NULL, '
+      '"is_from_nation" INTEGER NOT NULL DEFAULT 0 '
+      'CHECK ("is_from_nation" IN (0, 1)), "team_id" TEXT NULL, '
+      '"team_share_allowed" INTEGER NOT NULL DEFAULT 0 '
+      'CHECK ("team_share_allowed" IN (0, 1)), '
+      '"source_survey_id" TEXT NULL, PRIMARY KEY ("id"))';
+
+  const surveyQuestionsDdlFrozen =
+      'CREATE TABLE "survey_questions" ("id" TEXT NOT NULL, '
+      '"survey_id" TEXT NOT NULL, "question_id" TEXT NULL, '
+      '"header" TEXT NULL, "body" TEXT NULL, "type" TEXT NULL, '
+      '"choices" TEXT NOT NULL DEFAULT \'[]\', '
+      '"required" INTEGER NOT NULL DEFAULT 0 CHECK ("required" IN (0, 1)), '
+      '"position" INTEGER NOT NULL, PRIMARY KEY ("id"))';
+
+  /// The same literal with v35's two columns and without v47's — the shape a
+  /// handset running the last shipped build actually has on disk, and the one
+  /// the `needs_sync` backfill has to work from.
+  const surveysDdlBeforeV47 =
+      'CREATE TABLE "surveys" ("id" TEXT NOT NULL, "_rev" TEXT NULL, '
+      '"name" TEXT NULL, "description" TEXT NULL, '
+      '"created_date" INTEGER NOT NULL DEFAULT 0, '
+      '"updated_date" INTEGER NOT NULL DEFAULT 0, '
+      '"adoption_date" INTEGER NOT NULL DEFAULT 0, '
+      '"created_by" TEXT NULL, "total_marks" INTEGER NOT NULL DEFAULT 0, '
+      '"passing_percentage" TEXT NULL, "source_planet" TEXT NULL, '
+      '"is_from_nation" INTEGER NOT NULL DEFAULT 0 '
+      'CHECK ("is_from_nation" IN (0, 1)), "team_id" TEXT NULL, '
+      '"team_share_allowed" INTEGER NOT NULL DEFAULT 0 '
+      'CHECK ("team_share_allowed" IN (0, 1)), '
+      '"source_survey_id" TEXT NULL, "course_id" TEXT NULL, '
+      '"step_id" TEXT NULL, PRIMARY KEY ("id"))';
+
+  /// The columns the frozen literals carry, and the three the migration steps
+  /// are responsible for adding on top of them.
+  ///
+  /// Checked against the live table before the literals are installed, the way
+  /// [recreateTeamTasksWithoutV46Columns] checks its own hand-written shape.
+  /// There is no v34 schema artefact to read, so a *renamed or removed*
+  /// `Surveys` column would otherwise slip past the `containsAll` assertions
+  /// below — those catch an addition, not a rename. Exact equality here means a
+  /// new column fails at the fixture, before the outcome assertion, which is
+  /// the earliest and clearest place to be told a step is owed.
+  const frozenSurveyColumns = {
+    'id',
+    '_rev',
+    'name',
+    'description',
+    'created_date',
+    'updated_date',
+    'adoption_date',
+    'created_by',
+    'total_marks',
+    'passing_percentage',
+    'source_planet',
+    'is_from_nation',
+    'team_id',
+    'team_share_allowed',
+    'source_survey_id',
+  };
+  const migratedSurveyColumns = {'course_id', 'step_id', 'needs_sync'};
+
+  Future<Set<String>> columnsOf(String table) async {
+    final rows = await database.customSelect('PRAGMA table_info($table)').get();
+    return rows.map((row) => row.read<String>('name')).toSet();
+  }
+
+  /// Replaces the freshly-created tables with a frozen historical shape, the
+  /// way an on-device upgrade would find them. Dropping a table drops its
+  /// indexes, so `surveys_course_id` goes with the pre-v35 one — which is the
+  /// point: `createAll` recreates it with a bare `CREATE INDEX`, and that
+  /// aborts unless `course_id` is back by then.
+  Future<void> installSurveyShape(String surveysDdl) async {
+    await database.customStatement('SELECT 1');
+    expect(
+      await columnsOf('surveys'),
+      frozenSurveyColumns.union(migratedSurveyColumns),
+      reason: 'the frozen literals below have drifted from the live table',
+    );
+    await database.customStatement('DROP TABLE surveys');
+    await database.customStatement('DROP TABLE survey_questions');
+    await database.customStatement(surveysDdl);
+    await database.customStatement(surveyQuestionsDdlFrozen);
+  }
+
+  Future<void> installSurveyShapeBeforeV35() =>
+      installSurveyShape(surveysDdlBeforeV35);
+
+  test('a preserved survey table gains every column it is missing', () async {
+    await installSurveyShapeBeforeV35();
+    // A clone as a pre-v35 device would hold it: no course join, no rev.
+    await database.customStatement(
+      "INSERT INTO surveys (id, name, source_survey_id, team_id) "
+      "VALUES ('survey-1_team-1', 'Water needs - Team One', "
+      "'survey-1', 'team-1')",
+    );
+    await database.customStatement(
+      "INSERT INTO survey_questions (id, survey_id, header, position) "
+      "VALUES ('survey-1_team-1:q1', 'survey-1_team-1', 'How was it?', 0)",
+    );
+
+    await runUpgrade(from: 34);
+
+    expect(
+      await columnsOf('surveys'),
+      containsAll(database.surveys.$columns.map((column) => column.name)),
+      reason:
+          'a column with no migration step is absent on every upgrade, '
+          'and every query naming it fails — silently, until now',
+    );
+    expect(
+      await columnsOf('survey_questions'),
+      containsAll(
+        database.surveyQuestions.$columns.map((column) => column.name),
+      ),
+    );
+    // The row was preserved, not recreated — the whole reason for the steps.
+    final survivor = await database.surveyDao.getById('survey-1_team-1');
+    expect(survivor?.name, 'Water needs - Team One');
+    expect(survivor?.sourceSurveyId, 'survey-1');
+    expect(
+      await database.surveyDao.questionsFor('survey-1_team-1'),
+      hasLength(1),
+    );
+    // And the v47 step's backfill recognised it as this device's own work, so
+    // it publishes rather than sitting unswept until a prune reaches it. The
+    // rows that must *not* be flagged are covered separately below.
+    expect(
+      (await database.surveyDao.pendingAdoptedSurveys()).map((row) => row.id),
+      ['survey-1_team-1'],
+    );
+  });
+
+  // Inserts the four rows the `needs_sync` backfill has to tell apart, into a
+  // pre-v47 `surveys` table (so no `needs_sync` column to set). Shapes taken
+  // from their producers, not invented:
+  //
+  //  * `adoptSurvey` mints `id = '<sourceSurveyId>_<teamId>'` with an explicit
+  //    `_rev = null` and no `stepId` (`surveys_repository.dart:105`, `:144`).
+  //  * A survey the `exams` walk sent carries no `sourceSurveyId`.
+  //  * An adopted copy *Planet* published carries a `_rev`, and Kotlin mints
+  //    its clone ids with `UUID.randomUUID()`
+  //    (`SurveysRepositoryImpl.kt:85`), so it cannot match the id shape.
+  //  * A course-embedded survey carries a `stepId` from the courses walk.
+  //  * And the adversarial one, `survey-3_team-1`: a clone that *published*
+  //    and was then attached to a course step on Planet. The courses walk
+  //    writes it back with the clone's own id and `sourceSurveyId`, with a
+  //    `stepId`, and with `rev` NULL — a course document's embedded survey is
+  //    a sub-object and carries no `_rev` of its own (the ownership conflict
+  //    Phase 138 recorded at `SurveyMapper._build`). So it matches the id
+  //    shape *and* the rev clause, and `step_id IS NULL` is the only thing
+  //    that keeps the backfill from re-publishing a document the server
+  //    already has.
+  Future<void> insertPreV47SurveyRows() async {
+    await database.customStatement(
+      'INSERT INTO surveys (id, name, _rev, source_survey_id, team_id, '
+      'step_id, course_id) VALUES '
+      "('survey-1_team-1', 'Water needs - Team One', NULL, 'survey-1', "
+      "'team-1', NULL, 'course-1'), "
+      "('survey-1', 'Water needs', '3-server', NULL, NULL, NULL, NULL), "
+      "('a1b2c3d4-uuid', 'Kotlin clone', NULL, 'survey-1', 'team-2', "
+      'NULL, NULL), '
+      "('survey-9_team-1', 'Published clone', '2-abc', 'survey-9', "
+      "'team-1', NULL, NULL), "
+      "('survey-5', 'Step survey', NULL, NULL, NULL, 'course-1:0', "
+      "'course-1'), "
+      "('survey-3_team-1', 'Published clone on a step', NULL, 'survey-3', "
+      "'team-1', 'course-1:0', 'course-1')",
+    );
+  }
+
+  test(
+    'a clone adopted before v47 is handed to the uploader, not the prune',
+    () async {
+      // The defect this closes: preserving the table saves the row from the
+      // bump, and `needs_sync` then defaults to 0 — so
+      // `pendingAdoptedSurveys()` cannot see it and `deleteNotIn`'s spare clause
+      // (`stepId IS NULL AND needsSync = 0`) no longer covers it. The very next
+      // surveys walk deletes it. The loss would have been deferred, not
+      // prevented.
+      await installSurveyShape(surveysDdlBeforeV47);
+      await insertPreV47SurveyRows();
+
+      await runUpgrade(from: 46);
+
+      expect(
+        (await database.surveyDao.pendingAdoptedSurveys()).map((row) => row.id),
+        ['survey-1_team-1'],
+        reason:
+            'the id shape is a positive identification of a local clone — '
+            'and it is one Kotlin cannot make, since its clone ids are UUIDs',
+      );
+
+      // Which is also what keeps it out of the prune's reach.
+      await database.surveyDao.deleteNotIn(['survey-1', 'survey-9_team-1']);
+      expect(
+        await database.surveyDao.getById('survey-1_team-1'),
+        isA<SurveyRow>(),
+      );
+    },
+  );
+
+  test('the backfill leaves every row it cannot positively identify', () async {
+    await installSurveyShape(surveysDdlBeforeV47);
+    await insertPreV47SurveyRows();
+
+    await runUpgrade(from: 46);
+
+    // Flagging any of these would POST a survey this device did not author to
+    // `exams` under the user's credentials — the leak `Surveys.needsSync`
+    // exists to prevent, recreated by the repair meant to use it.
+    for (final id in const [
+      'survey-1',
+      'a1b2c3d4-uuid',
+      'survey-9_team-1',
+      'survey-5',
+      'survey-3_team-1',
+    ]) {
+      final row = await database.surveyDao.getById(id);
+      expect(row, isA<SurveyRow>(), reason: '$id was dropped');
+      expect(row!.needsSync, isFalse, reason: '$id must not be published');
+    }
+  });
+
+  test('the backfill does not touch a handset already on v47', () async {
+    // A v47 device's clone is already flagged, and the branch must not run
+    // again — `from < 47` is false. Nothing here should change.
     await database.surveyDao.upsertAll([
-      SurveysCompanion.insert(id: 'survey-1', name: const Value('Survey')),
+      SurveysCompanion.insert(
+        id: 'survey-2_team-1',
+        sourceSurveyId: const Value('survey-2'),
+        teamId: const Value('team-1'),
+      ),
     ], const {});
-    // `isNull`/`isNotNull` are ambiguous here — drift exports its own.
-    expect(await database.surveyDao.getById('survey-1'), isA<SurveyRow>());
 
-    await runUpgrade();
+    await runUpgrade(from: 47);
 
-    expect(await database.surveyDao.getById('survey-1'), equals(null));
+    expect(
+      (await database.surveyDao.getById('survey-2_team-1'))?.needsSync,
+      isFalse,
+      reason:
+          'the id shape alone is not authorship — on v47 the flag is '
+          'authoritative, and a row without it was not adopted here',
+    );
+  });
+
+  test('the surveys indexes are rebuilt on a preserved table', () async {
+    await installSurveyShapeBeforeV35();
+
+    await runUpgrade(from: 34);
+
+    final indexes = await database
+        .customSelect(
+          "SELECT name FROM sqlite_master WHERE type = 'index' "
+          "AND tbl_name IN ('surveys', 'survey_questions')",
+        )
+        .get();
+    expect(
+      indexes.map((row) => row.read<String>('name')),
+      containsAll(<String>[
+        'surveys_created_date',
+        'surveys_course_id',
+        'survey_questions_survey',
+      ]),
+      reason:
+          'createAll emits a bare CREATE INDEX, so course_id has to exist '
+          'by the time it runs',
+    );
+  });
+
+  test('a table added after the running version is created complete', () async {
+    // The `_addColumnIfMissing` calls that precede `createAll` have to tolerate
+    // a table SQLite does not have yet — an upgrade from a version predating
+    // it. `createAll` then builds it with every column, so the steps no-op.
+    await database.customStatement('SELECT 1');
+    await database.customStatement('DROP TABLE surveys');
+
+    await runUpgrade(from: 34);
+
+    expect(
+      await columnsOf('surveys'),
+      containsAll(database.surveys.$columns.map((column) => column.name)),
+    );
   });
 
   test(
