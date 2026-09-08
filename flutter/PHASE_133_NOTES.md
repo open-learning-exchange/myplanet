@@ -134,6 +134,15 @@ followed in `activities_repository.dart`:
   read `group.first().title` and dropped the group on that one row alone.
 - Ties break on title ascending instead of on iteration order.
 
+One deliberate divergence, found while reviewing the audit's own probe of my
+doc comment and pinned by a test. SQLite's one-argument `TRIM()` strips **only**
+U+0020, so a title that is nothing but a tab, a newline or a non-breaking space
+passes `TRIM(title) != ''` and the Kotlin still picks it — rendering exactly the
+blank stat the filter was added to prevent. Dart's `trim()` strips all Unicode
+whitespace, so the port excludes those too. The port is the better behaviour
+here; the defect was my first comment implying the two were equivalent, which is
+the *"a wrong rationale is a real defect"* rule applied to my own writing.
+
 Two new tests, both checked against the pre-fix implementation and red on it
 (Phase 122's rule: a test that cannot fail reads as coverage and is worse than
 none). The tie-break test inserts `Zoology` before `Anatomy` precisely so the old

@@ -335,6 +335,21 @@ void main() {
       expect(best?.title, 'Geometry');
       expect(best?.count, 1);
 
+      // A deliberate divergence, pinned so a narrower reimplementation reds.
+      // SQLite's one-argument TRIM() strips only U+0020, so a tab-only title
+      // survives `TRIM(title) != ''` and the Kotlin still picks it — rendering
+      // exactly the blank stat the filter exists to prevent. Dart's trim()
+      // strips all Unicode whitespace, so the port drops it.
+      await open('t1', 'res-tab', '\t');
+      await open('t2', 'res-tab', '\t');
+      await open('t3', 'res-tab', '\t');
+      await open('t4', 'res-tab', '\t');
+      final stillGeometry = await repository.mostOpenedResource(
+        'ada',
+        ActivityTypes.visit,
+      );
+      expect(stillGeometry?.title, 'Geometry');
+
       // A group is now judged on its *titled* rows only: the untitled first row
       // no longer discards the whole resource, and no longer inflates its count.
       await open('m1', 'res-mixed', null);

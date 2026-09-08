@@ -269,6 +269,15 @@ class ActivitiesRepository {
   /// a title. Filtering first also changes the counts: an untitled open no
   /// longer contributes to any resource's total.
   ///
+  /// One narrow, deliberate divergence. SQLite's one-argument `TRIM()` strips
+  /// **only** U+0020, so a title that is nothing but a tab, a newline or a
+  /// non-breaking space passes `TRIM(title) != ''` and is still chosen by the
+  /// Kotlin — where it renders just as blank as the spaces case the filter was
+  /// added for. Dart's [String.trim] strips all Unicode whitespace, so the port
+  /// excludes those too. Reproducing the hole would mean matching `^ *$`
+  /// instead; the filter's purpose is to keep a blank stat off the profile, and
+  /// this serves it more completely.
+  ///
   /// **Ties break on title ascending** instead of resolving to whichever group
   /// the iteration reached first. `ORDER BY ... title ASC` is SQLite's BINARY
   /// collation (UTF-8 byte order); Dart's [String.compareTo] is UTF-16 code
