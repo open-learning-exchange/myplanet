@@ -170,27 +170,12 @@ class ActivitiesRepositoryImpl @Inject constructor(
         return resourceActivityDao.countByUserAndType(userName, type)
     }
 
-    override suspend fun getMostOpenedResource(userName: String, type: String): Pair<String, Int>? = withContext(dispatcherProvider.default) {
-        val activities = resourceActivityDao.getByUserAndType(userName, type)
-        if (activities.isEmpty()) {
-            return@withContext null
-        }
-
-        val resourceCounts = activities
-            .groupBy { it.resourceId }
-            .mapValues { entry ->
-                val count = entry.value.size
-                val title = entry.value.first().title
-                Pair(count, title)
-            }
-            .filterValues { it.second != null }
-
-        val maxEntry = resourceCounts.maxByOrNull { it.value.first }
-
-        if (maxEntry == null || maxEntry.value.first == 0) {
-            null
+    override suspend fun getMostOpenedResource(userName: String, type: String): Pair<String, Int>? = withContext(dispatcherProvider.io) {
+        val result = resourceActivityDao.getMostOpenedResource(userName, type)
+        if (result != null) {
+            Pair(result.title, result.openCount)
         } else {
-            Pair(maxEntry.value.second ?: "", maxEntry.value.first)
+            null
         }
     }
 
