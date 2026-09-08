@@ -213,4 +213,18 @@ class UploadConfigsTest {
         assertEquals("test-custom-device", json.get("customDeviceName").asString)
     }
 
+    @Test
+    fun `customDeviceName resolves dynamically when sharedPrefManager value changes`() = runTest {
+        val newsLog = NewsLog().apply { userId = "user1"; type = "news"; time = 100L }
+        val serializer = uploadConfigs.NewsActivities.serializer as UploadSerializer.Simple
+
+        val json1 = serializer.serialize(newsLog)
+        assertEquals("test-custom-device", json1.get("customDeviceName").asString)
+
+        every { sharedPrefManager.getCustomDeviceName() } returns "updated-custom-device"
+
+        val json2 = serializer.serialize(newsLog)
+        assertEquals("updated-custom-device", json2.get("customDeviceName").asString)
+    }
+
 }

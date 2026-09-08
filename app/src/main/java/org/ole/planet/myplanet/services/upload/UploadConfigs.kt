@@ -54,8 +54,8 @@ class UploadConfigs @Inject constructor(
     private val diagnosticsRepository: DiagnosticsRepository,
     private val progressRepository: ProgressRepository
 ) {
-    private val androidId: String? by lazy { VersionUtils.getAndroidId(context) }
-    private val customDeviceName: String by lazy { sharedPrefManager.getCustomDeviceName() }
+    private val androidId: String? get() = VersionUtils.getAndroidId(context)
+    private val customDeviceName: String get() = sharedPrefManager.getCustomDeviceName()
 
     val NewsActivities = RoomUploadConfig(
         endpoint = "myplanet_activities",
