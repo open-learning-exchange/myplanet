@@ -108,7 +108,7 @@ dependencies:
   # `BuildConfig.VERSION_CODE` for the About and Settings version lines. The
   # port had been hardcoding `0.62.97` / `Build 6297`, which drifts from the
   # pubspec version on every release.
-  package_info_plus: ^8.1.1
+  package_info_plus: "^9.0.0"
 
 dev_dependencies:
   flutter_test:
