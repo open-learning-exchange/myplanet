@@ -27,7 +27,7 @@ The basis, so it can be argued with rather than repeated:
 |---|---|---|
 | Feature breadth | all 28 UI packages have screens (enterprises is a team *type*, not a gap — Phase 99) | ~95 |
 | Behavioural parity | the limiter, and the lowest-confidence row: **reachability** audits keep finding ported, green, *dead* code — see below | ~72 |
-| Test coverage | 2425 tests / 206 test files vs 248 Kotlin test files | ~88 |
+| Test coverage | 2457 tests / 209 test files vs 248 Kotlin test files | ~88 |
 | Localisation | ar/es/fr 851–886 of 906 keys but **416–469 of those are unreviewed machine translation** (`"x-mt": true`, so the set is queryable); ne/so 444 | ~55 |
 | Background work | WorkManager gaps closed through Phase 94, platform channels in-tree | ~95 |
 
@@ -786,7 +786,7 @@ lose a behaviour.
 wrote the test, noticed it passed unconditionally, and fixed the test. A
 migration test that cannot fail is worse than none, because it reads as coverage.
 
-Phases 128–136 ran as three- and four-lane rounds. The work itself was routine
+Phases 128–137 ran as three- and four-lane rounds. The work itself was routine
 by now; what these rounds established is about the *method*, and two items are
 open data-loss rows that outrank anything they were opened for.
 
@@ -833,11 +833,21 @@ is now systematic. The adoption marker (`status: ''`) and `pending` drafts are
 uploaded reliably rather than incidentally; *what* reaches the server is
 unchanged, only *when*.
 
-**Two open rows, both bigger than the phases that found them.**
-`updateCourseProgress` has **zero callers** in the port — the Phase 119 shape,
-a Dart writer sitting uncalled — and `take_course_screen` deliberately leaves an
-exam-bearing step unpassed for the exam to grade while nothing grades it, so
-`completedCourseIds` may never complete such a course. And **an adopted team
+**One open row bigger than the phase that found it — and one alarm that was
+over-read, mine.** `updateCourseProgress` did have **zero callers**, and Phase
+135 wired it where Kotlin has it. But the consequence chain Phase 133 drew, and
+this file repeated — a step with an exam is left unpassed, nothing grades it,
+`completedCourseIds` requires every step passed, *therefore an exam-bearing
+course can never complete* — is **not a defect**, because Kotlin does the same:
+its exam finish passes `sub?.status == "graded"`, always false on that path, so
+it writes `passed = false` too. In both apps a step exam becomes passed when
+Planet's own grading arrives in the `courses_progress` document, and the port
+already mirrors that route — the test proving it **passed before Phase 135
+changed anything**. **A chain that ends "so the port cannot do X" is a defect
+only once you have walked the same chain in the Kotlin and found that it can.
+Both apps are allowed to depend on the server.** Second time a reachability
+finding has been over-read; the first was counting a Kotlin directory name as a
+missing screen (Phase 99). And **an adopted team
 survey clone is deleted on the next sync and never uploaded**: Kotlin uploads it
 (`getPendingAdoptedSurveys` → endpoint `exams`) so it gains a `_rev` and joins
 every later keep set, and Kotlin has no delete-except-ids on that table at all,
@@ -857,14 +867,38 @@ none on the rounds that do not.
 
 ### Dependency drift is now its own debt
 
-`flutter pub outdated` reports **89 packages** behind latest, up from 84 a few
-rounds ago — a raw number that has been quoted here for several rounds without
-anyone decomposing it into *resolvable now* versus *held by a direct
-dependency's constraint*, which is most of it. Phase 137 is doing that. Two of them are the port's load-bearing architecture:
-`flutter_riverpod` 2.6.1 → 3.4.3 and `go_router` 14.8.1 → 18.0.1, both major
-gaps. Nothing is broken, and no round has needed to touch them — but this only
-gets harder, and when it is done it wants a phase of its own with no other lane
-running, because a Riverpod major will touch every provider in the port.
+**The raw count was the wrong number, and quoting it overstated the debt by
+about three times.** Phase 137 decomposed it and took what could be taken: 89
+behind latest became **38**. The three buckets `flutter pub outdated` actually
+reports:
+
+| Bucket | Before | After | What it means |
+|---|---:|---:|---|
+| Locked, but upgradable under existing constraints | 53 | **0** | `flutter pub upgrade` takes them. No pubspec edit, no decision. |
+| Constrained below a resolvable version | 18 | **13** | The only bucket carrying judgement. **This is the number to track.** |
+| Not reachable at any constraint | 18 | **25** | Needs a newer SDK than the pinned 3.44.8, or a blocked parent. |
+
+The third bucket *growing* is correct, not a regression: taking a lock-only
+upgrade usually moves a package from bucket 1 into bucket 3 (`analyzer` 10.0.1
+→ 13.0.0 with 14.3.0 needing an SDK this repo cannot have). **On a pinned
+Flutter SDK the headline number has a floor and 38 is near it** — 25 of the 38
+are unreachable until `flutter.yml` and `.claude/hooks/session-start.sh` move
+off 3.44.8 together, and two of those (`js`,
+`flutter_secure_storage_macos`) are discontinued and will never move.
+
+The two majors this file has called load-bearing for several rounds were then
+*measured* rather than guessed, each resolved in a container and run:
+
+- **`go_router` 14.8.1 → 18.0.1 is a one-line change.** Analyze clean, full
+  suite green, zero source or test edits. 18.0.0's floor is Flutter 3.44 / Dart
+  3.12, exactly what is pinned; 17's observer default is unobservable with no
+  router observer registered; 16's `GoRouteData` break needs
+  `go_router_builder`, which the port does not have (zero `TypedGoRoute`); 15's
+  case-sensitive URLs change nothing because all 78 `GoRoute` paths are
+  lowercase. **Re-check that last one if a route is ever added with a capital
+  letter.**
+- **`flutter_riverpod` 2.6.1 → 3.4.3 is the real one** and still wants a phase
+  with no other lane running, because it touches every provider in the port.
 
 ### Running parallel lanes
 
@@ -913,6 +947,14 @@ established, at the cost of a regression and five failing tests:
   Twice the top two items from a round both needed the file a running lane
   owned, so the honest answer was to wait rather than spin up lower-value
   lanes. Integration cost is real; lane count is not the score.
+- **An audit subagent's mutations land in the lane's own working tree.** Phase
+  135's second `parity-auditor` pass reverted four of the phase's own reads to
+  measure whether anything pinned them, and **left the file that way**; only the
+  session's dirty-tree check caught it, and a reflexive "commit what's
+  outstanding" would have silently un-shipped the fix its commit message
+  described. After an audit pass, `git status` is not a formality: diff against
+  the commit you expect, and read any change you did not make rather than
+  staging it. Treat the tree as shared with whatever the lane spawned.
 - **A red gate is not always the diff.** `package:sqlite3`'s build hook fetches
   a prebuilt `libsqlite3` from a GitHub release and verifies a sha256 with **no
   retry of its own**, so one bad response fails `flutter test` before a test
