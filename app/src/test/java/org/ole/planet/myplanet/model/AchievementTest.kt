@@ -80,27 +80,45 @@ class AchievementTest {
     }
 
     @Test
-    fun parseStringListToJsonArray_returnsCachedElementWithoutDeepCopy() {
-        // A JsonObject entry is serialized to a string, then parsed back and cached.
-        // Cached elements are returned directly without deepCopy(), so repeated reads
-        // return equal content and the exact same cached object instance.
+    fun parseStringListToJsonArray_returnsCachedElementWithoutDeepCopy_forSameRecordAndField() {
         val entry = JsonObject().apply {
             addProperty("title", "cached-value")
         }
-        val first = Achievement.fromJson(JsonObject().apply {
+        val achievement = Achievement.fromJson(JsonObject().apply {
             addProperty("_id", "ach_cache")
             add("achievements", JsonArray().apply { add(entry) })
-        }).achievementsArray
+        })
 
-        val second = Achievement.fromJson(JsonObject().apply {
+        val firstRead = achievement.achievementsArray
+        val secondRead = achievement.achievementsArray
+
+        assertEquals("cached-value", firstRead[0].asJsonObject.get("title").asString)
+        assertEquals("cached-value", secondRead[0].asJsonObject.get("title").asString)
+        // Cache hit within the same record returns the exact same cached instance
+        assertTrue(firstRead[0] === secondRead[0])
+    }
+
+    @Test
+    fun parseStringListToJsonArray_scopesCacheKeysByRecordAndField() {
+        val entry = JsonObject().apply {
+            addProperty("title", "cached-value")
+        }
+        val ach1 = Achievement.fromJson(JsonObject().apply {
+            addProperty("_id", "ach_cache_1")
+            add("achievements", JsonArray().apply { add(entry) })
+        })
+        val ach2 = Achievement.fromJson(JsonObject().apply {
             addProperty("_id", "ach_cache_2")
             add("achievements", JsonArray().apply { add(entry) })
-        }).achievementsArray
+        })
 
-        assertEquals("cached-value", first[0].asJsonObject.get("title").asString)
-        assertEquals("cached-value", second[0].asJsonObject.get("title").asString)
-        // Cache hit returns the exact same cached instance without deepCopy or re-parsing
-        assertTrue(first[0] === second[0])
+        val firstRec = ach1.achievementsArray
+        val secondRec = ach2.achievementsArray
+
+        assertEquals("cached-value", firstRec[0].asJsonObject.get("title").asString)
+        assertEquals("cached-value", secondRec[0].asJsonObject.get("title").asString)
+        // Cache keys are scoped by record identifier, so distinct records do not share cache entries
+        assertTrue(firstRec[0] !== secondRec[0])
     }
 
     @Test

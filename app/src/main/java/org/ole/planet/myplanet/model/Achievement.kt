@@ -30,20 +30,41 @@ class Achievement {
     var resumeFileName: String? = null
 
     val achievementsArray: JsonArray
-        get() = parseStringListToJsonArray(achievements)
+        get() = parseStringListToJsonArray("achievements", achievements)
 
     @Ignore
     private var cachedReferencesArray: JsonArray? = null
 
     fun getReferencesArray(): JsonArray {
-        return parseStringListToJsonArray(references)
+        return parseStringListToJsonArray("references", references)
     }
 
     val linksArray: JsonArray
-        get() = parseStringListToJsonArray(links)
+        get() = parseStringListToJsonArray("links", links)
 
     val otherInfoArray: JsonArray
-        get() = parseStringListToJsonArray(otherInfo)
+        get() = parseStringListToJsonArray("otherInfo", otherInfo)
+
+    /**
+     * Parses a list of JSON strings into a [JsonArray].
+     *
+     * Cache keys are scoped by record identifier and field name (e.g. "$ownerKey#$fieldName#$s")
+     * to prevent cache collisions across distinct achievement records or fields.
+     */
+    private fun parseStringListToJsonArray(fieldName: String, list: List<String>?): JsonArray {
+        val ownerKey = if (_id.isNotEmpty()) _id else System.identityHashCode(this).toString()
+        val array = JsonArray()
+        for (s in list ?: emptyList()) {
+            val cacheKey = "$ownerKey#$fieldName#$s"
+            var ob = parsedJsonCache[cacheKey]
+            if (ob == null) {
+                ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
+                parsedJsonCache[cacheKey] = ob
+            }
+            array.add(ob)
+        }
+        return array
+    }
 
     fun setLinks(la: JsonArray?) {
         if (la == null) {
@@ -98,24 +119,6 @@ class Achievement {
             }
         )
 
-        /**
-         * Parses a list of JSON strings into a [JsonArray].
-         *
-         * Cached elements are returned directly without deep copying. Callers must not mutate
-         * the elements contained in the returned array.
-         */
-        private fun parseStringListToJsonArray(list: List<String>?): JsonArray {
-            val array = JsonArray()
-            for (s in list ?: emptyList()) {
-                var ob = parsedJsonCache[s]
-                if (ob == null) {
-                    ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
-                    parsedJsonCache[s] = ob
-                }
-                array.add(ob)
-            }
-            return array
-        }
 
         fun fromJson(act: JsonObject): Achievement {
             return Achievement().apply {
