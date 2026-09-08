@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.repository
 
-import android.util.Base64
 import android.util.Log
+import java.util.Base64
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Calendar
@@ -438,14 +438,12 @@ class CoursesRepositoryImpl @Inject constructor(
             emptyMap()
         } else {
             questionDao.getByExamIds(examIds)
-                .map { it }
                 .groupBy { it.examId ?: "" }
                 .filterKeys { it.isNotEmpty() }
         }
 
         val examIdsSet = examIds.toSet()
         val relevantSubmissions = submissionDao.getExamSubmissionsByUser(userId)
-            .map { it }
             .filter { sub -> examIdsSet.contains(getParentBaseId(sub.parentId)) }
 
         val submissionsByExamId = relevantSubmissions.groupBy { sub ->
@@ -457,7 +455,6 @@ class CoursesRepositoryImpl @Inject constructor(
             emptyMap()
         } else {
             answerDao.getBySubmissionIds(submissionIds)
-                .map { it }
                 .groupBy { it.submissionId ?: "" }
                 .filterKeys { it.isNotEmpty() }
         }
@@ -521,9 +518,9 @@ class CoursesRepositoryImpl @Inject constructor(
         return certificationDao.countByCourseId(courseId) > 0
     }
 
-    override suspend fun updateCourseProgress(courseId: String?, stepNum: Int, passed: Boolean) {
+    override suspend fun updateCourseProgress(courseId: String?, stepNum: Int, passed: Boolean, userId: String?) {
         if (courseId.isNullOrEmpty()) return
-        courseProgressDao.updatePassedByCourseAndStep(courseId, stepNum, passed)
+        courseProgressDao.updatePassedByCourseAndStep(courseId, stepNum, passed, userId)
     }
 
     override suspend fun getCourseStepData(stepId: String, userId: String?): CourseStepData {
@@ -681,7 +678,7 @@ class CoursesRepositoryImpl @Inject constructor(
         val stepsJson = JsonUtils.getJsonArray("steps", doc)
         for (i in 0 until stepsJson.size()) {
             val stepElement = stepsJson[i]
-            val stepId = Base64.encodeToString(stepElement.toString().toByteArray(), Base64.NO_WRAP)
+            val stepId = Base64.getEncoder().encodeToString(stepElement.toString().toByteArray())
             val stepJson = stepElement.asJsonObject
             val stepDescription = JsonUtils.getString("description", stepJson)
             extractLinks(stepDescription).forEach { link ->
@@ -827,7 +824,7 @@ class CoursesRepositoryImpl @Inject constructor(
             pendingCourseResources.clear()
         }
 
-        val resourceIds = batch.map { JsonUtils.getString("_id", it.doc) }.filter { it.isNotBlank() }
+        val resourceIds = batch.mapNotNull { pending -> JsonUtils.getString("_id", pending.doc).takeIf { it.isNotBlank() } }
         val existingMap = if (resourceIds.isNotEmpty()) {
             resourceIds.distinct()
                 .chunked(300)

@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.health
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -36,6 +35,7 @@ import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.effectiveId
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -139,7 +139,7 @@ class MyHealthFragment : Fragment() {
             if (currentUser != null) {
                 userModel = currentUser
                 binding.lblHealthName.text = getDisplayName(currentUser)
-                userId = if (currentUser._id.isNullOrEmpty()) currentUser.id else currentUser._id
+                userId = currentUser.effectiveId
                 setupButtons()
             } else {
                 userModel = null
@@ -258,7 +258,7 @@ class MyHealthFragment : Fragment() {
             startActivity(Intent(activity, AddHealthActivity::class.java).putExtra("userId", userId))
         }
 
-        binding.txtDob.text = if (TextUtils.isEmpty(userModel?.dob)) getString(R.string.birth_date) else TimeUtils.formatDateToDDMMYYYY(userModel?.dob)
+        binding.txtDob.text = if (userModel?.dob.isNullOrEmpty()) getString(R.string.birth_date) else TimeUtils.formatDateToDDMMYYYY(userModel?.dob)
     }
 
     private fun setupRealtimeSync() {
@@ -271,7 +271,7 @@ class MyHealthFragment : Fragment() {
 
     private fun selectPatient() {
         adapter = HealthUsersAdapter { selected ->
-            userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
+            userId = selected.effectiveId
             val normalizedId = userId?.trim()
             if (!normalizedId.isNullOrEmpty()) {
                 viewModel.selectPatient(normalizedId)

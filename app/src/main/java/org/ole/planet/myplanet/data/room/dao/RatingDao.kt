@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import org.ole.planet.myplanet.model.Rating
+import org.ole.planet.myplanet.model.RatingPromptLog
 
 data class RatingAggregate(
     val totalCount: Int,
@@ -47,4 +48,10 @@ interface RatingDao {
 
     @Update
     suspend fun update(item: Rating)
+
+    @Query("SELECT EXISTS(SELECT 1 FROM rating_prompt_log WHERE userId = :userId AND item = :item AND type = :type)")
+    suspend fun isRatingPrompted(userId: String, item: String, type: String = "resource"): Boolean
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun setRatingPrompted(prompt: RatingPromptLog)
 }
