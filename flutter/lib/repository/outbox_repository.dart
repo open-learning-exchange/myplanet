@@ -121,6 +121,24 @@ class OutboxRepository {
 
   Future<List<OutboxRow>> due() => _dao.due(_now().millisecondsSinceEpoch);
 
+  /// Whether a send for this item is on the wire right now.
+  ///
+  /// [enqueue] deliberately puts an `in_progress` row back to `pending` so a
+  /// payload edited mid-flight is not lost with the row `markCompleted`
+  /// deletes — and `markCompleted` is `deleteIfInProgress`, so the send that
+  /// just succeeded then deletes nothing and the row survives, `pending`, with
+  /// the same body. For *derived state* that is exactly right: the shelf's
+  /// handler rebuilds from the database, so a replay re-sends current truth.
+  ///
+  /// For an **append** it is a duplicate. A submission is an append, so its
+  /// uploader asks this first and leaves an in-flight row alone rather than
+  /// re-enqueueing over it. Kept here rather than as a bare `findOpen`
+  /// passthrough so the distinction that makes it necessary has one home; see
+  /// [OutboxHandler] for the append-versus-derived-state split it turns on.
+  Future<bool> isInFlight(String uploadType, String itemId) async =>
+      (await _dao.findOpen(uploadType, itemId))?.status ==
+      OutboxDao.statusInProgress;
+
   /// Withdraws a queued operation whose subject no longer exists.
   ///
   /// The Kotlin upload path has no equivalent because it reads the live table

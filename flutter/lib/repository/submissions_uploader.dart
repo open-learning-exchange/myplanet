@@ -49,7 +49,24 @@ class SubmissionsUploader {
   }) async {
     final rows = await _submissions.pendingUploads();
     final identity = rows.isEmpty ? null : await _identity.read();
+    var queued = 0;
     for (final row in rows) {
+      // A send already on the wire is left alone. `OutboxRepository.enqueue`
+      // would put it back to `pending` to preserve a mid-flight payload edit,
+      // and `markCompleted` only deletes an `in_progress` row — so the send
+      // that succeeds moments later deletes nothing, the row survives with the
+      // same body, and the next drain posts a **second** CouchDB document.
+      // That reset is right for derived state, whose handler rebuilds; a
+      // submission is an append and replaying it duplicates it.
+      //
+      // The cost is the narrow window where the sheet is edited while its POST
+      // is in flight: `markUploaded` clears `isUpdated` on success, so that
+      // edit leaves the pending set. Kotlin loses it identically —
+      // `SubmissionDao:44` clears `isUpdated` in the same statement — and a
+      // later edit is a `_rev`-carrying PUT rather than a new document, so an
+      // update is recoverable where a duplicate is not.
+      if (await _outbox.isInFlight(type, row.id)) continue;
+      queued++;
       await _outbox.enqueue(
         uploadType: type,
         itemId: row.id,
@@ -61,7 +78,7 @@ class SubmissionsUploader {
         userId: userId,
       );
     }
-    return rows.length;
+    return queued;
   }
 
   OutboxHandler get handler => (row, payload, authHeader) async {

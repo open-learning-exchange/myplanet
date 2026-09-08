@@ -5,13 +5,12 @@ import 'package:workmanager/workmanager.dart';
 import 'core/background/background_task_runner.dart';
 import 'core/background/background_task_names.dart';
 import 'core/background/background_download_queue.dart';
-import 'core/network/network_result.dart';
 import 'core/config/server_config.dart';
+import 'core/network/network_result.dart';
 import 'core/prefs/planet_prefs.dart';
 import 'core/sync/sync_result.dart';
 import 'providers/app_providers.dart';
 import 'repository/personals_uploader.dart';
-import 'repository/submissions_uploader.dart';
 
 /// WorkManager launches this in a new isolate, so it must be a retained
 /// top-level entry point rather than a closure installed by the UI isolate.
@@ -69,8 +68,17 @@ Future<bool> executeBackgroundTask(String taskName) async {
           ? null
           : DateTime.fromMillisecondsSinceEpoch(prefs.lastSync, isUtc: true),
       recoverOutbox: drainer.recoverStuck,
+      // The submissions safety net rides here rather than in `syncSteps`, and
+      // the placement is the whole point — see [sweepPendingSubmissions]. The
+      // drain that follows is unscoped, so the swept rows go out in this same
+      // invocation without the sweep needing a drain of its own.
       drainOutbox: () async {
         if (config == null) return;
+        await sweepPendingSubmissions(
+          container,
+          config: config,
+          userId: prefs.loggedInUserId,
+        );
         await drainer.drain(
           authHeader: PersonalsUploader.authHeaderFor(config),
         );
@@ -112,11 +120,6 @@ Future<bool> executeBackgroundTask(String taskName) async {
                 }
                 return true;
               }),
-              submissionsPushStep(
-                container,
-                config: config,
-                userId: prefs.loggedInUserId,
-              ),
               BackgroundSyncStep(
                 'resources',
                 () async => completed(
@@ -242,36 +245,45 @@ Future<bool> executeBackgroundTask(String taskName) async {
 }
 
 /// The headless half of the submissions safety net — see
-/// [DashboardSyncNotifier.queuePendingSubmissions], which carries the Kotlin
-/// reading this step is built on.
+/// `DashboardSyncNotifier.queuePendingSubmissions`, which carries the Kotlin
+/// reading this is built on.
 ///
-/// Placed **before** the `submissions` pull below rather than after it, and the
-/// order is load-bearing here in a way it is not in the sync centre.
-/// `SubmissionsRepository.upsertDocuments` writes `isUpdated: false` over every
-/// row it writes — as Kotlin's `bulkInsertFromSync` does
-/// (`SubmissionsRepositoryImpl:686`) — and it keys each row on the server
-/// `_id` (`submissions_repository.dart:1670-1672`, `id: id`).
+/// **Called from `drainOutbox`, deliberately not from `syncSteps`.** The first
+/// cut put it in the step list beside `shelf_push`, and the implementation
+/// audit found that this hides it behind three gates Kotlin's sweeper has none
+/// of: `BackgroundTaskRunner.run` returns before the steps for a `maintenance`
+/// task, when `autoSyncEnabled` is false, and when the interval is not yet due
+/// (`background_task_runner.dart:102-136`). Worse, `BackgroundWorkCoordinator`
+/// cancels the `autoSync` job outright when the user turns auto-sync off
+/// (`background_work_coordinator.dart:27-30`), so for that user only
+/// `maintenance` ever fires and a step in `syncSteps` would never run at all.
 ///
-/// **That keying is why the window is narrower than it first looks, and the
-/// first version of this comment had it wrong.** A *locally authored* sheet
+/// Kotlin's closest sweeper is `ServerReachabilityWorker`, scheduled by
+/// `NetworkMonitorWorker.start` from `MainApplication:520-522` with no
+/// reference to any sync setting or cadence, sweeping on **network
+/// reconnection** — which is exactly the case this net exists for: the handset
+/// was offline when the sheet was finished, and the network came back.
+/// `drainOutbox` runs ahead of all three gates and on every invocation, so it
+/// is the closest the port has to that worker.
+///
+/// Two properties survive the move. It is still ahead of the `'submissions'`
+/// pull, which matters because `SubmissionsRepository.upsertDocuments` writes
+/// `isUpdated: false` over every row it writes and keys each on the server
+/// `_id` (`submissions_repository.dart:1670-1672`): a *locally authored* sheet
 /// carries a sha1 local id, so a pulled document lands beside it as a separate
-/// row and cannot touch its flags — Kotlin behaves identically
-/// (`SubmissionsRepositoryImpl:669-670`). What the order protects is a sheet
-/// that **arrived from the server and was then edited locally**: survey resume
-/// (`markComplete`) sets `uploaded: false, isUpdated: true` on a row whose
-/// primary key *is* the server `_id`, so a pull running first overwrites both
-/// and the edit never uploads. Kotlin agrees by construction anyway — its
-/// submissions pull lives in `HeavyTableSyncWorker`
-/// (`HeavyTableSyncWorker:39-41`), which `startFullSync` only *schedules* at
-/// its end (`SyncManager:209`), while the sweep runs during the pass.
-///
-/// **Always `true`.** `BackgroundTaskRunner` adds a step that returns false or
-/// throws to `failedSteps`, which makes the whole task ask WorkManager for a
-/// retry. No Kotlin caller of `uploadSubmissions` does that:
-/// `UserDataWorker:48` wraps it in `runCatching` and still returns
-/// `Result.success()`, `AutoSyncWorker` logs and returns success, and
-/// `UploadManager:236-252` swallows the exception before either sees it. A
-/// sheet that cannot be sent must not re-run the pulls.
+/// row and cannot touch its flags — Kotlin identically
+/// (`SubmissionsRepositoryImpl:669-670`) — while a sheet that **arrived from
+/// the server and was then edited locally** (survey resume's `markComplete`)
+/// has the server `_id` for a primary key, so a pull running first overwrites
+/// the edit and it never uploads. And the sweep is swallowed rather than
+/// reported: a throwing `drainOutbox` adds `outboxDrain` to the runner's
+/// `failedSteps` and asks the OS to retry the task, and no Kotlin caller of
+/// `uploadSubmissions` does that — `UserDataWorker:48` wraps it in
+/// `runCatching` and still returns `Result.success()`, and
+/// `UploadManager:236-252` swallows the exception before either could see one.
+/// It is not hypothetical: `queuePending` reads device identity before it
+/// enqueues anything, and `PlatformDeviceIdentitySource.read` rethrows on a
+/// handset with no channel and no primed cache.
 ///
 /// [userId] is nullable because Kotlin's sweep takes no user at all. A handset
 /// whose session has gone is precisely the one with somebody else's finished
@@ -279,29 +291,19 @@ Future<bool> executeBackgroundTask(String taskName) async {
 /// (`SubmissionDao:41`) is handset-wide.
 ///
 /// Exposed because `executeBackgroundTask` needs a Flutter binding, real
-/// preferences and a WorkManager engine, so a step body written inline in that
+/// preferences and a WorkManager engine, so a body written inline in that
 /// closure is unreachable from a unit test.
 @visibleForTesting
-BackgroundSyncStep submissionsPushStep(
+Future<void> sweepPendingSubmissions(
   ProviderContainer container, {
   required ServerConfig config,
   required String? userId,
-}) => BackgroundSyncStep('submissions_push', () async {
+}) async {
   try {
     await container
         .read(submissionsUploaderProvider)
         .queuePending(config: config, userId: userId);
-    // Kotlin's sweep posts; `queuePending` only queues. The runner's own
-    // `drainOutbox` has already run by the time the steps do, so without this
-    // a sheet swept here would wait for the next invocation.
-    await container
-        .read(outboxDrainerProvider)
-        .drain(
-          authHeader: PersonalsUploader.authHeaderFor(config),
-          onlyTypes: const {SubmissionsUploader.type},
-        );
   } catch (_) {
     // Deliberately ignored — see above.
   }
-  return true;
-});
+}

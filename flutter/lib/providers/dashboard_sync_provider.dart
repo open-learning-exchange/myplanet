@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../repository/personals_uploader.dart';
-import '../repository/submissions_uploader.dart';
 import 'app_providers.dart';
 import 'activities_provider.dart';
 import 'session_provider.dart';
@@ -145,14 +144,16 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
     // null it would otherwise see on the first pass.
     await pushCurrentUserShelf();
 
-    // Beside the shelf push and for the same reason: a push belongs ahead of
-    // the pulls. See [queuePendingSubmissions].
-    await queuePendingSubmissions();
-
     // `DashboardElementActivity.logSyncInSharedPrefs` records the challenge
     // action right before the sync starts -- the challenge dialog's "sync"
-    // checkbox reads it via `hasUserCompletedSync`.
+    // checkbox reads it via `hasUserCompletedSync`. It stays ahead of the
+    // sweep below, which is unbounded network work: a user who taps Sync and
+    // backgrounds the app during it should still get the credit Kotlin gives
+    // them for pressing the button.
     await ref.read(activityLogProvider).recordSyncChallengeAction();
+
+    // With the shelf push, ahead of the pulls. See [queuePendingSubmissions].
+    await queuePendingSubmissions();
 
     for (final area in DashboardSyncArea.values) {
       await _syncArea(area);
@@ -221,9 +222,12 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
   /// the profile dialog's dismissal (`UserInformationFragment:303` →
   /// `SubmissionsUploader:84`), and once from
   /// `uploadManager.uploadSubmissions()`, which `AutoSyncWorker:136`,
-  /// `UserDataWorker:48` and `ServerReachabilityWorker:196` run with no
-  /// precondition on the sheet or the user. A missed dismissal therefore costs
-  /// nothing there: the next sync sweeps it up.
+  /// `UserDataWorker:48` and `ServerReachabilityWorker:196` run on a schedule
+  /// rather than off anything the sheet did. The first two call it bare;
+  /// `ServerReachabilityWorker` gates on `!isSyncRunning` and
+  /// `hasPendingOfflineSubmissions()` (`ServerReachabilityWorker:190-200`),
+  /// neither of which is a property of an individual sheet. A missed dismissal
+  /// therefore costs nothing there: the next sync sweeps it up.
   ///
   /// `UserDataWorker:48` is what puts this in *this* method rather than only in
   /// the headless path. It is not a background job in the sense the name
@@ -265,17 +269,26 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
   ///   Kotlin weakness rather than a behaviour to reproduce;
   ///   `UserDataWorker`'s per-step `runCatching` is the shape to follow, and
   ///   it is this one.
-  /// * **Ahead of the pulls.** Nothing in this pass pulls `submissions`, so
-  ///   ordering is free here — but the headless path does pull them, and
-  ///   Kotlin puts its submissions pull in `HeavyTableSyncWorker`
-  ///   (`HeavyTableSyncWorker:39-41`), which `startFullSync` only *schedules*
-  ///   at its end (`SyncManager:209`). Sweep-then-pull is therefore the Kotlin
-  ///   order as well as the safe one, and both port paths agree on it.
-  /// * **Drained, not merely queued.** Kotlin's sweep *posts*; `queuePending`
-  ///   only queues, and the drain trigger is app resume. Every write-time call
-  ///   site pairs the two (`submissions_screen:186-193`), so this does too —
-  ///   scoped to the one `uploadType` with `onlyTypes`, so a sweep cannot turn
-  ///   into a whole-queue flush that nothing asked for.
+  /// * **Ahead of the pulls.** Nothing in this pass pulls `submissions` at all
+  ///   (a gap of its own — see the phase notes), so ordering is free here; the
+  ///   headless path's is not, and `sweepPendingSubmissions` carries that
+  ///   reasoning. Kotlin agrees by construction either way: its submissions
+  ///   pull lives in `HeavyTableSyncWorker` (`HeavyTableSyncWorker:39-41`),
+  ///   which `startFullSync` only *schedules* at its end (`SyncManager:209`).
+  /// * **Drained, not merely queued, and drained whole.** Kotlin's sweep
+  ///   *posts*; `queuePending` only queues, and the drain trigger is otherwise
+  ///   app resume. `submissions_screen:186-193` is the one write-time site
+  ///   that pairs the two — the other three (`take_survey_screen:276-278`,
+  ///   `user_information_screen:471`, `take_exam_screen:542-547`) queue and
+  ///   leave — and it drains **unscoped**, which is what this does too.
+  ///   Scoping it to one `uploadType` was the first cut and was wrong twice
+  ///   over: `OutboxDrainer.drain` satisfies a *joining* caller without doing
+  ///   its work (`outbox_drainer.dart:79-82`), so a resume drain arriving
+  ///   during a scoped pass would return having sent nothing and every queued
+  ///   health record, rating and team write would wait for the next resume —
+  ///   and Kotlin's manual sync is a whole-queue flush anyway,
+  ///   `UserDataWorker`'s `UPLOAD_TYPE_BULK` running eleven upload arms of
+  ///   which `uploadSubmissions()` is one.
   ///
   /// **It cannot double-post, and the protection is not new.** Kotlin's only
   /// defence is exclusion from that same predicate: `SubmissionDao:44` sets
@@ -308,10 +321,7 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
           .queuePending(config: config, userId: user?.id);
       await ref
           .read(outboxDrainerProvider)
-          .drain(
-            authHeader: PersonalsUploader.authHeaderFor(config),
-            onlyTypes: const {SubmissionsUploader.type},
-          );
+          .drain(authHeader: PersonalsUploader.authHeaderFor(config));
     } catch (_) {
       // Deliberately ignored — see above.
     }

@@ -244,13 +244,76 @@ void main() {
       verifyNoMoreInteractions(api);
     });
 
+    test('a re-enqueue mid-flight does not post a second document', () async {
+      // The Phase 134 implementation audit found this, and it is the failure
+      // mode the phase most had to avoid. `OutboxRepository.enqueue` puts an
+      // `in_progress` row back to `pending` so a payload edited mid-flight is
+      // not lost, and `markCompleted` is `deleteIfInProgress` — so the send
+      // that just succeeded deletes nothing and the row survives, `pending`,
+      // with the same body. That is right for *derived state* (the shelf, whose
+      // handler rebuilds); a submission is an append (`submissions_uploader:10`)
+      // and replaying it is a second CouchDB document, not an edit.
+      //
+      // Reachable as soon as a sweep drains while the app is interactive:
+      // tapping Sync puts the POST on the wire, and the respondent finishing a
+      // survey during it calls the same `queuePending`.
+      final id = await seedStrandedSheet();
+      final container = await containerFor();
+      final uploader = container.read(submissionsUploaderProvider);
+      var posts = 0;
+      when(
+        () => api.postJsonObject(
+          any(),
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer((_) async {
+        posts++;
+        // The interleaving: another write-time enqueue lands while this POST
+        // is on the wire.
+        await uploader.queuePending(
+          config: config,
+          userId: 'org.couchdb.user:ada',
+        );
+        return NetworkSuccess<Map<String, dynamic>>({
+          'id': 'server-id-$posts',
+          'rev': '$posts-rev',
+        });
+      });
+
+      await container
+          .read(dashboardSyncProvider.notifier)
+          .queuePendingSubmissions();
+      // Whatever the resume drain does next must not re-send it.
+      await container
+          .read(outboxDrainerProvider)
+          .drain(authHeader: 'Basic test');
+
+      expect(posts, 1, reason: 'the answer sheet was posted twice');
+      expect(
+        await db.outboxDao.forItem(SubmissionsUploader.type, id),
+        isEmpty,
+        reason: 'a delivered append must leave no replayable row behind',
+      );
+      expect(
+        (await container.read(submissionsRepositoryProvider).getById(id))
+            ?.couchId,
+        'server-id-1',
+      );
+    });
+
     test('a sweep that throws does not fail the sync', () async {
       await seedStrandedSheet();
-      final container = await containerFor(
-        identity: const _ThrowingIdentitySource(),
-      );
+      final identity = _ThrowingIdentitySource();
+      final container = await containerFor(identity: identity);
 
       await container.read(dashboardSyncProvider.notifier).syncAll();
+
+      expect(
+        identity.reads,
+        1,
+        reason: 'the sweep never got far enough to throw',
+      );
 
       final state = container.read(dashboardSyncProvider);
       expect(state.running, isFalse);
@@ -290,6 +353,87 @@ void main() {
       expect(statusesAtPushTime, everyElement(DashboardSyncStatus.waiting));
     });
 
+    test("delivers another user's sheet from this user's sync", () async {
+      // The shared handset, which is the normal deployment for this app and
+      // the case the unscoped design exists for: member B finishes a survey
+      // and signs out without syncing, member A signs in and syncs.
+      // `SubmissionDao.pendingUploads`' own doc comment names this flow, and
+      // until now nothing drove it through a sync — a `pendingUploads()`
+      // re-scoped to the session in SQL would have left every other test
+      // green.
+      final id = await seedStrandedSheet(userId: 'org.couchdb.user:bob');
+      final container = await containerFor();
+      Map<String, dynamic>? posted;
+      when(
+        () => api.postJsonObject(
+          any(),
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer((invocation) async {
+        posted = invocation.positionalArguments[1] as Map<String, dynamic>;
+        return const NetworkSuccess<Map<String, dynamic>>({
+          'id': 'server-id',
+          'rev': '1-rev',
+        });
+      });
+
+      // Ada is the session (see `containerFor`).
+      await container.read(dashboardSyncProvider.notifier).syncAll();
+
+      expect(
+        (await container.read(submissionsRepositoryProvider).getById(id))
+            ?.uploaded,
+        isTrue,
+        reason: "the signed-in learner's sync must carry the whole handset",
+      );
+      expect(
+        (posted?['user'] as Map<String, dynamic>?)?['_id'],
+        'org.couchdb.user:bob',
+        reason: 'each document is attributed to its own owner, not the session',
+      );
+    });
+
+    test('the sync drains the whole queue, not just submissions', () async {
+      // `drain(onlyTypes: …)` was the first cut and was wrong: a *joining*
+      // caller gets `const []` without doing its own work
+      // (`outbox_drainer.dart:79-82`), so a resume drain arriving during a
+      // submissions-only pass would return having sent nothing and starve
+      // every other queued write. Kotlin's manual sync is a whole-queue flush
+      // anyway (`UserDataWorker`'s `UPLOAD_TYPE_BULK`).
+      await seedStrandedSheet();
+      final container = await containerFor();
+      acceptOnePost();
+      when(
+        () => api.sendJsonObject(
+          any(),
+          body: any(named: 'body'),
+          method: any(named: 'method'),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer(
+        (_) async => const NetworkSuccess<Map<String, dynamic>>({'ok': true}),
+      );
+      // A row of some other type, queued before the sync and handler-less, so
+      // the drainer sends it through the generic path.
+      await container
+          .read(outboxRepositoryProvider)
+          .enqueue(
+            uploadType: 'audit_probe',
+            itemId: 'probe-1',
+            endpoint: 'https://planet.example.org/probe',
+            payload: const {'hello': 'world'},
+          );
+
+      await container.read(dashboardSyncProvider.notifier).syncAll();
+
+      expect(
+        await db.outboxDao.forItem('audit_probe', 'probe-1'),
+        isEmpty,
+        reason: "the sync's drain left an unrelated queued write behind",
+      );
+    });
+
     test('no configured server means no sweep', () async {
       final id = await seedStrandedSheet();
       final container = ProviderContainer(
@@ -325,101 +469,119 @@ void main() {
   });
 
   group('headless path', () {
-    test('the push step queues and delivers a stranded sheet', () async {
+    test('the sweep queues a stranded sheet', () async {
       final id = await seedStrandedSheet();
       final container = await containerFor();
-      acceptOnePost();
 
-      final step = submissionsPushStep(
+      await sweepPendingSubmissions(
         container,
         config: config,
         userId: 'org.couchdb.user:ada',
       );
 
-      expect(step.name, 'submissions_push');
-      expect(await step.run(), isTrue);
       expect(
-        (await container.read(submissionsRepositoryProvider).getById(id))
-            ?.uploaded,
-        isTrue,
+        await db.outboxDao.forItem(SubmissionsUploader.type, id),
+        hasLength(1),
       );
     });
 
-    test('the push step sweeps with no signed-in user', () async {
+    test('the sweep runs with no signed-in user', () async {
       // Kotlin's sweep is unscoped and takes no user
-      // (`SubmissionDao.pendingUploads`); the port's `userId` is only the
-      // outbox row's session tag. A handset whose session is gone must still
-      // deliver the sheet left on it.
-      final id = await seedStrandedSheet();
+      // (`SubmissionDao.getPendingSubmissions`); the port's `userId` is only
+      // the outbox row's session tag. A handset whose session is gone must
+      // still deliver the sheet left on it.
+      final id = await seedStrandedSheet(userId: 'org.couchdb.user:bob');
       final container = await containerFor();
-      acceptOnePost();
 
-      expect(
-        await submissionsPushStep(
-          container,
-          config: config,
-          userId: null,
-        ).run(),
-        isTrue,
-      );
+      await sweepPendingSubmissions(container, config: config, userId: null);
 
-      expect(
-        (await container.read(submissionsRepositoryProvider).getById(id))
-            ?.uploaded,
-        isTrue,
-      );
+      final queued = await db.outboxDao.forItem(SubmissionsUploader.type, id);
+      expect(queued, hasLength(1));
+      expect(queued.single.userId, isNull);
     });
 
-    test('a throwing push step does not request an OS retry', () async {
-      // `BackgroundTaskRunner` adds a step that throws or returns false to
-      // `failedSteps`, which makes `run` return false and WorkManager retry
-      // the whole task. Kotlin wraps its sweep in `runCatching`
-      // (`UserDataWorker:48`) and `AutoSyncWorker` always reports success, so
-      // an undeliverable sheet must not re-run the pulls.
+    test('a throwing sweep does not escape', () async {
+      // `drainOutbox` throwing adds `outboxDrain` to the runner's
+      // `failedSteps`, which asks WorkManager to retry the whole task. Kotlin
+      // wraps its sweep in `runCatching` (`UserDataWorker:48`) and still
+      // returns `Result.success()`, so an undeliverable sheet must not re-run
+      // the pulls.
       await seedStrandedSheet();
-      final container = await containerFor(
-        identity: const _ThrowingIdentitySource(),
-      );
+      final identity = _ThrowingIdentitySource();
+      final container = await containerFor(identity: identity);
 
-      expect(
-        await submissionsPushStep(
+      await expectLater(
+        sweepPendingSubmissions(
           container,
           config: config,
           userId: 'org.couchdb.user:ada',
-        ).run(),
-        isTrue,
+        ),
+        completes,
+      );
+      expect(
+        identity.reads,
+        1,
+        reason:
+            'the test proves nothing unless the throw actually happened — '
+            '`queuePending` only reads identity when it has rows to queue',
       );
     });
   });
 
-  /// **Reachability, not behaviour.** [submissionsPushStep] is exercised
+  /// **Reachability, not behaviour.** [sweepPendingSubmissions] is exercised
   /// directly above, which is exactly the shape Phase 113 warned about: a
-  /// step can be ported, tested and green while nothing in the app builds it.
-  /// `executeBackgroundTask` needs a Flutter binding, real preferences and a
-  /// WorkManager engine, so its `syncSteps` list cannot be built in a unit
-  /// test — the source is read instead, the way `version_parity_test` reads
+  /// function can be ported, tested and green while nothing in the app calls
+  /// it. `executeBackgroundTask` needs a Flutter binding, real preferences and
+  /// a WorkManager engine, so its wiring cannot be built in a unit test — the
+  /// source is read instead, the way `version_parity_test` reads
   /// `app/build.gradle`.
-  test('the headless path builds the step, ahead of the submissions pull', () {
+  ///
+  /// It asserts the *call site*, not merely that the name occurs: the first cut
+  /// searched from `syncSteps:` to end of file, which includes the function's
+  /// own declaration, so its "nothing calls it" assertion could never fail.
+  test('the headless path calls the sweep from drainOutbox', () {
     final source = File('lib/background_entrypoint.dart').readAsStringSync();
-    final steps = source.substring(source.indexOf('syncSteps:'));
-
-    final built = steps.indexOf('submissionsPushStep(');
-    final pull = steps.indexOf(
-      "BackgroundSyncStep(\n                'submissions',",
+    // Bounded to the runner's argument list, which ends where the top-level
+    // declarations begin.
+    final wiring = source.substring(
+      source.indexOf('BackgroundTaskRunner('),
+      source.indexOf('@visibleForTesting'),
     );
 
     expect(
-      built,
-      greaterThan(-1),
-      reason: 'nothing builds submissionsPushStep',
+      wiring,
+      contains('sweepPendingSubmissions('),
+      reason: 'nothing in the headless path calls sweepPendingSubmissions',
     );
+
+    final swept = wiring.indexOf('sweepPendingSubmissions(');
+    final drained = wiring.indexOf('drainer.drain(');
+    final pull = wiring.indexOf("'submissions',");
+
+    expect(drained, greaterThan(-1), reason: 'drainer.drain moved');
     expect(pull, greaterThan(-1), reason: "the 'submissions' pull step moved");
     expect(
-      built,
+      swept,
+      lessThan(drained),
+      reason:
+          'the sweep must queue before the drain that carries it, or the rows '
+          'wait for the next invocation',
+    );
+    expect(
+      swept,
       lessThan(pull),
       reason:
           'the sweep must precede the pull — see the test below for the '
           'window that ordering closes',
+    );
+    expect(
+      swept,
+      lessThan(wiring.indexOf('syncSteps:')),
+      reason:
+          'the sweep must stay in drainOutbox rather than move into '
+          'syncSteps: those run only for an autoSync task, with auto-sync '
+          'enabled, and only when the interval is due — three gates Kotlin '
+          "ServerReachabilityWorker's network-reconnection sweep has none of",
     );
   });
 
@@ -492,11 +654,18 @@ class MockPlanetApi extends Mock implements PlanetApi {}
 /// (`device_identity.dart:89`), and `SubmissionsUploader.queuePending` reads
 /// identity before it enqueues anything.
 class _ThrowingIdentitySource implements DeviceIdentitySource {
-  const _ThrowingIdentitySource();
+  _ThrowingIdentitySource();
+
+  /// Counted so a test can prove the throw happened. `queuePending` reads
+  /// identity only when `pendingUploads()` returned rows, so a fixture that
+  /// stopped producing one would leave these tests passing vacuously.
+  int reads = 0;
 
   @override
-  Future<DeviceIdentity> read() async =>
-      throw StateError('no platform channel and no primed cache');
+  Future<DeviceIdentity> read() async {
+    reads++;
+    throw StateError('no platform channel and no primed cache');
+  }
 }
 
 class _TestServerConfigNotifier extends ServerConfigNotifier {

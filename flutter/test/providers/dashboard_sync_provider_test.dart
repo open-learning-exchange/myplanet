@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
+import 'package:myplanet/core/prefs/planet_prefs.dart';
 import 'package:myplanet/core/sync/sync_result.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
@@ -12,6 +13,7 @@ import 'package:myplanet/providers/session_provider.dart';
 import 'package:myplanet/repository/shelf_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../repository/device_identity_fixture.dart';
 import '../support/widget_harness.dart';
 
 void main() {
@@ -173,9 +175,12 @@ void _shelfPushTests() {
 
   setUpAll(() => registerFallbackValue(config));
 
-  setUp(() {
+  late PlanetPrefs prefs;
+
+  setUp(() async {
     SharedPreferences.setMockInitialValues({});
     db = AppDatabase.memory();
+    prefs = PlanetPrefs(await SharedPreferences.getInstance());
   });
   tearDown(() => db.close());
 
@@ -188,6 +193,13 @@ void _shelfPushTests() {
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         planetApiProvider.overrideWithValue(_UnusablePlanetApi()),
+        // Phase 134: `syncAll` now sweeps pending submissions, and
+        // `outboxDrainerProvider` builds every registered handler — several of
+        // which reach `planetPrefsProvider`. Without this the sweep throws
+        // `UnimplementedError`, its own `catch` swallows it, and these two
+        // tests stop covering the second half of the pass while still passing.
+        planetPrefsProvider.overrideWithValue(prefs),
+        deviceIdentitySourceProvider.overrideWithValue(testDeviceIdentity),
         shelfRepositoryProvider.overrideWithValue(shelf),
         serverConfigProvider.overrideWith(
           () => _TestServerConfigNotifier(serverConfig),
