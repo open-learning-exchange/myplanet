@@ -90,6 +90,28 @@ void main() {
       },
     );
 
+    test('the catalog arm keeps its AND/OR grouping', () async {
+      // Kotlin is `isPrivate = 0 AND (userId IS NULL OR userId NOT LIKE …)`
+      // (`MyLibraryDao.kt:126-130`). Flattened to
+      // `isPrivate = 0 AND isNull OR NOT LIKE`, a *private* resource nobody
+      // put on this user's shelf would satisfy the trailing `OR` on its own
+      // and leak into the catalog. Escaping the pattern rewrote this
+      // expression, so the grouping is pinned rather than assumed.
+      await resource(
+        'private-other',
+        userId: const [collider],
+        isPrivate: true,
+      );
+      await resource('public-other', userId: const [collider]);
+      await resource('mine', userId: const [escaped]);
+
+      final rows = await db.myLibraryDao
+          .watchResources(shelfUserId: escaped)
+          .first;
+
+      expect(rows.map((r) => r.id), ['public-other']);
+    });
+
     test('resourcesOnShelf does not leak a colliding shelf', () async {
       await seedResources();
 
