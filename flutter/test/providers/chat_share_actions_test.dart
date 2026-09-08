@@ -34,6 +34,11 @@ class _TestSessionNotifier extends SessionNotifier {
   Future<UserRow?> build() async => _user;
 }
 
+class _ThrowingSessionNotifier extends SessionNotifier {
+  @override
+  Future<UserRow?> build() async => throw StateError('no session');
+}
+
 /// The share *write* path, end to end against a real database: the Kotlin's
 /// `ChatHistoryFragment` gate, `shareChatToVoices`, and the enqueue the port
 /// adds in place of the Kotlin's full-table upload sweep.
@@ -152,7 +157,39 @@ void main() {
       expect(targets.enterprises, isEmpty);
     });
 
-    test('the community is synthesized when no team document exists', () async {
+    // Nothing in `lib/` calls `setCommunityName`, so the pref is empty in the
+    // running app and the community id has to come from the configuration
+    // `code` — the same value Kotlin's `SyncConfigurationCoordinator` writes
+    // into that pref. Setting the pref here instead fabricates a state
+    // production never reaches, and leaves the branch dead.
+    test('the community id comes from the configuration code', () async {
+      final container = ProviderContainer(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          planetApiProvider.overrideWithValue(MockPlanetApi()),
+          planetPrefsProvider.overrideWithValue(
+            PlanetPrefs(await SharedPreferences.getInstance()),
+          ),
+          serverConfigProvider.overrideWith(
+            () => _TestServerConfigNotifier(
+              config.copyWith(code: 'lc', parentCode: 'pc'),
+            ),
+          ),
+          sessionProvider.overrideWith(
+            () => _TestSessionNotifier(
+              buildUserRow(id: 'org.couchdb.user:ada', name: 'ada'),
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final targets = await container.read(chatShareTargetsProvider.future);
+      expect(targets.community?.id, 'lc@pc');
+      expect(targets.community?.name, 'lc');
+    });
+
+    test('an explicit community name pref still wins', () async {
       final prefs = PlanetPrefs(await SharedPreferences.getInstance());
       await prefs.setCommunityName('lc');
       final container = ProviderContainer(
@@ -189,6 +226,74 @@ void main() {
     );
   });
 
+  // `getTeamSummaries(currentUser?._id)`. A member registered on this device
+  // keeps a locally minted row id while their membership document carries the
+  // CouchDB id, and the membership filter is absolute — reading the row id
+  // here offers them nothing at all.
+  test('a member registered offline is still offered their teams', () async {
+    await db.teamDao.upsertAll([
+      TeamsCompanion.insert(
+        id: 'team_1',
+        name: const Value('Bricklayers'),
+        type: const Value('team'),
+      ),
+      TeamsCompanion.insert(
+        id: 'mem_1',
+        docType: const Value('membership'),
+        teamId: const Value('team_1'),
+        userId: const Value('org.couchdb.user:ada'),
+      ),
+    ]);
+    final container = await containerFor(
+      user: buildUserRow(
+        id: '1737000000000',
+        name: 'ada',
+      ).copyWith(couchId: const Value('org.couchdb.user:ada')),
+    );
+
+    final targets = await container.read(chatShareTargetsProvider.future);
+    expect(targets.teams.map((t) => t.id), ['team_1']);
+  });
+
+  // A share this device did not author — one a voices sync pulled in — must
+  // show up when the sheet is opened. Nothing invalidates the provider on that
+  // path, so `destinations()` has to recompute rather than read the cache;
+  // this is what pins the difference between `refresh` and a plain read.
+  test(
+    'a share arriving from elsewhere shows up without an invalidate',
+    () async {
+      final container = await containerFor(
+        user: buildUserRow(
+          id: 'org.couchdb.user:ada',
+          name: 'ada',
+        ).copyWith(planetCode: const Value('lc')),
+      );
+
+      final actions = container.read(chatShareActionsProvider);
+      expect(await actions.destinations(), isEmpty);
+
+      // Straight to the repository, as a sync-in would land it.
+      await container
+          .read(voicesRepositoryProvider)
+          .createFromShareMap(
+            payload: buildChatShareMap(
+              chat: chat(),
+              note: '',
+              target: team,
+              section: ChatShareSection.teams,
+              nowMillis: 1700000000000,
+            ),
+            userId: 'someone-else',
+            userName: 'bob',
+            planetCode: 'lc',
+          );
+
+      expect(await actions.destinations(), {
+        'chat_1': {'team_1'},
+      });
+    },
+  );
+
   test('a share writes the voices row and queues it for upload', () async {
     final container = await containerFor();
 
@@ -220,6 +325,48 @@ void main() {
     final payload = jsonDecode(queued.single.payload) as Map<String, dynamic>;
     expect(payload['chat'], isTrue);
     expect((payload['news'] as Map)['_id'], 'chat_1');
+  });
+
+  // `serializeNews` writes no top-level `userId`/`userName`: the nested `user`
+  // object is the only author identity a news document carries, and
+  // `NewsMapper.fromDoc` reads both back out of it — so a null here loses the
+  // author on Planet *and* on this device at the next sync-in.
+  test('the uploaded document names its author', () async {
+    final container = await containerFor(
+      user: buildUserRow(
+        id: 'org.couchdb.user:ada',
+        name: 'ada',
+        firstName: 'Ada',
+        email: 'ada@example.org',
+      ).copyWith(couchId: const Value('org.couchdb.user:ada')),
+    );
+
+    await container
+        .read(chatShareActionsProvider)
+        .share(
+          chat: chat(),
+          target: team,
+          section: ChatShareSection.teams,
+          note: '',
+        );
+
+    final row = (await db.newsDao.getAll()).single;
+    final queued = await db.outboxDao.forItem(VoicesUploader.type, row.id);
+    final payload = jsonDecode(queued.single.payload) as Map<String, dynamic>;
+    final author = payload['user'] as Map<String, dynamic>;
+
+    expect(author['_id'], 'org.couchdb.user:ada');
+    expect(author['name'], 'ada');
+    expect(author['firstName'], 'Ada');
+    expect(author['email'], 'ada@example.org');
+    expect(author['type'], 'user');
+    // `UserEntity.serialize()` carries these; a public voices document must
+    // not. `UserMapper.toDoc` is the `_users` PUT body — not this.
+    expect(author.containsKey('derived_key'), isFalse);
+    expect(author.containsKey('salt'), isFalse);
+    expect(author.containsKey('password'), isFalse);
+    expect(author.containsKey('password_scheme'), isFalse);
+    expect(author.containsKey('_attachments'), isFalse);
   });
 
   test('a second share of the same chat and target is refused', () async {
@@ -273,6 +420,34 @@ void main() {
         .read(chatShareActionsProvider)
         .share(
           chat: chat(docId: null),
+          target: team,
+          section: ChatShareSection.teams,
+          note: '',
+        );
+
+    expect(outcome, ChatShareOutcome.unavailable);
+    expect(await db.newsDao.getAll(), isEmpty);
+  });
+
+  // The `await` sits inside the enclosing `try` precisely because a future can
+  // reject where `valueOrNull` could not. Nothing pinned that until now.
+  test('a rejecting session is reported, not thrown', () async {
+    final container = ProviderContainer(
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        planetApiProvider.overrideWithValue(MockPlanetApi()),
+        planetPrefsProvider.overrideWithValue(
+          PlanetPrefs(await SharedPreferences.getInstance()),
+        ),
+        sessionProvider.overrideWith(_ThrowingSessionNotifier.new),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final outcome = await container
+        .read(chatShareActionsProvider)
+        .share(
+          chat: chat(),
           target: team,
           section: ChatShareSection.teams,
           note: '',

@@ -317,7 +317,7 @@ Future<void> startChatShare(
   final Map<String, Set<String>> destinations;
   try {
     targets = await ref.read(chatShareTargetsProvider.future);
-    destinations = await ref.read(sharedChatDestinationsProvider.future);
+    destinations = await ref.read(chatShareActionsProvider).destinations();
   } catch (_) {
     if (context.mounted) _showChatShareMessage(context, l10n.chatsUnavailable);
     return;
@@ -379,7 +379,10 @@ Future<void> startChatShare(
   _showChatShareMessage(context, switch (outcome) {
     ChatShareOutcome.shared => l10n.chatShared,
     ChatShareOutcome.alreadyShared => l10n.chatAlreadyShared,
-    ChatShareOutcome.unavailable => l10n.chatsUnavailable,
+    // Not `chatsUnavailable`: the chat is visibly on screen, and two of the
+    // three ways here — a chat the server has never seen, a null destination
+    // — have nothing to do with loading.
+    ChatShareOutcome.unavailable => l10n.chatCannotBeShared,
   });
 }
 

@@ -18,6 +18,13 @@ class _FakeShareActions implements ChatShareActions {
   Ref get ref => throw UnimplementedError();
   final calls = <Map<String, Object?>>[];
 
+  /// What the screen sees when it opens the sheet. The real one recomputes
+  /// `sharedChatDestinationsProvider` first; here the test supplies it.
+  Map<String, Set<String>> destinationMap = const {};
+
+  @override
+  Future<Map<String, Set<String>>> destinations() async => destinationMap;
+
   @override
   Future<ChatShareOutcome> share({
     required ChatRow chat,
@@ -70,7 +77,7 @@ void main() {
     ChatShareOutcome outcome = ChatShareOutcome.shared,
     List<ChatRow>? chats,
   }) async {
-    final actions = _FakeShareActions(outcome);
+    final actions = _FakeShareActions(outcome)..destinationMap = destinations;
     await tester.pumpWidget(
       wrapScreen(
         const ChatHistoryScreen(),
@@ -78,9 +85,6 @@ void main() {
           chatHistoryProvider.overrideWith((ref) async => chats ?? [_chat()]),
           chatConversationProvider.overrideWith(_StubChatNotifier.new),
           chatShareTargetsProvider.overrideWith((ref) async => targets),
-          sharedChatDestinationsProvider.overrideWith(
-            (ref) async => destinations,
-          ),
           chatShareActionsProvider.overrideWithValue(actions),
         ],
       ),
@@ -106,6 +110,36 @@ void main() {
 
     expect(find.byKey(const Key('share-chat-c1')), findsOneWidget);
     expect(find.byKey(const Key('share-chat-c2')), findsOneWidget);
+  });
+
+  // The awaits sit inside `startChatShare`'s `try` because a future can reject
+  // where `valueOrNull` could not. Nothing pinned that until now.
+  testWidgets('a rejecting targets provider does not take the screen down', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wrapScreen(
+        const ChatHistoryScreen(),
+        overrides: [
+          chatHistoryProvider.overrideWith((ref) async => [_chat()]),
+          chatConversationProvider.overrideWith(_StubChatNotifier.new),
+          chatShareTargetsProvider.overrideWith(
+            (ref) async => throw StateError('no targets'),
+          ),
+          sharedChatDestinationsProvider.overrideWith(
+            (ref) async => const <String, Set<String>>{},
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('share-chat-c1')));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Chats could not be loaded'), findsOneWidget);
+    expect(find.byKey(const Key('share-group-community')), findsNothing);
   });
 
   testWidgets('the share sheet offers the community and team groups', (
@@ -306,6 +340,25 @@ void main() {
       find.text('This chat has already been shared to this destination'),
       findsOneWidget,
     );
+  });
+
+  // Not "Chats could not be loaded": the chat is on screen, and two of the
+  // three ways to `unavailable` have nothing to do with loading.
+  testWidgets('an unshareable chat says so, not that chats failed to load', (
+    tester,
+  ) async {
+    await pump(tester, outcome: ChatShareOutcome.unavailable);
+    await openShareSheet(tester);
+
+    await tester.tap(find.byKey(const Key('share-group-community')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('share-child-community')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('share-note-submit')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('This chat cannot be shared yet'), findsOneWidget);
+    expect(find.text('Chats could not be loaded'), findsNothing);
   });
 
   testWidgets('a planet with no community offers no community entry', (

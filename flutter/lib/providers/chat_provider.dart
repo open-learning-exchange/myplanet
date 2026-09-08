@@ -301,16 +301,29 @@ final chatShareTargetsProvider = FutureProvider<ChatShareTargets>((ref) async {
   final repo = ref.watch(teamsRepositoryProvider);
   final prefs = ref.watch(planetPrefsProvider);
 
-  final userId = session?.id;
+  // `currentUser?._id` — the CouchDB id, not the local row id. The two
+  // coincide for a synced account, but a member registered on this device
+  // keeps a locally minted `'<millis>'` id while their membership documents
+  // carry `org.couchdb.user:<name>`, and this is a *hard* filter: the row id
+  // would offer that user no teams at all and show them "Please join a Team".
+  // The write path below already uses `couchId ?? id`.
+  final userId = session?.couchId ?? session?.id;
   final teams = await _shareableTargets(repo, 'team', userId);
   final enterprises = await _shareableTargets(repo, 'enterprise', userId);
 
-  final communityName = prefs.communityName;
-  // `sharedPrefManager.getParentCode()`. Read from the live config notifier
-  // rather than straight off `PlanetPrefs`, which is the same value — the
-  // notifier is built from that pref — but is the port's canonical handle on
-  // it and is overridable.
-  final parentCode = ref.watch(serverConfigProvider)?.parentCode ?? '';
+  // `sharedPrefManager.getCommunityName()`, which is not a name: Kotlin writes
+  // the *configuration document's `code`* into it, once, from
+  // `SyncConfigurationCoordinator`. The port persists that same value as
+  // `ServerConfig.code`, and **nothing in `lib/` ever calls
+  // `PlanetPrefs.setCommunityName`** — so reading only the pref left
+  // `communityName` permanently empty, `community` permanently null, and the
+  // whole community branch of the share dialog unreachable in the running app,
+  // green tests and all, because the pref's only writer was a test. The pref
+  // still wins when something does set it, so the two agree if it is wired.
+  final config = ref.watch(serverConfigProvider);
+  final prefName = prefs.communityName;
+  final communityName = prefName.isNotEmpty ? prefName : (config?.code ?? '');
+  final parentCode = config?.parentCode ?? '';
   ChatShareTarget? community;
   if (communityName.trim().isNotEmpty && parentCode.trim().isNotEmpty) {
     final id = '$communityName@$parentCode';
@@ -359,6 +372,14 @@ ChatShareTarget _targetOf(TeamRow row) =>
 /// Port of `ChatViewModel.loadChatHistoryScreenData`'s
 /// `chatRepository.extractSharedViewInIds(newsMessages)` over
 /// `voicesRepository.getPlanetNewsMessages(currentUser?.planetCode)`.
+///
+/// Read it through [ChatShareActions.destinations], which recomputes it:
+/// Kotlin re-runs `getPlanetNewsMessages` + `extractSharedViewInIds` on every
+/// `refreshChatSignal` and on screen re-creation, so a value cached for the
+/// process lifetime would keep offering a destination that a sync from
+/// another device had already filled. (`isAlreadyShared` still refuses the
+/// duplicate at write time, but only after the user has walked the whole
+/// dialog flow.)
 final sharedChatDestinationsProvider = FutureProvider<Map<String, Set<String>>>(
   (ref) async {
     final session = await ref.watch(sessionProvider.future);
@@ -392,6 +413,13 @@ class ChatShareActions {
   ChatShareActions(this.ref);
 
   final Ref ref;
+
+  /// The already-shared map, recomputed. See [sharedChatDestinationsProvider]
+  /// for why the cached value is not good enough to open a dialog on.
+  /// `refresh`, not `invalidate` then `read`: `invalidate` only schedules the
+  /// rebuild, so a read in the same microtask still resolves the stale future.
+  Future<Map<String, Set<String>>> destinations() =>
+      ref.refresh(sharedChatDestinationsProvider.future);
 
   Future<ChatShareOutcome> share({
     required ChatRow chat,
@@ -429,6 +457,7 @@ class ChatShareActions {
       ),
       userId: user.couchId ?? user.id,
       userName: user.name ?? '',
+      userJson: VoicesRepository.authorJson(user),
       planetCode: user.planetCode,
       parentCode: user.parentCode,
     );

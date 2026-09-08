@@ -203,11 +203,21 @@ void main() {
       nowMillis: _now,
     );
 
-    // Kotlin's `gson.toJson(null)` writes the four characters `null` here,
-    // which `News.createNews` then hands to `fromJson(..., JsonArray)` and
-    // dereferences — an uncaught NPE out of the share. `[]` is the same
-    // *meaning* with no crash.
+    // Kotlin's `gson.toJson(null)` writes the four characters `null` here.
+    // `News.createNews` hands that to `fromJson(..., JsonArray)`, which
+    // raises `JsonSyntaxException` ("Expected a JsonArray but was JsonNull")
+    // — caught by the inner `catch (e: JsonSyntaxException)`, so the column
+    // is left null and nothing crashes. `[]` reaches the same end state
+    // without the throw.
     expect(_news(map)['conversations'], '[]');
+  });
+
+  // The wire values, not just "whatever was passed through". Kotlin passes the
+  // localised `strings.xml` string here; these literals are the deviation.
+  test('the sections are the stable lowercase literals', () {
+    expect(ChatShareSection.community, 'community');
+    expect(ChatShareSection.teams, 'teams');
+    expect(ChatShareSection.enterprises, 'enterprises');
   });
 
   test('the section is carried verbatim', () {

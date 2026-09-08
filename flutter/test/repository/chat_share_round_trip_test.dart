@@ -129,6 +129,31 @@ void main() {
     },
   );
 
+  // `String.toBoolean()` is case-insensitive, and false for anything else.
+  test('the chat flag is read the way Kotlin reads it', () async {
+    Future<bool> chatFlagFor(String raw) async {
+      final payload = buildChatShareMap(
+        chat: chat(),
+        note: '',
+        target: team,
+        section: ChatShareSection.teams,
+        nowMillis: 1700000000000,
+      );
+      final id = await voices.createFromShareMap(
+        payload: {...payload, 'chat': raw},
+        userId: 'u1',
+        userName: 'ada',
+        planetCode: 'lc',
+      );
+      return (await database.newsDao.getById(id))!.chat;
+    }
+
+    expect(await chatFlagFor('true'), isTrue);
+    expect(await chatFlagFor('TRUE'), isTrue);
+    expect(await chatFlagFor('false'), isFalse);
+    expect(await chatFlagFor('yes'), isFalse);
+  });
+
   test('an empty conversation list leaves the column null', () async {
     final id = await share(row: chat(conversations: '[]'));
     expect((await database.newsDao.getById(id))!.conversations, isNull);

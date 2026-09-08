@@ -227,6 +227,56 @@ class VoicesRepository {
     ]);
   }
 
+  /// The author object a locally authored `news` document carries.
+  ///
+  /// `News.createNews` sets `news.user = gson.toJson(user.serialize())`, and
+  /// `serializeNews` writes that object into the document. It is the **only**
+  /// author identity on a news document — there is no top-level `userId` or
+  /// `userName` key — and `NewsMapper.fromDoc` reads both back out of it, so a
+  /// post uploaded without it has no author on Planet *and* loses its author
+  /// locally on the next sync-in.
+  ///
+  /// This is `UserEntity.serialize()` minus two groups, deliberately:
+  ///
+  /// - the credential branch (`password` / `derived_key` / `salt` /
+  ///   `password_scheme`) and the device trio. `serialize()` is the body of
+  ///   the `_users` PUT, where those belong; a voices post is a public
+  ///   document and must never carry them. `UserMapper.toDoc` is that PUT
+  ///   body — do not reach for it here.
+  /// - the `_attachments` photo, which would embed the user's profile image
+  ///   in every post they author.
+  ///
+  /// Everything else matches `serialize()` field for field, including the
+  /// `_id`/`_rev` pair being written only for an account the server knows.
+  static String authorJson(UserRow user) {
+    final couchId = user.couchId;
+    return jsonEncode(<String, dynamic>{
+      if (couchId != null && couchId.isNotEmpty) ...{
+        '_id': couchId,
+        '_rev': user.rev,
+      },
+      'name': user.name,
+      'roles': user.rolesList,
+      'isUserAdmin': user.userAdmin,
+      'joinDate': user.joinDate,
+      'firstName': user.firstName,
+      'lastName': user.lastName,
+      'middleName': user.middleName,
+      'email': user.email,
+      'language': user.language,
+      'level': user.level,
+      'type': 'user',
+      'gender': user.gender,
+      'phoneNumber': user.phoneNumber,
+      'birthDate': user.dob,
+      'age': user.age,
+      'parentCode': user.parentCode,
+      'planetCode': user.planetCode,
+      'birthPlace': user.birthPlace,
+      'isArchived': user.isArchived,
+    });
+  }
+
   /// Port of the `map["news"]` branch of `News.createNews` — writes the row a
   /// shared chat conversation becomes in the voices feed.
   ///

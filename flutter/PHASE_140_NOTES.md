@@ -39,9 +39,15 @@ was missing was a writer, and everything upstream of it. No schema bump needed.
 | share affordance + three dialogs | `lib/ui/chat/chat_history_screen.dart` | `ChatHistoryAdapter.bindShareChat`, `showGrandChildRecyclerView`, `showEditTextAndShareButton` |
 | 7 English keys | `lib/l10n/app_en.arb` | `share_chat`, `share_with_team_enterprise`, `add_note`, `chat_already_shared_to_destination`, `join_team_first`, `join_enterprise_first`, plus a shared-confirmation string |
 
-48 new tests in four files. Every claim below was mutation-tested: each piece
-was reverted in turn and the expected test confirmed to fail (15 mutations, 15
-caught — the list is at the bottom).
+**60 new tests** in four files (11 + 20 + 15 + 14, counted from the runner, not
+remembered). Every claim below was mutation-tested: each piece was reverted in
+turn and the expected test confirmed to fail — 24 mutations, 24 caught. The
+list is at the bottom.
+
+Two `parity-auditor` passes at `effort: max` ran, one on the Kotlin ground truth
+before implementing and one on the finished green code. **Both found things**,
+and the second found two defects that green tests could not have caught, plus
+one wrong claim of mine. They are in *What the second audit changed* below.
 
 ## The three reachability questions
 
@@ -177,64 +183,143 @@ string is the bug, not the baseline.
   membership set short-circuits to an empty list** rather than falling through
   to the whole catalog.
 
+## What the second audit changed
+
+The pass on the finished code found nine things. Six were acted on; the rest are
+in *Reported, not fixed*.
+
+**Every chat share reached CouchDB with no author.** `serializeNews` writes no
+top-level `userId` or `userName` — the nested `user` object is the *only* author
+identity a news document carries, and `NewsMapper.fromDoc` reads both back out
+of it. So an author-less share showed no author on Planet **and** lost its
+author on this device at the next sync-in. Kotlin sets
+`news.user = gson.toJson(user.serialize())`. The port's `createPost` has never
+passed one, so this was pre-existing — but shipping a new writer with the same
+hole is not "pre-existing", it is a new instance. `VoicesRepository.authorJson`
+is `serialize()` minus the credential branch (`password` / `derived_key` /
+`salt` / `password_scheme`), the device trio, and the `_attachments` photo. A
+voices post is a public document; `UserMapper.toDoc` is the `_users` PUT body
+and must never be used here. The test asserts the fields that must be present
+*and* the four that must not.
+
+**The community branch could not be reached in the running app.** The provider
+read `PlanetPrefs.communityName`, and **nothing in `lib/` ever calls
+`setCommunityName`** — the pref's only writer was one of my own tests. So
+`community` was permanently null, the community row never rendered, and the
+whole branch was dead behind green tests, including the checkmark path and four
+widget assertions. Kotlin writes the configuration document's `code` into that
+pref; the port persists the same value as `ServerConfig.code`, which is now the
+fallback. **The tell was in the fixture**: the test hand-set a pref production
+never sets, with a comment explaining that the value is really the configuration
+code — true of the Kotlin, false of the port. That test now drives the config
+path, and a second one keeps the pref precedence.
+
+**A member registered offline was offered no teams at all.**
+`chatShareTargetsProvider` scoped memberships by `session.id` where Kotlin uses
+`currentUser?._id`. They coincide for a synced account, but a member registered
+on-device keeps a locally minted `'<millis>'` id while their membership document
+carries `org.couchdb.user:<name>` — and here it is a *hard* filter, so that user
+saw "Please join a Team to share this chat" while being a member. My first cut
+had logged this as a note-worthy inconsistency, which undersold it: in
+`teams_provider` the same divergence only affects sort order. Fixed to
+`couchId ?? id`, matching what the write path two methods away already did.
+
+**The "cannot share" snackbar said "Chats could not be loaded".** Two of the
+three routes to `ChatShareOutcome.unavailable` have nothing to do with loading,
+and the chat is visibly on screen. A new key, `chatCannotBeShared`.
+
+**The stale-destination window.** Only a local share refreshed the map, so a
+share pulled from another device left the destination tappable until the app
+restarted. `ChatShareActions.destinations()` now recomputes on every dialog
+open, which is what Kotlin does on every `refreshChatSignal`. Note the Riverpod
+detail: `invalidate` then `read` still resolves the *stale* future in the same
+microtask — it must be `refresh`. The first cut used `invalidate` and the test
+caught it.
+
+**One of my test comments stated a Kotlin behaviour that is false.** It said a
+null conversation list makes `createNews` dereference a null and throw an
+uncaught NPE. It does not: `gson.toJson(null)` yields `"null"`, `fromJson`
+raises `JsonSyntaxException`, and the inner `catch (e: JsonSyntaxException)`
+catches it, leaving the column null. The notes had this right and the test
+comment contradicted them in the same commit pair. Corrected. This is the second
+Kotlin claim of mine this phase that a `parity-auditor` pass overturned by
+*running* the code rather than reading it — the first being the `=` replace.
+
+**Three comment claims that nothing pinned** now have tests: the two
+`await …future`-inside-`try` guards (a rejecting `sessionProvider`, a rejecting
+`chatShareTargetsProvider`), and `String.toBoolean()`'s case-insensitivity. All
+three mutate-and-fail. A near-tautological test — `viewInSection` is carried
+verbatim, which would pass for any literals — gained a sibling that pins the
+three constants themselves, since those literals *are* the deviation.
+
 ## Reported, not fixed
 
-Four of these need a file another lane owns this round. Each names the file, the
-change, and why.
+Each names the file, the change, and why it was not made here.
 
 1. **`teams` has no `teamPlanetCode` column**, so `messagePlanetCode` is `""` on
-   every chat share the port sends. `MyTeam.teamPlanetCode` is read from the
-   team document (`MyTeam.kt:86`) and is the third of the three `TeamSummary`
-   fields the payload uses. Fix: a nullable `teamPlanetCode` text column on
-   `Teams` in `lib/data/local/tables.dart`, populated in
-   `lib/data/local/team_mapper.dart`, and a `schemaVersion` bump in
+   every chat share the port sends. Kotlin sends `team.teamPlanetCode`
+   (`ChatSharePayload.kt:29`, read at `MyTeam.kt:86`). Fix: a nullable
+   `teamPlanetCode` column on `Teams` in `lib/data/local/tables.dart`, populated
+   in `lib/data/local/team_mapper.dart`, and a `schemaVersion` bump in
    `lib/data/local/app_database.dart` (**Lane A's file**, and no number is
-   allocated to this lane). `ChatShareTarget.teamPlanetCode` already exists and
-   is already tested with a non-null value, so only `_targetOf` changes.
-   Severity: low — Kotlin sends `""` too for a team document that omits the
-   field, and nothing in either app reads it back.
+   allocated to this lane). `ChatShareTarget.teamPlanetCode` exists and is
+   tested with a non-null value, so only `_targetOf` changes. Severity: low —
+   Kotlin sends `""` too when the document omits the field, and nothing reads it
+   back. Worth pairing with a second observation: the port's `createTeamPost`
+   writes `messagePlanetCode: user.planetCode` for a team *voice* post, so the
+   port now has two writers addressing the same team with two different values
+   for one field, where Kotlin uses `team.teamPlanetCode` for both.
 2. **`NewsDao` has no `getByNewsId` or `getPlanetMessages`.** `isAlreadyShared`
-   and `planetNewsMessages` walk `getAll()` and filter in Dart instead. Same
-   result set, more rows read — the Kotlin filters in memory after
-   `getByNewsId` anyway. Fix: two queries on `NewsDao` in
-   `lib/data/local/app_database.dart` (**Lane A's file**):
-   `SELECT * FROM news WHERE newsId = ?` and
+   and `planetNewsMessages` walk `getAll()` and filter in Dart. Same result set,
+   more rows read — the Kotlin filters in memory after `getByNewsId` anyway.
+   Fix: two queries on `NewsDao` in `lib/data/local/app_database.dart`
+   (**Lane A's file**): `WHERE newsId = ?`, and
    `WHERE docType = 'message' COLLATE NOCASE AND createdOn = ? COLLATE NOCASE`.
-3. **The `viewInSection` deviation is not in the migration tracker.**
-   `docs/kotlin-to-flutter-migration.md` (**Lane A's file**) lists faithful
-   quirks and deliberate deviations, and this is in neither. Suggested line, for
-   the deviations list: *"`viewIn[].section` is written as the stable literal
+3. **Six deviations want recording in the migration tracker.**
+   `docs/kotlin-to-flutter-migration.md` (**Lane A's file**) has no chat-share
+   entry in either its faithful-quirks or its deliberate-deviations list. The
+   full set: the stable-literal `viewInSection`; `[]` rather than `"null"` for a
+   null conversation list; `ChatShareOutcome.unavailable` where Kotlin drops the
+   tap; not rendering a community row when the target is null; recomputing the
+   shared-destination map on dialog open; and the "Chat shared" confirmation
+   snackbar, which Kotlin has no counterpart for. Suggested line for the first:
+   *"`viewIn[].section` is written as the stable literal
    `community`/`teams`/`enterprises`. `ChatHistoryAdapter` passes the localised
    `strings.xml` value, so a community share from a non-English handset writes a
    translated section and is invisible to `isVisibleToUser`, which matches
    `"community"`."*
-4. **A locally authored `news` row carries no `user` object.**
-   `News.createNews` sets `news.user = gson.toJson(user.serialize())` and the
-   uploaded document carries the whole user object; the port's `createPost` has
-   never passed a `userJson`, so `serialize` writes `'user': null` for every
-   post the port authors, chat shares included. `createFromShareMap` accepts a
-   `userJson` parameter and is ready for it. **Do not wire `UserMapper.toDoc`
-   into it** — that is the `_users` PUT body and carries `derived_key`/`salt`;
-   Planet reads `user.name` and `user._id` off a news document, so this wants a
-   small display-only projection. Pre-existing and port-wide, not introduced
-   here; `lib/providers/voices_provider.dart` is the other caller.
-
-Two more, outside anyone's file set:
-
-5. **`chatShareTargetsProvider` scopes memberships by `session.id`** where the
-   Kotlin uses `currentUser?._id`. Identical for a synced account (both are the
-   CouchDB `_id`), different for one created offline, whose `id` is a random
-   UUID. The port's own teams catalog uses `session.id`, so this follows the
-   port's convention rather than the Kotlin's; worth one deliberate decision
-   somewhere rather than two conventions.
+4. **There is no periodic voices upload sweep, and the enqueue is conditional.**
+   Kotlin's `uploadNews()` is an unconditional full-table sweep from
+   `AutoSyncWorker` and `UserDataWorker`, so a share cannot be stranded. The
+   port enqueues at write time — which is better when it runs — but
+   `ChatShareActions.share` skips the enqueue when `serverConfigProvider` is
+   null (there is no endpoint to queue against) and still reports success, and
+   nothing else ever sweeps `VoicesRepository.pendingUploads`. Grepped:
+   `dashboard_sync_provider.dart`, `background_entrypoint.dart` and
+   `outbox_drain_scope.dart` mention no voices uploader. This is exactly the
+   Phase 134 shape — a safety net Kotlin has and the port does not — and it
+   covers *every* port-authored voice, not just chat shares, so it wants its own
+   slice rather than a corner of this one. **The earlier claim in these notes
+   that "a shared chat cannot sit undelivered on the device" was too strong and
+   is withdrawn.**
+5. **A locally authored `news` row still carries no author on the other two
+   write paths.** `VoicesRepository.authorJson` now exists and is used by the
+   chat share; `createPost`, `createTeamPost` and `postReply` — called from
+   `lib/providers/voices_provider.dart`, outside this lane's files — still pass
+   none, so every ordinary voice post and reply the port authors uploads with
+   `"user": null` and loses its author locally on the next sync-in. One
+   argument each: `userJson: VoicesRepository.authorJson(user)`.
 6. **The port's "root team" predicate is `docType IS NULL` where Kotlin's is
-   `teamId IS NULL OR TRIM(teamId) = ''`.** Pre-existing in `watchCatalog` and
-   shared with the whole teams catalog; noted because the share now depends on
-   it too.
+   `teamId IS NULL OR TRIM(teamId) = ''`,** and `watchCatalog` adds an
+   `ORDER BY name ASC` that `getRootTeamsByType` does not have. Both
+   pre-existing in the shared teams catalog; noted because the share now depends
+   on them.
 
 ## Mutations run
 
 Each was applied alone to green code and reverted; all 15 were caught.
+
+**Round one — the port itself.**
 
 | Mutation | Caught by |
 |---|---|
@@ -253,3 +338,17 @@ Each was applied alone to green code and reverted; all 15 were caught.
 | membership scoping removed | provider: 2 target tests |
 | unsynced-chat gate removed | provider: `unavailable` |
 | share affordance renamed | 4 widget tests |
+
+**Round two — the fixes the second audit prompted.**
+
+| Mutation | Caught by |
+|---|---|
+| author object not passed | provider: the uploaded document names its author |
+| author object carries `derived_key` | the same test's negative assertions |
+| `communityName` read from the pref only | provider: the community id comes from the configuration code |
+| memberships scoped by the row id | provider: a member registered offline is still offered their teams |
+| `destinations()` reads the cache instead of refreshing | provider: a share arriving from elsewhere |
+| `unavailable` reuses `chatsUnavailable` | widget: an unshareable chat says so |
+| the `sessionProvider` try/catch removed | provider: a rejecting session is reported, not thrown |
+| the chat flag parsed case-sensitively | round trip: the chat flag is read the way Kotlin reads it |
+| the screen's try/catch removed | widget: a rejecting targets provider |

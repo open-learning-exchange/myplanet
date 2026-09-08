@@ -1617,5 +1617,9 @@
   "joinEnterpriseFirst": "Please join an Enterprise to share this chat",
   "@joinEnterpriseFirst": {
     "description": "Shown when the user belongs to no enterprise to share a chat with. Port of `join_enterprise_first`."
+  },
+  "chatCannotBeShared": "This chat cannot be shared yet",
+  "@chatCannotBeShared": {
+    "description": "Shown when a share cannot be attempted \u2014 no signed-in user, no destination, or a chat the server has never seen. `ChatHistoryFragment` drops the tap silently instead."
   }
 }
