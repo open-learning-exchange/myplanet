@@ -439,6 +439,70 @@ class UploadCoordinatorTest {
     }
 
     @Test
+    fun `upload queues retryable failures per batch when batch 1 fails retryably and batch 2 succeeds`() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        uploadCoordinator = UploadCoordinator(
+            uploadRepository = uploadRepository,
+            retryQueue = retryQueue,
+            dispatcherProvider = TestDispatcherProvider(testDispatcher)
+        )
+
+        val items = listOf(
+            Submission(id = "local-1"),
+            Submission(id = "local-2"),
+            Submission(id = "local-3"),
+            Submission(id = "local-4")
+        )
+
+        coEvery { uploadRepository.postUpload(any(), match { it.get("localId")?.asString in listOf("local-1", "local-2") }) } returns errorResponse(500)
+        coEvery { uploadRepository.postUpload(any(), match { it.get("localId")?.asString == "local-3" }) } returns successResponse("remote-3", "rev-3")
+        coEvery { uploadRepository.postUpload(any(), match { it.get("localId")?.asString == "local-4" }) } returns successResponse("remote-4", "rev-4")
+
+        val config = submissionConfig(items).copy(batchSize = 2)
+        val result = uploadCoordinator.upload(config)
+        advanceUntilIdle()
+
+        assertTrue(result is UploadResult.PartialSuccess)
+        val partial = result as UploadResult.PartialSuccess
+        assertEquals(2, partial.succeeded.size)
+        assertEquals(2, partial.failed.size)
+
+        coVerify(exactly = 1) {
+            retryQueue.queueFailedOperation(
+                uploadType = "Submission",
+                error = match { it.itemId == "local-1" },
+                payload = match { it.get("localId")?.asString == "local-1" },
+                endpoint = "submissions",
+                httpMethod = "POST",
+                dbId = null,
+                modelClassName = "Submission"
+            )
+        }
+        coVerify(exactly = 1) {
+            retryQueue.queueFailedOperation(
+                uploadType = "Submission",
+                error = match { it.itemId == "local-2" },
+                payload = match { it.get("localId")?.asString == "local-2" },
+                endpoint = "submissions",
+                httpMethod = "POST",
+                dbId = null,
+                modelClassName = "Submission"
+            )
+        }
+        coVerify(exactly = 0) {
+            retryQueue.queueFailedOperation(
+                uploadType = any(),
+                error = match { it.itemId in listOf("local-3", "local-4") },
+                payload = any(),
+                endpoint = any(),
+                httpMethod = any(),
+                dbId = any(),
+                modelClassName = any()
+            )
+        }
+    }
+
+    @Test
     fun `upload does not queue retries when failures are non-retryable`() = runTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)
         uploadCoordinator = UploadCoordinator(
@@ -447,11 +511,11 @@ class UploadCoordinatorTest {
             dispatcherProvider = TestDispatcherProvider(testDispatcher)
         )
 
-        val items = listOf(sampleItem("local-1"), sampleItem("local-2"))
+        val items = listOf(Submission(id = "local-1"), Submission(id = "local-2"))
         coEvery { uploadRepository.postUpload(any(), any()) } returns errorResponse(404)
         coEvery { uploadRepository.markUploaded(any(), any()) } returns emptyList()
 
-        val config = legacyConfig(items)
+        val config = submissionConfig(items)
         uploadCoordinator.upload(config)
         advanceUntilIdle()
 
@@ -469,23 +533,23 @@ class UploadCoordinatorTest {
             dispatcherProvider = TestDispatcherProvider(testDispatcher)
         )
 
-        val items = listOf(sampleItem("local-1"), sampleItem("local-2"))
+        val items = listOf(Submission(id = "local-1"), Submission(id = "local-2"))
         coEvery { uploadRepository.postUpload(any(), any()) } returns errorResponse(500)
         coEvery { uploadRepository.markUploaded(any(), any()) } returns emptyList()
 
-        val config = legacyConfig(items)
+        val config = submissionConfig(items)
         uploadCoordinator.upload(config)
         advanceUntilIdle()
 
         coVerify(exactly = 2) {
             retryQueue.queueFailedOperation(
-                uploadType = "SampleItem",
+                uploadType = "Submission",
                 error = any(),
                 payload = any(),
-                endpoint = "samples",
+                endpoint = "submissions",
                 httpMethod = "POST",
                 dbId = null,
-                modelClassName = "SampleItem"
+                modelClassName = "Submission"
             )
         }
     }
@@ -514,11 +578,11 @@ class UploadCoordinatorTest {
         markUploaded = { _: List<UploadedItemResult> -> emptyList() }
     )
 
-    private fun legacyConfig(items: List<SampleItem>) = UploadConfig<SampleItem>(
-        modelClass = SampleItem::class,
-        endpoint = "samples",
+    private fun submissionConfig(items: List<Submission>) = UploadConfig<Submission>(
+        modelClass = Submission::class,
+        endpoint = "submissions",
         fetchPendingItems = { items },
-        serializer = UploadSerializer.Simple { it.payload },
+        serializer = UploadSerializer.Simple { JsonObject().apply { addProperty("localId", it.id) } },
         idExtractor = { it.id },
         dbIdExtractor = null
     )

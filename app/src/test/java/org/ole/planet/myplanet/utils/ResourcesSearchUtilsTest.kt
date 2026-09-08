@@ -17,7 +17,6 @@ class ResourcesSearchUtilsTest {
                 averageRating = null, timesRated = 0, resourceId = null, isOffline = false,
                 _rev = null, uploadDate = null, filename = null,
             ),
-            rating = null,
             tags = emptyList(),
         )
 

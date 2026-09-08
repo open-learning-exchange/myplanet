@@ -212,6 +212,58 @@ class FileUtilsTest {
     }
 
     @Test
+    fun findHtmlCoverImage_returnsNullForNonDirectoryInput() {
+        val fileInput = File(tempDir, "file.txt").apply { writeText("hello") }
+        assertNull(FileUtils.findHtmlCoverImage(fileInput))
+
+        val nonExistent = File(tempDir, "non_existent_folder")
+        assertNull(FileUtils.findHtmlCoverImage(nonExistent))
+    }
+
+    @Test
+    fun findHtmlCoverImage_handlesCaseInsensitiveExtensionsAndHints() {
+        File(tempDir, "POSTER_IMAGE.WEBP").writeBytes(ByteArray(10))
+
+        val cover = FileUtils.findHtmlCoverImage(tempDir)
+
+        assertEquals("POSTER_IMAGE.WEBP", cover?.name)
+    }
+
+    @Test
+    fun findHtmlCoverImage_respectsMaxDepthLimit() {
+        // Depth 1: tempDir
+        // Depth 2: d1
+        // Depth 3: d1/d2
+        // Depth 4: d1/d2/d3
+        // Depth 5: d1/d2/d3/d4
+        val depth4Dir = File(tempDir, "d1/d2/d3").apply { mkdirs() }
+        val depth5Dir = File(tempDir, "d1/d2/d3/d4").apply { mkdirs() }
+
+        File(depth5Dir, "cover.png").writeBytes(ByteArray(10))
+
+        // cover.png is at depth 5, so walkTopDown().maxDepth(4) will not reach it
+        assertNull(FileUtils.findHtmlCoverImage(tempDir))
+
+        File(depth4Dir, "cover_depth4.png").writeBytes(ByteArray(10))
+        val found = FileUtils.findHtmlCoverImage(tempDir)
+        assertEquals("cover_depth4.png", found?.name)
+    }
+
+    @Test
+    fun findHtmlCoverImage_preservesWalkOrderTieBreakingForLargestFileFallback() {
+        val file1 = File(tempDir, "a_image.jpg").apply { writeBytes(ByteArray(100)) }
+        val file2 = File(tempDir, "b_image.jpg").apply { writeBytes(ByteArray(100)) }
+
+        val expectedFirstInWalk = tempDir.walkTopDown()
+            .maxDepth(4)
+            .first { it.isFile && it.extension.lowercase() in setOf("jpg") }
+
+        val cover = FileUtils.findHtmlCoverImage(tempDir)
+
+        assertEquals(expectedFirstInWalk.name, cover?.name)
+    }
+
+    @Test
     fun getIdFromUrl_returnsCorrectId() {
         assertEquals("123", FileUtils.getIdFromUrl("http://example.com/resources/123/file.txt"))
         assertEquals("abc", FileUtils.getIdFromUrl("https://test.com/api/resources/abc/data"))
@@ -302,6 +354,54 @@ class FileUtilsTest {
 
         assertEquals(displayName, resolved?.let { File(it).name })
         assertEquals("fake image bytes", resolved?.let { File(it).readText() })
+    }
+
+    @Test
+    fun resolveUriToPath_sanitizesTraversalDisplayName() {
+        val authority = "org.ole.planet.myplanet.test.fileutils.traversal"
+        val maliciousDisplayName = "../../evil.txt"
+        val sourceBytes = "fake image bytes".toByteArray()
+        val sourceFile = File(tempDir, "provider_source_traversal.jpg").apply { writeBytes(sourceBytes) }
+        val contentUri = Uri.parse("content://$authority/malicious")
+
+        val provider = object : ContentProvider() {
+            override fun onCreate() = true
+
+            override fun query(
+                uri: Uri,
+                projection: Array<out String>?,
+                selection: String?,
+                selectionArgs: Array<out String>?,
+                sortOrder: String?
+            ): Cursor {
+                return MatrixCursor(arrayOf(OpenableColumns.DISPLAY_NAME)).apply {
+                    addRow(arrayOf(maliciousDisplayName))
+                }
+            }
+
+            override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor =
+                ParcelFileDescriptor.open(sourceFile, ParcelFileDescriptor.MODE_READ_ONLY)
+
+            override fun getType(uri: Uri): String? = null
+            override fun insert(uri: Uri, values: ContentValues?): Uri? = null
+            override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?) = 0
+            override fun update(
+                uri: Uri,
+                values: ContentValues?,
+                selection: String?,
+                selectionArgs: Array<out String>?
+            ) = 0
+        }
+        val providerInfo = ProviderInfo().apply { this.authority = authority }
+        provider.attachInfo(context, providerInfo)
+        ShadowContentResolver.registerProviderInternal(authority, provider)
+
+        val destinationDir = File(tempDir, "destination").apply { mkdirs() }
+        val resolved = FileUtils.resolveUriToPath(context, contentUri, destinationDir)
+
+        val resolvedFile = File(requireNotNull(resolved))
+        assertEquals(destinationDir.canonicalFile, resolvedFile.parentFile?.canonicalFile)
+        assertEquals("evil.txt", resolvedFile.name)
     }
 
     @Test

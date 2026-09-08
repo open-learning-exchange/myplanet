@@ -37,6 +37,7 @@ import kotlin.arrayOf
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.AlertAddAttachmentBinding
@@ -163,7 +164,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             }
 
             // ONLY continue saving if no missing fields
-            val achievementId = user?.id + "@" + user?.planetCode
+            val achievementId = viewModel.achievementId.value.takeUnless { it.isNullOrEmpty() } ?: return@setOnClickListener
             val header = binding.etAchievement.text.toString().trim()
             val goals = binding.etGoals.text.toString().trim()
             val purpose = binding.etPurpose.text.toString().trim()
@@ -461,20 +462,23 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         }
     }
 
-    private fun computeCvFilename(): String {
+    private suspend fun computeCvFilename(): String {
         if (deleteCv) return ""
         val uri = selectedCvUri
         val filename = pendingCvFilename
         if (uri != null && filename != null) {
-            val destDir = File(FileUtils.getOlePath(requireContext()) + "cv")
-            if (!destDir.exists()) destDir.mkdirs()
-            val destFile = File(destDir, filename)
-            try {
-                requireContext().contentResolver.openInputStream(uri)?.use { input ->
-                    destFile.outputStream().use { output -> input.copyTo(output) }
+            val context = requireContext()
+            withContext(dispatcherProvider.io) {
+                val destDir = File(FileUtils.getOlePath(context) + "cv")
+                if (!destDir.exists()) destDir.mkdirs()
+                val destFile = File(destDir, filename)
+                try {
+                    context.contentResolver.openInputStream(uri)?.use { input ->
+                        destFile.outputStream().use { output -> input.copyTo(output) }
+                    }
+                } catch (e: Exception) {
+                    Utilities.toast(activity, "Failed to save CV: ${e.message}")
                 }
-            } catch (e: Exception) {
-                Utilities.toast(activity, "Failed to save CV: ${e.message}")
             }
             return filename
         }
