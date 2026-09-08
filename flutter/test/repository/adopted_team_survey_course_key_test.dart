@@ -16,7 +16,7 @@ class MockPlanetApi extends Mock implements PlanetApi {}
 ///
 /// `SurveysRepositoryImpl.createMappedSurvey` copies the source survey's
 /// `courseId` and `stepId` onto an adopted team clone
-/// (`SurveysRepositoryImpl.kt:180-181`). The port's `adoptSurvey` copied
+/// (`SurveysRepositoryImpl.kt:181-182`). The port's `adoptSurvey` copied
 /// neither, and once Phase 132 made Send pass the *clone's* id,
 /// `createBulkSurveySubmissions` resolved `survey?.courseId == null` and keyed
 /// every member's answer sheet with the bare clone id where Kotlin keys
@@ -259,7 +259,7 @@ void main() {
     final user = jsonDecode(marker.user!) as Map<String, dynamic>;
     final doc = user['doc'] as Map<String, dynamic>;
     expect(doc['name'], 'Ada Lovelace');
-    // Kotlin's key set and order under `doc` (`createUserJsonString:139-147`).
+    // Kotlin's key set and order under `doc` (`createUserJsonString:142-148`).
     expect(doc.keys, [
       '_id',
       'name',
@@ -288,6 +288,102 @@ void main() {
     expect(doc.containsKey('name'), isFalse);
     expect(doc['userId'], 'leader-1');
     expect(doc['createdBy'], 'leader-1');
+  });
+
+  test('a server-authored step survey still gates, even if adopted', () async {
+    // `sourceSurveyId` alone is **not** a local-authorship marker in the port:
+    // the courses walk reads it straight off the server's own embedded survey
+    // (`survey_mapper.dart:163-167`). A step survey that is itself an adopted
+    // copy therefore lands with `courseId`, `stepId` *and* `sourceSurveyId` —
+    // it gets a Take Survey button and a working retake label, so the gate
+    // must keep demanding it. Kotlin's own test for a locally minted clone is
+    // the **conjunction** `sourceSurveyId IS NOT NULL AND _rev IS NULL`
+    // (`ExamDao.kt:21`); skipping on the first half alone silently let a
+    // learner finish `MANDATORY_SURVEY_COURSE_ID` having answered nothing.
+    const doc = {
+      '_id': 'course-2',
+      'courseTitle': 'Adopted upstream',
+      'steps': [
+        {
+          'stepTitle': 'First',
+          'survey': {
+            '_id': 'survey-adopted',
+            '_rev': '3-abc',
+            'type': 'surveys',
+            'name': 'Adopted upstream survey',
+            'sourceSurveyId': 'survey-origin',
+            'questions': [
+              {'id': 's1', 'title': 'How was it?', 'type': 'input'},
+            ],
+          },
+        },
+      ],
+    };
+    final parsed = CourseMapper.fromDoc(doc)!;
+    await database.courseDao.upsertAll([parsed.course], parsed.steps);
+    for (final mapping in SurveyMapper.fromCourseDoc(
+      doc,
+      stepIdFor: CourseMapper.stepIdFor,
+    )) {
+      await database.surveyDao.upsertAll(
+        [mapping.survey],
+        {mapping.survey.id.value: mapping.questions},
+      );
+    }
+    final row = (await database.surveyDao.getByCourseId('course-2')).single;
+    expect(row.sourceSurveyId, 'survey-origin');
+    expect(
+      row.rev,
+      '3-abc',
+      reason: 'a server row carries a rev; a clone does not',
+    );
+    expect(
+      (await database.surveyDao.getByStepId('course-2:0')).map((r) => r.id),
+      ['survey-adopted'],
+      reason: 'it has a Take Survey button, so it can be satisfied',
+    );
+    expect(
+      await submissions.hasUnfinishedSurveys('course-2', 'user-1'),
+      isTrue,
+      reason: 'nothing answered, so the course must still block',
+    );
+  });
+
+  test('re-adopting does not rewrite a round-tripped marker', () async {
+    // Kotlin's guard is `it.status.orEmpty().isEmpty()`
+    // (`SurveysRepositoryImpl.kt:206`), which matches a null status and an
+    // empty one alike. `row.status == ''` misses the null — and null is the
+    // *normal* state for a marker that has synced, because [serialize] sends
+    // `'status': ''` and `upsertDocuments` reads the empty string back as null
+    // (`json_utils.dart:19-22`). The same shape `_repairSurveyParentId` needed
+    // `coalesce(status, '')` for.
+    await adopt();
+    final marker = (await database.submissionDao.getSurveySubmissionsByUser(
+      'leader-1',
+    )).singleWhere((row) => row.status == '');
+    await (database.submissionDao.update(database.submissionDao.submissions)
+          ..where((row) => row.id.equals(marker.id)))
+        .write(const SubmissionsCompanion(status: Value(null)));
+    expect((await submissions.getById(marker.id))!.status, isNull);
+
+    await surveys.adoptSurvey(
+      surveyId: 'survey-1',
+      userId: 'leader-1',
+      teamId: 'team-1',
+      teamName: 'Water Team',
+      isTeam: true,
+      now: DateTime.fromMillisecondsSinceEpoch(9000),
+    );
+    final after = (await database.submissionDao.getSurveySubmissionsByUser(
+      'leader-1',
+    )).where((row) => (row.status ?? '').isEmpty).toList();
+    expect(after, hasLength(1));
+    expect(
+      after.single.status,
+      isNull,
+      reason: 'the existing marker was recognised, not rewritten',
+    );
+    expect(after.single.startTime, 5000);
   });
 
   test('a course-less survey is unaffected', () async {

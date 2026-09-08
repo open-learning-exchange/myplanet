@@ -987,14 +987,19 @@ class SubmissionsRepository {
   /// no step join: found here, offered by no button. Kotlin genuinely cannot do
   /// that, since `StepExam.insertCourseStepsExams` never reads either key from
   /// the document (`StepExam.kt:36-58`) and the exams walk passes
-  /// `("", "", doc, "")`. Whether it is live depends on Planet's document
-  /// shape, which nothing in this tree settles.
+  /// `("", "", doc, "")`.
+  ///
+  /// **And since Phase 136 the port manufactures that shape itself**, on every
+  /// team adoption: `adoptSurvey` copies `courseId` and deliberately not
+  /// `stepId`. So this is no longer a hypothetical waiting on Planet's
+  /// document shapes — it is the normal state of an adopted clone, and the
+  /// skip below is what keeps it out of this reader.
   ///
   /// Two things the audit established that keep this reader safe, both pinned
   /// by tests in `mandatory_survey_round_trip_test.dart`:
   ///
   /// * Kotlin's `createMappedSurvey` copies the source survey's `courseId` and
-  ///   `stepId` into an adopted team clone (`SurveysRepositoryImpl.kt:180-181`).
+  ///   `stepId` into an adopted team clone (`SurveysRepositoryImpl.kt:181-182`).
   ///   Since Phase 136 the port copies the `courseId` too — Send has to, since
   ///   `createBulkSurveySubmissions` folds it into every member's key — so
   ///   `getByCourseId` now returns clones and **this loop skips them
@@ -1011,13 +1016,17 @@ class SubmissionsRepository {
   ///   never can have one, so counting it would make the course unfinishable —
   ///   Phase 125's bug, re-entered from the writer's side.
   ///
-  ///   And in the *other* branch — a step survey whose embedded document omits
-  ///   `type`, which is the only way Kotlin ever writes the singular value
-  ///   (`CoursesRepositoryImpl.kt:746`, `else examKey`) — Kotlin's gate does
-  ///   match, and matches the clone too, but `getTeamOwnedSurveys` filters
-  ///   `type = "surveys"` and so lists no such clone at all. The obligation it
-  ///   adds is one no Kotlin screen can discharge. Neither branch is behaviour
-  ///   worth reproducing.
+  ///   And a `type = "survey"` **clone** cannot exist at all, which an earlier
+  ///   draft of this bullet got wrong: the singular value is written only by
+  ///   `CoursesRepositoryImpl.kt:746`'s `else examKey`, while every list
+  ///   `adoptSurvey` is reachable from is plural — `getAdoptableTeamSurveys`,
+  ///   `getTeamOwnedSurveys` and `getIndividualSurveys` are all
+  ///   `type = "surveys"` (`ExamDao.kt:29-31`), and `createMappedSurvey`
+  ///   copies `type = exam.type`. So Kotlin's gate cannot see a clone under
+  ///   *any* document shape. That makes the case for skipping stronger than
+  ///   the one this replaced, not weaker — but it is also the sentence a later
+  ///   round would reach for to remove the skip, so it is worth stating
+  ///   correctly.
   ///
   ///   [repairCourseSurveyParentIds] deliberately does **not** skip them: a
   ///   clone's member sheets are exactly the rows a pre-Phase-136 build keyed
@@ -1052,10 +1061,21 @@ class SubmissionsRepository {
     final surveys = await _surveyDao.getByCourseId(courseId);
     for (final survey in surveys) {
       // An adopted team clone joins the course as of Phase 136, and the course
-      // must not demand it — see this method's doc comment. `sourceSurveyId`
-      // is Kotlin's own test for "this row is an adopted copy"
-      // (`ExamDao.kt:21`, the upload sweep).
-      if (survey.sourceSurveyId != null) continue;
+      // must not demand it — see this method's doc comment.
+      //
+      // **Both halves of the predicate are load-bearing**, and the first cut
+      // of this had only the first. `sourceSurveyId` is not a local-authorship
+      // marker in the port: the courses walk reads it straight off the
+      // server's embedded survey (`survey_mapper.dart:163-167`), so a step
+      // survey that is itself an adopted copy arrives with `courseId`,
+      // `stepId` and `sourceSurveyId` — it has a Take Survey button and a
+      // working retake label, and skipping it let a learner finish
+      // `MANDATORY_SURVEY_COURSE_ID` having answered nothing. Kotlin's own
+      // test for a locally minted clone is the conjunction
+      // `sourceSurveyId IS NOT NULL AND _rev IS NULL` (`ExamDao.kt:21`, the
+      // upload sweep), and `adoptSurvey` writing `rev: Value(null)`
+      // explicitly is what makes the second half exact here.
+      if (survey.sourceSurveyId != null && survey.rev == null) continue;
       // Routed through the writers' own derivation so the two cannot drift
       // apart again. `courseId` is non-empty by the guard above and equal to
       // `survey.courseId` by the query that produced the row, so this is

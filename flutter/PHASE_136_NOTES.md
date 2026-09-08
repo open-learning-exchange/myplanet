@@ -15,7 +15,7 @@ code.
 
 ## `createMappedSurvey`, read field by field
 
-`SurveysRepositoryImpl.kt:162-192` makes **nineteen** assignments — every one
+`SurveysRepositoryImpl.kt:163-191` makes **nineteen** assignments — every one
 of `StepExam`'s constructor properties. Nothing is left at a default.
 
 | Kotlin | source | port |
@@ -73,9 +73,13 @@ would punish it. Proven, not reasoned:
   (`stepId IS NOT NULL`), so the course join holds.
 
 Withholding it also keeps the clone off the course step's Take Survey button
-(`stepSurveysProvider` → `getByStepId`), whose *count* the port renders to the
-learner. Kotlin's `getByStepIdAndType(stepId, "surveys")` does list every
-team's clone there — a quirk worth not importing.
+(`stepSurveysProvider` → `getByStepId`) — and the second audit corrected my
+reason. The survey tile renders **no** count (`take_course_screen.dart:468-474`
+says so itself; only the *test* tile counts). The real hazard is worse: the
+button opens `surveys.first.id` (`:499`), so a copied `stepId` would point a
+learner's Take Survey button at whichever team's private clone sorted first.
+Kotlin's `getByStepIdAndType(stepId, "surveys")`
+(`CoursesRepositoryImpl.kt:530`) does exactly that.
 
 ## The reader had to change, and the brief's premise is dead code
 
@@ -87,23 +91,29 @@ That is Phase 125's bug re-entered from the writer's side, and the guard
 `'the gate does not demand a team's private copy'` fails on the unfiltered
 version (mutation-tested: `Expected: false / Actual: <true>`).
 
-So `hasUnfinishedSurveys` now skips `sourceSurveyId != null` — Kotlin's own
-test for "this row is an adopted copy" (`ExamDao.kt:21`).
+So `hasUnfinishedSurveys` now skips a clone — **on both halves of Kotlin's own
+predicate**, `sourceSurveyId IS NOT NULL AND _rev IS NULL` (`ExamDao.kt:21`).
+The first cut had only the first half and that was a real regression; see
+*What the second audit found in my own green code*.
 
-**That is not a divergence from a live Kotlin behaviour.** Both branches of the
-Kotlin fork are broken, and the audit pinned both:
+**Skipping is not a divergence from a live Kotlin behaviour.** Kotlin's gate
+cannot see a clone under any document shape:
 
 * `getSurveysByCourseId` (`:367-369`) filters
   `getByCourseIdAndType(courseId, "survey")` — **singular** — while every
   survey in the app, clone included (`type = exam.type`), carries `"surveys"`:
-  the take-survey button (`:531`), all three survey lists, `ExamDao`'s
-  defaults. So for a normally shaped document the gate matches nothing at all
-  and `hasUnfinishedSurveys` is constant `false`.
-* The only writer of the singular value is `CoursesRepositoryImpl.kt:746`'s
-  `else examKey` — a step survey whose embedded document omits its own `type`.
-  There the gate does match, and matches the clone, but
-  `getTeamOwnedSurveys` filters `"surveys"`, so no screen lists that clone and
-  the obligation is one nothing can discharge.
+  the take-survey button (`CoursesRepositoryImpl.kt:530`), all three survey
+  lists, `ExamDao`'s defaults. So for a normally shaped document the gate
+  matches nothing at all and `hasUnfinishedSurveys` is constant `false`.
+* The singular value is written only by `CoursesRepositoryImpl.kt:746`'s
+  `else examKey`. My first draft claimed that in *that* branch Kotlin's gate
+  does match the clone; **it cannot**, and the second audit caught it. Every
+  list `adoptSurvey` is reachable from is plural — `getAdoptableTeamSurveys`,
+  `getTeamOwnedSurveys` and `getIndividualSurveys` are all `type = "surveys"`
+  (`ExamDao.kt:29-31`) — so an adoption source is always `"surveys"` and so is
+  its clone. The conclusion survives and is *stronger* than the argument I
+  wrote for it, but the false step is the dangerous half: it is exactly the
+  sentence a later round would cite to remove the skip.
 
 `repairCourseSurveyParentIds` deliberately does **not** skip clones: a clone's
 member sheets are exactly the rows a pre-Phase-136 build keyed bare, so the
@@ -112,13 +122,17 @@ and the doc comment now says so.
 
 ## Two more defects in the same function
 
-* **The adoption marker's `parent` document disowned the course.** Kotlin's
-  `createParentJsonString(exam)` is handed the **source** exam — resolved at
-  `:73`, ten lines before the clone's id exists — and writes
-  `put("courseId", exam.courseId ?: "")`. The port hardcoded `''`. Confirmed by
-  the audit: the `parent` blob describes the source throughout (`_id` = source
-  id, name without the `" - $teamName"` suffix, `teamShareAllowed` = the
-  source's `true`).
+* **The adoption marker's `parent` document disowned the course** — on the
+  fallback path only, and my first write-up overstated it. Kotlin's
+  `createParentJsonString(exam)` is handed the **source** exam (resolved at
+  `:73`, ten lines before the clone's id exists) and writes
+  `put("courseId", exam.courseId ?: "")`; the port hardcoded `''`. But nothing
+  *published* that field: `serialize` prefers the live survey row
+  (`_liveParentDocument`) and `surveyParentDocument` emits no `courseId`, as
+  Kotlin's `StepExam.serializeExam` does not either. The stored blob is sent
+  only when the source survey row has gone missing. So this is faithfulness on
+  a rarely taken path, not a defect anyone observed — the commit message ranks
+  it too highly.
 * **The marker's `user.doc` had no `name`.** Kotlin writes
   `_id, name, userId, teamPlanetCode, status, type, createdBy` under `doc`
   (`:139-147`). `adoptSurvey` gains a `userName` parameter, filled from the
@@ -209,11 +223,84 @@ nobody should expect the column to be there after a sync.
   Nothing near `queuePending` touched (Lane A).
 * `lib/ui/teams/team_surveys_screen.dart` — passes `userName` from the session
   user it already watches.
-* `test/repository/adopted_team_survey_course_key_test.dart` — new, 9 tests.
+* `test/repository/adopted_team_survey_course_key_test.dart` — new, 13 tests
+  (the commit message for the first push says nine; two landed in a follow-up
+  and two more with the second audit's fixes).
 * `test/repository/mandatory_survey_round_trip_test.dart` — the Phase 125
   pinned test now pins the corrected behaviour.
 
 No Drift `schemaVersion` bump: both columns already exist.
+
+## What the second audit found in my own green code
+
+Both passes were run at `effort: max`, ground truth before implementing and
+implementation after it was green — and the second one earned its keep, as it
+has in every phase that ran it.
+
+### `sourceSurveyId != null` alone silently loosened the gate
+
+**A regression this phase introduced, and the worst kind: it made a blocking
+check stop blocking.** `sourceSurveyId` is *not* a local-authorship marker in
+the port. The courses walk reads it straight off the server's embedded survey
+(`survey_mapper.dart:163-167`), so a step survey that is itself an adopted copy
+lands with `courseId`, `stepId` **and** `sourceSurveyId`. That row has a Take
+Survey button and a working retake label — it can be satisfied — and my skip
+ignored it. A learner on `MANDATORY_SURVEY_COURSE_ID` could tap Finish having
+answered nothing and see no snackbar; the challenge dialog would report the
+survey task done.
+
+Kotlin's own test for a locally minted clone is the **conjunction**
+`sourceSurveyId IS NOT NULL AND _rev IS NULL` (`ExamDao.kt:21`) — I cited that
+line as authority and then ported half of it. The predicate is now the whole
+thing, which this phase's own `rev: Value(null)` makes exact: a server row
+always carries a rev, a clone never does. Pinned by
+`'a server-authored step survey still gates, even if adopted'`, on a course
+document carrying `_rev` and `sourceSurveyId`, which fails on the one-clause
+version.
+
+### The adoption guard had the null-vs-empty bug this phase celebrates catching
+
+Kotlin's `findExistingAdoption` predicate is `it.status.orEmpty().isEmpty()`
+(`:206`) — null **and** `''`. The port's was `row.status == ''`, which misses
+null, and null is the *normal* state for a marker that has synced: `serialize`
+sends `'status': ''` and `upsertDocuments` reads the empty string back as null
+(`json_utils.dart:19-22`). The same shape `_repairSurveyParentId` needs
+`coalesce(status, '')` for, three hundred lines away, with a doc comment
+explaining why. Now `(row.status ?? '').isEmpty`.
+
+Harmless today only because the port's marker id is deterministic, so the
+rewrite lands on the same row rather than duplicating (Kotlin would insert a
+second marker) — but it reset the status, bumped both timestamps and re-flagged
+`isUpdated`, re-queueing the marker for upload on every stray adopt tap.
+
+### Claims of mine it corrected
+
+* the "other Kotlin branch" argument, above — a misread citation;
+* the `parent.courseId` impact, above — not observable on the wire;
+* the Take Survey *count* — the survey tile renders none; the real hazard is
+  the button's target;
+* seven citations off by one or two (`:180-181` → `:181-182` for the
+  `stepId`/`courseId` pair, `createUserJsonString:139-141` → `:142-143`, the
+  `doc` key span `:139-147` → `:142-148`, the take-survey button `:531` →
+  `:530`), all now fixed;
+* the test count, which was nine and is thirteen.
+
+### And the framing, which is worth stating plainly
+
+**With the clone skipped, no reader in `lib/` distinguishes the bare key from
+the composite one for a clone.** The only two readers comparing a whole
+`parentId` are `latestPendingByUserAndParent` (writer-side dedupe,
+self-consistent under either key) and `countByUserParentAndType` (reached from
+`hasSubmission`, which only ever sees step surveys, and from
+`hasUnfinishedSurveys`, which now skips clones). Off-device, Planet has no
+clone document to join against, because the port never uploads one.
+
+So this is a **writer-faithfulness** change, not the live writer/reader
+disagreement the commit message describes. It is still worth having — Send and
+the answering path now derive the key from one place so they cannot drift
+apart, a mixed Kotlin/port fleet agrees, and the transition is covered by the
+repair — but the ranking in *Reported, not fixed* is the correct one: **the
+uploader/prune gap is the item that loses data. This one does not.**
 
 ## Reported, not fixed
 
@@ -255,6 +342,27 @@ carry it — to match Kotlin's step button, say — then
 `sourceSurveyId IS NOT NULL`, or the next courses sync nulls the clone's
 `courseId` with it and this phase silently reverts. `app_database.dart`,
 Lane B's file this round.
+
+### `progress_repository.dart:92-95` now reads as a contradiction
+
+Not touched — Lane B's file this round. Its comment justifies a `groupBy` with
+"`adoptSurvey` copies `stepId` onto a new row, so a step can legitimately carry
+more than one". That is a statement about *Kotlin*, and it was unambiguous
+while the port copied neither column; now that `adoptSurvey` deliberately
+withholds `stepId` it reads as a contradiction of
+`surveys_repository.dart`'s block. The `groupBy` itself is correct and should
+stay — Kotlin's clone really does share the step. It wants one clarifying
+clause, from whoever owns that file.
+
+### The repair's idempotence claim is device-local only
+
+`repairCourseSurveyParentIds`' doc says "after the first pass no row matches the
+bare id any more". True on the device: but `upsertDocuments` writes `parentId`
+verbatim from the document and `_repairSurveyParentId` does not set
+`isUpdated`, so a *server-authored* bare-id row is rewritten locally on every
+Finish tap and re-reverted on the next pull. Pre-existing (Phase 125), and the
+clone extension adds no new instance — a clone has no server rows, because the
+port never uploads it. Recorded because this phase re-asserted the claim.
 
 ### Adopt is still gated on team leadership; Kotlin gates on guest
 

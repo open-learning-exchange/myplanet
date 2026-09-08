@@ -197,7 +197,7 @@ void main() {
     // Phase 125 read this as "the clone must not join the course"; Phase 136
     // corrected it to "the clone joins the course and the gate must skip it".
     // Kotlin's `createMappedSurvey` copies the source survey's `courseId`
-    // (`SurveysRepositoryImpl.kt:180`) and Send folds it into every member's
+    // (`SurveysRepositoryImpl.kt:182`) and Send folds it into every member's
     // key, so the port has to copy it. `SurveyDao.getByCourseId` has no
     // adoption filter, so `hasUnfinishedSurveys` now skips
     // `sourceSurveyId != null` itself — otherwise a learner outside the

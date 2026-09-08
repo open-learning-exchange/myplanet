@@ -78,7 +78,7 @@ class SurveysRepository {
   /// Port of `SurveysRepositoryImpl.adoptSurvey` (`:66-114`).
   ///
   /// [userName] feeds the adoption marker's `user.doc.name`, which Kotlin
-  /// writes from the resolved session model (`createUserJsonString:143`). It is
+  /// writes from the resolved session model (`createUserJsonString:142-143`). It is
   /// nullable and omitted when absent rather than sent as null, because
   /// `JSONObject.put(String, Object)` *removes* the key for a null value.
   Future<void> adoptSurvey({
@@ -105,7 +105,7 @@ class SurveysRepository {
         final adoptedId = createId?.call() ?? '${surveyId}_$teamId';
         await _dao.upsertAll(
           [
-            // `createMappedSurvey` (`SurveysRepositoryImpl.kt:162-192`) makes
+            // `createMappedSurvey` (`SurveysRepositoryImpl.kt:163-191`) makes
             // nineteen assignments; every one with a column here is below.
             // `type` and `noOfQuestions` have none — the port splits Kotlin's
             // single `exams` table on the document's own `type` and computes
@@ -125,10 +125,15 @@ class SurveysRepository {
             // (`stepId IS NOT NULL`), and the course join holds.
             //
             // Withholding it also keeps the clone off the course step's Take
-            // Survey button (`stepSurveysProvider` -> `getByStepId`), whose
-            // count the port renders to the learner; Kotlin's
-            // `getByStepIdAndType(stepId, "surveys")` does show every team's
-            // clone there, and that is a quirk worth not importing.
+            // Survey button (`stepSurveysProvider` -> `getByStepId`). That
+            // matters more than a wrong count — the survey tile renders none
+            // (`take_course_screen.dart:468-474`; only the *test* tile counts)
+            // — because the button opens `surveys.first.id` (`:499`), so a
+            // copied `stepId` would point a learner's Take Survey button at
+            // whichever team's private clone sorted first. Kotlin's
+            // `getByStepIdAndType(stepId, "surveys")`
+            // (`CoursesRepositoryImpl.kt:530`) does exactly that, and it is a
+            // quirk worth not importing.
             SurveysCompanion.insert(
               id: adoptedId,
               // `_rev = null` is an explicit assignment in the Kotlin, and it
@@ -181,9 +186,18 @@ class SurveysRepository {
     final candidates = isTeam && teamId != null && teamId.isNotEmpty
         ? await _submissions.submissionsForTeam(teamId)
         : await _submissions.submissionsForUserWithoutTeam(userId);
+    // `it.status.orEmpty().isEmpty()` (`SurveysRepositoryImpl.kt:206`) — a
+    // **null** status counts as empty, and null is the normal state for a
+    // marker that has round-tripped: [SubmissionsRepository.serialize] sends
+    // `'status': ''` and `upsertDocuments` reads the empty string back as null
+    // (`json_utils.dart:19-22`). `row.status == ''` missed those and rewrote
+    // the marker on every adopt tap, re-queueing it for upload. Same shape as
+    // the `coalesce(status, '')` that `_repairSurveyParentId` needs.
     final exists = candidates.any(
       (row) =>
-          row.userId == userId && row.parentId == surveyId && row.status == '',
+          row.userId == userId &&
+          row.parentId == surveyId &&
+          (row.status ?? '').isEmpty,
     );
     if (exists) return;
     final parentJson = jsonEncode({
@@ -193,7 +207,14 @@ class SurveysRepository {
       // (`createParentJsonString`, `SurveysRepositoryImpl.kt:122`), where
       // `exam` is the **source** survey this marker is about, not the clone —
       // `adoptSurvey` resolves it at `:73` and calls this at `:77`, ten lines
-      // before the clone's id exists. A hardcoded `''` here published a
+      // before the clone's id exists.
+      //
+      // The hardcoded `''` this replaced was **not** observable on the wire:
+      // `SubmissionsRepository.serialize` prefers the live survey row
+      // (`_liveParentDocument`) and `surveyParentDocument` emits no `courseId`
+      // at all, as Kotlin's `StepExam.serializeExam` does not either. This
+      // blob is uploaded only when the source row has gone missing. So the
+      // fix is faithfulness on the fallback path, not a bug anyone saw. A hardcoded `''` here published a
       // marker whose parent document disowned the course the survey belongs
       // to.
       'courseId': survey.courseId ?? '',
