@@ -15,7 +15,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
-import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -25,7 +25,7 @@ class CommunityTabViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val configurationsRepository: ConfigurationsRepository = mockk()
-    private val userSessionManager: UserSessionManager = mockk()
+    private val userRepository: UserRepository = mockk()
 
     @Before
     fun setup() {
@@ -35,11 +35,11 @@ class CommunityTabViewModelTest {
     }
 
     @Test
-    fun `init populates state with values from configurationsRepository and userSessionManager`() = runTest {
+    fun `init populates state with values from configurationsRepository and userRepository`() = runTest {
         val user = UserEntity().apply { planetCode = "planet_code_999" }
-        coEvery { userSessionManager.getUserModel() } returns user
+        coEvery { userRepository.getUserModel() } returns user
 
-        val viewModel = CommunityTabViewModel(configurationsRepository, userSessionManager)
+        val viewModel = CommunityTabViewModel(configurationsRepository, userRepository)
         advanceUntilIdle()
 
         val state = viewModel.state.first()
@@ -51,6 +51,6 @@ class CommunityTabViewModelTest {
         verify { configurationsRepository.getParentCode() }
         verify { configurationsRepository.getCommunityName() }
         verify { configurationsRepository.getPlanetType() }
-        coVerify { userSessionManager.getUserModel() }
+        coVerify { userRepository.getUserModel() }
     }
 }
