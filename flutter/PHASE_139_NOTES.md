@@ -24,8 +24,13 @@ the highest-yield source of work:
    material items I had not asked about. All of them are recorded below rather
    than quietly folded in.
 3. Implement, with each defect demonstrated failing first.
-4. **Sixteen mutations**, each replayed against the suite to confirm the
+4. **Eighteen mutations**, each replayed against the suite to confirm the
    intended test reds.
+5. A second `parity-auditor` pass at `effort: max` aimed at the finished,
+   already-green code. It found one test that could not fail, three recorded
+   rationales that were wrong, and four divergences worth naming — every one of
+   them is folded in below rather than left in the transcript. **That is five
+   consecutive rounds in which the second pass found something on green code.**
 
 ## What the ground-truth audit corrected
 
@@ -274,9 +279,24 @@ to `course_progress` is the one the learner saw, and it cannot disagree with
 `take_course_screen._recordProgress`'s `stepNum: index + 1`.
 
 The derivation stays as the fallback, because the route's query parameters are
-optional and a location without a `stepNum` must still work. A non-positive
+optional and a location without a `stepNum` must still work — though with both
+pushers sending it, that branch now has no production caller. A non-positive
 value is treated as absent: `0` is Kotlin's missing-argument default and
 `WHERE stepNum = 0` is precisely the value its own update matches nothing with.
+
+**The argument for passing it is one materialisation versus two queries, and
+my first version of that argument was unsound.** I wrote that the derivation
+rests on `stepIndex`, whose column default of `0` makes ties legal. It does
+not: `CourseMapper._parseSteps` is the only writer of `course_steps` and always
+sets `stepIndex: Value(i)`, so no tie is reachable — and if one were,
+`watchSteps` and `getSteps` are byte-identical queries, so it would corrupt the
+*passed* number just as badly, because that ordering is where the tile's number
+comes from. The sound argument is the other one: the tile's rendered number,
+`_recordProgress`'s `index + 1` and the pushed `stepNum` all index the same
+`widget.steps` list, while the derivation issues a fresh query and re-finds the
+step by id. Corrected at the code too. Relatedly, my claim that the old comment
+"used the *same* ordering as Kotlin" misread it — it was a port-to-port claim
+about `getSteps` versus `_recordProgress`, and a true one.
 
 **What passing it explicitly buys, concretely:** the derivation had to resolve
 the *step id* in a re-query first, so a step id the course does not list — a
@@ -306,7 +326,7 @@ ids, which is a mapper and migration question.
 | `lib/ui/router.dart` | parses `stepNum` |
 | `lib/ui/exam/take_exam_screen.dart` | **outside the brief's file set — see below** |
 | `lib/l10n/app_en.arb` | `pleaseCompleteTest`, additions only |
-| `test/ui/courses/step_next_lock_test.dart` | new, 14 tests |
+| `test/ui/courses/step_next_lock_test.dart` | new, 15 tests |
 | `test/ui/courses/step_num_argument_test.dart` | new, 6 tests |
 | `test/ui/surveys/take_survey_screen_test.dart` | +4 tests, and the harness fix above |
 | `test/ui/courses/take_course_screen_test.dart` | +1 round-trip test |
@@ -343,8 +363,9 @@ hand-off; this is one key rather than five.
 
 ## Mutation testing
 
-Sixteen reverts, each replayed against the suite. Every one reds its intended
-test, and eight red exactly one.
+Eighteen reverts, each replayed against the suite. Every one reds its intended
+test, and nine red exactly one. The last two close the gap the second audit
+pass found.
 
 | # | mutation | reds |
 |---|---|---|
@@ -364,18 +385,39 @@ test, and eight red exactly one.
 | 14 | drop `&stepNum=` from the detail tile | *"the second tile sends 2"* |
 | 15 | router stops parsing `stepNum` | the router pair test |
 | 16 | `_resolveStepNum` ignores the passed value | 2 tests |
+| 17 | the lock reads `steps[0]` rather than the displayed step | *"the lock reads the displayed step"* |
+| 18 | the lock reads `steps[currentStep + 1]` | 4 tests |
 
-Two tests of my own needed fixing because they could not fail for the reason
-they named, both the same trap: **`find.text` searches the element tree and
-`PageView.builder` leaves an off-screen page in it.** Every step tile renders
-the identical label (`take test [N]`'s count is that step's `exams.length`, so
-it reads `[1]` on any step with one), so the first cut of the second-step
-`stepNum` test matched the page the learner had *left* and reported
-`stepNum=1` for step 2. The fixtures now put exactly one exam tile in the
-course, and the lock tests assert on `_ProgressSection`'s counter rather than a
-step title. This is also what makes the *page* assertions meaningful: a title
-that is present but off-screen would have hidden the `PageController` defect
-for a second round.
+**Three tests of mine could not fail for the reason their names gave.** Two I
+found; the third the implementation audit found, and it was the most important
+of the three.
+
+*The audit's:* nothing pinned which step the lock reads.
+`_nextStepLock` takes `steps[currentStep]`, Kotlin takes
+`steps.getOrNull(position - 1)` — and replacing it with `steps[0]` left the
+**entire suite green**. Every fixture here put the assessment on step 1 of a
+two-step course, and the lock is only ever *consulted* at index 0: at index 1
+`onNext` is null and `_NavigationBar` renders Finish, so the value computed for
+the last step is discarded. Nothing distinguished `currentStep` from `0`,
+`currentStep + 1` or `currentStep - 1`. Closed by a three-step course with the
+exam on the **middle** step, where the two readings disagree in both directions
+— reading `steps[0]` lets the learner off the locked step *and* blocks them on
+the unlocked one. `steps[0]` now reds exactly that test; `steps[currentStep+1]`
+reds four.
+
+*Mine, and the reason I recorded for them was wrong.* The first cut of the
+second-step `stepNum` test tapped a tile belonging to step 1 and reported
+`stepNum=1` for step 2, and I attributed it to `find.text` reaching an
+off-screen `PageView` page. **It does not reach one:** `PageView`'s
+`cacheExtent` is `allowImplicitScrolling ? 1.0 : 0.0` and that flag defaults
+false, so a settled `PageView` has only the visible page in the element tree —
+which is what the `findsNothing` assertion in *Next moves the page* depends on.
+The real cause was the `PageController` defect this phase then fixed: the page
+never moved, so step 1's tile was the only one built. The wrong reason was
+recorded in three places and is corrected in all three, because it would have
+told the next lane that page assertions are unreliable when they are the
+strongest assertions in the file — and a title assertion is exactly what would
+have caught the controller defect a round earlier.
 
 One harness note worth carrying forward: **`pumpAndSettle` does not clear a
 `SnackBar`.** It returns as soon as no frame is scheduled, and the four-second
@@ -397,19 +439,34 @@ released". `letSnackBarExpire` exists for that and says so.
    ```dart
    Future<int> countCompletedByUserAndExamId(String? userId, String examId)
    ```
-   with `userId` matched null-safely (Kotlin's `IS`), `parentId.like('%$examId%')`
-   escaped against the stored form, and `status.equals('pending').not()` — noting
-   that a NULL status must **not** count, which is what SQL gives for free and
+   with `userId` matched null-safely (Kotlin's `IS`),
+   `parentId.like('%$examId%')`, `status.equals('pending').not()`, and **no
+   `type` predicate** — Kotlin's count has none, where `_isStepCompleted` picks
+   its table by type, so adopting this closes a divergence rather than
+   preserving one. A NULL status must not count, which SQL gives for free and
    Dart does not.
+   **Do not escape the `LIKE` pattern**, which an earlier draft of this item
+   advised: Kotlin interpolates the raw exam id and escaping would make the
+   port *stricter* than Kotlin, the opposite of the looseness the `contains`
+   was chosen to preserve. Two axes the `contains` gets wrong in the other
+   direction, and which the DAO version would fix for free: SQLite's `LIKE` is
+   case-insensitive for ASCII, and it treats `%`/`_` in the pattern as
+   wildcards. All three are unreachable while `parentId` is minted from the
+   same `exam.id` through `examParentId`.
 2. **`_NavigationBar` shows Next and Previous to a non-member**, where
-   `updateNavigationVisibility:256-270` hides both — so a Kotlin non-member
-   cannot page through a course at all (its pager is also
-   `isUserInputEnabled = false`, and `navigateToStep` *is* membership-gated at
-   `:290`). Porting that would remove this phase's need for a membership gate on
-   the lock, and it is a one-line change to `_NavigationBar`. Left alone because
-   it takes a capability away from a browsing learner and is a behavioural call
-   beyond this brief. Note Kotlin's else-branch does not touch `finishStep`, so
-   a faithful port has to decide what a non-member sees on the last step.
+   `updateNavigationVisibility:267-270` hides both. Porting that would remove
+   this phase's need for a membership gate on the lock, and it is a one-line
+   change to `_NavigationBar`. Left alone because it takes a capability away
+   from a browsing learner and is a behavioural call beyond this brief.
+   **Do not port it as "a non-member cannot page through a course at all"** —
+   an earlier draft of this item said exactly that, contradicting this file's
+   own §*One claim was simply wrong* two screens up, which is the half that is
+   right: `onResume:146-162` puts Next back with no membership test, and
+   `steps` is a fragment field that survives view destruction, so a non-member
+   who leaves and returns *does* get Next. Kotlin's rule is stricter on the
+   first open than on any later one. Note also that the else branch does not
+   touch `finishStep`, so a faithful port has to decide what a non-member sees
+   on the last step.
 3. **`_ProgressSection` labels step 1 "Course Details".** It renders
    `currentStep == 0 ? l10n.courseDetails : l10n.stepNumber(currentStep + 1)`,
    a fossil of Kotlin's pager where position 0 *is* the course cover. The port's
@@ -420,8 +477,8 @@ released". `letSnackBarExpire` exists for that and says so.
 4. **The resources tile still has a chevron that does nothing** — Phase 128's
    item 1, unchanged, in both `take_course_screen` and `course_detail_screen`.
 5. **`getExamQuestionCount` shares `isStepCompleted`'s untyped first-row pick.**
-   `CoursesStepsAdapter.kt:51-55` renders `R.string.test_size,
-   step.questionCount`, which is `examDao.getFirstByStepId(stepId)?.noOfQuestions`
+   `CoursesStepsAdapter.kt:52-56` renders `R.string.test_size`
+   (`:54`) with `step.questionCount`, which is `examDao.getFirstByStepId(stepId)?.noOfQuestions`
    (`SubmissionsRepositoryImpl.kt:162-164`) — so Kotlin's step tile can show a
    *survey's* question count under a "Test:" label. The port's course-detail
    tile shows `resourcesInStep` instead and has no analogue, so there is nothing
@@ -445,7 +502,40 @@ released". `letSnackBarExpire` exists for that and says so.
    this phase edited. It stayed out because the values come from the session
    user and threading them through is a change to the screen's provider reads
    rather than to any of these three jobs.
-9. **The port's `Exams` table has no `type` column**, which is what makes the
+9. **The port does not resume a course at the learner's saved step.**
+   `_TakeCourseScreenState._currentStep` starts at 0 and nothing reads the
+   saved progress, where Kotlin opens at
+   `position = if (lastPositionBeforeExam > 0) … else if (currentStep > 0)
+   currentStep else 0` from `progressMap[courseId]?.current`
+   (`TakeCourseFragment.kt:104`, `:116`). Surfaced by the audit while checking
+   this phase's `PageController`, whose `initialPage` is therefore always 0.
+   Worth knowing that it also narrows the membership-gate rationale above: the
+   Kotlin path on which a returning non-member meets the lock depends on that
+   restored position, which the port has no equivalent of.
+10. **`TakeCourseScreen.build`'s clamp moves the index without driving the
+    controller.** When the step list shrinks it assigns `_currentStep` during
+    `build` and never calls `animateToPage` — the same shape this phase just
+    fixed 250 lines below. The scroll position self-corrects at layout, so the
+    page lands right; it is one line and it is pre-existing.
+11. **`_resolveStepNum`'s derivation branch is now test-only.** Both builders
+    of `/courses/exam/` send `stepNum`, so nothing in `lib/` reaches the
+    fallback. Kept deliberately as a defensive path for a location typed
+    without the parameter; named so nobody reads its coverage as proof it is
+    live.
+12. **The `isFromNation` team arm now ends in the thank-you dialog and a pop,
+    where Kotlin toasts and replaces with the survey list**
+    (`BaseExamFragment.kt:156-163`). That branch is dead in Kotlin — its only
+    writer derives `isFromNation` from a `parentId` both callers pass as `""` —
+    but it is **live in the port**, because `SurveyMapper` reads the field
+    straight off the server document, so "dead code" is not a reason to ignore
+    it here. I gave the path the same exit as every other non-team survey
+    rather than reproducing an unexercised Kotlin branch; the other view is
+    defensible and this is where to argue it.
+13. **`barrierDismissible: false` is not `setCancelable(false)`.** Kotlin's
+    thank-you dialog also swallows the back button. No behavioural difference
+    today, since either exit reaches the same pop, and `PopScope` is the
+    literal port if the pop ever becomes conditional on how the dialog closed.
+14. **The port's `Exams` table has no `type` column**, which is what makes the
    superset described above unavoidable. Adding one would let the port
    distinguish Kotlin's `"courses"` from its `"exam"` fallback and reproduce
    both the missing button and the wedged step — neither of which is desirable,

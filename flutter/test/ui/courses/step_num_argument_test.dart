@@ -47,14 +47,20 @@ void main() {
 
   /// A two-step course carrying an exam on whichever steps are named.
   ///
-  /// **Exactly one exam tile per fixture, and that is not tidiness.** Every
-  /// step tile renders the identical label — the count in `take test [N]` is
-  /// `exams.length` for that step, so it reads `[1]` on every step that has
-  /// one — and `PageView.builder` leaves an off-screen page in the element
-  /// tree, which `find.text` searches. The first cut of the second-step test
-  /// put an exam on both steps, matched the page the learner had *left*, and
-  /// reported `stepNum=1` for step 2. A fixture with one tile cannot be tapped
-  /// on the wrong page.
+  /// One exam tile per fixture, which is now belt-and-braces rather than
+  /// necessary — and the reason it looked necessary is worth recording,
+  /// because it was a misdiagnosis. Every step tile renders the identical
+  /// label (`take test [N]`'s count is that step's own `exams.length`, so it
+  /// reads `[1]` wherever there is one), and the first cut of the second-step
+  /// test tapped a tile belonging to step 1 and reported `stepNum=1` for step
+  /// 2. I attributed that to `find.text` reaching an off-screen `PageView`
+  /// page. **It does not:** `cacheExtent` is
+  /// `allowImplicitScrolling ? 1.0 : 0.0` and that flag defaults false, so a
+  /// settled `PageView` has only the visible page in the tree. The real cause
+  /// was the `PageController` defect this phase then fixed — the page never
+  /// moved, so step 1's tile was the only one built. With that fixed, a
+  /// two-tile fixture would match only the built page; one tile per fixture
+  /// stays because it makes the assertion independent of that reasoning.
   Map<String, Object?> courseDoc({
     Map<String, Object?>? firstExam,
     Map<String, Object?>? secondExam,

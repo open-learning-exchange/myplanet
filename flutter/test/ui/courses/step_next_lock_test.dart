@@ -70,6 +70,24 @@ void main() {
     ],
   };
 
+  /// A three-step course whose assessment sits on the **middle** step.
+  ///
+  /// This is what distinguishes `steps[currentStep]` from `steps[0]`, and
+  /// nothing else in this file does: in a two-step course the lock is only
+  /// ever *consulted* at index 0, because at index 1 `onNext` is null and
+  /// `_NavigationBar` renders Finish, so whatever the lock returns for the
+  /// last step is computed and discarded. Kotlin reads the displayed step
+  /// (`steps.getOrNull(position - 1)`, `TakeCourseFragment.kt:317`).
+  Map<String, Object?> middleStepCourseDoc() => {
+    '_id': mandatoryCourseId,
+    'courseTitle': 'Onboarding',
+    'steps': [
+      {'stepTitle': 'First'},
+      {'stepTitle': 'Second', 'exam': examDoc()},
+      {'stepTitle': 'Third'},
+    ],
+  };
+
   Future<AppDatabase> seed(Map<String, Object?> doc) async {
     final db = AppDatabase.memory();
     final parsed = CourseMapper.fromDoc(doc)!;
@@ -188,13 +206,21 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  /// The step counter in `_ProgressSection`, which is the only widget that
-  /// reflects the current step and nothing else.
+  /// The step counter in `_ProgressSection`.
   ///
-  /// Deliberately not the step *title*: `PageView.builder` keeps an
-  /// off-screen page in the element tree, and `find.text` searches the element
-  /// tree, so "Second" can be found for a page the learner is not on. A test
-  /// that asserted the title would pass whether or not Next was blocked.
+  /// Paired with an assertion on the step *title* wherever the page itself
+  /// matters, because the two can disagree and did: the counter is driven by
+  /// `currentStep` and the title by what the `PageView` actually built, which
+  /// is how the `PageController` defect hid — see *Next moves the page*.
+  ///
+  /// An earlier version of this comment said the title was unreliable because
+  /// `PageView.builder` leaves an off-screen page in the element tree. **That
+  /// was a misdiagnosis.** `PageView`'s `cacheExtent` is
+  /// `allowImplicitScrolling ? 1.0 : 0.0`, and that flag defaults false, so
+  /// once a scroll settles only the visible page is in the tree — which the
+  /// `findsNothing` assertion in *Next moves the page* relies on. The first
+  /// cut of the second-step test failed because the page never moved, not
+  /// because a stale page lingered.
   Finder onStep(int number, int total) => find.text('$number / $total');
 
   Future<void> tapNext(WidgetTester tester) async {
@@ -332,6 +358,33 @@ void main() {
 
       expect(onStep(1, 2), findsOneWidget);
       expect(find.text('First'), findsOneWidget);
+    });
+
+    testWidgets('the lock reads the displayed step, not the first one', (
+      tester,
+    ) async {
+      // The assessment is on the **middle** step of three, so the two
+      // readings disagree in both directions: reading `steps[0]` would let
+      // the learner off the locked step and block them on the unlocked one.
+      //
+      // Every other test here puts the assessment on step 1 of two, where
+      // `steps[currentStep]`, `steps[0]` and "the only step the lock is
+      // consulted for" are the same thing — so the whole file was green
+      // against `steps[0]`. Found by the implementation audit.
+      await pumpCourse(tester, db: await seed(middleStepCourseDoc()));
+
+      // Step 1 carries nothing, so Next goes through.
+      expect(onStep(1, 3), findsOneWidget);
+      await tapNext(tester);
+      expect(onStep(2, 3), findsOneWidget);
+      expect(find.text('Second'), findsOneWidget);
+      expect(find.textContaining('please complete'), findsNothing);
+
+      // Step 2 carries the unanswered test, so Next is refused here.
+      await tapNext(tester);
+      expect(find.text('please complete the test to proceed'), findsOneWidget);
+      expect(onStep(2, 3), findsOneWidget);
+      expect(find.text('Third'), findsNothing);
     });
 
     testWidgets('a step with no assessment advances', (tester) async {

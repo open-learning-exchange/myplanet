@@ -718,9 +718,25 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
   ///
   /// The derivation stays as the fallback because the route's query
   /// parameters are optional: it keeps a location typed without a `stepNum`
-  /// working. It is the weaker rule — `CourseDao.getSteps` orders by
-  /// `stepIndex`, whose column default of `0` makes ties legal, and a tie
-  /// makes `indexWhere`'s answer depend on which row SQLite returns first.
+  /// working. Since both pushers send the value, that branch is reached by no
+  /// production caller today.
+  ///
+  /// **Why the passed value is the stronger rule: one materialisation instead
+  /// of two independent queries.** The step tile's rendered number,
+  /// `take_course_screen._recordProgress`'s `stepNum: index + 1` and the
+  /// pushed `stepNum` all index the *same* `widget.steps` list, so the number
+  /// the learner saw is the number written and the pair cannot disagree. The
+  /// derivation issues a fresh `CourseDao.getSteps` and finds the step by id in
+  /// its result.
+  ///
+  /// An earlier version of this comment argued instead that `stepIndex`'s
+  /// column default of `0` makes ties legal, so the ordering is unreliable.
+  /// **That argument is unsound** and is recorded here so it is not repeated:
+  /// `CourseMapper._parseSteps` is the only writer of `course_steps` and always
+  /// sets `stepIndex: Value(i)`, so no tie is reachable — and if one were,
+  /// `watchSteps` and `getSteps` are byte-identical queries, so it would
+  /// corrupt the *passed* number just as badly, since that ordering is where
+  /// the tile's number comes from.
   ///
   /// A `stepNum` of 0 or less is treated as absent rather than written: that
   /// is Kotlin's missing-argument default, and `WHERE stepNum = 0` is the

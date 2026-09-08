@@ -244,6 +244,13 @@ class _CourseContentState extends ConsumerState<_CourseContent> {
     // in state nothing else does — see [_pageController]. `animateToPage`
     // rather than `jumpToPage` to match `viewPager2.currentItem += 1`, whose
     // ViewPager2 default is a smooth scroll.
+    // `hasClients` cannot be false at either call site — both are button
+    // `onPressed` callbacks, so the controller is attached — and if it ever
+    // were, this would perform half the operation: the index would move and
+    // the page would not, which is exactly the defect [_pageController]
+    // documents. Guarded rather than left to throw because a throw out of a
+    // tap handler is worse for the learner than a stuck page, and the state
+    // that would cause it is unreachable.
     void goToStep(int index) {
       onStepChanged(index);
       if (_pageController.hasClients) {

@@ -366,10 +366,26 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
   /// has a reviewed human translation in every locale. Five translations beat
   /// four extra words.
   ///
-  /// `barrierDismissible: false` is `setCancelable(false)` (`:147`), so the
-  /// learner leaves through Finish rather than by tapping outside — which is
-  /// what makes the pop reliable enough for the step tile to refresh behind
-  /// it.
+  /// `barrierDismissible: false` stands in for `setCancelable(false)`
+  /// (`:147`) but is **not** its equal: Kotlin's also swallows the back
+  /// button, and this dialog can still be dismissed with back. The outcome is
+  /// identical today because either exit reaches the pop below, and it stops
+  /// being identical the moment the pop is made conditional on how the dialog
+  /// closed — `PopScope` is the literal port if that ever happens.
+  ///
+  /// **One arm reaches here that Kotlin sends elsewhere, and the divergence is
+  /// a choice.** `showUserInfoDialog`'s else branch — a team survey that is
+  /// `isFromNation` — marks the sheet complete, toasts and
+  /// `navigateToSurveyList`s (`:156-163`). That branch is dead in Kotlin
+  /// (`isFromNation`'s only writer derives it from a `parentId` both callers
+  /// pass as `""`), but it is **live here**, because `SurveyMapper` reads the
+  /// field straight off the server document. So its Kotlin behaviour is
+  /// unexercised, unreviewed code, and this port gives the path the same exit
+  /// as every other non-team survey rather than reproducing it. Recorded in
+  /// `PHASE_139_NOTES.md` so the next lane can take the other view.
+  ///
+  /// `_submit` awaits `queuePending` before reaching here, so the pop cannot
+  /// race the outbox row.
   Future<void> _thankAndLeave() async {
     final l10n = AppLocalizations.of(context);
     await showDialog<void>(

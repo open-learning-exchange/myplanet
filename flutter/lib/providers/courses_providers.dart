@@ -486,8 +486,12 @@ typedef StepNextLock = ({bool locked, bool blockedByTest});
 /// so a tap in between is not blocked there either.
 final stepNextLockProvider = FutureProvider.autoDispose
     .family<StepNextLock, StepAssessmentKey>((ref, key) async {
-      final assessment = await ref.watch(stepAssessmentProvider(key).future);
+      // Watched before the await rather than after it: a `ref.watch` on the
+      // far side of an `await` runs against an element that may already be
+      // disposed. Harmless for this provider, which never changes, but the
+      // shape is not worth keeping.
       final db = ref.watch(appDatabaseProvider);
+      final assessment = await ref.watch(stepAssessmentProvider(key).future);
       // Kotlin's order (`:323-333`) is completion first, presence second. The
       // two agree either way — `isStepCompleted` answers true when the step
       // carries no assessment — and this keeps the cheap test first.
@@ -529,7 +533,10 @@ final stepNextLockProvider = FutureProvider.autoDispose
 ///    `getFirstByStepId` is not, so a step whose exam object carries no `type`
 ///    and whose survey object says `"type": "surveys"` locks with the *survey*
 ///    message while the unlock condition interrogates the *exam* row —
-///    answering the survey never opens it.
+///    answering the survey never opens it. The type filter is not the only
+///    route to that disagreement: `getFirstByStepId` has no `ORDER BY` either,
+///    so a step that gains an exam *after* its first sync leaves the survey
+///    holding the lower rowid and Kotlin picks the survey.
 ///  * **The lock fires on documents Kotlin's does not.** Kotlin's `type`
 ///    column holds the server document's own `type`, falling back to the
 ///    singular `"exam"`/`"survey"` that no Kotlin query selects
@@ -542,10 +549,20 @@ final stepNextLockProvider = FutureProvider.autoDispose
 ///    buttons to the lock.
 ///
 /// The submission read picks its table from the row's own, the way
-/// [SubmissionsRepository.hasSubmission] picks its question table — Kotlin has
-/// one `submissions` query with no `type` filter, and the only input that
-/// would tell the two apart is an exam and a survey sharing an `_id`, which is
-/// also the case where Kotlin's own row pick is undefined.
+/// [SubmissionsRepository.hasSubmission] picks its question table. **Kotlin's
+/// count has no `type` predicate at all** (`SubmissionDao.kt:24`), so this is
+/// a divergence rather than a translation: a submission whose `type` is null or
+/// unexpected, but whose `parentId` carries the assessment id, releases
+/// Kotlin's lock and not this one. Unreachable today — every port writer sets
+/// `'exam'` or `'survey'` and the sync-in copies Planet's own value — and the
+/// DAO method named in `PHASE_139_NOTES.md` would drop the filter and close it.
+///
+/// Two more axes on which `contains` is not `LIKE`, both unreachable for the
+/// same reason (`parentId` is always minted from the same `exam.id` through
+/// `examParentId`) and both worth knowing before anyone rewrites this as SQL:
+/// SQLite's `LIKE` is **case-insensitive** for ASCII where `contains` is not,
+/// and it treats `%`/`_` in the pattern as wildcards, which Kotlin does not
+/// escape.
 ///
 /// **This reads a list where Kotlin reads a `COUNT(*)`.** The faithful query
 /// is `SubmissionDao.countCompletedByUserAndExamId`, which the port does not
@@ -565,6 +582,11 @@ Future<bool> _isStepCompleted({
       : (surveys.isEmpty ? null : surveys.first.id);
   // `examDao.getFirstByStepId(stepId) ?: return true` — a step with no
   // assessment row is complete, which is what unlocks an ordinary step.
+  //
+  // Unreachable from the one caller, which short-circuits on both lists being
+  // empty before it gets here. Kept because it is Kotlin's own `?:` and this
+  // function reads as a port of `isStepCompleted` rather than as a helper for
+  // one call site; its lack of coverage is deliberate, not a gap.
   if (assessmentId == null) return true;
   final rows = fromExam
       ? await db.submissionDao.getExamSubmissionsByUser(userId)
