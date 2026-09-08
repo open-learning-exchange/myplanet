@@ -241,11 +241,17 @@ class _CourseContentState extends ConsumerState<_CourseContent> {
     // `setCourseData:216-232` shows `btnRemove` for `!isGuest && !containsUserId`
     // only, so Kotlin offers the membership button to a signed-in non-member
     // and to nobody else. Watched rather than derived from `widget.userId`,
-    // because `UserMapper.isGuest` deliberately tests both id columns where
-    // `isGuestId` tests one; the parent already watches this provider, so the
-    // value is resolved by the time this builds.
+    // because the predicate reads the row's roles and both id columns where
+    // `isGuestId` reads one string; the parent already watches this provider,
+    // so the value is resolved by the time this builds.
+    //
+    // `isGuestAccount`, not `isGuest`: the Kotlin here is `isGuest()`
+    // (`TakeCourseFragment:213`), which is the id prefix **or** a `guest` role
+    // with no `learner` role. Phase 145 landed this gate on the narrow rule,
+    // so a role-only guest was offered a button Kotlin withholds.
     final user = ref.watch(sessionProvider).valueOrNull;
-    final canChangeMembership = user != null && !UserMapper.isGuest(user);
+    final canChangeMembership =
+        user != null && !UserMapper.isGuestAccount(user);
 
     // The recording moved to [_recordCurrentStep], which covers this and the
     // step the screen opens on alike.

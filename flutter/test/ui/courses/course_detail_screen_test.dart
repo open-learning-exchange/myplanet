@@ -37,6 +37,21 @@ UserRow _guest() => UserRow(
   isUpdated: false,
 );
 
+/// A user Planet marks a guest by **role** rather than by id — the shape
+/// `UserEntity.isGuest()`'s second disjunct is written for, and one the port's
+/// id-prefix rule cannot see.
+UserRow _roleGuest({List<String> roles = const ['guest']}) => UserRow(
+  id: 'org.couchdb.user:jane',
+  couchId: 'org.couchdb.user:jane',
+  rev: '1-a',
+  name: 'jane',
+  rolesList: roles,
+  userAdmin: false,
+  joinDate: 0,
+  isArchived: false,
+  isUpdated: false,
+);
+
 UserRow _user() => UserRow(
   id: 'user-1',
   couchId: 'org.couchdb.user:ada',
@@ -325,6 +340,49 @@ void main() {
       await pumpScreen(
         tester,
         course: buildCourseRow(id: 'course-1', courseTitle: 'Algebra'),
+      );
+
+      expect(find.text('Add to my courses'), findsOneWidget);
+    });
+
+    /// The gate reads `UserEntity.isGuest()`, which is the id prefix **or** a
+    /// `guest` role without a `learner` role (`UserEntity.kt:178-182`). The
+    /// port gated on the id prefix alone, so a user Planet marks a guest by
+    /// role — with an ordinary `org.couchdb.user:` id — was offered the button
+    /// Kotlin withholds, and this copy's tap reaches the server.
+    testWidgets('a guest by role, with an ordinary id, gets no button', (
+      tester,
+    ) async {
+      await pumpScreen(
+        tester,
+        course: buildCourseRow(id: 'course-1', courseTitle: 'Algebra'),
+        overrides: [
+          sessionProvider.overrideWith(
+            () => _TestSessionNotifier(_roleGuest()),
+          ),
+        ],
+      );
+
+      expect(find.text('Add to my courses'), findsNothing);
+      expect(find.text('Algebra'), findsWidgets);
+    });
+
+    /// The other half of the same clause, and the one a `roles.contains`
+    /// would get wrong: Planet can grant a member both roles, and the learner
+    /// role wins.
+    testWidgets('a user carrying guest and learner keeps the button', (
+      tester,
+    ) async {
+      await pumpScreen(
+        tester,
+        course: buildCourseRow(id: 'course-1', courseTitle: 'Algebra'),
+        overrides: [
+          sessionProvider.overrideWith(
+            () => _TestSessionNotifier(
+              _roleGuest(roles: const ['guest', 'learner']),
+            ),
+          ),
+        ],
       );
 
       expect(find.text('Add to my courses'), findsOneWidget);

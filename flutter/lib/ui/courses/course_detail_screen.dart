@@ -92,7 +92,11 @@ class _CourseBody extends ConsumerWidget {
     final theme = Theme.of(context);
     final isMyCourse = userId != null && course.userId.contains(userId);
     final user = ref.watch(sessionProvider).valueOrNull;
-    final isGuest = user != null && UserMapper.isGuest(user);
+    // `UserMapper.isGuestAccount`, the port of `UserEntity.isGuest()` —
+    // the id prefix **or** a `guest` role with no `learner` role. The narrow
+    // `UserMapper.isGuest` was what this gate read until Phase 149, which
+    // matched neither this site's Kotlin nor the other course screen's.
+    final isGuest = user != null && UserMapper.isGuestAccount(user);
     final target = (type: 'course', itemId: course.id);
     final rating = ref.watch(ratingSummaryProvider(target)).valueOrNull;
 
@@ -147,11 +151,12 @@ class _CourseBody extends ConsumerWidget {
               // and Phase 145 gated the other one first. `take_course_screen`'s
               // `_toggleMembership` writes locally; this one writes *and*
               // pushes the shelf, so an ungated guest tap here reached the
-              // server. The guard is `UserMapper.isGuest`, whose id-prefix rule
-              // no port writer can currently satisfy — so this is hardening
-              // rather than a live bug closed, and it is narrower than
-              // `UserEntity.isGuest()`, which is that rule *or* a `guest` role
-              // without a `learner` role. See `PHASE_145_NOTES.md`.
+              // server. The guard is `UserMapper.isGuestAccount`, the full
+              // `UserEntity.isGuest()`: the id-prefix rule no port writer can
+              // currently satisfy, **or** a `guest` role without a `learner`
+              // role, which the sync-in writes straight from the account
+              // document. Phase 145 landed this gate on the narrow rule and
+              // Phase 149 widened it. See `PHASE_149_NOTES.md`.
               if (!isGuest)
                 FilledButton.tonalIcon(
                   onPressed: () => _toggleMembership(ref, joined: !isMyCourse),

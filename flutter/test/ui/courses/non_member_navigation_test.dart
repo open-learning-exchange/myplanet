@@ -99,6 +99,7 @@ void main() {
     required Stream<CourseRow> courses,
     int stepCount = 3,
     String userId = 'user-1',
+    UserRow? sessionUser,
   }) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = PlanetPrefs(await SharedPreferences.getInstance());
@@ -129,7 +130,8 @@ void main() {
         overrides: [
           planetPrefsProvider.overrideWithValue(prefs),
           sessionProvider.overrideWith(
-            () => _Session(buildUserRow(id: userId, name: 'ada')),
+            () =>
+                _Session(sessionUser ?? buildUserRow(id: userId, name: 'ada')),
           ),
           courseProvider('course-1').overrideWith((ref) => courses),
           courseStepsProvider(
@@ -208,6 +210,35 @@ void main() {
     expect(find.text('Step title 0'), findsOneWidget);
     expect(find.text('Next'), findsNothing);
     expect(find.text('Add to my courses'), findsNothing);
+  });
+
+  /// The gate's Kotlin is `setCourseData:213`'s `isGuest()`, which is the id
+  /// prefix **or** a `guest` role without a `learner` role
+  /// (`UserEntity.kt:178-182`). The port read the id prefix alone, so a user
+  /// Planet marks a guest by role — with an ordinary `org.couchdb.user:` id —
+  /// was offered a join button Kotlin withholds.
+  testWidgets('a guest by role, with an ordinary id, gets no join button', (
+    tester,
+  ) async {
+    await pumpCourse(
+      tester,
+      courses: Stream.value(courseRow(joined: false)),
+      sessionUser: UserRow(
+        id: 'org.couchdb.user:jane',
+        couchId: 'org.couchdb.user:jane',
+        name: 'jane',
+        rolesList: const ['guest'],
+        userAdmin: false,
+        joinDate: 0,
+        isArchived: false,
+        isUpdated: false,
+      ),
+    );
+
+    expect(find.text('Add to my courses'), findsNothing);
+    // The learner clause is `!= true`, so `['guest', 'learner']` is not a
+    // guest — covered as a unit in `user_mapper_test.dart`; here the point is
+    // only that this screen asks the wide question.
   });
 
   testWidgets('a member keeps Next', (tester) async {
