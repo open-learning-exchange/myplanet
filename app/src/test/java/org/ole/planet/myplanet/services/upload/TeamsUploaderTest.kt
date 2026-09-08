@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class TeamsUploadRunnerTest {
+class TeamsUploaderTest {
 
     private val context: Context = mockk(relaxed = true)
     private val teamsSyncRepository: Lazy<TeamsSyncRepository> = mockk(relaxed = true)
@@ -36,7 +36,7 @@ class TeamsUploadRunnerTest {
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
 
-    private lateinit var teamsUploadRunner: TeamsUploadRunner
+    private lateinit var teamsUploader: TeamsUploader
 
     @Before
     fun setup() {
@@ -48,7 +48,7 @@ class TeamsUploadRunnerTest {
         every { Log.e(any(), any(), any()) } returns 0
         every { Log.w(any(), any<String>()) } returns 0
 
-        teamsUploadRunner = TeamsUploadRunner(
+        teamsUploader = TeamsUploader(
             context,
             teamsSyncRepository,
             uploadRepository,
@@ -83,7 +83,7 @@ class TeamsUploadRunnerTest {
         coEvery { mockRepo.markTeamsUploaded(any()) } returns Unit
         coEvery { mockRepo.deleteLocalTeamRecords(any()) } returns Unit
 
-        teamsUploadRunner.uploadTeams()
+        teamsUploader.uploadTeams()
         advanceUntilIdle()
 
         coVerify(exactly = 1) { uploadRepository.postUploadArray("http://mock.url/teams/_bulk_docs", any()) }
@@ -105,7 +105,7 @@ class TeamsUploadRunnerTest {
         coEvery { uploadRepository.postUploadArray(any(), any()) } returns retrofit2.Response.success(bulkResponse)
         coEvery { mockRepo.markTeamsUploaded(any()) } returns Unit
 
-        teamsUploadRunner.uploadTeams()
+        teamsUploader.uploadTeams()
         advanceUntilIdle()
 
         coVerify(exactly = 1) { mockRepo.markTeamsUploaded(mapOf("localTeam1" to "rev1")) }
@@ -123,7 +123,7 @@ class TeamsUploadRunnerTest {
         coEvery { uploadRepository.postUploadArray(any(), any()) } returns retrofit2.Response.error(500, errorBody)
         coEvery { retryQueue.queueFailedOperation(any(), any(), any(), any(), any(), any(), any()) } returns Unit
 
-        teamsUploadRunner.uploadTeams()
+        teamsUploader.uploadTeams()
         advanceUntilIdle()
 
         coVerify(exactly = 1) { uploadRepository.postUploadArray("http://mock.url/teams/_bulk_docs", any()) }
@@ -141,7 +141,7 @@ class TeamsUploadRunnerTest {
         coEvery { uploadRepository.postUploadArray(any(), any()) } throws java.io.IOException("Network down")
         coEvery { retryQueue.queueFailedOperation(any(), any(), any(), any(), any(), any(), any()) } returns Unit
 
-        teamsUploadRunner.uploadTeams()
+        teamsUploader.uploadTeams()
         advanceUntilIdle()
 
         coVerify(exactly = 1) { uploadRepository.postUploadArray("http://mock.url/teams/_bulk_docs", any()) }

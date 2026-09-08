@@ -40,7 +40,7 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.services.upload.AchievementUploader
 import org.ole.planet.myplanet.services.upload.PhotoUploader
-import org.ole.planet.myplanet.services.upload.TeamsUploadRunner
+import org.ole.planet.myplanet.services.upload.TeamsUploader
 import org.ole.planet.myplanet.services.upload.UploadConfigs
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
 import org.ole.planet.myplanet.services.upload.UploadError
@@ -53,15 +53,15 @@ import org.ole.planet.myplanet.utils.UrlUtils
 class UploadManagerTest {
 
     @Test
-    fun `uploadTeams delegates to teamsUploadRunner`() = testScope.runTest {
-        coEvery { teamsUploadRunner.uploadTeams() } returns Unit
+    fun `uploadTeams delegates to teamsUploader`() = testScope.runTest {
+        coEvery { teamsUploader.uploadTeams() } returns Unit
         uploadManager.uploadTeams()
         advanceUntilIdle()
-        coVerify(exactly = 1) { teamsUploadRunner.uploadTeams() }
+        coVerify(exactly = 1) { teamsUploader.uploadTeams() }
     }
 
     private lateinit var uploadManager: UploadManager
-    private val teamsUploadRunner: TeamsUploadRunner = mockk(relaxed = true)
+    private val teamsUploader: TeamsUploader = mockk(relaxed = true)
     private val context: Context = mockk(relaxed = true)
     private val submissionsRepository: SubmissionsRepository = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
@@ -106,7 +106,7 @@ class UploadManagerTest {
                 voicesRepository,
                 uploadConfigs,
                 resourcesRepository,
-                teamsUploadRunner,
+                teamsUploader,
                 activitiesRepository,
                 TestDispatcherProvider(testDispatcher),
                 testScope,

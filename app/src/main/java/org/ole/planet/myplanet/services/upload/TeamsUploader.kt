@@ -27,7 +27,7 @@ private inline fun <T> Iterable<T>.processInBatches(action: (List<T>) -> Unit) {
     chunked(BATCH_SIZE).forEach(action)
 }
 
-class TeamsUploadRunner @Inject constructor(
+class TeamsUploader @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val teamsSyncRepository: Lazy<TeamsSyncRepository>,
     private val uploadRepository: UploadRepository,

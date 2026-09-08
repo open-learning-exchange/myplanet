@@ -31,7 +31,7 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.services.upload.AchievementUploader
 import org.ole.planet.myplanet.services.upload.PhotoUploader
-import org.ole.planet.myplanet.services.upload.TeamsUploadRunner
+import org.ole.planet.myplanet.services.upload.TeamsUploader
 import org.ole.planet.myplanet.services.upload.UploadConfigs
 import org.ole.planet.myplanet.services.upload.UploadConstants.BATCH_SIZE
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
@@ -61,7 +61,7 @@ class UploadManager @Inject constructor(
     private val voicesRepository: VoicesRepository,
     private val uploadConfigs: UploadConfigs,
     private val resourcesRepository: ResourcesRepository,
-    private val teamsUploadRunner: TeamsUploadRunner,
+    private val teamsUploader: TeamsUploader,
     private val activitiesRepository: ActivitiesRepository,
     private val dispatcherProvider: DispatcherProvider,
     @ApplicationScope private val scope: CoroutineScope,
@@ -249,7 +249,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeams() {
-        teamsUploadRunner.uploadTeams()
+        teamsUploader.uploadTeams()
     }
 
     suspend fun uploadUserActivities(listener: OnSuccessListener) {
