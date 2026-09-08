@@ -254,6 +254,51 @@ void main() {
     expect(find.text('Step A'), findsOneWidget);
   });
 
+  /// **The step row carries the title and nothing else, because that is all
+  /// Kotlin's carries.**
+  ///
+  /// `CoursesStepsAdapter.bind` (`:51-55`) fills `row_steps.xml`'s two views:
+  /// `tv_title` from `stepTitle`, and `tv_description` from
+  /// `R.string.test_size` — *"This test has %d questions"* — with
+  /// `step.questionCount`. It shows **no** resource count; `CourseStep
+  /// .noOfResources` is written at `CoursesRepositoryImpl.kt:695` and read
+  /// nowhere in `app/src/main`, a dead column in Kotlin as well.
+  ///
+  /// And the second line is never drawn either. `tv_description` is
+  /// `visibility="gone"` in the layout, `updateDescriptionVisibility` keys on
+  /// `StepItem.isDescriptionVisible` (default `false`), and its only writer —
+  /// `CourseDetailViewModel.toggleStepDescription` — is reached only from
+  /// `CourseDetailFragment:140`'s `else`, which is **unreachable**:
+  /// `CourseDetailFragment` is constructed only at `CoursesPagerAdapter.kt:44`
+  /// as page 0 of `CoursesPagerAdapter(this@TakeCourseFragment, courseId)`
+  /// (`TakeCourseFragment.kt:122`), so `parentFragment as? TakeCourseFragment`
+  /// is never null and a tap always navigates.
+  ///
+  /// So `resourcesInStep(step.noOfResources)` in this slot was the port's own
+  /// invention twice over — a datum Kotlin does not put here, in a slot Kotlin
+  /// leaves empty — and Phase 149 removed it rather than replacing it with the
+  /// test-size line, which would be porting a no-op. (`take_course_screen`
+  /// keeps its own resources tile; that one is a deliberate, documented
+  /// stand-in for the inline resource list the port cannot render yet.)
+  testWidgets('a step row shows its title and no resource count', (
+    tester,
+  ) async {
+    await pumpScreen(
+      tester,
+      course: buildCourseRow(id: 'c1', courseTitle: 'Algebra'),
+      steps: [
+        buildStepRow(id: 's1', stepTitle: 'First', noOfResources: 3),
+        buildStepRow(id: 's2', stepTitle: 'Second', stepIndex: 1),
+      ],
+    );
+
+    expect(find.text('First'), findsOneWidget);
+    expect(find.text('3 resources'), findsNothing);
+    // The zero case too: `resourcesInStep` renders "No resources" at 0, so a
+    // subtitle that survived only for resource-less steps would still show.
+    expect(find.text('No resources'), findsNothing);
+  });
+
   testWidgets(
     'a step carrying an embedded exam offers Take exam, from a real sync',
     (tester) async {

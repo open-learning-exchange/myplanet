@@ -168,12 +168,22 @@ void main() {
   testWidgets('the course-detail step tile offers none either', (tester) async {
     // Phase 128's item said the dead chevron was in "both" screens and
     // Phase 139 repeated it. **It is not in this one** — `_StepTile` is an
-    // `ExpansionTile` whose count is a subtitle and whose trailing arrow does
-    // what it says, expanding the description. Pinned rather than assumed,
-    // because the claim survived two rounds of notes unchecked.
+    // `ExpansionTile` whose trailing arrow does what it says, expanding the
+    // description. Pinned rather than assumed, because the claim survived two
+    // rounds of notes unchecked.
+    //
+    // **The resource count is gone from this tile as of Phase 149**, and only
+    // from this one. Kotlin's own step row (`CoursesStepsAdapter.bind`) shows
+    // the title and a second line that is never visible; it shows no resource
+    // count anywhere, and `CourseStep.noOfResources` is read nowhere in
+    // `app/src/main`. The count survives on `take_course_screen`, where it
+    // stands in for the inline resource list the port cannot build yet — see
+    // the test above — and that is a deliberate, documented port addition
+    // rather than a second copy of one.
     await pumpCourseDetail(tester);
 
-    expect(find.text('3 resources'), findsOneWidget);
+    expect(find.text('First'), findsOneWidget);
+    expect(find.text('3 resources'), findsNothing);
     expect(find.byIcon(Icons.chevron_right), findsNothing);
   });
 }
