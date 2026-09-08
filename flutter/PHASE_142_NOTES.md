@@ -287,6 +287,56 @@ Kotlin CI runs too, and must: the merge brings 94 files of `app/` change onto
 the branch, so both flavours build and `testDefaultDebugUnitTest` runs across
 its two shards.
 
+## The chat-share ground-truth audit (`parity-auditor`, `effort: max`)
+
+Aimed at my own six claims *before* they were trusted, because a hand-off note has
+seeded an error into the next round three times running. **All six held.** Five needed
+amending anyway, and the amendments are in the tracker:
+
+- **Claim 1 named one consequence where there are two.** Besides `isVisibleToUser`, the
+  challenge dialog's "post five community voices" tally reads the section value —
+  `NewsDao.countDistinctCommunityVoiceDates`/`…ForUser` are
+  `WHERE … AND viewIn LIKE '%"section":"community"%'`, reached through
+  `getCommunityVoiceDateCount`. So a localised share is uncounted there too, in **both**
+  apps, since the port's `isCommunityNews` compares the same literal. My sentence
+  "nothing anywhere reads the value except that `"community"` comparison" was true to the
+  letter and misleading in effect; corrected to name both.
+- **Claim 2 gained two limits and a better provenance.** The audit re-ran the Gson probe
+  independently on **2.14.0**, the version `libs.versions.toml` actually pins (I had run
+  2.10 and 2.13.1) — same `JsonSyntaxException`. It also established that the *null*-list
+  premise may be unreachable from Kotlin's own writers, since
+  `insertChatsBatchInternal` and `addConversation` both always assign a list; the
+  reachable case is the *empty* list, which is byte-identical in both apps. And "same end
+  state" is true of the local column but **not the wire**: `serializeNews` uploads
+  `"conversations": null` where the port uploads `[]`.
+- **Claims 3, 5 and 6 were understated.** `ChatShareOutcome.unavailable` has four routes,
+  not the one I named. Kotlin's post-share branch is not merely stale but **wholly
+  inert** — the `newsList` it writes is never read and the rebound row holds no shared
+  state — and re-entering the screen refreshes the map too, because `refreshChatSignal`
+  is a `MutableSharedFlow(replay = 1)` emitting in `init`. So the successful share has no
+  observable effect at all.
+- **A seventh deviation existed and was recorded nowhere but the Dart.**
+  `News.kt`'s `newsObj?.replace("=", ":")`. Now in the tracker, because an omission with
+  no note is the one most likely to be mistaken for an oversight.
+
+### One audit finding overturned
+
+The audit reported that the port's challenge tally "would count a team-only post toward
+*post five community voices*", because `NewsDao.getInTimeRange` in
+`app_database.dart` filters on top-level and time window with no community predicate
+where the Kotlin's `countDistinctCommunityVoiceDates` has the `viewIn LIKE`.
+
+**That is wrong, and it is wrong in the direction this project keeps warning about** — a
+chain read to its conclusion in one layer without walking the next.
+`VoicesRepository.getCommunityVoiceDates` filters the returned rows with
+`isCommunityNews(row)` before adding a date, and that helper parses `viewIn` and compares
+`section` case-insensitively against `community`. The predicate is not missing, it moved
+to Dart — and parsing beats the Kotlin's raw substring `LIKE`. No defect. Recorded here
+because an audit's finding gets the same treatment as a brief's claim.
+
+Verifying it did surface something real but much narrower, which is in *Reported, not
+fixed* below: the two apps bucket a post into a *day* differently.
+
 ## Reported, not fixed
 
 Each names the file, the change, and why it was not made here.
@@ -324,7 +374,27 @@ Each names the file, the change, and why it was not made here.
    one owner" is cheap to honour and a stale comment costs the next lane only if
    it is believed. Suggested replacement: "…the shape `VoicesActions` uses. It
    is not a delivery guarantee: see `PHASE_140_NOTES.md` item 4."
-4. **Phase 140's items 1, 2, 4, 5 and 6 are still open** and all land in other
+4. **The challenge tally buckets a post by UTC day; Kotlin uses the device's local
+   day.** Kotlin counts distinct days in SQL with
+   `strftime('%Y-%m-%d', time / 1000, 'unixepoch', 'localtime')`; the port's
+   `VoicesRepository._formatDate` builds the date from
+   `DateTime.fromMillisecondsSinceEpoch(millis, isUtc: true)`. A community post made near
+   midnight is therefore attributed to different days by the two apps, so the "posted on
+   five distinct days" progress can differ by one. Fix: format in local time in
+   `_formatDate` (`flutter/lib/repository/voices_repository.dart`, no lane owns it).
+   Severity: low, and stated with a limit — the divergence in bucketing is certain, but I
+   have not constructed a case where the *count* actually crosses the five-day threshold.
+5. **Two stale citations in `app_database.dart`'s challenge queries** (**Lane B's file**,
+   so not touched). `getInTimeRange`'s dartdoc says "Port of `NewsDao.getInTimeRange`",
+   and Kotlin has no such method — the counterpart is
+   `countDistinctCommunityVoiceDates`. The same comment describes the result as "all
+   top-level *community* voices", which its query does not implement; the community
+   filter is the caller's `isCommunityNews`. And `getCommunityVoiceDates`' comment says
+   "The Kotlin filters `isCommunitySection` in memory after the DAO query", which the
+   current Kotlin does not — it filters in SQL. Behaviour is correct in all three cases;
+   only the comments mislead, and a comment that names a Kotlin method which does not
+   exist is how a future audit reaches a wrong verdict.
+6. **Phase 140's items 1, 2, 4, 5 and 6 are still open** and all land in other
    lanes' files: `teamPlanetCode` on `Teams` (Lane B's `tables.dart` +
    `app_database.dart`, and a schema bump this lane has no number for),
    `NewsDao.getByNewsId`/`getPlanetMessages` (Lane B's `app_database.dart`), the
