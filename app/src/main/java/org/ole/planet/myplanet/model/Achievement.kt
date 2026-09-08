@@ -93,20 +93,6 @@ class Achievement {
             }
         )
 
-        /**
-         * Parses a list of JSON strings into a [JsonArray].
-         *
-         * [parsedJsonCache] memoizes the parse only, so it is keyed by the source string alone:
-         * the key fully determines the value, which makes a collision across records or fields
-         * impossible by construction and keeps identical strings a single entry.
-         *
-         * Every element is handed out as a [JsonElement.deepCopy], so a cached instance never
-         * escapes and no caller can corrupt another record's data by mutating what it got back.
-         * That enforces the invariant instead of documenting it, and it is free where sharing
-         * would have been safe anyway: [com.google.gson.JsonPrimitive] and
-         * [com.google.gson.JsonNull] are immutable and their `deepCopy()` returns the receiver,
-         * so only mutable objects and arrays are actually copied.
-         */
         private fun parseStringListToJsonArray(list: List<String>?): JsonArray {
             val array = JsonArray()
             for (s in list ?: emptyList()) {
