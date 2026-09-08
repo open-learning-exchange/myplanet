@@ -1026,7 +1026,9 @@ class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
 
 /// Port of `ResourcesRepositoryImpl.userIdPattern` (`:64-70`) — a user id as
 /// the `LIKE` pattern that finds it inside the serialized JSON list
-/// `my_library.user_id` holds.
+/// `my_library.user_id` holds. `CoursesRepositoryImpl.userIdPattern`
+/// (`:94-100`) is character-for-character the same function over
+/// `courses.user_id`, so both tables share this one.
 ///
 /// The three replacements are in the Kotlin's order, and the order matters:
 /// escaping `\` first means the backslashes this function itself introduces
@@ -1043,6 +1045,28 @@ String likeEscapedUserPattern(String userId) {
       .replaceAll('_', '\\_');
   return '%"$escaped"%';
 }
+
+/// Shelf membership: `user_id LIKE '%"<id>"%' ESCAPE '\'`, the predicate
+/// behind `MyLibraryDao.getForUserPattern` (`MyLibraryDao.kt:103`) and
+/// `CourseDao.getForUserPattern` (`CourseDao.kt:17`).
+///
+/// The `ESCAPE` clause is the whole point, and it is why this is a function
+/// rather than an inline `like()`. Five call sites interpolated the raw id
+/// into the pattern, which leaves LIKE's own metacharacters live: `_` matches
+/// any single character, so a shelf query for `u_1` also returned `ux1`'s
+/// rows — and the catalog arm, which is the same predicate negated, dropped
+/// them from the catalog at the same time, so the resource went missing from
+/// both views. `%` is worse: it matches any run, so one id could claim
+/// almost every shelf. Kotlin escapes at every one of these sites; the port
+/// escaped at exactly one, the count added in Phase 131.
+///
+/// [likeEscapedUserPattern] escapes the id and drift's `escapeChar` writes
+/// the matching `ESCAPE` clause, binding the pattern as a variable rather
+/// than splicing it into the SQL.
+Expression<bool> _shelfMembership(
+  GeneratedColumn<String> userIdColumn,
+  String userId,
+) => userIdColumn.like(likeEscapedUserPattern(userId), escapeChar: r'\');
 
 /// Port of `data/room/dao/MyLibraryDao.kt`.
 @DriftAccessor(tables: [MyLibraryTable])
@@ -1105,13 +1129,14 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
 
     if (myLibrary && shelfUserId != null && shelfUserId.isNotEmpty) {
       // `getMyLibrary` — the user's shelf, private team resources included.
-      statement.where((r) => r.userId.like('%"$shelfUserId"%'));
+      statement.where((r) => _shelfMembership(r.userId, shelfUserId));
     } else {
       // `getPublic` / `getPublicNotUserPattern` — the catalog.
       statement.where((r) => r.isPrivate.equals(false));
       if (shelfUserId != null && shelfUserId.isNotEmpty) {
         statement.where(
-          (r) => r.userId.isNull() | r.userId.like('%"$shelfUserId"%').not(),
+          (r) =>
+              r.userId.isNull() | _shelfMembership(r.userId, shelfUserId).not(),
         );
       }
     }
@@ -1131,7 +1156,7 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
   /// query stream for a single value.
   Future<List<MyLibraryRow>> resourcesOnShelf(String userId) => (select(
     myLibraryTable,
-  )..where((r) => r.userId.like('%"$userId"%'))).get();
+  )..where((r) => _shelfMembership(r.userId, userId))).get();
 
   /// Port of `MyLibraryDao.countPublicNeedingUpdateForUserPattern`
   /// (`MyLibraryDao.kt:119-124`) — how many of the user's shelf resources are
@@ -1168,10 +1193,13 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
   /// with `!=` it would be SQL NULL, hence false, and those rows would vanish
   /// from the count.
   ///
-  /// Raw SQL rather than the query builder for one reason: drift's `like()`
-  /// takes no `ESCAPE`, and the Kotlin pattern is escaped
-  /// ([likeEscapedUserPattern]). Keeping the statement verbatim also lets it be
-  /// read side by side with the `@Query` it ports.
+  /// Raw SQL rather than the query builder so the statement can be read side
+  /// by side with the `@Query` it ports — `IS NOT` in particular has no
+  /// query-builder spelling. The original reason given here was that "drift's
+  /// `like()` takes no `ESCAPE`", which is not true: it takes an `escapeChar`
+  /// and binds the pattern as a variable, which is how the five shelf
+  /// predicates escape theirs ([_shelfMembership]). The rationale is corrected
+  /// rather than the code, because the `IS NOT` reason stands on its own.
   Stream<int> watchResourcesNeedingUpdateCount(String userId) => customSelect(
     'SELECT COUNT(*) AS c FROM my_library '
     'WHERE is_private = 0 '
@@ -1420,7 +1448,7 @@ class CourseDao extends DatabaseAccessor<AppDatabase> with _$CourseDaoMixin {
       statement.where((c) => c.courseTitleNormal.like('%$trimmed%'));
     }
     if (shelfUserId != null && shelfUserId.isNotEmpty) {
-      statement.where((c) => c.userId.like('%"$shelfUserId"%'));
+      statement.where((c) => _shelfMembership(c.userId, shelfUserId));
     }
     if (gradeLevel != null && gradeLevel.isNotEmpty) {
       statement.where((c) => c.gradeLevel.equals(gradeLevel));
@@ -1476,7 +1504,7 @@ class CourseDao extends DatabaseAccessor<AppDatabase> with _$CourseDaoMixin {
 
   /// The user's shelf, read once — see [MyLibraryDao.resourcesOnShelf].
   Future<List<CourseRow>> coursesOnShelf(String userId) =>
-      (select(courses)..where((c) => c.userId.like('%"$userId"%'))).get();
+      (select(courses)..where((c) => _shelfMembership(c.userId, userId))).get();
 
   /// Port of `CoursesRepositoryImpl.isMyCourse`.
   Future<bool> isMyCourse(String courseId, String userId) async {
