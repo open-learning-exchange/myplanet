@@ -294,9 +294,12 @@ Phase 128 left `takeTest` in the same state; this makes two.
    count of rows it does not hold. Kotlin's courses walk buffers each embedded
    resource document (`queueCourseResources`, `CoursesRepositoryImpl.kt:687`,
    `:792-798`) and drains it into `my_library` stamped with `courseId` and
-   `stepId` (`flushPendingCourseResources`, `:819-851`, run from
-   `TransactionSyncManager.kt:302`); `CourseMapper._parseSteps` keeps only the
-   length. **This is the item behind Job 2** and it blocks three readers at
+   `stepId` (`flushPendingCourseResources`, `:819-851`); `CourseMapper
+   ._parseSteps` keeps only the length. **The drain has two call sites**, not
+   one: `TransactionSyncManager.kt:302`, per batch inside the `"courses"` walk,
+   and `CoursesRepositoryImpl.kt:508`. A port needs both or an equivalent, since
+   the walk's own call is what makes a step's resources available before the
+   sync finishes. **This is the item behind Job 2** and it blocks three readers at
    once: the inline per-step resource list (`setupInlineResources`), the
    course-level download button (`setResourceButton`, `getCourseResources`'s
    `WHERE courseId = ?`), and the step's auto-download and next-step prefetch.
