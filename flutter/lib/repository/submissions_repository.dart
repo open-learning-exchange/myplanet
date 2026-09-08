@@ -994,10 +994,35 @@ class SubmissionsRepository {
   /// by tests in `mandatory_survey_round_trip_test.dart`:
   ///
   /// * Kotlin's `createMappedSurvey` copies the source survey's `courseId` and
-  ///   `stepId` into an adopted team clone (`SurveysRepositoryImpl.kt:181-182`),
-  ///   so a Kotlin course step can serve a clone and this block would demand
-  ///   every team's copy. The port's `adoptSurvey` omits both columns, and that
-  ///   omission is what makes an unfiltered `getByCourseId` correct here.
+  ///   `stepId` into an adopted team clone (`SurveysRepositoryImpl.kt:180-181`).
+  ///   Since Phase 136 the port copies the `courseId` too — Send has to, since
+  ///   `createBulkSurveySubmissions` folds it into every member's key — so
+  ///   `getByCourseId` now returns clones and **this loop skips them
+  ///   explicitly**. It used to be safe by accident, on the omission.
+  ///
+  ///   Skipping is not a divergence from a live Kotlin behaviour, and the note
+  ///   this replaced implied it was. Kotlin's own gate reaches **no** survey at
+  ///   all: `getSurveysByCourseId` (`:367-369`) filters
+  ///   `getByCourseIdAndType(courseId, "survey")`, singular, while every
+  ///   survey — clone included, since `createMappedSurvey` assigns
+  ///   `type = exam.type` — carries `"surveys"`. So there is no Kotlin
+  ///   behaviour here to match, only a live port gate to keep satisfiable: a
+  ///   learner outside the adopting team has no sheet for that team's copy and
+  ///   never can have one, so counting it would make the course unfinishable —
+  ///   Phase 125's bug, re-entered from the writer's side.
+  ///
+  ///   And in the *other* branch — a step survey whose embedded document omits
+  ///   `type`, which is the only way Kotlin ever writes the singular value
+  ///   (`CoursesRepositoryImpl.kt:746`, `else examKey`) — Kotlin's gate does
+  ///   match, and matches the clone too, but `getTeamOwnedSurveys` filters
+  ///   `type = "surveys"` and so lists no such clone at all. The obligation it
+  ///   adds is one no Kotlin screen can discharge. Neither branch is behaviour
+  ///   worth reproducing.
+  ///
+  ///   [repairCourseSurveyParentIds] deliberately does **not** skip them: a
+  ///   clone's member sheets are exactly the rows a pre-Phase-136 build keyed
+  ///   bare, so the sweep is how they heal. The two loops want opposite things
+  ///   from the same query.
   /// * `countByUserParentAndType` is status-blind, as Kotlin's is
   ///   (`SubmissionDao.kt:23`) — a sheet the learner has merely *opened*
   ///   satisfies the gate. That is also why the adoption marker, which is
@@ -1026,6 +1051,11 @@ class SubmissionsRepository {
     await repairCourseSurveyParentIds(courseId);
     final surveys = await _surveyDao.getByCourseId(courseId);
     for (final survey in surveys) {
+      // An adopted team clone joins the course as of Phase 136, and the course
+      // must not demand it — see this method's doc comment. `sourceSurveyId`
+      // is Kotlin's own test for "this row is an adopted copy"
+      // (`ExamDao.kt:21`, the upload sweep).
+      if (survey.sourceSurveyId != null) continue;
       // Routed through the writers' own derivation so the two cannot drift
       // apart again. `courseId` is non-empty by the guard above and equal to
       // `survey.courseId` by the query that produced the row, so this is

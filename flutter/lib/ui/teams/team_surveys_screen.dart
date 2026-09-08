@@ -23,7 +23,8 @@ class TeamSurveysScreen extends ConsumerWidget {
     final owned = ref.watch(teamOwnedSurveysProvider(teamId));
     final adoptable = ref.watch(teamAdoptableSurveysProvider(teamId));
     final team = ref.watch(teamProvider(teamId)).valueOrNull;
-    final userId = ref.watch(sessionProvider).valueOrNull?.id;
+    final user = ref.watch(sessionProvider).valueOrNull;
+    final userId = user?.id;
     final memberships =
         ref.watch(teamMembershipsProvider).valueOrNull ?? const {};
     final membership =
@@ -123,6 +124,11 @@ class TeamSurveysScreen extends ConsumerWidget {
                               .adoptSurvey(
                                 surveyId: survey.id,
                                 userId: userId,
+                                // The marker's `user.doc.name`, which Kotlin
+                                // takes off the same resolved session model
+                                // it takes the id from
+                                // (`createUserJsonString:139-141`).
+                                userName: user?.name,
                                 teamId: teamId,
                                 teamName: team?.name,
                                 isTeam: true,

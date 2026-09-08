@@ -221,6 +221,7 @@ void main() {
       () => repo.adoptSurvey(
         surveyId: any(named: 'surveyId'),
         userId: any(named: 'userId'),
+        userName: any(named: 'userName'),
         teamId: any(named: 'teamId'),
         teamName: any(named: 'teamName'),
         isTeam: any(named: 'isTeam'),
@@ -255,6 +256,10 @@ void main() {
       () => repo.adoptSurvey(
         surveyId: 'a1',
         userId: 'user-1',
+        // Phase 136: the marker's `user.doc.name`, which Kotlin takes off the
+        // same resolved session model it takes the id from
+        // (`createUserJsonString:143`).
+        userName: 'ada',
         teamId: 'team-1',
         teamName: null,
         isTeam: true,
