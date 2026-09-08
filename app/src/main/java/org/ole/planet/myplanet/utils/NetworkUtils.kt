@@ -59,6 +59,38 @@ object NetworkUtils {
 
     private val connectivityManager: ConnectivityManager by connectivityManagerCache
 
+    private val wifiManagerCache = ResettableCache {
+        context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+    }
+
+    private val wifiManager: WifiManager by wifiManagerCache
+
+    private val bluetoothManagerCache = ResettableCache {
+        context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+    }
+
+    private val bluetoothManager: BluetoothManager by bluetoothManagerCache
+
+    private val uniqueIdentifierCache = ResettableCache {
+        val androidId = VersionUtils.getAndroidId(context)
+        val buildId = Build.ID
+        androidId + "_" + buildId
+    }
+
+    private val cachedUniqueIdentifier: String by uniqueIdentifierCache
+
+    private val deviceNameCache = ResettableCache {
+        val manufacturer = Build.MANUFACTURER
+        val model = Build.MODEL
+        if (model.startsWith(manufacturer)) {
+            model.uppercase(Locale.ROOT)
+        } else {
+            "$manufacturer $model".uppercase(Locale.ROOT)
+        }
+    }
+
+    private val cachedDeviceName: String by deviceNameCache
+
     private val _currentNetwork = MutableStateFlow(provideDefaultCurrentNetwork())
 
     private val isNetworkConnectedFlowCache = ResettableCache {
@@ -74,7 +106,11 @@ object NetworkUtils {
         sharedPrefManagerCache,
         coroutineScopeCache,
         connectivityManagerCache,
+        wifiManagerCache,
+        bluetoothManagerCache,
         isNetworkConnectedFlowCache,
+        uniqueIdentifierCache,
+        deviceNameCache,
     )
 
     val isNetworkConnected: Boolean
@@ -164,7 +200,6 @@ object NetworkUtils {
     }
 
     fun isWifiEnabled(): Boolean {
-        val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
         return wifiManager.isWifiEnabled
     }
 
@@ -179,7 +214,6 @@ object NetworkUtils {
     }
 
     fun isBluetoothEnabled(): Boolean {
-        val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         val adapter: BluetoothAdapter? = bluetoothManager.adapter
         return adapter != null && adapter.isEnabled
     }
@@ -207,19 +241,11 @@ object NetworkUtils {
     }
 
     fun getUniqueIdentifier(): String {
-        val androidId = VersionUtils.getAndroidId(context)
-        val buildId = Build.ID
-        return androidId + "_" + buildId
+        return cachedUniqueIdentifier
     }
 
     fun getDeviceName(): String {
-        val manufacturer = Build.MANUFACTURER
-        val model = Build.MODEL
-        return if (model.startsWith(manufacturer)) {
-            model.uppercase(Locale.ROOT)
-        } else {
-            "$manufacturer $model".uppercase(Locale.ROOT)
-        }
+        return cachedDeviceName
     }
 
     fun getCustomDeviceName(context: Context): String {

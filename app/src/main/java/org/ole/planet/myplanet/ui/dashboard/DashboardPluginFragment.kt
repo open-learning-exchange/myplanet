@@ -24,6 +24,30 @@ import org.ole.planet.myplanet.ui.user.AchievementFragment
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.Utilities
 
+enum class MyLifeRoute {
+    SUBMISSIONS,
+    REFERENCES,
+    CALENDAR,
+    SURVEYS,
+    ACHIEVEMENTS,
+    PERSONALS,
+    HEALTH,
+    UNKNOWN
+}
+
+internal fun myLifeRouteFor(imageId: String?): MyLifeRoute {
+    return when (imageId) {
+        "ic_submissions" -> MyLifeRoute.SUBMISSIONS
+        "ic_references" -> MyLifeRoute.REFERENCES
+        "ic_calendar" -> MyLifeRoute.CALENDAR
+        "ic_my_survey" -> MyLifeRoute.SURVEYS
+        "my_achievement" -> MyLifeRoute.ACHIEVEMENTS
+        "ic_mypersonals" -> MyLifeRoute.PERSONALS
+        "ic_myhealth" -> MyLifeRoute.HEALTH
+        else -> MyLifeRoute.UNKNOWN
+    }
+}
+
 open class DashboardPluginFragment : BaseContainerFragment() {
 
     private val dashboardViewModel: DashboardViewModel by activityViewModels()
@@ -67,18 +91,18 @@ open class DashboardPluginFragment : BaseContainerFragment() {
         }
     }
 
-    private fun handleClickMyLife(title: String, v: View) {
+    private fun handleClickMyLife(imageId: String?, v: View) {
         v.setOnClickListener {
             homeItemClickListener?.let { listener ->
-                when (title) {
-                    "mySubmissions" -> openIfLoggedIn { listener.openCallFragment(SubmissionsFragment()) }
-                    "References" -> listener.openCallFragment(ReferencesFragment())
-                    "Calendar" -> listener.openCallFragment(CalendarFragment())
-                    "mySurveys" -> openIfLoggedIn { listener.openCallFragment(SubmissionsFragment.newInstance("survey")) }
-                    "myAchievements" -> openIfLoggedIn { listener.openCallFragment(AchievementFragment()) }
-                    "myPersonals" -> openIfLoggedIn { listener.openCallFragment(PersonalsFragment()) }
-                    "myHealth" -> openIfLoggedIn { listener.openCallFragment(MyHealthFragment()) }
-                    else -> Utilities.toast(activity, getString(R.string.feature_not_available))
+                when (myLifeRouteFor(imageId)) {
+                    MyLifeRoute.SUBMISSIONS -> openIfLoggedIn { listener.openCallFragment(SubmissionsFragment()) }
+                    MyLifeRoute.REFERENCES -> listener.openCallFragment(ReferencesFragment())
+                    MyLifeRoute.CALENDAR -> listener.openCallFragment(CalendarFragment())
+                    MyLifeRoute.SURVEYS -> openIfLoggedIn { listener.openCallFragment(SubmissionsFragment.newInstance("survey")) }
+                    MyLifeRoute.ACHIEVEMENTS -> openIfLoggedIn { listener.openCallFragment(AchievementFragment()) }
+                    MyLifeRoute.PERSONALS -> openIfLoggedIn { listener.openCallFragment(PersonalsFragment()) }
+                    MyLifeRoute.HEALTH -> openIfLoggedIn { listener.openCallFragment(MyHealthFragment()) }
+                    MyLifeRoute.UNKNOWN -> Utilities.toast(activity, getString(R.string.feature_not_available))
                 }
             }
         }
@@ -114,9 +138,7 @@ open class DashboardPluginFragment : BaseContainerFragment() {
             itemMyLifeBinding.tvCount.visibility = View.GONE
         }
 
-        if (title != null) {
-            handleClickMyLife(title, v)
-        }
+        handleClickMyLife(obj.imageId, v)
         return v
     }
 
