@@ -78,7 +78,11 @@ object Utilities {
     }
 
     fun normalizeText(str: String): String {
-        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
+        val lower = str.lowercase(Locale.getDefault())
+        if (lower.all { it < '\u0080' }) {
+            return lower
+        }
+        return Normalizer.normalize(lower, Normalizer.Form.NFD)
             .replace(DIACRITICS_REGEX, "")
     }
 
