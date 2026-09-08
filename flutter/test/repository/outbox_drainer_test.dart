@@ -77,7 +77,15 @@ void main() {
     expect(await outbox.due(), hasLength(1));
   });
 
-  test('a 409 conflict is permanent, matching UploadCoordinator', () async {
+  test('a 409 rejects the request the payload made', () async {
+    // Renamed from "a 409 conflict is permanent, matching UploadCoordinator",
+    // which misread the Kotlin: `UploadCoordinator.kt:169-204` intercepts a
+    // 409 *before* its `code >= 500` rule, GETs the document, adopts its
+    // `_rev` and reports success. `retryable = false` appears only when that
+    // recovery GET itself fails. The port has that arm for exactly one
+    // uploader (`adopted_surveys_uploader.dart:219-242`); everywhere else a
+    // 409 lands here. What this test pins is the narrower true thing: the
+    // request as sent has been refused, so nothing re-sends it unchanged.
     final id = await enqueue();
     stubSend(const NetworkError<Map<String, dynamic>>(409, 'conflict'));
 
@@ -90,10 +98,189 @@ void main() {
     expect(row?.httpCode, 409);
   });
 
-  test('a 400 is permanent — only 5xx is retryable', () async {
+  test('a 400 is a rejection of the request', () async {
     await enqueue();
     stubSend(const NetworkError<Map<String, dynamic>>(400, 'bad request'));
     expect(await drainer().drain(), [OutboxOutcome.abandoned]);
+  });
+
+  test('a 401 is retried — it is about the caller, not the request', () async {
+    // Kotlin's one rule is `retryable = response.code() >= 500`
+    // (`UploadCoordinator.kt:211`), which makes a 401 non-retryable — but
+    // `RetryQueue` then declines to queue it at all and Kotlin's sweep
+    // re-reads the live table on the next sync, so the write *is* re-attempted
+    // there. The port's sweep re-enqueues rather than re-posts, so reaching
+    // the same outcome needs 401 classified as transient here.
+    await enqueue();
+    stubSend(const NetworkError<Map<String, dynamic>>(401, 'unauthorized'));
+
+    expect(await drainer().drain(), [OutboxOutcome.retryScheduled]);
+    clock = clock.add(const Duration(minutes: 1));
+    expect(await outbox.due(), hasLength(1));
+  });
+
+  test('403, 408 and 429 are retried for the same reason', () async {
+    for (final code in [403, 408, 429]) {
+      await outbox.enqueue(
+        uploadType: 'personals',
+        itemId: 'note-$code',
+        endpoint: endpoint,
+        payload: const {'title': 'A note'},
+      );
+      stubSend(NetworkError<Map<String, dynamic>>(code, 'refused'));
+      // Rows queued by an earlier turn of this loop are due again, so the
+      // assertion is on the kind of every outcome rather than on the count.
+      expect(
+        await drainer().drain(),
+        everyElement(OutboxOutcome.retryScheduled),
+        reason: '$code',
+      );
+      clock = clock.add(const Duration(minutes: 1));
+    }
+    for (final code in [403, 408, 429]) {
+      final rows = await database.outboxDao.forItem('personals', 'note-$code');
+      expect(rows.single.status, OutboxDao.statusPending, reason: '$code');
+    }
+  });
+
+  test("a handler's verdict on a 2xx body is not a server refusal", () async {
+    // `PlanetApi` only builds a `NetworkError` from a response it received
+    // and substitutes 0 for a missing status, so a *null* code can only have
+    // come from a handler: the send succeeded and the body was unusable. The
+    // write may already be on the server, so it is recorded terminally —
+    // never re-sent under the same payload — but with a code that says no
+    // HTTP status was the reason.
+    final id = await enqueue();
+
+    final outcomes = await drainer(
+      handlers: {
+        'personals': (row, payload, authHeader) async =>
+            const NetworkError<Map<String, dynamic>>(null, 'no rev'),
+      },
+    ).drain();
+
+    expect(outcomes, [OutboxOutcome.abandoned]);
+    final row = await database.outboxDao.getById(id);
+    expect(row?.status, OutboxDao.statusAbandoned);
+    expect(row?.httpCode, OutboxRepository.noUsableResponse);
+    expect(
+      OutboxRepository.classifyStatus(row?.httpCode),
+      OutboxRefusal.indeterminate,
+    );
+  });
+
+  test('a rejected request is asked once, however many sweeps run', () async {
+    // The accretion Phase 134 reported and Phase 138 sharpened. One sweep is
+    // not evidence — the row and the POST used to be minted afresh on *every*
+    // sweep, so the demonstration has to be several. The cadence differs per
+    // upload type (per sync for submissions and voices, per user write for
+    // health, per team-detail mount for `teamLog`); what they share is that
+    // nothing about it is bounded.
+    stubSend(const NetworkError<Map<String, dynamic>>(409, 'conflict'));
+
+    for (var sync = 0; sync < 5; sync++) {
+      // What `queuePending` does on every sweep: re-offer every locally dirty
+      // record, whose serialization has not changed because nothing has
+      // successfully uploaded it.
+      await enqueue();
+      await drainer().drain();
+      clock = clock.add(const Duration(hours: 1));
+    }
+
+    verify(
+      () => api.sendJsonObject(
+        any(),
+        body: any(named: 'body'),
+        method: any(named: 'method'),
+        authHeader: any(named: 'authHeader'),
+      ),
+    ).called(1);
+    expect(
+      await database.outboxDao.forItem('personals', 'note-1'),
+      hasLength(1),
+      reason: 'one row for the item, not one per sweep',
+    );
+    expect(
+      await database.outboxDao.abandoned('personals'),
+      hasLength(1),
+      reason: 'still diagnosable, just not repeated',
+    );
+  });
+
+  test('an unusable 2xx response is not asked again either', () async {
+    // Job 1: the same unboundedness, reached through a handler's own verdict
+    // rather than through a status code — and the case where re-asking risks
+    // a *second* copy of a document that is already filed.
+    var sends = 0;
+
+    for (var sync = 0; sync < 5; sync++) {
+      await enqueue();
+      await drainer(
+        handlers: {
+          'personals': (row, payload, authHeader) async {
+            sends++;
+            return const NetworkError<Map<String, dynamic>>(null, 'no rev');
+          },
+        },
+      ).drain();
+      clock = clock.add(const Duration(hours: 1));
+    }
+
+    expect(sends, 1);
+    expect(
+      await database.outboxDao.forItem('personals', 'note-1'),
+      hasLength(1),
+    );
+  });
+
+  test('a transient failure keeps being offered across sweeps', () async {
+    // The other half of the policy: bounding the *rows* must not bound the
+    // *retries* of a write that is still deliverable. A server that is down
+    // for a week is not a verdict on the record — and Kotlin agrees, since
+    // `RetryQueue` never abandons an *item*, only an operation: a refused
+    // item's local flag is untouched (`UploadCoordinator.kt:63-68, 241-257`)
+    // and the next sweep re-offers it.
+    stubSend(const NetworkError<Map<String, dynamic>>(503, 'unavailable'));
+
+    for (var sync = 0; sync < 3; sync++) {
+      await enqueue();
+      await drainer().drain();
+      clock = clock.add(const Duration(hours: 1));
+    }
+
+    expect(
+      await database.outboxDao.forItem('personals', 'note-1'),
+      hasLength(1),
+      reason: 'one row, still',
+    );
+    verify(
+      () => api.sendJsonObject(
+        any(),
+        body: any(named: 'body'),
+        method: any(named: 'method'),
+        authHeader: any(named: 'authHeader'),
+      ),
+    ).called(3);
+  });
+
+  test('a rejected row is re-armed by an edited payload', () async {
+    stubSend(const NetworkError<Map<String, dynamic>>(409, 'conflict'));
+    await enqueue();
+    await drainer().drain();
+    clock = clock.add(const Duration(hours: 1));
+
+    // The pull that follows a sync hands the row the revision the 409 was
+    // about, so the next serialization differs.
+    await outbox.enqueue(
+      uploadType: 'personals',
+      itemId: 'note-1',
+      endpoint: endpoint,
+      payload: const {'title': 'A note', '_rev': '2-b'},
+    );
+    stubSend(const NetworkSuccess<Map<String, dynamic>>({'ok': true}));
+
+    expect(await drainer().drain(), [OutboxOutcome.completed]);
+    expect(await database.outboxDao.forItem('personals', 'note-1'), isEmpty);
   });
 
   test('a transport failure is always retryable', () async {

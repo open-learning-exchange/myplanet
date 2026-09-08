@@ -169,7 +169,11 @@ void main() {
     );
 
     expect(
-      await repository.markFailed(id, httpCode: 409, permanent: true),
+      await repository.markFailed(
+        id,
+        httpCode: 409,
+        refusal: OutboxRefusal.rejected,
+      ),
       isTrue,
     );
     clock = clock.add(const Duration(days: 1));
@@ -288,14 +292,23 @@ void main() {
     expect(await repository.due(), hasLength(1));
   });
 
-  test('an abandoned item does not block a fresh enqueue', () async {
+  test('a rejected item is not re-armed by the identical request', () async {
+    // This used to read "an abandoned item does not block a fresh enqueue",
+    // and it asserted `second` was a *different* row. That is the accretion:
+    // `queuePending` runs every sync, so one 409 became one more dead row and
+    // one more doomed POST per sync, for ever, in a table that survives schema
+    // bumps.
     final first = await repository.enqueue(
       uploadType: 'personals',
       itemId: 'note-1',
       endpoint: 'e',
       payload: const {},
     );
-    await repository.markFailed(first, permanent: true);
+    await repository.markFailed(
+      first,
+      httpCode: 409,
+      refusal: OutboxRefusal.rejected,
+    );
 
     final second = await repository.enqueue(
       uploadType: 'personals',
@@ -303,8 +316,196 @@ void main() {
       endpoint: 'e',
       payload: const {},
     );
-    expect(second, isNot(first));
+    expect(second, first, reason: 'one row per (uploadType, itemId)');
+    expect(await repository.due(), isEmpty, reason: 'nothing left to ask');
+    expect(
+      await database.outboxDao.forItem('personals', 'note-1'),
+      hasLength(1),
+    );
+  });
+
+  test('a changed request re-arms the same row', () async {
+    final first = await repository.enqueue(
+      uploadType: 'personals',
+      itemId: 'note-1',
+      endpoint: 'e',
+      payload: const {'body': 'first'},
+    );
+    await repository.markFailed(
+      first,
+      httpCode: 409,
+      refusal: OutboxRefusal.rejected,
+    );
+
+    // The user edited the note; a 409 against a stale `_rev` says nothing
+    // about a body the server has not seen.
+    final second = await repository.enqueue(
+      uploadType: 'personals',
+      itemId: 'note-1',
+      endpoint: 'e',
+      payload: const {'body': 'edited'},
+    );
+
+    expect(second, first);
+    final due = await repository.due();
+    expect(due, hasLength(1));
+    expect(due.single.attemptCount, 0, reason: 'a fresh ladder');
+    expect(due.single.httpCode, isNull);
+    expect(due.single.errorMessage, isNull);
+  });
+
+  test('a reconfigured endpoint re-arms a rejected row', () async {
+    // The outbox freezes `endpoint` at enqueue time, so moving the app to the
+    // clone URL changes the request even when the body is byte-identical.
+    final first = await repository.enqueue(
+      uploadType: 'personals',
+      itemId: 'note-1',
+      endpoint: 'https://primary.example/db',
+      payload: const {},
+    );
+    await repository.markFailed(
+      first,
+      httpCode: 400,
+      refusal: OutboxRefusal.rejected,
+    );
+
+    await repository.enqueue(
+      uploadType: 'personals',
+      itemId: 'note-1',
+      endpoint: 'https://clone.example/db',
+      payload: const {},
+    );
     expect(await repository.due(), hasLength(1));
+  });
+
+  test('an exhausted transient failure is re-armed unchanged', () async {
+    // Nothing about a 503 or a dropped connection is a verdict on the
+    // request, so a later sweep is entitled to ask again — which is how a
+    // record queued during a server outage eventually lands.
+    final id = await repository.enqueue(
+      uploadType: 'personals',
+      itemId: 'note-1',
+      endpoint: 'e',
+      payload: const {},
+      maxAttempts: 1,
+    );
+    expect(
+      await repository.markFailed(id, httpCode: 503, errorMessage: 'down'),
+      isTrue,
+    );
+    expect(await repository.due(), isEmpty);
+
+    final second = await repository.enqueue(
+      uploadType: 'personals',
+      itemId: 'note-1',
+      endpoint: 'e',
+      payload: const {},
+    );
+    expect(second, id);
+    expect(await repository.due(), hasLength(1));
+  });
+
+  test('a rejection without a status is still terminal', () async {
+    // `markFailed` records [OutboxRepository.noUsableResponse] for a terminal
+    // refusal that carries no HTTP status of its own — a handler's verdict on
+    // a 2xx body, or a payload that will not parse. Storing plain `null` would
+    // make it indistinguishable from a transport failure, which must be
+    // retried.
+    final id = await repository.enqueue(
+      uploadType: 'personals',
+      itemId: 'note-1',
+      endpoint: 'e',
+      payload: const {},
+    );
+    await repository.markFailed(
+      id,
+      errorMessage: 'no rev',
+      refusal: OutboxRefusal.indeterminate,
+    );
+    expect(
+      (await database.outboxDao.getById(id))?.httpCode,
+      OutboxRepository.noUsableResponse,
+    );
+
+    await repository.enqueue(
+      uploadType: 'personals',
+      itemId: 'note-1',
+      endpoint: 'e',
+      payload: const {},
+    );
+    expect(await repository.due(), isEmpty);
+  });
+
+  test('a transport failure keeps a null status and stays retryable', () async {
+    final id = await repository.enqueue(
+      uploadType: 'personals',
+      itemId: 'note-1',
+      endpoint: 'e',
+      payload: const {},
+      maxAttempts: 1,
+    );
+    await repository.markFailed(id, errorMessage: 'connection reset');
+    expect((await database.outboxDao.getById(id))?.httpCode, isNull);
+
+    await repository.enqueue(
+      uploadType: 'personals',
+      itemId: 'note-1',
+      endpoint: 'e',
+      payload: const {},
+    );
+    expect(await repository.due(), hasLength(1));
+  });
+
+  test('surplus rows an older build left are collapsed to one', () async {
+    // An install upgrading into this policy carries one abandoned row per
+    // sweep since its first refusal, and `outbox` survives schema bumps.
+    for (var i = 0; i < 4; i++) {
+      await database.outboxDao.upsert(
+        OutboxEntriesCompanion.insert(
+          id: 'legacy-$i',
+          uploadType: 'personals',
+          itemId: 'note-1',
+          payload: '{}',
+          endpoint: 'e',
+          status: const Value(OutboxDao.statusAbandoned),
+          httpCode: const Value(409),
+          createdAt: 1000 + i,
+        ),
+      );
+    }
+
+    await repository.enqueue(
+      uploadType: 'personals',
+      itemId: 'note-1',
+      endpoint: 'e',
+      payload: const {},
+    );
+
+    final rows = await database.outboxDao.forItem('personals', 'note-1');
+    expect(rows, hasLength(1));
+    expect(rows.single.id, 'legacy-3', reason: 'the newest answer is kept');
+    expect(rows.single.status, OutboxDao.statusAbandoned);
+  });
+
+  test('classifyStatus splits the caller from the request', () {
+    for (final code in [null, 0, 500, 503, 401, 403, 404, 408, 429]) {
+      expect(
+        OutboxRepository.classifyStatus(code),
+        OutboxRefusal.transient,
+        reason: '$code',
+      );
+    }
+    for (final code in [400, 409, 412, 413, 415, 422]) {
+      expect(
+        OutboxRepository.classifyStatus(code),
+        OutboxRefusal.rejected,
+        reason: '$code',
+      );
+    }
+    expect(
+      OutboxRepository.classifyStatus(OutboxRepository.noUsableResponse),
+      OutboxRefusal.indeterminate,
+    );
   });
 
   test('watchPendingCount tracks the queue', () async {
@@ -328,7 +529,11 @@ void main() {
       endpoint: 'e',
       payload: const {},
     );
-    await repository.markFailed(abandoned, permanent: true);
+    await repository.markFailed(
+      abandoned,
+      httpCode: 409,
+      refusal: OutboxRefusal.rejected,
+    );
     await repository.enqueue(
       uploadType: 'personals',
       itemId: 'note-2',

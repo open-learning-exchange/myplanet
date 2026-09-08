@@ -151,19 +151,108 @@ void main() {
     expect(abandoned.single.httpCode, 409);
   });
 
-  test('a record refused twice is one stranded record, not two', () async {
-    // `enqueue` only looks for an *open* operation, so an abandoned row never
-    // blocks a fresh one — a save re-queues the same doomed record and earns a
-    // second abandoned row. Counting rows would tell the clinician the wrong
-    // number and keep growing.
+  test('a record refused ten times leaves one row and one POST', () async {
+    // The accretion. `enqueue` used to look only for an *open* operation, so
+    // an abandoned row never blocked a fresh one and every sweep minted
+    // another dead row and made another doomed POST — in `outbox`, a table
+    // schema bumps preserve. Ten sweeps rather than two, because one repeat is
+    // not a demonstration of unboundedness.
+    final legacyId = await seedLegacyPair();
+
+    // `seedLegacyPair` leaves two dirty rows — the patient's profile and the
+    // examination that collides with it — so the first sweep legitimately
+    // POSTs twice. What must not grow is everything after it.
+    await queueAndDrain();
+    final afterFirstSweep = couch.postCount;
+    expect(afterFirstSweep, 2);
+
+    for (var sweep = 0; sweep < 9; sweep++) {
+      await queueAndDrain();
+    }
+
+    expect(
+      couch.postCount,
+      afterFirstSweep,
+      reason: 'the server was asked the identical question exactly once',
+    );
+    final rows = await database.outboxDao.forItem(
+      HealthUploader.type,
+      legacyId,
+    );
+    expect(rows, hasLength(1));
+    expect(rows.single.status, OutboxDao.statusAbandoned);
+    expect(rows.single.httpCode, 409, reason: 'still diagnosable');
+
+    final abandoned = await database.outboxDao.abandoned(HealthUploader.type);
+    expect(abandoned.map((row) => row.itemId), [legacyId]);
+  });
+
+  test('the clinician tapping Retry does override the memo', () async {
+    // `MyHealthScreen`'s banner counts stranded records and offers Retry next
+    // to the count. A sweep must not re-ask; a person who has just been told
+    // something is wrong must be able to.
     final legacyId = await seedLegacyPair();
 
     await queueAndDrain();
+    final afterFirstSweep = couch.postCount;
     await queueAndDrain();
+    expect(couch.postCount, afterFirstSweep, reason: 'a sweep does not re-ask');
 
-    final abandoned = await database.outboxDao.abandoned(HealthUploader.type);
-    expect(abandoned.length, 2);
-    expect(abandoned.map((row) => row.itemId).toSet(), {legacyId});
+    await uploader.queuePending(
+      config: config,
+      userId: patientId,
+      retryRefused: true,
+    );
+    await drainer.drain(authHeader: 'auth');
+
+    expect(couch.postCount, afterFirstSweep + 1);
+    // Still refused, so still one row and still reported.
+    final rows = await database.outboxDao.forItem(
+      HealthUploader.type,
+      legacyId,
+    );
+    expect(rows, hasLength(1));
+    expect(rows.single.status, OutboxDao.statusAbandoned);
+  });
+
+  test('an accepted response with no revision is never re-sent', () async {
+    // Job 1. The transport called the send a success, so the examination may
+    // be on the server; asking again could file it twice. The row is abandoned
+    // once, with a code that says no HTTP status was the reason, and no sweep
+    // re-arms it.
+    final legacyId = await seedLegacyPair();
+    // The v45 repair first, so the examination owns its own document id and
+    // the response shape is the only thing under test — otherwise it collides
+    // with the profile and earns a 409 instead.
+    await database.customStatement('SELECT 1');
+    await database.migration.onUpgrade(database.createMigrator(), 44, 45);
+    couch.omitRevOnPost = true;
+
+    await queueAndDrain();
+    final afterFirstSweep = couch.postCount;
+
+    for (var sweep = 0; sweep < 4; sweep++) {
+      await queueAndDrain();
+    }
+
+    expect(couch.postCount, afterFirstSweep);
+    expect(
+      couch.documents.containsKey(legacyId),
+      isTrue,
+      reason: 'the server did accept it — that is what makes re-sending unsafe',
+    );
+    final rows = await database.outboxDao.forItem(
+      HealthUploader.type,
+      legacyId,
+    );
+    expect(rows, hasLength(1));
+    expect(rows.single.status, OutboxDao.statusAbandoned);
+    expect(rows.single.httpCode, OutboxRepository.noUsableResponse);
+    expect(rows.single.errorMessage, 'Upload response carried no rev');
+
+    // And the revision the row already held is untouched: `markUploaded` is
+    // not called with a null, which would erase it.
+    expect((await repository.getById(legacyId))!.isUpdated, isTrue);
   });
 
   test('a delivered record stops being reported as stranded', () async {
@@ -267,11 +356,21 @@ class _FakeCouchDb extends Mock implements PlanetApi {
   final Map<String, Map<String, dynamic>> documents = {};
   var _rev = 0;
 
+  /// Every POST that reached this fake, so a test can assert that a refused
+  /// request was not asked a second time.
+  var postCount = 0;
+
+  /// Answers an accepted write with `id` and no `rev` — the shape
+  /// `HealthUploader`'s handler refuses to interpret.
+  var omitRevOnPost = false;
+
   NetworkResult<Map<String, dynamic>> _post(Map<String, dynamic> body) {
+    postCount++;
     final id = body['_id'] as String?;
     if (id == null) {
       final minted = 'minted-${documents.length}';
       documents[minted] = {...body};
+      if (omitRevOnPost) return NetworkSuccess({'id': minted});
       return NetworkSuccess({'id': minted, 'rev': '1-${++_rev}'});
     }
     final existing = documents[id];
@@ -280,6 +379,7 @@ class _FakeCouchDb extends Mock implements PlanetApi {
     }
     final rev = '${++_rev}-x';
     documents[id] = {...body, '_rev': rev};
+    if (omitRevOnPost) return NetworkSuccess({'id': id});
     return NetworkSuccess({'id': id, 'rev': rev});
   }
 }
