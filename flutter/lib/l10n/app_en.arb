@@ -1316,6 +1316,7 @@
   "addedToCourse": "Added to your courses",
   "removedFromCourse": "Removed from your courses",
   "pleaseCompleteSurvey": "please complete the survey to finish the course",
+  "pleaseCompleteTest": "please complete the test to proceed",
   "takeCourse": "Take Course",
   "teamCalendar": "Team Calendar",
   "noMeetupsOnDate": "No meetups on this date",

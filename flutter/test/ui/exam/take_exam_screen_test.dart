@@ -284,6 +284,7 @@ void main() {
     String examId = 'exam-1',
     String? courseId,
     String? stepId,
+    int? stepNum,
     UserRow? session,
     ServerConfig? config = server,
     List<Override> overrides = const [],
@@ -309,6 +310,7 @@ void main() {
             examId: examId,
             courseId: courseId,
             stepId: stepId,
+            stepNum: stepNum,
           ),
         },
         overrides: [
@@ -1008,6 +1010,92 @@ void main() {
       expect(step1?.passed, isFalse);
       // And the step-2 rows, which a wrong number would have hit.
       expect(await passedFor('user-1'), isTrue);
+      expect(await passedFor('other-user'), isTrue);
+    });
+
+    testWidgets('the passed step number is used in preference to the '
+        'derivation', (tester) async {
+      // Kotlin never derives the number: `CourseStepFragment.kt:280` forwards
+      // the pager position and `BaseExamFragment.kt:75` reads it back. Both
+      // port pushers now send it, so this is the live path.
+      //
+      // The `stepId` here resolves to step **1** and the passed number is
+      // **2**, so the two disagree on purpose: whichever the screen uses is
+      // the row that moves.
+      await seedTwoQuestionExam(courseId: 'course-1');
+      await seedCourseWithGradedPeer();
+      await db.courseProgressDao.upsert(
+        CourseProgressCompanion.insert(
+          id: 'progress-user-1-step-1',
+          courseId: const Value('course-1'),
+          userId: const Value('user-1'),
+          stepNum: const Value(1),
+          passed: const Value(true),
+        ),
+      );
+      await pumpExam(
+        tester,
+        courseId: 'course-1',
+        stepId: 'course-1:0',
+        stepNum: 2,
+      );
+
+      await finishExam(tester);
+
+      // The passed number won: step 2's row was cleared…
+      expect(await passedFor('user-1'), isFalse);
+      // …and step 1's, which the derivation would have hit, was not.
+      final step1 = await db.courseProgressDao.findByCourseUserAndStep(
+        'course-1',
+        'user-1',
+        1,
+      );
+      expect(step1?.passed, isTrue);
+      // A peer's step-2 row is still `ed5609f`-safe.
+      expect(await passedFor('other-user'), isTrue);
+    });
+
+    testWidgets('a passed step number writes progress the derivation could '
+        'not resolve', (tester) async {
+      // What passing it explicitly buys, concretely. The derivation has to
+      // find the *step id* in a re-query of `CourseDao.getSteps` first, so a
+      // step id the course does not list — a step row that has not synced, or
+      // one re-bound by a course-step reorder — skipped the write entirely.
+      // Kotlin never consults the step table here at all.
+      await seedTwoQuestionExam(courseId: 'course-1');
+      await seedCourseWithGradedPeer();
+      await pumpExam(
+        tester,
+        courseId: 'course-1',
+        stepId: 'course-9:7',
+        stepNum: 2,
+      );
+
+      await finishExam(tester);
+
+      expect(await passedFor('user-1'), isFalse);
+      expect(await passedFor('other-user'), isTrue);
+    });
+
+    testWidgets('a non-positive step number falls back to the derivation', (
+      tester,
+    ) async {
+      // `0` is Kotlin's missing-argument default (`getInt("stepNum")`), and
+      // `WHERE stepNum = 0` is the value its own update deliberately matches
+      // nothing with — so a `0` must not be written as if it named a step.
+      // The derivation resolves `course-1:1` to 2 instead.
+      await seedTwoQuestionExam(courseId: 'course-1');
+      await seedCourseWithGradedPeer();
+      await pumpExam(
+        tester,
+        courseId: 'course-1',
+        stepId: 'course-1:1',
+        stepNum: 0,
+      );
+
+      await finishExam(tester);
+
+      expect(await passedFor('user-1'), isFalse);
       expect(await passedFor('other-user'), isTrue);
     });
 

@@ -217,9 +217,18 @@ class _StepTile extends ConsumerWidget {
                 child: FilledButton.tonalIcon(
                   icon: const Icon(Icons.assignment_turned_in_outlined),
                   label: Text(l10n.takeExam),
+                  // `stepNum` is the tile's own 1-based position, passed
+                  // explicitly rather than derived from the step's place in a
+                  // re-query. There is no Kotlin `stepNum` to copy on this
+                  // path — the button itself is a port addition — but the
+                  // number is the same one `take_course_screen` sends, and
+                  // both come from the ordering `courseStepsProvider` renders,
+                  // so the two entries into the same step exam cannot key
+                  // `course_progress` differently.
                   onPressed: () => context.push(
                     '/courses/exam/${exam.value!.id}'
-                    '?stepId=${step.id}&courseId=${step.courseId ?? ''}',
+                    '?stepId=${step.id}&courseId=${step.courseId ?? ''}'
+                    '&stepNum=$number',
                   ),
                 ),
               ),

@@ -2,7 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/data/local/converters.dart';
@@ -79,6 +81,11 @@ void main() {
           sessionProvider.overrideWith(
             () => _StubSession(buildUserRow(id: 'user-a', name: 'jane')),
           ),
+          // See the note in `pumpPushed`: without this every submit in this
+          // file lands in `_submit`'s failure branch. The tests that assert
+          // only on the stored row never noticed, which is how the screen's
+          // whole exit path stayed untested.
+          serverConfigProvider.overrideWith(() => _StubServerConfig(null)),
         ],
       ),
     );
@@ -196,6 +203,146 @@ void main() {
     expect(questions.single.choices, ['Water', 'Power']);
   });
 
+  group('where a finished survey leaves the learner', () {
+    /// Pushes the survey screen from a root page, so `context.pop()` has
+    /// somewhere to return to — which is the state every real entry point is
+    /// in, since all five push.
+    Future<void> pumpPushed(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1000, 3000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        wrapScreen(
+          Builder(
+            builder: (context) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                final router = GoRouter.of(context);
+                final location = router
+                    .routerDelegate
+                    .currentConfiguration
+                    .last
+                    .matchedLocation;
+                if (location != '/survey') router.push('/survey');
+              });
+              return const Scaffold(body: Text('WHERE_I_CAME_FROM'));
+            },
+          ),
+          pushTargets: {
+            '/survey': (_) => const TakeSurveyScreen(surveyId: 'survey-1'),
+            '/life/submissions/:id': (_) =>
+                const Scaffold(body: Text('SUBMISSION_PAGE')),
+            '/life/surveys': (_) => const Scaffold(body: Text('SURVEY_LIST')),
+          },
+          overrides: [
+            appDatabaseProvider.overrideWith((ref) {
+              ref.onDispose(db.close);
+              return db;
+            }),
+            planetApiProvider.overrideWithValue(MockPlanetApi()),
+            sessionProvider.overrideWith(
+              () => _StubSession(buildUserRow(id: 'user-a', name: 'jane')),
+            ),
+            // **Not optional, and its absence is silent.** `_submit` reads
+            // `serverConfigProvider` *inside* its own `try`, and the real
+            // notifier reaches `planetPrefs`, which is `UnimplementedError`
+            // in this harness — so without this the screen writes the row and
+            // then takes the `surveySubmitFailed` branch, which returns before
+            // the exit path this group exists to test. A null config is what
+            // an offline handset has, and it skips the queue step.
+            serverConfigProvider.overrideWith(() => _StubServerConfig(null)),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('submitting shows the thank-you dialog', (tester) async {
+      // `BaseExamFragment.continueExam:132-148` — the non-team terminal state
+      // is a thank-you dialog whose one button is Finish, and
+      // `setCancelable(false)` means the learner leaves through it.
+      await seedSurvey(type: 'select');
+      await pumpPushed(tester);
+
+      await tester.tap(find.text('Water'));
+      await tester.pumpAndSettle();
+      await tapSubmit(tester);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Thank you for taking this survey'), findsOneWidget);
+      expect(find.widgetWithText(TextButton, 'Finish'), findsOneWidget);
+      // Not the submission detail: `context.go('/life/submissions/<id>')` was
+      // a port invention with no Kotlin counterpart on any entry point.
+      expect(find.text('SUBMISSION_PAGE'), findsNothing);
+    });
+
+    testWidgets('Finish returns the learner where they came from', (
+      tester,
+    ) async {
+      // `FragmentNavigator.popBackStack(parentFragmentManager)` (`:146`). The
+      // pop is what makes one exit right for all five entry points: each was
+      // reached by a push, so each lands back on its own caller.
+      await seedSurvey(type: 'select');
+      await pumpPushed(tester);
+
+      await tester.tap(find.text('Water'));
+      await tester.pumpAndSettle();
+      await tapSubmit(tester);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Finish'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('WHERE_I_CAME_FROM'), findsOneWidget);
+      expect(find.byType(TakeSurveyScreen), findsNothing);
+      expect(find.text('SUBMISSION_PAGE'), findsNothing);
+      // And it did not invent a destination either: Kotlin's `popBackStack`
+      // goes back, it does not navigate to the survey list.
+      expect(find.text('SURVEY_LIST'), findsNothing);
+    });
+
+    testWidgets('the answers are still stored', (tester) async {
+      // The exit changed; what it exits *from* must not have. A pop that
+      // happened before the write would lose the sheet.
+      await seedSurvey(type: 'select');
+      await pumpPushed(tester);
+
+      await tester.tap(find.text('Water'));
+      await tester.pumpAndSettle();
+      await tapSubmit(tester);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Finish'));
+      await tester.pumpAndSettle();
+
+      final stored = await answers();
+      expect(stored, hasLength(1));
+      expect(stored.single.valueChoices, [
+        jsonEncode({'id': 'water', 'text': 'Water'}),
+      ]);
+    });
+
+    testWidgets('nothing to pop leaves the learner on the screen', (
+      tester,
+    ) async {
+      // `FragmentNavigator.popBackStack` is a no-op on an empty back stack
+      // (`FragmentNavigator.kt:55`), so a survey reached without a push stays
+      // put rather than being sent somewhere Kotlin would not send it. This
+      // is the harness's own shape — `wrapScreen` puts the screen at `/` — so
+      // it is also what every other test in this file exercises.
+      await seedSurvey(type: 'select');
+      await pumpScreen(tester);
+
+      await tester.tap(find.text('Water'));
+      await tester.pumpAndSettle();
+      await tapSubmit(tester);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Finish'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TakeSurveyScreen), findsOneWidget);
+      expect(find.text('SUBMISSION_PAGE'), findsNothing);
+    });
+  });
+
   testWidgets('a survey with no questions offers no submit button', (
     tester,
   ) async {
@@ -213,6 +360,13 @@ void main() {
     expect(find.text('This survey has no questions'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Submit survey'), findsNothing);
   });
+}
+
+class _StubServerConfig extends ServerConfigNotifier {
+  _StubServerConfig(this.config);
+  final ServerConfig? config;
+  @override
+  ServerConfig? build() => config;
 }
 
 class _StubSession extends SessionNotifier {

@@ -133,6 +133,33 @@ class _CourseContentState extends ConsumerState<_CourseContent> {
   /// this mount, so a rebuild is not a re-visit.
   int? _recordedStep;
 
+  /// **Owned by the state, and that is a fix rather than a tidy-up.** The
+  /// controller used to be built inline in `build` as
+  /// `PageController(initialPage: currentStep)`, which meant Previous and Next
+  /// moved the step *counter* and left the page where it was: `Scrollable`
+  /// hands a replacement controller the existing `ScrollPosition`'s pixels
+  /// (`createScrollPosition(..., oldPosition: _position)`), so `initialPage` is
+  /// read once at first attach and ignored on every rebuild after it.
+  ///
+  /// Nothing caught it because nothing asserted on the page. The tests here
+  /// checked the counter, which is driven by the same `currentStep` the
+  /// controller was being handed — so the two agreed about the number while
+  /// disagreeing about what was on screen. Found by a `stepNum` test that
+  /// tapped the second step's assessment tile and could not find it.
+  ///
+  /// Kotlin drives the pager explicitly for the same reason: `onClick` does
+  /// `binding.viewPager2.currentItem += 1` (`TakeCourseFragment.kt:372`) and
+  /// `navigateToStep` calls `setCurrentItem(index + 1, true)` (`:293`).
+  late final PageController _pageController = PageController(
+    initialPage: widget.currentStep,
+  );
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
   /// **Stateful for one reason: the step the learner *lands on* has to be
   /// recorded, and a page-change callback never fires for it.**
   ///
@@ -204,14 +231,55 @@ class _CourseContentState extends ConsumerState<_CourseContent> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final currentStep = widget.currentStep;
     final onStepChanged = widget.onStepChanged;
     final isMyCourse = _isMyCourse;
+    final lock = _nextStepLock(currentStep, isMyCourse);
 
     // The recording moved to [_recordCurrentStep], which covers this and the
     // step the screen opens on alike.
+    //
+    // Moves the pager as well as the index, because with the controller held
+    // in state nothing else does — see [_pageController]. `animateToPage`
+    // rather than `jumpToPage` to match `viewPager2.currentItem += 1`, whose
+    // ViewPager2 default is a smooth scroll.
+    // `hasClients` cannot be false at either call site — both are button
+    // `onPressed` callbacks, so the controller is attached — and if it ever
+    // were, this would perform half the operation: the index would move and
+    // the page would not, which is exactly the defect [_pageController]
+    // documents. Guarded rather than left to throw because a throw out of a
+    // tap handler is worse for the learner than a stuck page, and the state
+    // that would cause it is unreachable.
     void goToStep(int index) {
       onStepChanged(index);
+      if (_pageController.hasClients) {
+        _pageController.animateToPage(
+          index,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    }
+
+    /// `onClick`'s `R.id.next_step` arm (`TakeCourseFragment.kt:366-376`): a
+    /// locked step shows the message and returns **before** advancing. The
+    /// button stays enabled — Kotlin never touches `isEnabled`, and a disabled
+    /// button would say "you cannot go on" without saying why.
+    void onNext() {
+      if (lock?.locked ?? false) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              lock!.blockedByTest
+                  ? l10n.pleaseCompleteTest
+                  : l10n.pleaseCompleteSurvey,
+            ),
+          ),
+        );
+        return;
+      }
+      goToStep(currentStep + 1);
     }
 
     return Column(
@@ -222,8 +290,24 @@ class _CourseContentState extends ConsumerState<_CourseContent> {
         Expanded(
           child: PageView.builder(
             itemCount: steps.length,
-            controller: PageController(initialPage: currentStep),
-            onPageChanged: goToStep,
+            controller: _pageController,
+            // Reports the landing rather than re-driving the controller: a
+            // programmatic `animateToPage` fires this too, and routing it back
+            // through `goToStep` would call `animateToPage` from inside its own
+            // completion.
+            onPageChanged: onStepChanged,
+            // `binding.viewPager2.isUserInputEnabled = false`
+            // (`TakeCourseFragment.kt:137`). Kotlin advances the course by its
+            // two buttons and nothing else — the SeekBar that looks like a
+            // third way is inside `ll_progress`, which is `gone` in the layout
+            // and never made visible by any code, so its `onProgressChanged`
+            // jump is dead UI.
+            //
+            // Load-bearing for the lock above rather than cosmetic: a swipe
+            // goes straight to `onPageChanged`, so while this `PageView`
+            // scrolled, the refusal to advance an unanswered step could be
+            // got past by dragging the page.
+            physics: const NeverScrollableScrollPhysics(),
             itemBuilder: (context, index) => _StepContent(
               step: steps[index],
               stepNumber: index + 1,
@@ -239,14 +323,68 @@ class _CourseContentState extends ConsumerState<_CourseContent> {
           totalSteps: steps.length,
           isMyCourse: isMyCourse,
           onPrevious: currentStep > 0 ? () => goToStep(currentStep - 1) : null,
-          onNext: currentStep < steps.length - 1
-              ? () => goToStep(currentStep + 1)
-              : null,
+          onNext: currentStep < steps.length - 1 ? onNext : null,
           onFinish: () => _onFinish(context, ref),
           onToggleMembership: () => _toggleMembership(context, ref, isMyCourse),
         ),
       ],
     );
+  }
+
+  /// The lock on advancing past [currentStep], or null when nothing can lock
+  /// it. Port of the `if` that wraps `changeNextButtonState`'s whole body
+  /// (`TakeCourseFragment.kt:315-338`); [stepNextLockProvider] carries the
+  /// decision itself and documents it.
+  ///
+  /// Three reasons this returns null, in Kotlin's own terms:
+  ///
+  ///  * **Any other course.** `:316` compares against a hardcoded
+  ///    `"4e6b78800b6ad18b4e8b0e1e38a98cac"` — the same value as the
+  ///    `MANDATORY_SURVEY_COURSE_ID` companion constant, which only the finish
+  ///    gate reads — and `:336` is an unconditional `isNextStepLocked = false`
+  ///    for everything else. Kotlin compares the *navigation* argument
+  ///    (`arguments.getString("id")`, `:61`) rather than the loaded row;
+  ///    `course.id` is that same value, since the row is looked up by it.
+  ///  * **A step index out of range**, which is `steps.getOrNull(position - 1)`
+  ///    returning null and `isStepCompleted(null, …)` answering true (`:317`,
+  ///    `SubmissionsRepositoryImpl.kt:360`).
+  ///  * **A course the learner has not joined — and this one is a deviation,
+  ///    named rather than assumed.** `changeNextButtonState` has no membership
+  ///    test; Kotlin's is on the button, `updateNavigationVisibility:256-270`
+  ///    hiding Next and Previous outright for a non-member. But that is not
+  ///    Kotlin's last word: `onResume:154-160` makes Next visible again with
+  ///    no membership test, and `position` is restored from the learner's
+  ///    saved progress (`:116`), so somebody who joined, made progress, left
+  ///    the course and came back *can* meet the lock there. This port gates
+  ///    the lock instead of the button, because the port's `_NavigationBar`
+  ///    has no membership gate at all (see `PHASE_139_NOTES.md`) — so the
+  ///    effect matches Kotlin's intended rule and diverges from its `onResume`
+  ///    slip. It also keeps the lock consistent with the step tile, which
+  ///    `_StepContent` hides for a non-member: a learner cannot be blocked by
+  ///    an assessment the screen is not offering them.
+  StepNextLock? _nextStepLock(int currentStep, bool isMyCourse) {
+    if (course.id != _mandatorySurveyCourseId) return null;
+    if (!isMyCourse) return null;
+    if (currentStep < 0 || currentStep >= steps.length) return null;
+    final step = steps[currentStep];
+    // The same key `_StepContent` builds, so the tile's post-return
+    // `invalidate` of `stepAssessmentProvider` refreshes this too. That is not
+    // an optimisation: Kotlin re-evaluates the lock only on a page-selection
+    // event (`onPageSelected:309`, and `onResume` does *not* call it), and
+    // gets away with it because `openCallFragment`'s `replace()` destroys this
+    // screen's view so returning from the exam re-dispatches `onPageSelected`.
+    // A `context.push` leaves the screen mounted, so without sharing the
+    // refresh the lock would still be holding a step the learner had just
+    // finished.
+    return ref
+        .watch(
+          stepNextLockProvider((
+            stepId: step.id,
+            courseId: step.courseId,
+            userId: userId,
+          )),
+        )
+        .valueOrNull;
   }
 
   /// Port of `CourseStepFragment.launchSaveCourseProgress` — landing on a step
@@ -530,10 +668,22 @@ class _StepContent extends ConsumerWidget {
                 // dropped the learner on go_router's error page. The exam
                 // screen wants the step and course as query parameters, as
                 // `CourseStepFragment` passes `stepId`/`stepNum`.
+                // `stepNum` is Kotlin's own argument, not a derivation:
+                // `CoursesPagerAdapter.kt:49` puts the pager position on the
+                // step fragment as `"stepNumber"` and
+                // `CourseStepFragment.kt:280` forwards it to the exam as
+                // `"stepNum"`, which `BaseExamFragment.kt:75` reads. Passing
+                // it from here assumes nothing about ordering, where deriving
+                // it from the step's position in a re-query rests on
+                // `stepIndex`, whose column default of `0` makes ties legal.
+                // This widget already holds the number it drew in the step
+                // header, so the number written to `course_progress` is the
+                // one the learner saw.
                 onTap: () async {
                   await context.push(
                     '/courses/exam/${exams.first.id}'
-                    '?stepId=${step.id}&courseId=${step.courseId ?? ''}',
+                    '?stepId=${step.id}&courseId=${step.courseId ?? ''}'
+                    '&stepNum=$stepNumber',
                   );
                   refreshAssessment();
                 },
@@ -562,20 +712,18 @@ class _StepContent extends ConsumerWidget {
                 // being a pattern rather than a base, an unmatchable route: a
                 // course-step survey has no `teamId`, so the interpolation
                 // left an empty segment too.
-                // **The refresh here only fires on a back-out, and that is a
-                // gap rather than a design.** `TakeSurveyScreen`'s submit ends
-                // with `context.go('${Routes.submissions}/<id>')`, not a pop,
-                // so answering the survey unmounts this screen and the `await`
-                // never resolves into a live element — `refreshAssessment`
-                // short-circuits on `context.mounted`. Kotlin *does* return:
+                // **The refresh fires on a submit as well as a back-out since
+                // Phase 139.** It used to fire only on a back-out: the survey
+                // screen's submit ended with
+                // `context.go('${Routes.submissions}/<id>')`, which unmounted
+                // this screen, so the `await` never resolved into a live
+                // element and `refreshAssessment` short-circuited on
+                // `context.mounted` — the *redo survey* relabel was
+                // unreachable on the one path that produces the submission it
+                // reads. `TakeSurveyScreen` now ends where Kotlin does:
                 // `openSurvey` → `BaseExamFragment.continueExam` shows the
                 // thank-you dialog and its Finish calls
-                // `FragmentNavigator.popBackStack`, landing back on the step
-                // with the label now reading *redo survey*. Making the port
-                // match means changing that screen's exit, which four other
-                // entry points share — outside this phase's diff, recorded in
-                // PHASE_128_NOTES.md. The call stays because it is correct for
-                // the back-out case and a no-op otherwise.
+                // `FragmentNavigator.popBackStack`, landing back on the step.
                 onTap: () async {
                   await context.push('${Routes.surveys}/${surveys.first.id}');
                   refreshAssessment();

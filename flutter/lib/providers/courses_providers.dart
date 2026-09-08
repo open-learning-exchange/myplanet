@@ -416,6 +416,189 @@ final stepAssessmentProvider = FutureProvider.autoDispose
       );
     });
 
+/// Kotlin's `isNextStepLocked` / `lockedStepMessage` pair for one step
+/// ([locked] and, when locked, which of the two messages to show).
+///
+/// [blockedByTest] picks the message the way `changeNextButtonState:327-330`
+/// does — `please_complete_test` when the step carries an exam, otherwise
+/// `please_complete_survey` — so it is only meaningful while [locked].
+typedef StepNextLock = ({bool locked, bool blockedByTest});
+
+/// Port of `TakeCourseFragment.changeNextButtonState`
+/// (`TakeCourseFragment.kt:315-338`) — the per-step refusal to advance that
+/// the MyPlanet Onboarding course puts in front of an unanswered step
+/// assessment. **This is not the finish-time gate**, which is
+/// `onFinishStep`'s `hasUnfinishedSurveys` and lives in
+/// `take_course_screen._onFinish`; the two are independent, and Kotlin's
+/// per-step lock never applies to the last step because Next is replaced by
+/// Finish there.
+///
+/// The course-id gate (`:316`) is deliberately **not** here: it reads the
+/// screen's own course, so the caller decides whether to watch this at all,
+/// exactly as `changeNextButtonState`'s `if` wraps its whole body and its
+/// `else` is a bare `isNextStepLocked = false` (`:336`).
+///
+/// **Presence, not submission — and that distinction is the whole point.**
+/// `changeNextButtonState` reads `stepData.stepExams.isNotEmpty()` /
+/// `stepData.stepSurvey.isNotEmpty()` (`:320-321`), i.e. *does the step carry
+/// an assessment at all*. It locally shadows the names `hasExam`/`hasSurvey`,
+/// which on `CourseStepData` mean something else entirely —
+/// `hasSubmission(...)`, *has the learner already answered*
+/// (`CoursesRepositoryImpl.kt:534-542`). Building the lock on those would
+/// invert it: only a learner who had already answered would be blocked. The
+/// lists are read off [stepAssessmentProvider] rather than re-queried so the
+/// lock and the step tile cannot disagree about what the step carries, and so
+/// that the tile's post-return `invalidate` refreshes both — see below.
+///
+/// **The completion half is [SubmissionsRepository]-adjacent but is not
+/// `hasSubmission`.** Kotlin's is `isStepCompleted`
+/// (`SubmissionsRepositoryImpl.kt:359-365`), and it differs from
+/// `hasSubmission` in four ways, of which two decide this feature:
+///
+///  * `status != 'pending'`. `hasSubmission` is status-blind, so a learner who
+///    has merely *started* the exam satisfies it; this needs them to have
+///    finished. `saveExamAnswer` writes `complete` for a survey's last answer
+///    and `requires grading` for an exam's, both of which pass; a half-answered
+///    attempt is `pending` and does not. In SQL `status != 'pending'` is NULL —
+///    so false — for a NULL status, which [_isStepCompleted] reproduces
+///    explicitly; the team-adoption marker (`status: ''`) does pass, as it does
+///    in Kotlin.
+///  * `parentId LIKE '%' || :examId || '%'` (`SubmissionDao.kt:24`), against
+///    `hasSubmission`'s exact `"$examId@$courseId"`. The `LIKE` is
+///    deliberately loose and [_isStepCompleted] keeps it as a `contains`: it
+///    matches the compound key every current writer stores (Phase 125), a bare
+///    id an older build wrote, and — as Kotlin does — any other `parentId`
+///    carrying the id as a substring.
+///
+/// It also takes no `courseId` and no `type`, and answers **true** for a step
+/// with no assessment row at all (`?: return true`) — which is why a step
+/// carrying neither an exam nor a survey is unlocked.
+///
+/// **A rejected read is unlocked, and that is a decision rather than a
+/// default.** `getCourseStepData` throws `IllegalStateException` on a missing
+/// step row (`CoursesRepositoryImpl.kt:527-528`) and
+/// `changeNextButtonState`'s `lifecycleScope.launch` (`:318`) has no `try`, so
+/// Kotlin's `isNextStepLocked` keeps the `false` that `onPageSelected:306` had
+/// just assigned. A caller reading `.valueOrNull` gets null here and treats it
+/// as unlocked, which is Kotlin's outcome without Kotlin's crash. The same
+/// mapping covers the still-loading case, which reproduces Kotlin's own race:
+/// `:306` clears the flag synchronously and `:318` sets it from a coroutine,
+/// so a tap in between is not blocked there either.
+final stepNextLockProvider = FutureProvider.autoDispose
+    .family<StepNextLock, StepAssessmentKey>((ref, key) async {
+      // Watched before the await rather than after it: a `ref.watch` on the
+      // far side of an `await` runs against an element that may already be
+      // disposed. Harmless for this provider, which never changes, but the
+      // shape is not worth keeping.
+      final db = ref.watch(appDatabaseProvider);
+      final assessment = await ref.watch(stepAssessmentProvider(key).future);
+      // Kotlin's order (`:323-333`) is completion first, presence second. The
+      // two agree either way — `isStepCompleted` answers true when the step
+      // carries no assessment — and this keeps the cheap test first.
+      final hasExam = assessment.exams.isNotEmpty;
+      final hasSurvey = assessment.surveys.isNotEmpty;
+      if (!hasExam && !hasSurvey) {
+        return (locked: false, blockedByTest: false);
+      }
+      final completed = await _isStepCompleted(
+        db: db,
+        exams: assessment.exams,
+        surveys: assessment.surveys,
+        userId: key.userId,
+      );
+      return (locked: !completed, blockedByTest: hasExam);
+    });
+
+/// Port of `SubmissionsRepositoryImpl.isStepCompleted` (`:359-365`).
+///
+/// **Which row is interrogated is a judgement call the split tables force.**
+/// Kotlin keeps every exam and survey in one `exams` table and picks the row
+/// with `ExamDao.getFirstByStepId`, which is `WHERE stepId = ? LIMIT 1` with
+/// **no type filter and no `ORDER BY`** (`ExamDao.kt:13`) — so on a step
+/// carrying both, the row is whichever SQLite returns first. In practice that
+/// is the exam: `buildCoursePayload` collects `steps[i].exam` before
+/// `steps[i].survey` into one list (`CoursesRepositoryImpl.kt:698-699`) and
+/// `@Upsert` inserts in list order, giving the exam the lower rowid. This
+/// takes the step's first exam and falls back to its first survey, which
+/// matches that and has a property worth keeping deliberately: the message
+/// [stepNextLockProvider] chooses is the *test* one whenever an exam is
+/// present (`changeNextButtonState:328`), so message and remedy name the same
+/// assessment. An `OR` across both tables would let the two disagree.
+///
+/// Two consequences of the split, both in the port's favour and both
+/// deviations rather than fidelity:
+///
+///  * **Kotlin can wedge a step permanently and the port cannot.** Its
+///    `stepExams`/`stepSurvey` are filtered on `type` while
+///    `getFirstByStepId` is not, so a step whose exam object carries no `type`
+///    and whose survey object says `"type": "surveys"` locks with the *survey*
+///    message while the unlock condition interrogates the *exam* row —
+///    answering the survey never opens it. The type filter is not the only
+///    route to that disagreement: `getFirstByStepId` has no `ORDER BY` either,
+///    so a step that gains an exam *after* its first sync leaves the survey
+///    holding the lower rowid and Kotlin picks the survey.
+///  * **The lock fires on documents Kotlin's does not.** Kotlin's `type`
+///    column holds the server document's own `type`, falling back to the
+///    singular `"exam"`/`"survey"` that no Kotlin query selects
+///    (`CoursesRepositoryImpl.kt:746`), so `getByStepIdAndType(…, "courses"
+///    / "surveys")` misses a type-less step assessment — no button *and* no
+///    lock. `ExamMapper` routes on `type == 'surveys'` and files everything
+///    else as an exam, so the port's tables are a superset and a type-less
+///    assessment both shows a tile and holds the step. That is Phase 113's
+///    documented deviation; this is the reader that extends it from the
+///    buttons to the lock.
+///
+/// The submission read picks its table from the row's own, the way
+/// [SubmissionsRepository.hasSubmission] picks its question table. **Kotlin's
+/// count has no `type` predicate at all** (`SubmissionDao.kt:24`), so this is
+/// a divergence rather than a translation: a submission whose `type` is null or
+/// unexpected, but whose `parentId` carries the assessment id, releases
+/// Kotlin's lock and not this one. Unreachable today — every port writer sets
+/// `'exam'` or `'survey'` and the sync-in copies Planet's own value — and the
+/// DAO method named in `PHASE_139_NOTES.md` would drop the filter and close it.
+///
+/// Two more axes on which `contains` is not `LIKE`, both unreachable for the
+/// same reason (`parentId` is always minted from the same `exam.id` through
+/// `examParentId`) and both worth knowing before anyone rewrites this as SQL:
+/// SQLite's `LIKE` is **case-insensitive** for ASCII where `contains` is not,
+/// and it treats `%`/`_` in the pattern as wildcards, which Kotlin does not
+/// escape.
+///
+/// **This reads a list where Kotlin reads a `COUNT(*)`.** The faithful query
+/// is `SubmissionDao.countCompletedByUserAndExamId`, which the port does not
+/// have; adding it means editing `app_database.dart`, which another lane owns
+/// this round. The set is one user's submissions of one type, so the read is
+/// bounded — but it is a workaround, and `PHASE_139_NOTES.md` names the method
+/// that should replace it.
+Future<bool> _isStepCompleted({
+  required AppDatabase db,
+  required List<ExamRow> exams,
+  required List<SurveyRow> surveys,
+  required String? userId,
+}) async {
+  final fromExam = exams.isNotEmpty;
+  final assessmentId = fromExam
+      ? exams.first.id
+      : (surveys.isEmpty ? null : surveys.first.id);
+  // `examDao.getFirstByStepId(stepId) ?: return true` — a step with no
+  // assessment row is complete, which is what unlocks an ordinary step.
+  //
+  // Unreachable from the one caller, which short-circuits on both lists being
+  // empty before it gets here. Kept because it is Kotlin's own `?:` and this
+  // function reads as a port of `isStepCompleted` rather than as a helper for
+  // one call site; its lack of coverage is deliberate, not a gap.
+  if (assessmentId == null) return true;
+  final rows = fromExam
+      ? await db.submissionDao.getExamSubmissionsByUser(userId)
+      : await db.submissionDao.getSurveySubmissionsByUser(userId ?? '');
+  return rows.any((row) {
+    final status = row.status;
+    return (row.parentId ?? '').contains(assessmentId) &&
+        status != null &&
+        status != 'pending';
+  });
+}
+
 /// Distinct grade levels present locally, for the filter spinner.
 ///
 /// Deliberately *not* derived from [coursesStreamProvider]: that watches

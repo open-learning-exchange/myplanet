@@ -429,18 +429,24 @@ void main() {
       expect(profile.submissionId, (await submissions()).single.id);
     });
 
-    testWidgets('a personal survey goes straight to the submission', (
-      tester,
-    ) async {
+    testWidgets('a personal survey goes to the thank-you dialog, not the '
+        'profile step', (tester) async {
       // The other side of the same gate: Kotlin reaches `showUserInfoDialog`
       // only under `isTeam`, so a personal sheet must not acquire a profile
-      // step it never had.
+      // step it never had. It gets `continueExam`'s thank-you dialog instead
+      // (`BaseExamFragment.kt:132-148`).
+      //
+      // This used to assert `SUBMISSION_PAGE`, because the screen ended with
+      // `context.go('/life/submissions/<id>')` — a port invention with no
+      // Kotlin counterpart on any entry point, and the reason a course-step
+      // survey never returned the learner to the step. Phase 139.
       await seedSurvey();
       await pumpTakeSurvey(tester);
       await tester.pumpAndSettle();
 
       expect(find.byType(UserInformationScreen), findsNothing);
-      expect(find.text('SUBMISSION_PAGE'), findsOneWidget);
+      expect(find.text('Thank you for taking this survey'), findsOneWidget);
+      expect(find.text('SUBMISSION_PAGE'), findsNothing);
     });
 
     testWidgets('a nation survey skips the profile step', (tester) async {

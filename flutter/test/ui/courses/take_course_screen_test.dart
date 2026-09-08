@@ -16,7 +16,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:myplanet/repository/ratings_repository.dart';
 import 'package:myplanet/repository/submissions_repository.dart';
 import 'package:myplanet/repository/surveys_repository.dart';
+import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/ui/courses/take_course_screen.dart';
+import 'package:myplanet/ui/surveys/take_survey_screen.dart';
 
 import '../../support/widget_harness.dart';
 import '../../support/mock_planet_api.dart';
@@ -24,6 +26,13 @@ import '../../support/mock_planet_api.dart';
 /// Mirrors the test-session notifier in `session_provider_test.dart`: returns a
 /// fixed user (or none) without touching the database or prefs, so the
 /// take-course screen has a `userId` for the rating check.
+class _TestServerConfig extends ServerConfigNotifier {
+  _TestServerConfig(this.config);
+  final ServerConfig? config;
+  @override
+  ServerConfig? build() => config;
+}
+
 class _TestSessionNotifier extends SessionNotifier {
   _TestSessionNotifier(this.user);
   final UserRow? user;
@@ -696,6 +705,100 @@ void main() {
 
     expect(find.text('Retake Test [1]'), findsOneWidget);
     expect(find.text('take test [1]'), findsNothing);
+  });
+
+  testWidgets('answering a step survey returns to the step and relabels the '
+      'tile', (tester) async {
+    // **Phase 128 built this refresh and Phase 128's own item 6 recorded that
+    // half of it was unreachable.** `TakeSurveyScreen._submit` ended with
+    // `context.go('${Routes.submissions}/<id>')` — `go`, not a pop — so
+    // answering a course-step survey unmounted `TakeCourseScreen` outright,
+    // the tile's `await context.push(…)` never resumed, and
+    // `refreshAssessment` short-circuited on `context.mounted`. The *redo
+    // survey* relabel was therefore unreachable on the one path that produces
+    // the submission it reads: the learner had to leave the course and come
+    // back to see it.
+    //
+    // The survey target here is the **real** `TakeSurveyScreen`, not a
+    // sentinel. That is the whole point — the existing test that looks like it
+    // covers this path stubs the route with a `Text` widget, so the real
+    // screen's exit was never exercised by anything. A fixture that fakes the
+    // return proves nothing about whether the return happens.
+    tester.view.physicalSize = const Size(1000, 3000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    final db = await seedStepAssessments();
+    addTearDown(db.close);
+    final steps = await db.courseDao.getSteps('course-1');
+
+    await tester.pumpWidget(
+      wrapScreen(
+        Builder(
+          builder: (context) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final router = GoRouter.of(context);
+              final location = router
+                  .routerDelegate
+                  .currentConfiguration
+                  .last
+                  .matchedLocation;
+              if (location != '/take') router.push('/take');
+            });
+            return const Scaffold(body: Text('ROOT_PAGE'));
+          },
+        ),
+        pushTargets: {
+          '/take': (context) => const TakeCourseScreen(courseId: 'course-1'),
+          '/life/surveys/:surveyId': (context) => TakeSurveyScreen(
+            surveyId: GoRouterState.of(context).pathParameters['surveyId']!,
+          ),
+        },
+        overrides: [
+          await _prefsOverride(),
+          appDatabaseProvider.overrideWithValue(db),
+          sessionProvider.overrideWith(() => _TestSessionNotifier(_user())),
+          serverConfigProvider.overrideWith(() => _TestServerConfig(null)),
+          courseProvider('course-1').overrideWith(
+            (ref) => Stream.value(
+              buildCourseRow(
+                id: 'course-1',
+                courseTitle: 'Algebra',
+                userId: const ['user-1'],
+              ),
+            ),
+          ),
+          courseStepsProvider(
+            'course-1',
+          ).overrideWith((ref) => Stream.value(steps)),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Record survey'), findsOneWidget);
+    await tester.tap(find.text('Record survey'));
+    await tester.pumpAndSettle();
+
+    // The real survey screen, answered and submitted.
+    expect(find.byType(TakeSurveyScreen), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'it was fine');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Submit survey'));
+    // Never pumpAndSettle straight after Submit: while `submitting` is true
+    // the button holds an indefinite CircularProgressIndicator.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(TextButton, 'Finish'));
+    await tester.pumpAndSettle();
+
+    // Back on the step — and the tile now reads *redo survey*, which is only
+    // observable because the pop let the `await` resume.
+    expect(find.byType(TakeSurveyScreen), findsNothing);
+    expect(find.text('redo survey'), findsOneWidget);
+    expect(find.text('Record survey'), findsNothing);
   });
 
   testWidgets('an attempt by another learner does not swap the label', (
