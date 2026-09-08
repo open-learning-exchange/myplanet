@@ -45,10 +45,10 @@ class LifeViewModel @Inject constructor(
 
     fun updateVisibility(isVisible: Boolean, id: String) {
         viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
+            val updatedList = withContext(dispatcherProvider.io) {
                 lifeRepository.updateVisibility(isVisible, id)
             }
-            loadMyLifeList()
+            _myLifeList.value = updatedList
         }
     }
 
