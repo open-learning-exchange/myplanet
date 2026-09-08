@@ -130,7 +130,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         } else if (isTeam && type?.startsWith("survey") == true) {
             showUserInfoDialog()
         } else {
-            saveCourseProgress(exam?.courseId, stepNumber, sub?.status == "graded")
+            saveCourseProgress(exam?.courseId, stepNumber, sub?.status == "graded", user?.id)
             val titleView = TextView(requireContext()).apply {
                 text = "${getString(R.string.thank_you_for_taking_this)}$type! ${getString(R.string.we_wish_you_all_the_best)}"
                 textSize = 18f
@@ -148,7 +148,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         }
     }
 
-    abstract fun saveCourseProgress(courseId: String?, stepNum: Int, isGraded: Boolean)
+    abstract fun saveCourseProgress(courseId: String?, stepNum: Int, isGraded: Boolean, userId: String?)
 
     private fun showUserInfoDialog() {
         if (!isMySurvey && exam?.isFromNation != true) {
