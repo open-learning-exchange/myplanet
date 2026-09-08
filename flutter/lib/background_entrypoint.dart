@@ -74,6 +74,14 @@ Future<bool> executeBackgroundTask(String taskName) async {
       // invocation without the sweep needing a drain of its own.
       drainOutbox: () async {
         if (config == null) return;
+        // Ahead of the submissions sweep, as both Kotlin workers have it
+        // (`AutoSyncWorker:130` before `:136`, `UserDataWorker:40` before
+        // `:48`). See [sweepPendingVoices].
+        await sweepPendingVoices(
+          container,
+          config: config,
+          userId: prefs.loggedInUserId,
+        );
         await sweepPendingSubmissions(
           container,
           config: config,
@@ -241,6 +249,55 @@ Future<bool> executeBackgroundTask(String taskName) async {
     return false;
   } finally {
     container.dispose();
+  }
+}
+
+/// The headless half of the voices safety net — see
+/// `DashboardSyncNotifier.queuePendingVoices`, which carries the Kotlin
+/// reading this is built on.
+///
+/// **Called from `drainOutbox`, deliberately not from `syncSteps`**, for the
+/// reason [sweepPendingSubmissions] gives at length: the step list runs only
+/// for an `autoSync` task, only with auto-sync enabled, and only when the
+/// interval is due, and `BackgroundWorkCoordinator` cancels the `autoSync` job
+/// outright for a user who turns auto-sync off — so a step there would never
+/// run at all for exactly the user most likely to have an undelivered post.
+/// Kotlin's `uploadNews()` has none of those gates.
+///
+/// Ordering is free here in a way it is not for submissions: nothing in the
+/// step list pulls `news` before this, and the voices pull that does exist
+/// (`DashboardSyncArea.voices`) writes a pulled document beside a locally
+/// authored row rather than over it — `NewsMapper.fromDoc` keys on the CouchDB
+/// `_id`, and an undelivered post has none. It is kept ahead of the drain for
+/// the reason that always holds: a row queued after the drain waits for the
+/// next invocation.
+///
+/// [userId] is nullable because Kotlin's sweep takes no user at all — the
+/// author travels in the document, and the outbox tag is nothing anyone reads
+/// back. A handset whose session has gone is precisely the one with an
+/// undelivered post on it.
+///
+/// Exposed because `executeBackgroundTask` needs a Flutter binding, real
+/// preferences and a WorkManager engine, so a body written inline in that
+/// closure is unreachable from a unit test.
+@visibleForTesting
+Future<void> sweepPendingVoices(
+  ProviderContainer container, {
+  required ServerConfig config,
+  required String? userId,
+}) async {
+  try {
+    await container
+        .read(voicesUploaderProvider)
+        .queuePending(config: config, userId: userId);
+  } catch (_) {
+    // Swallowed for the reason `sweepPendingSubmissions` is: a throwing
+    // `drainOutbox` adds `outboxDrain` to the runner's `failedSteps` and asks
+    // the OS to retry the whole task, and no Kotlin caller of `uploadNews()`
+    // does that — `UserDataWorker:40` wraps it in `runCatching` and still
+    // returns `Result.success()`. It is not hypothetical: `queuePending` reads
+    // device identity, which rethrows on an engine with no channel and no
+    // primed cache.
   }
 }
 

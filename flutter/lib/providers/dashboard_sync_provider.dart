@@ -152,6 +152,10 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
     // them for pressing the button.
     await ref.read(activityLogProvider).recordSyncChallengeAction();
 
+    // Ahead of the submissions sweep, as both Kotlin workers have it
+    // (`AutoSyncWorker:130` before `:136`, `UserDataWorker:40` before `:48`).
+    await queuePendingVoices();
+
     // With the shelf push, ahead of the pulls. See [queuePendingSubmissions].
     await queuePendingSubmissions();
 
@@ -342,6 +346,88 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
       }
       await ref
           .read(submissionsUploaderProvider)
+          .queuePending(config: config, userId: user?.id);
+      await ref
+          .read(outboxDrainerProvider)
+          .drain(authHeader: PersonalsUploader.authHeaderFor(config));
+    } catch (_) {
+      // Deliberately ignored — see above.
+    }
+  }
+
+  /// Port of `uploadManager.uploadNews()` as the sync path's safety net.
+  ///
+  /// **Kotlin has no write-time upload for a voice at all.** Composing one
+  /// writes a `news` row and stops; the document reaches the server when
+  /// `UploadManager.uploadNews()` next runs, and that runs from
+  /// `AutoSyncWorker:130` and `UserDataWorker:40` off nothing the post did.
+  /// `VoicesRepositoryImpl.getNewsForUpload()` reads the whole table minus
+  /// guests, so a voice cannot be stranded there.
+  ///
+  /// The port inverted the relation: `VoicesActions` enqueues at write time —
+  /// better when it runs — and nothing swept. `VoicesActions.queuePending`
+  /// returns 0 when `serverConfigProvider` is null, and every caller reports
+  /// success regardless, so a voice composed before the server was configured
+  /// (or across a write that threw, or a process death between the row and the
+  /// enqueue) sat on the handset until the same user happened to make some
+  /// *other* voices write, because `queuePending` is an unscoped sweep that
+  /// then rescues it incidentally. Phase 134 found and fixed exactly this shape
+  /// for submissions; this is the voices half.
+  ///
+  /// The shape follows [queuePendingSubmissions], for the same readings:
+  ///
+  /// * **Unscoped.** `getNewsForUpload()` carries no `userId` predicate and
+  ///   `uploadNews()` takes no user — the author travels in the document. The
+  ///   session is only the outbox row's tag, hence the nullable `userId`.
+  /// * **Ungated.** Not conditional on `successCount > 0`: `UserDataWorker`
+  ///   sweeps inside its own `runCatching` and inspects no pull.
+  /// * **Its own `try`, and swallowed.** `UserDataWorker:40`'s per-step
+  ///   `runCatching` is the shape, not `AutoSyncWorker`'s shared `try` — and
+  ///   this can throw where Kotlin's cannot, because `queuePending` reads
+  ///   device identity and `PlatformDeviceIdentitySource.read` rethrows on an
+  ///   engine with no channel and no primed cache. A voice that cannot be
+  ///   queued must not flip the sync to failed.
+  /// * **Drained, not merely queued.** Kotlin's sweep *posts*; `queuePending`
+  ///   only queues, and the drain trigger is otherwise app resume. The first
+  ///   cut relied on [queuePendingSubmissions] running next with an unscoped
+  ///   drain — which it does, but that drain sits *inside* its `try`, after
+  ///   `submissionsUploaderProvider.queuePending`, so anything throwing there
+  ///   is swallowed and the voices rows wait for the next resume. Hunk
+  ///   adjacency is not a guarantee; this one drains for itself, as
+  ///   [queuePendingSubmissions] does, and `OutboxDrainer`'s single-flight
+  ///   guard makes the second pass cheap rather than redundant. Unscoped, for
+  ///   the reason spelled out there.
+  ///
+  /// **It cannot double-post.** Two protections, one of them Kotlin's:
+  /// `markUploaded` stamps `_id`/`_rev` and clears `isEdited`, which takes the
+  /// row out of [VoicesRepository.pendingUploads] — the port of
+  /// `markNewsUploaded`. The port adds two more:
+  /// `OutboxRepository.enqueue` keys on `(uploadType, itemId)`, and
+  /// [VoicesUploader.queuePending] skips a row whose send is in flight.
+  ///
+  /// **One divergence, now systematic rather than incidental, and deliberate.**
+  /// `getNewsForUpload()` returns *every* non-guest row and re-sends it on each
+  /// sync — a `_rev`-carrying update, so it is not a duplicate, but it churns a
+  /// revision per post per sync. [VoicesRepository.pendingUploads] returns only
+  /// rows that were never delivered or have been edited since. Every local
+  /// mutation the port has sets `isEdited` — `editPost`, `shareToCommunity`,
+  /// the un-share branch of `deletePost`, `toggleReaction`, and `addLabel` /
+  /// `removeLabel`, which are unreachable today and were flagged in the same
+  /// phase precisely so that stays true when someone wires them up — so
+  /// nothing a user can do leaves a changed row outside the set; what the narrower predicate gives
+  /// up is Kotlin's incidental repair of a *server-side* divergence, which no
+  /// reader on either side depends on. Widening it would refill the outbox with
+  /// unchanged documents on every sync.
+  Future<void> queuePendingVoices() async {
+    final config = ref.read(serverConfigProvider);
+    if (config == null) return;
+    try {
+      // Awaited rather than read, and inside the `try`: this notifier never
+      // watches `sessionProvider`, so `.valueOrNull` would be null on any pass
+      // that reached here first, and the future can reject where it could not.
+      final user = await ref.read(sessionProvider.future);
+      await ref
+          .read(voicesUploaderProvider)
           .queuePending(config: config, userId: user?.id);
       await ref
           .read(outboxDrainerProvider)

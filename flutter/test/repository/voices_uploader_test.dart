@@ -42,6 +42,13 @@ void main() {
   });
   tearDown(() => database.close());
 
+  /// What `OutboxDrainer` hands the handler: the operation's own stored
+  /// payload, decoded. Passing `const {}` instead would read as "the row
+  /// changed while the POST was on the wire", which is a real branch of
+  /// `markUploaded` and not what these tests are about.
+  Map<String, dynamic> payloadOf(OutboxRow operation) =>
+      jsonDecode(operation.payload) as Map<String, dynamic>;
+
   Future<String> seedPost() =>
       voices.createPost(message: 'Hello', userId: 'user-1', userName: 'Ada');
 
@@ -93,12 +100,40 @@ void main() {
       }),
     );
 
-    await uploader.handler(operation, const {}, 'Basic dGVzdA==');
+    await uploader.handler(operation, payloadOf(operation), 'Basic dGVzdA==');
 
     final row = await voices.getById(id);
     expect(row?.docId, 'remote-1');
     expect(row?.rev, '1-abc');
     expect(await voices.pendingUploads(), isEmpty);
+  });
+
+  test('a send already on the wire is neither counted nor re-queued', () async {
+    // Phase 144. `OutboxRepository.enqueue` puts an `in_progress` row back to
+    // `pending` so a payload edited mid-flight is not lost, and `markCompleted`
+    // is `deleteIfInProgress` — so the send that succeeds moments later deletes
+    // nothing, the row survives with the same body, and the next drain posts a
+    // **second** `news` document. A voice with no `_id` is an append, so that
+    // is a duplicate rather than an edit.
+    final id = await seedPost();
+    expect(await uploader.queuePending(config: config, userId: 'user-1'), 1);
+    final claimed = (await outbox.due()).single;
+    await outbox.markInProgress(claimed.id);
+
+    expect(
+      await uploader.queuePending(config: config, userId: 'user-1'),
+      0,
+      reason: 'a post whose POST is on the wire must be left alone',
+    );
+    final rows = await database.outboxDao.forItem(VoicesUploader.type, id);
+    expect(rows, hasLength(1));
+    expect(
+      rows.single.status,
+      'in_progress',
+      reason:
+          'the re-enqueue would have reset it to pending, which is what makes '
+          'the row survive `markCompleted` and replay',
+    );
   });
 
   test('a success without id/rev fails rather than dropping the row', () async {
@@ -113,7 +148,11 @@ void main() {
       ),
     ).thenAnswer((_) async => NetworkSuccess<Map<String, dynamic>>(const {}));
 
-    final result = await uploader.handler(operation, const {}, null);
+    final result = await uploader.handler(
+      operation,
+      payloadOf(operation),
+      null,
+    );
 
     expect(result, isA<NetworkError<Map<String, dynamic>>>());
     expect(await voices.pendingUploads(), hasLength(1));
@@ -140,7 +179,7 @@ void main() {
 
     // The endpoint no longer authenticates, so the header is the only
     // credential; matching it with `any()` would hide a null.
-    await uploader.handler(operation, const {}, 'Basic dGVzdA==');
+    await uploader.handler(operation, payloadOf(operation), 'Basic dGVzdA==');
 
     expect(seen, 'Basic dGVzdA==');
   });

@@ -624,6 +624,64 @@ void main() {
       expect(await repository.pendingUploads(), hasLength(1));
     });
 
+    test('every local mutation puts a delivered post back in the queue', () async {
+      // Phase 144. The narrower predicate is what makes the new sync-path
+      // sweep cheap — `getNewsForUpload()` re-sends the whole table on every
+      // sync — and it is only safe while *every* local mutation flags the row.
+      // `editPost` and `shareToCommunity` have their own tests above; these are
+      // the other two, and a mutation that forgets the flag is a post whose
+      // change never reaches the server at all.
+      await repository.cacheDocuments([
+        {
+          '_id': 'server-1',
+          'docType': 'message',
+          'message': 'Synced',
+          'viewIn': [
+            {'_id': 'team-1', 'section': 'teams'},
+            {'_id': 'planet@parent', 'section': 'community', 'sharedDate': 5},
+          ],
+        },
+      ]);
+      expect(await repository.pendingUploads(), isEmpty);
+
+      // `addLabel`/`removeLabel` have no caller in `lib/` yet — which is why
+      // they are here. They mutate `labels`, which `serialize` sends, and
+      // Kotlin's sweep re-sends the whole table, so a label change reaches the
+      // server there. Flagged in Phase 144 so that stays true the day the
+      // label chips get wired, rather than being discovered missing then.
+      await repository.addLabel('server-1', 'important');
+      expect(
+        await repository.pendingUploads(),
+        hasLength(1),
+        reason: 'a label that never uploads is device-local',
+      );
+      await repository.markUploaded('server-1', 'server-1', '2-rev');
+
+      await repository.removeLabel('server-1', 'important');
+      expect(await repository.pendingUploads(), hasLength(1));
+      await repository.markUploaded('server-1', 'server-1', '3-rev');
+      expect(await repository.pendingUploads(), isEmpty);
+
+      await repository.toggleReaction('server-1', '👍', 'user-1');
+      expect(
+        await repository.pendingUploads(),
+        hasLength(1),
+        reason: 'a reaction that never uploads is invisible to everyone else',
+      );
+
+      await repository.markUploaded('server-1', 'server-1', '4-rev');
+      expect(await repository.pendingUploads(), isEmpty);
+
+      // The un-share branch: two entries, deleted from the community feed, so
+      // the row survives with the community entry stripped.
+      expect(await repository.deletePost('server-1'), 0);
+      expect(
+        await repository.pendingUploads(),
+        hasLength(1),
+        reason: 'an un-share that never uploads leaves the post shared',
+      );
+    });
+
     test('never queues a guest post', () async {
       // A guest has no CouchDB user document, so the server rejects it.
       await repository.createPost(
