@@ -33,7 +33,11 @@ class VoicesUploader {
   ///
   /// Safe to call repeatedly: [OutboxRepository.enqueue] keys on
   /// `(uploadType, itemId)`, so a post already queued has its payload refreshed
-  /// rather than being posted twice.
+  /// rather than being posted twice, and a post whose send is already on the
+  /// wire is skipped outright — see the loop.
+  ///
+  /// Returns the number of posts queued by *this* call, so a caller can tell
+  /// "nothing to send" from "everything was already in flight".
   ///
   /// `VoicesRepositoryImpl.serializeNews` gained `addDocumentOrigin()` in
   /// `27c0470`, a pure addition — `androidId` and `app` are both new on the
@@ -50,7 +54,28 @@ class VoicesUploader {
     final endpoint = endpointFor(config);
     final pending = await _voices.pendingUploads();
     final identity = pending.isEmpty ? null : await _identity.read();
+    var queued = 0;
     for (final row in pending) {
+      // A send already on the wire is left alone. [OutboxRepository.enqueue]
+      // would put it back to `pending` to preserve a mid-flight payload edit,
+      // and `markCompleted` only deletes an `in_progress` row — so the send
+      // that succeeds moments later deletes nothing, the row survives with the
+      // same body, and the next drain posts a **second** `news` document. That
+      // reset is right for derived state, whose handler rebuilds from the
+      // database; a voice with no `_id` yet is an append and replaying it
+      // duplicates the post.
+      //
+      // Reachable without the sweep and systematic with it: [queuePending] is
+      // unscoped, so any second write — another post, an edit, a reaction —
+      // re-enqueues every undelivered row, including one whose POST is in
+      // flight. The cost is the narrow window where the post is edited while
+      // its POST is on the wire: `markUploaded` clears `isEdited` on success,
+      // so that edit leaves the pending set. Kotlin loses it identically
+      // (`markNewsUploaded` writes the row back with no edited flag at all),
+      // and a later edit is a `_rev`-carrying update rather than a new
+      // document, so a lost edit is recoverable where a duplicate is not.
+      if (await _outbox.isInFlight(type, row.id)) continue;
+      queued++;
       await _outbox.enqueue(
         uploadType: type,
         itemId: row.id,
@@ -62,7 +87,7 @@ class VoicesUploader {
         userId: userId,
       );
     }
-    return pending.length;
+    return queued;
   }
 
   /// The [OutboxHandler] for [type].

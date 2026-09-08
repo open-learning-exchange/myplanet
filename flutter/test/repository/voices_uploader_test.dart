@@ -101,6 +101,34 @@ void main() {
     expect(await voices.pendingUploads(), isEmpty);
   });
 
+  test('a send already on the wire is neither counted nor re-queued', () async {
+    // Phase 144. `OutboxRepository.enqueue` puts an `in_progress` row back to
+    // `pending` so a payload edited mid-flight is not lost, and `markCompleted`
+    // is `deleteIfInProgress` — so the send that succeeds moments later deletes
+    // nothing, the row survives with the same body, and the next drain posts a
+    // **second** `news` document. A voice with no `_id` is an append, so that
+    // is a duplicate rather than an edit.
+    final id = await seedPost();
+    expect(await uploader.queuePending(config: config, userId: 'user-1'), 1);
+    final claimed = (await outbox.due()).single;
+    await outbox.markInProgress(claimed.id);
+
+    expect(
+      await uploader.queuePending(config: config, userId: 'user-1'),
+      0,
+      reason: 'a post whose POST is on the wire must be left alone',
+    );
+    final rows = await database.outboxDao.forItem(VoicesUploader.type, id);
+    expect(rows, hasLength(1));
+    expect(
+      rows.single.status,
+      'in_progress',
+      reason:
+          'the re-enqueue would have reset it to pending, which is what makes '
+          'the row survive `markCompleted` and replay',
+    );
+  });
+
   test('a success without id/rev fails rather than dropping the row', () async {
     await seedPost();
     await uploader.queuePending(config: config, userId: 'user-1');

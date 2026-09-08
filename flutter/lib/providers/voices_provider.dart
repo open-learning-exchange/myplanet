@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/server_config.dart';
 import '../core/sync/sync_result.dart';
 import '../data/local/app_database.dart';
+import '../repository/voices_repository.dart';
 import '../repository/voices_uploader.dart';
 import 'app_providers.dart';
 import 'session_provider.dart';
@@ -138,8 +139,31 @@ class VoicesActions {
 
   final Ref ref;
 
+  /// The session is **awaited**, and the `await` sits inside the `try`.
+  ///
+  /// This provider never watches `sessionProvider`, so
+  /// `ref.read(...).valueOrNull` was null until something else resolved it and
+  /// the composed post was dropped with no error, no snackbar and no row. In
+  /// the shipping app the router's `ref.listen` keeps it resolved, which is
+  /// what made this latent rather than visible. The `await` is inside the
+  /// `try` because a future can reject where `valueOrNull` could not.
+  ///
+  /// The screen with the live window is `VoicesScreen`, whose compose FAB is
+  /// **ungated** and renders while `communityFeedProvider` is still loading.
+  /// `TeamVoicesScreen` is not it, contrary to an earlier draft of this
+  /// comment: it watches `teamMembershipsProvider`, which watches
+  /// `sessionProvider`, and only renders its FAB once a membership resolved —
+  /// which needs a resolved session. Both are safe now; only one ever wasn't.
+  Future<UserRow?> _author() async {
+    try {
+      return await ref.read(sessionProvider.future);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<String?> createPost(String message) async {
-    final user = ref.read(sessionProvider).valueOrNull;
+    final user = await _author();
     if (user == null) return null;
     final id = await ref
         .read(voicesRepositoryProvider)
@@ -147,8 +171,32 @@ class VoicesActions {
           message: message,
           userId: user.couchId ?? user.id,
           userName: user.name ?? '',
+          // The nested `user` object is the **only** author identity a news
+          // document carries — there is no top-level `userId`/`userName` on
+          // the wire — and `NewsMapper.fromDoc` reads all three local columns
+          // back out of it. Without this the post uploads anonymously *and*
+          // loses its author here at the next sync-in. Kotlin sets it on every
+          // write path (`News.createNews`: `news.user = gson.toJson(...)`).
+          userJson: VoicesRepository.authorJson(user),
           planetCode: user.planetCode,
           parentCode: user.parentCode,
+          // The four keys `VoicesFragment.btnSubmit` builds before it calls
+          // `createNews` (`ui/voices/VoicesFragment.kt:139-143`). Without them
+          // `_viewInJson` writes `"[]"`, `isVisibleToUser` falls through its
+          // empty-`viewIn` guard to false, and the post the user just composed
+          // is listed by nobody — not in this app's community feed, and not on
+          // Planet, where `serialize` omits the key entirely for an empty
+          // list. Both halves of the identifier are interpolated unguarded, as
+          // Kotlin does: an empty or `"@"` id is the planet-wide wildcard on
+          // both sides, so a user missing a code still reaches everyone rather
+          // than nobody.
+          messageType: 'sync',
+          messagePlanetCode: user.planetCode,
+          viewInId: communityViewerIdentifier(
+            planetCode: user.planetCode,
+            parentCode: user.parentCode,
+          ),
+          viewInSection: 'community',
         );
     await queuePending();
     return id;
@@ -160,7 +208,7 @@ class VoicesActions {
     required String teamName,
     required String message,
   }) async {
-    final user = ref.read(sessionProvider).valueOrNull;
+    final user = await _author();
     if (user == null) return null;
     final id = await ref
         .read(voicesRepositoryProvider)
@@ -168,10 +216,21 @@ class VoicesActions {
           message: message,
           userId: user.couchId ?? user.id,
           userName: user.name ?? '',
+          userJson: VoicesRepository.authorJson(user),
           planetCode: user.planetCode,
           parentCode: user.parentCode,
           messageType: 'team',
-          messagePlanetCode: user.planetCode,
+          // The **team's** planet code, not the author's:
+          // `TeamsVoicesFragment.kt:78` writes `team?.teamPlanetCode ?: ""`.
+          // The port's `Teams` table has no such column (reported against
+          // `tables.dart`), and `MyTeam.kt:86` reads the field with
+          // `JsonUtils.getString`, so a team document that omits it yields
+          // `""` in Kotlin too — `''` is the faithful interim value.
+          // `user.planetCode` was a claim about a team that may have been
+          // created on another planet, and it disagreed with the port's own
+          // chat-share writer, which already sends `''` here
+          // (`chat_repository.dart:306-310`).
+          messagePlanetCode: '',
           viewInId: teamId,
           viewInSection: 'teams',
           viewInName: teamName,
@@ -184,7 +243,7 @@ class VoicesActions {
     required String parentId,
     required String message,
   }) async {
-    final user = ref.read(sessionProvider).valueOrNull;
+    final user = await _author();
     if (user == null) return null;
     final id = await ref
         .read(voicesRepositoryProvider)
@@ -193,6 +252,7 @@ class VoicesActions {
           message: message,
           userId: user.couchId ?? user.id,
           userName: user.name ?? '',
+          userJson: VoicesRepository.authorJson(user),
           planetCode: user.planetCode,
           parentCode: user.parentCode,
         );
@@ -247,7 +307,7 @@ class VoicesActions {
   /// configured community as the fallback — the same effective-code rule the
   /// Kotlin applies against its preferences.
   Future<bool> shareToCommunity(String newsId, {String teamName = ''}) async {
-    final user = ref.read(sessionProvider).valueOrNull;
+    final user = await _author();
     if (user == null) return false;
     final config = ref.read(serverConfigProvider);
     final shared = await ref

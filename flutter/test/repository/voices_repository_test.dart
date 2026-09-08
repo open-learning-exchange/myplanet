@@ -624,6 +624,46 @@ void main() {
       expect(await repository.pendingUploads(), hasLength(1));
     });
 
+    test('every local mutation puts a delivered post back in the queue', () async {
+      // Phase 144. The narrower predicate is what makes the new sync-path
+      // sweep cheap — `getNewsForUpload()` re-sends the whole table on every
+      // sync — and it is only safe while *every* local mutation flags the row.
+      // `editPost` and `shareToCommunity` have their own tests above; these are
+      // the other two, and a mutation that forgets the flag is a post whose
+      // change never reaches the server at all.
+      await repository.cacheDocuments([
+        {
+          '_id': 'server-1',
+          'docType': 'message',
+          'message': 'Synced',
+          'viewIn': [
+            {'_id': 'team-1', 'section': 'teams'},
+            {'_id': 'planet@parent', 'section': 'community', 'sharedDate': 5},
+          ],
+        },
+      ]);
+      expect(await repository.pendingUploads(), isEmpty);
+
+      await repository.toggleReaction('server-1', '👍', 'user-1');
+      expect(
+        await repository.pendingUploads(),
+        hasLength(1),
+        reason: 'a reaction that never uploads is invisible to everyone else',
+      );
+
+      await repository.markUploaded('server-1', 'server-1', '2-rev');
+      expect(await repository.pendingUploads(), isEmpty);
+
+      // The un-share branch: two entries, deleted from the community feed, so
+      // the row survives with the community entry stripped.
+      expect(await repository.deletePost('server-1'), 0);
+      expect(
+        await repository.pendingUploads(),
+        hasLength(1),
+        reason: 'an un-share that never uploads leaves the post shared',
+      );
+    });
+
     test('never queues a guest post', () async {
       // A guest has no CouchDB user document, so the server rejects it.
       await repository.createPost(

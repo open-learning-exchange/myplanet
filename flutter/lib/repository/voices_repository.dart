@@ -248,31 +248,42 @@ class VoicesRepository {
   ///
   /// Everything else matches `serialize()` field for field, including the
   /// `_id`/`_rev` pair being written only for an account the server knows.
+  ///
+  /// **A null value drops its key rather than writing `null`.** `createNews`
+  /// serializes with `JsonUtils.gson`, a bare `Gson()` whose `serializeNulls`
+  /// is off, so `addProperty("middleName", null)` writes nothing at all — a
+  /// user with no middle name produces an object with no `middleName` key.
+  /// This is the same rule [_viewInJson] twelve lines up already applies, and
+  /// applying it in one place and not the other was an inconsistency inside
+  /// one file. Nothing on either side reads these with a `has`/`containsKey`
+  /// test today, unlike `viewIn`'s `name`, so this is faithfulness rather than
+  /// a fix — but the next reader of `_viewInJson` should not find a
+  /// counter-example sitting beside it.
   static String authorJson(UserRow user) {
     final couchId = user.couchId;
     return jsonEncode(<String, dynamic>{
       if (couchId != null && couchId.isNotEmpty) ...{
         '_id': couchId,
-        '_rev': user.rev,
+        if (user.rev != null) '_rev': user.rev,
       },
-      'name': user.name,
+      'name': ?user.name,
       'roles': user.rolesList,
       'isUserAdmin': user.userAdmin,
       'joinDate': user.joinDate,
-      'firstName': user.firstName,
-      'lastName': user.lastName,
-      'middleName': user.middleName,
-      'email': user.email,
-      'language': user.language,
-      'level': user.level,
+      'firstName': ?user.firstName,
+      'lastName': ?user.lastName,
+      'middleName': ?user.middleName,
+      'email': ?user.email,
+      'language': ?user.language,
+      'level': ?user.level,
       'type': 'user',
-      'gender': user.gender,
-      'phoneNumber': user.phoneNumber,
-      'birthDate': user.dob,
-      'age': user.age,
-      'parentCode': user.parentCode,
-      'planetCode': user.planetCode,
-      'birthPlace': user.birthPlace,
+      'gender': ?user.gender,
+      'phoneNumber': ?user.phoneNumber,
+      'birthDate': ?user.dob,
+      'age': ?user.age,
+      'parentCode': ?user.parentCode,
+      'planetCode': ?user.planetCode,
+      'birthPlace': ?user.birthPlace,
       'isArchived': user.isArchived,
     });
   }
