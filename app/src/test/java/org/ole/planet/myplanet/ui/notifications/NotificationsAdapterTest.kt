@@ -97,4 +97,17 @@ class NotificationsAdapterTest {
         viewHolder.bind(NotificationListItem.Item(updatedNotif))
         assertEquals("Updated text", titleTextView.text.toString())
     }
+
+    @Test
+    fun `test labelResFor returns correct string resources`() {
+        assertEquals(R.string.notif_group_join_requests, labelResFor("join_request"))
+        assertEquals(R.string.notif_group_join_requests, labelResFor("JOIN_REQUEST"))
+        assertEquals(R.string.notif_group_team_updates, labelResFor("team_join"))
+        assertEquals(R.string.tasks, labelResFor("task"))
+        assertEquals(R.string.notif_group_new_voices, labelResFor("chat"))
+        assertEquals(R.string.notif_group_voice_replies, labelResFor("voice_reply"))
+        assertEquals(R.string.resources, labelResFor("resource"))
+        assertEquals(R.string.notification_group_system, labelResFor("storage"))
+        assertEquals(R.string.notification_group_other, labelResFor("unknown"))
+    }
 }

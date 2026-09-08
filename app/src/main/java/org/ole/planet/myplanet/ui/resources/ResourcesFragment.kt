@@ -628,6 +628,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     private fun clearTagsButton() {
         clearTags.setOnClickListener {
+            binding.cardFilter.visibility = View.GONE
             saveSearchActivity()
             selectedDownloadFilterIndex = 0
             val chipRow = binding.chipFilterRow
@@ -873,9 +874,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             bottomSheet.visibility = View.GONE
         }
         binding.btnCollections.setOnClickListener {
-            bottomSheet.visibility = View.GONE
-        }
-        binding.btnClearTags.setOnClickListener {
             bottomSheet.visibility = View.GONE
         }
         binding.filterCategories.setOnClickListener {

@@ -41,19 +41,21 @@ class UploadCoordinator @Inject constructor(
         config: UploadPipelineConfig<T>
     ): UploadResult<Int> = withContext(dispatcherProvider.io) {
         try {
-            val itemsToUpload = queryItemsToUpload(config)
+            val pendingItems = config.fetchPendingItems.invoke()
 
-            if (itemsToUpload.isEmpty()) {
+            if (pendingItems.isEmpty()) {
                 return@withContext UploadResult.Empty
             }
 
-            Log.d(TAG, "Uploading ${itemsToUpload.size} ${config.modelLabel} items")
+            Log.d(TAG, "Uploading ${pendingItems.size} ${config.modelLabel} items")
 
             val allSucceeded = mutableListOf<UploadedItem>()
             val allFailed = mutableListOf<UploadError>()
 
-            itemsToUpload.chunked(config.batchSize).forEachIndexed { batchIndex, batch ->
-                Log.d(TAG, "Processing batch ${batchIndex + 1} with ${batch.size} items")
+            pendingItems.chunked(config.batchSize).forEachIndexed { batchIndex, rawBatch ->
+                Log.d(TAG, "Processing batch ${batchIndex + 1} with ${rawBatch.size} items")
+
+                val batch = queryItemsToUpload(rawBatch, config)
 
                 val (succeeded, failed) = uploadBatch(batch, config)
 
@@ -65,12 +67,12 @@ class UploadCoordinator @Inject constructor(
                     allSucceeded.addAll(actuallySucceeded)
                 }
 
-                allFailed.addAll(failed)
-                allFailed.addAll(dbFailedErrors)
-            }
+                val batchFailed = failed + dbFailedErrors
+                allFailed.addAll(batchFailed)
 
-            if (allFailed.isNotEmpty()) {
-                queueRetryableFailures(config, allFailed, itemsToUpload)
+                if (batchFailed.isNotEmpty()) {
+                    queueRetryableFailures(config, batchFailed, batch)
+                }
             }
 
             Log.d(TAG, "Upload complete: ${allSucceeded.size} succeeded, ${allFailed.size} failed")
@@ -91,10 +93,9 @@ class UploadCoordinator @Inject constructor(
     }
 
     private suspend fun <T : Any> queryItemsToUpload(
+        items: List<T>,
         config: UploadPipelineConfig<T>
     ): List<PreparedUpload<T>> {
-        val items = config.fetchPendingItems.invoke()
-
         return items.mapNotNull { item ->
             if (config.shouldFilter(item)) {
                 Log.d(TAG, "Filtering out item from upload")
