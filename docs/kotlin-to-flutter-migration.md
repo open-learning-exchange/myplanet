@@ -740,13 +740,22 @@ not built, or needs a primitive the port lacks):
   cache of CouchDB, so the Flutter app starts with an empty database and re-pulls from the
   server. There is no Room → Drift data migration path, and none is planned.
 
-  **Except where the row is not a cache.** `AppDatabase._localAuthorityTables` exempts `outbox`,
-  `my_personal`, `removed_log` and `my_life` from the drop: they hold un-pushed writes, private
-  notes that may never have been uploaded, the "leave" records that keep the shelf merge from
-  re-adding something, and the user's own ordering. No sync can give any of that back, so
-  dropping it would silently discard work done offline. The exemption has a cost worth knowing:
-  `createAll` will not *alter* a preserved table, so changing one of their shapes needs a
-  hand-written migration step.
+  **Except where the row is not a cache.** `AppDatabase._localAuthorityTables` exempts a named
+  set of tables from the drop — **27 of them as of Phase 143**, not the four (`outbox`,
+  `my_personal`, `removed_log`, `my_life`) this paragraph listed for far longer than they were
+  the whole set. **Read the set itself** in `flutter/lib/data/local/app_database.dart`: it is the
+  authority, it grows most rounds, and every entry past the first four carries the argument for
+  its own membership as a comment. What they have in common is that no sync can put the row back
+  — un-pushed writes waiting on the outbox, private notes and the user's own ordering, the
+  "leave" records that keep the shelf merge from re-adding something, medical records and the
+  device-generated key without which the ones already written are unreadable, offline course
+  progress and the activity logs whose CouchDB databases this app only ever writes to, and the
+  *mixed* tables (`teams`, `surveys`, `submissions`, `news`, …) where a locally authored row
+  sits in the same table as the server catalogue and the next walk's `deleteNotIn` evicts the
+  stale cache half. Dropping any of it would silently discard work done offline. The exemption
+  has a cost worth knowing: `createAll` will not *alter* a preserved table, so **every** new
+  column on one needs a hand-written `_addColumnIfMissing` step alongside the schema bump, and
+  `migration_test.dart`'s frozen-DDL guard fails until it has one.
 
 ## What is ported
 
@@ -1374,9 +1383,13 @@ back* -- kept passing them, because CouchDB genuinely does hold the data:
 The operative question is not who authored the row, it is whether the next sync
 can put it back. A cache with no sync path is local-only in practice, whatever
 its provenance. Both later cases were caught by the guard test added after the
-`my_life` omission: adding a name to the preserved set fails the suite until a
-preservation test exists, which is how the coverage held while the set grew from
-nine tables to twelve.
+`my_life` omission: it asserts `AppDatabase.localAuthorityTables` equals a set
+listed by hand in `migration_test.dart` beside the preservation tests, so adding
+a name to the preserved set fails the suite until someone goes to the file where
+the tests live. That is how the coverage held while the set grew from nine
+tables to the **27** it holds today (Phase 143, `surveys` and
+`survey_questions`) — and the list in that test is not the place to read the
+set, because it is a copy; `app_database.dart` is.
 
 Three related defects clustered around the same code, all from copy-paste:
 

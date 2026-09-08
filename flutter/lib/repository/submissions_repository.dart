@@ -2138,9 +2138,17 @@ class AnswerShape {
   /// choice on either screen, so `otherVisible` is never true and there is
   /// nothing to carry. It stays part of the open `hasOtherOption` gap — and
   /// closing it needs a `hasOtherOption` column on `survey_questions`, which
-  /// `ExamQuestions` has but `SurveyQuestions` does not. That table is not in
-  /// `localAuthorityTables`, so `createAll` rebuilds it and the column costs
-  /// only a schema bump, no hand-written step.
+  /// `ExamQuestions` has but `SurveyQuestions` does not. That table is in
+  /// `localAuthorityTables` since Phase 143, so `createAll` will not alter it:
+  /// the column costs a schema bump **and** a hand-written
+  /// `_addColumnIfMissing` step. `migration_test.dart` enforces both — its
+  /// frozen `survey_questions` DDL reds the moment a column lands (those
+  /// literals are deliberately not kept in step with the table, which is what
+  /// makes them able to fail), and the post-upgrade `containsAll` over
+  /// `database.surveyQuestions.$columns` stays red until the step adds it.
+  /// `PHASE_123_NOTES.md:108-110` records `marks`, `correctChoice` and
+  /// `hasOtherOption` as the three columns still owed, so this is a live
+  /// target rather than a hypothetical one.
   static AnswerShape forQuestion({
     required String? type,
     required List<ExamChoice> choices,
