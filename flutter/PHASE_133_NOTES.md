@@ -247,7 +247,41 @@ that the payload nests the chat under `news` as a JSON *string* and sets
 `chat: "true"` — the same nested-vs-top-level trap as the Phase 74 reactions
 round trip, so test the pair.
 
-**4. `ne`/`so` remain at 5 keys richer but structurally far behind.** Nothing to
+**4. `storageOther` is wrong in all six locales, and the tool rule that broke it
+may have broken others.** Found by the first `parity-auditor` pass while checking
+whether my reuse of that key was sound — it was not. `storageOther` is the port
+of Kotlin's `storage_other`, whose English is **"Other Files"**; the ARB holds
+"Other". `tool/arb_from_strings_xml.dart` matches by key name first and falls
+back to matching by *English text*, and since `"Other Files" != "Other"` the name
+rule missed and the text rule imported the unrelated `other` key's translations
+into ar/es/fr/ne/so. Its four siblings (`storagePdfs`, `storageVideos`,
+`storageAudio`, `storageImages`) are all correct, so it is the lone outlier, and
+no ARB key anywhere holds "Other Files". Live effect: `storage_breakdown_screen.dart:285`
+and `storage_category_detail_screen.dart:167` render "Other" where the Kotlin
+storage breakdown renders "Other Files", in every language. This phase did not
+repair it — that is a storage-screen change, not a harvest one — but it did stop
+the new media-type chip from depending on it (`filterOther`), so the repair is
+now a one-key change. **Worth a sweep of every key the text-match fallback
+resolved**, because the mechanism is not specific to this key.
+
+**5. Three pre-existing facet divergences in `resources_filter_sheet.dart`**, none
+introduced here, all found by the same pass. The third is a real behaviour bug:
+
+- `:106`/`:110` use `isNotEmpty` where `ResourcesRepositoryImpl.kt:611,613` uses
+  `isNotBlank()`, so a synced row with `mediaType = " "` draws a blank chip in the
+  port and none in the Kotlin — the same shape as the `TRIM` divergence above, but
+  here the port is the *worse* side.
+- `:117-120` sorts each facet alphabetically; Kotlin returns `mutableSetOf` in
+  first-appearance order, so chip order differs.
+- `:160` builds the facets from `resourcesStreamProvider`, which has already
+  applied the **search query**. `ResourcesFragment.kt:780-783` deliberately feeds
+  `getFilterFacets` the *unfiltered* `allResourceModels`, under the comment "Keep
+  facet options stable so applying one filter does not hide other available
+  options." So typing into the search box collapses the port's media-type list to
+  the types on matching rows, and the Kotlin's stays put. Fixing it means changing
+  which provider the sheet reads, which is a `resources_providers`/screen change.
+
+**6. `ne`/`so` remain at 6 keys richer but structurally far behind.** Nothing to
 do here; noted only because this phase moved their counts and a reader comparing
 against the CLAUDE.md table will see the drift.
 
