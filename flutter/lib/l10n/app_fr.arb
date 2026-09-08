@@ -2298,5 +2298,6 @@
   "filterVideos": "Vidéos",
   "filterAudio": "Audio",
   "mediumTextHtml": "Texte / HTML",
-  "mediumHtml": "HTML"
+  "mediumHtml": "HTML",
+  "filterOther": "Autre"
 }

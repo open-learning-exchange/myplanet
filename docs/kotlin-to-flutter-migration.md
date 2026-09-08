@@ -855,6 +855,17 @@ Deliberate *deviations*, all flagged in code:
   the login name (keeping the `org.couchdb.user:` colon literal, which CouchDB requires), and
   `resourceUrl` returns `null` instead of interpolating the literal text `null`. All are no-ops
   for well-formed input; the Kotlin is simply wrong when a value contains `@`, `/` or a space.
+- **Two filters in the resources/profile area are stricter than the Kotlin's, both
+  deliberately.** `getMostOpenedResource` drops a blank-titled resource with
+  `TRIM(title) != ''`, but SQLite's one-argument `TRIM` strips **only** U+0020, so a
+  title that is nothing but a tab or a non-breaking space (what a server `&nbsp;`
+  yields) still wins and still renders blank. Dart's `trim()` strips all Unicode
+  whitespace, so the port excludes those too. And `getMediumDisplayName` lowercases
+  with `Locale.getDefault()`, so on a `tr`/`az` device `I` maps to `\u0131` and
+  `IMAGE`/`VIDEO`/`AUDIO` -- three of its seven cases -- fall through and render raw;
+  Dart's `toLowerCase` is locale-independent and matches them. Both are cases where
+  reproducing the Kotlin would mean reproducing a bug with no user served by it.
+
 - **The `exams` database is split into two tables at insert time, not filtered at query time.**
   Kotlin keeps one Room `exams` entity with a `type` column: `bulkInsertExamsFromSync` runs
   `StepExam.insertCourseStepsExams` over *every* document of that database and never filters,

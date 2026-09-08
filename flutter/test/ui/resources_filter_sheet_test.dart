@@ -43,6 +43,9 @@ void main() {
     expect(await label(tester, 'image'), 'Images');
     expect(await label(tester, 'text/html'), 'Text / HTML');
     expect(await label(tester, 'html'), 'HTML');
+    // From `filterOther`, not `storageOther` — see the doc comment at
+    // `mediaTypeDisplayName`. If this ever reds because `storageOther` was
+    // repaired to "Other Files", the chip is wired to the wrong key again.
     expect(await label(tester, 'other'), 'Other');
   });
 

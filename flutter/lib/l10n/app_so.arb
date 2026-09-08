@@ -524,5 +524,6 @@
   "filterVideos": "Muuqaallo",
   "filterAudio": "Codad",
   "mediumTextHtml": "Qoraal / HTML",
-  "mediumHtml": "HTML"
+  "mediumHtml": "HTML",
+  "filterOther": "Kale"
 }

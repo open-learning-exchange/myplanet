@@ -524,5 +524,6 @@
   "filterVideos": "भिडियोहरू",
   "filterAudio": "अडियो",
   "mediumTextHtml": "पाठ / HTML",
-  "mediumHtml": "HTML"
+  "mediumHtml": "HTML",
+  "filterOther": "अन्य"
 }

@@ -1585,5 +1585,9 @@
   "mediumHtml": "HTML",
   "@mediumHtml": {
     "description": "Label for the `html` entry in the resources media-type filter. Recovered from the Kotlin `medium_html`."
+  },
+  "filterOther": "Other",
+  "@filterOther": {
+    "description": "Label for the `other` entry in the resources media-type filter. Recovered from the Kotlin `other`. Deliberately NOT `storageOther`: that key is the port of `storage_other` (\"Other Files\"), whose value is currently wrong, and this chip must not move when it is repaired."
   }
 }

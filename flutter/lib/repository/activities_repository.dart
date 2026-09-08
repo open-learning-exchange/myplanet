@@ -253,7 +253,7 @@ class ActivitiesRepository {
   /// opened resource" row.
   ///
   /// Upstream `3002830` replaced the Kotlin's in-memory `groupBy`/`maxByOrNull`
-  /// with one SQL statement, and it changed two things beyond the mechanism:
+  /// with one SQL statement, and it changed three things beyond the mechanism:
   ///
   /// ```sql
   /// SELECT title, COUNT(*) AS openCount FROM resource_activity
@@ -284,9 +284,19 @@ class ActivitiesRepository {
   /// unit order, which agrees for everything up to U+FFFF and can disagree only
   /// for supplementary-plane titles.
   ///
-  /// The Kotlin returns `null` when the winning count is zero, which cannot
-  /// happen for a non-empty group; the guard is dropped rather than reproduced
-  /// because it is unreachable, not because the behaviour differs.
+  /// The pre-`3002830` Kotlin also returned `null` when the winning count was
+  /// zero, which could not happen for a non-empty group. The commit deleted
+  /// that guard along with the rest of the in-memory path, so there is nothing
+  /// left here to reproduce or to skip.
+  ///
+  /// One thing SQLite does **not** promise: which row supplies the bare `title`
+  /// under `GROUP BY resourceId`. The docs call it an arbitrary row of the
+  /// group, and it is not merely cosmetic — the reported title also feeds
+  /// `ORDER BY title ASC`, so on a resource renamed server-side between opens
+  /// it can decide a tie. Observed behaviour on the SQLite versions in play is
+  /// the first surviving row in scan order, which is what `group.first` below
+  /// pins; a future engine taking the last row could break a tie the other way
+  /// in both apps.
   Future<MostOpenedResource?> mostOpenedResource(
     String userName,
     String type,

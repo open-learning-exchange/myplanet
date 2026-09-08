@@ -19,16 +19,25 @@ import '../../providers/resources_providers.dart';
 /// that is what `ResourceFilter.mediaTypes` matches `MyLibraryRow.mediaType`
 /// against.
 ///
-/// `image` and `other` reuse the existing `storageImages` / `storageOther`
-/// keys, which carry exactly the text Kotlin's `storage_images` and `other`
-/// do, rather than adding duplicate keys — `app_en.arb` is guarded against
-/// those (Phase 60).
+/// `image` reuses `storageImages`, which is the port of Kotlin's
+/// `storage_images` — the very key `getMediumDisplayName` itself uses for this
+/// case, so that is reuse of the same string, not a coincidence.
+///
+/// `other` deliberately does **not** reuse `storageOther`, even though the two
+/// read identically today. `storageOther` is the port of `storage_other`
+/// ("Other Files"), and its value is currently wrong: `arb_from_strings_xml`
+/// matches by English text when the key name does not match, `"Other Files" !=
+/// "Other"`, so it imported the unrelated `other` key's translations into all
+/// five locales. Repairing it — which the storage breakdown needs — would
+/// silently relabel this chip. `filterOther` carries Kotlin's `other` in its own
+/// right so the two can move independently.
 ///
 /// Kotlin lowercases with `Locale.getDefault()`, which is the Turkish-dotless-I
-/// trap: a Turkish locale maps `I` to `\u0131` and would miss a medium spelled
-/// `IMAGE`. Dart's [String.toLowerCase] is locale-independent, so the port
-/// matches such a value where the Kotlin does not. Deliberate — reproducing the
-/// bug would need an explicit Turkish special case.
+/// trap: under `tr`/`az`, `I` maps to `\u0131`, so `IMAGE`, `VIDEO` and `AUDIO`
+/// — three of the seven cases — fall through to `else` and render raw. Dart's
+/// [String.toLowerCase] is locale-independent, so the port matches them where
+/// the Kotlin does not. Deliberate; reproducing the bug would need an explicit
+/// Turkish special case.
 String mediaTypeDisplayName(BuildContext context, String medium) {
   final l10n = AppLocalizations.of(context);
   switch (medium.toLowerCase()) {
@@ -45,7 +54,7 @@ String mediaTypeDisplayName(BuildContext context, String medium) {
     case 'html':
       return l10n.mediumHtml;
     case 'other':
-      return l10n.storageOther;
+      return l10n.filterOther;
     default:
       return medium;
   }

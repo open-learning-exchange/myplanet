@@ -325,20 +325,23 @@ void main() {
     // the English because the Kotlin string is `%1$sx` in all five: a
     // multiplier suffix nobody translates. That is the translation, not a
     // missing one.
-    // Phase 133 adds five per locale, all recovered rather than generated.
+    // Phase 133 adds six per locale, all recovered rather than generated.
     // Upstream `64140ca` gave the resources media-type filter localised labels
     // instead of raw server strings, and every key it needs -- `filter_pdfs`,
     // `filter_videos`, `filter_audio` and the two the commit itself added,
     // `medium_text_html` and `medium_html` -- already ships a human translation
     // in all five `values-*/strings.xml`. Recovering those beats generating
     // machine output for them, which is why the count moves by the same five
-    // everywhere including Nepali and Somali.
+    // everywhere including Nepali and Somali. The sixth is `filterOther`,
+    // which carries the Kotlin `other` for the filter's own chip rather than
+    // borrowing `storageOther` — that key is the port of `storage_other`
+    // ("Other Files") and its value is wrong, so the chip must not ride on it.
     const humanReviewed = {
-      'ar': 417,
-      'es': 469,
-      'fr': 416,
-      'ne': 418,
-      'so': 418,
+      'ar': 418,
+      'es': 470,
+      'fr': 417,
+      'ne': 419,
+      'so': 419,
     };
 
     for (final code in locales) {
