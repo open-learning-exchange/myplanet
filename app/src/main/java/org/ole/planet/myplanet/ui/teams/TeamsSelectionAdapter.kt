@@ -21,6 +21,8 @@ class TeamsSelectionAdapter(
             { old, new -> old.name == new.name && old._id == new._id }
         )
     ) {
+    private var cachedTeamsLabel: String? = null
+
     inner class TeamSelectionViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val textView: TextView = itemView.findViewById(R.id.textView)
         private val teamIcon: ImageView = itemView.findViewById(R.id.teamIcon)
@@ -28,7 +30,8 @@ class TeamsSelectionAdapter(
 
         fun bind(item: TeamSummary) {
             textView.text = item.name
-            if (section == itemView.context.getString(R.string.teams)) {
+            val teamsLabel = cachedTeamsLabel ?: itemView.context.getString(R.string.teams).also { cachedTeamsLabel = it }
+            if (section == teamsLabel) {
                 teamIcon.setImageResource(R.drawable.team)
             } else {
                 teamIcon.setImageResource(R.drawable.business)

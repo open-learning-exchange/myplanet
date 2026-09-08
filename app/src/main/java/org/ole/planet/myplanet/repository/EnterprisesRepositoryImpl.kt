@@ -100,9 +100,7 @@ class EnterprisesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun exportReportsAsCsv(teamId: String, teamName: String): String {
-        val reports = teamDao.getByTeamIdAndDocType(teamId, "report")
-            .filter { it.status != "archived" }
-            .sortedByDescending { it.createdDate }
+        val reports = teamDao.getNonArchivedReportsByTeamId(teamId)
         val csvBuilder = StringBuilder()
         csvBuilder.append(teamName).append(" Financial Report Summary\n\n")
         csvBuilder.append("Start Date, End Date, Created Date, Updated Date, Beginning Balance, Sales, Other Income, Wages, Other Expenses, Profit/Loss, Ending Balance\n")

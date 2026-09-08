@@ -135,10 +135,6 @@ class SyncTimeLogger @Inject constructor(
         val startKey = "$processName:start"
         val endTime = timeProvider.now()
 
-        if (!processTimes.containsKey(startKey)) {
-            return
-        }
-
         val startTime = processTimes[startKey] ?: return
         val duration = endTime - startTime
 
