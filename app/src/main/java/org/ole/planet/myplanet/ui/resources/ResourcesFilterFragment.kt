@@ -10,6 +10,7 @@ import android.view.ViewGroup
 import android.widget.AbsListView
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.CheckedTextView
 import android.widget.ListView
 import android.widget.TextView
 import androidx.core.view.isGone
@@ -19,6 +20,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnFilterListener
 import org.ole.planet.myplanet.databinding.FragmentLibraryFilterBinding
+import java.util.Locale
 
 class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListener {
     private var _binding: FragmentLibraryFilterBinding? = null
@@ -124,18 +126,28 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
             selectedLang = selectedFilter?.get("languages")?.toMutableSet() ?: selectedLang
             setAdapter(binding.listLevel, levels, selectedLvls)
             setAdapter(binding.listLang, languages, selectedLang)
-            setAdapter(binding.listMedium, mediums, selectedMeds)
+            setAdapter(binding.listMedium, mediums, selectedMeds, ::getMediumDisplayName)
             setAdapter(binding.listSub, subjects, selectedSubs)
         }
     }
 
-    private fun setAdapter(listView: ListView, ar: Set<String>?, set: Set<String>) {
+    private fun setAdapter(listView: ListView, ar: Set<String>?, set: Set<String>, label: (String) -> String = { it }, ) {
         val arr = ar?.let { ArrayList(it) } ?: return
         listView.choiceMode = AbsListView.CHOICE_MODE_MULTIPLE
-        listView.adapter = ArrayAdapter(requireActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, arr)
+        listView.adapter = object : ArrayAdapter<String>(requireActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, arr) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = super.getView(position, convertView, parent)
+                val textView = view.findViewById<CheckedTextView>(R.id.checkBoxRowLayout)
+                val item = getItem(position)
+                if (item != null && textView != null) {
+                    textView.text = label(item)
+                }
+                return view
+            }
+        }
         for (i in arr.indices) {
                 listView.setItemChecked(i, set.contains(arr[i]))
-            }
+        }
     }
 
     override fun onItemClick(adapterView: AdapterView<*>, view: View, i: Int, l: Long) {
@@ -206,5 +218,18 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
     private fun rotateDrawable(textView: TextView, rotation: Float) {
         val drawableRes = if (rotation == 180f) R.drawable.outline_keyboard_arrow_up_24 else R.drawable.down_arrow
         textView.setCompoundDrawablesWithIntrinsicBounds(0, 0, drawableRes, 0)
+    }
+
+    fun getMediumDisplayName(medium: String): String {
+        return when (medium.lowercase(Locale.getDefault())) {
+            "pdf" -> getString(R.string.filter_pdfs)
+            "video" -> getString(R.string.filter_videos)
+            "audio" -> getString(R.string.filter_audio)
+            "image" -> getString(R.string.storage_images)
+            "text/html" -> getString(R.string.medium_text_html)
+            "html" -> getString(R.string.medium_html)
+            "other" -> getString(R.string.other)
+            else -> medium
+        }
     }
 }

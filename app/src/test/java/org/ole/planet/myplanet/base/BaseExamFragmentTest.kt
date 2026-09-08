@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.model.ExamQuestion
 class BaseExamFragmentTest {
 
     class TestBaseExamFragment : BaseExamFragment() {
-        override fun saveCourseProgress(courseId: String?, stepNum: Int, isGraded: Boolean) {}
+        override fun saveCourseProgress(courseId: String?, stepNum: Int, isGraded: Boolean, userId: String?) {}
         override fun startExam(question: ExamQuestion?) {}
     }
 
