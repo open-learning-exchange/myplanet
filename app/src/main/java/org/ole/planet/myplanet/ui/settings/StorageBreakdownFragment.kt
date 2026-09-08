@@ -175,11 +175,13 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
         binding.contentLayout.visibility = View.GONE
         binding.emptyText.visibility = View.GONE
 
-        binding.availableSpaceText.text = getString(R.string.available_space_colon) +
-            " " + FileUtils.availableOverTotalMemoryFormattedString(requireContext())
-
         loadJob = viewLifecycleOwner.lifecycleScope.launch {
-            val result = withContext(dispatcherProvider.io) { scanStorage() }
+            val (availableSpaceText, result) = withContext(dispatcherProvider.io) {
+                FileUtils.availableOverTotalMemoryFormattedString(requireContext()) to scanStorage()
+            }
+
+            binding.availableSpaceText.text = getString(R.string.available_space_colon) +
+                " " + availableSpaceText
 
             categories.forEachIndexed { index, category ->
                 category.sizeBytes = result.sizes[index]
