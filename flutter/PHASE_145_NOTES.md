@@ -161,10 +161,12 @@ tile. The count stays: it is true (it is the length of the step document's
 below keep their chevrons, because those two navigate.
 
 **Phase 128's item said the chevron was in `course_detail_screen.dart` too and
-Phase 139 repeated it. It is not, and was not.** `_StepTile` there is an
-`ExpansionTile` whose count is a subtitle and whose trailing arrow expands the
-description — an honest affordance. Pinned by a test rather than left as a
-second unchecked claim.
+Phase 139 repeated it. It is not, and was not** — `git log --all -S chevron --
+flutter/lib/ui/courses/course_detail_screen.dart` returns nothing, so no commit
+on any branch ever added or removed one there. `_StepTile` is an `ExpansionTile`
+whose count is a subtitle and whose trailing arrow expands the description — an
+honest affordance. Pinned by a test rather than left as a second unchecked
+claim.
 
 ## Job 3 — the non-member gate, ported
 
@@ -264,9 +266,9 @@ Every fix reverted, every test replayed.
 | 1 | restore `currentStep == 0 ? l10n.courseDetails : …` | 2 tests |
 | 2 | `stepNumber(currentStep + 1)` → `stepNumber(currentStep)` | 3 tests |
 | 3 | restore the resource tile's `trailing:` chevron | *the resource count offers no chevron to tap* |
-| 4 | drop the `isMyCourse` gate on Next | 3 tests, across two files |
+| 4 | drop the `isMyCourse` gate on Next | 4 tests, across two files |
 | 5 | drop the `isMyCourse` gate on Previous | *leaving the course part-way…* |
-| 6 | Finish gated on `isMyCourse` too | *a non-member on the last step still sees Finish* + 3 pre-existing finish tests |
+| 6 | Finish gated on `isMyCourse` too | *a non-member on the last step still sees Finish*, plus 3 pre-existing finish/rating tests in `take_course_screen_test.dart` |
 | 7 | drop `canChangeMembership` on the join/leave button | *a guest gets no navigation and no join button* |
 | 8 | re-add the membership gate to `_nextStepLock` | **nothing** — deliberately; see above |
 
