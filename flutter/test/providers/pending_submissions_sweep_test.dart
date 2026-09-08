@@ -329,6 +329,7 @@ void main() {
       await seedStrandedSheet();
       final container = await containerFor();
       List<DashboardSyncStatus>? statusesAtPushTime;
+      bool? challengeRecordedFirst;
       when(
         () => api.postJsonObject(
           any(),
@@ -341,6 +342,9 @@ void main() {
             .items
             .map((item) => item.status)
             .toList(growable: false);
+        challengeRecordedFirst = await container
+            .read(activitiesRepositoryProvider)
+            .hasUserCompletedSync('org.couchdb.user:ada');
         return const NetworkSuccess<Map<String, dynamic>>({
           'id': 'server-id',
           'rev': '1-rev',
@@ -351,6 +355,16 @@ void main() {
 
       expect(statusesAtPushTime, isNotNull, reason: 'nothing was posted');
       expect(statusesAtPushTime, everyElement(DashboardSyncStatus.waiting));
+      // And behind the challenge write, which is local and instant. Kotlin
+      // records it "right before the sync starts"
+      // (`DashboardElementActivity.logSyncInSharedPrefs`); a user who taps Sync
+      // and backgrounds the app during the sweep's unbounded network work
+      // should still get the credit for pressing the button.
+      expect(
+        challengeRecordedFirst,
+        isTrue,
+        reason: 'the sweep overtook recordSyncChallengeAction',
+      );
     });
 
     test("delivers another user's sheet from this user's sync", () async {
