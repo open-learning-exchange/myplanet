@@ -223,6 +223,9 @@ touched, and `voices_uploader.dart` was not opened for edit.**
 
 ## Tests
 
+Gate green: `dart format` clean, `flutter analyze` clean, **2648 tests pass**
+(2631 before — the three files below go 19 → 27, 14 → 21 and 7 → 9).
+
 Every claim was mutation-tested: the fix reverted, the suite run, the named
 test confirmed failing, the fix restored. Where a mutation survived, the
 fixture was strengthened rather than the clause deleted.
