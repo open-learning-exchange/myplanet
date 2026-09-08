@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonObject
 import java.io.File
+import java.net.URLConnection
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.withContext
@@ -65,8 +66,8 @@ class UploadRepositoryImpl @Inject constructor(
     ): List<UploadedItemResult> {
         if (succeeded.isEmpty()) return emptyList()
         val existing = examDao.getByIds(succeeded.map { it.localId }).associateBy { it.id }
-        val updated = mutableListOf<StepExam>()
-        val failed = mutableListOf<UploadedItemResult>()
+        val updated = ArrayList<StepExam>(succeeded.size)
+        val failed = ArrayList<UploadedItemResult>(succeeded.size)
 
         succeeded.forEach { result ->
             val exam = existing[result.localId]
@@ -101,8 +102,7 @@ class UploadRepositoryImpl @Inject constructor(
         name: String
     ): Response<JsonObject> {
         val (mimeType, body) = withContext(dispatcherProvider.io) {
-            val connection = file.toURI().toURL().openConnection()
-            val type = connection.contentType ?: "application/octet-stream"
+            val type = URLConnection.guessContentTypeFromName(file.name) ?: "application/octet-stream"
             type to file.asRequestBody("application/octet-stream".toMediaTypeOrNull())
         }
         val url = String.format(destinationFormat, UrlUtils.getUrl(), id, name)
