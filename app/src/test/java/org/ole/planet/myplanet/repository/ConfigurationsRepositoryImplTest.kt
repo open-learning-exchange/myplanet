@@ -43,6 +43,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.model.MyPlanet
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -838,11 +839,23 @@ class ConfigurationsRepositoryImplTest {
     }
 
     @Test
-    fun `getCommunityLeaders delegates to sharedPrefManager`() {
-        every { sharedPrefManager.getCommunityLeaders() } returns "leaders_json"
+    fun `getCommunityLeaders delegates to sharedPrefManager and UserEntity parseLeadersJson`() {
+        val leadersJson = "leaders_json"
+        val expectedLeaders = listOf(UserEntity(id = "leader_1", name = "Alice"))
 
-        assertEquals("leaders_json", repository.getCommunityLeaders())
-        verify { sharedPrefManager.getCommunityLeaders() }
+        every { sharedPrefManager.getCommunityLeaders() } returns leadersJson
+        mockkObject(UserEntity.Companion)
+        every { UserEntity.parseLeadersJson(leadersJson) } returns expectedLeaders
+
+        try {
+            val leaders = repository.getCommunityLeaders()
+            assertEquals(expectedLeaders, leaders)
+
+            verify { sharedPrefManager.getCommunityLeaders() }
+            verify { UserEntity.parseLeadersJson(leadersJson) }
+        } finally {
+            unmockkObject(UserEntity.Companion)
+        }
     }
 
     @Test

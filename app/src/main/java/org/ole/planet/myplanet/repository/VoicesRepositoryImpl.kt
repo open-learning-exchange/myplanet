@@ -97,7 +97,6 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
-
     private fun teamIdPattern(teamId: String): String {
         val escaped = teamId
             .replace("\\", "\\\\")
@@ -277,7 +276,6 @@ class VoicesRepositoryImpl @Inject constructor(
         return newsDao.getReplyCount(newsId)
     }
 
-    // Gathers a post and all of its (recursive) replies for deletion.
     private suspend fun collectNewsAndReplies(newsId: String): List<String> {
         return newsDao.getNewsAndRepliesIds(newsId)
     }
@@ -356,10 +354,14 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun insertNewsList(docs: List<JsonObject>) {
-        // Pre-fetch existing rows in one query instead of a getByUnderscoreId per doc (an N+1
-        // that ran serially inside the sync write lock for hundreds of news items).
-        val mappedDocs = docs.map { it to JsonUtils.getString("_id", it) }
-        val underscoreIds = mappedDocs.map { it.second }.filter { it.isNotEmpty() }
+        val underscoreIds = ArrayList<String>(docs.size)
+        val mappedDocs = docs.map { doc ->
+            val id = JsonUtils.getString("_id", doc)
+            if (id.isNotEmpty()) {
+                underscoreIds.add(id)
+            }
+            doc to id
+        }
         val existing = newsDao.getByUnderscoreIds(underscoreIds).associateBy { it._id }
         val newsList = mappedDocs.map { (doc, id) -> buildNewsFromJson(doc, id, existing) }
         newsDao.upsertAll(newsList)
