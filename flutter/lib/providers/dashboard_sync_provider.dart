@@ -316,6 +316,30 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
       // reached here first. The `await` is inside the `try` because the future
       // can reject where `valueOrNull` could not.
       final user = await ref.read(sessionProvider.future);
+      // Ahead of the submissions sweep, as `SubmissionsUploader.kt:83-84` has
+      // it — and, unlike in Kotlin, ahead of the surveys pull below, which is
+      // what keeps `SurveyDao.deleteNotIn` from destroying a team's adopted
+      // clone: the drain below records the clone's rev, so by the time the
+      // prune runs the walk names it. A drain that fails leaves the row
+      // `needsSync`, which that prune spares.
+      //
+      // **In its own `try`, for the reason this method's own doc gives for
+      // not sharing one.** `UserDataWorker:47-48` wraps each arm in its own
+      // `runCatching`, and `SubmissionsUploader.kt:80-88`'s shared `try` is
+      // not a counter-example because `uploadAdoptedSurveys()` cannot throw —
+      // `UploadCoordinator.runPipeline` catches `Exception` internally
+      // (`UploadCoordinator.kt:87-92`). This one can: `queuePending` reads
+      // device identity, and `PlatformDeviceIdentitySource.read` rethrows on
+      // an engine with no channel and no primed cache. Sharing the `try` let
+      // one adopted clone on such a handset skip the submissions safety net
+      // Phase 134 added *and* the whole outbox drain.
+      try {
+        await ref
+            .read(adoptedSurveysUploaderProvider)
+            .queuePending(config: config, userId: user?.id);
+      } catch (_) {
+        // Deliberately ignored — see above.
+      }
       await ref
           .read(submissionsUploaderProvider)
           .queuePending(config: config, userId: user?.id);

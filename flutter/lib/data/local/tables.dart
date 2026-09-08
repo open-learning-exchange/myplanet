@@ -541,6 +541,34 @@ class Surveys extends Table {
   TextColumn get courseId => text().nullable()();
   TextColumn get stepId => text().nullable()();
 
+  /// This device authored this row and the server has never seen it — set only
+  /// by `SurveysRepository.adoptSurvey`, cleared by [SurveyDao.markUploaded].
+  ///
+  /// **It exists because the port cannot ask `_rev IS NULL` the way Kotlin
+  /// can.** `ExamDao.getPendingAdoptedSurveys()` is
+  /// `sourceSurveyId IS NOT NULL AND _rev IS NULL` (`ExamDao.kt:21`), and in
+  /// Kotlin that names exactly one writer: `JsonUtils.getString` returns `""`
+  /// for a missing key (`JsonUtils.kt:64-68`) and both sync writers assign
+  /// `_rev = JsonUtils.getString("_rev", …)` unconditionally
+  /// (`StepExam.kt:47`, `CoursesRepositoryImpl.kt:736`), so a synced row's
+  /// `_rev` is `""` and never NULL. Only `createMappedSurvey`'s explicit
+  /// `_rev = null` (`SurveysRepositoryImpl.kt:172`) makes the predicate true.
+  ///
+  /// The port's mappers use `getStringOrNull`, so **absent becomes NULL** and
+  /// that distinction is gone: `rev IS NULL` is true for every survey whose
+  /// document omitted `_rev`, which is every course-embedded survey (a
+  /// sub-object carries no `_rev` of its own) and every public-API one. With
+  /// `sourceSurveyId` as the only other clause — and the courses walk reads
+  /// that straight off the server (`survey_mapper.dart:163-165`) — the sweep
+  /// selected another team's private copy and POSTed it to `exams` under this
+  /// user's credentials, and the prune spared it forever.
+  ///
+  /// A flag written by one caller has no such ambiguity, and it also frees
+  /// `SurveyDao.deleteNotIn` and `pendingAdoptedSurveys` from depending on a
+  /// `rev` column two sync walks disagree about the ownership of (see the
+  /// phase notes).
+  BoolColumn get needsSync => boolean().withDefault(const Constant(false))();
+
   @override
   Set<Column> get primaryKey => {id};
 }

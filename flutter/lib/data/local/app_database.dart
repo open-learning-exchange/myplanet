@@ -109,7 +109,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 46;
+  int get schemaVersion => 47;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -405,6 +405,21 @@ class AppDatabase extends _$AppDatabase {
       if (from < 46) {
         await _addColumnIfMissing(m, teamTasks, teamTasks.sync);
         await _addColumnIfMissing(m, teamTasks, teamTasks.link);
+      }
+
+      // v47 adds `Surveys.needsSync`, the local-authorship flag an adopted
+      // team clone is published on. No hand-written step: `surveys` is not in
+      // [_localAuthorityTables], so it is dropped above and `createAll`
+      // recreates it with the column. Which also means the bump itself
+      // destroys an unpublished clone — pre-existing for this table and
+      // recorded in the phase notes, not something this column changes.
+      //
+      // The default is `false`, which is correct for every row a re-sync
+      // refills: a survey the server sent is not this device's to publish.
+      if (from < 47) {
+        // Deliberately empty. Kept as an explicit branch so the next reader
+        // sees that v47 was considered here and needs nothing, rather than
+        // wondering whether a step was forgotten.
       }
     },
   );
@@ -2469,15 +2484,76 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
   /// that member answering it while signed in. On the answering turn scoped and
   /// unscoped agree.
   ///
-  /// `isUpdated` stays the status gate rather than Kotlin's
+  /// `isUpdated` stays the *primary* gate rather than Kotlin's
   /// `status = 'complete'`, because the port merges the two configs into one
   /// uploader: an exam is never `complete` (it finishes at
-  /// `requires grading`), so filtering on that would strand every exam
+  /// `requires grading`), so filtering on that alone would strand every exam
   /// attempt. The exam arm it stands in for is `ExamResults`, whose guest
   /// filter is ported alongside it — a guest's attempt is answer-sheet
   /// practice, and Kotlin does not send it. Both operands are coalesced so a
   /// null `type` or `userId` cannot turn the test into SQL NULL and drop a row
   /// that is nobody's guest exam.
+  ///
+  /// **On top of it there is now one status exclusion, and it is a behaviour
+  /// decision rather than a repair.** Having no status test at all was a
+  /// defensible trade while this ran from four deliberate write-time sites;
+  /// Phase 134 gave it a sweep on every sync, for every row on the handset,
+  /// and named two rows Kotlin's sweeps never send that therefore went up
+  /// systematically. **Only one of the two should stop.**
+  ///
+  /// The **team-adoption marker** does. `createSurveyAdoptionSubmission` writes
+  /// `status: ''` with `isUpdated: true`; Kotlin's `getPendingSubmissions`
+  /// wants `complete` and its `getPendingExamResults` wants `type = 'exam'`, so
+  /// neither selects it. It is local bookkeeping that a team has taken a copy
+  /// of a shared survey — no learner authored it and it carries no answers —
+  /// and uploading it put an answerless `submissions` document into Planet's
+  /// response set for every adoption.
+  ///
+  /// What makes withholding it *safe* rather than a data-sharing regression is
+  /// the other half of Phase 138: with [SurveyDao.pendingAdoptedSurveys] and
+  /// `AdoptedSurveysUploader` the clone itself now reaches the server carrying
+  /// `teamId` and `sourceSurveyId`, so a second handset in the team learns of
+  /// the adoption from the survey document — the route Kotlin has always used.
+  /// Before that the marker was the port's only server-side trace of an
+  /// adoption, and dropping it would have lost the team's adoption off-device.
+  ///
+  /// The **`pending` free-form draft does not**, and Phase 134's note that it
+  /// should was checked and is wrong. `createDraft` is the submissions screen's
+  /// New-submission button, and `submissions_screen.dart:172-194` runs
+  /// `queuePending` *and* `drain` on the very next lines: the learner filled in
+  /// a title and an answer and pressed Save, so the row is a deliberate
+  /// submission, not a bookkeeping artefact. Excluding it would have made that
+  /// button write to the device and nothing else — silently, since the sweep
+  /// would return zero and the drain would find nothing to send. That it has no
+  /// Kotlin writer makes the *document shape* port-only; it does not make the
+  /// user's intent absent, and "Planet may refuse this shape" is a reason to
+  /// fix the shape, not to strand the data. The divergence is recorded in
+  /// `docs/kotlin-to-flutter-migration.md`. (Its `status: 'pending'` is
+  /// arguably the wrong value for something the user just submitted, but that
+  /// string also drives the screen's own Pending/finished split, so it is a UI
+  /// change and not this predicate's to make.)
+  ///
+  /// The exclusion is written as an **exclusion** rather than an allow-list of
+  /// `complete`/`requires grading`/`pending`. The two forms select identically
+  /// today — every local writer that sets `isUpdated: true` sets one of those
+  /// four statuses, and `upsertDocuments` writes `isUpdated: false` on every
+  /// pulled row, so a server-authored status can never reach this predicate —
+  /// but they fail differently. An unanticipated status under an allow-list is
+  /// silently stranded on the handset, which is the failure this project keeps
+  /// paying for; under the exclusion it is an extra document. `coalesce`
+  /// because a null status is the empty one (`SurveysRepositoryImpl.kt:206`
+  /// reads `it.status.orEmpty().isEmpty()`, and `json_utils.dart:19-22` turns
+  /// the empty string back into null on a re-pull) — which is exactly the
+  /// state a marker that has round-tripped is in.
+  ///
+  /// Two things it deliberately does **not** change. A `pending` exam attempt
+  /// still does not upload, because `saveExamAnswer` only sets `isUpdated` at
+  /// `requires grading` — Kotlin's `ExamResults` config has no status test and
+  /// does send a half-finished attempt, a divergence recorded in
+  /// `docs/kotlin-to-flutter-migration.md` rather than closed here. And a bulk
+  /// `pending` sheet from `createBulkSurveySubmissions` was never selected
+  /// either way (`getOrCreateSurveySubmission` writes `isUpdated: false`),
+  /// which matches Kotlin, whose sweep wants `complete`.
   ///
   /// The one exclusion with no Kotlin counterpart is the **anonymous
   /// public-survey answer sheet**. `public_survey_screen` mints a
@@ -2499,9 +2575,28 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
     Expression<bool> isGuestExamAttempt($SubmissionsTable row) =>
         coalesce([row.type, const Constant('')]).equals('exam') &
         owner(row).like('guest%');
+    // `status IS NOT NULL AND status = ''`, and the first clause is
+    // load-bearing in the direction opposite to `isGuestExamAttempt`'s
+    // `coalesce`. A **null** status is not a marker: `pendingUploads` was
+    // status-blind until Phase 138, so two of this table's own tests build a
+    // row with no status at all to probe the guest test, and the sync-in
+    // stores null for a document that omits the key. Coalescing null to `''`
+    // here — the reading `SurveysRepositoryImpl.kt:206` uses for the *adoption
+    // guard*, where a round-tripped marker really has read back as null —
+    // would silently strand every such row instead, which is the failure this
+    // predicate's shape is chosen to avoid. It is safe to be strict because a
+    // marker is only ever in this set as `createSurveyAdoptionSubmission`
+    // wrote it, with the literal empty string: the re-pull that turns `''`
+    // into null also writes `isUpdated: false`.
+    //
+    // `FALSE AND NULL` is `FALSE` in SQL, so a null status fails the
+    // conjunction rather than poisoning it to NULL and dropping the row.
+    Expression<bool> isATeamAdoptionMarker($SubmissionsTable row) =>
+        row.status.isNotNull() & row.status.equals('');
     return (select(submissions)..where(
           (row) =>
               row.isUpdated.equals(true) &
+              isATeamAdoptionMarker(row).not() &
               isGuestExamAttempt(row).not() &
               // The `_` is LIKE's single-character wildcard, not an escaped
               // literal, and nothing turns on that: the two patterns differ
@@ -2754,16 +2849,82 @@ class SurveyDao extends DatabaseAccessor<AppDatabase> with _$SurveyDaoMixin {
     }
   });
 
+  /// Every locally minted team-adoption clone that has not reached the server.
+  ///
+  /// Port of `ExamDao.getPendingAdoptedSurveys()` (`ExamDao.kt:21`),
+  /// `sourceSurveyId IS NOT NULL AND _rev IS NULL`, which feeds
+  /// `UploadConfigs.AdoptedSurveys` (`UploadConfigs.kt:186-195`) to the `exams`
+  /// endpoint. Kotlin carries no `type` clause because it has one `exams`
+  /// table; the port's split puts the whole query here, and the `exams` table
+  /// needs no counterpart because `adoptSurvey` writes only to [Surveys].
+  ///
+  /// **Both clauses matter, and the second is the load-bearing one.**
+  /// `sourceSurveyId` is not a local-authorship marker: the courses walk reads
+  /// it straight off a server-embedded survey (`survey_mapper.dart:163-167`),
+  /// so an adopted copy that Planet itself published carries it too. Only
+  /// `rev IS NULL` separates "this device minted it and nobody else has it"
+  /// from "the server sent it" — the same conjunction Phase 136 had to restore
+  /// in `hasUnfinishedSurveys` after shipping half of it.
+  Future<List<SurveyRow>> pendingAdoptedSurveys() =>
+      (select(surveys)..where((row) => row.needsSync.equals(true))).get();
+
+  /// Records that an adopted clone became a real CouchDB document.
+  ///
+  /// **This is at parity with Kotlin, and an earlier revision of this comment
+  /// said the opposite.** `UploadConfigs.AdoptedSurveys` declares no
+  /// `markUploaded` and no `responseHandler`, which is what the declaration
+  /// looks like — but `UploadConfig` carries a **default** `persistUploaded`
+  /// keyed on the model class (`UploadConfig.kt:46-56`,
+  /// `StepExam::class -> UploadUpdateType.Exams`), which
+  /// `UploadRepositoryImpl.markExamsUploaded` resolves to
+  /// `exam._rev = result.remoteRev` (`UploadRepositoryImpl.kt:76`), and
+  /// `runPipeline` calls it on every successful batch
+  /// (`UploadCoordinator.kt:63-68`). So Kotlin records the rev, its row leaves
+  /// `getPendingAdoptedSurveys()`, and there is no second POST. The `Meetups`
+  /// contrast was wrong twice over: `Meetups` is a `RoomUploadConfig`, whose
+  /// `persistUploaded` *is* only that lambda (`RoomUploadConfig.kt:42-45`) so
+  /// it has no default to fall back on, and its
+  /// `ResponseHandler.Custom("id", "rev")` is byte-identical to the `Standard`
+  /// default (`UploadConfig.kt:24`).
+  ///
+  /// Recorded here because the port needs it for the same reason Kotlin does,
+  /// plus one Kotlin does not have: [deleteNotIn] prunes this table where
+  /// Kotlin never deletes from `exams` at all, so clearing
+  /// [Surveys.needsSync] is what hands a published clone back to the walk that
+  /// now names it. Kotlin's `_rev` write and this one are the same statement
+  /// serving two purposes.
+  Future<int> markUploaded(String id, String rev) =>
+      (update(surveys)..where((row) => row.id.equals(id))).write(
+        SurveysCompanion(rev: Value(rev), needsSync: const Value(false)),
+      );
+
   /// See [MeetupDao.deleteNotIn] for why the difference is taken in Dart and
   /// the deletes are chunked. Rows with a `stepId` are spared for the reason
   /// [ExamDao.deleteNotIn] gives: since Phase 113 a course step's survey is
   /// written by the *courses* walk and cannot be in this walk's keep set.
+  ///
+  /// **An unpublished team-adoption clone is spared too.** It is minted on this
+  /// handset by [SurveysRepository.adoptSurvey], carries no `stepId`
+  /// (deliberately — see that method) and is in no document the server can
+  /// name, so before this exemption the very next surveys sync deleted it and
+  /// its question rows and orphaned every answer sheet its members had filled
+  /// in. Kotlin cannot reach that outcome from either side: it uploads the
+  /// clone (`UploadConfigs.AdoptedSurveys`) and its `exams` walk is
+  /// insert-only — `bulkInsertExamsFromSync` upserts and nothing in the tree
+  /// ever deletes from that table.
+  ///
+  /// The exemption is scoped to `rev IS NULL` rather than to every clone, so it
+  /// lapses the moment [markUploaded] runs: once the document exists, the walk
+  /// that names it keeps it and a walk that stops naming it is reporting a
+  /// deletion this prune should honour.
   Future<int> deleteNotIn(List<String> ids) => transaction(() async {
     final keep = ids.toSet();
     final all =
         await (selectOnly(surveys)
               ..addColumns([surveys.id])
-              ..where(surveys.stepId.isNull()))
+              ..where(
+                surveys.stepId.isNull() & surveys.needsSync.equals(false),
+              ))
             .map((row) => row.read(surveys.id)!)
             .get();
     final stale = all.where((id) => !keep.contains(id)).toList(growable: false);

@@ -37,6 +37,7 @@ SurveyRow _survey({
   totalMarks: 0,
   isFromNation: false,
   teamShareAllowed: false,
+  needsSync: false,
 );
 
 UserRow _user() => UserRow(

@@ -79,6 +79,7 @@ void main() {
         totalMarks: 0,
         isFromNation: false,
         teamShareAllowed: false,
+        needsSync: false,
       );
 
   Future<void> seedSurvey({String id = 's1', bool fromNation = false}) async {

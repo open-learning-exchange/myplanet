@@ -13,6 +13,7 @@ SurveyRow _native(String id, String? name, {int createdDate = 0}) => SurveyRow(
   totalMarks: 0,
   isFromNation: false,
   teamShareAllowed: false,
+  needsSync: false,
 );
 
 /// An adopted survey — copied from a source, so it carries a `sourceSurveyId`
@@ -33,6 +34,7 @@ SurveyRow _adopted(
   totalMarks: 0,
   isFromNation: false,
   teamShareAllowed: false,
+  needsSync: false,
 );
 
 void main() {

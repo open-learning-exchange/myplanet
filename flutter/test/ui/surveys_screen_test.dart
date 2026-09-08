@@ -17,6 +17,7 @@ void main() {
       totalMarks: 0,
       isFromNation: false,
       teamShareAllowed: false,
+      needsSync: false,
     );
     await tester.pumpWidget(
       wrapScreen(

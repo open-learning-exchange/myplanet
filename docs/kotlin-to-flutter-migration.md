@@ -886,6 +886,106 @@ Deliberate *deviations*, all flagged in code:
   while the only two type literals the tree does write are the singular `"exam"` and `"survey"`
   fallbacks, which no Kotlin query ever selects on.
 
+- **An adopted team survey is published, and an unpublished one is spared from the prune
+  by a local-authorship flag rather than by `_rev IS NULL`.** Kotlin's sweep is
+  `ExamDao.getPendingAdoptedSurveys()` — `sourceSurveyId IS NOT NULL AND _rev IS NULL`
+  (`ExamDao.kt:21`) — and that names exactly one writer, because `JsonUtils.getString`
+  returns `""` for a missing key (`JsonUtils.kt:64-68`) and both sync writers assign
+  `_rev` unconditionally (`StepExam.kt:47`, `CoursesRepositoryImpl.kt:736`), so a synced
+  Kotlin row's `_rev` is `""` and never NULL. Only `createMappedSurvey`'s explicit
+  `_rev = null` satisfies it.
+
+  **The port cannot ask that question.** Its mappers use `getStringOrNull`, so an absent
+  `_rev` becomes the same NULL an unpublished clone has — true of every course-embedded
+  survey (a sub-object carries no `_rev`) and every public-API one — and
+  `sourceSurveyId` is no help, since the courses walk reads it straight off the server.
+  A first cut of this predicate swept another team's private copy and POSTed it to `exams`
+  under the signed-in user's credentials. `Surveys.needsSync` (schema v47) is set only by
+  `adoptSurvey` and cleared by `SurveyDao.markUploaded`, which makes both the sweep and the
+  prune exemption exact.
+
+  The port also prunes this table, where Kotlin never deletes from `exams` at all
+  (`bulkInsertExamsFromSync` upserts, and `ExamDao.deleteById` has zero production callers).
+  So `markUploaded` serves two purposes here against Kotlin's one: it records the rev, as
+  Kotlin does — via `UploadConfig`'s **default** `persistUploaded`
+  (`UploadConfig.kt:46-56`, `StepExam::class -> UploadUpdateType.Exams`) reaching
+  `exam._rev = result.remoteRev` (`UploadRepositoryImpl.kt:76`), not via the
+  `markUploaded` lambda the config declaration omits — and it clears the flag that keeps a
+  clone out of the prune.
+
+  `UploadCoordinator`'s 409 arm (`UploadCoordinator.kt:169-204`) is ported alongside it,
+  and the port needs it *more* than Kotlin does: Kotlin mints the clone id with
+  `UUID.randomUUID()` so two leaders adopting the same survey write two documents, while
+  the port's deterministic `'<surveyId>_<teamId>'` converges on one — better, but it makes
+  a conflict ordinary. Without recovery the loser is stuck for good, because a re-pull does
+  **not** clear the flag: a mapper's companion omits the column and Drift's
+  `insertOnConflictUpdate` writes only the columns present, so the row gains a `rev` and
+  stays swept, re-POSTing and abandoning one outbox row every sync.
+
+- **The uploaded clone carries `courseId`, which neither app's serializer emits.** A clone
+  copies the source survey's `courseId` and the member sheets Send writes are keyed
+  `"<cloneId>@<courseId>"`. Without the key on the wire only the authoring handset keeps
+  the value (`SurveyMapper.fromDoc` writes `courseId` absent when the document omits it);
+  a second handset in the team gets NULL and keys the same survey's sheets bare, so one
+  member gets two pending sheets and the column oscillates between the repair sweep and
+  the next pull. Kotlin is *consistent* rather than correct — its re-pull wipes the column
+  on the authoring handset too, which is why `getSurveyInfos.resolveParentId` accepts both
+  key shapes (`SurveysRepositoryImpl.kt:304-307`). The port has no such tolerant reader.
+
+- **`hasUnfinishedSurveys` skips an adopted team clone; Kotlin's gate has no such rule
+  because it cannot see one.** `getSurveysByCourseId` filters
+  `getByCourseIdAndType(courseId, "survey")` — **singular**
+  (`SubmissionsRepositoryImpl.kt:367-379`) — while a clone copies the source's `type`
+  (`SurveysRepositoryImpl.kt:180`) and every list adoption is reachable from queries
+  `type = "surveys"` (`ExamDao.kt:29-31`). The port's table split *is* the type, so its
+  `getByCourseId` returns the clone and the guard is a port-invented one on port-invented
+  breadth. It is keyed on `stepId == null` — does the courses walk own this row's course
+  join? — and deliberately **not** on `rev == null`: that read was exact only while nothing
+  published a clone, and Phase 138 publishes it, at which point the gate would demand a
+  team's private copy of every learner on the course and make
+  `MANDATORY_SURVEY_COURSE_ID` uncompletable for outsiders.
+
+- **The team-adoption marker is not uploaded; everything else with an `isUpdated` flag
+  still is.** Kotlin's sweeps are
+  `status = 'complete' AND (isUpdated = 1 OR _id IS NULL OR _id = '')` (`SubmissionDao:41`)
+  and, for exams, `type = 'exam' AND … AND (_id IS NULL OR _id = '')` (`:40`). The port
+  merges the two configs into one uploader and gates on `isUpdated`, because an exam finishes
+  at `requires grading` rather than `complete` — which left it with no status test at all,
+  and Phase 134's safety-net sweep made that systematic. Phase 138 excludes one row:
+  `createSurveyAdoptionSubmission`'s marker (`status: ''`), which is local bookkeeping that a
+  team took a copy of a shared survey rather than a learner's answers, and which no Kotlin
+  config selects. Withholding it is only safe because the same phase publishes the adopted
+  clone itself, carrying `teamId` and `sourceSurveyId` — the route Kotlin has always used to
+  tell a second handset about an adoption.
+
+  Phase 134 named a second row, the **`createDraft` free-form submission** (`status:
+  'pending'`, a port-only shape with no Kotlin writer), and that half is **wrong**:
+  `submissions_screen.dart:172-194` runs `queuePending` *and* `drain` immediately after the
+  New-submission dialog's Save, so the row is a deliberate submission. Excluding it would
+  have made that button write to the device and nothing else, silently. The port still sends
+  it, which remains a divergence from Kotlin — Kotlin has no such button — and the
+  predicate is written as an exclusion rather than an allow-list so that an unanticipated
+  status is an extra document rather than data stranded on the handset. A **null** status is
+  deliberately not treated as a blank one, which is the inverse of the reading
+  `SurveysRepositoryImpl.kt:206` needs for the adoption *guard*; the detail is at the
+  predicate.
+
+- **A half-finished exam attempt is not uploaded; Kotlin's is.** `UploadConfigs.ExamResults`
+  -> `SubmissionDao.getPendingExamResults` (`:40`) has no status and no `isUpdated` test, so
+  every Kotlin sweep POSTs an attempt the learner abandoned two questions in and it appears
+  in Planet's course report. The port sets `isUpdated: false` at `_openExamSession` and flips
+  it only at `requires grading`, so an attempt becomes uploadable exactly when it is
+  submitted. Kept because a partial attempt is not a result, and Kotlin then POSTs a *second*
+  document for the retake (`deleteExamSubmissions` clears the local row, not the remote one).
+
+- **A retried upload cannot produce a duplicate document.**
+  `RetryQueueWorker.processOperationInternal` re-POSTs a queued payload and on success calls
+  only `retryQueue.markCompleted(operation.id)` (`RetryQueueWorker:231`,
+  `RetryQueue:64-67`) — the `submissions` row still has `_id = NULL` and `isUpdated = 1`, so
+  the next Kotlin sweep POSTs it again. Concrete: a survey POST that gets a 502, a successful
+  retry drain, then any sync — two CouchDB documents. `SubmissionsUploader.handler` calls
+  `markUploaded` on every successful send, retried ones included.
+
 - **A step's Take Test button opens the row its own label interrogated.** Kotlin's does not
   necessarily. `hideTestIfNoQuestion` decides the label from `stepExams[0]`, selected by
   `stepId = ? AND type = 'courses'`, but the button routes through `BaseExamFragment.initExam`

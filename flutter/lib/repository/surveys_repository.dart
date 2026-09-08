@@ -160,6 +160,14 @@ class SurveysRepository {
               teamShareAllowed: const Value(false),
               sourceSurveyId: Value(surveyId),
               courseId: Value(survey.courseId),
+              // The local-authorship flag `AdoptedSurveysUploader` sweeps on
+              // and `SurveyDao.deleteNotIn` spares. It stands in for Kotlin's
+              // `_rev IS NULL`, which the port cannot ask: `getStringOrNull`
+              // turns an absent `_rev` into the same NULL an unpublished clone
+              // has, so that predicate also matched every course-embedded and
+              // public-API survey — and the sweep POSTed another team's
+              // private copy under this user's credentials. See the column.
+              needsSync: const Value(true),
             ),
           ],
           {
