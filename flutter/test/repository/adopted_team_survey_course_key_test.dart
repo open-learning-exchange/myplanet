@@ -243,6 +243,53 @@ void main() {
     expect(parent['noOfQuestions'], 1);
   });
 
+  test('the marker\'s user document carries the adopter\'s name', () async {
+    await surveys.adoptSurvey(
+      surveyId: 'survey-1',
+      userId: 'leader-1',
+      userName: 'Ada Lovelace',
+      teamId: 'team-1',
+      teamName: 'Water Team',
+      isTeam: true,
+      now: DateTime.fromMillisecondsSinceEpoch(5000),
+    );
+    final marker = (await database.submissionDao.getSurveySubmissionsByUser(
+      'leader-1',
+    )).singleWhere((row) => row.status == '');
+    final user = jsonDecode(marker.user!) as Map<String, dynamic>;
+    final doc = user['doc'] as Map<String, dynamic>;
+    expect(doc['name'], 'Ada Lovelace');
+    // Kotlin's key set and order under `doc` (`createUserJsonString:139-147`).
+    expect(doc.keys, [
+      '_id',
+      'name',
+      'userId',
+      'teamPlanetCode',
+      'status',
+      'type',
+      'createdBy',
+    ]);
+    // `membershipDoc` is a **sibling** of `doc`, not nested in it: the sync-in
+    // reads `user.membershipDoc.teamId`.
+    expect(user['membershipDoc'], {'teamId': 'team-1'});
+  });
+
+  test('a nameless adopter omits the key rather than sending null', () async {
+    // `org.json`'s `put(String, Object)` removes the mapping for a null value,
+    // which is why Kotlin's `_id`/`name` disappear while its `userId` and
+    // `createdBy` fall back to `""`.
+    await adopt();
+    final marker = (await database.submissionDao.getSurveySubmissionsByUser(
+      'leader-1',
+    )).singleWhere((row) => row.status == '');
+    final doc =
+        (jsonDecode(marker.user!) as Map<String, dynamic>)['doc']
+            as Map<String, dynamic>;
+    expect(doc.containsKey('name'), isFalse);
+    expect(doc['userId'], 'leader-1');
+    expect(doc['createdBy'], 'leader-1');
+  });
+
   test('a course-less survey is unaffected', () async {
     await database.surveyDao.upsertAll([
       SurveysCompanion.insert(
