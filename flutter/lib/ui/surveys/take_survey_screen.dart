@@ -225,7 +225,16 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
       // null and decide the gate on a value it does not have yet. The await
       // is inside the `try` because the future can reject.
       final survey = await ref.read(surveyProvider(widget.surveyId).future);
+      // `!isMySurvey && exam?.isFromNation != true` (`:154-155`) — both
+      // halves. A resumed sheet is Kotlin's `isMySurvey`, and it takes the
+      // else arm: mark complete and leave, without asking. No pusher produces
+      // a `?submission=` *and* a `?teamId=` today, so this half is latent —
+      // but a gate that is a line-for-line port cannot drift into the case
+      // later, and `updateSurveyResponse` deliberately carries no team, so
+      // without it a resumed sheet would be asked for a profile it could not
+      // attribute.
       askWhoTheyAre =
+          widget.submissionId == null &&
           (widget.teamId ?? '').trim().isNotEmpty &&
           survey?.isFromNation != true;
       final repo = ref.read(surveysRepositoryProvider);
@@ -243,11 +252,26 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
       final config = ref.read(serverConfigProvider);
       // Not before the profile step, which is the order Kotlin uses: the
       // upload is `UserInformationFragment.onDismiss`'s job, *after* the
-      // dialog. Queueing here as well would enqueue a payload serialized
-      // before `markSubmissionComplete` wrote the respondent's answers into
-      // the row, and if the outbox drained in between, `markUploaded` would
-      // take the sheet out of `pendingUploads` and the profile would never go
-      // out at all.
+      // dialog.
+      //
+      // The reason that always holds is duplication, not loss, and an
+      // earlier draft of this comment had it the other way round. Queueing
+      // here enqueues a payload serialized before `markSubmissionComplete`
+      // writes the profile; if the outbox drains before the respondent
+      // saves — an app background/foreground cycle mid-form is enough — the
+      // sheet is POSTed once without the profile, `markComplete` then puts
+      // the row back in `pendingUploads` (`app_database.dart`'s
+      // `markComplete` sets `uploaded: false, isUpdated: true`, and says so),
+      // and the pop's queue POSTs it **again**. Two documents on the server
+      // for one answer sheet, where Kotlin posts one. That is worse for a
+      // survey's results than a late delivery, which is what the old comment
+      // wrongly claimed was at stake here.
+      //
+      // The cost of this order is recorded in `PHASE_132_NOTES.md` under
+      // *Reported, not fixed*: nothing in the port sweeps `pendingUploads` on
+      // sync, so a sheet whose profile step is interrupted by process death
+      // waits for the user's next submission. Kotlin's safety net is
+      // `uploadSubmissions()` running unconditionally from `AutoSyncWorker`.
       if (id != null && config != null && !askWhoTheyAre) {
         await ref
             .read(submissionsUploaderProvider)

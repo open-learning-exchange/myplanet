@@ -65,12 +65,23 @@ class TeamSurveysScreen extends ConsumerWidget {
                         // `createBulkSurveySubmissions` — and an adopted team
                         // survey always has a `sourceSurveyId`, so preferring
                         // it sent every member a sheet keyed to the
-                        // *un-adopted original*. Their answers then filed
-                        // against the source, where neither
-                        // `submissionsForTeam` nor the adoptable list looks,
-                        // so the team's own copy read zero submissions
-                        // forever. `surveys_screen.dart` already passes
-                        // `row.id`.
+                        // *un-adopted original*, so their answers filed
+                        // against the source survey rather than against the
+                        // team's own copy — mis-attributed at the parent id,
+                        // which is what identifies a survey's responses.
+                        // `surveys_screen.dart` already passes `row.id`.
+                        //
+                        // Note what this does *not* fix, because an earlier
+                        // draft of this comment claimed it did:
+                        // `getOrCreateSurveySubmission` writes neither a
+                        // `teamId` column nor a `parent` document
+                        // (`submissions_repository.dart:683-695`), and the
+                        // team's two readers need one or the other —
+                        // `submissionsForTeam` is `byTeam` on the column and
+                        // `_teamSubmissionSurveyIds` reads `parent._id`. So a
+                        // bulk-created sheet is invisible to both under
+                        // either id. This is right because Kotlin does it,
+                        // not because it makes those readers work.
                         builder: (context) =>
                             SendSurveyScreen(surveyId: survey.id),
                       ),

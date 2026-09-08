@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -299,9 +300,27 @@ void main() {
   });
 
   group('the answer sheet the port writes carries the team', () {
+    /// A pending sheet the resume path can reopen.
+    Future<String> seedPendingSheet() async {
+      const id = 'sub-resume';
+      await db.submissionDao.upsertAll([
+        SubmissionsCompanion.insert(
+          id: id,
+          parentId: const Value('s1'),
+          parent: Value(jsonEncode({'_id': 's1', 'name': 'Water access'})),
+          userId: const Value('user-a'),
+          type: const Value('survey'),
+          status: const Value('pending'),
+          uploaded: const Value(false),
+        ),
+      ]);
+      return id;
+    }
+
     Future<void> pumpTakeSurvey(
       WidgetTester tester, {
       String? teamId,
+      String? submissionId,
       ServerConfig? config,
     }) async {
       tester.view.physicalSize = const Size(1000, 3000);
@@ -310,7 +329,11 @@ void main() {
 
       await tester.pumpWidget(
         wrapScreen(
-          TakeSurveyScreen(surveyId: 's1', teamId: teamId),
+          TakeSurveyScreen(
+            surveyId: 's1',
+            teamId: teamId,
+            submissionId: submissionId,
+          ),
           pushTargets: {
             '/life/submissions/:id': (_) =>
                 const Scaffold(body: Text('SUBMISSION_PAGE')),
@@ -484,6 +507,26 @@ void main() {
       final payload = jsonDecode(queued!.payload) as Map<String, dynamic>;
       expect(payload['team'], {'_id': 'team-1'});
       expect((payload['user'] as Map<String, dynamic>)['age'], isNotNull);
+    });
+
+    testWidgets('a resumed sheet is not asked for a profile', (tester) async {
+      // `showUserInfoDialog`'s gate is `!isMySurvey && exam?.isFromNation !=
+      // true` (`BaseExamFragment:154-155`) — a resumed sheet takes the else
+      // arm and is never asked. Latent, since no pusher pairs `?submission=`
+      // with `?teamId=`; pinned so the gate stays a line-for-line port,
+      // because `updateSurveyResponse` carries no team and a profile asked
+      // for here could not be attributed to one.
+      await seedSurvey();
+      final existing = await seedPendingSheet();
+      await pumpTakeSurvey(tester, teamId: 'team-1', submissionId: existing);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(UserInformationScreen), findsNothing);
+      // And the submit really ran, rather than the gate passing because
+      // nothing happened: the resumed row now holds the typed answer.
+      final answers = await db.select(db.submissionAnswers).get();
+      expect(answers.single.value, '2 km');
+      expect((await submissions()).single.id, existing);
     });
 
     testWidgets('a blank team id is stored as no team at all', (tester) async {

@@ -129,11 +129,17 @@ void main() {
       // test below.
       '/survey/:teamId/:surveyId': 'deep-link entry point',
       // Kotlin shows the respondent profile as a dialog over the survey and the
-      // port keeps that shape, so `PublicSurveyScreen` builds the screen with
-      // `Navigator.push` and there is no location to navigate to. The route is
-      // a spare entry point kept for a future in-app caller.
+      // port keeps that shape, so its callers build the screen with
+      // `Navigator.push` and there is no location to navigate to. There are
+      // **two** of them since Phase 132 — `PublicSurveyScreen` for a deep
+      // link and `TakeSurveyScreen` for a team survey, which is the pair
+      // Kotlin's `showUserInfoDialog` serves — so the route is still spare,
+      // and now spare with two live builders rather than one. Either give it
+      // a caller or delete it: a parsed-but-unreachable route is how the
+      // `teamId` it reads sat unread for three phases.
       '/exam/user-info/:submissionId':
-          'PublicSurveyScreen builds it with Navigator.push',
+          'PublicSurveyScreen and TakeSurveyScreen build it with '
+          'Navigator.push',
     };
 
     final reached = _navigationSites().map((s) => s.location).toSet();

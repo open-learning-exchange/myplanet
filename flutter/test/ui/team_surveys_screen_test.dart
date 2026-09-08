@@ -140,9 +140,13 @@ void main() {
     // -> `sendSurveyToUsers` -> `createBulkSurveySubmissions`. An adopted team
     // survey always carries a `sourceSurveyId`, so preferring it sent the
     // *un-adopted original*: each member got a pending sheet keyed
-    // `parentId = <source>`, their answers filed against the source, and the
-    // team's own copy — which is what `submissionsForTeam` and the adoptable
-    // list read — showed no submissions at all, permanently.
+    // `parentId = <source>`, so their answers filed against the source survey
+    // rather than against the team's own copy. Not because it repairs the
+    // team's readers — `getOrCreateSurveySubmission` writes neither a `teamId`
+    // column nor a `parent`, so a bulk-created sheet is invisible to
+    // `submissionsForTeam` and `_teamSubmissionSurveyIds` under either id —
+    // but because the parent id is what identifies a survey's responses, and
+    // Kotlin keys them to the survey the card shows.
     //
     // `surveys_screen.dart:118` already passes `row.id`; the two screens
     // disagreeing is the tell.

@@ -18,7 +18,8 @@ The brief (and Phase 129's notes) said **"every answer sheet the port writes is
 team-less where Kotlin's carries the team."** The first half is true, the second
 overstates the comparison, and the audit was right to say so.
 
-Kotlin has **six** survey journeys, and only **two** carry a team:
+Kotlin has **seven** survey journeys (plus a course step's *exam*), and only
+**two** carry a team:
 
 | entry point | `isMySurvey` | `isTeam` | `teamId` |
 |---|---|---|---|
@@ -28,19 +29,26 @@ Kotlin has **six** survey journeys, and only **two** carry a team:
 | `SubmissionsAdapter:98` (my-surveys row) | true | false | `""` |
 | `BellDashboardFragment:256` (pending prompt) | true | false | `""` |
 | `CourseStepFragment:289` (a course step's survey) | false | false | `""` |
-| `CourseStepFragment:277-282` (a course step's **exam**) | false | false | absent |
+| `DashboardActivity:220` (`surveyNavigationEvent`) | false | false | `""` |
+| `CourseStepFragment:275-284` (a course step's **exam**) | false | false | absent |
 
 The flag and the id are only ever set together, and `TeamPagerAdapter:89-94` is
 the **only** producer of the pair — the other three `SurveyFragment()`
-constructions and `BaseExamFragment.navigateToSurveyList` set neither. So four
-of the six port paths were already at parity by doing nothing, and the phase is
-about the two that were not.
+constructions and `BaseExamFragment.navigateToSurveyList` set neither. So five
+of the seven port paths were already at parity by doing nothing, and the phase
+is about the two that were not.
+
+**The count was "six" in the first draft, and the implementation audit caught
+it**: `DashboardActivity:220`'s `surveyNavigationEvent` is an eighth
+`openSurvey` call site the table had omitted. It passes `false, false, ""`, so
+no port change follows and the conclusion is unaffected — but a table that
+claims to be exhaustive has to be.
 
 **The exam arm is confirmed unreachable with a team**, which Phase 129 claimed
 and this pass proved from the call sites rather than by analogy: `type` defaults
 to `"exam"` (`BaseExamFragment:52`) and is only overwritten from the bundle
 (`:95-99`); every survey site hard-codes `putString("type", "survey")`, and the
-one bundle that omits it — `CourseStepFragment:277-285` — carries only `stepId`
+one bundle that omits it — `CourseStepFragment:275-284` — carries only `stepId`
 and `stepNum`, so `isTeam` is false there and `if (isTeam) teamId else null` is
 structurally null.
 
@@ -67,7 +75,7 @@ Three choices in there are deliberate:
 * **`teamId` as the query key, not `team`.** `addResource` and `userInfo`
   already read exactly that key (`router.dart:267,319`), so the alternative
   would have made this the odd one out. The mutation that renames it is one of
-  the fourteen below, because a route reading `team` where the push writes
+  the fifteen below, because a route reading `team` where the push writes
   `teamId` is the Phase 74/100 shape.
 * **The location stays a literal at the call site.** A `surveyLocation(...)`
   helper in `router.dart` reads better and would have been *worse*:
@@ -123,6 +131,23 @@ and it also puts the order where Kotlin has it — the queue runs *after*
 `enqueue` dedupes on `(uploadType, itemId)`, so a path that pops twice cannot
 double-post.
 
+**A third half of the gate landed after the implementation audit.** Kotlin's
+condition is `!isMySurvey && exam?.isFromNation != true`, and the first cut
+ported only the second half. No pusher pairs `?submission=` with `?teamId=`, so
+a resumed team sheet is latent — but `updateSurveyResponse` deliberately
+carries no team, so such a sheet would have been asked for a profile it could
+not attribute. `widget.submissionId == null` makes the gate line-for-line, and
+a test drives a real resumed sheet through it (asserting the answer was stored,
+so the gate cannot pass merely because nothing happened).
+
+**`public_survey_screen` does *not* apply the `isFromNation` half**, and the
+asymmetry is now stated at the call site rather than left for the next reader
+to find. Kotlin's nation arm inside `PublicSurveyActivity` is
+`navigateToSurveyList` with `addToBackStack = false`, after which neither the
+back-stack listener nor `onFragmentDetached` fires and the answers are never
+POSTed at all. Porting the gate there would mean porting that, and delivering
+the answers is the deep link's whole purpose.
+
 **Review `user_information_screen.dart` with `git diff -w`.** Wrapping the
 returned `Scaffold` re-indents the whole build method: 292 changed lines, of
 which 28 are real. The alternative placements all cost a reindent of something,
@@ -163,12 +188,25 @@ thing in the round. `team_surveys_screen.dart` passed
 
 An adopted team survey always has a `sourceSurveyId`, so every Send from the
 team tab created the members' pending sheets against the **un-adopted
-original**: `parentId = <source>`, answers filed against the source, and the
-team's own copy — which is what `submissionsForTeam` and the adoptable list read
-— showing zero submissions forever. `surveys_screen.dart:118` already passed
-`row.id`; **the two screens disagreeing was the tell.** The port's `adoptSurvey`
-copies the questions onto the clone (`surveys_repository.dart:96-135`), so there
-was no lookup reason for the old value either.
+original**: `parentId = <source>`, so their answers filed against the source
+survey rather than against the team's own copy — mis-attributed at the parent
+id, which is what identifies a survey's responses.
+`surveys_screen.dart:118` already passed `row.id`; **the two screens
+disagreeing was the tell.** The port's `adoptSurvey` copies the questions onto
+the clone (`surveys_repository.dart:96-135`), so there was no lookup reason for
+the old value either.
+
+**The symptom I first wrote for this was the wrong mechanism, and the
+implementation audit was right to reject it.** I claimed the team's own copy
+"read zero submissions forever, because that is what `submissionsForTeam` and
+the adoptable list read". Neither reader can see a bulk-created sheet under
+*either* id: `getOrCreateSurveySubmission` writes no `teamId` column and no
+`parent` document (`submissions_repository.dart:683-695`), while
+`submissionsForTeam` is `byTeam` on that column and `_teamSubmissionSurveyIds`
+reads `parent._id`. Verified in both directions. The change is right because
+Kotlin does it and because the parent id is the attribution; it does **not**
+repair those readers, and the corrected reasoning now stands in the code
+comment and the test rather than only here.
 
 Worth recording so nobody re-litigates the severity: Kotlin's own Send button is
 **invisible** — `SurveysAdapter` sets `sendSurvey.visibility = View.GONE` in the
@@ -203,7 +241,7 @@ they could be written:
 
 ## Tests
 
-`test/ui/surveys/survey_team_context_test.dart`, 12 new tests, plus 5 in
+`test/ui/surveys/survey_team_context_test.dart`, 13 new tests, plus 5 in
 `user_information_screen_test.dart`, 1 in `team_surveys_screen_test.dart` and 2
 in `public_survey_screen_test.dart`.
 
@@ -222,14 +260,20 @@ passed alone while the whole was broken:
 * and one test that walks the whole journey — team tab → real
   `TakeSurveyScreen` → profile → back on the tab.
 
-**Mutation-tested: fourteen injected, fourteen killed**, each by a test that names
+**Mutation-tested: fifteen injected, fifteen killed**, each by a test that names
 it. Dropping the query parameter; renaming the route's read to `team`; dropping
 the forward at each of the two repository hops; dropping the public screen's id;
 re-seeding the Phase 106 pop gate; never asking who the respondent is; ignoring
 `isFromNation`; going to the submission detail instead of popping back; queueing
 before the profile step; not queueing on Cancel; dropping the team gate on the
 queue; deferring `_queueUpload`'s `ref` reads past its first `await`; and
-narrowing the pop hook to a `true` result, which is the back button's exit.
+narrowing the pop hook to a `true` result, which is the back button's exit; and
+dropping the resume half of the profile gate.
+
+The implementation audit ran sixteen of its own on a scratchpad copy, including
+one this set had not covered — breaking the *pushed path* to `/surveys/typo/…`,
+which `route_reachability_test` kills, confirming the guard still reads the new
+literal. None survived.
 
 The twelfth is the one worth the note: **queueing before the profile step
 passed at first.** `enqueue` refreshes an open row's payload, so the end state
@@ -285,6 +329,71 @@ notification UI; Lane C: `app/` and `docs/`), the change is additive and
 forwarding-only, and every other edit is inside the set. Flagged on the PR too.
 
 ## Reported, not fixed
+
+### Nothing sweeps `pendingUploads`, and this phase leans on that
+
+**The most important thing the implementation audit found, and my change made
+it reachable.** Kotlin has two ways a completed sheet reaches the server: the
+dismissal (`UserInformationFragment:303`) *and* `uploadManager.uploadSubmissions()`
+running unconditionally from `AutoSyncWorker:136`, `UserDataWorker:48` and
+`ServerReachabilityWorker:183,186`. A missed dismissal costs nothing there.
+
+The port has **no `queuePending` sweep in any sync or background path**. Its
+only writers of a submissions outbox row are four write-time call sites
+(`take_survey_screen:252`, `user_information_screen:471`,
+`take_exam_screen:544`, `submissions_screen:187`);
+`background_entrypoint.dart:177-184`'s `'submissions'` step is the *pull*, and
+`OutboxDrainScope` only drains rows that already exist.
+
+Before this phase a team survey's row was enqueued at submit time. Now it is
+enqueued at the profile screen's pop — the Kotlin order, and the one that
+avoids the double POST above — so two windows end with the sheet queued by
+nobody: **process death while the profile screen is open**, and the
+`if (!mounted) return` before the push. In both, `submissions` holds a
+`complete, isUpdated, !uploaded` team sheet with no outbox row, and it stays
+there until the same user completes some *other* submission, because
+`queuePending` is an unscoped sweep that then rescues it. Reproduce it by
+answering a team survey, tapping Submit, and force-stopping the app on "Your
+information".
+
+Not data loss — the answers are on the device — but for a field survey an
+indefinitely deferred delivery is the same outcome. **The fix is a
+`queuePending` step in the sync path**, beside the existing steps in
+`lib/providers/dashboard_sync_provider.dart` and
+`lib/background_entrypoint.dart`, which is where Kotlin's safety net lives.
+Both are outside this lane's set; the gap is pre-existing and port-wide (it
+applies equally to an exam attempt whose queue call fails), and it wants the
+owner of the sync path rather than a third out-of-set edit from here. Whoever
+takes it should treat it as the round's highest-value item.
+
+### `adoptSurvey` does not copy `courseId`/`stepId` onto the clone
+
+`createMappedSurvey` copies both onto an adopted team clone
+(`SurveysRepositoryImpl.kt:441-456`); `surveys_repository.dart:99-118` sets 14
+fields and neither, though `Surveys` has both columns
+(`tables.dart:541-542`). The Send fix above now depends on it: with the clone's
+own id being sent, `createBulkSurveySubmissions` resolves
+`survey?.courseId == null` and keys the members' sheets `<cloneId>` where
+Kotlin keys `"<cloneId>@<courseId>"` — Phase 125's class, in the one place the
+Phase 125 sweep cannot reach (`_repairSurveyParentId` returns 0 when
+`target == survey.id`). And `hasUnfinishedSurveys` selects by
+`getByCourseId`, so the port's clone is invisible to the mandatory-survey gate
+where Kotlin's is one more requirement in it. Reachable only for a
+`teamShareAllowed` survey that also carries a `courseId`. Two field copies in a
+file outside this set.
+
+### The Send id change is a parentId key change with no repair
+
+`createBulkSurveySubmissions`' existence check is
+`latestPendingByUserAndParent`, on the whole column. A team that used Send
+*before* this change has member sheets under `<sourceId>`; after it, Send
+creates a **second** pending sheet under `<cloneId>` — the shape
+`submissions_repository.dart:645-652` describes for the Phase 125 key change,
+which shipped `repairCourseSurveyParentIds` while this one ships nothing.
+Mitigating: Kotlin's Send button is invisible (`SurveysAdapter:62`, never set
+`VISIBLE`), so the port's is a surplus affordance and real usage is unknown. A
+decision rather than an obvious repair, and it belongs with whoever decides
+whether the port keeps that button at all.
 
 ### Adopt is gated on team leadership; Kotlin gates on guest
 
@@ -382,9 +491,11 @@ parsing `?teamId=`, and nothing navigates to it — it sits in
 `route_reachability_test`'s `allowed` map. This phase did **not** change that:
 `take_survey_screen` pushes the screen with `Navigator.push`, matching
 `public_survey_screen` and matching Kotlin, where it is a dialog over the
-survey rather than a destination. Either the route should be removed or a
-caller should use it; leaving a parsed-but-unreachable route is how the
-`teamId` this phase just wired sat unread in the first place.
+survey rather than a destination. What did change is that the route is now
+spare with **two** live builders instead of one, which the allowlist's reason
+string said out loud only after the implementation audit noticed it was stale.
+Either give the route a caller or delete it; leaving a parsed-but-unreachable
+route is how the `teamId` this phase wired sat unread in the first place.
 
 ### Kotlin's degenerate team survey has no guard, and the port inherits none
 
@@ -409,3 +520,31 @@ the *individual* list, losing the team context — and inside
 is POSTed. The port's nation-survey arm goes to the submission detail instead.
 Since the arm is dead in Kotlin and its Kotlin behaviour is partly broken,
 matching it would be porting a bug; recorded rather than copied.
+
+### Smaller confirmed divergences, all currently unreachable
+
+* **A whitespace-only team id.** `onDismiss`'s gate is exact string equality —
+  `if (safeTeamId == "") return` — so `" "` *uploads* in Kotlin, where
+  `user_information_screen`'s `.trim().isEmpty` does not. No port path can
+  produce one (the value comes from a route parameter fed by `team.id`), and
+  the repository's own `.trim()` is right there because that writer really is
+  `isNotBlank`. Left as is: the two Kotlin sites genuinely differ, so being
+  faithful means differing, and churning unreachable semantics costs more than
+  it buys.
+* **Two silent returns in `_submit`.** `if (id == null) return` leaves the user
+  on a reset form with no message when `submitResponse` finds no survey row,
+  and `if (!mounted) return` is the second window of the sweep item above.
+  Both pre-existing; the first is behaviourally unchanged by this phase.
+
+### Two of the thirteen new tests are negative controls
+
+`'a personal survey stores no team'` and `'a personal survey location builds a
+team-less screen'` assert an absence that holds trivially on the pre-fix tree.
+They are worth keeping — they are what would catch a future change that starts
+attributing personal sheets to a team — but they are controls, not evidence,
+and no mutation in the table below is killed by them alone.
+
+Related, and a claim of mine the audit trimmed: the whole-journey test's
+`pushTargets` hand-writes `queryParameters['teamId']`, so it *is* a third copy
+of the key. "No third copy" is true only of `tapOwnedSurvey` +
+`_buildFromRouter`, which is the pair that actually guards the route's read.
