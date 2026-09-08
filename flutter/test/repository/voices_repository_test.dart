@@ -644,6 +644,24 @@ void main() {
       ]);
       expect(await repository.pendingUploads(), isEmpty);
 
+      // `addLabel`/`removeLabel` have no caller in `lib/` yet — which is why
+      // they are here. They mutate `labels`, which `serialize` sends, and
+      // Kotlin's sweep re-sends the whole table, so a label change reaches the
+      // server there. Flagged in Phase 144 so that stays true the day the
+      // label chips get wired, rather than being discovered missing then.
+      await repository.addLabel('server-1', 'important');
+      expect(
+        await repository.pendingUploads(),
+        hasLength(1),
+        reason: 'a label that never uploads is device-local',
+      );
+      await repository.markUploaded('server-1', 'server-1', '2-rev');
+
+      await repository.removeLabel('server-1', 'important');
+      expect(await repository.pendingUploads(), hasLength(1));
+      await repository.markUploaded('server-1', 'server-1', '3-rev');
+      expect(await repository.pendingUploads(), isEmpty);
+
       await repository.toggleReaction('server-1', '👍', 'user-1');
       expect(
         await repository.pendingUploads(),
@@ -651,7 +669,7 @@ void main() {
         reason: 'a reaction that never uploads is invisible to everyone else',
       );
 
-      await repository.markUploaded('server-1', 'server-1', '2-rev');
+      await repository.markUploaded('server-1', 'server-1', '4-rev');
       expect(await repository.pendingUploads(), isEmpty);
 
       // The un-share branch: two entries, deleted from the community feed, so

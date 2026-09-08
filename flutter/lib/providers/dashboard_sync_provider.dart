@@ -154,9 +154,6 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
 
     // Ahead of the submissions sweep, as both Kotlin workers have it
     // (`AutoSyncWorker:130` before `:136`, `UserDataWorker:40` before `:48`).
-    // It queues only; the unscoped drain at the end of
-    // [queuePendingSubmissions] is what carries these rows out in this same
-    // pass — the coupling `syncAll delivers a voice nothing enqueued` pins.
     await queuePendingVoices();
 
     // With the shelf push, ahead of the pulls. See [queuePendingSubmissions].
@@ -390,9 +387,16 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
   ///   device identity and `PlatformDeviceIdentitySource.read` rethrows on an
   ///   engine with no channel and no primed cache. A voice that cannot be
   ///   queued must not flip the sync to failed.
-  /// * **Queued, not drained, here.** [queuePendingSubmissions] follows
-  ///   immediately and its drain is unscoped, so these rows go out in this same
-  ///   pass. Draining twice would only add a redundant single-flight join.
+  /// * **Drained, not merely queued.** Kotlin's sweep *posts*; `queuePending`
+  ///   only queues, and the drain trigger is otherwise app resume. The first
+  ///   cut relied on [queuePendingSubmissions] running next with an unscoped
+  ///   drain — which it does, but that drain sits *inside* its `try`, after
+  ///   `submissionsUploaderProvider.queuePending`, so anything throwing there
+  ///   is swallowed and the voices rows wait for the next resume. Hunk
+  ///   adjacency is not a guarantee; this one drains for itself, as
+  ///   [queuePendingSubmissions] does, and `OutboxDrainer`'s single-flight
+  ///   guard makes the second pass cheap rather than redundant. Unscoped, for
+  ///   the reason spelled out there.
   ///
   /// **It cannot double-post.** Two protections, one of them Kotlin's:
   /// `markUploaded` stamps `_id`/`_rev` and clears `isEdited`, which takes the
@@ -406,9 +410,11 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
   /// sync — a `_rev`-carrying update, so it is not a duplicate, but it churns a
   /// revision per post per sync. [VoicesRepository.pendingUploads] returns only
   /// rows that were never delivered or have been edited since. Every local
-  /// mutation the port has sets `isEdited` (`editPost`, `shareToCommunity`, the
-  /// un-share branch of `deletePost`, `toggleReaction`), so nothing a user can
-  /// do leaves a changed row outside the set; what the narrower predicate gives
+  /// mutation the port has sets `isEdited` — `editPost`, `shareToCommunity`,
+  /// the un-share branch of `deletePost`, `toggleReaction`, and `addLabel` /
+  /// `removeLabel`, which are unreachable today and were flagged in the same
+  /// phase precisely so that stays true when someone wires them up — so
+  /// nothing a user can do leaves a changed row outside the set; what the narrower predicate gives
   /// up is Kotlin's incidental repair of a *server-side* divergence, which no
   /// reader on either side depends on. Widening it would refill the outbox with
   /// unchanged documents on every sync.
@@ -423,6 +429,9 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
       await ref
           .read(voicesUploaderProvider)
           .queuePending(config: config, userId: user?.id);
+      await ref
+          .read(outboxDrainerProvider)
+          .drain(authHeader: PersonalsUploader.authHeaderFor(config));
     } catch (_) {
       // Deliberately ignored — see above.
     }

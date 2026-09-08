@@ -183,12 +183,15 @@ void main() {
         hasLength(1),
       );
 
-      // The sweep's own enqueue over the same still-undelivered row. The first
-      // of the two protections: `OutboxRepository.enqueue` keys on
-      // `(uploadType, itemId)`, so it refreshes the queued row rather than
-      // adding a second. Kotlin has no equivalent — its only defence is the
-      // predicate below.
-      await container.read(dashboardSyncProvider.notifier).queuePendingVoices();
+      // The sweep's own enqueue over the same still-undelivered row, taken at
+      // the uploader rather than through `queuePendingVoices`, which drains as
+      // well as queues. The first of the three protections:
+      // `OutboxRepository.enqueue` keys on `(uploadType, itemId)`, so it
+      // refreshes the queued row rather than adding a second. Kotlin has no
+      // equivalent — its only defence is the predicate below.
+      await container
+          .read(voicesUploaderProvider)
+          .queuePending(config: config, userId: 'ada');
       expect(
         await db.outboxDao.forItem(VoicesUploader.type, id),
         hasLength(1),
@@ -268,6 +271,80 @@ void main() {
       );
     });
 
+    test('an edit made while the POST is on the wire still goes out', () async {
+      // The cost of the in-flight guard, and it must not be a loss.
+      //
+      // Kotlin does **not** lose this edit: `getNewsForUpload()` has no
+      // predicate beyond the guest prefix, and `markNewsUploaded`
+      // (`VoicesRepositoryImpl.kt:50-66`) writes back `imageUrls`, `_id`,
+      // `_rev` and `images` and touches no edit marker — so the next
+      // `uploadNews()` re-serializes the edited message with the fresh `_rev`
+      // and it reaches the server as an update. The port's narrower
+      // `pendingUploads` predicate means `markUploaded` clearing `isEdited`
+      // would drop the row out of the pending set for good, and
+      // `NewsMapper.fromDoc` writes `message` unconditionally, so the next
+      // pull would overwrite the user's text with the server's older copy —
+      // the edit destroyed on the device as well as never sent.
+      final container = await containerFor();
+      final id = await seedStrandedVoice(container);
+      final repository = container.read(voicesRepositoryProvider);
+      final posted = <Map<String, dynamic>>[];
+      var posts = 0;
+      when(
+        () => api.postJsonObject(
+          any(),
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer((invocation) async {
+        posts++;
+        posted.add(invocation.positionalArguments[1] as Map<String, dynamic>);
+        if (posts == 1) {
+          // The user edits the post while its POST is in flight, exactly as
+          // `VoicesActions.editPost` does — repository write, then the
+          // unscoped re-queue the guard declines.
+          await repository.editPost(newsId: id, message: 'The pump is broken');
+          await container
+              .read(voicesUploaderProvider)
+              .queuePending(config: config, userId: 'ada');
+        }
+        return NetworkSuccess<Map<String, dynamic>>({
+          'id': 'server-id',
+          'rev': '$posts-rev',
+        });
+      });
+
+      await container.read(dashboardSyncProvider.notifier).queuePendingVoices();
+
+      expect(posts, 1, reason: 'the guard let a duplicate onto the wire');
+      expect(
+        (await repository.getById(id))?.message,
+        'The pump is broken',
+        reason: 'the local text is the fixture for the rest of this test',
+      );
+      expect(
+        (await repository.pendingUploads()).map((row) => row.id),
+        contains(id),
+        reason:
+            'the send carried a superseded body, so the row is not in sync '
+            'with the server and must stay queueable',
+      );
+
+      // And the next sweep delivers it as an **update**, not a duplicate:
+      // the row now carries the server id, so the payload does too.
+      await container.read(dashboardSyncProvider.notifier).queuePendingVoices();
+
+      expect(posts, 2);
+      expect(posted.last['message'], 'The pump is broken');
+      expect(
+        posted.last['_id'],
+        'server-id',
+        reason: 'a second create would fork the post on the server',
+      );
+      expect(posted.last['_rev'], '1-rev');
+      expect(await repository.pendingUploads(), isEmpty);
+    });
+
     test('a sweep that throws does not fail the sync', () async {
       final container = await containerFor(identity: _ThrowingIdentitySource());
       await seedStrandedVoice(container);
@@ -316,6 +393,14 @@ void main() {
   /// own first cut.
   test('the headless path calls the voices sweep from drainOutbox', () {
     final source = File('lib/background_entrypoint.dart').readAsStringSync();
+    // Bounded to the runner's argument list. The end bound is the *first*
+    // `@visibleForTesting`, which is where the top-level declarations begin,
+    // so `sweepPendingVoices`'s own declaration cannot satisfy the `contains`
+    // below — the failure mode Phase 134 found in its own first cut, where the
+    // range ran to end of file and the assertion could never fail. It stays
+    // sound only while the doc comment above that annotation does not itself
+    // write `sweepPendingVoices(`; the assertion on `sweepPendingSubmissions(`
+    // below would catch a slip, since both names live under the same rule.
     final wiring = source.substring(
       source.indexOf('BackgroundTaskRunner('),
       source.indexOf('@visibleForTesting'),
@@ -329,7 +414,17 @@ void main() {
 
     final swept = wiring.indexOf('sweepPendingVoices(');
     final drained = wiring.indexOf('drainer.drain(');
+    final submissions = wiring.indexOf('sweepPendingSubmissions(');
     expect(drained, greaterThan(-1), reason: 'drainer.drain moved');
+    expect(
+      swept,
+      lessThan(submissions),
+      reason:
+          'both Kotlin workers run uploadNews() before uploadSubmissions() '
+          '(AutoSyncWorker:130 before :136, UserDataWorker:40 before :48), '
+          'and the doc comments cite that ordering as the reason for the '
+          'placement — a claim nothing asserted until now',
+    );
     expect(
       swept,
       lessThan(drained),

@@ -17,8 +17,8 @@ the one to read first.
 | A team post carries `''`, not the author's planet code | `voices_provider.dart` | two port writers disagreeing about one field |
 | `authorJson` drops a null-valued key instead of writing `null` | `voices_repository.dart` | faithfulness to Gson's `serializeNulls` |
 
-**26 new tests** across three new files and two existing ones, counted from the
-runner. **20 mutations, 20 caught** — the list is at the bottom. Two
+**27 new tests** across three new files and two existing ones, counted from the
+runner. **26 mutations, 26 caught** — the list is at the bottom. Two
 `parity-auditor` passes at `effort: max` ran, one on the Kotlin ground truth
 before implementing and one on the finished green code.
 
@@ -91,10 +91,11 @@ user reaches it rather than by seeding the end state.
 
 `queuePendingVoices()` runs from `syncAll` immediately before
 `queuePendingSubmissions()`, which is the order both Kotlin workers have
-(`AutoSyncWorker:130` before `:136`; `UserDataWorker:40` before `:48`). It
-queues only: the unscoped drain at the end of `queuePendingSubmissions` carries
-these rows out in the same pass, and *syncAll delivers a voice nothing enqueued*
-pins that coupling end to end rather than trusting the adjacency.
+(`AutoSyncWorker:130` before `:136`; `UserDataWorker:40` before `:48`) — and
+which is now asserted rather than only asserted about, in both the foreground
+and the headless path. It queues **and drains**, unscoped, as
+`queuePendingSubmissions` does; see *What the implementation audit changed* for
+why relying on the neighbour's drain was not sound.
 `sweepPendingVoices` is the headless half, called from `drainOutbox` and
 deliberately not from `syncSteps` — those run only for an `autoSync` task, with
 auto-sync enabled, and only when the interval is due, and
@@ -108,6 +109,73 @@ earlier arm throwing skips `uploadNews` silently — a Kotlin weakness, not a
 behaviour to reproduce). It is not hypothetical: `queuePending` reads device
 identity before it enqueues anything, and `PlatformDeviceIdentitySource.read`
 rethrows on an engine with no channel and no primed cache.
+
+### What the implementation audit changed
+
+The second `parity-auditor` pass, on the finished green code, found one live
+defect and three documentation failures of the same class. All four are fixed;
+the rest of its findings are in *Reported, not fixed*.
+
+**The in-flight guard turned a mid-flight edit into permanent loss, and both
+reasons I gave for accepting that were wrong.** The comment said Kotlin "loses
+it identically". It does not: `getNewsForUpload` has no predicate beyond the
+guest prefix, and `markNewsUploaded` (`VoicesRepositoryImpl.kt:50-66`) writes
+back `imageUrls`, `_id`, `_rev` and `images` and touches no edit marker — so
+Kotlin's next sweep re-serializes the edited message with the fresh `_rev` and
+it lands as an update. The sentence was copied verbatim from
+`submissions_uploader.dart:64`, where it **is** true, because `SubmissionDao:44`
+clears `isUpdated` in the same statement that stamps the id and
+`getPendingSubmissions` filters on it. It does not transfer, because the narrow
+`pendingUploads` predicate is the port's own invention for voices. The second
+claim, that a lost edit is "recoverable", was wrong too: `NewsMapper.fromDoc`
+writes `message` unconditionally, so the next pull overwrites the user's text
+with the server's older copy and the edit is destroyed on the device as well.
+
+Concretely: compose a post offline, tap Sync, and edit it while the POST is on
+the wire. `queuePending` skips the in-flight row (correctly — a replay would
+fork the post), then `markUploaded` cleared `isEdited`, and with a `docId` now
+set the row fell out of `pendingUploads` for good. `markUploaded` now takes the
+document that actually went out and keeps the flag when the row no longer
+matches it (`payloadMatchesRow`), so the next sweep re-queues it carrying the
+`_id`/`_rev` just recorded — an update, not a duplicate. Whole documents are
+compared rather than a hand-listed set of columns, so a future writer touching
+a column nobody thought of is covered by construction.
+
+**The delivery coupling was not unconditional.** `queuePendingVoices` queued and
+relied on `queuePendingSubmissions` draining next. That drain sits *inside* its
+`try`, after `submissionsUploaderProvider.queuePending`, so anything throwing
+there is swallowed and the voices rows would wait for app resume. Hunk adjacency
+is not a guarantee — the same lesson the round's brief gives about two lanes
+sharing a file, arriving through one method calling another. It drains for
+itself now, which is also closer to Kotlin, whose sweep *posts*. The first cut's
+claim that a test "pins that coupling end to end" was false: that test drove
+only the happy path.
+
+**`addLabel` and `removeLabel` broke the enumeration.** "Every local mutation
+sets `isEdited`" listed four writers and missed two, which mutate `labels` — a
+column `serialize` sends — and set no flag. Harmless only because they have zero
+callers in `lib/`; Kotlin has a live labels UI and its sweep re-sends everything,
+so the day someone wires the chips up a label change would have been silently
+device-local. Both flagged, both now pinned.
+
+**Two mutations found claims nothing pinned** — the voices sweep's own drain and
+the label flags — which is the Phase 122 practice paying out again. One earlier
+mutation of mine was itself invalid: its anchor matched the *submissions* sweep
+first and reported a false negative. **Check that a mutation changed the line
+you meant.**
+
+Three citation slips are corrected at the code: `TeamsVoicesFragment.kt:81` not
+`:78`; `VoicesFragment.kt:140-143` not `:139-143`; and the empty-`viewIn`
+mechanism, which I described in four places as `isVisibleToUser` "falling
+through its empty-`viewIn` guard" when the value is the string `"[]"` — neither
+null nor empty, so it decodes to an empty list and `.any` returns false one
+branch later. Same outcome, wrong mechanism, copied four times. The
+"matches `serialize()` field for field" sentence in `authorJson` now names the
+`iterations` exception instead of leaving the correction in a notes file nobody
+reading the code will open. And the wrong claim about `TeamVoicesScreen` that
+this phase corrected **at the code** survived verbatim in the test comment for
+the very case it was about; that copy is fixed too. *A correction has to reach
+every copy of the claim.*
 
 ### It cannot double-post — and one protection was missing
 
@@ -290,7 +358,31 @@ Each names the file, the change, and why it was not made here.
    symmetric. The port's behaviour is right and only the stated reason is wrong
    — which is worth correcting, because someone could "fix" a non-existent
    asymmetry on the strength of it.
-10. **Phase 140's items 1, 2, 3 and 6 are still open**, and all four are in
+10. **The sweep decodes the whole `news` table every 15 minutes.**
+    `pendingUploads` is `_dao.getAll()` plus an in-memory filter — `NewsDao`
+    has no predicate query for it — and `drainOutbox` runs on **both** the
+    `autoSync` and the `maintenance` task, ahead of every gate, where
+    `maintenanceInterval` is 15 minutes. `sweepPendingSubmissions` is not
+    comparable: `SubmissionDao.pendingUploads` is an indexed query. Kotlin's
+    `getNewsForUpload` runs only from its two workers. Fix: a
+    `WHERE _id IS NULL OR _id = '' OR is_edited = 1` query on `NewsDao` in
+    `lib/data/local/app_database.dart` (**Lane B's file**, and this lane was
+    told to stop and report rather than assume the DAO gains methods). The
+    placement stands on its own reasoning; only the cost is unaddressed.
+11. **The reachability test's bounds are sound but one edit from unfailable.**
+    The slice ends at the first `@visibleForTesting`, so `sweepPendingVoices`'s
+    own declaration is excluded — verified by offset, not by eye. It stays that
+    way only while the doc comment above that annotation never writes
+    `sweepPendingVoices(` with an open paren. Ending the slice at the close of
+    `executeBackgroundTask` would be robust; left alone because the fix belongs
+    with `sweepPendingSubmissions`'s copy of the same test, and changing one
+    without the other is how the two drift.
+12. **`recoverStuck` does not run on foreground resume.** It runs at startup
+    only (`outbox_drain_scope.dart:51`), so a row left `in_progress` by a kill
+    mid-drain blocks its item's re-queue — now including a voice, via the new
+    in-flight guard — until the next launch or headless invocation. Bounded and
+    pre-existing; noted because the guard gives it one more way to matter.
+13. **Phase 140's items 1, 2, 3 and 6 are still open**, and all four are in
     files this round assigned elsewhere (`tables.dart`, `app_database.dart`,
     the migration doc). Item 1's `teamPlanetCode` column is what would let
     `createTeamPost` and the chat share both send the *right* value rather than
@@ -298,9 +390,16 @@ Each names the file, the change, and why it was not made here.
 
 ## Mutations run
 
-Each was applied alone to green code and reverted; all 20 were caught, and the
-test that caught each is named. Two of them exist because the mutation found a
-claim nothing pinned (13 and 14/15), which is the Phase 122 practice.
+Each was applied alone to green code and reverted; all 26 were caught, and the
+test that caught each is named. Four of them exist because the mutation found a
+claim nothing pinned — the `queued` counter, `toggleReaction`/the un-share
+branch, the voices sweep's own drain, and the two label writers — which is the
+Phase 122 practice. **One mutation was itself invalid**: its anchor matched the
+*submissions* sweep first and reported a false negative until it was re-aimed.
+Check that a mutation changed the line you meant.
+
+*Line numbers cited into `voices_repository.dart` in the sections above were
+taken before that file grew; treat them as approximate and grep the symbol.*
 
 | Mutation | Caught by |
 |---|---|
@@ -323,6 +422,12 @@ claim nothing pinned (13 and 14/15), which is the Phase 122 practice.
 | `createPost` does not address the community | 3 community tests |
 | `createPost` keeps the default `messageType` | the composed post addresses the community on the wire |
 | `createTeamPost` claims the author planet code | a team post carries no planet code it cannot know |
+| the sync-path sweep does not drain for itself | an edit made while the POST is on the wire |
+| `markUploaded` clears `isEdited` unconditionally | the same |
+| the handler does not tell `markUploaded` what it sent | the same |
+| `payloadMatchesRow` ignores every difference | the same |
+| `addLabel` does not flag the row | every local mutation puts a delivered post back in the queue |
+| `removeLabel` does not flag the row | the same |
 
 ## Files touched
 

@@ -246,8 +246,12 @@ class VoicesRepository {
   /// - the `_attachments` photo, which would embed the user's profile image
   ///   in every post they author.
   ///
-  /// Everything else matches `serialize()` field for field, including the
-  /// `_id`/`_rev` pair being written only for an account the server knows.
+  /// Everything else matches `serialize()` field for field **except**
+  /// `iterations` (`UserEntity.kt:83-88`), which is left out deliberately: it
+  /// is a PBKDF2 parameter and a voices post is a public document, so adding
+  /// it wants the same explicit judgement as the credential branch rather
+  /// than a silent completion of the field list. The `_id`/`_rev` pair is
+  /// written only for an account the server knows, as `serialize()` has it.
   ///
   /// **A null value drops its key rather than writing `null`.** `createNews`
   /// serializes with `JsonUtils.gson`, a bare `Gson()` whose `serializeNulls`
@@ -740,8 +744,19 @@ class VoicesRepository {
     // duplicate. Deduplicated here: the label set drives filter chips, and a
     // repeat renders a second identical chip that cannot be told apart.
     if (row.labels.contains(label)) return;
+    // Flagged like every other local mutation, and for the same reason: the
+    // `labels` column goes on the wire ([serialize]), Kotlin's sweep re-sends
+    // the whole table so a Kotlin label change reaches the server, and this
+    // port only uploads rows that are new or edited. Nothing calls this yet —
+    // which is exactly why the flag belongs here now rather than being
+    // discovered missing by whoever wires the label chips up.
     await _dao.upsert(
-      row.toCompanion(false).copyWith(labels: Value([...row.labels, label])),
+      row
+          .toCompanion(false)
+          .copyWith(
+            labels: Value([...row.labels, label]),
+            isEdited: const Value(true),
+          ),
     );
   }
 
@@ -758,6 +773,8 @@ class VoicesRepository {
                   .where((entry) => entry != label)
                   .toList(growable: false),
             ),
+            // See [addLabel].
+            isEdited: const Value(true),
           ),
     );
   }
@@ -806,14 +823,35 @@ class VoicesRepository {
   ///
   /// Clearing `imageUrls` is what marks the attachments as delivered; the
   /// server's `images` array replaces them.
+  ///
+  /// [delivered] is the document that actually went on the wire. When the row
+  /// has changed since that payload was captured, the send carried a
+  /// **superseded body** and the row is not in sync with the server, so
+  /// `isEdited` is left set and the next sweep re-queues it — this time with
+  /// the `_id`/`_rev` just recorded, so it lands as an update rather than a
+  /// second document.
+  ///
+  /// Without this, clearing the flag unconditionally is a silent loss.
+  /// [VoicesUploader.queuePending] leaves an in-flight row alone so an append
+  /// is not replayed, so an edit made while the POST is on the wire is never
+  /// queued; clearing `isEdited` on arrival then drops the row out of
+  /// [pendingUploads] for good, and `NewsMapper.fromDoc` writes `message`
+  /// unconditionally, so the next pull overwrites the user's text with the
+  /// server's older copy — destroyed on the device as well as never sent.
+  /// **Kotlin does not lose it**: `getNewsForUpload` has no predicate beyond
+  /// the guest prefix and `markNewsUploaded` touches no edit marker, so its
+  /// next sweep re-serializes the edited message with the fresh `_rev`. This
+  /// is the port's narrow predicate paying for itself, not a Kotlin quirk.
   Future<void> markUploaded(
     String id,
     String docId,
     String rev, {
     List<dynamic> images = const [],
+    Map<String, dynamic>? delivered,
   }) async {
     final row = await _dao.getById(id);
     if (row == null) return;
+    final superseded = delivered != null && !payloadMatchesRow(delivered, row);
     await _dao.upsert(
       row
           .toCompanion(false)
@@ -822,9 +860,30 @@ class VoicesRepository {
             rev: Value(rev),
             images: Value(jsonEncode(images)),
             imageUrls: const Value([]),
-            isEdited: const Value(false),
+            isEdited: Value(superseded),
           ),
     );
+  }
+
+  /// Whether [payload] still describes [row] — i.e. nothing local changed
+  /// between the payload being captured and now.
+  ///
+  /// Compares whole documents rather than a hand-listed set of mutable
+  /// columns, so a future writer touching a column nobody thought of here is
+  /// covered by construction. Three keys are excluded: `_id` and `_rev`,
+  /// which the send is in the middle of establishing, and the origin fields
+  /// [VoicesUploader.queuePending] stamps on after serializing. Key order is
+  /// comparable because both maps come from [serialize], and the spread that
+  /// adds the origin fields appends rather than reorders.
+  static bool payloadMatchesRow(Map<String, dynamic> payload, NewsRow row) {
+    bool established(String key) =>
+        key == '_id' || key == '_rev' || key == 'androidId' || key == 'app';
+    Map<String, dynamic> comparable(Map<String, dynamic> doc) => {
+      for (final entry in doc.entries)
+        if (!established(entry.key)) entry.key: entry.value,
+    };
+    return jsonEncode(comparable(payload)) ==
+        jsonEncode(comparable(serialize(row)));
   }
 
   /// Port of `VoicesRepositoryImpl.updateReaction` — toggles a user's emoji

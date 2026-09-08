@@ -118,6 +118,10 @@ class VoicesUploader {
         couchId,
         rev,
         images: images is List ? images : const [],
+        // The body that actually went out. A row mutated while this POST was
+        // on the wire keeps its `isEdited` flag, because [queuePending]
+        // declined to re-queue it and nothing else would.
+        delivered: payload,
       );
     }
     return result;

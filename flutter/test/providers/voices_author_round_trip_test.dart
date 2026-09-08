@@ -266,14 +266,25 @@ void main() {
     expect(row?.user, isNull);
   });
 
-  test('a session that never resolves does not swallow the post', () async {
+  test('a session not yet resolved does not swallow the post', () async {
     // `VoicesActions` read `ref.read(sessionProvider).valueOrNull` on a
-    // provider nothing here watches — `team_voices_screen` never touches
-    // `sessionProvider` at all — so the user was null, the early return
-    // dropped the composed post with no error and no row, and the app was
-    // saved only by the router's `ref.listen`. The `await` also has to sit
-    // inside the enclosing `try`, because a future can reject where
-    // `valueOrNull` could not.
+    // provider it never watches, so the user was null until something else
+    // resolved it, the early return dropped the composed post with no error
+    // and no row, and the app was saved only by the router's `ref.listen`.
+    //
+    // The screen with the live window is `VoicesScreen`, whose compose FAB is
+    // ungated and renders while `communityFeedProvider` is still loading —
+    // **not** `TeamVoicesScreen`, which an earlier draft of this comment named
+    // and which does reach the session, through `teamMembershipsProvider`, and
+    // gates its FAB on a resolved membership. The correction was made at the
+    // code and this copy of the claim outlived it by one commit.
+    //
+    // The `await` also has to sit inside the enclosing `try`, because a future
+    // can reject where `valueOrNull` could not — the test below.
+    //
+    // The name says *not yet* resolved: an `AsyncNotifier`'s first
+    // synchronous read is `AsyncLoading` even for a `build` that completes
+    // immediately, which is the window this reproduces.
     final container = await containerFor();
     final id = await container
         .read(voicesActionsProvider)

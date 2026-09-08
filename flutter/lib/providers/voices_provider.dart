@@ -181,12 +181,13 @@ class VoicesActions {
           planetCode: user.planetCode,
           parentCode: user.parentCode,
           // The four keys `VoicesFragment.btnSubmit` builds before it calls
-          // `createNews` (`ui/voices/VoicesFragment.kt:139-143`). Without them
-          // `_viewInJson` writes `"[]"`, `isVisibleToUser` falls through its
-          // empty-`viewIn` guard to false, and the post the user just composed
-          // is listed by nobody — not in this app's community feed, and not on
-          // Planet, where `serialize` omits the key entirely for an empty
-          // list. Both halves of the identifier are interpolated unguarded, as
+          // `createNews` (`ui/voices/VoicesFragment.kt:140-143`). Without them
+          // `_viewInJson` writes the string `"[]"` — which is neither null nor
+          // empty, so `isVisibleToUser` does not take its early guard: it
+          // decodes to an empty list and `.any` returns false. Either way the
+          // post the user just composed is listed by nobody — not in this
+          // app's community feed, and not on Planet, where `serialize` omits
+          // the key entirely for an empty list. Both halves of the identifier are interpolated unguarded, as
           // Kotlin does: an empty or `"@"` id is the planet-wide wildcard on
           // both sides, so a user missing a code still reaches everyone rather
           // than nobody.
@@ -221,7 +222,7 @@ class VoicesActions {
           parentCode: user.parentCode,
           messageType: 'team',
           // The **team's** planet code, not the author's:
-          // `TeamsVoicesFragment.kt:78` writes `team?.teamPlanetCode ?: ""`.
+          // `TeamsVoicesFragment.kt:81` writes `team?.teamPlanetCode ?: ""`.
           // The port's `Teams` table has no such column (reported against
           // `tables.dart`), and `MyTeam.kt:86` reads the field with
           // `JsonUtils.getString`, so a team document that omits it yields
@@ -328,12 +329,13 @@ class VoicesActions {
   Future<int> queuePending() async {
     final config = ref.read(serverConfigProvider);
     if (config == null) return 0;
+    // Awaited like the writers', though this one is only the outbox row's tag
+    // and nothing reads it back (`tables.dart:368`). `editPost` and
+    // `deletePost` reach here without having resolved the session, so a plain
+    // `.valueOrNull` tagged those rows null.
     return ref
         .read(voicesUploaderProvider)
-        .queuePending(
-          config: config,
-          userId: ref.read(sessionProvider).valueOrNull?.id,
-        );
+        .queuePending(config: config, userId: (await _author())?.id);
   }
 }
 

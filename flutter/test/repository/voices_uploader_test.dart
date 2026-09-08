@@ -42,6 +42,13 @@ void main() {
   });
   tearDown(() => database.close());
 
+  /// What `OutboxDrainer` hands the handler: the operation's own stored
+  /// payload, decoded. Passing `const {}` instead would read as "the row
+  /// changed while the POST was on the wire", which is a real branch of
+  /// `markUploaded` and not what these tests are about.
+  Map<String, dynamic> payloadOf(OutboxRow operation) =>
+      jsonDecode(operation.payload) as Map<String, dynamic>;
+
   Future<String> seedPost() =>
       voices.createPost(message: 'Hello', userId: 'user-1', userName: 'Ada');
 
@@ -93,7 +100,7 @@ void main() {
       }),
     );
 
-    await uploader.handler(operation, const {}, 'Basic dGVzdA==');
+    await uploader.handler(operation, payloadOf(operation), 'Basic dGVzdA==');
 
     final row = await voices.getById(id);
     expect(row?.docId, 'remote-1');
@@ -141,7 +148,11 @@ void main() {
       ),
     ).thenAnswer((_) async => NetworkSuccess<Map<String, dynamic>>(const {}));
 
-    final result = await uploader.handler(operation, const {}, null);
+    final result = await uploader.handler(
+      operation,
+      payloadOf(operation),
+      null,
+    );
 
     expect(result, isA<NetworkError<Map<String, dynamic>>>());
     expect(await voices.pendingUploads(), hasLength(1));
@@ -168,7 +179,7 @@ void main() {
 
     // The endpoint no longer authenticates, so the header is the only
     // credential; matching it with `any()` would hide a null.
-    await uploader.handler(operation, const {}, 'Basic dGVzdA==');
+    await uploader.handler(operation, payloadOf(operation), 'Basic dGVzdA==');
 
     expect(seen, 'Basic dGVzdA==');
   });
