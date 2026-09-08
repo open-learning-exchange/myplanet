@@ -1568,7 +1568,7 @@
   },
   "filterPdfs": "PDFs",
   "@filterPdfs": {
-    "description": "Label for the pdf entry in the resources media-type filter. Recovered from the Kotlin `filter_pdfs`, which `ResourcesFilterFragment.getMediumDisplayName` maps a raw `pdf` medium to."
+    "description": "Label for the pdf entry in the resources media-type filter. Recovered from the Kotlin `filter_pdfs`. Note that Kotlin has a second consumer the port does not: `ResourcesAdapter.typeLabelRes` uses this string (and `filter_videos`/`filter_audio`, plus a `filter_books` the port has no key for) as the first segment of every resource row subtitle. The port row subtitle shows author/year/subjects instead, so only the filter use is covered here."
   },
   "filterVideos": "Videos",
   "@filterVideos": {

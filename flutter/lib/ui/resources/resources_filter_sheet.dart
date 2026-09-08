@@ -33,8 +33,12 @@ import '../../providers/resources_providers.dart';
 /// right so the two can move independently.
 ///
 /// Kotlin lowercases with `Locale.getDefault()`, which is the Turkish-dotless-I
-/// trap: under `tr`/`az`, `I` maps to `\u0131`, so `IMAGE`, `VIDEO` and `AUDIO`
-/// — three of the seven cases — fall through to `else` and render raw. Dart's
+/// trap: under `tr`/`az`, a capital `I` maps to `\u0131` rather than `i`, so any
+/// value containing one falls through to `else` and renders raw — `IMAGE`,
+/// `VIDEO`, `AUDIO` in caps, and title-case `Image`, though not `Video` or
+/// `Audio`, whose `i` is already lowercase. It is reachable: `LocaleUtils`
+/// seeds the default from `Locale.getDefault().language`, so a Turkish device
+/// on which no language has been picked in myPlanet keeps `tr`. Dart's
 /// [String.toLowerCase] is locale-independent, so the port matches them where
 /// the Kotlin does not. Deliberate; reproducing the bug would need an explicit
 /// Turkish special case.
@@ -317,6 +321,19 @@ class _ResourcesFilterSheetState extends ConsumerState<ResourcesFilterSheet> {
       return const SizedBox.shrink();
     }
 
+    // `resourceFilterOptionsProvider` sorts each facet by its raw value, which
+    // was also the displayed text until the labels were mapped. Sorting on a
+    // string the user cannot see puts `Videos` before `PDFs` (because `Video` <
+    // `pdf`) and, in Arabic, produces an order unrelated to any collation. Sort
+    // on what is rendered. Kotlin sorts none of these facets at all — it
+    // returns `mutableSetOf` in first-appearance order — so the alphabetical
+    // ordering is a port-local improvement, and this keeps it one.
+    final ordered = labelFor == null
+        ? options
+        : (List<String>.of(options)..sort(
+            (a, b) => labelFor(context, a).compareTo(labelFor(context, b)),
+          ));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -325,7 +342,7 @@ class _ResourcesFilterSheetState extends ConsumerState<ResourcesFilterSheet> {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: options.map((option) {
+          children: ordered.map((option) {
             final isSelected = selected.contains(option);
             return FilterChip(
               // The chip's *label* may be a friendly name while its *value*

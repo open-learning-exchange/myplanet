@@ -163,10 +163,31 @@ mapping. Two details that are easy to get wrong:
   mapping the value would have been the writer/reader key disagreement this
   project keeps finding.
 
-All five ARB keys were **recovered, not generated**: `filter_pdfs`,
+The wiring, not just the mapping, is now tested. With only the
+`mediaTypeDisplayName` unit tests, the second audit pass showed three mutations
+that left all 2352 tests green: dropping the `labelFor:` argument entirely,
+adding it to the three lists Kotlin leaves raw, and — the writer/reader shape
+this project keeps rediscovering — storing the *label* instead of the raw medium,
+which makes the filter match nothing at all, silently. Four widget tests now pump
+the real sheet; each of the three mutations was re-run against them and each
+reds.
+
+One thing this phase introduced and then fixed: mapping the labels made the facet
+**sort key invisible**, because the options are sorted on the raw value. `Video`
+sorts before `pdf`, so the user saw `Videos` before `PDFs`, and in Arabic an
+order unrelated to any collation. The media-type list is now ordered by the
+rendered label. Kotlin sorts none of these facets, so the alphabetical order is a
+port-local improvement — this keeps it one instead of half-undoing it.
+
+All six ARB keys were **recovered, not generated**: `filter_pdfs`,
 `filter_videos`, `filter_audio` and the two the commit itself added
 (`medium_text_html`, `medium_html`) all ship human translations in every
-`values-*/strings.xml`. That is why the pinned human-reviewed counts in
+`values-*/strings.xml`, and `filterOther` carries the Kotlin `other`. Adding
+`filter*` keys rather than reusing the `storage*` ones was necessary, not
+redundant: the two Kotlin sets genuinely differ in ar, fr, ne and so — Somali has
+`PDF-yo` against `Dukumentiyada PDF` and `Codad` ("sounds") against `Codka`
+("the voice") — so reuse would have put storage-breakdown wording in the filter
+chips. That is why the pinned human-reviewed counts in
 `placeholder_integrity_test.dart` move by the same five in all five locales,
 Nepali and Somali included. `image` and `other` reuse `storageImages` and
 `storageOther`, whose text is identical to Kotlin's `storage_images` and `other`
@@ -254,15 +275,29 @@ of Kotlin's `storage_other`, whose English is **"Other Files"**; the ARB holds
 "Other". `tool/arb_from_strings_xml.dart` matches by key name first and falls
 back to matching by *English text*, and since `"Other Files" != "Other"` the name
 rule missed and the text rule imported the unrelated `other` key's translations
-into ar/es/fr/ne/so. Its four siblings (`storagePdfs`, `storageVideos`,
-`storageAudio`, `storageImages`) are all correct, so it is the lone outlier, and
-no ARB key anywhere holds "Other Files". Live effect: `storage_breakdown_screen.dart:285`
+into ar/es/fr/ne/so. Its four no ARB key anywhere holds "Other Files".
+
+**Corrected by the second audit pass**, which is why the two passes are both
+run: my first write-up of this item said its four siblings were "all correct, so
+it is the lone outlier". They are not. **`storagePdfs` is `PDF` in French where
+Kotlin's `storage_pdfs` is `PDFs`** — and `PDF` is `filter_pdfs`'s French, so the
+French storage breakdown mislabels *two* of its five rows. That one is invisible
+to the sweep this item proposed, because its **English matches**, so the name
+rule held and the wrong French arrived by some other route. There are two
+mis-derivation mechanisms, not one. The French value is repaired here (a
+one-value recovery from `values-fr/strings.xml`); `storageOther` is not, because
+that is a storage-screen change. Live effect: `storage_breakdown_screen.dart:285`
 and `storage_category_detail_screen.dart:167` render "Other" where the Kotlin
 storage breakdown renders "Other Files", in every language. This phase did not
 repair it — that is a storage-screen change, not a harvest one — but it did stop
 the new media-type chip from depending on it (`filterOther`), so the repair is
-now a one-key change. **Worth a sweep of every key the text-match fallback
-resolved**, because the mechanism is not specific to this key.
+now a one-key change. The sweep this item asked for has since been **run and bounded**: of 37 ARB keys
+whose Kotlin namesake has different English, 7 took their locale values from a
+different Kotlin key through the English-text path (`about`, `disclaimer`,
+`mission`, `nameIsRequired`, `deleteSelected`, `totalVisits`, `storageOther`),
+and only `storageOther` has a semantically unrelated donor — `totalVisits`
+genuinely maps to `total_visits_overall`, and `deleteSelected` is right for its
+screen. So the confirmed scope is one key, not an unknown.
 
 **5. Three pre-existing facet divergences in `resources_filter_sheet.dart`**, none
 introduced here, all found by the same pass. The third is a real behaviour bug:
@@ -281,7 +316,34 @@ introduced here, all found by the same pass. The third is a real behaviour bug:
   the types on matching rows, and the Kotlin's stays put. Fixing it means changing
   which provider the sheet reads, which is a `resources_providers`/screen change.
 
-**6. `ne`/`so` remain at 6 keys richer but structurally far behind.** Nothing to
+**6. `_iconFor` in `resources_screen.dart` claims a mirror it does not
+implement, and the gap is reachable.** Its doc says it "mirrors the media-type
+icon mapping in the Kotlin resource adapter". The Kotlin icon actually comes from
+`LibraryTypeClassifier.classify()`, which reads the **file extension** of
+`resourceLocalAddress ?: resourceRemoteAddress` first, then falls back to
+`mediaType.startsWith("video")`/`startsWith("audio")`; it has no `image` case and
+defaults to `BOOK`. So `mediaType: "video/mp4"` — a value Kotlin's own test pins
+— gets a video icon there and a generic article icon here, as does a null
+mediaType on a `.mp4` local file. Note this is *icon only*: `video/mp4` falls
+through `getMediumDisplayName`'s `when` in both apps, so the filter label is at
+parity. Porting `LibraryTypeClassifier` is the real fix and is a slice of its
+own.
+
+**7. `resourceFilterOptionsProvider` is a non-`autoDispose` family keyed on a
+`List`** (`resources_filter_sheet.dart:104`). Dart `List` has identity equality,
+so every stream emission mints a family element that is never released, each
+pinning a whole `List<MyLibraryRow>`. Leave the filter sheet open during a sync
+and they accumulate for the process lifetime. Pre-existing.
+
+**8. The port kept the in-memory shape `3002830` deleted** — performance only,
+correctness unaffected. `mostOpenedResource` still loads every
+`resource_activity` row for the user+type into Dart, which is exactly what
+upstream moved into `GROUP BY … LIMIT 1`; that was the point of the issue behind
+the commit. `resource_activity` is write-only telemetry that is never pruned, and
+`profileActivityStatsProvider` pays the cost on every resolve. Following the
+commit's *mechanism* as well as its semantics wants a Drift aggregate query.
+
+**9. `ne`/`so` remain at 6 keys richer but structurally far behind.** Nothing to
 do here; noted only because this phase moved their counts and a reader comparing
 against the CLAUDE.md table will see the drift.
 
