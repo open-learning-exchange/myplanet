@@ -40,7 +40,7 @@ class ServerUrlMapperTest {
     }
 
     @Test
-    fun testProcessUrlWithKnownMapping() {
+    fun testProcessUrlMappedPrimaryToCorrectAlternative() {
         val url = "http://${BuildConfig.PLANET_SANPABLO_URL}:80/db"
 
         val mapping = serverUrlMapper.processUrl(url)
@@ -50,21 +50,31 @@ class ServerUrlMapperTest {
     }
 
     @Test
-    fun testProcessUrlWithUnknownMapping() {
-        val url = "http://unknown.url:8080/db"
+    fun testProcessUrlUnmappedHostReturnsNullAlternativeUrl() {
+        val url = "http://unmapped.host.com/db"
 
         val mapping = serverUrlMapper.processUrl(url)
         assertEquals(url, mapping.primaryUrl)
-        assertEquals("http://unknown.url:8080", mapping.extractedBaseUrl)
+        assertEquals("http://unmapped.host.com", mapping.extractedBaseUrl)
         assertNull(mapping.alternativeUrl)
     }
 
     @Test
-    fun testProcessUrlWithInvalidUrl() {
-        val url = "invalid url"
+    fun testProcessUrlPreservesNonDefaultPortInExtractedBaseUrl() {
+        val url = "http://unmapped.host.com:8080/db"
 
         val mapping = serverUrlMapper.processUrl(url)
         assertEquals(url, mapping.primaryUrl)
+        assertEquals("http://unmapped.host.com:8080", mapping.extractedBaseUrl)
+        assertNull(mapping.alternativeUrl)
+    }
+
+    @Test
+    fun testProcessUrlMalformedStringReturnsNullWithoutThrowing() {
+        val malformedUrl = "invalid url"
+
+        val mapping = serverUrlMapper.processUrl(malformedUrl)
+        assertEquals(malformedUrl, mapping.primaryUrl)
         assertNull(mapping.extractedBaseUrl)
         assertNull(mapping.alternativeUrl)
     }
