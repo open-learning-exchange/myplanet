@@ -188,16 +188,25 @@ class ResourcesAdapter(
         super.onDetachedFromRecyclerView(recyclerView)
         adapterScope.cancel()
         htmlCoverCache.clear()
+        fileLengthCache.clear()
     }
 
     override fun onCurrentListChanged(previousList: MutableList<ResourceListModel>, currentList: MutableList<ResourceListModel>) {
         super.onCurrentListChanged(previousList, currentList)
         val currentMap = currentList.associateBy { it.library.id }
+        val dir = externalFilesDir
         previousList.forEach { prev ->
             val id = prev.library.id
             val current = currentMap[id]
             if (current == null || current.library.resourceLocalAddress != prev.library.resourceLocalAddress) {
                 htmlCoverCache.remove(id)
+                prev.item.resourceLocalAddress?.takeIf { it.isNotBlank() }?.let {
+                    fileLengthCache.remove(File(it).path)
+                }
+                val address = prev.library.resourceLocalAddress
+                if (dir != null && !address.isNullOrBlank() && !id.isNullOrBlank()) {
+                    fileLengthCache.remove(FileUtils.getLibraryFile(dir, id, address).path)
+                }
             }
         }
     }
@@ -268,8 +277,10 @@ class ResourcesAdapter(
         binding.tvMeta.text = buildMetaLine(model, type, fileSize = null)
         bindSelectionAndDownload(binding.checkbox, binding.ivDownloaded, model)
         bindClicks(holder.itemView, binding.checkbox, model)
+        setCoverColor(binding.coverContainer, type)
+        binding.ivTypeIcon.setImageResource(typeIconRes(type))
         holder.setPreviewJob(adapterScope.launch {
-            bindCover(binding.coverContainer, binding.ivCoverPreview, binding.ivTypeIcon, type, model, GRID_COVER_WIDTH_DP)
+            bindCover(binding.ivCoverPreview, binding.ivTypeIcon, model, GRID_COVER_WIDTH_DP)
             val fileSize = resourceFileLength(model)
             binding.tvMeta.text = buildMetaLine(model, type, fileSize)
         })
@@ -282,8 +293,10 @@ class ResourcesAdapter(
         binding.tvMeta.text = buildMetaLine(model, type, fileSize = null)
         bindSelectionAndDownload(binding.checkbox, binding.ivDownloaded, model)
         bindClicks(holder.itemView, binding.checkbox, model)
+        setCoverColor(binding.coverContainer, type)
+        binding.ivTypeIcon.setImageResource(typeIconRes(type))
         holder.setPreviewJob(adapterScope.launch {
-            bindCover(binding.coverContainer, binding.ivCoverPreview, binding.ivTypeIcon, type, model, LIST_COVER_WIDTH_DP)
+            bindCover(binding.ivCoverPreview, binding.ivTypeIcon, model, LIST_COVER_WIDTH_DP)
             val fileSize = resourceFileLength(model)
             binding.tvMeta.text = buildMetaLine(model, type, fileSize)
         })
@@ -297,16 +310,11 @@ class ResourcesAdapter(
     }
 
     private suspend fun bindCover(
-        coverContainer: View,
         ivPreview: ImageView,
         ivTypeIcon: ImageView,
-        type: LibraryType,
         model: ResourceListModel,
         coverWidthDp: Int
     ) {
-        setCoverColor(coverContainer, type)
-        ivTypeIcon.setImageResource(typeIconRes(type))
-
         val isOffline = model.item.isOffline || locallyOfflineIds.contains(model.item.id) || model.isLocallyOffline
         val address = model.library.resourceLocalAddress
         val libraryId = model.library.id
