@@ -670,4 +670,45 @@ class ProgressRepositoryImplTest {
         // DAO methods should not be called with an empty list
         coVerify(exactly = 0) { courseProgressDao.upsertAll(any()) }
     }
+
+    @Test
+    fun testInsertCourseProgressFromSync_BlankIdsAndDuplicates() = testScope.runTest {
+        val doc1 = JsonObject().apply {
+            addProperty("_id", "doc1")
+            addProperty("courseId", "course1")
+            addProperty("userId", "user1")
+            addProperty("stepNum", 1)
+            addProperty("passed", true)
+        }
+        val doc2 = JsonObject().apply {
+            addProperty("_id", "")
+            addProperty("courseId", "course1")
+            addProperty("userId", "")
+            addProperty("stepNum", 1)
+            addProperty("passed", false)
+        }
+        val doc3 = JsonObject().apply {
+            addProperty("_id", "doc2")
+            addProperty("courseId", "course2")
+            addProperty("userId", "user1")
+            addProperty("stepNum", 2)
+            addProperty("passed", true)
+        }
+
+        coEvery { courseProgressDao.getByIds(listOf("doc1", "doc2")) } returns emptyList()
+        coEvery { courseProgressDao.getByCourseUsersAndSteps(listOf("course1", "course2"), listOf("user1"), listOf(1, 2)) } returns emptyList()
+
+        repository.insertCourseProgressFromSync(listOf(doc1, doc2, doc3))
+
+        coVerify {
+            courseProgressDao.getByIds(listOf("doc1", "doc2"))
+            courseProgressDao.getByCourseUsersAndSteps(listOf("course1", "course2"), listOf("user1"), listOf(1, 2))
+            courseProgressDao.upsertAll(match { progresses ->
+                progresses.size == 3 &&
+                    progresses[0].id == "doc1" &&
+                    progresses[1].id == "" &&
+                    progresses[2].id == "doc2"
+            })
+        }
+    }
 }
