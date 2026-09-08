@@ -168,7 +168,7 @@ class _CourseContent extends ConsumerWidget {
     );
   }
 
-  /// Port of `CourseStepFragment.saveCourseProgress` — landing on a step
+  /// Port of `CourseStepFragment.launchSaveCourseProgress` — landing on a step
   /// records a `course_progress` row and queues it for upload. The row is keyed
   /// by `(courseId, userId, stepNum)`, so a re-visit upserts in place rather
   /// than creating duplicates.

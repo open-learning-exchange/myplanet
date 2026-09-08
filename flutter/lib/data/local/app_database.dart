@@ -3402,6 +3402,16 @@ class CourseProgressDao extends DatabaseAccessor<AppDatabase>
     with _$CourseProgressDaoMixin {
   CourseProgressDao(super.db);
 
+  /// The four user-scoped reads below are `userId IS :userId` in the Kotlin
+  /// DAO (`CourseProgressDao.kt:10-20`), not `=`. The port had them as
+  /// `equals(userId ?? '')`, which coerces a null argument into the empty
+  /// string: it then matched rows whose `userId` is literally `''` and no row
+  /// whose `userId` is NULL — where Kotlin matches exactly the NULL rows. A
+  /// synced document that omits `userId` writes one of those NULL rows
+  /// (`CourseProgressMapper.fromDoc` passes `getStringOrNull`), so the two
+  /// apps disagreed about which rows a null-user query returns.
+  /// `equalsNullable` is drift's spelling of `IS`: `IS NULL` for a null
+  /// argument, `=` otherwise.
   Future<List<CourseProgressRow>> getByUserAndCourseIds(
     String? userId,
     List<String> courseIds,
@@ -3409,8 +3419,9 @@ class CourseProgressDao extends DatabaseAccessor<AppDatabase>
     if (courseIds.isEmpty) return const [];
     final rows = <CourseProgressRow>[];
     for (final chunk in _chunked(courseIds, _sqliteVariableChunk)) {
-      final stmt = select(courseProgress)
-        ..where((r) => r.userId.equals(userId ?? '') & r.courseId.isIn(chunk));
+      final stmt = select(
+        courseProgress,
+      )..where((r) => r.userId.equalsNullable(userId) & r.courseId.isIn(chunk));
       rows.addAll(await stmt.get());
     }
     return rows;
@@ -3422,14 +3433,14 @@ class CourseProgressDao extends DatabaseAccessor<AppDatabase>
   ) =>
       (select(courseProgress)..where(
             (r) =>
-                r.userId.equals(userId ?? '') &
-                r.courseId.equals(courseId ?? ''),
+                r.userId.equalsNullable(userId) &
+                r.courseId.equalsNullable(courseId),
           ))
           .get();
 
   Future<List<CourseProgressRow>> getByUser(String? userId) => (select(
     courseProgress,
-  )..where((r) => r.userId.equals(userId ?? ''))).get();
+  )..where((r) => r.userId.equalsNullable(userId))).get();
 
   Future<CourseProgressRow?> findByCourseUserAndStep(
     String? courseId,
@@ -3439,8 +3450,8 @@ class CourseProgressDao extends DatabaseAccessor<AppDatabase>
       (select(courseProgress)
             ..where(
               (r) =>
-                  r.courseId.equals(courseId ?? '') &
-                  r.userId.equals(userId ?? '') &
+                  r.courseId.equalsNullable(courseId) &
+                  r.userId.equalsNullable(userId) &
                   r.stepNum.equals(stepNum),
             )
             ..limit(1))
@@ -3505,16 +3516,33 @@ class CourseProgressDao extends DatabaseAccessor<AppDatabase>
         CourseProgressCompanion(couchId: Value(remoteId), rev: Value(rev)),
       );
 
-  /// Port of `CourseProgressDao.updatePassedByCourseAndStep`. Used by the exam
-  /// path (`CoursesRepository.updateCourseProgress`) to flip the `passed` flag
-  /// for every user who reached a step, since an exam result is not per-user.
+  /// Port of `CourseProgressDao.updatePassedByCourseAndStep`
+  /// (`CourseProgressDao.kt:34-35`) — the exam path's write, reached from
+  /// `ProgressRepository.updateCourseProgress`.
+  ///
+  /// `AND userId IS :userId` is upstream `ed5609f` (fixes #16695). Without it
+  /// the update hit **every** row on `(courseId, stepNum)` whatever its owner,
+  /// so on a shared handset one learner finishing an exam rewrote another
+  /// learner's flag for that step. The direction that actually bites is the
+  /// clearing one: the value written here is `sub?.status == "graded"`, which
+  /// no local writer can make true (see [ProgressRepository
+  /// .updateCourseProgress]), so the unscoped statement wrote `passed = 0`
+  /// over a peer's server-granted pass and un-completed their course.
+  ///
+  /// [userId] is nullable with `IS` semantics, exactly as the `@Query` has it:
+  /// a null argument matches the rows whose `userId` is NULL rather than
+  /// matching nothing.
   Future<int> updatePassedByCourseAndStep(
     String courseId,
     int stepNum,
     bool passed,
+    String? userId,
   ) =>
       (update(courseProgress)..where(
-            (r) => r.courseId.equals(courseId) & r.stepNum.equals(stepNum),
+            (r) =>
+                r.courseId.equals(courseId) &
+                r.stepNum.equals(stepNum) &
+                r.userId.equalsNullable(userId),
           ))
           .write(CourseProgressCompanion(passed: Value(passed)));
 

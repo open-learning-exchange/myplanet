@@ -547,6 +547,13 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
               .queuePending(config: config);
         }
       }
+      // `BaseExamFragment.continueExam` records the step's course progress
+      // before it shows the thank-you dialog (`:133`), so this sits in the
+      // same place. It is inside this `try` with the photo and the upload
+      // queueing because it is bookkeeping of the same kind: the attempt is
+      // already on disk, and a failure here is reported the same way theirs
+      // is.
+      await _recordExamProgress(submissionId, exam, user?.id);
       if (!mounted) return;
       await _showResult();
     } catch (_) {
@@ -556,6 +563,99 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
       return;
     }
     if (mounted) setState(() => _isSubmitting = false);
+  }
+
+  /// Port of the `saveCourseProgress(exam?.courseId, stepNumber,
+  /// sub?.status == "graded", user?.id)` call in
+  /// `BaseExamFragment.continueExam` (`:133`) — reached, as here, once the
+  /// learner has answered the last question.
+  ///
+  /// **This call had no counterpart at all.** `ProgressRepository
+  /// .updateCourseProgress` was ported and then never called from anywhere in
+  /// `lib/` or `test/` — the "a Dart writer already sitting uncalled" shape
+  /// Phase 119 named. What it costs is narrower than it looks, and worth
+  /// stating precisely, because the missing caller reads like a
+  /// course-breaking bug: on this path the value written is always `false`, so
+  /// an exam step is left unpassed by *both* apps and only Planet's own
+  /// grading — arriving through the `courses_progress` pull — completes such a
+  /// course. The behaviour the port was missing is therefore the *clearing*
+  /// one: re-taking an exam after the server granted a pass resets the flag.
+  /// That quirk survives `ed5609f` for the taker's own row and is ported here
+  /// deliberately; what the commit removes is the reset landing on *other*
+  /// learners' rows on a shared handset.
+  ///
+  /// [ProgressRepository.updateCourseProgress] carries the whole argument.
+  ///
+  /// `courseId` is the **exam document's**, not the navigation argument's:
+  /// Kotlin passes `exam?.courseId` (`BaseExamFragment.kt:133`) and never
+  /// consults the fragment's own arguments here. Both port entry points build
+  /// their query string as `courseId=${step.courseId ?? ''}` against a
+  /// nullable column, so `widget.courseId` can be the empty string — reading
+  /// the exam avoids inheriting that.
+  ///
+  /// `stepNum` is derived rather than passed. Kotlin threads it through the
+  /// fragment arguments (`CourseStepFragment.kt:280` forwards the
+  /// `stepNumber` that `CoursesPagerAdapter.kt:49` set to the pager position,
+  /// where page 0 is the course cover — so step *i* carries *i+1*). This route
+  /// carries `stepId` and not `stepNum`, and the same 1-based number falls out
+  /// of the step's position in `CourseDao.getSteps`, which is the *same*
+  /// ordering `take_course_screen._recordProgress` counts to write
+  /// `stepNum: index + 1`. Both halves of the pair therefore agree by
+  /// construction rather than by two independent conventions.
+  ///
+  /// An unresolvable step (no `stepId`, an empty `courseId`, or a `stepId` the
+  /// course does not list) skips the write rather than writing `stepNum: 0`.
+  /// Kotlin reaches the same outcome by a different route: `stepNumber`
+  /// defaults to 0 there, and `WHERE stepNum = 0` matches no row a course step
+  /// ever wrote.
+  ///
+  /// One asymmetry worth naming since a derivation now rests on it. Kotlin's
+  /// number is a position in an unordered read (`CourseStepDao` has no
+  /// `ORDER BY` and `CourseStep` no order column), so it is the document's
+  /// step order as first inserted — and an author who *reorders* a course's
+  /// steps leaves Kotlin's `stepNum`s stale, because `@Upsert` keeps the
+  /// rowids. The port rewrites `stepIndex` from the new position on every
+  /// pull, so it tracks the reorder. That is a pre-existing difference in the
+  /// port's favour, not something introduced here.
+  Future<void> _recordExamProgress(
+    String submissionId,
+    ExamRow exam,
+    String? userId,
+  ) async {
+    final courseId = exam.courseId;
+    if (courseId == null || courseId.isEmpty) return;
+    final stepNum = await _resolveStepNum(courseId);
+    if (stepNum == null) return;
+
+    // `sub?.status == "graded"`, read back from the row rather than assumed.
+    //
+    // It cannot be true here, and the reason is the attempt's provenance, not
+    // the vocabulary: `startExamSession`'s exam branch recreates the
+    // submission, so the row this screen wrote is `pending` and then
+    // `requires grading`. A `graded` status exists only on a submission the
+    // server sent, and Kotlin can reach one of those on a *different* path
+    // (`BaseExamFragment.kt:88` loads a my-surveys submission by id with no
+    // status filter) — inert there only because that path carries no
+    // `stepNum`. Reading the row keeps this tracking the status rather than
+    // hard-coding a verdict that holds for one path's reason.
+    final attempt = await ref.read(submissionDaoProvider).getById(submissionId);
+
+    await ref
+        .read(progressRepositoryProvider)
+        .updateCourseProgress(
+          courseId: courseId,
+          stepNum: stepNum,
+          passed: attempt?.status == 'graded',
+          userId: userId,
+        );
+  }
+
+  Future<int?> _resolveStepNum(String courseId) async {
+    final stepId = widget.stepId;
+    if (stepId == null || stepId.isEmpty) return null;
+    final steps = await ref.read(courseDaoProvider).getSteps(courseId);
+    final index = steps.indexWhere((step) => step.id == stepId);
+    return index < 0 ? null : index + 1;
   }
 
   /// Captures a verification photo for a certified course exam, the port of

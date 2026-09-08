@@ -283,6 +283,7 @@ void main() {
     WidgetTester tester, {
     String examId = 'exam-1',
     String? courseId,
+    String? stepId,
     UserRow? session,
     ServerConfig? config = server,
     List<Override> overrides = const [],
@@ -304,7 +305,11 @@ void main() {
           },
         ),
         pushTargets: {
-          '/exam': (_) => TakeExamScreen(examId: examId, courseId: courseId),
+          '/exam': (_) => TakeExamScreen(
+            examId: examId,
+            courseId: courseId,
+            stepId: stepId,
+          ),
         },
         overrides: [
           appDatabaseProvider.overrideWith((ref) => db),
@@ -889,6 +894,135 @@ void main() {
         find.widgetWithText(FilledButton, 'Submit exam'),
       );
       expect(button.onPressed, isNotNull);
+    });
+  });
+
+  /// The `saveCourseProgress` call in `BaseExamFragment.continueExam`
+  /// (`:133`), which the port had ported into `ProgressRepository
+  /// .updateCourseProgress` and then never called from anywhere — so these are
+  /// the reachability tests for a write that previously did not happen.
+  group('course progress on finish', () {
+    /// A two-step course whose step 2 carries the exam, plus progress rows for
+    /// two learners: `user-1` (this session) and `other-user`, whose step-2
+    /// pass came back graded from Planet.
+    Future<void> seedCourseWithGradedPeer() async {
+      await db.courseDao.upsertAll(
+        [
+          CoursesCompanion.insert(
+            id: 'course-1',
+            courseId: const Value('course-1'),
+            courseTitle: const Value('Algebra'),
+            userId: const Value(['user-1', 'other-user']),
+          ),
+        ],
+        [
+          CourseStepsCompanion.insert(
+            id: 'course-1:0',
+            courseId: const Value('course-1'),
+            stepIndex: const Value(0),
+          ),
+          CourseStepsCompanion.insert(
+            id: 'course-1:1',
+            courseId: const Value('course-1'),
+            stepIndex: const Value(1),
+          ),
+        ],
+      );
+      for (final owner in ['user-1', 'other-user']) {
+        await db.courseProgressDao.upsert(
+          CourseProgressCompanion.insert(
+            id: 'progress-$owner',
+            courseId: const Value('course-1'),
+            userId: Value(owner),
+            stepNum: const Value(2),
+            passed: const Value(true),
+          ),
+        );
+      }
+    }
+
+    Future<void> finishExam(WidgetTester tester) async {
+      await tester.tap(find.text('Paris'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Next'));
+      await settleExam(tester);
+      await tester.enterText(find.byType(TextField), 'Paris');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Submit exam'));
+      await settleExam(tester);
+    }
+
+    Future<bool?> passedFor(String userId) async {
+      final row = await db.courseProgressDao.findByCourseUserAndStep(
+        'course-1',
+        userId,
+        2,
+      );
+      return row?.passed;
+    }
+
+    testWidgets('finishing writes the taker\'s own step row and leaves a '
+        'peer\'s alone', (tester) async {
+      await seedTwoQuestionExam(courseId: 'course-1');
+      await seedCourseWithGradedPeer();
+      await pumpExam(tester, courseId: 'course-1', stepId: 'course-1:1');
+
+      await finishExam(tester);
+      expect(find.text('Exam Complete'), findsOneWidget);
+
+      // `sub?.status == "graded"` is false — the attempt this screen created
+      // is `requires grading` — so the write is `passed = false`. That reset
+      // is the behaviour the missing caller was costing.
+      expect(await passedFor('user-1'), isFalse);
+      // And `ed5609f`: unscoped, the same statement cleared this row too.
+      expect(await passedFor('other-user'), isTrue);
+    });
+
+    testWidgets('the step number comes from the step\'s position in the '
+        'course', (tester) async {
+      await seedTwoQuestionExam(courseId: 'course-1');
+      await seedCourseWithGradedPeer();
+      // Step 1 of the same course, so a write against the wrong step number
+      // would land on the step-2 rows instead.
+      await pumpExam(tester, courseId: 'course-1', stepId: 'course-1:0');
+
+      await finishExam(tester);
+
+      expect(await passedFor('user-1'), isTrue);
+      expect(await passedFor('other-user'), isTrue);
+      final step1 = await db.courseProgressDao.findByCourseUserAndStep(
+        'course-1',
+        'user-1',
+        1,
+      );
+      // Kotlin runs the `UPDATE` and inserts nothing, so a step the learner
+      // never opened still has no row.
+      expect(step1, isNull);
+    });
+
+    testWidgets('an exam with no course writes no progress', (tester) async {
+      await seedTwoQuestionExam();
+      await seedCourseWithGradedPeer();
+      // `BaseExamFragment` passes `exam?.courseId`, and this exam has none.
+      await pumpExam(tester, courseId: 'course-1', stepId: 'course-1:1');
+
+      await finishExam(tester);
+
+      expect(await passedFor('user-1'), isTrue);
+      expect(await passedFor('other-user'), isTrue);
+    });
+
+    testWidgets('a step id the course does not list writes no progress', (
+      tester,
+    ) async {
+      await seedTwoQuestionExam(courseId: 'course-1');
+      await seedCourseWithGradedPeer();
+      await pumpExam(tester, courseId: 'course-1', stepId: 'course-9:7');
+
+      await finishExam(tester);
+
+      expect(await passedFor('user-1'), isTrue);
+      expect(await passedFor('other-user'), isTrue);
     });
   });
 

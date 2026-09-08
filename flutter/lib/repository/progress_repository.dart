@@ -418,45 +418,61 @@ class ProgressRepository {
     );
   }
 
-  /// Port of `CoursesRepositoryImpl.updateCourseProgress`.
+  /// Port of `CoursesRepositoryImpl.updateCourseProgress` (`:521-524`), the
+  /// write `BaseExamFragment.continueExam` makes when the learner answers the
+  /// last question of a step exam.
   ///
-  /// Flips `passed` to [passed] for every user's row on `(courseId, stepNum)`,
-  /// matching the Kotlin `updatePassedByCourseAndStep`. An exam result is not
-  /// per-user, so the row the take-course screen created for the current user
-  /// is updated in place; a row that does not exist yet (the exam was taken
-  /// before the step was opened) is created keyed by the current user.
+  /// **Scoped to [userId]** since upstream `ed5609f`. The old rationale here
+  /// read "an exam result is not per-user", and upstream has contradicted it:
+  /// the statement is `WHERE courseId = ? AND stepNum = ? AND userId IS ?`,
+  /// so it rewrites the taker's row and nobody else's.
+  ///
+  /// **What [passed] is actually worth knowing.** Kotlin passes
+  /// `sub?.status == "graded"` (`BaseExamFragment.kt:133`) — and `"graded"` is
+  /// a status no local writer in either app produces. `saveExamAnswer` writes
+  /// `pending`, `complete` or `requires grading`; the exam branch of
+  /// `startExamSession` always recreates the attempt, so the submission the
+  /// comparison reads is always freshly `pending`; and only the server ever
+  /// sends `graded`. So finishing an exam writes `passed = false`, in both
+  /// apps: **no local action grades an exam step.** (Kotlin can reach a
+  /// server-sent `graded` on one other path — `BaseExamFragment.kt:88` loads a
+  /// my-surveys submission by id with no status filter — but that path carries
+  /// no `stepNum`, so its update matches nothing. It does not reach the exam
+  /// screen, whose attempt is always recreated.) A step exam becomes passed
+  /// through the `courses_progress` pull instead
+  /// ([insertCourseProgressFromSync], whose merge adopts a server `true`),
+  /// which is Planet's grading arriving. Do not "fix" this to `true` — that
+  /// would complete a course the server has not graded.
+  ///
+  /// Which makes the *clearing* direction the one `ed5609f` matters for: on a
+  /// shared handset the unscoped statement wrote that `false` over a peer's
+  /// server-granted pass, un-completing their course. Note the commit does
+  /// **not** close the self case, and that quirk is ported rather than fixed:
+  /// retaking a step exam whose server-granted pass has already synced in
+  /// resets the taker's own flag and darkens their completed-course star until
+  /// Planet grades the new attempt.
+  ///
+  /// There is deliberately **no insert** when no row matches. Kotlin runs the
+  /// `UPDATE` and nothing else, and the port's extra insert was both an
+  /// invention and unsafe once this method had a caller: its row id was
+  /// `'${courseId}_$stepNum'` with no user in it, so a second learner on the
+  /// same handset would have overwritten the first learner's whole row on the
+  /// primary key. A missing row also means the learner never opened the step,
+  /// and `getCurrentProgress` counts rows *ignoring* `passed` — so inserting
+  /// one would have reported a step as reached that never was.
   Future<void> updateCourseProgress({
     required String courseId,
     required int stepNum,
     required bool passed,
     String? userId,
-    String? parentCode,
   }) async {
-    await _progressDao.updatePassedByCourseAndStep(courseId, stepNum, passed);
-    if (userId != null && userId.isNotEmpty) {
-      final existing = await _progressDao.findByCourseUserAndStep(
-        courseId,
-        userId,
-        stepNum,
-      );
-      if (existing == null) {
-        final now = DateTime.now().millisecondsSinceEpoch;
-        await _progressDao.upsert(
-          CourseProgressCompanion.insert(
-            id: '${courseId}_$stepNum',
-            couchId: const Value(null),
-            createdOn: Value(parentCode),
-            createdDate: Value(now),
-            updatedDate: Value(now),
-            stepNum: Value(stepNum),
-            passed: Value(passed),
-            userId: Value(userId),
-            courseId: Value(courseId),
-            parentCode: Value(parentCode),
-          ),
-        );
-      }
-    }
+    if (courseId.isEmpty) return;
+    await _progressDao.updatePassedByCourseAndStep(
+      courseId,
+      stepNum,
+      passed,
+      userId,
+    );
   }
 
   /// Port of `ProgressRepositoryImpl.insertCourseProgressFromSync`.
