@@ -2155,5 +2155,9 @@
   "filterOther": "أخرى",
   "takeTestCount": "إجراء الاختبار [{count}]",
   "retakeTestCount": "إعادة الاختبار [{count}]",
-  "redoSurvey": "أعد إجراء الاستبيان"
+  "redoSurvey": "أعد إجراء الاستبيان",
+  "pleaseCompleteTest": "يرجى إكمال الاختبار للمتابعة",
+  "chatAlreadyShared": "تمت مشاركة هذه الدردشة بالفعل إلى هذه الوجهة",
+  "joinTeamFirst": "يرجى الانضمام إلى فريق لمشاركة هذه المحادثة",
+  "joinEnterpriseFirst": "يرجى الانضمام إلى مؤسسة لمشاركة هذه المحادثة"
 }

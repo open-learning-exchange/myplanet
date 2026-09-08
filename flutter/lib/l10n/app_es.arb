@@ -2160,5 +2160,9 @@
   "filterOther": "Otro",
   "takeTestCount": "Realizar examen [{count}]",
   "retakeTestCount": "Volver a tomar el test [{count}]",
-  "redoSurvey": "volver a hacer la encuesta"
+  "redoSurvey": "volver a hacer la encuesta",
+  "pleaseCompleteTest": "Por favor completa la prueba para continuar",
+  "chatAlreadyShared": "Este chat ya ha sido compartido a este destino",
+  "joinTeamFirst": "Únete a un equipo para compartir este chat",
+  "joinEnterpriseFirst": "Únete a una empresa para compartir este chat"
 }

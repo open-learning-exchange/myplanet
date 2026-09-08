@@ -437,12 +437,22 @@ void main() {
     // machine output, because the recovery pass tested unanimity before it
     // tested whether the value was already one of the candidates, and Kotlin's
     // `completed` and `status_completed` disagree in Arabic. Marking only.
+    // Phase 138-141's round adds four more per locale, all recovered rather
+    // than generated, and all verified against `values-*/strings.xml` by hand
+    // before the pin moved. `pleaseCompleteTest` (Phase 139's per-step Next
+    // lock) and `joinTeamFirst`/`joinEnterpriseFirst` (Phase 140's chat share)
+    // derive **by name** from `please_complete_test`/`join_team_first`/
+    // `join_enterprise_first`. `chatAlreadyShared` derives by **shared
+    // English**: Kotlin calls it `chat_already_shared_to_destination`, a
+    // different key name carrying the identical English string, which is the
+    // case that path exists for. Nothing existing changed value — the only
+    // other diff line per locale was a trailing comma.
     const humanReviewed = {
-      'ar': 421,
-      'es': 473,
-      'fr': 419,
-      'ne': 421,
-      'so': 421,
+      'ar': 425,
+      'es': 477,
+      'fr': 423,
+      'ne': 425,
+      'so': 425,
     };
 
     for (final code in locales) {

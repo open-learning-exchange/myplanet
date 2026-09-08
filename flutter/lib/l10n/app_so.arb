@@ -527,5 +527,9 @@
   "filterOther": "Kale",
   "takeTestCount": "Barto Imtixaan [{count}]",
   "retakeTestCount": "Dib u habayn Imtixaanka [{count}]",
-  "redoSurvey": "Dib u samee sahanka"
+  "redoSurvey": "Dib u samee sahanka",
+  "pleaseCompleteTest": "Fadlan dhamee imtixaanka si aad u sii wadato",
+  "chatAlreadyShared": "Wadahadalkan hore ayaa loogu wadaagay goobtan",
+  "joinTeamFirst": "Fadlan ku biir koox si aad u wadaagto wada sheekaysigan",
+  "joinEnterpriseFirst": "Fadlan ku biir shirkad si aad u wadaagto wada sheekaysigan"
 }

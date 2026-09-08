@@ -2301,5 +2301,9 @@
   "filterOther": "Autre",
   "takeTestCount": "Passer le test [{count}]",
   "retakeTestCount": "Repasser le test [{count}]",
-  "redoSurvey": "refaire le sondage"
+  "redoSurvey": "refaire le sondage",
+  "pleaseCompleteTest": "Veuillez compléter le test pour continuer",
+  "chatAlreadyShared": "Cette discussion a déjà été partagée vers cette destination",
+  "joinTeamFirst": "Veuillez rejoindre une équipe pour partager cette conversation",
+  "joinEnterpriseFirst": "Veuillez rejoindre une entreprise pour partager cette conversation"
 }
