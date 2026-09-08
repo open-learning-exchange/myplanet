@@ -158,18 +158,36 @@ Starting from versions 3.x of the `sqlite3` package, `sqlite3_flutter_libs` is
 no longer necessary. This version removes all code from this package."* The port
 is already on `sqlite3` 3.5.2, so on paper the migration applies.
 
-It resolves. It would almost certainly pass the gate. **That is the problem.**
-`flutter.yml` runs `analyze` and `test` and never builds an APK for the port,
-and `flutter test` runs on the Dart VM against the host's SQLite — so nothing in
-CI, and nothing in this container, exercises the Android native build this
-change is entirely about. A green run here would be evidence of nothing.
+It resolves, and it would pass this lane's gate. Refused anyway, and left at
+`^0.5.26` — but the reason needs stating carefully, because my first reading of
+it was wrong.
 
-This container has no Android SDK at all (`flutter doctor`: *"Unable to locate
-Android SDK"*), so I cannot produce the one piece of evidence that matters.
-Refused and left at `^0.5.26`. Whoever takes it needs `flutter build apk` to
-pass *and* the app to actually open a database on a device, before and after.
-Worth doing — it is the upstream-recommended direction and removes a build-script
-dependency — but not on analyze-and-test evidence.
+**Correction, recorded because the wrong version of this argument would mislead
+the next round.** An earlier draft of this file said `flutter.yml` never builds
+an APK. It does: the workflow has a second job, `build-android`, which runs
+`flutter build apk --debug` on every Flutter push. I had read only as far as the
+`analyze-and-test` job. So build-level evidence for this migration *is*
+available in CI, and the refusal cannot rest on "nothing would exercise it".
+
+What is still missing is the evidence that actually decides it. `sqlite3`'s
+`hook/build.dart` only emits a code asset when `input.config.buildCodeAssets` is
+true — that is, when code assets are active for that build; it then either
+downloads a prebuilt binary or compiles SQLite from source (both Android paths
+exist, including the `-lm` link). Dropping `sqlite3_flutter_libs` hands the
+Android app's entire SQLite provisioning to that hook. If code assets are *not*
+active for the Android APK build under Flutter 3.44.8, the hook contributes
+nothing, `flutter build apk --debug` still succeeds, and the app ships with no
+SQLite at all. **That is a green-CI-but-broken-app shape**, which is the failure
+class this project has a whole section about — and the payload here is the
+database, so the blast radius is the entire app.
+
+This container has no Android SDK (`flutter doctor`: *"Unable to locate Android
+SDK"*), so I cannot check it locally either. The concrete thing the next round
+must do before dropping this package: confirm the Android build actually emits
+`sqlite3`'s code asset — or just run the app and open a database — not merely
+that `build-android` went green. Worth doing; it is the upstream-recommended
+direction and removes a build-script dependency. Not worth doing on a green
+check mark.
 
 ### 3c. SDK-pinned — `build_runner`, `intl`, `meta`
 
