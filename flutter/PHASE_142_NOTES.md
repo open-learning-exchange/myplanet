@@ -36,6 +36,22 @@ line-for-line port and still emitted the pre-fix form.
 Ported: the quote, the doc comment that states the emitted shape, the five test
 expectations, and the upstream spaces case.
 
+**One more correction to that file, from the second audit: its stated reason for
+the `resources/` strip was wrong.** The comment said the server stores
+attachments under `/<db>/resources/<id>/<file>` "so the prefix would double up".
+Nothing doubles up — all four Kotlin callers pass
+`file://<externalFilesDir>/ole/`, which has no `resources` segment. The strip is
+about the **local** layout: `FileUtils.getIdFromSegments` treats `resources` as
+a marker (`segments.indexOf("resources")`, then take the *next* segment as the
+id), so the download lands at `<externalFilesDir>/ole/<id>/<file>` and stripping
+the marker is what makes the rendered `src` point at it. Verified at
+`CourseStepFragment:124-128` and `FileUtils:82-86`. The corollary is worth
+keeping too: the *download* URL keeps `resources/` while the *render* base drops
+it, and the port's own relative resolution keeps it — correctly, since that one
+resolves against the server rather than the local cache. Corrected at the code,
+because a wrong reason in a doc comment is what a future audit reads as ground
+truth.
+
 **But the Follow means less than it looks like, and that is the finding.**
 Neither `prependBaseUrlToImages` nor `extractImageLinks` has a **caller
 anywhere in `flutter/lib`** — the only occurrences outside the file are two
@@ -63,11 +79,32 @@ post-fix code routes null-rev ids to a new `SET isUpdated = 0 WHERE _id IN
 not a batching optimisation. The reason it is not a Follow: the port's
 `health_uploader.dart:62-68` returns a `NetworkError` when the response `rev`
 is not a `String` and never reaches `markUploaded`, so it cannot write a null
-revision at all. (Its behaviour then differs from the post-fix Kotlin — the port
-retries where Kotlin clears `isUpdated` and keeps the old `_rev` — and the
-port's is the safer of the two.) The sibling commit `f271072`, notifications,
-*did* use `COALESCE(:rev, rev)` pre-fix and genuinely was equivalent; conflating
-the two is what produced the wrong reason.
+revision at all. The sibling commit `f271072`, notifications, *did* use
+`COALESCE(:rev, rev)` pre-fix and genuinely was equivalent; conflating the two
+is what produced the wrong reason.
+
+> **Amended by the second audit — my own framing here was wrong, and in the
+> flattering direction.** I wrote that the port "retries where Kotlin clears
+> `isUpdated`" and called the port's behaviour "the safer of the two". It does
+> not retry. `OutboxDrainer` computes `final permanent = (code ?? 0) < 500`
+> (`outbox_drainer.dart:163`), and `NetworkError`'s first positional argument
+> *is* the code (`NetworkError(this.code, this.message)`), so the health
+> uploader's `NetworkError(null, 'Upload response carried no rev')` has
+> `code == null`, `(null ?? 0) < 500` is true, and the row is **abandoned on
+> its first attempt**. The full consequence, for a `POST /health` that answers
+> `id` without `rev` — which is what CouchDB returns for `?batch=ok`: the
+> document *is* on the server, `isUpdated` stays `1`, the outbox row abandons,
+> `findOpen` ignores abandoned rows so the next `queuePending` mints a fresh
+> one and re-POSTs with the unchanged stale `_rev`, CouchDB answers 409, which
+> is also `< 500` and also permanent — so it abandons again, on every drain,
+> for the life of the install. And `MyHealthScreen` reads
+> `OutboxDao.abandoned('health')`, so the clinician is warned about a record
+> that is already on the server. Neither app loses the document; Kotlin
+> post-fix simply succeeds. This is a pre-existing port defect, not something
+> the harvest introduced, and it is in *Reported, not fixed* rather than fixed
+> here — it is outside a harvest lane's remit and the right repair (treat a
+> missing `rev` as retryable, or mark the row uploaded and let the next sync
+> supply the revision) is a judgement this lane should not make alone.
 
 **`83ebafe` — `sync: smoother retry repository dao operating`.** The first pass
 said "same outcome for the same inputs". Not so: the commit unifies **two**
@@ -75,12 +112,19 @@ Kotlin failure paths that disagreed. `RetryRepositoryImpl.markFailed` set
 `status` to `abandoned`-or-`pending` explicitly; `updateAttempt` set
 `abandoned` only when attempts were exhausted and otherwise **left the status
 untouched**, so a row that `markInProgress` had moved to `in_progress` stayed
-there and `RetryDao.getPending()` (`WHERE status = 'pending'`) skipped it until
-`recoverStuckOperations()` (`SET status='pending' WHERE status='in_progress'`)
-swept it. Work was delayed, not lost, but the two paths were not the same
-function. The new single `UPDATE` always writes `abandoned`-or-`pending`. No
-port impact because `OutboxRepository.recordFailure` (`outbox_repository.dart:194-206`)
-already writes `abandoned ? statusAbandoned : statusPending` unconditionally.
+there and `RetryDao.getPending()` skipped it until `recoverStuckOperations()`
+(`SET status='pending' WHERE status='in_progress'`) swept it. Work was delayed,
+not lost, but the two paths were not the same function. The new single `UPDATE`
+always writes `abandoned`-or-`pending`. No port impact because
+`OutboxRepository.markFailed` (`outbox_repository.dart:185-207`) already writes
+`abandoned ? statusAbandoned : statusPending` unconditionally, and every failure
+route in `OutboxDrainer._send` goes through it.
+
+> Two citations corrected by the second audit: `getPending` is
+> `WHERE status = 'pending' AND nextRetryTime <= :now AND attemptCount <
+> maxAttempts` — three predicates, not the one I quoted, though the status
+> clause is the load-bearing one and the conclusion stands — and the port's
+> method is `markFailed`, not `recordFailure`.
 It also advances `nextAttemptAt` on an abandoned row where the post-fix Kotlin
 preserves the old value; immaterial, because an abandoned row is never selected
 by time and `enqueue` never reuses one.
@@ -96,9 +140,20 @@ it.isNotBlank() } ?: team?.name ?: ""`. So the CSV filename, the CSV content
 (`exportReportsAsCsv(teamId, name)`) and the report card title stop depending on
 whichever team was last written to prefs. No port impact:
 `team_reports_screen.dart:123-127` already uses `team?.name ?? ''`, the resolved
-team row — the tail of the post-fix chain. The port has no nav-argument
-preference because it resolves the team directly rather than through Kotlin's
-tab pager.
+team row — the tail of the post-fix chain — for both the CSV filename and the
+CSV content, and both read the same `await repo.getById(teamId)`, so there is no
+loading window where one could differ from the other. The port has no
+nav-argument preference because it resolves the team directly rather than
+through Kotlin's tab pager.
+
+> **Third call site, stated correctly after the second audit.** The report card
+> title is not "already matching" — the port has **no** `%s Financial Report`
+> title at all (no such ARB key; `team_reports_screen.dart:47` uses the plain
+> `financialReports` as the AppBar title), which Phase 99 deferred deliberately
+> because the title needs a `teamProvider` watch. So `5589dfc` has nothing to
+> change there, and the reason is "the affordance is missing", not "it is at
+> parity". Worth the distinction so the next reader does not conclude the title
+> is done.
 
 ### Two Kotlin behaviour changes the port already matched (2)
 
@@ -337,6 +392,49 @@ because an audit's finding gets the same treatment as a brief's claim.
 Verifying it did surface something real but much narrower, which is in *Reported, not
 fixed* below: the two apps bucket a post into a *day* differently.
 
+## The harvest audit (`parity-auditor`, `effort: max`)
+
+Aimed adversarially at this lane's own finished work, because every time this
+project has pointed a second pass at already-green code it has found more.
+
+**The Follow is proven, not argued.** Rather than reading the two
+implementations side by side, the pass built a differential harness: the
+post-fix Kotlin transcribed to Java, the port's Dart extracted and
+*programmatically diffed against the repo file* with comments stripped (25 code
+lines, exact match, so the harness tests the shipped function and not a
+paraphrase), then 50 inputs × 3 outputs each, hex-encoded so no whitespace or
+encoding artefact could hide a difference. The corpus covers the `resources/`
+strip and its near-misses (`RESOURCES/`, `resources/resources/`, a leading
+space), `$`/`$0`/`$1` in the path, spaces, tabs, `&`, `%20`, quotes, a `"title"`
+suffix, inner brackets, `![]()`, newlines and `\r\n`, combining diacritics and
+a surrogate pair. **Byte-identical on all 50.** The harness was itself
+mutation-tested: reverting only the quotes diverges on 42 of the 50 rows, so it
+can fail.
+
+**No missed Follow.** All 40 commits re-read independently against
+`app/src/main`; the 39 non-Follows group as byte-equivalent idiom swaps, pure
+code moves and DI seams, and — worth naming as a category, because it is the
+reverse of a Follow — **three commits where Kotlin caught up to what the port
+already did**: `f536ab6`'s null guard (the port's plugin already had
+`stats.orEmpty()`), `0d0b62c`/`a182edd`'s name-based MIME (the port never
+sniffed), and `7f21245`'s Turkish-locale `.GIF` fix (Dart's `toLowerCase` is
+locale-independent, so the port was never exposed).
+
+**Three of my framings were wrong or incomplete**, and all three are corrected
+in place above rather than only noted here: the health null-rev consequence
+(the port abandons on the first attempt, it does not retry — my "safer of the
+two" was simply wrong), `getPending`'s predicate count and the port's
+`markFailed` name, and the reports title, which is missing rather than at
+parity. The first of those is the one that matters: it turned a framing
+correction into a real defect, now item 6 below.
+
+**Disclosure, checked rather than taken on trust.** The pass reported one
+accidental write — an empty `flutter/.audit_harness.dart` from a python
+heredoc — and said it removed it. Verified: the file does not exist,
+`git status --porcelain` is empty, and the stash is empty. This is the check
+CLAUDE.md added after an audit's mutation was nearly committed in a lane two
+rounds ago, and it is not a formality.
+
 ## Reported, not fixed
 
 Each names the file, the change, and why it was not made here.
@@ -394,7 +492,52 @@ Each names the file, the change, and why it was not made here.
    current Kotlin does not — it filters in SQL. Behaviour is correct in all three cases;
    only the comments mislead, and a comment that names a Kotlin method which does not
    exist is how a future audit reaches a wrong verdict.
-6. **Phase 140's items 1, 2, 4, 5 and 6 are still open** and all land in other
+6. **A health examination whose upload answers `id` without `rev` is abandoned
+   on the first attempt and then re-POSTs forever.** Detail and the full chain
+   are in the `1004e90` amendment above. Files: `flutter/lib/repository/health_uploader.dart`
+   and/or `flutter/lib/repository/outbox_drainer.dart` (no lane owns either).
+   Not fixed here because the repair is a judgement — treat a missing `rev` as
+   retryable (`permanent: false`), or mark the row uploaded and let the next
+   sync supply the revision — and a harvest lane should not pick between them
+   unilaterally. Severity: medium. Nothing is lost; a clinician is told an
+   uploaded record failed, permanently.
+7. **`HealthRepository.markUploadedBatch` is dead code carrying the exact bug
+   `1004e90` just fixed.** It loops `_dao.markUploaded(id, rev)` over a
+   `Map<String, String?>`, and that DAO writes `rev: Value(rev)`
+   (`app_database.dart:3565-3572`), so a null entry wipes a stored `_rev`. Zero
+   callers in `lib` **or** `test`. It is the shape-for-shape port of
+   `markHealthExaminationsUploaded`, the very Kotlin method upstream repaired,
+   so the next lane that wires it up as the "obvious" port reintroduces the
+   defect with no test to catch it. The correct pattern is already in the same
+   file's generated DAO one table over — `rev == null ? const Value.absent() :
+   Value(rev)` (`app_database.dart:1035`), which is what `f271072`'s
+   `COALESCE` corresponds to. Fix: that ternary, or delete the wrapper, or a
+   comment naming the trap. **Lane B's `app_database.dart`** if the DAO is
+   touched; the wrapper itself is unowned.
+8. **Voice messages render as raw markdown source.** Kotlin's
+   `VoicesAdapter.setMessageAndDate` (`:447-455`) runs `prependBaseUrlToImages`
+   then `setMarkdownText`, so a voice body gets full Markwon rendering;
+   `flutter/lib/ui/voices/voices_screen.dart:181` is `Text(row.message ?? '')`.
+   A voice posted from Planet as `**Water** committee notes — see
+   ![chart](resources/abc123/chart.png)` renders bold text and an image in
+   Kotlin and those literal characters in the port. `CourseMarkdownBody`
+   already exists and would fix it at the widget level; nothing wires it. This
+   is *not* a documented deviation — the tracker's Phase 77 entry scopes
+   markdown rendering to course detail and take-course only. Found while
+   checking this round's Follow, because it is the second of the four Kotlin
+   `prependBaseUrlToImages` call sites.
+9. **The community-services screen omits the description Kotlin shows.**
+   `CommunityServicesFragment:40-58` renders the team/community `description`
+   as markdown at 600×350 with a `tvNoDescription` empty state, above the
+   services list; `flutter/lib/ui/community/services_screen.dart` renders only
+   the list. The fourth `prependBaseUrlToImages` call site maps to a screen
+   region the port does not have.
+10. **`flutter/lib/core/system/device_stats.dart:48` says the channel is
+    "answered by the Kotlin `MainActivity`".** Stale since Phase 94 moved it
+    into `planet_platform_channels` and made `MainActivity` a bare
+    `FlutterActivity`. Misleading to anyone tracing the headless-engine path.
+    Comment only.
+11. **Phase 140's items 1, 2, 4, 5 and 6 are still open** and all land in other
    lanes' files: `teamPlanetCode` on `Teams` (Lane B's `tables.dart` +
    `app_database.dart`, and a schema bump this lane has no number for),
    `NewsDao.getByNewsId`/`getPlanetMessages` (Lane B's `app_database.dart`), the
@@ -416,4 +559,8 @@ Recorded so the next round does not spend the same time twice.
   `takeIf { isNotEmpty }` agree on every reachable value.
 - **`achievements_provider.dart:39`'s `ref.read(sessionProvider).valueOrNull`.**
   Not the documented trap here; the enclosing screen watches a provider that
-  watches the session. Reasoning above under `af7db0d`.
+  watches the session. Reasoning above under `af7db0d`. The second audit reached
+  the same conclusion independently, with one qualification worth keeping: the
+  safety is incidental to a provider dependency rather than stated at the call
+  site, so a refactor that stops watching `achievementEntryProvider` re-opens
+  it.
