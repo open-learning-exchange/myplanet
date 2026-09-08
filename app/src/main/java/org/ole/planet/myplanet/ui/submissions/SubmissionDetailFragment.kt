@@ -45,20 +45,12 @@ class SubmissionDetailFragment : Fragment() {
     }
 
     private fun observeViewModel() {
-        collectWhenStarted(viewModel.questionAnswers) { questionAnswers ->
-            adapter.submitList(questionAnswers)
-        }
-        collectWhenStarted(viewModel.title) { title ->
-            binding.tvSubmissionTitle.text = title
-        }
-        collectWhenStarted(viewModel.status) { status ->
-            binding.tvSubmissionStatus.text = status
-        }
-        collectWhenStarted(viewModel.date) { date ->
-            binding.tvSubmissionDate.text = date
-        }
-        collectWhenStarted(viewModel.submittedBy) { submittedBy ->
-            binding.tvSubmittedBy.text = submittedBy
+        collectWhenStarted(viewModel.uiState) { uiState ->
+            adapter.submitList(uiState.questionAnswers)
+            binding.tvSubmissionTitle.text = uiState.title
+            binding.tvSubmissionStatus.text = uiState.status
+            binding.tvSubmissionDate.text = uiState.date
+            binding.tvSubmittedBy.text = uiState.submittedBy
         }
     }
 
