@@ -220,6 +220,7 @@ void main() {
         .createTeamPost(
           teamId: 'team-1',
           teamName: 'Water',
+          teamType: 'team',
           message: 'The pump needs parts',
         );
 

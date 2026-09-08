@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/teams_provider.dart';
@@ -86,10 +87,17 @@ class TeamVoicesScreen extends ConsumerWidget {
     );
   }
 
+  /// The team's own `type` is what labels the post, not the literal `'team'`:
+  /// `TeamsVoicesFragment.kt:80` sends `getEffectiveTeamType()`, which is the
+  /// nav argument or `team?.type`, falling back to `""`. This screen resolves
+  /// the team directly rather than through Kotlin's tab pager, so there is no
+  /// nav argument to prefer — `team?.type` is the whole chain, and `''` when
+  /// the row has not resolved or carries no type, which is what Kotlin sends
+  /// there too.
   Future<void> _compose(
     BuildContext context,
     WidgetRef ref,
-    dynamic team,
+    TeamRow? team,
   ) async {
     final message = await showVoiceComposer(context);
     if (message == null || message.isEmpty) return;
@@ -98,6 +106,7 @@ class TeamVoicesScreen extends ConsumerWidget {
         .createTeamPost(
           teamId: teamId,
           teamName: team?.name ?? '',
+          teamType: team?.type ?? '',
           message: message,
         );
   }

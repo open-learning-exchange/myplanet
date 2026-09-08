@@ -204,9 +204,18 @@ class VoicesActions {
   }
 
   /// Creates a voice post visible only to members of the specified team.
+  /// [teamType] is the port of `getEffectiveTeamType()`
+  /// (`BaseTeamFragment.kt:94-96`), which `TeamsVoicesFragment.kt:80` writes
+  /// straight into `messageType`. An enterprise is a team *type*, not a
+  /// separate feature (Phase 99), so an enterprise's discussion posts are
+  /// `"enterprise"` on Planet; hardcoding `'team'` mislabelled every one of
+  /// them. Required rather than defaulted so a new caller has to decide: the
+  /// Kotlin's own fallback is `""`, and inventing `'team'` for a team document
+  /// that omits the field would send a value Kotlin never sends.
   Future<String?> createTeamPost({
     required String teamId,
     required String teamName,
+    required String teamType,
     required String message,
   }) async {
     final user = await _author();
@@ -220,7 +229,7 @@ class VoicesActions {
           userJson: VoicesRepository.authorJson(user),
           planetCode: user.planetCode,
           parentCode: user.parentCode,
-          messageType: 'team',
+          messageType: teamType,
           // The **team's** planet code, not the author's:
           // `TeamsVoicesFragment.kt:81` writes `team?.teamPlanetCode ?: ""`.
           // The port's `Teams` table has no such column (reported against
