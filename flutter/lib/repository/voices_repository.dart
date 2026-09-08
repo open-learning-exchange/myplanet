@@ -210,11 +210,262 @@ class VoicesRepository {
   }
 
   /// Port of `getViewInJson`: an empty array unless a target was named.
+  ///
+  /// A null [name] omits the key rather than writing `"name": null`, which is
+  /// what the Kotlin produces: `addProperty("name", map["name"])` stores a
+  /// `JsonNull`, and `JsonUtils.gson` is a bare `Gson()` with `serializeNulls`
+  /// **off**, so the key is dropped at write time. The difference is not
+  /// cosmetic — [shareToCommunity] back-fills the first entry's name only when
+  /// `!first.containsKey('name')` (the Kotlin's `!obj.has("name")`, which is
+  /// true for an *absent* key and false for an explicit null), so an explicit
+  /// null would silently disable that back-fill for every post sharing this
+  /// helper.
   static String _viewInJson({String? id, String? section, String? name}) {
     if (id == null || id.isEmpty) return jsonEncode(const []);
     return jsonEncode([
-      {'_id': id, 'section': section, 'name': name},
+      {'_id': id, 'section': section, 'name': ?name},
     ]);
+  }
+
+  /// The author object a locally authored `news` document carries.
+  ///
+  /// `News.createNews` sets `news.user = gson.toJson(user.serialize())`, and
+  /// `serializeNews` writes that object into the document. It is the **only**
+  /// author identity on a news document — there is no top-level `userId` or
+  /// `userName` key — and `NewsMapper.fromDoc` reads both back out of it, so a
+  /// post uploaded without it has no author on Planet *and* loses its author
+  /// locally on the next sync-in.
+  ///
+  /// This is `UserEntity.serialize()` minus two groups, deliberately:
+  ///
+  /// - the credential branch (`password` / `derived_key` / `salt` /
+  ///   `password_scheme`) and the device trio. `serialize()` is the body of
+  ///   the `_users` PUT, where those belong; a voices post is a public
+  ///   document and must never carry them. `UserMapper.toDoc` is that PUT
+  ///   body — do not reach for it here.
+  /// - the `_attachments` photo, which would embed the user's profile image
+  ///   in every post they author.
+  ///
+  /// Everything else matches `serialize()` field for field, including the
+  /// `_id`/`_rev` pair being written only for an account the server knows.
+  static String authorJson(UserRow user) {
+    final couchId = user.couchId;
+    return jsonEncode(<String, dynamic>{
+      if (couchId != null && couchId.isNotEmpty) ...{
+        '_id': couchId,
+        '_rev': user.rev,
+      },
+      'name': user.name,
+      'roles': user.rolesList,
+      'isUserAdmin': user.userAdmin,
+      'joinDate': user.joinDate,
+      'firstName': user.firstName,
+      'lastName': user.lastName,
+      'middleName': user.middleName,
+      'email': user.email,
+      'language': user.language,
+      'level': user.level,
+      'type': 'user',
+      'gender': user.gender,
+      'phoneNumber': user.phoneNumber,
+      'birthDate': user.dob,
+      'age': user.age,
+      'parentCode': user.parentCode,
+      'planetCode': user.planetCode,
+      'birthPlace': user.birthPlace,
+      'isArchived': user.isArchived,
+    });
+  }
+
+  /// Port of the `map["news"]` branch of `News.createNews` — writes the row a
+  /// shared chat conversation becomes in the voices feed.
+  ///
+  /// [payload] is the map [buildChatShareMap] produced; the fields that come
+  /// from the signed-in user are passed alongside it, exactly as
+  /// `createNews(map, user, imageList)` takes them separately.
+  ///
+  /// Three pairings have to hold, and each has a test:
+  ///
+  /// - `docType = 'message'` and `createdOn = planetCode` are what
+  ///   [planetNewsMessages] selects on (`NewsDao.getPlanetMessages`), and that
+  ///   query is the only thing that feeds [extractSharedViewInIds]. Get either
+  ///   wrong and the share succeeds but the dialog never marks the
+  ///   destination as already shared.
+  /// - `newsId` is the shared chat's CouchDB `_id`, which is what
+  ///   [isAlreadyShared] looks a row up by.
+  /// - the row is left with no `_id`, so `pendingUploads` finds it and
+  ///   `VoicesUploader` delivers it. Nothing else would ever send it.
+  ///
+  /// One line of the Kotlin is deliberately **not** ported:
+  /// `newsObj?.replace("=", ":")` (`News.kt:187`), a fossil from when the
+  /// value was a `HashMap.toString()` (`{_id=abc}`) rather than JSON. In
+  /// Kotlin it is a provable no-op, and not because of anything in the source:
+  /// `JsonUtils.gson` is a bare `Gson()`, whose `htmlSafe` default escapes
+  /// `=` to `\u003d` inside every string, so the encoded payload contains no
+  /// `=` for the replace to find. Dart's `jsonEncode` emits `=` raw, so
+  /// carrying the line across would rewrite every `=` in the user's own
+  /// title and transcript — `2+2=4`, a URL query string, base64 padding —
+  /// and CouchDB would keep the damage. Behaviour is preserved by dropping
+  /// the line; `an "=" in conversation text survives the share` pins it.
+  Future<String> createFromShareMap({
+    required Map<String, String> payload,
+    required String userId,
+    required String userName,
+    String? userJson,
+    String? planetCode,
+    String? parentCode,
+  }) async {
+    final id = _createId();
+    final news = _decodeObject(payload['news']) ?? const <String, dynamic>{};
+    final conversations = _shareConversations(news['conversations']);
+
+    await _dao.upsert(
+      NewsEntriesCompanion.insert(
+        id: id,
+        message: Value(payload['message']),
+        time: Value(_now().millisecondsSinceEpoch),
+        createdOn: Value(planetCode),
+        avatar: const Value(''),
+        docType: const Value('message'),
+        userName: Value(userName),
+        parentCode: Value(parentCode),
+        messagePlanetCode: Value(payload['messagePlanetCode']),
+        messageType: Value(payload['messageType']),
+        sharedBy: const Value(''),
+        viewIn: Value(
+          _viewInJson(
+            id: payload['viewInId'],
+            section: payload['viewInSection'],
+            // `getViewInJson` reads `map["name"]`, which `buildShareMap` never
+            // writes, so the entry's name is null in the Kotlin too.
+            name: payload['name'],
+          ),
+        ),
+        // `String.toBoolean()`, which is case-insensitive and false for
+        // anything that is not "true".
+        chat: Value(payload['chat']?.toLowerCase() == 'true'),
+        updatedDate: Value(int.tryParse(payload['updatedDate'] ?? '') ?? 0),
+        userId: Value(userId),
+        replyTo: Value(payload['replyTo'] ?? ''),
+        user: Value(userJson),
+        imageUrls: const Value([]),
+        newsId: Value(JsonUtils.getString('_id', news)),
+        newsRev: Value(JsonUtils.getString('_rev', news)),
+        newsUser: Value(JsonUtils.getString('user', news)),
+        aiProvider: Value(JsonUtils.getString('aiProvider', news)),
+        newsTitle: Value(JsonUtils.getString('title', news)),
+        // Left null for an empty conversation list, matching the Kotlin's
+        // `if (!conversationsArray.isEmpty())` guard.
+        conversations: Value(
+          conversations.isEmpty ? null : jsonEncode(conversations),
+        ),
+        newsCreatedDate: Value(_shareMillis(news['createdDate'])),
+        newsUpdatedDate: Value(_shareMillis(news['updatedDate'])),
+      ),
+    );
+    return id;
+  }
+
+  /// The nested `conversations` value, normalized to `{query, response}` maps.
+  ///
+  /// It arrives as a JSON array *encoded into a string*, because every value
+  /// of the Kotlin payload is a `String`. The Kotlin re-parses it under
+  /// `conversationsElement.isJsonPrimitive && isString` and rebuilds each turn
+  /// from just those two keys, which is what this mirrors — an unparseable
+  /// value yields no conversations rather than throwing.
+  static List<Map<String, String>> _shareConversations(dynamic value) {
+    if (value is! String || value.isEmpty) return const [];
+    try {
+      final decoded = jsonDecode(value);
+      if (decoded is! List) return const [];
+      return decoded
+          .whereType<Map<String, dynamic>>()
+          .map(
+            (turn) => {
+              'query': JsonUtils.getString('query', turn),
+              'response': JsonUtils.getString('response', turn),
+            },
+          )
+          .toList(growable: false);
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// `JsonUtils.getLong` over a value the payload stringified: a number is
+  /// taken as-is, a numeric string is parsed, anything else is 0.
+  static int _shareMillis(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
+  }
+
+  /// Port of `VoicesRepositoryImpl.isAlreadyShared`.
+  ///
+  /// True when some voices row carrying this chat (`newsId == chatId`) already
+  /// names [viewInId] in its `viewIn`. The Kotlin tests the *raw JSON text*
+  /// for the substring `"_id":"<viewInId>"`, case-insensitively, rather than
+  /// parsing — kept, because Gson writes `viewIn` without spaces and the same
+  /// substring test is what decides whether the dialog offers the destination.
+  ///
+  /// The row lookup walks every voices row instead of a `WHERE newsId = ?`
+  /// query: `NewsDao` has no such method and adding one means editing a file
+  /// another lane owns this round. Same result, more rows read — see
+  /// `PHASE_140_NOTES.md` § "Reported, not fixed".
+  Future<bool> isAlreadyShared(String chatId, String viewInId) async {
+    final rows = await _dao.getAll();
+    final needle = '"_id":"$viewInId"'.toLowerCase();
+    return rows
+        .where((row) => row.newsId == chatId)
+        .any((row) => (row.viewIn ?? '').toLowerCase().contains(needle));
+  }
+
+  /// Port of `NewsDao.getPlanetMessages` — the planet's `message` rows, which
+  /// is the set [extractSharedViewInIds] is computed over.
+  ///
+  /// Both predicates are case-insensitive (`COLLATE NOCASE`), and an absent
+  /// planet code yields nothing rather than everything.
+  Future<List<NewsRow>> planetNewsMessages(String? planetCode) async {
+    if (planetCode == null || planetCode.isEmpty) return const [];
+    final wanted = planetCode.toLowerCase();
+    final rows = await _dao.getAll();
+    return rows
+        .where(
+          (row) =>
+              (row.docType ?? '').toLowerCase() == 'message' &&
+              (row.createdOn ?? '').toLowerCase() == wanted,
+        )
+        .toList(growable: false);
+  }
+
+  /// Port of `ChatRepositoryImpl.extractSharedViewInIds`: for each shared
+  /// chat, the set of destinations it has already been shared to.
+  ///
+  /// Keyed by the *chat's* CouchDB id (`newsId`), not the voices row's own id.
+  /// Rows with no `newsId` — every ordinary voice post — are dropped, and a
+  /// row whose `viewIn` will not parse contributes nothing rather than
+  /// failing the whole map.
+  static Map<String, Set<String>> extractSharedViewInIds(List<NewsRow> rows) {
+    final result = <String, Set<String>>{};
+    for (final row in rows) {
+      final newsId = row.newsId;
+      if (newsId == null) continue;
+      final ids = result.putIfAbsent(newsId, () => <String>{});
+      try {
+        final decoded = jsonDecode(row.viewIn ?? '');
+        if (decoded is! List) continue;
+        for (final element in decoded) {
+          if (element is! Map<String, dynamic>) continue;
+          final id = element['_id'];
+          if (id is String) ids.add(id);
+        }
+      } catch (_) {
+        // `groupBy` still yields the key with whatever the other rows
+        // contributed; only this row's ids are lost.
+      }
+    }
+    return result;
   }
 
   /// Port of `postReply`.

@@ -178,6 +178,16 @@ class ChatHistoryScreen extends ConsumerWidget {
                               ),
                           ],
                         ),
+                        // `RowChatHistoryBinding.shareChat` — the per-row
+                        // share affordance. Without it every screen and
+                        // repository below is unreachable, which is the whole
+                        // reason the port had no chat share.
+                        trailing: IconButton(
+                          key: Key('share-chat-${chat.id}'),
+                          icon: const Icon(Icons.share),
+                          tooltip: l10n.shareChat,
+                          onPressed: () => startChatShare(context, ref, chat),
+                        ),
                         onTap: () {
                           ref
                               .read(chatConversationProvider.notifier)
@@ -276,5 +286,317 @@ class ChatHistoryScreen extends ConsumerWidget {
     } catch (_) {
       return null;
     }
+  }
+}
+
+/// Which branch of the share dialog the user picked.
+enum _ShareBranch { community, teams, enterprises }
+
+/// Port of `ChatHistoryAdapter.bindShareChat` and the two dialogs it opens.
+///
+/// The Kotlin flow is: an expandable list with a *community* group and a
+/// *team/enterprise* group; picking a group's child either opens the note
+/// dialog straight away (community) or a second dialog listing the teams or
+/// enterprises to pick from. A destination the chat has already been shared
+/// to shows a marker and is not tappable, and an empty team or enterprise
+/// list gets its own "please join one first" alert rather than an empty
+/// dialog.
+///
+/// The two providers are awaited, not read: nothing on this screen watches
+/// them, so `valueOrNull` would be null on the first tap and the dialog would
+/// silently offer no destinations. Both awaits are inside the `try`, because a
+/// future can reject where `valueOrNull` could not.
+@visibleForTesting
+Future<void> startChatShare(
+  BuildContext context,
+  WidgetRef ref,
+  ChatRow chat,
+) async {
+  final l10n = AppLocalizations.of(context);
+  final ChatShareTargets targets;
+  final Map<String, Set<String>> destinations;
+  try {
+    targets = await ref.read(chatShareTargetsProvider.future);
+    destinations = await ref.read(chatShareActionsProvider).destinations();
+  } catch (_) {
+    if (context.mounted) _showChatShareMessage(context, l10n.chatsUnavailable);
+    return;
+  }
+  if (!context.mounted) return;
+
+  final sharedIds = destinations[chat.docId ?? ''] ?? const <String>{};
+  final community = targets.community;
+  final communityShared = community != null && sharedIds.contains(community.id);
+
+  final branch = await showDialog<_ShareBranch>(
+    context: context,
+    builder: (context) => _ShareBranchDialog(
+      hasCommunity: community != null,
+      communityShared: communityShared,
+    ),
+  );
+  if (branch == null || !context.mounted) return;
+
+  final ChatShareTarget? target;
+  final String section;
+  switch (branch) {
+    case _ShareBranch.community:
+      target = community;
+      section = ChatShareSection.community;
+    case _ShareBranch.teams:
+      section = ChatShareSection.teams;
+      target = await _pickShareTarget(
+        context,
+        title: l10n.teams,
+        emptyMessage: l10n.joinTeamFirst,
+        targets: targets.teams,
+        sharedIds: sharedIds,
+      );
+    case _ShareBranch.enterprises:
+      section = ChatShareSection.enterprises;
+      target = await _pickShareTarget(
+        context,
+        title: l10n.enterprises,
+        emptyMessage: l10n.joinEnterpriseFirst,
+        targets: targets.enterprises,
+        sharedIds: sharedIds,
+      );
+  }
+  if (target == null || !context.mounted) return;
+
+  final note = await showDialog<String>(
+    context: context,
+    builder: (context) => const _ShareNoteDialog(),
+  );
+  // Cancel writes nothing, as `setNegativeButton` does; an empty note is a
+  // deliberate share and still posts, because `add_note` is optional.
+  if (note == null || !context.mounted) return;
+
+  final outcome = await ref
+      .read(chatShareActionsProvider)
+      .share(chat: chat, target: target, section: section, note: note);
+  if (!context.mounted) return;
+  _showChatShareMessage(context, switch (outcome) {
+    ChatShareOutcome.shared => l10n.chatShared,
+    ChatShareOutcome.alreadyShared => l10n.chatAlreadyShared,
+    // Not `chatsUnavailable`: the chat is visibly on screen, and two of the
+    // three ways here — a chat the server has never seen, a null destination
+    // — have nothing to do with loading.
+    ChatShareOutcome.unavailable => l10n.chatCannotBeShared,
+  });
+}
+
+void _showChatShareMessage(BuildContext context, String message) {
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+}
+
+/// Second dialog: the teams or enterprises to share into.
+///
+/// Port of `showGrandChildRecyclerView`, including its empty branch — an
+/// alert naming the section rather than a list with nothing in it.
+Future<ChatShareTarget?> _pickShareTarget(
+  BuildContext context, {
+  required String title,
+  required String emptyMessage,
+  required List<ChatShareTarget> targets,
+  required Set<String> sharedIds,
+}) async {
+  if (targets.isEmpty) {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(emptyMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(MaterialLocalizations.of(context).okButtonLabel),
+          ),
+        ],
+      ),
+    );
+    return null;
+  }
+  return showDialog<ChatShareTarget>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(title),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            for (final target in targets)
+              _ShareTargetTile(
+                target: target,
+                // `TeamsSelectionAdapter.bind`: an already-shared destination
+                // shows the shared icon and has its click listener removed.
+                alreadyShared: sharedIds.contains(target.id),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(AppLocalizations.of(context).close),
+        ),
+      ],
+    ),
+  );
+}
+
+class _ShareTargetTile extends StatelessWidget {
+  const _ShareTargetTile({required this.target, required this.alreadyShared});
+
+  final ChatShareTarget target;
+  final bool alreadyShared;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      key: Key('share-target-${target.id}'),
+      leading: const Icon(Icons.groups_outlined),
+      title: Text(target.name),
+      trailing: alreadyShared ? const Icon(Icons.check) : null,
+      enabled: !alreadyShared,
+      onTap: alreadyShared ? null : () => Navigator.of(context).pop(target),
+    );
+  }
+}
+
+/// First dialog: the two collapsible destination groups.
+class _ShareBranchDialog extends StatefulWidget {
+  const _ShareBranchDialog({
+    required this.hasCommunity,
+    required this.communityShared,
+  });
+
+  /// False when the planet has no community name or parent code configured,
+  /// in which case `loadShareTargets` leaves `community` null and there is
+  /// nothing for the group to open.
+  final bool hasCommunity;
+  final bool communityShared;
+
+  @override
+  State<_ShareBranchDialog> createState() => _ShareBranchDialogState();
+}
+
+class _ShareBranchDialogState extends State<_ShareBranchDialog> {
+  bool _communityExpanded = false;
+  bool _teamsExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return AlertDialog(
+      content: SizedBox(
+        width: double.maxFinite,
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            ListTile(
+              key: const Key('share-group-community'),
+              title: Text(
+                l10n.shareWithCommunity,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              trailing: Icon(
+                _communityExpanded ? Icons.expand_less : Icons.expand_more,
+              ),
+              onTap: () =>
+                  setState(() => _communityExpanded = !_communityExpanded),
+            ),
+            if (_communityExpanded && widget.hasCommunity)
+              ListTile(
+                key: const Key('share-child-community'),
+                title: Text(l10n.community),
+                trailing: widget.communityShared
+                    ? const Icon(Icons.check)
+                    : null,
+                enabled: !widget.communityShared,
+                onTap: widget.communityShared
+                    ? null
+                    : () => Navigator.of(context).pop(_ShareBranch.community),
+              ),
+            ListTile(
+              key: const Key('share-group-team'),
+              title: Text(
+                l10n.shareWithTeamEnterprise,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              trailing: Icon(
+                _teamsExpanded ? Icons.expand_less : Icons.expand_more,
+              ),
+              onTap: () => setState(() => _teamsExpanded = !_teamsExpanded),
+            ),
+            if (_teamsExpanded) ...[
+              ListTile(
+                key: const Key('share-child-teams'),
+                title: Text(l10n.teams),
+                onTap: () => Navigator.of(context).pop(_ShareBranch.teams),
+              ),
+              ListTile(
+                key: const Key('share-child-enterprises'),
+                title: Text(l10n.enterprises),
+                onTap: () =>
+                    Navigator.of(context).pop(_ShareBranch.enterprises),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.close),
+        ),
+      ],
+    );
+  }
+}
+
+/// Port of `showEditTextAndShareButton` — the optional note carried as the
+/// post's `message`.
+class _ShareNoteDialog extends StatefulWidget {
+  const _ShareNoteDialog();
+
+  @override
+  State<_ShareNoteDialog> createState() => _ShareNoteDialogState();
+}
+
+class _ShareNoteDialogState extends State<_ShareNoteDialog> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return AlertDialog(
+      content: TextField(
+        key: const Key('share-note-field'),
+        controller: _controller,
+        autofocus: true,
+        maxLines: null,
+        keyboardType: TextInputType.multiline,
+        decoration: InputDecoration(hintText: l10n.addNoteOptional),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.cancel),
+        ),
+        TextButton(
+          key: const Key('share-note-submit'),
+          onPressed: () => Navigator.of(context).pop(_controller.text),
+          child: Text(l10n.shareChat),
+        ),
+      ],
+    );
   }
 }

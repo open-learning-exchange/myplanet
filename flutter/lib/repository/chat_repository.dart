@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../core/config/server_config.dart';
 import '../core/sync/sync_result.dart';
 import '../core/utils/text_utils.dart';
@@ -252,4 +254,111 @@ List<ChatRow> _fullConvoSearch({
     ...startsWith,
     ...contains,
   ];
+}
+
+/// The `viewIn` section a chat share is addressed to.
+///
+/// These are wire values, not labels. `ChatHistoryAdapter` passes
+/// `context.getString(R.string.teams)` / `R.string.enterprises` /
+/// `R.string.community` straight into [ChatSharePayload.buildShareMap] as the
+/// `section`, so on an Android device running in French the document reaches
+/// CouchDB with a French `viewIn[].section` — and
+/// `VoicesRepository.isVisibleToUser` matches `section == "community"`, so a
+/// community share made in a non-English locale is invisible in the community
+/// feed of both apps. The port writes the stable literals instead, which is
+/// what every *other* writer on both sides already does
+/// (`VoicesFragment` writes `"community"`, `TeamsVoicesFragment` writes
+/// `"teams"`, and the port's `createTeamPost` writes `"teams"`).
+///
+/// English is the only locale where this is observable as a difference at all,
+/// and there only for enterprises: `R.string.enterprises` is `"Enterprises"`
+/// where this writes `"enterprises"`. Nothing on either side reads that value —
+/// the only `section` comparison anywhere is against `"community"`, and it is
+/// case-insensitive.
+abstract final class ChatShareSection {
+  static const String community = 'community';
+  static const String teams = 'teams';
+  static const String enterprises = 'enterprises';
+}
+
+/// The share destination a chat is addressed to — a team, an enterprise, or
+/// the planet's community pseudo-team.
+///
+/// Port of the three fields of `model/TeamSummary.kt` that the share path
+/// reads: `_id` becomes `viewInId`, `teamType` becomes `messageType`, and
+/// `teamPlanetCode` becomes `messagePlanetCode`. [name] is the dialog label;
+/// note that it does *not* reach the payload — `News.getViewInJson` writes a
+/// `name` key read from `map["name"]`, which `buildShareMap` never sets, so
+/// the entry's name is null in the Kotlin too.
+class ChatShareTarget {
+  const ChatShareTarget({
+    required this.id,
+    required this.name,
+    this.teamType,
+    this.teamPlanetCode,
+  });
+
+  final String id;
+  final String name;
+  final String? teamType;
+
+  /// Null for every target the port builds today: the `teams` Drift table has
+  /// no `teamPlanetCode` column, so there is nothing to read it from. The
+  /// Kotlin sends `""` for a team document that omits the field and for the
+  /// synthesized community target, which is the same value this produces —
+  /// see `PHASE_140_NOTES.md` § "Reported, not fixed".
+  final String? teamPlanetCode;
+}
+
+/// Port of `model/ChatSharePayload.kt` — the `HashMap` a shared chat is
+/// posted as.
+///
+/// Pure and top-level so a test can pin the wire shape without a repository,
+/// and so the caller need not transitively watch `chatRepositoryProvider`
+/// (and through it `planetPrefsProvider`, unimplemented in the widget-test
+/// harness).
+///
+/// Two shapes are load-bearing and easy to lose:
+///
+/// - **Every value is a string**, the nested object included. `createdDate`
+///   and `updatedDate` are the millis *stringified*, and `conversations` is a
+///   JSON array encoded into a string and stored under a key of the outer
+///   JSON — which is why `News.createNews` re-parses it out of a string
+///   primitive rather than reading an array.
+/// - **A null title shares as `""`, not `"null"`.** Upstream `7167684` moved
+///   this out of the adapter, where it had been `"${chatHistory.title}".trim()`
+///   — a Kotlin string template of null renders the four characters `null`, so
+///   before that commit an untitled chat was shared under the title `null`.
+///   The current behaviour is what is ported.
+Map<String, String> buildChatShareMap({
+  required ChatRow chat,
+  required String note,
+  required ChatShareTarget? target,
+  required String section,
+  required int nowMillis,
+}) {
+  final conversations = ChatMapper.parseConversations(chat.conversations)
+      .map((c) => {'query': c.query ?? '', 'response': c.response ?? ''})
+      .toList(growable: false);
+
+  final news = <String, String>{
+    '_id': chat.docId ?? '',
+    '_rev': chat.rev ?? '',
+    'title': (chat.title ?? '').trim(),
+    'user': chat.user ?? '',
+    'aiProvider': chat.aiProvider ?? '',
+    'createdDate': '$nowMillis',
+    'updatedDate': '$nowMillis',
+    'conversations': jsonEncode(conversations),
+  };
+
+  return <String, String>{
+    'message': note,
+    'viewInId': target?.id ?? '',
+    'viewInSection': section,
+    'messageType': target?.teamType ?? '',
+    'messagePlanetCode': target?.teamPlanetCode ?? '',
+    'chat': 'true',
+    'news': jsonEncode(news),
+  };
 }
