@@ -263,14 +263,20 @@ reads as coverage without being any.
 ## Gate
 
 `dart format --set-exit-if-changed lib test` clean, `flutter analyze` clean,
-`flutter test` **2418 passing** (2405 before this lane's 13 new repository and
-screen tests; the 7 `LIKE` tests are inside the 2405 because they were written
-and run first). Codegen (`dart run build_runner build`) run before analyzing,
-per the stale-generated-sources rule — the Drift DAO signature changed.
+`flutter test` **2430 passing** on the final tree, against 2405 on the base —
+25 new tests across the two jobs and the second audit's fixes. Codegen
+(`dart run build_runner build`) run before analyzing, per the
+stale-generated-sources rule, since the Drift DAO signature changed.
+
+An intermediate count of 2418/2419 appears in the audit narrative below and in
+the earlier commit messages; those were taken before the second audit's fixes
+added their tests, and before the `take_course_screen_test.dart` repair. The
+number to trust is the one measured last.
 
 ## What the second audit found in this lane's own finished code
 
-Six defects in code that was formatted, analyzer-clean and 2419-tests green.
+Six defects in code that was formatted, analyzer-clean and green at the time
+(2419 tests).
 Phases 110, 113, 116 and 119 each found more in their second pass; this is the
 fifth. Two of the six are in the work this phase added, and the worst of them
 made the phase's own headline change a no-op.
