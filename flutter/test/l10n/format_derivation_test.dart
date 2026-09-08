@@ -181,6 +181,77 @@ void main() {
     });
   });
 
+  group('the trust floor', () {
+    // Phase 141. The tier ladder stops at `casing`, and the 11 template keys
+    // that would match only one notch below it — `logOut`/`Logout`,
+    // `myLibrary`/`myLibrary`, `profitLoss`/`Profit/Loss`, the rest of the
+    // `my*` compound family — are not an oversight waiting to be swept up.
+    // That is where the Kotlin data stops being trustworthy: 47 of its 1056
+    // strings are byte-identical to their English in at least four of the five
+    // locales, and the `my*` family is the worst of them. A tier reaching those
+    // keys would have written the token `mySurveys` over the real `استطلاعاتي`
+    // and `Mes enquêtes`, in all five locales, and called it a recovery.
+
+    test('an untranslated source string is not a candidate translation', () {
+      // `my_survey` is `mySurveys` in `values/strings.xml` and `mySurveys` in
+      // every `values-<locale>` file. Whatever tier proposes it, it is English.
+      expect(
+        isUntranslatedSource(
+          proposal: 'mySurveys',
+          kotlinEnglish: 'mySurveys',
+          templateEnglish: 'My surveys',
+        ),
+        isTrue,
+      );
+    });
+
+    test('a real translation of the same key is still a candidate', () {
+      expect(
+        isUntranslatedSource(
+          proposal: 'استطلاعاتي',
+          kotlinEnglish: 'mySurveys',
+          templateEnglish: 'My surveys',
+        ),
+        isFalse,
+      );
+    });
+
+    test('a legitimately invariant value is not mistaken for English', () {
+      // The guard must compare against the Kotlin string's own English *and*
+      // require it to differ from the template's, or it would reject the values
+      // that are correctly identical to their source. `medium_html` is "HTML"
+      // in `values/strings.xml` and "HTML" in `values-fr` — that is the French
+      // translation, not a missing one, and `app_fr.arb` ships it.
+      expect(
+        isUntranslatedSource(
+          proposal: 'HTML',
+          kotlinEnglish: 'HTML',
+          templateEnglish: 'HTML',
+        ),
+        isFalse,
+      );
+      expect(
+        isUntranslatedSource(
+          proposal: 'PDF',
+          kotlinEnglish: 'PDFs',
+          templateEnglish: 'PDFs',
+        ),
+        isFalse,
+      );
+    });
+
+    test('an absent source string proposes nothing either way', () {
+      expect(
+        isUntranslatedSource(
+          proposal: 'anything',
+          kotlinEnglish: '',
+          templateEnglish: 'Something',
+        ),
+        isFalse,
+      );
+    });
+  });
+
   group('plain text', () {
     // Not a placeholder concern, but the same file: this is where the tool's
     // derivation rules are tested, and the plain-text rules turned out to

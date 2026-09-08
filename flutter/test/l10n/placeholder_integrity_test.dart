@@ -252,6 +252,53 @@ void main() {
     );
   });
 
+  test('no locale value is an untranslated Kotlin source string', () {
+    // Phase 141, and the other end of `format_derivation_test`'s trust-floor
+    // guard: that one pins the predicate, this one pins the shipped files, so
+    // *any* route into the bad state fails rather than only the one anticipated.
+    //
+    // 47 of the Kotlin app's 1056 strings are byte-identical to their English
+    // in at least four of the five locales. The `my*` compound family is the
+    // worst of them — `my_survey` is the literal token `mySurveys` everywhere,
+    // `my_library` is `"mylibrary"` everywhere — and it is also exactly what a
+    // tier looser than `casing` would reach, because the port re-spaced Kotlin's
+    // `myLibrary`/`mySurveys` into "My Library"/"My surveys". Adopting one of
+    // those would replace `استطلاعاتي` and `Mes enquêtes` with English and
+    // report it as a recovered human translation.
+    //
+    // The Kotlin XML is read rather than the tokens listed here: a hardcoded
+    // list would go stale the moment upstream translates one of them.
+    for (final code in locales) {
+      final english = _kotlinStrings('values');
+      final localised = _kotlinStrings('values-$code');
+      final arb = _readArb(code);
+      for (final entry in english.entries) {
+        final source = entry.value.trim();
+        final key = _camelCase(entry.key);
+        final value = arb[key];
+        if (value is! String) continue;
+        // Only a *source* string sitting untranslated is evidence. A locale
+        // value equal to its English where the template says the same thing is
+        // an invariant translation ("HTML", "N/A"), not a missing one.
+        if (source.isEmpty || localised[entry.key]?.trim() != source) continue;
+        final templateValue = template[key];
+        if (templateValue is! String || templateValue.trim() == source) {
+          continue;
+        }
+        expect(
+          value.trim(),
+          isNot(source),
+          reason:
+              'app_$code.arb "$key" is the untranslated Kotlin source string '
+              '"${entry.key}" ("$source"), not a translation of the template\'s '
+              '"$templateValue". Adopting one of these replaces a real '
+              'translation with English — see the trust floor in '
+              'tool/arb_from_strings_xml.dart.',
+        );
+      }
+    }
+  });
+
   test('the template declares no review state of its own', () {
     // `app_en.arb` is the source text, not a translation of anything. An
     // `x-mt` flag there would mean the English itself is machine output.
@@ -336,12 +383,24 @@ void main() {
     // which carries the Kotlin `other` for the filter's own chip rather than
     // borrowing `storageOther` — that key is the port of `storage_other`
     // ("Other Files") and its value is wrong, so the chip must not ride on it.
+    //
+    // Phase 141 adds 3 per locale and one more for Arabic. The three are
+    // `takeTestCount`, `retakeTestCount` and `redoSurvey` — template keys added
+    // after Phase 121's derivation run, whose Kotlin `take_test`/`retake_test`/
+    // `redo_survey` ship human translations in all five locales; they needed no
+    // new rule, only a re-run. French gains a fourth, `storagePdfs`, where the
+    // `.arb` carried the English "PDFs" and `values-fr` says "PDF". Arabic's
+    // extra is not a value at all: `progressFilterCompleted` already held
+    // `status_completed`'s Arabic word for word while flagged unreviewed
+    // machine output, because the recovery pass tested unanimity before it
+    // tested whether the value was already one of the candidates, and Kotlin's
+    // `completed` and `status_completed` disagree in Arabic. Marking only.
     const humanReviewed = {
-      'ar': 418,
-      'es': 470,
-      'fr': 417,
-      'ne': 419,
-      'so': 419,
+      'ar': 421,
+      'es': 473,
+      'fr': 419,
+      'ne': 421,
+      'so': 421,
     };
 
     for (final code in locales) {
@@ -427,6 +486,31 @@ bool _usesPlaceholder(String value, String name) =>
 /// A regex rather than an XML parser: the test needs one string, `strings.xml`
 /// writes it on one line, and pulling a parser into the test tree to read it
 /// would be the larger dependency.
+/// Every `<string name=…>` in a `values*` directory, flattened to its text.
+Map<String, String> _kotlinStrings(String valuesDir) {
+  final xml = File(
+    '../app/src/main/res/$valuesDir/strings.xml',
+  ).readAsStringSync();
+  final result = <String, String>{};
+  for (final match in RegExp(
+    r'<string name="([^"]+)"[^>]*>(.*?)</string>',
+    dotAll: true,
+  ).allMatches(xml)) {
+    result[match.group(1)!] = match.group(2)!;
+  }
+  return result;
+}
+
+/// `snake_case` → `camelCase`, the ARB key naming the derivation tool uses.
+String _camelCase(String snakeCase) {
+  final parts = snakeCase.split('_');
+  return parts.first +
+      parts
+          .skip(1)
+          .map((p) => p.isEmpty ? '' : p[0].toUpperCase() + p.substring(1))
+          .join();
+}
+
 String _kotlinString(String valuesDir) {
   final xml = File(
     '../app/src/main/res/$valuesDir/strings.xml',

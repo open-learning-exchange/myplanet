@@ -146,7 +146,6 @@
     "x-mt": true
   },
   "appTheme": "Thème de l'application",
-  "aiChat": "AI Chat",
   "syncNow": "Synchroniser maintenant",
   "syncCenter": "Centre de synchronisation",
   "@syncCenter": {
@@ -1840,7 +1839,7 @@
   "storageTotalDownloaded": "Total téléchargé",
   "storageVideos": "Vidéos",
   "storageAudio": "Audio",
-  "storagePdfs": "PDFs",
+  "storagePdfs": "PDF",
   "storageImages": "Images",
   "storageOther": "Autre",
   "fileCountOne": "1 fichier",
@@ -2299,5 +2298,8 @@
   "filterAudio": "Audio",
   "mediumTextHtml": "Texte / HTML",
   "mediumHtml": "HTML",
-  "filterOther": "Autre"
+  "filterOther": "Autre",
+  "takeTestCount": "Passer le test [{count}]",
+  "retakeTestCount": "Repasser le test [{count}]",
+  "redoSurvey": "refaire le sondage"
 }

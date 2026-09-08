@@ -18,7 +18,6 @@
   "ok": "ठिक छ",
   "home": "होम",
   "appTheme": "एप थिम",
-  "aiChat": "AI Chat",
   "syncNow": "अहिले सिङ्क गर्नुहोस्",
   "syncing": "सिङ्क हुँदैछ…",
   "surveys": "सर्वेक्षणहरू",
@@ -525,5 +524,8 @@
   "filterAudio": "अडियो",
   "mediumTextHtml": "पाठ / HTML",
   "mediumHtml": "HTML",
-  "filterOther": "अन्य"
+  "filterOther": "अन्य",
+  "takeTestCount": "परीक्षा दिनुहोस् [{count}]",
+  "retakeTestCount": "पुन: टेस्ट दिनुहोस् [{count}]",
+  "redoSurvey": "सर्वे पुनः गर्नुहोस्"
 }
