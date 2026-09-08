@@ -31,6 +31,7 @@ interface SurveysRepository {
     suspend fun getSurvey(id: String): StepExam?
     suspend fun getSurveys(ascending: Boolean = false): List<StepExam>
     suspend fun bulkInsertExamsFromSync(jsonArray: JsonArray)
+    suspend fun deleteByIds(ids: List<String>)
     fun dueRemindersFlow(): Flow<List<String>>
     suspend fun scheduleSurveyReminder(surveyIds: String, timeUnit: TimeUnit, value: Int)
     suspend fun setLastSurveyDialogShown(time: Long)

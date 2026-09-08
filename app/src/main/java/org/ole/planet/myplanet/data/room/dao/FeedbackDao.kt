@@ -41,4 +41,7 @@ interface FeedbackDao {
 
     @Update
     suspend fun update(item: Feedback)
+
+    @Query("DELETE FROM feedback WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<String>): Int
 }

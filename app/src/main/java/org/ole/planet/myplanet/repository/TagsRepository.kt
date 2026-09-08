@@ -11,5 +11,6 @@ interface TagsRepository {
     suspend fun getTagsForResources(resourceIds: List<String>): Map<String, List<TagEntity>>
     suspend fun getTagsForCourses(courseIds: List<String>): Map<String, List<TagEntity>>
     suspend fun insert(documentList: List<JsonObject>)
+    suspend fun deleteByIds(ids: List<String>)
     suspend fun getLinkIdsForTagNames(dbType: String, tagNames: List<String>): List<String>
 }

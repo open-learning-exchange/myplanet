@@ -15,23 +15,25 @@ import androidx.work.workDataOf
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.concurrent.TimeUnit
-import org.ole.planet.myplanet.services.SharedPrefManager
 
 @HiltWorker
 class HeavyTableSyncWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted workerParams: WorkerParameters,
     private val transactionSyncManager: TransactionSyncManager,
-    private val sharedPrefManager: SharedPrefManager,
     private val syncManager: SyncManager
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
         val table = inputData.getString(KEY_TABLE) ?: return Result.failure()
         if (syncManager.isMainSyncActive()) return Result.retry()
+        // All ALL_HEAVY_TABLES now sync incrementally via a since-cursor persisted after every
+        // page (TransactionSyncManager.syncDbIncremental), so there's no separate "was this
+        // interrupted mid-scan" checkpoint to inspect here: a real interruption throws out of
+        // syncDb() as a CancellationException, which WorkManager handles via the coroutine's own
+        // cancellation rather than this method returning a Result at all.
         transactionSyncManager.syncDb(table, useCheckpoint = true)
-        val interrupted = sharedPrefManager.rawPreferences.getInt("heavy_sync_skip_$table", 0) > 0
-        return if (interrupted) Result.retry() else Result.success()
+        return Result.success()
     }
 
     companion object {
@@ -56,11 +58,11 @@ class HeavyTableSyncWorker @AssistedInject constructor(
             }
         }
 
-        fun scheduleIfPending(context: Context, sharedPrefManager: SharedPrefManager) {
-            val pending = ALL_HEAVY_TABLES.filter { table ->
-                sharedPrefManager.rawPreferences.getInt("heavy_sync_skip_$table", 0) > 0
-            }
-            if (pending.isNotEmpty()) schedule(context, pending)
+        fun scheduleIfPending(context: Context) {
+            // Heavy tables sync incrementally now (a persisted since-cursor per table), so a
+            // catch-up run here is cheap even when nothing changed -- no need to gate on a
+            // "was interrupted" pref that incremental syncs no longer write.
+            schedule(context)
         }
     }
 }

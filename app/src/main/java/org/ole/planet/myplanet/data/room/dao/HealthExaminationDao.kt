@@ -41,4 +41,7 @@ interface HealthExaminationDao {
 
     @Query("SELECT * FROM health_examinations WHERE profileId = :profileId")
     suspend fun getByProfileId(profileId: String): List<HealthExamination>
+
+    @Query("DELETE FROM health_examinations WHERE _id IN (:ids)")
+    suspend fun deleteByIds(ids: List<String>): Int
 }

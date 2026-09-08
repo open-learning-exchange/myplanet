@@ -17,6 +17,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.room.dao.SyncCursorDao
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatSyncWriter
@@ -66,6 +67,7 @@ class TransactionSyncManagerTest {
     private val testScope = TestScope(testDispatcher)
     private val dispatcherProvider: DispatcherProvider = mockk()
     private val userSessionManager: org.ole.planet.myplanet.services.UserSessionManager = mockk()
+    private val syncCursorDao: SyncCursorDao = mockk()
 
     @Before
     fun setup() {
@@ -97,6 +99,7 @@ class TransactionSyncManagerTest {
             surveysRepository,
             dispatcherProvider,
             userSessionManager,
+            syncCursorDao,
             mockk(relaxed = true)
         )
     }

@@ -57,6 +57,7 @@ interface SubmissionsRepository {
     suspend fun getOrCreateSubmission(userId: String?, parentId: String): Submission
     suspend fun getPhotosByIds(ids: Array<String>): List<SubmitPhotos>
     suspend fun bulkInsertFromSync(jsonArray: JsonArray)
+    suspend fun deleteByIds(ids: List<String>)
     suspend fun insertSubmission(submission: JsonObject)
     suspend fun getExamUploadPayload(submission: Submission, user: UserEntity?): JsonObject
     suspend fun serializeSubmission(submission: Submission, source: String, parentCode: String, user: UserEntity?): JsonObject

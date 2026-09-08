@@ -353,6 +353,11 @@ class VoicesRepositoryImpl @Inject constructor(
         return newsDao.getPlanetMessages(planetCode)
     }
 
+    override suspend fun deleteByIds(ids: List<String>) {
+        if (ids.isEmpty()) return
+        newsDao.deleteByIds(ids)
+    }
+
     override suspend fun insertNewsList(docs: List<JsonObject>) {
         val underscoreIds = ArrayList<String>(docs.size)
         val mappedDocs = docs.map { doc ->

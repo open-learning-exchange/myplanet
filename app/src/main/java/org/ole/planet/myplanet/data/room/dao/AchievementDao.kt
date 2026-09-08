@@ -21,4 +21,7 @@ interface AchievementDao {
 
     @Query("UPDATE achievements SET _rev = COALESCE(:rev, _rev), isUpdated = 0 WHERE _id = :id")
     suspend fun markUploaded(id: String, rev: String?)
+
+    @Query("DELETE FROM achievements WHERE _id IN (:ids)")
+    suspend fun deleteByIds(ids: List<String>): Int
 }

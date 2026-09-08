@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.data.room.dao.RetryDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
+import org.ole.planet.myplanet.data.room.dao.SyncCursorDao
 import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
@@ -72,6 +73,7 @@ import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.SubmitPhotos
+import org.ole.planet.myplanet.model.SyncCursor
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.TeamLog
 import org.ole.planet.myplanet.model.TeamNotification
@@ -126,8 +128,9 @@ import org.ole.planet.myplanet.model.UserEntity
         Submission::class,
         Answer::class,
         MyTeam::class,
+        SyncCursor::class,
     ],
-    version = 11,
+    version = 12,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -169,4 +172,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun submissionDao(): SubmissionDao
     abstract fun answerDao(): AnswerDao
     abstract fun teamDao(): TeamDao
+    abstract fun syncCursorDao(): SyncCursorDao
 }

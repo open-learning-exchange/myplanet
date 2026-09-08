@@ -121,6 +121,11 @@ class FeedbackRepositoryImpl @Inject constructor(
         feedbackDao.upsert(mapToFeedback(jsonObject, existing, id))
     }
 
+    override suspend fun deleteByIds(ids: List<String>) {
+        if (ids.isEmpty()) return
+        feedbackDao.deleteByIds(ids)
+    }
+
     override suspend fun insertFeedbackList(jsonObjects: List<JsonObject>) {
         val ids = jsonObjects.map { JsonUtils.getString("_id", it) }
         val existingById = feedbackDao.getByIds(ids).associateBy { it.id }

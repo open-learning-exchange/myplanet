@@ -49,6 +49,9 @@ interface RatingDao {
     @Update
     suspend fun update(item: Rating)
 
+    @Query("DELETE FROM rating WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<String>): Int
+
     @Query("SELECT EXISTS(SELECT 1 FROM rating_prompt_log WHERE userId = :userId AND item = :item AND type = :type)")
     suspend fun isRatingPrompted(userId: String, item: String, type: String = "resource"): Boolean
 

@@ -40,6 +40,7 @@ interface VoicesRepository : VoicesEditActions {
     suspend fun getCommunityVoiceDateCount(startTime: Long, endTime: Long, userId: String?): Int
     suspend fun getPlanetNewsMessages(planetCode: String?): List<News>
     suspend fun insertNewsList(docs: List<JsonObject>)
+    suspend fun deleteByIds(ids: List<String>)
     suspend fun countTeamChats(teamId: String): Long
     suspend fun countTopLevelByTeam(teamId: String): Long
     suspend fun getPendingNewsLogUploads(): List<org.ole.planet.myplanet.model.NewsLog>

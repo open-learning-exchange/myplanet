@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.data.room.dao.RetryDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
+import org.ole.planet.myplanet.data.room.dao.SyncCursorDao
 import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
@@ -245,6 +246,11 @@ object RoomModule {
     @Provides
     fun provideTeamDao(database: AppDatabase): TeamDao {
         return database.teamDao()
+    }
+
+    @Provides
+    fun provideSyncCursorDao(database: AppDatabase): SyncCursorDao {
+        return database.syncCursorDao()
     }
 }
 

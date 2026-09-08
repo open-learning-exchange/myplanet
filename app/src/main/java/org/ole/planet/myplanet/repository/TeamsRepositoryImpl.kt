@@ -1265,6 +1265,11 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun deleteTasksByIds(ids: List<String>) {
+        if (ids.isEmpty()) return
+        teamTaskDao.deleteByIds(ids)
+    }
+
     override suspend fun bulkInsertTasksFromSync(jsonArray: JsonArray) {
         val tasks = jsonArray.toSyncDocuments().map { (_, doc) -> TeamTask.fromJson(doc) }
         teamTaskDao.upsertAll(tasks)

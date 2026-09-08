@@ -16,6 +16,7 @@ interface HealthRepository {
     suspend fun markHealthExaminationsUploaded(idToRevMap: Map<String, String?>)
     suspend fun updateExaminationUserId(id: String, userId: String)
     suspend fun bulkInsertFromSync(jsonArray: JsonArray)
+    suspend fun deleteByIds(ids: List<String>)
     suspend fun uploadHealthData(myHealths: List<HealthExamination>): Map<String, String?>
     suspend fun getExaminationConditions(examination: HealthExamination?): Map<String, Boolean>
     suspend fun getByIdOrUserId(id: String): HealthExamination?

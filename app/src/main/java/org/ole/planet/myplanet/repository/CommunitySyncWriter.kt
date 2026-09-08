@@ -4,4 +4,5 @@ import com.google.gson.JsonObject
 
 interface CommunitySyncWriter {
     suspend fun insertMeetupsFromSync(docs: List<JsonObject>)
+    suspend fun deleteByIds(ids: List<String>)
 }

@@ -266,6 +266,11 @@ class ProgressRepositoryImpl @Inject constructor(
         return courseProgress
     }
 
+    override suspend fun deleteByIds(ids: List<String>) {
+        if (ids.isEmpty()) return
+        courseProgressDao.deleteByIds(ids)
+    }
+
     private data class CourseProgressSyncKeys(
         val doc: JsonObject,
         val docId: String,
