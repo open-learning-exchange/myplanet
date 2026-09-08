@@ -181,13 +181,56 @@ SQLite at all. **That is a green-CI-but-broken-app shape**, which is the failure
 class this project has a whole section about — and the payload here is the
 database, so the blast radius is the entire app.
 
-This container has no Android SDK (`flutter doctor`: *"Unable to locate Android
-SDK"*), so I cannot check it locally either. The concrete thing the next round
-must do before dropping this package: confirm the Android build actually emits
-`sqlite3`'s code asset — or just run the app and open a database — not merely
-that `build-android` went green. Worth doing; it is the upstream-recommended
-direction and removes a build-script dependency. Not worth doing on a green
-check mark.
+**And CI then answered it.** The `build-android` job on this branch's head
+(run 34239569599) is green, and its log settles the question:
+
+- `sqlite3_flutter_libs` 0.5.42's `android/build.gradle` is an AGP library
+  module whose whole job is one line — `implementation
+  "eu.simonbinder:sqlite3-native-library:3.52.0"`. That prebuilt AAR **is** how
+  the Android app gets SQLite today.
+- `sqlite3_flutter_libs` 0.6.0+eol contains exactly one file,
+  `lib/sqlite3_flutter_libs.dart`. There is **no `android/` directory at all**.
+  Upgrading deletes the module that pulls that AAR in.
+- The build log shows no native-assets or code-assets step anywhere between
+  `pub get` and `assembleDebug`, so `sqlite3`'s `hook/build.dart` is not running
+  for the Android build under Flutter 3.44.8 — nothing replaces the AAR.
+
+So the upgrade would remove the app's SQLite and `flutter build apk --debug`
+would still print `✓ Built app-debug.apk`. **Refused, and now on evidence rather
+than caution.** The precondition for the round that takes it is that
+`sqlite3`'s hook actually runs for Android — a Flutter version where native
+assets are on for Android builds, or the flag that enables them — verified by
+the app opening a database, not by a green check mark.
+
+One near-miss worth recording, since it is the same mistake as the flutter.yml
+one. The APK log installs CMake 3.22.1, and the obvious reading is "that is
+`sqlite3_flutter_libs` compiling SQLite" — it is the behaviour that package is
+known for. It is not: 0.5.42 uses a Maven AAR and no CMake, and the CMake
+install comes from `jni` (via `pdfx`). The conclusion above survived the check;
+the reason I first reached for did not. **Two errors in one lane from reading
+the plausible thing instead of the actual file.**
+
+### 3b-bis. A forward-looking Android break CI is already warning about
+
+Not a version gap, so `pub outdated` never mentions it, but it surfaced in the
+same log and belongs with the rest of this file:
+
+```
+WARNING: Your app uses the following plugins that apply Kotlin Gradle Plugin (KGP):
+  file_picker, package_info_plus, pdfx, workmanager_android
+Future versions of Flutter will fail to build if your app uses plugins that apply KGP.
+```
+
+This is not fixed by anything in this branch and is not fixed by the win32-6
+cluster either — checked directly: `package_info_plus` 10.2.1 still applies KGP,
+and `file_picker` 12 delegates its Android side to `android_file_picker` 1.1.0,
+which also applies KGP. `pdfx` 2.11.0 and `workmanager_android` 0.10.9 are the
+versions this branch already upgraded *to*, and both still apply it.
+
+So all four are upstream's problem, and the port's exposure is a future Flutter
+release, not a current one. Worth watching rather than acting on — but if a
+Flutter SDK bump is ever blocked by a hard KGP failure, this is the list, and
+the fix is upstream migration or replacing the plugin, not a constraint change.
 
 ### 3c. SDK-pinned — `build_runner`, `intl`, `meta`
 
