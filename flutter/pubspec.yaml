@@ -19,7 +19,11 @@ dependencies:
   cupertino_icons: ^1.0.8
 
   # State management — replaces Hilt + ViewModel/StateFlow.
-  flutter_riverpod: ^2.6.1
+  # Phase 137 pin. Riverpod 3 is a rewrite of the provider surface (203 provider
+  # declarations across 152 files here) and wants a round with no other lane
+  # running; see PHASE_137_NOTES.md. The exact pin stops any resolution — direct
+  # or transitive — from moving it while that round is unscheduled.
+  flutter_riverpod: 2.6.1
 
   # Networking — replaces Retrofit + OkHttp.
   dio: ^5.7.0
@@ -33,7 +37,10 @@ dependencies:
   mime: ^2.0.0
 
   # Navigation — replaces the Activity/Fragment + FragmentNavigator stack.
-  go_router: ^14.6.2
+  # Phase 137 pin, same reasoning as flutter_riverpod above: four majors behind,
+  # and the upgrade is coupled to the Riverpod one through the router's
+  # `ref.listen(sessionProvider, …)`. See PHASE_137_NOTES.md.
+  go_router: 14.8.1
 
   # Deep links — replaces reading `Intent.getData()` in `OnboardingActivity`.
   # The engine's own handling hands go_router a location that may carry no
