@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.health
 
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
@@ -52,7 +51,7 @@ class HealthUsersAdapter(private val clickListener: ((UserEntity) -> Unit)? = nu
         }
 
         fun bindImage(user: UserEntity) {
-            if (!TextUtils.isEmpty(user.userImage)) {
+            if (!user.userImage.isNullOrEmpty()) {
                 ImageUtils.loadProfileImage(user.userImage, binding.ivUser, avatarSize)
             } else {
                 binding.ivUser.setImageResource(R.drawable.profile)

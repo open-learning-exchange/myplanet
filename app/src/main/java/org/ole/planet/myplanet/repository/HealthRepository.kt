@@ -20,6 +20,7 @@ interface HealthRepository {
     suspend fun getExaminationConditions(examination: HealthExamination?): Map<String, Boolean>
     suspend fun getByIdOrUserId(id: String): HealthExamination?
     suspend fun getHealthProfile(userId: String): MyHealth?
+    suspend fun getDecryptedHealth(pojo: HealthExamination?, user: UserEntity?): MyHealth?
     suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>)
     suspend fun getByProfileId(profileId: String): List<HealthExamination>
     suspend fun upsert(examination: HealthExamination)
