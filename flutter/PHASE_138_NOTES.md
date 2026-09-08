@@ -404,6 +404,13 @@ schema bump on a handset that has adopted but not yet drained drops the clone
 and its questions and *keeps* the members' answer sheets — the same orphaning
 this phase removed from the sync path, reachable by an upgrade instead.
 
+**And it is not hypothetical for this release: the v47 bump above is such a
+bump.** Any handset carrying an adopted clone that has not yet reached the
+server loses it on upgrade to this build, and keeps the answer sheets. The
+window is narrow — an adoption is published on the next sync, and the outbox
+drains on app resume — but it is real, and it is the price of fixing the leak
+with a column. Worth stating plainly rather than leaving in the general case.
+
 By this project's own stated test — *can a sync restore this?*, not *is it
 local?* — the answer is mixed and the tables qualify: a **published** clone
 comes back on the next `exams` walk, an **unpublished** one exists nowhere else.
