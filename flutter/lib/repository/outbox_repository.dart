@@ -32,8 +32,9 @@ enum OutboxRefusal {
   /// back — a 2xx whose body carries no usable `rev`/`id`. The write may
   /// already be on the server, which makes this the one class where resending
   /// is worse than not: it risks a second copy of a document that is already
-  /// filed. Terminal for the same reason as [rejected], for a different
-  /// reason.
+  /// filed. Terminal to the same effect as [rejected], for the opposite
+  /// reason: [rejected] is certain the write did not land, this one is not
+  /// certain it did not.
   indeterminate,
 }
 
