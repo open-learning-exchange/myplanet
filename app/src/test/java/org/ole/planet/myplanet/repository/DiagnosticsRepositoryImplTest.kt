@@ -1,11 +1,9 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkObject
 import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.verify
@@ -20,16 +18,15 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.CrashLogStore
-import org.ole.planet.myplanet.utils.VersionUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DiagnosticsRepositoryImplTest {
-    private lateinit var context: Context
     private lateinit var apkLogDao: ApkLogDao
     private lateinit var sharedPrefManager: SharedPrefManager
     private lateinit var userRepository: UserRepository
@@ -42,7 +39,6 @@ class DiagnosticsRepositoryImplTest {
 
     @Before
     fun setUp() {
-        context = mockk()
         apkLogDao = mockk(relaxed = true)
         sharedPrefManager = mockk()
         userRepository = mockk()
@@ -50,10 +46,7 @@ class DiagnosticsRepositoryImplTest {
         every { sharedPrefManager.getParentCode() } returns "parent-123"
         every { sharedPrefManager.getPlanetCode() } returns "planet-456"
 
-        mockkObject(VersionUtils)
-        every { VersionUtils.getVersionName(any()) } returns "0.63.42"
-
-        repository = DiagnosticsRepositoryImpl(context, apkLogDao, userRepository, sharedPrefManager)
+        repository = DiagnosticsRepositoryImpl(apkLogDao, userRepository, sharedPrefManager)
     }
 
     @Test
@@ -74,7 +67,7 @@ class DiagnosticsRepositoryImplTest {
         assertEquals("", log.page)
         assertEquals("parent-123", log.parentCode)
         assertEquals("planet-456", log.createdOn)
-        assertEquals("0.63.42", log.version)
+        assertEquals(BuildConfig.VERSION_NAME, log.version)
         assertEquals("user-1", log.userId)
         assertNotNull(log.id)
         assertTrue(log.id.isNotEmpty())
@@ -136,7 +129,7 @@ class DiagnosticsRepositoryImplTest {
         assertEquals("", first.page)
         assertEquals("parent-123", first.parentCode)
         assertEquals("planet-456", first.createdOn)
-        assertEquals("0.63.42", first.version)
+        assertEquals(BuildConfig.VERSION_NAME, first.version)
         assertEquals("user-1", first.userId)
         assertNotNull(first.id)
         assertTrue(first.id.isNotEmpty())
@@ -152,10 +145,6 @@ class DiagnosticsRepositoryImplTest {
         // Each log gets its own generated id.
         assertFalse(first.id == second.id)
 
-        // The three context lookups are hoisted above the map, so each runs once
-        // for the whole batch regardless of size (VersionUtils.getVersionName is
-        // a PackageManager IPC — the batch path flushes pending logs at startup).
-        verify(exactly = 1) { VersionUtils.getVersionName(any()) }
         verify(exactly = 1) { sharedPrefManager.getParentCode() }
         verify(exactly = 1) { sharedPrefManager.getPlanetCode() }
     }
