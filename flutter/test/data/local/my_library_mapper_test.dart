@@ -276,6 +276,57 @@ void main() {
     });
   });
 
+  group('the course-step stamp', () {
+    // Port of the two non-blank guards in `insertMyLibrary`
+    // (`MyLibrary.kt:231-236`). The courses walk stamps; the resources walk
+    // passes nothing and must not clear what the courses walk wrote.
+    test('a non-blank stamp is written', () {
+      final companion = MyLibraryMapper.fromDoc(
+        {'_id': 'res-1', 'title': 'Doc'},
+        couchDbUrl: couchDbUrl,
+        stepId: 'course-1:0',
+        courseId: 'course-1',
+      )!;
+
+      expect(companion.stepId, const Value('course-1:0'));
+      expect(companion.courseId, const Value('course-1'));
+    });
+
+    test('no stamp leaves both columns absent', () {
+      final companion = MyLibraryMapper.fromDoc({
+        '_id': 'res-1',
+        'title': 'Doc',
+      }, couchDbUrl: couchDbUrl)!;
+
+      expect(
+        companion.stepId,
+        const Value<String?>.absent(),
+        reason: 'a Value(null) here is written, and would clear the link',
+      );
+      expect(companion.courseId, const Value<String?>.absent());
+    });
+
+    test(
+      'a blank stamp is folded into absent, not written as an empty string',
+      () {
+        // `isNullOrBlank()` is what the Kotlin tests, and `WHERE stepId = \'\''
+        // matches nothing — an empty stamp is a link that reads as broken
+        // rather than as unset.
+        for (final blank in ['', '   ']) {
+          final companion = MyLibraryMapper.fromDoc(
+            {'_id': 'res-1', 'title': 'Doc'},
+            couchDbUrl: couchDbUrl,
+            stepId: blank,
+            courseId: blank,
+          )!;
+
+          expect(companion.stepId, const Value<String?>.absent());
+          expect(companion.courseId, const Value<String?>.absent());
+        }
+      },
+    );
+  });
+
   group('credentialFreeBase', () {
     test('strips the satellite credentials', () {
       // The default :443 normalizes away; the non-default case is covered below.

@@ -36,9 +36,18 @@ void main() {
 
   tearDown(() => db.close());
 
-  Map<String, dynamic> row(String id, String title) => {
+  /// A row as `_all_docs?include_docs=true` returns it.
+  ///
+  /// The `_rev` is not decoration. `MyLibraryDao.deleteNotIn` prunes only rows
+  /// the server has actually seen — Kotlin's `deleteStalePublicNotIn` is
+  /// `WHERE _rev IS NOT NULL AND _rev != '' AND isPrivate = 0`
+  /// (`MyLibraryDao.kt:170-178`) — because a row with no revision was authored
+  /// on this device and no walk can vouch for it. A fixture that omits the
+  /// field is not a server document, and the prune tests below would be
+  /// asserting against rows the real walk never produces.
+  Map<String, dynamic> row(String id, String title, {String rev = '1-a'}) => {
     'id': id,
-    'doc': {'_id': id, 'title': title},
+    'doc': {'_id': id, '_rev': rev, 'title': title},
   };
 
   void stubCount(int totalRows) {

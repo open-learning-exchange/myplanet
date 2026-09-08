@@ -47,6 +47,8 @@ class MyLibraryMapper {
     List<String> existingTag = const [],
     List<String> existingLanguages = const [],
     String? shelfId,
+    String? stepId,
+    String? courseId,
   }) {
     if (doc.isEmpty) return null;
 
@@ -121,8 +123,32 @@ class MyLibraryMapper {
       ),
       isPrivate: Value(isPrivate),
       privateFor: _privateFor(doc, isPrivate),
+      stepId: _stampOrAbsent(stepId),
+      courseId: _stampOrAbsent(courseId),
     );
   }
+
+  /// Port of the two non-blank guards in `insertMyLibrary`
+  /// (`MyLibrary.kt:231-236`).
+  ///
+  /// The `resources` walk passes neither, and it must not clear a link the
+  /// courses walk wrote — one column, two writers. Kotlin gets that from the
+  /// guard *and* from being handed the stored entity to mutate; the port has
+  /// only the guard, because drift's `insertAllOnConflictUpdate` builds its
+  /// `SET` clause from the companion's **present** columns alone
+  /// (`toColumns(true)`), so an absent one is not written on insert or on
+  /// conflict. That makes [Value.absent] load-bearing rather than tidy: a
+  /// `Value(null)` here, or routing a `my_library` write through a whole-row
+  /// `toCompanion(true)`, silently restores the defect.
+  ///
+  /// Blank is folded into absent, not written as `''`, because
+  /// `isNullOrBlank()` is what the Kotlin tests — and `WHERE stepId = ''`
+  /// matches nothing, so an empty stamp is a link that reads as broken rather
+  /// than as unset.
+  static Value<String?> _stampOrAbsent(String? value) =>
+      value == null || value.trim().isEmpty
+      ? const Value<String?>.absent()
+      : Value(value);
 
   /// Port of `MyLibrary.kt:292-299`.
   ///

@@ -9,10 +9,42 @@ import 'app_database.dart';
 /// Port of `CoursesRepositoryImpl.ParsedCourseSyncPayload`, minus the exam and
 /// question halves — those arrive with the `ui/exam` package.
 class ParsedCourse {
-  const ParsedCourse({required this.course, required this.steps});
+  const ParsedCourse({
+    required this.course,
+    required this.steps,
+    this.resources = const [],
+  });
 
   final CoursesCompanion course;
   final List<CourseStepsCompanion> steps;
+
+  /// The resource documents embedded in the steps, in document order.
+  final List<CourseResourceDoc> resources;
+}
+
+/// One resource document embedded in a course step, with the join it belongs
+/// to. Port of `CoursesRepositoryImpl.PendingCourseResource`.
+///
+/// Kotlin buffers these on the repository and drains the buffer separately
+/// (`queueCourseResources` → `flushPendingCourseResources`), because its parse
+/// and its write are in different methods. The port parses and writes in one
+/// page loop, so the buffer collapses into a return value — which also removes
+/// the two ways Kotlin's buffer misbehaves: a throw mid-page leaves items
+/// queued under a `courseId` whose row was discarded, and the shelf path runs
+/// up to six coroutines against the one shared list.
+class CourseResourceDoc {
+  const CourseResourceDoc({
+    required this.doc,
+    required this.courseId,
+    required this.stepId,
+  });
+
+  final Map<String, dynamic> doc;
+  final String courseId;
+  final String stepId;
+
+  /// The resource's CouchDB id — the `my_library` primary key it lands under.
+  String get resourceId => JsonUtils.getString('_id', doc);
 }
 
 /// Port of the course-parsing half of `repository/CoursesRepositoryImpl.kt`
@@ -32,9 +64,11 @@ class CourseMapper {
     if (courseId.isEmpty || courseId.startsWith('_design')) return null;
 
     final title = JsonUtils.getString('courseTitle', doc);
-    final steps = _parseSteps(doc, courseId);
+    final resources = <CourseResourceDoc>[];
+    final steps = _parseSteps(doc, courseId, resources);
 
     return ParsedCourse(
+      resources: resources,
       course: CoursesCompanion(
         id: Value(courseId),
         couchId: Value(courseId),
@@ -90,6 +124,7 @@ class CourseMapper {
   static List<CourseStepsCompanion> _parseSteps(
     Map<String, dynamic> doc,
     String courseId,
+    List<CourseResourceDoc> collectedResources,
   ) {
     final rawSteps = doc['steps'];
     if (rawSteps is! List) return const [];
@@ -100,6 +135,9 @@ class CourseMapper {
       if (step is! Map<String, dynamic>) continue;
 
       final resources = step['resources'];
+      collectedResources.addAll(
+        _parseStepResources(resources, courseId, stepIdFor(courseId, i)),
+      );
       steps.add(
         CourseStepsCompanion(
           id: Value(stepIdFor(courseId, i)),
@@ -112,6 +150,47 @@ class CourseMapper {
       );
     }
     return steps;
+  }
+
+  /// Port of `queueCourseResources` (`CoursesRepositoryImpl.kt:792-798`).
+  ///
+  /// **Three deviations, all of them refusals to reproduce a latent
+  /// corruption**, because Kotlin filters nothing here — unlike
+  /// `batchInsertResources`, which filters both blank ids and `_design` docs
+  /// (`ResourcesRepositoryImpl.kt:668-671`) before writing the same table:
+  ///
+  /// * A non-object element is skipped. Kotlin calls `.asJsonObject` on it,
+  ///   which throws `IllegalStateException`, and the enclosing catch
+  ///   (`CoursesRepositoryImpl.kt:637-646`) only swallows it when
+  ///   `continueOnError` is true — which the shelf path passes and **the sync
+  ///   walk does not** (`:619` defaults to false). So one malformed element
+  ///   aborts the whole `courses` table walk at that page, writing nothing and
+  ///   skipping the drain.
+  /// * A blank or whitespace-only `_id` is skipped. `insertMyLibrary` returns a row only for an
+  ///   empty document (`MyLibrary.kt:220`), so Kotlin writes `id = ""` — and
+  ///   because the primary key collides, every `_id`-less resource in a batch
+  ///   collapses into one row under `REPLACE`, leaving a phantom carrying the
+  ///   last one's title and the last one's step.
+  /// * A `_design` id is skipped, as the `resources` walk already does.
+  static List<CourseResourceDoc> _parseStepResources(
+    Object? resources,
+    String courseId,
+    String stepId,
+  ) {
+    if (resources is! List) return const [];
+
+    final parsed = <CourseResourceDoc>[];
+    for (final resource in resources) {
+      if (resource is! Map<String, dynamic>) continue;
+      final resourceId = JsonUtils.getString('_id', resource);
+      if (resourceId.trim().isEmpty || resourceId.startsWith('_design')) {
+        continue;
+      }
+      parsed.add(
+        CourseResourceDoc(doc: resource, courseId: courseId, stepId: stepId),
+      );
+    }
+    return parsed;
   }
 
   /// Local step id: `<courseId>:<position>`.

@@ -8,6 +8,7 @@ import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
 import '../data/local/course_mapper.dart';
 import '../data/local/exam_mapper.dart';
+import '../data/local/my_library_mapper.dart';
 import '../data/local/survey_mapper.dart';
 import 'shelf_repository.dart';
 
@@ -186,6 +187,11 @@ class CoursesRepository {
 
       final courseRows = <CoursesCompanion>[];
       final stepRows = <CourseStepsCompanion>[];
+      // The resource documents embedded in this page's course steps, and per
+      // course the union of the ids its steps still claim — the keep set the
+      // stale-join release runs against.
+      final parsedResources = <CourseResourceDoc>[];
+      final resourceIdsByCourse = <String, Set<String>>{};
       final examRows = <ExamsCompanion>[];
       final examQuestionRows = <String, List<ExamQuestionsCompanion>>{};
       final surveyRows = <SurveysCompanion>[];
@@ -227,6 +233,14 @@ class CoursesRepository {
         stepRows.addAll(parsed.steps);
         savedIds.add(parsed.course.id.value);
 
+        parsedResources.addAll(parsed.resources);
+        // Seeded for every course, not only those that still carry resources,
+        // so a course whose last resource was removed still gets its old join
+        // released below.
+        resourceIdsByCourse
+            .putIfAbsent(courseId, () => <String>{})
+            .addAll(parsed.resources.map((r) => r.resourceId));
+
         // A question map entry is written only when the embedded object
         // actually carried questions. `ExamDao.upsertAll` deletes an exam's
         // questions before reinserting the entry's list, so passing an empty
@@ -263,6 +277,14 @@ class CoursesRepository {
       if (courseRows.isNotEmpty) {
         await _dao.upsertAll(courseRows, stepRows);
       }
+      // Kotlin drains its buffered course resources here, per batch, from
+      // inside the walk itself (`TransactionSyncManager.kt:302`) — not once at
+      // the end — so a step's resources are readable before the sync finishes.
+      await _ingestCourseResources(
+        config: config,
+        parsedResources: parsedResources,
+        resourceIdsByCourse: resourceIdsByCourse,
+      );
       // Written after the courses, so a step row always exists by the time an
       // exam claims to belong to it. Neither table is pruned here: the `exams`
       // database walk owns their `deleteNotIn`, and a course test is a document
@@ -303,5 +325,66 @@ class CoursesRepository {
     }
 
     return SyncComplete(savedIds.length);
+  }
+
+  /// Writes one page's embedded step resources into `my_library`, stamped with
+  /// the step and course they came from.
+  ///
+  /// Port of `flushPendingCourseResources` (`CoursesRepositoryImpl.kt:819-863`).
+  /// The stamp is what makes a step's resources readable at all —
+  /// `MyLibraryDao.getByStepId` and `getCourseResources` are the Kotlin
+  /// readers, and before this the port held the *count* of a step's resources
+  /// and none of the rows.
+  ///
+  /// Two properties are deliberate:
+  ///
+  /// * **The existing row is read first and its six merge lists passed back
+  ///   in.** `my_library.userId` is the shelf, written by the user's own tap as
+  ///   well as by a walk, and `MyLibraryMapper.fromDoc` writes
+  ///   `Value(existingUserIds)` unconditionally — so ingesting a course
+  ///   resource without this would retract a membership, the Phase 116 defect
+  ///   in a new caller. No `shelfId` is passed, matching Kotlin: the drain
+  ///   sends no `userId` at all, so `setUserId` returns early
+  ///   (`MyLibrary.kt:123-130`) and course ingestion never *adds* membership
+  ///   either.
+  /// * **A resource in two steps of one course keeps the last step's stamp.**
+  ///   One row per resource id, so the later companion wins the upsert —
+  ///   exactly what Kotlin's `REPLACE` over the twice-mutated entity does. The
+  ///   keep set is a union across the document precisely so the release step
+  ///   does not then un-stamp it.
+  Future<void> _ingestCourseResources({
+    required ServerConfig config,
+    required List<CourseResourceDoc> parsedResources,
+    required Map<String, Set<String>> resourceIdsByCourse,
+  }) async {
+    if (resourceIdsByCourse.isEmpty) return;
+
+    final existingById = {
+      for (final row in await _dao.existingResources([
+        for (final resource in parsedResources) resource.resourceId,
+      ]))
+        row.id: row,
+    };
+
+    final rows = <MyLibraryTableCompanion>[];
+    for (final resource in parsedResources) {
+      final existing = existingById[resource.resourceId];
+      final companion = MyLibraryMapper.fromDoc(
+        resource.doc,
+        couchDbUrl: config.couchDbUrl,
+        existingUserIds: existing?.userId ?? const [],
+        existingResourceFor: existing?.resourceFor ?? const [],
+        existingSubject: existing?.subject ?? const [],
+        existingLevel: existing?.level ?? const [],
+        existingTag: existing?.tag ?? const [],
+        existingLanguages: existing?.languages ?? const [],
+        stepId: resource.stepId,
+        courseId: resource.courseId,
+      );
+      if (companion == null) continue;
+      rows.add(companion);
+    }
+
+    await _dao.upsertCourseResources(rows, resourceIdsByCourse);
   }
 }

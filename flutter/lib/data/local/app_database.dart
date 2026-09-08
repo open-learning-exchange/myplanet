@@ -109,7 +109,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 47;
+  int get schemaVersion => 48;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -567,6 +567,16 @@ class AppDatabase extends _$AppDatabase {
         await _addColumnIfMissing(m, teamTasks, teamTasks.sync);
         await _addColumnIfMissing(m, teamTasks, teamTasks.link);
       }
+
+      // v48 adds `my_library.step_id` / `.course_id` for the course-step
+      // resource ingestion. **No step is needed here, and that is a fact about
+      // the table rather than an oversight**: `my_library` is not in
+      // [_localAuthorityTables], so the drop loop above deleted it and
+      // `createAll` has just rebuilt it carrying both columns. It also has no
+      // `@TableIndex`, so it never enters the pre-`createAll` reconciliation
+      // block. `migration_test.dart` pins this against a frozen v47 shape —
+      // adding `my_library` to the preserved set without a hand-written
+      // [_addColumnIfMissing] pair reds it.
     },
   );
 
@@ -1422,17 +1432,51 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
   /// binding every kept id into one `NOT IN`: SQLite caps bound variables at
   /// `SQLITE_MAX_VARIABLE_NUMBER` (999 on older builds), and a library easily
   /// exceeds that, which would fail the whole sync.
+  ///
+  /// **Only rows the server has actually seen are eligible**, which this had
+  /// never implemented. Kotlin's prune is not "delete what the walk did not
+  /// list": `deleteStalePublicNotIn` is `WHERE _rev IS NOT NULL AND _rev != ''
+  /// AND isPrivate = 0 AND resourceId NOT IN (...)`, and its empty-list twin
+  /// `deleteAllStalePublic` carries the same two guards
+  /// (`MyLibraryDao.kt:170-178`). Without them the port deleted:
+  ///
+  /// * **a resource the user created offline.** [saveLocalResource] writes a
+  ///   row with no `rev`, no CouchDB document and no outbox entry, so nothing
+  ///   could give it back — and the very first resources sync removed it,
+  ///   along with the pointer to the file they picked.
+  /// * **a private team resource**, which the public `resources` walk never
+  ///   lists and so could never keep.
+  /// * **a course step's resource whose embedded sub-object carries no
+  ///   `_rev`.** That one is why the guard is load-bearing for the course
+  ///   stamp above rather than only adjacent to it: the courses walk would
+  ///   ingest the row and the next resources walk would delete it, making the
+  ///   join a one-sync artefact.
+  ///
+  /// Matching on `id` rather than Kotlin's `resourceId` is kept: the two are
+  /// equal for every synced row ([MyLibraryMapper.fromDoc] writes the document
+  /// id into both), and the one writer that makes them differ
+  /// ([saveLocalResource], a UUID id and no `resourceId`) is now spared by the
+  /// `rev` guard anyway.
   Future<int> deleteNotIn(List<String> keepIds) async {
-    if (keepIds.isEmpty) return delete(myLibraryTable).go();
+    // `isPrivate = 0 AND (_rev IS NOT NULL AND _rev != '')` — the eligibility
+    // half of both Kotlin statements, shared by the empty-list branch.
+    Expression<bool> prunable(MyLibraryTable r) =>
+        r.isPrivate.equals(false) & r.rev.isNotNull() & r.rev.equals('').not();
+
+    if (keepIds.isEmpty) {
+      return (delete(myLibraryTable)..where(prunable)).go();
+    }
 
     return transaction(() async {
-      final localIds =
-          await (selectOnly(myLibraryTable)..addColumns([myLibraryTable.id]))
-              .map((row) => row.read(myLibraryTable.id)!)
-              .get();
+      final query = selectOnly(myLibraryTable)
+        ..addColumns([myLibraryTable.id])
+        ..where(prunable(myLibraryTable));
+      final eligibleIds = await query
+          .map((row) => row.read(myLibraryTable.id)!)
+          .get();
 
       final keep = keepIds.toSet();
-      final stale = localIds.where((id) => !keep.contains(id)).toList();
+      final stale = eligibleIds.where((id) => !keep.contains(id)).toList();
 
       var deleted = 0;
       for (final chunk in _chunked(stale, _sqliteVariableChunk)) {
@@ -1442,6 +1486,83 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
       }
       return deleted;
     });
+  }
+
+  /// Port of `MyLibraryDao.getByStepId` — a course step's embedded resources.
+  ///
+  /// Feeds `CourseStepFragment.setupInlineResources` / `autoDownloadResources`
+  /// / `prefetchNextStepResources` through
+  /// `ResourcesRepositoryImpl.getAllStepResources`.
+  Future<List<MyLibraryRow>> getByStepId(String stepId) =>
+      (select(myLibraryTable)..where((r) => r.stepId.equals(stepId))).get();
+
+  /// Port of `MyLibraryDao.getByCourseId`.
+  Future<List<MyLibraryRow>> getByCourseId(String courseId) =>
+      (select(myLibraryTable)..where((r) => r.courseId.equals(courseId))).get();
+
+  /// Port of `MyLibraryDao.getCourseResources(courseId, isOffline)` — the
+  /// course-level download button's two lists
+  /// (`CoursesRepositoryImpl.getCourseOnlineResources` / `…OfflineResources`).
+  ///
+  /// `resourceLocalAddress IS NOT NULL` is the Kotlin's, and it is not a test
+  /// for a file on disk: the column holds the CouchDB attachment *name*,
+  /// written on every sync. It says "this resource has an attachment to
+  /// download at all".
+  Future<List<MyLibraryRow>> getCourseResources(
+    String courseId, {
+    required bool isOffline,
+  }) =>
+      (select(myLibraryTable)..where(
+            (r) =>
+                r.courseId.equals(courseId) &
+                r.resourceOffline.equals(isOffline) &
+                r.resourceLocalAddress.isNotNull(),
+          ))
+          .get();
+
+  /// Detaches every resource of [courseId] that [keepIds] does not name.
+  ///
+  /// The direct analogue of [ExamDao.releaseStepJoinsForCourse], and needed for
+  /// the same reason with a sharper edge. The port's step id is positional
+  /// (`CourseMapper.stepIdFor`, `'$courseId:$index'`), so **deleting** a step
+  /// shifts every later step's id down one. A resource belonging to the removed
+  /// step is never re-stamped, so it keeps an id that now names a *different,
+  /// live* step: `getByStepId` returns it, the inline list shows it and the
+  /// auto-download fetches it. Kotlin cannot reach that — its step ids hash the
+  /// step's own JSON, so a stale stamp matches no live step and merely dangles.
+  /// A pure reorder is safe in the port either way, because every surviving
+  /// step is re-stamped in the same pass; it is shortening that corrupts.
+  ///
+  /// `courseId` is nulled together with `stepId`, which for this table is the
+  /// only correct choice rather than symmetry with the exam DAO:
+  /// [getCourseResources] and [getByCourseId] read `courseId` on its own, so a
+  /// stale one left behind would keep over-filling the course download dialog.
+  ///
+  /// A partial-column update, never `toCompanion` — `my_library` rows carry
+  /// `userId`, `resourceOffline`, `downloadedRev` and `resourceLocalAddress`
+  /// that a whole-row write would clobber with sync-time values.
+  Future<void> releaseStepJoinsForCourse(
+    String courseId,
+    Set<String> keepIds,
+  ) async {
+    final stale =
+        await (selectOnly(myLibraryTable)
+              ..addColumns([myLibraryTable.id])
+              ..where(
+                myLibraryTable.courseId.equals(courseId) &
+                    myLibraryTable.stepId.isNotNull(),
+              ))
+            .map((row) => row.read(myLibraryTable.id)!)
+            .get();
+    final drop = stale.where((id) => !keepIds.contains(id)).toList();
+    for (final chunk in _chunked(drop, _sqliteVariableChunk)) {
+      await (update(myLibraryTable)..where((r) => r.id.isIn(chunk))).write(
+        const MyLibraryTableCompanion(
+          stepId: Value(null),
+          courseId: Value(null),
+        ),
+      );
+    }
   }
 
   /// Gets a single resource by its local id.
@@ -1568,6 +1689,51 @@ class CourseDao extends DatabaseAccessor<AppDatabase> with _$CourseDaoMixin {
           statement.where((s) => s.id.isNotIn(kept.toList()));
         }
         await statement.go();
+      }
+    });
+  }
+
+  /// The courses walk's third table.
+  ///
+  /// A course document carries its steps' resources inline, and Kotlin's walk
+  /// writes them into `my_library` from inside the same batch
+  /// (`TransactionSyncManager.kt:302`). The port reaches that table through the
+  /// sibling accessor rather than giving [CoursesRepository] a second DAO,
+  /// because its constructor is built in `app_providers.dart`: an added
+  /// parameter there is a file this lane does not own, and an *optional* one
+  /// that production never passes is how a ported feature ends up green and
+  /// dead.
+  MyLibraryDao get _library => attachedDatabase.myLibraryDao;
+
+  /// The `my_library` rows these ids already have, so the caller can hand
+  /// [MyLibraryMapper.fromDoc] the columns the server does not own — the shelf
+  /// membership above all. See `mapper_preserves_local_columns_test.dart`.
+  Future<List<MyLibraryRow>> existingResources(List<String> ids) =>
+      _library.getByIds(ids);
+
+  /// Port of `flushPendingCourseResources` (`CoursesRepositoryImpl.kt:819-863`)
+  /// minus the buffer: the port parses and writes in one page loop, so the rows
+  /// arrive built.
+  ///
+  /// [keptByCourse] is, per course on the page, the resource ids its document
+  /// still claims across **all** its steps — a union, so the release below
+  /// cannot un-stamp a row the upsert just wrote. Every course on the page is
+  /// passed, including those whose steps now carry no resources at all, or
+  /// removing a course's last resource would never clear the old join.
+  ///
+  /// One transaction, so a course's steps and its resources become visible
+  /// together.
+  Future<void> upsertCourseResources(
+    List<MyLibraryTableCompanion> resourceRows,
+    Map<String, Set<String>> keptByCourse,
+  ) async {
+    if (resourceRows.isEmpty && keptByCourse.isEmpty) return;
+    await transaction(() async {
+      if (resourceRows.isNotEmpty) {
+        await _library.upsertAll(resourceRows);
+      }
+      for (final entry in keptByCourse.entries) {
+        await _library.releaseStepJoinsForCourse(entry.key, entry.value);
       }
     });
   }
