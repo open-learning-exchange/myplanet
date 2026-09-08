@@ -267,10 +267,10 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
   ///   it is this one.
   /// * **Ahead of the pulls.** Nothing in this pass pulls `submissions`, so
   ///   ordering is free here — but the headless path does pull them, and
-  ///   Kotlin puts its submissions pull in `HeavyTableSyncWorker`, which
-  ///   `startFullSync` only *schedules* at its end (`SyncManager:209`).
-  ///   Sweep-then-pull is therefore the Kotlin order as well as the safe one,
-  ///   and both port paths agree on it.
+  ///   Kotlin puts its submissions pull in `HeavyTableSyncWorker`
+  ///   (`HeavyTableSyncWorker:39-41`), which `startFullSync` only *schedules*
+  ///   at its end (`SyncManager:209`). Sweep-then-pull is therefore the Kotlin
+  ///   order as well as the safe one, and both port paths agree on it.
   /// * **Drained, not merely queued.** Kotlin's sweep *posts*; `queuePending`
   ///   only queues, and the drain trigger is app resume. Every write-time call
   ///   site pairs the two (`submissions_screen:186-193`), so this does too —

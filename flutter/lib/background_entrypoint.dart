@@ -246,14 +246,24 @@ Future<bool> executeBackgroundTask(String taskName) async {
 /// reading this step is built on.
 ///
 /// Placed **before** the `submissions` pull below rather than after it, and the
-/// order is load-bearing here in a way it is not in the sync centre:
+/// order is load-bearing here in a way it is not in the sync centre.
 /// `SubmissionsRepository.upsertDocuments` writes `isUpdated: false` over every
-/// row it touches — as Kotlin's `bulkInsertFromSync` does
-/// (`SubmissionsRepositoryImpl:686`) — so a pull that ran first would take a
-/// locally edited sheet out of `pendingUploads` before the sweep could see it.
-/// Kotlin agrees by construction: its submissions pull lives in
-/// `HeavyTableSyncWorker`, which `startFullSync` only *schedules* at its end
-/// (`SyncManager:209`), while the sweep runs during the pass.
+/// row it writes — as Kotlin's `bulkInsertFromSync` does
+/// (`SubmissionsRepositoryImpl:686`) — and it keys each row on the server
+/// `_id` (`submissions_repository.dart:1670-1672`, `id: id`).
+///
+/// **That keying is why the window is narrower than it first looks, and the
+/// first version of this comment had it wrong.** A *locally authored* sheet
+/// carries a sha1 local id, so a pulled document lands beside it as a separate
+/// row and cannot touch its flags — Kotlin behaves identically
+/// (`SubmissionsRepositoryImpl:669-670`). What the order protects is a sheet
+/// that **arrived from the server and was then edited locally**: survey resume
+/// (`markComplete`) sets `uploaded: false, isUpdated: true` on a row whose
+/// primary key *is* the server `_id`, so a pull running first overwrites both
+/// and the edit never uploads. Kotlin agrees by construction anyway — its
+/// submissions pull lives in `HeavyTableSyncWorker`
+/// (`HeavyTableSyncWorker:39-41`), which `startFullSync` only *schedules* at
+/// its end (`SyncManager:209`), while the sweep runs during the pass.
 ///
 /// **Always `true`.** `BackgroundTaskRunner` adds a step that returns false or
 /// throws to `failedSteps`, which makes the whole task ask WorkManager for a

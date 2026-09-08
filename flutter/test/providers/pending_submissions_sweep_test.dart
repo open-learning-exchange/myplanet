@@ -418,9 +418,69 @@ void main() {
       built,
       lessThan(pull),
       reason:
-          'the sweep must precede the pull: `upsertDocuments` writes '
-          '`isUpdated: false` over every row it touches, which would take a '
-          'locally edited sheet out of `pendingUploads` first',
+          'the sweep must precede the pull — see the test below for the '
+          'window that ordering closes',
+    );
+  });
+
+  /// Why the order above is load-bearing rather than tidy, and the narrow
+  /// shape of it. `upsertDocuments` keys each row on the server `_id`, so a
+  /// pulled document lands *beside* a locally authored sheet (sha1 local id)
+  /// and cannot touch its flags — Kotlin behaves the same way
+  /// (`SubmissionsRepositoryImpl:669-670`). The row it can clobber is one that
+  /// arrived from the server and was then edited locally, which survey resume
+  /// produces: `markComplete` sets `uploaded: false, isUpdated: true` on a row
+  /// whose primary key *is* the server `_id`.
+  test('a pull clears the local edit on a server-originated sheet', () async {
+    final db = AppDatabase.memory();
+    addTearDown(db.close);
+    final api = MockPlanetApi();
+    final repository = SubmissionsRepository(
+      api,
+      db.submissionDao,
+      db.submitPhotosDao,
+      db.surveyDao,
+      db.examDao,
+      teamDao: db.teamDao,
+    );
+
+    await repository.upsertDocuments([
+      {
+        '_id': 'server-1',
+        '_rev': '1-rev',
+        'parentId': 'survey-1',
+        'type': 'survey',
+        'status': 'pending',
+        'user': {'_id': 'org.couchdb.user:ada'},
+      },
+    ]);
+    // The local edit — the shape survey resume leaves behind.
+    await repository.markSubmissionComplete('server-1', {
+      '_id': 'org.couchdb.user:ada',
+    });
+    expect(
+      (await repository.pendingUploads()).map((row) => row.id),
+      contains('server-1'),
+    );
+
+    // The same document arrives again on the next walk.
+    await repository.upsertDocuments([
+      {
+        '_id': 'server-1',
+        '_rev': '2-rev',
+        'parentId': 'survey-1',
+        'type': 'survey',
+        'status': 'pending',
+        'user': {'_id': 'org.couchdb.user:ada'},
+      },
+    ]);
+
+    expect(
+      await repository.pendingUploads(),
+      isEmpty,
+      reason:
+          'the pull wrote isUpdated: false over the local edit, so a sweep '
+          'running after it would find nothing to send',
     );
   });
 }

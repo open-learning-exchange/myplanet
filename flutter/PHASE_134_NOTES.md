@@ -50,7 +50,7 @@ pre-fix code it came back `uploaded == false`.
 * **`background_entrypoint.dart`** — top-level `submissionsPushStep(...)`, wired
   into `syncSteps` after `shelf_push` and **before** the pulls.
 * **`submissions_uploader.dart`** — `queuePending`'s `userId` is now nullable.
-* **`test/providers/pending_submissions_sweep_test.dart`** — 10 tests.
+* **`test/providers/pending_submissions_sweep_test.dart`** — 11 tests.
 
 ### Five decisions, each a reading of the Kotlin
 
@@ -98,11 +98,26 @@ runs. That is a Kotlin weakness rather than a behaviour to reproduce;
 pull is not in the full sync at all — it lives in `HeavyTableSyncWorker`
 (`HeavyTableSyncWorker:39-41`), which `startFullSync` only *schedules* at its
 end (`SyncManager:209`), while the sweep runs during the pass. The port's
-headless path does have a `'submissions'` pull step, and
-`SubmissionsRepository.upsertDocuments` writes `isUpdated: false` over rows it
-touches (as `bulkInsertFromSync` does, `SubmissionsRepositoryImpl:686`), so
-sweep-then-pull is the safe order as well as the faithful one. Both port paths
-agree on it, and a source-reading test pins the order in the headless list.
+headless path does have a `'submissions'` pull step, so sweep-then-pull is the
+safe order as well as the faithful one; both port paths agree on it, and a
+source-reading test pins the order in the headless list.
+
+**The first version of that reasoning was wrong, and it was mine.** Both doc
+comments said a pull "would take a locally edited sheet out of
+`pendingUploads`", full stop. `upsertDocuments` keys every row on the server
+`_id` (`submissions_repository.dart:1670-1672`, `id: id`), so a **locally
+authored** sheet — sha1 local id — has a pulled document land *beside* it as a
+separate row, touching nothing. Kotlin does exactly the same
+(`SubmissionsRepositoryImpl:669-670`), at the cost of two rows per logical
+submission after upload-then-pull. What the order actually protects is the
+narrower case of a sheet that **arrived from the server and was then edited
+locally**: survey resume's `markComplete` sets `uploaded: false,
+isUpdated: true` on a row whose primary key *is* the server `_id`, so a pull
+running first overwrites both and the edit never uploads. The claim is now
+stated in that narrower form and pinned by its own test (*a pull clears the
+local edit on a server-originated sheet*) rather than asserted in prose — a
+justification nothing exercises is how the four misread-Kotlin findings got
+in.
 
 ### Drained, not merely queued
 
