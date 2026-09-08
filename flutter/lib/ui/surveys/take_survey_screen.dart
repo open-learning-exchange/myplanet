@@ -9,6 +9,7 @@ import '../../providers/app_providers.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/surveys_provider.dart';
 import '../../repository/submissions_repository.dart';
+import '../exam/user_information_screen.dart';
 import '../router.dart';
 
 /// Offline survey-taking form, replacing the survey mode of
@@ -197,6 +198,7 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
     // the form permanently unusable with no message — the user's answers are
     // still on screen but there is no way to send them.
     String? id;
+    var askWhoTheyAre = false;
     try {
       // `ref.read(sessionProvider).valueOrNull` is null until something else
       // resolves that provider, and this screen never watches it: the early
@@ -209,6 +211,23 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
       // the failure path rather than reintroducing the silence.
       final user = await ref.read(sessionProvider.future);
       if (user == null) throw StateError('no signed-in user');
+      // `BaseExamFragment.continueExam:127-131` sends the last question of a
+      // *team* survey to `showUserInfoDialog` instead of the thank-you
+      // dialog, and `showUserInfoDialog:153-164` opens the respondent form
+      // unless the survey came from the nation — in which case it marks the
+      // sheet complete and leaves. `exam?.isFromNation != true` is reproduced
+      // literally, null included: a survey row that has not loaded takes the
+      // ask-them branch there too.
+      //
+      // Awaited rather than read off the `AsyncValue` this screen watches:
+      // the title falls back to a label while the survey loads, so the form
+      // can be submitted before it resolves, and `.valueOrNull` would read
+      // null and decide the gate on a value it does not have yet. The await
+      // is inside the `try` because the future can reject.
+      final survey = await ref.read(surveyProvider(widget.surveyId).future);
+      askWhoTheyAre =
+          (widget.teamId ?? '').trim().isNotEmpty &&
+          survey?.isFromNation != true;
       final repo = ref.read(surveysRepositoryProvider);
       id = widget.submissionId != null
           ? await repo.updateSurveyResponse(
@@ -222,7 +241,14 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
               teamId: widget.teamId,
             );
       final config = ref.read(serverConfigProvider);
-      if (id != null && config != null) {
+      // Not before the profile step, which is the order Kotlin uses: the
+      // upload is `UserInformationFragment.onDismiss`'s job, *after* the
+      // dialog. Queueing here as well would enqueue a payload serialized
+      // before `markSubmissionComplete` wrote the respondent's answers into
+      // the row, and if the outbox drained in between, `markUploaded` would
+      // take the sheet out of `pendingUploads` and the profile would never go
+      // out at all.
+      if (id != null && config != null && !askWhoTheyAre) {
         await ref
             .read(submissionsUploaderProvider)
             .queuePending(config: config, userId: user.id);
@@ -237,7 +263,43 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
     }
     if (!mounted) return;
     setState(() => submitting = false);
-    if (id != null) context.go('${Routes.submissions}/$id');
+    if (id == null) return;
+    if (askWhoTheyAre) {
+      // Kotlin shows this over the exhausted question screen
+      // (`childFragmentManager`) and, when it dismisses — Save or Cancel
+      // alike — `onDismiss` uploads, thanks the respondent and pops the
+      // survey off the back stack. The screen owns the first two; this owns
+      // the pop, so the respondent lands back on the team's surveys tab
+      // rather than on a submission detail they did not ask for.
+      //
+      // `Navigator.push` rather than the `Routes.userInfo` route, matching
+      // `public_survey_screen`: Kotlin's is a dialog over this screen, not a
+      // destination, and pushing a location would put it in the history.
+      await Navigator.of(context).push(
+        MaterialPageRoute<bool>(
+          builder: (_) => UserInformationScreen(
+            submissionId: id!,
+            teamId: widget.teamId,
+            // Kotlin's `shouldHideElements` is `exam?.isFromNation != true`,
+            // which this branch has already established is true, and this
+            // parameter is its negation.
+            showAdditionalFields: false,
+          ),
+        ),
+      );
+      if (!mounted) return;
+      // `FragmentNavigator.popBackStack`. A team survey is always reached by
+      // a push from the team's surveys tab, so there is something to pop;
+      // the fallback covers a `go` — Kotlin's own dead `isFromNation` arm
+      // lands on the survey list too (`navigateToSurveyList`).
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go(Routes.surveys);
+      }
+      return;
+    }
+    context.go('${Routes.submissions}/$id');
   }
 }
 

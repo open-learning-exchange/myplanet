@@ -1,8 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:myplanet/core/config/server_config.dart';
+import 'package:myplanet/core/system/device_identity.dart';
 import 'package:myplanet/core/prefs/planet_prefs.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
@@ -11,6 +15,8 @@ import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/session_provider.dart';
 import 'package:myplanet/providers/team_surveys_provider.dart';
 import 'package:myplanet/providers/teams_provider.dart';
+import 'package:myplanet/repository/submissions_uploader.dart';
+import 'package:myplanet/ui/exam/user_information_screen.dart';
 import 'package:myplanet/ui/router.dart';
 import 'package:myplanet/ui/surveys/take_survey_screen.dart';
 import 'package:myplanet/ui/teams/team_surveys_screen.dart';
@@ -19,6 +25,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../support/widget_harness.dart';
 
 class _MockPlanetApi extends Mock implements PlanetApi {}
+
+class _StubServerConfig extends ServerConfigNotifier {
+  _StubServerConfig(this.config);
+  final ServerConfig? config;
+  @override
+  ServerConfig? build() => config;
+}
 
 class _StubSession extends SessionNotifier {
   _StubSession(this.user);
@@ -41,6 +54,12 @@ class _StubSession extends SessionNotifier {
 /// These tests exercise the chain rather than its halves — the team screen's
 /// push, the real route table's read, and the row the repository actually
 /// writes — because each half was already green while the whole was broken.
+const _server = ServerConfig(
+  serverUrl: 'https://planet.example',
+  pin: '1234',
+  couchDbUrl: 'https://planet.example/db',
+);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -61,11 +80,12 @@ void main() {
         teamShareAllowed: false,
       );
 
-  Future<void> seedSurvey({String id = 's1'}) async {
+  Future<void> seedSurvey({String id = 's1', bool fromNation = false}) async {
     final mapping = SurveyMapper.fromDoc({
       '_id': id,
       'type': 'surveys',
       'name': 'Water access',
+      'isFromNation': fromNation,
       'questions': [
         {'id': 'q1', 'body': 'How far is the nearest tap?', 'type': 'input'},
       ],
@@ -184,8 +204,106 @@ void main() {
     });
   });
 
+  testWidgets('the whole journey: team tab -> survey -> profile -> back', (
+    tester,
+  ) async {
+    // One test that walks it end to end, because every earlier round's
+    // reachability defect was a chain whose links each passed alone. The team
+    // tab's tap opens the real `TakeSurveyScreen` here — not a stub — so the
+    // team id crosses the navigation for real, and Kotlin's landing is
+    // asserted too: `UserInformationFragment.onDismiss` pops the survey off
+    // the back stack, so the respondent ends on the team's surveys tab rather
+    // than on a submission detail.
+    tester.view.physicalSize = const Size(1000, 3000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await seedSurvey();
+
+    final overrides = [
+      appDatabaseProvider.overrideWith((ref) {
+        ref.onDispose(db.close);
+        return db;
+      }),
+      planetApiProvider.overrideWithValue(_MockPlanetApi()),
+      teamOwnedSurveysProvider(
+        'team-1',
+      ).overrideWith((ref) async => [survey()]),
+      teamAdoptableSurveysProvider(
+        'team-1',
+      ).overrideWith((ref) async => const []),
+      teamProvider('team-1').overrideWith((ref) async => null),
+      sessionProvider.overrideWith(
+        () => _StubSession(buildUserRow(id: 'user-a', name: 'jane')),
+      ),
+      teamMembershipsProvider.overrideWith(
+        (ref) => Stream.value(const <String, TeamRow>{}),
+      ),
+      serverConfigProvider.overrideWith(() => _StubServerConfig(_server)),
+      deviceIdentitySourceProvider.overrideWithValue(
+        const FixedDeviceIdentitySource(
+          DeviceIdentity(
+            androidId: 'android-1',
+            deviceName: 'Pixel',
+            customDeviceName: 'ada-phone',
+          ),
+        ),
+      ),
+    ];
+
+    await tester.pumpWidget(
+      wrapScreen(
+        const TeamSurveysScreen(teamId: 'team-1'),
+        pushTargets: {
+          '/life/surveys/:surveyId': (context) => TakeSurveyScreen(
+            surveyId: GoRouterState.of(context).pathParameters['surveyId']!,
+            teamId: GoRouterState.of(context).uri.queryParameters['teamId'],
+          ),
+        },
+        overrides: overrides,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Water access'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), '2 km');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Submit survey'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Your information'), findsOneWidget);
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Year of birth'),
+      '1990',
+    );
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    for (var i = 0; i < 12; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    await tester.pumpAndSettle();
+
+    // Back on the team's surveys tab: both pushed pages are gone. (The tab
+    // itself was never unmounted — it sits under the pushed routes — so its
+    // presence alone would prove nothing.)
+    expect(find.byType(TakeSurveyScreen), findsNothing);
+    expect(find.byType(UserInformationScreen), findsNothing);
+    expect(find.byType(TeamSurveysScreen), findsOneWidget);
+
+    final row = (await db.select(db.submissions).get()).single;
+    expect(row.teamId, 'team-1');
+    expect(row.user, isNotNull);
+  });
+
   group('the answer sheet the port writes carries the team', () {
-    Future<void> pumpTakeSurvey(WidgetTester tester, {String? teamId}) async {
+    Future<void> pumpTakeSurvey(
+      WidgetTester tester, {
+      String? teamId,
+      ServerConfig? config,
+    }) async {
       tester.view.physicalSize = const Size(1000, 3000);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -205,6 +323,26 @@ void main() {
             planetApiProvider.overrideWithValue(_MockPlanetApi()),
             sessionProvider.overrideWith(
               () => _StubSession(buildUserRow(id: 'user-a', name: 'jane')),
+            ),
+            // Overridden because the real notifier reads `planetPrefs`, which
+            // is `UnimplementedError` in this harness — and `_submit` reads it
+            // *inside* its `try`, so without this the screen writes the row
+            // and then shows "Could not save your answers". The existing
+            // tests in `take_survey_screen_test.dart` assert only on the row,
+            // so they never saw the failure branch they were leaving the
+            // screen in. A null config skips the queue step, which is what
+            // an offline handset does anyway.
+            serverConfigProvider.overrideWith(() => _StubServerConfig(config)),
+            // The real source reads `planetPrefs`; the uploader reads this at
+            // queue time.
+            deviceIdentitySourceProvider.overrideWithValue(
+              const FixedDeviceIdentitySource(
+                DeviceIdentity(
+                  androidId: 'android-1',
+                  deviceName: 'Pixel',
+                  customDeviceName: 'ada-phone',
+                ),
+              ),
             ),
           ],
         ),
@@ -238,6 +376,114 @@ void main() {
       final rows = await submissions();
       expect(rows, hasLength(1));
       expect(rows.single.teamId, isNull);
+    });
+
+    testWidgets('a team survey asks the respondent who they are', (
+      tester,
+    ) async {
+      // `BaseExamFragment.continueExam:127-131` — the last question of a team
+      // survey goes to `showUserInfoDialog`, not to the thank-you dialog — and
+      // `showUserInfoDialog:153-164` opens `UserInformationFragment` for every
+      // live case (`isMySurvey` is false at both team entry points, and
+      // `isFromNation` has no writer that can make it true in Kotlin). The
+      // port completed a team survey in one tap and collected nothing, so the
+      // demographic a team survey exists to gather was never asked for and
+      // `UserInformationScreen.teamId` had no caller to be read by.
+      await seedSurvey();
+      await pumpTakeSurvey(tester, teamId: 'team-1');
+      await tester.pumpAndSettle();
+
+      expect(find.byType(UserInformationScreen), findsOneWidget);
+      final profile = tester.widget<UserInformationScreen>(
+        find.byType(UserInformationScreen),
+      );
+      expect(profile.teamId, 'team-1');
+      // `shouldHideElements = exam?.isFromNation != true`, which the arm's own
+      // predicate makes `true` — so the compact year-of-birth form, whose
+      // negation is `showAdditionalFields: false`.
+      expect(profile.showAdditionalFields, isFalse);
+      expect(profile.submissionId, (await submissions()).single.id);
+    });
+
+    testWidgets('a personal survey goes straight to the submission', (
+      tester,
+    ) async {
+      // The other side of the same gate: Kotlin reaches `showUserInfoDialog`
+      // only under `isTeam`, so a personal sheet must not acquire a profile
+      // step it never had.
+      await seedSurvey();
+      await pumpTakeSurvey(tester);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(UserInformationScreen), findsNothing);
+      expect(find.text('SUBMISSION_PAGE'), findsOneWidget);
+    });
+
+    testWidgets('a nation survey skips the profile step', (tester) async {
+      // `showUserInfoDialog`'s else arm: `exam?.isFromNation == true` marks
+      // the sheet complete and leaves without asking. Dead in Kotlin — its
+      // only writer is `!parentId.isNullOrEmpty()` with `parentId` always `""`
+      // — but *live here*, because `SurveyMapper` reads `isFromNation` off the
+      // document, so a server that sends the key reaches this arm.
+      await seedSurvey(fromNation: true);
+      await pumpTakeSurvey(tester, teamId: 'team-1');
+      await tester.pumpAndSettle();
+
+      expect(find.byType(UserInformationScreen), findsNothing);
+      // The team is still on the row: the arm changes who is asked what, not
+      // what the sheet is attributed to.
+      expect((await submissions()).single.teamId, 'team-1');
+    });
+
+    testWidgets('the uploaded document carries both the team and the '
+        'respondent', (tester) async {
+      // The end of the chain, across both screens and the real uploader: what
+      // Planet actually receives. `resolveTeamJson` sends `{_id}` alone when
+      // the team document is not on this handset — which is the normal state
+      // of a handset that has not finished syncing — and the respondent's
+      // answers about themselves ride in the same document.
+      //
+      // Kotlin's order is what makes this hold: the sheet is queued by
+      // `onDismiss`, *after* `markSubmissionComplete` writes the profile. A
+      // port that queued at submit time would serialize the row before that
+      // write, and `pendingUploads` would have nothing left to re-queue once
+      // the outbox drained.
+      await seedSurvey();
+      await pumpTakeSurvey(tester, teamId: 'team-1', config: _server);
+      await tester.pumpAndSettle();
+
+      // Nothing is queued yet, and that is the ordering under test rather
+      // than an incidental observation: an enqueue here would carry a payload
+      // serialized before the profile exists, and a drain landing between the
+      // two would `markUploaded` the row out of `pendingUploads` for good.
+      expect(
+        await db.outboxDao.findOpen(
+          SubmissionsUploader.type,
+          (await submissions()).single.id,
+        ),
+        isNull,
+        reason: 'the sheet was queued before the respondent was asked',
+      );
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Year of birth'),
+        '1990',
+      );
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      for (var i = 0; i < 12; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      final submissionId = (await submissions()).single.id;
+      final queued = await db.outboxDao.findOpen(
+        SubmissionsUploader.type,
+        submissionId,
+      );
+      expect(queued, isNotNull, reason: 'the team sheet was never queued');
+      final payload = jsonDecode(queued!.payload) as Map<String, dynamic>;
+      expect(payload['team'], {'_id': 'team-1'});
+      expect((payload['user'] as Map<String, dynamic>)['age'], isNotNull);
     });
 
     testWidgets('a blank team id is stored as no team at all', (tester) async {

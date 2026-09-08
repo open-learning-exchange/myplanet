@@ -56,9 +56,23 @@ class TeamSurveysScreen extends ConsumerWidget {
                       icon: const Icon(Icons.send),
                       onPressed: () => showDialog<void>(
                         context: context,
-                        builder: (context) => SendSurveyScreen(
-                          surveyId: survey.sourceSurveyId ?? survey.id,
-                        ),
+                        // The survey on the card, never its source. Kotlin
+                        // hands the bound exam straight through —
+                        // `listener?.sendSurvey(current.exam)`
+                        // (`SurveysAdapter:63-66`) ->
+                        // `b.putString("surveyId", current?.id)`
+                        // (`DashboardActivity:1008-1014`) ->
+                        // `createBulkSurveySubmissions` — and an adopted team
+                        // survey always has a `sourceSurveyId`, so preferring
+                        // it sent every member a sheet keyed to the
+                        // *un-adopted original*. Their answers then filed
+                        // against the source, where neither
+                        // `submissionsForTeam` nor the adoptable list looks,
+                        // so the team's own copy read zero submissions
+                        // forever. `surveys_screen.dart` already passes
+                        // `row.id`.
+                        builder: (context) =>
+                            SendSurveyScreen(surveyId: survey.id),
                       ),
                     ),
                     const Icon(Icons.chevron_right),

@@ -117,11 +117,13 @@ class SubmissionsRepository {
   /// belongs here as much as on [startExamSession], with the same
   /// blank-guarded, unconditional write.
   ///
-  /// **No caller passes it yet** — see [startExamSession] and
-  /// `PHASE_129_NOTES.md` for the chain that has to carry it
-  /// (`TeamSurveysScreen` -> the survey route -> `TakeSurveyScreen` ->
-  /// `SurveysRepository.submitResponse`), and for the second site,
-  /// `public_survey_screen`, which already holds the team id it does not pass.
+  /// **Two callers pass it, one per Kotlin site** (Phase 132, which closed the
+  /// gap Phase 129 recorded here): `TeamSurveysScreen` -> the survey route's
+  /// `?teamId=` -> `TakeSurveyScreen` -> `SurveysRepository.submitResponse`
+  /// -> here, and `public_survey_screen` for the deep link. Every other caller
+  /// of this method is team-less in Kotlin too — the individual survey list,
+  /// the dashboard's pending-survey prompt and a course step all pass
+  /// `isTeam = false` — so a null here is a positive answer, not a hole.
   Future<String> createSurveyDraft({
     required SurveyRow survey,
     required List<SurveyQuestionRow> questions,
@@ -303,12 +305,14 @@ class SubmissionsRepository {
   /// team reaches is [createSurveyDraft], and that is where the port's gap
   /// actually is.
   ///
-  /// **Nothing in the port passes it on either arm yet, and that is a named
-  /// gap, not a finished feature.** `TeamSurveysScreen` pushes
-  /// `'${Routes.surveys}/${survey.id}'` with no team, so the port's answer
-  /// sheets are all team-less where Kotlin's carry the team. Closing it is
-  /// four edits outside this repository, all recorded in
-  /// `PHASE_129_NOTES.md`.
+  /// **The survey arm now has its callers** (Phase 132: the team surveys tab
+  /// and the public-survey deep link, the two sites Kotlin sets `isTeam` at).
+  /// **This one still has none, and that is the answer rather than the gap** —
+  /// the port's only exam route is `/courses/exam/:examId`, reached from a
+  /// course step, where no team context exists or can, exactly as in Kotlin.
+  /// So a `null` arriving here is a fact about the journey, not a value
+  /// somebody forgot to thread; see `PHASE_132_NOTES.md` for the six Kotlin
+  /// journeys and which two carry a team.
   Future<String> startExamSession({
     required ExamRow exam,
     required List<ExamQuestionRow> questions,

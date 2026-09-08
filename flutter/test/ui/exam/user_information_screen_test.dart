@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:drift/drift.dart' show Value;
@@ -42,6 +43,15 @@ class _TestSessionNotifier extends SessionNotifier {
 
   @override
   Future<UserRow?> build() async => user;
+}
+
+/// A session whose future is still pending until the test completes it, so
+/// the widget can be disposed while `_queueUpload` is mid-flight.
+class _PendingSessionNotifier extends SessionNotifier {
+  static Completer<UserRow?>? completer;
+
+  @override
+  Future<UserRow?> build() => (completer ??= Completer<UserRow?>()).future;
 }
 
 /// A session whose future rejects — the shape Phase 100 found on the exam
@@ -163,6 +173,7 @@ void main() {
     UserRow? session,
     bool anonymous = false,
     bool failingSession = false,
+    bool pendingSession = false,
     ServerConfig? config = server,
     String? teamId = 'team-1',
   }) async {
@@ -182,6 +193,8 @@ void main() {
           sessionProvider.overrideWith(
             failingSession
                 ? _FailingSessionNotifier.new
+                : pendingSession
+                ? _PendingSessionNotifier.new
                 : () => _TestSessionNotifier(
                     anonymous ? null : (session ?? user),
                   ),
@@ -455,6 +468,113 @@ void main() {
       final row = await db.submissionDao.getById(submissionId);
       expect(row?.status, 'pending');
       expect(find.text('ROOT_PAGE'), findsOneWidget);
+    });
+
+    testWidgets('cancel still queues the team survey for upload', (
+      tester,
+    ) async {
+      // `UserInformationFragment.onDismiss` (`:293-311`) fires on **every**
+      // dismissal — Save, Cancel, an outside tap, the back button — and when
+      // the team id is non-empty it calls
+      // `submissionsUploader.checkAvailableServer`. So in Kotlin declining the
+      // profile is what *sends* the sheet, which was already `complete` before
+      // this screen opened; the port queued on Save only, and a respondent who
+      // skipped the questions about themselves left their answers sitting
+      // until some later sync happened to run.
+      //
+      // The row has to be in the state a real one is in first. This file's
+      // seed is `status: 'pending', isUpdated: false`, which **no caller of
+      // this screen can produce**: the sheet arrives from `createSurveyDraft`,
+      // which writes `status: 'complete', isUpdated: true` (as Kotlin's
+      // `saveExamAnswer` does before the dialog opens), and `pendingUploads`
+      // selects on `isUpdated`. Asserting against the seed instead would have
+      // pinned the fixture rather than the behaviour.
+      await (db.update(
+        db.submissions,
+      )..where((row) => row.id.equals(submissionId))).write(
+        const SubmissionsCompanion(
+          status: Value('complete'),
+          isUpdated: Value(true),
+        ),
+      );
+      await pumpScreen(tester);
+
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Cancel'));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      final queued = await db.outboxDao.findOpen(
+        SubmissionsUploader.type,
+        submissionId,
+      );
+      expect(queued, isNotNull);
+      // And nothing was written to the row — Cancel saves no profile.
+      expect(await savedProfile(), isNull);
+    });
+
+    testWidgets('a team-less sheet is not queued at all', (tester) async {
+      // The other half of the same `onDismiss` gate: `if (safeTeamId == "")
+      // return`, before the upload. The port queued unconditionally. Nothing
+      // in the port reaches this screen without a team today — the public
+      // path always has one and `Routes.userInfo` has no pusher — so this is
+      // the specification being pinned before a caller arrives, not a live
+      // defect.
+      await pumpScreen(tester, teamId: null);
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Year of birth'),
+        '1990',
+      );
+      await tapSave(tester);
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // The profile still saves: that half of `submitForm` is reached with or
+      // without a team once a submission id is present (`:155-174`).
+      expect(await savedProfile(), isNotNull);
+      final queued = await db.outboxDao.findOpen(
+        SubmissionsUploader.type,
+        submissionId,
+      );
+      expect(queued, isNull);
+    });
+
+    testWidgets('cancel queues even after the screen is gone', (tester) async {
+      // The hazard the Cancel path introduces, and it is invisible without
+      // this: `_cancel` pops before the queue finishes, so this `State` can be
+      // disposed while the session future is pending. A `ref` read after
+      // disposal throws — into a `catch` that exists to make a failed queue
+      // harmless — so the upload would be skipped silently, which is the one
+      // failure mode this whole gate is meant to remove. Every `ref` read is
+      // therefore taken synchronously, before the first `await`.
+      //
+      // The session is held pending until after `pumpAndSettle` has disposed
+      // the route, which is what makes the window real rather than incidental;
+      // with the reads deferred, this test fails.
+      _PendingSessionNotifier.completer = Completer<UserRow?>();
+      addTearDown(() => _PendingSessionNotifier.completer = null);
+      await (db.update(
+        db.submissions,
+      )..where((row) => row.id.equals(submissionId))).write(
+        const SubmissionsCompanion(
+          status: Value('complete'),
+          isUpdated: Value(true),
+        ),
+      );
+      await pumpScreen(tester, pendingSession: true);
+
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Cancel'));
+      await tester.pumpAndSettle();
+      expect(find.text('ROOT_PAGE'), findsOneWidget);
+
+      _PendingSessionNotifier.completer!.complete(user);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      final queued = await db.outboxDao.findOpen(
+        SubmissionsUploader.type,
+        submissionId,
+      );
+      expect(queued, isNotNull);
     });
 
     testWidgets('cancel pops false', (tester) async {

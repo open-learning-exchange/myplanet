@@ -349,7 +349,13 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
   /// Cancel writes nothing at all (`:112-118`). Declining only omits the
   /// `user` object from the body.
   Future<void> _cancel(BuildContext context) async {
+    // Kotlin's `onDismiss` runs on Cancel too, so declining the profile is
+    // still what sends a team survey — see [_queueUpload]. Queued before the
+    // pop, and not awaited into the navigation: the drain is best-effort and
+    // the respondent should not wait on it to leave.
+    final queued = _queueUpload();
     Navigator.of(context).pop(false);
+    await queued;
   }
 
   Future<void> _submit(BuildContext context) async {
@@ -407,19 +413,48 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
   /// The Kotlin's `onDismiss` hands a team survey to
   /// `submissionsUploader.checkAvailableServer`; here the outbox carries it.
   ///
+  /// **[UserInformationScreen.teamId] is the gate**, which is what that
+  /// parameter is for and why it sat unread for so long.
+  /// `UserInformationFragment.onDismiss` (`:293-311`) reads it, returns
+  /// outright when it is empty, and otherwise uploads — on **every**
+  /// dismissal, Save and Cancel alike, because the sheet was already
+  /// `complete` before this screen opened (`saveExamAnswer` marks it on the
+  /// last question, `SubmissionsRepositoryImpl.kt:546-551`). Its other read,
+  /// `submitForm:151-174`, routes the profile onto the submission rather than
+  /// onto the signed-in user's own document — and that branch is inert here,
+  /// because this screen requires a `submissionId` and so always takes
+  /// Kotlin's `saveSubmission` arm anyway.
+  ///
+  /// The toast and `popBackStack` Kotlin gates on the same value are
+  /// deliberately **not** ported to this gate: each port screen owns its own
+  /// messaging, `PublicSurveyScreen` already thanks the respondent after its
+  /// POST, and duplicating the dialog's toast here would queue two identical
+  /// snackbars on the one path that reaches this screen today.
+  ///
   /// Swallowed on purpose, and awaited on the session's **future** rather than
   /// its `valueOrNull`: a screen that only reads `sessionProvider` sees it
   /// still loading, and a failure to queue is not a failure to save — the
   /// submission is already complete, and the next sync picks it up.
+  ///
+  /// **Every `ref` read is synchronous, ahead of the first `await`, and that is
+  /// load-bearing on the Cancel path**: `_cancel` pops before this finishes, so
+  /// this `State` can be disposed while the session future is still pending —
+  /// and a `ref` read after disposal throws, straight into the `catch` below,
+  /// which would silently skip the upload this gate exists to perform. The
+  /// swallowing that makes a failed queue harmless is exactly what would have
+  /// hidden that. Capturing the uploader and the session's future up front
+  /// keeps the rule that the `await` stays inside the `try` while owing
+  /// nothing to `ref` afterwards.
   Future<void> _queueUpload() async {
+    if ((widget.teamId ?? '').trim().isEmpty) return;
     try {
       final config = ref.read(serverConfigProvider);
       if (config == null) return;
-      final user = await ref.read(sessionProvider.future);
+      final session = ref.read(sessionProvider.future);
+      final uploader = ref.read(submissionsUploaderProvider);
+      final user = await session;
       if (user == null) return;
-      await ref
-          .read(submissionsUploaderProvider)
-          .queuePending(config: config, userId: user.id);
+      await uploader.queuePending(config: config, userId: user.id);
     } catch (_) {
       // See above.
     }

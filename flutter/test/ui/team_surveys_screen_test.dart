@@ -7,6 +7,7 @@ import 'package:myplanet/providers/session_provider.dart';
 import 'package:myplanet/providers/team_surveys_provider.dart';
 import 'package:myplanet/providers/teams_provider.dart';
 import 'package:myplanet/repository/surveys_repository.dart';
+import 'package:myplanet/ui/surveys/send_survey_screen.dart';
 import 'package:myplanet/ui/teams/team_surveys_screen.dart';
 
 import '../support/widget_harness.dart';
@@ -20,18 +21,23 @@ class _TestSessionNotifier extends SessionNotifier {
   Future<UserRow?> build() async => user;
 }
 
-SurveyRow _survey({String id = 's1', String? name, String? description}) =>
-    SurveyRow(
-      id: id,
-      name: name,
-      description: description,
-      createdDate: 0,
-      updatedDate: 0,
-      adoptionDate: 0,
-      totalMarks: 0,
-      isFromNation: false,
-      teamShareAllowed: false,
-    );
+SurveyRow _survey({
+  String id = 's1',
+  String? name,
+  String? description,
+  String? sourceSurveyId,
+}) => SurveyRow(
+  id: id,
+  name: name,
+  description: description,
+  sourceSurveyId: sourceSurveyId,
+  createdDate: 0,
+  updatedDate: 0,
+  adoptionDate: 0,
+  totalMarks: 0,
+  isFromNation: false,
+  teamShareAllowed: false,
+);
 
 UserRow _user() => UserRow(
   id: 'user-1',
@@ -123,6 +129,56 @@ void main() {
     expect(find.text('Untitled survey'), findsOneWidget);
     expect(find.byIcon(Icons.send), findsNWidgets(2));
     expect(find.byIcon(Icons.chevron_right), findsNWidgets(2));
+  });
+
+  testWidgets('Send targets the survey on the card, not its source', (
+    tester,
+  ) async {
+    // Phase 132. Kotlin sends the id of the exam the row is bound to —
+    // `listener?.sendSurvey(current.exam)` (`SurveysAdapter:63-66`) ->
+    // `b.putString("surveyId", current?.id)` (`DashboardActivity:1008-1014`)
+    // -> `sendSurveyToUsers` -> `createBulkSurveySubmissions`. An adopted team
+    // survey always carries a `sourceSurveyId`, so preferring it sent the
+    // *un-adopted original*: each member got a pending sheet keyed
+    // `parentId = <source>`, their answers filed against the source, and the
+    // team's own copy — which is what `submissionsForTeam` and the adoptable
+    // list read — showed no submissions at all, permanently.
+    //
+    // `surveys_screen.dart:118` already passes `row.id`; the two screens
+    // disagreeing is the tell.
+    final adopted = _survey(
+      id: 's1_team-1',
+      name: 'Water access - Blue',
+      sourceSurveyId: 's1',
+    );
+
+    await tester.pumpWidget(
+      wrapScreen(
+        const TeamSurveysScreen(teamId: 'team-1'),
+        overrides: [
+          teamOwnedSurveysProvider(
+            'team-1',
+          ).overrideWith((ref) async => [adopted]),
+          teamAdoptableSurveysProvider(
+            'team-1',
+          ).overrideWith((ref) async => const []),
+          teamProvider('team-1').overrideWith((ref) async => null),
+          sessionProvider.overrideWith(() => _TestSessionNotifier(_user())),
+          teamMembershipsProvider.overrideWith(
+            (ref) => Stream.value(const <String, TeamRow>{}),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.send));
+    await tester.pumpAndSettle();
+
+    final dialog = tester.widget<SendSurveyScreen>(
+      find.byType(SendSurveyScreen),
+    );
+    expect(dialog.surveyId, 's1_team-1');
   });
 
   testWidgets('a non-leader sees the adopt button disabled', (tester) async {
