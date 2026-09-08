@@ -25,6 +25,18 @@ class _TestSessionNotifier extends SessionNotifier {
   Future<UserRow?> build() async => user;
 }
 
+UserRow _guest() => UserRow(
+  id: 'guest_ada',
+  couchId: 'guest_ada',
+  rev: '1-a',
+  name: 'ada',
+  rolesList: const [],
+  userAdmin: false,
+  joinDate: 0,
+  isArchived: false,
+  isUpdated: false,
+);
+
 UserRow _user() => UserRow(
   id: 'user-1',
   couchId: 'org.couchdb.user:ada',
@@ -282,4 +294,40 @@ void main() {
       expect(find.widgetWithText(FilledButton, 'Take exam'), findsOneWidget);
     },
   );
+  group('the membership button is gated on guest, as `setCourseData` is', () {
+    // `TakeCourseFragment.setCourseData:216-232` shows `btnRemove` for
+    // `!isGuest && !containsUserId` only. Phase 145 gated the copy on
+    // `take_course_screen` first and left this one, which is **the more
+    // consequential of the two**: that one's `_toggleMembership` writes
+    // locally, while this one writes *and* calls `shelfRepository.upload`, so
+    // an ungated guest tap here reached the server.
+    //
+    // Written because the first cut of the fix was pinned by nothing — a
+    // mutation that deleted the gate left the whole suite green.
+
+    testWidgets('a guest is offered no join button', (tester) async {
+      await pumpScreen(
+        tester,
+        course: buildCourseRow(id: 'course-1', courseTitle: 'Algebra'),
+        overrides: [
+          sessionProvider.overrideWith(() => _TestSessionNotifier(_guest())),
+        ],
+      );
+
+      expect(find.text('Add to my courses'), findsNothing);
+      expect(find.text('Remove from my courses'), findsNothing);
+      // The rest of the screen is unaffected — Kotlin's guest still reads the
+      // course, and `CourseDetailFragment` has no membership button at all.
+      expect(find.text('Algebra'), findsWidgets);
+    });
+
+    testWidgets('a signed-in learner still gets one', (tester) async {
+      await pumpScreen(
+        tester,
+        course: buildCourseRow(id: 'course-1', courseTitle: 'Algebra'),
+      );
+
+      expect(find.text('Add to my courses'), findsOneWidget);
+    });
+  });
 }

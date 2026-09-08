@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/local/app_database.dart';
+import '../../data/local/user_mapper.dart';
 import '../../l10n/app_localizations.dart';
 
 import '../../providers/courses_providers.dart';
@@ -235,7 +236,16 @@ class _CourseContentState extends ConsumerState<_CourseContent> {
     final currentStep = widget.currentStep;
     final onStepChanged = widget.onStepChanged;
     final isMyCourse = _isMyCourse;
-    final lock = _nextStepLock(currentStep, isMyCourse);
+    final lock = _nextStepLock(currentStep);
+
+    // `setCourseData:216-232` shows `btnRemove` for `!isGuest && !containsUserId`
+    // only, so Kotlin offers the membership button to a signed-in non-member
+    // and to nobody else. Watched rather than derived from `widget.userId`,
+    // because `UserMapper.isGuest` deliberately tests both id columns where
+    // `isGuestId` tests one; the parent already watches this provider, so the
+    // value is resolved by the time this builds.
+    final user = ref.watch(sessionProvider).valueOrNull;
+    final canChangeMembership = user != null && !UserMapper.isGuest(user);
 
     // The recording moved to [_recordCurrentStep], which covers this and the
     // step the screen opens on alike.
@@ -322,6 +332,7 @@ class _CourseContentState extends ConsumerState<_CourseContent> {
           currentStep: currentStep,
           totalSteps: steps.length,
           isMyCourse: isMyCourse,
+          canChangeMembership: canChangeMembership,
           onPrevious: currentStep > 0 ? () => goToStep(currentStep - 1) : null,
           onNext: currentStep < steps.length - 1 ? onNext : null,
           onFinish: () => _onFinish(context, ref),
@@ -348,23 +359,22 @@ class _CourseContentState extends ConsumerState<_CourseContent> {
   ///  * **A step index out of range**, which is `steps.getOrNull(position - 1)`
   ///    returning null and `isStepCompleted(null, …)` answering true (`:317`,
   ///    `SubmissionsRepositoryImpl.kt:360`).
-  ///  * **A course the learner has not joined — and this one is a deviation,
-  ///    named rather than assumed.** `changeNextButtonState` has no membership
-  ///    test; Kotlin's is on the button, `updateNavigationVisibility:256-270`
-  ///    hiding Next and Previous outright for a non-member. But that is not
-  ///    Kotlin's last word: `onResume:154-160` makes Next visible again with
-  ///    no membership test, and `position` is restored from the learner's
-  ///    saved progress (`:116`), so somebody who joined, made progress, left
-  ///    the course and came back *can* meet the lock there. This port gates
-  ///    the lock instead of the button, because the port's `_NavigationBar`
-  ///    has no membership gate at all (see `PHASE_139_NOTES.md`) — so the
-  ///    effect matches Kotlin's intended rule and diverges from its `onResume`
-  ///    slip. It also keeps the lock consistent with the step tile, which
-  ///    `_StepContent` hides for a non-member: a learner cannot be blocked by
-  ///    an assessment the screen is not offering them.
-  StepNextLock? _nextStepLock(int currentStep, bool isMyCourse) {
+  ///
+  /// **There is deliberately no membership test here, and there used to be
+  /// one.** `changeNextButtonState` has none either: Kotlin's membership test
+  /// is on the button, `updateNavigationVisibility:256-270` hiding Next and
+  /// Previous outright for a non-member. Phase 139 put a copy of that test on
+  /// the lock because `_NavigationBar` had no gate at all, and recorded it as
+  /// a deviation. Phase 145 moved the gate to `_NavigationBar`, where Kotlin
+  /// keeps it, so the copy is gone and this method reads like its original.
+  ///
+  /// The consequence is worth stating rather than leaving to be rediscovered:
+  /// a non-member has no Next to tap, so this value is computed and discarded
+  /// for them. If `_NavigationBar`'s gate is ever relaxed, the lock becomes
+  /// live for a learner whose assessment tile `_StepContent` is not showing —
+  /// which is the state Phase 139's gate existed to avoid.
+  StepNextLock? _nextStepLock(int currentStep) {
     if (course.id != _mandatorySurveyCourseId) return null;
-    if (!isMyCourse) return null;
     if (currentStep < 0 || currentStep >= steps.length) return null;
     final step = steps[currentStep];
     // The same key `_StepContent` builds, so the tile's post-return
@@ -517,10 +527,31 @@ class _ProgressSection extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              // `updateStepDisplay` (`TakeCourseFragment.kt:192-197`): the
+              // heading is the bare literal `"Course Details"` at pager
+              // position 0 and `setStepText(position, steps.size)` — `"step
+              // p/N"` — at every later position.
+              //
+              // **Kotlin's pager has a cover page and this one does not**, and
+              // that is the whole reason the `position == 0` branch does not
+              // belong here. `CoursesPagerAdapter.getItemCount()` is
+              // `steps.size + 1`; `createFragment(0)` builds a
+              // `CourseDetailFragment` and `createFragment(p > 0)` builds the
+              // step at `steps[p - 1]` with `stepNumber = p`
+              // (`CoursesPagerAdapter.kt:40-60`). The port reaches the course
+              // description through its own `CourseDetailScreen` route
+              // instead, so `PageView.builder` has `itemCount: steps.length`
+              // and **port index `i` is Kotlin position `i + 1`**. Special
+              // casing index 0 therefore labelled a real step with the cover
+              // page's heading, and on a one-step course it was the only
+              // heading the course ever showed.
+              //
+              // `currentStep + 1` is right for every index under that mapping
+              // — it is the number `_StepContent` draws in the step header,
+              // the number in the `n / N` counter beside this, and the
+              // `stepNum` the assessment tiles push at the exam screen.
               Text(
-                currentStep == 0
-                    ? l10n.courseDetails
-                    : l10n.stepNumber(currentStep + 1),
+                l10n.stepNumber(currentStep + 1),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               Text(
@@ -634,13 +665,41 @@ class _StepContent extends ConsumerWidget {
             CourseMarkdownBody(data: step.description!),
             const SizedBox(height: 16),
           ],
-          // Resources count
+          // Resources count.
+          //
+          // **A count, and deliberately nothing more.** This tile used to
+          // carry `trailing: Icon(Icons.chevron_right)` with no `onTap` — a
+          // disclosure arrow for a screen nothing implements, reported by
+          // Phase 128 and unchanged through Phase 139. The two tiles below
+          // keep their chevrons because they navigate.
+          //
+          // Kotlin's per-step resources UI is not a button: `btnResources` is
+          // dead twice over (no listener is ever attached, and `setListeners`
+          // sets it `View.GONE`), and what a step actually shows is an inline
+          // list — `CourseStepFragment.setupInlineResources()` binding
+          // `rvInlineResources` to an `InlineResourceAdapter` whose rows call
+          // `openResource(library)`, with `autoDownloadResources()` and
+          // `prefetchNextStepResources()` alongside. The course-level button
+          // Phase 128 cited (`BaseContainerFragment.setResourceButton`) is
+          // live but belongs to `CourseDetailFragment` and lists the whole
+          // course's resources, not a step's.
+          //
+          // **The port cannot render either of those yet, and the blocker is
+          // the data, not the widget.** Kotlin knows a step's resources
+          // because `queueCourseResources` writes each embedded resource
+          // document into `my_library` stamped with its `courseId` and
+          // `stepId` (`CoursesRepositoryImpl.kt:687`, `:794`) and
+          // `getAllStepResources` reads them back with
+          // `myLibraryDao.getByStepId`. `CourseMapper._parseSteps` keeps
+          // `resources.length` and discards the documents; `my_library` has no
+          // `stepId` column and `MyLibraryMapper` writes no `courseId`. So the
+          // number here describes rows the port does not hold. Restoring a tap
+          // target means porting that walk first — see `PHASE_145_NOTES.md`.
           if (step.noOfResources > 0) ...[
             Card(
               child: ListTile(
                 leading: const Icon(Icons.folder_outlined),
                 title: Text(l10n.resourcesInStep(step.noOfResources)),
-                trailing: const Icon(Icons.chevron_right),
               ),
             ),
             const SizedBox(height: 8),
@@ -742,6 +801,7 @@ class _NavigationBar extends StatelessWidget {
     required this.currentStep,
     required this.totalSteps,
     required this.isMyCourse,
+    required this.canChangeMembership,
     required this.onPrevious,
     required this.onNext,
     required this.onFinish,
@@ -750,7 +810,81 @@ class _NavigationBar extends StatelessWidget {
 
   final int currentStep;
   final int totalSteps;
+
+  /// Gates Next and Previous, which is where `updateNavigationVisibility`
+  /// (`TakeCourseFragment.kt:256-270`) gates them:
+  ///
+  /// ```kotlin
+  /// if (containsUserId) { … } else {
+  ///     binding.nextStep.visibility = View.GONE
+  ///     binding.previousStep.visibility = View.GONE
+  /// }
+  /// ```
+  ///
+  /// A learner who has not joined the course can read the step they opened on
+  /// and nothing else; the join button beside these is how they get further,
+  /// and Kotlin additionally puts a *do you want to join this course* dialog in
+  /// front of them (`setCourseData`). Joining restores the buttons on both
+  /// sides — Kotlin re-runs `setCourseData()` from `addRemoveCourse`'s success
+  /// path, and here the course stream re-emits.
+  ///
+  /// **Kotlin's own last word on this is not the rule above, and the
+  /// difference is deliberately not ported.** Three later writes put the
+  /// buttons back without consulting membership: `onResume:158` sets
+  /// `nextStep` VISIBLE, and `onClick`'s next arm sets `previousStep` VISIBLE
+  /// at `:373` with `onClickNext():347` setting `nextStep` VISIBLE at `:375`.
+  /// The first of those is not exam-specific — `onPause:164-169` stamps
+  /// `lastPositionBeforeExam` on **every** pause, so backgrounding the app is
+  /// enough — and it fires on every resume once a successful bind has
+  /// assigned `steps`. So in the shipping Android app **the gate holds on a
+  /// cold open and not afterwards.**
+  ///
+  /// How long it survives a Next tap after that turns on whether
+  /// `viewPager2.currentItem += 1` dispatches `onPageSelected` (and with it
+  /// `updateNavigationVisibility`) synchronously, before `:373`/`:375` run, or
+  /// afterwards. ViewPager2's `setCurrentItemInternal` calls
+  /// `ScrollEventAdapter.notifyProgrammaticScroll`, which dispatches the
+  /// selection synchronously on a changed target — under that reading the
+  /// buttons stay for the rest of the fragment's life; under the other they
+  /// go again on the next page selection. **That is not in this repository to
+  /// read and the decision here does not rest on it**, because either way the
+  /// gate is gone after a resume.
+  ///
+  /// It is ported anyway, as the intent rather than the effect, and the port
+  /// is therefore *stricter* than the shipping app in any session after the
+  /// first resume. The reasons: `updateNavigationVisibility` is the only place
+  /// Kotlin states a rule, while all three writes that undo it are doing
+  /// something else — restoring after a lifecycle event, or swapping
+  /// Next for Finish at the end of the list — and each is a partial copy of
+  /// the *member* branch written without its `else`. And the same method that
+  /// hides these puts a *do you want to join this course* dialog in front of a
+  /// non-member (`setCourseData:219-229`), which is a design statement about
+  /// whose screen this is. Reproducing the escape would also mean modelling
+  /// Android's fragment lifecycle, so a Flutter learner's navigation would
+  /// depend on whether they had been away.
+  ///
+  /// Phase 139 read the same lines from the other side, when the gate was on
+  /// the lock, and reached the same conclusion.
   final bool isMyCourse;
+
+  /// Whether the join/leave button is offered at all.
+  ///
+  /// `setCourseData:216-232` shows `btnRemove` only for `!isGuest &&
+  /// !containsUserId`, so in Kotlin a guest gets no membership button — and
+  /// `updateNavigationVisibility` gives them no navigation either, since it
+  /// keys on `containsUserId` alone with no guest exception. The port offered
+  /// the button unconditionally, which for a guest meant a control that
+  /// **would have worked**: `_toggleMembership` bails only on a null
+  /// `userId`, and the guest row has one, so tapping it wrote shelf
+  /// membership Kotlin does not allow a guest to write.
+  ///
+  /// **The `!containsUserId` half is deliberately not ported.** Kotlin hides
+  /// this button from members too, so `TakeCourseFragment` has no leave
+  /// affordance at all; the port keeps one, as `CourseDetailScreen` does. That
+  /// is a port addition rather than a defect, and taking it away is a
+  /// capability decision rather than a parity fix — see `PHASE_145_NOTES.md`.
+  final bool canChangeMembership;
+
   final VoidCallback? onPrevious;
   final VoidCallback? onNext;
   final VoidCallback onFinish;
@@ -775,35 +909,55 @@ class _NavigationBar extends StatelessWidget {
       child: SafeArea(
         child: Row(
           children: [
-            // Leave/Join button
-            OutlinedButton.icon(
-              onPressed: onToggleMembership,
-              icon: Icon(
-                isMyCourse ? Icons.bookmark_remove : Icons.bookmark_add,
+            // Leave/Join button — see [canChangeMembership].
+            if (canChangeMembership)
+              OutlinedButton.icon(
+                onPressed: onToggleMembership,
+                icon: Icon(
+                  isMyCourse ? Icons.bookmark_remove : Icons.bookmark_add,
+                ),
+                label: Text(isMyCourse ? l10n.leaveCourse : l10n.joinCourse),
               ),
-              label: Text(isMyCourse ? l10n.leaveCourse : l10n.joinCourse),
-            ),
             const Spacer(),
-            // Previous button
-            if (onPrevious != null)
+            // Previous button. Hidden for a non-member with Next, per
+            // [isMyCourse] above; also hidden on the first step, which is
+            // `previousStep.visibility = if (position == 0) GONE else VISIBLE`
+            // one line up in the same Kotlin method — the port's index 0 is
+            // Kotlin's position 1, but there is no cover page behind it to go
+            // back to, so the first step is where Previous stops either way.
+            if (isMyCourse && onPrevious != null)
               FilledButton.tonalIcon(
                 onPressed: onPrevious,
                 icon: const Icon(Icons.arrow_back),
                 label: Text(l10n.previous),
               ),
             const SizedBox(width: 8),
-            // Next/Finish button
-            if (currentStep < totalSteps - 1 && onNext != null)
-              FilledButton.icon(
-                onPressed: onNext,
-                icon: const Icon(Icons.arrow_forward),
-                label: Text(l10n.next),
-              )
-            else
+            // Next / Finish.
+            //
+            // `updateNavigationVisibility` splits these by `position >=
+            // steps.size` — Finish on the last step, Next before it — and the
+            // port's `currentStep >= totalSteps - 1` is the same test under
+            // the index mapping. `onNext` is null on exactly that step, so the
+            // two conditions were redundant and only one is kept.
+            //
+            // **Finish is not gated on membership and Next is**, which looks
+            // like an oversight and is Kotlin's own shape. The `else` branch
+            // sets `nextStep` and `previousStep` GONE and never mentions
+            // `finishStep`, so the button keeps whatever
+            // `setNavigationButtons` (`:464-473`) left it — visible exactly
+            // when `position >= steps.size`. Reachable here on a one-step
+            // course, where the first step is also the last.
+            if (currentStep >= totalSteps - 1)
               FilledButton.icon(
                 onPressed: onFinish,
                 icon: const Icon(Icons.check),
                 label: Text(l10n.finish),
+              )
+            else if (isMyCourse)
+              FilledButton.icon(
+                onPressed: onNext,
+                icon: const Icon(Icons.arrow_forward),
+                label: Text(l10n.next),
               ),
           ],
         ),

@@ -102,7 +102,19 @@ void main() {
           sessionProvider.overrideWith(() => _TestSessionNotifier(_user())),
           courseProvider('course-1').overrideWith(
             (ref) => Stream.value(
-              buildCourseRow(id: 'course-1', courseTitle: 'Algebra'),
+              // A **member** row, deliberately. These fixtures used
+              // `buildCourseRow`'s default empty `userId` and so were
+              // non-members by accident, which was harmless until Phase 145
+              // gated the navigation bar on membership: from then on five
+              // tests named for a learner finishing a course were silently
+              // propping up the *ungated Finish* decision, and mutating that
+              // gate reddened all five instead of the one test that is
+              // actually about it (`non_member_navigation_test.dart`).
+              buildCourseRow(
+                id: 'course-1',
+                courseTitle: 'Algebra',
+                userId: const ['user-1'],
+              ),
             ),
           ),
           courseStepsProvider('course-1').overrideWith(
@@ -274,7 +286,11 @@ void main() {
           sessionProvider.overrideWith(() => _TestSessionNotifier(_user())),
           courseProvider(mandatoryCourseId).overrideWith(
             (ref) => Stream.value(
-              buildCourseRow(id: mandatoryCourseId, courseTitle: 'Onboarding'),
+              buildCourseRow(
+                id: mandatoryCourseId,
+                courseTitle: 'Onboarding',
+                userId: const ['user-1'],
+              ),
             ),
           ),
           courseStepsProvider(mandatoryCourseId).overrideWith(
@@ -376,7 +392,11 @@ void main() {
           sessionProvider.overrideWith(() => _TestSessionNotifier(_user())),
           courseProvider(mandatoryCourseId).overrideWith(
             (ref) => Stream.value(
-              buildCourseRow(id: mandatoryCourseId, courseTitle: 'Onboarding'),
+              buildCourseRow(
+                id: mandatoryCourseId,
+                courseTitle: 'Onboarding',
+                userId: const ['user-1'],
+              ),
             ),
           ),
           courseStepsProvider(mandatoryCourseId).overrideWith(

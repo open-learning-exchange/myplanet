@@ -497,26 +497,35 @@ void main() {
       expect(find.textContaining('please complete'), findsNothing);
     });
 
-    testWidgets('a learner who has not joined is not locked', (tester) async {
-      // A deviation, pinned so it is a decision rather than a drift.
-      // `changeNextButtonState` has no membership test — Kotlin's is on the
-      // button (`updateNavigationVisibility:256-270` hides Next for a
-      // non-member) — but `onResume:154-160` puts Next back with no such test,
-      // so a returning ex-member *can* meet Kotlin's lock. The port has no
-      // membership gate on Next at all, so the gate went on the lock: a
-      // learner cannot be blocked by an assessment `_StepContent` is not
-      // offering them.
+    testWidgets('a learner who has not joined never meets the lock', (
+      tester,
+    ) async {
+      // **This test changed shape in Phase 145 and the change is the point.**
+      // It used to tap Next and assert the page moved, pinning a membership
+      // test that Phase 139 had put on the *lock* — a deviation, since
+      // `changeNextButtonState` has no membership test of its own. Kotlin's
+      // membership test is on the button
+      // (`updateNavigationVisibility:256-270`), and Phase 145 moved the port's
+      // there too. So the lock is no longer reachable for a non-member for
+      // the reason Kotlin makes it unreachable: there is no Next.
+      //
+      // Asserting on the *absence of Next* rather than on a page move is what
+      // keeps this able to fail. Re-adding a membership test to
+      // `_nextStepLock` would leave every assertion here green, because the
+      // lock is dead code on this path either way; dropping the gate in
+      // `_NavigationBar` reds it immediately.
       await pumpCourse(
         tester,
         joined: false,
         db: await seed(courseDoc(courseId: mandatoryCourseId, exam: examDoc())),
       );
 
-      // The tile is hidden for a non-member, which is the reason.
+      // The tile is hidden for a non-member too (`CourseStepFragment
+      // .onViewCreated`'s `!userHasCourse` arm), so nothing on this screen
+      // offers the assessment the lock would be holding them to.
       expect(find.textContaining('take test'), findsNothing);
-      await tapNext(tester);
-
-      expect(onStep(2, 2), findsOneWidget);
+      expect(find.text('Next'), findsNothing);
+      expect(onStep(1, 2), findsOneWidget);
     });
   });
 
