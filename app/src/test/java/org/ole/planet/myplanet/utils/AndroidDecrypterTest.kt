@@ -2,10 +2,15 @@ package org.ole.planet.myplanet.utils
 
 import java.util.Locale
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class AndroidDecrypterTest {
 
     @Test
@@ -116,5 +121,37 @@ class AndroidDecrypterTest {
 
         val result = AndroidDecrypter.androidDecrypter(userId, password, expectedHash, salt)
         assertTrue(result)
+    }
+
+    @Test
+    fun testDecryptMalformedHexReturnsNull() {
+        val key = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        val iv = "abcdef0123456789abcdef0123456789"
+        val malformedEncryptedHex = "invalid_hex"
+
+        val result = AndroidDecrypter.decrypt(malformedEncryptedHex, key, iv)
+        assertNull(result)
+    }
+
+    @Test
+    fun testAndroidDecrypterInvalidDbPwdKeyValueReturnsFalse() {
+        val userId = "testUser"
+        val password = "password123"
+        val salt = "someSalt"
+
+        val result = AndroidDecrypter.androidDecrypter(userId, password, "invalid_hex_db_pwd", salt)
+        assertFalse(result)
+    }
+
+    @Test
+    fun testGenerateIvAndGenerateKeyNonBlank() {
+        val iv = AndroidDecrypter.generateIv()
+        assertTrue(iv.isNotBlank())
+        assertEquals(32, iv.length) // 16 bytes = 32 hex chars
+
+        val key = AndroidDecrypter.generateKey()
+        assertNotNull(key)
+        assertTrue(key!!.isNotBlank())
+        assertEquals(64, key.length) // 32 bytes = 64 hex chars
     }
 }

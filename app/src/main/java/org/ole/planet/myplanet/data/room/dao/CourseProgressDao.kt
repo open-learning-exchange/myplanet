@@ -31,8 +31,8 @@ interface CourseProgressDao {
     @Query("UPDATE course_progress SET _id = :remoteId, _rev = :rev WHERE id = :localId")
     suspend fun markUploaded(localId: String, remoteId: String, rev: String): Int
 
-    @Query("UPDATE course_progress SET passed = :passed WHERE courseId = :courseId AND stepNum = :stepNum")
-    suspend fun updatePassedByCourseAndStep(courseId: String, stepNum: Int, passed: Boolean): Int
+    @Query("UPDATE course_progress SET passed = :passed WHERE courseId = :courseId AND stepNum = :stepNum AND userId IS :userId")
+    suspend fun updatePassedByCourseAndStep(courseId: String, stepNum: Int, passed: Boolean, userId: String?): Int
 
     @Upsert
     suspend fun upsert(progress: CourseProgress)
