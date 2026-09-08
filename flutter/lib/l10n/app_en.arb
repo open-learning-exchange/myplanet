@@ -1589,5 +1589,33 @@
   "filterOther": "Other",
   "@filterOther": {
     "description": "Label for the `other` entry in the resources media-type filter. Recovered from the Kotlin `other`. Deliberately NOT `storageOther`: that key is the port of `storage_other` (\"Other Files\"), whose value is currently wrong, and this chip must not move when it is repaired."
+  },
+  "shareChat": "Share chat",
+  "@shareChat": {
+    "description": "Positive button of the note dialog that sends a chat conversation to a team, enterprise or the community. The Kotlin `share_chat` is lowercase (\"share chat\"); sentence case matches every other button label in the port."
+  },
+  "shareWithTeamEnterprise": "Share with team/enterprise",
+  "@shareWithTeamEnterprise": {
+    "description": "Group header in the chat share dialog, above the teams and enterprises entries. Port of `share_with_team_enterprise`."
+  },
+  "addNoteOptional": "Add a note (optional)",
+  "@addNoteOptional": {
+    "description": "Hint of the note field shown before a chat conversation is shared. Port of `add_note`."
+  },
+  "chatAlreadyShared": "This chat has already been shared to this destination",
+  "@chatAlreadyShared": {
+    "description": "Shown when the user shares a chat to a destination that already has it. Port of `chat_already_shared_to_destination`."
+  },
+  "chatShared": "Chat shared",
+  "@chatShared": {
+    "description": "Confirmation shown after a chat conversation is shared."
+  },
+  "joinTeamFirst": "Please join a Team to share this chat",
+  "@joinTeamFirst": {
+    "description": "Shown when the user belongs to no team to share a chat with. Port of `join_team_first`."
+  },
+  "joinEnterpriseFirst": "Please join an Enterprise to share this chat",
+  "@joinEnterpriseFirst": {
+    "description": "Shown when the user belongs to no enterprise to share a chat with. Port of `join_enterprise_first`."
   }
 }

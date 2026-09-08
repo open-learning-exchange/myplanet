@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/local/app_database.dart';
 import '../data/local/chat_mapper.dart';
 import '../repository/chat_repository.dart';
+import '../repository/teams_repository.dart';
+import '../repository/voices_repository.dart';
 import '../core/config/server_config.dart';
 import '../core/sync/sync_result.dart';
 import 'app_providers.dart';
@@ -265,4 +267,179 @@ class ChatSyncNotifier extends SyncNotifier {
 
 final chatSyncProvider = NotifierProvider<ChatSyncNotifier, SyncUiState>(
   ChatSyncNotifier.new,
+);
+
+/// Port of `model/ChatShareTargets.kt` — the three destination groups the
+/// share dialog offers.
+class ChatShareTargets {
+  const ChatShareTargets({
+    this.community,
+    this.teams = const [],
+    this.enterprises = const [],
+  });
+
+  final ChatShareTarget? community;
+  final List<ChatShareTarget> teams;
+  final List<ChatShareTarget> enterprises;
+}
+
+/// Port of `ChatViewModel.loadShareTargets`.
+///
+/// Teams and enterprises are the *root*, non-archived documents of each type
+/// the signed-in user is a member of; a signed-out session sees the whole
+/// catalog, which is the Kotlin's `userId.isNullOrBlank()` branch. The
+/// community is a pseudo-team whose id is `"<communityName>@<parentCode>"`,
+/// taken from the cached team document when the planet has one and
+/// synthesized from the name when it does not — so the community entry is
+/// offered even on a device that has never synced a community team.
+///
+/// The session is awaited rather than read: this provider never watches
+/// `sessionProvider` for its value, and `valueOrNull` is null until something
+/// else resolves it.
+final chatShareTargetsProvider = FutureProvider<ChatShareTargets>((ref) async {
+  final session = await ref.watch(sessionProvider.future);
+  final repo = ref.watch(teamsRepositoryProvider);
+  final prefs = ref.watch(planetPrefsProvider);
+
+  final userId = session?.id;
+  final teams = await _shareableTargets(repo, 'team', userId);
+  final enterprises = await _shareableTargets(repo, 'enterprise', userId);
+
+  final communityName = prefs.communityName;
+  final parentCode = prefs.serverConfig?.parentCode ?? '';
+  ChatShareTarget? community;
+  if (communityName.trim().isNotEmpty && parentCode.trim().isNotEmpty) {
+    final id = '$communityName@$parentCode';
+    final row = await repo.getById(id);
+    community = row == null
+        ? ChatShareTarget(id: id, name: communityName)
+        : _targetOf(row);
+  }
+
+  return ChatShareTargets(
+    community: community,
+    teams: teams,
+    enterprises: enterprises,
+  );
+});
+
+/// Port of `getShareableTeams` / `getShareableEnterpriseSummaries`, which
+/// differ only in the `type` they query.
+///
+/// `watchCatalog` is `getRootTeamsByType`: real team documents of that type
+/// that are not archived. A blank user id skips the membership filter, and a
+/// user with no memberships gets an empty list rather than the catalog.
+Future<List<ChatShareTarget>> _shareableTargets(
+  TeamsRepository repo,
+  String type,
+  String? userId,
+) async {
+  final rows = await repo.watchCatalog(type: type).first;
+  if (userId == null || userId.trim().isEmpty) {
+    return rows.map(_targetOf).toList(growable: false);
+  }
+  final statuses = await repo.memberStatuses(userId, rows.map((r) => r.id));
+  return rows
+      .where((row) => statuses[row.id]?.isMember ?? false)
+      .map(_targetOf)
+      .toList(growable: false);
+}
+
+/// Port of `MyTeam.toSummary()`, narrowed to the fields the share reads.
+ChatShareTarget _targetOf(TeamRow row) =>
+    ChatShareTarget(id: row.id, name: row.name ?? '', teamType: row.teamType);
+
+/// The destinations each already-shared chat has reached, keyed by the chat's
+/// CouchDB `_id`.
+///
+/// Port of `ChatViewModel.loadChatHistoryScreenData`'s
+/// `chatRepository.extractSharedViewInIds(newsMessages)` over
+/// `voicesRepository.getPlanetNewsMessages(currentUser?.planetCode)`.
+final sharedChatDestinationsProvider = FutureProvider<Map<String, Set<String>>>(
+  (ref) async {
+    final session = await ref.watch(sessionProvider.future);
+    final rows = await ref
+        .watch(voicesRepositoryProvider)
+        .planetNewsMessages(session?.planetCode);
+    return VoicesRepository.extractSharedViewInIds(rows);
+  },
+);
+
+/// What a share attempt did, so the screen can tell the user.
+enum ChatShareOutcome {
+  shared,
+
+  /// `ShareChatResult.AlreadyShared` — the chat is already in this
+  /// destination's feed.
+  alreadyShared,
+
+  /// The share was not attempted: no signed-in user, no destination, or a
+  /// chat the server has never seen. `ChatHistoryFragment` gates on
+  /// `chatId.isNotEmpty() && viewInId.isNotEmpty()` and drops the tap
+  /// silently; the port says so instead.
+  unavailable,
+}
+
+/// The write path for a chat share, keeping "build the payload", "write the
+/// voices row" and "queue it for upload" together — the shape
+/// `VoicesActions` uses, and the reason a shared chat cannot sit undelivered
+/// on the device.
+class ChatShareActions {
+  ChatShareActions(this.ref);
+
+  final Ref ref;
+
+  Future<ChatShareOutcome> share({
+    required ChatRow chat,
+    required ChatShareTarget? target,
+    required String section,
+    required String note,
+  }) async {
+    final UserRow? user;
+    try {
+      user = await ref.read(sessionProvider.future);
+    } catch (_) {
+      return ChatShareOutcome.unavailable;
+    }
+    // `chat._id`, not the local row id: the payload's `newsId` is what
+    // `isAlreadyShared` and the shared-destination map are both keyed by, and
+    // a chat the server has never seen has nothing to key on.
+    final chatId = chat.docId ?? '';
+    final viewInId = target?.id ?? '';
+    if (user == null || chatId.isEmpty || viewInId.isEmpty) {
+      return ChatShareOutcome.unavailable;
+    }
+
+    final voices = ref.read(voicesRepositoryProvider);
+    if (await voices.isAlreadyShared(chatId, viewInId)) {
+      return ChatShareOutcome.alreadyShared;
+    }
+
+    await voices.createFromShareMap(
+      payload: buildChatShareMap(
+        chat: chat,
+        note: note,
+        target: target,
+        section: section,
+        nowMillis: DateTime.now().millisecondsSinceEpoch,
+      ),
+      userId: user.couchId ?? user.id,
+      userName: user.name ?? '',
+      planetCode: user.planetCode,
+      parentCode: user.parentCode,
+    );
+
+    final config = ref.read(serverConfigProvider);
+    if (config != null) {
+      await ref
+          .read(voicesUploaderProvider)
+          .queuePending(config: config, userId: user.id);
+    }
+    ref.invalidate(sharedChatDestinationsProvider);
+    return ChatShareOutcome.shared;
+  }
+}
+
+final chatShareActionsProvider = Provider<ChatShareActions>(
+  ChatShareActions.new,
 );
