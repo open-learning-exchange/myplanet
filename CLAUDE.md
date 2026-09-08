@@ -19,7 +19,7 @@
 
 ### Flutter port (in progress)
 
-**Migration progress: ≈88/100.** Report this figure whenever you report on the
+**Migration progress: ≈90/100.** Report this figure whenever you report on the
 port; it is the whole migration effort on a 1-to-100 scale, not a phase count.
 The basis, so it can be argued with rather than repeated:
 
@@ -27,11 +27,11 @@ The basis, so it can be argued with rather than repeated:
 |---|---|---|
 | Feature breadth | all 28 UI packages have screens (enterprises is a team *type*, not a gap — Phase 99) | ~95 |
 | Behavioural parity | the limiter, and the lowest-confidence row: **reachability** audits keep finding ported, green, *dead* code — see below | ~72 |
-| Test coverage | 2265 tests / 195 test files vs 240 Kotlin test files | ~87 |
-| Localisation | ar/es/fr 843–878 of 897 keys but **416–469 of those are unreviewed machine translation**; ne/so 436 | ~55 |
+| Test coverage | 2425 tests / 206 test files vs 248 Kotlin test files | ~88 |
+| Localisation | ar/es/fr 851–886 of 906 keys but **416–469 of those are unreviewed machine translation** (`"x-mt": true`, so the set is queryable); ne/so 444 | ~55 |
 | Background work | WorkManager gaps closed through Phase 94, platform channels in-tree | ~95 |
 
-Breadth is measurable and depth is not — 243 hand-written Dart files against 547
+Breadth is measurable and depth is not — 247 hand-written Dart files against 550
 Kotlin sources mostly reflects Dart folding Fragment + ViewModel + Adapter + XML
 into one screen file, so it says little about parity. Depth is only ever revealed
 by auditing, and **every audit so far has found something**, which is why the
@@ -45,7 +45,10 @@ filenames, and it had already missed 22 chat tests in Phase 108. **Grep the test
 tree for the symbol, never the filename.** And the localisation row counted 899
 `[Language] …` strings — `"[Nepali] Join requests"` — as translations; Phase 118
 deleted them so those keys fall back to clean English, which is why ne/so read
-421 rather than ~850. A number that only ever moves up is not being measured.
+444 rather than ~850. A number that only ever moves up is not being measured.
+Three revisions of this file quoted three different figures for that same count
+(421, 436, 458) because each was remembered rather than counted; **measure the
+tree when you fold, and the l10n counts are one `json.load` away.**
 
 ### Reachability: ported, tested, green, and dead
 
@@ -276,19 +279,21 @@ real — they had been setting a locale with no `.arb` to resolve to. Somali nee
 locale would otherwise resolve with no `MaterialLocalizations` and crash. Directional padding and
 alignment are done; a visual RTL review in Arabic is not.
 
-**Current l10n state.** The template `app_en.arb` is 897 keys. Arabic, Spanish
-and French sit at 843–878 of them, Nepali and Somali at 436. But coverage is the
+**Current l10n state.** The template `app_en.arb` is 906 keys. Arabic sits at
+851, Spanish and French at 886, Nepali and Somali at 444. But coverage is the
 wrong headline: **416–469 of each of ar/es/fr's values are unreviewed machine
-translation**, marked as such by Phase 109 so a human pass can list exactly which.
+translation** (ar 433, es 416, fr 469), marked by Phase 109 with `"x-mt": true`
+in the key's metadata — so the set is queryable rather than estimated, and a
+human pass can list exactly which. ne/so carry 25 each.
 The ~250 keys derived from the Kotlin `values-*/strings.xml` are real human
 translations already shipping in the Android app, and Phases 114/118/121 have
 been recovering more of them — that recovery is strictly better than machine
 translation and should be exhausted before any more is generated.
 
 The earlier "nothing machine-translated" claim is obsolete, and so is any reading
-of the untranslated counts as a quality measure: ne/so went *up* to 458 when Phase
-118 deleted 899 `[Language] Join requests`-style strings, because falling back to
-clean English beats displaying a language tag. A confidently wrong translation can
+of the untranslated counts as a quality measure: the ne/so *untranslated* count
+went **up** when Phase 118 deleted 899 `[Language] Join requests`-style strings,
+because falling back to clean English beats displaying a language tag. A confidently wrong translation can
 mislead a learner where an English fallback merely inconveniences them.
 
 Phase 48 fixed the team-finance summary so it is derived from the filtered transaction stream.
@@ -781,20 +786,81 @@ lose a behaviour.
 wrote the test, noticed it passed unconditionally, and fixed the test. A
 migration test that cannot fail is worse than none, because it reads as coverage.
 
+Phases 128–136 ran as three- and four-lane rounds. The work itself was routine
+by now; what these rounds established is about the *method*, and two items are
+open data-loss rows that outrank anything they were opened for.
+
+**A brief propagates the previous round's mistakes as efficiently as its facts.**
+Three consecutive rounds, the integrator's own brief carried an error a lane
+caught by auditing the ground truth first. Phase 130's note misread
+`countPublicNeedingUpdateForUserPattern` as the *catalog* predicate — it is
+`userId LIKE`, the **shelf**, and the catalog version is the next method down —
+and Phase 131's brief repeated it verbatim; under the wrong reading the bell
+would have counted resources the user has never added and excluded every one
+they have. Phase 132's note said "every answer sheet the port writes is
+team-less where Kotlin's carries the team", and Phase 136's brief repeated it:
+Kotlin has **eight** survey entry points and only two pass a team, so five port
+paths were already at parity. The same note told Phase 136 to copy `courseId`
+*and* `stepId` onto an adopted clone; copying `stepId` would have been
+destructive, because the port's step ids are positional (`'$courseId:$index'`)
+where Kotlin's are a hash, so the courses walk owns that join and
+`releaseStepJoinsForCourse` nulls `stepId` **and `courseId`** together — the
+clone is in no course document, so the next sync would strip the very `courseId`
+the phase writes. **Front-loading a brief is still right; it is why the
+ground-truth `parity-auditor` pass is mandatory rather than nice-to-have.**
+
+**Mutation-test the test, not just the migration.** Phase 122's practice
+generalised. Phase 134 mutated all nine of its claims and found one pinned by
+nothing, plus a reachability assertion that **could not fail**: it searched from
+`syncSteps:` to end of file, which includes that function's own declaration, so
+the name always occurred. Phase 136 found its own first cut implemented only the
+first half of Kotlin's clone predicate. A test that cannot fail reads as
+coverage, and a green suite is where they hide.
+
+**The safety net Kotlin has twice and the port had once.** Kotlin sends a
+finished answer sheet from the profile dismissal *and* from
+`uploadManager.uploadSubmissions()` in three workers, with no precondition. The
+port had only four write-time call sites, so a sheet whose one enqueue never ran
+sat on the handset as `complete, isUpdated, !uploaded` with no outbox row until
+the same user finished some *other* submission. Every layer had passing tests —
+one drove `queuePending`, another drove `syncAll`, **nothing asked whether the
+second knew about the first.** Phase 134 added the sweep to
+`dashboard_sync_provider` and `background_entrypoint`. Note what it changed
+about an existing divergence: `SubmissionDao.pendingUploads` has no status test
+where Kotlin's sweep is `status = 'complete' AND (isUpdated = 1 OR _id IS NULL
+OR _id = '')`, which was defensible while it ran from four deliberate sites and
+is now systematic. The adoption marker (`status: ''`) and `pending` drafts are
+uploaded reliably rather than incidentally; *what* reaches the server is
+unchanged, only *when*.
+
+**Two open rows, both bigger than the phases that found them.**
+`updateCourseProgress` has **zero callers** in the port — the Phase 119 shape,
+a Dart writer sitting uncalled — and `take_course_screen` deliberately leaves an
+exam-bearing step unpassed for the exam to grade while nothing grades it, so
+`completedCourseIds` may never complete such a course. And **an adopted team
+survey clone is deleted on the next sync and never uploaded**: Kotlin uploads it
+(`getPendingAdoptedSurveys` → endpoint `exams`) so it gains a `_rev` and joins
+every later keep set, and Kotlin has no delete-except-ids on that table at all,
+while the port has neither half and `SurveyDao.deleteNotIn` prunes it. Phase 136
+probed it — clone and question rows gone after one surveys sync, answer sheets
+orphaned. **A wrong `parentId` mis-files answers; a deleted survey loses them.**
+
 ### Harvesting master rebuilds the Kotlin app, and that is correct
 
 `build.yml` and `test.yml` carry `paths-ignore: flutter/**, docs/**, **.md`, so a
 Flutter-only push skips both and only `flutter.yml` runs. **A harvest push does
 not skip them, and should not**: merging `master` brings real changes under
-`app/` onto the branch — Phase 126's merge carried 117 of them — so both Kotlin
-flavours build and the Kotlin unit tests run. That is the filter working, not
+`app/` onto the branch — Phase 126's merge carried 117 of them and Phase 133's
+122 — so both Kotlin flavours build and the Kotlin unit tests run. That is the filter working, not
 leaking. Expect ~10 minutes of Kotlin CI on any round that merges master, and
 none on the rounds that do not.
 
 ### Dependency drift is now its own debt
 
 `flutter pub outdated` reports **89 packages** behind latest, up from 84 a few
-rounds ago. Two of them are the port's load-bearing architecture:
+rounds ago — a raw number that has been quoted here for several rounds without
+anyone decomposing it into *resolvable now* versus *held by a direct
+dependency's constraint*, which is most of it. Phase 137 is doing that. Two of them are the port's load-bearing architecture:
 `flutter_riverpod` 2.6.1 → 3.4.3 and `go_router` 14.8.1 → 18.0.1, both major
 gaps. Nothing is broken, and no round has needed to touch them — but this only
 gets harder, and when it is done it wants a phase of its own with no other lane
@@ -831,6 +897,31 @@ established, at the cost of a regression and five failing tests:
   plus the full suite plus diff review, serially, and collision pairs grow
   quadratically. Verify a candidate lane's import graph is disjoint before
   adding it.
+- **Section-level sharing of one file works until it doesn't, and the analyzer
+  is what catches it.** Four rounds shared a file by region successfully; the
+  fifth merged cleanly and did not compose, because one lane made a constructor
+  parameter *required* while the other's tests predated it. Two
+  `missing_required_argument` errors, found because codegen-then-analyze runs
+  before the suite. It was still the right call over serialising two
+  independent slices — but *hunk positions are not evidence*, so when two
+  targets need the same file, prefer giving both jobs to one lane. Phase 135
+  did that with `app_database.dart` deliberately.
+- **`outcome_branch` needs `source_url` and `source_revision`.** A
+  `create_session` call with only `outcome_branch` is refused with
+  *"outcome_branch requires a github.com git source"*.
+- **A round's highest-value targets are often blocked on the lane in flight.**
+  Twice the top two items from a round both needed the file a running lane
+  owned, so the honest answer was to wait rather than spin up lower-value
+  lanes. Integration cost is real; lane count is not the score.
+- **A red gate is not always the diff.** `package:sqlite3`'s build hook fetches
+  a prebuilt `libsqlite3` from a GitHub release and verifies a sha256 with **no
+  retry of its own**, so one bad response fails `flutter test` before a test
+  runs. It happened once (the fetched bytes hashed to `8e8052a0…`, which matches
+  no released version's expected hash, while the Android job on the same commit
+  fetched its own prebuilts fine, and the locally cached copy from days earlier
+  hashed correctly). One re-run fixed it. Before assuming a native-asset or
+  network failure is yours, check whether a sibling job on the same commit
+  passed.
 
 ### Documentation Map
 
@@ -1595,6 +1686,6 @@ Note: SYSTEM_ALERT_WINDOW is **not** declared (removed at some point; older docs
 
 ---
 
-**Last Updated**: 2026-09-02
+**Last Updated**: 2026-09-08
 **Version**: 0.69.18
 **Maintainer**: Open Learning Exchange
