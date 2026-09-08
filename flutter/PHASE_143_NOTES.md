@@ -17,9 +17,9 @@ prevented it. That is the round's lesson and it is in *Job 2* below.
    in the plan itself**, corrected my intended answer to the v47 question, and
    named two stale claims elsewhere in the tree.
 3. Implement, each defect demonstrated failing first.
-4. **Ten mutations**, each applied alone to green code and reverted. Nine
-   redded immediately; one survived and is written up below, because a surviving
-   mutation is the only kind worth reporting.
+4. **Fourteen mutations**, each applied alone to green code and reverted.
+   Thirteen redded immediately; one survived and is written up below, because a
+   surviving mutation is the only kind worth reporting.
 5. A second `parity-auditor` pass at `effort: max` aimed at the finished,
    already-green code.
 
@@ -193,6 +193,15 @@ Added, with their call-site swaps reported rather than half-done.
   with `lower()`, the idiom the rest of the DAO already uses for
   `COLLATE NOCASE`.
 
+All three have no callers yet, so `test/data/local/dao_query_semantics_test.dart`
+pins the SQL semantics their doc-comments claim — and pins two of them against
+the **raw Kotlin statement** run on the same rows, rather than against my
+reading of it. The three-valued cases are why: a NULL status, a null `userId`,
+a NULL `docType`. Also pinned: `getByNewsId`'s case-sensitivity, and that an
+exam id containing a quote cannot inject (drift binds the `LIKE` pattern as a
+parameter, so the deliberate non-escaping is a *matching* looseness and not an
+injection one). Four mutations, four reds.
+
 ## The v47 question, answered: that window is closed
 
 The brief asked for a stated decision on handsets already upgraded to v47.
@@ -237,7 +246,7 @@ effect at the *next* bump, whoever spends it. **48 is free.**
 
 ## The mutation that survived
 
-Nine of ten redded on the first try. The tenth: removing `AND step_id IS NULL`
+Thirteen of fourteen redded on the first try. The other one: removing `AND step_id IS NULL`
 from the backfill broke nothing, because every step-joined row in my fixture
 also lacked a `source_survey_id`, so the id-shape clause already excluded it.
 
