@@ -17,7 +17,6 @@ import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -26,7 +25,6 @@ class SurveysViewModelTest {
     private lateinit var surveysRepository: SurveysRepository
     private lateinit var submissionsRepository: SubmissionsRepository
     private lateinit var userRepository: UserRepository
-    private lateinit var userSessionManager: UserSessionManager
     private lateinit var viewModel: SurveysViewModel
     private val testDispatcher = StandardTestDispatcher()
     private val testDispatcherProvider = TestDispatcherProvider(testDispatcher)
@@ -37,13 +35,11 @@ class SurveysViewModelTest {
         surveysRepository = mockk()
         submissionsRepository = mockk()
         userRepository = mockk()
-        userSessionManager = mockk()
 
         viewModel = SurveysViewModel(
             surveysRepository,
             submissionsRepository,
             userRepository,
-            userSessionManager,
             testDispatcherProvider
         )
     }
@@ -71,7 +67,7 @@ class SurveysViewModelTest {
 
     private fun stubLoadSurveys(surveys: List<StepExam>) {
         coEvery { surveysRepository.getIndividualSurveys() } returns surveys
-        coEvery { userSessionManager.getUserModel() } returns mockk(relaxed = true)
+        coEvery { userRepository.getUserModel() } returns mockk(relaxed = true)
         coEvery { surveysRepository.getSurveyInfos(any(), any(), any(), any()) } returns emptyMap()
         coEvery { surveysRepository.getSurveyFormState(any(), any()) } returns emptyMap()
     }
