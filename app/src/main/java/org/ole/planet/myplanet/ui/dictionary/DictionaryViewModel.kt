@@ -8,9 +8,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.data.room.entity.DictionaryEntity
 import org.ole.planet.myplanet.repository.DictionaryLoad
 import org.ole.planet.myplanet.repository.DictionaryRepository
+import org.ole.planet.myplanet.repository.DictionaryWord
 
 sealed interface DictionaryLoadState {
     data object Idle : DictionaryLoadState
@@ -21,7 +21,7 @@ sealed interface DictionaryLoadState {
 
 sealed interface DictionarySearchState {
     data object Idle : DictionarySearchState
-    data class Found(val entry: DictionaryEntity) : DictionarySearchState
+    data class Found(val entry: DictionaryWord) : DictionarySearchState
     data object NotFound : DictionarySearchState
 }
 
