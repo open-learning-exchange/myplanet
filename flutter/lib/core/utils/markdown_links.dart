@@ -26,14 +26,34 @@ List<String> extractImageLinks(String? text) {
 
 /// Port of `MarkdownUtils.prependBaseUrlToImages`.
 ///
-/// Rewrites each `![alt](path)` to `<img src=$baseUrl$path width height/>`,
-/// stripping a leading `resources/` from the path first — the server stores
-/// resource attachments under `/<db>/resources/<id>/<file>`, but the markdown
-/// author writes the path as `resources/…`, so the prefix would double up.
+/// Rewrites each `![alt](path)` to `<img src="$baseUrl$path" width height/>`,
+/// stripping a leading `resources/` from the path first.
+///
+/// The strip is about the **local** directory layout, not about a doubled
+/// prefix: all four Kotlin callers pass a [baseUrl] of
+/// `file://<externalFilesDir>/ole/`, which has no `resources` segment to
+/// double. A markdown author writes `resources/<id>/<file>`, and
+/// `FileUtils.getIdFromSegments` treats `resources` as a *marker* — the
+/// download lands at `<externalFilesDir>/ole/<id>/<file>`. Stripping the
+/// marker is what makes the rendered `src` point at where the file actually
+/// is. Note the corollary: the download URL keeps `resources/`
+/// (`CoursesRepositoryImpl:671` builds `"$baseUrl/$link"` from the unstripped
+/// link) while the render base drops it, and the port's own relative
+/// resolution in `course_markdown.dart` keeps it — correctly, because that
+/// resolves against the server, not the local cache.
 ///
 /// The Kotlin feeds a `file://<externalFilesDir>/ole/` [baseUrl] so the
 /// rendered image reads a locally downloaded copy; the same rewrite works for
 /// any base. Returns the empty string for `null` input, matching the Kotlin.
+///
+/// The `src` value is **quoted**, following upstream `9e402fb`: unquoted, a
+/// path containing a space runs into the following `width=` attribute and the
+/// tag is mis-parsed.
+///
+/// Nothing in `lib/` calls this yet — see `PHASE_142_NOTES.md`. The port's
+/// `CourseMarkdownBody` renders `![alt](path)` spans directly and resolves
+/// relative paths as authenticated bytes, so it never needs the rewrite; the
+/// Kotlin uses it in four places.
 String prependBaseUrlToImages(
   String? markdownContent,
   String baseUrl, {
@@ -46,6 +66,6 @@ String prependBaseUrlToImages(
     final stripped = relativePath.startsWith('resources/')
         ? relativePath.substring('resources/'.length)
         : relativePath;
-    return '<img src=$baseUrl$stripped width=$width height=$height/>';
+    return '<img src="$baseUrl$stripped" width=$width height=$height/>';
   });
 }
