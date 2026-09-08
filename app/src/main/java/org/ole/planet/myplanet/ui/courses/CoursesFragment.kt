@@ -265,7 +265,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
                 }
             },
             onAddToLib = {
-                if ((selectedItems?.size ?: 0) > 0) {
+                if (!selectedItems.isNullOrEmpty()) {
                     confirmation = createAlertDialog()
                     confirmation.show()
                 }

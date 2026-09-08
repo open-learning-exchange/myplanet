@@ -26,7 +26,12 @@ class MyPlanet : Serializable {
     }
 
     companion object {
-        fun getMyPlanetActivities(context: Context, spm: SharedPrefManager, model: UserEntity): JsonObject {
+        fun getMyPlanetActivities(
+            context: Context,
+            spm: SharedPrefManager,
+            model: UserEntity,
+            now: Long = System.currentTimeMillis()
+        ): JsonObject {
             val postJSON = JsonObject()
             val planet = JsonUtils.gson.fromJson(spm.getVersionDetail() ?: "", MyPlanet::class.java)
             if (planet != null) postJSON.addProperty("planetVersion", planet.planetVersion)
@@ -35,7 +40,7 @@ class MyPlanet : Serializable {
             postJSON.addProperty("parentCode", model.parentCode)
             postJSON.addProperty("createdOn", model.planetCode)
             postJSON.addProperty("type", "usages")
-            postJSON.add("usages", getTabletUsages(context, spm))
+            postJSON.add("usages", getTabletUsages(context, spm, now))
             return postJSON
         }
 
@@ -57,14 +62,20 @@ class MyPlanet : Serializable {
             return postJSON
         }
 
-        fun getTabletUsages(context: Context, spm: SharedPrefManager): JsonArray {
+        fun getTabletUsages(
+            context: Context,
+            spm: SharedPrefManager,
+            now: Long = System.currentTimeMillis()
+        ): JsonArray {
             val cal = Calendar.getInstance()
             cal.timeInMillis = spm.getLastUsageUploaded()
             val arr = JsonArray()
             val mUsageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-            val queryUsageStats = mUsageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, cal.timeInMillis, System.currentTimeMillis())
-            for (s in queryUsageStats) {
-                addStats(s, arr, context)
+            val queryUsageStats = mUsageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, cal.timeInMillis, now)
+            if (queryUsageStats != null) {
+                for (s in queryUsageStats) {
+                    addStats(s, arr, context)
+                }
             }
             return arr
         }
