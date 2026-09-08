@@ -309,9 +309,19 @@ Future<void> sweepPendingSubmissions(
     // rev before the surveys pull's `deleteNotIn` runs, so the clone is either
     // named by the walk or still `rev IS NULL` and spared. Either way it
     // survives — see [SurveyDao.deleteNotIn].
-    await container
-        .read(adoptedSurveysUploaderProvider)
-        .queuePending(config: config, userId: userId);
+    // In its own `try`: `UserDataWorker:47-48` wraps each arm in its own
+    // `runCatching`, and this arm can throw where the Kotlin's cannot —
+    // `queuePending` reads device identity, which rethrows on an engine with
+    // no channel and no primed cache, and a headless engine is exactly that
+    // case. Sharing the `try` let one adopted clone skip the submissions
+    // safety net entirely.
+    try {
+      await container
+          .read(adoptedSurveysUploaderProvider)
+          .queuePending(config: config, userId: userId);
+    } catch (_) {
+      // Deliberately ignored — see above.
+    }
     await container
         .read(submissionsUploaderProvider)
         .queuePending(config: config, userId: userId);

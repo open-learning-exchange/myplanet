@@ -226,7 +226,7 @@ void main() {
       expect(
         (await database.surveyDao.getById(cloneId))!.rev,
         '1-abc',
-        reason: 'Kotlin never records this, and re-POSTs the clone forever',
+        reason: 'the published clone is handed back to the walk that names it',
       );
       expect(
         await database.surveyDao.pendingAdoptedSurveys(),
@@ -279,28 +279,139 @@ void main() {
     expect(await database.surveyDao.getById(cloneId), isNull);
   });
 
-  test('a server-authored adopted survey is not swept for upload', () async {
-    // `sourceSurveyId` is not a local-authorship marker: the courses walk reads
-    // it off a server-embedded survey, so an adopted copy Planet published
-    // carries it *and* a rev. Sweeping on the first clause alone would re-POST
-    // somebody else's document.
+  /// **The shape that made `rev IS NULL` the wrong predicate.** Kotlin can ask
+  /// `_rev IS NULL` because `JsonUtils.getString` returns `''` for a missing
+  /// key, so only `createMappedSurvey`'s explicit null satisfies it. The port's
+  /// mappers use `getStringOrNull`, and a course document's embedded survey
+  /// carries no `_rev` of its own — every embedded-survey fixture in this tree
+  /// omits it — so `rev IS NULL` was true for another team's private copy and
+  /// the sweep POSTed it to `exams` under this user's credentials.
+  test(
+    "another team's course-embedded copy is neither swept nor spared",
+    () async {
+      const otherCourse = {
+        '_id': 'course-9',
+        'courseTitle': "Another planet's course",
+        'steps': [
+          {
+            'stepTitle': 'One',
+            'survey': {
+              '_id': 'survey-embedded',
+              'type': 'surveys',
+              'name': "Another team's copy",
+              'sourceSurveyId': 'survey-1',
+              'teamId': 'someone-elses-team',
+              'questions': <Map<String, dynamic>>[],
+            },
+          },
+        ],
+      };
+      final parsed = CourseMapper.fromDoc(otherCourse)!;
+      await database.courseDao.upsertAll([parsed.course], parsed.steps);
+      for (final mapping in SurveyMapper.fromCourseDoc(
+        otherCourse,
+        stepIdFor: CourseMapper.stepIdFor,
+      )) {
+        await database.surveyDao.upsertAll(
+          [mapping.survey],
+          {mapping.survey.id.value: mapping.questions},
+        );
+      }
+      final embedded = (await database.surveyDao.getById('survey-embedded'))!;
+      expect(embedded.rev, isNull, reason: 'the fixture shape this is about');
+      expect(embedded.sourceSurveyId, 'survey-1');
+
+      expect(
+        (await database.surveyDao.pendingAdoptedSurveys()).map((row) => row.id),
+        [cloneId],
+        reason: 'the port must not publish a document it did not author',
+      );
+
+      // And the prune exemption must not spare it either: once the courses walk
+      // stops naming that step, `releaseStepJoinsForCourse` nulls its `stepId`
+      // and `courseId` and it is an ordinary cache row again.
+      await database.surveyDao.releaseStepJoinsForCourse('course-9', const {});
+      await database.surveyDao.deleteNotIn(['survey-1']);
+      expect(await database.surveyDao.getById('survey-embedded'), isNull);
+      expect(await database.surveyDao.getById(cloneId), isNotNull);
+    },
+  );
+
+  /// A public-API survey lands through `SurveyMapper.fromDoc` too, and the
+  /// port's own public-survey fixtures carry no `_rev` either.
+  test('a rev-less cache row is not swept for upload', () async {
     final mapped = SurveyMapper.fromDoc(const {
-      '_id': 'survey-9',
-      '_rev': '4-server',
+      '_id': 'survey-public',
       'type': 'surveys',
-      'name': 'Adopted elsewhere',
+      'name': 'From the public API',
       'sourceSurveyId': 'survey-1',
-      'teamId': 'team-9',
       'questions': <Map<String, dynamic>>[],
     })!;
     await database.surveyDao.upsertAll(
       [mapped.survey],
       {mapped.survey.id.value: mapped.questions},
     );
-
-    final pending = await database.surveyDao.pendingAdoptedSurveys();
-    expect(pending.map((row) => row.id), [cloneId]);
+    expect(
+      (await database.surveyDao.pendingAdoptedSurveys()).map((row) => row.id),
+      [cloneId],
+    );
   });
+
+  test(
+    'a second handset in the team keys member sheets the same way',
+    () async {
+      await uploader.queuePending(config: config, userId: 'user-1');
+      final payload = decoded((await outbox.due()).single);
+      await drain();
+      await submissions.createBulkSurveySubmissions(cloneId, const [
+        'member-1',
+      ]);
+
+      // Device B has never seen this row, so `_presentOrAbsent` cannot preserve
+      // anything: whatever the wire carries is all it gets.
+      final b = AppDatabase.memory();
+      addTearDown(b.close);
+      final bSubmissions = SubmissionsRepository(
+        api,
+        b.submissionDao,
+        b.submitPhotosDao,
+        b.surveyDao,
+        b.examDao,
+        teamDao: b.teamDao,
+      );
+      final mapped = SurveyMapper.fromDoc({...payload, '_rev': '1-abc'})!;
+      await b.surveyDao.upsertAll(
+        [mapped.survey],
+        {mapped.survey.id.value: mapped.questions},
+      );
+      final onB = (await b.surveyDao.getById(cloneId))!;
+      expect(
+        onB.courseId,
+        'course-1',
+        reason:
+            'without this B keys the same survey bare and A keys it '
+            'compound — one member, two pending sheets',
+      );
+      expect(
+        onB.needsSync,
+        isFalse,
+        reason: "a row B pulled is not B's to publish",
+      );
+
+      await bSubmissions.createBulkSurveySubmissions(cloneId, const [
+        'member-2',
+      ]);
+      final aKey = (await database.submissionDao.latestPendingByUserAndParent(
+        'member-1',
+        '$cloneId@course-1',
+      ))!.parentId;
+      final bKey = (await b.submissionDao.latestPendingByUserAndParent(
+        'member-2',
+        '$cloneId@course-1',
+      ))!.parentId;
+      expect(aKey, bKey);
+    },
+  );
 
   test(
     'publishing a clone does not block an outsider from finishing the course',
@@ -435,4 +546,85 @@ void main() {
       expect((await database.surveyDao.getById(cloneId))!.rev, isNull);
     },
   );
+
+  /// **The two-leader race, and why a later walk does not rescue it.** The
+  /// port's clone id is deterministic (`'<surveyId>_<teamId>'`) where Kotlin's
+  /// is a UUID, so two leaders adopting the same survey for the same team
+  /// before either syncs converge on one document — better than Kotlin's two,
+  /// but it makes a 409 ordinary. `OutboxDrainer` treats any `code < 500` as
+  /// permanent, and a re-pull leaves `needsSync` set (a mapper's companion
+  /// omits the column and Drift writes only the columns present), so without
+  /// recovery the loser re-POSTs and abandons one outbox row every sync, for
+  /// the life of the install.
+  test(
+    'a 409 adopts the winning document instead of abandoning the row',
+    () async {
+      await uploader.queuePending(config: config, userId: 'user-1');
+      final operation = (await outbox.due()).single;
+      when(
+        () => api.postJsonObject(
+          operation.endpoint,
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            const NetworkError<Map<String, dynamic>>(409, 'Document conflict'),
+      );
+      // The header is asserted, not `any`: `outbox.endpoint` is stored
+      // credential-free on purpose, so an unauthenticated read of a CouchDB
+      // document is a 401 and this recovery would never fire.
+      when(
+        () => api.getJsonObject(
+          '${operation.endpoint}/$cloneId',
+          authHeader: 'Basic x',
+        ),
+      ).thenAnswer(
+        (_) async => NetworkSuccess<Map<String, dynamic>>({
+          '_id': cloneId,
+          '_rev': '1-winner',
+        }),
+      );
+
+      expect(
+        await uploader.handler(operation, decoded(operation), 'Basic x'),
+        isA<NetworkSuccess<Map<String, dynamic>>>(),
+      );
+      final clone = (await database.surveyDao.getById(cloneId))!;
+      expect(clone.rev, '1-winner');
+      expect(clone.needsSync, isFalse);
+      expect(await database.surveyDao.pendingAdoptedSurveys(), isEmpty);
+    },
+  );
+
+  test('a 409 whose document cannot be read stays a failure', () async {
+    await uploader.queuePending(config: config, userId: 'user-1');
+    final operation = (await outbox.due()).single;
+    when(
+      () => api.postJsonObject(
+        operation.endpoint,
+        any(),
+        authHeader: any(named: 'authHeader'),
+      ),
+    ).thenAnswer(
+      (_) async =>
+          const NetworkError<Map<String, dynamic>>(409, 'Document conflict'),
+    );
+    when(
+      () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer(
+      (_) async => const NetworkError<Map<String, dynamic>>(503, 'Unavailable'),
+    );
+
+    // Clearing the flag with no rev in hand would drop the clone out of the
+    // prune exemption while it is still, as far as this device knows,
+    // unpublished — the destruction this whole file is about.
+    expect(
+      await uploader.handler(operation, decoded(operation), 'Basic x'),
+      isA<NetworkError<Map<String, dynamic>>>(),
+    );
+    final clone = (await database.surveyDao.getById(cloneId))!;
+    expect(clone.needsSync, isTrue);
+    expect(clone.rev, isNull);
+  });
 }

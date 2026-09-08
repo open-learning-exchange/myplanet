@@ -109,7 +109,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 46;
+  int get schemaVersion => 47;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -405,6 +405,21 @@ class AppDatabase extends _$AppDatabase {
       if (from < 46) {
         await _addColumnIfMissing(m, teamTasks, teamTasks.sync);
         await _addColumnIfMissing(m, teamTasks, teamTasks.link);
+      }
+
+      // v47 adds `Surveys.needsSync`, the local-authorship flag an adopted
+      // team clone is published on. No hand-written step: `surveys` is not in
+      // [_localAuthorityTables], so it is dropped above and `createAll`
+      // recreates it with the column. Which also means the bump itself
+      // destroys an unpublished clone — pre-existing for this table and
+      // recorded in the phase notes, not something this column changes.
+      //
+      // The default is `false`, which is correct for every row a re-sync
+      // refills: a survey the server sent is not this device's to publish.
+      if (from < 47) {
+        // Deliberately empty. Kept as an explicit branch so the next reader
+        // sees that v47 was considered here and needs nothing, rather than
+        // wondering whether a step was forgotten.
       }
     },
   );
@@ -2850,27 +2865,37 @@ class SurveyDao extends DatabaseAccessor<AppDatabase> with _$SurveyDaoMixin {
   /// `rev IS NULL` separates "this device minted it and nobody else has it"
   /// from "the server sent it" — the same conjunction Phase 136 had to restore
   /// in `hasUnfinishedSurveys` after shipping half of it.
-  Future<List<SurveyRow>> pendingAdoptedSurveys() => (select(
-    surveys,
-  )..where((row) => row.sourceSurveyId.isNotNull() & row.rev.isNull())).get();
+  Future<List<SurveyRow>> pendingAdoptedSurveys() =>
+      (select(surveys)..where((row) => row.needsSync.equals(true))).get();
 
   /// Records that an adopted clone became a real CouchDB document.
   ///
-  /// **Kotlin does not do this**, and the omission is a defect rather than a
-  /// behaviour to port: `UploadConfigs.AdoptedSurveys` declares no
-  /// `responseHandler` and no `markUploaded` (contrast `Meetups`, five lines
-  /// above it, which has both), so the row keeps `_rev = NULL`, stays in
-  /// `getPendingAdoptedSurveys()` for the life of the install, and is re-POSTed
-  /// on every sweep — `serializeExam` always writes `_id`
-  /// (`StepExam.kt:73`), so CouchDB answers the second POST with a 409 and
-  /// every one after it, silently.
+  /// **This is at parity with Kotlin, and an earlier revision of this comment
+  /// said the opposite.** `UploadConfigs.AdoptedSurveys` declares no
+  /// `markUploaded` and no `responseHandler`, which is what the declaration
+  /// looks like — but `UploadConfig` carries a **default** `persistUploaded`
+  /// keyed on the model class (`UploadConfig.kt:46-56`,
+  /// `StepExam::class -> UploadUpdateType.Exams`), which
+  /// `UploadRepositoryImpl.markExamsUploaded` resolves to
+  /// `exam._rev = result.remoteRev` (`UploadRepositoryImpl.kt:76`), and
+  /// `runPipeline` calls it on every successful batch
+  /// (`UploadCoordinator.kt:63-68`). So Kotlin records the rev, its row leaves
+  /// `getPendingAdoptedSurveys()`, and there is no second POST. The `Meetups`
+  /// contrast was wrong twice over: `Meetups` is a `RoomUploadConfig`, whose
+  /// `persistUploaded` *is* only that lambda (`RoomUploadConfig.kt:42-45`) so
+  /// it has no default to fall back on, and its
+  /// `ResponseHandler.Custom("id", "rev")` is byte-identical to the `Standard`
+  /// default (`UploadConfig.kt:24`).
   ///
-  /// Recording the rev also gives [deleteNotIn] a precise exemption. Without it
-  /// the only predicate available would be "spare every clone forever", which
-  /// would keep a clone whose server document has since been deleted.
+  /// Recorded here because the port needs it for the same reason Kotlin does,
+  /// plus one Kotlin does not have: [deleteNotIn] prunes this table where
+  /// Kotlin never deletes from `exams` at all, so clearing
+  /// [Surveys.needsSync] is what hands a published clone back to the walk that
+  /// now names it. Kotlin's `_rev` write and this one are the same statement
+  /// serving two purposes.
   Future<int> markUploaded(String id, String rev) =>
       (update(surveys)..where((row) => row.id.equals(id))).write(
-        SurveysCompanion(rev: Value(rev)),
+        SurveysCompanion(rev: Value(rev), needsSync: const Value(false)),
       );
 
   /// See [MeetupDao.deleteNotIn] for why the difference is taken in Dart and
@@ -2898,8 +2923,7 @@ class SurveyDao extends DatabaseAccessor<AppDatabase> with _$SurveyDaoMixin {
         await (selectOnly(surveys)
               ..addColumns([surveys.id])
               ..where(
-                surveys.stepId.isNull() &
-                    (surveys.sourceSurveyId.isNull() | surveys.rev.isNotNull()),
+                surveys.stepId.isNull() & surveys.needsSync.equals(false),
               ))
             .map((row) => row.read(surveys.id)!)
             .get();

@@ -254,6 +254,7 @@ void main() {
           totalMarks: 0,
           isFromNation: false,
           teamShareAllowed: false,
+          needsSync: false,
         ),
         questions: const [],
         userId: 'user-2',

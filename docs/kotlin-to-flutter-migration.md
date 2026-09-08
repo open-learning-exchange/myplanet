@@ -886,18 +886,51 @@ Deliberate *deviations*, all flagged in code:
   while the only two type literals the tree does write are the singular `"exam"` and `"survey"`
   fallbacks, which no Kotlin query ever selects on.
 
-- **An adopted team survey's upload records the CouchDB rev; Kotlin's records nothing.**
-  `UploadConfigs.AdoptedSurveys` (`UploadConfigs.kt:186-195`) declares no
-  `responseHandler` and no `markUploaded` — unlike `Meetups` five lines above it, which has
-  both — so the local row keeps `_rev = NULL`, stays in
-  `ExamDao.getPendingAdoptedSurveys()` for the life of the install, and is re-POSTed on
-  every sweep; `serializeExam` always writes `_id` (`StepExam.kt:73`), so CouchDB answers
-  the second POST with a 409 and every one after it, silently.
-  `AdoptedSurveysUploader.handler` calls `SurveyDao.markUploaded` instead. The rev is also
-  what scopes the port's prune exemption: Kotlin never deletes from `exams` at all
-  (`bulkInsertExamsFromSync` upserts, and `ExamDao.deleteById` has zero production callers),
-  while the port's `SurveyDao.deleteNotIn` has to spare an unpublished clone explicitly —
-  and only an unpublished one, so a document the server has stopped naming is still pruned.
+- **An adopted team survey is published, and an unpublished one is spared from the prune
+  by a local-authorship flag rather than by `_rev IS NULL`.** Kotlin's sweep is
+  `ExamDao.getPendingAdoptedSurveys()` — `sourceSurveyId IS NOT NULL AND _rev IS NULL`
+  (`ExamDao.kt:21`) — and that names exactly one writer, because `JsonUtils.getString`
+  returns `""` for a missing key (`JsonUtils.kt:64-68`) and both sync writers assign
+  `_rev` unconditionally (`StepExam.kt:47`, `CoursesRepositoryImpl.kt:736`), so a synced
+  Kotlin row's `_rev` is `""` and never NULL. Only `createMappedSurvey`'s explicit
+  `_rev = null` satisfies it.
+
+  **The port cannot ask that question.** Its mappers use `getStringOrNull`, so an absent
+  `_rev` becomes the same NULL an unpublished clone has — true of every course-embedded
+  survey (a sub-object carries no `_rev`) and every public-API one — and
+  `sourceSurveyId` is no help, since the courses walk reads it straight off the server.
+  A first cut of this predicate swept another team's private copy and POSTed it to `exams`
+  under the signed-in user's credentials. `Surveys.needsSync` (schema v47) is set only by
+  `adoptSurvey` and cleared by `SurveyDao.markUploaded`, which makes both the sweep and the
+  prune exemption exact.
+
+  The port also prunes this table, where Kotlin never deletes from `exams` at all
+  (`bulkInsertExamsFromSync` upserts, and `ExamDao.deleteById` has zero production callers).
+  So `markUploaded` serves two purposes here against Kotlin's one: it records the rev, as
+  Kotlin does — via `UploadConfig`'s **default** `persistUploaded`
+  (`UploadConfig.kt:46-56`, `StepExam::class -> UploadUpdateType.Exams`) reaching
+  `exam._rev = result.remoteRev` (`UploadRepositoryImpl.kt:76`), not via the
+  `markUploaded` lambda the config declaration omits — and it clears the flag that keeps a
+  clone out of the prune.
+
+  `UploadCoordinator`'s 409 arm (`UploadCoordinator.kt:169-204`) is ported alongside it,
+  and the port needs it *more* than Kotlin does: Kotlin mints the clone id with
+  `UUID.randomUUID()` so two leaders adopting the same survey write two documents, while
+  the port's deterministic `'<surveyId>_<teamId>'` converges on one — better, but it makes
+  a conflict ordinary. Without recovery the loser is stuck for good, because a re-pull does
+  **not** clear the flag: a mapper's companion omits the column and Drift's
+  `insertOnConflictUpdate` writes only the columns present, so the row gains a `rev` and
+  stays swept, re-POSTing and abandoning one outbox row every sync.
+
+- **The uploaded clone carries `courseId`, which neither app's serializer emits.** A clone
+  copies the source survey's `courseId` and the member sheets Send writes are keyed
+  `"<cloneId>@<courseId>"`. Without the key on the wire only the authoring handset keeps
+  the value (`SurveyMapper.fromDoc` writes `courseId` absent when the document omits it);
+  a second handset in the team gets NULL and keys the same survey's sheets bare, so one
+  member gets two pending sheets and the column oscillates between the repair sweep and
+  the next pull. Kotlin is *consistent* rather than correct — its re-pull wipes the column
+  on the authoring handset too, which is why `getSurveyInfos.resolveParentId` accepts both
+  key shapes (`SurveysRepositoryImpl.kt:304-307`). The port has no such tolerant reader.
 
 - **`hasUnfinishedSurveys` skips an adopted team clone; Kotlin's gate has no such rule
   because it cannot see one.** `getSurveysByCourseId` filters

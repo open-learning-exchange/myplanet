@@ -571,6 +571,7 @@ void main() {
           totalMarks: 0,
           isFromNation: false,
           teamShareAllowed: false,
+          needsSync: false,
         ),
         const [],
       );
@@ -600,6 +601,7 @@ void main() {
           isFromNation: false,
           teamId: 'team-9',
           teamShareAllowed: false,
+          needsSync: false,
           sourceSurveyId: 'survey-0',
           courseId: 'course-1',
         ),
@@ -662,6 +664,7 @@ void main() {
           totalMarks: 0,
           isFromNation: false,
           teamShareAllowed: false,
+          needsSync: false,
         ),
         const [],
       );

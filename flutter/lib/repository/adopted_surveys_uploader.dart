@@ -65,12 +65,44 @@ class AdoptedSurveysUploader {
   /// list `adoptSurvey` is reachable from queries `type = "surveys"`
   /// (`ExamDao.kt:29-31`), so the source, and therefore the clone, is always
   /// plural.
+  /// **`courseId` is emitted, which neither app's serializer does**, and it is
+  /// the one deliberate addition to the wire format here.
+  ///
+  /// A clone copies the source survey's `courseId` (`adoptSurvey`, ported from
+  /// `createMappedSurvey`, `SurveysRepositoryImpl.kt:181`) and the member
+  /// sheets Send writes are keyed `"<cloneId>@<courseId>"`. Without the key on
+  /// the wire the *authoring* handset keeps its value only because
+  /// `SurveyMapper.fromDoc` writes `courseId` `Value.absent()` when the
+  /// document omits it — but a **second** handset in the team, which has never
+  /// seen the row, gets NULL, so its Send keys the same survey's sheets bare
+  /// and `latestPendingByUserAndParent` cannot see the other device's sheet.
+  /// One member ends up with two pending sheets for one survey, and
+  /// `repairCourseSurveyParentIds` and the next pull rewrite the column past
+  /// each other. That is the Phase 120/125 writer-reader key class, across
+  /// devices rather than across layers, and it becomes reachable only because
+  /// this class publishes the clone at all.
+  ///
+  /// Kotlin is *consistent* here rather than correct: `serializeExam` emits no
+  /// `courseId` either, and its own re-pull wipes the column on the authoring
+  /// handset too (`bulkInsertExamsFromSync` passes `("", "", doc, "")` and
+  /// Room's `@Upsert` is a whole-row replace), which is why
+  /// `getSurveyInfos.resolveParentId` has to accept both key shapes
+  /// (`SurveysRepositoryImpl.kt:304-307`). The port has no such tolerant
+  /// reader, so it needs the value instead.
+  ///
+  /// Safe to add: nothing contends for the column on a clone. The courses walk
+  /// owns `courseId`/`stepId` and retires them together
+  /// (`SurveyDao.releaseStepJoinsForCourse`), but a clone is in no course
+  /// document and carries no `stepId`, so that update cannot select it. And a
+  /// clone arriving with a `courseId` is still skipped by
+  /// `hasUnfinishedSurveys`, whose guard is `stepId == null`.
   static Map<String, dynamic> documentFor(
     SurveyRow survey,
     List<SurveyQuestionRow> questions,
   ) => {
     ...SubmissionsRepository.surveyParentDocument(survey, questions),
     'type': 'surveys',
+    if (survey.courseId != null) 'courseId': survey.courseId,
   };
 
   /// Queues every adopted clone that has not reached the server.
@@ -128,8 +160,8 @@ class AdoptedSurveysUploader {
       final couchId = data['id'];
       final rev = data['rev'];
       if (couchId is! String || rev is! String) {
-        // Reporting success would drop the outbox row while the clone keeps
-        // `rev == null`, so it would stay in `pendingAdoptedSurveys()` and be
+        // Reporting success would drop the outbox row while the clone stays
+        // `needsSync`, so it would stay in `pendingAdoptedSurveys()` and be
         // POSTed again on the next sweep.
         return const NetworkError<Map<String, dynamic>>(
           null,
@@ -141,8 +173,8 @@ class AdoptedSurveysUploader {
         // and the two are the same string. If a server ever answers with a
         // different id, the document is unreachable from every local key that
         // embeds this row's id — a member's answer sheet keys on
-        // `"<surveyId>@<courseId>"` — and recording a rev against the local id
-        // would claim a round trip that did not happen.
+        // `"<surveyId>@<courseId>"` — and clearing `needsSync` against the
+        // local id would claim a round trip that did not happen.
         return NetworkError<Map<String, dynamic>>(
           null,
           'Adopted survey stored under $couchId, not ${row.itemId}',
@@ -150,6 +182,62 @@ class AdoptedSurveysUploader {
       }
       await _surveyDao.markUploaded(row.itemId, rev);
     }
+    if (result case NetworkError<Map<String, dynamic>>(
+      :final code,
+    ) when code == 409) {
+      return _adoptExistingDocument(row, authHeader, result);
+    }
     return result;
   };
+
+  /// Port of `UploadCoordinator`'s 409 arm (`UploadCoordinator.kt:169-204`):
+  /// GET the document that already exists, take its `_rev`, and report the
+  /// upload as the success it effectively was.
+  ///
+  /// **The port needs this more than Kotlin does, because its clone id is
+  /// deterministic.** Kotlin mints one with `UUID.randomUUID()`
+  /// (`SurveysRepositoryImpl.kt:86`), so two leaders adopting the same survey
+  /// for the same team write two documents; the port's
+  /// `'${surveyId}_$teamId'` (`surveys_repository.dart:105`) converges on one,
+  /// which is better — but it makes a conflict ordinary rather than freakish,
+  /// since neither leader has synced yet and `adoptedTeamSurvey` can only
+  /// dedupe locally.
+  ///
+  /// Without this the loser is permanently stuck: `OutboxDrainer` classifies
+  /// any `code < 500` as permanent (`outbox_drainer.dart:160-172`) so the row
+  /// is abandoned, and **a later walk does not rescue it** — a mapper's
+  /// companion leaves `needsSync` absent, and Drift's `insertOnConflictUpdate`
+  /// writes only the columns present, so the re-pull hands the row a `rev` and
+  /// leaves the flag set. Probed: `needsSync=true rev=1-winner`, still swept.
+  /// `OutboxDao.findOpen` ignores an `abandoned` row, so every sweep
+  /// thereafter inserts a fresh one and makes a fresh doomed POST, for the
+  /// life of the install, in a table schema bumps preserve.
+  ///
+  /// A GET that fails returns the original 409 rather than inventing success:
+  /// clearing the flag without a rev would drop the clone out of the prune
+  /// exemption while it is still, as far as this device knows, unpublished.
+  Future<NetworkResult<Map<String, dynamic>>> _adoptExistingDocument(
+    OutboxRow row,
+    String? authHeader,
+    NetworkResult<Map<String, dynamic>> conflict,
+  ) async {
+    final existing = await _api.getJsonObject(
+      '${row.endpoint}/${row.itemId}',
+      // The drain's credential, not none: `outbox.endpoint` is stored
+      // credential-free on purpose, so an unauthenticated read of a CouchDB
+      // document is a 401 and this recovery would never fire.
+      authHeader: authHeader,
+    );
+    if (existing case NetworkSuccess<Map<String, dynamic>>(:final data)) {
+      final rev = data['_rev'];
+      if (rev is String && rev.isNotEmpty) {
+        await _surveyDao.markUploaded(row.itemId, rev);
+        return NetworkSuccess<Map<String, dynamic>>({
+          'id': row.itemId,
+          'rev': rev,
+        });
+      }
+    }
+    return conflict;
+  }
 }
