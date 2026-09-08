@@ -306,7 +306,11 @@ final chatShareTargetsProvider = FutureProvider<ChatShareTargets>((ref) async {
   final enterprises = await _shareableTargets(repo, 'enterprise', userId);
 
   final communityName = prefs.communityName;
-  final parentCode = prefs.serverConfig?.parentCode ?? '';
+  // `sharedPrefManager.getParentCode()`. Read from the live config notifier
+  // rather than straight off `PlanetPrefs`, which is the same value — the
+  // notifier is built from that pref — but is the port's canonical handle on
+  // it and is overridable.
+  final parentCode = ref.watch(serverConfigProvider)?.parentCode ?? '';
   ChatShareTarget? community;
   if (communityName.trim().isNotEmpty && parentCode.trim().isNotEmpty) {
     final id = '$communityName@$parentCode';
