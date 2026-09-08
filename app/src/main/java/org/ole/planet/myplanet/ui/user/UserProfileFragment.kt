@@ -93,8 +93,10 @@ class UserProfileFragment : Fragment() {
             if (result.resultCode == RESULT_OK && result.data != null) {
                 val uri = result.data?.data ?: return@registerForActivityResult
                 viewLifecycleOwner.lifecycleScope.launch {
+                    val appContext = requireContext().applicationContext
+                    val filesDir = requireContext().filesDir
                     val path = withContext(dispatcherProvider.io) {
-                        FileUtils.resolveUriToPath(requireContext().applicationContext, uri, requireContext().filesDir)
+                        FileUtils.resolveUriToPath(appContext, uri, filesDir)
                     }
                     if (path != null) {
                         startIntent(path)
@@ -106,9 +108,19 @@ class UserProfileFragment : Fragment() {
         }
 
         captureImageLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { isSuccess ->
-            if (isSuccess) {
-                startIntent(photoURI?.toString())
-                binding.image.setImageURI(photoURI)
+            val uri = photoURI
+            if (isSuccess && uri != null) {
+                binding.image.setImageURI(uri)
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val appContext = requireContext().applicationContext
+                    val filesDir = requireContext().filesDir
+                    val path = withContext(dispatcherProvider.io) {
+                        FileUtils.resolveUriToPath(appContext, uri, filesDir)
+                    }
+                    if (path != null) {
+                        startIntent(path)
+                    }
+                }
             }
         }
 
