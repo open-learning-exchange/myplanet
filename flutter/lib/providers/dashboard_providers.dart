@@ -63,32 +63,47 @@ final myLibraryStreamProvider =
 ///   that storm; drift coalesces its own updates, and the write is a no-op when
 ///   the count is unchanged (`updateResourceNotification` returns early on an
 ///   equal message), so a burst of shelf writes costs at most one row update.
-/// * **No permission trigger.** It exists so the Kotlin can *raise an OS
-///   notification* it suppressed while permission was denied. This row is a
-///   bell row only — `DashboardUiState.newNotifications` has no writer, so
-///   `createResourceNotification` never fires in the Android app either
-///   (`PHASE_130_NOTES.md`). Nothing to re-raise.
+/// * **No permission trigger.** `onNotificationPermissionGranted`
+///   (`:1116-1121`) does not raise anything — its `super` is a bare toast
+///   (`BasePermissionActivity.kt:487-489`) and its body is the *same*
+///   `checkAndCreateNewNotifications` call as the other two triggers, so it
+///   writes this row rather than re-raising a suppressed one. It needs no port
+///   for a different reason: granting a permission changes nothing in
+///   `my_library`, so the live count stream already holds the value that call
+///   would have recomputed.
 ///
 /// The unread badge needs no equivalent of `checkAndCreateNewNotifications`'
 /// second half: `unreadNotificationCountProvider` is itself a drift stream, so
 /// writing the row updates the badge without a push into UI state.
 ///
+/// **`autoDispose`, unlike every other family in this file.** The neighbours
+/// are pure readers, where a stream outliving its screen costs nothing; this
+/// one *writes*. A plain family's element lives for the container's lifetime,
+/// and `SessionNotifier.signOut` invalidates nothing — so after logout the
+/// stream would stay subscribed and a later sync would rewrite the previous
+/// user's row, unread, stamped from inside somebody else's session. Kotlin
+/// cannot: `collectWhenStarted` is `repeatOnLifecycle(STARTED)` bound to the
+/// activity (`FlowExtensions.kt:38-43`), so the collection stops when the
+/// dashboard does. Auto-disposing gives the port that same lifetime.
+///
+/// Tab switches are unaffected either way — `DashboardShell` is a
+/// `StatefulShellRoute`, so `HomeScreen` stays mounted across branches, which
+/// is the Kotlin activity's scope too.
+///
 /// The count is a value, not a void, so a test can assert what was written and
 /// a caller can watch it; the write is the point.
-final resourceUpdateNotificationProvider = StreamProvider.family<int, String>((
-  ref,
-  userId,
-) {
-  if (userId.isEmpty) return Stream.value(0);
-  final notifications = ref.watch(notificationsRepositoryProvider);
-  return ref
-      .watch(resourcesRepositoryProvider)
-      .watchResourcesNeedingUpdateCount(userId)
-      .asyncMap((count) async {
-        await notifications.updateResourceNotification(userId, count);
-        return count;
-      });
-});
+final resourceUpdateNotificationProvider = StreamProvider.autoDispose
+    .family<int, String>((ref, userId) {
+      if (userId.isEmpty) return Stream.value(0);
+      final notifications = ref.watch(notificationsRepositoryProvider);
+      return ref
+          .watch(resourcesRepositoryProvider)
+          .watchResourcesNeedingUpdateCount(userId)
+          .asyncMap((count) async {
+            await notifications.updateResourceNotification(userId, count);
+            return count;
+          });
+    });
 
 /// The user's joined courses — `coursesRepository.getMyCoursesFlow(userId)`,
 /// including its blank-title filter (`renderMyCourses` drops those before

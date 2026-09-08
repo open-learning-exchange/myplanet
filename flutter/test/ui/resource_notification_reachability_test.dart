@@ -285,4 +285,67 @@ void main() {
     expect(row, isNotNull, reason: 'Kotlin has no guest gate on this path');
     expect(row!.message, '1');
   });
+
+  test('the writer does not outlive the dashboard', () async {
+    // `setupDashboardDataObserver` (`DashboardActivity.kt:591-595`) collects
+    // through `collectWhenStarted`, i.e. `repeatOnLifecycle(STARTED)`
+    // (`FlowExtensions.kt:38-43`), bound to the activity. When the dashboard
+    // finishes — logout, or any route that replaces it — the collection stops
+    // and nothing rewrites the row until the user opens the dashboard again.
+    //
+    // A plain `StreamProvider.family` does not do that: its element lives for
+    // the container's lifetime, so the stream stays subscribed after the last
+    // listener goes and keeps writing. `SessionNotifier.signOut` invalidates
+    // nothing, so the concrete failure is: Alice reads her notification and
+    // logs out, Bob signs in and syncs, the sync writes `my_library`, and
+    // *Alice's* row is rewritten unread with a `createdAt` from inside Bob's
+    // session — which is the sort key for `watchForUser`
+    // (`ORDER BY isRead ASC, createdAt DESC`) and the relative-time label.
+    //
+    // Hence `.autoDispose`. Note the neighbouring families in this file are
+    // deliberately *not* auto-disposing — they are pure readers, where a stale
+    // live stream costs nothing. This is the only one that writes.
+    const userId = 'org.couchdb.user:alice';
+    final container = ProviderContainer(
+      overrides: [appDatabaseProvider.overrideWithValue(database)],
+    );
+    addTearDown(container.dispose);
+
+    await database.myLibraryDao.upsertAll([
+      resource('a', userId: const [userId]),
+    ]);
+
+    final subscription = container.listen(
+      resourceUpdateNotificationProvider(userId),
+      (_, _) {},
+      fireImmediately: true,
+    );
+    await pumpEventQueue();
+    expect(
+      await database.notificationDao.getById('$userId:resource:count'),
+      isNotNull,
+      reason: 'the dashboard writes while it is listening',
+    );
+
+    // The dashboard goes away, and the row is cleared the way a user deleting
+    // it from the bell would clear it.
+    subscription.close();
+    // Riverpod schedules auto-disposal rather than doing it inline, so the
+    // cancellation has to be given a turn of the event loop before the row is
+    // cleared — otherwise the stream is still live and simply rewrites it.
+    await pumpEventQueue();
+    await database.notificationDao.deleteById('$userId:resource:count');
+
+    // Someone else's session syncs and touches the shelf.
+    await database.myLibraryDao.upsertAll([
+      resource('b', userId: const [userId]),
+    ]);
+    await pumpEventQueue();
+
+    expect(
+      await database.notificationDao.getById('$userId:resource:count'),
+      isNull,
+      reason: 'nothing should write this row once the dashboard is gone',
+    );
+  });
 }

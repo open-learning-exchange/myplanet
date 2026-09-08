@@ -121,10 +121,17 @@ Three omissions, each deliberate and none an invention:
   trip; a drift stream's first emission is already off the first frame;
 * **no 5 s throttle** — it guards storming Realm change callbacks, and the write
   is already a no-op on an unchanged count;
-* **no permission trigger** — it exists so Kotlin can raise an OS notification
-  it suppressed, and `createResourceNotification` has no production caller in
-  the Android app either (`DashboardUiState.newNotifications` has no writer;
-  `PHASE_130_NOTES.md` found the same thing from the other end).
+* **no permission trigger** — and *not* for the reason the first draft of this
+  file gave. `onNotificationPermissionGranted` (`:1116-1121`) raises nothing:
+  its `super` is a bare toast (`BasePermissionActivity.kt:487-489`) and its body
+  is the same `checkAndCreateNewNotifications` call as the other two triggers,
+  so it writes this row rather than re-raising a suppressed notification. It
+  needs no port because granting a permission changes nothing in `my_library`,
+  so the live count stream already holds the value that call would recompute.
+  (The claim it replaces — that the trigger re-raises an OS notification — was
+  the "named the right function and misread it" shape again, in the very file
+  documenting that shape. `createResourceNotification` really does have no
+  production caller, but that is a separate fact and not this trigger's job.)
 
 ### The phase title was wrong, and so was the row it described
 
@@ -255,17 +262,105 @@ exam screen: **a failure that names a timer is the harness, not the behaviour.**
 
 ---
 
+## What the second audit found in this lane's own finished code
+
+Run against the green diff, as `CLAUDE.md` requires. It confirmed the SQL
+character-for-character against the generated table, re-ran all three mutations
+this phase claimed (`IS NOT`→`!=`: 1 red; shelf→catalog predicate: 9 red;
+watch above the inactive return: 1 red), and established two things this lane
+had not checked and had been lucky about:
+
+* **`asyncMap` pausing a drift stream loses nothing.** `QueryStream` only calls
+  `markAsClosed` when its listener set is *empty*; a pause keeps the
+  table-change subscription alive and refetches on resume, and the resume
+  re-push cannot loop because `_QueryStreamListener.add` drops an identical row.
+  Measured: one emission on mount, one per write, none over 300 ms idle.
+* **A throwing write does not terminate the stream.** With a repository whose
+  first `updateResourceNotification` throws, the provider goes to `AsyncError`,
+  the stream survives, and the next `my_library` write retries and succeeds.
+  That is `DashboardViewModel.kt:354-362`'s `try/catch { printStackTrace }` plus
+  its re-triggering, reproduced — `HomeScreen` discards the `AsyncValue`, so
+  nothing surfaces to the user, matching.
+
+And it found one real divergence, plus three factual errors in this file.
+
+### The writer outlived the dashboard
+
+`resourceUpdateNotificationProvider` was a plain `StreamProvider.family`, so its
+element lived for the container's lifetime rather than the screen's, and
+`SessionNotifier.signOut` invalidates nothing. Kotlin cannot do this:
+`collectWhenStarted` is `repeatOnLifecycle(STARTED)` bound to the activity, and
+the collection stops when the dashboard finishes.
+
+The concrete failure: Alice reads her notification and logs out; Bob signs in
+and syncs; the sync writes `my_library`; **Alice's** row is rewritten unread with
+a `createdAt` from inside Bob's session. Not data loss — it converges when Alice
+next opens the dashboard — but `createdAt` is the sort key for
+`NotificationDao.watchForUser` (`ORDER BY isRead ASC, createdAt DESC`) and drives
+the relative-time label, so the row's position and age are wrong meanwhile.
+
+Demonstrated failing (`the writer does not outlive the dashboard`), fixed with
+`.autoDispose`, and mutation-checked: reverting to a plain family turns that one
+test red again. Worth stating because the house style points the other way — the
+neighbouring families in `dashboard_providers.dart` are deliberately not
+auto-disposing, and that is right for all of them, because **they are pure
+readers**. This is the only provider in the file that writes, which is exactly
+what makes a stale live stream cost something. The comment at the call site had
+claimed the subscription "lives exactly as long as the dashboard does"; it now
+does, rather than only saying so.
+
+### A fresh dead method, in the phase about dead methods
+
+`ResourcesRepository.countResourcesNeedingUpdate` — the `Future` form, the
+literal shape of the Kotlin `countLibrariesNeedingUpdate` — had no production
+caller. Only the stream form is used, and only tests called the other. A phase
+whose stated subject is retiring ported-tested-green-and-dead code has no
+business leaving a new instance behind, so it and the DAO method under it are
+deleted; the tests now call the stream through a one-line `countNeedingUpdate`
+helper, which has the side benefit of exercising the production path.
+
+### Three corrections to this file
+
+Recorded in place above rather than only here, because the next round is briefed
+from the *Reported, not fixed* list and a wrong entry there is worse than a
+missing one.
+
+1. **The permission-trigger rationale was wrong.**
+   `onNotificationPermissionGranted` raises nothing — same body as the other two
+   triggers. Corrected in the omissions list; the conclusion survives for a
+   different reason.
+2. **"Reported, not fixed" item 1 named two unescaped `LIKE` sites; there are
+   five**, two of them in `CourseDao`. A lane briefed from the short list would
+   have fixed resources and left courses — the half-migration shape that has
+   cost rounds before. Now a table.
+3. **`resource_local_address IS NOT NULL` is not "a file on disk".**
+   `MyLibraryMapper._attachmentOf` writes the CouchDB attachment *name* there on
+   every sync, downloaded or not (`MyLibrary.kt:262` does the same, so parity is
+   intact and the query is right). The gloss would have led a reader to
+   mis-predict the offline-with-no-attachment fixture, which passes only because
+   it is a shape a sync cannot produce. Corrected at the column and in the test.
+
 ## Reported, not fixed
 
-1. **`MyLibraryDao.watchResources` does not escape its `LIKE` pattern**, where
-   the count added here does and the Kotlin does throughout. It interpolates
-   `'%"$shelfUserId"%'` directly, so a user id containing `_` (LIKE's
-   single-character wildcard) matches another user's shelf entry, and one
-   containing `%` matches almost anything. The file is in this lane's set but
-   the change is outside this phase: it moves catalog/shelf membership for every
-   consumer of `resources_providers.dart`, which is not, and it wants its own
-   failing-first test per call site. `likeEscapedUserPattern` is now available
-   for whoever takes it. Same applies to `resourcesOnShelf` on the line above.
+1. **Five unescaped `LIKE` interpolations in `app_database.dart`**, where the
+   count added here escapes and the Kotlin escapes throughout
+   (`ResourcesRepositoryImpl.userIdPattern`, `CoursesRepositoryImpl.userIdPattern`).
+   A user id containing `_` — LIKE's single-character wildcard — matches another
+   user's shelf entry; one containing `%` matches almost anything. All five,
+   because a list naming two of them would get half the class fixed:
+
+   | line | site |
+   |---|---|
+   | `1108` | `MyLibraryDao.watchResources`, shelf arm |
+   | `1114` | `MyLibraryDao.watchResources`, catalog arm (`.not()`) |
+   | `1134` | `MyLibraryDao.resourcesOnShelf` |
+   | `1430` | `CourseDao.watchCourses` |
+   | `1486` | `CourseDao.coursesOnShelf` |
+
+   Outside this phase: the change moves catalog/shelf membership for every
+   consumer of `resources_providers.dart` and `courses_providers.dart`, and it
+   wants a failing-first test per call site. `likeEscapedUserPattern` is now
+   available for whoever takes it.
 2. **The JSON/LIKE escaping mismatch is a genuine two-app bug**, described
    above. Nobody should fix it in the port alone: the two apps would then
    disagree about shelf membership for the affected ids. It needs escaping
@@ -277,7 +372,22 @@ exam screen: **a failure that names a timer is the harness, not the behaviour.**
    never be true. Harmless — `'[]'` matches no `%"x"%` pattern — but it is dead
    SQL that reads as a ported condition. Not touched because changing it is a
    schema question.
-4. **The Kotlin's inactive-user gate silences the whole bell, not just this
+4. **The port's `isInactive` carries a `!isGuest` term the Kotlin does not
+   have.** `home_screen.dart:352-356` is
+   `session != null && !isGuest && rolesList.isEmpty && !userAdmin`;
+   `DashboardActivity.kt:302` has no guest term. A user whose `_id` starts
+   `guest_` *and* whose `rolesList` is empty would get the inactive dashboard
+   (and no row) in Kotlin, and the full dashboard plus the row here.
+   Unreachable — `UserRepositoryImpl.kt:150-153` gives every guest
+   `roles: ["guest"]`, and nothing in the port creates a guest row at all — so
+   it is not fixed. Recorded because **this phase's whole placement rationale
+   rests on that predicate**, and the guard added for it cannot separate the two
+   terms: the guest fixture carries `rolesList: const ['guest']`, which fails
+   `!isGuest` and `rolesList.isEmpty` alike. A fixture with
+   `id: 'guest_ada', rolesList: const []` would distinguish them, and should be
+   added by whoever aligns the predicate.
+
+5. **The Kotlin's inactive-user gate silences the whole bell, not just this
    row.** For `rolesList.isEmpty() && userAdmin != true` there is no data
    observer, no notification check and no badge, because `handleGuestAccess`
    returns before `initializeDashboard`. The port's `InactiveDashboardScreen`
@@ -285,18 +395,18 @@ exam screen: **a failure that names a timer is the harness, not the behaviour.**
    obvious from the method name, and because the next person to add a
    dashboard-load side effect will face the same placement question this phase
    got wrong on the first try.
-5. **`updateResourceNotification` upserts on an unchanged count where the port
+6. **`updateResourceNotification` upserts on an unchanged count where the port
    returns early.** Kotlin rewrites `message` and `relatedId` to the same values
    and leaves `isRead`/`createdAt` alone; the port skips the write entirely. The
    observable state is identical unless a row's `relatedId` has drifted from its
    `message`, which no writer can produce. Left alone — the method has six tests
    and is not this phase's to churn.
-6. **`relatedId` on this row is the count, not a resource id**, in both apps,
+7. **`relatedId` on this row is the count, not a resource id**, in both apps,
    and nothing reads it (`NotificationsFragment.kt:128` is
    `"resource" -> openMyFragment(ResourcesFragment())`). It is a field carrying
    a value that looks like an identifier and is not one. Recorded for whoever
    next reads a `relatedId` generically.
-7. **The Android tap opens My Library, the port's opens the catalog.**
+8. **The Android tap opens My Library, the port's opens the catalog.**
    `openMyFragment` overwrites the fragment arguments with `isMyCourseLib = true`
    (`DashboardActivity.kt:951-959`); the port's resolver maps `resource` to
    `/resources`, which is the catalog unless `resourceShelfOnlyProvider` happens

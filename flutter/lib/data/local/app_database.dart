@@ -1135,7 +1135,12 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
 
   /// Port of `MyLibraryDao.countPublicNeedingUpdateForUserPattern`
   /// (`MyLibraryDao.kt:119-124`) — how many of the user's shelf resources are
-  /// not on the device, or are on it but stale.
+  /// not on the device, or are on it but stale. Streams rather than reads once,
+  /// because in the port the stream is also the trigger: the Kotlin recomputes
+  /// on every emission of `DashboardViewModel.dashboardDataFlow` (`:207-214`),
+  /// two of whose four merged flows are `my_library` queries, and `readsFrom`
+  /// makes drift re-run this on any write to that table. Same substitution
+  /// [watchResources] makes for `RealtimeSyncManager.dataUpdateFlow`.
   ///
   /// This is the **shelf** predicate (`userId LIKE`), not the catalog one
   /// (`userId IS NULL OR userId NOT LIKE`) that sits immediately below it in
@@ -1145,11 +1150,15 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
   ///
   /// The third clause is two cases, not one:
   ///
-  /// * `resource_offline = 0` — never downloaded.
+  /// * `resource_offline = 0` — not downloaded.
   /// * `resource_local_address IS NOT NULL AND _rev IS NOT downloaded_rev` —
-  ///   downloaded, but the server document moved on since. `downloadedRev` is
-  ///   stamped by [markDownloaded] and stays put while `rev` follows the sync,
-  ///   which is exactly what makes the comparison meaningful.
+  ///   the document has an attachment and the server has moved past the
+  ///   revision we fetched. Note `resource_local_address` is **not** evidence
+  ///   of a file on disk: `MyLibraryMapper._attachmentOf` writes the CouchDB
+  ///   attachment *name* there on every sync, downloaded or not, exactly as
+  ///   `MyLibrary.kt:262` does. What makes the comparison meaningful is
+  ///   `downloadedRev`, which [markDownloaded] stamps from `rev` when the file
+  ///   actually lands and which then stays put while `rev` follows the sync.
   ///
   /// `IS NOT` is SQLite's **null-safe** inequality, not `!=`: two NULLs compare
   /// equal (so the row is excluded) and NULL against a value compares unequal
@@ -1163,23 +1172,7 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
   /// takes no `ESCAPE`, and the Kotlin pattern is escaped
   /// ([likeEscapedUserPattern]). Keeping the statement verbatim also lets it be
   /// read side by side with the `@Query` it ports.
-  Future<int> countResourcesNeedingUpdate(String userId) async =>
-      (await _needingUpdateQuery(userId).getSingle()).read<int>('c');
-
-  /// The reactive form of [countResourcesNeedingUpdate].
-  ///
-  /// The Kotlin recomputes on every emission of
-  /// `DashboardViewModel.dashboardDataFlow` (`:207-214`), two of whose four
-  /// merged flows are `my_library` queries. `readsFrom` makes drift re-run this
-  /// on any write to that table, which is the same trigger — and the same
-  /// substitution the port already makes for `queryListFlow` /
-  /// `RealtimeSyncManager.dataUpdateFlow` in [watchResources].
-  Stream<int> watchResourcesNeedingUpdateCount(String userId) =>
-      _needingUpdateQuery(
-        userId,
-      ).watchSingle().map((row) => row.read<int>('c'));
-
-  Selectable<QueryRow> _needingUpdateQuery(String userId) => customSelect(
+  Stream<int> watchResourcesNeedingUpdateCount(String userId) => customSelect(
     'SELECT COUNT(*) AS c FROM my_library '
     'WHERE is_private = 0 '
     "AND user_id LIKE ?1 ESCAPE '\\' "
@@ -1187,7 +1180,7 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
     'OR (resource_local_address IS NOT NULL AND _rev IS NOT downloaded_rev))',
     variables: [Variable<String>(likeEscapedUserPattern(userId))],
     readsFrom: {myLibraryTable},
-  );
+  ).watchSingle().map((row) => row.read<int>('c'));
 
   /// Port of `ResourcesRepositoryImpl.removeDeletedResources` — drops local rows
   /// the server no longer lists.

@@ -67,24 +67,21 @@ class ResourcesRepository {
   /// the device or stale on it. Feeds the bell's *"You have N resources not
   /// downloaded"* row.
   ///
+  /// Streaming rather than a `Future`, because in the port the stream *is* the
+  /// trigger. The Kotlin re-runs its suspend count from each of
+  /// `DashboardActivity`'s trigger points; here a drift watch over `my_library`
+  /// covers the load and data-change ones together, the same substitution
+  /// [watchResources] makes for `RealtimeSyncManager.dataUpdateFlow`. A
+  /// `Future` twin was written first and deleted: it had no caller, and a phase
+  /// whose whole subject is retiring ported-but-dead code should not leave a
+  /// fresh one behind.
+  ///
   /// The null guard is the Kotlin's, quirk included: it tests `userId == null`
   /// and **not** `isNullOrBlank`, unlike the sibling `getMyLibrary` /
   /// `getMyLibraryFlow` two methods above it. So a blank user id reaches the
   /// DAO and matches on the pattern `%""%` rather than short-circuiting. It
   /// counts nothing in practice — no shelf list contains an empty string — but
   /// reproducing the guard as written keeps a future divergence honest.
-  Future<int> countResourcesNeedingUpdate(String? userId) {
-    if (userId == null) return Future.value(0);
-    return _dao.countResourcesNeedingUpdate(userId);
-  }
-
-  /// The reactive form of [countResourcesNeedingUpdate], and the one the
-  /// dashboard actually uses.
-  ///
-  /// The Kotlin has no streaming counterpart because it re-runs the suspend
-  /// count from each of `DashboardActivity`'s trigger points; here the stream
-  /// *is* the trigger, the same substitution [watchResources] makes for
-  /// `RealtimeSyncManager.dataUpdateFlow`.
   Stream<int> watchResourcesNeedingUpdateCount(String? userId) {
     if (userId == null) return Stream.value(0);
     return _dao.watchResourcesNeedingUpdateCount(userId);

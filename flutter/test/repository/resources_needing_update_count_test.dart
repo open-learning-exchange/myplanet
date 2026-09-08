@@ -37,6 +37,11 @@ void main() {
 
   tearDown(() => db.close());
 
+  /// The production path — there is no `Future` form to test against, by
+  /// design: the dashboard watches, so the tests watch too.
+  Future<int> countNeedingUpdate(String? userId) =>
+      repository.watchResourcesNeedingUpdateCount(userId).first;
+
   Future<void> insert(
     String id, {
     List<String> userId = const [],
@@ -63,7 +68,7 @@ void main() {
       await insert('theirs', userId: const ['org.couchdb.user:bob']);
       await insert('nobodys');
 
-      expect(await repository.countResourcesNeedingUpdate(userId), 1);
+      expect(await countNeedingUpdate(userId), 1);
     });
 
     test(
@@ -80,26 +85,26 @@ void main() {
         await insert('theirs', userId: const ['org.couchdb.user:bob']);
         await insert('nobodys');
 
-        expect(await repository.countResourcesNeedingUpdate(userId), 1);
+        expect(await countNeedingUpdate(userId), 1);
       },
     );
 
     test('counts a shelf shared with other users', () async {
       await insert('shared', userId: const ['org.couchdb.user:bob', userId]);
-      expect(await repository.countResourcesNeedingUpdate(userId), 1);
+      expect(await countNeedingUpdate(userId), 1);
     });
 
     test('excludes private resources', () async {
       await insert('pub', userId: const [userId]);
       await insert('priv', userId: const [userId], isPrivate: true);
-      expect(await repository.countResourcesNeedingUpdate(userId), 1);
+      expect(await countNeedingUpdate(userId), 1);
     });
   });
 
   group('the download predicate', () {
     test('counts a resource that was never downloaded', () async {
       await insert('a', userId: const [userId]);
-      expect(await repository.countResourcesNeedingUpdate(userId), 1);
+      expect(await countNeedingUpdate(userId), 1);
     });
 
     test('counts a downloaded resource the server has moved past', () async {
@@ -111,7 +116,7 @@ void main() {
         rev: '4-def',
         downloadedRev: '3-abc',
       );
-      expect(await repository.countResourcesNeedingUpdate(userId), 1);
+      expect(await countNeedingUpdate(userId), 1);
     });
 
     test('does not count a downloaded resource that is current', () async {
@@ -123,7 +128,7 @@ void main() {
         rev: '3-abc',
         downloadedRev: '3-abc',
       );
-      expect(await repository.countResourcesNeedingUpdate(userId), 0);
+      expect(await countNeedingUpdate(userId), 0);
     });
 
     test(
@@ -145,7 +150,7 @@ void main() {
           localAddress: '/tmp/a',
           rev: '3-abc',
         );
-        expect(await repository.countResourcesNeedingUpdate(userId), 1);
+        expect(await countNeedingUpdate(userId), 1);
       },
     );
 
@@ -158,15 +163,19 @@ void main() {
         offline: true,
         localAddress: '/tmp/a',
       );
-      expect(await repository.countResourcesNeedingUpdate(userId), 0);
+      expect(await countNeedingUpdate(userId), 0);
     });
 
     test(
       'does not count a resource flagged offline with no local address',
       () async {
         // `resource_local_address IS NOT NULL` is an `AND` *inside* the `OR`,
-        // not a third top-level case: the stale branch needs a file on disk to
-        // be stale about, whatever the revisions say.
+        // not a third top-level case. Note the column holds the CouchDB
+        // attachment *name*, not a path — `MyLibraryMapper._attachmentOf`
+        // writes it on every sync — so a synced resource normally has one and
+        // this fixture (offline with no attachment at all) is a shape only a
+        // hand-built row reaches. It is here to pin the `AND`, not to describe
+        // a state the sync produces.
         await insert(
           'a',
           userId: const [userId],
@@ -174,7 +183,7 @@ void main() {
           rev: '9-zzz',
           downloadedRev: '1-aaa',
         );
-        expect(await repository.countResourcesNeedingUpdate(userId), 0);
+        expect(await countNeedingUpdate(userId), 0);
       },
     );
   });
@@ -182,7 +191,7 @@ void main() {
   group('the null guard', () {
     test('a null user id counts nothing', () async {
       await insert('a', userId: const [userId]);
-      expect(await repository.countResourcesNeedingUpdate(null), 0);
+      expect(await countNeedingUpdate(null), 0);
     });
 
     test('a blank user id reaches the query, as the Kotlin lets it', () async {
@@ -193,7 +202,7 @@ void main() {
       // 0 either way. Pinned because the guard as written is the port's, and a
       // future reader should see the difference is deliberate.
       await insert('a', userId: const [userId]);
-      expect(await repository.countResourcesNeedingUpdate(''), 0);
+      expect(await countNeedingUpdate(''), 0);
     });
   });
 
@@ -205,15 +214,15 @@ void main() {
       await insert('mine', userId: const ['a_b']);
       await insert('theirs', userId: const ['a1b']);
 
-      expect(await repository.countResourcesNeedingUpdate('a_b'), 1);
-      expect(await repository.countResourcesNeedingUpdate('a1b'), 1);
+      expect(await countNeedingUpdate('a_b'), 1);
+      expect(await countNeedingUpdate('a1b'), 1);
     });
 
     test('escapes a user id containing a percent sign', () async {
       await insert('mine', userId: const ['a%b']);
       await insert('theirs', userId: const ['axxb']);
 
-      expect(await repository.countResourcesNeedingUpdate('a%b'), 1);
+      expect(await countNeedingUpdate('a%b'), 1);
     });
 
     test('cannot match a user id containing a backslash — in either app', () {
