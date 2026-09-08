@@ -781,14 +781,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.1.0"
-  lists:
-    dependency: transitive
-    description:
-      name: lists
-      sha256: "4ca5c19ae4350de036a7e996cdd1ee39c93ac0a2b840f4915459b7d0a7d4ab27"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.1"
   logging:
     dependency: transitive
     description:
@@ -833,10 +825,10 @@ packages:
     dependency: transitive
     description:
       name: mgrs_dart
-      sha256: fb89ae62f05fa0bb90f70c31fc870bcbcfd516c843fb554452ab3396f78586f7
+      sha256: "385e7168ecc77eb545220223c49eef8ab249da7bf57f22781c40a04d23fb196f"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.0"
+    version: "3.0.0"
   mime:
     dependency: "direct main"
     description:
@@ -1040,10 +1032,10 @@ packages:
     dependency: transitive
     description:
       name: proj4dart
-      sha256: c8a659ac9b6864aa47c171e78d41bbe6f5e1d7bd790a5814249e6b68bc44324e
+      sha256: ddcedc1f7876e62717de43ab3491e2829bdad0b028261805f94aa080967e5859
       url: "https://pub.dev"
     source: hosted
-    version: "2.1.0"
+    version: "3.0.0"
   pub_semver:
     dependency: transitive
     description:
@@ -1172,6 +1164,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.1"
+  simple_sparse_list:
+    dependency: transitive
+    description:
+      name: simple_sparse_list
+      sha256: aa648fd240fa39b49dcd11c19c266990006006de6699a412de485695910fbc1f
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.4"
   sky_engine:
     dependency: transitive
     description: flutter
@@ -1309,10 +1309,10 @@ packages:
     dependency: transitive
     description:
       name: unicode
-      sha256: "0f69e46593d65245774d4f17125c6084d2c20b4e473a983f6e21b7d7762218f1"
+      sha256: a6f7bcfc8ea1d5ce1f6c0b1c39117a9919f4953edd9fd7a64090a9796c499b57
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.1"
+    version: "1.1.9"
   universal_platform:
     dependency: transitive
     description:
