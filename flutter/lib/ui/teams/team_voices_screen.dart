@@ -99,15 +99,16 @@ class TeamVoicesScreen extends ConsumerWidget {
     WidgetRef ref,
     TeamRow? team,
   ) async {
-    final message = await showVoiceComposer(context);
-    if (message == null || message.isEmpty) return;
+    final composed = await showVoiceComposer(context, allowImages: true);
+    if (composed == null || composed.message.isEmpty) return;
     await ref
         .read(voicesActionsProvider)
         .createTeamPost(
           teamId: teamId,
           teamName: team?.name ?? '',
           teamType: team?.type ?? '',
-          message: message,
+          message: composed.message,
+          attachments: composed.images,
         );
   }
 }

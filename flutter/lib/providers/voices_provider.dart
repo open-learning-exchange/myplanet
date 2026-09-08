@@ -162,7 +162,10 @@ class VoicesActions {
     }
   }
 
-  Future<String?> createPost(String message) async {
+  Future<String?> createPost(
+    String message, {
+    List<VoiceImageAttachment> attachments = const [],
+  }) async {
     final user = await _author();
     if (user == null) return null;
     final id = await ref
@@ -198,6 +201,7 @@ class VoicesActions {
             parentCode: user.parentCode,
           ),
           viewInSection: 'community',
+          attachments: attachments,
         );
     await queuePending();
     return id;
@@ -217,6 +221,7 @@ class VoicesActions {
     required String teamName,
     required String teamType,
     required String message,
+    List<VoiceImageAttachment> attachments = const [],
   }) async {
     final user = await _author();
     if (user == null) return null;
@@ -244,6 +249,7 @@ class VoicesActions {
           viewInId: teamId,
           viewInSection: 'teams',
           viewInName: teamName,
+          attachments: attachments,
         );
     await queuePending();
     return id;
@@ -252,6 +258,7 @@ class VoicesActions {
   Future<String?> postReply({
     required String parentId,
     required String message,
+    List<VoiceImageAttachment> attachments = const [],
   }) async {
     final user = await _author();
     if (user == null) return null;
@@ -265,6 +272,7 @@ class VoicesActions {
           userJson: VoicesRepository.authorJson(user),
           planetCode: user.planetCode,
           parentCode: user.parentCode,
+          attachments: attachments,
         );
     await queuePending();
     ref.invalidate(voiceRepliesProvider(parentId));

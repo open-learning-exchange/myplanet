@@ -720,6 +720,10 @@
   "noVoices": "No voices yet",
   "voicesUnavailable": "Voices are unavailable",
   "shareYourVoice": "Share your voice",
+  "addImage": "Add Image",
+  "@addImage": {
+    "description": "Button that attaches an image to a voice post"
+  },
   "postVoice": "Post",
   "replyToVoice": "Reply",
   "writeAReply": "Write a reply",

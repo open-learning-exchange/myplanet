@@ -960,6 +960,7 @@
   "@shareYourVoice": {
     "x-mt": true
   },
+  "addImage": "Agregar imagen",
   "postVoice": "Correo",
   "@postVoice": {
     "x-mt": true

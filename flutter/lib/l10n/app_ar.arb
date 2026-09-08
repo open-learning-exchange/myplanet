@@ -893,6 +893,7 @@
   "@shareYourVoice": {
     "x-mt": true
   },
+  "addImage": "إضافة صورة",
   "postVoice": "بريد",
   "@postVoice": {
     "x-mt": true

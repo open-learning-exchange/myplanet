@@ -83,9 +83,11 @@ class VoicesScreen extends ConsumerWidget {
   }
 
   Future<void> _compose(BuildContext context, WidgetRef ref) async {
-    final message = await showVoiceComposer(context);
-    if (message == null || message.isEmpty) return;
-    await ref.read(voicesActionsProvider).createPost(message);
+    final composed = await showVoiceComposer(context, allowImages: true);
+    if (composed == null || composed.message.isEmpty) return;
+    await ref
+        .read(voicesActionsProvider)
+        .createPost(composed.message, attachments: composed.images);
   }
 }
 
@@ -225,15 +227,19 @@ class VoiceCard extends ConsumerWidget {
 
   Future<void> _edit(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context);
-    final message = await showVoiceComposer(
+    // No `allowImages`: Kotlin's `editPost` does take `newImages`, but the
+    // port's edit flow has never offered the affordance and adding images to a
+    // delivered post needs the second send to carry both the existing `images`
+    // and the new ones — a slice of its own, reported rather than smuggled in.
+    final composed = await showVoiceComposer(
       context,
       initialText: row.message,
       title: l10n.editVoice,
     );
-    if (message == null || message.isEmpty) return;
+    if (composed == null || composed.message.isEmpty) return;
     await ref
         .read(voicesActionsProvider)
-        .editPost(newsId: row.id, message: message);
+        .editPost(newsId: row.id, message: composed.message);
   }
 
   Future<void> _delete(

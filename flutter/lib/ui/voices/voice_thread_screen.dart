@@ -87,14 +87,21 @@ class VoiceThreadScreen extends ConsumerWidget {
       return;
     }
     if (user == null || !context.mounted) return;
-    final message = await showVoiceComposer(
+    final composed = await showVoiceComposer(
       context,
       title: l10n.replyToVoice,
       hintText: l10n.writeAReply,
+      // `ReplyActivity` carries the same picker as the two compose screens
+      // (`ReplyActivity.kt:226-233` builds the identical `imageUrls` entry).
+      allowImages: true,
     );
-    if (message == null || message.isEmpty) return;
+    if (composed == null || composed.message.isEmpty) return;
     await ref
         .read(voicesActionsProvider)
-        .postReply(parentId: newsId, message: message);
+        .postReply(
+          parentId: newsId,
+          message: composed.message,
+          attachments: composed.images,
+        );
   }
 }
