@@ -58,6 +58,14 @@ void main() {
     planetPrefsProvider.overrideWithValue(await _prefs()),
     healthKeyIvSyncProvider.overrideWith(() => RecordingKeyIvSync()),
     unreadNotificationCountProvider.overrideWith((ref) => Stream.value(0)),
+    // Overridden for the drift pending-timer reason
+    // `home_screen_test.dart` documents. Note the *inactive* cases here would
+    // pass without it — `HomeScreen` returns before reaching the watch, which
+    // is the Kotlin's `handleGuestAccess` early return and is asserted directly
+    // in `resource_notification_reachability_test.dart`.
+    resourceUpdateNotificationProvider.overrideWith(
+      (ref, userId) => Stream.value(0),
+    ),
     myLibraryStreamProvider.overrideWith(
       (ref, userId) => Stream.value(const []),
     ),

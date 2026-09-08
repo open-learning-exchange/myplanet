@@ -1024,6 +1024,26 @@ class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
   }
 }
 
+/// Port of `ResourcesRepositoryImpl.userIdPattern` (`:64-70`) — a user id as
+/// the `LIKE` pattern that finds it inside the serialized JSON list
+/// `my_library.user_id` holds.
+///
+/// The three replacements are in the Kotlin's order, and the order matters:
+/// escaping `\` first means the backslashes this function itself introduces
+/// are not escaped again. The result is only valid against a `LIKE` carrying
+/// `ESCAPE '\'`.
+///
+/// A user id is `org.couchdb.user:ada` in practice, which contains no `LIKE`
+/// metacharacter — but `_` matches any single character, so an id containing
+/// one would otherwise match a *different* user's shelf entry.
+String likeEscapedUserPattern(String userId) {
+  final escaped = userId
+      .replaceAll('\\', '\\\\')
+      .replaceAll('%', '\\%')
+      .replaceAll('_', '\\_');
+  return '%"$escaped"%';
+}
+
 /// Port of `data/room/dao/MyLibraryDao.kt`.
 @DriftAccessor(tables: [MyLibraryTable])
 class MyLibraryDao extends DatabaseAccessor<AppDatabase>
@@ -1112,6 +1132,62 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
   Future<List<MyLibraryRow>> resourcesOnShelf(String userId) => (select(
     myLibraryTable,
   )..where((r) => r.userId.like('%"$userId"%'))).get();
+
+  /// Port of `MyLibraryDao.countPublicNeedingUpdateForUserPattern`
+  /// (`MyLibraryDao.kt:119-124`) — how many of the user's shelf resources are
+  /// not on the device, or are on it but stale.
+  ///
+  /// This is the **shelf** predicate (`userId LIKE`), not the catalog one
+  /// (`userId IS NULL OR userId NOT LIKE`) that sits immediately below it in
+  /// the Kotlin DAO and is easy to mistake for it. The count answers "how many
+  /// of *your* resources still need downloading", so a resource nobody put on
+  /// your shelf is not your problem.
+  ///
+  /// The third clause is two cases, not one:
+  ///
+  /// * `resource_offline = 0` — never downloaded.
+  /// * `resource_local_address IS NOT NULL AND _rev IS NOT downloaded_rev` —
+  ///   downloaded, but the server document moved on since. `downloadedRev` is
+  ///   stamped by [markDownloaded] and stays put while `rev` follows the sync,
+  ///   which is exactly what makes the comparison meaningful.
+  ///
+  /// `IS NOT` is SQLite's **null-safe** inequality, not `!=`: two NULLs compare
+  /// equal (so the row is excluded) and NULL against a value compares unequal
+  /// (so the row is counted). That is load-bearing — a row marked offline by an
+  /// older build that never wrote `downloadedRev` carries NULL there against a
+  /// non-null `_rev`, and the Kotlin counts it as needing an update. Written
+  /// with `!=` it would be SQL NULL, hence false, and those rows would vanish
+  /// from the count.
+  ///
+  /// Raw SQL rather than the query builder for one reason: drift's `like()`
+  /// takes no `ESCAPE`, and the Kotlin pattern is escaped
+  /// ([likeEscapedUserPattern]). Keeping the statement verbatim also lets it be
+  /// read side by side with the `@Query` it ports.
+  Future<int> countResourcesNeedingUpdate(String userId) async =>
+      (await _needingUpdateQuery(userId).getSingle()).read<int>('c');
+
+  /// The reactive form of [countResourcesNeedingUpdate].
+  ///
+  /// The Kotlin recomputes on every emission of
+  /// `DashboardViewModel.dashboardDataFlow` (`:207-214`), two of whose four
+  /// merged flows are `my_library` queries. `readsFrom` makes drift re-run this
+  /// on any write to that table, which is the same trigger — and the same
+  /// substitution the port already makes for `queryListFlow` /
+  /// `RealtimeSyncManager.dataUpdateFlow` in [watchResources].
+  Stream<int> watchResourcesNeedingUpdateCount(String userId) =>
+      _needingUpdateQuery(
+        userId,
+      ).watchSingle().map((row) => row.read<int>('c'));
+
+  Selectable<QueryRow> _needingUpdateQuery(String userId) => customSelect(
+    'SELECT COUNT(*) AS c FROM my_library '
+    'WHERE is_private = 0 '
+    "AND user_id LIKE ?1 ESCAPE '\\' "
+    'AND (resource_offline = 0 '
+    'OR (resource_local_address IS NOT NULL AND _rev IS NOT downloaded_rev))',
+    variables: [Variable<String>(likeEscapedUserPattern(userId))],
+    readsFrom: {myLibraryTable},
+  );
 
   /// Port of `ResourcesRepositoryImpl.removeDeletedResources` — drops local rows
   /// the server no longer lists.

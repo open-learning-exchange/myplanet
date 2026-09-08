@@ -358,6 +358,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       return const InactiveDashboardScreen();
     }
 
+    // `DashboardActivity.checkIfShouldShowNotifications` (`:193`, `:690-698`) —
+    // the dashboard is what keeps the bell's resource-update row current, and
+    // watching the count is also its data-change trigger. See
+    // [resourceUpdateNotificationProvider].
+    //
+    // **This has to sit below the inactive-user return, not above it.**
+    // `DashboardActivity.kt:165-182` calls `handleGuestAccess()` and
+    // `return@launch`es *before* `initializeDashboard()`, so for a user with no
+    // roles and no admin flag none of the Kotlin's three triggers ever runs.
+    // Placed above, the port would author a row the Android app never writes,
+    // on the one screen with no bell to show it — which is what the reachability
+    // test caught. Despite the Kotlin method's name the gate is the *inactive*
+    // condition, not guest: a guest carries `roles: ["guest"]`, falls through to
+    // the full dashboard, and does get the row.
+    //
+    // Watched rather than read so the subscription lives exactly as long as the
+    // dashboard does, which is the Kotlin's Activity scope. The value is unused
+    // here: the row it writes reaches the badge through
+    // `unreadNotificationCountProvider`'s own stream, which is why the port
+    // needs no equivalent of `checkAndCreateNewNotifications`' second half.
+    if (session != null) {
+      ref.watch(resourceUpdateNotificationProvider(session.id));
+    }
+
     return Scaffold(
       drawer: const DashboardDrawer(),
       // `binding.fabMyActivity` — opens the login-activity chart.

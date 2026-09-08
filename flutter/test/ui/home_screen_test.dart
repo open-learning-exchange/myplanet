@@ -116,6 +116,17 @@ void main() {
       () => keyIvSync ?? RecordingKeyIvSync(),
     ),
     unreadNotificationCountProvider.overrideWith((ref) => Stream.value(0)),
+    // The dashboard now keeps the bell's resource-update row current by
+    // watching a live drift count (Phase 131). Overridden here for the reason
+    // `team_voices_screen_test.dart:40-43` gives: a real drift query stream
+    // leaves a pending timer when the provider scope is torn down, and every
+    // test in this file would fail on the harness backstop rather than on
+    // anything it asserts. The behaviour itself is covered end to end in
+    // `resource_notification_reachability_test.dart`, which mounts this screen
+    // against a real database and unmounts it inside the test body.
+    resourceUpdateNotificationProvider.overrideWith(
+      (ref, userId) => Stream.value(0),
+    ),
     myLibraryStreamProvider.overrideWith(
       (ref, userId) => Stream.value(library),
     ),

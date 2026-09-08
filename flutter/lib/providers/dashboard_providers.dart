@@ -25,6 +25,71 @@ final myLibraryStreamProvider =
           .watchResources(shelfUserId: userId, myLibrary: true),
     );
 
+/// Port of `DashboardViewModel.updateResourceNotification` (`:134-137`) and the
+/// `DashboardActivity` trigger points that call it, via
+/// `checkAndCreateNewNotifications` (`:354-362`).
+///
+/// The Android bell carries a *"You have N resources not downloaded"* row; the
+/// port's never did, because `NotificationsRepository.updateResourceNotification`
+/// was ported with six tests and **no caller** — the "ported, tested, green and
+/// dead" class. This provider is that caller.
+///
+/// ## Why a stream, when the Kotlin calls a suspend function
+///
+/// The Kotlin fires the same one-line body from three places
+/// (`DashboardActivity.kt`):
+///
+/// 1. dashboard load — `initializeDashboard` → `checkIfShouldShowNotifications`
+///    (`:193`, `:690-698`), once per Activity unless launched from login,
+///    after a `delay(1000)`;
+/// 2. **data change** — `setupDashboardDataObserver` (`:591-595`) collects
+///    `dashboardDataFlow`, two of whose four merged flows are `my_library`
+///    queries, and `onRealmDataChange` (`:622-630`) re-runs the check, throttled
+///    to once per 5s;
+/// 3. notification permission granted (`:1116-1121`), unthrottled.
+///
+/// Watching the count collapses (1) and (2) into one subscription: the first
+/// emission is the load, and drift re-runs the query on any `my_library` write,
+/// which is what `dashboardDataFlow` was merging those two flows to detect.
+/// That is the substitution the port already makes for
+/// `RealtimeSyncManager.dataUpdateFlow` throughout.
+///
+/// Three deliberate omissions, none of them an improvement invented here:
+///
+/// * **No 1000ms delay.** It exists to let the Kotlin dashboard draw before a
+///   DB round trip on the main-thread-adjacent path; a drift stream's first
+///   emission is already off the first frame.
+/// * **No 5s throttle.** The Kotlin's guards a pair of Realm change callbacks
+///   that storm; drift coalesces its own updates, and the write is a no-op when
+///   the count is unchanged (`updateResourceNotification` returns early on an
+///   equal message), so a burst of shelf writes costs at most one row update.
+/// * **No permission trigger.** It exists so the Kotlin can *raise an OS
+///   notification* it suppressed while permission was denied. This row is a
+///   bell row only — `DashboardUiState.newNotifications` has no writer, so
+///   `createResourceNotification` never fires in the Android app either
+///   (`PHASE_130_NOTES.md`). Nothing to re-raise.
+///
+/// The unread badge needs no equivalent of `checkAndCreateNewNotifications`'
+/// second half: `unreadNotificationCountProvider` is itself a drift stream, so
+/// writing the row updates the badge without a push into UI state.
+///
+/// The count is a value, not a void, so a test can assert what was written and
+/// a caller can watch it; the write is the point.
+final resourceUpdateNotificationProvider = StreamProvider.family<int, String>((
+  ref,
+  userId,
+) {
+  if (userId.isEmpty) return Stream.value(0);
+  final notifications = ref.watch(notificationsRepositoryProvider);
+  return ref
+      .watch(resourcesRepositoryProvider)
+      .watchResourcesNeedingUpdateCount(userId)
+      .asyncMap((count) async {
+        await notifications.updateResourceNotification(userId, count);
+        return count;
+      });
+});
+
 /// The user's joined courses — `coursesRepository.getMyCoursesFlow(userId)`,
 /// including its blank-title filter (`renderMyCourses` drops those before
 /// counting).
