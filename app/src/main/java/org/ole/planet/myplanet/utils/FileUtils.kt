@@ -263,7 +263,9 @@ object FileUtils {
                     if (columnIndex >= 0) cursor.getString(columnIndex) else null
                 } else null
             }
-            val destinationFile = File(destinationDir, displayName ?: UUID.randomUUID().toString())
+            val safeName = displayName?.let { File(it).name }
+                ?.takeIf { it.isNotBlank() && it != "." && it != ".." }
+            val destinationFile = File(destinationDir, safeName ?: UUID.randomUUID().toString())
             copyUriToFile(context, uri, destinationFile)
             destinationFile.absolutePath
         } catch (e: Exception) {

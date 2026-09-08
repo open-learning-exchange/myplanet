@@ -305,6 +305,54 @@ class FileUtilsTest {
     }
 
     @Test
+    fun resolveUriToPath_sanitizesTraversalDisplayName() {
+        val authority = "org.ole.planet.myplanet.test.fileutils.traversal"
+        val maliciousDisplayName = "../../evil.txt"
+        val sourceBytes = "fake image bytes".toByteArray()
+        val sourceFile = File(tempDir, "provider_source_traversal.jpg").apply { writeBytes(sourceBytes) }
+        val contentUri = Uri.parse("content://$authority/malicious")
+
+        val provider = object : ContentProvider() {
+            override fun onCreate() = true
+
+            override fun query(
+                uri: Uri,
+                projection: Array<out String>?,
+                selection: String?,
+                selectionArgs: Array<out String>?,
+                sortOrder: String?
+            ): Cursor {
+                return MatrixCursor(arrayOf(OpenableColumns.DISPLAY_NAME)).apply {
+                    addRow(arrayOf(maliciousDisplayName))
+                }
+            }
+
+            override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor =
+                ParcelFileDescriptor.open(sourceFile, ParcelFileDescriptor.MODE_READ_ONLY)
+
+            override fun getType(uri: Uri): String? = null
+            override fun insert(uri: Uri, values: ContentValues?): Uri? = null
+            override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?) = 0
+            override fun update(
+                uri: Uri,
+                values: ContentValues?,
+                selection: String?,
+                selectionArgs: Array<out String>?
+            ) = 0
+        }
+        val providerInfo = ProviderInfo().apply { this.authority = authority }
+        provider.attachInfo(context, providerInfo)
+        ShadowContentResolver.registerProviderInternal(authority, provider)
+
+        val destinationDir = File(tempDir, "destination").apply { mkdirs() }
+        val resolved = FileUtils.resolveUriToPath(context, contentUri, destinationDir)
+
+        val resolvedFile = File(requireNotNull(resolved))
+        assertEquals(destinationDir.canonicalFile, resolvedFile.parentFile?.canonicalFile)
+        assertEquals("evil.txt", resolvedFile.name)
+    }
+
+    @Test
     fun getStringFromFile_returnsFileContent() {
         val file = File(tempDir, "string_test.txt")
         val content = "This is a test string.\nWith multiple lines."
