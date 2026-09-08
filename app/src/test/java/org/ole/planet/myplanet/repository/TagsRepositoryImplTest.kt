@@ -184,6 +184,38 @@ class TagsRepositoryImplTest {
     }
 
     @Test
+    fun `getTagsForResources deduplicates tagIds in encounter order and excludes nulls`() = runTest {
+        val link1 = TagEntity().apply { db = "resources"; linkId = "res1"; tagId = "tag1" }
+        val link2 = TagEntity().apply { db = "resources"; linkId = "res2"; tagId = null }
+        val link3 = TagEntity().apply { db = "resources"; linkId = "res3"; tagId = "tag2" }
+        val link4 = TagEntity().apply { db = "resources"; linkId = "res4"; tagId = "tag1" }
+
+        coEvery { tagDao.getByDbAndLinkIds("resources", listOf("res1", "res2", "res3", "res4")) } returns
+            listOf(link1, link2, link3, link4)
+        coEvery { tagDao.getByIds(listOf("tag1", "tag2")) } returns emptyList()
+
+        repository.getTagsForResources(listOf("res1", "res2", "res3", "res4"))
+
+        coVerify { tagDao.getByIds(listOf("tag1", "tag2")) }
+    }
+
+    @Test
+    fun `getTagsForResource deduplicates tagIds in encounter order and excludes nulls`() = runTest {
+        val link1 = TagEntity().apply { db = "resources"; linkId = "res1"; tagId = "tagB" }
+        val link2 = TagEntity().apply { db = "resources"; linkId = "res1"; tagId = null }
+        val link3 = TagEntity().apply { db = "resources"; linkId = "res1"; tagId = "tagA" }
+        val link4 = TagEntity().apply { db = "resources"; linkId = "res1"; tagId = "tagB" }
+
+        coEvery { tagDao.getByDbAndLinkId("resources", "res1") } returns
+            listOf(link1, link2, link3, link4)
+        coEvery { tagDao.getByIds(listOf("tagB", "tagA")) } returns emptyList()
+
+        repository.getTagsForResource("res1")
+
+        coVerify { tagDao.getByIds(listOf("tagB", "tagA")) }
+    }
+
+    @Test
     fun `getTagsForCourse resolves linked tags through tagId lookup`() = runTest {
         val courseId = "course1"
         val tagId = "tag1"

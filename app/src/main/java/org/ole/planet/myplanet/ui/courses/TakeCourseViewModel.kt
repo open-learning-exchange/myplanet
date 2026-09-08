@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
-import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.repository.UserRepository
 
 sealed interface RatingPromptDecision {
     object Show : RatingPromptDecision
@@ -36,7 +36,7 @@ sealed interface TakeCourseUiState {
 class TakeCourseViewModel @Inject constructor(
     private val coursesRepository: CoursesRepository,
     private val progressRepository: ProgressRepository,
-    private val userSessionManager: UserSessionManager,
+    private val userRepository: UserRepository,
     private val ratingsRepository: RatingsRepository
 ) : ViewModel() {
 
@@ -106,7 +106,7 @@ class TakeCourseViewModel @Inject constructor(
             try {
                 _uiState.value = TakeCourseUiState.Loading
 
-                val userModel = userSessionManager.getUserModel()
+                val userModel = userRepository.getUserModel()
                 val course = coursesRepository.getCourseById(courseId)
                 if (course == null) {
                     _uiState.value = TakeCourseUiState.NotFound

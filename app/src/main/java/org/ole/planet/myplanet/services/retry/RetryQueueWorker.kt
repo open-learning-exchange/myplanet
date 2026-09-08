@@ -22,6 +22,11 @@ import dagger.assisted.AssistedInject
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withTimeout
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -40,6 +45,7 @@ class RetryQueueWorker @AssistedInject constructor(
         private const val TAG = "RetryQueueWorker"
         private const val WORK_NAME = "retryQueueWork"
         private const val BATCH_SIZE = 50
+        private const val MAX_CONCURRENT_RETRIES = 6
 
         fun schedule(context: Context) {
             val workRequest = createScheduleWorkRequest()
@@ -120,6 +126,8 @@ class RetryQueueWorker @AssistedInject constructor(
             var successCount = 0
             var failureCount = 0
 
+            val semaphore = Semaphore(MAX_CONCURRENT_RETRIES)
+
             // Add timeout for entire batch processing (5 minutes max)
             withTimeout(5 * 60 * 1000L) {
                 pendingOperations.chunked(BATCH_SIZE).forEach { batch ->
@@ -129,10 +137,19 @@ class RetryQueueWorker @AssistedInject constructor(
                         return@withTimeout
                     }
 
-                    batch.forEach { operation ->
-                        val success = processOperation(operation, baseUrl, authHeader)
-                        if (success) successCount++ else failureCount++
+                    val results = coroutineScope {
+                        batch.map { operation ->
+                            async {
+                                semaphore.withPermit {
+                                    processOperation(operation, baseUrl, authHeader)
+                                }
+                            }
+                        }.awaitAll()
                     }
+
+                    val (batchSuccesses, batchFailures) = results.partition { it }
+                    successCount += batchSuccesses.size
+                    failureCount += batchFailures.size
                 }
             }
 
