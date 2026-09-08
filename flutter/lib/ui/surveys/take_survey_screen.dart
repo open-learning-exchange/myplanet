@@ -313,9 +313,17 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
       );
       if (!mounted) return;
       // `FragmentNavigator.popBackStack`. A team survey is always reached by
-      // a push from the team's surveys tab, so there is something to pop;
-      // the fallback covers a `go` — Kotlin's own dead `isFromNation` arm
-      // lands on the survey list too (`navigateToSurveyList`).
+      // a push from the team's surveys tab, so there is something to pop.
+      //
+      // The fallback is **not** a mirror of anything, and an earlier version
+      // of this comment claimed it was: it cited Kotlin's `isFromNation` arm
+      // landing on the survey list via `navigateToSurveyList`, which is dead
+      // code (`isFromNation` has no writer that can make it true in Kotlin —
+      // `insertCourseStepsExams` sets it from a `parentId` its only caller
+      // passes as `""`), and `FragmentNavigator.popBackStack` is simply a
+      // no-op on an empty back stack (`FragmentNavigator.kt:55`). Kept as a
+      // belt-and-braces destination for a `go`-entered survey rather than for
+      // fidelity.
       if (context.canPop()) {
         context.pop();
       } else {
@@ -323,7 +331,65 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
       }
       return;
     }
-    context.go('${Routes.submissions}/$id');
+    await _thankAndLeave();
+  }
+
+  /// Kotlin's terminal state for every non-team survey: the thank-you dialog,
+  /// and its Finish button pops the survey off the back stack
+  /// (`BaseExamFragment.continueExam:132-148`).
+  ///
+  /// **This replaced a `context.go('${Routes.submissions}/$id')`, which was a
+  /// port invention with no Kotlin counterpart on any entry point.** No Kotlin
+  /// path shows the learner their own submission after finishing one — the
+  /// only openers of `SubmissionDetailFragment` are list-row taps. All five
+  /// `openSurvey` call sites reach `continueExam`, four of them hardcoding
+  /// `isTeam = false` (`SubmissionsAdapter.kt:98`, `CourseStepFragment.kt:289`,
+  /// `BellDashboardFragment.kt:256`, `DashboardActivity.kt:220`) and the fifth
+  /// (`SurveysAdapter.kt:88`) passing a variable, so the individual list, the
+  /// my-surveys row, the dashboard's pending prompt, a deep link and a course
+  /// step all end here.
+  ///
+  /// A pop rather than a destination is what makes one exit right for all of
+  /// them: each was reached by a `context.push`, so each lands back where the
+  /// learner started. **The course step is the entry that was actually
+  /// broken**: `go` unmounted `TakeCourseScreen` outright, so the step tile's
+  /// `await context.push(…)` never resumed and Phase 128's *redo survey*
+  /// relabel — whose only trigger is a submission made on this screen — was
+  /// unreachable on the one path that produces it.
+  ///
+  /// One deviation, deliberate. Kotlin composes its dialog title from two
+  /// strings and the survey/exam word — *"Thank you for taking this survey!
+  /// We wish you all the best."* (`:135`) — and no single Kotlin string
+  /// matches that, so a new ARB key for it could not derive a translation from
+  /// `values-*/strings.xml` and would show English in all five locales.
+  /// [AppLocalizations.thankYouForTakingSurvey] is one sentence shorter and
+  /// has a reviewed human translation in every locale. Five translations beat
+  /// four extra words.
+  ///
+  /// `barrierDismissible: false` is `setCancelable(false)` (`:147`), so the
+  /// learner leaves through Finish rather than by tapping outside — which is
+  /// what makes the pop reliable enough for the step tile to refresh behind
+  /// it.
+  Future<void> _thankAndLeave() async {
+    final l10n = AppLocalizations.of(context);
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.thankYouForTakingSurvey),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(l10n.finish),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    // `popBackStack` is a no-op on an empty back stack, so a survey that was
+    // somehow reached without a push stays put rather than being sent
+    // somewhere Kotlin would not send it.
+    if (context.canPop()) context.pop();
   }
 }
 

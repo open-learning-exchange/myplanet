@@ -35,12 +35,24 @@ class TakeExamScreen extends ConsumerStatefulWidget {
     required this.examId,
     this.stepId,
     this.courseId,
+    this.stepNum,
     super.key,
   });
 
   final String examId;
   final String? stepId;
   final String? courseId;
+
+  /// The step's 1-based position in its course — Kotlin's `"stepNum"`
+  /// argument, which `CourseStepFragment.kt:280` forwards from the pager
+  /// position `CoursesPagerAdapter.kt:49` stamped on the step fragment, and
+  /// `BaseExamFragment.kt:75` reads back.
+  ///
+  /// Null when the caller did not pass one, which is every entry that is not a
+  /// course step — Kotlin's equivalent is the `getInt` default of `0`, whose
+  /// `UPDATE … WHERE stepNum = 0` matches nothing a course step ever wrote.
+  /// [_resolveStepNum] falls back to deriving it in that case.
+  final int? stepNum;
 
   @override
   ConsumerState<TakeExamScreen> createState() => _TakeExamScreenState();
@@ -595,24 +607,25 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
   /// nullable column, so `widget.courseId` can be the empty string — reading
   /// the exam avoids inheriting that.
   ///
-  /// `stepNum` is derived rather than passed. Kotlin threads it through the
-  /// fragment arguments (`CourseStepFragment.kt:280` forwards the
-  /// `stepNumber` that `CoursesPagerAdapter.kt:49` set to the pager position,
-  /// where page 0 is the course cover — so step *i* carries *i+1*). This route
-  /// carries `stepId` and not `stepNum`, and the same 1-based number falls out
-  /// of the step's position in `CourseDao.getSteps`, which is the *same*
-  /// ordering `take_course_screen._recordProgress` counts to write
-  /// `stepNum: index + 1`. Both halves of the pair therefore agree by
-  /// construction rather than by two independent conventions.
+  /// `stepNum` is **passed**, as Kotlin passes it: `CourseStepFragment.kt:280`
+  /// forwards the `stepNumber` that `CoursesPagerAdapter.kt:49` set to the
+  /// pager position, where page 0 is the course cover — so step *i* carries
+  /// *i+1* — and `BaseExamFragment.kt:75` reads it back. Both port pushers
+  /// send it on the query string; [_resolveStepNum] carries the fallback for a
+  /// location that does not, and why the fallback is the weaker rule.
   ///
-  /// An unresolvable step (no `stepId`, an empty `courseId`, or a `stepId` the
-  /// course does not list) skips the write rather than writing `stepNum: 0`.
-  /// Kotlin reaches the same outcome by a different route: `stepNumber`
-  /// defaults to 0 there, and `WHERE stepNum = 0` matches no row a course step
-  /// ever wrote.
+  /// An unresolvable step with no passed number (no `stepId`, an empty
+  /// `courseId`, or a `stepId` the course does not list) skips the write
+  /// rather than writing `stepNum: 0`. Kotlin reaches the same outcome by a
+  /// different route: `stepNumber` defaults to 0 there, and
+  /// `WHERE stepNum = 0` matches no row a course step ever wrote. (Not quite
+  /// *no* row: the sync-in reads `stepNum` with a 0 default too
+  /// (`ProgressRepositoryImpl.kt:259`), so a `courses_progress` document
+  /// missing the field would land on 0. Planet writes it; do not build an
+  /// invariant on the value being impossible.)
   ///
-  /// One asymmetry worth naming since a derivation now rests on it, and it
-  /// runs **against** the port rather than for it. Kotlin's step id is
+  /// One asymmetry worth naming, and it runs **against** the port rather than
+  /// for it. Kotlin's step id is
   /// content-derived — `Base64(stepElement.toString())`
   /// (`CoursesRepositoryImpl.kt:681`) — so reordering a course changes no
   /// step's id, `@Upsert` updates each row in place, and every existing
@@ -624,7 +637,15 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
   /// existing progress rows keep their old `stepNum` — a step the learner
   /// passed can end up describing a different step. Pre-existing, not
   /// introduced here, and not fixable without changing how step ids are
-  /// minted; recorded because this derivation now rests on it.
+  /// minted.
+  ///
+  /// Passing `stepNum` explicitly does **not** fix it and is not offered as a
+  /// fix: the number is still the position the learner navigated from, so
+  /// after a reorder it names the new content at that position while the
+  /// learner's older rows name the old. What it does remove is the extra hop
+  /// — the derivation had to find the *step id* in a re-query first, so a
+  /// reorder could make the write miss the row entirely rather than merely
+  /// describe the wrong step.
   Future<void> _recordExamProgress(
     String submissionId,
     ExamRow exam,
@@ -684,7 +705,36 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
     }
   }
 
+  /// [TakeExamScreen.stepNum] when the caller passed one, otherwise the step's
+  /// position in its course.
+  ///
+  /// **The passed value is the closer port and now the live path**: Kotlin
+  /// threads the number through the fragment arguments and never re-derives
+  /// it, and both port pushers — `take_course_screen`'s step tile and
+  /// `course_detail_screen`'s — send it, each from the 1-based number it had
+  /// already rendered. So the number written to `course_progress` is the one
+  /// the learner saw, and it cannot disagree with
+  /// `take_course_screen._recordProgress`'s `stepNum: index + 1`.
+  ///
+  /// The derivation stays as the fallback because the route's query
+  /// parameters are optional: it keeps a location typed without a `stepNum`
+  /// working. It is the weaker rule — `CourseDao.getSteps` orders by
+  /// `stepIndex`, whose column default of `0` makes ties legal, and a tie
+  /// makes `indexWhere`'s answer depend on which row SQLite returns first.
+  ///
+  /// A `stepNum` of 0 or less is treated as absent rather than written: that
+  /// is Kotlin's missing-argument default, and `WHERE stepNum = 0` is the
+  /// value its own update deliberately matches nothing with.
+  ///
+  /// An unresolvable step (no `stepId`, a `stepId` the course does not list)
+  /// still skips the write when no number was passed. Note the passed value
+  /// makes the write reachable where the derivation could not: a step whose
+  /// row is missing locally, or one re-bound by a course-step reorder, has no
+  /// resolvable position but does have the position the learner navigated
+  /// from.
   Future<int?> _resolveStepNum(String courseId) async {
+    final passed = widget.stepNum;
+    if (passed != null && passed > 0) return passed;
     final stepId = widget.stepId;
     if (stepId == null || stepId.isEmpty) return null;
     final steps = await ref.read(courseDaoProvider).getSteps(courseId);

@@ -306,10 +306,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: Routes.exam,
+        // `stepNum` is Kotlin's `"stepNum"` fragment argument
+        // (`CourseStepFragment.kt:280` → `BaseExamFragment.kt:75`), the pager
+        // position `CoursesPagerAdapter` stamped on the step. `int.tryParse`
+        // rather than a cast, so a hand-typed or malformed value reads as
+        // absent and the screen falls back to deriving it — Kotlin's own
+        // default for a missing argument is `0`, which its `UPDATE` then
+        // matches nothing with.
         builder: (context, state) => TakeExamScreen(
           examId: state.pathParameters['examId']!,
           stepId: state.uri.queryParameters['stepId'],
           courseId: state.uri.queryParameters['courseId'],
+          stepNum: int.tryParse(state.uri.queryParameters['stepNum'] ?? ''),
         ),
       ),
       GoRoute(
