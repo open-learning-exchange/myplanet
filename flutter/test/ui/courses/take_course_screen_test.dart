@@ -11,6 +11,8 @@ import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/courses_providers.dart';
 import 'package:myplanet/providers/ratings_provider.dart';
 import 'package:myplanet/providers/session_provider.dart';
+import 'package:myplanet/core/prefs/planet_prefs.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:myplanet/repository/ratings_repository.dart';
 import 'package:myplanet/repository/submissions_repository.dart';
 import 'package:myplanet/repository/surveys_repository.dart';
@@ -40,6 +42,20 @@ UserRow _user() => UserRow(
   isArchived: false,
   isUpdated: false,
 );
+
+/// `TakeCourseScreen` records a `course_progress` row for the step it opens on
+/// (Kotlin's `withResumed { launchSaveCourseProgress() }`), and that queues an
+/// outbox row — which reaches `serverConfigProvider` and through it
+/// `planetPrefsProvider`, the harness trap that throws `UnimplementedError`
+/// unless overridden. Before the on-mount recording existed, no test here ever
+/// reached it. With no server configured the queueing is skipped, which is all
+/// these tests need.
+Future<Override> _prefsOverride() async {
+  SharedPreferences.setMockInitialValues({});
+  return planetPrefsProvider.overrideWithValue(
+    PlanetPrefs(await SharedPreferences.getInstance()),
+  );
+}
 
 void main() {
   /// Pushes the take-course screen onto a router so `context.pop()` (the finish
@@ -73,6 +89,7 @@ void main() {
           ...extraTargets,
         },
         overrides: [
+          await _prefsOverride(),
           sessionProvider.overrideWith(() => _TestSessionNotifier(_user())),
           courseProvider('course-1').overrideWith(
             (ref) => Stream.value(
@@ -102,6 +119,7 @@ void main() {
     await pumpScreen(
       tester,
       overrides: [
+        await _prefsOverride(),
         appDatabaseProvider.overrideWith((ref) {
           ref.onDispose(db.close);
           return db;
@@ -136,6 +154,7 @@ void main() {
     await pumpScreen(
       tester,
       overrides: [
+        await _prefsOverride(),
         appDatabaseProvider.overrideWith((ref) {
           ref.onDispose(db.close);
           return db;
@@ -171,6 +190,7 @@ void main() {
     await pumpScreen(
       tester,
       overrides: [
+        await _prefsOverride(),
         appDatabaseProvider.overrideWith((ref) {
           ref.onDispose(db.close);
           return db;
@@ -241,6 +261,7 @@ void main() {
               const TakeCourseScreen(courseId: mandatoryCourseId),
         },
         overrides: [
+          await _prefsOverride(),
           sessionProvider.overrideWith(() => _TestSessionNotifier(_user())),
           courseProvider(mandatoryCourseId).overrideWith(
             (ref) => Stream.value(
@@ -342,6 +363,7 @@ void main() {
               const TakeCourseScreen(courseId: mandatoryCourseId),
         },
         overrides: [
+          await _prefsOverride(),
           sessionProvider.overrideWith(() => _TestSessionNotifier(_user())),
           courseProvider(mandatoryCourseId).overrideWith(
             (ref) => Stream.value(
@@ -474,6 +496,7 @@ void main() {
         ),
       },
       overrides: [
+        await _prefsOverride(),
         appDatabaseProvider.overrideWithValue(db),
         courseProvider('course-1').overrideWith(
           (ref) => Stream.value(
