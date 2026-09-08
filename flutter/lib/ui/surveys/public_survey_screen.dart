@@ -251,6 +251,14 @@ class _PublicSurveyScreenState extends ConsumerState<PublicSurveyScreen> {
             questions: questions,
             userId: userId,
             answers: answers,
+            // `PublicSurveyActivity` launches the sheet with
+            // `isTeam = true` and the link's team id (`:99-107`), so
+            // `createExamSubmission` stamps the column here too — this is the
+            // second of Kotlin's two team-carrying sites, not an extra. The
+            // id was already in hand two statements from the call, and
+            // `UserInformationScreen(teamId: …)` below has been passing it
+            // all along.
+            teamId: widget.teamId,
           );
 
       if (!mounted) return;

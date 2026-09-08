@@ -64,7 +64,23 @@ class TeamSurveysScreen extends ConsumerWidget {
                     const Icon(Icons.chevron_right),
                   ],
                 ),
-                onTap: () => context.push('${Routes.surveys}/${survey.id}'),
+                // The team travels with the tap. `TeamPagerAdapter` puts
+                // `isTeam`/`teamId` into the surveys tab's arguments
+                // (`:89-93`) and every sheet opened from it is attributed to
+                // the team; the port pushed the bare survey route, so the
+                // whole chain below — route, screen, `createSurveyDraft` —
+                // had a `teamId` nothing ever filled.
+                //
+                // Written as a literal rather than through a helper on
+                // purpose: `route_reachability_test`'s scanner reads
+                // `'${Routes.x}/…'` literals out of `lib/` and skips
+                // `router.dart`, so moving this into a builder there would
+                // make the one navigation this phase adds the one navigation
+                // that guard cannot see.
+                onTap: () => context.push(
+                  '${Routes.surveys}/${survey.id}'
+                  '?teamId=${Uri.encodeQueryComponent(teamId)}',
+                ),
               ),
             ),
             const SizedBox(height: 16),

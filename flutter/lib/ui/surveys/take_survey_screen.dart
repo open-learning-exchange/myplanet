@@ -17,10 +17,32 @@ class TakeSurveyScreen extends ConsumerStatefulWidget {
   const TakeSurveyScreen({
     required this.surveyId,
     this.submissionId,
+    this.teamId,
     super.key,
   });
   final String surveyId;
   final String? submissionId;
+
+  /// The team this sheet is being answered for, or null for a personal one.
+  ///
+  /// Kotlin's pair of fragment arguments (`isTeam` plus the id, read at
+  /// `BaseExamFragment:77-78`) collapses to one nullable value here, and
+  /// `ExamTakingFragment` hands it to `CreateExamSubmissionRequest` as
+  /// `if (isTeam) teamId else null` (`:151-152`) — so a null or blank value
+  /// means "no team", and the repository's own blank guard is what enforces
+  /// that rather than a check here.
+  ///
+  /// Only `${Routes.surveys}/:surveyId?teamId=` fills it, from
+  /// `TeamSurveysScreen`. It is deliberately **not** carried into the resume
+  /// path (`updateSurveyResponse`), and Kotlin agrees twice over: with a team
+  /// it never resumes at all — `if (sub == null || isTeam)` recreates the
+  /// sheet (`ExamTakingFragment:150-153`, `recreate = isTeam`) and the
+  /// resume-or-restart branch below it is unreachable while `isTeam` is true —
+  /// and every site that opens a *pending* sheet passes
+  /// `isMySurvey = true, isTeam = false, teamId = ""`
+  /// (`BellDashboardFragment:256`, `SubmissionsAdapter:98`). A resumed row
+  /// already carries whatever team it was created with.
+  final String? teamId;
 
   @override
   ConsumerState<TakeSurveyScreen> createState() => _TakeSurveyScreenState();
@@ -193,7 +215,12 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
               widget.submissionId!,
               answers: answers,
             )
-          : await repo.submitResponse(widget.surveyId, user.id, answers);
+          : await repo.submitResponse(
+              widget.surveyId,
+              user.id,
+              answers,
+              teamId: widget.teamId,
+            );
       final config = ref.read(serverConfigProvider);
       if (id != null && config != null) {
         await ref

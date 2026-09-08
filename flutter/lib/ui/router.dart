@@ -469,9 +469,21 @@ final routerProvider = Provider<GoRouter>((ref) {
                     routes: [
                       GoRoute(
                         path: ':surveyId',
+                        // `teamId` is the port of the `isTeam`/`teamId`
+                        // fragment-argument pair `TeamPagerAdapter` injects
+                        // into the team's surveys tab (`:89-93`) and
+                        // `BaseExamFragment` reads (`:77-78`). Kotlin keeps two
+                        // arguments and stamps `if (isTeam) teamId else null`;
+                        // one nullable parameter says the same thing, because
+                        // the only site that sets the flag also sets the id.
+                        // A survey opened from anywhere else — the personal
+                        // list, the dashboard prompt, a course step — carries
+                        // no team, exactly as `openSurvey(..., false, "")`
+                        // does at those Kotlin call sites.
                         builder: (context, state) => TakeSurveyScreen(
                           surveyId: state.pathParameters['surveyId']!,
                           submissionId: state.uri.queryParameters['submission'],
+                          teamId: state.uri.queryParameters['teamId'],
                         ),
                       ),
                     ],
