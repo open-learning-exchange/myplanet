@@ -535,6 +535,15 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
       // must not be reported as a failed save. The photo and the queueing are
       // what need a user; the record does not.
       final user = await ref.read(sessionProvider.future);
+
+      // Ahead of the photo and the two outbox writes, because Kotlin's
+      // progress write goes out before any of that: `capturePhoto()`
+      // (`ExamTakingFragment.kt:655-663`) only *launches* the camera and
+      // returns, and Kotlin has no upload-queue step here at all. Awaiting
+      // this after a camera round trip made it skippable by the camera, by
+      // `queuePending`, and by an unmount in between.
+      await _recordExamProgress(submissionId, exam, user?.id);
+
       final config = ref.read(serverConfigProvider);
       if (user != null) {
         await _captureVerificationPhoto(submissionId, exam, user.id);
@@ -556,6 +565,131 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
       return;
     }
     if (mounted) setState(() => _isSubmitting = false);
+  }
+
+  /// Port of the `saveCourseProgress(exam?.courseId, stepNumber,
+  /// sub?.status == "graded", user?.id)` call in
+  /// `BaseExamFragment.continueExam` (`:133`) — reached, as here, once the
+  /// learner has answered the last question.
+  ///
+  /// **This call had no counterpart at all.** `ProgressRepository
+  /// .updateCourseProgress` was ported and then never called from anywhere in
+  /// `lib/` or `test/` — the "a Dart writer already sitting uncalled" shape
+  /// Phase 119 named. What it costs is narrower than it looks, and worth
+  /// stating precisely, because the missing caller reads like a
+  /// course-breaking bug: on this path the value written is always `false`, so
+  /// an exam step is left unpassed by *both* apps and only Planet's own
+  /// grading — arriving through the `courses_progress` pull — completes such a
+  /// course. The behaviour the port was missing is therefore the *clearing*
+  /// one: re-taking an exam after the server granted a pass resets the flag.
+  /// That quirk survives `ed5609f` for the taker's own row and is ported here
+  /// deliberately; what the commit removes is the reset landing on *other*
+  /// learners' rows on a shared handset.
+  ///
+  /// [ProgressRepository.updateCourseProgress] carries the whole argument.
+  ///
+  /// `courseId` is the **exam document's**, not the navigation argument's:
+  /// Kotlin passes `exam?.courseId` (`BaseExamFragment.kt:133`) and never
+  /// consults the fragment's own arguments here. Both port entry points build
+  /// their query string as `courseId=${step.courseId ?? ''}` against a
+  /// nullable column, so `widget.courseId` can be the empty string — reading
+  /// the exam avoids inheriting that.
+  ///
+  /// `stepNum` is derived rather than passed. Kotlin threads it through the
+  /// fragment arguments (`CourseStepFragment.kt:280` forwards the
+  /// `stepNumber` that `CoursesPagerAdapter.kt:49` set to the pager position,
+  /// where page 0 is the course cover — so step *i* carries *i+1*). This route
+  /// carries `stepId` and not `stepNum`, and the same 1-based number falls out
+  /// of the step's position in `CourseDao.getSteps`, which is the *same*
+  /// ordering `take_course_screen._recordProgress` counts to write
+  /// `stepNum: index + 1`. Both halves of the pair therefore agree by
+  /// construction rather than by two independent conventions.
+  ///
+  /// An unresolvable step (no `stepId`, an empty `courseId`, or a `stepId` the
+  /// course does not list) skips the write rather than writing `stepNum: 0`.
+  /// Kotlin reaches the same outcome by a different route: `stepNumber`
+  /// defaults to 0 there, and `WHERE stepNum = 0` matches no row a course step
+  /// ever wrote.
+  ///
+  /// One asymmetry worth naming since a derivation now rests on it, and it
+  /// runs **against** the port rather than for it. Kotlin's step id is
+  /// content-derived — `Base64(stepElement.toString())`
+  /// (`CoursesRepositoryImpl.kt:681`) — so reordering a course changes no
+  /// step's id, `@Upsert` updates each row in place, and every existing
+  /// `course_progress.stepNum` still names the same step content; only
+  /// Kotlin's *rendered* order lags the author's intent, because its position
+  /// comes from an unordered read. The port's ids are position-derived
+  /// (`<courseId>:<index>`) and `stepIndex` is rewritten from the new position
+  /// on every pull, so a reorder re-binds each id to different content while
+  /// existing progress rows keep their old `stepNum` — a step the learner
+  /// passed can end up describing a different step. Pre-existing, not
+  /// introduced here, and not fixable without changing how step ids are
+  /// minted; recorded because this derivation now rests on it.
+  Future<void> _recordExamProgress(
+    String submissionId,
+    ExamRow exam,
+    String? userId,
+  ) async {
+    final courseId = exam.courseId;
+    if (courseId == null || courseId.isEmpty) return;
+
+    // Contained, because Kotlin's caller is fire-and-forget:
+    // `ExamTakingFragment.kt:846-850` is a bare `lifecycleScope.launch`, and
+    // `continueExam` builds its thank-you dialog on the very next statement,
+    // so a failure in here can neither suppress that dialog nor tell the
+    // learner anything. Awaited inside `_submitExam`'s own `try` it did both —
+    // a throw took the `examSubmitFailed` branch, so there was no dialog, no
+    // pop, and a learner told their exam failed to submit when the attempt was
+    // already `requires grading` on disk and already queued. They would then
+    // retake a recorded exam. The realistic trigger is not a database fault
+    // but using `ref` after dispose, which throws if the learner backs out
+    // during the awaited photo capture.
+    //
+    // Swallowed rather than surfaced, deliberately and against this project's
+    // usual rule about silent failure: there is nothing the learner can do,
+    // the attempt is safe either way, the row is rewritten by the next
+    // `courses_progress` sync, and `lib/` has no logging seam to route it to.
+    try {
+      final stepNum = await _resolveStepNum(courseId);
+      if (stepNum == null) return;
+
+      // `sub?.status == "graded"`, read back from the row rather than assumed.
+      //
+      // It cannot be true here, and the reason is the attempt's provenance,
+      // not the vocabulary: `startExamSession`'s exam branch recreates the
+      // submission, so the row this screen wrote is `pending` and then
+      // `requires grading`. A `graded` status exists only on a submission the
+      // server sent, and Kotlin can reach one of those through a different
+      // route into the same fragment (`BaseExamFragment.kt:88` loads a
+      // my-surveys submission by id with no status filter) — inert there only
+      // because that route carries no `stepNum`. Reading the row keeps this
+      // tracking the status rather than hard-coding a verdict that holds for
+      // one route's reason. Note Kotlin does *not* track it: its `sub` is the
+      // object captured at session start and never refreshed, so a
+      // `submissions` sync landing mid-exam would move this and not Kotlin.
+      final attempt = await ref
+          .read(submissionDaoProvider)
+          .getById(submissionId);
+
+      await ref
+          .read(progressRepositoryProvider)
+          .updateCourseProgress(
+            courseId: courseId,
+            stepNum: stepNum,
+            passed: attempt?.status == 'graded',
+            userId: userId,
+          );
+    } catch (_) {
+      // See above: the attempt is already recorded and already queued.
+    }
+  }
+
+  Future<int?> _resolveStepNum(String courseId) async {
+    final stepId = widget.stepId;
+    if (stepId == null || stepId.isEmpty) return null;
+    final steps = await ref.read(courseDaoProvider).getSteps(courseId);
+    final index = steps.indexWhere((step) => step.id == stepId);
+    return index < 0 ? null : index + 1;
   }
 
   /// Captures a verification photo for a certified course exam, the port of
