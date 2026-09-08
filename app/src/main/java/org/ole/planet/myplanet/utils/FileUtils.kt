@@ -141,14 +141,26 @@ object FileUtils {
 
     fun findHtmlCoverImage(resourceDir: File): File? {
         if (!resourceDir.isDirectory) return null
-        val images = resourceDir.walkTopDown()
-            .maxDepth(4)
-            .filter { it.isFile && it.extension.lowercase() in previewImageExtensions }
-            .toList()
-        if (images.isEmpty()) return null
-        return images.firstOrNull { image ->
-            previewImageNameHints.any { image.nameWithoutExtension.lowercase().contains(it) }
-        } ?: images.maxByOrNull { it.length() }
+        var largestFile: File? = null
+        var maxBytes: Long = -1L
+
+        for (file in resourceDir.walkTopDown().maxDepth(4)) {
+            if (!file.isFile) continue
+            if (file.extension.lowercase() !in previewImageExtensions) continue
+
+            val nameLower = file.nameWithoutExtension.lowercase()
+            if (previewImageNameHints.any { nameLower.contains(it) }) {
+                return file
+            }
+
+            val length = file.length()
+            if (largestFile == null || length > maxBytes) {
+                largestFile = file
+                maxBytes = length
+            }
+        }
+
+        return largestFile
     }
 
     fun checkFileExist(context: Context, url: String?): Boolean {

@@ -9,6 +9,7 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import androidx.room.withTransaction
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.room.dao.AnswerDao
@@ -69,7 +70,8 @@ class CoursesRepositoryImpl @Inject constructor(
     private val myLibraryDao: MyLibraryDao,
     private val userRepository: dagger.Lazy<UserRepository>,
     private val dispatcherProvider: DispatcherProvider,
-    private val realtimeSyncManager: RealtimeSyncManager
+    private val realtimeSyncManager: RealtimeSyncManager,
+    private val appDatabase: org.ole.planet.myplanet.data.room.AppDatabase
 ) : CoursesRepository {
 
     private val pendingCourseResources =
@@ -436,14 +438,12 @@ class CoursesRepositoryImpl @Inject constructor(
             emptyMap()
         } else {
             questionDao.getByExamIds(examIds)
-                .map { it }
                 .groupBy { it.examId ?: "" }
                 .filterKeys { it.isNotEmpty() }
         }
 
         val examIdsSet = examIds.toSet()
         val relevantSubmissions = submissionDao.getExamSubmissionsByUser(userId)
-            .map { it }
             .filter { sub -> examIdsSet.contains(getParentBaseId(sub.parentId)) }
 
         val submissionsByExamId = relevantSubmissions.groupBy { sub ->
@@ -455,7 +455,6 @@ class CoursesRepositoryImpl @Inject constructor(
             emptyMap()
         } else {
             answerDao.getBySubmissionIds(submissionIds)
-                .map { it }
                 .groupBy { it.submissionId ?: "" }
                 .filterKeys { it.isNotEmpty() }
         }
@@ -519,9 +518,9 @@ class CoursesRepositoryImpl @Inject constructor(
         return certificationDao.countByCourseId(courseId) > 0
     }
 
-    override suspend fun updateCourseProgress(courseId: String?, stepNum: Int, passed: Boolean) {
+    override suspend fun updateCourseProgress(courseId: String?, stepNum: Int, passed: Boolean, userId: String?) {
         if (courseId.isNullOrEmpty()) return
-        courseProgressDao.updatePassedByCourseAndStep(courseId, stepNum, passed)
+        courseProgressDao.updatePassedByCourseAndStep(courseId, stepNum, passed, userId)
     }
 
     override suspend fun getCourseStepData(stepId: String, userId: String?): CourseStepData {
@@ -587,14 +586,23 @@ class CoursesRepositoryImpl @Inject constructor(
         return tagsRepository.getTagsForCourses(courseIds)
     }
 
-    override suspend fun deleteCourseProgress(courseId: String?) {
-        val examIds = courseId?.let { examDao.getByCourseId(it).map { exam -> exam.id } }.orEmpty()
+    override suspend fun deleteCoursesProgress(courseIds: List<String>) {
+        if (courseIds.isEmpty()) return
+        val examIds = courseIds.chunked(900).flatMap { chunk ->
+            examDao.getByCourseIds(chunk).map { it.id }
+        }
         if (examIds.isNotEmpty()) {
-            val submissions = submissionDao.getUnuploadedNonSurveyByParentIds(examIds)
+            val submissions = examIds.chunked(900).flatMap { chunk ->
+                submissionDao.getUnuploadedNonSurveyByParentIds(chunk)
+            }
             val submissionIds = submissions.map { it.id }
             if (submissionIds.isNotEmpty()) {
-                answerDao.deleteBySubmissionIds(submissionIds)
-                submissionDao.deleteByIds(submissionIds)
+                appDatabase.withTransaction {
+                    submissionIds.chunked(900).forEach { chunk ->
+                        answerDao.deleteBySubmissionIds(chunk)
+                        submissionDao.deleteByIds(chunk)
+                    }
+                }
             }
         }
     }
@@ -816,7 +824,7 @@ class CoursesRepositoryImpl @Inject constructor(
             pendingCourseResources.clear()
         }
 
-        val resourceIds = batch.map { JsonUtils.getString("_id", it.doc) }.filter { it.isNotBlank() }
+        val resourceIds = batch.mapNotNull { pending -> JsonUtils.getString("_id", pending.doc).takeIf { it.isNotBlank() } }
         val existingMap = if (resourceIds.isNotEmpty()) {
             resourceIds.distinct()
                 .chunked(300)

@@ -53,8 +53,7 @@ class CoursesViewModelTest {
         viewModel.removeCourses(listOf("c1", "c2"), "u1", true) {}
         testDispatcher.scheduler.advanceUntilIdle()
         coVerify { coursesRepository.removeCoursesFromShelf(listOf("c1", "c2"), "u1") }
-        coVerify { coursesRepository.deleteCourseProgress("c1") }
-        coVerify { coursesRepository.deleteCourseProgress("c2") }
+        coVerify { coursesRepository.deleteCoursesProgress(listOf("c1", "c2")) }
     }
 
     @Test
@@ -62,8 +61,7 @@ class CoursesViewModelTest {
         viewModel.removeCourses(listOf("c1", "c2"), "u1", false) {}
         testDispatcher.scheduler.advanceUntilIdle()
         coVerify { coursesRepository.removeCoursesFromShelf(listOf("c1", "c2"), "u1") }
-        coVerify(exactly = 0) { coursesRepository.deleteCourseProgress("c1") }
-        coVerify(exactly = 0) { coursesRepository.deleteCourseProgress("c2") }
+        coVerify(exactly = 0) { coursesRepository.deleteCoursesProgress(any()) }
     }
 
     @Test
@@ -71,7 +69,7 @@ class CoursesViewModelTest {
         viewModel.removeCourses(emptyList(), "u1", true) {}
         testDispatcher.scheduler.advanceUntilIdle()
         coVerify(exactly = 0) { coursesRepository.removeCoursesFromShelf(any(), any()) }
-        coVerify(exactly = 0) { coursesRepository.deleteCourseProgress(any()) }
+        coVerify(exactly = 0) { coursesRepository.deleteCoursesProgress(any()) }
     }
 
     @Test
