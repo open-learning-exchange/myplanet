@@ -8,7 +8,6 @@ import androidx.core.graphics.drawable.toDrawable
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import java.io.File
-import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogZoomableImageBinding
 
@@ -35,7 +34,7 @@ object ImageViewerUtils {
             request.load(imagePath)
         } else {
             val file = File(imagePath)
-            if (imagePath.lowercase(Locale.getDefault()).endsWith(".gif")) {
+            if (imagePath.endsWith(".gif", ignoreCase = true)) {
                 request.asGif().load(file).error(request.asGif().load(imagePath))
             } else {
                 request.load(file).error(request.load(imagePath))

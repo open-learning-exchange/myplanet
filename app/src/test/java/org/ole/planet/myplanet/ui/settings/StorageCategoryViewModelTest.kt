@@ -1,21 +1,16 @@
 package org.ole.planet.myplanet.ui.settings
 
-import android.content.Context
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.mockkObject
-import io.mockk.unmockkAll
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -24,7 +19,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
@@ -37,7 +31,6 @@ class StorageCategoryViewModelTest {
     val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
     private val resourcesRepository = mockk<ResourcesRepository>(relaxed = true)
-    private val context = mockk<Context>(relaxed = true)
     private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
     private lateinit var viewModel: StorageCategoryViewModel
@@ -51,14 +44,7 @@ class StorageCategoryViewModelTest {
 
     @Before
     fun setUp() {
-        mockkObject(FileUtils)
-        every { FileUtils.getOlePath(any()) } returns olePath
-        viewModel = StorageCategoryViewModel(resourcesRepository, dispatcherProvider, context)
-    }
-
-    @After
-    fun tearDown() {
-        unmockkAll()
+        viewModel = StorageCategoryViewModel(resourcesRepository, dispatcherProvider)
     }
 
     @Test
@@ -133,7 +119,7 @@ class StorageCategoryViewModelTest {
         loadItems(items)
 
         viewModel.toggleItemChecked("r1")
-        viewModel.deleteSelected()
+        viewModel.deleteSelected(olePath)
         advanceUntilIdle()
 
         coVerify {
@@ -149,7 +135,7 @@ class StorageCategoryViewModelTest {
     fun `deleteSelected with no checked items does not delete`() = runTest(testDispatcher) {
         loadItems(items)
 
-        viewModel.deleteSelected()
+        viewModel.deleteSelected(olePath)
         advanceUntilIdle()
 
         coVerify(exactly = 0) { resourcesRepository.deleteOfflineResources(any(), any()) }
@@ -159,7 +145,7 @@ class StorageCategoryViewModelTest {
     fun `deleteAll deletes every loaded item`() = runTest(testDispatcher) {
         loadItems(items)
 
-        viewModel.deleteAll()
+        viewModel.deleteAll(olePath)
         advanceUntilIdle()
 
         coVerify {
@@ -171,7 +157,7 @@ class StorageCategoryViewModelTest {
     fun `deleteAll with no items does not delete`() = runTest(testDispatcher) {
         loadItems(emptyList())
 
-        viewModel.deleteAll()
+        viewModel.deleteAll(olePath)
         advanceUntilIdle()
 
         coVerify(exactly = 0) { resourcesRepository.deleteOfflineResources(any(), any()) }
@@ -182,11 +168,11 @@ class StorageCategoryViewModelTest {
         loadItems(items)
         coEvery { resourcesRepository.deleteOfflineResources(olePath, items) } just Runs
 
-        viewModel.deleteAll()
+        viewModel.deleteAll(olePath)
         // The first call sets isDeleting synchronously; without advancing, a second call hits the guard.
         assertTrue(viewModel.uiState.value.isDeleting)
 
-        viewModel.deleteAll()
+        viewModel.deleteAll(olePath)
         advanceUntilIdle()
 
         assertFalse("isDeleting should be cleared after deletion completes", viewModel.uiState.value.isDeleting)
@@ -197,7 +183,7 @@ class StorageCategoryViewModelTest {
     fun `delete emits deleteCompleteEvent`() = runTest(testDispatcher) {
         loadItems(items)
 
-        viewModel.deleteAll()
+        viewModel.deleteAll(olePath)
         advanceUntilIdle()
 
         assertEquals(Unit, viewModel.deleteCompleteEvent.first())
@@ -207,7 +193,7 @@ class StorageCategoryViewModelTest {
         coEvery {
             resourcesRepository.getOfflineResourceItems(olePath, any(), any())
         } returns loaded
-        viewModel.loadResources(emptySet(), emptySet())
+        viewModel.loadResources(olePath, emptySet(), emptySet())
         advanceUntilIdle()
     }
 }

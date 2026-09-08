@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -96,7 +95,6 @@ class VoicesRepositoryImpl @Inject constructor(
             false
         }
     }
-
 
     private fun teamIdPattern(teamId: String): String {
         val escaped = teamId
@@ -277,7 +275,6 @@ class VoicesRepositoryImpl @Inject constructor(
         return newsDao.getReplyCount(newsId)
     }
 
-    // Gathers a post and all of its (recursive) replies for deletion.
     private suspend fun collectNewsAndReplies(newsId: String): List<String> {
         return newsDao.getNewsAndRepliesIds(newsId)
     }
@@ -356,10 +353,14 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun insertNewsList(docs: List<JsonObject>) {
-        // Pre-fetch existing rows in one query instead of a getByUnderscoreId per doc (an N+1
-        // that ran serially inside the sync write lock for hundreds of news items).
-        val mappedDocs = docs.map { it to JsonUtils.getString("_id", it) }
-        val underscoreIds = mappedDocs.map { it.second }.filter { it.isNotEmpty() }
+        val underscoreIds = ArrayList<String>(docs.size)
+        val mappedDocs = docs.map { doc ->
+            val id = JsonUtils.getString("_id", doc)
+            if (id.isNotEmpty()) {
+                underscoreIds.add(id)
+            }
+            doc to id
+        }
         val existing = newsDao.getByUnderscoreIds(underscoreIds).associateBy { it._id }
         val newsList = mappedDocs.map { (doc, id) -> buildNewsFromJson(doc, id, existing) }
         newsDao.upsertAll(newsList)
@@ -451,12 +452,12 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     private fun addViewIn(`object`: JsonObject, news: News) {
-        if (!TextUtils.isEmpty(news.viewableId)) {
+        if (!news.viewableId.isNullOrEmpty()) {
             `object`.addProperty("viewableId", news.viewableId)
             `object`.addProperty("viewableBy", news.viewableBy)
         }
         val viewInStr = news.viewIn
-        if (!TextUtils.isEmpty(viewInStr)) {
+        if (!viewInStr.isNullOrEmpty()) {
             val ar = plainGson.fromJson(viewInStr, JsonArray::class.java)
             if (!ar.isEmpty()) `object`.add("viewIn", ar)
         }
