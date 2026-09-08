@@ -55,6 +55,7 @@ class ResourcesAdapter(
     private val externalFilesDir: File? by lazy { FileUtils.getExternalFilesDir(context) }
     private var adapterScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
     private val htmlCoverCache = mutableMapOf<String, File?>()
+    private val fileLengthCache = mutableMapOf<String, Long?>()
 
     init {
         setHasStableIds(true)
@@ -263,21 +264,29 @@ class ResourcesAdapter(
     private fun bindGrid(holder: GridViewHolder, model: ResourceListModel) {
         val binding = holder.binding
         val type = LibraryTypeClassifier.classify(model.library)
-        holder.setPreviewJob(bindCover(binding.coverContainer, binding.ivCoverPreview, binding.ivTypeIcon, type, model, GRID_COVER_WIDTH_DP))
         binding.title.text = model.item.title
-        binding.tvMeta.text = buildMetaLine(model, type)
+        binding.tvMeta.text = buildMetaLine(model, type, fileSize = null)
         bindSelectionAndDownload(binding.checkbox, binding.ivDownloaded, model)
         bindClicks(holder.itemView, binding.checkbox, model)
+        holder.setPreviewJob(adapterScope.launch {
+            bindCover(binding.coverContainer, binding.ivCoverPreview, binding.ivTypeIcon, type, model, GRID_COVER_WIDTH_DP)
+            val fileSize = resourceFileLength(model)
+            binding.tvMeta.text = buildMetaLine(model, type, fileSize)
+        })
     }
 
     private fun bindList(holder: ListViewHolder, model: ResourceListModel) {
         val binding = holder.binding
         val type = LibraryTypeClassifier.classify(model.library)
-        holder.setPreviewJob(bindCover(binding.coverContainer, binding.ivCoverPreview, binding.ivTypeIcon, type, model, LIST_COVER_WIDTH_DP))
         binding.title.text = model.item.title
-        binding.tvMeta.text = buildMetaLine(model, type)
+        binding.tvMeta.text = buildMetaLine(model, type, fileSize = null)
         bindSelectionAndDownload(binding.checkbox, binding.ivDownloaded, model)
         bindClicks(holder.itemView, binding.checkbox, model)
+        holder.setPreviewJob(adapterScope.launch {
+            bindCover(binding.coverContainer, binding.ivCoverPreview, binding.ivTypeIcon, type, model, LIST_COVER_WIDTH_DP)
+            val fileSize = resourceFileLength(model)
+            binding.tvMeta.text = buildMetaLine(model, type, fileSize)
+        })
     }
 
     private fun setCoverColor(view: View, type: LibraryType) {
@@ -287,14 +296,14 @@ class ResourcesAdapter(
         }
     }
 
-    private fun bindCover(
+    private suspend fun bindCover(
         coverContainer: View,
         ivPreview: ImageView,
         ivTypeIcon: ImageView,
         type: LibraryType,
         model: ResourceListModel,
         coverWidthDp: Int
-    ): Job? {
+    ) {
         setCoverColor(coverContainer, type)
         ivTypeIcon.setImageResource(typeIconRes(type))
 
@@ -304,33 +313,32 @@ class ResourcesAdapter(
         val dir = externalFilesDir
         if (!isOffline || address.isNullOrBlank() || libraryId.isNullOrBlank() || dir == null) {
             showTypeIconOnly(ivPreview, ivTypeIcon)
-            return null
+            return
         }
 
         val file = FileUtils.getLibraryFile(dir, libraryId, address)
         val mimeType = Utilities.getMimeType(address)
-        return when {
+        when {
             mimeType?.startsWith("image") == true -> {
+                showTypeIconOnly(ivPreview, ivTypeIcon)
                 showImagePreview(ivPreview, ivTypeIcon, file)
-                null
             }
             mimeType?.startsWith("video") == true -> {
+                showTypeIconOnly(ivPreview, ivTypeIcon)
                 showVideoPreview(ivPreview, ivTypeIcon, file)
-                null
             }
             mimeType?.contains("pdf") == true -> {
                 showTypeIconOnly(ivPreview, ivTypeIcon)
                 val targetWidthPx = (coverWidthDp * context.resources.displayMetrics.density).toInt()
-                adapterScope.launch { showPdfPreview(ivPreview, ivTypeIcon, file, targetWidthPx) }
+                showPdfPreview(ivPreview, ivTypeIcon, file, targetWidthPx)
             }
             mimeType?.contains("html") == true -> {
                 showTypeIconOnly(ivPreview, ivTypeIcon)
                 val resourceDir = File(dir, "ole/$libraryId")
-                adapterScope.launch { showHtmlPreview(ivPreview, ivTypeIcon, libraryId, resourceDir) }
+                showHtmlPreview(ivPreview, ivTypeIcon, libraryId, resourceDir)
             }
             else -> {
                 showTypeIconOnly(ivPreview, ivTypeIcon)
-                null
             }
         }
     }
@@ -341,8 +349,8 @@ class ResourcesAdapter(
         ivTypeIcon.visibility = View.VISIBLE
     }
 
-    private fun showImagePreview(ivPreview: ImageView, ivTypeIcon: ImageView, file: File) {
-        if (!file.exists()) {
+    private suspend fun showImagePreview(ivPreview: ImageView, ivTypeIcon: ImageView, file: File) {
+        if (cachedFileLength(file) == null) {
             showTypeIconOnly(ivPreview, ivTypeIcon)
             return
         }
@@ -357,8 +365,8 @@ class ResourcesAdapter(
             .into(ivPreview)
     }
 
-    private fun showVideoPreview(ivPreview: ImageView, ivTypeIcon: ImageView, file: File) {
-        if (!file.exists()) {
+    private suspend fun showVideoPreview(ivPreview: ImageView, ivTypeIcon: ImageView, file: File) {
+        if (cachedFileLength(file) == null) {
             showTypeIconOnly(ivPreview, ivTypeIcon)
             return
         }
@@ -405,18 +413,27 @@ class ResourcesAdapter(
         }
     }
 
-    private fun buildMetaLine(model: ResourceListModel, type: LibraryType): String {
+    private fun buildMetaLine(model: ResourceListModel, type: LibraryType, fileSize: Long?): String {
         val parts = mutableListOf<String>()
         parts.add(context.getString(typeLabelRes(type)))
-        val localPath = model.item.resourceLocalAddress
-        if (!localPath.isNullOrBlank()) {
-            val file = File(localPath)
-            if (file.exists()) {
-                parts.add(FileUtils.formatSize(context, file.length()))
-            }
+        if (fileSize != null) {
+            parts.add(FileUtils.formatSize(context, fileSize))
         }
         model.library.language?.takeIf { it.isNotBlank() }?.let { parts.add(it) }
         return parts.joinToString(" · ")
+    }
+
+    private suspend fun resourceFileLength(model: ResourceListModel): Long? {
+        val localPath = model.item.resourceLocalAddress?.takeIf { it.isNotBlank() } ?: return null
+        return cachedFileLength(File(localPath))
+    }
+
+    private suspend fun cachedFileLength(file: File): Long? {
+        val path = file.path
+        if (fileLengthCache.containsKey(path)) return fileLengthCache[path]
+        val length = withContext(dispatcherProvider.io) { if (file.exists()) file.length() else null }
+        fileLengthCache[path] = length
+        return length
     }
 
     private fun bindSelectionAndDownload(checkbox: CheckBox, ivDownloaded: ImageView, model: ResourceListModel) {
