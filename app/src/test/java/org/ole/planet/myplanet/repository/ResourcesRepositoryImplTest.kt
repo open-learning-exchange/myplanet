@@ -923,6 +923,47 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
+    fun `downloadResources returns false when resources list is empty`() = runTest {
+        val result = repository.downloadResources(emptyList())
+
+        assertFalse(result)
+    }
+
+    @Test
+    fun `downloadResources filters offline resources and resources without remote address, then calls openPriorityDownloadService`() = runTest {
+        val offlineResource = MyLibrary().apply {
+            id = "res1"
+            resourceOffline = true
+            resourceLocalAddress = "file.pdf"
+            resourceRemoteAddress = "http://example.com/file1.pdf"
+        }
+        val onlineResourceNoUrl = MyLibrary().apply {
+            id = "res2"
+            resourceOffline = false
+            resourceLocalAddress = null
+            resourceRemoteAddress = null
+        }
+        val onlineResourceWithUrl = MyLibrary().apply {
+            id = "res3"
+            resourceOffline = false
+            resourceLocalAddress = null
+            resourceRemoteAddress = "http://example.com/file3.pdf"
+        }
+
+        mockkObject(DownloadUtils)
+        try {
+            every { DownloadUtils.openPriorityDownloadService(context, arrayListOf("http://example.com/file3.pdf")) } returns Unit
+
+            val result = repository.downloadResources(listOf(offlineResource, onlineResourceNoUrl, onlineResourceWithUrl))
+
+            assertTrue(result)
+            verify(exactly = 1) { DownloadUtils.openPriorityDownloadService(context, arrayListOf("http://example.com/file3.pdf")) }
+        } finally {
+            unmockkObject(DownloadUtils)
+        }
+    }
+
+    @Test
     fun `saveLocalResource fails when the source file does not exist`() = runTest {
         val missingFile = File(temporaryFolder.root, "missing.pdf")
         coEvery { myLibraryDao.countByTitle("My Report") } returns 0
