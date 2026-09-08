@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/local/app_database.dart';
+import '../../data/local/user_mapper.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/courses_providers.dart';
@@ -90,6 +91,8 @@ class _CourseBody extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final isMyCourse = userId != null && course.userId.contains(userId);
+    final user = ref.watch(sessionProvider).valueOrNull;
+    final isGuest = user != null && UserMapper.isGuest(user);
     final target = (type: 'course', itemId: course.id);
     final rating = ref.watch(ratingSummaryProvider(target)).valueOrNull;
 
@@ -136,13 +139,27 @@ class _CourseBody extends ConsumerWidget {
                 icon: const Icon(Icons.play_arrow),
                 label: Text(l10n.takeCourse),
               ),
-              FilledButton.tonalIcon(
-                onPressed: () => _toggleMembership(ref, joined: !isMyCourse),
-                icon: Icon(
-                  isMyCourse ? Icons.bookmark_remove : Icons.bookmark_add,
+              // Gated on `!isGuest`, as `TakeCourseFragment.setCourseData`
+              // (`:216-232`) gates `btnRemove` — Kotlin offers the membership
+              // button to a signed-in non-guest and to nobody else.
+              //
+              // **This is the more consequential of the port's two copies**,
+              // and Phase 145 gated the other one first. `take_course_screen`'s
+              // `_toggleMembership` writes locally; this one writes *and*
+              // pushes the shelf, so an ungated guest tap here reached the
+              // server. The guard is `UserMapper.isGuest`, whose id-prefix rule
+              // no port writer can currently satisfy — so this is hardening
+              // rather than a live bug closed, and it is narrower than
+              // `UserEntity.isGuest()`, which is that rule *or* a `guest` role
+              // without a `learner` role. See `PHASE_145_NOTES.md`.
+              if (!isGuest)
+                FilledButton.tonalIcon(
+                  onPressed: () => _toggleMembership(ref, joined: !isMyCourse),
+                  icon: Icon(
+                    isMyCourse ? Icons.bookmark_remove : Icons.bookmark_add,
+                  ),
+                  label: Text(isMyCourse ? l10n.leaveCourse : l10n.joinCourse),
                 ),
-                label: Text(isMyCourse ? l10n.leaveCourse : l10n.joinCourse),
-              ),
               OutlinedButton.icon(
                 onPressed: () => showDialog<void>(
                   context: context,

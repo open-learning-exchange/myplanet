@@ -12,7 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../support/widget_harness.dart';
 
 /// `_ProgressSection`'s heading, against `TakeCourseFragment.updateStepDisplay`
-/// (`TakeCourseFragment.kt:184-193`).
+/// (`TakeCourseFragment.kt:192-197`).
 ///
 /// **Kotlin's pager carries a cover page and the port's does not, and that one
 /// structural difference is the whole of this file.**

@@ -28,7 +28,7 @@ import '../../support/widget_harness.dart';
 /// `BaseContainerFragment.setResourceButton` as the live analogue; that button
 /// is real but it is **course-level**, bound once from `CourseDetailFragment`
 /// out of `CourseDetailModel.resources` (`CourseDetailFragment.kt:91`,
-/// `CoursesRepositoryImpl.kt:137`). The per-step counterpart is
+/// `CoursesRepositoryImpl.kt:136`). The per-step counterpart is
 /// `CourseStepFragment.btnResources`, which is dead twice over — no listener is
 /// ever attached to it and `setListeners()` sets it `View.GONE`. What
 /// `CourseStepFragment` actually shows for a step's resources is not a button
@@ -42,9 +42,9 @@ import '../../support/widget_harness.dart';
 /// (`CoursesRepositoryImpl.kt:687`, `:794`), and `getAllStepResources` reads
 /// them back with `myLibraryDao.getByStepId`. The port's `CourseMapper`
 /// keeps `resources.length` and **discards the documents**, its
-/// `my_library` table has no `stepId` column at all, and `MyLibraryMapper`
-/// writes no `courseId` either — so `noOfResources` is a number about rows the
-/// port does not have. Until that walk exists there is nowhere for a tap to
+/// `my_library` table has neither a `stepId` nor a `courseId` column, and no
+/// port mapper writes step-resource provenance at all — so `noOfResources` is
+/// a number about rows the port does not have. Until that walk exists there is nowhere for a tap to
 /// go, which is why the fix here is to stop advertising one.
 void main() {
   Future<Override> prefsOverride() async {
@@ -133,9 +133,24 @@ void main() {
   }
 
   testWidgets('the step still says how many resources it has', (tester) async {
-    // The count itself is not the defect and must survive the fix — it is the
-    // one thing the port does know, and `CourseStepFragment` shows the same
-    // number (`R.string.resources_size`, from `data.resources.size`).
+    // The count survives the fix, but **not** because Kotlin shows it.
+    //
+    // An earlier draft of this comment said `CourseStepFragment` "shows the
+    // same number". It does not, and the mistake has a history worth naming:
+    // that is precisely the claim **Phase 128 made and retracted in the same
+    // paragraph** (`PHASE_128_NOTES.md:378-380`, *"there is no live Kotlin
+    // count"*), and Phase 145 reinstated it from memory. The number is written
+    // to `btnResources` at `CourseStepFragment.kt:121-122` and the button is
+    // GONE at `:292`, inside a container that is `visibility="gone"`. The only
+    // per-step resources UI Kotlin renders is `tv_resources_header`, whose
+    // text is the bare `@string/resources` with **no count**, above the list.
+    //
+    // So the count is a port presentation of data the port does hold (the
+    // step document's `resources` array length), standing in for a list it
+    // cannot build until the walk in `PHASE_145_NOTES.md` item 1 lands. It is
+    // kept because it is true and it is the only thing the screen can say
+    // about a step's resources; when the list arrives it should replace this,
+    // not sit beside it.
     await pumpTakeCourse(tester);
 
     expect(find.text('3 resources'), findsOneWidget);

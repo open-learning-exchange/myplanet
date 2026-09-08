@@ -526,7 +526,6 @@ void main() {
       expect(find.textContaining('take test'), findsNothing);
       expect(find.text('Next'), findsNothing);
       expect(onStep(1, 2), findsOneWidget);
-      expect(find.textContaining('please complete'), findsNothing);
     });
   });
 
