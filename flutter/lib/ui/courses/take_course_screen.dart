@@ -133,6 +133,33 @@ class _CourseContentState extends ConsumerState<_CourseContent> {
   /// this mount, so a rebuild is not a re-visit.
   int? _recordedStep;
 
+  /// **Owned by the state, and that is a fix rather than a tidy-up.** The
+  /// controller used to be built inline in `build` as
+  /// `PageController(initialPage: currentStep)`, which meant Previous and Next
+  /// moved the step *counter* and left the page where it was: `Scrollable`
+  /// hands a replacement controller the existing `ScrollPosition`'s pixels
+  /// (`createScrollPosition(..., oldPosition: _position)`), so `initialPage` is
+  /// read once at first attach and ignored on every rebuild after it.
+  ///
+  /// Nothing caught it because nothing asserted on the page. The tests here
+  /// checked the counter, which is driven by the same `currentStep` the
+  /// controller was being handed — so the two agreed about the number while
+  /// disagreeing about what was on screen. Found by a `stepNum` test that
+  /// tapped the second step's assessment tile and could not find it.
+  ///
+  /// Kotlin drives the pager explicitly for the same reason: `onClick` does
+  /// `binding.viewPager2.currentItem += 1` (`TakeCourseFragment.kt:372`) and
+  /// `navigateToStep` calls `setCurrentItem(index + 1, true)` (`:293`).
+  late final PageController _pageController = PageController(
+    initialPage: widget.currentStep,
+  );
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
   /// **Stateful for one reason: the step the learner *lands on* has to be
   /// recorded, and a page-change callback never fires for it.**
   ///
@@ -212,8 +239,20 @@ class _CourseContentState extends ConsumerState<_CourseContent> {
 
     // The recording moved to [_recordCurrentStep], which covers this and the
     // step the screen opens on alike.
+    //
+    // Moves the pager as well as the index, because with the controller held
+    // in state nothing else does — see [_pageController]. `animateToPage`
+    // rather than `jumpToPage` to match `viewPager2.currentItem += 1`, whose
+    // ViewPager2 default is a smooth scroll.
     void goToStep(int index) {
       onStepChanged(index);
+      if (_pageController.hasClients) {
+        _pageController.animateToPage(
+          index,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
     }
 
     /// `onClick`'s `R.id.next_step` arm (`TakeCourseFragment.kt:366-376`): a
@@ -244,8 +283,12 @@ class _CourseContentState extends ConsumerState<_CourseContent> {
         Expanded(
           child: PageView.builder(
             itemCount: steps.length,
-            controller: PageController(initialPage: currentStep),
-            onPageChanged: goToStep,
+            controller: _pageController,
+            // Reports the landing rather than re-driving the controller: a
+            // programmatic `animateToPage` fires this too, and routing it back
+            // through `goToStep` would call `animateToPage` from inside its own
+            // completion.
+            onPageChanged: onStepChanged,
             // `binding.viewPager2.isUserInputEnabled = false`
             // (`TakeCourseFragment.kt:137`). Kotlin advances the course by its
             // two buttons and nothing else — the SeekBar that looks like a

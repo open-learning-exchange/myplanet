@@ -286,6 +286,54 @@ void main() {
       );
     });
 
+    testWidgets('Next moves the page, not just the counter', (tester) async {
+      // **A pre-existing defect this lane's own `stepNum` test surfaced, and
+      // it made the lock meaningless.** The `PageController` was built inline
+      // in `build` as `PageController(initialPage: currentStep)`; `Scrollable`
+      // hands a replacement controller the previous `ScrollPosition`'s pixels,
+      // so `initialPage` applies once and Previous/Next moved the step counter
+      // while leaving the page where it was.
+      //
+      // Nothing here caught it because every navigation assertion read the
+      // counter, which is driven by the same `currentStep` the controller was
+      // being handed — the two agreed about the number and disagreed about
+      // what was on screen. So this asserts on the *page*: pre-fix the second
+      // step's content was never built at all.
+      //
+      // It matters for this file specifically: with `isUserInputEnabled =
+      // false` ported, the buttons are the only way through a course, so a
+      // lock guarding a button that does not navigate would have been the only
+      // working half of the pair.
+      await pumpCourse(
+        tester,
+        db: await seed(courseDoc(courseId: mandatoryCourseId)),
+      );
+
+      expect(find.text('First'), findsOneWidget);
+      expect(find.text('Second'), findsNothing);
+
+      await tapNext(tester);
+
+      expect(onStep(2, 2), findsOneWidget);
+      expect(find.text('Second'), findsOneWidget);
+    });
+
+    testWidgets('Previous moves the page back', (tester) async {
+      await pumpCourse(
+        tester,
+        db: await seed(courseDoc(courseId: mandatoryCourseId)),
+      );
+
+      await tapNext(tester);
+      expect(find.text('Second'), findsOneWidget);
+
+      await tester.tap(find.text('Previous'));
+      await tester.pumpAndSettle();
+
+      expect(onStep(1, 2), findsOneWidget);
+      expect(find.text('First'), findsOneWidget);
+    });
+
     testWidgets('a step with no assessment advances', (tester) async {
       // `isStepCompleted` answers **true** for a step with no exam row at all
       // (`?: return true`, `SubmissionsRepositoryImpl.kt:361`), which is what
