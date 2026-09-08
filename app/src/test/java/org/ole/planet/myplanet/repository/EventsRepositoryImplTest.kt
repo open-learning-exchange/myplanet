@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.services.reminders.LocalReminderScheduler
 import org.ole.planet.myplanet.utils.SystemTimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -27,6 +28,7 @@ class EventsRepositoryImplTest {
 
     private lateinit var meetupDao: MeetupDao
     private lateinit var userDao: UserDao
+    private lateinit var localReminderScheduler: LocalReminderScheduler
     private lateinit var repository: EventsRepositoryImpl
 
     class SilentException(message: String) : Exception(message) {
@@ -37,7 +39,8 @@ class EventsRepositoryImplTest {
     fun setup() {
         meetupDao = mockk(relaxed = true)
         userDao = mockk(relaxed = true)
-        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, userDao, Gson())
+        localReminderScheduler = mockk(relaxed = true)
+        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, userDao, localReminderScheduler, Gson())
     }
 
     @Test
@@ -167,6 +170,7 @@ class EventsRepositoryImplTest {
         val result = repository.createMeetup(params)
         assertTrue(result)
         coVerify { meetupDao.upsert(any()) }
+        coVerify { localReminderScheduler.scheduleMeetupReminder(any()) }
     }
 
     @Test

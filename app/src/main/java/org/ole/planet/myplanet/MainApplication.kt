@@ -55,6 +55,7 @@ import org.ole.planet.myplanet.services.TaskNotificationWorker
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.utils.ANRWatchdog
+import org.ole.planet.myplanet.utils.ActivityTracker
 import org.ole.planet.myplanet.utils.Constants.NETWORK_TRAFFIC_TAG
 import org.ole.planet.myplanet.utils.CrashLogStore
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -439,6 +440,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     }
 
     private fun setupLifecycleCallbacks() {
+        registerActivityLifecycleCallbacks(ActivityTracker)
         ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) {
                 onAppForegrounded()

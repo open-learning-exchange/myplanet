@@ -27,6 +27,7 @@ class TeamTask {
     var status: String? = null
     var completed = false
     var isNotified = false
+    var reminderAdvanceMinutes: String? = "0"
 
     override fun toString(): String {
         return title.orEmpty()
@@ -51,6 +52,9 @@ class TeamTask {
                 task.assignee = JsonUtils.getString("_id", user)
             }
             task.completed = JsonUtils.getBoolean("completed", obj)
+            if (obj != null && obj.has("reminderAdvanceMinutes")) {
+                task.reminderAdvanceMinutes = JsonUtils.getString("reminderAdvanceMinutes", obj)
+            }
             return task
         }
 
@@ -65,6 +69,7 @@ class TeamTask {
             `object`.addProperty("description", task.description)
             `object`.addProperty("completed", task.completed)
             `object`.addProperty("completedTime", task.completedTime)
+            `object`.addProperty("reminderAdvanceMinutes", task.reminderAdvanceMinutes)
             if (user != null) `object`.add("assignee", user.serialize())
             else `object`.addProperty("assignee", "")
             `object`.add("sync", JsonUtils.gson.fromJson(task.sync, JsonObject::class.java))

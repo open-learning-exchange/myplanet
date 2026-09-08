@@ -10,6 +10,27 @@
         android:key="storage_breakdown"
         android:title="@string/storage_breakdown"
         android:summary="@string/storage_breakdown_summary" />
+
+    <PreferenceCategory
+        android:title="@string/local_reminders">
+
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="meetup_notifications_enabled"
+            android:title="@string/meetup_reminders"
+            android:summary="@string/meetup_reminders_summary" />
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="task_notifications_enabled"
+            android:title="@string/task_deadline_reminders"
+            android:summary="@string/task_deadline_reminders_summary" />
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="course_notifications_enabled"
+            android:title="@string/course_reminders"
+            android:summary="@string/course_reminders_summary" />
+    </PreferenceCategory>
+
     <PreferenceCategory
         android:dependency="auto_sync_with_server"
         android:title="@string/auto_sync">

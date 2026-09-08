@@ -1,76 +1,139 @@
 package org.ole.planet.myplanet.services
 
+import android.app.Application
 import android.content.Context
-import android.util.Log
-import androidx.work.ListenableWorker.Result
+import android.os.Build
+import androidx.test.core.app.ApplicationProvider
+import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
-import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
-import io.mockk.mockkStatic
 import io.mockk.unmockkAll
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.ole.planet.myplanet.data.room.dao.MeetupDao
+import org.ole.planet.myplanet.data.room.dao.TeamDao
+import org.ole.planet.myplanet.model.Meetup
+import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.NotificationConfig
+import org.ole.planet.myplanet.services.reminders.LocalReminderScheduler
 import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.TimeProvider
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
-@OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [Build.VERSION_CODES.O], application = Application::class)
 class TaskNotificationWorkerTest {
+
     private lateinit var context: Context
-    private lateinit var workerParams: WorkerParameters
-    private lateinit var userSessionManager: UserSessionManager
-    private lateinit var teamsRepository: TeamsRepository
-    private lateinit var notificationsRepository: NotificationsRepository
-    private lateinit var timeProvider: TimeProvider
+    private val workerParams: WorkerParameters = mockk(relaxed = true)
+    private val userSessionManager: UserSessionManager = mockk(relaxed = true)
+    private val teamsRepository: TeamsRepository = mockk(relaxed = true)
+    private val notificationsRepository: NotificationsRepository = mockk(relaxed = true)
+    private val meetupDao: MeetupDao = mockk(relaxed = true)
+    private val teamDao: TeamDao = mockk(relaxed = true)
+    private val localReminderScheduler: LocalReminderScheduler = mockk(relaxed = true)
+    private val timeProvider: TimeProvider = mockk()
+    private val notificationManager: NotificationUtils.NotificationManager = mockk(relaxed = true)
+
+    private val baseTime = 1700000000000L
     private lateinit var worker: TaskNotificationWorker
 
     @Before
-    fun setup() {
-        context = mockk(relaxed = true)
-        workerParams = mockk(relaxed = true)
-        userSessionManager = mockk(relaxed = true)
-        teamsRepository = mockk(relaxed = true)
-        notificationsRepository = mockk(relaxed = true)
-        timeProvider = mockk(relaxed = true)
-
-        mockkStatic(Log::class)
-        every { Log.e(any(), any(), any()) } returns 0
-        every { Log.e(any(), any()) } returns 0
-
-        mockkObject(FileUtils)
-        every { FileUtils.totalAvailableMemoryRatio(any()) } returns 50L
+    fun setUp() {
+        context = ApplicationProvider.getApplicationContext()
+        every { timeProvider.now() } returns baseTime
 
         mockkObject(NotificationUtils)
-        every { NotificationUtils.getInstance(any()) } returns mockk(relaxed = true)
-        every { NotificationUtils.createTaskNotification(any(), any(), any(), any()) } returns mockk<NotificationConfig>(relaxed = true)
+        every { NotificationUtils.getInstance(any()) } returns notificationManager
 
         worker = TaskNotificationWorker(
-            context,
-            workerParams,
-            userSessionManager,
-            teamsRepository,
-            notificationsRepository,
-            timeProvider
+            appContext = context,
+            workerParams = workerParams,
+            userSessionManager = userSessionManager,
+            teamsRepository = teamsRepository,
+            notificationsRepository = notificationsRepository,
+            meetupDao = meetupDao,
+            teamDao = teamDao,
+            localReminderScheduler = localReminderScheduler,
+            timeProvider = timeProvider
         )
     }
 
     @After
     fun tearDown() {
-        clearAllMocks()
         unmockkAll()
+    }
+
+    @Test
+    fun testDoWork_userLoggedIn_processesTasksAndMeetups() = runTest {
+        val user = UserEntity(id = "user_123", name = "Test User")
+        coEvery { userSessionManager.getUserModel() } returns user
+
+        val task = TeamTask().apply {
+            id = "task_1"
+            title = "Prepare Slides"
+            deadline = baseTime + 3600000L
+            completed = false
+        }
+        coEvery { teamsRepository.getPendingTasksForUser("user_123", any(), any()) } returns listOf(task)
+
+        val team = MyTeam(_id = "team_1").apply { teamId = "team_1" }
+        coEvery { teamDao.getByUserId("user_123") } returns listOf(team)
+
+        val meetup = Meetup().apply {
+            id = "meetup_1"
+            title = "Team Huddle"
+            startDate = baseTime + (10 * 60 * 1000L) // in 10 minutes
+            startTime = "09:00"
+            teamId = "team_1"
+        }
+        coEvery {
+            meetupDao.getUpcomingMeetupsForTeamsOrUser(listOf("team_1"), "user_123", any(), any())
+        } returns listOf(meetup)
+
+        val result = worker.doWork()
+
+        assertEquals(ListenableWorker.Result.success(), result)
+
+        // Verify task notification was triggered
+        verify {
+            notificationManager.showNotification(
+                match { it.type == NotificationUtils.TYPE_TASK && it.id == "task_1" }
+            )
+        }
+
+        // Verify meetup notification was triggered
+        verify {
+            notificationManager.showNotification(
+                match { it.type == NotificationUtils.TYPE_MEETUP && it.id == "meetup_meetup_1" }
+            )
+        }
+
+        // Verify alarm scheduler was called to reconcile
+        coVerify { localReminderScheduler.rescheduleAllUpcomingReminders("user_123") }
+    }
+
+    @Test
+    fun testDoWork_noLoggedInUser_returnsSuccess() = runTest {
+        coEvery { userSessionManager.getUserModel() } returns null
+
+        val result = worker.doWork()
+
+        assertEquals(ListenableWorker.Result.success(), result)
+        coVerify(exactly = 0) { localReminderScheduler.rescheduleAllUpcomingReminders(any()) }
     }
 
     @Test
@@ -78,14 +141,14 @@ class TaskNotificationWorkerTest {
         val user = UserEntity().apply { id = "user_123" }
         coEvery { userSessionManager.getUserModel() } returns user
 
-        val task1 = TeamTask().apply { id = "task_1"; title = "Task One" }
-        val task2 = TeamTask().apply { id = ""; title = "Task Two with blank ID" }
-        val task3 = TeamTask().apply { id = "task_3"; title = "Task Three" }
+        val task1 = TeamTask().apply { id = "task_1"; title = "Task One"; deadline = baseTime + 3600000L }
+        val task2 = TeamTask().apply { id = ""; title = "Task Two with blank ID"; deadline = baseTime + 3600000L }
+        val task3 = TeamTask().apply { id = "task_3"; title = "Task Three"; deadline = baseTime + 3600000L }
         coEvery { teamsRepository.getPendingTasksForUser(any(), any(), any()) } returns listOf(task1, task2, task3)
 
         val result = worker.doWork()
 
-        assertEquals(Result.success(), result)
+        assertEquals(ListenableWorker.Result.success(), result)
         coVerify(exactly = 1) {
             teamsRepository.markTasksNotified(listOf("task_1", "task_3"))
         }
@@ -96,12 +159,12 @@ class TaskNotificationWorkerTest {
         val user = UserEntity().apply { id = "user_123" }
         coEvery { userSessionManager.getUserModel() } returns user
 
-        val task1 = TeamTask().apply { id = ""; title = "Task Blank" }
+        val task1 = TeamTask().apply { id = ""; title = "Task Blank"; deadline = baseTime + 3600000L }
         coEvery { teamsRepository.getPendingTasksForUser(any(), any(), any()) } returns listOf(task1)
 
         val result = worker.doWork()
 
-        assertEquals(Result.success(), result)
+        assertEquals(ListenableWorker.Result.success(), result)
         coVerify(exactly = 0) {
             teamsRepository.markTasksNotified(any())
         }

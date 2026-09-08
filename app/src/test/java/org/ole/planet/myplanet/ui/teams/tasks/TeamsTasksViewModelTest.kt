@@ -164,6 +164,21 @@ class TeamsTasksViewModelTest {
     }
 
     @Test
+    fun `createOrUpdateTask passes reminderAdvanceMinutes when provided`() = runTest(testDispatcher) {
+        val title = "Task With Reminder"
+        val desc = "Description"
+        val teamId = "team123"
+        val assigneeId = "user1"
+        val reminder = "10,60"
+        viewModel.setDeadline(5000L)
+
+        viewModel.createOrUpdateTask(title, desc, null, teamId, assigneeId, reminder)
+        yield()
+
+        coVerify { mockTeamsRepository.createTask(title, desc, viewModel.getDeadlineMillis(), teamId, assigneeId, reminder) }
+    }
+
+    @Test
     fun `deleteTask calls repository and emits event`() = runTest(testDispatcher) {
         val events = mutableListOf<TaskActionEvent>()
         val job = backgroundScope.launch(testDispatcher) { viewModel.taskActionEvents.collect { events.add(it) } }

@@ -91,6 +91,107 @@ class NotificationUtilsTest {
     }
 
     @Test
+    fun testCreateTaskReminderNotification_AdvanceWithAssignee() {
+        val taskId = "task_adv_1"
+        val taskTitle = "Final Project"
+        val deadline = "2026-09-10 15:00"
+        val config = NotificationUtils.createTaskReminderNotification(
+            taskId = taskId,
+            taskTitle = taskTitle,
+            deadline = deadline,
+            advanceMinutes = 60,
+            assigneeName = "John Doe",
+            timeProvider = timeProvider
+        )
+
+        assertEquals("task_reminder_task_adv_1_60", config.id)
+        assertEquals(NotificationUtils.TYPE_TASK, config.type)
+        assertEquals("⏰ Task Reminder (John Doe)", config.title)
+        assertTrue(config.message.contains(taskTitle))
+        assertTrue(config.message.contains("Due in 1 hour"))
+        assertTrue(config.message.contains(deadline))
+        assertEquals(NotificationCompat.PRIORITY_HIGH, config.priority)
+    }
+
+    @Test
+    fun testCreateTaskReminderNotification_AtDeadlineNoAssignee() {
+        val taskId = "task_adv_2"
+        val taskTitle = "Self Task"
+        val deadline = "2026-09-10 15:00"
+        val config = NotificationUtils.createTaskReminderNotification(
+            taskId = taskId,
+            taskTitle = taskTitle,
+            deadline = deadline,
+            advanceMinutes = 0,
+            assigneeName = null,
+            timeProvider = timeProvider
+        )
+
+        assertEquals("task_reminder_task_adv_2_0", config.id)
+        assertEquals(NotificationUtils.TYPE_TASK, config.type)
+        assertEquals("⏰ Task Due Now", config.title)
+        assertTrue(config.message.contains(taskTitle))
+        assertTrue(config.message.contains("Due: $deadline"))
+        assertEquals(NotificationCompat.PRIORITY_HIGH, config.priority)
+    }
+
+    @Test
+    fun testCreateMeetupNotification() {
+        val meetupId = "meetup_123"
+        val meetupTitle = "Weekly Sync"
+        val timeInfo = "Aug 20, 2026 at 10:00 AM"
+        val location = "Room 101"
+        val teamId = "team_abc"
+
+        val config = NotificationUtils.createMeetupNotification(
+            meetupId = meetupId,
+            meetupTitle = meetupTitle,
+            timeInfo = timeInfo,
+            location = location,
+            teamId = teamId,
+            timeProvider = timeProvider
+        )
+
+        assertEquals("meetup_meetup_123", config.id)
+        assertEquals(NotificationUtils.TYPE_MEETUP, config.type)
+        assertEquals("📅 Upcoming Team Meetup", config.title)
+        assertTrue(config.message.contains(meetupTitle))
+        assertTrue(config.message.contains(timeInfo))
+        assertTrue(config.message.contains("Room 101"))
+        assertEquals(NotificationCompat.PRIORITY_HIGH, config.priority)
+        assertEquals(NotificationCompat.CATEGORY_EVENT, config.category)
+        assertTrue(config.actionable)
+        assertEquals(meetupId, config.extras["meetupId"])
+        assertEquals(teamId, config.extras["teamId"])
+        assertEquals(meetupId, config.relatedId)
+    }
+
+    @Test
+    fun testCreateCourseReminderNotification() {
+        val courseId = "course_456"
+        val courseTitle = "Intro to Kotlin"
+        val message = "Scheduled study session at 3:00 PM"
+
+        val config = NotificationUtils.createCourseReminderNotification(
+            courseId = courseId,
+            courseTitle = courseTitle,
+            message = message,
+            timeProvider = timeProvider
+        )
+
+        assertEquals("course_course_456", config.id)
+        assertEquals(NotificationUtils.TYPE_COURSE, config.type)
+        assertEquals("📖 Study Reminder", config.title)
+        assertTrue(config.message.contains(courseTitle))
+        assertTrue(config.message.contains(message))
+        assertEquals(NotificationCompat.PRIORITY_HIGH, config.priority)
+        assertEquals(NotificationCompat.CATEGORY_REMINDER, config.category)
+        assertTrue(config.actionable)
+        assertEquals(courseId, config.extras["courseId"])
+        assertEquals(courseId, config.relatedId)
+    }
+
+    @Test
     fun testCreateJoinRequestNotification() {
         val requestId = "req_1"
         val requesterName = "John Doe"

@@ -92,6 +92,7 @@ class TeamsRepositoryBulkInsertTransactionTest {
             mockk<CourseDao>(relaxed = true),
             mockk<CourseStepDao>(relaxed = true),
             db,
+            mockk(relaxed = true),
         )
     }
 
