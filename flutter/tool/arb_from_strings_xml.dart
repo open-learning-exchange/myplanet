@@ -524,7 +524,7 @@ void _recover(List<String> args, {required bool apply}) {
           continue;
         }
         if (isUntranslatedSource(
-          proposal: proposal,
+          localeValue: value,
           kotlinEnglish: english[name] ?? '',
           templateEnglish: templateValue,
         )) {
@@ -778,7 +778,7 @@ String? derivePlainTextValue({
 String _mirrorTrailingSpace(String value, String templateEnglish) =>
     templateEnglish.endsWith(' ') && !value.endsWith(' ') ? '$value ' : value;
 
-/// Whether a candidate translation is really the Kotlin *source* string sitting
+/// Whether [localeValue] is really the Kotlin *source* string sitting
 /// untranslated in a `values-<locale>` file, and must therefore not be adopted.
 ///
 /// 47 of the Kotlin app's 1056 strings are byte-identical to their English in at
@@ -803,18 +803,31 @@ String _mirrorTrailingSpace(String value, String templateEnglish) =>
 /// otherwise this would reject the legitimately invariant values ("HTML",
 /// "PDF", "N/A"), which are translations that happen to equal their source.
 ///
+/// **Judge the raw `values-<locale>` string, never the proposal.** The first
+/// cut of this took `_proposal`'s output and was inert: `_proposal` runs
+/// `_alignInitialCase` for every non-`exact` tier, so `values-ar`'s `mySurveys`
+/// arrives as `MySurveys` and no longer equals the `mySurveys` it is a copy of.
+/// The guard returned false on both examples its own comment names, and the
+/// unit test pinning it passed only because the fixture handed it a `proposal`
+/// the pipeline cannot produce — a fabricated join, which is the shape this
+/// project has been caught by before. Comparing the untransformed locale value
+/// is what makes the question answerable at all: "did this translator leave the
+/// source string in place" is a fact about the XML, not about our rendering
+/// of it.
+///
 /// No tier reaches this today; it is the guard that keeps the floor safe by
 /// construction rather than by luck. `test/l10n/format_derivation_test.dart`
-/// pins it, and `test/l10n/placeholder_integrity_test.dart` pins the outcome
-/// from the other end, over the shipped `.arb` files.
+/// pins it against the real `values-*/strings.xml`, and
+/// `test/l10n/placeholder_integrity_test.dart` pins the outcome from the other
+/// end, over the shipped `.arb` files.
 bool isUntranslatedSource({
-  required String proposal,
+  required String localeValue,
   required String kotlinEnglish,
   required String templateEnglish,
 }) {
   final source = kotlinEnglish.trim();
   if (source.isEmpty || source == templateEnglish.trim()) return false;
-  return proposal.trim() == source;
+  return localeValue.trim() == source;
 }
 
 /// Whether [current] is something other than a human translation, and may

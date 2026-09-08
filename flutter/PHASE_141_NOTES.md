@@ -7,7 +7,7 @@ and say precisely what is left and why. **No machine translation was generated.*
 ## The headline
 
 **The recoverable pool is essentially exhausted, and the reason is a floor rather
-than a backlog.** 16 values were recovered (below). The next 38 values a looser
+than a backlog.** 16 values were recovered (below). The next 42 values a looser
 matcher would reach are not a missed opportunity — they are a trap that would have
 replaced real translations with English tokens, and the largest single remaining
 block is blocked by a defect in `app_en.arb`, which this lane does not own.
@@ -59,8 +59,14 @@ All by re-running the existing tool; no new matching rule was needed.
   re-ran the tool after the keys landed. *(This is the recurring one — Phase 130
   found the same shape with `playbackSpeed`. Re-running the tool after any template
   key is added costs nothing and is not automated.)*
-- **`fr/storagePdfs`**: the `.arb` carried the English "PDFs"; `values-fr` says
-  "PDF".
+- **`fr/storagePdfs`**: the `.arb` carried the English "PDFs", and French supplies
+  "PDF". Note the provenance, because my first write-up got it wrong:
+  `values-fr/storage_pdfs` is *itself* untranslated ("PDFs"); the value comes from
+  the sibling `filter_pdfs`, a different Kotlin key with the same English, whose
+  French is "PDF". The untranslated namesake is dropped by the
+  `proposal == templateValue` rule, leaving `filter_pdfs` as the unanimous
+  candidate. The recovery is sound — a French human wrote "PDF" for that exact
+  English — but it is not the namesake key.
 
 Plus one marking-only fix and one deletion, neither of which changes a rendered
 string:
@@ -102,12 +108,21 @@ pins it directly as a unit test — which is the correct place for it.
 
 11 template keys match the Kotlin XML *only* under internal-whitespace
 normalisation — one notch below the `casing` tier. Adding that tier would adopt
-**38 values across the five locales**. I measured what those 38 are before writing
-any code, and **almost all of them are degradations**:
+**42 values across the five locales** (ar 5, es 6, fr 9, ne 11, so 11). My first
+count said 38; it missed `usernameOnlyLettersNumbers` in ar/fr/ne/so, which does
+match (an internal space before a comma) and does substitute one valid translation
+for another. The error under-counted the damage, so it argued the point weakly
+rather than wrongly. I measured them before writing any code, and **almost all are
+degradations**:
 
-- `mySurveys` → the literal token **`mySurveys`** in all five locales, replacing
-  Arabic `استطلاعاتي` and French `Mes enquêtes`. Kotlin's `my_survey` is untranslated
-  everywhere; `my_library` is `"mylibrary"` everywhere.
+- `mySurveys` → the literal token **`mySurveys`** in ar/fr/ne/so, replacing Arabic
+  `استطلاعاتي` and French `Mes enquêtes`. **Spanish is the exception** and translates
+  both `my_survey` (`misEncuestas`) and `my_library` (`miBiblioteca`) — an earlier
+  draft of this file said "all five", which is wrong and understates how the guard
+  has to work: it must pass Spanish while refusing the other four. In ne/so there is
+  no existing value at all, so the tier would *add* an English token rather than
+  overwrite a translation. And the tool writes the case-aligned form (`MySurveys`),
+  not the bare token.
 - `addedToMyLibrary` (ar) → `تمت الإضافة إلى myLibrary`, an English token spliced
   into an Arabic sentence.
 - `myPersonals` (so) → `Dhamaan xogtaaga caafimaadka` — "all your health
@@ -115,8 +130,9 @@ any code, and **almost all of them are degradations**:
 - `logOut` (fr) → `Se déconnecter` replaced by `Déconnexion`: substituting one valid
   translation for another, which the rules forbid outright.
 
-**47 of the Kotlin app's 1055 strings are byte-identical to their English in at
-least four of the five locales.** The `my*` compound family is the worst of them,
+**47 of the Kotlin app's 1055 translatable strings are byte-identical to their
+English in at least four of the five locales** (1055 excludes the one
+`translatable="false"` entry; the raw element count is 1056). The `my*` compound family is the worst of them,
 and it is exactly what a looser tier reaches — because the port deliberately
 re-spaced Kotlin's `myLibrary`/`mySurveys` into "My Library"/"My surveys". The port's
 English is a *correction* of Kotlin's, and Kotlin's translations inherit the original
@@ -126,28 +142,48 @@ So the ladder's floor is not an oversight. **It is the line past which the Kotli
 data stops being trustworthy**, and the honest report is that these 11 keys are
 unrecoverable rather than pending.
 
-Two guards now hold that line, both mutation-tested (each was confirmed to fail when
-the code it pins is reverted):
+Two guards hold that line. **Both were wrong in their first cut, and an audit pass
+against my own finished work is what found it** — the unit test pinning them passed
+because its fixture fabricated an input the pipeline cannot produce, which is the
+exact "a fixture that fabricates a join is not evidence" shape this project keeps
+relearning.
 
-- `isUntranslatedSource` in `tool/arb_from_strings_xml.dart` — rejects a proposal
-  equal to the Kotlin string's **own** English where that differs from the template's.
-  The existing guard compared against the *template's* English, which is only sound
-  while every tier matches English byte-identical to it. It is a no-op today by
-  design; it is what keeps the floor safe by construction rather than by luck.
-  Pinned in `format_derivation_test.dart`.
-- `no locale value is an untranslated Kotlin source string` in
-  `placeholder_integrity_test.dart` — the same invariant asserted over the shipped
-  `.arb` files, so *any* route into the state fails, not only the one I anticipated.
-  **This test found `aiChat` on its first run**, which is the only reason that fix
-  is in this phase.
+- **`isUntranslatedSource` in `tool/arb_from_strings_xml.dart` — the guard that
+  matters.** It refuses a Kotlin string whose locale value is still its own English,
+  where that English differs from the template's. The first cut judged
+  `_proposal`'s *output*, and `_proposal` runs `_alignInitialCase` for every
+  non-`exact` tier — so `values-ar`'s `mySurveys` arrived as `MySurveys` and no
+  longer equalled the `mySurveys` it is a copy of. **It returned false on both
+  examples its own comment named**, and simulating the whitespace tier with the
+  guard on and off gave 42 adoptions either way: it blocked nothing. It now judges
+  the raw `values-<locale>` string, which is where the question is actually
+  answerable — "did this translator leave the source in place" is a fact about the
+  XML, not about our rendering of it. Verified firing on `mySurveys`/`mylibrary`,
+  correctly passing Spanish's `misEncuestas` and the invariant `HTML`, and pinned
+  against the real XML rather than hand-made inputs.
+- **`no locale value is an untranslated Kotlin source string` in
+  `placeholder_integrity_test.dart` — the backstop.** It found `aiChat` on its first
+  run, but that was also *the only thing it could ever have found*: it keyed on
+  `_camelCase`, which maps `my_survey` to `mySurvey` (not a template key), and read
+  the XML with a regex that left Android's quoting on, so `my_library` came back as
+  `"mylibrary"` with quotes and could never match. It now parses the XML properly
+  (which also fixes three silent misparses — a self-closing `<string/>` was
+  swallowing the next element entirely, so `message_placeholder` appeared nowhere in
+  the map) and matches loosely enough to reach the `my*` family.
+  **Its limit, stated rather than papered over:** the comparison is byte-exact, so it
+  catches a value that *is* the source but not the case-aligned form the tool would
+  write. It cannot: at the ARB level "the untranslated source" and "the port's own
+  English" are the same string modulo case and spacing for exactly this class,
+  because the port's English *is* a re-spacing of Kotlin's. Loosening it to reach
+  `Mylibrary` also flags `appTitle`. Only the tool sees what a proposal would
+  *overwrite*, which is where the damage is.
 
 ## Reported, not fixed
 
-1. **`app_en.arb`'s three printf keys are a live user-visible bug, not just a
-   derivation blocker.** `communityEarnings` and `yourEarnings` declare
-   `{amount: int}` while their English is `'Community total earnings: **$%1$d** / 500'`.
-   ICU never interpolates `%1$d`, so the generated getter takes the argument and
-   drops it:
+1. **`app_en.arb`'s three printf keys render their own format specifier.**
+   `communityEarnings` and `yourEarnings` declare `{amount: int}` while their
+   English is `'Community total earnings: **$%1$d** / 500'`. ICU never interpolates
+   `%1$d`, so the generated getter takes the argument and drops it:
 
    ```dart
    String communityEarnings(int amount) {
@@ -155,23 +191,38 @@ the code it pins is reverted):
    }
    ```
 
-   `lib/ui/components/challenge_dialog.dart:145,146,149,150` calls both. **The
-   challenge dialog renders the literal `%1$d` to users in every language, English
-   included.** `app_en.arb` is not this lane's file, so this is a report.
+   Kotlin renders these correctly (`ChallengePrompter.kt:41,55` passes the argument
+   through `getString`), so it is a genuine parity defect, in every language
+   including English.
 
-   The fix is `%1$d` → `{amount}` and `%1$s` → `{status}`. Note what it does and does
-   not unlock: **`perSurvey` then derives in all five locales** (Kotlin's
-   `%1$s per survey` matches the template literal exactly). `communityEarnings` and
-   `yourEarnings` do **not** — Kotlin writes `/$500`, the template writes `/ 500`, so
-   the literals differ and the exact-literal rule correctly refuses. So: 3 rendering
-   bugs fixed, 5 human translations unlocked.
+   **It is not, however, "live", and an earlier draft of this file said it was.**
+   The only caller is `lib/ui/components/challenge_dialog.dart:145,146,149,150`, and
+   `lib/providers/challenge_provider.dart:30-31,55-60` gates that dialog on
+   `promptStart = 2024-11-30` / `promptEnd = 2025-01-16` plus one of six hardcoded
+   server URLs. **That window closed 20 months ago**, so no user sees this today.
+   The accurate statement is *a latent rendering defect on a currently unreachable
+   screen* — and calling it live was the reachability over-read this project has now
+   been caught by three times, in the same direction each time. `app_en.arb` is not
+   this lane's file either way.
+
+   The fix is `%1$d` → `{amount}` and `%1$s` → `{status}`. What it unlocks is
+   smaller than I first wrote: **`perSurvey` would derive in all five locales**
+   (Kotlin's `%1$s per survey` matches the template literal exactly), but
+   `perSurvey` **has zero callers in `lib/`**, so those five values would render
+   nowhere. `communityEarnings`/`yourEarnings` do **not** derive at all — Kotlin
+   writes `/$500`, the template `/ 500`, so the literals differ and the
+   exact-literal rule correctly refuses. So: 3 rendering defects corrected, 0
+   translations reaching a screen.
 
 2. **Four `x-mt` flags sit on values that are byte-identical to a Kotlin human
    translation, and I deliberately left them.** `ar/profitLoss`, `es/height`,
    `es/weight`, `es/bloodPressure`. Unlike `ar/progressFilterCompleted` (fixed above,
-   where the Kotlin English is byte-identical to the template's), these matched at the
+   where the Kotlin English is byte-identical to the template's), three of these matched at the
    *name-only* tier where the English differs materially — Kotlin's `height` is
-   "Height (cm)", the template's is "Height". Byte-identity to a translation of
+   "Height (cm)", the template's is "Height". (`ar/profitLoss` is not one of them:
+   `Profit/Loss` against `Profit / loss` differs only in spacing and case, so it is
+   one of the 11 below-floor keys of §4. The conservative decision stands; the
+   rationale I gave fits the other three.) Byte-identity to a translation of
    *different* English is weak evidence: "Altura" is simply the obvious translation
    of "Height", so the machine and the human agreeing proves the string is *right*,
    not that it was *reviewed*. A flag wrongly cleared hides a string from review
@@ -202,6 +253,24 @@ the code it pins is reverted):
    the tool. Phase 130 hit the identical shape. A CI step, or a test asserting the
    tool produces no diff, would close it permanently — but it belongs to whoever owns
    `flutter.yml`, not to this lane.
+
+## What the audit changed
+
+A `parity-auditor` pass at `effort: max` was run against this phase's own finished,
+already-green work, as the round requires. It found that **both guards were inert**
+— each failing on the exact example its own doc comment named — plus five
+measurement overstatements (§2 `storagePdfs` provenance, §4 "all five locales" and
+"38 values", the 1055/1056 denominator, and the "live bug" over-read above). None of
+it was a defect in the shipped translation data, which the audit reproduced
+byte-identically from the pre-141 state; all of it was in the guards and the claims.
+
+That is the second time in this phase the same mistake shape appeared: **a green
+test whose fixture fabricated the input.** The unit test pinning
+`isUntranslatedSource` passed `proposal: 'mySurveys'`, a value `_proposal` cannot
+emit, so it certified a guard that never fired. The tests now drive the real
+`values-*/strings.xml`. Worth stating plainly because I had already written the
+"fixtures that fabricate a join are not evidence" rule into this very file's
+reasoning before walking into it.
 
 ## The gate
 

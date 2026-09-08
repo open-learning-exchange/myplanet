@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:xml/xml.dart';
 import 'package:myplanet/providers/settings_provider.dart';
 
 /// Guards the *values* in the locale files, which nothing checked before.
@@ -254,49 +255,90 @@ void main() {
 
   test('no locale value is an untranslated Kotlin source string', () {
     // Phase 141, and the other end of `format_derivation_test`'s trust-floor
-    // guard: that one pins the predicate, this one pins the shipped files, so
-    // *any* route into the bad state fails rather than only the one anticipated.
+    // guard: that one pins the predicate against the real XML, this one pins the
+    // shipped files, so a bad value fails however it got there.
     //
-    // 47 of the Kotlin app's 1056 strings are byte-identical to their English
-    // in at least four of the five locales. The `my*` compound family is the
-    // worst of them — `my_survey` is the literal token `mySurveys` everywhere,
-    // `my_library` is `"mylibrary"` everywhere — and it is also exactly what a
-    // tier looser than `casing` would reach, because the port re-spaced Kotlin's
-    // `myLibrary`/`mySurveys` into "My Library"/"My surveys". Adopting one of
-    // those would replace `استطلاعاتي` and `Mes enquêtes` with English and
-    // report it as a recovered human translation.
+    // 47 of the Kotlin app's 1055 translatable strings are byte-identical to
+    // their English in at least four of the five locales. The `my*` compound
+    // family is the worst — `my_survey` is the token `mySurveys` in ar/fr/ne/so
+    // and `my_library` is `mylibrary` in the same four (Spanish translates
+    // both) — and it is also exactly what a tier looser than `casing` reaches,
+    // because the port re-spaced Kotlin's `myLibrary`/`mySurveys` into
+    // "My Library"/"My surveys". Adopting one would replace `استطلاعاتي` and
+    // `Mes enquêtes` with English and report it as a recovered translation.
     //
-    // The Kotlin XML is read rather than the tokens listed here: a hardcoded
-    // list would go stale the moment upstream translates one of them.
+    // **The match has to be looser than the tool's**, or this guard cannot see
+    // the keys it exists for. Its first cut keyed on `_camelCase` alone, which
+    // maps `my_survey` to `mySurvey` — not a template key — and read the XML
+    // with a regex that left Android's quoting on, so `my_library` came back as
+    // `"mylibrary"` with the quotes. Between them, `ai_chat` was the only thing
+    // the test could ever have found. Matching loosely here is safe: it only
+    // selects which pairs to *check*, and the policy of refusing to adopt at
+    // that looseness lives in the tool.
+    //
+    // **What this cannot see, and why the tool holds the real line.** The
+    // comparison below is byte-exact, so it catches a value that *is* the source
+    // string. It does not catch the case-aligned form the tool would actually
+    // write (`Mylibrary`, `MySurveys`), and it cannot: at the ARB level "the
+    // untranslated Kotlin source" and "the port's own English" are the same
+    // string modulo case and spacing for precisely this class — the port's
+    // English *is* a re-spacing of Kotlin's. Loosening the comparison to reach
+    // `Mylibrary` also reaches `appTitle` ("myPlanet" against `app_name`'s
+    // "My Planet"), which is correct as it stands. Only the tool sees what a
+    // proposal would *overwrite*, which is where the damage is, so
+    // `isUntranslatedSource` is the guard that matters and this one is the
+    // backstop for the verbatim case.
+    final english = _kotlinStrings('values');
+    final byTight = <String, List<String>>{};
+    for (final name in english.keys) {
+      byTight.putIfAbsent(_tight(name), () => []).add(name);
+      byTight.putIfAbsent(_tight(english[name]!), () => []).add(name);
+    }
+
+    final defects = <String>[];
     for (final code in locales) {
-      final english = _kotlinStrings('values');
       final localised = _kotlinStrings('values-$code');
       final arb = _readArb(code);
-      for (final entry in english.entries) {
-        final source = entry.value.trim();
-        final key = _camelCase(entry.key);
-        final value = arb[key];
-        if (value is! String) continue;
-        // Only a *source* string sitting untranslated is evidence. A locale
-        // value equal to its English where the template says the same thing is
-        // an invariant translation ("HTML", "N/A"), not a missing one.
-        if (source.isEmpty || localised[entry.key]?.trim() != source) continue;
+      for (final key in _messageKeys(arb)) {
+        final value = (arb[key] as String).trim();
         final templateValue = template[key];
-        if (templateValue is! String || templateValue.trim() == source) {
-          continue;
+        if (templateValue is! String) continue;
+        final names =
+            {
+              ...?byTight[_tight(key)],
+              ...?byTight[_tight(templateValue)],
+              if (english.containsKey(key)) key,
+            }..removeWhere(
+              (n) =>
+                  _camelCase(n) != key &&
+                  _tight(n) != _tight(key) &&
+                  _tight(english[n]!) != _tight(templateValue),
+            );
+        for (final name in names) {
+          final source = english[name]!.trim();
+          // Only a *source* string left in place is evidence. A locale value
+          // equal to its English where the template says the same thing is an
+          // invariant translation ("HTML", "N/A"), not a missing one.
+          if (source.isEmpty || localised[name]?.trim() != source) continue;
+          if (templateValue.trim() == source) continue;
+          if (value != source) continue;
+          defects.add(
+            '$code:$key is the untranslated Kotlin source "$name" ("$source"), '
+            'not a translation of the template\'s "$templateValue"',
+          );
         }
-        expect(
-          value.trim(),
-          isNot(source),
-          reason:
-              'app_$code.arb "$key" is the untranslated Kotlin source string '
-              '"${entry.key}" ("$source"), not a translation of the template\'s '
-              '"$templateValue". Adopting one of these replaces a real '
-              'translation with English — see the trust floor in '
-              'tool/arb_from_strings_xml.dart.',
-        );
       }
     }
+
+    expect(
+      defects,
+      isEmpty,
+      reason:
+          '${defects.length} locale value(s) are untranslated Kotlin source '
+          'strings:\n${defects.join("\n")}\n'
+          'Adopting one of these replaces a real translation with English — see '
+          'the trust floor in tool/arb_from_strings_xml.dart.',
+    );
   });
 
   test('the template declares no review state of its own', () {
@@ -486,17 +528,31 @@ bool _usesPlaceholder(String value, String name) =>
 /// A regex rather than an XML parser: the test needs one string, `strings.xml`
 /// writes it on one line, and pulling a parser into the test tree to read it
 /// would be the larger dependency.
-/// Every `<string name=…>` in a `values*` directory, flattened to its text.
+/// Every translatable `<string>` in a `values*` directory, read exactly as
+/// `tool/arb_from_strings_xml.dart` reads it: inline markup flattened, Android's
+/// whitespace quoting undone, `translatable="false"` skipped.
+///
+/// The first cut of this was a regex, and it misread the real file four ways.
+/// `<string name="empty_text" />` is self-closing, so the opener matched and
+/// `(.*?)` ran on to the *next* `</string>` — swallowing `message_placeholder`,
+/// which then existed nowhere in the map. CDATA came back wrapped in its own
+/// `<![CDATA[…]]>`, entities came back unresolved, and the quoting this
+/// function now undoes made `my_library` read as `"mylibrary"` *with* the
+/// quotes, so it could never equal an ARB value — which is what blinded the
+/// guard below to the very key its comment names.
 Map<String, String> _kotlinStrings(String valuesDir) {
-  final xml = File(
-    '../app/src/main/res/$valuesDir/strings.xml',
-  ).readAsStringSync();
+  final document = XmlDocument.parse(
+    File('../app/src/main/res/$valuesDir/strings.xml').readAsStringSync(),
+  );
   final result = <String, String>{};
-  for (final match in RegExp(
-    r'<string name="([^"]+)"[^>]*>(.*?)</string>',
-    dotAll: true,
-  ).allMatches(xml)) {
-    result[match.group(1)!] = match.group(2)!;
+  for (final element in document.findAllElements('string')) {
+    final name = element.getAttribute('name');
+    if (name == null) continue;
+    if (element.getAttribute('translatable') == 'false') continue;
+    final raw = element.innerText;
+    result[name] = raw.length > 1 && raw.startsWith('"') && raw.endsWith('"')
+        ? raw.substring(1, raw.length - 1)
+        : raw;
   }
   return result;
 }
@@ -511,6 +567,15 @@ String _camelCase(String snakeCase) {
           .join();
 }
 
+/// A key reduced to letters and digits only, lower-cased — the loosest match
+/// anybody could reasonably propose. Used here to *find* keys worth checking,
+/// never to adopt one: `my_survey`'s English is `mySurveys` and the template's
+/// is `My surveys`, so neither the name nor the text links them, which is
+/// precisely why the guard could not see the case it was written for.
+String _tight(String value) =>
+    value.replaceAll(RegExp(r'[^\p{L}\p{N}]', unicode: true), '').toLowerCase();
+
+/// The `incorrect_ans` string alone, for the retry-hint test above.
 String _kotlinString(String valuesDir) {
   final xml = File(
     '../app/src/main/res/$valuesDir/strings.xml',
