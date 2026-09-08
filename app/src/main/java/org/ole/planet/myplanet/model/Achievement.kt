@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.model
 
 import androidx.room.Entity
-import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
@@ -30,41 +29,17 @@ class Achievement {
     var resumeFileName: String? = null
 
     val achievementsArray: JsonArray
-        get() = parseStringListToJsonArray("achievements", achievements)
-
-    @Ignore
-    private var cachedReferencesArray: JsonArray? = null
+        get() = parseStringListToJsonArray(achievements)
 
     fun getReferencesArray(): JsonArray {
-        return parseStringListToJsonArray("references", references)
+        return parseStringListToJsonArray(references)
     }
 
     val linksArray: JsonArray
-        get() = parseStringListToJsonArray("links", links)
+        get() = parseStringListToJsonArray(links)
 
     val otherInfoArray: JsonArray
-        get() = parseStringListToJsonArray("otherInfo", otherInfo)
-
-    /**
-     * Parses a list of JSON strings into a [JsonArray].
-     *
-     * Cache keys are scoped by record identifier and field name (e.g. "$ownerKey#$fieldName#$s")
-     * to prevent cache collisions across distinct achievement records or fields.
-     */
-    private fun parseStringListToJsonArray(fieldName: String, list: List<String>?): JsonArray {
-        val ownerKey = if (_id.isNotEmpty()) _id else System.identityHashCode(this).toString()
-        val array = JsonArray()
-        for (s in list ?: emptyList()) {
-            val cacheKey = "$ownerKey#$fieldName#$s"
-            var ob = parsedJsonCache[cacheKey]
-            if (ob == null) {
-                ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
-                parsedJsonCache[cacheKey] = ob
-            }
-            array.add(ob)
-        }
-        return array
-    }
+        get() = parseStringListToJsonArray(otherInfo)
 
     fun setLinks(la: JsonArray?) {
         if (la == null) {
@@ -99,7 +74,6 @@ class Achievement {
     }
 
     fun setReferences(of: JsonArray?) {
-        cachedReferencesArray = null
         if (of == null) {
             references = mutableListOf()
             return
@@ -119,6 +93,22 @@ class Achievement {
             }
         )
 
+        // Keyed by the source string, so the key fully determines the value and one entry serves
+        // every record holding it. deepCopy() keeps a cached instance from ever escaping; it is
+        // free for primitives and nulls, which return the receiver, so only mutable objects and
+        // arrays are copied, exactly the ones that are unsafe to share.
+        private fun parseStringListToJsonArray(list: List<String>?): JsonArray {
+            val array = JsonArray()
+            for (s in list ?: emptyList()) {
+                var ob = parsedJsonCache[s]
+                if (ob == null) {
+                    ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
+                    parsedJsonCache[s] = ob
+                }
+                array.add(ob?.deepCopy())
+            }
+            return array
+        }
 
         fun fromJson(act: JsonObject): Achievement {
             return Achievement().apply {
