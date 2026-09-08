@@ -517,10 +517,30 @@ class _ProgressSection extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              // `updateStepDisplay` (`TakeCourseFragment.kt:184-193`): the
+              // heading is `"Course Details"` at pager position 0 and
+              // `"Step p/N"` at every later position.
+              //
+              // **Kotlin's pager has a cover page and this one does not**, and
+              // that is the whole reason the `position == 0` branch does not
+              // belong here. `CoursesPagerAdapter.getItemCount()` is
+              // `steps.size + 1`; `createFragment(0)` builds a
+              // `CourseDetailFragment` and `createFragment(p > 0)` builds the
+              // step at `steps[p - 1]` with `stepNumber = p`
+              // (`CoursesPagerAdapter.kt:40-60`). The port reaches the course
+              // description through its own `CourseDetailScreen` route
+              // instead, so `PageView.builder` has `itemCount: steps.length`
+              // and **port index `i` is Kotlin position `i + 1`**. Special
+              // casing index 0 therefore labelled a real step with the cover
+              // page's heading, and on a one-step course it was the only
+              // heading the course ever showed.
+              //
+              // `currentStep + 1` is right for every index under that mapping
+              // — it is the number `_StepContent` draws in the step header,
+              // the number in the `n / N` counter beside this, and the
+              // `stepNum` the assessment tiles push at the exam screen.
               Text(
-                currentStep == 0
-                    ? l10n.courseDetails
-                    : l10n.stepNumber(currentStep + 1),
+                l10n.stepNumber(currentStep + 1),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               Text(
@@ -634,13 +654,41 @@ class _StepContent extends ConsumerWidget {
             CourseMarkdownBody(data: step.description!),
             const SizedBox(height: 16),
           ],
-          // Resources count
+          // Resources count.
+          //
+          // **A count, and deliberately nothing more.** This tile used to
+          // carry `trailing: Icon(Icons.chevron_right)` with no `onTap` — a
+          // disclosure arrow for a screen nothing implements, reported by
+          // Phase 128 and unchanged through Phase 139. The two tiles below
+          // keep their chevrons because they navigate.
+          //
+          // Kotlin's per-step resources UI is not a button: `btnResources` is
+          // dead twice over (no listener is ever attached, and `setListeners`
+          // sets it `View.GONE`), and what a step actually shows is an inline
+          // list — `CourseStepFragment.setupInlineResources()` binding
+          // `rvInlineResources` to an `InlineResourceAdapter` whose rows call
+          // `openResource(library)`, with `autoDownloadResources()` and
+          // `prefetchNextStepResources()` alongside. The course-level button
+          // Phase 128 cited (`BaseContainerFragment.setResourceButton`) is
+          // live but belongs to `CourseDetailFragment` and lists the whole
+          // course's resources, not a step's.
+          //
+          // **The port cannot render either of those yet, and the blocker is
+          // the data, not the widget.** Kotlin knows a step's resources
+          // because `queueCourseResources` writes each embedded resource
+          // document into `my_library` stamped with its `courseId` and
+          // `stepId` (`CoursesRepositoryImpl.kt:687`, `:794`) and
+          // `getAllStepResources` reads them back with
+          // `myLibraryDao.getByStepId`. `CourseMapper._parseSteps` keeps
+          // `resources.length` and discards the documents; `my_library` has no
+          // `stepId` column and `MyLibraryMapper` writes no `courseId`. So the
+          // number here describes rows the port does not hold. Restoring a tap
+          // target means porting that walk first — see `PHASE_145_NOTES.md`.
           if (step.noOfResources > 0) ...[
             Card(
               child: ListTile(
                 leading: const Icon(Icons.folder_outlined),
                 title: Text(l10n.resourcesInStep(step.noOfResources)),
-                trailing: const Icon(Icons.chevron_right),
               ),
             ),
             const SizedBox(height: 8),
