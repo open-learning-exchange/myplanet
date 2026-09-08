@@ -6,7 +6,6 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.utils.DeviceNameProvider
@@ -17,7 +16,6 @@ import org.ole.planet.myplanet.utils.distinctByContent
 
 class PersonalsRepositoryImpl @Inject constructor(
     private val personalDao: PersonalDao,
-    private val apiInterface: ApiInterface,
     private val uploadRepository: UploadRepository,
     private val deviceNameProvider: DeviceNameProvider
 ) : PersonalsRepository {
@@ -62,12 +60,7 @@ class PersonalsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updatePersonalResource(id: String, update: PersonalUpdate) {
-        val personal = personalDao.findByDocId(id) ?: personalDao.findById(id)
-        personal?.let {
-            if (update.title != null) it.title = update.title
-            if (update.description != null) it.description = update.description
-            personalDao.update(it)
-        }
+        personalDao.updateFields(id, update.title, update.description)
     }
 
     override suspend fun getPendingPersonalUploads(userId: String): List<Personal> {
@@ -79,9 +72,9 @@ class PersonalsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun uploadPersonalDocument(personal: Personal): Pair<String, String>? {
-        val response = apiInterface.postDoc(
-            UrlUtils.header, "application/json",
-            "${UrlUtils.getUrl()}/resources", Personal.serialize(personal, deviceNameProvider.getCustomDeviceName())
+        val response = uploadRepository.postUpload(
+            "${UrlUtils.getUrl()}/resources",
+            Personal.serialize(personal, deviceNameProvider.getCustomDeviceName())
         )
 
         val `object` = response.body()

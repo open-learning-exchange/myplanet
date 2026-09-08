@@ -54,6 +54,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private var courseDetailContentReady = false
     private var coursesPagerAdapter: CoursesPagerAdapter? = null
     private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
+    private val stepFormatPattern by lazy { "${getString(R.string.step)} %d/%d" }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -186,7 +187,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun setStepText(currentStep: Int, totalSteps: Int) {
-        binding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", currentStep, totalSteps)
+        binding.tvStep.text = String.format(Locale.getDefault(), stepFormatPattern, currentStep, totalSteps)
     }
 
     private fun updateStepDisplay(position: Int) {
