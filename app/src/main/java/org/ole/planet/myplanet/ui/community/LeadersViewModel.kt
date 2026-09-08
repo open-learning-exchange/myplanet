@@ -27,12 +27,7 @@ class LeadersViewModel @Inject constructor(
 
     private fun loadLeaders() {
         viewModelScope.launch(dispatcherProvider.default) {
-            val leadersString = configurationsRepository.getCommunityLeaders()
-            if (leadersString.isNotEmpty()) {
-                _leaders.value = UserEntity.parseLeadersJson(leadersString)
-            } else {
-                _leaders.value = emptyList()
-            }
+            _leaders.value = configurationsRepository.getCommunityLeaders()
         }
     }
 }
