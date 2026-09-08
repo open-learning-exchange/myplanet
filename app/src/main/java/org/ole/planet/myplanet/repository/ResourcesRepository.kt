@@ -96,11 +96,6 @@ interface ResourcesRepository {
     suspend fun batchInsertResources(documents: List<JsonObject>): List<String>
     suspend fun batchInsertMyLibrary(shelfId: String?, documents: List<JsonObject>): Int
     suspend fun getResourceListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel>
-    /**
-     * Returns the in-memory cached list of [ResourceListModel]s without performing database I/O.
-     * This non-suspend method allows UI components (like ResourcesFragment) to immediately render
-     * the cached list during tab navigation on the main thread before background loading refreshes it.
-     */
     fun getCachedResourceListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel>?
     fun clearResourceListCache()
     suspend fun getLibraryItemsByResourceIds(ids: Collection<String>): List<MyLibrary>
