@@ -527,6 +527,53 @@ void main() {
       expect(find.text('Next'), findsNothing);
       expect(onStep(1, 2), findsOneWidget);
     });
+
+    testWidgets('a synced submission with no type releases the lock', (
+      tester,
+    ) async {
+      // **The `type` predicate the port had and Kotlin does not.**
+      // `SubmissionDao.countCompletedByUserAndExamId` (`SubmissionDao.kt:24`)
+      // counts on `userId`, `parentId LIKE` and `status != 'pending'` and
+      // nothing else; the port read `getExamSubmissionsByUser`, whose
+      // `type = 'exam'` is the port's own addition, and filtered the rest in
+      // Dart. So a submission Kotlin counts was invisible here.
+      //
+      // Reachable, and through a production writer rather than a fixture:
+      // `upsertDocuments` stores `type` as
+      // `JsonUtils.getStringOrNull('type', json)`, i.e. **null when Planet's
+      // document omits the key** — the same null-`type` sync-in row
+      // `submissions_repository_test.dart` already pins on the upload side.
+      // The document below is shaped the way the server sends one: the owner
+      // in the nested `user` object, no top-level `userId`, a `_rev` because
+      // it came back from CouchDB.
+      final db = await seed(
+        courseDoc(courseId: mandatoryCourseId, exam: examDoc()),
+      );
+      await repositoryFor(db).upsertDocuments([
+        {
+          '_id': 'sub-typeless',
+          '_rev': '1-abc',
+          'parentId': SubmissionsRepository.examParentId(
+            examId: 'exam-1',
+            courseId: mandatoryCourseId,
+          ),
+          'user': {'_id': 'user-1'},
+          'status': 'complete',
+        },
+      ]);
+      expect(
+        (await db.submissionDao.getById('sub-typeless'))?.type,
+        isNull,
+        reason: 'the fixture is only evidence while the sync-in stores no type',
+      );
+
+      await pumpCourse(tester, db: db);
+      await tapNext(tester);
+
+      // Kotlin counts it, so the step is answered and Next advances.
+      expect(onStep(2, 2), findsOneWidget);
+      expect(find.text('please complete the test to proceed'), findsNothing);
+    });
   });
 
   testWidgets('the lock releases on returning from the exam, without leaving '
