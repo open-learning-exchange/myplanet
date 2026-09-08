@@ -80,28 +80,29 @@ class AchievementTest {
     }
 
     @Test
-    fun parseStringListToJsonArray_returnsCachedElementWithoutDeepCopy_forSameRecordAndField() {
-        val entry = JsonObject().apply {
-            addProperty("title", "cached-value")
-        }
+    fun parseStringListToJsonArray_neverHandsOutTheCachedInstance() {
         val achievement = Achievement.fromJson(JsonObject().apply {
             addProperty("_id", "ach_cache")
-            add("achievements", JsonArray().apply { add(entry) })
+            add("achievements", JsonArray().apply {
+                add(JsonObject().apply { addProperty("title", "cached-value") })
+            })
         })
 
         val firstRead = achievement.achievementsArray
         val secondRead = achievement.achievementsArray
 
-        assertEquals("cached-value", firstRead[0].asJsonObject.get("title").asString)
+        // Each read gets its own mutable object, so mutating one cannot reach the cache
+        assertTrue(firstRead[0] !== secondRead[0])
+        firstRead[0].asJsonObject.addProperty("title", "mutated")
+
         assertEquals("cached-value", secondRead[0].asJsonObject.get("title").asString)
-        // Cache hit within the same record returns the exact same cached instance
-        assertTrue(firstRead[0] === secondRead[0])
+        assertEquals("cached-value", achievement.achievementsArray[0].asJsonObject.get("title").asString)
     }
 
     @Test
-    fun parseStringListToJsonArray_scopesCacheKeysByRecordAndField() {
+    fun parseStringListToJsonArray_isolatesRecordsWithIdenticalContent() {
         val entry = JsonObject().apply {
-            addProperty("title", "cached-value")
+            addProperty("title", "shared-value")
         }
         val ach1 = Achievement.fromJson(JsonObject().apply {
             addProperty("_id", "ach_cache_1")
@@ -112,13 +113,24 @@ class AchievementTest {
             add("achievements", JsonArray().apply { add(entry) })
         })
 
-        val firstRec = ach1.achievementsArray
-        val secondRec = ach2.achievementsArray
+        // Two records whose field serializes to the same string share the cache entry but not
+        // the instances, so one record cannot corrupt the other
+        ach1.achievementsArray[0].asJsonObject.addProperty("title", "mutated")
 
-        assertEquals("cached-value", firstRec[0].asJsonObject.get("title").asString)
-        assertEquals("cached-value", secondRec[0].asJsonObject.get("title").asString)
-        // Cache keys are scoped by record identifier, so distinct records do not share cache entries
-        assertTrue(firstRec[0] !== secondRec[0])
+        assertEquals("shared-value", ach1.achievementsArray[0].asJsonObject.get("title").asString)
+        assertEquals("shared-value", ach2.achievementsArray[0].asJsonObject.get("title").asString)
+    }
+
+    @Test
+    fun parseStringListToJsonArray_copyIsFreeForImmutablePrimitives() {
+        val achievement = Achievement.fromJson(JsonObject().apply {
+            addProperty("_id", "ach_primitives")
+            add("links", JsonArray().apply { add("https://example.com/resource-1") })
+        })
+
+        // JsonPrimitive.deepCopy() returns the receiver, so primitive-valued fields pay nothing
+        // for the copy that keeps object-valued fields safe
+        assertTrue(achievement.linksArray[0] === achievement.linksArray[0])
     }
 
     @Test
@@ -182,11 +194,13 @@ class AchievementTest {
 
     @Test
     fun parsedJsonCache_isBoundedToCapacity() {
-        // The bound is verified by observing the shared process-wide cache directly.
-        // The cache is populated by parseStringListToJsonArray (reached via the achievementsArray
-        // getter, not the setter), so each distinct entry is read back to fill the cache.
-        // Pushing more than CACHE_CAPACITY distinct entries must evict the eldest and cap the
-        // size instead of growing unbounded.
+        // deepCopy() is applied on every read, so cached and freshly parsed elements are
+        // indistinguishable through the public API. The bound is therefore verified by
+        // observing the shared process-wide cache directly. The cache is populated by
+        // parseStringListToJsonArray (reached via the achievementsArray getter, not the
+        // setter), so each distinct entry is read back to fill the cache. Pushing more than
+        // CACHE_CAPACITY distinct entries must evict the eldest and cap the size instead of
+        // growing unbounded.
         Achievement.parsedJsonCache.clear()
         val achievement = Achievement().apply { _id = "bound_ach" }
         val overCapacity = Achievement.CACHE_CAPACITY + 500
