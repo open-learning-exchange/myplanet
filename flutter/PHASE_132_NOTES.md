@@ -67,7 +67,7 @@ Three choices in there are deliberate:
 * **`teamId` as the query key, not `team`.** `addResource` and `userInfo`
   already read exactly that key (`router.dart:267,319`), so the alternative
   would have made this the odd one out. The mutation that renames it is one of
-  the twelve below, because a route reading `team` where the push writes
+  the thirteen below, because a route reading `team` where the push writes
   `teamId` is the Phase 74/100 shape.
 * **The location stays a literal at the call site.** A `surveyLocation(...)`
   helper in `router.dart` reads better and would have been *worse*:
