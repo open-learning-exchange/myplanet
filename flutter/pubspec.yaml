@@ -37,10 +37,21 @@ dependencies:
   mime: ^2.0.0
 
   # Navigation — replaces the Activity/Fragment + FragmentNavigator stack.
-  # Phase 137 pin, same reasoning as flutter_riverpod above: four majors behind,
-  # and the upgrade is coupled to the Riverpod one through the router's
-  # `ref.listen(sessionProvider, …)`. See PHASE_137_NOTES.md.
-  go_router: 14.8.1
+  # Taken after being measured green twice: Phase 137 resolved 18.0.1 in a
+  # container (analyze clean, full suite green, zero source or test edits) but
+  # held the pin on the grounds that the upgrade is coupled to the Riverpod one
+  # through the router's `ref.listen(sessionProvider, …)`; the integrator then
+  # reproduced the same green result on the branch against Riverpod 2.6.1. The
+  # coupling is real but it is not a reason to sit four majors behind — the
+  # Riverpod round will touch `router.dart` either way. Why 18 is cheap here:
+  # 18.0.0's floor is Flutter 3.44 / Dart 3.12, exactly what is pinned; 17's
+  # ShellRoute observer default is unobservable with no observer registered;
+  # 16's `GoRouteData` break needs go_router_builder, which this port does not
+  # use (zero `TypedGoRoute`); and 15's case-sensitive URLs change nothing
+  # because every literal path segment is lowercase. **Re-check that last one
+  # if a route is ever added with a capital letter in a literal segment** — a
+  # `:paramName` is not one. See PHASE_137_NOTES.md § 4.
+  go_router: 18.0.1
 
   # Deep links — replaces reading `Intent.getData()` in `OnboardingActivity`.
   # The engine's own handling hands go_router a location that may carry no
