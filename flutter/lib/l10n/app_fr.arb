@@ -2293,5 +2293,10 @@
   "storageRunningLow": "Espace de stockage presque plein: ",
   "storageAvailable": "Espace de stockage disponible: ",
   "playbackSpeed": "Vitesse de lecture",
-  "playbackSpeedValue": "{speed}x"
+  "playbackSpeedValue": "{speed}x",
+  "filterPdfs": "PDF",
+  "filterVideos": "Vidéos",
+  "filterAudio": "Audio",
+  "mediumTextHtml": "Texte / HTML",
+  "mediumHtml": "HTML"
 }

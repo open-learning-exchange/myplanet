@@ -519,5 +519,10 @@
   "storageRunningLow": "Xaddida maaliyadeed waa tagaa: ",
   "storageAvailable": "Xaddida maaliyadeed waa heli kara: ",
   "playbackSpeed": "Xawaaraha dib-u-daawashada",
-  "playbackSpeedValue": "{speed}x"
+  "playbackSpeedValue": "{speed}x",
+  "filterPdfs": "PDF-yo",
+  "filterVideos": "Muuqaallo",
+  "filterAudio": "Codad",
+  "mediumTextHtml": "Qoraal / HTML",
+  "mediumHtml": "HTML"
 }

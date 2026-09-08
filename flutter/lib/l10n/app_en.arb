@@ -1565,5 +1565,25 @@
         "example": "1.25"
       }
     }
+  },
+  "filterPdfs": "PDFs",
+  "@filterPdfs": {
+    "description": "Label for the pdf entry in the resources media-type filter. Recovered from the Kotlin `filter_pdfs`, which `ResourcesFilterFragment.getMediumDisplayName` maps a raw `pdf` medium to."
+  },
+  "filterVideos": "Videos",
+  "@filterVideos": {
+    "description": "Label for the video entry in the resources media-type filter. Recovered from the Kotlin `filter_videos`."
+  },
+  "filterAudio": "Audio",
+  "@filterAudio": {
+    "description": "Label for the audio entry in the resources media-type filter. Recovered from the Kotlin `filter_audio`."
+  },
+  "mediumTextHtml": "Text / HTML",
+  "@mediumTextHtml": {
+    "description": "Label for the `text/html` entry in the resources media-type filter. Recovered from the Kotlin `medium_text_html`."
+  },
+  "mediumHtml": "HTML",
+  "@mediumHtml": {
+    "description": "Label for the `html` entry in the resources media-type filter. Recovered from the Kotlin `medium_html`."
   }
 }

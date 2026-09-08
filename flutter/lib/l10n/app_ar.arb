@@ -2150,5 +2150,10 @@
   "storageRunningLow": "التخزين قليل: ",
   "storageAvailable": "التخزين المتاح: ",
   "playbackSpeed": "سرعة التشغيل",
-  "playbackSpeedValue": "{speed}x"
+  "playbackSpeedValue": "{speed}x",
+  "filterPdfs": "ملفات PDF",
+  "filterVideos": "مقاطع فيديو",
+  "filterAudio": "صوتيات",
+  "mediumTextHtml": "نص / HTML",
+  "mediumHtml": "HTML"
 }

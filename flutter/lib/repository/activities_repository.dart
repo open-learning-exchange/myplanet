@@ -252,9 +252,30 @@ class ActivitiesRepository {
   /// Port of `getMostOpenedResource(userName, type)` — the profile's "Most
   /// opened resource" row.
   ///
-  /// Groups by `resourceId`, takes the title from the first row of each group
-  /// and drops groups whose title is null, exactly as the Kotlin does. The
-  /// Kotlin then returns `null` when the winning count is zero, which cannot
+  /// Upstream `3002830` replaced the Kotlin's in-memory `groupBy`/`maxByOrNull`
+  /// with one SQL statement, and it changed two things beyond the mechanism:
+  ///
+  /// ```sql
+  /// SELECT title, COUNT(*) AS openCount FROM resource_activity
+  ///  WHERE user = ? AND type = ? AND title IS NOT NULL AND TRIM(title) != ''
+  ///  GROUP BY resourceId ORDER BY openCount DESC, title ASC LIMIT 1
+  /// ```
+  ///
+  /// **Blank titles are excluded before the grouping, not after.** The old
+  /// Kotlin grouped every row, took `group.first().title`, and dropped the
+  /// group only when that one title was null — so a whitespace-only title was
+  /// returned verbatim and rendered as an empty stat, and a group whose *first*
+  /// row happened to be untitled was discarded even when its other rows carried
+  /// a title. Filtering first also changes the counts: an untitled open no
+  /// longer contributes to any resource's total.
+  ///
+  /// **Ties break on title ascending** instead of resolving to whichever group
+  /// the iteration reached first. `ORDER BY ... title ASC` is SQLite's BINARY
+  /// collation (UTF-8 byte order); Dart's [String.compareTo] is UTF-16 code
+  /// unit order, which agrees for everything up to U+FFFF and can disagree only
+  /// for supplementary-plane titles.
+  ///
+  /// The Kotlin returns `null` when the winning count is zero, which cannot
   /// happen for a non-empty group; the guard is dropped rather than reproduced
   /// because it is unreachable, not because the behaviour differs.
   Future<MostOpenedResource?> mostOpenedResource(
@@ -264,17 +285,23 @@ class ActivitiesRepository {
     final rows = await _resourceDao.byUserAndType(userName, type);
     if (rows.isEmpty) return null;
 
+    // The `WHERE ... title IS NOT NULL AND TRIM(title) != ''` half of the
+    // statement: untitled rows are dropped here, so they neither win nor count.
     final grouped = <String?, List<ResourceActivityRow>>{};
     for (final row in rows) {
+      final title = row.title;
+      if (title == null || title.trim().isEmpty) continue;
       grouped.putIfAbsent(row.resourceId, () => []).add(row);
     }
 
     MostOpenedResource? best;
     for (final group in grouped.values) {
-      final title = group.first.title;
-      if (title == null) continue;
-      if (best == null || group.length > best.count) {
-        best = MostOpenedResource(title, group.length);
+      final title = group.first.title!;
+      final count = group.length;
+      if (best == null ||
+          count > best.count ||
+          (count == best.count && title.compareTo(best.title) < 0)) {
+        best = MostOpenedResource(title, count);
       }
     }
     return best;

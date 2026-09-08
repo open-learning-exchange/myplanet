@@ -519,5 +519,10 @@
   "storageRunningLow": "स्टोरेज गम्भीर रूपमा कम: ",
   "storageAvailable": "स्टोरेज उपलब्ध: ",
   "playbackSpeed": "प्लेब्याक गति",
-  "playbackSpeedValue": "{speed}x"
+  "playbackSpeedValue": "{speed}x",
+  "filterPdfs": "PDFहरू",
+  "filterVideos": "भिडियोहरू",
+  "filterAudio": "अडियो",
+  "mediumTextHtml": "पाठ / HTML",
+  "mediumHtml": "HTML"
 }
