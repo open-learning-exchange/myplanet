@@ -98,7 +98,7 @@ object MarkdownUtils {
                 relativePath
             }
             val fullUrl = baseUrl + modifiedPath
-            result.append("<img src=$fullUrl width=$width height=$height/>")
+            result.append("<img src=\"$fullUrl\" width=$width height=$height/>")
             last = matcher.end()
         }
         result.append(content, last, content.length)
