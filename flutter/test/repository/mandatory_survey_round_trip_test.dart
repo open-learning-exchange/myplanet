@@ -194,15 +194,15 @@ void main() {
   });
 
   test('an adopted team clone is not counted by the course gate', () async {
-    // The Phase 125 audit overturned my reading here. Kotlin's
-    // `createMappedSurvey` copies the source survey's `courseId` **and**
-    // `stepId` into the clone (`SurveysRepositoryImpl.kt:181-182`), and
-    // `getAdoptableTeamSurveys` filters only on `teamShareAllowed` — so a
-    // course-attached survey is adoptable and the Kotlin clone inherits the
-    // course join. `SurveyDao.getByCourseId` has no team or adoption filter,
-    // so if the port's clone ever copied those columns this gate would start
-    // demanding that the learner complete every team's copy of the survey.
-    // The port's `adoptSurvey` omits both, and that omission is load-bearing.
+    // Phase 125 read this as "the clone must not join the course"; Phase 136
+    // corrected it to "the clone joins the course and the gate must skip it".
+    // Kotlin's `createMappedSurvey` copies the source survey's `courseId`
+    // (`SurveysRepositoryImpl.kt:182`) and Send folds it into every member's
+    // key, so the port has to copy it. `SurveyDao.getByCourseId` has no
+    // adoption filter, so `hasUnfinishedSurveys` now skips
+    // `sourceSurveyId != null` itself — otherwise a learner outside the
+    // adopting team could never satisfy that team's copy. `stepId` stays null;
+    // `adoptSurvey` documents why.
     await surveys.adoptSurvey(
       surveyId: 'survey-1',
       userId: 'user-1',
@@ -215,9 +215,13 @@ void main() {
       'survey-1',
     );
     expect(clone, isNotNull);
-    expect(clone!.courseId, isNull, reason: 'a clone must not join the course');
+    expect(clone!.courseId, 'course-1', reason: 'as Kotlin\'s clone does');
     expect(clone.stepId, isNull);
-    expect(await database.surveyDao.getByCourseId('course-1'), hasLength(1));
+    expect(
+      await database.surveyDao.getByCourseId('course-1'),
+      hasLength(2),
+      reason: 'the clone is in the query the gate reads; the gate skips it',
+    );
 
     // And the adoption marker it wrote — bare id, `status = ''` — must not be
     // mistaken for an answered sheet, nor repaired into the composite key.
