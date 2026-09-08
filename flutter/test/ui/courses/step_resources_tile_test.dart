@@ -118,12 +118,14 @@ void main() {
               buildStepRow(id: 's0', stepTitle: 'First', noOfResources: 3),
             ]),
           ),
-          ratingSummaryProvider((type: 'course', itemId: 'course-1'))
-              .overrideWith(
-                (ref) => Stream.value(
-                  const RatingSummary(average: 0, total: 0, userRating: null),
-                ),
-              ),
+          ratingSummaryProvider((
+            type: 'course',
+            itemId: 'course-1',
+          )).overrideWith(
+            (ref) => Stream.value(
+              const RatingSummary(average: 0, total: 0, userRating: null),
+            ),
+          ),
         ],
       ),
     );
