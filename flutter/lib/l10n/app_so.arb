@@ -18,7 +18,6 @@
   "ok": "Sax",
   "home": "Guriga",
   "appTheme": "Mawduuca app-ka",
-  "aiChat": "AI Chat",
   "syncNow": "Isku-dar hadda",
   "syncing": "La waafajinayaa…",
   "surveys": "Sahaminta",
@@ -525,5 +524,8 @@
   "filterAudio": "Codad",
   "mediumTextHtml": "Qoraal / HTML",
   "mediumHtml": "HTML",
-  "filterOther": "Kale"
+  "filterOther": "Kale",
+  "takeTestCount": "Barto Imtixaan [{count}]",
+  "retakeTestCount": "Dib u habayn Imtixaanka [{count}]",
+  "redoSurvey": "Dib u samee sahanka"
 }

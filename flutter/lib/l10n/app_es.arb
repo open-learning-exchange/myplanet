@@ -2157,5 +2157,8 @@
   "filterAudio": "Audio",
   "mediumTextHtml": "Texto / HTML",
   "mediumHtml": "HTML",
-  "filterOther": "Otro"
+  "filterOther": "Otro",
+  "takeTestCount": "Realizar examen [{count}]",
+  "retakeTestCount": "Volver a tomar el test [{count}]",
+  "redoSurvey": "volver a hacer la encuesta"
 }

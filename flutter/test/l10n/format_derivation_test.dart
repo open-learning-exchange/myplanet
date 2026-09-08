@@ -181,6 +181,92 @@ void main() {
     });
   });
 
+  group('the trust floor', () {
+    // Phase 141. The tier ladder stops at `casing`, and the 11 template keys
+    // that would match only one notch below it — `logOut`/`Logout`,
+    // `myLibrary`/`myLibrary`, `profitLoss`/`Profit/Loss`, the rest of the
+    // `my*` compound family — are not an oversight waiting to be swept up.
+    // That is where the Kotlin data stops being trustworthy: 47 of its 1055
+    // translatable strings are byte-identical to their English in at least four
+    // of the five locales, and the `my*` family is the worst of them. A tier
+    // reaching those keys would have written the token `mySurveys` over the real
+    // `استطلاعاتي` and `Mes enquêtes`, and called it a recovered translation.
+    //
+    // These read the real `values-*/strings.xml` rather than hand-made inputs.
+    // The first cut of this group did hand-make them, and that is exactly why
+    // it certified a guard that never fired: it passed `proposal: 'mySurveys'`,
+    // a string the pipeline cannot produce, because `_proposal` case-aligns
+    // every non-`exact` tier and hands the guard `MySurveys`.
+
+    test('an untranslated source string is not a candidate translation', () {
+      // `my_survey` is `mySurveys` in `values/strings.xml` and left at
+      // `mySurveys` in Arabic, French, Nepali and Somali.
+      for (final code in ['ar', 'fr', 'ne', 'so']) {
+        for (final name in ['my_survey', 'my_library']) {
+          expect(
+            isUntranslatedSource(
+              localeValue: _kotlin(code, name),
+              kotlinEnglish: _kotlin('en', name),
+              templateEnglish: name == 'my_survey'
+                  ? 'My surveys'
+                  : 'My Library',
+            ),
+            isTrue,
+            reason:
+                '$code/$name is "${_kotlin(code, name)}" against the English '
+                '"${_kotlin('en', name)}" and must be refused',
+          );
+        }
+      }
+    });
+
+    test('the one locale that did translate them is still a candidate', () {
+      // Spanish is why the headline figure is "four of five" and not "all
+      // five": it renders both, so both are real candidates there.
+      expect(_kotlin('es', 'my_survey'), 'misEncuestas');
+      expect(_kotlin('es', 'my_library'), ' miBiblioteca');
+      for (final name in ['my_survey', 'my_library']) {
+        expect(
+          isUntranslatedSource(
+            localeValue: _kotlin('es', name),
+            kotlinEnglish: _kotlin('en', name),
+            templateEnglish: name == 'my_survey' ? 'My surveys' : 'My Library',
+          ),
+          isFalse,
+          reason: 'es/$name is a real translation',
+        );
+      }
+    });
+
+    test('a legitimately invariant value is not mistaken for English', () {
+      // The guard must compare against the Kotlin string's own English *and*
+      // require it to differ from the template's, or it would reject the values
+      // that are correctly identical to their source. `medium_html` is "HTML"
+      // in `values/strings.xml` and "HTML" in `values-fr` — that is the French
+      // translation, not a missing one, and `app_fr.arb` ships it.
+      expect(_kotlin('fr', 'medium_html'), _kotlin('en', 'medium_html'));
+      expect(
+        isUntranslatedSource(
+          localeValue: _kotlin('fr', 'medium_html'),
+          kotlinEnglish: _kotlin('en', 'medium_html'),
+          templateEnglish: 'HTML',
+        ),
+        isFalse,
+      );
+    });
+
+    test('an absent source string proposes nothing either way', () {
+      expect(
+        isUntranslatedSource(
+          localeValue: 'anything',
+          kotlinEnglish: '',
+          templateEnglish: 'Something',
+        ),
+        isFalse,
+      );
+    });
+  });
+
   group('plain text', () {
     // Not a placeholder concern, but the same file: this is where the tool's
     // derivation rules are tested, and the plain-text rules turned out to

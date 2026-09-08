@@ -523,6 +523,13 @@ void _recover(List<String> args, {required bool apply}) {
             _printfSpecifier.hasMatch(proposal)) {
           continue;
         }
+        if (isUntranslatedSource(
+          localeValue: value,
+          kotlinEnglish: english[name] ?? '',
+          templateEnglish: templateValue,
+        )) {
+          continue;
+        }
         byKotlinName[name] = proposal;
       }
       // A locale entry that is still the English is an untranslated string, not
@@ -564,10 +571,20 @@ void _recover(List<String> args, {required bool apply}) {
         // The Kotlin name exists but this locale never translated it. Nothing
         // to recover; not a disagreement either.
         verdict = 'no-translation';
+      } else if (current != null && proposals.contains(current)) {
+        // The value already *is* one of the Kotlin translations — which settles
+        // it whether or not the candidates agree with each other. This used to
+        // sit below the unanimity test, so a key whose two Kotlin names
+        // disagreed was called `no-unanimous` even when the `.arb` carried one
+        // of them verbatim, and `_adopt`'s flag reconciliation (which only ever
+        // looks at `apply` and `already`) never reached it. `progressFilterCompleted`
+        // is the live instance: Kotlin's `completed` and `status_completed` are
+        // different Arabic strings, `app_ar.arb` holds `status_completed`'s
+        // word for word, and it was still flagged unreviewed machine output.
+        // Nothing a user sees changes here — only the marking.
+        verdict = 'already';
       } else if (proposals.length != 1) {
         verdict = 'no-unanimous';
-      } else if (current == proposals.single) {
-        verdict = 'already';
       } else if (current != null &&
           _sameButForSpacing(current, proposals.single)) {
         // Identical words, different space character. `app_fr.arb` writes
@@ -760,6 +777,58 @@ String? derivePlainTextValue({
 /// does, this is the function to extend rather than a third one to add.
 String _mirrorTrailingSpace(String value, String templateEnglish) =>
     templateEnglish.endsWith(' ') && !value.endsWith(' ') ? '$value ' : value;
+
+/// Whether [localeValue] is really the Kotlin *source* string sitting
+/// untranslated in a `values-<locale>` file, and must therefore not be adopted.
+///
+/// 47 of the Kotlin app's 1056 strings are byte-identical to their English in at
+/// least four of the five locales — `my_survey` is the literal token
+/// `mySurveys` in all five, `my_library` is `"mylibrary"` in all five. They are
+/// not translations, and adopting one *replaces* a translation with English:
+/// `app_ar.arb` holds `استطلاعاتي` for `mySurveys` and `app_fr.arb` holds
+/// `Mes enquêtes`, both of which such an adoption would overwrite.
+///
+/// The caller already drops a proposal equal to the *template's* English, which
+/// is the same idea — but only sound while every tier matches English that is
+/// byte-identical to the template's. The three tiers today do: `_proposal`
+/// normalises a punctuation- or casing-tier value back toward the template, so
+/// an untranslated one collapses onto it and is caught. A tier matching on
+/// anything looser would not, and the `my*` compound family is exactly what
+/// such a tier reaches — the port re-spaced Kotlin's `myLibrary`/`mySurveys`
+/// into "My Library"/"My surveys", so those keys sit one notch below the
+/// ladder's floor with Kotlin translations that inherit the original defect.
+///
+/// So the comparison that actually means "untranslated" is against the Kotlin
+/// string's *own* English, and only where that differs from the template's —
+/// otherwise this would reject the legitimately invariant values ("HTML",
+/// "PDF", "N/A"), which are translations that happen to equal their source.
+///
+/// **Judge the raw `values-<locale>` string, never the proposal.** The first
+/// cut of this took `_proposal`'s output and was inert: `_proposal` runs
+/// `_alignInitialCase` for every non-`exact` tier, so `values-ar`'s `mySurveys`
+/// arrives as `MySurveys` and no longer equals the `mySurveys` it is a copy of.
+/// The guard returned false on both examples its own comment names, and the
+/// unit test pinning it passed only because the fixture handed it a `proposal`
+/// the pipeline cannot produce — a fabricated join, which is the shape this
+/// project has been caught by before. Comparing the untransformed locale value
+/// is what makes the question answerable at all: "did this translator leave the
+/// source string in place" is a fact about the XML, not about our rendering
+/// of it.
+///
+/// No tier reaches this today; it is the guard that keeps the floor safe by
+/// construction rather than by luck. `test/l10n/format_derivation_test.dart`
+/// pins it against the real `values-*/strings.xml`, and
+/// `test/l10n/placeholder_integrity_test.dart` pins the outcome from the other
+/// end, over the shipped `.arb` files.
+bool isUntranslatedSource({
+  required String localeValue,
+  required String kotlinEnglish,
+  required String templateEnglish,
+}) {
+  final source = kotlinEnglish.trim();
+  if (source.isEmpty || source == templateEnglish.trim()) return false;
+  return localeValue.trim() == source;
+}
 
 /// Whether [current] is something other than a human translation, and may
 /// therefore be replaced. See the header — this is the guard that keeps the
