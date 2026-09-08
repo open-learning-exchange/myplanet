@@ -855,6 +855,45 @@ Deliberate *deviations*, all flagged in code:
   the login name (keeping the `org.couchdb.user:` colon literal, which CouchDB requires), and
   `resourceUrl` returns `null` instead of interpolating the literal text `null`. All are no-ops
   for well-formed input; the Kotlin is simply wrong when a value contains `@`, `/` or a space.
+- **Two filters in the resources/profile area are stricter than the Kotlin's, both
+  deliberately.** `getMostOpenedResource` drops a blank-titled resource with
+  `TRIM(title) != ''`, but SQLite's one-argument `TRIM` strips **only** U+0020, so a
+  title that is nothing but a tab or a non-breaking space (what a server `&nbsp;`
+  yields) still wins and still renders blank. Dart's `trim()` strips all Unicode
+  whitespace, so the port excludes those too. And `getMediumDisplayName` lowercases
+  with `Locale.getDefault()`, so on a `tr`/`az` device `I` maps to `\u0131` and
+  `IMAGE`/`VIDEO`/`AUDIO` -- three of its seven cases -- fall through and render raw;
+  Dart's `toLowerCase` is locale-independent and matches them. Both are cases where
+  reproducing the Kotlin would mean reproducing a bug with no user served by it.
+
+- **The `exams` database is split into two tables at insert time, not filtered at query time.**
+  Kotlin keeps one Room `exams` entity with a `type` column: `bulkInsertExamsFromSync` runs
+  `StepExam.insertCourseStepsExams` over *every* document of that database and never filters,
+  and the survey/test split happens later, per query -- `ExamDao.getByType("surveys")`,
+  `getByStepIdAndType(stepId, "courses")`. The port has an `exams` table and a `surveys` table
+  and no `type` column, so the split has to happen in the mapper: **`type == 'surveys'` goes to
+  `SurveyMapper`, everything else is an exam** (`ExamMapper.fromDoc`, `SurveyMapper.fromDoc`).
+  Phase 128's step-tile count, the take/retake wording and both buttons' presence all rest on
+  this routing, which is why it belongs here rather than only at the code.
+
+  The rule has to be *"everything else"*, and getting that wrong was Phase 113's bug. The port
+  originally required `type == 'exam'` -- a value `insertCourseStepsExams` uses only as a
+  **fallback** for a document carrying no `type` key at all. A real course test carries
+  `type: "courses"` (`CoursesRepositoryImpl.kt:196`, `:530`), so every one of them was dropped on
+  the floor and `TakeExamScreen` was unreachable in production with green tests either side of
+  the gap. Worth knowing why the Kotlin surface is so easy to misread: `type = "courses"` is
+  **never assigned anywhere in the Kotlin tree** -- it is the server's value copied verbatim --
+  while the only two type literals the tree does write are the singular `"exam"` and `"survey"`
+  fallbacks, which no Kotlin query ever selects on.
+
+- **A step's Take Test button opens the row its own label interrogated.** Kotlin's does not
+  necessarily. `hideTestIfNoQuestion` decides the label from `stepExams[0]`, selected by
+  `stepId = ? AND type = 'courses'`, but the button routes through `BaseExamFragment.initExam`
+  -> `ExamDao.getFirstByStepId`, which is `WHERE stepId = ? LIMIT 1` with **no type filter** --
+  so on a step carrying both an exam and a survey it can open the survey row the label never
+  asked about. The port pushes `exams.first.id`, the same row the label read, so label and
+  destination cannot disagree. A deliberate improvement, preserved rather than introduced; the
+  detail is at `stepAssessmentProvider` in `lib/providers/courses_providers.dart`.
 
 ## Write-back
 

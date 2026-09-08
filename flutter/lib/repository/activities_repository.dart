@@ -252,11 +252,51 @@ class ActivitiesRepository {
   /// Port of `getMostOpenedResource(userName, type)` — the profile's "Most
   /// opened resource" row.
   ///
-  /// Groups by `resourceId`, takes the title from the first row of each group
-  /// and drops groups whose title is null, exactly as the Kotlin does. The
-  /// Kotlin then returns `null` when the winning count is zero, which cannot
-  /// happen for a non-empty group; the guard is dropped rather than reproduced
-  /// because it is unreachable, not because the behaviour differs.
+  /// Upstream `3002830` replaced the Kotlin's in-memory `groupBy`/`maxByOrNull`
+  /// with one SQL statement, and it changed three things beyond the mechanism:
+  ///
+  /// ```sql
+  /// SELECT title, COUNT(*) AS openCount FROM resource_activity
+  ///  WHERE user = ? AND type = ? AND title IS NOT NULL AND TRIM(title) != ''
+  ///  GROUP BY resourceId ORDER BY openCount DESC, title ASC LIMIT 1
+  /// ```
+  ///
+  /// **Blank titles are excluded before the grouping, not after.** The old
+  /// Kotlin grouped every row, took `group.first().title`, and dropped the
+  /// group only when that one title was null — so a whitespace-only title was
+  /// returned verbatim and rendered as an empty stat, and a group whose *first*
+  /// row happened to be untitled was discarded even when its other rows carried
+  /// a title. Filtering first also changes the counts: an untitled open no
+  /// longer contributes to any resource's total.
+  ///
+  /// One narrow, deliberate divergence. SQLite's one-argument `TRIM()` strips
+  /// **only** U+0020, so a title that is nothing but a tab, a newline or a
+  /// non-breaking space passes `TRIM(title) != ''` and is still chosen by the
+  /// Kotlin — where it renders just as blank as the spaces case the filter was
+  /// added for. Dart's [String.trim] strips all Unicode whitespace, so the port
+  /// excludes those too. Reproducing the hole would mean matching `^ *$`
+  /// instead; the filter's purpose is to keep a blank stat off the profile, and
+  /// this serves it more completely.
+  ///
+  /// **Ties break on title ascending** instead of resolving to whichever group
+  /// the iteration reached first. `ORDER BY ... title ASC` is SQLite's BINARY
+  /// collation (UTF-8 byte order); Dart's [String.compareTo] is UTF-16 code
+  /// unit order, which agrees for everything up to U+FFFF and can disagree only
+  /// for supplementary-plane titles.
+  ///
+  /// The pre-`3002830` Kotlin also returned `null` when the winning count was
+  /// zero, which could not happen for a non-empty group. The commit deleted
+  /// that guard along with the rest of the in-memory path, so there is nothing
+  /// left here to reproduce or to skip.
+  ///
+  /// One thing SQLite does **not** promise: which row supplies the bare `title`
+  /// under `GROUP BY resourceId`. The docs call it an arbitrary row of the
+  /// group, and it is not merely cosmetic — the reported title also feeds
+  /// `ORDER BY title ASC`, so on a resource renamed server-side between opens
+  /// it can decide a tie. Observed behaviour on the SQLite versions in play is
+  /// the first surviving row in scan order, which is what `group.first` below
+  /// pins; a future engine taking the last row could break a tie the other way
+  /// in both apps.
   Future<MostOpenedResource?> mostOpenedResource(
     String userName,
     String type,
@@ -264,17 +304,23 @@ class ActivitiesRepository {
     final rows = await _resourceDao.byUserAndType(userName, type);
     if (rows.isEmpty) return null;
 
+    // The `WHERE ... title IS NOT NULL AND TRIM(title) != ''` half of the
+    // statement: untitled rows are dropped here, so they neither win nor count.
     final grouped = <String?, List<ResourceActivityRow>>{};
     for (final row in rows) {
+      final title = row.title;
+      if (title == null || title.trim().isEmpty) continue;
       grouped.putIfAbsent(row.resourceId, () => []).add(row);
     }
 
     MostOpenedResource? best;
     for (final group in grouped.values) {
-      final title = group.first.title;
-      if (title == null) continue;
-      if (best == null || group.length > best.count) {
-        best = MostOpenedResource(title, group.length);
+      final title = group.first.title!;
+      final count = group.length;
+      if (best == null ||
+          count > best.count ||
+          (count == best.count && title.compareTo(best.title) < 0)) {
+        best = MostOpenedResource(title, count);
       }
     }
     return best;

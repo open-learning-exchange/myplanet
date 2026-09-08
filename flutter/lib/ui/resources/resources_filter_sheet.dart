@@ -5,6 +5,65 @@ import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/resources_providers.dart';
 
+/// Port of `ResourcesFilterFragment.getMediumDisplayName` (upstream `64140ca`).
+///
+/// The resources filter lists whatever `mediaType` values the synced rows
+/// happen to carry, which are raw server strings — `pdf`, `text/html`, `other`.
+/// Kotlin used to render them verbatim and now maps the seven it recognises
+/// onto localised labels, leaving anything else untouched. The mapping is
+/// applied to the **medium** list only: `setAdapter`'s `label` parameter
+/// defaults to the identity for the language, subject and level lists, so those
+/// still show their raw values in both apps.
+///
+/// Only the *label* is mapped. The chip's value stays the raw medium, because
+/// that is what `ResourceFilter.mediaTypes` matches `MyLibraryRow.mediaType`
+/// against.
+///
+/// `image` reuses `storageImages`, which is the port of Kotlin's
+/// `storage_images` — the very key `getMediumDisplayName` itself uses for this
+/// case, so that is reuse of the same string, not a coincidence.
+///
+/// `other` deliberately does **not** reuse `storageOther`, even though the two
+/// read identically today. `storageOther` is the port of `storage_other`
+/// ("Other Files"), and its value is currently wrong: `arb_from_strings_xml`
+/// matches by English text when the key name does not match, `"Other Files" !=
+/// "Other"`, so it imported the unrelated `other` key's translations into all
+/// five locales. Repairing it — which the storage breakdown needs — would
+/// silently relabel this chip. `filterOther` carries Kotlin's `other` in its own
+/// right so the two can move independently.
+///
+/// Kotlin lowercases with `Locale.getDefault()`, which is the Turkish-dotless-I
+/// trap: under `tr`/`az`, a capital `I` maps to `\u0131` rather than `i`, so any
+/// value containing one falls through to `else` and renders raw — `IMAGE`,
+/// `VIDEO`, `AUDIO` in caps, and title-case `Image`, though not `Video` or
+/// `Audio`, whose `i` is already lowercase. It is reachable: `LocaleUtils`
+/// seeds the default from `Locale.getDefault().language`, so a Turkish device
+/// on which no language has been picked in myPlanet keeps `tr`. Dart's
+/// [String.toLowerCase] is locale-independent, so the port matches them where
+/// the Kotlin does not. Deliberate; reproducing the bug would need an explicit
+/// Turkish special case.
+String mediaTypeDisplayName(BuildContext context, String medium) {
+  final l10n = AppLocalizations.of(context);
+  switch (medium.toLowerCase()) {
+    case 'pdf':
+      return l10n.filterPdfs;
+    case 'video':
+      return l10n.filterVideos;
+    case 'audio':
+      return l10n.filterAudio;
+    case 'image':
+      return l10n.storageImages;
+    case 'text/html':
+      return l10n.mediumTextHtml;
+    case 'html':
+      return l10n.mediumHtml;
+    case 'other':
+      return l10n.filterOther;
+    default:
+      return medium;
+  }
+}
+
 /// Filter criteria for resources.
 class ResourceFilter {
   final Set<String> languages;
@@ -204,6 +263,7 @@ class _ResourcesFilterSheetState extends ConsumerState<ResourcesFilterSheet> {
                       title: l10n.mediaType,
                       options: options.mediaTypes,
                       selected: _currentFilter.mediaTypes,
+                      labelFor: mediaTypeDisplayName,
                       onChanged: (value) {
                         setState(() {
                           _currentFilter = _currentFilter.copyWith(
@@ -255,10 +315,24 @@ class _ResourcesFilterSheetState extends ConsumerState<ResourcesFilterSheet> {
     required List<String> options,
     required Set<String> selected,
     required ValueChanged<Set<String>> onChanged,
+    String Function(BuildContext, String)? labelFor,
   }) {
     if (options.isEmpty) {
       return const SizedBox.shrink();
     }
+
+    // `resourceFilterOptionsProvider` sorts each facet by its raw value, which
+    // was also the displayed text until the labels were mapped. Sorting on a
+    // string the user cannot see puts `Videos` before `PDFs` (because `Video` <
+    // `pdf`) and, in Arabic, produces an order unrelated to any collation. Sort
+    // on what is rendered. Kotlin sorts none of these facets at all — it
+    // returns `mutableSetOf` in first-appearance order — so the alphabetical
+    // ordering is a port-local improvement, and this keeps it one.
+    final ordered = labelFor == null
+        ? options
+        : (List<String>.of(options)..sort(
+            (a, b) => labelFor(context, a).compareTo(labelFor(context, b)),
+          ));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -268,10 +342,14 @@ class _ResourcesFilterSheetState extends ConsumerState<ResourcesFilterSheet> {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: options.map((option) {
+          children: ordered.map((option) {
             final isSelected = selected.contains(option);
             return FilterChip(
-              label: Text(option),
+              // The chip's *label* may be a friendly name while its *value*
+              // stays the raw medium the resource row carries — the filter
+              // predicate and `ResourceFilterOptions` both key on the raw
+              // string, so only the rendering is mapped.
+              label: Text(labelFor?.call(context, option) ?? option),
               selected: isSelected,
               onSelected: (value) {
                 final newSelected = Set<String>.from(selected);

@@ -278,6 +278,92 @@ void main() {
     },
   );
 
+  test('a tie on open count breaks on title ascending', () async {
+    Future<void> open(String id, String resourceId, String? title) =>
+        repository.logResourceOpen(
+          id: id,
+          userId: 'user-ada',
+          userName: 'ada',
+          title: title,
+          resourceId: resourceId,
+          type: ActivityTypes.visit,
+          time: 1,
+        );
+
+    // Zoology is inserted first, so the pre-`3002830` implementation — which
+    // kept the first group reaching the maximum, `count > best.count` being
+    // strict — returned it. `ORDER BY openCount DESC, title ASC` returns
+    // Anatomy.
+    await open('z1', 'res-z', 'Zoology');
+    await open('z2', 'res-z', 'Zoology');
+    await open('a1', 'res-a', 'Anatomy');
+    await open('a2', 'res-a', 'Anatomy');
+
+    final best = await repository.mostOpenedResource(
+      'ada',
+      ActivityTypes.visit,
+    );
+    expect(best?.title, 'Anatomy');
+    expect(best?.count, 2);
+  });
+
+  test(
+    'a whitespace-only title is excluded, and does not count toward a total',
+    () async {
+      Future<void> open(String id, String resourceId, String? title) =>
+          repository.logResourceOpen(
+            id: id,
+            userId: 'user-ada',
+            userName: 'ada',
+            title: title,
+            resourceId: resourceId,
+            type: ActivityTypes.visit,
+            time: 1,
+          );
+
+      // The old filter was `title != null`, so a blank title outran everything
+      // and rendered as an empty stat. `TRIM(title) != ''` drops it.
+      await open('b1', 'res-blank', '   ');
+      await open('b2', 'res-blank', '   ');
+      await open('b3', 'res-blank', '   ');
+      await open('r1', 'res-real', 'Geometry');
+
+      final best = await repository.mostOpenedResource(
+        'ada',
+        ActivityTypes.visit,
+      );
+      expect(best?.title, 'Geometry');
+      expect(best?.count, 1);
+
+      // A deliberate divergence, pinned so a narrower reimplementation reds.
+      // SQLite's one-argument TRIM() strips only U+0020, so a tab-only title
+      // survives `TRIM(title) != ''` and the Kotlin still picks it — rendering
+      // exactly the blank stat the filter exists to prevent. Dart's trim()
+      // strips all Unicode whitespace, so the port drops it.
+      await open('t1', 'res-tab', '\t');
+      await open('t2', 'res-tab', '\t');
+      await open('t3', 'res-tab', '\t');
+      await open('t4', 'res-tab', '\t');
+      final stillGeometry = await repository.mostOpenedResource(
+        'ada',
+        ActivityTypes.visit,
+      );
+      expect(stillGeometry?.title, 'Geometry');
+
+      // A group is now judged on its *titled* rows only: the untitled first row
+      // no longer discards the whole resource, and no longer inflates its count.
+      await open('m1', 'res-mixed', null);
+      await open('m2', 'res-mixed', 'Mixed');
+      await open('m3', 'res-mixed', 'Mixed');
+      final mixed = await repository.mostOpenedResource(
+        'ada',
+        ActivityTypes.visit,
+      );
+      expect(mixed?.title, 'Mixed');
+      expect(mixed?.count, 2);
+    },
+  );
+
   test('a course visit records the visit type and the course id', () async {
     await repository.logCourseVisit(
       id: 'course-1',

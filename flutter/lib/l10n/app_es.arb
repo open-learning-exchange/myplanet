@@ -2151,5 +2151,11 @@
   "storageRunningLow": "Almacenamiento bajo: ",
   "storageAvailable": "Almacenamiento disponible: ",
   "playbackSpeed": "Velocidad de reproducción",
-  "playbackSpeedValue": "{speed}x"
+  "playbackSpeedValue": "{speed}x",
+  "filterPdfs": "PDFs",
+  "filterVideos": "Videos",
+  "filterAudio": "Audio",
+  "mediumTextHtml": "Texto / HTML",
+  "mediumHtml": "HTML",
+  "filterOther": "Otro"
 }

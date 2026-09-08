@@ -1565,5 +1565,29 @@
         "example": "1.25"
       }
     }
+  },
+  "filterPdfs": "PDFs",
+  "@filterPdfs": {
+    "description": "Label for the pdf entry in the resources media-type filter. Recovered from the Kotlin `filter_pdfs`. Note that Kotlin has a second consumer the port does not: `ResourcesAdapter.typeLabelRes` uses this string (and `filter_videos`/`filter_audio`, plus a `filter_books` the port has no key for) as the first segment of every resource row subtitle. The port row subtitle shows author/year/subjects instead, so only the filter use is covered here."
+  },
+  "filterVideos": "Videos",
+  "@filterVideos": {
+    "description": "Label for the video entry in the resources media-type filter. Recovered from the Kotlin `filter_videos`."
+  },
+  "filterAudio": "Audio",
+  "@filterAudio": {
+    "description": "Label for the audio entry in the resources media-type filter. Recovered from the Kotlin `filter_audio`."
+  },
+  "mediumTextHtml": "Text / HTML",
+  "@mediumTextHtml": {
+    "description": "Label for the `text/html` entry in the resources media-type filter. Recovered from the Kotlin `medium_text_html`."
+  },
+  "mediumHtml": "HTML",
+  "@mediumHtml": {
+    "description": "Label for the `html` entry in the resources media-type filter. Recovered from the Kotlin `medium_html`."
+  },
+  "filterOther": "Other",
+  "@filterOther": {
+    "description": "Label for the `other` entry in the resources media-type filter. Recovered from the Kotlin `other`. Deliberately NOT `storageOther`: that key is the port of `storage_other` (\"Other Files\"), whose value is currently wrong, and this chip must not move when it is repaired."
   }
 }
