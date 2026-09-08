@@ -67,7 +67,7 @@ Three choices in there are deliberate:
 * **`teamId` as the query key, not `team`.** `addResource` and `userInfo`
   already read exactly that key (`router.dart:267,319`), so the alternative
   would have made this the odd one out. The mutation that renames it is one of
-  the thirteen below, because a route reading `team` where the push writes
+  the fourteen below, because a route reading `team` where the push writes
   `teamId` is the Phase 74/100 shape.
 * **The location stays a literal at the call site.** A `surveyLocation(...)`
   helper in `router.dart` reads better and would have been *worse*:
@@ -102,7 +102,7 @@ The two Kotlin reads of `teamId`, and what each became:
 | Kotlin | port |
 |---|---|
 | `submitForm:151-174` — a non-empty team routes the profile onto the *submission* rather than onto the signed-in user's own document | inert: this screen requires a `submissionId`, so it always takes Kotlin's `saveSubmission` arm anyway. Documented, not coded. |
-| `onDismiss:293-311` — a non-empty team uploads, **on every dismissal, Cancel included** | ported: `_queueUpload` is gated on the team id and `_cancel` now calls it |
+| `onDismiss:293-311` — a non-empty team uploads, **on every dismissal**: Save, Cancel, an outside tap, the back button | ported: `_queueUpload` is gated on the team id and hangs off the screen's `PopScope`, so all three exits take it |
 
 The toast and `popBackStack` that Kotlin gates on the same value are
 deliberately **not** ported to that gate: each port screen owns its own
@@ -111,6 +111,23 @@ and a second identical snackbar would queue behind the first on the one path
 that reaches the screen today. The pop is owned by `take_survey_screen`, which
 lands the respondent back on the team's surveys tab — Kotlin's
 `FragmentNavigator.popBackStack` — instead of on a submission detail.
+
+**The queue hangs off the pop, not off the buttons, and that was the second
+thing my own re-read caught.** `onDismiss` is not the Cancel handler — it is
+every dismissal, the system back button included. Wiring the two buttons left
+the back button as a silent third exit that saved nothing and sent nothing:
+exactly the defect the Cancel fix had just removed, in the same method. A
+`PopScope` whose `onPopInvokedWithResult` calls `_queueUpload` covers all three,
+and it also puts the order where Kotlin has it — the queue runs *after*
+`markSubmissionComplete`, so the enqueued payload carries the profile.
+`enqueue` dedupes on `(uploadType, itemId)`, so a path that pops twice cannot
+double-post.
+
+**Review `user_information_screen.dart` with `git diff -w`.** Wrapping the
+returned `Scaffold` re-indents the whole build method: 292 changed lines, of
+which 28 are real. The alternative placements all cost a reindent of something,
+and hanging one hook off the pop is what makes the three exits agree — which is
+the point, since two of them disagreeing is what this fixed.
 
 **The Cancel path had a hazard of its own, found by re-reading my own diff.**
 `_cancel` pops before the queue finishes, so the `State` can be disposed while
@@ -186,7 +203,7 @@ they could be written:
 
 ## Tests
 
-`test/ui/surveys/survey_team_context_test.dart`, 12 new tests, plus 4 in
+`test/ui/surveys/survey_team_context_test.dart`, 12 new tests, plus 5 in
 `user_information_screen_test.dart`, 1 in `team_surveys_screen_test.dart` and 2
 in `public_survey_screen_test.dart`.
 
@@ -205,13 +222,14 @@ passed alone while the whole was broken:
 * and one test that walks the whole journey — team tab → real
   `TakeSurveyScreen` → profile → back on the tab.
 
-**Mutation-tested: thirteen injected, thirteen killed**, each by a test that names
+**Mutation-tested: fourteen injected, fourteen killed**, each by a test that names
 it. Dropping the query parameter; renaming the route's read to `team`; dropping
 the forward at each of the two repository hops; dropping the public screen's id;
 re-seeding the Phase 106 pop gate; never asking who the respondent is; ignoring
 `isFromNation`; going to the submission detail instead of popping back; queueing
 before the profile step; not queueing on Cancel; dropping the team gate on the
-queue; and deferring `_queueUpload`'s `ref` reads past its first `await`.
+queue; deferring `_queueUpload`'s `ref` reads past its first `await`; and
+narrowing the pop hook to a `true` result, which is the back button's exit.
 
 The twelfth is the one worth the note: **queueing before the profile step
 passed at first.** `enqueue` refreshes an open row's payload, so the end state

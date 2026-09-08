@@ -90,155 +90,170 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.yourInformation)),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            if (!widget.showAdditionalFields) ...[
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: OutlinedButton(
-                  onPressed: () {
-                    setState(() {
-                      _showAdditionalFields = !_showAdditionalFields;
-                      if (!_showAdditionalFields) {
-                        _fnameController.clear();
-                        _mnameController.clear();
-                        _lnameController.clear();
-                        _emailController.clear();
-                        _phoneController.clear();
-                        _dateOfBirth = null;
-                      } else {
-                        _yobController.clear();
-                      }
-                    });
-                  },
-                  child: Text(
-                    _showAdditionalFields
-                        ? l10n.hideAdditionalFields
-                        : l10n.showAdditionalFields,
-                  ),
-                ),
-              ),
-            ],
-
-            // Year of birth (simplified mode)
-            if (_showAdditionalFields) ...[
-              // No validator: `createUserProfile` requires nothing but the
-              // year of birth, so a respondent who gives no name still
-              // completes the survey.
-              _buildTextField(
-                controller: _fnameController,
-                label: l10n.firstName,
-              ),
-              _buildTextField(
-                controller: _mnameController,
-                label: l10n.middleName,
-              ),
-              _buildTextField(
-                controller: _lnameController,
-                label: l10n.lastName,
-              ),
-              _buildTextField(
-                controller: _emailController,
-                label: l10n.email,
-                keyboardType: TextInputType.emailAddress,
-              ),
-              _buildDropdown(
-                value: _selectedLanguage,
-                label: l10n.language,
-                items: memberLanguages,
-                onChanged: (v) => setState(() => _selectedLanguage = v),
-              ),
-              _buildTextField(
-                controller: _phoneController,
-                label: l10n.phoneNumber,
-                keyboardType: TextInputType.phone,
-              ),
-              _buildDateField(context, l10n),
-            ] else ...[
-              _buildTextField(
-                controller: _yobController,
-                label: l10n.yearOfBirth,
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(4),
-                ],
-                validator: _validateYearOfBirth,
-              ),
-            ],
-
-            // Gender
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                l10n.gender,
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-            ),
-            RadioGroup<String?>(
-              groupValue: _selectedGender,
-              onChanged: (v) => setState(() => _selectedGender = v),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: RadioListTile<String?>(
-                      title: Text(l10n.male),
-                      value: 'male',
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                  Expanded(
-                    child: RadioListTile<String?>(
-                      title: Text(l10n.female),
-                      value: 'female',
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Level (for additional fields mode)
-            if (_showAdditionalFields) ...[
-              _buildDropdown(
-                value: _selectedLevel,
-                label: l10n.level,
-                items: memberLevels,
-                onChanged: (v) => setState(() => _selectedLevel = v),
-              ),
-            ],
-
-            const SizedBox(height: 24),
-
-            // Action buttons
-            Row(
-              children: [
-                Expanded(
+    // `onDismiss` is not the Cancel handler — it is *every* dismissal (Save,
+    // Cancel, an outside tap, the system back button), which is why the queue
+    // hangs off the pop rather than off the two buttons. Wiring the buttons
+    // only left the back button as a silent third exit that saved nothing and
+    // sent nothing. It also puts the order where Kotlin has it: the queue runs
+    // after `markSubmissionComplete`, so the payload carries the profile.
+    //
+    // `enqueue` dedupes on (uploadType, itemId), so a path that pops twice
+    // cannot double-post.
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) _queueUpload();
+      },
+      child: Scaffold(
+        appBar: AppBar(title: Text(l10n.yourInformation)),
+        body: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              if (!widget.showAdditionalFields) ...[
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
                   child: OutlinedButton(
-                    onPressed: _isSubmitting ? null : () => _cancel(context),
-                    child: Text(l10n.cancel),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: _isSubmitting ? null : () => _submit(context),
-                    child: _isSubmitting
-                        ? const SizedBox.square(
-                            dimension: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(l10n.save),
+                    onPressed: () {
+                      setState(() {
+                        _showAdditionalFields = !_showAdditionalFields;
+                        if (!_showAdditionalFields) {
+                          _fnameController.clear();
+                          _mnameController.clear();
+                          _lnameController.clear();
+                          _emailController.clear();
+                          _phoneController.clear();
+                          _dateOfBirth = null;
+                        } else {
+                          _yobController.clear();
+                        }
+                      });
+                    },
+                    child: Text(
+                      _showAdditionalFields
+                          ? l10n.hideAdditionalFields
+                          : l10n.showAdditionalFields,
+                    ),
                   ),
                 ),
               ],
-            ),
-          ],
+
+              // Year of birth (simplified mode)
+              if (_showAdditionalFields) ...[
+                // No validator: `createUserProfile` requires nothing but the
+                // year of birth, so a respondent who gives no name still
+                // completes the survey.
+                _buildTextField(
+                  controller: _fnameController,
+                  label: l10n.firstName,
+                ),
+                _buildTextField(
+                  controller: _mnameController,
+                  label: l10n.middleName,
+                ),
+                _buildTextField(
+                  controller: _lnameController,
+                  label: l10n.lastName,
+                ),
+                _buildTextField(
+                  controller: _emailController,
+                  label: l10n.email,
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                _buildDropdown(
+                  value: _selectedLanguage,
+                  label: l10n.language,
+                  items: memberLanguages,
+                  onChanged: (v) => setState(() => _selectedLanguage = v),
+                ),
+                _buildTextField(
+                  controller: _phoneController,
+                  label: l10n.phoneNumber,
+                  keyboardType: TextInputType.phone,
+                ),
+                _buildDateField(context, l10n),
+              ] else ...[
+                _buildTextField(
+                  controller: _yobController,
+                  label: l10n.yearOfBirth,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(4),
+                  ],
+                  validator: _validateYearOfBirth,
+                ),
+              ],
+
+              // Gender
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  l10n.gender,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+              RadioGroup<String?>(
+                groupValue: _selectedGender,
+                onChanged: (v) => setState(() => _selectedGender = v),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: RadioListTile<String?>(
+                        title: Text(l10n.male),
+                        value: 'male',
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                    Expanded(
+                      child: RadioListTile<String?>(
+                        title: Text(l10n.female),
+                        value: 'female',
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Level (for additional fields mode)
+              if (_showAdditionalFields) ...[
+                _buildDropdown(
+                  value: _selectedLevel,
+                  label: l10n.level,
+                  items: memberLevels,
+                  onChanged: (v) => setState(() => _selectedLevel = v),
+                ),
+              ],
+
+              const SizedBox(height: 24),
+
+              // Action buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _isSubmitting ? null : () => _cancel(context),
+                      child: Text(l10n.cancel),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: _isSubmitting ? null : () => _submit(context),
+                      child: _isSubmitting
+                          ? const SizedBox.square(
+                              dimension: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(l10n.save),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -350,12 +365,10 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
   /// `user` object from the body.
   Future<void> _cancel(BuildContext context) async {
     // Kotlin's `onDismiss` runs on Cancel too, so declining the profile is
-    // still what sends a team survey — see [_queueUpload]. Queued before the
-    // pop, and not awaited into the navigation: the drain is best-effort and
-    // the respondent should not wait on it to leave.
-    final queued = _queueUpload();
+    // still what sends a team survey — but the queue hangs off the pop (see
+    // the `PopScope` in [build]) rather than being called here, so that the
+    // back button takes the same path.
     Navigator.of(context).pop(false);
-    await queued;
   }
 
   Future<void> _submit(BuildContext context) async {
@@ -390,7 +403,8 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
       await ref
           .read(submissionsRepositoryProvider)
           .markSubmissionComplete(widget.submissionId, profile);
-      await _queueUpload();
+      // No `_queueUpload()` here: the pop below runs it, after this write, so
+      // the enqueued payload carries the profile — Kotlin's order exactly.
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,

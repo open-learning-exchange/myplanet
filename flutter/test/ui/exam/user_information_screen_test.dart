@@ -577,6 +577,34 @@ void main() {
       expect(queued, isNotNull);
     });
 
+    testWidgets('the back button queues it too', (tester) async {
+      // `onDismiss` is not the Cancel handler — it is *every* dismissal:
+      // Save, Cancel, an outside tap, and the system back button. Wiring only
+      // the two buttons left the back button as a silent third exit that
+      // saved nothing and sent nothing, which is the same defect the Cancel
+      // path had, in the same method.
+      await (db.update(
+        db.submissions,
+      )..where((row) => row.id.equals(submissionId))).write(
+        const SubmissionsCompanion(
+          status: Value('complete'),
+          isUpdated: Value(true),
+        ),
+      );
+      await pumpScreen(tester);
+
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.text('ROOT_PAGE'), findsOneWidget);
+      final queued = await db.outboxDao.findOpen(
+        SubmissionsUploader.type,
+        submissionId,
+      );
+      expect(queued, isNotNull);
+    });
+
     testWidgets('cancel pops false', (tester) async {
       // Reports that nothing was saved. It must NOT be read as "do not
       // post": Kotlin uploads from `onFragmentDetached` on both the save and
