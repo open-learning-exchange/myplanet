@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.effectiveId
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
@@ -61,7 +62,6 @@ class HealthViewModel @Inject constructor(
     fun searchPatients(query: String, sortBy: String = "joinDate", descending: Boolean = true) {
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
-            delay(300)
             val loadingJob = launch {
                 delay(100)
                 _isListLoading.value = true
@@ -77,7 +77,7 @@ class HealthViewModel @Inject constructor(
         viewModelScope.launch {
             val currentUser = userRepository.getUserModel()
             _loggedInUser.value = currentUser
-            val uid = if (currentUser?._id.isNullOrEmpty()) currentUser?.id else currentUser?._id
+            val uid = currentUser?.effectiveId
             val normalizedId = uid?.trim()
             if (!normalizedId.isNullOrEmpty()) {
                 selectPatient(normalizedId)
@@ -105,7 +105,7 @@ class HealthViewModel @Inject constructor(
             _isLoading.value = true
             coroutineScope {
                 val userModelDeferred = async { userRepository.getUserById(userId) }
-                val decodedHealthDeferred = async { userRepository.getHealthProfile(userId) }
+                val decodedHealthDeferred = async { healthRepository.getHealthProfile(userId) }
 
                 val userModel = userModelDeferred.await()
                 val decodedHealth = decodedHealthDeferred.await()
@@ -127,7 +127,7 @@ class HealthViewModel @Inject constructor(
 
     fun saveHealthData(userId: String, userData: Map<String, Any?>) {
         viewModelScope.launch {
-            userRepository.updateUserHealthProfile(userId, userData)
+            healthRepository.updateUserHealthProfile(userId, userData)
             _isSaved.value = true
         }
     }

@@ -15,7 +15,7 @@ class ANRWatchdog(
     private val scope: CoroutineScope,
     private val timeout: Long = DEFAULT_ANR_TIMEOUT,
     private val listener: ANRListener? = null,
-    private val dispatcherProvider: DispatcherProvider = DefaultDispatcherProvider()
+    private val dispatcherProvider: DispatcherProvider
 ) {
     private var job: Job? = null
     companion object {

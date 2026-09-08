@@ -65,6 +65,8 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var teamId: String? = null
     internal var answerTextWatcher: TextWatcher? = null
     private var currentAnswerEditText: EditText? = null
+    private val markwon by lazy(LazyThreadSafetyMode.NONE) { Markwon.create(requireActivity()) }
+    private val markwonEditor by lazy(LazyThreadSafetyMode.NONE) { MarkwonEditor.create(markwon) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -85,11 +87,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
                 id?.let {
                     sub = submissionsRepository.getSubmissionById(it)
                 }
-                id = if (sub?.parentId?.contains("@") == true) {
-                    sub?.parentId?.split("@".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()?.get(0)
-                } else {
-                    sub?.parentId
-                }
+                id = sub?.parentId?.substringBefore("@")
             }
         }
     }
@@ -132,7 +130,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         } else if (isTeam && type?.startsWith("survey") == true) {
             showUserInfoDialog()
         } else {
-            saveCourseProgress(exam?.courseId, stepNumber, sub?.status == "graded")
+            saveCourseProgress(exam?.courseId, stepNumber, sub?.status == "graded", user?.id)
             val titleView = TextView(requireContext()).apply {
                 text = "${getString(R.string.thank_you_for_taking_this)}$type! ${getString(R.string.we_wish_you_all_the_best)}"
                 textSize = 18f
@@ -150,7 +148,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         }
     }
 
-    abstract fun saveCourseProgress(courseId: String?, stepNum: Int, isGraded: Boolean)
+    abstract fun saveCourseProgress(courseId: String?, stepNum: Int, isGraded: Boolean, userId: String?)
 
     private fun showUserInfoDialog() {
         if (!isMySurvey && exam?.isFromNation != true) {
@@ -197,10 +195,8 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         currentAnswerEditText?.removeTextChangedListener(answerTextWatcher)
         currentAnswerEditText = etAnswer
         etAnswer.visibility = View.VISIBLE
-        val markwon = Markwon.create(requireActivity())
-        val editor = MarkwonEditor.create(markwon)
         if (type.equals("textarea", ignoreCase = true)) {
-            answerTextWatcher = MarkwonEditorTextWatcher.withProcess(editor)
+            answerTextWatcher = MarkwonEditorTextWatcher.withProcess(markwonEditor)
             etAnswer.addTextChangedListener(answerTextWatcher)
         } else {
             answerTextWatcher = object : TextWatcher {

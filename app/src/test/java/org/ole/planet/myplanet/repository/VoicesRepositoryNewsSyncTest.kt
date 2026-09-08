@@ -16,9 +16,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.room.AppDatabase
-import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.NewsDao
-import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -33,7 +31,7 @@ import org.robolectric.annotation.Config
  * batched existing-row dedup (the former N+1), and the top-level/reply queries the UI relies on.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(application = Application::class, sdk = [26])
+@Config(application = Application::class)
 class VoicesRepositoryNewsSyncTest {
 
     private lateinit var db: AppDatabase
@@ -74,10 +72,9 @@ class VoicesRepositoryNewsSyncTest {
         repository = VoicesRepositoryImpl(
             mockk<DispatcherProvider>(relaxed = true),
             Gson(),
+            Gson(),
             sharedPrefManager,
-            mockk<TeamNotificationDao>(relaxed = true),
             newsDao,
-            mockk<MyLibraryDao>(relaxed = true),
             mockk<org.ole.planet.myplanet.data.room.dao.NewsLogDao>(relaxed = true)
         )
     }
@@ -119,5 +116,25 @@ class VoicesRepositoryNewsSyncTest {
 
         assertEquals("Edited", newsDao.getByUnderscoreId("n1")?.message)
         assertEquals(1, newsDao.getAll().size)
+    }
+
+    @Test
+    fun `insertNewsList handles duplicate and blank _id values correctly`() = runBlocking {
+        val doc1 = messageDoc("n1", "First version")
+        val doc1Updated = messageDoc("n1", "Second version")
+        val blankDoc = messageDoc("", "Blank id message")
+
+        repository.insertNewsList(listOf(doc1, doc1Updated, blankDoc))
+
+        val allNews = newsDao.getAll()
+        assertEquals(2, allNews.size)
+
+        val n1 = newsDao.getByUnderscoreId("n1")
+        assertNotNull(n1)
+        assertEquals("Second version", n1?.message)
+
+        val blankNews = newsDao.getByUnderscoreId("")
+        assertNotNull(blankNews)
+        assertEquals("Blank id message", blankNews?.message)
     }
 }

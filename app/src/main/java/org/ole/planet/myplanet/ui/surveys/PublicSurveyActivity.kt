@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 @AndroidEntryPoint
 class PublicSurveyActivity : AppCompatActivity() {
     private lateinit var binding: ActivityPublicSurveyBinding
+    private var backStackListener: FragmentManager.OnBackStackChangedListener? = null
 
     @Inject
     lateinit var surveysRepository: SurveysRepository
@@ -61,11 +62,12 @@ class PublicSurveyActivity : AppCompatActivity() {
         }
 
         supportFragmentManager.registerFragmentLifecycleCallbacks(userInfoDialogCallback, true)
-        supportFragmentManager.addOnBackStackChangedListener {
+        backStackListener = FragmentManager.OnBackStackChangedListener {
             if (surveyStarted && supportFragmentManager.backStackEntryCount == 0 && !isFinishing) {
                 uploadCompletedSubmission()
             }
         }
+        backStackListener?.let { supportFragmentManager.addOnBackStackChangedListener(it) }
         loadSurvey()
     }
 
@@ -170,7 +172,7 @@ class PublicSurveyActivity : AppCompatActivity() {
             val choices = answer?.valueChoicesArray ?: JsonArray()
             when {
                 question.type.equals("selectMultiple", ignoreCase = true) -> payload.add(choices)
-                question.type.equals("select", ignoreCase = true) && choices.size() > 0 -> payload.add(choices[0])
+                question.type.equals("select", ignoreCase = true) && !choices.isEmpty() -> payload.add(choices[0])
                 else -> payload.add(JsonPrimitive(answer?.value.orEmpty()))
             }
         }
@@ -179,6 +181,7 @@ class PublicSurveyActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         supportFragmentManager.unregisterFragmentLifecycleCallbacks(userInfoDialogCallback)
+        backStackListener?.let { supportFragmentManager.removeOnBackStackChangedListener(it) }
         super.onDestroy()
     }
 

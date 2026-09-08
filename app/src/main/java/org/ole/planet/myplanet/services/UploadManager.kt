@@ -17,21 +17,18 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.NewsUpdateData
 import org.ole.planet.myplanet.repository.NewsUploadData
-import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.TeamUploadData
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -50,6 +47,7 @@ import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 
 private inline fun <T> Iterable<T>.processInBatches(action: (List<T>) -> Unit) {
     chunked(BATCH_SIZE).forEach(action)
@@ -58,7 +56,7 @@ private inline fun <T> Iterable<T>.processInBatches(action: (List<T>) -> Unit) {
 @Singleton
 class UploadManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val sharedPrefManager: SharedPrefManager,
+    private val submissionsRepository: SubmissionsRepository,
     private val gson: Gson,
     private val uploadCoordinator: UploadCoordinator,
     private val uploadRepository: UploadRepository,
@@ -139,7 +137,7 @@ class UploadManager @Inject constructor(
         user?.parentCode?.let { `object`.addProperty("resideOn", it) }
         user?.planetCode?.let { `object`.addProperty("sourcePlanet", it) }
         val object1 = JsonObject()
-        `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+        `object`.addDocumentOrigin()
         `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
         `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
         `object`.add("privateFor", object1)
@@ -263,16 +261,12 @@ class UploadManager @Inject constructor(
                 val uploadedTeams = mutableMapOf<String, String>()
 
                 val bulkDocs = com.google.gson.JsonArray()
-                val teamMap = mutableMapOf<String, org.ole.planet.myplanet.repository.TeamUploadData>()
 
                 batch.forEach { teamData ->
-                    teamData.teamId?.let { id ->
-                        teamMap[id] = teamData
-                    }
                     bulkDocs.add(teamData.serialized)
                 }
 
-                if (bulkDocs.size() == 0) return@processInBatches
+                if (bulkDocs.isEmpty()) return@processInBatches
 
                 val payload = com.google.gson.JsonObject()
                 payload.add("docs", bulkDocs)
@@ -285,10 +279,13 @@ class UploadManager @Inject constructor(
                     val responseBody = response.body()
 
                     if (response.isSuccessful && responseBody != null) {
+                        if (responseBody.size() < batch.size) {
+                            Log.w(TAG, "Team bulk upload response returned ${responseBody.size()} result(s) for a batch of ${batch.size}; ${batch.size - responseBody.size()} team(s) were not processed and will retry next sync")
+                        }
                         for (i in 0 until responseBody.size()) {
                             val element = responseBody.get(i).asJsonObject
                             val id = getString("id", element)
-                            val teamData = teamMap[id] ?: continue
+                            val teamData = batch.getOrNull(i) ?: continue
 
                             if (element.has("error")) {
                                 // 200 bulk response code prevents retry here, as per doc errors aren't retried
@@ -301,7 +298,7 @@ class UploadManager @Inject constructor(
                                     if (!teamData.imageName.isNullOrEmpty() && rev.isNotEmpty()) {
                                         rev = uploadTeamImageAttachment(id, rev, teamData.imageName)
                                     }
-                                    uploadedTeams[id] = rev
+                                    uploadedTeams[teamData.teamId ?: id] = rev
                                 }
                             }
                         }
@@ -359,7 +356,7 @@ class UploadManager @Inject constructor(
         if (!imageFile.exists()) return rev
         return try {
             val mimeType = FileUtils.getMimeType(imageName) ?: "image/*"
-            val body = imageFile.readBytes().toRequestBody(mimeType.toMediaTypeOrNull())
+            val body = imageFile.asRequestBody(mimeType.toMediaTypeOrNull())
             val encodedName = Uri.encode(imageName)
             val url = "${UrlUtils.getUrl()}/teams/$teamId/$encodedName"
             val response = uploadRepository.uploadResource(FileUploader.getHeaderMap(mimeType, rev), url, body)
@@ -445,8 +442,7 @@ class UploadManager @Inject constructor(
                             val imageFile = File(getString("imageUrl", imgObject))
                             val fileName = FileUtils.getFileNameFromUrl(getString("imageUrl", imgObject))
                             val mimeType = imageFile.toURI().toURL().openConnection().contentType
-                            val fileBody = FileUtils.fullyReadFileToBytes(imageFile)
-                                .toRequestBody("application/octet-stream".toMediaTypeOrNull())
+                            val fileBody = imageFile.asRequestBody("application/octet-stream".toMediaTypeOrNull())
 
                             uploadRepository.uploadResource(
                                 getHeaderMap(mimeType, resourceRev),
@@ -477,7 +473,7 @@ class UploadManager @Inject constructor(
                     }
                 }
 
-                if (bulkDocsArray.size() > 0) {
+                if (!bulkDocsArray.isEmpty()) {
                     val bulkRequest = JsonObject()
                     bulkRequest.add("docs", bulkDocsArray)
 

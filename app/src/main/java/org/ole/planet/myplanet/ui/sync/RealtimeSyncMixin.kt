@@ -26,9 +26,10 @@ class RealtimeSyncHelper(
 
     @OptIn(FlowPreview::class)
     fun setupRealtimeSync() {
+        val watchedTables = mixin.getWatchedTables().toSet()
         fragment.collectWhenStarted(
             syncManagerInstance.dataUpdateFlow
-                .filter { update -> mixin.getWatchedTables().contains(update.table) }
+                .filter { update -> watchedTables.contains(update.table) }
                 .distinctUntilChanged { old, new ->
                     old.table == new.table &&
                     old.newItemsCount == new.newItemsCount &&

@@ -3,26 +3,26 @@ package org.ole.planet.myplanet.ui.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.model.CourseCompletion
-import org.ole.planet.myplanet.repository.ProgressRepository
-import org.ole.planet.myplanet.repository.TeamsRepository
-import java.util.concurrent.TimeUnit
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
+import org.ole.planet.myplanet.utils.TimeProvider
 
 @HiltViewModel
 class BellDashboardViewModel @Inject constructor(

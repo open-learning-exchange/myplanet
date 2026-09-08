@@ -15,6 +15,7 @@
         android:layout_height="match_parent">
 
         <FrameLayout
+            android:id="@+id/ll_home_library"
             android:layout_width="wrap_content"
             android:layout_height="match_parent">
 
@@ -69,6 +70,7 @@
             android:layout_weight="1"
             android:contentDescription="@string/txt_myLibrary"
             android:background="@color/card_bg"
+            android:fillViewport="true"
             android:scrollbars="none">
 
             <com.google.android.flexbox.FlexboxLayout
@@ -80,7 +82,8 @@
                 android:paddingBottom="@dimen/dashboard_chip_gap"
                 app:alignContent="stretch"
                 app:alignItems="stretch"
-                app:flexWrap="wrap" />
+                app:flexDirection="row"
+                app:flexWrap="nowrap" />
         </HorizontalScrollView>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

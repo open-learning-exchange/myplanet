@@ -15,9 +15,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.google.android.material.snackbar.Snackbar
@@ -27,7 +25,6 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Locale
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
@@ -39,6 +36,7 @@ import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class EnterprisesReportsFragment : BaseTeamFragment() {
@@ -83,7 +81,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                 result.data?.data?.let { uri ->
                     viewLifecycleOwner.lifecycleScope.launch {
                         try {
-                            val csvContent = viewModel.exportReportsAsCsv(reports, teamsRepository.getTeamNameFromPrefs() ?: "")
+                            val csvContent = viewModel.exportReportsAsCsv(teamId, teamsRepository.getTeamNameFromPrefs() ?: "")
                             requireContext().contentResolver.openOutputStream(uri)?.use { outputStream ->
                                 outputStream.write(csvContent.toByteArray())
                             }
@@ -120,39 +118,29 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         binding.rvReports.adapter = reportsAdapter
         binding.rvReports.layoutManager = LinearLayoutManager(activity)
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    isMemberFlow.collectLatest { isMember ->
-                        val canManage = if (fromCommunity) user?.isManager() == true else isMember
-                        binding.addReports.isVisible = canManage
-                        reportsAdapter.setNonTeamMember(!canManage)
+        collectLatestWhenStarted(isMemberFlow) { isMember ->
+            val canManage = if (fromCommunity) user?.isManager() == true else isMember
+            binding.addReports.isVisible = canManage
+            reportsAdapter.setNonTeamMember(!canManage)
+        }
+        collectLatestWhenStarted(viewModel.getReportsFlow(teamId)) { reportList ->
+            updatedReportsList(reportList)
+        }
+        collectLatestWhenStarted(viewModel.reportEvent) { event ->
+            when (event) {
+                is ReportEvent.ReportAdded,
+                is ReportEvent.ReportUpdated -> {
+                    if (event is ReportEvent.ReportAdded) {
+                        scrollToLatestReport = true
                     }
+                    activeDialog?.dismiss()
+                    activeDialog = null
                 }
-                launch {
-                    viewModel.getReportsFlow(teamId).collectLatest { reportList ->
-                        updatedReportsList(reportList)
-                    }
+                is ReportEvent.ReportArchived -> {
+                    // archived successfully
                 }
-                launch {
-                    viewModel.reportEvent.collectLatest { event ->
-                        when (event) {
-                            is ReportEvent.ReportAdded,
-                            is ReportEvent.ReportUpdated -> {
-                                if (event is ReportEvent.ReportAdded) {
-                                    scrollToLatestReport = true
-                                }
-                                activeDialog?.dismiss()
-                                activeDialog = null
-                            }
-                            is ReportEvent.ReportArchived -> {
-                                // archived successfully
-                            }
-                            is ReportEvent.Error -> {
-                                Snackbar.make(view, event.message, Snackbar.LENGTH_LONG).show()
-                            }
-                        }
-                    }
+                is ReportEvent.Error -> {
+                    Snackbar.make(view, event.message, Snackbar.LENGTH_LONG).show()
                 }
             }
         }

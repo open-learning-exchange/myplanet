@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -36,7 +35,6 @@ import org.ole.planet.myplanet.ui.voices.VoicesActions
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
-import org.ole.planet.myplanet.utils.FileUtils.getRealPathFromURI
 import org.ole.planet.myplanet.utils.JsonUtils
 
 abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickListener {
@@ -102,8 +100,9 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
     override fun onMemberSelected(userModel: UserEntity?) {
         if (!isAdded) return
 
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             val fragment = VoicesActions.showMemberDetails(userModel, activitiesRepository) ?: return@launch
+            if (!isAdded) return@launch
             FragmentNavigator.replaceFragment(
                 requireActivity().supportFragmentManager,
                 R.id.fragment_container,
@@ -142,10 +141,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
     private fun processImageUri(uri: Uri?, resultCode: Int) {
         if (uri == null) return
 
-        var path: String? = getRealPathFromURI(requireActivity(), uri)
-        if (TextUtils.isEmpty(path)) {
-            path = FileUtils.getPathFromURI(requireActivity(), uri)
-        }
+        val path: String? = FileUtils.resolveUriToPath(requireActivity(), uri)
 
         if (path.isNullOrEmpty()) return
 

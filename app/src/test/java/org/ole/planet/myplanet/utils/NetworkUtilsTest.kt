@@ -23,7 +23,7 @@ import org.robolectric.util.ReflectionHelpers
 
 @HiltAndroidTest
 @RunWith(RobolectricTestRunner::class)
-@Config(application = HiltTestApplication::class, sdk = [33])
+@Config(application = HiltTestApplication::class)
 @LooperMode(LooperMode.Mode.PAUSED)
 class NetworkUtilsTest {
 
@@ -33,9 +33,9 @@ class NetworkUtilsTest {
     @Before
     fun init() {
         hiltRule.inject()
-        // Initialize MainApplication.context which is required by NetworkUtils to avoid UninitializedPropertyAccessException
-        // It is needed here because NetworkUtils gets system service from it directly
         org.ole.planet.myplanet.MainApplication.testContext = ApplicationProvider.getApplicationContext()
+        VersionUtils.resetAndroidIdCacheForTesting()
+        NetworkUtils.resetForTesting()
     }
 
     @Test
@@ -48,6 +48,58 @@ class NetworkUtilsTest {
 
         wifiManager.isWifiEnabled = false
         assertFalse(NetworkUtils.isWifiEnabled())
+    }
+
+    @Test
+    fun getDeviceName_cachesValueAndUpdatesOnReset() {
+        ReflectionHelpers.setStaticField(Build::class.java, "MANUFACTURER", "TestBrand")
+        ReflectionHelpers.setStaticField(Build::class.java, "MODEL", "TestDevice")
+
+        val initialDeviceName = NetworkUtils.getDeviceName()
+        assertEquals("TESTBRAND TESTDEVICE", initialDeviceName)
+
+        // Mutate Build properties without calling resetForTesting
+        ReflectionHelpers.setStaticField(Build::class.java, "MANUFACTURER", "NewBrand")
+        ReflectionHelpers.setStaticField(Build::class.java, "MODEL", "NewDevice")
+
+        // Should return cached value
+        assertEquals("TESTBRAND TESTDEVICE", NetworkUtils.getDeviceName())
+
+        // After reset, recomputed value should be fetched
+        NetworkUtils.resetForTesting()
+        assertEquals("NEWBRAND NEWDEVICE", NetworkUtils.getDeviceName())
+    }
+
+    @Test
+    fun getUniqueIdentifier_cachesValueAndUpdatesOnReset() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        Settings.Secure.putString(
+            context.contentResolver,
+            Settings.Secure.ANDROID_ID,
+            "id_1"
+        )
+        ReflectionHelpers.setStaticField(Build::class.java, "ID", "build_1")
+
+        val initialUniqueId = NetworkUtils.getUniqueIdentifier()
+        assertEquals("id_1_build_1", initialUniqueId)
+
+        // Change underlying values without reset
+        Settings.Secure.putString(
+            context.contentResolver,
+            Settings.Secure.ANDROID_ID,
+            "id_2"
+        )
+        ReflectionHelpers.setStaticField(Build::class.java, "ID", "build_2")
+
+        // Should return cached value
+        assertEquals("id_1_build_1", NetworkUtils.getUniqueIdentifier())
+
+        // Reset both VersionUtils and NetworkUtils caches
+        VersionUtils.resetAndroidIdCacheForTesting()
+        NetworkUtils.resetForTesting()
+
+        assertEquals("id_2_build_2", NetworkUtils.getUniqueIdentifier())
     }
 
     @Test
@@ -166,16 +218,6 @@ class NetworkUtilsTest {
 
     @Test
     fun extractProtocol_withSpaceReturnedByUriParse() {
-        // android.net.Uri doesn't strictly follow all JVM URI rules.
-        // There are edge cases where scheme might be parsed containing a space
-        // depending on android framework version.
-        // We will mock this behaviour indirectly by testing what happens if scheme has a space.
-        // Since we can't easily force Uri.parse to return a space in scheme here without a custom mock
-        // that intercepts toUri(), we test strings that might potentially trigger it.
-        // The implementation checks: return if (scheme != null && !scheme.contains(" ")) "$scheme://" else null
-
-        // This is a proxy test, we test strings with spaces before colon in ways that android might parse it
-        // Or we test if it correctly handles null schemes when there are spaces.
         assertNull(NetworkUtils.extractProtocol("my scheme://example.com"))
     }
 }

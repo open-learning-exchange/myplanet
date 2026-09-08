@@ -3,23 +3,22 @@ package org.ole.planet.myplanet.ui.courses
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.test.runTest
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
 import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
-import org.ole.planet.myplanet.repository.RatingsRepository
-import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CoursesViewModelTest {
@@ -29,7 +28,6 @@ class CoursesViewModelTest {
 
     private val coursesRepository = mockk<CoursesRepository>(relaxed = true)
     private val progressRepository = mockk<ProgressRepository>(relaxed = true)
-    private val ratingsRepository = mockk<RatingsRepository>(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
     private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
@@ -41,7 +39,6 @@ class CoursesViewModelTest {
         viewModel = CoursesViewModel(
             coursesRepository,
             progressRepository,
-            ratingsRepository,
             dispatcherProvider
         )
     }
@@ -56,8 +53,7 @@ class CoursesViewModelTest {
         viewModel.removeCourses(listOf("c1", "c2"), "u1", true) {}
         testDispatcher.scheduler.advanceUntilIdle()
         coVerify { coursesRepository.removeCoursesFromShelf(listOf("c1", "c2"), "u1") }
-        coVerify { coursesRepository.deleteCourseProgress("c1") }
-        coVerify { coursesRepository.deleteCourseProgress("c2") }
+        coVerify { coursesRepository.deleteCoursesProgress(listOf("c1", "c2")) }
     }
 
     @Test
@@ -65,8 +61,7 @@ class CoursesViewModelTest {
         viewModel.removeCourses(listOf("c1", "c2"), "u1", false) {}
         testDispatcher.scheduler.advanceUntilIdle()
         coVerify { coursesRepository.removeCoursesFromShelf(listOf("c1", "c2"), "u1") }
-        coVerify(exactly = 0) { coursesRepository.deleteCourseProgress("c1") }
-        coVerify(exactly = 0) { coursesRepository.deleteCourseProgress("c2") }
+        coVerify(exactly = 0) { coursesRepository.deleteCoursesProgress(any()) }
     }
 
     @Test
@@ -74,7 +69,7 @@ class CoursesViewModelTest {
         viewModel.removeCourses(emptyList(), "u1", true) {}
         testDispatcher.scheduler.advanceUntilIdle()
         coVerify(exactly = 0) { coursesRepository.removeCoursesFromShelf(any(), any()) }
-        coVerify(exactly = 0) { coursesRepository.deleteCourseProgress(any()) }
+        coVerify(exactly = 0) { coursesRepository.deleteCoursesProgress(any()) }
     }
 
     @Test

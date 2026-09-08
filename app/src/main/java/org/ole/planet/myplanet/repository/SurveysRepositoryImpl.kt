@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
-import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
@@ -48,7 +47,7 @@ class SurveysRepositoryImpl @Inject constructor(
     private val examDao: ExamDao,
     private val questionDao: QuestionDao,
     private val submissionDao: SubmissionDao,
-    private val teamDao: TeamDao,
+    private val teamsRepository: dagger.Lazy<TeamsRepository>,
 ) : SurveysRepository {
 
     private val reminderPrefs: SharedPreferences by lazy {
@@ -61,7 +60,7 @@ class SurveysRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getExamQuestions(examId: String): List<ExamQuestion> {
-        return questionDao.getByExamId(examId).map { it }
+        return questionDao.getByExamId(examId)
     }
 
     override suspend fun adoptSurvey(
@@ -79,7 +78,7 @@ class SurveysRepositoryImpl @Inject constructor(
         val userJsonString = createUserJsonString(userModel, planetCode, isTeam, teamId)
 
         if (isTeam && !teamId.isNullOrEmpty()) {
-            val teamName = teamDao.getById(teamId)?.name ?: teamDao.getByTeamId(teamId)?.name
+            val teamName = teamsRepository.get().getTeamByIdOrTeamId(teamId)?.name
             if (!teamName.isNullOrEmpty()) {
                 val existingSurvey = examDao.getByTeamIdAndType(teamId, "surveys")
                     .firstOrNull { it.sourceSurveyId == examId }
@@ -251,30 +250,24 @@ class SurveysRepositoryImpl @Inject constructor(
             .toSet()
         val filteredSubmissionIds = teamSubmissionIds - adoptedSourceSurveyIds
 
-        return examDao.getByType("surveys")
-            .asSequence()
-            .filter { it.teamId == teamId || filteredSubmissionIds.contains(it.id) }
-            .map { it }
-            .toList()
+        return examDao.getTeamOwnedSurveys(teamId, filteredSubmissionIds)
     }
 
     override suspend fun getAdoptableTeamSurveys(teamId: String?): List<StepExam> {
         if (teamId.isNullOrEmpty()) return emptyList()
-        val excludedIds = getTeamSubmissionExamIds(teamId) +
-            examDao.getByTeamIdAndType(teamId, "surveys").mapNotNull { it.sourceSurveyId }
+        val excludedIds = (getTeamSubmissionExamIds(teamId) +
+            examDao.getByTeamIdAndType(teamId, "surveys").mapNotNull { it.sourceSurveyId }).toSet()
 
-        return examDao.getByType("surveys")
-            .asSequence()
-            .filter { it.isTeamShareAllowed }
-            .filterNot { excludedIds.contains(it.id) }
-            .map { it }
-            .toList()
+        return if (excludedIds.isEmpty()) {
+            examDao.getAdoptableTeamSurveys()
+        } else {
+            examDao.getAdoptableTeamSurveys(excludedIds)
+        }
     }
 
     override suspend fun getIndividualSurveys(): List<StepExam> {
         return examDao.getByType("surveys")
             .filter { !it.isTeamShareAllowed && it.teamId.isNullOrEmpty() }
-            .map { it }
     }
 
     private suspend fun getTeamSubmissionExamIds(teamId: String): Set<String> {
@@ -373,12 +366,12 @@ class SurveysRepositoryImpl @Inject constructor(
 
     override suspend fun getSurvey(id: String): StepExam? {
         return examDao.getById(id)
-            ?: examDao.getByType("surveys").firstOrNull { it.name == id }
+            ?: examDao.getByTypeAndName("surveys", id)
     }
 
     override suspend fun getSurveys(ascending: Boolean): List<StepExam> {
         val entities = examDao.getByType("surveys").sortedBy { it.createdDate }
-        return (if (ascending) entities else entities.asReversed()).map { it }
+        return if (ascending) entities else entities.asReversed()
     }
 
     override suspend fun deleteByIds(ids: List<String>) {
@@ -469,7 +462,7 @@ class SurveysRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getPendingAdoptedSurveys(): List<StepExam> {
-        return examDao.getPendingAdoptedSurveys().map { it }
+        return examDao.getPendingAdoptedSurveys()
     }
 
     override suspend fun fetchPublicSurvey(baseUrl: String, teamId: String, surveyId: String): JsonObject? {

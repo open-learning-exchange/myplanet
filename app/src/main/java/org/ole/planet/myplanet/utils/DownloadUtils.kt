@@ -8,6 +8,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.annotation.VisibleForTesting
 import androidx.core.app.NotificationCompat
 import androidx.core.content.edit
 import androidx.work.OneTimeWorkRequestBuilder
@@ -25,7 +26,11 @@ object DownloadUtils {
     private const val WORKER_CHANNEL = "DownloadWorkerChannel"
     private val LINK_PATTERN = Pattern.compile("!\\[.*?]\\((.*?)\\)")
 
+    @Volatile
+    private var channelsCreated = false
+
     fun createChannels(context: Context) {
+        if (channelsCreated) return
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (manager.getNotificationChannel(DOWNLOAD_CHANNEL) == null) {
             val channel = NotificationChannel(DOWNLOAD_CHANNEL, "Download Service",
@@ -54,6 +59,12 @@ object DownloadUtils {
             }
             manager.createNotificationChannel(channel)
         }
+        channelsCreated = true
+    }
+
+    @VisibleForTesting
+    internal fun resetChannelsCreatedForTesting() {
+        channelsCreated = false
     }
 
     fun buildInitialNotification(context: Context): Notification {
@@ -124,7 +135,10 @@ object DownloadUtils {
             .build()
     }
     fun downloadAllFiles(dbMyLibrary: List<MyLibrary?>): ArrayList<String> {
-        return ArrayList(dbMyLibrary.map { UrlUtils.getUrl(it) })
+        val base = UrlUtils.getUrl()
+        return dbMyLibrary.mapTo(ArrayList()) { library ->
+            UrlUtils.getUrl(library?.resourceId, library?.resourceLocalAddress, base)
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.S)

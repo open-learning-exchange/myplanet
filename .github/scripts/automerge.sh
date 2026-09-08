@@ -1,25 +1,43 @@
 #!/usr/bin/env bash
 #
-# Drain the automerge queue. Per PR labelled $LABEL, lowest number first:
+# Drain the automerge queue. Per PR labelled $LABEL -- those also labelled
+# $PRIORITY_LABEL first, then lowest number within each tier:
 #
-#   1. merge $BASE into the PR branch          (a conflict stops the drain)
+#   1. merge $BASE into the PR branch          (a conflict relabels it and moves on)
 #   2. bump the version on the PR branch
-#   3. push, and wait for build + test on that prepared commit
+#   3. push, and wait for build + test on that prepared commit (red relabels too)
 #   4. wait for $BASE to be settled and green, then squash merge
-#
-# Stop on the first failure. Both waits sit in front of step 4 so they
-# overlap: $BASE releases the previous merge while this PR builds.
-#
-# Runs from a copy outside the work tree -- it checks out PR branches.
-#
 set -euo pipefail
 
 REPO="${REPO:?}"
 BASE="${BASE:?}"
-LABEL="${LABEL:?}"
+
+# queue,priority,conflict,failing in one field: an empty slot means that label
+# goes unused, a slot left off the end keeps the default below.
+if [ -n "${LABELS:-}" ]; then
+    label_i=0
+    while IFS= read -r label_part; do
+        label_part="${label_part#"${label_part%%[![:space:]]*}"}"
+        label_part="${label_part%"${label_part##*[![:space:]]}"}"
+        case "$label_i" in
+            0) LABEL="$label_part" ;;
+            1) PRIORITY_LABEL="$label_part" ;;
+            2) CONFLICT_LABEL="$label_part" ;;
+            3) FAILING_LABEL="$label_part" ;;
+        esac
+        label_i=$(( label_i + 1 ))
+    done <<<"$(printf '%s' "$LABELS" | tr ',' '\n')"
+fi
+
+LABEL="${LABEL:?the queue label may not be blank -- it is the first slot of LABELS}"
+CONFLICT_LABEL="${CONFLICT_LABEL-conflict}"
+FAILING_LABEL="${FAILING_LABEL-failing}"
+PRIORITY_LABEL="${PRIORITY_LABEL-priority}"
 GRADLE_FILE="${GRADLE_FILE:?}"
 VERSION_SH="${VERSION_SH:?}"
 COAUTHORS_SH="${COAUTHORS_SH:?}"
+QUOTA_SH="${QUOTA_SH:-}"
+PLAYSTORE_SH="${PLAYSTORE_SH:-}"
 REQUIRE_CHECKS="${REQUIRE_CHECKS:-true}"
 REQUIRED_WORKFLOWS="${REQUIRED_WORKFLOWS:-}"
 PUBLISH_JOB="${PUBLISH_JOB:-}"
@@ -29,8 +47,13 @@ DRY_RUN="${DRY_RUN:-true}"
 MAX_MERGES="${MAX_MERGES:-0}"
 WAIT_TIMEOUT_MIN="${WAIT_TIMEOUT_MIN:-45}"
 USING_PAT="${USING_PAT:-false}"
+BASE_RERUN_ATTEMPTS="${BASE_RERUN_ATTEMPTS:-1}"
+case "$BASE_RERUN_ATTEMPTS" in *[!0-9]*|"") BASE_RERUN_ATTEMPTS=1 ;; esac
+HEAD_RERUN_ATTEMPTS="${HEAD_RERUN_ATTEMPTS:-1}"
+case "$HEAD_RERUN_ATTEMPTS" in *[!0-9]*|"") HEAD_RERUN_ATTEMPTS=1 ;; esac
 
 RUN_APPEAR_TIMEOUT_SEC=300
+RERUN_START_TIMEOUT_SEC=180
 POLL_INTERVAL_SEC=20
 PR_SETTLE_TIMEOUT_SEC=120
 MERGE_RETRY_DELAYS='5 10 15'
@@ -46,12 +69,17 @@ summary() { [ -n "${GITHUB_STEP_SUMMARY:-}" ] && printf '%s\n' "$*" >> "$GITHUB_
 
 merged_count=0
 merged_list=""
+conflict_count=0
+conflict_list=""
+failing_count=0
+failing_list=""
 skip_numbers=""
 last_base_sha=""
 
 MAX_REPREPARES=2
 reprep_pr=""
 reprep_n=0
+rerun_log=""
 
 pick_pr() {
     gh pr list \
@@ -59,13 +87,18 @@ pick_pr() {
         --state open \
         --base "$BASE" \
         --label "$LABEL" \
-        --limit 100 \
-        --json number,title,isDraft,headRefName,headRefOid,headRepositoryOwner \
-      | jq -c --arg skip "$skip_numbers" '
+        --limit 1000 \
+        --json number,title,isDraft,headRefName,headRefOid,headRepositoryOwner,labels \
+      | jq -c --arg skip "$skip_numbers" --arg prio "$PRIORITY_LABEL" '
             [ $skip | split(" ")[] | select(length > 0) | tonumber ] as $done
+            | ($done | map({ key: tostring, value: true }) | from_entries) as $doneSet
             | map(select(.isDraft | not))
-            | map(select(.number as $n | $done | index($n) | not))
-            | sort_by(.number) | first'
+            | map(select(.number as $n | $doneSet | has($n | tostring) | not))
+            | map(. + { priority: (
+                  ($prio | length > 0)
+                  and (((.labels // []) | map(.name) | index($prio)) != null)
+              ) })
+            | sort_by([ (if .priority then 0 else 1 end), .number ]) | first'
 }
 
 pr_state()  { gh pr view "$1" --repo "$REPO" --json state --jq '.state' 2>/dev/null || echo ''; }
@@ -80,12 +113,59 @@ check_mergeable() {
     done
     case "$state" in
         MERGEABLE) ;;
-        CONFLICTING)
-            log "  #$pr conflicts with $BASE -- needs a human"
-            return 1 ;;
+        CONFLICTING) return 1 ;;
         *)
             log "  #$pr mergeability is ${state:-unavailable} -- letting step 1 decide" ;;
     esac
+}
+
+add_marker_label() {
+    local pr=$1 label=$2 color=$3 desc=$4
+    gh pr edit "$pr" --repo "$REPO" --add-label "$label" >/dev/null 2>&1 && return 0
+    gh label create "$label" --repo "$REPO" \
+        --color "$color" --description "$desc" >/dev/null 2>&1 || true
+    gh pr edit "$pr" --repo "$REPO" --add-label "$label" >/dev/null 2>&1
+}
+
+# Drop $LABEL so the queue moves on, and mark why on the PR itself.
+retire_pr() {
+    local pr=$1 marker=$2 color=$3 desc=$4 what=$5
+
+    if [ "$DRY_RUN" = 'true' ]; then
+        log "  dry run: #$pr $what -- would relabel it and move on"
+        summary "| #$pr | | dry run: **$what** |"
+        return 0
+    fi
+
+    local marked=""
+    log "  #$pr $what -- dropping '$LABEL', moving on to the next PR"
+    if [ -n "$marker" ]; then
+        if add_marker_label "$pr" "$marker" "$color" "$desc"; then
+            marked=", added \`$marker\`"
+        else
+            log "  #$pr: could not add '$marker'"
+        fi
+    fi
+    if gh pr edit "$pr" --repo "$REPO" --remove-label "$LABEL" >/dev/null 2>&1; then
+        summary "| #$pr | | **$what**: dropped \`$LABEL\`$marked |"
+    else
+        log "  #$pr: could not remove '$LABEL' -- skipped for this drain only"
+        summary "| #$pr | | **$what**: \`$LABEL\` could not be removed |"
+    fi
+    return 0
+}
+
+handle_conflict() {
+    conflict_count=$(( conflict_count + 1 ))
+    conflict_list="$conflict_list #$1"
+    retire_pr "$1" "$CONFLICT_LABEL" BD8652 'merge conflict' "conflicts with \`$BASE\`"
+}
+
+handle_failing() {
+    failing_count=$(( failing_count + 1 ))
+    failing_list="$failing_list #$1"
+    retire_pr "$1" "$FAILING_LABEL" B60205 'build or test failing on the prepared commit' \
+        'failed build or test on its prepared commit'
 }
 
 wait_pr_merged() {
@@ -102,15 +182,26 @@ runs_for() {
     local raw
     raw=$(gh api "repos/$REPO/actions/runs?head_sha=$1&per_page=100" 2>/dev/null) \
         || { echo '[]'; return 0; }
-    jq -c --arg self "$SELF_WORKFLOW_PATH" --arg run "$SELF_RUN_ID" '
+    jq -c --arg self "$SELF_WORKFLOW_PATH" --arg run "$SELF_RUN_ID" --arg branch "${2:-}" '
         [ .workflow_runs[]?
           | select(.path | startswith(".github/workflows/"))
           | select(.path != $self)
           | select(($run | length == 0) or ((.id | tostring) != $run))
-          | {name, status, conclusion} ]' <<<"$raw" 2>/dev/null || echo '[]'
+          | select(($branch | length == 0) or (.head_branch == $branch))
+          | {id, name, status, conclusion} ]' <<<"$raw" 2>/dev/null || echo '[]'
 }
 
-runs_failed()  { jq '[.[] | select(.status == "completed" and .conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral")] | length' <<<"$1"; }
+runs_bad() {
+    jq -c '
+        ([ .[] | select(.status == "completed" and .conclusion == "success") | .name ] | unique) as $green
+        | [ .[]
+            | select(.status == "completed")
+            | select(.conclusion != "success" and .conclusion != "skipped"
+                     and .conclusion != "neutral" and .conclusion != "cancelled")
+            | select(.name as $n | $green | index($n) | not) ]' <<<"$1"
+}
+
+runs_green()   { jq '[.[] | select(.conclusion == "success")] | length' <<<"$1"; }
 runs_pending() { jq '[.[] | select(.status != "completed")] | length' <<<"$1"; }
 
 runs_missing() {
@@ -123,22 +214,23 @@ runs_missing() {
 }
 
 wait_for_runs() {
-    local sha=$1 need=$2 absent=$3
+    local sha=$1 need=$2 absent=$3 branch=${4:-}
     local deadline=$(( SECONDS + WAIT_TIMEOUT_MIN * 60 ))
     local appear_deadline=$(( SECONDS + RUN_APPEAR_TIMEOUT_SEC ))
-    local runs total pending failed missing announced=0
+    local runs total bad pending failed green missing announced=0
 
-    log "  waiting for workflows on ${sha:0:7} (timeout ${WAIT_TIMEOUT_MIN}m)"
+    log "  waiting for workflows on ${sha:0:7}${branch:+ ($branch)} (timeout ${WAIT_TIMEOUT_MIN}m)"
     while :; do
-        runs=$(runs_for "$sha")
+        runs=$(runs_for "$sha" "$branch")
         total=$(jq 'length' <<<"$runs")
 
         if [ "$total" -gt 0 ]; then
-            failed=$(runs_failed "$runs")
+            bad=$(runs_bad "$runs")
+            failed=$(jq 'length' <<<"$bad")
             if [ "$failed" -ne 0 ]; then
-                jq -r '.[] | select(.status == "completed" and .conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral") | "    \(.conclusion)\t\(.name)"' <<<"$runs"
+                jq -r '.[] | "    \(.conclusion)\t\(.name)"' <<<"$bad"
                 log "  $failed workflow(s) failed on ${sha:0:7}"
-                return 1
+                return 2
             fi
 
             pending=$(runs_pending "$runs")
@@ -146,7 +238,8 @@ wait_for_runs() {
 
             if [ "$pending" -eq 0 ] && [ -z "$missing" ]; then
                 jq -r '.[] | "    \(.conclusion)\t\(.name)"' <<<"$runs"
-                log "  all $total workflow(s) green on ${sha:0:7}"
+                green=$(runs_green "$runs")
+                log "  $green of $total workflow(s) green on ${sha:0:7}, none red"
                 return 0
             fi
 
@@ -184,6 +277,62 @@ wait_for_runs() {
     done
 }
 
+rerun_count_for() {
+    local id=$1 n=0 e
+    for e in $rerun_log; do
+        [ "$e" = "$id" ] && n=$((n + 1))
+    done
+    printf '%s\n' "$n"
+}
+
+wait_run_restarted() {
+    local id=$1 status deadline=$(( SECONDS + RERUN_START_TIMEOUT_SEC ))
+    while [ "$SECONDS" -lt "$deadline" ]; do
+        status=$(gh api "repos/$REPO/actions/runs/$id" --jq '.status' 2>/dev/null || echo '')
+        [ "$status" = 'completed' ] || return 0
+        sleep 5
+    done
+    log "  run $id still reads as completed ${RERUN_START_TIMEOUT_SEC}s after the re-run request"
+    return 1
+}
+
+rerun_failed_runs() {
+    local sha=$1 branch=${2:-} attempts=${3:-$BASE_RERUN_ATTEMPTS} id name triggered=0
+    [ "$attempts" -gt 0 ] || return 1
+
+    while IFS=$'\t' read -r id name; do
+        [ -n "$id" ] || continue
+        if [ "$(rerun_count_for "$id")" -ge "$attempts" ]; then
+            log "  $name failed again after $attempts re-run(s) -- taking it as real"
+            continue
+        fi
+        if gh api -X POST "repos/$REPO/actions/runs/$id/rerun-failed-jobs" >/dev/null 2>&1 \
+           || gh api -X POST "repos/$REPO/actions/runs/$id/rerun" >/dev/null 2>&1; then
+            rerun_log="$rerun_log $id"
+            triggered=1
+            log "  re-running $name on ${sha:0:7} (run $id)"
+            wait_run_restarted "$id" || true
+        else
+            log "  could not re-run $name (run $id) -- does the token have actions: write?"
+        fi
+    done < <(jq -r '.[] | "\(.id)\t\(.name)"' <<<"$(runs_bad "$(runs_for "$sha" "$branch")")")
+
+    [ "$triggered" -eq 1 ]
+}
+
+wait_base_green() {
+    local sha=$1 rc=0
+    while :; do
+        wait_for_runs "$sha" '' pass "$BASE" && return 0
+        rc=$?
+        [ "$rc" -eq 2 ] || return 1
+        [ "$BASE_RERUN_ATTEMPTS" -gt 0 ] \
+            && log "  ${sha:0:7} passed build and test as a PR head minutes ago -- treating this as flaky"
+        rerun_failed_runs "$sha" "$BASE" || return 1
+    done
+}
+
+# Cause the warn annotation later reads as failed -- ask playstore.sh whether the track actually is ok.
 publish_failed() {
     local sha=$1 run_id job_id note
     [ -n "$PUBLISH_JOB" ] || return 1
@@ -196,16 +345,42 @@ publish_failed() {
                  --jq "[.[] | select(.annotation_level == \"warning\") | .message | select(startswith(\"$PUBLISH_FAIL_MARKER\"))] | first" 2>/dev/null || true)
         if [ -n "$note" ] && [ "$note" != "null" ]; then
             log "  $note"
+            local pend=""
+            [ -n "$PLAYSTORE_SH" ] && [ -x "$PLAYSTORE_SH" ] \
+                && pend=$(GITHUB_OUTPUT='' PLAYSTORE_FORCE=true "$PLAYSTORE_SH" pending 2>/dev/null || true)
+            # pending=false also means "could not tell" -- only the track-read branch emits track_code
+            if grep -qx 'pending=false' <<<"$pend" && grep -qE '^track_code=[0-9]+$' <<<"$pend"; then
+                log "  the $BASE track carries it now -- the warning is stale, carrying on"
+                return 1
+            fi
             return 0
         fi
     done
     return 1
 }
 
+quota_note() {
+    quota_report=""
+    quota_eta=""
+    [ -n "$QUOTA_SH" ] && [ -x "$QUOTA_SH" ] || return 0
+
+    local status line
+    status=$("$QUOTA_SH" status 2>/dev/null) || return 0
+    eval "$(sed -n "s/^report=/quota_report=/p; s/^next_free_local=/quota_eta=/p" <<<"$status")" || return 0
+
+    # the whole forecast: the refill rate decides whether a resume keeps pace
+    while IFS= read -r line; do
+        log "  $line"
+    done < <("$QUOTA_SH" forecast 2>/dev/null || printf '%s\n' "$quota_report")
+
+    [ -n "$quota_eta" ] && log "  publish it without a rebuild: ${GITHUB_SERVER_URL:-https://github.com}/$REPO/actions/workflows/playstore.yml"
+    return 0
+}
+
 base_already_failed() {
     local sha=$1 runs bad
-    runs=$(runs_for "$sha")
-    bad=$(jq -r '.[] | select(.status == "completed" and .conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral") | "\(.conclusion)\t\(.name)"' <<<"$runs")
+    runs=$(runs_for "$sha" "$BASE")
+    bad=$(jq -r '.[] | "\(.conclusion)\t\(.name)"' <<<"$(runs_bad "$runs")")
     [ -n "$bad" ] || return 1
     printf '%s\n' "$bad" | sed 's/^/    /'
     log "the last merge has already failed on $BASE (${sha:0:7})"
@@ -266,8 +441,8 @@ push_with_retry() {
     return 1
 }
 
-log "draining '$LABEL' into $BASE (dry_run=$DRY_RUN)"
-summary "### automerge: draining \`$LABEL\` into \`$BASE\`"
+log "draining '$LABEL' into $BASE${PRIORITY_LABEL:+, '$PRIORITY_LABEL' first} (dry_run=$DRY_RUN)"
+summary "### automerge: draining \`$LABEL\` into \`$BASE\`${PRIORITY_LABEL:+, \`$PRIORITY_LABEL\` first}"
 summary ""
 summary "| PR | version | result |"
 summary "|---|---|---|"
@@ -283,8 +458,10 @@ while :; do
     fi
 
     if [ -n "$last_base_sha" ] && base_already_failed "$last_base_sha"; then
-        summary "| | | **stopped**: \`$BASE\` red after the last merge |"
-        exit 1
+        if ! wait_base_green "$last_base_sha"; then
+            summary "| | | **stopped**: \`$BASE\` red after the last merge |"
+            exit 1
+        fi
     fi
 
     git fetch --quiet origin "$BASE"
@@ -292,7 +469,8 @@ while :; do
 
     if [ "$REQUIRE_CHECKS" = 'true' ] && publish_failed "$base_at_prepare"; then
         log "the release on $BASE (${base_at_prepare:0:7}) was not published -- stopping the drain"
-        summary "| | | **stopped**: release on \`$BASE\` not published |"
+        quota_note
+        summary "| | | **stopped**: release on \`$BASE\` not published${quota_eta:+, next playstore slot around $quota_eta} |"
         exit 1
     fi
 
@@ -308,8 +486,12 @@ while :; do
     HEAD=$(jq   -r '.headRefName'               <<<"$pr_json")
     SHA=$(jq    -r '.headRefOid'                <<<"$pr_json")
     OWNER=$(jq  -r '.headRepositoryOwner.login' <<<"$pr_json")
+    PRIORITY=$(jq -r '.priority'                <<<"$pr_json")
 
-    log "picked #$NUMBER ($HEAD @ ${SHA:0:7}): $TITLE"
+    TIER=""
+    if [ "$PRIORITY" = true ]; then TIER=" $PRIORITY_LABEL"; fi
+
+    log "picked$TIER #$NUMBER ($HEAD @ ${SHA:0:7}): $TITLE"
 
     if [ "$OWNER" != "${REPO%%/*}" ]; then
         log "  #$NUMBER comes from fork $OWNER -- cannot push a version bump to it"
@@ -333,7 +515,11 @@ while :; do
             continue ;;
     esac
 
-    check_mergeable "$NUMBER" || { summary "| #$NUMBER | | **stopped**: conflicts with \`$BASE\` |"; exit 1; }
+    if ! check_mergeable "$NUMBER"; then
+        handle_conflict "$NUMBER"
+        skip_numbers="$skip_numbers $NUMBER"
+        continue
+    fi
 
     git show "origin/$BASE:$GRADLE_FILE" > /tmp/base-build.gradle
     eval "$("$VERSION_SH" next /tmp/base-build.gradle | sed 's/^/new_/')"
@@ -348,21 +534,23 @@ while :; do
             log "           wait for ${REQUIRED_WORKFLOWS:-the triggered workflows}, then squash merge #$NUMBER"
             summary "| #$NUMBER | → \`$new_name\` | dry run: would merge |"
         else
-            git merge --abort || true
-            log "  dry run: #$NUMBER conflicts with $BASE -- needs a human"
-            summary "| #$NUMBER | | dry run: **conflicts** with \`$BASE\` |"
+            git merge --abort 2>/dev/null || git reset --quiet --hard HEAD
+            handle_conflict "$NUMBER"
+            skip_numbers="$skip_numbers $NUMBER"
+            continue
         fi
-        log "dry run stops after one PR (nothing advances)"
+        log "dry run stops after one mergeable PR (nothing advances)"
         break
     fi
 
     git checkout --quiet -B "$HEAD" "origin/$HEAD"
 
     if ! git merge --quiet --no-edit "origin/$BASE"; then
-        git merge --abort || true
-        log "  #$NUMBER conflicts with $BASE -- needs a human"
-        summary "| #$NUMBER | | **stopped**: conflicts with \`$BASE\` |"
-        exit 1
+        git merge --abort 2>/dev/null || git reset --quiet --hard HEAD
+        git checkout --quiet --detach "origin/$BASE" || true
+        handle_conflict "$NUMBER"
+        skip_numbers="$skip_numbers $NUMBER"
+        continue
     fi
 
     pre_bump_sha=$(git rev-parse HEAD)
@@ -387,20 +575,37 @@ while :; do
     fi
 
     if [ "$REQUIRE_CHECKS" = 'true' ]; then
-        wait_for_runs "$merge_sha" "$REQUIRED_WORKFLOWS" fail \
-            || { summary "| #$NUMBER | → \`$new_name\` | **stopped**: prepared commit not green |"; exit 1; }
+        checks_rc=0
+        while :; do
+            checks_rc=0
+            wait_for_runs "$merge_sha" "$REQUIRED_WORKFLOWS" fail "$HEAD" || checks_rc=$?
+            [ "$checks_rc" -eq 2 ] || break
+            [ "$HEAD_RERUN_ATTEMPTS" -gt 0 ] \
+                && log "  re-running the red workflow(s) before taking this as #$NUMBER's"
+            rerun_failed_runs "$merge_sha" "$HEAD" "$HEAD_RERUN_ATTEMPTS" || break
+        done
+        # 2 is a verdict on this PR alone; 1 is no verdict at all, which still stops.
+        if [ "$checks_rc" -eq 2 ]; then
+            handle_failing "$NUMBER"
+            skip_numbers="$skip_numbers $NUMBER"
+            continue
+        elif [ "$checks_rc" -ne 0 ]; then
+            summary "| #$NUMBER | → \`$new_name\` | **stopped**: no verdict on the prepared commit |"
+            exit 1
+        fi
     else
         log "  require_checks is off -- merging ${merge_sha:0:7} unverified"
     fi
 
     if [ "$REQUIRE_CHECKS" = 'true' ]; then
         git fetch --quiet origin "$BASE"
-        wait_for_runs "$(git rev-parse "origin/$BASE")" '' pass \
+        wait_base_green "$(git rev-parse "origin/$BASE")" \
             || { summary "| #$NUMBER | → \`$new_name\` | **stopped**: \`$BASE\` is red |"; exit 1; }
 
         if publish_failed "$(git rev-parse "origin/$BASE")"; then
             log "the release of the last merge was not published -- stopping before #$NUMBER"
-            summary "| #$NUMBER | → \`$new_name\` | **stopped**: release of the last merge not published |"
+            quota_note
+            summary "| #$NUMBER | → \`$new_name\` | **stopped**: release of the last merge not published${quota_eta:+, next playstore slot around $quota_eta} |"
             exit 1
         fi
 
@@ -491,3 +696,21 @@ done
 log "done: merged $merged_count PR(s):${merged_list:- none}"
 summary ""
 summary "**merged $merged_count PR(s)**:${merged_list:- none}"
+if [ "$conflict_count" -ne 0 ]; then
+    log "left for a human, conflicting with $BASE:$conflict_list"
+    summary ""
+    if [ "$DRY_RUN" = 'true' ]; then
+        summary "**$conflict_count PR(s) conflict with \`$BASE\`**:$conflict_list -- a real run would drop \`$LABEL\`${CONFLICT_LABEL:+ and add \`$CONFLICT_LABEL\`} and keep draining."
+    else
+        summary "**$conflict_count PR(s) conflict with \`$BASE\`**:$conflict_list -- \`$LABEL\` dropped${CONFLICT_LABEL:+, \`$CONFLICT_LABEL\` added}. Resolve the conflict and re-add \`$LABEL\` to queue it again."
+    fi
+fi
+if [ "$failing_count" -ne 0 ]; then
+    log "left for a human, failing on the prepared commit:$failing_list"
+    summary ""
+    if [ "$DRY_RUN" = 'true' ]; then
+        summary "**$failing_count PR(s) failed on their prepared commit**:$failing_list -- a real run would drop \`$LABEL\`${FAILING_LABEL:+ and add \`$FAILING_LABEL\`} and keep draining."
+    else
+        summary "**$failing_count PR(s) failed on their prepared commit**:$failing_list -- \`$LABEL\` dropped${FAILING_LABEL:+, \`$FAILING_LABEL\` added}. Fix the build or test and re-add \`$LABEL\` to queue it again."
+    fi
+fi

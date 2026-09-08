@@ -19,25 +19,37 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.addCallback
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewFeature
+import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.io.FileInputStream
 import java.net.URLConnection
+import javax.inject.Inject
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityWebViewBinding
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ServerConfigUtils
 import org.ole.planet.myplanet.utils.WebViewSafety
 
+@AndroidEntryPoint
 class WebViewActivity : AppCompatActivity() {
     private lateinit var activityWebViewBinding: ActivityWebViewBinding
     private var fromDeepLink = false
+    @Inject
+    lateinit var userRepository: UserRepository
+    private val viewModel: ResourceViewerViewModel by viewModels()
+    private val exitCoordinator by lazy {
+        ResourcesExitCoordinator(this, userRepository, viewModel)
+    }
     private lateinit var link: String
     private val trustedHosts by lazy {
         ServerConfigUtils.getTrustedServerHosts()
@@ -63,7 +75,7 @@ class WebViewActivity : AppCompatActivity() {
         setupWebView()
         setListeners()
 
-        activityWebViewBinding.contentWebView.finish.setOnClickListener { finish() }
+        activityWebViewBinding.contentWebView.finish.setOnClickListener { handleBackNavigation() }
         setWebClient()
 
         onBackPressedDispatcher.addCallback(this) {
@@ -71,16 +83,18 @@ class WebViewActivity : AppCompatActivity() {
             if (webView.canGoBack()) {
                 webView.goBack()
             } else {
-                isEnabled = false
-                onBackPressedDispatcher.onBackPressed()
+                handleBackNavigation()
             }
         }
 
         if (resourceDirectory != null) {
-            val indexFile = File(resourceDirectory, "index.html")
+            val entryRelativePath = intent.getStringExtra("OPEN_WHICH_FILE")
+            val indexFile = FileUtils.resolveHtmlEntryFile(resourceDirectory, entryRelativePath)
 
-            if (indexFile.exists()) {
-                activityWebViewBinding.contentWebView.wv.loadUrl("https://appassets.androidplatform.net/assets/index.html")
+            if (indexFile?.exists() == true) {
+                val entryPath = indexFile.relativeTo(resourceDirectory).invariantSeparatorsPath
+                val encodedEntryPath = entryPath.split("/").joinToString("/") { Uri.encode(it) }
+                activityWebViewBinding.contentWebView.wv.loadUrl("https://appassets.androidplatform.net/assets/$encodedEntryPath")
             }
         } else {
             activityWebViewBinding.contentWebView.wv.loadUrl(link)
@@ -142,6 +156,14 @@ class WebViewActivity : AppCompatActivity() {
         }
     }
 
+    private fun handleBackNavigation() {
+        exitCoordinator.handleBackNavigation(
+            resourceId = intent.getStringExtra("RESOURCE_ID"),
+            title = activityWebViewBinding.contentWebView.webTitle.text.toString().ifBlank {
+                intent.getStringExtra("title") ?: ""
+            },
+        )
+    }
 
     private fun setWebClient() {
         val assetLoader = setupAssetLoader()

@@ -17,16 +17,15 @@ import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.decrypt
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
 
 data class HealthExaminationState(
     val isLoading: Boolean = true,
     val user: UserEntity? = null,
     val pojo: HealthExamination? = null,
     val health: MyHealth? = null,
-    val examination: HealthExamination? = null
+    val examination: HealthExamination? = null,
+    val conditionsMap: Map<String, Boolean> = emptyMap()
 )
 
 @HiltViewModel
@@ -53,6 +52,7 @@ class HealthExaminationViewModel @Inject constructor(
             var pojo: HealthExamination? = null
             var health: MyHealth? = null
             var examination: HealthExamination? = null
+            var conditionsMap: Map<String, Boolean> = emptyMap()
 
             withContext(dispatcherProvider.io) {
                 if (userId != null) {
@@ -66,13 +66,7 @@ class HealthExaminationViewModel @Inject constructor(
                     }
                 }
 
-                if (pojo != null && pojo.data?.isNotEmpty() == true) {
-                    try {
-                        health = JsonUtils.gson.fromJson(decrypt(pojo.data, user?.key, user?.iv), MyHealth::class.java)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
+                health = healthRepository.getDecryptedHealth(pojo, user)
                 if (health == null) {
                     health = healthRepository.initHealth()
                 }
@@ -80,6 +74,8 @@ class HealthExaminationViewModel @Inject constructor(
                 if (examinationId != null) {
                     examination = healthRepository.getExaminationById(examinationId)
                 }
+
+                conditionsMap = healthRepository.getExaminationConditions(examination)
             }
 
             _state.value = HealthExaminationState(
@@ -87,7 +83,8 @@ class HealthExaminationViewModel @Inject constructor(
                 user = user,
                 pojo = pojo,
                 health = health,
-                examination = examination
+                examination = examination,
+                conditionsMap = conditionsMap
             )
         }
     }

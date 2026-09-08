@@ -1,10 +1,13 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import android.util.Log
 import androidx.core.content.edit
 import androidx.core.net.toUri
+import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
 import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
@@ -18,19 +21,20 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.Json
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.Sha256Utils
@@ -46,9 +50,14 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     private val appDatabase: AppDatabase,
     private val serverUrlMapper: ServerUrlMapper,
     private val dispatcherProvider: DispatcherProvider,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    @PlainGson private val gson: Gson
 ) : ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
+
+    companion object {
+        private const val TAG = "ConfigurationsRepository"
+    }
 
     override suspend fun checkHealth(): String {
         return try {
@@ -70,7 +79,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                     else -> "Server error: ${response.code()}"
                 }
             } catch (t: Exception) {
-                t.printStackTrace()
+                Log.e(TAG, "Health access request failed", t)
                 when (t) {
                     is UnknownHostException -> "Server not reachable"
                     is SocketTimeoutException -> "Connection timeout"
@@ -80,7 +89,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Health access initialization failed", e)
             "Health access initialization failed"
         }
     }
@@ -105,11 +114,11 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
                 if (cachedVersionDetail != null && cachedApkVersion != -1) {
                     try {
-                        val cachedInfo = JsonUtils.gson.fromJson(cachedVersionDetail, MyPlanet::class.java)
+                        val cachedInfo = gson.fromJson(cachedVersionDetail, MyPlanet::class.java)
                         handleVersionEvaluation(cachedInfo, cachedApkVersion, callback)
                         return@launch
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Log.e(TAG, "Failed to parse cached version detail", e)
                     }
                 }
             }
@@ -125,10 +134,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                     putLong("last_version_check_timestamp", timeProvider.now())
                 }
                 sharedPrefManager.setLastWifiId(NetworkUtils.getCurrentNetworkId(context))
-                sharedPrefManager.setVersionDetail(JsonUtils.gson.toJson(planetInfo))
+                sharedPrefManager.setVersionDetail(gson.toJson(planetInfo))
 
                 val rawApkVersion = fetchApkVersionString(spm)
-                val versionStr = JsonUtils.gson.fromJson(rawApkVersion, String::class.java)
+                val versionStr = gson.fromJson(rawApkVersion, String::class.java)
                 if (versionStr.isNullOrEmpty()) {
                     callback.onError(context.getString(R.string.planet_is_up_to_date), false)
                     return@launch
@@ -149,7 +158,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
                 handleVersionEvaluation(planetInfo, apkVersion, callback)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Version check failed", e)
                 withContext(dispatcherProvider.main) {
                     callback.onError(context.getString(R.string.connection_failed), true)
                 }
@@ -208,8 +217,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             val code = response.code()
             if (response.isSuccessful) {
                 val ss = withContext(dispatcherProvider.io) { response.body()?.string() }
-                val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
-                val dbCount = myList?.size ?: 0
+                val dbCount = countCommaEntries(ss)
                 dbCount >= 8
             } else {
                 code == 401
@@ -217,6 +225,18 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         } catch (_: Exception) {
             false
         }
+    }
+
+    private fun countCommaEntries(body: String?): Int {
+        if (body == null) return 0
+        var end = body.length
+        while (end > 0 && body[end - 1] == ',') end--
+        if (end == 0) return 0
+        var commaCount = 0
+        for (i in 0 until end) {
+            if (body[i] == ',') commaCount++
+        }
+        return commaCount + 1
     }
 
     override suspend fun checkCheckSum(path: String): Boolean {
@@ -230,13 +250,17 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                         val sha256 = withContext(dispatcherProvider.io) {
                             Sha256Utils().getCheckSumFromFile(f)
                         }
+                        if (sha256 == null) {
+                            Log.w(TAG, "Could not compute checksum for $path")
+                            return false
+                        }
                         return checksum.contains(sha256)
                     }
                 }
             }
             false
         } catch (e: IOException) {
-            e.printStackTrace()
+            Log.e(TAG, "Checksum check failed", e)
             false
         }
     }
@@ -256,7 +280,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                     ?: allResults.firstOrNull()
                     ?: UrlCheckResult.Failure(url)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Configuration URL check failed", e)
                 UrlCheckResult.Failure(url)
             }
 
@@ -275,7 +299,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "getMinApk failed", e)
             ConfigurationsRepository.ConfigurationResult.Failure(context.getString(R.string.device_couldn_t_reach_local_server), url)
         }
     }
@@ -303,10 +327,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
             UrlCheckResult.Failure(currentUrl)
         } catch (e: TimeoutCancellationException) {
-            e.printStackTrace()
+            Log.e(TAG, "Configuration URL check timed out", e)
             UrlCheckResult.Failure(currentUrl)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Configuration URL check failed", e)
             UrlCheckResult.Failure(currentUrl)
         }
     }
@@ -321,7 +345,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             if (configResponse.isSuccessful) {
                 val rows = configResponse.body()?.getAsJsonArray("rows")
 
-                if (rows != null && rows.size() > 0) {
+                if (rows != null && !rows.isEmpty()) {
                     val firstRow = rows[0].asJsonObject
                     val id = firstRow.getAsJsonPrimitive("id").asString
                     val doc = firstRow.getAsJsonObject("doc")
@@ -332,10 +356,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
             null
         } catch (e: TimeoutCancellationException) {
-            e.printStackTrace()
+            Log.e(TAG, "Fetch configuration timed out", e)
             null
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Fetch configuration failed", e)
             null
         }
     }
@@ -356,7 +380,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         if (doc.has("models")) {
             val modelsMap = doc.getAsJsonObject("models").entrySet()
                 .associate { it.key to it.value.asString }
-            sharedPrefManager.rawPreferences.edit { putString("ai_models", JsonUtils.gson.toJson(modelsMap)) }
+            sharedPrefManager.rawPreferences.edit { putString("ai_models", gson.toJson(modelsMap)) }
         }
 
         if (doc.has("planetType")) {
@@ -367,6 +391,47 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
     override fun getPlanetType(): String? {
         return sharedPrefManager.getRawString("planetType")
+    }
+
+    override fun getParentCode(): String {
+        return sharedPrefManager.getParentCode()
+    }
+
+    override fun getCommunityName(): String {
+        return sharedPrefManager.getCommunityName()
+    }
+
+    override fun getCommunityLeaders(): String {
+        return sharedPrefManager.getCommunityLeaders()
+    }
+
+    override fun clearPreferences() {
+        sharedPrefManager.clearPreferences()
+    }
+
+    override suspend fun clearFirstRunStorageAndSetFlag(hasWritePermission: Boolean) {
+        withContext(dispatcherProvider.io) {
+            if (hasWritePermission && sharedPrefManager.getFirstRun()) {
+                val myDir = File(FileUtils.getOlePath(context))
+                if (myDir.isDirectory) {
+                    myDir.listFiles()?.forEach { it.deleteRecursively() }
+                }
+                sharedPrefManager.setFirstRun(false)
+            }
+        }
+    }
+
+    override suspend fun getQueuedDownloads(): List<String> {
+        return withContext(dispatcherProvider.io) {
+            val storedJsonConcatenatedLinks = sharedPrefManager.getConcatenatedLinks()
+            if (storedJsonConcatenatedLinks.isNullOrEmpty()) {
+                emptyList()
+            } else {
+                runCatching {
+                    Json.decodeFromString<List<String>>(storedJsonConcatenatedLinks)
+                }.getOrDefault(emptyList())
+            }
+        }
     }
 
     private fun buildCouchdbUrl(currentUrl: String, pin: String): String {
@@ -431,16 +496,14 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
     private fun handleVersionEvaluation(info: MyPlanet, apkVersion: Int, callback: ConfigurationsRepository.CheckVersionCallback) {
         val currentVersion = VersionUtils.getVersionCode(context)
-        serviceScope.launch(dispatcherProvider.main) {
-            if (Constants.showBetaFeature(Constants.KEY_UPGRADE_MAX, context) && info.latestapkcode > currentVersion) {
-                callback.onUpdateAvailable(info, false)
-            } else if (apkVersion > currentVersion) {
-                callback.onUpdateAvailable(info, currentVersion >= info.minapkcode)
-            } else if (currentVersion < info.minapkcode && apkVersion < info.minapkcode) {
-                callback.onUpdateAvailable(info, true)
-            } else {
-                callback.onError(context.getString(R.string.planet_is_up_to_date), false)
-            }
+        if (Constants.showBetaFeature(Constants.KEY_UPGRADE_MAX, context) && info.latestapkcode > currentVersion) {
+            callback.onUpdateAvailable(info, false)
+        } else if (apkVersion > currentVersion) {
+            callback.onUpdateAvailable(info, currentVersion >= info.minapkcode)
+        } else if (currentVersion < info.minapkcode && apkVersion < info.minapkcode) {
+            callback.onUpdateAvailable(info, true)
+        } else {
+            callback.onError(context.getString(R.string.planet_is_up_to_date), false)
         }
     }
 

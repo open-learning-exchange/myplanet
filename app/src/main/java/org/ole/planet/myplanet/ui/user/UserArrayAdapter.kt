@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.user
 
+import android.content.Context
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -14,6 +15,7 @@ import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 
 class UserArrayAdapter(
+    private val context: Context,
     private val onItemClick: (UserEntity) -> Unit
 ) : ListAdapter<UserEntity, UserArrayAdapter.ViewHolder>(
     DiffUtils.itemCallback<UserEntity>(
@@ -24,6 +26,12 @@ class UserArrayAdapter(
 
     var selectedUser: UserEntity? = null
     private var avatarSize = 0
+    private val selectedColor by lazy(LazyThreadSafetyMode.NONE) {
+        ContextCompat.getColor(context, R.color.md_grey_300)
+    }
+    private val transparentColor by lazy(LazyThreadSafetyMode.NONE) {
+        ContextCompat.getColor(context, android.R.color.transparent)
+    }
 
     class ViewHolder(val binding: ItemUserBinding) : RecyclerView.ViewHolder(binding.root)
 
@@ -38,11 +46,10 @@ class UserArrayAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {
         if (payloads.contains(PAYLOAD_SELECTION)) {
             val user = getItem(position)
-            val context = holder.itemView.context
             if (user.id == selectedUser?.id) {
-                holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_grey_300))
+                holder.itemView.setBackgroundColor(selectedColor)
             } else {
-                holder.itemView.setBackgroundColor(ContextCompat.getColor(context, android.R.color.transparent))
+                holder.itemView.setBackgroundColor(transparentColor)
             }
         } else {
             super.onBindViewHolder(holder, position, payloads)
@@ -51,7 +58,6 @@ class UserArrayAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val user = getItem(position)
-        val context = holder.itemView.context
 
         holder.binding.txtName.text = context.getString(R.string.two_strings, user.getFullName(), "(${user.name})")
         holder.binding.txtJoined.text = context.getString(R.string.joined_colon, TimeUtils.formatDate(user.joinDate))
@@ -63,9 +69,9 @@ class UserArrayAdapter(
         }
 
         if (user.id == selectedUser?.id) {
-            holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_grey_300))
+            holder.itemView.setBackgroundColor(selectedColor)
         } else {
-            holder.itemView.setBackgroundColor(ContextCompat.getColor(context, android.R.color.transparent))
+            holder.itemView.setBackgroundColor(transparentColor)
         }
 
         holder.itemView.setOnClickListener {

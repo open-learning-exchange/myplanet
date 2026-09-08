@@ -2,15 +2,16 @@ package org.ole.planet.myplanet.ui.teams.tasks
 
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.every
 import io.mockk.mockk
 import java.util.Calendar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.yield
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -23,8 +24,6 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.yield
 
 @ExperimentalCoroutinesApi
 class TeamsTasksViewModelTest {

@@ -14,13 +14,12 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
 import javax.inject.Singleton
 import javax.net.SocketFactory
+import okhttp3.ConnectionPool
 import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.api.RetryInterceptor
-import org.ole.planet.myplanet.services.BroadcastService
 import org.ole.planet.myplanet.utils.Constants.NETWORK_TRAFFIC_TAG
-import org.ole.planet.myplanet.utils.TimeProvider
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -41,6 +40,10 @@ annotation class StandardHttpClient
 @Retention(AnnotationRetention.BINARY)
 annotation class StandardRetrofit
 
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class PlainGson
+
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
@@ -56,15 +59,24 @@ object NetworkModule {
             .serializeNulls()
             .create()
     }
-    
+
+    @Provides
+    @Singleton
+    @PlainGson
+    fun providePlainGson(): Gson {
+        return Gson()
+    }
+
     private const val MAX_REQUESTS_PER_HOST = 20
 
     private fun buildOkHttpClient(connect: Long, read: Long, write: Long, retryInterceptor: RetryInterceptor? = null): OkHttpClient {
         val dispatcher = Dispatcher().apply {
             maxRequestsPerHost = MAX_REQUESTS_PER_HOST
         }
+        val connectionPool = ConnectionPool(MAX_REQUESTS_PER_HOST, 5, TimeUnit.MINUTES)
         val builder = OkHttpClient.Builder()
             .dispatcher(dispatcher)
+            .connectionPool(connectionPool)
             .connectTimeout(connect, TimeUnit.SECONDS)
             .readTimeout(read, TimeUnit.SECONDS)
             .writeTimeout(write, TimeUnit.SECONDS)
@@ -80,12 +92,12 @@ object NetworkModule {
     @Provides
     @Singleton
     @StandardHttpClient
-    fun provideStandardOkHttpClient(broadcastService: BroadcastService, timeProvider: TimeProvider): OkHttpClient {
+    fun provideStandardOkHttpClient(retryInterceptor: RetryInterceptor): OkHttpClient {
         return buildOkHttpClient(
             CONNECT_TIMEOUT_SECONDS,
             READ_TIMEOUT_SECONDS,
             WRITE_TIMEOUT_SECONDS,
-            RetryInterceptor(broadcastService, timeProvider)
+            retryInterceptor
         )
     }
 

@@ -17,6 +17,8 @@ import javax.inject.Inject
 import kotlin.OptIn
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -65,6 +67,8 @@ class TeamFragment : Fragment() {
         binding.addTeam.setOnClickListener { createTeamAlert(null) }
         binding.tvFragmentInfo.text = if (TextUtils.equals(type, "enterprise")) {
             getString(R.string.enterprises)
+        } else if (fromDashboard) {
+            getString(R.string.txt_myTeams)
         } else {
             getString(R.string.team)
         }
@@ -313,7 +317,9 @@ class TeamFragment : Fragment() {
     @OptIn(FlowPreview::class)
     private fun setupTextWatcher() {
         binding.etSearch.textChanges()
+            .drop(1)
             .debounce(300)
+            .distinctUntilChanged()
             .onEach { text -> viewModel.searchTeams(text?.toString() ?: "") }
             .launchIn(viewLifecycleOwner.lifecycleScope)
     }

@@ -3,15 +3,16 @@ package org.ole.planet.myplanet.ui.dashboard
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -24,10 +25,8 @@ import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
-import kotlinx.coroutines.flow.MutableStateFlow
-import java.util.concurrent.TimeUnit
+import org.ole.planet.myplanet.utils.TestTimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class BellDashboardViewModelTest {

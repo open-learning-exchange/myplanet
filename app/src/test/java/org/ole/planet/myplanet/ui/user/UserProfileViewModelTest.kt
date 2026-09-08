@@ -29,7 +29,6 @@ class UserProfileViewModelTest {
     val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
     private lateinit var userRepository: UserRepository
-    private lateinit var userSessionManager: UserSessionManager
     private lateinit var activitiesRepository: ActivitiesRepository
     private lateinit var viewModel: UserProfileViewModel
 
@@ -44,18 +43,17 @@ class UserProfileViewModelTest {
     @Before
     fun setup() {
         userRepository = mockk(relaxed = true)
-        userSessionManager = mockk(relaxed = true)
         activitiesRepository = mockk(relaxed = true)
 
         val mockUser = mockk<UserEntity>(relaxed = true)
         every { mockUser.name } returns "Test User"
-        coEvery { userSessionManager.getUserModel() } returns mockUser
+        coEvery { userRepository.getUserModel() } returns mockUser
 
         coEvery { activitiesRepository.getMostOpenedResource("Test User", UserSessionManager.KEY_RESOURCE_OPEN) } returns Pair("Test Resource", 5)
         coEvery { activitiesRepository.getGlobalLastVisit() } returns 123456789L
         coEvery { activitiesRepository.getResourceOpenCount("Test User", UserSessionManager.KEY_RESOURCE_OPEN) } returns 10L
 
-        viewModel = UserProfileViewModel(userRepository, userSessionManager, activitiesRepository)
+        viewModel = UserProfileViewModel(userRepository, activitiesRepository)
     }
 
     @Test

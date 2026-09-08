@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -30,19 +29,15 @@ import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
-import org.ole.planet.myplanet.ui.voices.VoicesActions
-import org.ole.planet.myplanet.ui.voices.VoicesViewModel
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
-import org.ole.planet.myplanet.utils.FileUtils.getImagePath
-import org.ole.planet.myplanet.utils.FileUtils.getRealPathFromURI
+import org.ole.planet.myplanet.utils.FileUtils.resolveUriToPath
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 
@@ -64,8 +59,6 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
 
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
-    @Inject
-    lateinit var userRepository: UserRepository
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     @Inject
@@ -154,9 +147,8 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                     },
                     onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(lifecycleScope, dispatcherProvider),
                     labelManager = labelManager,
-                    voicesRepository = voicesRepository,
-                    userRepository = userRepository,
-                    getCommunityLeadersFn = { sharedPrefManager.getCommunityLeaders() },
+                    voicesEditActions = voicesRepository,
+                    leadersList = UserEntity.parseLeadersJson(sharedPrefManager.getCommunityLeaders()),
                     setRepliedNewsIdFn = { sharedPrefManager.setRepliedNewsId(it) }
                 )
                 newsAdapter.setListener(this@ReplyActivity)
@@ -223,10 +215,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
             return
         }
 
-        var path: String? = getRealPathFromURI(this, url)
-        if (TextUtils.isEmpty(path)) {
-            path = getImagePath(this, url)
-        }
+        val path: String? = resolveUriToPath(this, url)
 
         if (path == null) {
             return

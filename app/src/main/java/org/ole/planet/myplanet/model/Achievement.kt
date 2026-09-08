@@ -1,14 +1,12 @@
 package org.ole.planet.myplanet.model
 
-import android.text.TextUtils
-import android.util.LruCache
-import android.widget.EditText
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import java.util.Collections
 import org.ole.planet.myplanet.utils.JsonUtils
 
 @Entity(tableName = "achievements", indices = [androidx.room.Index("isUpdated")])
@@ -93,15 +91,20 @@ class Achievement {
     }
 
     companion object {
-        private val parsedJsonCache = LruCache<String, JsonElement>(1000)
+        internal const val CACHE_CAPACITY = 1000
+        internal val parsedJsonCache: MutableMap<String, JsonElement> = Collections.synchronizedMap(
+            object : LinkedHashMap<String, JsonElement>(16, 0.75f, true) {
+                override fun removeEldestEntry(eldest: Map.Entry<String, JsonElement>): Boolean = size > CACHE_CAPACITY
+            }
+        )
 
         private fun parseStringListToJsonArray(list: List<String>?): JsonArray {
             val array = JsonArray()
             for (s in list ?: emptyList()) {
-                var ob = parsedJsonCache.get(s)
+                var ob = parsedJsonCache[s]
                 if (ob == null) {
                     ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
-                    parsedJsonCache.put(s, ob)
+                    parsedJsonCache[s] = ob
                 }
                 array.add(ob?.deepCopy())
             }
@@ -132,7 +135,7 @@ class Achievement {
         fun serialize(sub: Achievement): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("_id", sub._id)
-            if (!TextUtils.isEmpty(sub._rev)) `object`.addProperty("_rev", sub._rev)
+            if (!sub._rev.isNullOrEmpty()) `object`.addProperty("_rev", sub._rev)
             `object`.addProperty("goals", sub.goals)
             `object`.addProperty("purpose", sub.purpose)
             `object`.addProperty("achievementsHeader", sub.achievementsHeader)
@@ -149,12 +152,12 @@ class Achievement {
             return `object`
         }
 
-        fun createReference(name: String?, relation: EditText, phone: EditText, email: EditText): JsonObject {
+        fun createReference(name: String?, relation: String, phone: String, email: String): JsonObject {
             val ob = JsonObject()
             ob.addProperty("name", name)
-            ob.addProperty("phone", phone.text.toString())
-            ob.addProperty("relationship", relation.text.toString())
-            ob.addProperty("email", email.text.toString())
+            ob.addProperty("phone", phone)
+            ob.addProperty("relationship", relation)
+            ob.addProperty("email", email)
             return ob
         }
 

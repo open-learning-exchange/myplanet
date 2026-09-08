@@ -22,9 +22,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.isNotEmpty
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.AndroidEntryPoint
@@ -432,29 +430,7 @@ class ChatDetailFragment : Fragment() {
     }
 
     fun checkAiProviders() {
-        if (!sharedViewModel.shouldFetchAiProviders()) {
-            return
-        }
-
-        sharedViewModel.setAiProvidersLoading(true)
-        sharedViewModel.setAiProvidersError(false)
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            val providers = sharedViewModel.fetchAiProviders(serverUrl)
-            sharedViewModel.setAiProvidersLoading(false)
-            if (providers == null || providers.values.all { !it }) {
-                val cachedProviders = getCachedProviderAvailability()
-                if (cachedProviders != null) {
-                    sharedViewModel.setAiProvidersError(false)
-                    sharedViewModel.setAiProviders(cachedProviders)
-                } else {
-                    sharedViewModel.setAiProvidersError(true)
-                    sharedViewModel.setAiProviders(null)
-                }
-            } else {
-                sharedViewModel.setAiProviders(providers)
-            }
-        }
+        sharedViewModel.fetchAiProviders(serverUrl, getCachedProviderAvailability())
     }
 
     private fun updateAIButtons(aiProvidersResponse: Map<String, Boolean>) {

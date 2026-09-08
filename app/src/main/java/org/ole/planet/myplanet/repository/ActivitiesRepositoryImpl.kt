@@ -15,13 +15,15 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
-import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
+import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
+import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.LoginActivityData
 import org.ole.planet.myplanet.model.MyPlanet
@@ -33,13 +35,17 @@ import org.ole.planet.myplanet.model.UserChallengeActions
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
+import org.ole.planet.myplanet.utils.distinctByContent
 
 class ActivitiesRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val dispatcherProvider: DispatcherProvider,
     private val userRepository: Lazy<UserRepository>,
     private val apiInterface: ApiInterface,
     private val sharedPrefManager: SharedPrefManager,
@@ -49,7 +55,8 @@ class ActivitiesRepositoryImpl @Inject constructor(
     private val resourceActivityDao: ResourceActivityDao,
     private val offlineActivityDao: OfflineActivityDao,
     private val removedLogDao: RemovedLogDao,
-    private val searchActivityDao: SearchActivityDao
+    private val searchActivityDao: SearchActivityDao,
+    private val userDao: UserDao
 ) : ActivitiesRepository {
     override suspend fun getOfflineVisitCount(userId: String): Int {
         return offlineActivityDao.countByUserIdAndType(userId, UserSessionManager.KEY_LOGIN)
@@ -59,8 +66,9 @@ class ActivitiesRepositoryImpl @Inject constructor(
         return offlineActivityDao.countByUserNameAndType(userName, UserSessionManager.KEY_LOGIN)
     }
 
-    override suspend fun getOfflineLogins(userName: String): Flow<List<OfflineActivity>> {
+    override fun getOfflineLogins(userName: String): Flow<List<OfflineActivity>> {
         return offlineActivityDao.observeByUserNameAndType(userName, UserSessionManager.KEY_LOGIN)
+            .distinctByContent { a, b -> a.id == b.id && a.loginTime == b.loginTime }
     }
 
     override suspend fun markResourceAdded(userId: String?, resourceId: String) {
@@ -79,7 +87,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun logCourseVisit(courseId: String, title: String, userId: String) {
-        val user = userRepository.get().getUserByName(userId)
+        val user = userDao.getByName(userId)
         val parentCode = user?.parentCode
         val createdOn = user?.planetCode
 
@@ -162,27 +170,12 @@ class ActivitiesRepositoryImpl @Inject constructor(
         return resourceActivityDao.countByUserAndType(userName, type)
     }
 
-    override suspend fun getMostOpenedResource(userName: String, type: String): Pair<String, Int>? {
-        val activities = resourceActivityDao.getByUserAndType(userName, type)
-        if (activities.isEmpty()) {
-            return null
-        }
-
-        val resourceCounts = activities
-            .groupBy { it.resourceId }
-            .mapValues { entry ->
-                val count = entry.value.size
-                val title = entry.value.first().title
-                Pair(count, title)
-            }
-            .filterValues { it.second != null }
-
-        val maxEntry = resourceCounts.maxByOrNull { it.value.first }
-
-        return if (maxEntry == null || maxEntry.value.first == 0) {
-            null
+    override suspend fun getMostOpenedResource(userName: String, type: String): Pair<String, Int>? = withContext(dispatcherProvider.io) {
+        val result = resourceActivityDao.getMostOpenedResource(userName, type)
+        if (result != null) {
+            Pair(result.title, result.openCount)
         } else {
-            Pair(maxEntry.value.second ?: "", maxEntry.value.first)
+            null
         }
     }
 
@@ -294,11 +287,11 @@ class ActivitiesRepositoryImpl @Inject constructor(
         ob.addProperty("logoutTime", activity.logoutTime)
         ob.addProperty("createdOn", activity.createdOn)
         ob.addProperty("parentCode", activity.parentCode)
-        ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+        ob.addDocumentOrigin()
         ob.addProperty("deviceName", NetworkUtils.getDeviceName())
         ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
         if (activity._id != null) {
-            ob.addProperty("_id", activity.logoutTime)
+            ob.addProperty("_id", activity._id)
         }
         if (activity._rev != null) {
             ob.addProperty("_rev", activity._rev)
@@ -348,17 +341,26 @@ class ActivitiesRepositoryImpl @Inject constructor(
         }
         if (documentList.isEmpty()) return
 
-        val ids = documentList.map { JsonUtils.getString("_id", it) }.filter { it.isNotEmpty() }.distinct()
+        val ids = LinkedHashSet<String>()
+        val loginTimes = LinkedHashSet<Long>()
+        val userNames = LinkedHashSet<String>()
+        for (jsonDoc in documentList) {
+            val id = JsonUtils.getString("_id", jsonDoc)
+            if (id.isNotEmpty()) ids.add(id)
+            val loginTime = JsonUtils.getLong("loginTime", jsonDoc)
+            if (loginTime > 0) loginTimes.add(loginTime)
+            val userName = JsonUtils.getString("user", jsonDoc)
+            if (userName.isNotEmpty()) userNames.add(userName)
+        }
+
         val existingActivitiesMap = if (ids.isNotEmpty()) {
-            offlineActivityDao.getByRemoteIds(ids).associateBy { it._id ?: "" }.toMutableMap()
+            offlineActivityDao.getByRemoteIds(ids.toList()).associateBy { it._id ?: "" }.toMutableMap()
         } else {
             mutableMapOf()
         }
 
-        val loginTimes = documentList.map { JsonUtils.getLong("loginTime", it) }.filter { it > 0 }.distinct()
-        val userNames = documentList.map { JsonUtils.getString("user", it) }.filter { it.isNotEmpty() }.distinct()
         val fallbackActivitiesMap = if (loginTimes.isNotEmpty() && userNames.isNotEmpty()) {
-            offlineActivityDao.getByLoginTimesAndUserNames(loginTimes, userNames)
+            offlineActivityDao.getByLoginTimesAndUserNames(loginTimes.toList(), userNames.toList())
                 .associateBy { "${it.loginTime}_${it.userName}" }
                 .toMutableMap()
         } else {
@@ -441,7 +443,7 @@ internal fun serializeResourceActivities(activity: ResourceActivity): JsonObject
     ob.addProperty("time", activity.time)
     ob.addProperty("createdOn", activity.createdOn)
     ob.addProperty("parentCode", activity.parentCode)
-    ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+    ob.addDocumentOrigin()
     ob.addProperty("deviceName", NetworkUtils.getDeviceName())
     return ob
 }

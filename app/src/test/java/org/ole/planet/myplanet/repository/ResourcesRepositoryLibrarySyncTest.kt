@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
-import org.ole.planet.myplanet.data.room.dao.TeamDao
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.robolectric.RobolectricTestRunner
@@ -34,7 +34,7 @@ import org.robolectric.annotation.Config
  * lets one resource belong to multiple shelves.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(application = Application::class, sdk = [26])
+@Config(application = Application::class)
 class ResourcesRepositoryLibrarySyncTest {
 
     private lateinit var db: AppDatabase
@@ -71,7 +71,7 @@ class ResourcesRepositoryLibrarySyncTest {
             mockk<dagger.Lazy<TeamsSyncRepository>>(relaxed = true),
             myLibraryDao,
             mockk<UserRepository>(relaxed = true),
-            mockk<TeamDao>(relaxed = true),
+            mockk<dagger.Lazy<TeamsRepository>>(relaxed = true),
             mockk<org.ole.planet.myplanet.services.UserSessionManager>(relaxed = true),
             mockk<org.ole.planet.myplanet.repository.ConfigurationsRepository>(relaxed = true),
             mockk<org.ole.planet.myplanet.utils.DispatcherProvider>(relaxed = true)
@@ -119,5 +119,79 @@ class ResourcesRepositoryLibrarySyncTest {
         assertEquals(2, merged.size)
         // Still a single row for the resource.
         assertEquals(1, myLibraryDao.getAll().size)
+    }
+
+    @Test
+    fun `batchInsertResources captures openWhichFile for nested HTML app entry points`() = runBlocking {
+        val doc = resourceDoc("sudoku", "Sudoku").apply {
+            addProperty("mediaType", "HTML")
+            addProperty("openWith", "HTML")
+            addProperty("openWhichFile", "sudoku/index.html")
+        }
+
+        repository.batchInsertResources(listOf(doc))
+
+        assertEquals("sudoku/index.html", myLibraryDao.getById("sudoku")?.openWhichFile)
+    }
+
+    @Test
+    fun `batchInsertResources leaves openWhichFile null when doc omits it`() = runBlocking {
+        repository.batchInsertResources(listOf(resourceDoc("res1", "Algebra")))
+
+        assertNull(myLibraryDao.getById("res1")?.openWhichFile)
+    }
+
+    @Test
+    fun `getSyncable includes online rows and offline rows with stale rev but excludes up to date offline rows`() = runBlocking {
+        val online = MyLibrary().apply { id = "r1"; resourceOffline = false; isPrivate = false }
+        val offlineStale = MyLibrary().apply { id = "r2"; resourceOffline = true; resourceLocalAddress = "a.pdf"; _rev = "2-b"; downloadedRev = "1-a"; isPrivate = false }
+        val offlineCurrent = MyLibrary().apply { id = "r3"; resourceOffline = true; resourceLocalAddress = "b.pdf"; _rev = "1-a"; downloadedRev = "1-a"; isPrivate = false }
+        val offlineNoAddress = MyLibrary().apply { id = "r4"; resourceOffline = true; resourceLocalAddress = null; _rev = "2-b"; downloadedRev = "1-a"; isPrivate = false }
+
+        myLibraryDao.upsertAll(listOf(online, offlineStale, offlineCurrent, offlineNoAddress))
+
+        val syncable = repository.getAllLibrariesToSync()
+        val syncableIds = syncable.map { it.id }.toSet()
+
+        assertEquals(setOf("r1", "r2"), syncableIds)
+    }
+
+    @Test
+    fun `getPublicNeedingUpdateForUserPattern and countPublicNeedingUpdateForUserPattern filter by shelf and predicate`() = runBlocking {
+        val matching = MyLibrary().apply {
+            id = "m1"
+            isPrivate = false
+            setUserId("userA")
+            resourceOffline = false
+        }
+        val privateRes = MyLibrary().apply {
+            id = "m2"
+            isPrivate = true
+            setUserId("userA")
+            resourceOffline = false
+        }
+        val upToDate = MyLibrary().apply {
+            id = "m3"
+            isPrivate = false
+            setUserId("userA")
+            resourceOffline = true
+            resourceLocalAddress = "c.pdf"
+            _rev = "1-a"
+            downloadedRev = "1-a"
+        }
+        val userBRes = MyLibrary().apply {
+            id = "m4"
+            isPrivate = false
+            setUserId("userB")
+            resourceOffline = false
+        }
+
+        myLibraryDao.upsertAll(listOf(matching, privateRes, upToDate, userBRes))
+
+        val userAList = repository.getLibraryListForUser("userA")
+        assertEquals(listOf("m1"), userAList.map { it.id })
+
+        val count = repository.countLibrariesNeedingUpdate("userA")
+        assertEquals(1, count)
     }
 }

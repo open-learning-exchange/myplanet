@@ -73,6 +73,7 @@ class TeamsRepositoryBulkInsertTransactionTest {
         teamDao = spyk(db.teamDao())
 
         repository = TeamsRepositoryImpl(
+            mockk<android.content.Context>(relaxed = true),
             mockk<ActivitiesRepository>(relaxed = true),
             mockk<UserSessionManager>(relaxed = true),
             mockk<UploadManager>(relaxed = true),

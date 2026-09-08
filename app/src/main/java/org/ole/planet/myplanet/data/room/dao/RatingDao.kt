@@ -6,14 +6,25 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import org.ole.planet.myplanet.model.Rating
+import org.ole.planet.myplanet.model.RatingPromptLog
+
+data class RatingAggregate(
+    val totalCount: Int,
+    val averageRate: Double?,
+)
 
 @Dao
 interface RatingDao {
     @Query("SELECT * FROM rating WHERE type IS :type")
     suspend fun getByType(type: String?): List<Rating>
 
-    @Query("SELECT * FROM rating WHERE type IS :type AND item IS :item")
-    suspend fun getByTypeAndItem(type: String?, item: String?): List<Rating>
+    // Aggregates the count and average rate directly in SQLite so a summary no longer has to
+    // load and reduce every rating row in Kotlin.
+    @Query(
+        "SELECT COUNT(*) AS totalCount, AVG(rate) AS averageRate " +
+            "FROM rating WHERE type IS :type AND item IS :item"
+    )
+    suspend fun getAggregate(type: String?, item: String?): RatingAggregate
 
     @Query("SELECT * FROM rating WHERE type = :type AND userId = :userId AND item = :item LIMIT 1")
     suspend fun findByTypeUserItem(type: String, userId: String, item: String): Rating?
@@ -40,4 +51,10 @@ interface RatingDao {
 
     @Query("DELETE FROM rating WHERE id IN (:ids)")
     suspend fun deleteByIds(ids: List<String>): Int
+
+    @Query("SELECT EXISTS(SELECT 1 FROM rating_prompt_log WHERE userId = :userId AND item = :item AND type = :type)")
+    suspend fun isRatingPrompted(userId: String, item: String, type: String = "resource"): Boolean
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun setRatingPrompted(prompt: RatingPromptLog)
 }

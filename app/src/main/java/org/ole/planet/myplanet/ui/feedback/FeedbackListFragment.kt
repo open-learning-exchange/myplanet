@@ -11,7 +11,7 @@ import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
-import org.ole.planet.myplanet.callback.OnFeedbackSubmittedListener
+import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.databinding.FragmentFeedbackListBinding
 import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.TableDataUpdate
@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
-class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener, RealtimeSyncMixin {
+class FeedbackListFragment : Fragment(), OnChangedListener, RealtimeSyncMixin {
 
     private var _binding: FragmentFeedbackListBinding? = null
     private val binding get() = _binding!!
@@ -78,7 +78,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener, RealtimeSy
         super.onDestroyView()
     }
 
-    override fun onFeedbackSubmitted() {
+    override fun onChanged() {
         refreshFeedbackListData()
     }
 

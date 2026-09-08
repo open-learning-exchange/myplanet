@@ -53,35 +53,8 @@ class RetryQueue @Inject constructor(
         }
     }
 
-    suspend fun queueFailedOperations(
-        uploadType: String,
-        errors: List<UploadError>,
-        payloadProvider: (String) -> JsonObject?,
-        endpoint: String,
-        httpMethod: String = "POST",
-        dbIdProvider: ((String) -> String?)? = null,
-        modelClassName: String,
-        userId: String? = null
-    ) {
-        errors.filter { it.retryable }.forEach { error ->
-            val payload = payloadProvider(error.itemId)
-            if (payload != null) {
-                queueFailedOperation(
-                    uploadType, error, payload, endpoint, httpMethod,
-                    dbIdProvider?.invoke(error.itemId), modelClassName, userId
-                )
-            } else {
-                Log.w(TAG, "Could not retrieve payload for item ${error.itemId}, skipping queue")
-            }
-        }
-    }
-
     suspend fun getPendingOperations(): List<RetryOperation> {
         return retryRepository.getPending()
-    }
-
-    suspend fun getPendingCount(): Long {
-        return retryRepository.getPendingCount()
     }
 
     suspend fun markInProgress(operationId: String) {
@@ -99,10 +72,6 @@ class RetryQueue @Inject constructor(
 
     suspend fun cleanup() {
         retryRepository.cleanup()
-    }
-
-    suspend fun resetAllPending() {
-        retryRepository.resetAllPending()
     }
 
     /**

@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import javax.inject.Inject
+import javax.inject.Singleton
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.CommunityDao
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
@@ -10,11 +11,12 @@ import org.ole.planet.myplanet.model.Community
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.utils.JsonUtils
 
+@Singleton
 class CommunityRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
     private val communityDao: CommunityDao,
     private val meetupDao: MeetupDao
-) : CommunityRepository {
+) : CommunityRepository, CommunitySyncWriter {
 
     override suspend fun replaceAll(rows: JsonArray) {
         val communities = mutableListOf<Community>()

@@ -2,12 +2,12 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.os.SystemClock
+import android.util.Log
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
-import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserDataWorker
 import org.ole.planet.myplanet.services.sync.AdaptiveBatchProcessor
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
@@ -31,6 +32,7 @@ import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utils.JsonUtils.gson
 import org.ole.planet.myplanet.utils.SyncTimeLogger
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
@@ -40,32 +42,26 @@ class SyncRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val resourcesRepository: ResourcesRepository,
     private val coursesRepository: CoursesRepository,
-    private val eventsRepository: EventsRepository,
+    private val eventsRepository: EventsSyncWriter,
     private val teamsSyncRepository: TeamsSyncRepository,
-    private val transactionSyncManager: dagger.Lazy<TransactionSyncManager>
+    private val transactionSyncManager: dagger.Lazy<TransactionSyncManager>,
+    private val syncTimeLogger: SyncTimeLogger,
+    private val sharedPrefManager: SharedPrefManager,
+    private val timeProvider: TimeProvider
 ) : SyncRepository {
-    override fun uploadLoginData(): Flow<SyncUiState> {
-        val workRequest = OneTimeWorkRequest.Builder(UserDataWorker::class.java)
-            .setInputData(workDataOf(UserDataWorker.KEY_UPLOAD_TYPE to UserDataWorker.UPLOAD_TYPE_LOGIN))
-            .build()
-        val workManager = WorkManager.getInstance(context)
-        workManager.enqueueUniqueWork(
-            "UploadUserData_Login",
-            ExistingWorkPolicy.REPLACE,
-            workRequest
-        )
-        return workManager.getWorkInfoByIdFlow(workRequest.id).map { workInfo ->
-            mapWorkInfoToState(workInfo)
-        }
-    }
+    override fun uploadLoginData(): Flow<SyncUiState> =
+        enqueueUserDataUpload("UploadUserData_Login", UserDataWorker.UPLOAD_TYPE_LOGIN)
 
-    override fun uploadBulkData(): Flow<SyncUiState> {
+    override fun uploadBulkData(): Flow<SyncUiState> =
+        enqueueUserDataUpload("UploadUserData_Bulk", UserDataWorker.UPLOAD_TYPE_BULK)
+
+    private fun enqueueUserDataUpload(uniqueWorkName: String, uploadType: String): Flow<SyncUiState> {
         val workRequest = OneTimeWorkRequest.Builder(UserDataWorker::class.java)
-            .setInputData(workDataOf(UserDataWorker.KEY_UPLOAD_TYPE to UserDataWorker.UPLOAD_TYPE_BULK))
+            .setInputData(workDataOf(UserDataWorker.KEY_UPLOAD_TYPE to uploadType))
             .build()
         val workManager = WorkManager.getInstance(context)
         workManager.enqueueUniqueWork(
-            "UploadUserData_Bulk",
+            uniqueWorkName,
             ExistingWorkPolicy.REPLACE,
             workRequest
         )
@@ -112,7 +108,7 @@ class SyncRepositoryImpl @Inject constructor(
             coroutineScope {
                 val dataJobs = Constants.shelfDataList.mapNotNull { shelfData ->
                     val array = getJsonArray(shelfData.key, shelfDoc)
-                    if (array.size() > 0) {
+                    if (!array.isEmpty()) {
                         async(dispatcherProvider.io) {
                             processShelfDataOptimizedSync(shelfId, shelfData, shelfDoc)
                         }
@@ -122,7 +118,7 @@ class SyncRepositoryImpl @Inject constructor(
                 processedItems = dataJobs.awaitAll().sum()
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("SyncRepositoryImpl", "Error in processShelfParallel", e)
         }
 
         return processedItems
@@ -130,16 +126,16 @@ class SyncRepositoryImpl @Inject constructor(
 
     private suspend fun processShelfDataOptimizedSync(shelfId: String?, shelfData: Constants.ShelfData, shelfDoc: JsonObject?): Int {
         var processedCount = 0
-        val logger = SyncTimeLogger
+        val logger = syncTimeLogger
 
         try {
             val array = getJsonArray(shelfData.key, shelfDoc)
-            if (array.size() == 0) return 0
+            if (array.isEmpty()) return 0
 
             val validIds = mutableListOf<String>()
-            for (i in 0 until array.size()) {
-                if (array[i] !is JsonNull) {
-                    validIds.add(array[i].asString)
+            for (element in array) {
+                if (element !is JsonNull) {
+                    validIds.add(element.asString)
                 }
             }
 
@@ -180,11 +176,11 @@ class SyncRepositoryImpl @Inject constructor(
                 val responseRows = getJsonArray("rows", response)
                 logger.logApiCall("${UrlUtils.getUrl()}/${shelfData.type}/_all_docs (shelf batch $batchNum)", apiDuration, true, responseRows.size())
 
-                if (responseRows.size() == 0) continue
+                if (responseRows.isEmpty()) continue
 
                 val documentsToProcess = mutableListOf<JsonObject>()
-                for (j in 0 until responseRows.size()) {
-                    val rowObj = responseRows[j].asJsonObject
+                for (rowElement in responseRows) {
+                    val rowObj = rowElement.asJsonObject
                     if (rowObj.has("doc")) {
                         val doc = getJsonObject("doc", rowObj)
                         documentsToProcess.add(doc)
@@ -200,7 +196,7 @@ class SyncRepositoryImpl @Inject constructor(
                         "teams" -> processedCount += teamsSyncRepository.batchInsertMyTeams(documentsToProcess)
                     }
                     val realmDuration = SystemClock.elapsedRealtime() - realmStartTime
-                    logger.logRealmOperation("shelf_insert", shelfData.type, realmDuration, documentsToProcess.size)
+                    logger.logDbOperation("shelf_insert", shelfData.type, realmDuration, documentsToProcess.size)
                 }
 
                 val batchDuration = SystemClock.elapsedRealtime() - batchStartTime
@@ -210,7 +206,7 @@ class SyncRepositoryImpl @Inject constructor(
             }
 
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("SyncRepositoryImpl", "Error in processShelfDataOptimizedSync", e)
             logger.logDetail("shelf_sync", "Shelf $shelfId ${shelfData.type} failed: ${e.message}")
         }
         return processedCount
@@ -223,5 +219,29 @@ class SyncRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             SyncUiState.Error(e.message)
         }
+    }
+
+    override fun getCachedShelvesWithData(): List<String> {
+        val cacheTime = sharedPrefManager.getRawLong(CACHE_KEY_SHELVES_CACHE_TIME, 0)
+        val now = timeProvider.now()
+
+        if (now - cacheTime < CACHE_VALIDITY_HOURS * 60 * 60 * 1000) {
+            val cachedData = sharedPrefManager.getRawString(CACHE_KEY_SHELVES_WITH_DATA, "")
+            if (cachedData.isNotEmpty()) {
+                return cachedData.split(",").filter { it.isNotBlank() }
+            }
+        }
+        return emptyList()
+    }
+
+    override fun cacheShelvesWithData(shelves: List<String>) {
+        sharedPrefManager.setRawString(CACHE_KEY_SHELVES_WITH_DATA, shelves.joinToString(","))
+        sharedPrefManager.setRawLong(CACHE_KEY_SHELVES_CACHE_TIME, timeProvider.now())
+    }
+
+    private companion object {
+        const val CACHE_KEY_SHELVES_WITH_DATA = "shelves_with_data"
+        const val CACHE_KEY_SHELVES_CACHE_TIME = "shelves_cache_time"
+        const val CACHE_VALIDITY_HOURS = 6
     }
 }

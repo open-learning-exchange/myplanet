@@ -31,11 +31,11 @@ class ProgressRepositoryImpl @Inject constructor(
     private val answerDao: AnswerDao,
     private val questionDao: QuestionDao
 ) : ProgressRepository {
-    override suspend fun getCourseProgress(courseIds: List<String>, userId: String?): Map<String, CourseProgressState> {
+    override suspend fun getCourseProgress(courseIds: List<String>, userId: String?): Map<String, CourseProgressState> = withContext(dispatcherProvider.default) {
         val allSteps = if (courseIds.isEmpty()) {
             emptyList()
         } else {
-            courseStepDao.getByCourseIds(courseIds).map { it }
+            courseStepDao.getByCourseIds(courseIds)
         }
         val allProgresses = if (courseIds.isEmpty()) emptyList() else courseProgressDao.getByUserAndCourseIds(userId, courseIds)
 
@@ -51,7 +51,7 @@ class ProgressRepositoryImpl @Inject constructor(
                 current = calculateCurrentProgress(steps, progresses)
             )
         }
-        return map
+        map
     }
 
     override suspend fun fetchCourseData(userId: String?): JsonArray {
@@ -63,22 +63,16 @@ class ProgressRepositoryImpl @Inject constructor(
         val allExams = if (courseIds.isEmpty()) {
             emptyList()
         } else {
-            examDao.getByCourseIds(courseIds).map { it }
+            examDao.getByCourseIds(courseIds)
         }
         val examsByCourseId = allExams.groupBy { it.courseId }
         val courseIdsSet = courseIds.toHashSet()
         val submissionsByCourseId = submissionDao.getExamSubmissionsByUser(userId)
-            .map { it }
             .groupBy { submission ->
                 val parentId = submission.parentId
                 if (parentId != null) {
                     val parts = parentId.split("@")
-                    // If exactly 2 parts, try fast-path lookup. Multiple '@' fall back to legacy substring check.
-                    if (parts.size == 2 && courseIdsSet.contains(parts[1])) {
-                        parts[1]
-                    } else {
-                        courseIds.firstOrNull { parentId.contains(it) }
-                    }
+                    parts.lastOrNull { courseIdsSet.contains(it) }
                 } else {
                     null
                 }
@@ -141,11 +135,18 @@ class ProgressRepositoryImpl @Inject constructor(
     private suspend fun submissionMap(
         submissions: List<Submission>, examIds: List<String>, obj: JsonObject
     ) {
+        val examIndexMap = HashMap<String, String>()
+        examIds.forEachIndexed { index, id ->
+            if (!examIndexMap.containsKey(id)) {
+                examIndexMap[id] = index.toString()
+            }
+        }
+
         val submissionIds = submissions.mapNotNull { it.id }
-        val allAnswers = if (submissionIds.isEmpty()) emptyList() else answerDao.getBySubmissionIds(submissionIds).map { it }
+        val allAnswers = if (submissionIds.isEmpty()) emptyList() else answerDao.getBySubmissionIds(submissionIds)
 
         val questionIds = allAnswers.mapNotNull { it.questionId }.distinct()
-        val allQuestions = if (questionIds.isEmpty()) emptyList() else questionDao.getByIds(questionIds).map { it }
+        val allQuestions = if (questionIds.isEmpty()) emptyList() else questionDao.getByIds(questionIds)
         val questionsMap = allQuestions.associateBy { it.id }
 
         val answersBySubmissionId = allAnswers.groupBy { it.submissionId }
@@ -157,10 +158,12 @@ class ProgressRepositoryImpl @Inject constructor(
             answers.forEach { r ->
                 r.questionId?.let { questionId ->
                     val question = questionsMap[questionId]
-                    if (question != null && examIds.contains(question.examId)) {
-                        totalMistakes += r.mistakes
-                        val examIndexKey = examIds.indexOf(question.examId).toString()
-                        mistakesMap[examIndexKey] = (mistakesMap[examIndexKey] ?: 0) + r.mistakes
+                    if (question != null) {
+                        val examIndexKey = examIndexMap[question.examId]
+                        if (examIndexKey != null) {
+                            totalMistakes += r.mistakes
+                            mistakesMap[examIndexKey] = (mistakesMap[examIndexKey] ?: 0) + r.mistakes
+                        }
                     }
                 }
             }
@@ -268,11 +271,29 @@ class ProgressRepositoryImpl @Inject constructor(
         courseProgressDao.deleteByIds(ids)
     }
 
+    private data class CourseProgressSyncKeys(
+        val doc: JsonObject,
+        val docId: String,
+        val courseId: String,
+        val userId: String,
+        val stepNum: Int
+    )
+
     override suspend fun insertCourseProgressFromSync(docs: List<JsonObject>) {
-        val docIds = docs.map { JsonUtils.getString("_id", it) }.filter { it.isNotEmpty() }.distinct()
-        val courseIds = docs.map { JsonUtils.getString("courseId", it) }.filter { it.isNotEmpty() }.distinct()
-        val userIds = docs.map { JsonUtils.getString("userId", it) }.filter { it.isNotEmpty() }.distinct()
-        val stepNums = docs.map { JsonUtils.getInt("stepNum", it) }.distinct()
+        val syncKeys = docs.map { act ->
+            CourseProgressSyncKeys(
+                doc = act,
+                docId = JsonUtils.getString("_id", act),
+                courseId = JsonUtils.getString("courseId", act),
+                userId = JsonUtils.getString("userId", act),
+                stepNum = JsonUtils.getInt("stepNum", act)
+            )
+        }
+
+        val docIds = syncKeys.mapNotNullTo(LinkedHashSet()) { keys -> keys.docId.takeIf { it.isNotEmpty() } }.toList()
+        val courseIds = syncKeys.mapNotNullTo(LinkedHashSet()) { keys -> keys.courseId.takeIf { it.isNotEmpty() } }.toList()
+        val userIds = syncKeys.mapNotNullTo(LinkedHashSet()) { keys -> keys.userId.takeIf { it.isNotEmpty() } }.toList()
+        val stepNums = syncKeys.mapTo(LinkedHashSet()) { keys -> keys.stepNum }.toList()
 
         val existingProgresses = if (docIds.isNotEmpty()) {
             courseProgressDao.getByIds(docIds).associateBy { it.id }
@@ -288,19 +309,15 @@ class ProgressRepositoryImpl @Inject constructor(
 
         val localRecordsByKey = localRecords.groupBy { Triple(it.courseId, it.userId, it.stepNum) }
 
-        val progress = docs.map { act ->
-            val docId = JsonUtils.getString("_id", act)
-            val courseId = JsonUtils.getString("courseId", act)
-            val userId = JsonUtils.getString("userId", act)
-            val stepNum = JsonUtils.getInt("stepNum", act)
-            val existingProgress = existingProgresses[docId]
+        val progress = syncKeys.map { keys ->
+            val existingProgress = existingProgresses[keys.docId]
             val localRecord = if (existingProgress == null) {
-                localRecordsByKey[Triple<String?, String?, Int>(courseId, userId, stepNum)]
-                    ?.find { it._id == null || it._id == docId }
+                localRecordsByKey[Triple<String?, String?, Int>(keys.courseId, keys.userId, keys.stepNum)]
+                    ?.find { it._id == null || it._id == keys.docId }
             } else {
                 null
             }
-            courseProgressFromJson(act, existingProgress, localRecord)
+            courseProgressFromJson(keys.doc, existingProgress, localRecord)
         }
 
         if (progress.isNotEmpty()) {

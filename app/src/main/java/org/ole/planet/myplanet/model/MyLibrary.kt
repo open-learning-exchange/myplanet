@@ -15,6 +15,7 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 
 /**
  * Room replacement for the former `MyLibrary` model (resources).
@@ -49,6 +50,7 @@ open class MyLibrary {
     var uploadDate: String? = null
     var createdDate: Long = 0
     var openWith: String? = null
+    var openWhichFile: String? = null
     var articleDate: String? = null
     var kind: String? = null
     var language: String? = null
@@ -180,7 +182,7 @@ open class MyLibrary {
                 addProperty("resideOn", user?.planetCode)
                 addProperty("updatedDate", Calendar.getInstance().timeInMillis)
                 addProperty("createdDate", personal.createdDate)
-                addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+                addDocumentOrigin()
                 addProperty("deviceName", NetworkUtils.getDeviceName())
                 addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
             }
@@ -274,6 +276,7 @@ open class MyLibrary {
                 publisher = JsonUtils.getString("publisher", params.doc)
                 linkToLicense = JsonUtils.getString("linkToLicense", params.doc)
                 openWith = JsonUtils.getString("openWith", params.doc)
+                openWhichFile = JsonUtils.getString("openWhichFile", params.doc).takeIf { it.isNotBlank() }
                 articleDate = JsonUtils.getString("articleDate", params.doc)
                 kind = JsonUtils.getString("kind", params.doc)
                 createdDate = JsonUtils.getLong("createdDate", params.doc)

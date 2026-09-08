@@ -63,8 +63,8 @@ class PersonalsAdapter(private val context: Context) : ListAdapter<Personal, Per
     }
 
     private fun openResource(path: String?) {
-        val arr = path?.split("\\.".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
-        when (arr?.get(arr.size - 1)) {
+        val extension = path?.substringAfterLast('.', "")?.lowercase()
+        when (extension) {
             "pdf" -> context.startActivity(
                 Intent(context, ResourceViewerActivity::class.java)
                     .putExtra("TOUCHED_FILE", path)

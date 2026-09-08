@@ -12,7 +12,13 @@ interface ConfigurationsRepository {
     suspend fun clearAllData()
     suspend fun getMinApk(url: String, pin: String): ConfigurationResult
     fun getPlanetType(): String?
+    fun getParentCode(): String
+    fun getCommunityName(): String
+    fun getCommunityLeaders(): String
+    fun clearPreferences()
     suspend fun ensureServerUrlUpdated()
+    suspend fun clearFirstRunStorageAndSetFlag(hasWritePermission: Boolean)
+    suspend fun getQueuedDownloads(): List<String>
 
     interface CheckVersionCallback {
         fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean)

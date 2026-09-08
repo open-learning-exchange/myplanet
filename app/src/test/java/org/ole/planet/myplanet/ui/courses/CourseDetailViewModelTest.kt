@@ -25,7 +25,6 @@ import org.ole.planet.myplanet.model.StepItem
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.RatingSummary
-import org.ole.planet.myplanet.repository.RatingSummaryModel
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
@@ -193,14 +192,11 @@ class CourseDetailViewModelTest {
         viewModel.loadCourseDetail(courseId)
         advanceUntilIdle()
 
-        coEvery { ratingsRepository.getCourseRatingSummary(courseId) } returns RatingSummaryModel(
-            user = UserEntity().apply { id = "user_1" },
-            ratingSummary = RatingSummary(
-                existingRating = null,
-                averageRating = 5.0f,
-                totalRatings = 10,
-                userRating = 5
-            )
+        coEvery { ratingsRepository.getRatingSummary("course", courseId, "user_1") } returns RatingSummary(
+            existingRating = null,
+            averageRating = 5.0f,
+            totalRatings = 10,
+            userRating = 5
         )
 
         viewModel.refreshRatings(courseId)

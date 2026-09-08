@@ -5,13 +5,19 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import io.mockk.every
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import io.mockk.unmockkStatic
+import io.mockk.verify
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.utils.NetworkUtils
 
 class FeedbackTest {
 
@@ -22,6 +28,8 @@ class FeedbackTest {
             val str = firstArg<CharSequence?>()
             str == null || str.length == 0
         }
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "uniqueIdentifier"
     }
 
     @After
@@ -60,6 +68,15 @@ class FeedbackTest {
     }
 
     @Test
+    fun testMessageListEmptyArray() {
+        val feedback = Feedback()
+        feedback.messages = "[]"
+        val list = feedback.messageList
+        assertNotNull(list)
+        assertTrue(list!!.isEmpty())
+    }
+
+    @Test
     fun testMessageListWithElements() {
         val feedback = Feedback()
         val messageString = """
@@ -88,6 +105,13 @@ class FeedbackTest {
         assertEquals("", feedback.message)
 
         feedback.messages = null
+        assertEquals("", feedback.message)
+    }
+
+    @Test
+    fun testMessageEmptyArray() {
+        val feedback = Feedback()
+        feedback.messages = "[]"
         assertEquals("", feedback.message)
     }
 
@@ -143,6 +167,8 @@ class FeedbackTest {
         val messagesArray = serialized.get("messages").asJsonArray
         assertEquals(1, messagesArray.size())
         assertEquals("Test message", messagesArray[0].asJsonObject.get("message").asString)
+        assertEquals("uniqueIdentifier", serialized.get("androidId").asString)
+        assertEquals("myplanet", serialized.get("app").asString)
     }
 
     @Test
@@ -162,5 +188,56 @@ class FeedbackTest {
 
         // When an exception is thrown, the "messages" property is not added
         assertNull(jsonObject.get("messages"))
+    }
+
+    @Test
+    fun testMessagesCachedAcrossAccesses() {
+        val expectedArray = JsonArray().apply {
+            add(JsonObject().apply { addProperty("message", "First message"); addProperty("user", "user0"); addProperty("time", "time0") })
+            add(JsonObject().apply { addProperty("message", "Second message"); addProperty("user", "user1"); addProperty("time", "time1") })
+        }
+        val feedback = Feedback()
+        feedback.messages = """[{"message": "First message", "user": "user0", "time": "time0"},
+            {"message": "Second message", "user": "user1", "time": "time1"}]"""
+
+        mockkStatic(JsonParser::class)
+        every { JsonParser.parseString(any()) } returns expectedArray
+
+        try {
+            // Repeated reads of both derived views share one parse of the backing string.
+            assertEquals("First message", feedback.message)
+            assertEquals(1, feedback.messageList?.size)
+            assertEquals("Second message", feedback.messageList?.get(0)?.message)
+            repeat(5) { feedback.message }
+            repeat(5) { feedback.messageList }
+
+            verify(exactly = 1) { JsonParser.parseString(any()) }
+        } finally {
+            unmockkStatic(JsonParser::class)
+        }
+    }
+
+    @Test
+    fun testCacheInvalidatedOnMessagesChange() {
+        val feedback = Feedback()
+        feedback.messages = """[{"message": "first", "user": "u", "time": "t"}]"""
+        assertEquals("first", feedback.message)
+
+        feedback.messages = """[{"message": "second", "user": "u", "time": "t"}]"""
+        // After reassigning messages the cache must be invalidated.
+        assertEquals("second", feedback.message)
+    }
+
+    @Test
+    fun testCacheInvalidatedOnSetMessages() {
+        val feedback = Feedback()
+        feedback.messages = """[{"message": "first", "user": "u", "time": "t"}]"""
+        assertEquals("first", feedback.message)
+
+        val jsonArray = JsonArray().apply {
+            add(JsonObject().apply { addProperty("message", "second"); addProperty("user", "u"); addProperty("time", "t") })
+        }
+        feedback.setMessages(jsonArray)
+        assertEquals("second", feedback.message)
     }
 }

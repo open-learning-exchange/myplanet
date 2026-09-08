@@ -8,16 +8,17 @@ import io.mockk.unmockkAll
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.Utilities
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -36,7 +37,7 @@ class UserEntityTest {
             null
         }
         Dispatchers.setMain(Dispatchers.Unconfined)
-        MainApplication.applicationScope = CoroutineScope(Dispatchers.Unconfined)
+        MainApplication.applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
         mockkObject(Utilities)
         every { Utilities.toast(any(), any()) } returns Unit
         try {
@@ -106,7 +107,7 @@ class UserEntityTest {
         val user = UserEntity()
         user.rolesList = mutableListOf("project_manager")
         user.userAdmin = false
-        assertTrue(user.isManager())
+        assertFalse(user.isManager())
     }
 
     @Test
@@ -120,6 +121,24 @@ class UserEntityTest {
     fun testIsLeaderWithCompoundRole() {
         val user = UserEntity()
         user.rolesList = mutableListOf("team_leader")
-        assertTrue(user.isLeader())
+        assertFalse(user.isLeader())
+    }
+
+    @Test
+    fun testEffectiveIdWhenCouchIdPresent() {
+        val user = UserEntity(id = "local_123", _id = "couch_456")
+        assertEquals("couch_456", user.effectiveId)
+    }
+
+    @Test
+    fun testEffectiveIdWhenCouchIdNull() {
+        val user = UserEntity(id = "local_123", _id = null)
+        assertEquals("local_123", user.effectiveId)
+    }
+
+    @Test
+    fun testEffectiveIdWhenCouchIdEmpty() {
+        val user = UserEntity(id = "local_123", _id = "")
+        assertEquals("local_123", user.effectiveId)
     }
 }

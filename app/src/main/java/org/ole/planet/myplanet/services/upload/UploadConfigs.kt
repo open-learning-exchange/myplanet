@@ -1,10 +1,10 @@
 package org.ole.planet.myplanet.services.upload
 
+import android.content.Context
 import dagger.Lazy
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
-import org.ole.planet.myplanet.repository.DiagnosticsRepository
-import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.CourseProgress
@@ -22,8 +22,10 @@ import org.ole.planet.myplanet.model.TeamLog
 import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.DiagnosticsRepository
 import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
+import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
@@ -32,9 +34,11 @@ import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.NetworkUtils
 
 @Singleton
 class UploadConfigs @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val voicesRepository: VoicesRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val activitiesRepository: ActivitiesRepository,
@@ -95,7 +99,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "team_activities",
         modelClassName = "TeamLog",
         fetchPendingItems = { teamsSyncRepository.get().getPendingTeamLogUploads() },
-        serializer = UploadSerializer.WithContext { log, context -> teamsSyncRepository.get().serializeTeamActivities(log, context) },
+        serializer = UploadSerializer.Simple { log -> teamsSyncRepository.get().serializeTeamActivities(log) },
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
@@ -208,7 +212,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "apk_logs",
         modelClassName = "ApkLog",
         fetchPendingItems = { diagnosticsRepository.getPendingApkLogs() },
-        serializer = UploadSerializer.WithContext(ApkLog::serialize),
+        serializer = UploadSerializer.Simple { log -> ApkLog.serialize(log, NetworkUtils.getCustomDeviceName(context)) },
         idExtractor = { it.id },
         markUploaded = { results ->
             // A row is "pending" until it has a _rev; set it here. Rows that no longer exist
@@ -237,7 +241,8 @@ class UploadConfigs @Inject constructor(
         endpoint = "submissions",
         fetchPendingItems = { submissionsRepository.getPendingExamResults() },
         serializer = UploadSerializer.Async { submission ->
-            submissionsRepository.getExamUploadPayload(submission)
+            val user = submission.userId?.let { userRepository.getUserById(it) }
+            submissionsRepository.getExamUploadPayload(submission, user)
         },
         idExtractor = { it.id },
         dbIdExtractor = { it._id },
@@ -249,8 +254,9 @@ class UploadConfigs @Inject constructor(
         modelClass = Submission::class,
         endpoint = "submissions",
         fetchPendingItems = { submissionsRepository.getPendingSubmissionsForUpload() },
-        serializer = UploadSerializer.AsyncContext { submission, context ->
-            submissionsRepository.serializeSubmission(submission, context, sharedPrefManager.getPlanetCode(), sharedPrefManager.getParentCode())
+        serializer = UploadSerializer.Async { submission ->
+            val user = submission.userId?.let { userRepository.getUserById(it) }
+            submissionsRepository.serializeSubmission(submission, sharedPrefManager.getPlanetCode(), sharedPrefManager.getParentCode(), user)
         },
         idExtractor = { it.id },
         dbIdExtractor = { it._id },

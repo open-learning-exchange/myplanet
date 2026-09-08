@@ -65,6 +65,7 @@ import org.ole.planet.myplanet.model.NewsLog
 import org.ole.planet.myplanet.model.OfflineActivity
 import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.model.Rating
+import org.ole.planet.myplanet.model.RatingPromptLog
 import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.ResourceActivity
 import org.ole.planet.myplanet.model.RetryOperation
@@ -101,6 +102,7 @@ import org.ole.planet.myplanet.model.UserEntity
         ChatHistory::class,
         Feedback::class,
         Rating::class,
+        RatingPromptLog::class,
         TagEntity::class,
         Meetup::class,
         SearchActivity::class,
@@ -128,7 +130,7 @@ import org.ole.planet.myplanet.model.UserEntity
         MyTeam::class,
         SyncCursor::class,
     ],
-    version = 9,
+    version = 12,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)

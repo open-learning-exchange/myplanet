@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.TeamLog
@@ -14,7 +13,7 @@ interface TeamsSyncRepository {
     suspend fun syncTeamActivities()
     suspend fun insertTeamLog(json: JsonObject)
     suspend fun insertTeamLogs(logs: List<JsonObject>)
-    fun serializeTeamActivities(log: TeamLog, context: Context): JsonObject
+    fun serializeTeamActivities(log: TeamLog): JsonObject
     suspend fun insertMyTeam(doc: JsonObject)
     suspend fun batchInsertMyTeams(documents: List<JsonObject>): Int
     suspend fun bulkInsertFromSync(jsonArray: JsonArray)

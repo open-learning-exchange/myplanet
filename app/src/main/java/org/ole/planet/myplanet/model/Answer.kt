@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import android.text.TextUtils
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
@@ -45,14 +44,14 @@ open class Answer(
 
         private fun createObject(ans: Answer): JsonObject {
             val `object` = JsonObject()
-            if (!TextUtils.isEmpty(ans.value)) {
+            if (!ans.value.isNullOrEmpty()) {
                 `object`.addProperty("value", ans.value)
             } else {
                 `object`.add("value", ans.valueChoicesArray)
             }
             `object`.addProperty("mistakes", ans.mistakes)
             `object`.addProperty("passed", ans.isPassed)
-            if (!TextUtils.isEmpty(ans.questionId)) {
+            if (!ans.questionId.isNullOrEmpty()) {
                 `object`.addProperty("questionId", ans.questionId)
             }
             return `object`

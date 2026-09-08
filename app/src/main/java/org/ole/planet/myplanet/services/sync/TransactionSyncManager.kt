@@ -13,7 +13,6 @@ import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -25,16 +24,15 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.SyncCursorDao
-import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.SyncCursor
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.ChatRepository
-import org.ole.planet.myplanet.repository.CommunityRepository
+import org.ole.planet.myplanet.repository.ChatSyncWriter
+import org.ole.planet.myplanet.repository.CommunitySyncWriter
 import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.repository.FeedbackRepository
+import org.ole.planet.myplanet.repository.FeedbackSyncWriter
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
@@ -42,7 +40,6 @@ import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TagsRepository
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
@@ -64,8 +61,8 @@ class TransactionSyncManager @Inject constructor(
     private val apiInterface: ApiInterface,
     @param:ApplicationContext private val context: Context,
     private val voicesRepository: VoicesRepository,
-    private val chatRepository: ChatRepository,
-    private val feedbackRepository: FeedbackRepository,
+    private val chatRepository: ChatSyncWriter,
+    private val feedbackRepository: FeedbackSyncWriter,
     private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
     private val userSyncRepository: UserSyncRepository,
@@ -76,14 +73,14 @@ class TransactionSyncManager @Inject constructor(
     private val ratingsRepository: RatingsRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val coursesRepository: CoursesRepository,
-    private val communityRepository: CommunityRepository,
+    private val communityRepository: CommunitySyncWriter,
     private val healthRepository: HealthRepository,
     private val progressRepository: ProgressRepository,
     private val surveysRepository: SurveysRepository,
-    @ApplicationScope private val applicationScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider,
     private val userSessionManager: UserSessionManager,
-    private val syncCursorDao: SyncCursorDao
+    private val syncCursorDao: SyncCursorDao,
+    private val syncTimeLogger: SyncTimeLogger
 ) {
     // The heavy tables are fetched in parallel (see SyncManager), but SQLite has a single
     // writer, so running ~14 batch inserts concurrently just thrashes the write lock/WAL — the
@@ -227,7 +224,7 @@ class TransactionSyncManager @Inject constructor(
                 val batchApiDuration = SystemClock.elapsedRealtime() - batchApiStartTime
                 val body = response.body()
                 if (!response.isSuccessful || body == null) {
-                    SyncTimeLogger.logApiCall("$changesUrl (batch $batchNumber)", batchApiDuration, false, 0)
+                    syncTimeLogger.logApiCall("$changesUrl (batch $batchNumber)", batchApiDuration, false, 0)
                     // Self-heal once on a rejected cursor (e.g. the server's update-seq counter
                     // was reset) instead of getting stuck failing on the same since token forever.
                     if (!resetAttempted && since != "0") {
@@ -241,7 +238,7 @@ class TransactionSyncManager @Inject constructor(
                     break
                 }
                 val results = getJsonArray("results", body)
-                SyncTimeLogger.logApiCall("$changesUrl (batch $batchNumber)", batchApiDuration, true, results.size())
+                syncTimeLogger.logApiCall("$changesUrl (batch $batchNumber)", batchApiDuration, true, results.size())
                 if (results.size() == 0) break
 
                 val liveRows = JsonArray()
@@ -340,11 +337,11 @@ class TransactionSyncManager @Inject constructor(
                     break
                 }
                 val arr = getJsonArray("rows", response.body())
-                if (arr.size() == 0) {
+                if (arr.isEmpty()) {
                     syncCompletedFully = true
                     break
                 }
-                SyncTimeLogger.logApiCall(
+                syncTimeLogger.logApiCall(
                     "$url/$table/_all_docs (batch $batchNumber)",
                     batchApiDuration,
                     response.isSuccessful,
@@ -362,7 +359,7 @@ class TransactionSyncManager @Inject constructor(
                 Log.d("SyncPerf", "    $table batch $batchNumber: ${arr.size()} docs in ${batchDuration}ms (total: $totalDocs)")
                 // Show progress for slow syncs
                 if (table in listOf("ratings", "submissions")) {
-                    SyncTimeLogger.logDetail(table, "Progress: $totalDocs documents synced so far...")
+                    syncTimeLogger.logDetail(table, "Progress: $totalDocs documents synced so far...")
                 }
                 // If we got less than pageSize, we're done
                 if (arr.size() < pageSize) {
@@ -371,7 +368,7 @@ class TransactionSyncManager @Inject constructor(
                 }
             }
             if (useCheckpoint && syncCompletedFully) {
-                sharedPrefManager.rawPreferences.edit().remove(checkpointKey).commit()
+                sharedPrefManager.rawPreferences.edit().remove(checkpointKey).apply()
             }
             val totalDuration = SystemClock.elapsedRealtime() - syncStartTime
             Log.d("SyncPerf", "  ✓ Completed $table sync: $totalDocs docs in ${totalDuration}ms")
@@ -460,7 +457,7 @@ class TransactionSyncManager @Inject constructor(
                     }
                 }
                 val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
-                SyncTimeLogger.logRealmOperation(
+                syncTimeLogger.logDbOperation(
                     "insert_batch",
                     table,
                     insertDuration,
@@ -522,7 +519,7 @@ class TransactionSyncManager @Inject constructor(
         val insertStartTime = SystemClock.elapsedRealtime()
         dbWriteMutex.withLock { insert() }
         val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
-        SyncTimeLogger.logRealmOperation(
+        syncTimeLogger.logDbOperation(
             "insert_batch",
             table,
             insertDuration,

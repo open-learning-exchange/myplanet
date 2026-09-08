@@ -20,7 +20,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33], manifest = Config.NONE, application = Application::class)
+@Config(manifest = Config.NONE, application = Application::class)
 class LocaleUtilsTest {
 
     private lateinit var appContext: Context

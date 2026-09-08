@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.ui.notifications
 
+import android.text.Html
+import android.util.LruCache
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -36,6 +38,7 @@ class NotificationsAdapter(
 
     private var dateFormatter: DateTimeFormatter? = null
     private var lastLocale: Locale? = null
+    private val parsedHtmlCache = LruCache<String, CharSequence>(100)
 
     private fun getDateFormatter(): DateTimeFormatter {
         val currentLocale = Locale.getDefault()
@@ -88,7 +91,7 @@ class NotificationsAdapter(
     ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(header: NotificationListItem.Header) {
-            binding.tvHeaderLabel.text = header.label
+            binding.tvHeaderLabel.setText(labelResFor(header.type))
             binding.ivHeaderIcon.setImageResource(iconResFor(header.type))
             if (header.unreadCount > 0) {
                 binding.tvUnreadBadge.visibility = View.VISIBLE
@@ -110,7 +113,16 @@ class NotificationsAdapter(
 
         fun bind(item: NotificationListItem.Item) {
             val notification = item.notification
-            binding.title.text = item.parsedText
+            val rawText = notification.formattedText.toString()
+            var titleText = parsedHtmlCache.get(rawText)
+            if (titleText == null) {
+                titleText = Html.fromHtml(
+                    rawText,
+                    Html.FROM_HTML_MODE_LEGACY
+                )
+                parsedHtmlCache.put(rawText, titleText)
+            }
+            binding.title.text = titleText
             binding.timestamp.text = formatRelativeTime(notification.createdAt)
             binding.root.alpha = if (notification.isRead) 0.6f else 1.0f
 
@@ -152,13 +164,28 @@ class NotificationsAdapter(
     }
 }
 
-internal fun iconResFor(type: String): Int = when (type.lowercase()) {
-    "join_request" -> R.drawable.ic_join_request
-    "team_join" -> R.drawable.ic_activity
-    "task" -> R.drawable.ic_date
-    "chat" -> R.drawable.ic_mic
-    "voice_reply" -> R.drawable.ic_send
-    "resource" -> R.drawable.ic_folder
-    "storage" -> R.drawable.ic_warn
-    else -> R.drawable.ic_notifications
-}
+private val LABEL_RES_BY_TYPE = mapOf(
+    "join_request" to R.string.notif_group_join_requests,
+    "team_join" to R.string.notif_group_team_updates,
+    "task" to R.string.tasks,
+    "chat" to R.string.notif_group_new_voices,
+    "voice_reply" to R.string.notif_group_voice_replies,
+    "resource" to R.string.resources,
+    "storage" to R.string.notification_group_system
+)
+
+internal fun labelResFor(type: String): Int =
+    LABEL_RES_BY_TYPE[type.lowercase(Locale.ROOT)] ?: R.string.notification_group_other
+
+private val ICON_BY_TYPE = mapOf(
+    "join_request" to R.drawable.ic_join_request,
+    "team_join" to R.drawable.ic_activity,
+    "task" to R.drawable.ic_date,
+    "chat" to R.drawable.ic_mic,
+    "voice_reply" to R.drawable.ic_send,
+    "resource" to R.drawable.ic_folder,
+    "storage" to R.drawable.ic_warn
+)
+
+internal fun iconResFor(type: String): Int =
+    ICON_BY_TYPE[type.lowercase(Locale.ROOT)] ?: R.drawable.ic_notifications

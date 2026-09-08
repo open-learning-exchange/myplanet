@@ -2,9 +2,16 @@ package org.ole.planet.myplanet.services.upload
 
 import android.util.Log
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnSuccessListener
+import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao.UploadedPhoto
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UploadRepository
@@ -33,28 +40,41 @@ class PhotoUploader @Inject constructor(
         withContext(dispatcherProvider.io) {
             data class UploadedPhotoInfo(val photoId: String, val rev: String, val id: String)
 
+            val baseUrl = UrlUtils.getUrl()
+
+            val semaphore = Semaphore(MAX_CONCURRENT_UPLOADS)
+
             photosToUpload.chunked(BATCH_SIZE).forEach { batch ->
-                val successfulUploads = mutableListOf<UploadedPhotoInfo>()
+                val successfulUploads = coroutineScope {
+                    batch.map { (photoId, serialized) ->
+                        async {
+                            if (photoId == null) return@async null
+                            try {
+                                val response = semaphore.withPermit {
+                                    uploadRepository.postUpload(
+                                        "$baseUrl/submissions", serialized
+                                    )
+                                }
 
-                batch.forEach { (photoId, serialized) ->
-                    try {
-                        val `object` = uploadRepository.postUpload(
-                            "${UrlUtils.getUrl()}/submissions", serialized
-                        ).body()
-
-                        if (`object` != null) {
-                            val rev = getString("rev", `object`)
-                            val id = getString("id", `object`)
-
-                            submissionsRepository.markPhotoUploaded(photoId, rev, id)
-
-                            if (listener != null && photoId != null) {
-                                successfulUploads.add(UploadedPhotoInfo(photoId, rev, id))
+                                val `object` = response.body()
+                                if (response.isSuccessful && `object` != null) {
+                                    val rev = getString("rev", `object`)
+                                    val id = getString("id", `object`)
+                                    UploadedPhotoInfo(photoId, rev, id)
+                                } else null
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Exception in PhotoUploader", e)
+                                null
                             }
                         }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Exception in PhotoUploader", e)
-                    }
+                    }.awaitAll().filterNotNull()
+                }
+
+                if (successfulUploads.isNotEmpty()) {
+                    val batchedMarks = successfulUploads.map { UploadedPhoto(it.photoId, it.rev, it.id) }
+                    submissionsRepository.markPhotosUploadedBatch(batchedMarks)
                 }
 
                 if (listener != null && successfulUploads.isNotEmpty()) {
@@ -75,5 +95,6 @@ class PhotoUploader @Inject constructor(
 
     companion object {
         private const val TAG = "PhotoUploader"
+        private const val MAX_CONCURRENT_UPLOADS = 6
     }
 }

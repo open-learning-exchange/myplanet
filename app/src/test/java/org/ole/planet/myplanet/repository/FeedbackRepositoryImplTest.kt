@@ -5,9 +5,11 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -16,6 +18,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.model.Feedback
+import org.ole.planet.myplanet.model.UserEntity
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FeedbackRepositoryImplTest {
@@ -103,5 +106,36 @@ class FeedbackRepositoryImplTest {
         assertTrue(saved.captured.isUploaded)
         val messages = Gson().fromJson(saved.captured.messages, JsonArray::class.java)
         assertEquals("server reply", messages[0].asJsonObject["message"].asString)
+    }
+
+    @Test
+    fun `getFeedback deduplicates byte-identical flow emissions for manager`() = runTest {
+        val user = mockk<UserEntity> {
+            every { isManager() } returns true
+        }
+        val f1 = Feedback().apply { id = "f1"; _rev = "rev1"; status = "Open"; isUploaded = true; messages = "[]" }
+        val f2 = Feedback().apply { id = "f1"; _rev = "rev1"; status = "Open"; isUploaded = true; messages = "[]" }
+        coEvery { feedbackDao.getAllSortedFlow() } returns flowOf(listOf(f1), listOf(f2))
+
+        val emissions = mutableListOf<List<Feedback>>()
+        repository.getFeedback(user).collect { emissions.add(it) }
+
+        assertEquals(1, emissions.size)
+    }
+
+    @Test
+    fun `getFeedback deduplicates byte-identical flow emissions for owner`() = runTest {
+        val user = mockk<UserEntity> {
+            every { isManager() } returns false
+            every { name } returns "ownerName"
+        }
+        val f1 = Feedback().apply { id = "f1"; _rev = "rev1"; status = "Open"; isUploaded = true; messages = "[]" }
+        val f2 = Feedback().apply { id = "f1"; _rev = "rev1"; status = "Open"; isUploaded = true; messages = "[]" }
+        coEvery { feedbackDao.getByOwnerFlow("ownerName") } returns flowOf(listOf(f1), listOf(f2))
+
+        val emissions = mutableListOf<List<Feedback>>()
+        repository.getFeedback(user).collect { emissions.add(it) }
+
+        assertEquals(1, emissions.size)
     }
 }

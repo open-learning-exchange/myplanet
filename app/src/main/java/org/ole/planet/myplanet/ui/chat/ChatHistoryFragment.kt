@@ -16,9 +16,10 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.OnChatHistoryItemClickListener
@@ -27,7 +28,6 @@ import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
@@ -35,7 +35,6 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
 
 private data class Quartet<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
-
 
 @AndroidEntryPoint
 class ChatHistoryFragment : Fragment() {
@@ -51,8 +50,6 @@ class ChatHistoryFragment : Fragment() {
     private var shareTargets = ChatShareTargets(null, emptyList(), emptyList())
     private var sharedViewInIds: Map<String, Set<String>> = emptyMap()
     
-    @Inject
-    lateinit var chatRepository: ChatRepository
     private val serverUrl: String
         get() = sharedPrefManager.getServerUrl()
 
@@ -97,10 +94,10 @@ class ChatHistoryFragment : Fragment() {
             }
         }
 
-        refreshChatHistory()
-
         binding.searchBar.textChanges()
+            .drop(1)
             .debounce(300)
+            .distinctUntilChanged()
             .onEach { text -> sharedViewModel.searchChats(text?.toString() ?: "", isFullSearch, isQuestion) }
             .launchIn(viewLifecycleOwner.lifecycleScope)
 
@@ -146,11 +143,6 @@ class ChatHistoryFragment : Fragment() {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        refreshChatHistory()
-    }
-
     fun refreshChatHistory() {
         sharedViewModel.loadChatHistoryScreenData(
             sharedPrefManager.getUserId(),
@@ -187,6 +179,7 @@ class ChatHistoryFragment : Fragment() {
             }
         })
         binding.recyclerView.adapter = newAdapter
+        binding.recyclerView.setHasFixedSize(true)
 
         collectLatestWhenStarted(sharedViewModel.screenData) { data ->
             if (data == null) return@collectLatestWhenStarted
@@ -215,23 +208,7 @@ class ChatHistoryFragment : Fragment() {
     }
 
     private fun checkAiProvidersIfNeeded() {
-        if (!sharedViewModel.shouldFetchAiProviders()) {
-            return
-        }
-
-        sharedViewModel.setAiProvidersLoading(true)
-        sharedViewModel.setAiProvidersError(false)
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            val providers = chatRepository.fetchAiProviders(serverUrl)
-            sharedViewModel.setAiProvidersLoading(false)
-            if (providers == null || providers.values.all { !it }) {
-                sharedViewModel.setAiProvidersError(true)
-                sharedViewModel.setAiProviders(null)
-            } else {
-                sharedViewModel.setAiProviders(providers)
-            }
-        }
+        sharedViewModel.fetchAiProviders(serverUrl)
     }
 
     private fun setupRealtimeSync() {
@@ -267,7 +244,6 @@ class ChatHistoryFragment : Fragment() {
         _binding = null
         super.onDestroyView()
     }
-
 }
 
 class ChatHistoryOnBackPressedCallback(private val slidingPaneLayout: SlidingPaneLayout) :

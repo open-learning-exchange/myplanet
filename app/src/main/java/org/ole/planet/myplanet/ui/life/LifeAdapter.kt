@@ -7,10 +7,6 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -20,6 +16,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnItemDragStateListener
 import org.ole.planet.myplanet.callback.OnItemMoveListener
 import org.ole.planet.myplanet.callback.OnStartDragListener
+import org.ole.planet.myplanet.databinding.RowLifeBinding
 import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
@@ -43,8 +40,8 @@ class LifeAdapter(
     private val drawableCache = mutableMapOf<String, Int>()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        val v = LayoutInflater.from(context).inflate(R.layout.row_life, parent, false)
-        return LifeViewHolder(v)
+        val binding = RowLifeBinding.inflate(LayoutInflater.from(context), parent, false)
+        return LifeViewHolder(binding)
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -124,21 +121,29 @@ class LifeAdapter(
     }
 
     override fun onItemMoveFinished() {
-        dragList?.let { list ->
-            val finalList = list.toList()
-            reorderCallback(finalList)
-            submitList(finalList)
-            dragList = null
+        val list = dragList ?: return
+        val updatedList = list.mapIndexed { index, item ->
+            MyLife().apply {
+                _id = item._id
+                imageId = item.imageId
+                userId = item.userId
+                title = item.title
+                isVisible = item.isVisible
+                weight = index
+            }
         }
+        dragList = null
+        reorderCallback(updatedList)
+        submitList(updatedList)
     }
 
-    internal inner class LifeViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView),
+    internal inner class LifeViewHolder(val binding: RowLifeBinding) : RecyclerView.ViewHolder(binding.root),
         OnItemDragStateListener {
-        var title: TextView = itemView.findViewById(R.id.titleTextView)
-        var imageView: ImageView = itemView.findViewById(R.id.itemImageView)
-        var dragImageButton: ImageButton = itemView.findViewById(R.id.drag_image_button)
-        var visibility: ImageButton = itemView.findViewById(R.id.visibility_image_button)
-        var rvItemContainer: LinearLayout = itemView.findViewById(R.id.rv_item_parent_layout)
+        val title get() = binding.titleTextView
+        val imageView get() = binding.itemImageView
+        val dragImageButton get() = binding.dragImageButton
+        val visibility get() = binding.visibilityImageButton
+        val rvItemContainer get() = binding.rvItemParentLayout
 
         override fun onItemSelected() {
             itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.user_profile_background))
