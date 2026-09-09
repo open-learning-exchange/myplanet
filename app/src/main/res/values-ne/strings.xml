@@ -551,6 +551,8 @@
     <string name="subject_level">विषय स्तर</string>
     <string name="order_by_date">मिति अनुसार आदेश गर्नुहोस्</string>
     <string name="order_by_title">शीर्षक अनुसार आदेश गर्नुहोस्</string>
+    <string name="sort">क्रमबद्ध गर्नुहोस्</string>
+    <string name="show_n_results">%1$d नतिजा देखाउनुहोस्</string>
     <string name="exams">परीक्षाहरू</string>
     <string name="survey">सर्वेक्षण</string>
     <string name="submitted_by">पेश गर्ने:</string>

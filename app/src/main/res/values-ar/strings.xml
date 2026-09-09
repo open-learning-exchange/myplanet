@@ -551,6 +551,8 @@
     <string name="subject_level">مستوى الموضوع</string>
     <string name="order_by_date">ترتيب حسب التاريخ</string>
     <string name="order_by_title">ترتيب حسب العنوان</string>
+    <string name="sort">فرز</string>
+    <string name="show_n_results">عرض %1$d نتيجة</string>
     <string name="exams">الامتحانات</string>
     <string name="survey">الاستبيان</string>
     <string name="submitted_by">تم الإرسال بواسطة</string>

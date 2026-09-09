@@ -6,4 +6,8 @@ interface OnFilterListener {
     suspend fun getData(): Map<String, Set<String>>
 
     fun getSelectedFilter(): Map<String, Set<String>>
+
+    fun getFilteredCount(subjects: Set<String>, languages: Set<String>, mediums: Set<String>, levels: Set<String>): Int
+
+    fun clearAllFilters()
 }

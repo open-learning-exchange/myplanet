@@ -47,6 +47,8 @@ class ResourcesViewModel @Inject constructor(
     private var isAscending = true
     private var isTitleAscending = false
 
+    val currentSortMode: SortMode get() = sortMode
+
     private val _downloadComplete = MutableStateFlow(false)
     val downloadComplete: StateFlow<Boolean> = _downloadComplete.asStateFlow()
 
