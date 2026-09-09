@@ -193,13 +193,41 @@ class ResourcesRepository {
           filename: storedName,
         );
         await destination.parent.create(recursive: true);
-        copied = await source.copy(destination.path);
-      } catch (_) {
+        final written = await source.copy(destination.path);
+        // A zero-length file is what the viewer treats as absent
+        // ([ResourceFiles.existingFileFor] requires `length > 0`, as
+        // `FileUtils.checkFileExist` does), so a row pointing at one would
+        // claim to be downloaded and still dead-end. **A deliberate deviation:
+        // Kotlin's `copyTo` has the same hole** — it writes an empty
+        // destination and sets `resourceOffline = true` regardless — but the
+        // whole point of this phase is not shipping a flag that lies, so an
+        // empty pick lands as a metadata-only row instead.
+        if (await written.length() > 0) {
+          copied = written;
+        } else {
+          // Both columns are derived from the copy, so neither may outlive
+          // it: an address naming an empty file would still put Download on
+          // the detail screen (`_shouldShowDownloadButton` tests only for a
+          // non-empty address), and that button cannot work for a row with no
+          // `couchId`. Delete the stub so nothing is left under `ole/`.
+          storedName = null;
+          try {
+            await written.delete();
+          } on Exception catch (_) {}
+        }
+      } on Exception catch (_) {
         // `FileSystemException` on an unwritable or full volume,
         // `MissingPluginException` where the documents directory cannot be
         // resolved at all — Kotlin's "Storage unavailable" and its
         // `IOException`/`SecurityException` arms. Caught together because the
         // caller shows one message for all of them.
+        //
+        // `on Exception`, not a bare `catch`: Kotlin catches those two classes
+        // and lets anything else propagate, and a bare catch would turn a
+        // programming error in [ResourceFiles.fileFor] into the form's
+        // "resource title already exists" (which is genuinely what
+        // `AddResourceActivity` shows for any create failure — the *routing*
+        // is parity, the swallowing was not).
         return LocalResourceError.copyFailed;
       }
     }
@@ -227,8 +255,9 @@ class ResourcesRepository {
       // resolves the path from.
       resourceLocalAddress: Value(storedName),
       // Only true when there really are bytes under
-      // `<base>/ole/<id>/<storedName>`. A row with no file must not claim to
-      // be downloaded: the list sorts offline-first and the detail screen
+      // `<base>/ole/<id>/<storedName>` — a non-empty copy, since an empty file
+      // is what the viewer reads as absent. A row with no file must not claim
+      // to be downloaded: the list sorts offline-first and the detail screen
       // hides Download in favour of View, so the claim is what strands it.
       resourceOffline: Value(copied != null),
       filename: Value(storedName),

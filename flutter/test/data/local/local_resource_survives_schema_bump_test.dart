@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/files/resource_files.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/data/local/my_library_mapper.dart';
@@ -24,9 +25,11 @@ class _MockPlanetApi extends Mock implements PlanetApi {}
 ///    [AppDatabase.localAuthorityTables].
 ///  * `resourceOffline` / `resourceLocalAddress` / `downloadedRev` are written
 ///    only when a download completes. Kotlin re-derives the flag from the disk
-///    on **every** pull (`MyLibrary.insertMyLibrary`, `MyLibrary.kt:255-268`,
-///    `FileUtils.checkFileExist`); [MyLibraryMapper.fromDoc] writes none of the
-///    three, so a rebuilt table cannot recover them.
+///    on every pull that carries an attachment (`MyLibrary.insertMyLibrary`,
+///    `MyLibrary.kt:243,261-265`, inside both the `_attachments` and the
+///    unnested-key guards, via `FileUtils.checkFileExist`);
+///    [MyLibraryMapper.fromDoc] writes none of the three, so a rebuilt table
+///    cannot recover them.
 ///
 /// So before this phase a schema bump destroyed the user's own resource
 /// outright and left every downloaded resource's bytes on disk with the table
@@ -53,6 +56,10 @@ void main() {
     ResourceFiles.baseDirectory = () async => sandbox;
   });
   tearDown(() async {
+    // The seam is static, so a sandbox left installed outlives the temp
+    // directory deleted below — the same restore its sibling
+    // `local_resource_file_copy_test.dart` does.
+    ResourceFiles.baseDirectory = getApplicationDocumentsDirectory;
     await database.close();
     await sandbox.delete(recursive: true);
     await picked.delete(recursive: true);

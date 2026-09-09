@@ -1402,7 +1402,7 @@ There is no generic base repository; each implementation talks to its Room DAO(s
 
 ### Flutter port toolchain
 
-**Current Drift `schemaVersion` is 48** (`flutter/lib/data/local/app_database.dart`).
+**Current Drift `schemaVersion` is 49** (`flutter/lib/data/local/app_database.dart`).
 Bump it only when you have been allocated a number — parallel lanes must not each
 pick one, and a bump discards unsynced local writes on any device that has not
 synced, which is what `localAuthorityTables` and the hand-written

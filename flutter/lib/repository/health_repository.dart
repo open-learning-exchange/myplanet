@@ -178,11 +178,18 @@ class HealthRepository {
   Future<void> upsertAll(List<HealthExaminationsCompanion> rows) =>
       _dao.upsertAll(rows);
 
-  /// Mark examination as uploaded with the server revision.
+  /// Marks the examination uploaded, recording the server revision **when
+  /// there is one** — a null [rev] clears the dirty flag and leaves the stored
+  /// revision alone, which is what Kotlin's map overload does. See
+  /// [HealthExaminationDao.markUploaded]; this used to say "with the server
+  /// revision", which described the defect rather than the behaviour.
   Future<void> markUploaded(String id, String? rev) =>
       _dao.markUploaded(id, rev);
 
-  /// Mark multiple examinations as uploaded.
+  /// Mark multiple examinations as uploaded — the shape of Kotlin's
+  /// `markUploaded(idToRevMap)`, and **still with zero callers**
+  /// (`PHASE_142_NOTES.md` item 7). Its copy of the null-rev defect is fixed by
+  /// the DAO change behind it; what remains is whether it should exist at all.
   Future<void> markUploadedBatch(Map<String, String?> idToRev) async {
     for (final entry in idToRev.entries) {
       await _dao.markUploaded(entry.key, entry.value);

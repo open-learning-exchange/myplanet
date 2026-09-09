@@ -89,20 +89,28 @@ class VoicesRepository {
   /// `VoicesRepositoryImpl.getCommunityVoiceDateCount` (`:298-304`) — which
   /// returns an `Int`, not dates; the port returns the dates and its caller
   /// counts them. Returns the
-  /// distinct `yyyy-MM-dd` dates of top-level community-section posts in a
+  /// distinct `yyyy-MM-dd` dates of community-section posts in a
   /// time window — one per day the user (or, when `userId` is null, the whole
   /// community) posted, used by the challenge dialog's voice-count check.
+  ///
+  /// **Replies included**, as Kotlin includes them: its two counters have no
+  /// `replyTo` predicate and `postReply` copies the parent's `viewIn`
+  /// verbatim, so answering a community voice makes that day count. This
+  /// comment said "top-level" until Phase 150 removed the port's extra
+  /// predicate.
   ///
   /// [isCommunityNews] stands in for the Kotlin's community predicate, which
   /// is **in SQL**, not in memory: `countDistinctCommunityVoiceDates` filters
   /// `viewIn LIKE '%"section":"community"%'` (`NewsDao.kt:61-72`). An
   /// earlier version of this comment said the Kotlin filtered in memory after
-  /// the DAO query; it does not. Two *different* wrong claims sit on
-  /// `NewsDao.getInTimeRange` in `app_database.dart` — it cites a Kotlin
-  /// `NewsDao.getInTimeRange` that does not exist, and calls its result "all
-  /// top-level community voices", which neither query implements — alongside
-  /// the `_isTopLevel` predicate itself, which Kotlin's SQL has no equivalent
-  /// of. All three are another lane's file this round: reported, not fixed.
+  /// the DAO query; it does not.
+  ///
+  /// Phase 147 reported three defects here that were another lane's file at
+  /// the time — the two wrong claims on `NewsDao.getInTimeRange` (a Kotlin
+  /// method that does not exist, and a "top-level community voices" result
+  /// neither query implements) and the `_isTopLevel` predicate itself, which
+  /// Kotlin's SQL has no equivalent of. **All three were fixed in Phase 150**;
+  /// this paragraph is what is left of the hand-off.
   Future<List<String>> getCommunityVoiceDates(
     int startTime,
     int endTime,

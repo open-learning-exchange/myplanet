@@ -118,7 +118,7 @@ void main() {
   });
 
   test('a document that carries an explicit null revision clears it', () async {
-    // `_presentOrAbsent` keys on the *key*, not the value, so a server that
+    // `_revOrAbsent` keys on the *key*, not the value, so a server that
     // sends `"_rev": null` is still honoured — otherwise the guard would be a
     // blanket "never write a null rev", which is a different rule.
     await pull(serverDoc);

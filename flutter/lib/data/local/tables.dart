@@ -81,6 +81,22 @@ class Users extends Table {
 }
 
 /// Port of `model/MyLibrary.kt` (`@Entity(tableName = "my_library")`).
+///
+/// **Preserved across a schema bump since Phase 150** (see
+/// [AppDatabase.localAuthorityTables]): a resource the user created offline
+/// exists nowhere else — the port has no resources uploader — and
+/// `resourceOffline`/`resourceLocalAddress`/`downloadedRev` are never
+/// re-derived on sync-in, so a rebuilt table could not recover them.
+///
+/// Two consequences before you change this table:
+///
+///  * Its columns are reconciled by a **loop** in `AppDatabase.migration`,
+///    ahead of `createAll`, because [TableIndex] names `course_id`. A new
+///    column therefore needs no `_addColumnIfMissing` step of its own — but it
+///    does need a `schemaVersion` bump to reach an existing install, and a
+///    backfill decision if its default is wrong for rows already there.
+///  * `migration_test.dart`'s column inventory reds when a column is added,
+///    which is where that decision gets made.
 @DataClassName('MyLibraryRow')
 @TableIndex(name: 'my_library_course_id', columns: {#courseId})
 class MyLibraryTable extends Table {

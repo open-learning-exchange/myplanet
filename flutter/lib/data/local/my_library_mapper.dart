@@ -243,6 +243,20 @@ class MyLibraryMapper {
   /// would be a different and less honest rule. Same spelling as
   /// `ExamMapper._presentOrAbsent`, which exists for this hazard on
   /// `stepId`/`courseId`.
+  ///
+  /// **One row class is worse off, and it is the price of the fix.** A
+  /// resource that the `resources` walk has recorded *and* a course step
+  /// embeds, once deleted server-side, is now prunable where it used to be
+  /// immortal — so the next resources walk deletes it, the courses walk
+  /// re-inserts it from the sub-object with no `_attachments`, and it comes
+  /// back with `resourceOffline` at its `false` default while the bytes stay
+  /// orphaned under `ole/<id>/`. That is a stable wrong state rather than a
+  /// churning one, and it costs a user access to a file they already have. It
+  /// is accepted because the alternative — leaving `_rev` blanked — makes
+  /// *every* such row permanently unprunable now that the table is preserved,
+  /// and because the orphaned-file half is a pre-existing gap (nothing deletes
+  /// `ole/<docId>/` when a row is pruned, for any row). Reported in
+  /// `PHASE_150_NOTES.md`.
   static Value<String?> _revOrAbsent(Map<String, dynamic> doc) =>
       doc.containsKey('_rev')
       ? Value(JsonUtils.getStringOrNull('_rev', doc))

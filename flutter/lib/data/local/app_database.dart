@@ -109,7 +109,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 48;
+  int get schemaVersion => 49;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -300,8 +300,12 @@ class AppDatabase extends _$AppDatabase {
     //    pointer to the file they picked.
     //  * `resource_offline` / `resource_local_address` / `downloaded_rev` on
     //    *any* row. Kotlin re-derives the flag from the disk on every pull
-    //    (`insertMyLibrary` calls `FileUtils.checkFileExist`,
-    //    `MyLibrary.kt:263-265`), so its rebuilt table repairs itself on the
+    //    that carries an attachment (`insertMyLibrary` calls
+    //    `FileUtils.checkFileExist` inside `if (doc.has("_attachments"))` and
+    //    `if (key.indexOf("/") < 0)`, `MyLibrary.kt:243,261-265` — so a course
+    //    step's sub-object re-derives nothing, and the `resources` walk is the
+    //    only place the flag can become true), so its rebuilt table repairs
+    //    itself on the
     //    next sync. [MyLibraryMapper.fromDoc] names none of the three, so the
     //    port's rebuilt table cannot: the bytes stayed on disk and the row said
     //    they were not there, and the bell asked the user to download every
@@ -320,47 +324,45 @@ class AppDatabase extends _$AppDatabase {
     // orphan a file on disk. Preservation is necessary, and the prune is not
     // sufficient on its own.
     //
-    // Unlike every other table here, a new column on this one needs **no**
-    // hand-written step: the reconciliation loop below adds whatever the
-    // running database is missing. Read its comment before adding one anyway —
-    // a column that needs a *backfill* still needs thinking about, and
-    // `migration_test.dart`'s column inventory is what makes that decision
-    // visible.
+    // Unlike every other table here, a new column on this one needs no
+    // hand-written `_addColumnIfMissing` step: the reconciliation loop below
+    // adds whatever the running database is missing. **That is not permission
+    // to add columns freely.** The loop runs inside `onUpgrade`, so a new
+    // column still needs a `schemaVersion` bump to reach any existing install
+    // — and it still needs a *backfill* decision if its default is wrong for
+    // rows already there, which no loop can make. `migration_test.dart`'s
+    // column inventory reds on a new column so that decision is taken rather
+    // than skipped; read the loop's own comment for the two column shapes
+    // (`clientDefault`, `currentDateAndTime`) that SQLite refuses in an
+    // `ALTER TABLE ADD COLUMN` and would abort the upgrade on every install.
     'my_library',
   };
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: (m, from, to) async {
-      // Drop-and-resync for the CouchDB caches only; the next sync refills
-      // them. Locally-authored tables are stepped over and left in place.
-      for (final table in allTables) {
-        if (_localAuthorityTables.contains(table.actualTableName)) continue;
-        await m.deleteTable(table.actualTableName);
-      }
-
-      // Indexes are dropped first so `createAll` can recreate them. It emits
-      // `CREATE TABLE IF NOT EXISTS` but a bare `CREATE INDEX`, so an index
-      // belonging to a preserved table would collide and abort the upgrade.
-      // They are pure derived data, so dropping and rebuilding costs nothing.
-      for (final entity in allSchemaEntities) {
-        if (entity is Index) {
-          await customStatement('DROP INDEX IF EXISTS ${entity.entityName}');
-        }
-      }
-
-      // Preserved-table columns an *index* names have to be reconciled here,
+      // Preserved-table columns an *index* names have to be reconciled
       // before `createAll` — not with the rest of the hand-written steps
       // below.
       //
       // `createAll` emits `CREATE TABLE IF NOT EXISTS`, which no-ops on a
       // preserved table, but a **bare** `CREATE INDEX` (drift's generated
-      // `Index` carries the literal statement; see `createIndex`). The indexes
-      // were all just dropped, so every one is recreated — and
+      // `Index` carries the literal statement; see `createIndex`). Every index
+      // is dropped further down and recreated by `createAll` — and
       // `surveys_course_id` names `course_id`, which `surveys` only gained at
       // v35. On a device older than that the preserved table has no such
       // column and the `CREATE INDEX` aborts the whole upgrade. Adding the
       // column first is the fix; ordering, not the statement, was the bug.
+      //
+      // **These blocks run first of all, ahead of the drop loop, and the
+      // order is deliberate.** Drift does not wrap a migration in a
+      // transaction, so an `ALTER TABLE` that throws leaves `onUpgrade`
+      // abandoned wherever it failed. Reconciling before anything is dropped
+      // makes that failure non-destructive: the caches are still there, the
+      // next open retries the same `from`, and every step here is idempotent.
+      // Reconciling *after* the drop loop would leave a database with its
+      // caches gone and `createAll` never reached. Costs nothing, since
+      // nothing here depends on the drop.
       //
       // No other preserved table is exposed to this: of the columns added by
       // hand below, none of `chat_history.is_uploaded`, `users.is_updated`,
@@ -403,6 +405,14 @@ class AppDatabase extends _$AppDatabase {
       // `CHECK (… IN (0, 1))` on the two booleans is fine; `surveys.needs_sync`
       // and `users.is_updated` are the shipping precedent).
       //
+      // Two column shapes would make this loop **abort the upgrade on every
+      // existing install**, and neither exists on this table today:
+      // a `NOT NULL` column with a `clientDefault` (applied in Dart, so
+      // `Migrator.addColumn` emits `NOT NULL` with no `DEFAULT`, which SQLite
+      // rejects), and `withDefault(currentDateAndTime)` (`DEFAULT
+      // CURRENT_TIMESTAMP`, which `ADD COLUMN` forbids outright). A new column
+      // of either shape needs a rebuild-and-copy step, not this loop.
+      //
       // What this loop cannot do is **backfill**. No `my_library` column needs
       // one today, and the reason is structural rather than lucky: the table
       // has no authorship flag, so the state that marks a row local is
@@ -417,6 +427,68 @@ class AppDatabase extends _$AppDatabase {
         for (final column in myLibraryTable.$columns) {
           if (column.name == myLibraryTable.id.name) continue;
           await _addColumnIfMissing(m, myLibraryTable, column);
+        }
+
+        // v49 repairs the rows preserving this table would otherwise keep
+        // *wrong*, and it is the reason this phase spends a version number at
+        // all. Before Phase 150 `saveLocalResource` copied no file: it stored
+        // the raw `FilePicker` path in `resource_local_address` and set
+        // `resource_offline = 1` over the top. The bump used to delete that
+        // row; preserving the table keeps it, and it is then a permanent dead
+        // end — My Library shows the offline pin, the detail screen offers
+        // **View** rather than Download (`_shouldShowDownloadButton` sees a
+        // non-empty address, `_isResourceOffline` is true), the viewer finds
+        // nothing under `ole/<id>/`, and the Download it falls back to cannot
+        // work either because `urlFor` needs a `couchId` a locally created row
+        // has never had.
+        //
+        // **A dead end that lies is worse than the absence it replaced**, so
+        // the repair is the difference between removing this phase's data loss
+        // and merely relocating it — Phase 143's lesson, aimed at the fix that
+        // quotes it. The metadata the user typed is kept; only the claim goes,
+        // which lands the row on exactly the shape the fixed writer produces
+        // for a fileless save.
+        //
+        // **The discriminator is `_id IS NULL`, not `_rev IS NULL`.** Every
+        // mapper-written row carries a `couchId`; only [saveLocalResource]
+        // leaves it unset, and a random local id can never match a server
+        // document, so the clause selects exactly the locally created rows.
+        // `_rev IS NULL` looks equivalent and is not: a resource embedded only
+        // in a course document arrives rev-less (a step sub-object carries
+        // none) while still getting its `couchId`, so it is downloadable, and
+        // `markDownloaded` then writes an absolute path onto a rev-less row —
+        // which that clause would have cleared, losing a real download. Third
+        // instance this round of *`_rev IS NULL` is authorship in Kotlin and
+        // is not in the port*.
+        //
+        // `LIKE '%/%'` is the other half: `MyLibraryMapper._primaryAttachment`
+        // skips any attachment key containing a separator, and the fixed
+        // writer stores a basename, so only a picker path has one. Without it
+        // the repair would un-flag every locally created resource on every
+        // future bump.
+        if (from < 49) {
+          await customStatement(
+            'UPDATE my_library '
+            'SET resource_offline = 0, resource_local_address = NULL '
+            "WHERE _id IS NULL AND resource_local_address LIKE '%/%'",
+          );
+        }
+      }
+
+      // Drop-and-resync for the CouchDB caches only; the next sync refills
+      // them. Locally-authored tables are stepped over and left in place.
+      for (final table in allTables) {
+        if (_localAuthorityTables.contains(table.actualTableName)) continue;
+        await m.deleteTable(table.actualTableName);
+      }
+
+      // Indexes are dropped first so `createAll` can recreate them. It emits
+      // `CREATE TABLE IF NOT EXISTS` but a bare `CREATE INDEX`, so an index
+      // belonging to a preserved table would collide and abort the upgrade.
+      // They are pure derived data, so dropping and rebuilding costs nothing.
+      for (final entity in allSchemaEntities) {
+        if (entity is Index) {
+          await customStatement('DROP INDEX IF EXISTS ${entity.entityName}');
         }
       }
 

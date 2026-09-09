@@ -1636,15 +1636,26 @@ void main() {
   /// run v48 carries. Dumped from `sqlite_master` on the v47 schema, not
   /// retyped.
   ///
-  /// v48 adds `step_id` and `course_id` for the course-step resource
-  /// ingestion, and writes **no** hand-written migration step — because
-  /// `my_library` is a CouchDB cache, so the drop loop deletes it and
-  /// `createAll` rebuilds it carrying both columns. That reasoning is a fact
-  /// about [AppDatabase.localAuthorityTables], and it is exactly the kind of
-  /// fact a later phase changes without noticing what depended on it: add
-  /// `my_library` to the preserved set and the drop is skipped, `CREATE TABLE
-  /// IF NOT EXISTS` no-ops over the old shape, and the two columns never
-  /// appear. These tests red when that happens.
+  /// v48 added `step_id` and `course_id` for the course-step resource
+  /// ingestion and wrote **no** hand-written migration step, because
+  /// `my_library` was a CouchDB cache: the drop loop deleted it and
+  /// `createAll` rebuilt it carrying both columns. Phase 146 wrote that down
+  /// as *"exactly the kind of fact a later phase changes without noticing what
+  /// depended on it: add `my_library` to the preserved set and the drop is
+  /// skipped, `CREATE TABLE IF NOT EXISTS` no-ops over the old shape, and the
+  /// two columns never appear. These tests red when that happens."*
+  ///
+  /// **It was right, and Phase 150 is that phase.** The table is preserved
+  /// now; the drop *is* skipped, and the columns arrive through the
+  /// reconciliation loop in `AppDatabase.migration` instead — which runs
+  /// before `createAll` because `my_library_course_id` names one of them.
+  /// These literals stay frozen for the same reason as the surveys pair: they
+  /// are the fixture that makes a *missing* reconciliation fail loudly, and
+  /// `installMyLibraryShapeBeforeV48` pins them against what drift emits so
+  /// they cannot go stale unnoticed.
+  ///
+  /// The prediction is left quoted rather than deleted, because a guard that
+  /// fired is worth more as a record than as a removed comment.
   const myLibraryDdlFrozenAtV47 =
       'CREATE TABLE "my_library" ("id" TEXT NOT NULL, "_id" TEXT NULL'
       ', "_rev" TEXT NULL, "user_id" TEXT NOT NULL DEFAULT \'[]\''
@@ -1698,8 +1709,11 @@ void main() {
     // mistake.
     expect(
       database.schemaVersion,
-      greaterThanOrEqualTo(48),
-      reason: 'my_library gained step_id/course_id at v48',
+      greaterThanOrEqualTo(49),
+      reason:
+          'my_library gained step_id/course_id at v48, and v49 repairs the '
+          'rows preserving the table would otherwise keep wrong — a device '
+          'already on v48 reaches that repair only if the version moves',
     );
 
     await installMyLibraryShapeBeforeV48();
@@ -1805,6 +1819,113 @@ void main() {
       equals(null),
       reason: 'the row survives the reconciliation, with the column unset',
     );
+  });
+
+  test('a pre-fix local resource stops claiming a file it never had', () async {
+    // The defect the *implementation* audit found in this phase's own headline
+    // change, and it is Phase 143's shape aimed back at me: preserving a table
+    // keeps every row, including the ones an older build wrote wrong.
+    //
+    // Before Phase 150 `saveLocalResource` copied no file: it stored the raw
+    // `FilePicker` path in `resource_local_address` and set
+    // `resource_offline = 1` over the top. The bump used to delete that row.
+    // Preserving the table keeps it — and the row is then a permanent dead
+    // end: My Library shows it with the offline pin (the list sorts
+    // `resource_offline DESC`), the detail screen offers **View** rather than
+    // Download because `_shouldShowDownloadButton` sees a non-empty address
+    // and `_isResourceOffline` is true, the viewer resolves
+    // `<base>/ole/<id>/<filename>` and finds nothing, and the Download it
+    // falls back to cannot work either because `urlFor` needs a `couchId` a
+    // locally created row has never had.
+    //
+    // **A dead end that lies is worse than the absence it replaced**, so the
+    // migration normalises those rows onto the shape the fixed writer
+    // produces: metadata kept, offline claim dropped.
+    await installMyLibraryShapeBeforeV48();
+    await database.customStatement(
+      "INSERT INTO my_library (id, title, resource_local_address, "
+      "resource_offline, filename) VALUES "
+      "('local-1', 'Well survey notes', "
+      "'/data/user/0/org.ole.planet.myplanet/cache/file_picker/well.pdf', "
+      "1, 'well.pdf')",
+    );
+
+    await runUpgrade(from: 47);
+
+    final row = (await database.myLibraryDao.getById('local-1'))!;
+    expect(
+      row.title,
+      'Well survey notes',
+      reason: 'the metadata the user typed is the part worth preserving',
+    );
+    expect(row.resourceOffline, isFalse);
+    expect(
+      row.resourceLocalAddress,
+      equals(null),
+      reason:
+          'an address pointing outside ole/ is what made the row claim a file '
+          'nothing had copied',
+    );
+  });
+
+  test('the repair cannot reach a row that owns a real file', () async {
+    // The discriminator is `_id IS NULL`, not `_rev IS NULL`, and the
+    // difference is load-bearing. The audit that found the defect above
+    // proposed `_rev IS NULL AND resource_local_address LIKE '%/%'`, which has
+    // a false positive: a resource embedded **only** in a course document
+    // arrives with `_rev` NULL (a step sub-object carries none) while
+    // `MyLibraryMapper` still writes its `couchId`, so `urlFor` can build a
+    // URL, the user can download it, and `markDownloaded` then writes an
+    // absolute path onto a rev-less row. That is a genuine download, and the
+    // proposed clause would have cleared it.
+    //
+    // `_id IS NULL` cannot: every mapper-written row carries a `couchId`, and
+    // only `saveLocalResource` leaves it unset. This is the third instance
+    // this round of "`_rev IS NULL` is authorship in Kotlin and is not in the
+    // port" — here it caught a proposed fix rather than a shipped one.
+    await installMyLibraryShapeBeforeV48();
+    await database.customStatement(
+      "INSERT INTO my_library (id, _id, title, resource_local_address, "
+      "resource_offline, filename) VALUES "
+      "('course-res-1', 'course-res-1', 'Rainfall', "
+      "'/data/user/0/org.ole.planet.myplanet/app_flutter/ole/course-res-1/r.pdf', "
+      "1, 'r.pdf')",
+    );
+    // And a downloaded synced row, whose address is also a path.
+    await database.customStatement(
+      "INSERT INTO my_library (id, _id, _rev, title, resource_local_address, "
+      "resource_offline, downloaded_rev) VALUES "
+      "('synced-1', 'synced-1', '3-abc', 'Algebra', "
+      "'/data/user/0/org.ole.planet.myplanet/app_flutter/ole/synced-1/a.pdf', "
+      "1, '3-abc')",
+    );
+
+    await runUpgrade(from: 47);
+
+    for (final id in ['course-res-1', 'synced-1']) {
+      final row = (await database.myLibraryDao.getById(id))!;
+      expect(row.resourceOffline, isTrue, reason: '$id owns its bytes');
+      expect(row.resourceLocalAddress, isNot(equals(null)));
+    }
+  });
+
+  test('the repair leaves a post-fix local resource alone', () async {
+    // The fixed writer stores a basename, which has no separator — so the
+    // `LIKE '%/%'` half is what keeps the repair off rows the current code
+    // wrote. Without it every locally created resource would be un-flagged on
+    // the next bump, which is the defect running in reverse.
+    await installMyLibraryShapeBeforeV48();
+    await database.customStatement(
+      "INSERT INTO my_library (id, title, resource_local_address, "
+      "resource_offline, filename) VALUES "
+      "('local-2', 'Budget scan', 'budget.pdf', 1, 'budget.pdf')",
+    );
+
+    await runUpgrade(from: 47);
+
+    final row = (await database.myLibraryDao.getById('local-2'))!;
+    expect(row.resourceOffline, isTrue);
+    expect(row.resourceLocalAddress, 'budget.pdf');
   });
 
   test('every my_library column is either old or a deliberate decision', () {

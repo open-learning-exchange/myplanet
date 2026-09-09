@@ -53,7 +53,7 @@ void main() {
     ResourceFiles.baseDirectory = () async => sandbox;
   });
   tearDown(() async {
-    ResourceFiles.baseDirectory = getApplicationDocumentsDirectoryStub;
+    ResourceFiles.baseDirectory = getApplicationDocumentsDirectoryFallback;
     await db.close();
     await sandbox.delete(recursive: true);
     await source.delete(recursive: true);
@@ -156,6 +156,21 @@ void main() {
     );
   });
 
+  test('an empty pick does not claim to be downloaded', () async {
+    // `ResourceFiles.existingFileFor` requires `length > 0`, exactly as
+    // `FileUtils.checkFileExist` does, so a zero-byte copy is invisible to
+    // the viewer — and a row flagged offline over it dead-ends the same way
+    // the uncopied path did. Kotlin's `copyTo` has this hole; the port does
+    // not, deliberately.
+    final picked = await pickedFile(name: 'empty.pdf', contents: '');
+
+    expect(await save(picked.path), equals(null));
+
+    final row = (await db.myLibraryDao.getAll()).single;
+    expect(row.resourceOffline, isFalse);
+    expect(row.resourceLocalAddress, equals(null));
+  });
+
   test('two resources with the same filename do not collide', () async {
     // `ResourceFiles.fileFor` keys the directory on the doc id for exactly
     // this reason, and a locally created row has no `couchId`, so the id it
@@ -189,8 +204,16 @@ void main() {
   });
 }
 
-/// The production default, restored in `tearDown`. Named rather than inlined
-/// because `ResourceFiles.baseDirectory` is a static seam: leaving a test's
-/// sandbox installed leaks into every later test in the same shard.
-Future<Directory> getApplicationDocumentsDirectoryStub() async =>
-    throw UnsupportedError('resource base directory not overridden');
+/// What `tearDown` puts back into the `ResourceFiles.baseDirectory` seam.
+///
+/// **Not the production default** — that is `getApplicationDocumentsDirectory`,
+/// which needs a platform channel no test has. This is the same stand-in
+/// `resource_downloader_test.dart:218` and `resources_repository_test.dart:881`
+/// install, under the same name, so the convention is one thing rather than
+/// three. (An earlier version of this file threw instead, and justified itself
+/// with "leaks into every later test in the same shard" — wrong twice: the
+/// seam is per-isolate and `flutter test` gives each file its own, and a
+/// thrower is not a default. It is still worth restoring, because a leaked
+/// sandbox path outlives the temp directory `tearDown` deletes.)
+Future<Directory> getApplicationDocumentsDirectoryFallback() async =>
+    Directory.systemTemp;

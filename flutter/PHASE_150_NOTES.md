@@ -168,16 +168,64 @@ say:
 
 So the table joins `teams`, `surveys` and `news` as a preserved hybrid.
 
-### `schemaVersion` 49 was allocated and is **not spent**
+### `schemaVersion` 49 was allocated and **is spent** — the implementation audit is why
 
-Preservation changes migration *behaviour*, not DDL: no column is added, so
-there is nothing for a bump to deliver. A device on v47 runs
-`onUpgrade(47 → 48)` under the new code and keeps its rows — it has not run the
-drop yet, which is exactly why the fix helps it. A device already on v48 has
-the full shape and needs no upgrade. Bumping would only drop every cache again
-for no benefit. **49 is free for the next lane.** (Precedent for the reasoning:
-`submissions_repository.dart:766` records the same "not a schema migration and
-needs no `schemaVersion`" argument for the Phase 104 converter swap.)
+The first cut did not bump, and argued — correctly, for DDL — that preservation
+changes migration *behaviour* and not schema: a device on v47 runs
+`onUpgrade(47 → 48)` under the new code and keeps its rows, a device on v48
+already has the shape, and drift's bookkeeping (`PRAGMA user_version`, written
+only after `beforeOpen` returns, which is null here) wants nothing.
+
+**Sound argument, wrong conclusion, because it answered the wrong question.**
+The implementation audit asked Phase 143's question about the rows this phase
+newly *keeps* rather than the columns it adds, and the row class preservation
+exists for comes out of the migration permanently self-contradictory. A device
+that used Add Resource on any earlier build has, for each locally created
+resource, `resource_offline = 1` and the raw `FilePicker` path in
+`resource_local_address`, because the pre-fix writer copied no file. Old code
+deleted that row. Preserving the table keeps it, and it is then a dead end that
+**lies**: My Library shows the offline pin (the list sorts
+`resource_offline DESC`), the detail screen offers *View* rather than Download,
+the viewer finds nothing under `ole/<id>/`, and the Download it falls back to
+cannot work either because `urlFor` needs a `couchId` a local row has never
+had. **A dead end that lies is worse than the absence it replaced** — so the
+fix would have *relocated* the loss rather than removing it, which is exactly
+the failure this phase was briefed to avoid and quotes in its own comments.
+
+v49 therefore carries a repair, and the repair is why the number is spent: the
+affected population includes devices already on v48, which never enter
+`onUpgrade` again unless the version moves. **The no-bump and no-repair
+decisions were coupled and the first cut presented them as independent** —
+banking 49 while shipping no repair would have spent the only vehicle for one.
+
+```sql
+UPDATE my_library SET resource_offline = 0, resource_local_address = NULL
+WHERE _id IS NULL AND resource_local_address LIKE '%/%'
+```
+
+**The audit proposed `_rev IS NULL` for the first clause, and it has a false
+positive.** A resource embedded *only* in a course document arrives rev-less (a
+step sub-object carries none) while `MyLibraryMapper` still writes its
+`couchId` — so `urlFor` can build a URL, the user can download it, and
+`markDownloaded` then writes an absolute path onto a rev-less row. That clause
+would have cleared a genuine download. `_id IS NULL` cannot: every
+mapper-written row carries a `couchId`, and only `saveLocalResource` leaves it
+unset. **Third instance this round of *`_rev IS NULL` is authorship in Kotlin
+and is not in the port*** — and the first where it caught a *proposed* fix
+rather than a shipped one. Pinned by *the repair cannot reach a row that owns a
+real file*.
+
+`LIKE '%/%'` is the other half: `_primaryAttachment` skips any attachment key
+containing a separator and the fixed writer stores a basename, so only a picker
+path has one. Without it the repair would un-flag every locally created
+resource on every future bump — pinned by *the repair leaves a post-fix local
+resource alone*.
+
+Mutation 17 is the one worth copying: leaving `schemaVersion` at 48 reds the
+version-floor assertion, which is Phase 146's *"the test exercised the
+migration correctly and was blind to whether the migration would ever be
+invoked"* recurring for a **repair** rather than a column. The floor moved from
+48 to 49 in the same edit.
 
 ### What preservation costs, and why the loop is exhaustive
 
@@ -224,11 +272,17 @@ two `CHECK (… IN (0, 1))` booleans, for which `surveys.needs_sync` and
 
 ### Phase 143's question: what is each row's state *after* the migration?
 
-**No column needs a backfill, and the reason is structural rather than
-lucky.** The `surveys.needsSync` shape cannot recur here because `my_library`
-has no authorship flag at all: the state that marks a row local is
-`_rev IS NULL`, which a preserved local row already carries and which is
-Kotlin's own `getPendingUploads` predicate. `step_id`/`course_id` arrive NULL,
+**No *column* needs a backfill, and the reason is structural rather than
+lucky — but the question is about rows, and answering it about columns is how
+this phase nearly shipped the loss it was fixing.** The `surveys.needsSync`
+shape cannot recur here because `my_library` has no authorship flag at all: the
+state that marks a row local is `_rev IS NULL`, which a preserved local row
+already carries and which is Kotlin's own `getPendingUploads` predicate. That
+much is true and it is not the whole answer: a row can need repairing because
+an **older writer** wrote it wrong, with no new column involved at all, and
+that is exactly what the v49 repair above exists for. *"Does a new column
+default wrongly?"* is a proper subset of *"what state is each row in after the
+migration?"*, and the first cut of these notes answered only the subset. `step_id`/`course_id` arrive NULL,
 which is the truthful value ("in no course document") and what the courses
 walk overwrites on its next page — a guessed backfill would be actively wrong,
 since nothing on the row records which step it came from.
@@ -360,10 +414,23 @@ at risk.
    flag first, which is a column on a now-preserved table and so a **backfill
    decision** (the reconciliation loop adds the column; only a person can
    decide what existing rows should say). An uploader is also Lane C's file
-   class. Severity: high — it is the whole reason this table is preserved.
+   class.
+   **And one coupling the file copy creates, which whoever writes that uploader
+   must handle:** the viewer resolves bytes at
+   `<base>/ole/<couchId ?? id>/<filename>`, and this phase writes the copy
+   under the *local* id because a local row has no `couchId`. The moment an
+   uploader records one — as Kotlin's `markResourceUploaded` does
+   (`ResourcesRepositoryImpl.kt:797-818`, which sets `_id`/`_rev` and leaves
+   the addresses alone) — the file becomes invisible to the viewer. Either
+   relocate the directory on upload, or keep the viewer on `id` for a row whose
+   file it wrote itself. Severity: high — it is the whole reason this table is
+   preserved.
 2. **A stale `resource_offline = 1` has lost its only automatic repair.**
-   Kotlin re-derives the flag from the disk on every pull; the port's mapper
-   writes it never, and until this phase the bump was the accidental repair —
+   Kotlin re-derives the flag from the disk on every pull that carries an
+   attachment (inside `if (doc.has("_attachments"))` and
+   `if (key.indexOf("/") < 0)`, so a course sub-object re-derives nothing);
+   the port's mapper writes it never, and until this phase the bump was the
+   accidental repair —
    the row was destroyed and re-pulled with the column default. Now nothing
    repairs it except opening the resource
    (`resource_viewer_screen.dart:71-75`), while the list sorts offline-first
@@ -373,21 +440,22 @@ at risk.
    `checkFileExist` into the sync-in, which means disk IO in a mapper that is
    deliberately pure; it is the natural companion to Phase 146 item 3's
    `reconcileHtmlResourceOffline`, still unported anywhere. Severity: medium.
-3. **A permanently-failing `download_queue` entry can now never be cleared.**
-   The genuine *relocation* this phase creates, and the audit found it rather
-   than me. `ResourceDownloader.download` enqueues before checking the URL
-   (`resource_downloader.dart:37-41`) and `urlFor` needs `couchId`
-   (`:28-29`), null for a locally created resource — so the entry can never
-   complete, and the only branch that ever clears one is "the `my_library` row
-   is gone" (`background_entrypoint.dart:42-53`), which the bump used to
-   trigger. Both tables are preserved now, so the pair is stable and wrong.
-   **This phase's file copy removes the common route to it** — a local resource
-   with its file no longer sends the user to Download at all — but a
-   metadata-only row, or one whose file is deleted externally, still reaches
-   it. The fix is one condition in `resource_downloader.dart` (do not enqueue
-   what cannot resolve) or in `background_entrypoint.dart` (complete an entry
-   whose resource can never produce a URL); neither is this lane's file, and a
-   DAO method with no caller is the half-a-pair antipattern. Severity: medium.
+3. **A permanently-failing `download_queue` entry — latent, and the caller is
+   already the guard.** `ResourceDownloader.download` enqueues *before*
+   checking the URL (`resource_downloader.dart:37-41`) and `urlFor` needs a
+   `couchId` (`:28-29`), null for a locally created resource, so such an entry
+   could never complete — and the only branch that ever clears one is "the
+   `my_library` row is gone" (`background_entrypoint.dart:42-53`), which the
+   bump used to trigger. Preserving both tables removes that trigger.
+   **But nothing can reach it**, which the implementation audit established
+   and my first draft of this item got wrong: `download` has two production
+   callers, and the persisting one (`resource_viewer_screen.dart:227-247`) is
+   reachable only from inside `if (canDownload)`, which *is*
+   `urlFor(...) != null`; the background caller passes
+   `persistInBackground: false`. The guard my draft proposed adding to
+   `resource_downloader.dart` is already enforced two lines from the read.
+   Severity: **latent, not medium** — recorded because enqueue-before-check is
+   a trap for the next caller, not because a user can hit it today.
 4. **A course-only resource row is immortal.** The `_rev` fix means a row the
    `resources` walk has *also* seen keeps its real revision and stays
    prunable, which is the common case. A resource that exists **only** inside a
@@ -492,3 +560,103 @@ opened — the other two were mine as well.
 4 mapper rev, 6 file copy, 4 preservation, 2 migration guards), which is worth
 stating as arithmetic rather than "all green": a suite that loses a file still
 passes.
+
+## What the second audit pass changed
+
+Run at `effort: max`, read-only, against the finished and already-green code.
+It confirmed the Kotlin citations (it opened all of them and every one said
+what this file says it says) and found the defects elsewhere — which is the
+argument for the second pass in one line: **the ground-truth audit checks
+whether you read the Kotlin right; only the implementation audit checks whether
+what you built does what you think.**
+
+Fixed here as a result:
+
+1. **The v49 row repair** — the headline finding, written up above. This phase
+   would otherwise have relocated a data loss into a permanent dead end that
+   lies, in the row class it exists to protect.
+2. **The reconciliation blocks moved above the drop loop.** Drift does not wrap
+   a migration in a transaction, so a throwing `ALTER` left `onUpgrade`
+   abandoned with every cache already dropped and `createAll` never reached.
+   Reconciling first makes that failure non-destructive — the next open retries
+   the same `from`, and every step is idempotent. Nothing there depended on the
+   drop; the cost is zero.
+3. **A zero-byte pick no longer claims to be downloaded.**
+   `ResourceFiles.existingFileFor` requires `length > 0`, so an empty copy is
+   invisible to the viewer and a row flagged over it dead-ends exactly as the
+   uncopied path did. Both derived columns now come from the copy or neither
+   does, and the stub is deleted. **Kotlin's `copyTo` has this hole**, so this
+   is a deliberate deviation rather than parity — recorded at the code.
+4. **`catch (_)` narrowed to `on Exception`.** Kotlin catches `IOException` and
+   `SecurityException` and lets anything else propagate; the bare catch turned
+   a programming error in `ResourceFiles.fileFor` into the form's "resource
+   title already exists". (That *routing* is real parity —
+   `AddResourceActivity` shows the title error for any create failure — but the
+   swallowing was not.)
+5. **The moved block's own first paragraph** said "the indexes were all just
+   dropped", which the move falsified in the same edit. Caught by re-reading
+   the diff, not by the audit.
+6. **`voices_repository.dart`'s two sentences that this diff falsified**: the
+   dartdoc still called the tally "top-level", and the hand-off paragraph still
+   listed all three defects as another lane's, unfixed. Both under the *making
+   an existing statement true* carve-out.
+7. **`migration_test.dart`'s frozen-DDL dartdoc**, which predicted this exact
+   change and said "these tests red when that happens" — a prediction that was
+   right, left standing, and therefore telling a reader the guard had fired
+   when it had not. The prediction is now quoted as a record rather than
+   asserted as a fact. **My own notes listed this among the nine falsified
+   comments and said "It was right" — so the notes claimed a correction that
+   never landed.** The only row of that table where the code disagreed with the
+   write-up.
+8. **The loop's "needs no hand-written step" sentence**, which read as
+   permission to add columns freely. The bump is still mandatory (the loop runs
+   inside `onUpgrade`), and two column shapes — a `NOT NULL` column with a
+   `clientDefault`, and `withDefault(currentDateAndTime)` — are refused by
+   SQLite in an `ADD COLUMN` and would abort the upgrade on every install.
+9. **`MyLibraryTable` gained a class-level dartdoc.** Every other preserved
+   table says so at class level; this one buried it ninety lines down on
+   `stepId`, which is not where a later lane looks first.
+10. **The `_rev` deviation's cost is now written at the guard.** A resource in
+    both the `resources` walk and a course document, deleted server-side, is
+    now prunable where it used to be immortal — so it is pruned, re-inserted
+    from the sub-object with no `_attachments`, and comes back not-downloaded
+    with its bytes orphaned. Narrow, stable, and accepted; the alternative
+    makes every such row permanently unprunable.
+11. **Prose**: "Kotlin re-derives on **every** pull" overstated it (the
+    re-derivation sits inside `if (doc.has("_attachments"))` and
+    `if (key.indexOf("/") < 0)`, so a course sub-object triggers none — the
+    substance survives, the word did not); a test comment named
+    `_presentOrAbsent` for the function actually called `_revOrAbsent`; and
+    item 3 of *Reported, not fixed* was **refuted** — the enqueue guard it asks
+    a future lane to add is already enforced by the only caller that can reach
+    it. Demoted rather than deleted.
+12. **Test housekeeping.** The preservation test never restored
+    `ResourceFiles.baseDirectory`; and my new helper was a **third** copy of a
+    seam-restorer that exists twice already as
+    `getApplicationDocumentsDirectoryFallback`, under a different name, with a
+    dartdoc calling a thrower "the production default" and a rationale ("leaks
+    into every later test in the same shard") that is wrong because
+    `flutter test` gives each file its own isolate. Phase 78/95's
+    don't-hand-roll rule, in a diff that cites both. Now one name and one
+    behaviour, with the reason for restoring stated correctly.
+
+### Assertions the audit named as unable to discriminate
+
+Kept, because each pins a rule rather than the fix, and the audit found no
+vacuous ones among the load-bearing set. Recorded so nobody counts them as
+evidence: *a step-only resource still arrives with no revision* and *a document
+that carries an explicit null revision clears it* both pass against the pre-fix
+code (`Value(null)` and `Value.absent()` agree on an insert; the second
+discriminates against a hypothetical "never write a null rev", which is what it
+says it does), and *every preserved table has a preservation test* proves
+bookkeeping rather than coverage — as its own comment admits, though its name
+promises more.
+
+Two fixture caveats worth the same honesty. `local_resource_survives_schema_bump_test.dart`
+creates its database at the current version, so its `runUpgrade()` exercises the
+**drop loop only** — all 39 `_addColumnIfMissing` calls no-op, and the
+reconciliation is covered in `migration_test.dart` instead. And its
+private-team-resource case drives a state the app cannot currently produce
+(item 8: no caller supplies a `teamId`), so it proves preservation for
+something unreachable. Neither is wrong; neither is evidence of what its file
+header implies.
