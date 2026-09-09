@@ -24,7 +24,6 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <!-- Header -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -40,7 +39,6 @@
                         android:textColor="@color/daynight_textColor"
                         android:textSize="@dimen/profile_dialog_title_text_size"
                         android:textStyle="bold" />
-
                     <ImageButton
                         android:id="@+id/btn_close"
                         android:layout_width="@dimen/profile_dialog_close_size"
@@ -56,8 +54,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="@dimen/dashboard_hairline_width"
                     android:background="@color/card_border" />
-
-                <!-- Body -->
                 <androidx.core.widget.NestedScrollView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
@@ -289,7 +285,6 @@
                                     android:text="@string/language"
                                     android:textColor="@color/hint_color"
                                     android:textSize="@dimen/profile_dialog_label_text_size" />
-
                                 <Spinner
                                     android:id="@+id/language"
                                     android:layout_width="match_parent"
@@ -316,7 +311,6 @@
                                     android:text="@string/profile_label_level"
                                     android:textColor="@color/hint_color"
                                     android:textSize="@dimen/profile_dialog_label_text_size" />
-
                                 <Spinner
                                     android:id="@+id/level"
                                     android:layout_width="match_parent"
@@ -336,7 +330,6 @@
                             android:text="@string/gender"
                             android:textColor="@color/hint_color"
                             android:textSize="@dimen/profile_dialog_label_text_size" />
-
                         <RadioGroup
                             android:id="@+id/rdGender"
                             android:layout_width="match_parent"
@@ -353,7 +346,6 @@
                                 android:text="@string/male"
                                 android:textColor="@color/daynight_textColor"
                                 android:textSize="@dimen/profile_detail_text_size" />
-
                             <RadioButton
                                 android:id="@+id/rbFemale"
                                 android:layout_width="wrap_content"
@@ -370,8 +362,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="@dimen/dashboard_hairline_width"
                     android:background="@color/card_border" />
-
-                <!-- Footer -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -388,7 +378,6 @@
                         android:text="@string/cancel"
                         android:textAllCaps="false"
                         android:textColor="@color/colorAccent" />
-
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnSave"
                         style="@style/Widget.MaterialComponents.Button"
