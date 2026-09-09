@@ -134,8 +134,12 @@ deliberate nicety and this phase's job was the step lock, not a change of copy.
 
 ## The test that can see this axis
 
-`test/repository/submission_empty_vs_null_status_test.dart`, 11 tests. Six
-failed on the pre-fix code, the headline one with `Expected: <1> Actual: <0>`.
+`test/repository/submission_empty_vs_null_status_test.dart`, 11 tests.
+Reverting the writer (M1) fails **five** of them, the headline one with
+`Expected: <1> Actual: <0>`. The other six are controls, and each is pinned by
+its own mutation — the figure is five rather than the six an earlier draft of
+this said, because two of the original failures were `type` assertions since
+rewritten to pin the deferral instead.
 
 The existing coverage could not see it **by construction**, which is the point
 worth keeping. `step_next_lock_test`'s type-less document sets
