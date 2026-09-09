@@ -2309,5 +2309,8 @@
   "joinEnterpriseFirst": "Veuillez rejoindre une entreprise pour partager cette conversation",
   "syncToServer": "Synchroniser avec le serveur :",
   "showMore": "montrer plus",
-  "showLess": "montrer moins"
+  "showLess": "montrer moins",
+  "youWantToConnectToADifferentServer": "Vous souhaitez vous connecter à un autre serveur. Effacez les données de l'application pour continuer",
+  "clearData": "Effacer les données",
+  "clearingData": "Suppression des données…"
 }

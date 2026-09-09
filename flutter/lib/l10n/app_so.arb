@@ -535,5 +535,8 @@
   "addImage": "Kudar Sawir",
   "syncToServer": "Isku xidh adeegga:",
   "showMore": "tus wax badan",
-  "showLess": "tus wax yar"
+  "showLess": "tus wax yar",
+  "youWantToConnectToADifferentServer": "Waxaad rabtaa inaad ku xirto server kale. Tirtir xogta barnaamijka si aad u sii wadato",
+  "clearData": "Tirtir Data",
+  "clearingData": "Tirtiridda xogta…"
 }

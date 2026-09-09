@@ -2168,5 +2168,8 @@
   "joinEnterpriseFirst": "Únete a una empresa para compartir este chat",
   "syncToServer": "Sincronizar con el servidor:",
   "showMore": "mostrar más",
-  "showLess": "mostrar menos"
+  "showLess": "mostrar menos",
+  "youWantToConnectToADifferentServer": "¿Estás seguro de que deseas cambiar la configuración? Esta acción borrará los datos de la aplicación",
+  "clearData": "Borrar datos",
+  "clearingData": "Borrando datos…"
 }

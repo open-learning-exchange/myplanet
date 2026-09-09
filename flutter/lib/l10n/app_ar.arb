@@ -2163,5 +2163,8 @@
   "joinEnterpriseFirst": "يرجى الانضمام إلى مؤسسة لمشاركة هذه المحادثة",
   "syncToServer": ":المزامنة إلى الخادم",
   "showMore": "عرض المزيد",
-  "showLess": "عرض أقل"
+  "showLess": "عرض أقل",
+  "youWantToConnectToADifferentServer": "تريد الاتصال بخادم مختلف. امسح بيانات التطبيق للمتابعة",
+  "clearData": "مسح البيانات",
+  "clearingData": "جارٍ مسح البيانات…"
 }

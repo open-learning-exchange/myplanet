@@ -146,18 +146,97 @@ class ClearDataNotifier extends AsyncNotifier<void> {
 
   Future<void> clearAllData() async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      final db = ref.read(appDatabaseProvider);
-      final prefs = ref.read(planetPrefsProvider);
-      await db.clearAllData();
-      await prefs.clearAllData();
-      // Reset the provider states that the router's `redirect` reads, so the
-      // navigation lands without waiting for the next read of cleared prefs.
-      ref.read(serverConfigProvider.notifier).clear();
-      await ref.read(sessionProvider.notifier).signOut();
-    });
+    state = await AsyncValue.guard(_wipe);
+  }
+
+  /// The same wipe, for the server-switch path, which needs the failure rather
+  /// than a swallowed [AsyncError].
+  ///
+  /// Port of the positive-button body of `SyncActivity.clearDataDialog`
+  /// (`SyncActivity.kt:270-300`). Kotlin runs, in this order,
+  /// `configurationsRepository.clearAllData()` (which is
+  /// `appDatabase.clearAllTables()`), then `prefData.setManualConfig(config)`,
+  /// then `prefData.clearPreferences()`, and on an exception it dismisses its
+  /// progress dialog, releases the back-press guard and **re-enables both
+  /// dialog buttons** so the user can retry. Reproducing that last part is
+  /// why this rethrows where [clearAllData] guards: the settings screen reads
+  /// the failure off [clearDataProvider], the dialog has to act on it.
+  ///
+  /// Two pieces of the Kotlin sequence are deliberately absent.
+  ///
+  /// `setManualConfig(config)` writes `MANUAL_CONFIG`, one of the two keys
+  /// `SharedPrefManager.clearPreferences` deliberately keeps — which is why
+  /// Kotlin sets it *before* clearing rather than after. Its only readers are
+  /// the manual-configuration checkbox and `setupManualUi`, and the port has
+  /// neither: its URL and PIN fields are always editable, so there is no mode
+  /// to remember. Following it to its end (the Phase 149 rule) makes the
+  /// honest port of that line *nothing*, not `false` — see the PR's
+  /// "Reported, not fixed" for the two other call sites that pass `true`.
+  ///
+  /// `delay(500.milliseconds)` before `restartApp()` is a flush window rather
+  /// than a courtesy: `SharedPreferences.edit {}` defaults to `apply()`, and
+  /// `Runtime.getRuntime().exit(0)` skips the `QueuedWork` flush a normal
+  /// pause would perform, so the delay is Kotlin's (unreliable) hope that
+  /// steps 5 and 6 reached disk. Every write here is awaited, so there is
+  /// nothing to wait out — copying the sleep would reproduce the symptom of a
+  /// problem the port does not have.
+  Future<void> clearForServerSwitch() async {
+    state = const AsyncLoading();
+    try {
+      await _wipe();
+      state = const AsyncData(null);
+    } catch (error, stack) {
+      state = AsyncError<void>(error, stack);
+      rethrow;
+    }
+  }
+
+  Future<void> _wipe() async {
+    final db = ref.read(appDatabaseProvider);
+    final prefs = ref.read(planetPrefsProvider);
+    await db.clearAllData();
+    // `PlanetPrefs.clearAllData` keeps `onboardingComplete` and deletes secure
+    // storage, exactly as the reset-app path wants — and exactly as this path
+    // wants too, for a different reason. The stored password and PIN belong to
+    // the server being left behind, and the derived key and salt that back
+    // offline PBKDF2 verification were issued by it, so carrying them to a new
+    // Planet would leave credentials that can never authenticate. Kotlin's
+    // `clearPreferences` does not touch `SecurePrefs`, which is a gap on both
+    // of its call paths rather than a decision to copy.
+    await prefs.clearAllData();
+    // Reset the provider states that the router's `redirect` reads, so the
+    // navigation lands without waiting for the next read of cleared prefs.
+    ref.read(serverConfigProvider.notifier).clear();
+    await ref.read(sessionProvider.notifier).signOut();
   }
 }
+
+/// Whether this device still holds data that belongs to a server other than
+/// the one about to be configured — the port's answer to
+/// `ServerAddressAdapter`'s `isServerAlreadyConfigured`.
+///
+/// Kotlin can use the configured URL itself (`!urlWithoutProtocol.isNullOrEmpty()`,
+/// `ServerDialogExtensions.kt:192`) because its server dialog opens *over* a
+/// configured device. The port cannot: the only way to reach
+/// `ServerConfigScreen` on a configured device is the login screen's "change
+/// server" action, and that clears the persisted config to make the router's
+/// redirect fire — so by the time the screen builds, the signal Kotlin reads
+/// has already been destroyed while the database is still full of the old
+/// server's documents. Gating on the config alone would have produced a
+/// warning that can never appear, guarding the one path that can actually mix
+/// two Planets.
+///
+/// `lastSync` survives `clearServerConfig()` and is 0 on a fresh install and
+/// after a reset, so "this device has synced with some server" is both the
+/// question that matters and one the port can still answer. A configured
+/// server counts too, for whenever the screen becomes reachable with one.
+///
+/// Reading this touches [planetPrefsProvider], which throws unless overridden:
+/// a widget test of the server-config screen must override this provider.
+final deviceHoldsServerDataProvider = Provider<bool>((ref) {
+  if (ref.watch(serverConfigProvider) != null) return true;
+  return ref.watch(planetPrefsProvider).lastSync != 0;
+});
 
 final clearDataProvider = AsyncNotifierProvider<ClearDataNotifier, void>(
   ClearDataNotifier.new,
