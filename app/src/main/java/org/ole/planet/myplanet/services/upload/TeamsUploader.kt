@@ -3,8 +3,6 @@ package org.ole.planet.myplanet.services.upload
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -43,58 +41,27 @@ class TeamsUploader @Inject constructor(
                 val deletedIds = mutableListOf<String>()
                 val uploadedTeams = mutableMapOf<String, String>()
 
-                val bulkDocs = JsonArray()
-
-                batch.forEach { teamData ->
-                    bulkDocs.add(teamData.serialized)
-                }
-
-                if (bulkDocs.isEmpty()) return@processInBatches
-
-                val payload = JsonObject()
-                payload.add("docs", bulkDocs)
-
-                try {
-                    val response = uploadRepository.postUploadArray(
-                        "${UrlUtils.getUrl()}/teams/_bulk_docs", payload
-                    )
-
-                    val responseBody = response.body()
-
-                    if (response.isSuccessful && responseBody != null) {
-                        if (responseBody.size() < batch.size) {
-                            Log.w(TAG, "Team bulk upload response returned ${responseBody.size()} result(s) for a batch of ${batch.size}; ${batch.size - responseBody.size()} team(s) were not processed and will retry next sync")
-                        }
-                        for (i in 0 until responseBody.size()) {
-                            val element = responseBody.get(i).asJsonObject
-                            val id = getString("id", element)
-                            val teamData = batch.getOrNull(i) ?: continue
-
-                            if (element.has("error")) {
-                                // 200 bulk response code prevents retry here, as per doc errors aren't retried
-                                queueTeamRetry(teamData, response.code(), if (teamData.isDeletePending) "PUT" else "POST", id)
+                BulkDocUploader.upload(uploadRepository, "${UrlUtils.getUrl()}/teams/_bulk_docs", batch.map { it to it.serialized }) { teamData, outcome ->
+                    when (outcome) {
+                        is BulkDocUploader.Outcome.Accepted -> {
+                            val id = getString("id", outcome.element)
+                            var rev = getString("rev", outcome.element)
+                            if (teamData.isDeletePending) {
+                                deletedIds.add(id)
                             } else {
-                                var rev = getString("rev", element)
-                                if (teamData.isDeletePending) {
-                                    deletedIds.add(id)
-                                } else {
-                                    if (!teamData.imageName.isNullOrEmpty() && rev.isNotEmpty()) {
-                                        rev = uploadTeamImageAttachment(id, rev, teamData.imageName)
-                                    }
-                                    uploadedTeams[teamData.teamId ?: id] = rev
+                                if (!teamData.imageName.isNullOrEmpty() && rev.isNotEmpty()) {
+                                    rev = uploadTeamImageAttachment(id, rev, teamData.imageName)
                                 }
+                                uploadedTeams[teamData.teamId ?: id] = rev
                             }
                         }
-                    } else {
-                        // Entire bulk failed, queue all
-                        batch.forEach { teamData ->
-                            queueTeamRetry(teamData, response.code(), if (teamData.isDeletePending) "PUT" else "POST", teamData.teamId)
+                        is BulkDocUploader.Outcome.Rejected -> {
+                            val id = getString("id", outcome.element)
+                            queueTeamRetry(teamData, outcome.httpCode, if (teamData.isDeletePending) "PUT" else "POST", id)
                         }
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Exception in UploadManager bulk upload", e)
-                    batch.forEach { teamData ->
-                        queueTeamRetry(teamData, null, if (teamData.isDeletePending) "PUT" else "POST", teamData.teamId, e)
+                        is BulkDocUploader.Outcome.RequestFailed -> {
+                            queueTeamRetry(teamData, outcome.httpCode, if (teamData.isDeletePending) "PUT" else "POST", teamData.teamId, outcome.exception)
+                        }
                     }
                 }
 
