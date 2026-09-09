@@ -7,8 +7,10 @@ import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/core/files/voice_images.dart';
 import 'package:myplanet/core/network/network_result.dart';
+import 'package:myplanet/core/system/voice_image_picker.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
+import 'package:myplanet/repository/outbox_drainer.dart';
 import 'package:myplanet/repository/outbox_repository.dart';
 import 'package:myplanet/repository/voices_repository.dart';
 import 'package:myplanet/repository/voices_uploader.dart';
@@ -26,7 +28,7 @@ class MockPlanetApi extends Mock implements PlanetApi {}
 ///
 /// Kotlin's shape, from `UploadManager.kt:303-361`: a voice's image is **not**
 /// an attachment on the news document. Per image it POSTs a `resources`
-/// document (`createImage`, `:126-142`), PUTs the bytes onto *that*
+/// document (`createImage`, `:126-141`), PUTs the bytes onto *that*
 /// (`:321-331`), appends `![](resources/<id>/<name>)` to the outgoing message
 /// and records `{resourceId, filename, markdown}` in the post's `images`
 /// array — and only then POSTs the news document, which is why the order is
@@ -225,6 +227,12 @@ void main() {
     expect(resource['filename'], 'well.png');
     expect(resource['private'], isTrue);
     expect(resource['mediaType'], 'image');
+    expect(
+      resource['createdDate'],
+      isA<int>(),
+      reason:
+          '`createImage` stamps `timeProvider.now()` (UploadManager.kt:129)',
+    );
     expect(resource['privateFor'], isEmpty);
     // Read off the post rather than a live session: the drain is headless and
     // can outlive the composer, and the row already records who wrote it.
@@ -387,6 +395,25 @@ void main() {
     );
   });
 
+  test("the picker's own rename does not reach Planet", () async {
+    // Android's `ImageResizer.resizeImageIfNeeded` returns the original path
+    // only at `imageQuality == 100` with no max dimensions; otherwise it
+    // re-encodes and writes `"/scaled_" + name`. This picker asks for
+    // 1280x1280 at 85, so **every** pick comes back `scaled_<original>` — and
+    // that name is the `resources` title, the attachment name, and the
+    // markdown path all at once. Kotlin sends the bare basename.
+    expect(
+      VoiceImagePicker.originalName('scaled_IMG_0001.jpg'),
+      'IMG_0001.jpg',
+    );
+    expect(VoiceImagePicker.originalName('IMG_0001.jpg'), 'IMG_0001.jpg');
+    // Only the leading occurrence, and only at the start.
+    expect(VoiceImagePicker.originalName('a_scaled_b.png'), 'a_scaled_b.png');
+    // An empty name still yields something usable rather than an empty slot.
+    expect(VoiceImagePicker.originalName(''), endsWith('.jpg'));
+    expect(VoiceImagePicker.originalName('scaled_'), endsWith('.jpg'));
+  });
+
   test('the mime type is detected from the name, as a182edd made it', () async {
     stubPosts();
     final puts = stubAttachments();
@@ -468,6 +495,25 @@ void main() {
       503,
       reason: 'the drainer needs the real code to know this is retryable',
     );
+
+    // Driven through the real drainer, not just asserted about: the whole
+    // fix rests on `OutboxDrainer`'s `(code ?? 0) < 500` rule, and a test
+    // that only reads the handler's return value stays green if that rule
+    // changes underneath it.
+    final drainer = OutboxDrainer(
+      api,
+      outbox,
+      handlers: {VoicesUploader.type: uploader.handler},
+    );
+    await uploader.queuePending(config: config, userId: 'user-1');
+    await drainer.drain(authHeader: 'Basic dGVzdA==');
+
+    final rows = await database.outboxDao.forItem(VoicesUploader.type, id);
+    expect(
+      rows.single.status,
+      'pending',
+      reason: 'a 503 must leave the row retryable, not abandoned',
+    );
   });
 
   test('cleanup cannot fail a post the server already accepted', () async {
@@ -507,9 +553,24 @@ void main() {
     expect(row?.imageUrls, isEmpty);
   });
 
-  test('a refused attachment leaves the post queued with its image', () async {
+  test('a retryably refused attachment leaves the post queued', () async {
+    // A 5xx is worth attempting again, so here the whole operation fails and
+    // the outbox keeps the row — the opposite of the permanent case below.
+    // Kotlin discards the PUT response unchecked (`UploadManager.kt:327-331`)
+    // and uploads the post either way, referencing an attachment that is not
+    // there.
     final posts = stubPosts();
-    stubAttachments(succeed: false);
+    when(
+      () => api.uploadAttachment(
+        any(),
+        bytes: any(named: 'bytes'),
+        authHeader: any(named: 'authHeader'),
+        contentType: any(named: 'contentType'),
+        ifMatch: any(named: 'ifMatch'),
+      ),
+    ).thenAnswer(
+      (_) async => const NetworkError<Map<String, dynamic>>(503, 'busy'),
+    );
     final id = await seedPostWithImage();
 
     final operation = await queuedFor(id);
@@ -524,9 +585,8 @@ void main() {
       posts.map((p) => p.url),
       ['https://planet.example/db/resources'],
       reason:
-          'the news document must not go up referencing an attachment '
-          'that was refused — Kotlin discards the PUT response unchecked '
-          '(UploadManager.kt:327-331) and uploads it anyway',
+          'the news document must not go up while a retry could still attach '
+          'the image',
     );
     final row = await voices.getById(id);
     expect(row?.docId, isNull);
@@ -537,34 +597,115 @@ void main() {
     );
   });
 
-  test(
-    'a post whose bytes vanished is refused, not silently truncated',
-    () async {
-      stubPosts();
-      stubAttachments();
-      final id = await seedPostWithImage();
-      // Storage management cleared the slot between composing and draining.
-      await VoiceImages.deleteFor(id);
+  test('a post whose bytes vanished is sent without the image', () async {
+    // Refusing looked like the safe half and was not. `OutboxDao.findOpen`
+    // matches only `pending`/`in_progress`, so once the row is `abandoned`
+    // the next `queuePending` does not find it and `enqueue` inserts a
+    // **fresh** row with `attemptCount: 0` — and `queuePendingVoices` runs on
+    // every sync. A post whose image can never be delivered would therefore
+    // retry forever, never arrive, and leave a dead outbox row behind each
+    // time. The image is already lost; the text is not, so the text goes.
+    final posts = stubPosts();
+    stubAttachments();
+    final id = await seedPostWithImage();
+    // Storage management cleared the slot between composing and draining.
+    await VoiceImages.deleteFor(id);
 
-      final operation = await queuedFor(id);
-      final result = await uploader.handler(
-        operation,
-        jsonDecode(operation.payload) as Map<String, dynamic>,
-        'Basic dGVzdA==',
-      );
+    final operation = await queuedFor(id);
+    final result = await uploader.handler(
+      operation,
+      jsonDecode(operation.payload) as Map<String, dynamic>,
+      'Basic dGVzdA==',
+    );
 
-      expect(result, isA<NetworkError<Map<String, dynamic>>>());
-      verifyNever(
-        () => api.uploadAttachment(
-          any(),
-          bytes: any(named: 'bytes'),
-          authHeader: any(named: 'authHeader'),
-          contentType: any(named: 'contentType'),
-          ifMatch: any(named: 'ifMatch'),
-        ),
-      );
-    },
-  );
+    expect(result, isA<NetworkSuccess<Map<String, dynamic>>>());
+    expect(
+      posts.map((p) => p.url),
+      ['https://planet.example/db/news'],
+      reason: 'no resource document for an image with no bytes',
+    );
+    expect(
+      posts.single.body['message'],
+      'the well is dry',
+      reason: 'no `![](…)` line pointing at an attachment that will not exist',
+    );
+    final row = await voices.getById(id);
+    expect(row?.docId, 'news-1', reason: 'the post reached the server');
+    expect(
+      row?.imageUrls,
+      isEmpty,
+      reason: 'the dead entry is dropped, so no later sweep retries it',
+    );
+  });
+
+  test('a dead image is forgotten even when the post itself fails', () async {
+    // Where dropping the entry actually bites. On a successful post
+    // `markUploaded` clears `imageUrls` anyway, so the drop is invisible
+    // there — an assertion on the success path cannot see it. When the news
+    // POST fails, `markUploaded` never runs, and without the drop the retry
+    // would attempt the same undeliverable image again on every sweep.
+    var newsAttempts = 0;
+    when(
+      () => api.postJsonObject(
+        any(),
+        any(),
+        authHeader: any(named: 'authHeader'),
+      ),
+    ).thenAnswer((invocation) async {
+      final url = invocation.positionalArguments[0] as String;
+      if (url.contains('/resources')) {
+        return NetworkSuccess<Map<String, dynamic>>({
+          'id': 'resource-1',
+          'rev': '1-abc',
+        });
+      }
+      newsAttempts++;
+      return const NetworkError<Map<String, dynamic>>(503, 'busy');
+    });
+    stubAttachments(succeed: false);
+    final id = await seedPostWithImage();
+
+    final operation = await queuedFor(id);
+    await uploader.handler(
+      operation,
+      jsonDecode(operation.payload) as Map<String, dynamic>,
+      'Basic dGVzdA==',
+    );
+
+    expect(newsAttempts, 1, reason: 'the post was attempted and refused');
+    expect(
+      (await voices.getById(id))?.imageUrls,
+      isEmpty,
+      reason: 'the undeliverable image must not be retried on the next sweep',
+    );
+    expect(
+      await VoiceImages.existingFileFor(newsId: id, filename: 'well.png'),
+      isNull,
+      reason: 'and its bytes are not left occupying disk forever',
+    );
+  });
+
+  test('a permanently refused attachment does not block the post', () async {
+    // The same rule reached through the network instead of the disk: a 413
+    // from a body-size cap is permanent by the drainer's own classification,
+    // so retrying re-creates an orphan `resources` document every sync and
+    // the post still never lands.
+    final posts = stubPosts();
+    stubAttachments(succeed: false);
+    final id = await seedPostWithImage();
+
+    final operation = await queuedFor(id);
+    final result = await uploader.handler(
+      operation,
+      jsonDecode(operation.payload) as Map<String, dynamic>,
+      'Basic dGVzdA==',
+    );
+
+    expect(result, isA<NetworkSuccess<Map<String, dynamic>>>());
+    expect(posts.last.url, 'https://planet.example/db/news');
+    expect(posts.last.body['message'], 'the well is dry');
+    expect((await voices.getById(id))?.imageUrls, isEmpty);
+  });
 
   test(
     'a post with no images uploads without touching the resources db',

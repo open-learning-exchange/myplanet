@@ -85,7 +85,10 @@ class VoicesRepository {
 
   Future<NewsRow?> getById(String id) => _dao.getById(id);
 
-  /// Port of `VoicesRepositoryImpl.getCommunityVoiceDates`. Returns the
+  /// The port's counterpart to
+  /// `VoicesRepositoryImpl.getCommunityVoiceDateCount` (`:298-304`) — which
+  /// returns an `Int`, not dates; the port returns the dates and its caller
+  /// counts them. Returns the
   /// distinct `yyyy-MM-dd` dates of top-level community-section posts in a
   /// time window — one per day the user (or, when `userId` is null, the whole
   /// community) posted, used by the challenge dialog's voice-count check.
@@ -94,9 +97,12 @@ class VoicesRepository {
   /// is **in SQL**, not in memory: `countDistinctCommunityVoiceDates` filters
   /// `viewIn LIKE '%"section":"community"%'` (`NewsDao.kt:61-72`). An
   /// earlier version of this comment said the Kotlin filtered in memory after
-  /// the DAO query; it does not, and the same wrong claim is still on
-  /// `NewsDao.getCommunityVoiceDates` in `app_database.dart` (another lane's
-  /// file this round — reported, not fixed).
+  /// the DAO query; it does not. Two *different* wrong claims sit on
+  /// `NewsDao.getInTimeRange` in `app_database.dart` — it cites a Kotlin
+  /// `NewsDao.getInTimeRange` that does not exist, and calls its result "all
+  /// top-level community voices", which neither query implements — alongside
+  /// the `_isTopLevel` predicate itself, which Kotlin's SQL has no equivalent
+  /// of. All three are another lane's file this round: reported, not fixed.
   Future<List<String>> getCommunityVoiceDates(
     int startTime,
     int endTime,
@@ -359,6 +365,28 @@ class VoicesRepository {
       final candidate = '$stem-$n$extension';
       if (!used.contains(candidate)) return candidate;
     }
+  }
+
+  /// Forgets one pending image, leaving the rest of the post intact.
+  ///
+  /// For an image that can **never** be delivered — its bytes are gone from
+  /// disk, or the server refused it permanently. Keeping the entry would make
+  /// the uploader fail the whole post on every attempt, and because
+  /// `OutboxDao.findOpen` ignores an `abandoned` row, the next sweep enqueues
+  /// a *fresh* row with `attemptCount: 0` — so the post would retry forever,
+  /// never arrive, and grow the outbox by a dead row per sync. Dropping the
+  /// image loses something already lost; blocking the post loses the text too.
+  Future<void> dropPendingImage(String newsId, String fileName) async {
+    final row = await _dao.getById(newsId);
+    if (row == null) return;
+    final remaining = row.imageUrls
+        .where((raw) => PendingVoiceImage.decode(raw)?.fileName != fileName)
+        .toList(growable: false);
+    if (remaining.length == row.imageUrls.length) return;
+    await _dao.upsert(
+      row.toCompanion(false).copyWith(imageUrls: Value(remaining)),
+    );
+    await VoiceImages.deleteOne(newsId: newsId, filename: fileName);
   }
 
   /// The images on [newsId] that have not reached the server yet.
@@ -985,7 +1013,9 @@ class VoicesRepository {
   /// Clearing `imageUrls` is what marks the attachments as delivered; the
   /// server's `images` array replaces them.
   ///
-  /// [delivered] is the document that actually went on the wire. When the row
+  /// [delivered] is the payload **as queued** — which for a post with images
+  /// is not the document that went on the wire, because the uploader derives
+  /// the message and `images` from the resource uploads first. When the row
   /// has changed since that payload was captured, the send carried a
   /// **superseded body** and the row is not in sync with the server, so
   /// `isEdited` is left set and the next sweep re-queues it — this time with

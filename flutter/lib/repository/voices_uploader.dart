@@ -75,8 +75,8 @@ class VoicesUploader {
       // unscoped, so any second write — another post, an edit, a reaction —
       // re-enqueues every undelivered row, including one whose POST is in
       // flight. That window is handled at the other end rather than here:
-      // `markUploaded` takes the document that actually went out and keeps
-      // `isEdited` set when the row no longer matches it, so the next sweep
+      // `markUploaded` compares the payload as queued against the row and
+      // keeps `isEdited` set when they no longer match, so the next sweep
       // re-queues the edit carrying the `_id`/`_rev` just recorded.
       //
       // An earlier version of this comment said Kotlin "loses it identically".
@@ -179,10 +179,14 @@ class VoicesUploader {
         images: images is List ? images : const [],
         // The payload **as queued**, not [document]. The message and images
         // this handler derived from the uploaded resources are not a local
-        // edit, and comparing against the derived body would report every
-        // post with an image as superseded — leaving `isEdited` set, so the
-        // next sweep re-queues it forever. What this comparison is for is a
-        // row the *user* changed while the POST was on the wire.
+        // edit. Comparing against the derived body would report every post
+        // with an image as superseded, and the re-queue that follows would
+        // PUT the **un-augmented** message over the server's, stripping every
+        // `![](…)` line the first send established. (It would re-queue once,
+        // not forever: with nothing pending the second send derives nothing,
+        // so it matches and the flag clears — the damage is the stripped
+        // message, not a loop.) What this comparison is for is a row the
+        // *user* changed while the POST was on the wire.
         delivered: payload,
       );
     }
@@ -215,13 +219,30 @@ class VoicesUploader {
     final images = <Map<String, dynamic>>[];
 
     for (final image in pending) {
-      final uploaded = await _uploadImage(
-        row: row,
-        image: image,
-        resourcesEndpoint: resourcesEndpoint,
-        authHeader: authHeader,
-        document: _resourceDocument(image, post, identity),
-      );
+      final Map<String, dynamic> uploaded;
+      try {
+        uploaded = await _uploadImage(
+          row: row,
+          image: image,
+          resourcesEndpoint: resourcesEndpoint,
+          authHeader: authHeader,
+          document: _resourceDocument(image, post, identity),
+        );
+      } on _ImageUploadFailure catch (failure) {
+        // A failure the drainer would call **permanent** must not block the
+        // post. `OutboxDao.findOpen` ignores an `abandoned` row, so the next
+        // sweep enqueues a fresh one with `attemptCount: 0` — a post whose
+        // image can never be delivered would retry forever, never arrive, and
+        // leave a dead outbox row (and, on a refused attachment, an orphan
+        // `resources` document) behind on every sync. So the image is dropped
+        // and the post goes without it; the text is the part still
+        // recoverable. A *retryable* failure still fails the whole operation,
+        // because there the next attempt can succeed.
+        if (!failure.isPermanent) rethrow;
+        log('Dropping undeliverable voice image: ${failure.message}');
+        await _voices.dropPendingImage(row.itemId, image.fileName);
+        continue;
+      }
       images.add(uploaded);
       // A single `\n` per image, appended to the original message — the
       // separator and the order are Kotlin's (`UploadManager.kt:340`).
@@ -230,6 +251,10 @@ class VoicesUploader {
         ..write(uploaded['markdown']);
     }
 
+    // Every image was dropped as undeliverable, so there is nothing derived to
+    // send: return the payload untouched rather than an empty `images`, which
+    // is the key Kotlin's second sweep overwrites (see above).
+    if (images.isEmpty) return payload;
     return {...payload, 'message': message.toString(), 'images': images};
   }
 
@@ -254,10 +279,10 @@ class VoicesUploader {
       // a no-op, because there the document is already on the server and only
       // the bytes can be re-sent. Here the document has **not** been sent yet
       // and its `message` would carry a `![](…)` line pointing at an
-      // attachment that will never exist, so refusing is the safer half: the
-      // outbox retries, and if the bytes really are gone for good the row is
-      // abandoned after `maxAttempts` with `imageUrls` still set, which is
-      // visible rather than silent.
+      // attachment that will never exist. So this is a permanent failure, and
+      // `_withImages` drops the image and sends the post without it — see the
+      // `isPermanent` branch there for why failing the post instead would
+      // retry forever rather than being 'visible'.
       throw _ImageUploadFailure(
         'Pending voice image ${image.fileName} has no bytes on disk',
       );
@@ -314,7 +339,7 @@ class VoicesUploader {
   }
 
   /// The image reference a post carries: relative, no leading slash, no `/db`
-  /// prefix, empty alt text. The literal template at `UploadManager.kt:337`.
+  /// prefix, empty alt text. The literal template at `UploadManager.kt:336`.
   ///
   /// Unencoded, as Kotlin leaves it — this is markdown in a message body, not
   /// a URL the app builds a request from, and Planet renders it against its
@@ -332,7 +357,7 @@ class VoicesUploader {
   /// account; for a drain that can outlive a logout, the row is the honest
   /// source.
   ///
-  /// Key order follows `createImage` (`UploadManager.kt:126-142`) so a diff
+  /// Key order follows `createImage` (`UploadManager.kt:126-141`) so a diff
   /// against the Kotlin reads straight. `deviceName`/`customDeviceName` and
   /// the `androidId`/`app` origin pair arrive together as
   /// [DeviceIdentity.documentFields], which is exactly the set
@@ -381,4 +406,15 @@ class _ImageUploadFailure implements Exception {
 
   final String message;
   final NetworkResult<Map<String, dynamic>>? result;
+
+  /// Whether a retry could never help — classified by the **same rule**
+  /// `OutboxDrainer` uses (`code >= 500` and a transport `NetworkException`
+  /// are retryable, everything else is not), so the uploader and the drainer
+  /// cannot disagree about what is worth attempting again. A failure with no
+  /// [result] is the bytes missing from disk, which no retry recreates.
+  bool get isPermanent => switch (result) {
+    null => true,
+    NetworkError<Map<String, dynamic>>(:final code) => (code ?? 0) < 500,
+    _ => false,
+  };
 }

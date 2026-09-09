@@ -17,10 +17,12 @@ phase to start.
 | The challenge tally buckets by the device's day | `voices_repository.dart` | UTC where Kotlin uses `'localtime'` |
 | Three stale or false claims corrected at the code | `voices_uploader.dart`, `voices_repository.dart` | a correction has to reach every copy |
 
-**33 tests across five new files and four existing ones. 22 mutations, 22
-caught — two only after the test they exposed was rewritten.** Two
+**37 tests across five new files and four existing ones. 26 mutations, 26
+caught — three only after the test they exposed was rewritten.** Two
 `parity-auditor` passes at `effort: max` ran, one on the Kotlin ground truth
-before implementing and one on the finished green code.
+before implementing and one on the finished green code. **The second pass
+found two behavioural defects and five wrong claims**, all fixed here; the
+biggest is worth its own section.
 
 **Five defects were in code this phase itself wrote**, found after the first
 cut was green and all of them in the image slice. They are worth reading before
@@ -169,6 +171,65 @@ The ground-truth pass found more than the two the brief named. All are in
   to `""`, so a failed create yields a PUT to `resources//<name>` with
   `If-Match: ""` and markdown `![](resources//<name>)`. The port refuses.
 
+### What the implementation audit changed
+
+**An undeliverable image retried forever, and grew the outbox by a dead row per
+sync.** The first cut treated a missing file as a reason to fail the whole
+operation, on the reasoning that refusing is safer than Kotlin's silent loss
+and that the row would end up "abandoned after `maxAttempts`, which is visible
+rather than silent". Both halves were wrong. `_ImageUploadFailure` with no
+result becomes `NetworkError(null, …)`, which `OutboxDrainer` classes
+**permanent** — abandoned after *one* attempt, not `maxAttempts`. And
+`OutboxDao.findOpen` matches only `pending`/`in_progress`, so the next
+`queuePending` does not see the abandoned row and `enqueue` inserts a **fresh**
+one with `attemptCount: 0`. `queuePendingVoices` runs on every sync, so the
+post never arrives, nothing surfaces it (`watchPendingCount` counts only
+`pending`), the `outbox` table — a preserved table — grows without bound, and
+on a permanently refused attachment each cycle leaves another orphan
+`resources` document on the server. **The port's correct refusal is what made
+Kotlin's single leak unbounded.**
+
+The rule now: a failure the drainer would call permanent drops that image and
+sends the post without it; a retryable one still fails the operation so the
+outbox retries. `_ImageUploadFailure.isPermanent` classifies with the *same*
+expression the drainer uses, so the two cannot disagree about what is worth
+attempting again. The image was already lost; blocking the post loses the text
+as well.
+
+**Every uploaded image was named `scaled_<original>` on Planet.** Android's
+`ImageResizer.resizeImageIfNeeded` returns the original path only when
+`maxWidth == null && maxHeight == null && imageQuality == 100`; otherwise it
+re-encodes and writes `"/scaled_" + name`. The picker asks for 1280×1280 at
+quality 85 — deliberately, because these cross the connection myPlanet exists
+to work around — so **every** pick came back prefixed, and that one name is the
+`resources` document's `title` and `filename`, the attachment name in the PUT
+URL, and the `![](…)` path in the message. Kotlin sends the bare basename.
+Invisible to every test, because both test files fake the picker.
+
+**And the fix for the first defect needed its own test rewritten.** The
+assertion "the dead entry is dropped, so no later sweep retries it" ran on the
+success path, where `markUploaded` clears `imageUrls` anyway — so it passed
+with the drop removed. It only bites when the news POST *also* fails, which is
+what it now drives.
+
+Five claims were wrong and are corrected at the code: a citation to
+`BaseVoicesFragment.kt:63-67` for an affordance that is the *result handler*
+there (`addImage` is `:131-134`); a pointer to a wrong claim on a DAO method
+that does not carry it, past the two that do; "Port of
+`getCommunityVoiceDates`" for a Kotlin method called
+`getCommunityVoiceDateCount` that returns an `Int`; two comments still calling
+`delivered` "the document that actually went out" after the same commit's other
+comment says it deliberately is not; and a stated reason for that choice
+("re-queues forever") that is wrong — it re-queues once, and the real damage is
+the second send PUTting the un-augmented message over the server's.
+
+**One race closed.** `TeamVoicesScreen`'s FAB was gated on the membership
+stream while the team came from a separate future, so a tap in that window
+composed an enterprise's post as `messageType: ''` — the mislabelling Job 2
+exists to fix. The comment claimed Kotlin sends `""` there too; it does not,
+because `TeamsVoicesFragment` only enables its submit button once the team has
+resolved. The FAB now waits for both.
+
 ## Job 2 — an enterprise post is labelled `enterprise`
 
 `TeamsVoicesFragment.kt:80` writes `map["messageType"] =
@@ -306,7 +367,13 @@ Each names the file, the change, and why it was not made here.
    them, and the retry re-uploads both as fresh documents. Kotlin has this too
    and worse — unbounded, one orphan per image per sync forever, because
    `imageUrls` is never cleared on that path (`UploadManager.kt:349-353`).
-   Here it is bounded by the outbox's `maxAttempts`. Fixing it properly means
+   Here it is bounded by the drop rule above — a permanently refused image is
+   forgotten after one cycle, so at most one orphan per image rather than one
+   per sync. (An earlier draft of this line said "bounded by the outbox's
+   `maxAttempts`", which was wrong twice over and is what the implementation
+   audit's largest finding turned on.) A *retryable* failure can still leave
+   one orphan per attempt until the outbox abandons the row. Fixing that
+   properly means
    recording the resource ids across attempts, which is a column on `news` and
    a schema bump — **Lane A's `tables.dart`/`app_database.dart` and a number I
    do not have.**
@@ -403,6 +470,16 @@ sweep and reported a false negative.
 | M20 | the offset is dropped (the pre-fix UTC bucketing) | all three challenge-day tests |
 | M21 | the offset is subtracted instead of added | all three challenge-day tests |
 | M22 | the team screen falls back to `'team'` instead of `''` | *a team with no type sends the empty string* |
+| M23 | a permanent image failure blocks the post again | *bytes vanished…* + *a permanently refused attachment…* |
+| M24 | a retryable image failure is treated as permanent | *a transient attachment failure is retried* + *…leaves the post queued* |
+| M25 | the dead `imageUrls` entry is left on the row | *a dead image is forgotten even when the post itself fails* |
+| M26 | the picker's `scaled_` prefix reaches Planet | *the picker's own rename does not reach Planet* |
+
+**M25 survived too, and for a third distinct reason**: its assertion ran on the
+success path, where `markUploaded` clears `imageUrls` regardless, so the
+property it named was true whether or not the code under test did anything. It
+now drives the failing-post path, the only one where the drop is observable.
+**Ask where the claim is *observable*, not just where it is true.**
 
 **M7 and M13 survived their first run**, and both were the test's fault rather
 than a missing predicate — which is the whole reason to mutate. M7's assertion
@@ -413,3 +490,29 @@ that actually reaches Kotlin's stripping bug. M13's test built its own
 it could not see the line it exists to forbid. **A test whose expected value is
 the mutation's output, and a test that reimplements the call site it is
 guarding, both read as coverage and are not.**
+
+## Reported by the implementation audit, not fixed
+
+Beyond the numbered list above.
+
+12. **Kotlin refuses a duplicate pick with `image_already_added`**
+    (`BaseVoicesFragment.kt:171-176`, `ReplyActivity.kt:241-246`); the port has
+    neither the guard nor the string. It cannot implement Kotlin's version as
+    written, because that guard keys on `XFile.path` and `PickedVoiceImage`
+    keeps only bytes and a name — and Kotlin's own guard would miss here
+    anyway, since each pick lands at a fresh UUID cache path. A content hash
+    would work. Left out because it is a new affordance rather than a parity
+    gap, and `_uniqueFilename` already stops the two picks from colliding.
+13. **`flutter/ios/Runner/Info.plist` declares no
+    `NSPhotoLibraryUsageDescription`**, so `pickMultiImage` would terminate the
+    app on iOS. Pre-existing rather than introduced here — there is no
+    `NSCameraUsageDescription` either, so Phase 51's `PhotoCapture` has the
+    same gap, and the port targets the Android app — but this phase adds a
+    second `image_picker` entry point, so it is one more caller depending on it.
+14. **The image-upload handler landed in the wrong commit.** `1868806`, whose
+    message describes only the four smaller defects, carries
+    `voices_uploader.dart` +253 and the new `voice_images.dart`; `7c97837`
+    ("feat: upload a voice post's images to CouchDB") carries only the
+    UI/picker half. Not rewritten, because the branch is already pushed and the
+    integrator merges it — but anyone bisecting or reading the log for the
+    image feature will look in the wrong place.

@@ -72,6 +72,21 @@ class VoiceImages {
     return file;
   }
 
+  /// Removes one pending image's bytes. Best-effort, for the same reason
+  /// [deleteFor] is: cleanup must never fail an upload.
+  static Future<void> deleteOne({
+    required String newsId,
+    required String filename,
+  }) async {
+    if (newsId.isEmpty || filename.isEmpty) return;
+    try {
+      final file = await fileFor(newsId: newsId, filename: filename);
+      if (await file.exists()) await file.delete();
+    } catch (_) {
+      // A slot that cannot be cleaned is not a failed upload.
+    }
+  }
+
   /// Removes every pending image for a post, once they have been delivered.
   ///
   /// Best-effort, and the `catch` is deliberately unqualified. `markUploaded`
