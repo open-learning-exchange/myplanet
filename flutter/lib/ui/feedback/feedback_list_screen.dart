@@ -312,8 +312,16 @@ class _FeedbackListTile extends StatelessWidget {
 
   String _formatDate(int timestamp) {
     if (timestamp == 0) return '';
-    final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
-    return '${date.day}/${date.month}/${date.year}';
+    try {
+      final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (_) {
+      // `openTime` is whatever the server document held, and a value beyond
+      // the ~±275,000-year range throws out of `build` and takes the whole
+      // list down over one bad row. The detail screen's formatter has always
+      // been guarded; this one was not.
+      return '';
+    }
   }
 }
 

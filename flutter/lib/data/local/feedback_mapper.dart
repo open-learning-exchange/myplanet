@@ -17,29 +17,43 @@ import 'app_database.dart';
 /// one batch because 3 of them carried an object-valued `user`, fixed in
 /// `chat_mapper.dart`.
 ///
-/// Delegating to [JsonUtils.getStringOrNull] keeps a JSON **number** readable
+/// Delegating to [JsonUtils.getString] keeps a JSON **number** readable
 /// (`2019` reads as `'2019'` — the port's documented, deliberate divergence
-/// from Kotlin's `""`) and folds a missing key to null, which is what this
-/// mapper already stored for an absent field. A well-formed document therefore
-/// maps exactly as it did before.
+/// from Kotlin's `""`), and the two guards around it mean a well-formed
+/// document maps to exactly the bytes the cast produced.
 ///
-/// A Map or a List is intercepted first and reads as null, because that
-/// helper's own doc comment forbids passing it either: it would store Dart's
-/// `Map.toString()`, which is not JSON and throws wherever it is read back.
-/// Null is this mapper's spelling of Kotlin's `""` for an absent field.
+/// **Both guards are load-bearing, and the empty one is not obvious.**
+///
+/// * A missing key and an explicit JSON `null` read as null, because that is
+///   what this mapper's columns have always held for an absent field —
+///   [JsonUtils.getString] would give `''`, and [JsonUtils.getStringOrNull]
+///   would fold a *present* `""` to null, which is a different thing.
+///   `json_utils.dart` documents at length why that fold costs defects on a
+///   mapper path, and it would have cost one here: `owner` is matched with
+///   `FeedbackDao.watchByOwner`'s `f.owner.equals(owner ?? '')`, so a thread
+///   filed by a session with an empty name would map to null on the next pull
+///   and **disappear from its own author's list**.
+/// * A Map or a List reads as null, because [JsonUtils.getString]'s own doc
+///   comment forbids passing it either: it would store Dart's
+///   `Map.toString()`, which is not JSON and throws wherever it is read back.
+///   Null is this mapper's spelling of Kotlin's `""` for a field it cannot
+///   read.
 String? _string(String key, Map<String, dynamic> json) {
   final value = json[key];
-  if (value is Map || value is List) return null;
-  return JsonUtils.getStringOrNull(key, json);
+  if (value == null || value is Map || value is List) return null;
+  return JsonUtils.getString(key, json);
 }
 
 /// [_string], except that an object reads its `name`.
 ///
 /// Used only for the fields that hold a **person** — `owner`, `source`, and a
-/// reply's `user`. A Planet's web UI writes the whole CouchDB user document
-/// into a field the handset writes as a plain user name (Kotlin writes a
-/// reply's `user` as a string, `FeedbackRepositoryImpl.kt:100-104`), and
-/// `name` is the same value the other documents carry as that string.
+/// reply's `user`. Kotlin writes all three as plain strings
+/// (`FeedbackRepositoryImpl.kt:63-66, 100-104`), but a CouchDB field that is a
+/// user name on one document can be the whole user object on another: that is
+/// **observed** on `chat_history` (3 of a Planet's 1,630, see
+/// `chat_mapper.dart`) and **inferred** here, from feedback replies being
+/// authored through the same web UI. No captured feedback document proves it;
+/// what is certain is only what each app does when it arrives.
 ///
 /// Taking it is a deliberate improvement, and **how much of one depends on
 /// which field**, because Kotlin reads the two through different code:
@@ -54,13 +68,20 @@ String? _string(String key, Map<String, dynamic> json) {
 ///   unguarded collector. The Android app loses the detail screen on the same
 ///   document. Neither app should, so this reads the name.
 ///
-/// The shape was first observed against `https://planet.learning.ole.org`,
-/// where 3 of 1,630 chat documents carried it; `chat_mapper.dart`'s
-/// `_stringOrNull` reads the object the same way. It differs on a **number**,
-/// which that helper drops and [JsonUtils.getStringOrNull] keeps as its
-/// digits — the port-wide convention, and what Gson's `asString` gives
+/// **It is a write as well as a read.** [FeedbackMapper.toDoc] rebuilds the
+/// document from these columns and the uploader sends it under the carried
+/// `_rev`, so replying to a thread whose `owner` was an object flattens it to
+/// `"learning"` on the server. Kotlin would flatten the same field to `""`,
+/// which is why this is still the better of the two — but it is a change to
+/// the server's document, not only to what this device shows.
+///
+/// The shape was first observed against `https://planet.learning.ole.org`;
+/// `chat_mapper.dart`'s `_stringOrNull` reads the object the same way, bar
+/// `{"name": ""}`, which it keeps as `''` and this drops to null. It differs
+/// on a **number**, which that helper drops and [JsonUtils.getString] keeps as
+/// its digits — the port-wide convention, and what Gson's `asString` gives
 /// Kotlin's own reply reader, where a numeric `time` renders as its literal
-/// text rather than being dropped (`Feedback.kt:63-65`).
+/// text rather than being dropped (`Feedback.kt:61-69`).
 String? _userString(String key, Map<String, dynamic> json) {
   final value = json[key];
   if (value is Map) {
@@ -90,10 +111,11 @@ class FeedbackMapper {
   /// Converts a CouchDB feedback document JSON to a [FeedbackEntriesCompanion].
   ///
   /// Port of `FeedbackRepositoryImpl.mapToFeedback`. When the stored row has a
-  /// reply the server has not confirmed (`isUploaded == false`), the local
-  /// `messages` are kept and the row stays pending — a sync used to overwrite
-  /// the thread with the server's copy, silently destroying the reply the
-  /// uploader was about to send.
+  /// reply the server has not confirmed (`isUploaded == false`), the row stays
+  /// pending and its thread is merged rather than replaced — a sync used to
+  /// overwrite it with the server's copy, silently destroying the reply the
+  /// uploader was about to send. See [_mergePendingReplies] for why keeping
+  /// the local array alone, which is what Kotlin does, loses the other half.
   static FeedbackEntriesCompanion fromDoc(
     Map<String, dynamic> doc, [
     FeedbackRow? existing,
@@ -229,7 +251,7 @@ class FeedbackMapper {
 
   /// Parses the embedded messages JSON into a list of [FeedbackMessage].
   ///
-  /// Port of `Feedback.messageList` / `Feedback.message` (`Feedback.kt:56-88`),
+  /// Port of `Feedback.messageList` / `Feedback.message` (`Feedback.kt:54-85`),
   /// which read each element with Gson's `asString` — so a **numeric** `time`
   /// reads as its digits there, not as nothing.
   ///
@@ -262,6 +284,13 @@ class FeedbackMapper {
   }
 
   /// The messages array exactly as stored, elements untouched.
+  ///
+  /// A column that decodes to something other than a list is `[]` here, which
+  /// [addReply] then appends to — so a reply on a thread whose stored
+  /// `messages` is a JSON object or a JSON *string* still replaces it. Kotlin
+  /// has the same hole from the other side (`getJsonArray` normalises any
+  /// non-array to `"[]"`, `JsonUtils.kt:126-129`), so this is not a parity
+  /// gap; it is the one shape the array-preserving fix does not reach.
   static List<dynamic> _decodeMessages(String? messagesJson) {
     if (messagesJson == null || messagesJson.isEmpty) return [];
     try {

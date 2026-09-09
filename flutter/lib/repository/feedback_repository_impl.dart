@@ -193,7 +193,10 @@ class FeedbackRepositoryImpl implements FeedbackRepository {
         final doc = JsonUtils.getObject('doc', row);
         if (doc != null) {
           docs.add(doc);
-          final id = JsonUtils.getString('_id', doc);
+          // Through `idOf`, like the row key: `deleteNotIn` spares what is in
+          // this set, so a document the mapper stores under a key this set
+          // does not hold is inserted and then deleted in the same sync.
+          final id = FeedbackMapper.idOf(doc);
           if (id.isNotEmpty) savedIds.add(id);
         }
       }

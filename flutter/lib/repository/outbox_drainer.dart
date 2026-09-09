@@ -165,16 +165,19 @@ typedef OutboxHandler =
 /// closed (hence the `cacheDocuments` citation, which belongs there and only
 /// there), which is why health needs the arm most.
 ///
-/// **The exception, and it is a real one.** Where the server's document holds
-/// content the payload cannot reconstruct, "one sync later" is still a loss
-/// and this arm still makes it sooner. `feedback` is that case: `messages` is
-/// an append array both Planet's web UI and the handset write, and
-/// `FeedbackMapper.fromDoc:27-31` deliberately keeps the local array on a
-/// pending reply while taking the server's `rev`. So an admin reply present
-/// on the server and absent locally is destroyed by the next send — with or
-/// without this arm. That is a pre-existing merge defect, not one the arm
-/// introduces, and it is written up under *Reported, not fixed* in
-/// `PHASE_152_NOTES.md` rather than papered over here.
+/// **The exception was real, and it has been closed at the other end.** Where
+/// the server's document holds content the payload cannot reconstruct, "one
+/// sync later" is still a loss and this arm still makes it sooner. `feedback`
+/// was that case: `messages` is an append array both Planet's web UI and the
+/// handset write, and `FeedbackMapper.fromDoc` kept the local array on a
+/// pending reply while taking the server's `rev`, so an admin reply present on
+/// the server and absent locally was destroyed by the next send — with or
+/// without this arm. `FeedbackMapper._mergePendingReplies` now merges the two
+/// instead, and `FeedbackSyncNotifier` re-queues after a pull so the payload
+/// this arm re-sends is the merged one rather than a stale snapshot. **The
+/// rule the exception qualified still stands for any future uploader whose
+/// document holds server-authored content**: closing it took a merge in the
+/// mapper, not a change here.
 ///
 /// **One case deserves naming rather than falling out of the rule.** A team
 /// tombstone is `{_id, _rev, _deleted: true}` (`teams_provider.dart:295`), so

@@ -78,6 +78,21 @@ void main() {
         containsAll(<String>['fb-before', 'fb-odd', 'fb-after']),
         reason: 'a single odd field must cost one field, never the batch',
       );
+      expect(
+        stored,
+        hasLength(4),
+        reason: 'the fourth lands under an empty id',
+      );
+
+      // Landing is not enough: the odd document must also have carried its
+      // content across, or the batch survived by storing nothing.
+      final odd = stored.firstWhere((row) => row.id == 'fb-odd');
+      expect(odd.title, 'filed through the web UI');
+      expect(odd.owner, 'learning');
+      expect(FeedbackMapper.parseMessages(odd.messages).map((m) => m.message), [
+        'the question',
+        'the admin answer',
+      ]);
     });
 
     test('an object-valued person reads its name, as chat does', () async {
@@ -108,6 +123,58 @@ void main() {
       },
     );
 
+    test('an explicit empty string is stored as one, not folded to null', () {
+      // `JsonUtils.getStringOrNull` would fold these to null, and one of them
+      // hides a row: `FeedbackDao.watchByOwner` matches `owner.equals(owner ??
+      // '')`, so a thread filed by a session with an empty name would vanish
+      // from its own author's list on the next pull. `json_utils.dart`
+      // documents the fold's cost; this is the mapper refusing to pay it.
+      final mapped = FeedbackMapper.fromDoc({
+        '_id': 'fb1',
+        'title': '',
+        'owner': '',
+        'status': '',
+      });
+
+      expect(mapped.title.value, '');
+      expect(mapped.owner.value, '');
+      expect(
+        mapped.status.value,
+        '',
+        reason: "an empty status is the server's, not a missing one",
+      );
+    });
+
+    test('a row whose owner is empty stays in its author\'s list', () async {
+      // The same fold, driven through the query that would have hidden it.
+      await repository.insertFromJson([
+        {'_id': 'fb1', '_rev': '1-a', 'owner': '', 'title': 'filed by nobody'},
+      ]);
+
+      final visible = await repository.getFeedback(userName: '').first;
+      expect(visible.map((row) => row.id), ['fb1']);
+    });
+
+    test('a boolean reads as its literal, as any other non-string does', () {
+      expect(
+        FeedbackMapper.fromDoc({'_id': 'fb1', 'state': true}).state.value,
+        'true',
+      );
+    });
+
+    test('an object whose name is empty reads as null', () {
+      // Divergence from `chat_mapper.dart`'s `_stringOrNull`, which keeps the
+      // empty name. Nothing downstream can use it, and null is what this
+      // mapper stores for a field it cannot read.
+      expect(
+        FeedbackMapper.fromDoc({
+          '_id': 'fb1',
+          'owner': const {'name': ''},
+        }).owner.value,
+        isNull,
+      );
+    });
+
     test('a numeric field reads as its digits, the port-wide convention', () {
       final mapped = FeedbackMapper.fromDoc({'_id': 'fb1', 'priority': 2});
 
@@ -119,6 +186,12 @@ void main() {
       // worse than nothing for a primary key.
       expect(FeedbackMapper.idOf(const {'_id': _userDocument}), '');
       expect(FeedbackMapper.idOf(const {'id': 'fallback-id'}), 'fallback-id');
+      expect(
+        FeedbackMapper.idOf(const {'_id': '', 'id': 'fallback-id'}),
+        '',
+        reason:
+            'an empty `_id` is a present one; only an absent key falls back',
+      );
     });
 
     test('a well-formed document maps exactly as it did before', () {
@@ -399,6 +472,14 @@ void main() {
         }, reason: "the upload must not rewrite the admin's own reply");
         expect((messages[2] as Map)['message'], 'thank you');
         expect(payload['_rev'], '2-admin');
+        expect(
+          payload['owner'],
+          'learning',
+          reason:
+              'reading the name is also a write: the upload rebuilds the '
+              'document from the columns, so the object is flattened on the '
+              'server. Kotlin would flatten it to an empty string instead.',
+        );
         expect(
           replied.isUploaded,
           isFalse,

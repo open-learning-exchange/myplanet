@@ -365,6 +365,12 @@ above, and items 2 and 3 below.
    changes the latency, not the outcome. The fix is a real merge for that
    column, which is a feedback-slice decision with a conflict-resolution
    question inside it. Severity: medium-high, and older than this phase.
+   **Closed in the following round** (Lane 4, feedback hardening): the pull
+   merges the server's copy with the unsent local tail after their shared
+   prefix, and `FeedbackSyncNotifier` re-queues so the outbox snapshot is
+   refreshed rather than draining the pre-merge array. The two tests here that
+   pinned the loss now pin the merge. Annotated rather than rewritten — this
+   file is a record of what Phase 152 found, and it found this correctly.
 2. **The same shape is *constructible* for `submissions` but I could not prove
    it reachable, so I did not act on it.** A submission document is where
    Planet's grading lands (`grade`, `status`, per-answer marks, all read at
