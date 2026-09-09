@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/config/planet_servers.dart';
+import '../../core/config/server_config.dart';
+import '../../core/utils/url_utils.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/settings_provider.dart';
@@ -30,22 +32,27 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
   bool _showAllServers = false;
   String? _error;
 
-  /// Port of `ServerAddressAdapter.selectedPosition` and
-  /// `lastSelectedPosition`, keyed by host rather than by index because the
-  /// list is rebuilt and reordered on every `setState` and an index does not
-  /// survive that. `-1` becomes `null`.
+  /// Port of `ServerAddressAdapter.selectedPosition`, keyed by host rather
+  /// than by index because the list is reordered on every `setState` and an
+  /// index does not survive that. `-1` becomes `null`.
+  ///
+  /// Kotlin's companion `lastSelectedPosition` and its `revertSelection` are
+  /// **not** ported, and the reason is where the gate had to move to: they
+  /// exist only to undo a selection when the user declines the clear-data
+  /// dialog, and in this port that dialog is raised from the Connect button
+  /// rather than from the row tap. Porting them would have added an undo with
+  /// no caller. See `_connect` for why the gate sits there.
   String? _selectedHost;
-  String? _lastSelectedHost;
 
   /// The host of the persisted configuration, when there is one. Kotlin's
   /// `urlWithoutProtocol` (`ServerDialogExtensions.kt:172`), which drives both
   /// the initial selection and the list ordering.
   String? _configuredHost;
 
-  /// Whether the local database still belongs to a server this screen is
-  /// about to replace. Read once, because after a wipe it is stale by
-  /// construction: [deviceHoldsServerDataProvider] reads a preference off an
-  /// object whose identity does not change when the preference does.
+  /// Whether the local database holds synced data at all. Read once, because
+  /// after a wipe it is stale by construction:
+  /// [deviceHoldsServerDataProvider] reads a preference off an object whose
+  /// identity does not change when the preference does.
   bool _holdsServerData = false;
 
   /// Which request failed and what it said. Debug builds only — a release
@@ -67,56 +74,35 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
       // a `SyncActivity` field set when a sync attempt failed, and the port's
       // route carries no such state.
       _configuredHost = hostWithoutScheme(existing.serverUrl);
-      _setSelectedHost(_configuredHost);
-      // Kotlin resolves the same index **twice** on open — once from
-      // `setupServerListUi`'s `submitList` callback, once from
-      // `refreshServerList`'s (`SyncActivity.kt:696`, `:704`) — and the second
-      // call is what leaves `lastSelectedPosition == selectedPosition`, so
-      // Cancel keeps the highlight instead of erasing it. Writing the value
-      // rather than calling `_setSelectedHost` again says so without pretending
-      // there are two resolutions here.
-      _lastSelectedHost = _configuredHost;
+      _selectedHost = _configuredHost;
     }
   }
 
-  /// Port of `ServerAddressAdapter.setSelectedPosition`: remember what was
-  /// selected before, so [_revertSelection] can put it back.
-  void _setSelectedHost(String? host) {
-    _lastSelectedHost = _selectedHost;
-    _selectedHost = host;
-  }
-
-  /// Port of `ServerAddressAdapter.revertSelection`, called when the user
-  /// declines the wipe.
+  /// Where the clear-data gate lives, because this is where the switch is
+  /// actually committed: `serverConfigProvider.save(config)` is the line that
+  /// makes this device belong to the server in the fields, whether those
+  /// fields were filled by a row tap or typed by hand.
   ///
-  /// Kotlin's version is two integers, and reading it as one selection is how
-  /// a port gets it wrong. `setSelectedPosition` overwrites
-  /// `lastSelectedPosition` unconditionally, and opening the server dialog on
-  /// a configured device calls it **twice** with the same index — once from
-  /// `setupServerListUi`'s `submitList` callback, once from
-  /// `refreshServerList`'s (`SyncActivity.kt:696` then `:704`) — so
-  /// `lastSelectedPosition == selectedPosition` and Cancel is a **no-op that
-  /// leaves the highlight where it was**. That is the normal case, and it is
-  /// what this reproduces by seeding the previous selection with the
-  /// configured host. Kotlin's *other* case, where only the first callback
-  /// runs and Cancel therefore reverts to `-1` and unhighlights everything, is
-  /// not reproduced: it is reachable only through the manual-configuration
-  /// mode this port does not have, and unhighlighting is what makes every
-  /// subsequent tap raise the wipe dialog again.
+  /// Kotlin gates its own commit twice over. In list mode the row tap *is* the
+  /// submit and every tap of a row other than the selected one raises
+  /// `clearDataDialog` (`ServerAddressAdapter.kt:88-92`); to type a URL at all
+  /// you must switch manual configuration **on**, and doing that over an
+  /// existing configuration raises the same dialog before you can type
+  /// (`ServerDialogExtensions.kt:268-274`). So there is no way to reach a new
+  /// server's `configurations` document in Kotlin without having been offered
+  /// the wipe. This port's form is always editable, so the equivalent single
+  /// rule is: never adopt a configuration over another community's data.
   ///
-  /// `revertSelection` also does not update `lastSelectedPosition`, so a
-  /// second consecutive revert is a no-op in both apps.
-  void _revertSelection() {
-    setState(() => _selectedHost = _lastSelectedHost);
-  }
-
-  @override
-  void dispose() {
-    _urlController.dispose();
-    _pinController.dispose();
-    super.dispose();
-  }
-
+  /// The comparison is the **community code**, not the host. Kotlin has this
+  /// exact comparison as its other clear-data trigger — `clearDataDialog` from
+  /// `SyncConfigurationCoordinator` when the `minapk` check succeeded and the
+  /// server answered with a `configurations` id other than the stored one
+  /// (`SyncActivity.kt:245`) — and it is the more correct question anyway,
+  /// because a Planet's clone URL is a different host serving the same
+  /// community and nothing should be wiped for switching to it. It also
+  /// survives the thing that destroys the host: "change server" clears the
+  /// persisted config, but `users.planetCode` is in the database this is
+  /// protecting. See [localPlanetCodesProvider].
   Future<void> _connect() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
@@ -134,13 +120,31 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
 
     switch (result) {
       case ConfigurationSuccess(:final config, :final versionDetail):
-        await ref.read(serverConfigProvider.notifier).save(config);
-        if (versionDetail != null) {
-          // Port of `SharedPrefManager.setVersionDetail` — the raw `/versions`
-          // body, cached so the telemetry upload can echo `planetVersion`.
-          await ref.read(planetPrefsProvider).setVersionDetail(versionDetail);
+        // Everything from here can throw — `saveServerConfig` writes to secure
+        // storage, which raises `PlatformException` on a keystore fault — and
+        // `_isChecking` is deliberately left set on success, because the
+        // router's redirect navigates away. Without the guard a throw on any
+        // of these lines leaves the Connect button spinning for ever with
+        // nothing said: the same failure the repository's own try/catch was
+        // added for, one layer up.
+        try {
+          if (await _wipeRefusedFor(config)) return;
+          await ref.read(serverConfigProvider.notifier).save(config);
+          if (versionDetail != null) {
+            // Port of `SharedPrefManager.setVersionDetail` — the raw
+            // `/versions` body, cached so the telemetry upload can echo
+            // `planetVersion`.
+            await ref.read(planetPrefsProvider).setVersionDetail(versionDetail);
+          }
+          // The router redirect takes it from here.
+        } catch (error) {
+          if (!mounted) return;
+          setState(() {
+            _isChecking = false;
+            _error = AppLocalizations.of(context).operationFailed;
+            _diagnostic = UrlUtils.redactCredentials('$error');
+          });
         }
-      // The router redirect takes it from here.
       case ConfigurationFailure(:final reason, :final diagnostic):
         setState(() {
           _isChecking = false;
@@ -148,6 +152,34 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
           _diagnostic = diagnostic;
         });
     }
+  }
+
+  /// Whether the switch must stop: this device holds another community's data
+  /// and the user declined to clear it. Returns `false` — carry on — both when
+  /// no wipe is needed and when one was carried out.
+  Future<bool> _wipeRefusedFor(ServerConfig config) async {
+    if (!_holdsServerData) return false;
+    final localCodes = await ref.read(localPlanetCodesProvider.future);
+    if (!mounted) return true;
+    // An empty set means the data cannot be attributed to a community at all,
+    // which on a device that has synced is unexpected rather than reassuring —
+    // so it is treated as "not this one". Declining costs the user nothing but
+    // the switch; assuming a match would risk the mixing this exists to stop.
+    if (localCodes.contains(config.code) && config.code.isNotEmpty) {
+      return false;
+    }
+
+    final cleared = await _showClearDataDialog();
+    if (!mounted) return true;
+    if (!cleared) {
+      setState(() => _isChecking = false);
+      return true;
+    }
+    setState(() {
+      _holdsServerData = false;
+      _configuredHost = null;
+    });
+    return false;
   }
 
   static String _messageFor(
@@ -164,7 +196,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
   }
 
   /// Port of the click listener in `ServerAddressAdapter.onBindViewHolder`
-  /// (`ServerAddressAdapter.kt:88-97`), which is **two** branches, not one:
+  /// (`ServerAddressAdapter.kt:88-97`), which is **two** branches:
   ///
   /// ```kotlin
   /// if (isServerAlreadyConfigured && position != selectedPosition) {
@@ -174,36 +206,18 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
   /// }
   /// ```
   ///
-  /// The port only ever ran the `else` arm, so pointing a device that already
-  /// holds one Planet's data at another Planet filled the fields and connected
-  /// with the database left in place. Nothing failed and nothing warned: the
-  /// old server's documents stay under the new server's configuration, every
-  /// sync `deleteNotIn` prunes against a keep set built from the wrong server,
-  /// and a shelf, a submission or a health record from one institution is
-  /// indistinguishable from the other's afterwards. It is the one defect in
-  /// this area that destroys data rather than hiding it.
-  Future<void> _onServerTapped(PlanetServer server) async {
-    // `isServerAlreadyConfigured && position != selectedPosition`. The port
-    // measures the data rather than the configuration — see
-    // [deviceHoldsServerDataProvider] for why the configuration is already
-    // gone by the time this screen builds.
-    if (_holdsServerData && server.host != _selectedHost) {
-      final cleared = await _showClearDataDialog();
-      if (!mounted) return;
-      if (!cleared) {
-        // `serverAddressAdapter?.revertSelection()`, the dialog's `onCancel`
-        // (`ServerDialogExtensions.kt:188-192`).
-        _revertSelection();
-        return;
-      }
-      setState(() {
-        _holdsServerData = false;
-        _configuredHost = null;
-      });
-    }
-
+  /// Only the `else` arm is ported **here**, and that is deliberate: in Kotlin
+  /// the row tap *is* the commit — `serverCheck` is `true` and never assigned
+  /// (`SyncActivity.kt:122`), the URL and PIN fields are disabled and the
+  /// submit button is `GONE` in list mode (`ServerDialogExtensions.kt:211-212`,
+  /// `:32`), so tapping a row fills both fields, writes the protocol and fires
+  /// the sync. This port has an editable form and a separate Connect button,
+  /// so a tap commits nothing and warning about one would warn about nothing.
+  /// The warn arm therefore moves to the place that does commit: see
+  /// [_connect].
+  void _onServerTapped(PlanetServer server) {
     _useServer(server);
-    setState(() => _setSelectedHost(server.host));
+    setState(() => _selectedHost = server.host);
   }
 
   /// Port of `SyncActivity.clearDataDialog(message, config, onCancel)`
@@ -214,15 +228,20 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
   /// `Intent.makeRestartActivityTask` followed by `Runtime.getRuntime().exit(0)`
   /// (`SyncActivity.kt:831-836`) — a real process kill. Flutter has no
   /// equivalent, and the nearest thing here is what the wipe already does:
-  /// clear the persisted server and session so the router's `redirect` has
-  /// nowhere to send the user but this screen, with the fields then filled
-  /// from the tapped row. What a process death would additionally discard, and
-  /// this does not: whatever any provider captured by value rather than by
-  /// watching `serverConfigProvider`, the open Drift connection (its tables
-  /// are empty, the handle is not new), in-flight futures and timers, and any
-  /// live background isolate. None of those hold the old server's *documents*
-  /// — the wipe empties every table — so the data-mixing this exists to stop
-  /// is stopped; a stale cached string in some provider is not.
+  /// empty every table, clear the preferences and secure storage, delete the
+  /// downloaded-file tree, and clear the persisted server and session so the
+  /// router's `redirect` has nowhere to send the user but this screen.
+  ///
+  /// What a process death would additionally discard, and this does not:
+  /// whatever a provider captured by value rather than by watching
+  /// `serverConfigProvider`, the open Drift connection (its tables are empty,
+  /// the handle is not new), in-flight futures and timers, and any live
+  /// background isolate. An earlier version of this comment concluded from
+  /// that list that "none of those hold the old server's documents"; a
+  /// second audit pass pointed out that the list omitted the one place that
+  /// did — `<appDocuments>/ole/**`, which no wipe in this port had ever
+  /// deleted. `ClearDataNotifier` deletes it now. What is left is stale
+  /// in-memory state, which the next read replaces.
   Future<bool> _showClearDataDialog() async {
     final cleared = await showDialog<bool>(
       context: context,
