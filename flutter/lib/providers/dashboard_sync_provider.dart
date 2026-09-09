@@ -9,6 +9,7 @@ import 'courses_providers.dart';
 import 'events_provider.dart';
 import 'feedback_provider.dart';
 import 'health_provider.dart';
+import 'heavy_sync_providers.dart';
 import 'notifications_provider.dart';
 import 'resources_providers.dart';
 import 'surveys_provider.dart';
@@ -55,9 +56,11 @@ import 'voices_provider.dart';
 /// (`skip=10400`, connection aborted, no checkpoint to resume from).
 /// `login_activities` is a `HeavyTableSyncWorker` table in Kotlin and appears
 /// in no interactive step there either, so removing the area is the port
-/// matching it rather than dropping a feature. Local login rows are still
-/// written and still uploaded; only the pull is gone, and
-/// `ActivitiesRepository.sync` records what restoring it needs.
+/// matching it rather than dropping a feature. **The pull is not gone** — an
+/// earlier revision of this note said it was, and stopped being true when
+/// `HeavyTableSync` landed: the table is walked in a background task from a
+/// persisted `heavy_sync_skip_login_activities`, resuming rather than
+/// restarting. It is simply not walked from here.
 ///
 /// **`shelf` must stay last.** It pulls the shelf document and stamps rows
 /// that `resources` and `courses` write and prune, so it has to follow both —
@@ -167,12 +170,49 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
   Future<void> syncAll() async {
     if (state.running) return;
 
+    final startedAt = DateTime.now();
     state = DashboardSyncState.idle().copyWith(
       running: true,
-      startedAt: DateTime.now(),
+      startedAt: startedAt,
       clearFinishedAt: true,
     );
 
+    // Stands in for `SyncManager.start`'s `isSyncing.compareAndSet(false, true)`
+    // (`SyncManager:91`), which `HeavyTableSyncWorker` reads to decline running
+    // beside an interactive sync. [state.running] is the port's own version of
+    // that flag and would be enough if the worker lived here — it does not: a
+    // `workmanager` task is a separate Flutter isolate with its own Riverpod
+    // graph, so the flag has to be on disk to cross the boundary. See
+    // `HeavyTableSync.isInteractiveSyncActive`.
+    await _markInteractiveSyncActive(startedAt);
+    try {
+      await _runPass();
+    } finally {
+      // In a `finally`, as `SyncManager`'s `destroy()` is (`SyncManager:233`),
+      // and for a sharper reason than symmetry: a flag left standing makes
+      // *every* heavy walk answer retry until it decays, so it must not
+      // depend on the pass reaching its last statement. Nothing in the pass
+      // throws today — each step carries its own `catch` — which is exactly
+      // the state in which an unguarded clear looks fine.
+      //
+      // Cleared before [_scheduleHeavyTables], which runs after this block:
+      // a job enqueued while the flag still stood would start, read it, and
+      // stand down for a backoff having done nothing. Kotlin has the same
+      // window in the other order (it enqueues at `SyncManager:209` and
+      // clears in the `finally` at `:233`) and it costs it little, since only
+      // a few log lines separate the two; the port simply has no reason to
+      // reproduce the ordering rather than the intent.
+      await _clearInteractiveSyncActive();
+    }
+
+    await _scheduleHeavyTables();
+
+    state = state.copyWith(running: false, finishedAt: DateTime.now());
+  }
+
+  /// The pass itself, so [syncAll] can guarantee the interactive-sync flag is
+  /// cleared however it ends.
+  Future<void> _runPass() async {
     // First, as `startFullSync` has it -- and before the challenge write
     // below, which reads the session with `.valueOrNull`: resolving
     // `sessionProvider` here means that read finds a value rather than the
@@ -208,8 +248,50 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
     await _recordSyncActivity();
     await _uploadMyPlanetActivities();
     await _queueSearchActivities();
+  }
 
-    state = state.copyWith(running: false, finishedAt: DateTime.now());
+  Future<void> _markInteractiveSyncActive(DateTime startedAt) async {
+    try {
+      await ref.read(planetPrefsProvider).markInteractiveSyncStarted(startedAt);
+    } catch (_) {
+      // A preference write that fails must not stop the sync. The cost is a
+      // heavy walk that may overlap this pass — which the Kotlin also permits
+      // for a sync started mid-walk, since its guard is read once.
+    }
+  }
+
+  Future<void> _clearInteractiveSyncActive() async {
+    try {
+      await ref.read(planetPrefsProvider).clearInteractiveSyncStarted();
+    } catch (_) {
+      // Deliberately ignored. A flag left set decays after
+      // `HeavyTableSync.interactiveSyncTimeout` rather than blocking heavy
+      // walks for ever, which is exactly what that bound is for.
+    }
+  }
+
+  /// Port of `HeavyTableSyncWorker.schedule(context)` at `SyncManager:209` —
+  /// the end of a completed full sync, after the notification-read upload and
+  /// the activity record, which is where the Kotlin has it.
+  ///
+  /// Unconditional on the pass's outcome. The Kotlin's own condition is only
+  /// "`startFullSync` did not throw", and this pass cannot throw: every area
+  /// reports failure through its own state. Gating on `successCount > 0` — the
+  /// rule [_uploadMyPlanetActivities] follows — would be worse than useless
+  /// here, because a pass that failed everywhere is precisely when a resumable
+  /// walk should be queued. A heavy job scheduled against an unreachable
+  /// server fails its first page, reports success and does not retry, so there
+  /// is no storm to avoid.
+  Future<void> _scheduleHeavyTables() async {
+    if (ref.read(serverConfigProvider) == null) return;
+    try {
+      await ref.read(heavyTableSyncSchedulerProvider).scheduleAll();
+    } catch (_) {
+      // Swallowed like the telemetry uploads above: losing the scheduling of a
+      // background walk must not flip a finished sync to failed. The next
+      // completed sync, and every headless invocation's `scheduleIfPending`,
+      // try again.
+    }
   }
 
   /// Port of `SyncManager.pushCurrentUserShelf`, which `startFullSync` runs

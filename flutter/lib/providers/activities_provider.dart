@@ -189,9 +189,18 @@ final profileActivityStatsProvider = FutureProvider<ProfileActivityStats>((
 
 /// Drives the `login_activities` pull.
 ///
-/// A sync with no caller is the failure this port has shipped three times (see
-/// the migration doc), so the pull is registered as a Sync center area rather
-/// than left as library code.
+/// **This notifier is itself unreachable, and the sentence here used to claim
+/// the opposite** ("so the pull is registered as a Sync center area rather
+/// than left as library code"). It was true when written and stopped being
+/// true when the `activities` area was removed from `DashboardSyncArea`: the
+/// walk it drives could not finish inline on planet.learning — 19,324
+/// documents, 97 pages, aborted at `skip=10400` — so the area went and
+/// `activitiesSyncProvider` was left with no reader in `lib/` or `test/`.
+/// The pull now runs in `HeavyTableSync` from a persisted checkpoint, calling
+/// `ActivitiesRepository.insertLoginActivitiesFromSync` directly, so nothing
+/// needs this notifier. Corrected rather than deleted here because deleting it
+/// is a change of substance to a file outside the lane that found it; it is on
+/// that lane's reported list.
 class ActivitiesSyncNotifier extends SyncNotifier {
   @override
   Future<SyncResult> runSync(

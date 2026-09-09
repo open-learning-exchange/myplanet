@@ -53,6 +53,20 @@ class PlanetPrefs {
   static const String _keyAutoSyncInterval = 'autoSyncInterval';
   static const String _keyBackgroundRun = 'backgroundRun';
 
+  /// Prefix of the per-table heavy-sync checkpoint, matching the Kotlin's
+  /// `checkpointKey = "heavy_sync_skip_$table"`
+  /// (`TransactionSyncManager.kt:168`). The stored value is a **document
+  /// offset** — the `skip` the next `_all_docs` page should ask for — not a
+  /// page number.
+  static const String _keyHeavySyncSkipPrefix = 'heavy_sync_skip_';
+
+  /// Epoch millis at which the interactive sync began; `0` when none is
+  /// running. Stands in for `SyncManager.isSyncing`
+  /// (`SyncManager.kt:118`) — see `HeavyTableSync.isInteractiveSyncActive`
+  /// for why the port needs a persisted flag where the Kotlin has an
+  /// `AtomicBoolean`, and why the value is a timestamp rather than a bool.
+  static const String _keyInteractiveSyncStartedAt = 'interactiveSyncStartedAt';
+
   /// Prefix of the per-reminder keys, matching the Kotlin's
   /// `reminder_time_<surveyIds>` in its `survey_reminders` preferences file.
   /// The Kotlin scans `reminderPrefs.all` for this prefix; the port scans
@@ -525,4 +539,55 @@ class PlanetPrefs {
       'skipReason': ?skipReason,
     }),
   );
+
+  /// Document offset a heavy table's interrupted walk should resume from, `0`
+  /// when there is nothing to resume. Port of
+  /// `sharedPrefManager.rawPreferences.getInt(checkpointKey, 0)`
+  /// (`TransactionSyncManager.kt:178`, `HeavyTableSyncWorker.kt:33`).
+  ///
+  /// A key present with the value `0` reads the same as an absent one, exactly
+  /// as the Kotlin's `getInt(key, 0)` does — which matters because the walk
+  /// writes `0` before its first page request and only *removes* the key on a
+  /// completed walk.
+  int heavyTableSkip(String table) =>
+      _prefs.getInt('$_keyHeavySyncSkipPrefix$table') ?? 0;
+
+  Future<void> setHeavyTableSkip(String table, int skip) =>
+      _prefs.setInt('$_keyHeavySyncSkipPrefix$table', skip);
+
+  Future<void> clearHeavyTableSkip(String table) =>
+      _prefs.remove('$_keyHeavySyncSkipPrefix$table');
+
+  /// When the interactive sync began, or `null` when none is running.
+  DateTime? get interactiveSyncStartedAt {
+    final millis = _prefs.getInt(_keyInteractiveSyncStartedAt) ?? 0;
+    return millis == 0 ? null : DateTime.fromMillisecondsSinceEpoch(millis);
+  }
+
+  Future<void> markInteractiveSyncStarted(DateTime now) =>
+      _prefs.setInt(_keyInteractiveSyncStartedAt, now.millisecondsSinceEpoch);
+
+  Future<void> clearInteractiveSyncStarted() =>
+      _prefs.remove(_keyInteractiveSyncStartedAt);
+
+  /// Re-reads the `SharedPreferences` store, discarding the values this
+  /// isolate cached at `getInstance()`.
+  ///
+  /// **The secrets cache is not refreshed** — `_cachedPin` and
+  /// `_cachedCouchDbUrl` come from [hydrateSecrets] and are untouched here, so
+  /// a caller that relied on this to pick up a server change would get the new
+  /// `serverURL` beside the old PIN and CouchDB URL. Call [hydrateSecrets] for
+  /// those. No caller needs it today: the one call site runs moments after
+  /// [load], which hydrates both.
+  ///
+  /// It exists because `SharedPreferences` caches per isolate, so a value
+  /// another isolate has written since is invisible to this one. The Kotlin
+  /// has no analogue to need: its workers run in the app process, sharing both
+  /// the `SharedPreferences` object the UI writes `heavy_sync_skip_*` into and
+  /// the `SyncManager` instance whose `isSyncing` field — a field, not a
+  /// preference — the heavy worker reads directly.
+  ///
+  /// Called by the heavy-table entry point, which is the one path that reads
+  /// state the *other* isolate authors. Everything else reads what it wrote.
+  Future<void> reload() => _prefs.reload();
 }
