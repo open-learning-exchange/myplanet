@@ -16,6 +16,8 @@ import '../providers/app_providers.dart';
 import 'outbox_drainer.dart';
 import 'outbox_repository.dart';
 import 'resources_repository.dart';
+import 'teams_repository.dart';
+import 'teams_uploader.dart';
 
 /// Durable two-step write-back for resources this device authored, porting
 /// `UploadManager.uploadResource` (`:167-216`) together with
@@ -92,13 +94,20 @@ import 'resources_repository.dart';
 /// that reason, and [queuePending] passes the row's own `createdDate`. Same
 /// fix, same reasoning, as `PersonalsUploader.queuePending`'s `uploadedAt`.
 class ResourcesUploader {
-  ResourcesUploader(this._api, this._resources, this._outbox, this._identity);
+  ResourcesUploader(
+    this._api,
+    this._resources,
+    this._teams,
+    this._outbox,
+    this._identity,
+  );
 
   /// The `uploadType` these operations carry in the outbox.
   static const String type = 'resources';
 
   final PlanetApi _api;
   final ResourcesRepository _resources;
+  final TeamsRepository _teams;
   final OutboxRepository _outbox;
   final DeviceIdentitySource _identity;
 
@@ -204,7 +213,7 @@ class ResourcesUploader {
   /// `(uploadType, itemId)`, so a resource already queued has its payload
   /// refreshed rather than being POSTed twice. That refresh is what carries a
   /// later [ResourcesRepository.updateLocalResource] edit onto the wire — see
-  /// [queueOne].
+  /// [_enqueue], reached through this method on every path.
   ///
   /// [user] is the signed-in account, and it is a parameter rather than a
   /// dependency because Kotlin resolves it the same way, once per upload pass
@@ -220,10 +229,36 @@ class ResourcesUploader {
     if (pending.isEmpty) return 0;
     final endpoint = endpointFor(config);
     final identity = await _identity.read();
+    var queued = 0;
     for (final row in pending) {
+      // **A resource POST is an append, so an in-flight row must be left
+      // alone.** [OutboxRepository.enqueue] deliberately puts an `in_progress`
+      // row back to `pending` so a payload edited mid-flight is not lost with
+      // the row `markCompleted` deletes — and `markCompleted` is
+      // `deleteIfInProgress`, so the send that succeeds moments later deletes
+      // nothing, the row survives `pending` with the same body, and the next
+      // drain POSTs a **second CouchDB document**. Nothing downstream catches
+      // it: the handler carries no `_id`, so the server mints a fresh one, and
+      // `markResourceUploaded` then points the local row at the duplicate
+      // while the first document becomes an unidentifiable orphan in the
+      // shared Planet catalog.
+      //
+      // Reached without any exotic timing: a drain claims this row on a slow
+      // link while the user saves a second resource in `AddResourceScreen`,
+      // whose `_save` sweeps every pending row including this one. Also
+      // cross-isolate, between the headless drain and the UI — the case
+      // [OutboxRepository.isInFlight] documents — and more reachable once
+      // [sweepPendingResources] is wired.
+      //
+      // Same guard, same reasoning, as `SubmissionsUploader.queuePending`,
+      // `VoicesUploader` and `AdoptedSurveysUploader`. The shelf can skip it
+      // because its payload is derived state a replay recomputes; an append
+      // cannot.
+      if (await _outbox.isInFlight(type, row.id)) continue;
+      queued++;
       await _enqueue(row, endpoint, identity, user);
     }
-    return pending.length;
+    return queued;
   }
 
   Future<void> _enqueue(
@@ -313,10 +348,98 @@ class ResourcesUploader {
         log('Resource ${row.itemId} disappeared before its id could be stored');
         return result;
       }
+      await _linkPrivateResourceToTeam(row, couchId, payload);
       await _uploadAttachment(row, couchId, rev, authHeader);
     }
     return result;
   };
+
+  /// Port of the second half of `ResourcesRepositoryImpl.markResourceUploaded`
+  /// (`:808-816`): a private team resource also gets a local `resourceLink`
+  /// team document, so the resource appears under that team.
+  ///
+  /// **This was omitted in this phase's first cut, on a false premise, and the
+  /// premise is worth recording.** Two doc comments claimed
+  /// `TeamsRepository.createLocalResourceLink` "does not exist anywhere in the
+  /// port". It exists — as [TeamsRepository.addResourceLink], a field-for-field
+  /// match for the Kotlin (blank guard, generated id, `docType`
+  /// `'resourceLink'`, `teamType` `'local'`, `isUpdated` true) plus a duplicate
+  /// check Kotlin lacks. The search was for the Kotlin *name* rather than the
+  /// behaviour, which is the same mistake as matching `<basename>_test.dart`
+  /// instead of grepping for the symbol. Without this, a team leader's private
+  /// resource uploads its own document and **no team ever links to it**: the
+  /// team's Resources tab is empty on Planet and on every other member's
+  /// handset, for bytes that are already on the server.
+  ///
+  /// **It has to run here, after the POST**, because the link must carry the
+  /// **CouchDB** id. `markUploaded` leaves `resourceId` at the local uuid, so
+  /// `TeamResourceActions.add`'s `resource.resourceId` would name a document
+  /// that does not exist. Kotlin puts it inside `markResourceUploaded` for
+  /// exactly this reason.
+  ///
+  /// The link is then enqueued the way `TeamResourceActions.add` enqueues one
+  /// — `TeamsUploader.resourceType` against `<db>/teams` — because writing the
+  /// row alone would leave it local. Kotlin needs no equivalent: its
+  /// `updated = true` is swept by the team upload pass.
+  ///
+  /// `planetCode` comes out of the payload rather than a session read: the
+  /// drain may run days later in a headless isolate, and `sourcePlanet` is the
+  /// planet code this very document was serialized with, so it cannot drift
+  /// from it. **Note that [TeamsRepository.addResourceLink] currently accepts
+  /// `planetCode` and ignores it**, where Kotlin stamps `sourcePlanet` *and*
+  /// `teamPlanetCode` from it (`TeamsRepositoryImpl.kt:726-735`). Fixing that
+  /// means editing `teams_repository.dart`, which is outside this lane's file
+  /// set — it is passed here so the call is already correct once that lands,
+  /// and reported rather than reached for.
+  ///
+  /// Best-effort, like the attachment: the resource document is already filed,
+  /// and reporting failure would re-POST it and duplicate it to fix a missing
+  /// link.
+  Future<void> _linkPrivateResourceToTeam(
+    OutboxRow row,
+    String couchId,
+    Map<String, dynamic> payload,
+  ) async {
+    final resource = await _resources.getLibraryItemById(row.itemId);
+    final teamId = resource?.privateFor;
+    // Kotlin's condition is `library.isPrivate && !library.privateFor
+    // .isNullOrBlank()` (`ResourcesRepositoryImpl.kt:809`), and
+    // `createLocalResourceLink` re-checks both ids for blankness (`:725`).
+    if (resource == null || !resource.isPrivate) return;
+    if (teamId == null || teamId.isEmpty) return;
+
+    try {
+      final link = await _teams.addResourceLink(
+        teamId: teamId,
+        resourceId: couchId,
+        title: resource.title ?? '',
+        planetCode: payload['sourcePlanet'] as String?,
+      );
+      if (link == null) return;
+      await _outbox.enqueue(
+        uploadType: TeamsUploader.resourceType,
+        itemId: link.id,
+        endpoint: _siblingDatabase(row.endpoint, 'teams'),
+        payload: TeamsRepository.serializeTeamDocument(link),
+        userId: row.userId,
+      );
+    } on Exception catch (e, stack) {
+      log('Could not link resource to team', error: e, stackTrace: stack);
+    }
+  }
+
+  /// `<db>/resources` -> `<db>/<name>`.
+  ///
+  /// Derived from the stored endpoint rather than a `ServerConfig` read,
+  /// because a handler runs at drain time with no config in scope — the same
+  /// reason `PersonalsUploader._uploadAttachment` rebuilds its base this way.
+  static String _siblingDatabase(String endpoint, String name) {
+    const suffix = '/resources';
+    final base = endpoint.endsWith(suffix)
+        ? endpoint.substring(0, endpoint.length - suffix.length)
+        : endpoint;
+    return '$base/$name';
+  }
 
   /// PUTs the picked file to `resources/<id>/<name>` once the document POST
   /// lands — the port of `FileUploader.uploadAttachment(id, rev, personal:
@@ -330,7 +453,7 @@ class ResourcesUploader {
   /// [OutboxRepository.enqueue] is keyed on `MyLibraryRow.id`. One derivation,
   /// one helper, both sides. Phase 100's verification photo is what happens
   /// when the two sides each pick their own key, and
-  /// `resource_upload_round_trip_test.dart` drives the writer and this method
+  /// `resources_uploader_test.dart`'s *the round trip* group drives the writer and this method
   /// together rather than trusting either half's own fixture.
   ///
   /// A row with **no file** is a no-op, not an error, and that case is real
@@ -418,15 +541,20 @@ class ResourcesUploader {
 /// `add_resource_screen._save`, so a resource whose enqueue never ran has
 /// nothing to deliver it.
 ///
-/// That window is narrower than the submissions one Phase 134 closed, because
-/// the write site calls [ResourcesUploader.queuePending] — an *unscoped* sweep
-/// — rather than enqueuing the one row it just wrote, so saving any resource
-/// rescues every stranded one. It is not closed. A user who creates a resource
-/// with no server configured (`serverConfigProvider` null, which is the whole
-/// offline-first premise), or whose process dies between the row write and the
-/// enqueue, and who never returns to that screen, never uploads it — and the
-/// row is invisible in Planet for ever, with the reset-app action able to
-/// destroy it in the meantime.
+/// The write site does call [ResourcesUploader.queuePending] — an *unscoped*
+/// sweep rather than an enqueue of the one row it just wrote — so saving any
+/// resource rescues every stranded one. That is the only thing standing in for
+/// the sweep today, and it is not enough.
+///
+/// **This is the widest such window the port has had**, not a narrow one.
+/// Every resource created on any previous build has a `my_library` row with no
+/// `_id` and no outbox row, and `my_library` is preserved, so no schema bump
+/// clears them: they upload only if the user happens to open the add-resource
+/// screen and save something. A user who creates a resource with no server
+/// configured (`serverConfigProvider` null, which is the offline-first
+/// premise), or whose process dies between the row write and the enqueue, and
+/// who never returns to that screen, never uploads it — invisible in Planet
+/// for ever, with the reset-app action able to destroy it meanwhile.
 ///
 /// **`lib/background_entrypoint.dart` belongs to another lane this round**, so
 /// the two calls that close it are reported rather than made. They belong
@@ -436,8 +564,31 @@ class ResourcesUploader {
 /// which is precisely not the user most likely to have an undelivered write.
 /// Ordering against the other sweeps is free: no sync step writes `my_library`
 /// rows over a locally authored one ([MyLibraryMapper.fromDoc] keys on the
-/// CouchDB `_id`, and a pending resource has none), and the port's own
-/// `deleteNotIn` already spares a row with no `_rev`.
+/// CouchDB `_id`, and a *pending* resource has none), and `deleteNotIn` spares
+/// a row with no `_rev`.
+///
+/// **That second clause protects the row only while it is pending, and this
+/// direction is what ends that.** `MyLibraryDao.markUploaded` writes `_rev`,
+/// which makes the row eligible for `deleteNotIn` — whose keep set is document
+/// `_id`s while the locally authored row's primary key is still its local
+/// uuid. So the first resources sync after a successful upload inserts a
+/// *second* row keyed on the CouchDB id, with an empty shelf and
+/// `resourceOffline` at its default, and prunes the original — detaching the
+/// user from their own resource and orphaning the bytes under
+/// `ole/<uuid>/`. **Kotlin reaches the identical outcome** (its
+/// `deleteStalePublicNotIn` matches `resourceId`, which `saveLocalResource`
+/// also sets to the same uuid and `markResourceUploaded` does not update), so
+/// this is inherited rather than introduced — but it is not benign, and
+/// nothing before this note recorded it. See the PR's *Reported, not fixed*.
+///
+/// A second sweep site is missing too. Kotlin calls `uploadResource` from
+/// three places, of which two are the port's headless and foreground sync
+/// paths: this function belongs in `background_entrypoint.dart`'s
+/// `drainOutbox` **and** in `DashboardSyncNotifier` beside
+/// `queuePendingVoices`/`queuePendingSubmissions`. The third
+/// (`TeamsRepositoryImpl:928`, via `saveLocalResource`'s `teamId != null`
+/// tail) needs no port counterpart, because the screen enqueues on every save
+/// rather than only for a team.
 ///
 /// [userId] is nullable and a null one is not an early return: Kotlin passes
 /// `user?.id` and `user?.planetCode` straight through, so a handset whose

@@ -15,6 +15,8 @@ import 'package:myplanet/repository/outbox_drainer.dart';
 import 'package:myplanet/repository/outbox_repository.dart';
 import 'package:myplanet/repository/resources_repository.dart';
 import 'package:myplanet/repository/resources_uploader.dart';
+import 'package:myplanet/repository/teams_repository.dart';
+import 'package:myplanet/repository/teams_uploader.dart';
 
 import 'device_identity_fixture.dart';
 
@@ -36,6 +38,7 @@ void main() {
   late AppDatabase database;
   late MockPlanetApi api;
   late ResourcesRepository resources;
+  late TeamsRepository teams;
   late OutboxRepository outbox;
   late ResourcesUploader uploader;
   late Directory sandbox;
@@ -44,8 +47,11 @@ void main() {
 
   const config = ServerConfig(
     serverUrl: 'https://planet.example.org',
-    pin: '1234',
-    couchDbUrl: 'https://satellite:1234@planet.example.org:443',
+    // Deliberately not a digit run: the payload carries 13-digit epoch
+    // timestamps, so `isNot(contains(pin))` against '1234' has a real chance
+    // of matching one by accident and reading as a pass.
+    pin: 'p1n-9x7',
+    couchDbUrl: 'https://satellite:p1n-9x7@planet.example.org:443',
   );
 
   final user = UserRow(
@@ -69,7 +75,19 @@ void main() {
       database.removedLogDao,
     );
     outbox = OutboxRepository(database.outboxDao, now: () => clock);
-    uploader = ResourcesUploader(api, resources, outbox, testDeviceIdentity);
+    teams = TeamsRepository(
+      api,
+      database.teamDao,
+      database.teamLogDao,
+      createId: () => 'link-1',
+    );
+    uploader = ResourcesUploader(
+      api,
+      resources,
+      teams,
+      outbox,
+      testDeviceIdentity,
+    );
     sandbox = await Directory.systemTemp.createTemp('res-upload-docs');
     source = await Directory.systemTemp.createTemp('res-upload-pick');
     ResourceFiles.baseDirectory = () async => sandbox;
@@ -280,6 +298,36 @@ void main() {
       },
     );
 
+    test(
+      'filename uses the attachment spelling, not the URI-decoded one',
+      () async {
+        // The phase's most-argued decision, and it was pinned by nothing:
+        // `well-survey.pdf` and `deep/dir/book.epub` are names on which
+        // `p.basename` and Kotlin's `getFileNameFromUrl` agree, so a future
+        // "make it faithful to `getFileNameFromUrl`" change passed every test.
+        //
+        // Kotlin derives this field twice, differently: the document gets
+        // `getFileNameFromUrl` (`MyLibrary.kt:159`), which URI-parses and
+        // `URLDecoder.decode`s the last segment, while the attachment PUT names
+        // the file with `getFileNameFromLocalAddress` (`FileUploader.kt:38`), a
+        // plain `substringAfterLast('/')`. `a+b.pdf` is where they part —
+        // `URLDecoder` turns `+` into a space — and a document whose `filename`
+        // does not match its attachment's name is a resource Planet cannot
+        // resolve. The attachment spelling wins, because it names bytes that
+        // really exist.
+        await saveLocal(path: (await pickedFile(name: 'a+b.pdf')).path);
+        final plus = await soleRow();
+        expect(plus.resourceLocalAddress, 'a+b.pdf');
+        expect(
+          ResourcesUploader.serialize(plus, uploadedAt: 1)['filename'],
+          'a+b.pdf',
+          reason:
+              "getFileNameFromUrl would give 'a b.pdf' and contradict the "
+              'attachment PUT below',
+        );
+      },
+    );
+
     test('filename is the basename, or empty when there is no file', () async {
       await saveLocal();
       final row = await soleRow();
@@ -483,7 +531,74 @@ void main() {
       );
       // Indeterminate: the transport said the write landed, and a duplicate
       // append with a server-assigned id cannot be detected afterwards.
+      //
+      // `expect(await outbox.due(), isEmpty)` alone **cannot fail** here, and
+      // that is worth saying out loud: a `transient` classification would set
+      // `nextAttemptAt = now + 60s` and, with the clock unmoved, `due()` is
+      // empty either way. So the clock is advanced well past any backoff and
+      // the drain re-run — a regression that made `noUsableResponse` transient
+      // would re-POST this append, which is the whole harm.
       expect(await outbox.due(), isEmpty);
+      clock = clock.add(const Duration(hours: 2));
+      expect(await outbox.due(), isEmpty);
+      await drainer().drain();
+      verify(
+        () => api.postJsonObject(
+          any(),
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).called(1);
+    });
+
+    test('an in-flight resource is not re-enqueued over', () async {
+      // **A resource POST is an append, so a duplicate is undetectable.**
+      // `enqueue` puts an `in_progress` row back to `pending` to preserve a
+      // mid-flight payload edit, and `markCompleted` is `deleteIfInProgress`
+      // — so without the `isInFlight` guard the succeeding send deletes
+      // nothing, the row survives `pending` with the same body, and the next
+      // drain files a **second CouchDB document**. The handler carries no
+      // `_id`, so the server mints a fresh one and `markResourceUploaded`
+      // repoints the local row at the duplicate, leaving the first document an
+      // unidentifiable orphan.
+      //
+      // Reached by a drain claiming the row on a slow link while the user
+      // saves another resource — `_save` sweeps every pending row, this one
+      // included. Driven here by re-entering `queuePending` from inside the
+      // POST, which is that interleaving exactly.
+      await saveLocal(path: (await pickedFile()).path);
+      await uploader.queuePending(config: config, user: user);
+      final id = (await soleRow()).id;
+
+      var posts = 0;
+      when(
+        () => api.postJsonObject(
+          any(),
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer((_) async {
+        posts++;
+        // The user's second save, mid-flight.
+        await uploader.queuePending(config: config, user: user);
+        return NetworkSuccess<Map<String, dynamic>>({
+          'id': 'srv-$posts',
+          'rev': '$posts-a',
+        });
+      });
+      stubAttachment();
+
+      await drainer().drain();
+      clock = clock.add(const Duration(hours: 1));
+      await drainer().drain();
+
+      expect(posts, 1, reason: 'a second POST is a second document in Planet');
+      expect((await soleRow()).couchId, 'srv-1');
+      expect(
+        await database.outboxDao.forItem(ResourcesUploader.type, id),
+        isEmpty,
+        reason: 'the completed row must actually be deleted, not resurrected',
+      );
     });
 
     test(
@@ -806,6 +921,122 @@ void main() {
             ifMatch: any(named: 'ifMatch'),
           ),
         );
+      },
+    );
+
+    test(
+      'a private team resource gains its resourceLink, keyed on the CouchDB id',
+      () async {
+        // Port of `markResourceUploaded`'s second half
+        // (`ResourcesRepositoryImpl.kt:808-816`), which this phase first omitted
+        // on the false premise that the port had no `createLocalResourceLink`.
+        // It has `TeamsRepository.addResourceLink`; the search was for the
+        // Kotlin name rather than the behaviour.
+        //
+        // Without it a team leader's private resource uploads its own document
+        // and **no team links to it**: the team's Resources tab is empty on
+        // Planet and on every other member's handset, for bytes already on the
+        // server.
+        await saveLocal(
+          path: (await pickedFile()).path,
+          private: true,
+          teamId: 'team-7',
+        );
+        await uploader.queuePending(config: config, user: user);
+        stubPost(
+          const NetworkSuccess<Map<String, dynamic>>({
+            'id': 'srv-private',
+            'rev': '1-p',
+          }),
+        );
+        stubAttachment();
+
+        expect(await drainer().drain(), [OutboxOutcome.completed]);
+
+        final link = await database.teamDao.getById('link-1');
+        expect(link, isNotNull, reason: 'the resourceLink row must be written');
+        expect(link!.teamId, 'team-7');
+        expect(link.docType, 'resourceLink');
+        expect(link.teamType, 'local');
+        expect(
+          link.resourceId,
+          'srv-private',
+          reason:
+              'the link must name the CouchDB document. `markUploaded` leaves '
+              '`resourceId` at the local uuid, so linking before the POST — as '
+              "`TeamResourceActions.add` does — would name a document that "
+              'does not exist. Kotlin puts this inside markResourceUploaded '
+              'for exactly this reason',
+        );
+
+        // Writing the row alone would leave the link local, so it is enqueued
+        // the way `TeamResourceActions.add` enqueues one. Kotlin needs no
+        // equivalent: its `updated = true` is swept by the team upload pass.
+        final queued = await database.outboxDao.forItem(
+          TeamsUploader.resourceType,
+          'link-1',
+        );
+        expect(queued, hasLength(1));
+        expect(queued.single.endpoint, 'https://planet.example.org/db/teams');
+        expect(queued.single.payload, contains('"resourceId":"srv-private"'));
+      },
+    );
+
+    test('a public resource gets no team link', () async {
+      // Kotlin's condition is `isPrivate && !privateFor.isNullOrBlank()`, so
+      // both halves matter — a public resource created from a team context
+      // must not be linked.
+      await saveLocal(path: (await pickedFile()).path);
+      await uploader.queuePending(config: config, user: user);
+      stubPost(
+        const NetworkSuccess<Map<String, dynamic>>({
+          'id': 'srv-a',
+          'rev': '1-a',
+        }),
+      );
+      stubAttachment();
+      await drainer().drain();
+
+      expect(await database.teamDao.getById('link-1'), isNull);
+      expect(
+        await database.outboxDao.forItem(TeamsUploader.resourceType, 'link-1'),
+        isEmpty,
+      );
+    });
+
+    test(
+      'a privateFor with isPrivate false gets no team link either',
+      () async {
+        // Mutation testing found the `isPrivate` half of the gate pinned by
+        // nothing: the public-resource test above has `privateFor` null, so the
+        // team-id clause alone excludes it, and `saveLocalResource` moves the
+        // two columns together so no port writer produces this shape.
+        //
+        // The clause is defence in depth — it is Kotlin's explicit two-part
+        // condition, `isPrivate && !privateFor.isNullOrBlank()`
+        // (`ResourcesRepositoryImpl.kt:809`) — so it gets a hand-built row
+        // rather than a comment claiming it matters. A clause pinned by nothing
+        // reads as coverage.
+        await saveLocal(path: (await pickedFile()).path);
+        final row = await soleRow();
+        await database.myLibraryDao.upsertAll([
+          row
+              .copyWith(isPrivate: false, privateFor: const Value('team-9'))
+              .toCompanion(true),
+        ]);
+
+        await uploader.queuePending(config: config, user: user);
+        stubPost(
+          const NetworkSuccess<Map<String, dynamic>>({
+            'id': 'srv-b',
+            'rev': '1-b',
+          }),
+        );
+        stubAttachment();
+        await drainer().drain();
+
+        expect((await soleRow()).couchId, 'srv-b');
+        expect(await database.teamDao.getById('link-1'), isNull);
       },
     );
 

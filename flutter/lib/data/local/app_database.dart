@@ -1855,10 +1855,14 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
   /// vanished row is reported as a failure rather than silently succeeding.
   ///
   /// Kotlin also creates a team-resource-link document here for a private
-  /// resource, using the `planetCode` argument. That half is **not** ported:
-  /// `TeamsRepository.createLocalResourceLink` does not exist in the port at
-  /// all, so there is nothing to call. Reported rather than reached for —
-  /// `teams_repository.dart` belongs to no lane this round.
+  /// resource, using the `planetCode` argument. In the port that lives one
+  /// layer up, in `ResourcesUploader._linkPrivateResourceToTeam`, because the
+  /// link has to carry the CouchDB id and this DAO method is handed one — see
+  /// `ResourcesRepository.markResourceUploaded`. (An earlier revision of this
+  /// comment claimed the port had no equivalent of
+  /// `createLocalResourceLink`. It has `TeamsRepository.addResourceLink`; the
+  /// search that missed it was for the Kotlin name rather than the
+  /// behaviour.)
   Future<bool> markUploaded(String id, String couchId, String rev) async {
     final row = await getById(id);
     if (row == null) return false;

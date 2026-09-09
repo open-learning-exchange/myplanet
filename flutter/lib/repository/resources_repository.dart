@@ -337,14 +337,18 @@ class ResourcesRepository {
   /// `myLibraryDao.getById(localId) ?: return false` does; `ResourcesUploader`
   /// documents what that answer is used for.
   ///
-  /// **Kotlin's second half is not ported, and this is the gap.** For a
-  /// private resource it also writes a local `resourceLink` team document via
-  /// `TeamsRepository.createLocalResourceLink` (`TeamsRepositoryImpl
-  /// .kt:719-740`), stamped with the user's planet code — which is the only
-  /// consumer of the `planetCode` argument, and why this method does not take
-  /// one. `createLocalResourceLink` does not exist anywhere in the port, so
-  /// there is nothing to call, and adding it means reaching into
-  /// `teams_repository.dart`. Reported rather than reached for.
+  /// **Kotlin's second half lives in [ResourcesUploader], not here.** For a
+  /// private resource `markResourceUploaded` also writes a local
+  /// `resourceLink` team document (`TeamsRepositoryImpl.kt:719-740`), stamped
+  /// with the user's planet code — which is the only consumer of Kotlin's
+  /// `planetCode` argument, and why this method does not take one.
+  /// [ResourcesUploader._linkPrivateResourceToTeam] does it, after the POST,
+  /// because the link has to carry the CouchDB id.
+  ///
+  /// An earlier revision of this comment said `createLocalResourceLink` "does
+  /// not exist anywhere in the port". It does — as
+  /// [TeamsRepository.addResourceLink] — and the search that missed it was for
+  /// the Kotlin *name* rather than the behaviour.
   Future<bool> markResourceUploaded(
     String localId,
     String couchId,

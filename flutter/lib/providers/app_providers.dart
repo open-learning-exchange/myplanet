@@ -659,6 +659,9 @@ final resourcesUploaderProvider = Provider<ResourcesUploader>(
   (ref) => ResourcesUploader(
     ref.watch(planetApiProvider),
     ref.watch(resourcesRepositoryProvider),
+    // For the private-team-resource link Kotlin writes in the same step —
+    // see `ResourcesUploader._linkPrivateResourceToTeam`.
+    ref.watch(teamsRepositoryProvider),
     ref.watch(outboxRepositoryProvider),
     ref.watch(deviceIdentitySourceProvider),
   ),
