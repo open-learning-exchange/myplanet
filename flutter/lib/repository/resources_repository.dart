@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:drift/drift.dart';
+import 'package:path/path.dart' as p;
 
 import '../core/config/server_config.dart';
 import '../core/files/resource_files.dart';
@@ -25,7 +26,20 @@ import 'shelf_repository.dart';
 /// site (`AddResourceActivity.kt:164-167`, `:204-207`), which is why the
 /// destination differs per case: a title problem annotates the field, a
 /// missing row is a snackbar.
-enum LocalResourceError { titleMissing, titleAlreadyExists, notFound }
+/// [fileNotFound] and [copyFailed] are the port's counterparts of Kotlin's
+/// `"Resource file not found"` / `"Storage unavailable"` failures and its
+/// `IOException`/`SecurityException` arms (`ResourcesRepositoryImpl.kt
+/// :235-256`). `AddResourceScreen` keys its message on the *mode* rather than
+/// on the kind, exactly as `AddResourceActivity` does, so adding cases here
+/// changes no UI copy — see the comment at its error branch, which anticipated
+/// them.
+enum LocalResourceError {
+  titleMissing,
+  titleAlreadyExists,
+  notFound,
+  fileNotFound,
+  copyFailed,
+}
 
 /// Port of the resources phase of `services/sync/SyncManager.kt` (phase 2) plus
 /// the read side of `repository/ResourcesRepositoryImpl.kt`.
@@ -126,9 +140,32 @@ class ResourcesRepository {
   }
 
   /// Port of `ResourcesRepositoryImpl.saveLocalResource`. Creates a new
-  /// `my_library` row from the form fields and a picked file path, marks it
-  /// offline-available, and adds it to the user's shelf unless it is a
-  /// private team resource. Returns `null` on success or an error message.
+  /// `my_library` row from the form fields and a picked file, **copies that
+  /// file into the app's own resource directory**, marks the row
+  /// offline-available, and adds it to the user's shelf unless it is a private
+  /// team resource. Returns `null` on success or the reason it failed.
+  ///
+  /// The copy is the part that was missing, and without it the rest is a
+  /// claim: the row said `resourceOffline` while `resourceLocalAddress` held
+  /// the path `FilePicker` handed the screen — a cache location the OS may
+  /// reclaim, and in no case the `<base>/ole/<docId>/<filename>` the viewer
+  /// resolves ([ResourceFiles.existingFileFor]). So the user's own resource
+  /// was unopenable, and opening it made it worse: the viewer's stale-flag
+  /// repair cleared `resourceOffline` *and* `resourceLocalAddress`, and the
+  /// Download it then offered could not work either, because `urlFor` needs a
+  /// `couchId` a locally created row has never had.
+  ///
+  /// Kotlin copies first and stores the **basename**
+  /// (`ResourcesRepositoryImpl.kt:235-256`, `:278-280`, into
+  /// `FileUtils.getLibraryFile`'s `<ext>/ole/<id>/<basename>`), which is the
+  /// same convention [ResourceFiles] uses — so this is parity, not invention.
+  ///
+  /// **One divergence, deliberate.** Kotlin *requires* a file: a null
+  /// `resourceUrl` fails the save (`:235-238`). The port's form does not, and
+  /// rejecting one here would change what the screen accepts rather than
+  /// fixing what it stores — so a request with no file still saves a
+  /// metadata-only row, and that row no longer claims to be offline. Pinned in
+  /// `local_resource_file_copy_test.dart`.
   Future<LocalResourceError?> saveLocalResource(
     LocalResourceRequest request,
   ) async {
@@ -139,6 +176,33 @@ class ResourcesRepository {
     }
     final id = _randomResourceId();
     final now = DateTime.now().millisecondsSinceEpoch;
+
+    // Copied before the row is written, so a failure leaves nothing behind —
+    // the order Kotlin uses, and the reason it deletes the destination if the
+    // row write then throws (`:288-292`).
+    final picked = request.resourceUrl;
+    String? storedName;
+    File? copied;
+    if (picked != null && picked.isNotEmpty) {
+      final source = File(picked);
+      if (!await source.exists()) return LocalResourceError.fileNotFound;
+      storedName = p.basename(picked.replaceAll(r'\', '/'));
+      try {
+        final destination = await ResourceFiles.fileFor(
+          docId: id,
+          filename: storedName,
+        );
+        await destination.parent.create(recursive: true);
+        copied = await source.copy(destination.path);
+      } catch (_) {
+        // `FileSystemException` on an unwritable or full volume,
+        // `MissingPluginException` where the documents directory cannot be
+        // resolved at all — Kotlin's "Storage unavailable" and its
+        // `IOException`/`SecurityException` arms. Caught together because the
+        // caller shows one message for all of them.
+        return LocalResourceError.copyFailed;
+      }
+    }
     final companion = MyLibraryTableCompanion.insert(
       id: id,
       resourceId: Value(id),
@@ -158,9 +222,16 @@ class ResourcesRepository {
       level: Value(request.levels ?? const []),
       resourceFor: Value(request.resourceFor ?? const []),
       createdDate: Value(now),
-      resourceLocalAddress: Value(request.resourceUrl),
-      resourceOffline: const Value(true),
-      filename: Value(request.resourceUrl?.split('/').last),
+      // The basename, matching `MyLibrary.resourceLocalAddress = filename`.
+      // `filename` carries it too, because that is the column the viewer
+      // resolves the path from.
+      resourceLocalAddress: Value(storedName),
+      // Only true when there really are bytes under
+      // `<base>/ole/<id>/<storedName>`. A row with no file must not claim to
+      // be downloaded: the list sorts offline-first and the detail screen
+      // hides Download in favour of View, so the claim is what strands it.
+      resourceOffline: Value(copied != null),
+      filename: Value(storedName),
       isPrivate: Value(request.isPrivateTeamResource),
       privateFor: Value(request.isPrivateTeamResource ? request.teamId : null),
       // `MyLibrary.setUserId` returns early on a null or blank id, so the
@@ -173,7 +244,17 @@ class ResourcesRepository {
             : [request.userId!],
       ),
     );
-    await _dao.upsertAll([companion]);
+    try {
+      await _dao.upsertAll([companion]);
+    } catch (_) {
+      // Kotlin deletes the copy when `saveLibraryItem` throws (`:288-292`), so
+      // a failed save does not leave an orphan under `ole/`. Best effort: the
+      // delete failing must not mask the write failure.
+      try {
+        await copied?.delete();
+      } catch (_) {}
+      rethrow;
+    }
     return null;
   }
 

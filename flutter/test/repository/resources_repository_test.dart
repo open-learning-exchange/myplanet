@@ -758,30 +758,37 @@ void main() {
   });
 
   group('local resource creation', () {
-    test('saveLocalResource creates a row and marks it offline', () async {
-      final error = await repository.saveLocalResource(
-        const LocalResourceRequest(
-          title: 'My New Resource',
-          addedBy: 'ada',
-          author: 'Author',
-          year: '2026',
-          description: 'A test resource',
-          subjects: ['Agriculture'],
-          levels: ['Lower Primary'],
-          userId: 'user-1',
-        ),
-      );
-      expect(error, isNull);
+    test(
+      'saveLocalResource creates a row for a request with no file',
+      () async {
+        final error = await repository.saveLocalResource(
+          const LocalResourceRequest(
+            title: 'My New Resource',
+            addedBy: 'ada',
+            author: 'Author',
+            year: '2026',
+            description: 'A test resource',
+            subjects: ['Agriculture'],
+            levels: ['Lower Primary'],
+            userId: 'user-1',
+          ),
+        );
+        expect(error, isNull);
 
-      final rows = await db.myLibraryDao.getAll();
-      expect(rows, hasLength(1));
-      final row = rows.first;
-      expect(row.title, 'My New Resource');
-      expect(row.resourceOffline, isTrue);
-      expect(row.subject, contains('Agriculture'));
-      expect(row.level, contains('Lower Primary'));
-      expect(row.userId, contains('user-1'));
-    });
+        final rows = await db.myLibraryDao.getAll();
+        expect(rows, hasLength(1));
+        final row = rows.first;
+        expect(row.title, 'My New Resource');
+        // No `resourceUrl` in this request, so there is nothing on disk and the
+        // row must not claim to be downloaded. Phase 150: `resourceOffline` is
+        // `copied != null`, and the copy is what the port never used to make.
+        // `local_resource_file_copy_test.dart` covers the with-a-file path.
+        expect(row.resourceOffline, isFalse);
+        expect(row.subject, contains('Agriculture'));
+        expect(row.level, contains('Lower Primary'));
+        expect(row.userId, contains('user-1'));
+      },
+    );
 
     test('saveLocalResource rejects a duplicate title', () async {
       await repository.saveLocalResource(

@@ -62,7 +62,9 @@ class MyLibraryMapper {
     return MyLibraryTableCompanion(
       id: Value(resourceId),
       couchId: Value(resourceId),
-      rev: Value(JsonUtils.getStringOrNull('_rev', doc)),
+      // Absent when the document has no `_rev` key at all — see
+      // [_revOrAbsent]. Present, null included, when it has one.
+      rev: _revOrAbsent(doc),
       resourceId: Value(resourceId),
       title: Value(title),
       titleNormal: Value(normalizeTitle(title)),
@@ -204,6 +206,47 @@ class MyLibraryMapper {
     final merged = <String>{...existing, ...incoming};
     return merged.toList(growable: false);
   }
+
+  /// The row's `_rev`, or [Value.absent] when the document does not carry the
+  /// key — so the writer that cannot know a revision leaves the one another
+  /// writer recorded alone.
+  ///
+  /// `my_library` has two writers and only one of them sees a `_rev`. The
+  /// `resources` walk pulls whole documents; the courses walk pulls the
+  /// *thinner* copy embedded in a course step
+  /// (`CoursesRepository._ingestCourseResources`), and a sub-object carries
+  /// none. Writing `Value(null)` there blanked the revision the resources walk
+  /// had recorded — the same two-writers-one-column shape this class already
+  /// documents for `resourceRemoteAddress`/`resourceLocalAddress` at
+  /// [_primaryAttachment], on the one column those two guards did not cover.
+  ///
+  /// What a blank `_rev` costs: [MyLibraryDao.deleteNotIn] prunes only
+  /// `_rev IS NOT NULL AND _rev != ''` (Kotlin's own eligibility), so the row
+  /// can never be evicted, and since `my_library` became a preserved table the
+  /// schema bump no longer sweeps it either — a resource deleted server-side
+  /// would sit in the public catalog for good. And
+  /// [MyLibraryDao.watchResourcesNeedingUpdateCount] compares
+  /// `_rev IS NOT downloaded_rev`, so blanking it on a downloaded resource
+  /// makes the bell ask for it again.
+  ///
+  /// **A deliberate deviation, and the direction matters.**
+  /// `MyLibrary.insertMyLibrary` assigns `_rev = JsonUtils.getString("_rev",
+  /// doc)` unconditionally as well (`MyLibrary.kt:237`), and `getString`
+  /// returns `""` for a missing key, so Kotlin writes an *empty* revision onto
+  /// the stored row — the same defect, reached the same way, and its prune
+  /// spares `_rev != ''` too. Kotlin's Room bump sweeps the wreckage; the
+  /// port's no longer does, which is what turns a self-healing quirk into an
+  /// immortal row. Fixed rather than copied.
+  ///
+  /// The test is on the **key**, not the value, so a server that sends
+  /// `"_rev": null` is still honoured; a blanket "never write a null rev"
+  /// would be a different and less honest rule. Same spelling as
+  /// `ExamMapper._presentOrAbsent`, which exists for this hazard on
+  /// `stepId`/`courseId`.
+  static Value<String?> _revOrAbsent(Map<String, dynamic> doc) =>
+      doc.containsKey('_rev')
+      ? Value(JsonUtils.getStringOrNull('_rev', doc))
+      : const Value<String?>.absent();
 
   /// The Kotlin walks `_attachments` and treats the first key without a `/` as
   /// the resource's own file, deriving the download URL from it.

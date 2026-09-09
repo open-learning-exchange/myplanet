@@ -4026,8 +4026,18 @@ class HealthExaminationDao extends DatabaseAccessor<AppDatabase>
   /// defect: `_rev` is the only thing that lets the next edit PUT rather than
   /// conflict, and `HealthRepository.cacheDocuments` skips a locally dirty row,
   /// so no pull would supply it again either — the record would 409 for the
-  /// life of the install. `HealthUploader` reaches this call with a null
-  /// whenever a 2xx body carries an id and no rev, so the branch is live.
+  /// life of the install.
+  ///
+  /// **The hole is latent, not live, and an earlier revision of this comment
+  /// claimed the opposite.** No port caller passes a null today:
+  /// `HealthUploader`'s handler returns `NetworkError(null, …)` when the 2xx
+  /// body's `rev` `is! String` (`health_uploader.dart:70-72`), so the call
+  /// below is only reached with a promoted `String`. What this method being
+  /// correct buys is the *precondition* for removing that early return, which
+  /// is the one thing standing between the port and Kotlin's `has("id")` gate
+  /// (`HealthRepositoryImpl.kt:118-120`): with the erase gone, an
+  /// `id`-without-`rev` 2xx can clear `isUpdated` and keep `_rev`, instead of
+  /// being classified `indeterminate` and abandoned.
   ///
   /// The blank case is deliberately *not* folded in with the null one: Kotlin
   /// partitions on `it.value == null`, so an empty string is written.

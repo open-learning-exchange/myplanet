@@ -105,19 +105,23 @@ void main() {
     );
   });
 
-  test('a reply to a community voice counts in the whole-community tally', () async {
-    // The `userId`-less arm is a different SQL statement in both apps, so it
-    // needs its own case: the reply is written by a *different* user, which is
-    // the only thing distinguishing this from the test above.
-    final parent = await postAt(day1, userId: ada);
-    await replyAt(day2, parent, userId: grace);
+  test(
+    'a reply to a community voice counts in the whole-community tally',
+    () async {
+      // The `userId`-less arm is a different SQL statement in both apps, so it
+      // needs its own case: the reply is written by a *different* user, which is
+      // the only thing distinguishing this from the test above.
+      final parent = await postAt(day1, userId: ada);
+      await replyAt(day2, parent, userId: grace);
 
-    expect(
-      await dates(),
-      ['2026-09-01', '2026-09-02'],
-      reason: 'countDistinctCommunityVoiceDates has no replyTo predicate either',
-    );
-  });
+      expect(
+        await dates(),
+        ['2026-09-01', '2026-09-02'],
+        reason:
+            'countDistinctCommunityVoiceDates has no replyTo predicate either',
+      );
+    },
+  );
 
   test('a reply to a team post is still not a community voice', () async {
     // The conjunct that must survive. `isCommunityNews` is what excludes this,

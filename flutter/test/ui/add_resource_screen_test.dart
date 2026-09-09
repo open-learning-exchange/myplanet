@@ -218,7 +218,14 @@ void main() {
     expect(row.author, 'Ada', reason: 'the Kotlin trims every text field');
     expect(row.level, ['Lower Primary']);
     expect(row.subject, ['Agriculture']);
-    expect(row.resourceOffline, isTrue);
+    // The form has no file picked — `_FilePickerCard` is optional in the port
+    // where Kotlin's flow starts from a pick — and since Phase 150
+    // `resourceOffline` says whether bytes are actually under
+    // `<base>/ole/<id>/`, not merely that the row was authored here. This
+    // assertion used to read `isTrue`, which is what made a locally created
+    // resource unopenable: the list sorts offline-first and the detail screen
+    // hides Download in favour of View, on the strength of this flag.
+    expect(row.resourceOffline, isFalse);
   });
 
   testWidgets('the signed-in user is recorded on the new resource', (
