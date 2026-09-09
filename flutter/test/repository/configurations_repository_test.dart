@@ -281,4 +281,125 @@ void main() {
       );
     });
   });
+
+  group('a refused PIN is not an unreachable server', () {
+    // The whole point of these: before this group existed, every one of them
+    // reported `nationServerUnreachable`. A user on a working connection, with
+    // a server that was up and a `minapk` that passed, was told to check their
+    // internet — the only request in the handshake that carries the PIN is the
+    // configurations fetch, and its 401 was flattened into the same failure as
+    // a dead socket.
+    const url = 'https://planet.example.org';
+    const couchDb = 'https://satellite:1234@planet.example.org:443';
+
+    void stubConfigurationsStatus(int code) {
+      when(
+        () => api.getConfiguration(
+          '$couchDb/db/configurations/_all_docs?include_docs=true',
+        ),
+      ).thenAnswer(
+        (_) async => NetworkError<Map<String, dynamic>>(code, 'refused'),
+      );
+    }
+
+    test('a 401 on the configurations fetch reports pinRejected', () async {
+      stubVersions(url, minApk: 'v0.60.0');
+      stubConfigurationsStatus(401);
+
+      final result = await buildRepository().getMinApk(url, '1234');
+
+      expect(
+        result,
+        isA<ConfigurationFailure>().having(
+          (f) => f.reason,
+          'reason',
+          ConfigurationFailureReason.pinRejected,
+        ),
+      );
+    });
+
+    test('a 403 reports it too — CouchDB answers either way', () async {
+      stubVersions(url, minApk: 'v0.60.0');
+      stubConfigurationsStatus(403);
+
+      final result = await buildRepository().getMinApk(url, '1234');
+
+      expect(
+        (result as ConfigurationFailure).reason,
+        ConfigurationFailureReason.pinRejected,
+      );
+    });
+
+    test('a 500 is the server failing, not the PIN', () async {
+      stubVersions(url, minApk: 'v0.60.0');
+      stubConfigurationsStatus(500);
+
+      expect(
+        (await buildRepository().getMinApk(url, '1234') as ConfigurationFailure)
+            .reason,
+        ConfigurationFailureReason.nationServerUnreachable,
+      );
+    });
+
+    test('a request that never answered stays unreachable', () async {
+      stubVersions(url, minApk: 'v0.60.0');
+      when(
+        () => api.getConfiguration(
+          '$couchDb/db/configurations/_all_docs?include_docs=true',
+        ),
+      ).thenAnswer(
+        (_) async =>
+            NetworkException<Map<String, dynamic>>(Exception('no socket')),
+      );
+
+      expect(
+        (await buildRepository().getMinApk(url, '1234') as ConfigurationFailure)
+            .reason,
+        ConfigurationFailureReason.nationServerUnreachable,
+      );
+    });
+
+    test('an unreadable /versions never reaches the PIN verdict', () async {
+      // `/versions` is unauthenticated, so a failure there says nothing about
+      // the credentials and must not be blamed on them.
+      when(() => api.getConfiguration('$url/versions')).thenAnswer(
+        (_) async =>
+            NetworkException<Map<String, dynamic>>(Exception('no socket')),
+      );
+
+      expect(
+        (await buildRepository().getMinApk(url, '1234') as ConfigurationFailure)
+            .reason,
+        ConfigurationFailureReason.nationServerUnreachable,
+      );
+    });
+
+    test('a rejection on either candidate URL outranks a silence', () async {
+      // With an alternative URL the two are raced. "The PIN was rejected" is
+      // the actionable verdict and proves a server answered at all, so it wins
+      // over the candidate that never replied.
+      const alternative = 'https://clone.example.org';
+      stubVersions(url, minApk: 'v0.60.0');
+      stubVersions(alternative, minApk: 'v0.60.0');
+      stubConfigurationsStatus(401);
+      when(
+        () => api.getConfiguration(
+          'https://satellite:1234@clone.example.org:443'
+          '/db/configurations/_all_docs?include_docs=true',
+        ),
+      ).thenAnswer(
+        (_) async =>
+            NetworkException<Map<String, dynamic>>(Exception('no socket')),
+      );
+
+      final result = await buildRepository(
+        mappings: {url: alternative},
+      ).getMinApk(url, '1234');
+
+      expect(
+        (result as ConfigurationFailure).reason,
+        ConfigurationFailureReason.pinRejected,
+      );
+    });
+  });
 }

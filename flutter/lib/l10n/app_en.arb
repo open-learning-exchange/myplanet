@@ -12,6 +12,22 @@
   "serverUrlNotConfigured": "Server URL not configured",
   "deviceCouldNotReachLocalServer": "device couldn't reach the server. check if you are connected to the correct Wi-Fi network for the local server (community).",
   "deviceCouldNotReachNationServer": "device couldn’t reach the server. check if you are connected to the internet and try again",
+  "serverPinRejected": "the server rejected that PIN. check the server PIN and try again",
+  "@serverPinRejected": {
+    "description": "Shown on the server-configuration screen when the server was reached but refused the satellite PIN. Hand-authored: the Kotlin app folds this case into its unreachable-server message and so has no string to derive from."
+  },
+  "syncToServer": "Sync to server:",
+  "@syncToServer": {
+    "description": "Header above the preconfigured Planet server list on the server-configuration screen. Derived from the Kotlin `sync_to_server`."
+  },
+  "showMore": "show more",
+  "@showMore": {
+    "description": "Expands the server list from the first three to all of them. Derived from the Kotlin `show_more`."
+  },
+  "showLess": "show less",
+  "@showLess": {
+    "description": "Collapses the expanded server list back to the first three. Derived from the Kotlin `show_less`."
+  },
   "connectionFailed": "Connection failed!",
   "connectedToCommunity": "Connected to {code}",
   "@connectedToCommunity": {

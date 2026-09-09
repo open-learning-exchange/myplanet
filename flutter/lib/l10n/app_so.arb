@@ -532,5 +532,8 @@
   "chatAlreadyShared": "Wadahadalkan hore ayaa loogu wadaagay goobtan",
   "joinTeamFirst": "Fadlan ku biir koox si aad u wadaagto wada sheekaysigan",
   "joinEnterpriseFirst": "Fadlan ku biir shirkad si aad u wadaagto wada sheekaysigan",
-  "addImage": "Kudar Sawir"
+  "addImage": "Kudar Sawir",
+  "syncToServer": "Isku xidh adeegga:",
+  "showMore": "tus wax badan",
+  "showLess": "tus wax yar"
 }

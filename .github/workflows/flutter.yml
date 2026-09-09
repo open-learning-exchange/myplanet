@@ -89,11 +89,23 @@ jobs:
           dart run build_runner build --delete-conflicting-outputs
           flutter gen-l10n
 
+      # The preconfigured Planet servers, derived from the Kotlin app's own
+      # `gradle.properties` so the two cannot offer different servers. Without
+      # them the built APK has no server list and a user has to know a PIN,
+      # which is what made the first APK this workflow handed out unusable.
+      # The output holds real `satellite` PINs and lands under the gitignored
+      # `build/`; the script prints counts, never a value.
+      - name: Derive the preconfigured server defines
+        run: dart run tool/planet_server_defines.dart
+
       # `inputs.build_mode` is empty on push and pull_request, so those runs
       # keep building --debug exactly as before; only a manual dispatch can
       # ask for --release.
       - name: Build APK
-        run: flutter build apk ${{ inputs.build_mode == 'release' && '--release' || '--debug' }}
+        run: |
+          flutter build apk \
+            ${{ inputs.build_mode == 'release' && '--release' || '--debug' }} \
+            --dart-define-from-file=build/planet_server_defines.json
 
       # Dispatch-only, mirroring release.yml: a push run's APK is a
       # by-product nobody asks for, and ~50 MB per run for 9 days across

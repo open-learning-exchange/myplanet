@@ -19,6 +19,19 @@ enum ConfigurationFailureReason {
 
   /// The device could not reach a nation (https) server.
   nationServerUnreachable,
+
+  /// The server answered, and refused the `satellite` PIN.
+  ///
+  /// **Kotlin does not distinguish this**, and that is the point of adding it.
+  /// `checkConfigurationUrl` folds every failure into one "couldn't reach the
+  /// server" string, so a wrong or empty PIN — the single most likely thing to
+  /// go wrong on this screen — tells the user to check their internet
+  /// connection. It cost this project a full diagnostic pass on a device that
+  /// was online, against a server that was up, with a `minapk` that passed:
+  /// `/versions` returned 200 and only the credentialed
+  /// `configurations/_all_docs` came back 401. Phase 60 predicted exactly this
+  /// class of confusion for the *version* check; this is its other half.
+  pinRejected,
 }
 
 /// Port of `ConfigurationsRepository.ConfigurationResult`.
@@ -138,7 +151,19 @@ class ConfigurationsRepository {
       }
     }
 
-    return ConfigurationFailure(_failureReasonFor(url), url);
+    // A refusal outranks a silence. With an alternative URL in play the two
+    // candidates are raced, so one can 401 while the other never answers —
+    // and "the PIN was rejected" is the one the user can act on, and the one
+    // that proves a server was there at all.
+    final rejected = results.whereType<_UrlCheckFailure>().any(
+      (failure) => failure.pinRejected,
+    );
+    return ConfigurationFailure(
+      rejected
+          ? ConfigurationFailureReason.pinRejected
+          : _failureReasonFor(url),
+      url,
+    );
   }
 
   /// Port of `checkConfigurationUrl`.
@@ -169,8 +194,11 @@ class ConfigurationsRepository {
     }
 
     final couchDbUrl = ServerConfig.buildCouchDbUrl(currentUrl, pin);
-    final configuration = await _fetchConfiguration(couchDbUrl);
-    if (configuration == null) return _UrlCheckFailure(currentUrl);
+    final fetch = await _fetchConfiguration(couchDbUrl);
+    final configuration = fetch.configuration;
+    if (configuration == null) {
+      return _UrlCheckFailure(currentUrl, pinRejected: fetch.pinRejected);
+    }
 
     return _UrlCheckSuccess(
       id: configuration.id,
@@ -183,29 +211,41 @@ class ConfigurationsRepository {
   }
 
   /// Port of `fetchConfiguration` + `processConfigurationDoc`.
-  Future<_CommunityConfiguration?> _fetchConfiguration(
-    String couchDbUrl,
-  ) async {
+  ///
+  /// Returns the configuration, or why it could not be read. The Kotlin
+  /// returns a nullable pair and so cannot tell a refusal from a silence; this
+  /// keeps the distinction so [ConfigurationFailureReason.pinRejected] can be
+  /// reported. **This is the only request in the handshake that carries the
+  /// PIN** — `/versions` is unauthenticated — so a 401 or 403 here is a
+  /// verdict on the credentials and nothing else.
+  Future<_ConfigurationFetch> _fetchConfiguration(String couchDbUrl) async {
     final url =
         '${UrlUtils.dbUrlOf(couchDbUrl)}/configurations/_all_docs?include_docs=true';
     final result = await _api.getConfiguration(url);
-    if (result is! NetworkSuccess<Map<String, dynamic>>) return null;
+    if (result is! NetworkSuccess<Map<String, dynamic>>) {
+      final rejected =
+          result is NetworkError<Map<String, dynamic>> &&
+          (result.code == 401 || result.code == 403);
+      return _ConfigurationFetch.failed(pinRejected: rejected);
+    }
 
     final rows = result.data['rows'];
-    if (rows is! List || rows.isEmpty) return null;
+    if (rows is! List || rows.isEmpty) return _ConfigurationFetch.failed();
 
     final firstRow = rows.first;
-    if (firstRow is! Map<String, dynamic>) return null;
+    if (firstRow is! Map<String, dynamic>) return _ConfigurationFetch.failed();
 
     final doc = JsonUtils.getObject('doc', firstRow);
-    if (doc == null) return null;
+    if (doc == null) return _ConfigurationFetch.failed();
 
-    return _CommunityConfiguration(
-      id: JsonUtils.getString('id', firstRow),
-      code: JsonUtils.getString('code', doc),
-      parentCode: JsonUtils.getString('parentCode', doc),
-      preferredLanguage: languageCodeFromName(
-        JsonUtils.getString('preferredLang', doc),
+    return _ConfigurationFetch(
+      _CommunityConfiguration(
+        id: JsonUtils.getString('id', firstRow),
+        code: JsonUtils.getString('code', doc),
+        parentCode: JsonUtils.getString('parentCode', doc),
+        preferredLanguage: languageCodeFromName(
+          JsonUtils.getString('preferredLang', doc),
+        ),
       ),
     );
   }
@@ -238,6 +278,22 @@ class ConfigurationsRepository {
         ? ConfigurationFailureReason.nationServerUnreachable
         : ConfigurationFailureReason.localServerUnreachable;
   }
+}
+
+/// What [ConfigurationsRepository._fetchConfiguration] found: the community
+/// configuration, or the reason it is absent. Exists so a refused PIN can be
+/// told from a server that never answered.
+@immutable
+class _ConfigurationFetch {
+  const _ConfigurationFetch(this.configuration) : pinRejected = false;
+
+  const _ConfigurationFetch.failed({this.pinRejected = false})
+    : configuration = null;
+
+  final _CommunityConfiguration? configuration;
+
+  /// The server answered and refused the credentials.
+  final bool pinRejected;
 }
 
 @immutable
@@ -278,7 +334,10 @@ class _UrlCheckSuccess extends _UrlCheckResult {
 }
 
 class _UrlCheckFailure extends _UrlCheckResult {
-  const _UrlCheckFailure(this.url);
+  const _UrlCheckFailure(this.url, {this.pinRejected = false});
 
   final String url;
+
+  /// The server was reached and rejected the PIN, rather than not answering.
+  final bool pinRejected;
 }

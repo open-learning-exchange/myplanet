@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/config/planet_servers.dart';
 import '../core/config/server_config.dart';
 import '../core/background/background_download_queue.dart';
 import '../core/files/markdown_image_prefetcher.dart';
@@ -80,6 +81,17 @@ import 'resources_providers.dart' show diskStatsProvider;
 /// `SharedPreferencesModule` provides a ready instance.
 final planetPrefsProvider = Provider<PlanetPrefs>(
   (ref) => throw UnimplementedError('planetPrefsProvider must be overridden'),
+);
+
+/// The preconfigured Planet servers this build can offer.
+///
+/// A provider rather than a direct read of [configuredPlanetServers] so a test
+/// can supply rows: the values reach production as `--dart-define`s, which are
+/// empty under `flutter test`, and without a seam the server picker would be
+/// untestable — the shape this project keeps paying for (Phase 91's viewer,
+/// Phase 92's content reader).
+final planetServersProvider = Provider<List<PlanetServer>>(
+  (ref) => configuredPlanetServers,
 );
 
 final backgroundSchedulerProvider = Provider<BackgroundScheduler>(

@@ -453,12 +453,24 @@ void main() {
     // human translation in all five `values-*/strings.xml`, so the port's own
     // affordance can borrow the words the Android app already shows. Nothing
     // existing changed value.
+    // The server-list round adds three per locale, all recovered rather than
+    // generated: `syncToServer`, `showMore` and `showLess` derive **by name**
+    // from Kotlin's `sync_to_server`/`show_more`/`show_less`, which label the
+    // same header and the same expand toggle on the sync dialog and ship human
+    // translations in all five `values-*/strings.xml`. Counted from the tree
+    // after the derivation run, not remembered. Nothing existing changed value.
+    //
+    // The same change adds a fourth template key, `serverPinRejected`, which
+    // is **deliberately absent from all five** and so moves no count here.
+    // Kotlin folds a refused PIN into its unreachable-server string and has no
+    // counterpart to derive from, and an English fallback beats machine
+    // translating a sentence that tells someone their credential was rejected.
     const humanReviewed = {
-      'ar': 426,
-      'es': 478,
-      'fr': 424,
-      'ne': 426,
-      'so': 426,
+      'ar': 429,
+      'es': 481,
+      'fr': 427,
+      'ne': 429,
+      'so': 429,
     };
 
     for (final code in locales) {

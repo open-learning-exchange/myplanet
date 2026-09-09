@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/config/planet_servers.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../repository/configurations_repository.dart';
@@ -24,6 +25,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
   final _pinController = TextEditingController();
 
   bool _isChecking = false;
+  bool _showAllServers = false;
   String? _error;
 
   @override
@@ -83,7 +85,69 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
         l10n.deviceCouldNotReachLocalServer,
       ConfigurationFailureReason.nationServerUnreachable =>
         l10n.deviceCouldNotReachNationServer,
+      ConfigurationFailureReason.pinRejected => l10n.serverPinRejected,
     };
+  }
+
+  /// Port of `ServerAddressAdapter`'s `onItemClick`: a tapped row fills the
+  /// host **and** its PIN, which is the whole reason this list exists.
+  ///
+  /// Kotlin additionally submits immediately when its `serverCheck` flag is
+  /// set. Deliberately not ported: this is a route rather than a dialog, the
+  /// fields stay visible after the tap, and firing a network request from a
+  /// list tap hides which server is about to be contacted. One tap of Connect
+  /// is the cost.
+  void _useServer(PlanetServer server) {
+    setState(() {
+      _urlController.text = server.url;
+      _pinController.text = server.pin;
+      _error = null;
+    });
+  }
+
+  Widget _serverPicker(AppLocalizations l10n) {
+    final all = ref.watch(planetServersProvider);
+    // A build with no `--dart-define`s has no list to offer, which is how this
+    // screen behaved before the list existed. See `planet_servers.dart`.
+    if (all.isEmpty) return const SizedBox.shrink();
+
+    final shown = planetServersToShow(
+      servers: all,
+      showAdditional: _showAllServers,
+      configuredHost: hostWithoutScheme(_urlController.text.trim()),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: Text(
+            l10n.syncToServer,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+        ),
+        const SizedBox(height: 8),
+        for (final server in shown)
+          ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            title: Text(server.name),
+            subtitle: Text(server.url),
+            onTap: _isChecking ? null : () => _useServer(server),
+          ),
+        if (all.length > shown.length || _showAllServers)
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton(
+              onPressed: () =>
+                  setState(() => _showAllServers = !_showAllServers),
+              child: Text(_showAllServers ? l10n.showLess : l10n.showMore),
+            ),
+          ),
+        const Divider(height: 24),
+      ],
+    );
   }
 
   @override
@@ -104,6 +168,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    _serverPicker(l10n),
                     TextFormField(
                       controller: _urlController,
                       autocorrect: false,

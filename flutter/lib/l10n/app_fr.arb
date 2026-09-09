@@ -2306,5 +2306,8 @@
   "pleaseCompleteTest": "Veuillez compléter le test pour continuer",
   "chatAlreadyShared": "Cette discussion a déjà été partagée vers cette destination",
   "joinTeamFirst": "Veuillez rejoindre une équipe pour partager cette conversation",
-  "joinEnterpriseFirst": "Veuillez rejoindre une entreprise pour partager cette conversation"
+  "joinEnterpriseFirst": "Veuillez rejoindre une entreprise pour partager cette conversation",
+  "syncToServer": "Synchroniser avec le serveur :",
+  "showMore": "montrer plus",
+  "showLess": "montrer moins"
 }
