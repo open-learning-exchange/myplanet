@@ -1860,12 +1860,58 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
   /// all, so there is nothing to call. Reported rather than reached for —
   /// `teams_repository.dart` belongs to no lane this round.
   Future<bool> markUploaded(String id, String couchId, String rev) async {
-    final updated =
-        await (update(myLibraryTable)..where((r) => r.id.equals(id))).write(
-          MyLibraryTableCompanion(couchId: Value(couchId), rev: Value(rev)),
-        );
-    return updated > 0;
+    final row = await getById(id);
+    if (row == null) return false;
+    await (update(myLibraryTable)..where((r) => r.id.equals(id))).write(
+      MyLibraryTableCompanion(
+        couchId: Value(couchId),
+        rev: Value(rev),
+        // `downloadedRev` moves with `rev` **when there are bytes on disk**,
+        // and leaving it behind would have introduced a defect rather than
+        // preserved one.
+        //
+        // [watchResourcesNeedingUpdateCount] counts a shelf row where
+        // `_rev IS NOT downloaded_rev`. Before a resource is uploaded both are
+        // null, and SQLite's `IS NOT` between two nulls is false, so the row is
+        // not counted. Writing `_rev` alone flips that to true and the bell
+        // starts asking the user to **download the resource they just
+        // created**, over the copy already sitting under `ole/<id>/`.
+        //
+        // The honest reading is that the two are equal: the file on disk *is*
+        // the attachment of the revision being recorded, because this device
+        // authored both. Kotlin leaves `downloadedRev` null here
+        // (`ResourcesRepositoryImpl.kt:804-806` writes only the two columns),
+        // which also makes `MyLibrary.isResourceOffline` read false for a
+        // resource whose file is present. A deliberate divergence: copying it
+        // would ship a prompt that cannot be satisfied.
+        //
+        // Only when there really are bytes. A metadata-only row — which the
+        // port's form allows and Kotlin's does not — has nothing downloaded,
+        // and saying otherwise is the `resourceOffline` lie Phase 150 removed.
+        downloadedRev: (row.resourceOffline && row.resourceLocalAddress != null)
+            ? Value(rev)
+            : const Value.absent(),
+      ),
+    );
+    return true;
   }
+
+  /// Adopts the revision the **attachment** PUT returned.
+  ///
+  /// CouchDB bumps a document's revision when an attachment lands, and Kotlin
+  /// discards that response entirely — `FileUploader.onDataReceived` reads
+  /// only `ok` (`FileUploader.kt:70-78`). So the Kotlin row stays at the POST's
+  /// revision while the server has moved on, and the next resources sync pulls
+  /// the newer `_rev` over it, leaving `_rev != downloaded_rev` and the bell
+  /// asking to re-download a file the device already has.
+  ///
+  /// Recording it costs nothing and keeps the pair equal through that sync,
+  /// which is the point [markUploaded] makes above. Both columns move together
+  /// for the same reason they do there.
+  Future<void> adoptAttachmentRev(String id, String rev) =>
+      (update(myLibraryTable)..where((r) => r.id.equals(id))).write(
+        MyLibraryTableCompanion(rev: Value(rev), downloadedRev: Value(rev)),
+      );
 }
 
 /// Comfortably under SQLite's 999-variable floor.

@@ -3,14 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/session_provider.dart';
 import 'package:myplanet/repository/local_resource_request.dart';
 import 'package:myplanet/repository/resources_repository.dart';
+import 'package:myplanet/repository/resources_uploader.dart';
 import 'package:myplanet/ui/resources/add_resource_screen.dart';
 
+import '../repository/device_identity_fixture.dart';
 import '../support/widget_harness.dart';
 
 /// First tests for `AddResourceScreen` (Phase 102).
@@ -46,6 +49,7 @@ void main() {
     String? editResourceId,
     UserRow? user,
     LocalResourceError? failWith,
+    ServerConfig? serverConfig = _testServerConfig,
   }) async {
     // The form is one long `SingleChildScrollView`. It builds every child
     // eagerly, so `find.text` locates widgets below the fold but `tap` misses
@@ -81,6 +85,22 @@ void main() {
             return db;
           }),
           sessionProvider.overrideWith(() => _StubSession(user)),
+          // `_save` enqueues the new resource for upload, and
+          // `serverConfigProvider` transitively reads `planetPrefsProvider` —
+          // `UnimplementedError` in this harness (the Phase 75 shape). The
+          // enqueue is wrapped in a catch so that cannot take the screen down,
+          // which means an un-overridden provider here would leave the upload
+          // *silently absent* from every test in this file. Overriding it is
+          // what keeps `enqueues the new resource for upload` below able to
+          // fail.
+          serverConfigProvider.overrideWith(
+            () => _StubServerConfig(serverConfig),
+          ),
+          // The other half of the same problem. `queuePending` reads device
+          // identity to stamp the document, and the production source needs a
+          // platform channel no widget test has — so without this the enqueue
+          // throws into `_save`'s catch and the upload is silently absent.
+          deviceIdentitySourceProvider.overrideWithValue(testDeviceIdentity),
           // `saveLocalResource` can only fail on the title today: the file
           // copy `AddResourceActivity` relies on is still an open gap, so its
           // three other failure modes are unreachable from here. A stub is
@@ -226,6 +246,63 @@ void main() {
     // resource unopenable: the list sorts offline-first and the detail screen
     // hides Download in favour of View, on the strength of this flag.
     expect(row.resourceOffline, isFalse);
+  });
+
+  testWidgets('enqueues the new resource for upload', (tester) async {
+    // Until this lane, `saveLocalResource` was a complete port whose output
+    // went nowhere: the resource lived on that handset alone, invisible in
+    // Planet and on the user's other devices. The write site now hands it to
+    // the outbox.
+    //
+    // This test is also what keeps `_save`'s catch honest. That catch exists
+    // because `queuePending` reads device identity and `serverConfigProvider`
+    // reads `planetPrefsProvider`, either of which can throw — but a catch
+    // around the only enqueue in the app is exactly how a feature ends up
+    // green and dead, so the outbox row is asserted rather than assumed.
+    await pumpScreen(
+      tester,
+      user: buildUserRow(id: 'user-a', name: 'jane'),
+    );
+    await fillValidForm(tester);
+    await tapSubmit(tester, 'Submit');
+
+    final row = await onlyRow();
+    expect(row, isNotNull);
+    final queued = await db.outboxDao.forItem(ResourcesUploader.type, row!.id);
+    expect(queued, hasLength(1));
+    expect(queued.single.endpoint, endsWith('/resources'));
+    expect(
+      queued.single.endpoint,
+      isNot(contains('1234')),
+      reason: 'outbox.endpoint is persisted, so it must carry no PIN',
+    );
+    expect(queued.single.payload, contains('"title":"Kihu"'));
+  });
+
+  testWidgets('with no server configured the save still succeeds', (
+    tester,
+  ) async {
+    // The concrete way a resource is stranded: there is no endpoint to queue
+    // against, so nothing is queued — and the save must still report success,
+    // because the row is written and offline-first is the premise. This is the
+    // state `sweepPendingResources` exists to rescue, and the reason the
+    // feature is not finished until that sweep is wired into the background
+    // entry point.
+    await pumpScreen(
+      tester,
+      user: buildUserRow(id: 'user-a', name: 'jane'),
+      serverConfig: null,
+    );
+    await fillValidForm(tester);
+    await tapSubmit(tester, 'Submit');
+
+    expect(find.text('Added to My Library'), findsOneWidget);
+    final row = await onlyRow();
+    expect(row, isNotNull);
+    expect(
+      await db.outboxDao.forItem(ResourcesUploader.type, row!.id),
+      isEmpty,
+    );
   });
 
   testWidgets('the signed-in user is recorded on the new resource', (
@@ -487,4 +564,19 @@ class _StubSession extends SessionNotifier {
 
   @override
   Future<UserRow?> build() async => user;
+}
+
+const _testServerConfig = ServerConfig(
+  serverUrl: 'https://planet.example.org',
+  pin: '1234',
+  couchDbUrl: 'https://satellite:1234@planet.example.org:443',
+);
+
+class _StubServerConfig extends ServerConfigNotifier {
+  _StubServerConfig(this._config);
+
+  final ServerConfig? _config;
+
+  @override
+  ServerConfig? build() => _config;
 }

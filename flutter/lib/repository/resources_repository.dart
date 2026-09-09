@@ -321,6 +321,44 @@ class ResourcesRepository {
     return null;
   }
 
+  /// Port of `ResourcesRepositoryImpl.getPendingResourceUploads` (`:793-795`)
+  /// — resources this device authored that have never reached the server.
+  ///
+  /// The predicate is widened by one clause against Kotlin's, and
+  /// [MyLibraryDao.pendingUploads] sets out why at length: copying `_rev IS
+  /// NULL` verbatim would also match every course-embedded resource and
+  /// duplicate documents that already exist on the server.
+  Future<List<MyLibraryRow>> pendingUploads() => _dao.pendingUploads();
+
+  /// Port of `ResourcesRepositoryImpl.markResourceUploaded` (`:797-818`),
+  /// minus its private-team-resource link.
+  ///
+  /// Returns false when no local row matched, exactly as Kotlin's
+  /// `myLibraryDao.getById(localId) ?: return false` does; `ResourcesUploader`
+  /// documents what that answer is used for.
+  ///
+  /// **Kotlin's second half is not ported, and this is the gap.** For a
+  /// private resource it also writes a local `resourceLink` team document via
+  /// `TeamsRepository.createLocalResourceLink` (`TeamsRepositoryImpl
+  /// .kt:719-740`), stamped with the user's planet code — which is the only
+  /// consumer of the `planetCode` argument, and why this method does not take
+  /// one. `createLocalResourceLink` does not exist anywhere in the port, so
+  /// there is nothing to call, and adding it means reaching into
+  /// `teams_repository.dart`. Reported rather than reached for.
+  Future<bool> markResourceUploaded(
+    String localId,
+    String couchId,
+    String rev,
+  ) => _dao.markUploaded(localId, couchId, rev);
+
+  /// Records the revision the attachment PUT returned — see
+  /// [MyLibraryDao.adoptAttachmentRev]. Kotlin throws that response away.
+  Future<void> adoptAttachmentRev(String localId, String rev) =>
+      _dao.adoptAttachmentRev(localId, rev);
+
+  /// Port of `ResourcesRepositoryImpl.getLibraryItemById` (`:162-164`).
+  Future<MyLibraryRow?> getLibraryItemById(String id) => _dao.getById(id);
+
   /// Port of `ResourcesRepositoryImpl.getAllLibraries` — the achievement
   /// editor's resource picker lists the whole catalog.
   Future<List<MyLibraryRow>> getAllLibraries() => _dao.getAll();
