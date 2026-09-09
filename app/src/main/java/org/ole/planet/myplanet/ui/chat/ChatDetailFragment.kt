@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.chat
 
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.graphics.Typeface
 import android.os.Bundle
 import android.speech.RecognitionListener
@@ -17,7 +16,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.LinearLayout
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.view.isNotEmpty
 import androidx.fragment.app.Fragment
@@ -40,6 +38,7 @@ import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.base.BasePermissionActivity
 import org.ole.planet.myplanet.repository.ChatResult
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -88,13 +87,6 @@ class ChatDetailFragment : Fragment() {
     private var isListening = false
     private var textBeforeVoice: String = ""
 
-    private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-        if (isGranted) {
-            startSpeechToText()
-        } else {
-            Utilities.toast(requireContext(), getString(R.string.microphone_permission_required))
-        }
-    }
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     lateinit var customProgressDialog: DialogUtils.CustomProgressDialog
@@ -154,10 +146,8 @@ class ChatDetailFragment : Fragment() {
             if (isListening) {
                 stopSpeechToText()
             } else {
-                if (ContextCompat.checkSelfPermission(requireContext(), android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                (requireActivity() as BasePermissionActivity).requestRecordAudioPermission {
                     startSpeechToText()
-                } else {
-                    requestPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
                 }
             }
         }
