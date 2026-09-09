@@ -12,8 +12,6 @@ import '../data/local/app_database.dart';
 import '../data/local/converters.dart';
 import 'submissions_repository.dart';
 
-/// Dart port of `SubmissionsRepositoryExporter` using the cross-platform PDF
-/// package rather than Android's `PdfDocument` and `Canvas` APIs.
 /// The report's Status row.
 ///
 /// A **top-level function rather than an inline `??`** for the reason Phase
@@ -33,6 +31,13 @@ import 'submissions_repository.dart';
 /// (`row.status?.trim().isNotEmpty == true ? … : l10n.pending`), so a
 /// submission does not read "Pending" in the list and blank in its own PDF.
 ///
+/// The returned value is **trimmed**, which the screen's version is not: it
+/// renders `row.status!` with the padding intact. A deliberate difference
+/// rather than a copy of the idiom — a PDF table cell has no layout that
+/// absorbs leading whitespace — and pinned by a test, because an unpinned
+/// `.trim()` is how the two surfaces drift apart again. The screen's line is
+/// outside this lane's set; see `PHASE_151_NOTES.md`.
+///
 /// Kotlin prints the bare column here (`"Status: ${submission.status}"`,
 /// `SubmissionsRepositoryExporter.kt:77`) and therefore shows blank. Keeping
 /// the port's label is a deliberate nicety rather than a parity gap: Phase
@@ -42,6 +47,8 @@ import 'submissions_repository.dart';
 String submissionStatusLabel(SubmissionRow row) =>
     row.status?.trim().isNotEmpty == true ? row.status!.trim() : 'Pending';
 
+/// Dart port of `SubmissionsRepositoryExporter` using the cross-platform PDF
+/// package rather than Android's `PdfDocument` and `Canvas` APIs.
 class SubmissionsExporter {
   const SubmissionsExporter(this._repository);
 

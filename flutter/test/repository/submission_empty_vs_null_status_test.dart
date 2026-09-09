@@ -16,7 +16,8 @@ import 'package:myplanet/repository/submissions_repository.dart';
 /// `isStepCompleted` releases the course step.
 ///
 /// The port stored `getStringOrNull`, which is null for a missing key **and**
-/// for `""` (`json_utils.dart:19-22`). `NOT (status = 'pending')` is SQL NULL
+/// for `""` (`json_utils.dart`, `getStringOrNull`). `NOT (status = 'pending')`
+/// is SQL NULL
 /// for a NULL status and `WHERE NULL` drops the row, so the count was 0 and
 /// **the step stayed locked for a learner Kotlin lets through.**
 ///
@@ -163,9 +164,15 @@ void main() {
     });
 
     test('is matched by no positive `type` predicate either way', () async {
-      // The invariant that makes the deferral safe, and the guard that trips
-      // if a later phase adds a *negated* type predicate without moving the
-      // writer with it.
+      // The invariant that makes the deferral safe.
+      //
+      // **A pin, not a tripwire, and an earlier revision of this comment
+      // claimed the latter.** It holds under either writer and under a new
+      // negated predicate elsewhere, so no plausible mutation fails it — of
+      // this file's six controls it is the one nothing reaches. What it buys
+      // is the deferral's reason checked against the code rather than
+      // asserted in prose; the positive control below is what stops it being
+      // a claim about a query that returns nothing.
       await repository.upsertDocuments([planetDocument()]);
 
       expect(
@@ -205,9 +212,10 @@ void main() {
 
   group('re-serializing a pulled row', () {
     test('sends the empty status and type Kotlin sends', () async {
-      // `serializeSubmission`'s `submission.status ?: "pending"` and
-      // `submission.type ?: "survey"` (`SubmissionsRepositoryImpl.kt:835`,
-      // `:840`) do **not** catch `""` — Kotlin's Elvis fires on null only. So
+      // `serializeSubmission`'s `submission.type ?: "survey"` (`:835`) and
+      // `submission.status ?: "pending"`
+      // (`SubmissionsRepositoryImpl.kt:840`) do **not** catch `""` — Kotlin's
+      // Elvis fires on null only. So
       // a status-less document Kotlin pulled and re-sent carries `""` back,
       // where the port used to substitute `pending`/`survey` and tell Planet
       // something the document never said.
@@ -227,8 +235,12 @@ void main() {
 
     test('still defaults a genuinely null status, as Kotlin does', () async {
       // A row with no status at all is not something the sync-in can now
-      // produce, but a local writer or an older build's row can be in that
-      // state, and Kotlin's `?:` covers exactly it.
+      // produce, and **no local writer can either** — every one of them
+      // (`createDraft`, `createSurveyDraft`, `updateSurveyAnswers`,
+      // `saveExamAnswer`, `createSurveyAdoptionSubmission`, `markComplete`)
+      // writes an explicit status. Only a row a pre-Phase-151 build stored is
+      // in this state, on a preserved table, and Kotlin's `?:` covers exactly
+      // it. Built as a companion here for that reason.
       await database.submissionDao.upsertAll([
         SubmissionsCompanion.insert(
           id: 'local-1',

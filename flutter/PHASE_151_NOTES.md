@@ -60,35 +60,64 @@ predicate changed**, which is also why this lane needed nothing from Lane A.
 
 Three further arguments, all checked rather than asserted:
 
-1. **The port has already paid for the reader-side approach three times**, once
-   per phase, each time as a separate defect report: `pendingUploads`' coalesced
-   guest operands, `SubmissionsRepository._repairSurveyParentId`'s
+1. **The port has already paid for the reader-side approach, and the count is
+   smaller than my first draft claimed.** That draft said three times —
+   `pendingUploads`' coalesced operands, `_repairSurveyParentId`'s
    `coalesce([row.status, Constant('')]).equals('').not()`, and
-   `SurveysRepository`'s adoption guard `(row.status ?? '').isEmpty`. The step
-   count is the fourth reader of the same column and nobody remembered it. A
-   rule enforced at one writer is enforced; a rule enforced at N readers is a
-   rule that gets broken again — which is Phase 148's *one rule at the right
-   layer beat twenty special cases*, and Phase 78's `normalizeText`, and Phase
-   95's `ProfileAvatar`.
+   `SurveysRepository`'s `(row.status ?? '').isEmpty`. The implementation audit
+   took two of the three apart and it was right:
+
+   * `pendingUploads`' coalesces are on **`type` and `userId`**, not `status`;
+     its `status` clause is deliberately *not* coalesced.
+   * `_repairSurveyParentId`'s `coalesce` is **behaviourally redundant** —
+     `status.equals('').not()` excludes NULL and `''` identically, because
+     `NOT (NULL = '')` is NULL and a `WHERE` drops it. Verified by mutation:
+     dropping the coalesce passes the suite. Phase 136's actual fix was the
+     *operator* (`isNotValue` → `equals().not()`), not the coalesce. The
+     comment at the site now says so, and says not to cite it as evidence.
+
+   So the unambiguous instance is one: `SurveysRepository`'s Dart-side guard.
+   **The conclusion survives and the evidence was a third of what I claimed**,
+   which is worth the space because the argument is the phase's main one:
+   a rule enforced at one writer is enforced, a rule enforced at N readers
+   gets broken again — Phase 148's *one rule at the right layer beat twenty
+   special cases*, Phase 78's `normalizeText`, Phase 95's `ProfileAvatar`. And
+   the step count really was a reader nobody remembered.
 2. **`''` and NULL select identically under every positive equality**, so the
    change can only ever *include* rows Kotlin includes. It cannot strand
    anything, which is the failure mode this project keeps paying for.
-3. **It needs no migration to converge** — but *not* "self-healing on the next
-   sync", which is what my first draft of this said and what the code comment
-   claimed until the audit caught it. `sync()` does walk
-   `_all_docs?include_docs=true` in full every run and re-upsert every page
-   (there is deliberately no `deleteNotIn`), so the repair is free **when it
-   runs**. It has exactly one caller: the refresh icon on the Submissions
-   screen (`submissions_screen.dart:122`). `DashboardSyncArea` has no
-   `submissions` member and `dashboard_sync_provider.dart:276` says so
-   outright, where Kotlin pulls this table on **every** full sync
-   (`SyncManager.kt:209` → `HeavyTableSyncWorker`). So a device that already
-   synced keeps its NULL statuses until the learner opens Submissions and taps
-   refresh. Neither option repairs an existing row retroactively — the brief
-   was right to ask — but the reader fix would have to stay correct for both
-   states for ever, where this one converges as soon as the table is pulled.
-   **I checked that the walk was complete and never checked who calls it.
-   Verifying a mechanism is not verifying that it runs.**
+3. **It needs no migration to converge.** `sync()` walks
+   `_all_docs?include_docs=true` in full every run and re-upserts every page
+   (there is deliberately no `deleteNotIn`), so a submissions pull rewrites a
+   row a shipped build stored as NULL. Neither option repairs an existing row
+   retroactively — the brief was right to ask — but the reader fix would have
+   to stay correct for both states for ever, where this one converges as soon
+   as the table is pulled.
+
+   **The count of callers went wrong twice before landing here, and it is the
+   most instructive thing in the phase.** My first draft said "self-healing by
+   the next ordinary sync". The ground-truth audit called that false, on the
+   grounds that `sync()` has exactly one caller — the Submissions screen's
+   refresh icon — and I took the correction, wrote it into the code and the
+   notes, and made *"a mechanism verified is not a mechanism that runs"* the
+   phase's headline lesson. The implementation audit then found
+   `background_entrypoint.dart:195-202`: a `BackgroundSyncStep('submissions',
+   …)` inside `syncSteps`, on the periodic auto-sync task, with
+   `PlanetPrefs.autoSyncEnabled` defaulting to **true**
+   (`planet_prefs.dart:441`). Verified by hand. **The table is pulled
+   headlessly, the original claim was substantially right, and the correction
+   over-corrected.**
+
+   What is actually true of the sync center is only what
+   `dashboard_sync_provider.dart:276` says — nothing in the **foreground**
+   pass pulls `submissions` — which is a real gap against Kotlin's
+   `HeavyTableSyncWorker` (`SyncManager.kt:209`) and is a different statement
+   from the one I built on it. **An audit finding is a claim like any other.**
+   The first pass was right that I had not checked who calls `sync`; it was
+   wrong about the answer, and I propagated its answer without doing the check
+   its own finding said I had skipped. Fifth instance of the class this
+   project has now recorded, and the first where the error arrived *through* a
+   correction.
 
 ### The one place the argument could have failed, verified rather than reasoned
 
@@ -153,6 +182,42 @@ Planet-shaped document (owner in the nested `user` object, no top-level
 Both directions are pinned, so the fix cannot be mistaken for "count
 everything": a `pending` status still locks the step.
 
+## The defect this phase caused, and the guard it disarmed
+
+**The most valuable thing the implementation audit found is a defect the fix
+created in the test suite, on a line the same commit annotated to say it
+had not.**
+
+`_repairSurveyParentId`'s status test exists because Phase 136 shipped
+`row.status.isNotValue('')`, which emits SQL `IS NOT`; `NULL IS NOT ''` is
+**true**, so the guard rewrote an adoption marker into the gate key and, in
+that test's own words, *"the learner's Finish sailed past a survey they had
+never answered."* The only fixture reaching that branch was one document whose
+explicit `'status': ''` the old sync-in folded to NULL.
+
+After the writer fix that document stores `''`, and `'' IS NOT ''` is **false**
+— so the bug became invisible. Reverting `_repairSurveyParentId` to the
+Phase-136 form left all 40 tests in the three relevant files green.
+Demonstrated, not reasoned. And my edit to that test's expectation carried the
+comment *"The assertion below is unaffected either way"*, which was true of
+that assertion and false of the test's purpose; the same commit wrote the
+justification *"which is why the `coalesce` stays: rows a pre-Phase-151 build
+stored as NULL are still on devices"* and removed the coverage for exactly
+that population.
+
+Fixed by building the legacy row as a companion — **the sync-in can no longer
+produce it** — and asserting the repair leaves it alone. Reverting the guard
+now fails. `submissions` is a preserved table, so those rows are real, not
+hypothetical.
+
+**The general lesson, which is new here:** when a writer fix changes what a
+column holds, every test whose *fixture* went through that writer may have
+moved off the branch it was written to cover — silently, while staying green.
+Changing an expectation from `isNull` to `''` is the visible half; the
+invisible half is that no fixture reaches the old branch any more. **After a
+writer change, re-run the mutation that the affected guards were written
+against, not just the phase's own tests.**
+
 ## `type`, and why it is reported rather than fixed
 
 The inherited report says *"the same divergence exists on `type`"*. In the
@@ -199,11 +264,29 @@ local edit sets `isUpdated` on a synced typeless row.
    divergence with no reader that can see it.** Swept: `sender`, `source` and
    `parentCode` on `submissions` are read by **no predicate anywhere** in the
    port (and Kotlin's uploader supplies `source`/`parentCode` from arguments,
-   not from the row); `teamId`'s null-distinguishing readers,
-   `pendingSurveySubmissions` and the team-scoped pair, are already written
-   `teamId.isNull() | teamId.equals('')` and accept both. Moving them is parity
-   tidying with no behavioural payload — worth doing in one pass with item 1,
-   not worth a phase.
+   not from the row). Moving them is parity tidying with no behavioural
+   payload — worth doing in one pass with item 1, not worth a phase.
+
+   **`teamId` needs a sharper statement than "no payload", though.** The
+   *writer* change really is inert, because `byUserWithoutTeam`
+   (`app_database.dart:2688-2694`) and `pendingSurveySubmissions` are written
+   `teamId.isNull() | teamId.equals('')` and accept both. But that disjunct is
+   itself a divergence in the other direction: Kotlin's
+   `getByUserIdWithoutTeam`, `getUniquePendingSurveyCandidates` and
+   `deletePendingSurveyOrphans` are plain `teamId IS NULL`
+   (`SubmissionDao.kt:14`, `:20`, `:39`) while Kotlin's sync-in stores `''`, so
+   **Kotlin's own readers match no synced team-less submission at all** and the
+   port's match every one. A Kotlin bug the port does not reproduce, and
+   `SurveysRepository.findExistingAdoption`'s non-team path sits downstream of
+   it. **Anyone who "tidies up" the `equals('')` disjunct after item 1 lands
+   will break `byUserWithoutTeam` for every pulled row.**
+
+   And **`parentId` belongs on this list**, which presented itself as
+   complete and was not: `submissions_repository.dart`'s `parentId` is
+   `getStringOrNull` where Kotlin's `:661` is `getString`, and Kotlin *does*
+   have a distinguishing reader for it (`SubmissionDao.kt:40`,
+   `parentId IS NOT NULL`). Latent in the port — no port predicate
+   distinguishes it — but it is the same divergence.
 4. **`course_progress.userId` is a second live instance, and my first sweep
    missed it.** Kotlin's `ProgressRepositoryImpl.kt:260` writes
    `JsonUtils.getString("userId", act)` → `''`; the port's
@@ -247,10 +330,16 @@ local edit sets `isUpdated` on a synced typeless row.
    `couchId IS NULL`, which excludes every synced row. Both are one careless
    writer away from real; neither is real today.
 
-   Two general rules fell out of it. **`_id` and `_rev` can never diverge on
-   this axis** — CouchDB always returns a non-empty `_rev` from
-   `_all_docs?include_docs=true` — so only optional document fields can, which
-   cuts the 198 call sites down sharply. And **sometimes the port's null is
+   One general rule fell out of it, and one claim that looked like a rule and
+   was false. **`_id` and `_rev` cannot diverge on this axis *for a top-level
+   document*** — CouchDB always returns a non-empty `_rev` from
+   `_all_docs?include_docs=true`. My first draft stated that unqualified, as
+   something that "cuts the 198 call sites down sharply", and the
+   implementation audit refuted it with the phase's own material: not every
+   mapper input is a top-level document. `survey_mapper.dart:145` and
+   `exam_mapper.dart:247` read `_rev` from a survey or exam **embedded in a
+   course document**, which has none — and item 6 below describes exactly that
+   as the Phase-138 defect, two paragraphs from where I wrote the rule. And **sometimes the port's null is
    better and must not be "fixed" toward Kotlin**: `my_library_mapper.dart:73`
    reads `year`, and Kotlin's `getString` blanks a JSON *number* (its
    `isString` test's false branch returns `""`), so a resource with
@@ -305,7 +394,20 @@ local edit sets `isUpdated` on a synced typeless row.
    better one — see item 5's `year` example — but the helper's doc comment
    said only "missing/null becomes `''`", which is half the Kotlin. Left as
    is, deliberately, and now described accurately.
-11. **The trap is now documented at the helper**, since that is the layer with
+11. **`app_database.dart:2907-2911` carries the same falsified claim** as item
+   7's range — *"`json_utils.dart:19-22` turns the empty string back into null
+   on a re-pull"* — and is additionally stale against its own code, since it
+   justifies a `coalesce` that `isATeamAdoptionMarker` does not use. Two
+   ranges in Lane A's file, one hand-over. Its `json_utils.dart:19-22`
+   citation is also now off by ~37 lines, because this phase's own doc
+   comments moved `getStringOrNull`'s body; the same stale citation is fixed
+   in the two test files and in this lane's own new one.
+12. **`submissionStatusLabel` trims and `submissions_screen.dart:248` does
+   not**, so a status of `'  graded  '` renders trimmed in the PDF and padded
+   in the list. The trim is deliberate (a PDF table cell has no layout that
+   absorbs leading whitespace) and now pinned by a test; the screen's line is
+   outside this lane's set. One line if anyone wants them identical.
+13. **The trap is now documented at the helper**, since that is the layer with
    198 callers: `getStringOrNull`'s dartdoc states the three-valued-logic
    mechanism, names this defect as the instance that reached a learner, lists
    the three earlier reader-side patches, and says to prefer `getString` on a
@@ -314,12 +416,16 @@ local edit sets `isUpdated` on a synced typeless row.
 
 ## Two process notes, both mine
 
-**A mechanism verified is not a mechanism that runs.** I established that the
-submissions walk is a complete `_all_docs` re-upsert, correctly, and wrote
-"self-healing by the next ordinary sync" into both the code and these notes
-without checking `sync()`'s callers. It has one, behind a refresh icon. The
-audit caught it. This is the same shape as Phase 149's inherited-citation
-mistake and Phase 148's — the sentence looked finished, so nothing re-read it.
+**An audit finding is a claim like any other.** The ground-truth pass told me
+my "self-healing by the next ordinary sync" was false because `sync()` has one
+caller. I took it, wrote it into the code and these notes, and made it the
+phase's headline lesson — without running the check its own finding said I had
+skipped. It has two callers, one of them headless and on by default, so the
+original claim was substantially right and the correction was the error that
+shipped. Phase 149 recorded that *a supplied replacement sentence is a claim,
+not a patch*; this is the same failure with an audit as the supplier, which is
+worse, because an audit finding arrives pre-labelled as verified. **Open the
+citation even when the correction comes from something whose job was checking.**
 
 **Do not `git checkout <file>` to revert a mutation while the fix is
 uncommitted.** Twice it restored HEAD and silently deleted the change under

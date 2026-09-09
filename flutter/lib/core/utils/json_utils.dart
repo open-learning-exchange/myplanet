@@ -9,18 +9,32 @@ import 'dart:convert';
 class JsonUtils {
   const JsonUtils._();
 
-  /// Port of `JsonUtils.getString` — missing key, explicit JSON `null`, and a
-  /// non-primitive all become `''`, as Kotlin's does (`JsonUtils.kt:65-68`).
+  /// Port of `JsonUtils.getString`. A missing key and an explicit JSON `null`
+  /// become `''`, as Kotlin's do (`JsonUtils.kt:65-68`).
   ///
-  /// **One deliberate divergence.** Kotlin's map overload also returns `''`
-  /// for a non-string *primitive*, because its lambda is
-  /// `if (el.isJsonPrimitive && el.asJsonPrimitive.isString) el.asString else ""`
-  /// — so `{"year": 2019}` reads as `''` there and `'2019'` here. The port's
-  /// value is the useful one, and the Kotlin app really does drop the year on
-  /// a resource whose `year` is a JSON number (`MyLibrary.kt:274`). Kotlin's
-  /// sibling `getString(array, index)` overload omits that test, which is what
-  /// shows the map overload's is intentional rather than an oversight. Do not
-  /// "correct" this toward Kotlin.
+  /// **Everything else diverges, in two ways, and only one of them is
+  /// benign.** Kotlin's map overload is
+  /// `if (el.isJsonPrimitive && el.asJsonPrimitive.isString) el.asString else ""`,
+  /// so it returns `''` for *anything* that is not a string primitive. This
+  /// returns `value.toString()`:
+  ///
+  /// * **A non-string primitive** — `{"year": 2019}` is `''` in Kotlin and
+  ///   `'2019'` here. The port's value is the useful one; the Kotlin app
+  ///   really does drop the year on a resource whose `year` is a JSON number
+  ///   (`MyLibrary.kt:274`). Do not "correct" this toward Kotlin.
+  /// * **A Map or List** — `{"parent": {...}}` is `''` in Kotlin and
+  ///   `'{_id: exam-1, name: Week 1 quiz}'` here, which is Dart's
+  ///   `Map.toString()` and **is not JSON**, so `jsonDecode` throws on it
+  ///   wherever it is read back. That has already cost this project a defect,
+  ///   recorded at [SubmissionsRepository.upsertDocuments]: the sync-in stored
+  ///   that literal for `user`/`parent` until it was changed to `jsonEncode`.
+  ///   **Never pass this an object or array key** — use [getObject] and encode
+  ///   it, or `jsonEncode` the value yourself.
+  ///
+  /// An earlier revision of this comment claimed a non-primitive becomes `''`
+  /// "as Kotlin's does" and named the primitive case as the only divergence.
+  /// Both halves were wrong, in the doc comment added to stop the next of 198
+  /// callers being misled.
   static String getString(String key, Map<String, dynamic>? json) {
     final value = json?[key];
     if (value == null) return '';

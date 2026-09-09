@@ -55,6 +55,12 @@ void main() {
       expect(submissionStatusLabel(rowWith(null)), 'Pending');
     });
 
+    test('trims, which the list screen deliberately does not', () {
+      // An unpinned `.trim()` is how two surfaces drift apart; the list
+      // renders `row.status!` with the padding intact.
+      expect(submissionStatusLabel(rowWith('  graded  ')), 'graded');
+    });
+
     test('falls back for the empty status the sync-in now stores', () {
       // Phase 151: `upsertDocuments` stores Kotlin's `''` for a document that
       // omits `status`, so `row.status ?? 'Pending'` stopped covering the case
