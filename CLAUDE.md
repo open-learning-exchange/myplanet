@@ -19,16 +19,16 @@
 
 ### Flutter port (in progress)
 
-**Migration progress: ≈94/100.** Report this figure whenever you report on the
+**Migration progress: ≈95/100.** Report this figure whenever you report on the
 port; it is the whole migration effort on a 1-to-100 scale, not a phase count.
 The basis, so it can be argued with rather than repeated:
 
 | Dimension | State | Est. |
 |---|---|---|
 | Feature breadth | all 28 UI packages have screens (enterprises is a team *type*, not a gap — Phase 99) | ~95 |
-| Behavioural parity | the limiter, and the lowest-confidence row: **reachability** audits keep finding ported, green, *dead* code — see below | ~72 |
-| Test coverage | 2735 tests / 234 test files vs 260 Kotlin test files | ~90 |
-| Localisation | ar/es/fr 858–894 of 916 keys but **416–469 of those are unreviewed machine translation** (`"x-mt": true`, so the set is queryable); ne/so 451. Phase 141 measured the recoverable pool and found it **exhausted** — the next 42 values a looser matcher reaches are degradations | ~55 |
+| Behavioural parity | still the limiter and the lowest-confidence row: **reachability** audits keep finding ported, green, *dead* code — see below. Phase 154 closed two whole missing *directions*, which is why this moved | ~76 |
+| Test coverage | 3065 tests / 260 test files vs 260 Kotlin test files — the file counts are now equal, which is a coincidence of counting and **not** a parity claim | ~93 |
+| Localisation | template is 923 keys; ar 864, es 900, fr 899, but **416–469 of those are unreviewed machine translation** (`"x-mt": true`, so the set is queryable); ne/so 457 with 25 each. Phase 141 measured the recoverable pool and found it **exhausted** — the next 42 values a looser matcher reaches are degradations | ~55 |
 | Background work | WorkManager gaps closed through Phase 94, platform channels in-tree | ~95 |
 
 Breadth is measurable and depth is not — 250 hand-written Dart files against 551
@@ -963,14 +963,21 @@ off 3.44.8 together, and two of those (`js`,
 The two majors this file has called load-bearing for several rounds were then
 *measured* rather than guessed, each resolved in a container and run:
 
-- **`go_router` 14.8.1 → 18.0.1 is a one-line change.** Analyze clean, full
-  suite green, zero source or test edits. 18.0.0's floor is Flutter 3.44 / Dart
-  3.12, exactly what is pinned; 17's observer default is unobservable with no
-  router observer registered; 16's `GoRouteData` break needs
-  `go_router_builder`, which the port does not have (zero `TypedGoRoute`); 15's
-  case-sensitive URLs change nothing because all 78 `GoRoute` paths are
-  lowercase. **Re-check that last one if a route is ever added with a capital
-  letter.**
+- **`go_router` 14.8.1 → 18.0.1 was taken** in `e1921ef01`, and the pubspec
+  carries the reasoning at the pin. Analyze clean, full suite green, zero
+  source or test edits. **This entry said "is a one-line change" for several
+  rounds after it had been made**, and a Phase 154 brief told a lane to go take
+  it; the lane opened the pubspec, found 18.0.1 already there, and worked the
+  real remaining bucket instead. *An entry describing work as pending is a
+  claim with a shelf life — check the tree, not the table.* If a route is ever
+  added with a capital letter in a literal segment, re-check 15's
+  case-sensitive URLs.
+- **A free patch can hide behind a blocked major.** `flutter pub outdated`
+  reports only the *resolvable maximum*, so `file_picker`'s row read
+  `11.0.2 -> 12.2.0` and the reachable 11.0.3 never appeared — nor was it in
+  bucket 1, because `pub upgrade` obeys an exact pin. It was the one hosted
+  dependency written without a caret and without a comment explaining why.
+  **A dependency pinned without a stated reason is a bug with a shelf life.**
 - **`flutter_riverpod` 2.6.1 → 3.4.3 is the real one** and still wants a phase
   with no other lane running, because it touches every provider in the port.
 
@@ -1014,6 +1021,27 @@ established, at the cost of a regression and five failing tests:
   independent slices — but *hunk positions are not evidence*, so when two
   targets need the same file, prefer giving both jobs to one lane. Phase 135
   did that with `app_database.dart` deliberately.
+- **A lane that correctly stops at its file boundary ships an uncalled
+  function, and wiring it is the integrator's job.** Phase 154's Lane 3 wrote
+  `sweepPendingResources` and did not call it, because both call sites live in
+  files two other lanes owned. It reported them precisely — and merged green,
+  tested, and dead: *the exact shape Phase 113 warned about and Phase 119 found
+  four of, arriving by way of the process meant to catch it.* "Stop and report"
+  is still right; what it costs is a wiring step that no lane's own gate can
+  fail on, because every test drove the function directly. **After a round,
+  grep the merged tree for each new top-level function and confirm something
+  calls it**, then add the source-text call-site guard (the shape in
+  `pending_submissions_sweep_test.dart`) so it cannot be lost again.
+- **All four Phase 154 code lanes ran the mandatory second audit against their
+  own finished, green code, and all four found real defects in it** — nine,
+  four, five and five. Two were serious: a heavy-table walk scheduled at the
+  *top* of a background invocation, free to open a second Flutter engine
+  writing the same SQLite file with no WAL and no busy timeout; and a
+  server-switch gate placed on the row tap, which in *this* port commits
+  nothing, leaving the Connect button — the line that actually adopts a
+  configuration — wide open. Both were introduced by the lane's own first cut
+  and caught only by the second pass. **The two-pass rule is not a formality
+  and the second pass is the one that pays.**
 - **`outcome_branch` needs `source_url` and `source_revision`.** A
   `create_session` call with only `outcome_branch` is refused with
   *"outcome_branch requires a github.com git source"*.
