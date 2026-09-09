@@ -1759,7 +1759,40 @@ class SubmissionsRepository {
           startTime: Value(JsonUtils.getLong('startTime', json)),
           lastUpdateTime: Value(JsonUtils.getLong('lastUpdateTime', json)),
           grade: Value(JsonUtils.getLong('grade', json)),
-          status: Value(JsonUtils.getStringOrNull('status', json)),
+          // **`getString`, not `getStringOrNull`, and the difference locked a
+          // course step.** Kotlin stores
+          // `JsonUtils.getString("status", submission)`
+          // (`SubmissionsRepositoryImpl.kt:659`, `:679`), which is `""` for a
+          // key the document does not carry (`JsonUtils.kt:65-68`). The port
+          // stored `getStringOrNull`, which is null for a missing key *and*
+          // for `""` (`json_utils.dart`).
+          //
+          // `SubmissionDao.countCompletedByUserAndExamId`'s
+          // `status != 'pending'` (`SubmissionDao.kt:24`) is then the whole
+          // defect: `NOT (NULL = 'pending')` is SQL NULL and `WHERE NULL`
+          // drops the row, so a Planet submission with no `status` counted 0
+          // and `isStepCompleted` held the step shut — for a learner Kotlin,
+          // storing `""`, lets straight through.
+          //
+          // The reader was never wrong. `countCompletedByUserAndExamId` is a
+          // faithful port of that query, its NULL behaviour included, and
+          // Kotlin's own reader excludes a NULL status too. Coalescing there
+          // would have made the port's *reader* diverge from Kotlin's in order
+          // to compensate for the port's *writer* diverging from Kotlin's.
+          // Only one side had drifted, so only one side moved — which is also
+          // why no DAO predicate changed.
+          //
+          // Self-healing on already-synced handsets: [sync] walks
+          // `_all_docs?include_docs=true` in full every run and re-upserts
+          // every page, so a row a shipped build stored as NULL is rewritten
+          // to `''` by the next ordinary sync. Nothing has to migrate it.
+          //
+          // `type`, `sender`, `source`, `parentCode` and `teamId` carry the
+          // same divergence and are deliberately left alone this round —
+          // `PHASE_151_NOTES.md` § *Reported, not fixed* has the reach of each
+          // and why `type`'s fix needs two lines in `submission_detail_screen`
+          // that this lane does not own.
+          status: Value(JsonUtils.getString('status', json)),
           uploaded: Value(rev.isNotEmpty),
           sender: Value(JsonUtils.getStringOrNull('sender', json)),
           source: Value(JsonUtils.getStringOrNull('source', json)),

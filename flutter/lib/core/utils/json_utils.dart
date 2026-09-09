@@ -16,6 +16,32 @@ class JsonUtils {
     return value is String ? value : value.toString();
   }
 
+  /// [getString]'s result, with the empty string folded to null.
+  ///
+  /// **This helper has no Kotlin counterpart, and folding `''` to null is not
+  /// a free convenience — it changes what SQL does with the column.** Kotlin's
+  /// sync-in stores `getString`, so a key the server omits is `''` there and
+  /// null here, and the two are only interchangeable under a *positive*
+  /// predicate: `'' = 'x'` and `NULL = 'x'` both fail to select. Under a
+  /// negated one they diverge, because SQL is three-valued —
+  /// `NOT (NULL = 'x')` is NULL, and `WHERE NULL` drops the row. `LIKE`, `IS
+  /// NOT` (`NULL IS NOT ''` is **true**) and a Dart `?? fallback` all
+  /// distinguish them too.
+  ///
+  /// That is not hypothetical. Phase 151 traced one instance end to end: the
+  /// submissions sync-in stored a missing `status` as null, and
+  /// `SubmissionDao.countCompletedByUserAndExamId`'s `status != 'pending'`
+  /// therefore counted 0 where Kotlin counts 1 — **a course step stayed locked
+  /// for a learner Kotlin lets through.** Three earlier phases had already
+  /// paid for the same fold one reader at a time
+  /// (`SubmissionDao.pendingUploads`' coalesced operands,
+  /// `SubmissionsRepository._repairSurveyParentId`, `SurveysRepository`'s
+  /// adoption guard), each found as a separate defect.
+  ///
+  /// So: on a **sync-in or mapper** path, prefer [getString] and store what
+  /// Kotlin stores, unless the column's readers are all positive equalities
+  /// *and* nothing reads it with a `??` fallback. Reach for this helper where
+  /// null genuinely means absent to the code that reads it back.
   static String? getStringOrNull(String key, Map<String, dynamic>? json) {
     final value = getString(key, json);
     return value.isEmpty ? null : value;

@@ -107,7 +107,21 @@ class SubmissionsExporter {
   pw.Widget _metadata(SubmissionRow row) => pw.Table(
     columnWidths: const {0: pw.FixedColumnWidth(90)},
     children: [
-      _metadataRow('Status', row.status ?? 'Pending'),
+      // `?? 'Pending'` alone stopped covering this the moment the sync-in
+      // began storing Kotlin's `''` for a status-less document instead of
+      // null (`submissions_repository.dart`, `upsertDocuments`). Both states
+      // mean "the server told us nothing", so both take the fallback — which
+      // is the idiom `submissions_screen.dart`'s tile subtitle already uses
+      // (`row.status?.trim().isNotEmpty == true ? … : l10n.pending`), so a
+      // submission no longer reads "Pending" in the list and blank in its own
+      // PDF. Kotlin prints the bare column here (`"Status: ${submission
+      // .status}"`, `SubmissionsRepositoryExporter.kt:77`) and so shows blank;
+      // keeping the port's label is a deliberate nicety, not a parity gap, and
+      // this phase's job was the step lock rather than a change of copy.
+      _metadataRow(
+        'Status',
+        row.status?.trim().isNotEmpty == true ? row.status! : 'Pending',
+      ),
       // `getNormalizedSubmitterName` (`SubmissionsRepositoryImpl.kt:316-323`)
       // — the `name` inside the JSON, never the JSON.
       _metadataRow(
