@@ -993,6 +993,8 @@
     <string name="no_teams">equipos no disponibles</string>
     <string name="no_chats">no hay chats anteriores</string>
     <string name="no_feedback">No hay comentarios aquí</string>
+    <string name="medium_text_html">Texto / HTML</string>
+    <string name="medium_html">HTML</string>
     <string name="empty_text" />
     <string name="message_placeholder">%s</string>
     <string name="reports">informes</string>

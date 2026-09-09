@@ -25,16 +25,6 @@ class UserSessionManager @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val timeProvider: TimeProvider
 ) {
-    private val fullName: String
-
-    init {
-        try {
-            fullName = sharedPrefManager.getUserName()
-        } catch (e: IllegalArgumentException) {
-            throw e
-        }
-    }
-
     suspend fun getUserModel(): UserEntity? {
         return userRepository.getUserModel()
     }
