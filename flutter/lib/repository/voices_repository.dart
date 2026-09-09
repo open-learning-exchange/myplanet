@@ -319,21 +319,39 @@ class VoicesRepository {
     List<VoiceImageAttachment> attachments,
   ) async {
     final entries = <String>[];
+    final used = <String>{};
     for (final attachment in attachments) {
+      // Two picks with the same name would share one slot and the second
+      // would overwrite the first, so both `imageUrls` entries would resolve
+      // to the same bytes and one image would be silently lost. Kotlin cannot
+      // reach this — its entries carry two different absolute source paths —
+      // so the disambiguation is the port's own, forced by keying on the name.
+      final filename = _uniqueFilename(attachment.filename, used);
       final file = await VoiceImages.write(
         newsId: newsId,
-        filename: attachment.filename,
+        filename: filename,
         bytes: attachment.bytes,
       );
       if (file == null) continue;
+      used.add(filename);
       entries.add(
-        PendingVoiceImage(
-          imageUrl: file.path,
-          fileName: attachment.filename,
-        ).encode(),
+        PendingVoiceImage(imageUrl: file.path, fileName: filename).encode(),
       );
     }
     return entries;
+  }
+
+  /// `photo.jpg`, `photo-2.jpg`, `photo-3.jpg` — the extension is preserved so
+  /// name-based MIME detection still resolves it.
+  static String _uniqueFilename(String filename, Set<String> used) {
+    if (!used.contains(filename)) return filename;
+    final dot = filename.lastIndexOf('.');
+    final stem = dot <= 0 ? filename : filename.substring(0, dot);
+    final extension = dot <= 0 ? '' : filename.substring(dot);
+    for (var n = 2; ; n++) {
+      final candidate = '$stem-$n$extension';
+      if (!used.contains(candidate)) return candidate;
+    }
   }
 
   /// The images on [newsId] that have not reached the server yet.

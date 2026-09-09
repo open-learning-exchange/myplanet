@@ -142,7 +142,16 @@ class VoicesUploader {
       // not exist and the only local pointer to the file is gone, with nothing
       // logged. Failing the operation instead leaves the outbox row `pending`
       // with `imageUrls` intact, so the drain retries the whole post.
-      return NetworkError<Map<String, dynamic>>(null, failure.message);
+      // The **underlying** result, not a synthetic error, so
+      // `OutboxDrainer`'s existing classification applies unchanged: it treats
+      // `code >= 500` and a transport `NetworkException` as retryable and
+      // everything else as permanent. Wrapping in `NetworkError(null, ...)`
+      // made every failure permanent — `(code ?? 0) < 500` — so a single
+      // dropped connection mid-attachment abandoned the whole post, text and
+      // all, after one attempt. A missing file has no result and stays
+      // permanent, which is right: a retry cannot recreate bytes.
+      return failure.result ??
+          NetworkError<Map<String, dynamic>>(null, failure.message);
     }
 
     final result = await _api.postJsonObject(
@@ -268,7 +277,10 @@ class VoicesUploader {
       authHeader: authHeader,
     );
     if (created is! NetworkSuccess<Map<String, dynamic>>) {
-      throw _ImageUploadFailure('Resource document rejected: $created');
+      throw _ImageUploadFailure(
+        'Resource document rejected: $created',
+        result: created,
+      );
     }
     final resourceId = created.data['id'];
     final resourceRev = created.data['rev'];
@@ -288,7 +300,10 @@ class VoicesUploader {
       ifMatch: resourceRev,
     );
     if (attached is! NetworkSuccess<Map<String, dynamic>>) {
-      throw _ImageUploadFailure('Attachment rejected: $attached');
+      throw _ImageUploadFailure(
+        'Attachment rejected: $attached',
+        result: attached,
+      );
     }
 
     return {
@@ -351,10 +366,15 @@ class VoicesUploader {
       lookupMimeType(fileName) ?? 'application/octet-stream';
 }
 
-/// An image step that failed, carrying why. Not exported: the handler turns it
-/// into a [NetworkError] so the outbox retries the whole post.
+/// An image step that failed, carrying why.
+///
+/// [result] is the failing network result when there was one, so the handler
+/// can hand the drainer the real code and let its existing retryable-versus-
+/// permanent rule decide. A failure with no [result] — bytes missing from
+/// disk — is permanent by construction.
 class _ImageUploadFailure implements Exception {
-  const _ImageUploadFailure(this.message);
+  const _ImageUploadFailure(this.message, {this.result});
 
   final String message;
+  final NetworkResult<Map<String, dynamic>>? result;
 }

@@ -74,8 +74,18 @@ class VoiceImages {
 
   /// Removes every pending image for a post, once they have been delivered.
   ///
-  /// Best-effort: the row's `imageUrls` is what the uploader reads, so a
-  /// directory left behind costs disk, not correctness.
+  /// Best-effort, and the `catch` is deliberately unqualified. `markUploaded`
+  /// calls this **after** the news document has been accepted, so anything
+  /// escaping here would fail the outbox handler for a post that is already on
+  /// the server — and the next drain would POST a second copy, which is
+  /// precisely the duplicate the handler's id/rev guard exists to prevent.
+  /// `on Exception` was not enough: `getApplicationDocumentsDirectory` on an
+  /// engine with no `path_provider` channel throws a **`FlutterError`**, which
+  /// is an `Error`, and headless WorkManager engines are exactly where this
+  /// runs. The existing `markUploaded` test caught it.
+  ///
+  /// A slot left behind costs disk, not correctness: `imageUrls` is what the
+  /// uploader reads and it has just been cleared.
   static Future<void> deleteFor(String newsId) async {
     if (newsId.isEmpty) return;
     try {
@@ -84,8 +94,8 @@ class VoiceImages {
         p.join(base.path, 'voice_images', _segment(newsId)),
       );
       if (await dir.exists()) await dir.delete(recursive: true);
-    } on Exception {
-      // A slot that cannot be cleaned is not a failed upload.
+    } catch (_) {
+      // See above: never let cleanup fail a delivered upload.
     }
   }
 

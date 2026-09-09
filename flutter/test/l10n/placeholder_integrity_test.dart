@@ -447,12 +447,18 @@ void main() {
     // different key name carrying the identical English string, which is the
     // case that path exists for. Nothing existing changed value — the only
     // other diff line per locale was a trailing comma.
+    // Phase 147 adds one per locale: `addImage`, the voice composer's new
+    // attach-an-image button. Recovered rather than generated — the Kotlin
+    // `add_image` labels the same button on `fragment_voices.xml` and ships a
+    // human translation in all five `values-*/strings.xml`, so the port's own
+    // affordance can borrow the words the Android app already shows. Nothing
+    // existing changed value.
     const humanReviewed = {
-      'ar': 425,
-      'es': 477,
-      'fr': 423,
-      'ne': 425,
-      'so': 425,
+      'ar': 426,
+      'es': 478,
+      'fr': 424,
+      'ne': 426,
+      'so': 426,
     };
 
     for (final code in locales) {

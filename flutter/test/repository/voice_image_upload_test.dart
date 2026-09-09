@@ -290,6 +290,42 @@ void main() {
     );
   });
 
+  test('two picks with the same name do not share one slot', () async {
+    // Keyed on `<newsId>/<fileName>`, so two `photo.jpg` picks would land in
+    // the same file and both `imageUrls` entries would resolve to the second
+    // one's bytes — one image lost, silently. Kotlin cannot reach this: its
+    // entries carry two different absolute source paths.
+    final posts = stubPosts();
+    final puts = stubAttachments();
+    final first = Uint8List.fromList([1, 1, 1]);
+    final second = Uint8List.fromList([2, 2, 2]);
+    final id = await voices.createPost(
+      message: 'two shots of the same pump',
+      userId: 'org.couchdb.user:ada',
+      userName: 'ada',
+      attachments: [
+        VoiceImageAttachment(bytes: first, filename: 'photo.jpg'),
+        VoiceImageAttachment(bytes: second, filename: 'photo.jpg'),
+      ],
+    );
+
+    await drainOnce(id);
+
+    expect(puts.map((p) => p.bytes), [first, second]);
+    expect(puts.map((p) => p.url), [
+      'https://planet.example/db/resources/resource-1/photo.jpg',
+      'https://planet.example/db/resources/resource-2/photo-2.jpg',
+    ]);
+    // The extension survives the disambiguation, so MIME detection still works.
+    expect(puts.map((p) => p.contentType), ['image/jpeg', 'image/jpeg']);
+    expect(
+      posts.last.body['message'],
+      'two shots of the same pump\n'
+      '![](resources/resource-1/photo.jpg)\n'
+      '![](resources/resource-2/photo-2.jpg)',
+    );
+  });
+
   test('the mime type is detected from the name, as a182edd made it', () async {
     stubPosts();
     final puts = stubAttachments();
@@ -336,6 +372,79 @@ void main() {
       );
     },
   );
+
+  test('a transient attachment failure is retried, not abandoned', () async {
+    // `OutboxDrainer` classifies `code >= 500` and a transport
+    // `NetworkException` as retryable and everything else as permanent. The
+    // first cut wrapped every image failure in `NetworkError(null, ...)`,
+    // whose `(code ?? 0) < 500` reads as **permanent** — so one dropped
+    // connection mid-attachment abandoned the post, its text included, after
+    // a single attempt. The handler now returns the underlying result.
+    stubPosts();
+    when(
+      () => api.uploadAttachment(
+        any(),
+        bytes: any(named: 'bytes'),
+        authHeader: any(named: 'authHeader'),
+        contentType: any(named: 'contentType'),
+        ifMatch: any(named: 'ifMatch'),
+      ),
+    ).thenAnswer(
+      (_) async => const NetworkError<Map<String, dynamic>>(503, 'busy'),
+    );
+
+    final id = await seedPostWithImage();
+    final operation = await queuedFor(id);
+    final result = await uploader.handler(
+      operation,
+      jsonDecode(operation.payload) as Map<String, dynamic>,
+      'Basic dGVzdA==',
+    );
+
+    expect(result, isA<NetworkError<Map<String, dynamic>>>());
+    expect(
+      (result as NetworkError<Map<String, dynamic>>).code,
+      503,
+      reason: 'the drainer needs the real code to know this is retryable',
+    );
+  });
+
+  test('cleanup cannot fail a post the server already accepted', () async {
+    // `markUploaded` deletes the delivered slot, and the handler awaits it
+    // **after** the news document has been accepted. Anything escaping that
+    // cleanup fails the outbox row for a post that is already on the server,
+    // and the next drain POSTs a second copy — the exact duplicate the
+    // handler's id/rev guard exists to prevent.
+    //
+    // Not hypothetical: `getApplicationDocumentsDirectory` on an engine with
+    // no `path_provider` channel throws a `FlutterError`, which is an `Error`
+    // and not an `Exception`, and headless WorkManager engines are where this
+    // drains. An `on Exception` catch let it straight through, and the
+    // pre-existing `markUploaded` test in `voices_repository_test.dart` is
+    // what caught it.
+    //
+    // Driven at `markUploaded` rather than through the handler because a
+    // `baseDirectory` that throws for the whole drain fails earlier, in the
+    // attachment *read* — which is correct there (nothing was uploaded, so a
+    // retry is right) and would not exercise this.
+    final id = await seedPostWithImage();
+    VoiceImages.baseDirectory = () async => throw StateError('no channel');
+
+    await expectLater(
+      voices.markUploaded(
+        id,
+        'news-1',
+        '1-rev',
+        images: const [
+          {'a': 1},
+        ],
+      ),
+      completes,
+    );
+    final row = await voices.getById(id);
+    expect(row?.docId, 'news-1');
+    expect(row?.imageUrls, isEmpty);
+  });
 
   test('a refused attachment leaves the post queued with its image', () async {
     final posts = stubPosts();
