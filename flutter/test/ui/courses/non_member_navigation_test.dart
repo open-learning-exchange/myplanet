@@ -235,6 +235,10 @@ void main() {
       ),
     );
 
+    // Positive control first, as this file's three sibling guest tests have:
+    // without it the assertion below also passes on a screen that rendered
+    // nothing at all.
+    expect(find.text('Step title 0'), findsOneWidget);
     expect(find.text('Add to my courses'), findsNothing);
     // The learner clause is `!= true`, so `['guest', 'learner']` is not a
     // guest — covered as a unit in `user_mapper_test.dart`; here the point is

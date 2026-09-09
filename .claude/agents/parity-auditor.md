@@ -45,10 +45,13 @@ does not do what the Kotlin did:
   `appDatabaseProvider` to `AppDatabase.memory()`, a screen reading an un-overridden DAO hits
   `AppDatabase.open()`; screens read through `.valueOrNull ?? <default>`, so the error is
   swallowed and the test passes while asserting against nothing.
-- **Preserved tables.** `AppDatabase._localAuthorityTables` exempts `outbox`, `my_personal`,
-  `removed_log` and `my_life` from drop-and-resync. The test is "can a sync restore this?",
-  not "is it local?" — and `createAll` will not *alter* a preserved table, so a shape change
-  there needs a hand-written migration step.
+- **Preserved tables.** `AppDatabase._localAuthorityTables` exempts a named set from
+  drop-and-resync — **27 tables as of Phase 143**, not the four (`outbox`, `my_personal`,
+  `removed_log`, `my_life`) this brief listed for far longer than they were the whole set.
+  Read the set in `flutter/lib/data/local/app_database.dart`; do not trust a count quoted
+  anywhere else, this line included. The test is "can a sync restore this?", not "is it
+  local?" — and `createAll` will not *alter* a preserved table, so **every** new column on
+  one needs a hand-written `_addColumnIfMissing` step alongside the schema bump.
 - **Encrypted-at-rest columns.** Health examination `data` is AES-256-CBC under the user's
   `users.key`/`users.iv`, matching `AndroidDecrypter`. Plaintext here is a data-loss bug, not
   a style question.

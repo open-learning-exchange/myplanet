@@ -460,15 +460,18 @@ typedef StepNextLock = ({bool locked, bool blockedByTest});
 ///    finished. `saveExamAnswer` writes `complete` for a survey's last answer
 ///    and `requires grading` for an exam's, both of which pass; a half-answered
 ///    attempt is `pending` and does not. In SQL `status != 'pending'` is NULL —
-///    so false — for a NULL status, which [_isStepCompleted] reproduces
-///    explicitly; the team-adoption marker (`status: ''`) does pass, as it does
-///    in Kotlin.
+///    so false — for a NULL status; the team-adoption marker (`status: ''`)
+///    does pass, as it does in Kotlin.
 ///  * `parentId LIKE '%' || :examId || '%'` (`SubmissionDao.kt:24`), against
 ///    `hasSubmission`'s exact `"$examId@$courseId"`. The `LIKE` is
-///    deliberately loose and [_isStepCompleted] keeps it as a `contains`: it
-///    matches the compound key every current writer stores (Phase 125), a bare
-///    id an older build wrote, and — as Kotlin does — any other `parentId`
-///    carrying the id as a substring.
+///    deliberately loose: it matches the compound key every current writer
+///    stores (Phase 125), a bare id an older build wrote, and — as Kotlin does
+///    — any other `parentId` carrying the id as a substring.
+///
+/// Both are read off the Kotlin query, and since Phase 149 [_isStepCompleted]
+/// **runs that query** rather than reproducing it in Dart; an earlier revision
+/// of these two bullets said it kept the `contains` and the NULL test
+/// explicitly, which the swap made false in the same file.
 ///
 /// It also takes no `courseId` and no `type`, and answers **true** for a step
 /// with no assessment row at all (`?: return true`) — which is why a step
@@ -568,9 +571,17 @@ final stepNextLockProvider = FutureProvider.autoDispose
 ///    than the app it ports. Unreachable while `parentId` is minted from the
 ///    same `exam.id` through `examParentId`, and preserved deliberately.
 ///
-/// The NULL-`status` case is unchanged and was already right: `NOT (status =
-/// 'pending')` is NULL for a NULL status and `WHERE NULL` excludes the row,
-/// which is what the explicit `status != null` test did in Dart.
+/// The NULL-`status` case is unchanged, and the *predicate* was already right:
+/// `NOT (status = 'pending')` is NULL for a NULL status and `WHERE NULL`
+/// excludes the row, which is what the explicit `status != null` test did in
+/// Dart. **The outcome still diverges, one layer down, and this swap does not
+/// touch it**: Kotlin's sync-in stores `JsonUtils.getString('status', …)`,
+/// which is `""` for a missing key, and `'' != 'pending'` counts; the port's
+/// `upsertDocuments` stores `getStringOrNull`, which is null for a missing key
+/// *and* for `""`, and does not. So a Planet submission carrying no `status`
+/// unlocks the step in Kotlin and locks it here. That is a `""`-vs-null
+/// decision every submission reader shares — see `PHASE_149_NOTES.md`,
+/// *Reported, not fixed* item 1.
 ///
 /// Which *row* is interrogated stays this function's own judgement, above —
 /// the query takes an id, not a step.

@@ -2,9 +2,12 @@
 
 Lane D of a four-lane round. The brief was six statements other lanes reported
 as stale but could not edit, plus four small defects reported alongside them.
-Nothing here was taken on trust: every claim was read against the Kotlin or the
-Dart before it was acted on, and **three of the reports did not survive that
-reading**. Those are in *Findings* below, ahead of the fixes, because a wrong
+Nearly nothing here was taken on trust: almost every claim was read against the
+Kotlin or the Dart before it was acted on, and **three of the reports did not
+survive that reading**. The exception is recorded below rather than smoothed
+over, because it is the one that matters: I pasted one supplied sentence
+*including its citation* without opening the citation, and the citation says the
+opposite. Those are in *Findings* below, ahead of the fixes, because a wrong
 correction shipped into a load-bearing document is worse than the stale sentence
 it replaces — and this project writes its briefs from these documents.
 
@@ -20,7 +23,11 @@ it replaces — and this project writes its briefs from these documents.
    doing both.
 3. Implement, each behavioural change demonstrated failing first.
 4. Mutation-test every new pin.
-5. A second `parity-auditor` pass at `effort: max` on the finished code.
+5. A second `parity-auditor` pass at `effort: max` on the finished code. **It
+   found seven defects, all of them documentation-truth defects in a
+   documentation-truth lane**, and one of them is the lesson of the phase —
+   see *The correction that was itself uncorrected* below. Run both passes; the
+   ground-truth pass cannot see what you then write.
 
 ## Findings — three reports that were wrong
 
@@ -96,6 +103,39 @@ The deletion is one atomic edit across four ARBs plus one number: `app_en.arb`,
 — ar and fr are `"x-mt"`, so only the es entry is counted there. Verified, and
 handed to the integrator as one unit. Phase 128 left `takeTest` in the same
 state; this makes two.
+
+## The correction that was itself uncorrected
+
+The `AnswerShape` fix (below) came with a replacement sentence supplied verbatim
+by `PHASE_143_NOTES.md`, ending: *"`PHASE_123_NOTES.md:108-110` records the same
+three columns as still owed, so this is a live target, not a hypothetical one."*
+I checked the half about `migration_test.dart` against the test file, extended
+it, and **pasted the citation without opening it.**
+
+`PHASE_123_NOTES.md:106-112` says the opposite about two of the three:
+
+> `SurveyQuestions` has no `marks`, `correctChoice` or `hasOtherOption` column,
+> so a survey's questions omit those three keys **rather than inventing
+> defaults**; a survey question has no correct answer to lose. (Kotlin would
+> send `""`, `[]` and `false` there — `JsonUtils` defaults, not data.)
+
+That is a design decision in the port's favour, not a debt. Only
+`hasOtherOption` is a gap. The sentence I shipped pointed a future lane at
+adding two columns to a **preserved** table — a schema bump, two hand-written
+`_addColumnIfMissing` steps and the migration-test churn that follows — to close
+a hole Phase 123 argued should stay open.
+
+Two things make this worth a section rather than a line. It is exactly the
+failure mode this lane exists to prevent, committed by the lane, on its second
+target. And the mechanism is the one `CLAUDE.md` already names: *a brief
+propagates the previous round's mistakes as efficiently as its facts.* The
+wording was inherited, the error was inherited with it, and the reason the chain
+broke here is that the sentence looked like a correction — the very shape that
+gets read as already checked.
+
+**A supplied replacement sentence is a claim, not a patch.** Its citations need
+opening like any other. Caught by the implementation audit, which is the
+argument for running one even on a phase whose entire diff is prose.
 
 ## What landed
 
@@ -212,7 +252,7 @@ carrying **both** roles is not a guest.
 
 Two things kept deliberately. The id half delegates to `isGuest`, which tests
 both id columns where Kotlin reads `_id` alone — the same documented widening,
-which errs towards withholding a privilege. And the other nine `isGuest()` sites
+which errs towards withholding a privilege. And the other eleven `isGuest()` sites
 (`TeamFragment:235`, `:253`, `CoursesFragment:135`, `:141`, `:250`,
 `ResourcesFragment:208`, `:217`, `:524`, `:535`, `ResourceDetailFragment:215`,
 `BaseContainerFragment:154`) still have no port counterpart; when one lands it
@@ -268,7 +308,8 @@ Every new pin was mutated on green code and reverted.
 
 | Mutation | Result |
 |---|---|
-| `countCompletedByUserAndExamId(userId, …)` → `(null, …)` | red — 4 tests, including *another learner's finished attempt does not release it* |
+| `countCompletedByUserAndExamId(userId, …)` → `(null, …)` (narrowing) | red — the 4 release tests |
+| drop the `userMatch` conjunct in the DAO (widening) | red — *another learner's finished attempt does not release it*, and `dao_query_semantics_test`'s *a null userId matches the rows with no user* |
 | revert `_isStepCompleted` to the Dart filter | red — the new typeless-submission test |
 | `isGuestAccount`: drop `&& !roles.contains('learner')` | red — 3 tests across two files |
 | `isGuestAccount`: drop the `toLowerCase()` fold | red — *the role comparison ignores case* |
@@ -305,12 +346,25 @@ Every new pin was mutated on green code and reverted.
    correction has to reach every copy of the claim.*
 3. **The `courseDetails` deletion**, as one atomic edit — see *Findings* 3 for
    the exact file list and the number to change.
-4. **Nine `isGuest()` gates still have no port counterpart**, listed under
-   *`isGuestAccount`* above. Two are worth a slice on their own because the port
-   *does* have the screens: `ResourcesFragment:524`/`:535` (the batch
-   add/remove buttons, select-all, search and the collections button) and
-   `TeamFragment:235`/`:253` (add team, and the per-row join/leave). When they
-   land they want `isGuestAccount`, not `isGuest`.
+4. **Eleven `isGuest()` gates still have no port counterpart, and five of them
+   are gates on screens the port already has** — so these are *ungated
+   affordances*, not merely unported ones. Verified at the Dart:
+   * `ResourceDetailFragment:215` (the add/remove-from-My-Library button) →
+     `resource_detail_screen.dart:356`, no gate.
+   * `BaseContainerFragment:154` (attaches the rating listener only for a
+     non-guest) → `resource_detail_screen.dart:219` **and**
+     `course_detail_screen.dart:171`, neither gated.
+   * `CoursesFragment:250` (`CourseSelectionController(isGuest = …)`, which
+     suppresses multi-select) → `courses_screen.dart:51-103`, no gate.
+   * `ResourcesFragment:524`/`:535` (the batch add/remove buttons, select-all,
+     search, collections) and `TeamFragment:235`/`:253` (add team, per-row
+     join/leave) — the two this list originally named.
+
+   All unreachable while no port writer mints a guest row, and all wanting
+   `isGuestAccount` rather than `isGuest` when they land. My first draft of this
+   item named two of the five; the implementation audit found the other three,
+   which is the second time in this phase that a list I wrote from memory was
+   short.
 5. **Kotlin's two null-user fallbacks contradict each other.**
    `CoursesFragment:135` is `user?.isGuest() ?: true` and
    `ResourcesFragment:208` is `user?.isGuest() == true` — the same null user is

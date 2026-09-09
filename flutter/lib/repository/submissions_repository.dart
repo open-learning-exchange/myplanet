@@ -2146,9 +2146,14 @@ class AnswerShape {
   /// literals are deliberately not kept in step with the table, which is what
   /// makes them able to fail), and the post-upgrade `containsAll` over
   /// `database.surveyQuestions.$columns` stays red until the step adds it.
-  /// `PHASE_123_NOTES.md:108-110` records `marks`, `correctChoice` and
-  /// `hasOtherOption` as the three columns still owed, so this is a live
-  /// target rather than a hypothetical one.
+  ///
+  /// `hasOtherOption` is the **only** one of the three columns `ExamQuestions`
+  /// has and this table lacks that is a gap. `PHASE_123_NOTES.md:106-112` reads
+  /// the other two the other way round: a survey's questions omit `marks` and
+  /// `correctChoice` "rather than inventing defaults", because a survey
+  /// question has no correct answer to lose, and Kotlin sends `""`/`[]` there
+  /// out of `JsonUtils` defaults rather than out of data. So do not add those
+  /// two to a preserved table on the strength of this comment.
   static AnswerShape forQuestion({
     required String? type,
     required List<ExamChoice> choices,

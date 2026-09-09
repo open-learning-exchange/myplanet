@@ -296,6 +296,11 @@ void main() {
     expect(find.text('3 resources'), findsNothing);
     // The zero case too: `resourcesInStep` renders "No resources" at 0, so a
     // subtitle that survived only for resource-less steps would still show.
+    // The second tile is asserted present first: `find.text` searches the
+    // element tree and a `ListView` child below the 600px test fold is not
+    // mounted, so without this the "No resources" assertion could pass by
+    // never having been rendered.
+    expect(find.text('Second'), findsOneWidget);
     expect(find.text('No resources'), findsNothing);
   });
 

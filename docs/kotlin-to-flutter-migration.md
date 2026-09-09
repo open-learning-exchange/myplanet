@@ -744,8 +744,11 @@ not built, or needs a primitive the port lacks):
   set of tables from the drop — **27 of them as of Phase 143**, not the four (`outbox`,
   `my_personal`, `removed_log`, `my_life`) this paragraph listed for far longer than they were
   the whole set. **Read the set itself** in `flutter/lib/data/local/app_database.dart`: it is the
-  authority, it grows most rounds, and every entry past the first four carries the argument for
-  its own membership as a comment. What they have in common is that no sync can put the row back
+  authority and it grows most rounds. **Most** entries past the first four carry the argument for
+  their own membership as a comment; six do not — `submissions`, `submission_answers`,
+  `submission_questions`, `meetups`, `news` and `team_tasks` are bare literals, and
+  `course_activity` and `survey_questions` lean on the entry above them — which is a gap worth
+  closing rather than a reason to trust this paragraph instead. What they have in common is that no sync can put the row back
   — un-pushed writes waiting on the outbox, private notes and the user's own ordering, the
   "leave" records that keep the shelf merge from re-adding something, medical records and the
   device-generated key without which the ones already written are unreadable, offline course
@@ -4589,9 +4592,14 @@ port lacks.
 - `3c6a76aed` (guest user role handling) — `UserEntity.isGuest()` swaps
   `it?.lowercase() == "guest"` for `it.equals("guest", ignoreCase = true)`
   (semantically identical) and `android.util.Base64` for `java.util.Base64`
-  (same NO_WRAP output). The port detects guests by the `guest_` id prefix
-  alone and does not consult `rolesList`, a pre-existing deliberate
-  simplification this refactor does not change.
+  (same NO_WRAP output). **True when written, and no longer:** the port detected
+  guests by the `guest_` id prefix alone until Phase 149 added
+  `UserMapper.isGuestAccount`, which is the whole `isGuest()`, role clause
+  included. It is a second predicate rather than a widening of the first —
+  `UserMapper.isGuest` still reads the id prefix alone, because every settings
+  and voices gate in the port is a counterpart of Kotlin's narrower
+  `startsWith("guest")` family. Which of the two a gate wants is decided by
+  reading its own Kotlin site.
 - `d9e400bf7` (voices sorting) — moves `filterNotNull()` into `sortNews` and
   drops the redundant call-site filters. The port's `watchCommunityFeed` already
   returns `List<NewsRow>` (non-nullable) sorted by `sortDateOf` descending. No
