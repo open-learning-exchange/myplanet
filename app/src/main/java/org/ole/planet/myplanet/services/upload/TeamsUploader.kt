@@ -15,15 +15,10 @@ import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.services.FileUploader
 import org.ole.planet.myplanet.services.retry.RetryQueue
-import org.ole.planet.myplanet.services.upload.UploadConstants.BATCH_SIZE
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.UrlUtils
-
-private inline fun <T> Iterable<T>.processInBatches(action: (List<T>) -> Unit) {
-    chunked(BATCH_SIZE).forEach(action)
-}
 
 class TeamsUploader @Inject constructor(
     @param:ApplicationContext private val context: Context,
