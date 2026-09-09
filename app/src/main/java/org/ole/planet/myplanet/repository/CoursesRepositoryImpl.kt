@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.repository
 
-import android.util.Base64
 import android.util.Log
+import java.util.Base64
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Calendar
@@ -678,7 +678,7 @@ class CoursesRepositoryImpl @Inject constructor(
         val stepsJson = JsonUtils.getJsonArray("steps", doc)
         for (i in 0 until stepsJson.size()) {
             val stepElement = stepsJson[i]
-            val stepId = Base64.encodeToString(stepElement.toString().toByteArray(), Base64.NO_WRAP)
+            val stepId = Base64.getEncoder().encodeToString(stepElement.toString().toByteArray())
             val stepJson = stepElement.asJsonObject
             val stepDescription = JsonUtils.getString("description", stepJson)
             extractLinks(stepDescription).forEach { link ->
@@ -824,7 +824,7 @@ class CoursesRepositoryImpl @Inject constructor(
             pendingCourseResources.clear()
         }
 
-        val resourceIds = batch.map { JsonUtils.getString("_id", it.doc) }.filter { it.isNotBlank() }
+        val resourceIds = batch.mapNotNull { pending -> JsonUtils.getString("_id", pending.doc).takeIf { it.isNotBlank() } }
         val existingMap = if (resourceIds.isNotEmpty()) {
             resourceIds.distinct()
                 .chunked(300)

@@ -24,6 +24,7 @@ class SharedPrefManager @Inject constructor(
     val rawPreferences: SharedPreferences get() = pref
 
     companion object {
+        private val userListType = object : TypeToken<List<User>>() {}.type
         private const val SAVED_USERS = "savedUsers"
         private const val REPLIED_NEWS_ID = "repliedNewsId"
         const val MANUAL_CONFIG = "manualConfig"
@@ -72,8 +73,7 @@ class SharedPrefManager @Inject constructor(
     fun getSavedUsers(): List<User> {
         val usersJson = pref.getString(SAVED_USERS, null)
         return if (usersJson != null) {
-            val type = object : TypeToken<List<User>>() {}.type
-            gson.fromJson(usersJson, type)
+            gson.fromJson(usersJson, userListType)
         } else {
             emptyList()
         }

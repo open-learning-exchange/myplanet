@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.resources
 import android.app.AlertDialog
 import android.content.Context
 import android.content.DialogInterface
-import android.content.res.ColorStateList
 import android.os.Build
 import android.os.Bundle
 import android.view.ContextThemeWrapper
@@ -16,13 +15,10 @@ import android.widget.TextView
 import androidx.annotation.VisibleForTesting
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
-import androidx.core.widget.ImageViewCompat
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.chip.Chip
@@ -55,13 +51,12 @@ import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+import org.ole.planet.myplanet.ui.components.ViewModeToggleController
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
-import org.ole.planet.myplanet.utils.GridSpanCalculator
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.utils.ListViewMode
 import org.ole.planet.myplanet.utils.ResourcesSearchUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -110,13 +105,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private var refreshJob: Job? = null
     private var searchJob: Job? = null
 
-    private val spanUpdateRunnable = Runnable { updateGridSpanIfNeeded() }
-    private val layoutChangeListener = View.OnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
-        if (right - left != oldRight - oldLeft) {
-            recyclerView.removeCallbacks(spanUpdateRunnable)
-            recyclerView.post(spanUpdateRunnable)
-        }
-    }
+    private var viewModeController: ViewModeToggleController? = null
 
     internal val addResourceLauncher = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
@@ -183,21 +172,14 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private fun refreshResourcesData() {
         if (!isAdded || requireActivity().isFinishing) return
         if (view == null) return
-        refreshJob?.cancel()
-        refreshJob = viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
-                lastSearchQuery = null
-                applyFiltersAndUpdateUI(scrollToTop = false)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
+        viewModel.loadResources(isMyCourseLib, model?.id)
+    }
+
+    override suspend fun postAddRefresh() {
+        refreshResourcesData()
     }
 
     override suspend fun getAdapter(): ListAdapter<*, *> {
-        allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
-
         val user = viewModel.getCurrentUser()
         // The adapter caches the Context (Activity) which outlives onCreateView,
         // but Fragments and their host Activities are re-created together so this is safe from leaks.
@@ -229,12 +211,20 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         lastMediums = HashSet(mediums)
         lastDownloadFilterIndex = selectedDownloadFilterIndex
 
-        val filteredList = applyFilterModels(filterLocalLibraryByTag(allResourceModels, searchQuery, currentSearchTags))
-        adapterLibrary.setLibraryList(filteredList)
+        val cached = viewModel.resourcesState.value.ifEmpty {
+            viewModel.getCachedResources(isMyCourseLib, model?.id) ?: emptyList()
+        }
+        if (cached.isNotEmpty()) {
+            allResourceModels = cached
+            val filteredList = applyFilterModels(filterLocalLibraryByTag(allResourceModels, searchQuery, currentSearchTags))
+            adapterLibrary.setLibraryList(filteredList)
 
-        checkList(filteredList.size)
-        showNoData(tvMessage, filteredList.size, "resources")
-        changeButtonStatus()
+            checkList(filteredList.size)
+            showNoData(tvMessage, filteredList.size, "resources")
+            changeButtonStatus()
+        }
+
+        viewModel.loadResources(isMyCourseLib, model?.id)
         return adapterLibrary
     }
 
@@ -261,6 +251,13 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
                 refreshResourcesData()
             }
         }
+        collectWhenStarted(viewModel.resourcesState) { list ->
+            allResourceModels = list
+            if (::adapterLibrary.isInitialized && _binding != null) {
+                applyFiltersAndUpdateUI(scrollToTop = false, forceUpdate = true)
+            }
+        }
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 broadcastService.events.collect { intent ->
@@ -311,71 +308,25 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         clearTagsButton()
         setupUI(binding.myLibraryParentLayout, requireActivity())
         additionalSetup()
-        setupViewModeToggle()
+        viewModeController = ViewModeToggleController(
+            fragment = this,
+            recyclerView = recyclerView,
+            toggleGridButton = toggleGridButton,
+            toggleListButton = toggleListButton,
+            getMode = { prefManager.getLibraryViewMode() },
+            setMode = { prefManager.setLibraryViewMode(it) },
+            onModeChanged = { mode ->
+                if (::adapterLibrary.isInitialized) {
+                    adapterLibrary.setViewMode(mode)
+                }
+            }
+        ).also { it.setup() }
 
         tvFragmentInfo = binding.tvFragmentInfo
         if (isMyCourseLib) tvFragmentInfo.setText(R.string.txt_myLibrary)
 
         realtimeSyncHelper = RealtimeSyncHelper(this, this, realtimeSyncManager)
         realtimeSyncHelper.setupRealtimeSync()
-    }
-
-    private fun setupViewModeToggle() {
-        updateToggleUi(prefManager.getLibraryViewMode())
-        toggleGridButton?.setOnClickListener { setViewMode(ListViewMode.GRID) }
-        toggleListButton?.setOnClickListener { setViewMode(ListViewMode.LIST) }
-        recyclerView.addOnLayoutChangeListener(layoutChangeListener)
-    }
-
-    private fun setViewMode(mode: ListViewMode) {
-        prefManager.setLibraryViewMode(mode)
-        updateToggleUi(mode)
-        if (::adapterLibrary.isInitialized) {
-            adapterLibrary.setViewMode(mode)
-        }
-    }
-
-    private fun applyRecyclerLayoutManager(mode: ListViewMode) {
-        val currentLayoutManager = recyclerView.layoutManager
-        if (mode == ListViewMode.GRID) {
-            if (currentLayoutManager is GridLayoutManager) {
-                currentLayoutManager.spanCount = currentSpanCount()
-            } else {
-                recyclerView.layoutManager = GridLayoutManager(requireContext(), currentSpanCount())
-            }
-        } else {
-            if (currentLayoutManager !is LinearLayoutManager || currentLayoutManager is GridLayoutManager) {
-                recyclerView.layoutManager = LinearLayoutManager(requireContext())
-            }
-        }
-    }
-
-    private fun currentSpanCount(): Int {
-        val displayMetrics = requireContext().resources.displayMetrics
-        val widthPx = recyclerView.width.takeIf { it > 0 } ?: displayMetrics.widthPixels
-        val widthDp = (widthPx / displayMetrics.density).toInt()
-        return GridSpanCalculator.columnCount(widthDp)
-    }
-
-    private fun updateGridSpanIfNeeded() {
-        val layoutManager = recyclerView.layoutManager
-        if (layoutManager is GridLayoutManager) {
-            val currentSpan = currentSpanCount()
-            if (layoutManager.spanCount != currentSpan) {
-                layoutManager.spanCount = currentSpan
-            }
-        }
-    }
-
-    private fun updateToggleUi(mode: ListViewMode) {
-        val isGrid = mode == ListViewMode.GRID
-        val activeColor = ContextCompat.getColor(requireContext(), android.R.color.white)
-        val inactiveColor = ContextCompat.getColor(requireContext(), R.color.daynight_textColor)
-        toggleGridButton?.setBackgroundResource(if (isGrid) R.drawable.bg_toggle_selected else android.R.color.transparent)
-        toggleListButton?.setBackgroundResource(if (!isGrid) R.drawable.bg_toggle_selected else android.R.color.transparent)
-        toggleGridButton?.let { ImageViewCompat.setImageTintList(it, ColorStateList.valueOf(if (isGrid) activeColor else inactiveColor)) }
-        toggleListButton?.let { ImageViewCompat.setImageTintList(it, ColorStateList.valueOf(if (!isGrid) activeColor else inactiveColor)) }
-        applyRecyclerLayoutManager(mode)
     }
 
     private fun initializeViews() {
@@ -406,7 +357,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     private fun setupAddToLibListener() {
         tvAddToLib.setOnClickListener {
-            if ((selectedItems?.size ?: 0) > 0) {
+            if (!selectedItems.isNullOrEmpty()) {
                 confirmation = createAlertDialog()
                 confirmation?.show()
             }
@@ -435,14 +386,15 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             .launchIn(viewLifecycleOwner.lifecycleScope)
     }
 
-    private fun applyFiltersAndUpdateUI(scrollToTop: Boolean = true) {
+    private fun applyFiltersAndUpdateUI(scrollToTop: Boolean = true, forceUpdate: Boolean = false) {
         if (!::adapterLibrary.isInitialized || !isAdded || _binding == null) return
         val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
 
         val currentSearchTags = searchTags
         val searchTagIds = currentSearchTags.map { it.id }.sorted()
 
-        if (searchQuery == lastSearchQuery &&
+        if (!forceUpdate &&
+            searchQuery == lastSearchQuery &&
             searchTagIds == lastSearchTags &&
             subjects == lastSubjects &&
             levels == lastLevels &&
@@ -478,6 +430,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     private fun setupCollectionsButton() {
         binding.btnCollections.setOnClickListener {
+            binding.cardFilter.visibility = View.GONE
             val f = CollectionsFragment.getInstance(searchTags, "resources")
             f.setListener(this@ResourcesFragment)
             f.show(childFragmentManager, "")
@@ -794,10 +747,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     override fun onResume() {
         super.onResume()
         selectAll.isChecked = false
-        if (::recyclerView.isInitialized) {
-            recyclerView.removeCallbacks(spanUpdateRunnable)
-            recyclerView.post(spanUpdateRunnable)
-        }
+        viewModeController?.refreshSpanOnResume()
     }
 
     override fun onPause() {
@@ -806,10 +756,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     override fun onDestroyView() {
-        if (::recyclerView.isInitialized) {
-            recyclerView.removeOnLayoutChangeListener(layoutChangeListener)
-            recyclerView.removeCallbacks(spanUpdateRunnable)
-        }
+        viewModeController?.teardown()
+        viewModeController = null
         if (confirmation?.isShowing == true) {
             confirmation?.dismiss()
         }
@@ -873,9 +821,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         binding.root.findViewById<View>(R.id.btn_close_filter)?.setOnClickListener {
             bottomSheet.visibility = View.GONE
         }
-        binding.btnCollections.setOnClickListener {
-            bottomSheet.visibility = View.GONE
-        }
+
         binding.filterCategories.setOnClickListener {
             val f = ResourcesFilterFragment()
             f.setListener(this)
@@ -885,19 +831,15 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         binding.orderByDateButton.setOnClickListener {
             bottomSheet.visibility = View.GONE
             viewLifecycleOwner.lifecycleScope.launch {
-                val sorted = viewModel.toggleSortOrder(adapterLibrary.currentList)
-                adapterLibrary.setLibraryList(sorted) {
-                    recyclerView.scrollToPosition(0)
-                }
+                allResourceModels = viewModel.toggleSortOrder(allResourceModels)
+                applyFiltersAndUpdateUI(scrollToTop = true, forceUpdate = true)
             }
         }
         binding.orderByTitleButton.setOnClickListener {
             bottomSheet.visibility = View.GONE
             viewLifecycleOwner.lifecycleScope.launch {
-                val sorted = viewModel.toggleTitleSortOrder(adapterLibrary.currentList)
-                adapterLibrary.setLibraryList(sorted) {
-                    recyclerView.scrollToPosition(0)
-                }
+                allResourceModels = viewModel.toggleTitleSortOrder(allResourceModels)
+                applyFiltersAndUpdateUI(scrollToTop = true, forceUpdate = true)
             }
         }
     }

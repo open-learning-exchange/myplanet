@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.CourseProgressState
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.Tag
+import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -40,6 +41,9 @@ class CoursesViewModel @Inject constructor(
     private var isDateAscending = true
     private var activeSort: SortType? = null
     private var sortJob: Job? = null
+
+    var currentFilterState: FilterState = FilterState("", "", "", emptyList())
+        private set
 
     enum class SortType { TITLE, DATE }
 
@@ -129,7 +133,17 @@ class CoursesViewModel @Inject constructor(
                     val tagsMap = coursesRepository.getCourseTagsBulk(allCourseIds)
                         .mapValues { entry -> entry.value.map { it.toTag() } }
 
-                    processCourses(isMyCourseLib, userId, validCourses, myCourses, progressMap, tagsMap)
+                    if (currentFilterState.isActive) {
+                        filterCoursesInternal(
+                            isMyCourseLib = isMyCourseLib,
+                            userId = userId,
+                            filterState = currentFilterState,
+                            progressMap = progressMap,
+                            tagsMap = tagsMap
+                        )
+                    } else {
+                        processCourses(isMyCourseLib, userId, validCourses, myCourses, progressMap, tagsMap)
+                    }
                 } catch (e: Exception) {
                     e.printStackTrace()
                     null
@@ -148,43 +162,64 @@ class CoursesViewModel @Inject constructor(
         selectedGrade: String,
         selectedSubject: String,
         tagNames: List<String>,
-        progressFilter: String = ""
+        progressFilter: String = "",
+        tags: List<TagEntity> = emptyList()
     ) {
+        val filterState = FilterState(searchText, selectedGrade, selectedSubject, tagNames, progressFilter, tags)
+        currentFilterState = filterState
         viewModelScope.launch {
             val newState = withContext(dispatcherProvider.io) {
-                val filteredCourses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
-                val myCourses = coursesRepository.getMyCourses(userId, filteredCourses)
                 val progressMap = _coursesState.value.progressMap
                 val tagsMap = _coursesState.value.tagsMap
-
-                val baseCourses = if (isMyCourseLib) myCourses else filteredCourses
-
-                val progressFilteredCourses = if (progressFilter.isEmpty() || progressMap == null) {
-                    baseCourses
-                } else {
-                    baseCourses.filter { course ->
-                        val courseKey = course.courseId.takeIf { !it.isNullOrBlank() }
-                            ?: course.id.takeIf { !it.isNullOrBlank() }
-                            ?: course._id
-                        val p = progressMap[courseKey] ?: progressMap[course.courseId] ?: progressMap[course.id]
-                        val current = p?.current ?: 0
-                        val max = p?.max?.takeIf { it > 0 } ?: course.getNumberOfSteps()
-                        when (progressFilter) {
-                            "Not Started" -> current == 0
-                            "In Progress" -> current > 0 && (max == 0 || current < max)
-                            "Completed"   -> max > 0 && current >= max
-                            else -> true
-                        }
-                    }
-                }
-
-                if (isMyCourseLib) {
-                    processCourses(isMyCourseLib, userId, filteredCourses, progressFilteredCourses, progressMap, tagsMap)
-                } else {
-                    processCourses(isMyCourseLib, userId, progressFilteredCourses, myCourses, progressMap, tagsMap)
-                }
+                filterCoursesInternal(
+                    isMyCourseLib = isMyCourseLib,
+                    userId = userId,
+                    filterState = filterState,
+                    progressMap = progressMap,
+                    tagsMap = tagsMap
+                )
             }
             _coursesState.value = newState
+        }
+    }
+
+    private suspend fun filterCoursesInternal(
+        isMyCourseLib: Boolean,
+        userId: String?,
+        filterState: FilterState,
+        progressMap: Map<String, CourseProgressState>?,
+        tagsMap: Map<String, List<Tag>>
+    ): CoursesUiState {
+        val filteredCourses = coursesRepository.filterCourses(
+            filterState.searchText, filterState.grade, filterState.subject, filterState.tagNames
+        )
+        val myCourses = coursesRepository.getMyCourses(userId, filteredCourses)
+        val baseCourses = if (isMyCourseLib) myCourses else filteredCourses
+
+        val progressFilter = filterState.progressFilter
+        val progressFilteredCourses = if (progressFilter.isEmpty() || progressMap == null) {
+            baseCourses
+        } else {
+            baseCourses.filter { course ->
+                val courseKey = course.courseId.takeIf { !it.isNullOrBlank() }
+                    ?: course.id.takeIf { !it.isNullOrBlank() }
+                    ?: course._id
+                val p = progressMap[courseKey] ?: progressMap[course.courseId] ?: progressMap[course.id]
+                val current = p?.current ?: 0
+                val max = p?.max?.takeIf { it > 0 } ?: course.getNumberOfSteps()
+                when (progressFilter) {
+                    "Not Started" -> current == 0
+                    "In Progress" -> current > 0 && (max == 0 || current < max)
+                    "Completed"   -> max > 0 && current >= max
+                    else -> true
+                }
+            }
+        }
+
+        return if (isMyCourseLib) {
+            processCourses(isMyCourseLib, userId, filteredCourses, progressFilteredCourses, progressMap, tagsMap)
+        } else {
+            processCourses(isMyCourseLib, userId, progressFilteredCourses, myCourses, progressMap, tagsMap)
         }
     }
 
