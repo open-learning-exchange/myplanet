@@ -187,6 +187,28 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
+    fun `getUniquePendingSurveys deduplicates examIds preserving encounter order`() = runTest {
+        coEvery { submissionDao.getUniquePendingSurveyCandidates("user") } returns listOf(
+            Submission(id = "sub1", parentId = "exam1@course1"),
+            Submission(id = "sub2", parentId = "exam2@course1"),
+            Submission(id = "sub3", parentId = "exam1@course2"),
+            Submission(id = "sub4", parentId = null),
+        )
+        coEvery { answerDao.getBySubmissionIds(any()) } returns emptyList()
+        coEvery { examDao.getByIds(listOf("exam1", "exam2")) } returns listOf(
+            StepExam(id = "exam1", name = "Exam 1"),
+            StepExam(id = "exam2", name = "Exam 2")
+        )
+
+        val result = repository.getUniquePendingSurveys("user")
+
+        coVerify { examDao.getByIds(listOf("exam1", "exam2")) }
+        assertEquals(2, result.size)
+        assertEquals("sub1", result[0].id)
+        assertEquals("sub2", result[1].id)
+    }
+
+    @Test
     fun `getSurveyTitlesFromSubmissions returns empty list when examIds is empty`() = runTest {
         val result = repository.getSurveyTitlesFromSubmissions(emptyList())
         assertTrue(result.isEmpty())
