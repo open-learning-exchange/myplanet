@@ -18,21 +18,45 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
-            <CheckBox
-                android:id="@+id/checkbox"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="@dimen/padding_normal"
-                android:textColor="@color/daynight_textColor"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:buttonTint="@color/daynight_textColor" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <CheckBox
+                    android:id="@+id/checkbox"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:padding="@dimen/padding_normal"
+                    android:textColor="@color/daynight_textColor"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:buttonTint="@color/daynight_textColor" />
+
+                <TextView
+                    android:id="@+id/status_badge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/padding_small"
+                    android:paddingStart="8dp"
+                    android:paddingTop="3dp"
+                    android:paddingEnd="8dp"
+                    android:paddingBottom="3dp"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/md_white_1000"
+                    android:background="@drawable/bg_task_status_badge" />
+            </LinearLayout>
+
             <TextView
                 android:id="@+id/deadline"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_normal"
                 android:textColor="@color/hint_color" />
+
             <TextView
                 android:id="@+id/assignee"
                 android:layout_width="match_parent"
