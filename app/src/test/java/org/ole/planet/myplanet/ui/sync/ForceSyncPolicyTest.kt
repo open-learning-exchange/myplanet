@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.sync
 
-import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -9,7 +10,7 @@ class ForceSyncPolicyTest {
 
     private val now = 1_700_000_000_000L
 
-    private fun daysAgo(days: Long): Long = now - TimeUnit.DAYS.toMillis(days)
+    private fun daysAgo(days: Long): Long = now - days.days.inWholeMilliseconds
 
     @Test
     fun `no forced sync when autosync is disabled`() {
@@ -59,7 +60,7 @@ class ForceSyncPolicyTest {
 
     @Test
     fun `partial days do not count toward the threshold`() {
-        val almostSevenDays = daysAgo(7) + TimeUnit.HOURS.toMillis(1)
+        val almostSevenDays = daysAgo(7) + 1.hours.inWholeMilliseconds
         assertNull(ForceSyncPolicy.overdueDays(almostSevenDays, now, 7))
     }
 }
