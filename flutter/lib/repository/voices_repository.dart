@@ -326,7 +326,14 @@ class VoicesRepository {
       // to the same bytes and one image would be silently lost. Kotlin cannot
       // reach this — its entries carry two different absolute source paths —
       // so the disambiguation is the port's own, forced by keying on the name.
-      final filename = _uniqueFilename(attachment.filename, used);
+      // De-duplicated on the **stored** name, not the picked one: the slot
+      // is `<newsId>/<_segment(name)>`, so two different raw names can reduce
+      // to one file. Keying on the raw name would let them collide, which is
+      // exactly what this guard exists to prevent.
+      final filename = _uniqueFilename(
+        VoiceImages.storedNameFor(attachment.filename),
+        used,
+      );
       final file = await VoiceImages.write(
         newsId: newsId,
         filename: filename,

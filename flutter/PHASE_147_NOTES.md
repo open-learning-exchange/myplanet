@@ -17,10 +17,43 @@ phase to start.
 | The challenge tally buckets by the device's day | `voices_repository.dart` | UTC where Kotlin uses `'localtime'` |
 | Three stale or false claims corrected at the code | `voices_uploader.dart`, `voices_repository.dart` | a correction has to reach every copy |
 
-**28 tests across five new files and three existing ones. 15 mutations, 15
+**32 tests across five new files and four existing ones. 17 mutations, 17
 caught — two only after the test they exposed was rewritten.** Two
 `parity-auditor` passes at `effort: max` ran, one on the Kotlin ground truth
 before implementing and one on the finished green code.
+
+**Four defects were in code this phase itself wrote**, found after the first
+cut was green and all of them in the image slice. They are worth reading before
+the rest, because three would only ever have shown up in production and the
+fourth was caught by a test that already existed:
+
+- **Two picks with the same filename shared one slot.** The second overwrote
+  the first and both `imageUrls` entries resolved to the same bytes — one image
+  lost, silently. Kotlin cannot reach this; its entries carry two different
+  absolute source paths, and the collision is the price of keying on the name.
+- **And the de-duplication that fixed it keyed on the wrong string.** The slot
+  is `<newsId>/<_segment(name)>`, and `_segment` takes the basename, so
+  `a/photo.jpg` and `b/photo.jpg` are two distinct raw names that reduce to one
+  file. A guard keyed on the raw name let exactly the case it existed to
+  prevent straight through. `VoiceImages.storedNameFor` is now the key.
+- **Cleanup could fail a post the server had already accepted.**
+  `markUploaded` deletes the delivered slot *after* the news document lands, so
+  anything escaping it fails the outbox row for a post that is on the server —
+  and the next drain POSTs a second copy, the exact duplicate the handler's
+  id/rev guard exists to prevent. `on Exception` was not enough:
+  `getApplicationDocumentsDirectory` on an engine with no `path_provider`
+  channel throws a **`FlutterError`**, which is an `Error`, and headless
+  WorkManager engines are where this drains. **Caught by the pre-existing
+  `markUploaded` test**, not by anything this phase wrote.
+- **A transient attachment failure abandoned the whole post.** The handler
+  wrapped every image failure in `NetworkError(null, …)`, and `OutboxDrainer`
+  reads `(code ?? 0) < 500` as *permanent* — so one dropped connection
+  mid-attachment discarded the post, its text included, after a single attempt.
+  It now returns the underlying result and lets the drainer's existing
+  retryable-versus-permanent rule decide; a missing file has no result and
+  stays permanent, which is right because a retry cannot recreate bytes.
+  **Adding a failure path means deciding how the outbox classifies it** — a
+  synthetic error is not a neutral wrapper.
 
 ## Job 1 — the gap was much larger than the fix, in both directions
 
@@ -319,6 +352,10 @@ Declared for the integrator. None is owned by another lane this round.
 - `flutter/lib/core/files/voice_images.dart`,
   `flutter/lib/core/system/voice_image_picker.dart` — both **new**, so they
   cannot collide.
+- `flutter/test/l10n/placeholder_integrity_test.dart` — the pinned
+  human-reviewed counts, +1 per locale for `addImage`. Forced by the ARB
+  change; the test's own convention is that each move gets a paragraph saying
+  what it was and why it is recovery rather than generation.
 - `flutter/lib/l10n/app_{en,ar,es,fr,ne,so}.arb` — one key, `addImage`, with
   the **human translations recovered from `values-*/strings.xml`** in all five
   languages rather than generated. Per `CLAUDE.md`, recovery is strictly better
@@ -352,6 +389,8 @@ sweep and reported a false negative.
 | M13 | the edit composer gains the affordance it should not have | *the edit composer offers no attach affordance* |
 | M14 | `addComment` stops writing the `user` column | *a comment names its author* + the round trip |
 | M15 | the comment's `userId` reverts to the bare local id | *the comment is filed under the id its author object carries* |
+| M16 | colliding filenames are not disambiguated | *two picks with the same name do not share one slot* |
+| M17 | de-duplicate on the raw name instead of the stored one | *two names that reduce to one slot do not collide* |
 
 **M7 and M13 survived their first run**, and both were the test's fault rather
 than a missing predicate — which is the whole reason to mutate. M7's assertion

@@ -99,6 +99,15 @@ class VoiceImages {
     }
   }
 
+  /// The name a picked file is actually stored under.
+  ///
+  /// Exposed because the caller has to de-duplicate on **this**, not on the
+  /// raw name: `a/photo.jpg` and `b/photo.jpg` are different strings that
+  /// [_segment] reduces to the same slot, so a de-duplication keyed on the raw
+  /// name would let them collide and one image would be silently lost — the
+  /// very failure the de-duplication exists to prevent.
+  static String storedNameFor(String filename) => _segment(filename);
+
   /// Keeps a `..` or a path separator in a picked filename from escaping the
   /// attachment directory.
   static String _segment(String raw) {

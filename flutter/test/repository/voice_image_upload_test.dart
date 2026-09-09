@@ -326,6 +326,43 @@ void main() {
     );
   });
 
+  test('two names that reduce to one slot do not collide', () async {
+    // The slot is `<newsId>/<_segment(name)>`, and `_segment` takes the
+    // basename so a path separator cannot escape the directory. That means two
+    // *different* picked names can reduce to the same file — so the
+    // de-duplication has to key on the stored name, not the raw one. Keying on
+    // the raw name let these two through and the first image was lost.
+    final posts = stubPosts();
+    final puts = stubAttachments();
+    final first = Uint8List.fromList([1, 1, 1]);
+    final second = Uint8List.fromList([2, 2, 2]);
+    final id = await voices.createPost(
+      message: 'two folders, one name',
+      userId: 'org.couchdb.user:ada',
+      userName: 'ada',
+      attachments: [
+        VoiceImageAttachment(bytes: first, filename: 'a/photo.jpg'),
+        VoiceImageAttachment(bytes: second, filename: 'b/photo.jpg'),
+      ],
+    );
+
+    await drainOnce(id);
+
+    expect(puts.map((p) => p.bytes), [first, second]);
+    expect(puts.map((p) => p.url), [
+      'https://planet.example/db/resources/resource-1/photo.jpg',
+      'https://planet.example/db/resources/resource-2/photo-2.jpg',
+    ]);
+    // And the attachment name is the sanitised one, so the separator never
+    // reaches the URL as an extra path segment.
+    expect(
+      posts.last.body['message'],
+      'two folders, one name\n'
+      '![](resources/resource-1/photo.jpg)\n'
+      '![](resources/resource-2/photo-2.jpg)',
+    );
+  });
+
   test('the mime type is detected from the name, as a182edd made it', () async {
     stubPosts();
     final puts = stubAttachments();
