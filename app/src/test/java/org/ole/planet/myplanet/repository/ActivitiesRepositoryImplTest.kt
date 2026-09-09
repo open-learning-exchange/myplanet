@@ -1,13 +1,18 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import android.provider.Settings
 import com.google.gson.JsonObject
 import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.slot
+import io.mockk.unmockkObject
+import io.mockk.unmockkStatic
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -16,6 +21,7 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -27,6 +33,7 @@ import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
+import org.ole.planet.myplanet.data.room.dao.ResourceOpenCount
 import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.OfflineActivity
@@ -34,11 +41,14 @@ import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.ResourceActivity
 import org.ole.planet.myplanet.model.UserChallengeActions
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TimeProvider
+import org.ole.planet.myplanet.utils.UrlUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ActivitiesRepositoryImplTest {
@@ -64,7 +74,16 @@ class ActivitiesRepositoryImplTest {
     @Before
     fun setup() {
         Logger.getLogger("io.mockk").level = Level.OFF
+        mockkStatic(Settings.Secure::class)
+        every { Settings.Secure.getString(any(), Settings.Secure.ANDROID_ID) } returns "mock_android_id"
+
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "mock_unique_id"
+        every { NetworkUtils.getDeviceName() } returns "mock_device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "mock_custom_device"
+
         context = mockk(relaxed = true)
+        MainApplication.testContext = context
         userRepository = mockk(relaxed = true)
         val lazyUserRepository = Lazy { userRepository }
         apiInterface = mockk(relaxed = true)
@@ -78,6 +97,8 @@ class ActivitiesRepositoryImplTest {
         searchActivityDao = mockk(relaxed = true)
         userDao = mockk(relaxed = true)
         dispatcherProvider = TestDispatcherProvider(testDispatcher)
+
+        UrlUtils.init(sharedPrefManager)
 
         repository = ActivitiesRepositoryImpl(
             context,
@@ -94,6 +115,12 @@ class ActivitiesRepositoryImplTest {
             searchActivityDao,
             userDao
         )
+    }
+
+    @After
+    fun tearDown() {
+        unmockkObject(NetworkUtils)
+        unmockkStatic(Settings.Secure::class)
     }
 
     @Test
@@ -233,19 +260,15 @@ class ActivitiesRepositoryImplTest {
 
     @Test
     fun `getMostOpenedResource returns null when no activities`() = testScope.runTest {
-        coEvery { resourceActivityDao.getByUserAndType("john", "pdf") } returns emptyList()
+        coEvery { resourceActivityDao.getMostOpenedResource("john", "pdf") } returns null
         val result = repository.getMostOpenedResource("john", "pdf")
         assertNull(result)
     }
 
     @Test
     fun `getMostOpenedResource returns correct pair`() = testScope.runTest {
-        val activities = listOf(
-            ResourceActivity().apply { resourceId = "res1"; title = "Res 1" },
-            ResourceActivity().apply { resourceId = "res1"; title = "Res 1" },
-            ResourceActivity().apply { resourceId = "res2"; title = "Res 2" }
-        )
-        coEvery { resourceActivityDao.getByUserAndType("john", "pdf") } returns activities
+        val countObj = ResourceOpenCount("Res 1", 2)
+        coEvery { resourceActivityDao.getMostOpenedResource("john", "pdf") } returns countObj
 
         val result = repository.getMostOpenedResource("john", "pdf")
 
@@ -426,6 +449,51 @@ class ActivitiesRepositoryImplTest {
         coVerify(exactly = 0) { offlineActivityDao.getByRemoteIds(any()) }
         coVerify(exactly = 0) { offlineActivityDao.getByLoginTimesAndUserNames(any(), any()) }
         coVerify(exactly = 0) { offlineActivityDao.upsertAll(any()) }
+    }
+
+    @Test
+    fun `uploadMyPlanetActivities posts activities and usage stats when existing doc found`() = testScope.runTest {
+        val usageStatsManager = mockk<android.app.usage.UsageStatsManager>(relaxed = true)
+        every { context.getSystemService(Context.USAGE_STATS_SERVICE) } returns usageStatsManager
+        every { usageStatsManager.queryUsageStats(any(), any(), any()) } returns emptyList()
+
+        val mockResponseBody = JsonObject().apply {
+            add("usages", com.google.gson.JsonArray())
+        }
+        val mockResponse = mockk<retrofit2.Response<JsonObject>>()
+        every { mockResponse.body() } returns mockResponseBody
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns mockResponse
+
+        val userModel = UserEntity().apply {
+            parentCode = "parent"
+            planetCode = "planet"
+        }
+
+        repository.uploadMyPlanetActivities(userModel)
+
+        coVerify(exactly = 2) { apiInterface.postDoc(any(), eq("application/json"), any(), any()) }
+        coVerify(exactly = 1) { apiInterface.getJsonObject(any(), any()) }
+    }
+
+    @Test
+    fun `uploadMyPlanetActivities posts fallback activities when no existing doc found`() = testScope.runTest {
+        val usageStatsManager = mockk<android.app.usage.UsageStatsManager>(relaxed = true)
+        every { context.getSystemService(Context.USAGE_STATS_SERVICE) } returns usageStatsManager
+        every { usageStatsManager.queryUsageStats(any(), any(), any()) } returns emptyList()
+
+        val mockResponse = mockk<retrofit2.Response<JsonObject>>()
+        every { mockResponse.body() } returns null
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns mockResponse
+
+        val userModel = UserEntity().apply {
+            parentCode = "parent"
+            planetCode = "planet"
+        }
+
+        repository.uploadMyPlanetActivities(userModel)
+
+        coVerify(exactly = 2) { apiInterface.postDoc(any(), eq("application/json"), any(), any()) }
+        coVerify(exactly = 1) { apiInterface.getJsonObject(any(), any()) }
     }
 
     @Test

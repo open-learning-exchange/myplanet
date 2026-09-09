@@ -18,6 +18,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -109,6 +110,9 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
             user = userRepository.getUserModel()
             val data = loadStepData()
             val title = data.step.courseId?.let { coursesRepository.getCourseTitleById(it) }
+            val externalFilesDir = withContext(dispatcherProvider.io) {
+                MainApplication.context.getExternalFilesDir(null)
+            }
             viewLifecycleOwner.lifecycle.withStarted {
                 step = data.step
                 resources = data.resources
@@ -124,7 +128,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 fragmentCourseStepBinding.tvTitle.text = step.stepTitle
                 val markdownContentWithLocalPaths = prependBaseUrlToImages(
                     step.description,
-                    "file://${MainApplication.context.getExternalFilesDir(null)}/ole/",
+                    "file://$externalFilesDir/ole/",
                     600, 350
                 )
 

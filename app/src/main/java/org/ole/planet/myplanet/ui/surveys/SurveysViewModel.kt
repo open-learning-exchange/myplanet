@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -30,7 +29,6 @@ class SurveysViewModel @Inject constructor(
     private val surveysRepository: SurveysRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val userRepository: UserRepository,
-    private val userSessionManager: UserSessionManager,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
@@ -90,7 +88,7 @@ class SurveysViewModel @Inject constructor(
                     else -> surveysRepository.getIndividualSurveys()
                 }
 
-                val userModel = userSessionManager.getUserModel()
+                val userModel = userRepository.getUserModel()
                 val surveyInfos = surveysRepository.getSurveyInfos(
                     isTeam,
                     teamId,
@@ -185,7 +183,7 @@ class SurveysViewModel @Inject constructor(
     fun adoptSurvey(surveyId: String) {
         viewModelScope.launch {
             try {
-                val userModel = userSessionManager.getUserModel()
+                val userModel = userRepository.getUserModel()
                 surveysRepository.adoptSurvey(surveyId, userModel?.id, teamId, isTeam)
                 _userMessage.value = "Survey adopted successfully"
                 _isTeamShareAllowed.value = false

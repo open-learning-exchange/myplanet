@@ -180,7 +180,7 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
     }
 
     companion object {
-        private lateinit var recentList: MutableList<TagEntity>
+        private var recentList: MutableList<TagEntity> = ArrayList()
         fun getInstance(l: MutableList<TagEntity>, dbType: String): CollectionsFragment {
             recentList = l
             val f = CollectionsFragment()

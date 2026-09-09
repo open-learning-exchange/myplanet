@@ -223,9 +223,12 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         )
         filterController.setup()
 
+        val chipRow = view?.findViewById<LinearLayout>(R.id.chip_filter_row)
         var lastState: FilterState? = null
         var isFirstEmission = true
         collectLatestWhenStarted(filterController.filterState) { state ->
+            chipRow?.let { renderCourseChipSelection(it) }
+
             if (isFirstEmission) {
                 isFirstEmission = false
                 if (!state.isActive) {
@@ -266,7 +269,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
                 }
             },
             onAddToLib = {
-                if ((selectedItems?.size ?: 0) > 0) {
+                if (!selectedItems.isNullOrEmpty()) {
                     confirmation = createAlertDialog()
                     confirmation.show()
                 }
@@ -328,9 +331,6 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
             bottomSheet.visibility = View.GONE
         }
         requireView().findViewById<View>(R.id.btn_collections)?.setOnClickListener {
-            bottomSheet.visibility = View.GONE
-        }
-        requireView().findViewById<View>(R.id.btn_clear_tags)?.setOnClickListener {
             bottomSheet.visibility = View.GONE
         }
         orderByDate = requireView().findViewById(R.id.order_by_date_button)
