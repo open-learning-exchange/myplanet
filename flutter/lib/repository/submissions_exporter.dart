@@ -12,6 +12,41 @@ import '../data/local/app_database.dart';
 import '../data/local/converters.dart';
 import 'submissions_repository.dart';
 
+/// The report's Status row.
+///
+/// A **top-level function rather than an inline `??`** for the reason Phase
+/// 99's `reportExportDateSuffix` is one: the drawn cell is unreachable from a
+/// test. The PDF's *metadata* survives in the bytes as plain text — which is
+/// what `submissions_exporter_test` asserts the title through, and why that
+/// test can genuinely fail — but content streams are compressed, so
+/// `String.fromCharCodes(bytes).contains('Pending')` is false however the cell
+/// is drawn. Verified rather than assumed. Extracting it is the difference
+/// between a pinned behaviour and a comment.
+///
+/// `row.status ?? 'Pending'` alone stopped covering the empty case the moment
+/// the sync-in began storing Kotlin's `''` for a status-less document instead
+/// of null (`SubmissionsRepository.upsertDocuments`). Both states mean *the
+/// server told us nothing*, so both take the fallback — the idiom
+/// `submissions_screen.dart`'s tile subtitle already uses
+/// (`row.status?.trim().isNotEmpty == true ? … : l10n.pending`), so a
+/// submission does not read "Pending" in the list and blank in its own PDF.
+///
+/// The returned value is **trimmed**, which the screen's version is not: it
+/// renders `row.status!` with the padding intact. A deliberate difference
+/// rather than a copy of the idiom — a PDF table cell has no layout that
+/// absorbs leading whitespace — and pinned by a test, because an unpinned
+/// `.trim()` is how the two surfaces drift apart again. The screen's line is
+/// outside this lane's set; see `PHASE_151_NOTES.md`.
+///
+/// Kotlin prints the bare column here (`"Status: ${submission.status}"`,
+/// `SubmissionsRepositoryExporter.kt:77`) and therefore shows blank. Keeping
+/// the port's label is a deliberate nicety rather than a parity gap: Phase
+/// 151's job was the step lock, not a change of copy. English literals match
+/// the rest of this file, which draws a PDF with no `BuildContext` to localise
+/// against.
+String submissionStatusLabel(SubmissionRow row) =>
+    row.status?.trim().isNotEmpty == true ? row.status!.trim() : 'Pending';
+
 /// Dart port of `SubmissionsRepositoryExporter` using the cross-platform PDF
 /// package rather than Android's `PdfDocument` and `Canvas` APIs.
 class SubmissionsExporter {
@@ -107,7 +142,7 @@ class SubmissionsExporter {
   pw.Widget _metadata(SubmissionRow row) => pw.Table(
     columnWidths: const {0: pw.FixedColumnWidth(90)},
     children: [
-      _metadataRow('Status', row.status ?? 'Pending'),
+      _metadataRow('Status', submissionStatusLabel(row)),
       // `getNormalizedSubmitterName` (`SubmissionsRepositoryImpl.kt:316-323`)
       // — the `name` inside the JSON, never the JSON.
       _metadataRow(

@@ -304,12 +304,13 @@ void main() {
     //
     // An adoption marker is `status = ''` on the device that wrote it, and
     // `createSurveyAdoptionSubmission` also sets `isUpdated: true` — so the
-    // generic `pendingUploads` sweep uploads it. `serialize` sends
-    // `'status': ''`, and the pull reads it back through
-    // `JsonUtils.getStringOrNull`, which maps the empty string to **null**
-    // (`json_utils.dart:19-22`). So every marker that has round-tripped, and
-    // every marker a Kotlin handset in the same deployment published, carries
-    // `status = NULL` rather than `''`.
+    // generic `pendingUploads` sweep uploads it, and `serialize` sends
+    // `'status': ''`. **Until Phase 151 the pull folded that back to null**
+    // through `JsonUtils.getStringOrNull`, so a round-tripped marker — and
+    // every marker a Kotlin handset in the same deployment published —
+    // carried `status = NULL`. It is `''` now, and NULL is the *legacy*
+    // state rather than the normal one. Both are built below, because only
+    // the NULL one shows the bug.
     //
     // The guard was `row.status.isNotValue('')`, and drift's `isNotValue`
     // emits SQL `IS NOT`, not `!=` (`expression.dart:118-120` -> `:148-154`).
@@ -317,14 +318,21 @@ void main() {
     // existed to skip: the marker was rewritten to `survey-1@course-1`, the
     // status-blind count accepted it, and the learner's Finish sailed past a
     // survey they had never answered. Kotlin's own predicate is
-    // `it.status.orEmpty().isEmpty()` (`SurveysRepositoryImpl.kt:203-207`) —
-    // negating that needs `coalesce(status, '') != ''`, which is the idiom
-    // `pendingUploads` already uses for the same reason.
+    // `it.status.orEmpty().isEmpty()` (`SurveysRepositoryImpl.kt:203-207`).
     //
-    // In a real deployment this is the repair's *most likely* match, not a
-    // corner case: a bare-id answer sheet can only come from a pre-Phase-125
-    // port build, while a bare-id adoption marker is written on purpose by
-    // every Kotlin handset there is.
+    // **Both status states have to be built here, and Phase 151 is why.**
+    // Until then the sync-in folded `''` to null, so this one document
+    // exercised the NULL branch — the only branch the `isNotValue` bug is
+    // visible on, since `'' IS NOT ''` is false. After the writer fix a pulled
+    // marker is `''`, and with only this document the buggy predicate passes
+    // the suite: demonstrated by reverting the guard, which left all 40 tests
+    // in these three files green. So the legacy row is built below as a
+    // companion, because **the sync-in can no longer produce it** — and it is
+    // not hypothetical, since `submissions` is a preserved table
+    // (`app_database.dart`'s `_localAuthorityTables`), so rows a pre-Phase-151
+    // build stored as NULL survive on device until a submissions pull
+    // rewrites them. That is exactly the population
+    // `_repairSurveyParentId`'s `coalesce` is documented to exist for.
     await submissions.upsertDocuments([
       {
         '_id': 'adopt-doc-1',
@@ -335,8 +343,35 @@ void main() {
         'user': {'_id': 'org.couchdb.user:ada'},
       },
     ]);
+    // The pre-Phase-151 shape of the very same marker, still on any device
+    // that has not pulled submissions since.
+    await database.submissionDao.upsertAll([
+      SubmissionsCompanion.insert(
+        id: 'adopt-legacy-1',
+        couchId: const Value('adopt-legacy-1'),
+        rev: const Value('1-a'),
+        parentId: const Value('survey-1'),
+        type: const Value('survey'),
+        userId: const Value('org.couchdb.user:ada'),
+        uploaded: const Value(true),
+      ),
+    ]);
+    expect(
+      (await submissions.getById('adopt-legacy-1'))?.status,
+      isNull,
+      reason: 'the legacy row is only evidence while its status is NULL',
+    );
+
     final synced = await submissions.getById('adopt-doc-1');
-    expect(synced!.status, isNull, reason: 'the pull nulls an empty status');
+    // Phase 151 moved this: the pull used to fold `''` to null and now stores
+    // Kotlin's `''` verbatim. The assertion below is unaffected either way,
+    // which is the point of `_repairSurveyParentId`'s
+    // `coalesce(status, '') != ''` — it skipped the NULL and skips the `''`.
+    expect(
+      synced!.status,
+      '',
+      reason: 'the pull stores the empty status Kotlin stores',
+    );
 
     expect(
       await submissions.hasUnfinishedSurveys(
@@ -350,6 +385,13 @@ void main() {
       (await submissions.getById('adopt-doc-1'))!.parentId,
       'survey-1',
       reason: '`findExistingAdoption` looks this up by the bare id',
+    );
+    expect(
+      (await submissions.getById('adopt-legacy-1'))!.parentId,
+      'survey-1',
+      reason:
+          'a NULL status is an empty one too; this is the row the '
+          '`isNotValue` bug rewrote',
     );
   });
 

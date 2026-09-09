@@ -799,19 +799,33 @@ class SubmissionsRepository {
   /// (`expression.dart:118-120` → `:148-154`), and `NULL IS NOT ''` is **true**
   /// — so the first cut of this admitted exactly the rows it existed to skip.
   ///
-  /// A marker reaches null status by an ordinary route, not a corner case.
+  /// A marker reaches an empty status by an ordinary route, not a corner case.
   /// [createSurveyAdoptionSubmission] writes `status: ''` **and**
   /// `isUpdated: true`, so the generic `pendingUploads` sweep uploads it;
-  /// [serialize] sends `'status': ''`; and [upsertDocuments] reads it back
-  /// through `JsonUtils.getStringOrNull`, which maps the empty string to null
-  /// (`json_utils.dart:19-22`). Every marker that has round-tripped — and
-  /// every marker a Kotlin handset in the same deployment published, since
-  /// Kotlin writes them bare on purpose — arrives with `status = NULL`. In a
-  /// real mixed fleet that is the repair's *most likely* match, where a bare-id
-  /// answer sheet can only come from a pre-Phase-125 build.
+  /// [serialize] sends `'status': ''`; and [upsertDocuments] stores that back
+  /// verbatim. In a real mixed fleet that is the repair's *most likely* match,
+  /// where a bare-id answer sheet can only come from a pre-Phase-125 build —
+  /// and a marker a Kotlin handset in the same deployment published arrives
+  /// the same way, since Kotlin writes them bare on purpose.
   ///
-  /// `coalesce` on the status is the same idiom, for the same reason, as
-  /// `SubmissionDao.pendingUploads`' coalesced guest operands.
+  /// **A round-tripped marker used to arrive with `status = NULL`**, because
+  /// the sync-in folded `''` to null through `getStringOrNull`. Phase 151
+  /// removed that fold for this column, so both states now mean the same
+  /// thing here — which is why the `coalesce` stays: rows a pre-Phase-151
+  /// build stored as NULL are still on devices, and only a submissions pull
+  /// rewrites them.
+  ///
+  /// **The `coalesce` is redundant, and saying so is the point.** The fix
+  /// Phase 136 needed was the *operator*: `status IS NOT ''` is true for NULL,
+  /// `NOT (status = '')` is NULL for NULL and a `WHERE` drops it. So
+  /// `row.status.equals('').not()` selects exactly what the coalesced form
+  /// selects — verified by mutation, which passes the suite. It is kept
+  /// because it states "a null status is an empty one" in the expression
+  /// rather than leaving it to three-valued logic, but it is **not** the same
+  /// idiom as `SubmissionDao.pendingUploads`' coalesced guest operands: there
+  /// the coalesce stops NULL poisoning a *negated conjunction* and is
+  /// load-bearing. Do not cite this one as evidence that the reader side
+  /// needed patching.
   Future<int> _repairSurveyParentId(SurveyRow survey) async {
     final target = examParentId(examId: survey.id, courseId: survey.courseId);
     // A survey with no `courseId` of its own keys to the bare id already.
@@ -1262,8 +1276,10 @@ class SubmissionsRepository {
     return {
       if (row.couchId != null && row.couchId!.isNotEmpty) '_id': row.couchId,
       if (row.rev != null && row.rev!.isNotEmpty) '_rev': row.rev,
-      // Kotlin's own defaults, `serializeSubmission:827-832`: Planet reads
+      // Kotlin's own defaults, `serializeSubmission:834-835`: Planet reads
       // these unconditionally, so a null would arrive as a missing field.
+      // (`:827-832` are the conditional `_id`/`_rev` guards, which is what an
+      // earlier revision of this comment cited.)
       'parentId': row.parentId ?? '',
       'type': row.type ?? 'survey',
       // Straight after `type`, where both Kotlin serializers add it
@@ -1759,7 +1775,57 @@ class SubmissionsRepository {
           startTime: Value(JsonUtils.getLong('startTime', json)),
           lastUpdateTime: Value(JsonUtils.getLong('lastUpdateTime', json)),
           grade: Value(JsonUtils.getLong('grade', json)),
-          status: Value(JsonUtils.getStringOrNull('status', json)),
+          // **`getString`, not `getStringOrNull`, and the difference locked a
+          // course step.** Kotlin stores
+          // `JsonUtils.getString("status", submission)`
+          // (`SubmissionsRepositoryImpl.kt:659`, `:679`), which is `""` for a
+          // key the document does not carry (`JsonUtils.kt:65-68`). The port
+          // stored `getStringOrNull`, which is null for a missing key *and*
+          // for `""` (`json_utils.dart`).
+          //
+          // `SubmissionDao.countCompletedByUserAndExamId`'s
+          // `status != 'pending'` (`SubmissionDao.kt:24`) is then the whole
+          // defect: `NOT (NULL = 'pending')` is SQL NULL and `WHERE NULL`
+          // drops the row, so a Planet submission with no `status` counted 0
+          // and `isStepCompleted` held the step shut — for a learner Kotlin,
+          // storing `""`, lets straight through.
+          //
+          // The reader was never wrong. `countCompletedByUserAndExamId` is a
+          // faithful port of that query, its NULL behaviour included, and
+          // Kotlin's own reader excludes a NULL status too. Coalescing there
+          // would have made the port's *reader* diverge from Kotlin's in order
+          // to compensate for the port's *writer* diverging from Kotlin's.
+          // Only one side had drifted, so only one side moved — which is also
+          // why no DAO predicate changed.
+          //
+          // Rows a shipped build already stored as NULL need no migration:
+          // [sync] walks `_all_docs?include_docs=true` in full every run and
+          // re-upserts every page, so a submissions pull rewrites them.
+          //
+          // **Two callers, and this comment got the count wrong twice before
+          // landing on it.** The first draft said "the next ordinary sync";
+          // the ground-truth audit called that false on the grounds of a
+          // single caller (the Submissions screen's refresh icon,
+          // `submissions_screen.dart:122`) and the correction was taken; the
+          // implementation audit then found
+          // `background_entrypoint.dart:195-202`, a `BackgroundSyncStep`
+          // inside `syncSteps` that calls this repository's `sync` on the
+          // periodic auto-sync task — and `PlanetPrefs.autoSyncEnabled`
+          // defaults to **true** (`planet_prefs.dart:441`). So the table is
+          // pulled headlessly, without the learner visiting any screen, and
+          // the original claim was substantially right. What is true of
+          // `DashboardSyncArea` is only what
+          // `dashboard_sync_provider.dart:276` actually says — nothing in the
+          // **foreground** pass pulls `submissions` — which is a real gap
+          // against Kotlin's `HeavyTableSyncWorker` (`SyncManager.kt:209`)
+          // and is not the same statement.
+          //
+          // `type`, `sender`, `source`, `parentCode` and `teamId` carry the
+          // same divergence and are deliberately left alone this round —
+          // `PHASE_151_NOTES.md` § *Reported, not fixed* has the reach of each
+          // and why `type`'s fix needs two lines in `submission_detail_screen`
+          // that this lane does not own.
+          status: Value(JsonUtils.getString('status', json)),
           uploaded: Value(rev.isNotEmpty),
           sender: Value(JsonUtils.getStringOrNull('sender', json)),
           source: Value(JsonUtils.getStringOrNull('source', json)),

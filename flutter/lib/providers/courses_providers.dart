@@ -574,14 +574,16 @@ final stepNextLockProvider = FutureProvider.autoDispose
 /// The NULL-`status` case is unchanged, and the *predicate* was already right:
 /// `NOT (status = 'pending')` is NULL for a NULL status and `WHERE NULL`
 /// excludes the row, which is what the explicit `status != null` test did in
-/// Dart. **The outcome still diverges, one layer down, and this swap does not
-/// touch it**: Kotlin's sync-in stores `JsonUtils.getString('status', …)`,
-/// which is `""` for a missing key, and `'' != 'pending'` counts; the port's
-/// `upsertDocuments` stores `getStringOrNull`, which is null for a missing key
-/// *and* for `""`, and does not. So a Planet submission carrying no `status`
-/// unlocks the step in Kotlin and locks it here. That is a `""`-vs-null
-/// decision every submission reader shares — see `PHASE_149_NOTES.md`,
-/// *Reported, not fixed* item 1.
+/// Dart — and which is Kotlin's behaviour too, so the predicate is right.
+///
+/// **The outcome used to diverge one layer down, and Phase 151 closed it.**
+/// Kotlin's sync-in stores `JsonUtils.getString('status', …)`, which is `""`
+/// for a missing key, and `'' != 'pending'` counts; the port's
+/// `upsertDocuments` stored `getStringOrNull`, which is null for a missing key
+/// *and* for `""`, so a Planet submission carrying no `status` unlocked the
+/// step in Kotlin and locked it here. The writer now stores Kotlin's `''` and
+/// this reader is unchanged, because only one side had drifted. Pinned by
+/// `test/repository/submission_empty_vs_null_status_test.dart`.
 ///
 /// Which *row* is interrogated stays this function's own judgement, above —
 /// the query takes an id, not a step.

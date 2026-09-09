@@ -352,11 +352,15 @@ void main() {
   test('re-adopting does not rewrite a round-tripped marker', () async {
     // Kotlin's guard is `it.status.orEmpty().isEmpty()`
     // (`SurveysRepositoryImpl.kt:206`), which matches a null status and an
-    // empty one alike. `row.status == ''` misses the null — and null is the
-    // *normal* state for a marker that has synced, because [serialize] sends
-    // `'status': ''` and `upsertDocuments` reads the empty string back as null
-    // (`json_utils.dart:19-22`). The same shape `_repairSurveyParentId` needed
-    // `coalesce(status, '')` for.
+    // empty one alike. `row.status == ''` misses the null.
+    //
+    // Null was the *normal* state for a synced marker until Phase 151, because
+    // [serialize] sends `'status': ''` and `upsertDocuments` folded the empty
+    // string back to null. The writer now stores `''` verbatim, so null is the
+    // **legacy** state — rows a pre-Phase-151 build stored, on a preserved
+    // table, until a submissions pull rewrites them. That is why this test
+    // forces the null below rather than relying on the pull to produce one,
+    // and why the guard still has to match both.
     await adopt();
     final marker = (await database.submissionDao.getSurveySubmissionsByUser(
       'leader-1',
