@@ -186,19 +186,51 @@ const List<PlanetServer> allPlanetServers = <PlanetServer>[
 List<PlanetServer> get configuredPlanetServers =>
     allPlanetServers.where((server) => server.host.isNotEmpty).toList();
 
-/// Port of `getFilteredList`: three rows, expandable to all of them, with the
-/// already-configured server kept visible even when it sits further down.
+/// Port of `getFilteredList` **and** the reordering half of
+/// `ServerDialogExtensions.refreshServerList`.
+///
+/// Both arms keep the configured server visible, and they do it differently,
+/// which is the part an audit of `getFilteredList` alone cannot see:
+///
+/// * **Collapsed** — `getFilteredList` takes the first three rows and, when the
+///   configured server is not among them, prepends it, giving four
+///   (`ServerConfigUtils.kt:56-62`). No de-duplication is needed because the
+///   `contains` check is what gates the prepend.
+/// * **Expanded** — `getFilteredList` returns the list untouched, and then
+///   `refreshServerList` hoists the configured server to index 0 and drops the
+///   duplicate further down (`ServerDialogExtensions.kt:128-135`). This half
+///   had never been ported: expanding the list left the configured server
+///   wherever `getServerAddresses` declares it, so on a device configured for
+///   cambridge — the eleventh row — "show more" put the row the user is
+///   already using last.
+///
+/// One knowing simplification. Kotlin reads **two** preferences here:
+/// `getPinnedServerUrl()` feeds the collapsed prepend (written only after a
+/// successful sync, `SyncActivity.kt:529`) while `getServerUrl()` feeds the
+/// expanded hoist. The port has no separate pinned-after-sync preference, so
+/// one [configuredHost] serves both roles; the caller supplies the persisted
+/// `ServerConfig`'s host, which is the analogue of `getServerUrl()`.
 List<PlanetServer> planetServersToShow({
   required List<PlanetServer> servers,
   required bool showAdditional,
   String? configuredHost,
 }) {
-  if (showAdditional) return servers;
+  final configured = configuredHost ?? '';
+
+  if (showAdditional) {
+    if (configured.isEmpty) return servers;
+    final pinned = servers.where((s) => s.host == configured);
+    if (pinned.isEmpty) return servers;
+    return <PlanetServer>[
+      pinned.first,
+      ...servers.where((s) => s.host != configured),
+    ];
+  }
 
   final topThree = servers.take(3).toList();
-  if (configuredHost == null || configuredHost.isEmpty) return topThree;
-  if (topThree.any((s) => s.host == configuredHost)) return topThree;
-  final pinned = servers.where((s) => s.host == configuredHost);
+  if (configured.isEmpty) return topThree;
+  if (topThree.any((s) => s.host == configured)) return topThree;
+  final pinned = servers.where((s) => s.host == configured);
   if (pinned.isEmpty) return topThree;
   return <PlanetServer>[pinned.first, ...topThree];
 }
@@ -208,9 +240,22 @@ List<PlanetServer> planetServersToShow({
 /// The list stores bare hosts while the screen's field holds a full URL, so
 /// matching the configured server against a row needs one of the two reduced
 /// to the other's shape.
-String hostWithoutScheme(String url) {
-  for (final prefix in const <String>['https://', 'http://']) {
-    if (url.startsWith(prefix)) return url.substring(prefix.length);
-  }
-  return url;
-}
+///
+/// Kotlin **chains** the two strips —
+/// `url.removePrefix("https://").removePrefix("http://")`
+/// (`ServerConfigUtils.kt:64-66`) — where this returned on the first match, so
+/// `https://http://host` reduced to `http://host` there and to `host` in the
+/// Kotlin. The chain is asymmetric and that is reproduced rather than tidied:
+/// `https://` is stripped first, so `http://https://host` keeps its `https://`
+/// in both apps. Nothing else is removed: no trailing slash, no port, no
+/// `www.`, no credentials.
+///
+/// Kotlin has a second, *unchained* reducer for the same job — the
+/// `^https?://` regex `ServerDialogExtensions` matches list rows with — and the
+/// two disagree only on a doubled scheme. This follows `removeProtocol`, the
+/// one it is named after.
+String hostWithoutScheme(String url) =>
+    _withoutPrefix(_withoutPrefix(url, 'https://'), 'http://');
+
+String _withoutPrefix(String value, String prefix) =>
+    value.startsWith(prefix) ? value.substring(prefix.length) : value;
