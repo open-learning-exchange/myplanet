@@ -510,6 +510,31 @@ Every one failed the test it should.
 | `adoptExisting` forced true everywhere | 5 |
 | un-arm each of the eleven armed uploaders, one at a time | 1–2 each |
 | adopt instead of re-sending, checked against the tombstone path | 2 |
+| fetch before the create decision (revert the hoist) | 1 |
+| skip `markUploaded` in the voices success branch | 2 |
+| `fromDoc` takes the server's `messages` instead of keeping the local array | 1 |
 
 The third row is the one worth keeping: **porting Kotlin's arm as written fails
 twenty-two tests in this port.** That is the phase's finding stated as a number.
+
+The last three were added after the implementation audit, and the second of
+them is a correction rather than an addition: the voices assertion it replaced
+**could not fail**, and my own eighteen mutations had not caught that because
+un-arming the uploader still killed the *other* assertions in the same test.
+**A test being killed by a mutation does not mean every assertion in it can
+fail.** Mutate toward the specific clause, not just the feature.
+
+### A trap in the mutation harness itself, worth writing down
+
+The harness reverts with `git checkout -- lib/` between mutations. Run against
+an **uncommitted** fix, that silently reverts the fix. It happened here: the
+hoist, the health rationale and the `documentUrlUnder` dartdoc were all undone
+by a later mutation's cleanup, and the only reason it surfaced was the full
+gate going red on a test whose assertion had just been made stricter. Had that
+assertion not existed, three shipped corrections would have quietly not
+shipped, with a green suite and a commit message describing them.
+
+**Commit before mutating.** This is the same shape CLAUDE.md already records
+for an audit subagent leaving reverts in the working tree (Phase 135) — the
+tree is shared with whatever you spawn *and* with your own tooling, and
+`git status` after a mutation run is not a formality.
