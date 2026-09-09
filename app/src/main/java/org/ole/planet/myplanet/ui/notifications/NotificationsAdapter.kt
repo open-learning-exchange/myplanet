@@ -22,7 +22,8 @@ class NotificationsAdapter(
     private val onMarkAsReadClick: (String) -> Unit,
     private val onNotificationClick: (Notification) -> Unit,
     private val onToggleSelection: (String) -> Unit,
-    private val onToggleGroupExpansion: (String) -> Unit
+    private val onToggleGroupExpansion: (String) -> Unit,
+    private val now: () -> Long = { System.currentTimeMillis() }
 ) : ListAdapter<NotificationListItem, RecyclerView.ViewHolder>(
     DiffUtils.itemCallback(
         areItemsTheSame = { old, new ->
@@ -150,7 +151,7 @@ class NotificationsAdapter(
         }
 
         private fun formatRelativeTime(createdAt: Long): String {
-            val diff = System.currentTimeMillis() - createdAt
+            val diff = now() - createdAt
             val context = binding.root.context
             return when {
                 diff < 60_000L -> context.getString(R.string.just_now)

@@ -412,23 +412,24 @@ class VoicesAdapter(
         val userId = news.userId
         if (userId.isNullOrEmpty()) return null
 
+        val avatarSize = holder.binding.imgUser.context.resources.getDimensionPixelSize(R.dimen._40dp)
         if (userCache.containsKey(userId)) {
             val userModel = userCache[userId]
             val userFullName = userModel?.getFullNameWithMiddleName()?.trim()
             if (userModel != null && currentUser != null) {
                 holder.binding.tvName.text =
                     if (userFullName.isNullOrEmpty()) news.userName else userFullName
-                ImageUtils.loadImage(userModel.userImage, holder.binding.imgUser)
+                ImageUtils.loadImage(userModel.userImage, holder.binding.imgUser, avatarSize)
                 showHideButtons(news, holder)
             } else {
                 holder.binding.tvName.text = news.userName
-                ImageUtils.loadImage(null, holder.binding.imgUser)
+                ImageUtils.loadImage(null, holder.binding.imgUser, avatarSize)
                 showHideButtons(news, holder)
             }
             return userModel
         } else {
             holder.binding.tvName.text = news.userName
-            ImageUtils.loadImage(null, holder.binding.imgUser)
+            ImageUtils.loadImage(null, holder.binding.imgUser, avatarSize)
             showHideButtons(news, holder)
             if (!fetchingUserIds.contains(userId)) {
                 fetchingUserIds.add(userId)

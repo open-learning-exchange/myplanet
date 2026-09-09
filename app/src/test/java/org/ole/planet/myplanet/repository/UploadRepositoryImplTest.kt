@@ -84,6 +84,17 @@ class UploadRepositoryImplTest {
     }
 
     @Test
+    fun `markUploaded with empty succeeded list returns empty list`() = runTest {
+        val failed = repository.markUploaded(
+            UploadUpdateContract(UploadUpdateType.Exams),
+            emptyList()
+        )
+
+        assertEquals(emptyList<UploadedItemResult>(), failed)
+        coVerify(exactly = 0) { examDao.getByIds(any()) }
+    }
+
+    @Test
     fun `markUploaded updates exams and returns missing exams as failures`() = runTest {
         val existingExam = StepExam(id = "exam-1")
         coEvery { examDao.getByIds(listOf("exam-1", "exam-missing")) } returns listOf(existingExam)

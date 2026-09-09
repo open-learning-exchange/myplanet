@@ -24,6 +24,7 @@ class NotificationsAdapterTest {
 
     private lateinit var context: Context
     private lateinit var adapter: NotificationsAdapter
+    private val fixedNow = 1_700_000_000_000L
 
     @Before
     fun setUp() {
@@ -32,13 +33,13 @@ class NotificationsAdapterTest {
             onMarkAsReadClick = {},
             onNotificationClick = {},
             onToggleSelection = {},
-            onToggleGroupExpansion = {}
+            onToggleGroupExpansion = {},
+            now = { fixedNow }
         )
     }
 
-    private fun bindAndGetTimestamp(createdAtDiff: Long): String {
-        val now = System.currentTimeMillis()
-        val notification = Notification("1", "test", false, "test", "test", now - createdAtDiff, "")
+    private fun bindAndGetTimestamp(createdAt: Long): String {
+        val notification = Notification("1", "test", false, "test", "test", createdAt, "")
         val item = NotificationListItem.Item(notification, false, false)
 
         val parent = FrameLayout(context)
@@ -51,36 +52,51 @@ class NotificationsAdapterTest {
     }
 
     @Test
-    fun `test formatRelativeTime just now`() {
-        assertEquals(context.getString(R.string.just_now), bindAndGetTimestamp(10_000L))
+    fun `test formatRelativeTime just now boundary`() {
+        // diff = 0ms (exact match with fixedNow) -> just now
+        assertEquals(context.getString(R.string.just_now), bindAndGetTimestamp(fixedNow))
+        // diff = 59_999ms (upper boundary for just now) -> just now
+        assertEquals(context.getString(R.string.just_now), bindAndGetTimestamp(fixedNow - 59_999L))
     }
 
     @Test
-    fun `test formatRelativeTime minutes ago`() {
-        assertEquals(context.getString(R.string.minutes_ago, 5L), bindAndGetTimestamp(5 * 60_000L))
+    fun `test formatRelativeTime minutes ago boundary`() {
+        // diff = 60_000ms (1 min boundary) -> 1 minute ago
+        assertEquals(context.getString(R.string.minutes_ago, 1L), bindAndGetTimestamp(fixedNow - 60_000L))
+        // diff = 3_599_999ms (59 min boundary) -> 59 minutes ago
+        assertEquals(context.getString(R.string.minutes_ago, 59L), bindAndGetTimestamp(fixedNow - 3_599_999L))
     }
 
     @Test
-    fun `test formatRelativeTime hours ago`() {
-        assertEquals(context.getString(R.string.hours_ago, 2L), bindAndGetTimestamp(2 * 3_600_000L))
+    fun `test formatRelativeTime hours ago boundary`() {
+        // diff = 3_600_000ms (1 hr boundary) -> 1 hour ago
+        assertEquals(context.getString(R.string.hours_ago, 1L), bindAndGetTimestamp(fixedNow - 3_600_000L))
+        // diff = 86_399_999ms (23 hr 59 min 59 sec boundary) -> 23 hours ago
+        assertEquals(context.getString(R.string.hours_ago, 23L), bindAndGetTimestamp(fixedNow - 86_399_999L))
     }
 
     @Test
-    fun `test formatRelativeTime yesterday`() {
-        assertEquals(context.getString(R.string.yesterday), bindAndGetTimestamp(1 * 86_400_000L + 1000L))
+    fun `test formatRelativeTime yesterday boundary`() {
+        // diff = 86_400_000ms (24 hr boundary) -> yesterday
+        assertEquals(context.getString(R.string.yesterday), bindAndGetTimestamp(fixedNow - 86_400_000L))
+        // diff = 172_799_999ms (47 hr 59 min 59 sec boundary) -> yesterday
+        assertEquals(context.getString(R.string.yesterday), bindAndGetTimestamp(fixedNow - 172_799_999L))
     }
 
     @Test
-    fun `test formatRelativeTime days ago`() {
-        assertEquals(context.getString(R.string.days_ago, 3L), bindAndGetTimestamp(3 * 86_400_000L + 1000L))
+    fun `test formatRelativeTime days ago boundary`() {
+        // diff = 172_800_000ms (2 days boundary) -> 2 days ago
+        assertEquals(context.getString(R.string.days_ago, 2L), bindAndGetTimestamp(fixedNow - 172_800_000L))
+        // diff = 604_799_999ms (6 days 23 hr 59 min 59 sec boundary) -> 6 days ago
+        assertEquals(context.getString(R.string.days_ago, 6L), bindAndGetTimestamp(fixedNow - 604_799_999L))
     }
 
     @Test
-    fun `test formatRelativeTime absolute date`() {
-        val diff = 8 * 86_400_000L
-        val expectedDate = Date(System.currentTimeMillis() - diff)
-        val expectedString = SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(expectedDate)
-        assertEquals(expectedString, bindAndGetTimestamp(diff))
+    fun `test formatRelativeTime fallback absolute date boundary`() {
+        // diff = 604_800_000ms (7 days boundary) -> fallback date format
+        val createdAt = fixedNow - 604_800_000L
+        val expectedString = SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(createdAt))
+        assertEquals(expectedString, bindAndGetTimestamp(createdAt))
     }
 
     @Test

@@ -165,7 +165,8 @@ class MyHealthFragment : Fragment() {
             binding.layoutUserDetail.visibility = View.VISIBLE
             binding.tvMessage.visibility = View.GONE
             binding.txtFullName.text = getDisplayName(currentUser)
-            ImageUtils.loadPlaceholderImage(currentUser.userImage, binding.userImage)
+            val userImageSize = binding.userImage.context.resources.getDimensionPixelSize(R.dimen.user_image_size)
+            ImageUtils.loadPlaceholderImage(currentUser.userImage, binding.userImage, userImageSize)
             binding.txtEmail.text = Utilities.checkNA(currentUser.email)
             binding.txtLanguage.text = Utilities.checkNA(currentUser.language)
             binding.txtDob.text = TimeUtils.formatDateToDDMMYYYY(currentUser.dob).ifEmpty { "dd-MM-yyyy" }
