@@ -24,6 +24,7 @@ class SharedPrefManager @Inject constructor(
     val rawPreferences: SharedPreferences get() = pref
 
     companion object {
+        private val userListType = object : TypeToken<List<User>>() {}.type
         private const val SAVED_USERS = "savedUsers"
         private const val REPLIED_NEWS_ID = "repliedNewsId"
         const val MANUAL_CONFIG = "manualConfig"
@@ -72,8 +73,7 @@ class SharedPrefManager @Inject constructor(
     fun getSavedUsers(): List<User> {
         val usersJson = pref.getString(SAVED_USERS, null)
         return if (usersJson != null) {
-            val type = object : TypeToken<List<User>>() {}.type
-            gson.fromJson(usersJson, type)
+            gson.fromJson(usersJson, userListType)
         } else {
             emptyList()
         }
@@ -163,18 +163,21 @@ class SharedPrefManager @Inject constructor(
     fun setConfigurationId(id: String) = pref.edit { putString(CONFIGURATION_ID, id) }
 
     fun getCouchdbUrl(): String = pref.getString(COUCHDB_URL, "") ?: ""
-    fun setCouchdbUrl(url: String) = pref.edit { putString(COUCHDB_URL, url) }
+    fun setCouchdbUrl(url: String) {
+        pref.edit { putString(COUCHDB_URL, url) }
+        UrlUtils.invalidateCaches()
+    }
 
     fun getUrlUser(): String = pref.getString(URL_USER, "") ?: ""
     fun setUrlUser(user: String) {
         pref.edit { putString(URL_USER, user) }
-        UrlUtils.invalidateHeaderCache()
+        UrlUtils.invalidateCaches()
     }
 
     fun getUrlPwd(): String = pref.getString(URL_PWD, "") ?: ""
     fun setUrlPwd(pwd: String) {
         pref.edit { putString(URL_PWD, pwd) }
-        UrlUtils.invalidateHeaderCache()
+        UrlUtils.invalidateCaches()
     }
 
     fun getUrlScheme(): String = pref.getString(URL_SCHEME, "") ?: ""
@@ -187,10 +190,16 @@ class SharedPrefManager @Inject constructor(
     fun setAlternativeUrl(url: String) = pref.edit { putString(ALTERNATIVE_URL, url) }
 
     fun getProcessedAlternativeUrl(): String = pref.getString(PROCESSED_ALTERNATIVE_URL, "") ?: ""
-    fun setProcessedAlternativeUrl(url: String) = pref.edit { putString(PROCESSED_ALTERNATIVE_URL, url) }
+    fun setProcessedAlternativeUrl(url: String) {
+        pref.edit { putString(PROCESSED_ALTERNATIVE_URL, url) }
+        UrlUtils.invalidateCaches()
+    }
 
     fun isAlternativeUrl(): Boolean = pref.getBoolean(IS_ALTERNATIVE_URL, false)
-    fun setIsAlternativeUrl(value: Boolean) = pref.edit { putBoolean(IS_ALTERNATIVE_URL, value) }
+    fun setIsAlternativeUrl(value: Boolean) {
+        pref.edit { putBoolean(IS_ALTERNATIVE_URL, value) }
+        UrlUtils.invalidateCaches()
+    }
 
     fun getPinnedServerUrl(): String? = pref.getString(PINNED_SERVER_URL, null)
     fun setPinnedServerUrl(url: String) = pref.edit { putString(PINNED_SERVER_URL, url) }
@@ -307,7 +316,7 @@ class SharedPrefManager @Inject constructor(
         }
         val defaultPreferences = PreferenceManager.getDefaultSharedPreferences(context)
         defaultPreferences.edit { clear() }
-        UrlUtils.invalidateHeaderCache()
+        UrlUtils.invalidateCaches()
     }
 
 }

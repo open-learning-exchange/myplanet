@@ -85,15 +85,16 @@ class LifeViewModelTest {
     }
 
     @Test
-    fun `updateVisibility calls repository and reloads list`() = runTest {
-        coEvery { userRepository.getCurrentUserId() } returns "user_123"
-        coEvery { lifeRepository.getMyLifeByUserId("user_123", any()) } returns emptyList()
+    fun `updateVisibility calls repository and directly updates myLifeList without re-querying`() = runTest {
+        val updatedItem = MyLife("img1", "user_123", "Item 1").apply { isVisible = true }
+        coEvery { lifeRepository.updateVisibility(true, "item_1") } returns listOf(updatedItem)
 
         viewModel.updateVisibility(true, "item_1")
         testDispatcher.scheduler.advanceUntilIdle()
 
+        assertEquals(listOf(updatedItem), viewModel.myLifeList.value)
         coVerify(exactly = 1) { lifeRepository.updateVisibility(true, "item_1") }
-        coVerify { lifeRepository.getMyLifeByUserId("user_123", any()) }
+        coVerify(exactly = 0) { lifeRepository.getMyLifeByUserId(any(), any()) }
     }
 
     @Test

@@ -106,7 +106,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             return emptyList()
         }
 
-        val examIds = pendingSurveys.mapNotNull { it.examIdFromParentId() }.distinct()
+        val examIds = pendingSurveys.mapNotNullTo(LinkedHashSet()) { it.examIdFromParentId() }.toList()
         if (examIds.isEmpty()) {
             return emptyList()
         }

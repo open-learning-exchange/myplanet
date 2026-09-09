@@ -1,14 +1,12 @@
 package org.ole.planet.myplanet.services
 
 import android.content.Context
-import android.net.Uri
 import android.os.SystemClock
 import android.text.TextUtils
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
@@ -21,21 +19,20 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.NewsUpdateData
 import org.ole.planet.myplanet.repository.NewsUploadData
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.repository.TeamUploadData
-import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.services.upload.AchievementUploader
+import org.ole.planet.myplanet.services.upload.BulkDocsUploader
 import org.ole.planet.myplanet.services.upload.PhotoUploader
+import org.ole.planet.myplanet.services.upload.TeamsUploader
 import org.ole.planet.myplanet.services.upload.UploadConfigs
 import org.ole.planet.myplanet.services.upload.UploadConstants.BATCH_SIZE
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
@@ -65,7 +62,7 @@ class UploadManager @Inject constructor(
     private val voicesRepository: VoicesRepository,
     private val uploadConfigs: UploadConfigs,
     private val resourcesRepository: ResourcesRepository,
-    private val teamsSyncRepository: Lazy<TeamsSyncRepository>,
+    private val teamsUploader: TeamsUploader,
     private val activitiesRepository: ActivitiesRepository,
     private val dispatcherProvider: DispatcherProvider,
     @ApplicationScope private val scope: CoroutineScope,
@@ -253,123 +250,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeams() {
-        val teamsToUpload = teamsSyncRepository.get().getTeamsForUpload()
-
-        withContext(dispatcherProvider.io) {
-            teamsToUpload.processInBatches { batch ->
-                val deletedIds = mutableListOf<String>()
-                val uploadedTeams = mutableMapOf<String, String>()
-
-                val bulkDocs = com.google.gson.JsonArray()
-
-                batch.forEach { teamData ->
-                    bulkDocs.add(teamData.serialized)
-                }
-
-                if (bulkDocs.isEmpty()) return@processInBatches
-
-                val payload = com.google.gson.JsonObject()
-                payload.add("docs", bulkDocs)
-
-                try {
-                    val response = uploadRepository.postUploadArray(
-                        "${UrlUtils.getUrl()}/teams/_bulk_docs", payload
-                    )
-
-                    val responseBody = response.body()
-
-                    if (response.isSuccessful && responseBody != null) {
-                        if (responseBody.size() < batch.size) {
-                            Log.w(TAG, "Team bulk upload response returned ${responseBody.size()} result(s) for a batch of ${batch.size}; ${batch.size - responseBody.size()} team(s) were not processed and will retry next sync")
-                        }
-                        for (i in 0 until responseBody.size()) {
-                            val element = responseBody.get(i).asJsonObject
-                            val id = getString("id", element)
-                            val teamData = batch.getOrNull(i) ?: continue
-
-                            if (element.has("error")) {
-                                // 200 bulk response code prevents retry here, as per doc errors aren't retried
-                                queueTeamRetry(teamData, response.code(), if (teamData.isDeletePending) "PUT" else "POST", id)
-                            } else {
-                                var rev = getString("rev", element)
-                                if (teamData.isDeletePending) {
-                                    deletedIds.add(id)
-                                } else {
-                                    if (!teamData.imageName.isNullOrEmpty() && rev.isNotEmpty()) {
-                                        rev = uploadTeamImageAttachment(id, rev, teamData.imageName)
-                                    }
-                                    uploadedTeams[teamData.teamId ?: id] = rev
-                                }
-                            }
-                        }
-                    } else {
-                        // Entire bulk failed, queue all
-                        batch.forEach { teamData ->
-                            queueTeamRetry(teamData, response.code(), if (teamData.isDeletePending) "PUT" else "POST", teamData.teamId)
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Exception in UploadManager bulk upload", e)
-                    batch.forEach { teamData ->
-                        queueTeamRetry(teamData, null, if (teamData.isDeletePending) "PUT" else "POST", teamData.teamId, e)
-                    }
-                }
-
-                if (deletedIds.isNotEmpty()) {
-                    teamsSyncRepository.get().deleteLocalTeamRecords(deletedIds)
-                }
-                if (uploadedTeams.isNotEmpty()) {
-                    teamsSyncRepository.get().markTeamsUploaded(uploadedTeams)
-                }
-            }
-        }
-    }
-
-    private suspend fun queueTeamRetry(
-        teamData: TeamUploadData,
-        httpCode: Int?,
-        httpMethod: String,
-        dbId: String?,
-        exception: Exception? = null
-    ) {
-        val retryable = exception != null || (httpCode != null && httpCode >= 500)
-        if (!retryable) return
-        retryQueue.queueFailedOperation(
-            uploadType = "MyTeam",
-            error = UploadError(
-                itemId = teamData.teamId ?: "",
-                exception = exception ?: Exception("Upload failed: HTTP $httpCode"),
-                retryable = true,
-                httpCode = httpCode
-            ),
-            payload = teamData.serialized,
-            endpoint = "teams",
-            httpMethod = httpMethod,
-            dbId = dbId,
-            modelClassName = "MyTeam"
-        )
-    }
-
-    private suspend fun uploadTeamImageAttachment(teamId: String, rev: String, imageName: String): String {
-        val imageFile = MyTeam
-            .getAttachmentFile(context, teamId, imageName) ?: return rev
-        if (!imageFile.exists()) return rev
-        return try {
-            val mimeType = FileUtils.getMimeType(imageName) ?: "image/*"
-            val body = imageFile.asRequestBody(mimeType.toMediaTypeOrNull())
-            val encodedName = Uri.encode(imageName)
-            val url = "${UrlUtils.getUrl()}/teams/$teamId/$encodedName"
-            val response = uploadRepository.uploadResource(FileUploader.getHeaderMap(mimeType, rev), url, body)
-            val newRev = response.body()?.get("rev")?.asString
-            if (!newRev.isNullOrEmpty()) {
-                newRev
-            } else {
-                rev
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to upload team image attachment", e)
-            rev
-        }
+        teamsUploader.uploadTeams()
     }
 
     suspend fun uploadUserActivities(listener: OnSuccessListener) {
@@ -407,16 +288,14 @@ class UploadManager @Inject constructor(
         // Note: uploadNews has unique logic that requires uploading images BEFORE the news document,
         // then modifying the serialized JSON based on image upload responses. This doesn't fit the
         // standard UploadCoordinator pattern (a single serialize-then-POST/PUT per item), so the
-        // orchestration stays custom here — but the actual doc-level network calls and retry-queueing
-        // now reuse the same UploadRepository/RetryQueue primitives UploadCoordinator uses, instead of
-        // reimplementing them.
+        // per-item image handling stays custom here — but the bulk_docs POST and response walk now
+        // go through the same BulkDocsUploader used by TeamsUploader, instead of a separate copy.
         val user = userRepository.getUserModel()
         val newsItems = voicesRepository.getNewsForUpload()
 
         withContext(dispatcherProvider.io) {
             newsItems.processInBatches { batch ->
                 val successfulUpdates = mutableListOf<NewsUpdateData>()
-                val bulkDocsArray = JsonArray()
                 val processedNews = mutableListOf<Pair<NewsUploadData, JsonArray>>()
 
                 batch.forEach { news ->
@@ -441,7 +320,7 @@ class UploadManager @Inject constructor(
                             // Upload image file as attachment
                             val imageFile = File(getString("imageUrl", imgObject))
                             val fileName = FileUtils.getFileNameFromUrl(getString("imageUrl", imgObject))
-                            val mimeType = imageFile.toURI().toURL().openConnection().contentType
+                            val mimeType = FileUtils.getMimeType(fileName) ?: "application/octet-stream"
                             val fileBody = imageFile.asRequestBody("application/octet-stream".toMediaTypeOrNull())
 
                             uploadRepository.uploadResource(
@@ -464,7 +343,6 @@ class UploadManager @Inject constructor(
                         newsJson.addProperty("message", messageWithImages.toString())
                         newsJson.add("images", imagesArray)
 
-                        bulkDocsArray.add(newsJson)
                         processedNews.add(Pair(news, imagesArray))
                     } catch (e: Exception) {
                         Log.e(TAG, "Exception in UploadManager processing images for news", e)
@@ -473,43 +351,27 @@ class UploadManager @Inject constructor(
                     }
                 }
 
-                if (!bulkDocsArray.isEmpty()) {
-                    val bulkRequest = JsonObject()
-                    bulkRequest.add("docs", bulkDocsArray)
-
-                    try {
-                        val response = uploadRepository.postUploadArray("${UrlUtils.getUrl()}/news/_bulk_docs", bulkRequest)
-                        val responseBody = response.body()
-
-                        if (response.isSuccessful && responseBody != null) {
-                            for (i in 0 until responseBody.size()) {
-                                val itemResponse = responseBody.get(i).asJsonObject
-                                val (news, imagesArray) = processedNews[i]
-
-                                if (itemResponse.has("error")) {
-                                    val isCreate = TextUtils.isEmpty(news._id)
-                                    val errorReason = itemResponse.get("error").asString
-                                    queueNewsRetry(news, news.newsJson, null, if (isCreate) "POST" else "PUT", Exception("Bulk upload error: $errorReason"))
-                                } else {
-                                    successfulUpdates.add(NewsUpdateData(
-                                        id = news.id,
-                                        _id = getString("id", itemResponse),
-                                        _rev = getString("rev", itemResponse),
-                                        imagesArray = imagesArray
-                                    ))
-                                }
-                            }
-                        } else {
-                            processedNews.forEach { (news, _) ->
-                                val isCreate = TextUtils.isEmpty(news._id)
-                                queueNewsRetry(news, news.newsJson, response.code(), if (isCreate) "POST" else "PUT")
-                            }
+                BulkDocsUploader.upload(
+                    uploadRepository,
+                    "${UrlUtils.getUrl()}/news/_bulk_docs",
+                    processedNews.map { (news, imagesArray) -> (news to imagesArray) to news.newsJson }
+                ) { (news, imagesArray), outcome ->
+                    val isCreate = TextUtils.isEmpty(news._id)
+                    when (outcome) {
+                        is BulkDocsUploader.Outcome.Accepted -> {
+                            successfulUpdates.add(NewsUpdateData(
+                                id = news.id,
+                                _id = getString("id", outcome.element),
+                                _rev = getString("rev", outcome.element),
+                                imagesArray = imagesArray
+                            ))
                         }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Exception in UploadManager bulk upload", e)
-                        processedNews.forEach { (news, _) ->
-                            val isCreate = TextUtils.isEmpty(news._id)
-                            queueNewsRetry(news, news.newsJson, null, if (isCreate) "POST" else "PUT", e)
+                        is BulkDocsUploader.Outcome.Rejected -> {
+                            val errorReason = outcome.element.get("error").asString
+                            queueNewsRetry(news, news.newsJson, null, if (isCreate) "POST" else "PUT", Exception("Bulk upload error: $errorReason"))
+                        }
+                        is BulkDocsUploader.Outcome.RequestFailed -> {
+                            queueNewsRetry(news, news.newsJson, outcome.httpCode, if (isCreate) "POST" else "PUT", outcome.exception)
                         }
                     }
                 }

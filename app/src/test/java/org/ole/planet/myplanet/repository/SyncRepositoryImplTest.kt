@@ -5,6 +5,7 @@ import android.os.SystemClock
 import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import com.google.gson.JsonPrimitive
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -26,6 +27,7 @@ import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
 
@@ -42,9 +44,13 @@ class SyncRepositoryImplTest {
     private val teamsSyncRepository: TeamsSyncRepository = mockk(relaxed = true)
     private val transactionSyncManager: dagger.Lazy<TransactionSyncManager> = mockk(relaxed = true)
     private val syncTimeLogger: SyncTimeLogger = mockk(relaxed = true)
-    private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
 
+    private lateinit var sharedPrefManager: SharedPrefManager
+    private lateinit var timeProvider: TimeProvider
     private lateinit var syncRepository: SyncRepositoryImpl
+
+    private val storedStringMap = mutableMapOf<String, String>()
+    private val storedLongMap = mutableMapOf<String, Long>()
 
     @Before
     fun setUp() {
@@ -57,6 +63,33 @@ class SyncRepositoryImplTest {
 
         mockkStatic(SystemClock::class)
         every { SystemClock.elapsedRealtime() } returns 1000L
+
+        sharedPrefManager = mockk(relaxed = true)
+        timeProvider = mockk(relaxed = true)
+
+        storedStringMap.clear()
+        storedLongMap.clear()
+
+        every { sharedPrefManager.getRawString(any(), any()) } answers {
+            val key = firstArg<String>()
+            val default = secondArg<String>()
+            storedStringMap[key] ?: default
+        }
+        every { sharedPrefManager.getRawLong(any(), any()) } answers {
+            val key = firstArg<String>()
+            val default = secondArg<Long>()
+            storedLongMap[key] ?: default
+        }
+        every { sharedPrefManager.setRawString(any(), any()) } answers {
+            val key = firstArg<String>()
+            val value = secondArg<String>()
+            storedStringMap[key] = value
+        }
+        every { sharedPrefManager.setRawLong(any(), any()) } answers {
+            val key = firstArg<String>()
+            val value = secondArg<Long>()
+            storedLongMap[key] = value
+        }
 
         every { sharedPrefManager.getUrlUser() } returns "user"
         every { sharedPrefManager.getUrlPwd() } returns "pass"
@@ -72,12 +105,15 @@ class SyncRepositoryImplTest {
             eventsRepository = eventsRepository,
             teamsSyncRepository = teamsSyncRepository,
             transactionSyncManager = transactionSyncManager,
-            syncTimeLogger = syncTimeLogger
+            syncTimeLogger = syncTimeLogger,
+            sharedPrefManager = sharedPrefManager,
+            timeProvider = timeProvider
         )
     }
 
     @After
     fun tearDown() {
+        UrlUtils.resetForTesting()
         unmockkAll()
     }
 
@@ -86,7 +122,7 @@ class SyncRepositoryImplTest {
         val shelfId = "shelf123"
 
         val shelfDoc = JsonObject().apply {
-            add("_id", gsonDocId(shelfId))
+            add("_id", JsonPrimitive(shelfId))
             add("resourceIds", JsonArray().apply { add("res1") })
             add("courseIds", JsonArray().apply { add("course1") })
             add("meetupIds", JsonArray().apply { add("meetup1") })
@@ -174,5 +210,66 @@ class SyncRepositoryImplTest {
         }
     }
 
-    private fun gsonDocId(id: String) = com.google.gson.JsonPrimitive(id)
+    @Test
+    fun `getCachedShelvesWithData returns stored list when cache is within 6 hours`() {
+        val now = 1000000000000L
+        val cacheTime = now - (5 * 60 * 60 * 1000L) // 5 hours ago
+        every { timeProvider.now() } returns now
+
+        storedLongMap["shelves_cache_time"] = cacheTime
+        storedStringMap["shelves_with_data"] = "shelf1,shelf2,shelf3"
+
+        val result = syncRepository.getCachedShelvesWithData()
+
+        assertEquals(listOf("shelf1", "shelf2", "shelf3"), result)
+    }
+
+    @Test
+    fun `getCachedShelvesWithData returns empty list when cache is older than 6 hours`() {
+        val now = 1000000000000L
+        val cacheTime = now - (6 * 60 * 60 * 1000L + 1L) // 6 hours and 1 millisecond ago
+        every { timeProvider.now() } returns now
+
+        storedLongMap["shelves_cache_time"] = cacheTime
+        storedStringMap["shelves_with_data"] = "shelf1,shelf2,shelf3"
+
+        val result = syncRepository.getCachedShelvesWithData()
+
+        assertEquals(emptyList<String>(), result)
+    }
+
+    @Test
+    fun `getCachedShelvesWithData returns empty list when cache time is not set`() {
+        val now = 1000000000000L
+        every { timeProvider.now() } returns now
+
+        val result = syncRepository.getCachedShelvesWithData()
+
+        assertEquals(emptyList<String>(), result)
+    }
+
+    @Test
+    fun `cacheShelvesWithData stores comma joined string and current timestamp`() {
+        val now = 1000000000000L
+        every { timeProvider.now() } returns now
+
+        val shelves = listOf("shelf_a", "shelf_b", "shelf_c")
+        syncRepository.cacheShelvesWithData(shelves)
+
+        assertEquals("shelf_a,shelf_b,shelf_c", storedStringMap["shelves_with_data"])
+        assertEquals(now, storedLongMap["shelves_cache_time"])
+    }
+
+    @Test
+    fun `roundtrip caching and retrieving preserves shelf list`() {
+        val now = 1000000000000L
+        every { timeProvider.now() } returns now
+
+        val inputShelves = listOf("shelf_1", "shelf_2", "shelf_3")
+        syncRepository.cacheShelvesWithData(inputShelves)
+
+        val retrievedShelves = syncRepository.getCachedShelvesWithData()
+
+        assertEquals(inputShelves, retrievedShelves)
+    }
 }
