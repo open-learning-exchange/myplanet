@@ -166,7 +166,7 @@ void main() {
     final written = await prefetcher.prefetch(const [
       'https://cdn.example/a.png',
       'resources/../../escape.png',
-      'cover.jpg',
+      'resources/%2e%2e/escape.png',
     ], config: config);
 
     expect(written, 0);

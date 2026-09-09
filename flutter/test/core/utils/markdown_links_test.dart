@@ -120,6 +120,12 @@ void main() {
       expect(markdownImageCachePath('https://cdn.example/a.png'), isNull);
       expect(markdownImageCachePath('http://cdn.example/a.png'), isNull);
       expect(markdownImageCachePath('file:///tmp/a.png'), isNull);
+      // The one absolute shape the per-segment checks would let through: a
+      // data: URI splits into two non-empty segments.
+      expect(
+        markdownImageCachePath('data:image/png;base64,iVBORw0KGgo='),
+        isNull,
+      );
     });
 
     test('declines a link that could escape the cache directory', () {
@@ -129,11 +135,33 @@ void main() {
       expect(markdownImageCachePath(r'abc\..\x.png'), isNull);
     });
 
-    test('declines a link with no id segment', () {
-      // <base>/ole/cover.jpg with no id directory is how two unrelated
-      // cover.jpg attachments overwrite each other.
-      expect(markdownImageCachePath('cover.jpg'), isNull);
-      expect(markdownImageCachePath('resources/cover.jpg'), isNull);
+    test('accepts a bare filename, as the Kotlin does', () {
+      // One of only two link shapes whose Kotlin download path and render
+      // path agree. Declining it would regress against the app being ported.
+      expect(markdownImageCachePath('cover.jpg'), 'cover.jpg');
+      expect(markdownImageCachePath('resources/cover.jpg'), 'cover.jpg');
+    });
+
+    test('percent-decodes each segment', () {
+      // So an encoded link and a literal-space link name one file, and a
+      // markdown link to an attachment lands where the resource downloader
+      // would write it.
+      expect(
+        markdownImageCachePath('resources/abc/my%20chart.png'),
+        'abc/my chart.png',
+      );
+      expect(
+        markdownImageCachePath('resources/abc/my chart.png'),
+        'abc/my chart.png',
+      );
+    });
+
+    test('declines an escape that decodes into a traversal or separator', () {
+      // %2e%2e is '..' and %2f is '/', so checking only the raw form leaves
+      // the guard one encoding away from useless.
+      expect(markdownImageCachePath('resources/%2e%2e/%2e%2e/passwd'), isNull);
+      expect(markdownImageCachePath('resources/abc/a%2fb.png'), isNull);
+      expect(markdownImageCachePath('resources/abc/bad%zz.png'), isNull);
     });
 
     test('declines an empty or blank link', () {

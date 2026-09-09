@@ -50,10 +50,19 @@ List<String> extractImageLinks(String? text) {
 /// path containing a space runs into the following `width=` attribute and the
 /// tag is mis-parsed.
 ///
-/// Nothing in `lib/` calls this yet — see `PHASE_142_NOTES.md`. The port's
-/// `CourseMarkdownBody` renders `![alt](path)` spans directly and resolves
-/// relative paths as authenticated bytes, so it never needs the rewrite; the
-/// Kotlin uses it in four places.
+/// Nothing in `lib/` calls this, and Phase 153 established that nothing should.
+/// The port's `CourseMarkdownBody` renders `![alt](path)` spans through
+/// `flutter_markdown_plus`, preferring the pre-downloaded local copy
+/// ([markdownImageCachePath]) and falling back to an authenticated fetch, so it
+/// never needs the rewrite. The Kotlin uses it in four places, all live.
+///
+/// One property worth knowing before anyone wires this up: it **discards the
+/// markdown alt text**. Markwon draws an `<img>` whose file is missing as
+/// `HtmlEmptyTagReplacement`'s `IMG_REPLACEMENT`, the alt attribute if there is
+/// one and `U+FFFC OBJECT REPLACEMENT CHARACTER` if there is not — so the
+/// Kotlin's missing-image state is one unlabelled box glyph rather than the
+/// image's description. Kept here as the line-for-line port of a live Kotlin
+/// function, quirk included.
 String prependBaseUrlToImages(
   String? markdownContent,
   String baseUrl, {
@@ -101,25 +110,60 @@ String prependBaseUrlToImages(
 ///   escaped (`AchievementFiles._segment` and
 ///   `ResourceFiles.resolveHtmlEntryFile` are the precedents), and a legitimate
 ///   attachment path never contains one.
-/// * a link that does not have at least an id segment and a file segment after
-///   the strip. `<base>/ole/<file>` with no id directory is what makes two
-///   unrelated `cover.jpg` attachments overwrite each other — the reason
-///   `ResourceFiles.fileFor` keys the directory on the document id.
+/// * a link that is left with no segments at all after the strip.
+///
+/// A **single**-segment link (a bare `cover.jpg`) is accepted, resolving to
+/// `<base>/ole/cover.jpg`. That is what the Kotlin does — the ground-truth
+/// audit for this phase confirmed a bare filename is one of the only two
+/// shapes whose download path and render path agree there — so two courses
+/// that both write `![](cover.jpg)` collide in this port exactly as they do in
+/// the Kotlin. Declining the shape instead would have been a regression
+/// against the app being ported, not a hardening of it.
+///
+/// Each segment is percent-decoded, so `a%20b.png` and a literal `a b.png`
+/// name the same file. That matches the Kotlin's *download* side
+/// (`FileUtils.getResourceRelativePathFromSegments` runs `URLDecoder.decode`
+/// per segment) and `ResourceFiles.resourceRelativePathFromUrl` here, which
+/// is what lets a markdown link to an attachment land on the same file the
+/// resource downloader would write. The Kotlin's *render* side does not
+/// decode, so those two disagree there for an encoded path; here one
+/// derivation serves both, so they cannot.
 String? markdownImageCachePath(String link) {
   final trimmed = link.trim();
   if (trimmed.isEmpty) return null;
-  if (trimmed.startsWith('/') || trimmed.contains(r'\')) return null;
-  // A scheme means an absolute URL. Checked before the `..` guard so the
-  // rejection reason in a failing test is the accurate one.
+  // A scheme means an absolute URL — including a `data:` URI, which is the
+  // only absolute shape the per-segment checks below would otherwise let
+  // through (`http://…` fails them on its empty segment after the `//`).
   if (Uri.tryParse(trimmed)?.hasScheme ?? false) return null;
 
   final stripped = trimmed.startsWith('resources/')
       ? trimmed.substring('resources/'.length)
       : trimmed;
   final segments = stripped.split('/');
-  if (segments.length < 2) return null;
+  if (segments.isEmpty) return null;
+  final decoded = <String>[];
   for (final segment in segments) {
-    if (segment.isEmpty || segment == '.' || segment == '..') return null;
+    final String plain;
+    try {
+      plain = Uri.decodeComponent(segment);
+    } on ArgumentError {
+      // A malformed escape (`%zz`). Nothing can name a file from this.
+      return null;
+    }
+    // Checked *after* decoding, and only after: `%2e%2e` decodes to `..` and
+    // `%2f` to a separator, so a check on the raw segment alone is one
+    // encoding away from useless — and a check on both is the raw one dead,
+    // which reads as a guard while pinning nothing. A leading `/` and a
+    // backslash-separated path fail here too, on their empty first segment
+    // and on the separator respectively.
+    if (plain.isEmpty ||
+        plain == '.' ||
+        plain == '..' ||
+        plain.contains('/') ||
+        plain.contains(r'\')) {
+      return null;
+    }
+    decoded.add(plain);
   }
-  return segments.join('/');
+  return decoded.join('/');
 }
