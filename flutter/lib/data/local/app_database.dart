@@ -3546,21 +3546,53 @@ class NewsDao extends DatabaseAccessor<AppDatabase> with _$NewsDaoMixin {
 
   Future<List<NewsRow>> getAll() => select(newsEntries).get();
 
-  /// Port of `NewsDao.getInTimeRange(startTime, endTime)` — all top-level
-  /// community voices posted within a time window. Used by the challenge
-  /// dialog's `getCommunityVoiceDates` to count unique posting days.
+  /// The rows in a time window, for the challenge dialog's voice tally.
+  ///
+  /// **Not** a port of a `NewsDao.getInTimeRange` — Kotlin has no such method,
+  /// and three revisions of this comment said it did. The counterpart is
+  /// `NewsDao.countDistinctCommunityVoiceDates(startTime, endTime)`
+  /// (`NewsDao.kt:60-65`), which returns a *count of distinct local days* from
+  /// one SQL statement:
+  ///
+  /// ```sql
+  /// SELECT COUNT(*) FROM (SELECT DISTINCT
+  ///   strftime('%Y-%m-%d', time / 1000, 'unixepoch', 'localtime')
+  ///   FROM news WHERE time >= :startTime AND time <= :endTime
+  ///   AND viewIn LIKE '%"section":"community"%')
+  /// ```
+  ///
+  /// The port splits that in two: this query supplies the window, and
+  /// `VoicesRepository.getCommunityVoiceDates` applies the community predicate
+  /// and the day bucketing. So the result is **not** "community voices" —
+  /// naming it that (as this comment also used to) invites a reader to assume
+  /// a filter that is not here, and its caller is the only thing keeping a team
+  /// post out of the tally.
+  ///
+  /// There is deliberately **no top-level predicate**. Kotlin's statement has
+  /// exactly three: the window, the optional `userId`, and the `viewIn LIKE`.
+  /// A `_isTopLevel(r)` conjunct used to sit here and it made the port
+  /// *under*-count: `postReply` copies the parent's `viewIn` verbatim
+  /// (`VoicesRepositoryImpl.kt:319`, and the port's `postReply` does the same),
+  /// so in Kotlin a day on which the user only answered a community voice
+  /// counts, and here it did not — the dialog told a learner they had not done
+  /// something they had. See `challenge_tally_counts_replies_test.dart`.
   Future<List<NewsRow>> getInTimeRange(int startTime, int endTime) {
     return (select(newsEntries)..where(
           (r) =>
-              _isTopLevel(r) &
               r.time.isBiggerOrEqualValue(startTime) &
               r.time.isSmallerOrEqualValue(endTime),
         ))
         .get();
   }
 
-  /// Port of `NewsDao.getInTimeRangeForUser(startTime, endTime, userId)` —
-  /// the per-user slice the challenge dialog passes a non-null `userId`.
+  /// The per-user slice of [getInTimeRange], for the arm of the tally that
+  /// passes a non-null `userId`.
+  ///
+  /// Counterpart of `NewsDao.countDistinctCommunityVoiceDatesForUser`
+  /// (`NewsDao.kt:67-73`) — the same statement with `AND userId = :userId`.
+  /// Everything [getInTimeRange]'s comment says about the missing community
+  /// filter and the absent top-level predicate applies here too; the two
+  /// statements are separate in both apps.
   Future<List<NewsRow>> getInTimeRangeForUser(
     int startTime,
     int endTime,
@@ -3568,7 +3600,6 @@ class NewsDao extends DatabaseAccessor<AppDatabase> with _$NewsDaoMixin {
   ) {
     return (select(newsEntries)..where(
           (r) =>
-              _isTopLevel(r) &
               r.time.isBiggerOrEqualValue(startTime) &
               r.time.isSmallerOrEqualValue(endTime) &
               r.userId.equals(userId),
