@@ -741,7 +741,7 @@ not built, or needs a primitive the port lacks):
   server. There is no Room → Drift data migration path, and none is planned.
 
   **Except where the row is not a cache.** `AppDatabase._localAuthorityTables` exempts a named
-  set of tables from the drop — **27 of them as of Phase 143**, not the four (`outbox`,
+  set of tables from the drop — **28 of them as of Phase 150**, not the four (`outbox`,
   `my_personal`, `removed_log`, `my_life`) this paragraph listed for far longer than they were
   the whole set. **Read the set itself** in `flutter/lib/data/local/app_database.dart`: it is the
   authority and it grows most rounds. **Most** entries past the first four carry the argument for

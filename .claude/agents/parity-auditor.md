@@ -46,7 +46,7 @@ does not do what the Kotlin did:
   `AppDatabase.open()`; screens read through `.valueOrNull ?? <default>`, so the error is
   swallowed and the test passes while asserting against nothing.
 - **Preserved tables.** `AppDatabase._localAuthorityTables` exempts a named set from
-  drop-and-resync — **27 tables as of Phase 143**, not the four (`outbox`, `my_personal`,
+  drop-and-resync — **28 tables as of Phase 150**, not the four (`outbox`, `my_personal`,
   `removed_log`, `my_life`) this brief listed for far longer than they were the whole set.
   Read the set in `flutter/lib/data/local/app_database.dart`; do not trust a count quoted
   anywhere else, this line included. The test is "can a sync restore this?", not "is it

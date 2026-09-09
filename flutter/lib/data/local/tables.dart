@@ -171,10 +171,17 @@ class MyLibraryTable extends Table {
   /// matching nothing. `stepId` needs none: it is read one step at a time from
   /// a screen, not in a loop over a sync page.
   ///
-  /// Safe to index because `my_library` is a cache: the upgrade drops it and
-  /// `createAll` rebuilds table and index together, so it never enters the
-  /// pre-`createAll` reconciliation block that exists for *preserved* tables
-  /// whose indexes name columns they may not have yet.
+  /// **The index is why `my_library` must be reconciled before `createAll`.**
+  /// This used to read "safe to index because `my_library` is a cache: the
+  /// upgrade drops it and `createAll` rebuilds table and index together, so it
+  /// never enters the pre-`createAll` reconciliation block that exists for
+  /// *preserved* tables whose indexes name columns they may not have yet." The
+  /// table is preserved as of Phase 150, so the conclusion inverts: it is now
+  /// exactly such a table, and `course_id` is exactly such a column. A bare
+  /// `CREATE INDEX` naming a column an older install does not have aborts the
+  /// whole upgrade, so the reconciliation loop in `AppDatabase.migration` runs
+  /// before `createAll` for this table. Indexing is still the right call; it
+  /// is no longer free.
   TextColumn get stepId => text().nullable()();
   TextColumn get courseId => text().nullable()();
 

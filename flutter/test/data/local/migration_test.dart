@@ -1138,6 +1138,7 @@ void main() {
       'user_challenge_actions',
       'surveys',
       'survey_questions',
+      'my_library',
     };
     expect(
       AppDatabase.localAuthorityTables,
@@ -1561,27 +1562,25 @@ void main() {
   test(
     'a CouchDB cache is still dropped and refilled by the next sync',
     () async {
-      // `users` used to be the example here. It is preserved now — it carries
-      // the locally-generated health key — so the rule needs a table that is
-      // genuinely nothing but a cache.
-      await database.myLibraryDao.upsertAll([
-        MyLibraryTableCompanion.insert(
-          id: 'resource-1',
-          title: const Value('Algebra'),
-        ),
+      // This example has now moved twice, and the moves are the history of the
+      // preserved set. `users` was first — it is preserved for the
+      // locally-generated health key. Then `my_library`, until Phase 150
+      // preserved that too, for a resource the user created offline and for
+      // the download flags no sync re-derives. So the rule needs a table that
+      // is genuinely nothing but a cache, and `tag` is one: every row comes
+      // from the `tags` database and nothing authors one on the device.
+      await database.tagDao.upsertAll([
+        TagsCompanion.insert(id: 'tag-1', name: const Value('Algebra')),
       ]);
-      expect(
-        (await database.myLibraryDao.getById('resource-1'))?.id,
-        'resource-1',
-      );
+      expect((await database.tagDao.allTags()).map((row) => row.id), ['tag-1']);
 
       await runUpgrade();
 
       expect(
-        await database.myLibraryDao.getById('resource-1'),
-        equals(null),
+        await database.tagDao.allTags(),
+        isEmpty,
         reason:
-            'the resource cache is refilled by the next sync, so the '
+            'a pure CouchDB cache is refilled by the next sync, so the '
             'drop-and-resync policy still applies',
       );
     },
@@ -1590,9 +1589,12 @@ void main() {
   test(
     'the resource cache gains the openWhichFile column after the upgrade',
     () async {
-      // v36 adds `openWhichFile`, the nested HTML entry-file field. The table is
-      // a cache so it is dropped and recreated — the column appears on the new
-      // table, and a row synced after the upgrade carries the value through.
+      // v36 adds `openWhichFile`, the nested HTML entry-file field. This used
+      // to say "the table is a cache so it is dropped and recreated", which
+      // stopped being true when Phase 150 preserved it. The column now
+      // reaches an existing install through the reconciliation loop, and the
+      // test below that installs the frozen v47 shape is the one that proves
+      // it; this one only checks that a synced row carries the value through.
       await runUpgrade();
       await database.myLibraryDao.upsertAll([
         MyLibraryTableCompanion.insert(
@@ -1735,19 +1737,131 @@ void main() {
     expect(byStep.map((row) => row.id), ['res-1']);
   });
 
-  test('the cached resource rows themselves are still dropped', () async {
-    // The other half of the claim: `my_library` is *not* preserved, and this
-    // upgrade discards its rows for the next sync to refill. Stated as a test
-    // so that adding it to the preserved set is a deliberate, visible change
-    // rather than something the two assertions above quietly tolerate.
+  test('a resource row survives the upgrade, walk-pruned after', () async {
+    // This test used to assert the opposite — `the cached resource rows
+    // themselves are still dropped` — and Phase 146 wrote it that way
+    // deliberately, "so that adding it to the preserved set is a deliberate,
+    // visible change rather than something the two assertions above quietly
+    // tolerate". It was, and this is the change. Phase 150 preserves the
+    // table, so the rule the rest of this file pins applies instead: the row
+    // survives the bump, and the next walk's `deleteNotIn` evicts the stale
+    // cache half.
     await installMyLibraryShapeBeforeV48();
     await database.customStatement(
-      "INSERT INTO my_library (id, title) VALUES ('res-1', 'Rainfall')",
+      "INSERT INTO my_library (id, title, _rev, is_private) "
+      "VALUES ('res-1', 'Rainfall', '3-abc', 0)",
+    );
+    await database.customStatement(
+      "INSERT INTO my_library (id, title, is_private) "
+      "VALUES ('res-2', 'Well survey notes', 0)",
     );
 
     await runUpgrade(from: 47);
 
-    expect(await database.myLibraryDao.getAll(), isEmpty);
+    expect(
+      (await database.myLibraryDao.getAll()).map((row) => row.id),
+      unorderedEquals(['res-1', 'res-2']),
+      reason: 'the migration no longer decides which resource rows are stale',
+    );
+
+    // The walk does, and its eligibility is what makes preserving the table
+    // safe: the synced row goes, the one with no server document behind it —
+    // the resource the user created offline — stays.
+    await database.myLibraryDao.deleteNotIn(const ['res-3']);
+
+    expect((await database.myLibraryDao.getAll()).map((row) => row.id), [
+      'res-2',
+    ]);
+  });
+
+  test('a pre-v36 resource table gains every column it is missing', () async {
+    // The reconciliation loop is exhaustive rather than version-gated, and
+    // this is what says so: `open_which_file` arrived at v36, twelve versions
+    // before the pair v48 added, and a version-gated list written from the
+    // frozen v47 shape alone would have delivered the pair and not this.
+    //
+    // The clone this repository is developed in is shallow, so when each older
+    // column arrived cannot be established from git — which is the argument
+    // for the loop, and the reason this test drops a column from the frozen
+    // shape by hand rather than freezing a v35 literal it cannot verify.
+    await installMyLibraryShapeBeforeV48();
+    await database.customStatement('DROP TABLE my_library');
+    await database.customStatement(
+      myLibraryDdlFrozenAtV47.replaceFirst(', "open_which_file" TEXT NULL', ''),
+    );
+    expect(await columnsOf('my_library'), isNot(contains('open_which_file')));
+    await database.customStatement(
+      "INSERT INTO my_library (id, title) VALUES ('res-1', 'Sudoku')",
+    );
+
+    await runUpgrade(from: 35);
+
+    expect(
+      await columnsOf('my_library'),
+      containsAll({'open_which_file', ...myLibraryColumnsAddedAtV48}),
+    );
+    expect(
+      (await database.myLibraryDao.getAll()).single.openWhichFile,
+      equals(null),
+      reason: 'the row survives the reconciliation, with the column unset',
+    );
+  });
+
+  test('every my_library column is either old or a deliberate decision', () {
+    // The loop adds a missing column; it cannot *backfill* one. So a new
+    // column whose default is wrong for existing rows is the
+    // `surveys.needs_sync` shape — preserved rows kept, then stranded — and
+    // nothing about the loop would make that visible. This inventory is what
+    // makes it visible: adding a column to `MyLibraryTable` reds this test,
+    // and the fix is to decide whether existing rows need an `UPDATE` beside
+    // the loop and then list the column here.
+    expect(
+      database.myLibraryTable.$columns.map((column) => column.name).toSet(),
+      {
+        'id',
+        '_id',
+        '_rev',
+        'user_id',
+        'title',
+        'title_normal',
+        'description',
+        'resource_id',
+        'resource_remote_address',
+        'resource_local_address',
+        'resource_offline',
+        'downloaded_rev',
+        'filename',
+        'average_rating',
+        'upload_date',
+        'year',
+        'added_by',
+        'publisher',
+        'link_to_license',
+        'open_with',
+        'open_which_file',
+        'article_date',
+        'kind',
+        'created_date',
+        'language',
+        'author',
+        'media_type',
+        'resource_type',
+        'medium',
+        'times_rated',
+        'resource_for',
+        'subject',
+        'level',
+        'tag',
+        'languages',
+        'is_private',
+        'private_for',
+        'step_id',
+        'course_id',
+      },
+      reason:
+          'a new column on a preserved table needs a backfill decision first; '
+          'make it, then add the name here',
+    );
   });
 }
 

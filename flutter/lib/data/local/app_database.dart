@@ -282,6 +282,51 @@ class AppDatabase extends _$AppDatabase {
     // one.
     'surveys',
     'survey_questions',
+    // Mixed, like `teams` and `surveys`, and it took until Phase 150 to say
+    // so: almost every row is the `resources` cache, but two kinds of local
+    // state live in the same table and **no sync can give either back**, which
+    // is the operative test (*can a sync restore this?*, not *is it local?*).
+    //
+    //  * A resource the user created offline.
+    //    [ResourcesRepository.saveLocalResource] writes a row with no `_rev`,
+    //    no CouchDB document and no outbox entry, plus the file it copied into
+    //    `<base>/ole/<id>/`. Kotlin uploads its equivalent —
+    //    `MyLibraryDao.getPendingUploads` is `WHERE _rev IS NULL`
+    //    (`MyLibraryDao.kt:94-95`), reached from `UploadManager.uploadResource`
+    //    — so in Kotlin the row converges on a document and the loss window is
+    //    the gap before the next sweep. **The port has no resources uploader at
+    //    all**, so the window never closes and the row is the only copy that
+    //    will ever exist. Dropping it deleted the user's own resource and the
+    //    pointer to the file they picked.
+    //  * `resource_offline` / `resource_local_address` / `downloaded_rev` on
+    //    *any* row. Kotlin re-derives the flag from the disk on every pull
+    //    (`insertMyLibrary` calls `FileUtils.checkFileExist`,
+    //    `MyLibrary.kt:263-265`), so its rebuilt table repairs itself on the
+    //    next sync. [MyLibraryMapper.fromDoc] names none of the three, so the
+    //    port's rebuilt table cannot: the bytes stayed on disk and the row said
+    //    they were not there, and the bell asked the user to download every
+    //    resource they already had.
+    //
+    // The price is the `teams`/`surveys` one — a row the server has deleted
+    // survives until the next walk prunes it — and Phase 146's `deleteNotIn`
+    // fix is what makes that safe rather than lossy: the prune's eligibility is
+    // `is_private = 0 AND _rev IS NOT NULL AND _rev != ''`, so it still evicts
+    // the stale cache half and cannot touch either kind of local state.
+    // **Verified rather than inherited, and "spares exactly the rows
+    // preservation is for" is too strong**: `_rev IS NULL` in the port is not
+    // authorship (a course-step sub-object carries no `_rev`, which is why
+    // [MyLibraryMapper] now leaves the column absent instead of blanking it),
+    // and a *downloaded* public row is still prunable, so a prune can still
+    // orphan a file on disk. Preservation is necessary, and the prune is not
+    // sufficient on its own.
+    //
+    // Unlike every other table here, a new column on this one needs **no**
+    // hand-written step: the reconciliation loop below adds whatever the
+    // running database is missing. Read its comment before adding one anyway —
+    // a column that needs a *backfill* still needs thinking about, and
+    // `migration_test.dart`'s column inventory is what makes that decision
+    // visible.
+    'my_library',
   };
 
   @override
@@ -323,6 +368,57 @@ class AppDatabase extends _$AppDatabase {
       // `team_tasks.is_notified`, `team_tasks.sync`, `team_tasks.link` or
       // `news.reactions` appears in a `@TableIndex`. Check that before adding
       // a step after `createAll`.
+      //
+      // `my_library` **is** exposed to it, which is why it is reconciled here
+      // and not below. `my_library_course_id` names `course_id`, a column the
+      // table only gained at v48, so on an older install the recreated
+      // `CREATE INDEX` would abort the entire upgrade — not merely omit a
+      // column. (A comment further down used to say this table "has no
+      // `@TableIndex`". It has had one since Phase 146 added it in the same
+      // commit as that sentence.) `step_id` has to be here too, for a second
+      // reason: [CourseDao.upsertAll] runs
+      // `UPDATE my_library SET step_id = NULL, course_id = NULL` inside the
+      // courses-walk transaction, so a missing column takes the whole walk
+      // with it.
+      //
+      // **Every column, not a version-gated list.** The table has always been
+      // dropped and rebuilt, so what is on disk is exactly the shape of the
+      // version installed — and this repository's history is shallow, so there
+      // is no way to establish from git when each column arrived. (v36's
+      // `open_which_file` is known from `PHASE_53`; older columns are not
+      // knowable here.) Enumerating versions would therefore be guessing,
+      // where the loop is exhaustive by construction and idempotent:
+      // [_addColumnIfMissing] no-ops on a present column and on an absent
+      // table. It also retires, for this table only, the failure Phase 143
+      // warned about — a forgotten step that is silent until a query names the
+      // column.
+      //
+      // `id` is skipped explicitly. It is the primary key, present in every
+      // shape the table has ever had, so the loop would never reach it — but
+      // `ALTER TABLE ADD COLUMN` on a `NOT NULL` column with no default is
+      // illegal in SQLite, and relying on the guard to hide an illegal
+      // statement is safe by accident rather than by construction. Every other
+      // column is nullable or carries a literal default, which
+      // `Migrator.addColumn` emits unparenthesised and SQLite accepts (the
+      // `CHECK (… IN (0, 1))` on the two booleans is fine; `surveys.needs_sync`
+      // and `users.is_updated` are the shipping precedent).
+      //
+      // What this loop cannot do is **backfill**. No `my_library` column needs
+      // one today, and the reason is structural rather than lucky: the table
+      // has no authorship flag, so the state that marks a row local is
+      // `_rev IS NULL` — which a preserved row already carries, and which is
+      // Kotlin's own `getPendingUploads` predicate. `step_id`/`course_id`
+      // arrive NULL, which is the truthful value ("in no course document") and
+      // is what the courses walk overwrites on its next page. A future column
+      // whose default is *wrong* for existing rows is the `surveys.needs_sync`
+      // shape and needs a hand-written `UPDATE` beside this loop; see that
+      // backfill for what getting it wrong costs.
+      if (await _tableExists('my_library')) {
+        for (final column in myLibraryTable.$columns) {
+          if (column.name == myLibraryTable.id.name) continue;
+          await _addColumnIfMissing(m, myLibraryTable, column);
+        }
+      }
 
       // Both blocks below run before `createAll`, so neither may assume
       // `surveys` exists: an upgrade from a version predating the table would
@@ -583,15 +679,17 @@ class AppDatabase extends _$AppDatabase {
         await _addColumnIfMissing(m, teamTasks, teamTasks.link);
       }
 
-      // v48 adds `my_library.step_id` / `.course_id` for the course-step
-      // resource ingestion. **No step is needed here, and that is a fact about
-      // the table rather than an oversight**: `my_library` is not in
-      // [_localAuthorityTables], so the drop loop above deleted it and
-      // `createAll` has just rebuilt it carrying both columns. It also has no
-      // `@TableIndex`, so it never enters the pre-`createAll` reconciliation
-      // block. `migration_test.dart` pins this against a frozen v47 shape —
-      // adding `my_library` to the preserved set without a hand-written
-      // [_addColumnIfMissing] pair reds it.
+      // `my_library`'s columns — v48's `step_id`/`course_id` among them — are
+      // reconciled in the pre-`createAll` block above, not here, because the
+      // table is preserved as of Phase 150 *and* carries a `@TableIndex` on
+      // `course_id`. See there.
+      //
+      // The sentence this replaces claimed the opposite on both counts ("not
+      // in [_localAuthorityTables], so the drop loop above deleted it … also
+      // has no `@TableIndex`"), and the second half was already false when it
+      // was written: Phase 146 added the index in the same commit. It is the
+      // exact shape of sentence a later lane relies on, which is why it is
+      // corrected rather than deleted.
     },
   );
 

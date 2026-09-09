@@ -103,7 +103,8 @@ a join is not evidence; a document shaped like the server's is.
 - **A schema bump discards unsynced local writes**, which is why
   `localAuthorityTables` and the hand-written `_addColumnIfMissing` step exist.
   A Drift *converter* swap changes no DDL and needs no bump (Phase 104). The
-  preserved set is **27 tables**, not the handful the docs used to imply, and
+  preserved set is **28 tables** (`my_library` joined it in Phase 150), not the
+  handful the docs used to imply, and
   the membership test is ***can a sync restore this?*** — not *is it local?*
   **Preservation has a price, and Phase 143 is why it is written down:**
   `createAll` does not *alter* a preserved table, so every new column on one
