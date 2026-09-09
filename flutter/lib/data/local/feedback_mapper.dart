@@ -37,15 +37,30 @@ String? _string(String key, Map<String, dynamic> json) {
 ///
 /// Used only for the fields that hold a **person** — `owner`, `source`, and a
 /// reply's `user`. A Planet's web UI writes the whole CouchDB user document
-/// into a field the handset writes as a plain user name; `name` is the same
-/// value the other documents carry as a string, so taking it is a deliberate
-/// improvement on Kotlin's `""`, which discards something unambiguous. The
-/// shape was first observed against `https://planet.learning.ole.org`, where
-/// 3 of 1,630 chat documents carried it; `chat_mapper.dart`'s `_stringOrNull`
-/// reads the object the same way. It differs on a **number**, which that
-/// helper drops and [JsonUtils.getStringOrNull] keeps as its digits — the
-/// port-wide convention, and what Gson's `asString` gives Kotlin's own reply
-/// reader (`Feedback.kt:63-65`).
+/// into a field the handset writes as a plain user name (Kotlin writes a
+/// reply's `user` as a string, `FeedbackRepositoryImpl.kt:100-104`), and
+/// `name` is the same value the other documents carry as that string.
+///
+/// Taking it is a deliberate improvement, and **how much of one depends on
+/// which field**, because Kotlin reads the two through different code:
+///
+/// * `owner` and `source` come from `JsonUtils.getString`
+///   (`FeedbackRepositoryImpl.kt:142, 145`), so Kotlin stores `""` and
+///   discards something unambiguous.
+/// * A reply's `user` is read as `ob["user"].asString` with no `JsonUtils` and
+///   no `try` (`Feedback.kt:61-69`), and `JsonObject` does not override
+///   `getAsString` — so **Kotlin throws `UnsupportedOperationException` out of
+///   `messageList`**, which `FeedbackDetailActivity.kt:61` calls from an
+///   unguarded collector. The Android app loses the detail screen on the same
+///   document. Neither app should, so this reads the name.
+///
+/// The shape was first observed against `https://planet.learning.ole.org`,
+/// where 3 of 1,630 chat documents carried it; `chat_mapper.dart`'s
+/// `_stringOrNull` reads the object the same way. It differs on a **number**,
+/// which that helper drops and [JsonUtils.getStringOrNull] keeps as its
+/// digits — the port-wide convention, and what Gson's `asString` gives
+/// Kotlin's own reply reader, where a numeric `time` renders as its literal
+/// text rather than being dropped (`Feedback.kt:63-65`).
 String? _userString(String key, Map<String, dynamic> json) {
   final value = json[key];
   if (value is Map) {
