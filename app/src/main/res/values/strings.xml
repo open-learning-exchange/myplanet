@@ -611,6 +611,8 @@
     <string name="session_expired">Session expired.</string>
     <string name="downloading_started_please_check_notificati">Downloading started, please check notification…</string>
     <string name="dictionary_parsing_failed">Dictionary parsing failed.</string>
+    <string name="medium_text_html">Text / HTML</string>
+    <string name="medium_html">HTML</string>
     <string name="dictionary">Dictionary</string>
     <string name="list_size">List size %d</string>
     <string name="word_not_available_in_our_database">Word not available in our database.</string>
