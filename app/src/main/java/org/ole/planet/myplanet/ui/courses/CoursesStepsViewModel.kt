@@ -43,7 +43,7 @@ data class CourseStepUiState(
 )
 
 @HiltViewModel
-class CourseStepViewModel @Inject constructor(
+class CoursesStepsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val coursesRepository: CoursesRepository,
     private val userRepository: UserRepository,

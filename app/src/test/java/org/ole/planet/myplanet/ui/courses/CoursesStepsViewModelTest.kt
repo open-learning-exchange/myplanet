@@ -34,7 +34,7 @@ import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class CourseStepViewModelTest {
+class CoursesStepsViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -51,7 +51,7 @@ class CourseStepViewModelTest {
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
-    private lateinit var viewModel: CourseStepViewModel
+    private lateinit var viewModel: CoursesStepsViewModel
 
     @Before
     fun setUp() {
@@ -59,7 +59,7 @@ class CourseStepViewModelTest {
         every { sharedPrefManager.getCouchdbUrl() } returns "http://localhost:5984"
         UrlUtils.init(sharedPrefManager)
 
-        viewModel = CourseStepViewModel(
+        viewModel = CoursesStepsViewModel(
             context,
             coursesRepository,
             userRepository,

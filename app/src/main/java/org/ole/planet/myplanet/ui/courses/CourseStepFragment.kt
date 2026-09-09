@@ -37,7 +37,7 @@ import org.ole.planet.myplanet.utils.ResourcesPreviewLoader
 @AndroidEntryPoint
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
-    private val viewModel: CourseStepViewModel by viewModels()
+    private val viewModel: CoursesStepsViewModel by viewModels()
 
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null
