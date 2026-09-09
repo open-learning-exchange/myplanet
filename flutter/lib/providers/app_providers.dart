@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/server_config.dart';
 import '../core/background/background_download_queue.dart';
+import '../core/files/markdown_image_prefetcher.dart';
 import '../core/background/background_scheduler.dart';
 import '../core/notifications/notification_presenter.dart';
 import '../core/notifications/task_deadline_notifier.dart';
@@ -595,6 +596,7 @@ final coursesRepositoryProvider = Provider<CoursesRepository>(
     ref.watch(removedLogDaoProvider),
     ref.watch(examDaoProvider),
     ref.watch(surveyDaoProvider),
+    markdownImages: MarkdownImagePrefetcher(ref.watch(planetApiProvider)),
   ),
 );
 

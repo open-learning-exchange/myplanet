@@ -91,4 +91,58 @@ void main() {
       );
     });
   });
+
+  group('markdownImageCachePath', () {
+    test('strips a leading resources/ and keeps the id and file segments', () {
+      expect(
+        markdownImageCachePath('resources/abc123/chart.png'),
+        'abc123/chart.png',
+      );
+    });
+
+    test('accepts a link that already omits the resources/ marker', () {
+      expect(markdownImageCachePath('abc123/chart.png'), 'abc123/chart.png');
+    });
+
+    test('keeps a nested path under the id directory', () {
+      // A multi-file attachment bundle keeps its subfolder, the same reason
+      // ResourceFiles.resourceRelativePathFromUrl does not flatten one.
+      expect(
+        markdownImageCachePath('resources/abc123/figures/chart.png'),
+        'abc123/figures/chart.png',
+      );
+    });
+
+    test('declines an absolute URL so the network path keeps handling it', () {
+      // The Kotlin has no such guard: it queues "<serverUrl>/http://..." for
+      // download and renders "file://.../ole/http://...", neither of which
+      // resolves. _MarkdownImage already fetches these correctly.
+      expect(markdownImageCachePath('https://cdn.example/a.png'), isNull);
+      expect(markdownImageCachePath('http://cdn.example/a.png'), isNull);
+      expect(markdownImageCachePath('file:///tmp/a.png'), isNull);
+    });
+
+    test('declines a link that could escape the cache directory', () {
+      expect(markdownImageCachePath('resources/../../etc/passwd'), isNull);
+      expect(markdownImageCachePath('../secrets/key.png'), isNull);
+      expect(markdownImageCachePath('/etc/passwd'), isNull);
+      expect(markdownImageCachePath(r'abc\..\x.png'), isNull);
+    });
+
+    test('declines a link with no id segment', () {
+      // <base>/ole/cover.jpg with no id directory is how two unrelated
+      // cover.jpg attachments overwrite each other.
+      expect(markdownImageCachePath('cover.jpg'), isNull);
+      expect(markdownImageCachePath('resources/cover.jpg'), isNull);
+    });
+
+    test('declines an empty or blank link', () {
+      expect(markdownImageCachePath(''), isNull);
+      expect(markdownImageCachePath('   '), isNull);
+    });
+
+    test('declines a link with an empty interior segment', () {
+      expect(markdownImageCachePath('abc//chart.png'), isNull);
+    });
+  });
 }

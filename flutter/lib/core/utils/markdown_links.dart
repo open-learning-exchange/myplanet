@@ -69,3 +69,57 @@ String prependBaseUrlToImages(
     return '<img src="$baseUrl$stripped" width=$width height=$height/>';
   });
 }
+
+/// The cache-relative path a markdown image [link] names, or `null` when the
+/// link cannot name a locally cached file.
+///
+/// This is the **single key derivation** shared by the prefetcher that writes
+/// the bytes and the renderer that reads them back. Phase 100 lost a certified
+/// exam's verification photo because the writer and the reader each derived
+/// their own key and the lookup missed on every capture, silently; the same
+/// trap is why this is one function rather than two similar ones.
+///
+/// The shape it resolves is the one [prependBaseUrlToImages] documents: a
+/// Planet markdown author writes `resources/<attachmentId>/<file>`, the
+/// download lands at `<base>/ole/<attachmentId>/<file>`, and the Kotlin's
+/// render base (`file://<externalFilesDir>/ole/`) plus the `resources/`-
+/// stripped path point at it. So the returned path is the link with a leading
+/// `resources/` removed — the same strip, kept in the same file as the
+/// rewrite so the two cannot drift apart.
+///
+/// Returns `null` — meaning "there is no local copy of this, resolve it some
+/// other way" — for:
+///
+/// * an **absolute** URL (`http:`, `https:`, `file:`, or any other scheme).
+///   The Kotlin has no such guard and mishandles these at both ends: it builds
+///   a download URL of `<serverUrl>/http://…` and renders
+///   `file://…/ole/http://…`, neither of which resolves. The port's
+///   `_MarkdownImage` already handles an absolute URL correctly, so declining
+///   here hands it back to the path that works.
+/// * a link containing a `..` segment, a leading `/`, or a backslash. A
+///   server-supplied path reaching the filesystem is how a directory is
+///   escaped (`AchievementFiles._segment` and
+///   `ResourceFiles.resolveHtmlEntryFile` are the precedents), and a legitimate
+///   attachment path never contains one.
+/// * a link that does not have at least an id segment and a file segment after
+///   the strip. `<base>/ole/<file>` with no id directory is what makes two
+///   unrelated `cover.jpg` attachments overwrite each other — the reason
+///   `ResourceFiles.fileFor` keys the directory on the document id.
+String? markdownImageCachePath(String link) {
+  final trimmed = link.trim();
+  if (trimmed.isEmpty) return null;
+  if (trimmed.startsWith('/') || trimmed.contains(r'\')) return null;
+  // A scheme means an absolute URL. Checked before the `..` guard so the
+  // rejection reason in a failing test is the accurate one.
+  if (Uri.tryParse(trimmed)?.hasScheme ?? false) return null;
+
+  final stripped = trimmed.startsWith('resources/')
+      ? trimmed.substring('resources/'.length)
+      : trimmed;
+  final segments = stripped.split('/');
+  if (segments.length < 2) return null;
+  for (final segment in segments) {
+    if (segment.isEmpty || segment == '.' || segment == '..') return null;
+  }
+  return segments.join('/');
+}

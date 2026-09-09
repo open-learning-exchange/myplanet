@@ -7,14 +7,32 @@ import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/data/local/course_mapper.dart';
 import 'package:myplanet/data/local/exam_mapper.dart';
+import 'package:myplanet/core/files/markdown_image_prefetcher.dart';
 import 'package:myplanet/repository/courses_repository.dart';
 
 class MockPlanetApi extends Mock implements PlanetApi {}
+
+/// Records the links a sync hands over, without touching the filesystem.
+class _RecordingPrefetcher implements MarkdownImagePrefetcher {
+  final List<String> links = [];
+  int calls = 0;
+
+  @override
+  Future<int> prefetch(
+    Iterable<String> links, {
+    required ServerConfig config,
+  }) async {
+    calls++;
+    this.links.addAll(links);
+    return links.length;
+  }
+}
 
 void main() {
   late AppDatabase db;
   late MockPlanetApi api;
   late CoursesRepository repository;
+  late _RecordingPrefetcher prefetcher;
 
   const config = ServerConfig(
     serverUrl: 'https://planet.example.org',
@@ -27,12 +45,14 @@ void main() {
   setUp(() {
     db = AppDatabase.memory();
     api = MockPlanetApi();
+    prefetcher = _RecordingPrefetcher();
     repository = CoursesRepository(
       api,
       db.courseDao,
       db.removedLogDao,
       db.examDao,
       db.surveyDao,
+      markdownImages: prefetcher,
     );
   });
 
@@ -597,5 +617,137 @@ void main() {
       expect(await db.examDao.getByStepIds(['course-1:0']), isEmpty);
       expect(await db.surveyDao.getByStepId('course-1:0'), isEmpty);
     });
+  });
+
+  group('markdown image prefetch', () {
+    test('collects the images a course description references', () async {
+      // The gap this closes: nothing in the port ever collected these, so an
+      // image in a course description was fetched at render time and was
+      // therefore missing on an offline device — in an offline-first app.
+      stubCount(1);
+      stubPage(0, 50, [
+        {
+          'id': 'course-1',
+          'doc': {
+            '_id': 'course-1',
+            'courseTitle': 'Algebra',
+            'description': 'Intro ![cover](resources/cover-doc/cover.png)',
+          },
+        },
+      ]);
+
+      await repository.sync(config: config);
+
+      expect(prefetcher.links, ['resources/cover-doc/cover.png']);
+    });
+
+    test("collects the images a step's description references", () async {
+      // Kotlin extracts from the course description and from each step's,
+      // separately (CoursesRepositoryImpl:670 and :684).
+      stubCount(1);
+      stubPage(0, 50, [
+        {
+          'id': 'course-1',
+          'doc': {
+            '_id': 'course-1',
+            'courseTitle': 'Algebra',
+            'steps': [
+              {
+                'stepTitle': 'One',
+                'description': 'See ![a](resources/s1/a.png)',
+              },
+              {
+                'stepTitle': 'Two',
+                'description': 'And ![b](resources/s2/b.png)',
+              },
+            ],
+          },
+        },
+      ]);
+
+      await repository.sync(config: config);
+
+      expect(prefetcher.links, ['resources/s1/a.png', 'resources/s2/b.png']);
+    });
+
+    test('hands over one entry for an image repeated across steps', () async {
+      stubCount(1);
+      stubPage(0, 50, [
+        {
+          'id': 'course-1',
+          'doc': {
+            '_id': 'course-1',
+            'courseTitle': 'Algebra',
+            'description': '![c](resources/c/c.png)',
+            'steps': [
+              {'stepTitle': 'One', 'description': '![c](resources/c/c.png)'},
+            ],
+          },
+        },
+      ]);
+
+      await repository.sync(config: config);
+
+      expect(prefetcher.links, ['resources/c/c.png']);
+    });
+
+    test('prefetches once, after the walk rather than per page', () async {
+      stubCount(2);
+      stubPage(0, 50, [
+        {
+          'id': 'course-1',
+          'doc': {
+            '_id': 'course-1',
+            'courseTitle': 'A',
+            'description': '![a](resources/a/a.png)',
+          },
+        },
+        {
+          'id': 'course-2',
+          'doc': {
+            '_id': 'course-2',
+            'courseTitle': 'B',
+            'description': '![b](resources/b/b.png)',
+          },
+        },
+      ]);
+
+      await repository.sync(config: config);
+
+      expect(prefetcher.calls, 1);
+      expect(prefetcher.links, ['resources/a/a.png', 'resources/b/b.png']);
+    });
+
+    test(
+      'does not call the prefetcher when no description carries an image',
+      () async {
+        stubCount(1);
+        stubPage(0, 50, [row('course-1', 'Algebra')]);
+
+        await repository.sync(config: config);
+
+        expect(prefetcher.calls, 0);
+      },
+    );
+
+    test(
+      'does not prefetch when the walk fails before writing anything',
+      () async {
+        // The next sync re-collects these from the same documents, so dropping
+        // them here costs nothing — the documents are the durable store.
+        stubCount(1);
+        when(
+          () => api.getJsonObject(
+            '$dbUrl/courses/_all_docs?include_docs=true&limit=50&skip=0',
+            authHeader: any(named: 'authHeader'),
+          ),
+        ).thenAnswer(
+          (_) async => const NetworkError<Map<String, dynamic>>(500, 'boom'),
+        );
+
+        expect(await repository.sync(config: config), isA<SyncFailed>());
+        expect(prefetcher.calls, 0);
+      },
+    );
   });
 }

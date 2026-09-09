@@ -1,8 +1,10 @@
 import '../core/config/server_config.dart';
+import '../core/files/markdown_image_prefetcher.dart';
 import '../core/network/network_result.dart';
 import '../core/sync/adaptive_batch_processor.dart';
 import '../core/sync/sync_result.dart';
 import '../core/utils/json_utils.dart';
+import '../core/utils/markdown_links.dart';
 import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
@@ -30,8 +32,9 @@ class CoursesRepository {
     this._dao,
     this._removedLogDao,
     this._examDao,
-    this._surveyDao,
-  );
+    this._surveyDao, {
+    MarkdownImagePrefetcher? markdownImages,
+  }) : _markdownImages = markdownImages;
 
   /// Courses carry embedded steps, so documents are much larger than resource
   /// documents — a smaller starting page keeps the first batch responsive on a
@@ -48,6 +51,11 @@ class CoursesRepository {
   /// same, through `examDao`/`questionDao` (`CoursesRepositoryImpl.kt:650-651`).
   final ExamDao _examDao;
   final SurveyDao _surveyDao;
+
+  /// Downloads the images a course or step description references, so they
+  /// render offline. Optional so the repository's other tests need no stub;
+  /// `coursesRepositoryProvider` always supplies one.
+  final MarkdownImagePrefetcher? _markdownImages;
 
   /// Reactive, offline-first course list.
   Stream<List<CourseRow>> watchCourses({
@@ -157,6 +165,10 @@ class CoursesRepository {
 
     final batchSizer = AdaptiveBatchProcessor(initialSize: initialBatchSize);
     final savedIds = <String>[];
+    // The markdown images this walk's descriptions reference. A `Set` because
+    // one course commonly repeats a cover image across its steps, and because
+    // Kotlin's collector is a `HashSet` too (`MyCourse.concatenatedLinks`).
+    final markdownImageLinks = <String>{};
     var skip = 0;
     // A short page means the server changed under us mid-walk. `savedIds` is
     // then only a prefix of what exists, so the cleanup below must not run —
@@ -232,6 +244,24 @@ class CoursesRepository {
         courseRows.add(parsed.course);
         stepRows.addAll(parsed.steps);
         savedIds.add(parsed.course.id.value);
+
+        // Port of `buildCoursePayload`'s two `extractLinks` calls
+        // (`CoursesRepositoryImpl:670` for the course description, `:684` for
+        // each step's). Read from the raw document rather than from `parsed`
+        // for the same reason the Kotlin reads its `JsonObject`: the step
+        // description is on the document whether or not the mapper keeps it.
+        markdownImageLinks.addAll(
+          extractImageLinks(JsonUtils.getString('description', doc)),
+        );
+        final steps = doc['steps'];
+        if (steps is List) {
+          for (final step in steps) {
+            if (step is! Map<String, dynamic>) continue;
+            markdownImageLinks.addAll(
+              extractImageLinks(JsonUtils.getString('description', step)),
+            );
+          }
+        }
 
         parsedResources.addAll(parsed.resources);
 
@@ -315,6 +345,17 @@ class CoursesRepository {
 
     if (walkedEveryPage && savedIds.isNotEmpty) {
       await _dao.deleteNotIn(savedIds);
+    }
+
+    // Kotlin queues each link as it parses the document and downloads the
+    // whole set once the sync finishes (`SyncActivity:566`); the same order
+    // here, so a course whose description names an image is readable offline
+    // rather than only while the device is online. Runs after the walk even if
+    // it ended short, because the links collected so far are still valid — and
+    // never on the early-return failure paths above, where the next sync
+    // re-collects them from the same documents.
+    if (markdownImageLinks.isNotEmpty) {
+      await _markdownImages?.prefetch(markdownImageLinks, config: config);
     }
 
     return SyncComplete(savedIds.length);
