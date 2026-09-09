@@ -259,10 +259,25 @@ class AppDatabase extends _$AppDatabase {
     // [SurveyDao.releaseStepJoinsForCourse], which the courses walk calls for
     // the course documents on the current page. A course deleted server-side
     // is on no page, so nothing nulls its surveys' `stepId` and the prune can
-    // never reach them — the bump used to sweep them and no longer does. They
-    // are unreachable from the UI (the step tile is gone with the course), so
-    // this is accretion rather than a correctness defect; recorded because it
-    // is new, and because it is the argument for giving
+    // never reach them — the bump used to sweep them and no longer does.
+    //
+    // **They are not unreachable from the UI**, which is what this comment
+    // used to claim ("the step tile is gone with the course"). Phase 143's own
+    // implementation audit retracted that, and the retraction reached the
+    // notes and not this copy of the sentence: `surveysProvider` filters
+    // `watchAll()` through [SurveysRepository.individualSurveys], whose
+    // predicate is `!row.teamShareAllowed && (row.teamId ?? '').isEmpty` —
+    // **no `stepId` or `courseId` test at all**. A course-embedded survey
+    // arrives with neither key set (`SurveyMapper.fromCourseDoc` reads
+    // `teamShareAllowed` as false and `teamId` as null when the sub-object
+    // omits them), so it satisfies that predicate exactly: once its course is
+    // deleted server-side the orphan is listed at `/life/surveys` and
+    // tappable, forever.
+    //
+    // The *visibility* is parity — `ExamDao.getByType("surveys")` has no
+    // filter either — but Kotlin's Room bump drops the table and self-cleans
+    // where the port's no longer does. So this is a user-visible accretion,
+    // not a hidden one, and it is the argument for giving
     // `releaseStepJoinsForCourse` a whole-table sweep rather than a per-page
     // one.
     'surveys',
