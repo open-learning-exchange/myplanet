@@ -351,6 +351,16 @@ class ActivitiesRepository {
   Future<int> markCourseUploaded(String localId, String remoteId, String rev) =>
       _courseDao.markUploaded(localId, remoteId, rev);
 
+  /// **This has no caller, deliberately — see the note on
+  /// `ProgressRepository.syncCourseProgress`, which is the same story.**
+  /// `login_activities` is one of `HeavyTableSyncWorker.ALL_HEAVY_TABLES` and
+  /// appears in no interactive step in Kotlin either. On planet.learning it is
+  /// **19,324 documents**: 97 `_all_docs` pages with a deepening `skip`, which
+  /// failed on a real device at `skip=10400` with the connection aborted and
+  /// no checkpoint to resume from. It needs the background worker with a
+  /// persisted skip, not a caller here. Login rows are still written locally
+  /// and still uploaded; only the pull is absent.
+  ///
   /// Pulls the `login_activities` database, the direction this port lacked:
   /// Phase 33 wrote login rows and Phase 34 uploaded them, but nothing brought
   /// back the ones other devices had already sent, so a member's history was

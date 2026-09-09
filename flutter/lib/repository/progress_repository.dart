@@ -527,6 +527,34 @@ class ProgressRepository {
   /// Port of the `courses_progress` pull in
   /// `services/sync/TransactionSyncManager.kt`'s `syncDb`.
   ///
+  /// **This has no caller, deliberately, and it must not be given one here.**
+  /// Recorded loudly because an uncalled sync writer is exactly the shape this
+  /// project keeps paying for — Phase 119 found four of them, plumbing laid
+  /// for a pull nobody wrote. This one is the inverse: the pull exists and its
+  /// *scheduler* is what is missing.
+  ///
+  /// `courses_progress` is one of the five tables Kotlin keeps out of the
+  /// interactive sync entirely (`HeavyTableSyncWorker.ALL_HEAVY_TABLES`:
+  /// `ratings`, `courses_progress`, `submissions`, `login_activities`,
+  /// `team_activities`); none appear in `startFullSync`'s `parallelTables`.
+  /// They run as one-shot WorkManager jobs calling
+  /// `syncDb(table, useCheckpoint = true)`, and the checkpoint is the point —
+  /// a `heavy_sync_skip_<table>` preference lets an interrupted walk resume
+  /// instead of restarting, and the worker returns `Result.retry()` while any
+  /// remains.
+  ///
+  /// On planet.learning this table holds **114,219 documents**: 572 pages at
+  /// the batch size below, each with a deeper `skip` that CouchDB answers in
+  /// O(n). Called inline from the courses area it reached `skip=23600`, the
+  /// connection aborted, and with no checkpoint the next attempt began again
+  /// at zero — so it could never complete, and it failed the whole courses
+  /// sync with it.
+  ///
+  /// To bring it back, port the worker, not the call site: a background job
+  /// per heavy table plus a persisted skip. Until then Planet's grading does
+  /// not reach the handset (see `take_exam_screen`), which is a known,
+  /// recorded gap rather than a silent one.
+  ///
   /// Paginates `_all_docs` with a batch size of 200 (the Kotlin's page size for
   /// this table) and merges each page via [insertCourseProgressFromSync]. There
   /// is deliberately **no** `deleteNotIn` cleanup — the Kotlin does not run one

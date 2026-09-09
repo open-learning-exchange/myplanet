@@ -394,7 +394,12 @@ String _describeFailure(String step, NetworkResult<dynamic> result) {
     return '$step: HTTP ${result.code}${message == null ? '' : ' $message'}';
   }
   if (result is NetworkException) {
-    return '$step: ${result.error.runtimeType}: ${result.error}';
+    // Redacted for the same reason as [describeNetworkFailure]: a
+    // DioException's toString carries the request URI, and the credentialed
+    // CouchDB URI carries the PIN.
+    return UrlUtils.redactCredentials(
+      '$step: ${result.error.runtimeType}: ${result.error}',
+    );
   }
   return step;
 }

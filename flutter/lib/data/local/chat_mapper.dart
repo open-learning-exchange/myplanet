@@ -9,6 +9,35 @@ import 'app_database.dart';
 /// `ChatRepositoryImpl`.
 ///
 /// Maps CouchDB chat documents to [ChatEntriesCompanion] for Drift persistence.
+/// A `String?` from a server value that is not guaranteed to be a string.
+///
+/// **Three of planet.learning's 1,630 `chat_history` documents carry `user`
+/// as the whole CouchDB user document** — `{"_id":
+/// "org.couchdb.user:learning", "name": "learning", "roles": [...], ...}` —
+/// and a raw `as String?` on one of them threw
+/// `type '_Map<String, dynamic>' is not a subtype of type 'String?'`,
+/// failing the entire chat sync. Three documents took 1,630 down with them.
+///
+/// Kotlin does not crash: `JsonUtils.getString("user", json)`
+/// (`ChatRepositoryImpl:260`) returns `""` for anything that is not a string
+/// primitive. So the crash is the port being stricter than what it ports,
+/// exactly like the `Content-Type` case in `PlanetApi`.
+///
+/// **Deliberate divergence, one step better than Kotlin:** where the value
+/// is an object carrying a `name`, that name is used. These three documents
+/// mean `learning`, the same value the other 972 store as a plain string, so
+/// Kotlin's `""` throws away something unambiguous. Anything else becomes
+/// null rather than `Map.toString()` — `json_utils.dart` documents why that
+/// literal is worse than nothing.
+String? _stringOrNull(Object? value) {
+  if (value is String) return value;
+  if (value is Map<String, dynamic>) {
+    final name = value['name'];
+    return name is String ? name : null;
+  }
+  return null;
+}
+
 class ChatMapper {
   ChatMapper._();
 
@@ -16,8 +45,8 @@ class ChatMapper {
   ///
   /// Port of `ChatRepositoryImpl.insertChatsBatchInternal`.
   static ChatEntriesCompanion fromDoc(Map<String, dynamic> doc) {
-    final id = doc['_id'] as String? ?? doc['id'] as String? ?? '';
-    final rev = doc['_rev'] as String?;
+    final id = _stringOrNull(doc['_id']) ?? _stringOrNull(doc['id']) ?? '';
+    final rev = _stringOrNull(doc['_rev']);
     final createdDate = doc['createdDate'];
     final updatedDate = doc['updatedDate'];
     final conversations = doc['conversations'] as List<dynamic>?;
@@ -26,9 +55,9 @@ class ChatMapper {
       id: Value(id),
       docId: Value(id),
       rev: Value(rev),
-      user: Value(doc['user'] as String?),
-      aiProvider: Value(doc['aiProvider'] as String?),
-      title: Value(doc['title'] as String?),
+      user: Value(_stringOrNull(doc['user'])),
+      aiProvider: Value(_stringOrNull(doc['aiProvider'])),
+      title: Value(_stringOrNull(doc['title'])),
       createdDate: Value(createdDate?.toString()),
       updatedDate: Value(updatedDate?.toString()),
       conversations: Value(
@@ -56,8 +85,8 @@ class ChatMapper {
         return decoded.map((e) {
           if (e is Map<String, dynamic>) {
             return ChatConversation(
-              query: e['query'] as String?,
-              response: e['response'] as String?,
+              query: _stringOrNull(e['query']),
+              response: _stringOrNull(e['response']),
             );
           }
           return const ChatConversation();
@@ -166,8 +195,8 @@ class AiProviderConfig {
 
   static AiProviderConfig? fromJson(Map<String, dynamic>? json) {
     if (json == null) return null;
-    final name = json['name'] as String?;
-    final model = json['model'] as String?;
+    final name = _stringOrNull(json['name']);
+    final model = _stringOrNull(json['model']);
     if (name == null || model == null) return null;
     return AiProviderConfig(name: name, model: model);
   }

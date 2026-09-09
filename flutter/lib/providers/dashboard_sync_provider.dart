@@ -27,9 +27,44 @@ import 'voices_provider.dart';
 ///   [resources] and [courses] write — and prune — earlier in the same pass.
 ///   Kotlin runs it as phase 3, after the whole parallel set and the resources
 ///   pull, for the same reason.
+/// The pull areas, **in the order they run** — this list is the schedule,
+/// because [DashboardSyncNotifier] walks `values` in order.
+///
+/// Two things about `courses`' position, which is second-to-last rather than
+/// second:
+///
+/// 1. **A hanging walk here stops every area after it**, because the port runs
+///    these sequentially where Kotlin runs its equivalent batch concurrently
+///    (`SyncManager.startFullSync`: `coroutineScope { parallelTables.map {
+///    async { … } } }`). With `courses` second, a courses walk that never
+///    completed took `teams`, `events`, `surveys` and everything else down
+///    with it — the whole sync looked like "courses is slow" when in fact
+///    nothing past it had been attempted. Reported from a real device against
+///    planet.learning: 21 courses, never finishes.
+/// 2. **Late is also where Kotlin has it** — `courses` is 13th of the 14
+///    tables in that parallel list, so this is closer to the original than
+///    second was, not a workaround bolted on top of it.
+///
+/// The remaining sequential-vs-parallel divergence is the real fix and is not
+/// done here: until it is, *any* area that hangs still blocks its successors,
+/// so this ordering buys diagnosis rather than robustness.
+///
+/// **`activities` is absent for the same reason `courses` moved.** Its whole
+/// job was the `login_activities` pull — 19,324 documents on planet.learning,
+/// 97 pages with a deepening `skip` — and it failed the same way courses did
+/// (`skip=10400`, connection aborted, no checkpoint to resume from).
+/// `login_activities` is a `HeavyTableSyncWorker` table in Kotlin and appears
+/// in no interactive step there either, so removing the area is the port
+/// matching it rather than dropping a feature. Local login rows are still
+/// written and still uploaded; only the pull is gone, and
+/// `ActivitiesRepository.sync` records what restoring it needs.
+///
+/// **`shelf` must stay last.** It pulls the shelf document and stamps rows
+/// that `resources` and `courses` write and prune, so it has to follow both —
+/// see the note on [DashboardSyncNotifier.pushCurrentUserShelf]. `courses`
+/// therefore moves to just before it, not to the very end.
 enum DashboardSyncArea {
   resources,
-  courses,
   teams,
   events,
   surveys,
@@ -37,12 +72,12 @@ enum DashboardSyncArea {
   feedback,
   chat,
   health,
-  activities,
   notifications,
   tabletUsers,
   ratings,
   tasks,
   achievements,
+  courses,
   shelf,
 }
 
@@ -543,8 +578,6 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
         ref.read(feedbackSyncProvider.notifier).sync(),
       DashboardSyncArea.chat => ref.read(chatSyncProvider.notifier).sync(),
       DashboardSyncArea.health => ref.read(healthSyncProvider.notifier).sync(),
-      DashboardSyncArea.activities =>
-        ref.read(activitiesSyncProvider.notifier).sync(),
       DashboardSyncArea.notifications =>
         ref.read(notificationsSyncProvider.notifier).sync(),
       DashboardSyncArea.tabletUsers =>
@@ -568,7 +601,6 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
       DashboardSyncArea.feedback => ref.read(feedbackSyncProvider),
       DashboardSyncArea.chat => ref.read(chatSyncProvider),
       DashboardSyncArea.health => ref.read(healthSyncProvider),
-      DashboardSyncArea.activities => ref.read(activitiesSyncProvider),
       DashboardSyncArea.notifications => ref.read(notificationsSyncProvider),
       DashboardSyncArea.tabletUsers => ref.read(tabletUsersSyncProvider),
       DashboardSyncArea.ratings => ref.read(ratingsSyncProvider),

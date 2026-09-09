@@ -308,6 +308,45 @@ void _shelfPushTests() {
       ),
     );
   });
+
+  group('the area order is the sync schedule', () {
+    // Pinned because the order *is* behaviour: the notifier walks
+    // `DashboardSyncArea.values` sequentially, so a hanging walk stops every
+    // area after it. With `courses` second, a courses walk that never
+    // completed took teams, events and surveys down with it on a real device.
+    test('shelf runs last, after the areas whose rows it stamps', () {
+      expect(DashboardSyncArea.values.last, DashboardSyncArea.shelf);
+    });
+
+    test('courses runs late, and before shelf', () {
+      final order = DashboardSyncArea.values;
+      final courses = order.indexOf(DashboardSyncArea.courses);
+      final shelf = order.indexOf(DashboardSyncArea.shelf);
+      expect(courses, lessThan(shelf));
+      // Kotlin has courses 13th of 14 in its parallel batch. "Late" here means
+      // after the cheap areas, so one slow walk cannot hide the rest.
+      expect(courses, greaterThan(order.length ~/ 2));
+    });
+
+    test('resources runs before both courses and shelf', () {
+      final order = DashboardSyncArea.values;
+      expect(
+        order.indexOf(DashboardSyncArea.resources),
+        lessThan(order.indexOf(DashboardSyncArea.courses)),
+      );
+      expect(
+        order.indexOf(DashboardSyncArea.resources),
+        lessThan(order.indexOf(DashboardSyncArea.shelf)),
+      );
+    });
+
+    test('every area is scheduled exactly once', () {
+      expect(
+        DashboardSyncArea.values.toSet(),
+        hasLength(DashboardSyncArea.values.length),
+      );
+    });
+  });
 }
 
 class MockShelfRepository extends Mock implements ShelfRepository {}

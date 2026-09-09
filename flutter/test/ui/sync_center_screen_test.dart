@@ -89,7 +89,6 @@ void main() {
     expect(find.text('Sync center'), findsOneWidget);
     expect(find.text('Ready to sync'), findsOneWidget);
     expect(find.text('Resources'), findsOneWidget);
-    expect(find.text('Courses'), findsOneWidget);
     expect(find.text('Teams'), findsOneWidget);
     expect(find.text('Events'), findsOneWidget);
     expect(find.text('Surveys'), findsOneWidget);
@@ -101,6 +100,32 @@ void main() {
     expect(find.text('Feedback'), findsOneWidget);
     expect(find.text('AI chat'), findsOneWidget);
     expect(find.text('My health'), findsOneWidget);
+
+    // Courses is deliberately near the end of the list now — it moved there
+    // when `courses_progress` stopped being pulled inline — so it sits below
+    // the fold and needs scrolling to. `find.text` searches the element tree
+    // and a `CustomScrollView` only mounts what is in view.
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -1500));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Courses'), findsOneWidget);
+  });
+
+  testWidgets('does not offer a heavy-table area the port cannot finish', (
+    tester,
+  ) async {
+    // `My activities` was the `login_activities` pull — 19,324 documents on
+    // planet.learning, which aborted mid-walk with no checkpoint. Kotlin runs
+    // that table in `HeavyTableSyncWorker` and offers no interactive step for
+    // it either, so the row is gone rather than permanently red.
+    await pump(tester, stateWith(hasRun: false));
+
+    for (var i = 0; i < 4; i++) {
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -600));
+      await tester.pumpAndSettle();
+    }
+
+    expect(find.text('My activities'), findsNothing);
   });
 
   testWidgets('summarizes a completely successful run', (tester) async {

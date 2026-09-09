@@ -637,36 +637,51 @@ class CourseSyncNotifier extends SyncNotifier {
     final progress = ref.read(progressRepositoryProvider);
     final tags = ref.read(tagsRepositoryProvider);
 
-    // The four CouchDB caches are independent tables, so the pulls run
-    // concurrently. A "sync courses" refreshes progress and certifications in
-    // the same pass - the take-course view reads them together, and a stale
-    // `certification` row is what gates the "certified" badge. Tags ride
-    // along because the courses screen's collections filter reads them
-    // (the Kotlin pulls `tags` in every full sync).
+    // These CouchDB caches are independent tables, so the pulls run
+    // concurrently. A "sync courses" refreshes certifications in the same pass
+    // - the take-course view reads them together, and a stale `certification`
+    // row is what gates the "certified" badge. Tags ride along because the
+    // courses screen's collections filter reads them (the Kotlin pulls `tags`
+    // in every full sync).
+    //
+    // **`courses_progress` is deliberately not here, and Kotlin is why.**
+    // `HeavyTableSyncWorker.ALL_HEAVY_TABLES` names five tables -- `ratings`,
+    // `courses_progress`, `submissions`, `login_activities`,
+    // `team_activities` -- and none of them appear in `startFullSync`'s
+    // `parallelTables`. They run in one-shot WorkManager jobs with
+    // `syncDb(table, useCheckpoint = true)`, so each attempt *resumes* from a
+    // persisted skip instead of restarting.
+    //
+    // The port had it inline, and on planet.learning that table holds
+    // **114,219 documents** - 572 sequential `_all_docs` pages at this
+    // repository's batch size of 200, each with a deeper `skip`, which CouchDB
+    // answers in O(n). Reported from a device as "21 courses, never
+    // finishes": the walk reached `skip=23600` and the connection aborted, and
+    // because there is no checkpoint the next attempt started again at zero.
+    // It could never finish, and the whole courses area failed with it.
+    //
+    // **What this costs until the heavy-table path exists**, stated rather
+    // than left to be discovered: nothing pulls `courses_progress` any more,
+    // so Planet's own grading no longer reaches the handset - the route
+    // `take_exam_screen` documents for a step exam becoming `passed`. Local
+    // progress is still written and still uploaded by
+    // `CourseProgressUploader`; only the pull is gone. Restoring it needs the
+    // resumable checkpoint, not a re-add here: put it back inline and the
+    // courses sync breaks again.
     final courseResult = courses.sync(config: config, onProgress: onProgress);
-    final progressResult = progress.syncCourseProgress(
-      config: config,
-      onProgress: onProgress,
-    );
     final certResult = progress.syncCertifications(
       config: config,
       onProgress: onProgress,
     );
     final tagsResult = tags.sync(config: config, onProgress: onProgress);
 
-    final [a, b, c, d] = await Future.wait([
-      courseResult,
-      progressResult,
-      certResult,
-      tagsResult,
-    ]);
+    final [a, b, c] = await Future.wait([courseResult, certResult, tagsResult]);
     final totalSaved = [
       a,
       b,
       c,
-      d,
     ].fold<int>(0, (sum, r) => sum + (r is SyncComplete ? r.savedCount : 0));
-    final failed = [a, b, c, d].whereType<SyncFailed>().firstOrNull;
+    final failed = [a, b, c].whereType<SyncFailed>().firstOrNull;
     return failed ?? SyncComplete(totalSaved);
   }
 }

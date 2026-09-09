@@ -11,6 +11,25 @@ import '../config/server_config.dart';
 class UrlUtils {
   const UrlUtils._();
 
+  /// Strips a `user:password@` from every URL in [text].
+  ///
+  /// Anything built from a [DioException] carries the request URI, and this
+  /// project's CouchDB URIs embed `satellite:<PIN>@` — so an error string shown
+  /// on screen, pasted into a bug report, or written to a log puts the server
+  /// PIN there with it. That happened: a sync failure rendered
+  /// `uri = https://satellite:1983@planet.learning.ole.org/db/...` in the sync
+  /// centre, and the PIN travelled into a chat transcript from there.
+  ///
+  /// The user half is kept — `satellite` is not the secret — so the message
+  /// still says which account was used. Applies to every URL in the string,
+  /// since one message can name several.
+  static String redactCredentials(String text) {
+    return text.replaceAllMapped(
+      RegExp(r'(//)([^/@:\s]+):[^/@\s]*@'),
+      (match) => '${match[1]}${match[2]}:***@',
+    );
+  }
+
   /// Port of `UrlUtils.basicAuthHeader`.
   static String basicAuthHeader(String username, String password) =>
       'Basic ${base64.encode(utf8.encode('$username:$password'))}';
