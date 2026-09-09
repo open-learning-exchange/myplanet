@@ -36,34 +36,50 @@ typedef OutboxHandler =
       String? authHeader,
     );
 
-/// The 409 arm: port of `UploadCoordinator.kt:169-204`, **corrected**.
+/// The 409 arm: port of `UploadCoordinator.kt:169-204`, **split in two**.
 ///
 /// Kotlin answers a conflict by GETting the document that already exists,
-/// adopting its `_rev` and reporting the upload as a **success** — it runs the
-/// same `afterUpload` callback the accepted path runs
-/// (`UploadCoordinator.kt:169-186`). Ported literally that is a data-loss bug
-/// for every uploader in this port but one, and the reason is worth stating
-/// before the mechanism.
+/// adopting its `_rev` and reporting the upload as a **success** — the
+/// recovered item joins `succeeded`, so `updateDatabaseBatch` runs the
+/// config's `markUploaded` exactly as an accepted write would
+/// (`UploadCoordinator.kt:169-204`, `:241-257`). It never compares the
+/// document it fetched with the one it was sending, and that is the half a
+/// port cannot take on trust.
 ///
-/// **A 409 never means "your write is already there".** It means the document
-/// with this `_id` exists and the `_rev` you supplied — or the one you omitted
-/// — is not its current revision, so *your bytes were not stored*. Adopting
-/// the revision and reporting success marks the local row uploaded while the
-/// server holds somebody else's content. The examination's readings, the
-/// team document's edit, the achievement ledger: none of them ever leave the
-/// device, and the outbox row is deleted as delivered.
+/// **A 409 does not mean "your write is already there".** It means a document
+/// with this `_id` exists and the `_rev` supplied — or omitted — is not its
+/// current revision, so *these bytes were not stored*. Whether adopting is
+/// harmless therefore depends on something Kotlin never asks: is the document
+/// already on the server the document being sent?
 ///
-/// The one place adopting is equivalent is a document whose content is a pure
-/// function of shared inputs. `adopted_surveys_uploader.dart` is exactly that
-/// — the clone id is `'${surveyId}_$teamId'` and two leaders adopting the same
-/// survey for the same team author the *same* document — which is why the
-/// port's single existing arm is correct where a general one would not be.
+/// The payload answers it well enough to act on, and the two answers need
+/// opposite treatment:
 ///
-/// So the rule this class implements is the one that subsumes Kotlin's without
-/// inheriting its loss: **GET the current revision and re-send the same
-/// content under it.** The write lands. Where the content was idempotent
-/// anyway the re-send is a harmless overwrite that yields the same `rev`
-/// adopting would have.
+/// * **An update** — the payload carries a `_rev`, so this device has
+///   published this document before and is sending a change to it. The 409
+///   says that revision is stale. Adopting would clear the dirty flag with the
+///   change still on the handset: the learner's added answers, the clinician's
+///   edited profile, the achievement entry. So an update is **re-sent under
+///   the revision the GET reports**. The write lands.
+/// * **A create** — no `_rev`, so as far as this device knows the document has
+///   never been published, and the one on the server is content it has never
+///   seen. Re-sending would overwrite that; adopting would report a delivery
+///   that did not happen. Neither is safe in general, so the default is
+///   **neither**: the refusal stands, terminal, and `OutboxDao.abandoned`
+///   keeps reporting the row as stranded — which is the honest answer.
+///   [adoptExisting] is the opt-in for the one uploader that can prove the
+///   question away.
+///
+/// ### Where this sits relative to Kotlin
+///
+/// Only six of the port's twenty uploaders have a Kotlin counterpart that runs
+/// through `UploadCoordinator` at all. Kotlin's own health, achievements, news
+/// and teams paths swallow a 409 in silence
+/// (`HealthRepositoryImpl.kt:110-124`, `AchievementUploader.kt:32-42`,
+/// `UploadManager.kt:369-372`, `TeamsUploader.kt:73-75`), and
+/// `RetryQueueWorker.kt:234-238` discards the edit with a success log. So for
+/// most uploaders here this is **new behaviour, not restored parity**, and the
+/// update arm has no Kotlin precedent anywhere.
 ///
 /// ### Why this does not weaken Phase 148's policy
 ///
@@ -71,8 +87,8 @@ typedef OutboxHandler =
 /// terminal row is a memo, and nothing re-asks the identical question
 /// unattended. What re-arms it is a changed request.*
 ///
-/// The re-send here **is** a changed request — it carries a `_rev` the first
-/// one did not, fetched from the server between the two. That is the recovery
+/// The re-send **is** a changed request — it carries a `_rev` the first one
+/// did not, fetched from the server between the two. That is the recovery
 /// route the policy names, taken inline instead of waiting for a pull to
 /// supply the same revision. Three things keep it inside the policy rather
 /// than around it:
@@ -82,50 +98,100 @@ typedef OutboxHandler =
 ///   [OutboxRepository.classifyStatus] makes it terminal exactly as before.
 /// * **It never re-asks an identical question.** If the revision the server
 ///   reports is the one already in the payload, the re-send is skipped and the
-///   original refusal is returned — there is nothing new to ask.
+///   original refusal stands — there is nothing new to ask.
 /// * **It cannot duplicate a document.** The arm fires only for a request that
-///   names its own document, so the re-send is an update of that `_id`. An
+///   names its own document, so a re-send is an update of that `_id`. An
 ///   append with a server-minted id cannot 409 in the first place, which is
-///   why the eleven uploaders in that class are untouched and unaffected.
+///   why the eight uploaders in that class are deliberately not armed —
+///   see [documentUrlUnder].
 ///
-/// ### The trade it does make
+/// ### The trade the update arm makes
 ///
 /// Re-sending under the server's current revision is last-write-wins: a
 /// concurrent edit made on another device is overwritten. That is the port's
-/// existing stance everywhere else — `HealthRepository.cacheDocuments` skips a
+/// existing stance elsewhere — `HealthRepository.cacheDocuments` skips a
 /// locally dirty row (`health_repository.dart:772`), so the local copy is
 /// already authoritative over the server's — and it is the better of the two
-/// available mistakes. The alternative loses the *local* edit, silently, in a
-/// queue whose entire purpose is delivering local writes; Kotlin's arm loses
-/// it and reports success as well.
+/// available mistakes, because the alternative loses the *local* edit silently
+/// in a queue whose whole purpose is delivering local writes.
+///
+/// **One case deserves naming rather than falling out of the rule.** A team
+/// tombstone is `{_id, _rev, _deleted: true}` (`teams_provider.dart:295`), so
+/// it is an update and re-sending deletes a document whose latest content this
+/// device has never seen. That is accepted deliberately: the user asked for
+/// the membership to be removed, and a revision bump from another device does
+/// not revoke that instruction. The alternative — adopting — would report the
+/// delete as done while the document is still on the server *and* hand the row
+/// back to `deleteNotIn`.
 class ConflictRecovery {
   const ConflictRecovery._();
 
-  /// Runs [attempt], and on a 409 fetches [documentUrl] and runs it once more
-  /// under the revision that comes back.
+  /// Where CouchDB keeps the document [payload] names, given the URL the write
+  /// was sent to.
+  ///
+  /// Null when the payload names no document, which is the guard that keeps
+  /// the arm off appends — see [send].
+  ///
+  /// **The id is the payload's, not the outbox row's**, and conflating the two
+  /// is the trap here. `outbox.itemId` is the *local* row's key; the CouchDB
+  /// `_id` is whatever the serializer chose, and for health those are
+  /// different values — the row's key is the examination's, while
+  /// `HealthRepository.serialize` writes the **patient's** user id as `_id`
+  /// (`health_repository.dart:845-849`). A recovery keyed on `itemId` would
+  /// GET a document that does not exist, take the 404, and quietly return the
+  /// original conflict for ever.
+  static String? documentUrlUnder(
+    String sendUrl,
+    Map<String, dynamic> payload,
+  ) {
+    final id = payload['_id'];
+    if (id is! String || id.isEmpty) return null;
+    return '$sendUrl/${Uri.encodeComponent(id)}';
+  }
+
+  /// Runs [attempt], and on a 409 decides between re-sending and standing
+  /// down, per the class docs.
   ///
   /// [attempt] is the uploader's own send, passed as a closure so the verb,
   /// the URL and any per-uploader decoration of the body stay where they
-  /// belong. Everything the recovery itself decides lives here, once.
+  /// belong. Everything the recovery itself decides lives here, once — and
+  /// because a recovered result comes back through this method's return, the
+  /// handler's existing `if (result case NetworkSuccess…)` branch runs on it
+  /// unchanged. No uploader duplicates its own `markUploaded`, and none can
+  /// forget to run it.
+  ///
+  /// [adoptExisting] opts one uploader into Kotlin's original semantics for a
+  /// **create**: fetch the revision and report success without sending
+  /// anything. It is sound only where the document already on the server is
+  /// necessarily the document being sent, which is a property of the content,
+  /// not of the verb. `adopted_surveys_uploader.dart` has it — a team's clone
+  /// is a pure function of the survey and the team, and its id
+  /// (`'${surveyId}_$teamId'`) makes two leaders author the same document.
+  /// Nothing else in the port can make that claim, so nothing else sets it.
   ///
   /// A GET that fails returns the **original** 409 rather than inventing a
-  /// verdict of its own — the same choice `adopted_surveys_uploader.dart`
-  /// made, and the same one Kotlin makes for a non-successful fetch
-  /// (`UploadCoordinator.kt:187-192`, `retryable = false`, `httpCode = 409`).
+  /// verdict of its own — the same choice Kotlin makes for a non-successful
+  /// fetch (`UploadCoordinator.kt:185-192`).
   static Future<NetworkResult<Map<String, dynamic>>> send({
     required PlanetApi api,
-    required String documentUrl,
+    required String? documentUrl,
     required Map<String, dynamic> payload,
     required Future<NetworkResult<Map<String, dynamic>>> Function(
       Map<String, dynamic> body,
     )
     attempt,
     String? authHeader,
+    bool adoptExisting = false,
   }) async {
     final first = await attempt(payload);
     if (first is! NetworkError<Map<String, dynamic>> || first.code != 409) {
       return first;
     }
+    // A request that does not name its own document cannot be recovered and
+    // must not be: without an `_id` the re-send would be an append, and a
+    // second copy of a document with a server-minted id is undetectable
+    // afterwards. [documentUrlUnder] returns null for exactly that case.
+    if (documentUrl == null) return first;
 
     // The drain's credential, not none: `outbox.endpoint` is stored
     // credential-free on purpose, so an unauthenticated read of a CouchDB
@@ -138,9 +204,21 @@ class ConflictRecovery {
 
     final rev = existing.data['_rev'];
     if (rev is! String || rev.isEmpty) return first;
-    // Nothing new to ask. Re-sending the bytes the server has just refused is
+
+    final sentRev = payload['_rev'];
+    final isUpdate = sentRev is String && sentRev.isNotEmpty;
+    if (!isUpdate) {
+      if (!adoptExisting) return first;
+      // Kotlin's arm, shaped like the create response the handler expects: it
+      // reads `id`/`rev` from a write, while a document read carries `_id` and
+      // `_rev` (`UploadCoordinator.kt:177-182` does the same translation).
+      final id = existing.data['_id'] ?? payload['_id'];
+      return NetworkSuccess<Map<String, dynamic>>({'id': id, 'rev': rev});
+    }
+
+    // Nothing new to ask. Re-sending bytes the server has just refused is
     // precisely what Phase 148's memo exists to stop.
-    if (rev == payload['_rev']) return first;
+    if (rev == sentRev) return first;
 
     return attempt({...payload, '_rev': rev});
   }

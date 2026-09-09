@@ -151,10 +151,37 @@ class AdoptedSurveysUploader {
   }
 
   OutboxHandler get handler => (row, payload, authHeader) async {
-    final result = await _api.postJsonObject(
-      row.endpoint,
-      payload,
+    // The 409 arm, which this uploader had first and now shares.
+    //
+    // **The port needs it more than Kotlin does, because its clone id is
+    // deterministic.** Kotlin mints one with `UUID.randomUUID()`
+    // (`SurveysRepositoryImpl.kt:86`), so two leaders adopting the same survey
+    // for the same team write two documents; the port's `'${surveyId}_$teamId'`
+    // (`surveys_repository.dart:105`) converges on one, which is better — but
+    // it makes a conflict ordinary rather than freakish, since neither leader
+    // has synced yet and `adoptedTeamSurvey` can only dedupe locally.
+    //
+    // Without recovery the loser is permanently stuck: the row is abandoned as
+    // a terminal refusal and **no later walk rescues it** — a mapper's
+    // companion leaves `needsSync` absent, and Drift's `insertOnConflictUpdate`
+    // writes only the columns present, so a re-pull hands the row a `rev` and
+    // leaves the flag set. Probed: `needsSync=true rev=1-winner`, still swept.
+    //
+    // This is the **only** uploader that sets `adoptExisting`, and the reason
+    // is a property of the content rather than of the verb: the clone is a
+    // pure function of the survey and the team, so the document already on the
+    // server *is* the document being sent, and taking its revision loses
+    // nothing. No other uploader in the port can make that claim, which is why
+    // a create-conflict stands as a refusal everywhere else — see
+    // [ConflictRecovery].
+    final result = await ConflictRecovery.send(
+      api: _api,
+      documentUrl: '${row.endpoint}/${Uri.encodeComponent(row.itemId)}',
+      payload: payload,
       authHeader: authHeader,
+      adoptExisting: true,
+      attempt: (body) =>
+          _api.postJsonObject(row.endpoint, body, authHeader: authHeader),
     );
     if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
       final couchId = data['id'];
@@ -182,62 +209,6 @@ class AdoptedSurveysUploader {
       }
       await _surveyDao.markUploaded(row.itemId, rev);
     }
-    if (result case NetworkError<Map<String, dynamic>>(
-      :final code,
-    ) when code == 409) {
-      return _adoptExistingDocument(row, authHeader, result);
-    }
     return result;
   };
-
-  /// Port of `UploadCoordinator`'s 409 arm (`UploadCoordinator.kt:169-204`):
-  /// GET the document that already exists, take its `_rev`, and report the
-  /// upload as the success it effectively was.
-  ///
-  /// **The port needs this more than Kotlin does, because its clone id is
-  /// deterministic.** Kotlin mints one with `UUID.randomUUID()`
-  /// (`SurveysRepositoryImpl.kt:86`), so two leaders adopting the same survey
-  /// for the same team write two documents; the port's
-  /// `'${surveyId}_$teamId'` (`surveys_repository.dart:105`) converges on one,
-  /// which is better — but it makes a conflict ordinary rather than freakish,
-  /// since neither leader has synced yet and `adoptedTeamSurvey` can only
-  /// dedupe locally.
-  ///
-  /// Without this the loser is permanently stuck: `OutboxDrainer` classifies
-  /// any `code < 500` as permanent (`outbox_drainer.dart:160-172`) so the row
-  /// is abandoned, and **a later walk does not rescue it** — a mapper's
-  /// companion leaves `needsSync` absent, and Drift's `insertOnConflictUpdate`
-  /// writes only the columns present, so the re-pull hands the row a `rev` and
-  /// leaves the flag set. Probed: `needsSync=true rev=1-winner`, still swept.
-  /// `OutboxDao.findOpen` ignores an `abandoned` row, so every sweep
-  /// thereafter inserts a fresh one and makes a fresh doomed POST, for the
-  /// life of the install, in a table schema bumps preserve.
-  ///
-  /// A GET that fails returns the original 409 rather than inventing success:
-  /// clearing the flag without a rev would drop the clone out of the prune
-  /// exemption while it is still, as far as this device knows, unpublished.
-  Future<NetworkResult<Map<String, dynamic>>> _adoptExistingDocument(
-    OutboxRow row,
-    String? authHeader,
-    NetworkResult<Map<String, dynamic>> conflict,
-  ) async {
-    final existing = await _api.getJsonObject(
-      '${row.endpoint}/${row.itemId}',
-      // The drain's credential, not none: `outbox.endpoint` is stored
-      // credential-free on purpose, so an unauthenticated read of a CouchDB
-      // document is a 401 and this recovery would never fire.
-      authHeader: authHeader,
-    );
-    if (existing case NetworkSuccess<Map<String, dynamic>>(:final data)) {
-      final rev = data['_rev'];
-      if (rev is String && rev.isNotEmpty) {
-        await _surveyDao.markUploaded(row.itemId, rev);
-        return NetworkSuccess<Map<String, dynamic>>({
-          'id': row.itemId,
-          'rev': rev,
-        });
-      }
-    }
-    return conflict;
-  }
 }

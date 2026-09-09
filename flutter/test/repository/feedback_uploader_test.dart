@@ -93,6 +93,52 @@ void main() {
     expect(queued.map((row) => row.itemId), ['feedback-1']);
   });
 
+  test(
+    'a conflicting feedback document is re-sent under the server revision',
+    () async {
+      // `FeedbackMapper.toDoc` sends a device-generated `_id` deliberately, so a
+      // reply to an already-uploaded thread is an update rather than a duplicate
+      // — and an update against a stale `_rev` is a 409.
+      await seedPending();
+      final sent = <Map<String, dynamic>>[];
+      when(
+        () => api.postJsonObject(
+          any(),
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer((invocation) async {
+        final body = Map<String, dynamic>.from(
+          invocation.positionalArguments[1] as Map<String, dynamic>,
+        );
+        sent.add(body);
+        return body['_rev'] == '3-server'
+            ? NetworkSuccess<Map<String, dynamic>>({'rev': '4-d'})
+            : const NetworkError<Map<String, dynamic>>(409, 'conflict');
+      });
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer(
+        (_) async => NetworkSuccess<Map<String, dynamic>>({
+          '_id': 'feedback-1',
+          '_rev': '3-server',
+        }),
+      );
+
+      final result = await uploader.handler(rowFor('feedback-1'), const {
+        '_id': 'feedback-1',
+        '_rev': '2-stale',
+        'title': 'Sync fails offline',
+      }, 'auth');
+
+      expect(result, isA<NetworkSuccess<Map<String, dynamic>>>());
+      expect(sent, hasLength(2));
+      expect(sent[1]['title'], 'Sync fails offline');
+      expect(sent[1]['_rev'], '3-server');
+      expect((await database.feedbackDao.getById('feedback-1'))?.rev, '4-d');
+    },
+  );
+
   test('a successful upload records the revision', () async {
     await seedPending();
     when(

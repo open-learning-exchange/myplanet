@@ -65,10 +65,16 @@ class FeedbackUploader {
   }
 
   OutboxHandler get handler => (row, payload, authHeader) async {
-    final result = await _api.postJsonObject(
-      row.endpoint,
-      payload,
+    // The 409 arm: `FeedbackMapper.toDoc` sends a device-generated `_id` so a
+    // reply updates the thread rather than duplicating it, which also means a
+    // stale `_rev` conflicts. See [ConflictRecovery].
+    final result = await ConflictRecovery.send(
+      api: _api,
+      documentUrl: ConflictRecovery.documentUrlUnder(row.endpoint, payload),
+      payload: payload,
       authHeader: authHeader,
+      attempt: (body) =>
+          _api.postJsonObject(row.endpoint, body, authHeader: authHeader),
     );
     if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
       final rev = data['rev'];

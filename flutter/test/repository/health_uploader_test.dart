@@ -138,6 +138,91 @@ void main() {
     },
   );
 
+  test(
+    'a conflicting examination is re-sent under the server revision',
+    () async {
+      // The loop Phase 148 could only make *safe*. The `health` document id is
+      // the patient's user id (`HealthRepository.serialize`), so every
+      // examination for a patient the server already holds a document for
+      // POSTs into a 409 — and `cacheDocuments` skips a locally dirty row
+      // (`health_repository.dart:772`), so nothing on the device can ever
+      // learn the revision that would unstick it. Before the recovery arm the
+      // reading stayed on the handset for the life of the install.
+      final id = await repository.createExamination(
+        userId: 'user-1',
+        temperature: 36.5,
+        pulse: 70,
+        height: 170,
+        weight: 65,
+      );
+      // The reachable case, per the audit: the *profile* blob is re-saved on
+      // every examination save under a stable `_id`, so once it has been
+      // published its next write is an update — and `cacheDocuments` skips a
+      // locally dirty row (`health_repository.dart:772`), so the revision it
+      // carries is the one the last successful upload left and can go stale
+      // with nothing on the device able to refresh it.
+      await (database.update(database.healthExaminations)
+            ..where((h) => h.id.equals(id)))
+          .write(const HealthExaminationsCompanion(rev: Value('2-stale')));
+      final row = await repository.getById(id);
+      final payload = HealthRepository.serialize(row!);
+      expect(payload['_id'], 'user-1');
+      expect(payload['_rev'], '2-stale', reason: 'an update, not a create');
+
+      final sent = <Map<String, dynamic>>[];
+      when(
+        () => api.postJsonObject(
+          any(),
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer((invocation) async {
+        final body = Map<String, dynamic>.from(
+          invocation.positionalArguments[1] as Map<String, dynamic>,
+        );
+        sent.add(body);
+        return body['_rev'] == '7-a'
+            ? NetworkSuccess<Map<String, dynamic>>({
+                'id': 'user-1',
+                'rev': '8-b',
+              })
+            : const NetworkError<Map<String, dynamic>>(409, 'conflict');
+      });
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer(
+        (_) async => NetworkSuccess<Map<String, dynamic>>({
+          '_id': 'user-1',
+          '_rev': '7-a',
+        }),
+      );
+
+      final result = await uploader.handler(rowFor(id), payload, 'auth');
+
+      expect(result, isA<NetworkSuccess<Map<String, dynamic>>>());
+      // The reading reached the server, rather than the server's `_rev` being
+      // adopted over a document that never carried it.
+      expect(sent, hasLength(2));
+      expect(sent[1]['pulse'], 70);
+      expect(sent[1]['_rev'], '7-a');
+      final after = await repository.getById(id);
+      expect(after!.rev, '8-b');
+      expect(after.isUpdated, isFalse);
+
+      // The document is fetched at the *patient's* id, not the examination
+      // row's — those are different values here, and keying on the row would
+      // GET a document that does not exist.
+      final url = verify(
+        () => api.getJsonObject(
+          captureAny(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).captured.single;
+      expect(url, endsWith('/health/user-1'));
+      expect(url, isNot(contains(id)));
+    },
+  );
+
   test('a response without a revision is not treated as uploaded', () async {
     final id = await repository.createExamination(
       userId: 'user-1',

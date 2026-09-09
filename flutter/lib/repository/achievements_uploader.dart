@@ -62,10 +62,19 @@ class AchievementsUploader {
     if (couchId is! String || couchId.isEmpty) {
       return const NetworkError(null, 'Achievement ledger carried no _id');
     }
-    final result = await _api.putJsonObject(
-      '${row.endpoint}/achievements/$couchId',
-      payload,
+    // The 409 arm. The ledger is PUT to its own id, so the request *is* the
+    // document URL and no derivation is needed. A conflict here is a second
+    // device editing the same user's ledger; re-sending under the fetched
+    // revision delivers this device's entries rather than adopting the other
+    // one's and reporting success. See [ConflictRecovery].
+    final documentUrl = '${row.endpoint}/achievements/$couchId';
+    final result = await ConflictRecovery.send(
+      api: _api,
+      documentUrl: documentUrl,
+      payload: payload,
       authHeader: authHeader,
+      attempt: (body) =>
+          _api.putJsonObject(documentUrl, body, authHeader: authHeader),
     );
     if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
       final rev = data['rev'];

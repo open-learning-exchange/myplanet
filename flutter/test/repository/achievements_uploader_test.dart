@@ -52,6 +52,12 @@ void main() {
     ).thenAnswer((_) async => result);
   }
 
+  /// Queues the pending ledger and returns the single outbox row it made.
+  Future<OutboxRow> queueAndTake() async {
+    await uploader.queuePending(config: config);
+    return (await outbox.due()).single;
+  }
+
   OutboxDrainer drainer() => OutboxDrainer(
     api,
     outbox,
@@ -86,6 +92,75 @@ void main() {
       expect(rows.single.endpoint, AchievementsUploader.endpointFor(config));
     },
   );
+
+  test('a conflicting ledger is re-sent under the server revision', () async {
+    // The ledger is PUT to `achievements/<couchId>`, one document per user, so
+    // a second device editing the same account conflicts. Adopting the
+    // server's revision — Kotlin's arm — would clear `uploaded` with this
+    // device's entries still on the handset.
+    await repository.update(
+      'ada@earth',
+      const AchievementInput(achievementsJson: '[{"title":"First"}]'),
+    );
+    await (database.update(
+      database.achievements,
+    )..where((a) => a.id.equals('ada@earth'))).write(
+      const AchievementsCompanion(
+        couchId: Value('couch-ada'),
+        rev: Value('1-stale'),
+        uploaded: Value(false),
+      ),
+    );
+
+    final sent = <Map<String, dynamic>>[];
+    when(
+      () =>
+          api.putJsonObject(any(), any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer((invocation) async {
+      final body = Map<String, dynamic>.from(
+        invocation.positionalArguments[1] as Map<String, dynamic>,
+      );
+      sent.add(body);
+      return body['_rev'] == '6-server'
+          ? const NetworkSuccess<Map<String, dynamic>>({
+              'id': 'couch-ada',
+              'rev': '7-r',
+            })
+          : const NetworkError<Map<String, dynamic>>(409, 'conflict');
+    });
+    when(
+      () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer(
+      (_) async => const NetworkSuccess<Map<String, dynamic>>({
+        '_id': 'couch-ada',
+        '_rev': '6-server',
+      }),
+    );
+
+    final row = (await outbox.due()).isEmpty
+        ? await queueAndTake()
+        : (await outbox.due()).single;
+    final payload = jsonDecode(row.payload) as Map<String, dynamic>;
+    final result = await uploader.handler(row, payload, 'auth');
+
+    expect(result, isA<NetworkSuccess<Map<String, dynamic>>>());
+    expect(sent, hasLength(2));
+    expect(sent[1]['_rev'], '6-server');
+    expect(sent[1]['achievements'], sent[0]['achievements']);
+    final after = await database.achievementDao.getById('ada@earth');
+    expect(after?.rev, '7-r');
+    expect(after?.uploaded, isTrue);
+
+    // The ledger's own URL is fetched — the PUT target, not a derivation.
+    final url = verify(
+      () =>
+          api.getJsonObject(captureAny(), authHeader: any(named: 'authHeader')),
+    ).captured.single;
+    expect(
+      url,
+      '${AchievementsUploader.endpointFor(config)}/achievements/couch-ada',
+    );
+  });
 
   test(
     'handler PUTs the ledger, marks uploaded, and PUTs the resume bytes',

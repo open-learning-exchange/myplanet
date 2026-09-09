@@ -61,10 +61,21 @@ class HealthUploader {
   }
 
   OutboxHandler get handler => (row, payload, authHeader) async {
-    final result = await _api.postJsonObject(
-      row.endpoint,
-      payload,
+    // The 409 arm. This is the uploader that needs it most: the document id is
+    // the *patient's* user id, not the examination's, so a second examination
+    // for a patient the server already holds a document for conflicts by
+    // construction — and `HealthRepository.cacheDocuments` skips a locally
+    // dirty row (`health_repository.dart:772`), so no pull can ever supply the
+    // revision that would unstick it. Phase 148 could only stop the reading
+    // being re-POSTed for ever; this delivers it. See [ConflictRecovery] for
+    // why the arm re-sends rather than adopting as Kotlin does.
+    final result = await ConflictRecovery.send(
+      api: _api,
+      documentUrl: ConflictRecovery.documentUrlUnder(row.endpoint, payload),
+      payload: payload,
       authHeader: authHeader,
+      attempt: (body) =>
+          _api.postJsonObject(row.endpoint, body, authHeader: authHeader),
     );
     if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
       final rev = data['rev'];
