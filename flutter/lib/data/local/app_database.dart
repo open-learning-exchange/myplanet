@@ -3958,11 +3958,40 @@ class HealthExaminationDao extends DatabaseAccessor<AppDatabase>
     await batch((b) => b.insertAllOnConflictUpdate(healthExaminations, rows));
   }
 
-  /// Mark examination as uploaded with the server revision.
+  /// Marks the examination uploaded, recording the server revision when there
+  /// is one.
+  ///
+  /// **A null [rev] leaves the stored revision alone.** This method collapses
+  /// Kotlin's two overloads into one, and the collapse has to keep the
+  /// null-rev semantics of the one the app actually calls:
+  /// `HealthRepositoryImpl.markHealthExaminationsUploaded` (`:66-69`) passes a
+  /// `Map<String, String?>` to the `@Transaction`
+  /// `HealthExaminationDao.markUploaded(idToRevMap)` (`:36-46`), which
+  /// **partitions** the map and sends the null-rev ids to
+  /// `UPDATE health_examinations SET isUpdated = 0 WHERE _id IN (:ids)` —
+  /// clearing the dirty flag without touching `_rev`. Commit `1004e90` added
+  /// that partition, and its test is
+  /// `markUploaded_rowsWithoutRev_clearsIsUpdatedAndPreservesExistingRev`.
+  /// Kotlin's *single-id* overload does still write `_rev = :rev`, but its only
+  /// caller is the non-null half of that partition, so a null never reaches it
+  /// — which is why this is parity rather than an improvement on the Kotlin.
+  ///
+  /// Writing `Value(rev)` here erased the revision instead, the pre-`1004e90`
+  /// defect: `_rev` is the only thing that lets the next edit PUT rather than
+  /// conflict, and `HealthRepository.cacheDocuments` skips a locally dirty row,
+  /// so no pull would supply it again either — the record would 409 for the
+  /// life of the install. `HealthUploader` reaches this call with a null
+  /// whenever a 2xx body carries an id and no rev, so the branch is live.
+  ///
+  /// The blank case is deliberately *not* folded in with the null one: Kotlin
+  /// partitions on `it.value == null`, so an empty string is written.
+  ///
+  /// [Value.absent] is the port's spelling of "leave the column alone" — the
+  /// same pattern as [UserDao.markUploaded] and [AchievementDao.markUploaded].
   Future<int> markUploaded(String id, String? rev) =>
       (update(healthExaminations)..where((h) => h.id.equals(id))).write(
         HealthExaminationsCompanion(
-          rev: Value(rev),
+          rev: rev == null ? const Value.absent() : Value(rev),
           isUpdated: const Value(false),
         ),
       );
