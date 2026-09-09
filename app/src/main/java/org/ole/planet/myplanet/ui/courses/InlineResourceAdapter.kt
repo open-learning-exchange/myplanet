@@ -161,28 +161,34 @@ class InlineResourceAdapter(
 
     private fun updateStatusAndPreview(holder: ViewHolder, context: Context, resource: MyLibrary) {
         val binding = holder.binding
-        val isDownloaded = resource.isResourceOffline() ||
-            FileUtils.checkFileExist(context, UrlUtils.getUrl(resource))
-
-        val mimeType = Utilities.getMimeType(resource.resourceLocalAddress)
 
         binding.ivResourcePreview.visibility = View.GONE
         binding.videoThumbnailContainer.visibility = View.GONE
         binding.tvTextPreview.visibility = View.GONE
         binding.audioPreviewContainer.visibility = View.GONE
-        binding.pbDownload.visibility = View.GONE
         binding.ivStatus.visibility = View.GONE
+        binding.pbDownload.visibility = View.VISIBLE
 
-        if (isDownloaded) {
-            binding.ivStatus.visibility = View.VISIBLE
-            binding.ivStatus.setImageResource(R.drawable.ic_eye)
+        binding.ivResourceIcon.setImageResource(
+            ResourceOpener.getResourceTypeIcon(resource.resourceLocalAddress)
+        )
 
-            val resourceFile = File(
-                externalFilesDir,
-                "ole/${resource.id}/${resource.resourceLocalAddress}"
-            )
+        holder.setPreviewJob(adapterScope.launch {
+            val isDownloaded = resource.isResourceOffline() || withContext(dispatcherProvider.io) {
+                FileUtils.checkFileExist(context, UrlUtils.getUrl(resource))
+            }
 
-            holder.setPreviewJob(adapterScope.launch {
+            if (isDownloaded) {
+                binding.pbDownload.visibility = View.GONE
+                binding.ivStatus.visibility = View.VISIBLE
+                binding.ivStatus.setImageResource(R.drawable.ic_eye)
+
+                val mimeType = Utilities.getMimeType(resource.resourceLocalAddress)
+                val resourceFile = File(
+                    externalFilesDir,
+                    "ole/${resource.id}/${resource.resourceLocalAddress}"
+                )
+
                 when {
                     mimeType?.startsWith("image") == true -> showImagePreview(binding, context, resourceFile)
                     mimeType?.startsWith("video") == true -> showVideoPreview(binding, context, resourceFile)
@@ -192,14 +198,8 @@ class InlineResourceAdapter(
                     mimeType?.contains("csv") == true || resource.resourceLocalAddress?.endsWith(".csv") == true -> showCsvPreview(holder, resourceFile)
                     mimeType?.startsWith("text") == true || resource.resourceLocalAddress?.endsWith(".txt") == true || resource.resourceLocalAddress?.endsWith(".md") == true -> showTextPreview(holder, resourceFile)
                 }
-            })
-        } else {
-            binding.pbDownload.visibility = View.VISIBLE
-        }
-
-        binding.ivResourceIcon.setImageResource(
-            ResourceOpener.getResourceTypeIcon(resource.resourceLocalAddress)
-        )
+            }
+        })
     }
 
     private suspend fun showImagePreview(binding: ItemInlineResourceBinding, context: Context, file: File) {

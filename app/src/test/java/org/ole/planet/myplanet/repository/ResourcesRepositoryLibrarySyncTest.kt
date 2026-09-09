@@ -63,7 +63,6 @@ class ResourcesRepositoryLibrarySyncTest {
             RuntimeEnvironment.getApplication(),
             mockk<ActivitiesRepository>(relaxed = true),
             mockk<SharedPrefManager>(relaxed = true),
-            mockk<RatingsRepository>(relaxed = true),
             mockk<TagsRepository>(relaxed = true),
             mockk<SearchActivityDao>(relaxed = true),
             mockk<ResourceActivityDao>(relaxed = true),
