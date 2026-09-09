@@ -12,6 +12,12 @@ on:
       - 'flutter/**'
       - '.github/workflows/flutter.yml'
   workflow_dispatch:
+    inputs:
+      build_mode:
+        description: 'APK build mode (a manual run uploads the APK as an artifact)'
+        type: choice
+        options: [debug, release]
+        default: debug
 
 permissions:
   contents: read
@@ -83,5 +89,33 @@ jobs:
           dart run build_runner build --delete-conflicting-outputs
           flutter gen-l10n
 
-      - name: Build debug APK
-        run: flutter build apk --debug
+      # `inputs.build_mode` is empty on push and pull_request, so those runs
+      # keep building --debug exactly as before; only a manual dispatch can
+      # ask for --release.
+      - name: Build APK
+        run: flutter build apk ${{ inputs.build_mode == 'release' && '--release' || '--debug' }}
+
+      # Dispatch-only, mirroring release.yml: a push run's APK is a
+      # by-product nobody asks for, and ~50 MB per run for 9 days across
+      # every push is real storage. A manual run is someone asking for the
+      # file, so that is the run that keeps it.
+      - name: Name the APK with version, branch and mode
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          version=$(grep -m1 '^version:' pubspec.yaml | cut -d' ' -f2)
+          mode=${{ inputs.build_mode }}
+          branch=${GITHUB_REF##*/}
+          mkdir -p output
+          mv build/app/outputs/flutter-apk/app-$mode.apk \
+             "output/myPlanet-flutter-$version-$branch-$mode.apk"
+          ls -al output
+          echo "ARTIFACT_NAME=myPlanet-flutter-$version-$branch-$mode" >> $GITHUB_ENV
+
+      - name: Upload APK as build artifact
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: flutter/output/*.apk
+          retention-days: 9
+          if-no-files-found: error
