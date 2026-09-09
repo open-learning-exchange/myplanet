@@ -7,6 +7,20 @@ import 'package:myplanet/repository/configurations_repository.dart';
 
 class MockPlanetApi extends Mock implements PlanetApi {}
 
+/// A mapper that throws, standing in for anything in `getMinApk`'s body that
+/// is not the per-candidate check. Nothing there throws today —
+/// `extractBaseUrl` swallows its own `FormatException` and the success branch
+/// re-derives a CouchDB URL that already parsed — so this is the only way to
+/// reach Kotlin's outer `catch` (`ConfigurationsRepositoryImpl.kt:302-305`),
+/// and a backstop nothing can exercise is indistinguishable from one that
+/// does not work.
+class _ThrowingUrlMapper extends ServerUrlMapper {
+  _ThrowingUrlMapper() : super(mappings: const {});
+
+  @override
+  UrlMapping processUrl(String url) => throw StateError('mapper exploded');
+}
+
 void main() {
   late MockPlanetApi api;
 
@@ -485,5 +499,86 @@ void main() {
       expect(result.reason, ConfigurationFailureReason.nationServerUnreachable);
       expect(result.diagnostic, contains('401'));
     });
+  });
+
+  group('a throwing check fails rather than escaping', () {
+    // Kotlin catches at three levels — per candidate URL, around `awaitAll`,
+    // and around the whole body (`ConfigurationsRepositoryImpl.kt:273-337`) —
+    // and every level returns a `Failure`. The port had none, so an exception
+    // propagated into the screen's `_connect`, which awaits it without a
+    // `try`: the spinner never cleared and nothing was ever said.
+    const url = 'https://planet.example.org';
+
+    test('an exception from the request becomes a failure', () async {
+      when(
+        () => api.getConfiguration('$url/versions'),
+      ).thenThrow(StateError('boom'));
+
+      final result = await buildRepository().getMinApk(url, '1234');
+
+      expect(result, isA<ConfigurationFailure>());
+      expect(
+        (result as ConfigurationFailure).reason,
+        ConfigurationFailureReason.nationServerUnreachable,
+      );
+      expect(result.diagnostic, contains('StateError'));
+    });
+
+    test('one throwing candidate does not discard the other\'s success', () {
+      // The two URLs are raced through `Future.wait`, which rejects as soon as
+      // any future does — so without the per-candidate catch a throwing
+      // primary would throw away a mirror that answered correctly. This is
+      // why Kotlin's catch sits inside `checkConfigurationUrl`.
+      const alternative = 'https://mirror.example.org';
+      when(
+        () => api.getConfiguration('$url/versions'),
+      ).thenThrow(StateError('boom'));
+      stubVersions(alternative, minApk: '0.1.0');
+      stubConfigurations('https://satellite:1234@mirror.example.org:443');
+
+      return expectLater(
+        buildRepository(
+          mappings: const {url: alternative},
+        ).getMinApk(url, '1234'),
+        completion(isA<ConfigurationSuccess>()),
+      );
+    });
+
+    test(
+      'a throw from outside the per-candidate check is caught too',
+      () async {
+        final repository = ConfigurationsRepository(api, _ThrowingUrlMapper());
+
+        final result = await repository.getMinApk(url, '1234');
+
+        expect(result, isA<ConfigurationFailure>());
+        expect(
+          (result as ConfigurationFailure).diagnostic,
+          contains('mapper exploded'),
+        );
+      },
+    );
+
+    test(
+      'a PIN that breaks the CouchDB URL is a failure, not a crash',
+      () async {
+        // `buildCouchDbUrl` raises `FormatException` by contract on a URL with
+        // no host, and the mapper derives the alternative rather than the user
+        // typing it, so the screen's validator never sees it.
+        const hostless = 'https://';
+        when(() => api.getConfiguration('$hostless/versions')).thenAnswer(
+          (_) async =>
+              NetworkSuccess<Map<String, dynamic>>({'minapk': '0.1.0'}),
+        );
+
+        final result = await buildRepository().getMinApk(hostless, '1234');
+
+        expect(result, isA<ConfigurationFailure>());
+        expect(
+          (result as ConfigurationFailure).diagnostic,
+          contains('FormatException'),
+        );
+      },
+    );
   });
 }

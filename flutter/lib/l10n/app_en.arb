@@ -16,6 +16,18 @@
   "@serverPinRejected": {
     "description": "Shown on the server-configuration screen when the server was reached but refused the satellite PIN. Hand-authored: the Kotlin app folds this case into its unreachable-server message and so has no string to derive from."
   },
+  "youWantToConnectToADifferentServer": "Are you sure you want to change the configuration? This action will clear the app data.",
+  "@youWantToConnectToADifferentServer": {
+    "description": "Confirmation shown when an already-configured device is pointed at a different Planet server; confirming wipes the local database. Port of `you_want_to_connect_to_a_different_server`."
+  },
+  "clearData": "Clear data",
+  "@clearData": {
+    "description": "Confirm button of the clear-data dialog. Port of `clear_data`."
+  },
+  "clearingData": "Clearing data\u2026",
+  "@clearingData": {
+    "description": "Shown while the local database and preferences are being wiped. Port of `clearing_data`."
+  },
   "syncToServer": "Sync to server:",
   "@syncToServer": {
     "description": "Header above the preconfigured Planet server list on the server-configuration screen. Derived from the Kotlin `sync_to_server`."

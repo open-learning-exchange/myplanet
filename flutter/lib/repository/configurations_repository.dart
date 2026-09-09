@@ -133,7 +133,39 @@ class ConfigurationsRepository {
   }
 
   /// Port of `ConfigurationsRepositoryImpl.getMinApk`.
+  ///
+  /// Kotlin wraps this in **two** layers of `try`/`catch`
+  /// (`ConfigurationsRepositoryImpl.kt:273-305`): an inner one around
+  /// `deferreds.awaitAll()` and an outer one around the whole body, both
+  /// returning `ConfigurationResult.Failure`. The port had neither, and the
+  /// consequence here was worse than in Kotlin rather than equal to it: an
+  /// exception propagated out of `getMinApk` into the screen's `_connect`,
+  /// which awaits it without a `try`, so `_isChecking` was never cleared and
+  /// the Connect button kept a spinner for ever with no message. Both throwing
+  /// paths are real — `ServerConfig.buildCouchDbUrl` raises `FormatException`
+  /// by contract, and `Uri.parse` raises on a malformed alternative URL, which
+  /// the screen's validator never sees because the mapper derives it.
+  ///
+  /// The one deliberate divergence: Kotlin's outer catch hardcodes
+  /// `device_couldn_t_reach_local_server` whatever the scheme, where this keeps
+  /// the protocol-derived reason [_failureReasonFor] already computes. Saying
+  /// "local server" about an `https://` host is a Kotlin slip, not behaviour to
+  /// reproduce.
   Future<ConfigurationResult> getMinApk(String url, String pin) async {
+    try {
+      return await _getMinApk(url, pin);
+    } catch (error) {
+      return ConfigurationFailure(
+        _failureReasonFor(url),
+        url,
+        diagnostic: UrlUtils.redactCredentials(
+          'configuration check: ${error.runtimeType}: $error',
+        ),
+      );
+    }
+  }
+
+  Future<ConfigurationResult> _getMinApk(String url, String pin) async {
     final mapping = _urlMapper.processUrl(url);
     final urlsToTry = <String>[
       url,
@@ -184,10 +216,29 @@ class ConfigurationsRepository {
   }
 
   /// Port of `checkConfigurationUrl`.
+  ///
+  /// Kotlin's whole body is one `try` returning `UrlCheckResult.Failure` on any
+  /// exception (`ConfigurationsRepositoryImpl.kt:308-309`), and that placement
+  /// is load-bearing rather than defensive: the two candidate URLs are raced,
+  /// so without a per-candidate catch one throwing candidate rejects the
+  /// `Future.wait` and discards a *successful* answer from the mirror.
   Future<_UrlCheckResult> _checkConfigurationUrl(
     String currentUrl,
     String pin,
   ) async {
+    try {
+      return await _checkUrl(currentUrl, pin);
+    } catch (error) {
+      return _UrlCheckFailure(
+        currentUrl,
+        diagnostic: UrlUtils.redactCredentials(
+          '$currentUrl: ${error.runtimeType}: $error',
+        ),
+      );
+    }
+  }
+
+  Future<_UrlCheckResult> _checkUrl(String currentUrl, String pin) async {
     final versionsResult = await _api.getConfiguration('$currentUrl/versions');
     if (versionsResult is! NetworkSuccess<Map<String, dynamic>>) {
       return _UrlCheckFailure(

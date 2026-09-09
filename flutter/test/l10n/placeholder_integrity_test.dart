@@ -465,12 +465,20 @@ void main() {
     // Kotlin folds a refused PIN into its unreachable-server string and has no
     // counterpart to derive from, and an English fallback beats machine
     // translating a sentence that tells someone their credential was rejected.
+    //
+    // The server-switch round adds three more per locale, again recovered
+    // rather than generated: `clearData`, `clearingData` and
+    // `youWantToConnectToADifferentServer` derive by name from Kotlin's
+    // `clear_data`/`clearing_data`/`you_want_to_connect_to_a_different_server`,
+    // the wipe dialog's button, progress text and message, all three of which
+    // ship human translations in every `values-*/strings.xml`. Counted from
+    // the tree after the derivation run. Nothing existing changed value.
     const humanReviewed = {
-      'ar': 429,
-      'es': 481,
-      'fr': 427,
-      'ne': 429,
-      'so': 429,
+      'ar': 432,
+      'es': 484,
+      'fr': 430,
+      'ne': 432,
+      'so': 432,
     };
 
     for (final code in locales) {

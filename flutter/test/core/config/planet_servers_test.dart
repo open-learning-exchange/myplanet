@@ -173,6 +173,40 @@ void main() {
       }
     });
 
+    test('hoists the configured server to the top when expanded', () {
+      // `getFilteredList` returns the list untouched when expanded
+      // (`ServerConfigUtils.kt:52`); the hoist is `refreshServerList`'s
+      // (`ServerDialogExtensions.kt:128-135`), and it is the arm the user
+      // actually sees, because tapping "show more" is what calls it.
+      final shown = planetServersToShow(
+        servers: servers(11),
+        showAdditional: true,
+        configuredHost: 'host7.example.org',
+      );
+      expect(shown.first.name, 'server 7');
+      // Hoisted, not duplicated: Kotlin filters the original position out.
+      expect(shown, hasLength(11));
+      expect(shown.where((s) => s.host == 'host7.example.org'), hasLength(1));
+      // Everything else keeps declaration order behind it.
+      expect(shown.skip(1).map((s) => s.name).take(3), <String>[
+        'server 0',
+        'server 1',
+        'server 2',
+      ]);
+    });
+
+    test('expanded leaves the order alone for an unknown or empty host', () {
+      for (final host in <String?>[null, '', 'host99.example.org']) {
+        final shown = planetServersToShow(
+          servers: servers(11),
+          showAdditional: true,
+          configuredHost: host,
+        );
+        expect(shown.map((s) => s.name).first, 'server 0');
+        expect(shown, hasLength(11));
+      }
+    });
+
     test('fewer servers than the fold is not padded or thrown over', () {
       expect(
         planetServersToShow(servers: servers(2), showAdditional: false),
@@ -197,6 +231,38 @@ void main() {
       );
       expect(hostWithoutScheme('planet.example.org'), 'planet.example.org');
       expect(hostWithoutScheme(''), '');
+    });
+
+    test('chains the two strips, in Kotlin\'s asymmetric order', () {
+      // `removeProtocol` is `removePrefix("https://").removePrefix("http://")`,
+      // so it strips both in that order and only that order.
+      expect(
+        hostWithoutScheme('https://http://planet.example.org'),
+        'planet.example.org',
+      );
+      expect(
+        hostWithoutScheme('http://https://planet.example.org'),
+        'https://planet.example.org',
+      );
+    });
+
+    test('removes nothing else — no slash, port, credentials or case', () {
+      expect(
+        hostWithoutScheme('https://planet.example.org/'),
+        'planet.example.org/',
+      );
+      expect(
+        hostWithoutScheme('http://192.168.1.73:5984'),
+        '192.168.1.73:5984',
+      );
+      expect(
+        hostWithoutScheme('https://satellite:1983@planet.example.org:443'),
+        'satellite:1983@planet.example.org:443',
+      );
+      expect(
+        hostWithoutScheme('HTTPS://planet.example.org'),
+        'HTTPS://planet.example.org',
+      );
     });
   });
 }
