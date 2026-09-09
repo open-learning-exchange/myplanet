@@ -115,21 +115,21 @@ class FeedbackRepositoryImpl implements FeedbackRepository {
   Future<void> insertFromJson(List<Map<String, dynamic>> docs) async {
     // A row with an unconfirmed local reply must keep its messages through
     // the sync, so the mapper needs the stored row to compare against.
-    final ids = docs
-        .map((doc) => doc['_id'] as String? ?? doc['id'] as String? ?? '')
-        .where((id) => id.isNotEmpty)
-        .toList(growable: false);
+    // The id is derived through `FeedbackMapper.idOf` on both sides. A raw
+    // `as String?` here threw on a document whose `_id` was not a plain
+    // string, and deriving it twice by hand risked the lookup missing the
+    // very row whose pending reply the mapper has to keep.
+    final ids = docs.map(FeedbackMapper.idOf).toList(growable: false);
     final existingById = {
-      for (final row in await feedbackDao.getByIds(ids)) row.id: row,
+      for (final row in await feedbackDao.getByIds(
+        ids.where((id) => id.isNotEmpty).toList(growable: false),
+      ))
+        row.id: row,
     };
-    final companions = docs
-        .map(
-          (doc) => FeedbackMapper.fromDoc(
-            doc,
-            existingById[doc['_id'] as String? ?? doc['id'] as String? ?? ''],
-          ),
-        )
-        .toList();
+    final companions = [
+      for (var i = 0; i < docs.length; i++)
+        FeedbackMapper.fromDoc(docs[i], existingById[ids[i]]),
+    ];
     await feedbackDao.upsertAll(companions);
   }
 
@@ -193,7 +193,10 @@ class FeedbackRepositoryImpl implements FeedbackRepository {
         final doc = JsonUtils.getObject('doc', row);
         if (doc != null) {
           docs.add(doc);
-          final id = JsonUtils.getString('_id', doc);
+          // Through `idOf`, like the row key: `deleteNotIn` spares what is in
+          // this set, so a document the mapper stores under a key this set
+          // does not hold is inserted and then deleted in the same sync.
+          final id = FeedbackMapper.idOf(doc);
           if (id.isNotEmpty) savedIds.add(id);
         }
       }

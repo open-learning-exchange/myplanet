@@ -1,4 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:myplanet/core/config/server_config.dart';
+import 'package:myplanet/core/network/network_result.dart';
+import 'package:myplanet/core/sync/sync_result.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/data/api/planet_api.dart';
@@ -9,6 +12,12 @@ import 'package:myplanet/repository/feedback_repository_impl.dart';
 class MockPlanetApi extends Mock implements PlanetApi {}
 
 void main() {
+  const config = ServerConfig(
+    serverUrl: 'https://planet.example',
+    couchDbUrl: 'https://satellite:1234@planet.example:443',
+    pin: '1234',
+  );
+
   late AppDatabase database;
   late FeedbackRepositoryImpl repository;
   late MockPlanetApi api;
@@ -186,6 +195,42 @@ void main() {
     expect(stored!.isUploaded, isTrue);
     final parsed = FeedbackMapper.parseMessages(stored.messages);
     expect(parsed.map((m) => m.message), contains('server reply'));
+  });
+
+  test('the sync keeps a document the mapper stored under its `id`', () async {
+    // Writer and reader of the same id, driven together. `deleteNotIn` spares
+    // what the walk collected, so a document the mapper keys one way and the
+    // keep set derives another way is inserted and deleted inside one sync —
+    // and the row would be gone with no error anywhere. The second document
+    // is what makes the keep set non-empty, since the cleanup is skipped when
+    // it collected nothing at all.
+    when(
+      () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer((invocation) async {
+      final url = invocation.positionalArguments[0] as String;
+      if (url.contains('limit=0')) {
+        return const NetworkSuccess<Map<String, dynamic>>({'total_rows': 2});
+      }
+      return const NetworkSuccess<Map<String, dynamic>>({
+        'rows': [
+          {
+            'doc': {'_id': 'fb-normal', '_rev': '1-a', 'title': 'ordinary'},
+          },
+          {
+            'doc': {'id': 'fb-legacy', '_rev': '1-b', 'title': 'keyed by id'},
+          },
+        ],
+      });
+    });
+
+    final result = await repository.sync(config: config);
+
+    expect(result, isA<SyncComplete>());
+    final stored = await database.feedbackDao.watchAllSorted().first;
+    expect(
+      stored.map((row) => row.id),
+      containsAll(['fb-normal', 'fb-legacy']),
+    );
   });
 
   test(
