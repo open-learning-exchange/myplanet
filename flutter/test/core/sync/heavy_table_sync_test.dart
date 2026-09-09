@@ -14,10 +14,6 @@ import '../../support/mock_planet_api.dart';
 /// claims to pin was flipped and the test confirmed red. Where a mutation is
 /// not obvious the test says which one it survives, because a test that cannot
 /// fail reads as coverage.
-/// Stands in for the 1s/2s/4s page backoff so the retry tests cost no
-/// wall-clock time; the delays themselves are pinned as a constant.
-Future<void> _noSleep(Duration _) async {}
-
 void main() {
   const config = ServerConfig(
     serverUrl: 'https://planet.example.org',
@@ -492,3 +488,9 @@ void main() {
     });
   });
 }
+
+/// Stands in for the 1s/2s/4s page backoff so the retry tests cost no
+/// wall-clock time. The delays themselves are pinned as a constant instead —
+/// the real ones would add ~28 seconds of wall clock across the failure cases,
+/// and a test that looks like a hang is this project's most expensive kind.
+Future<void> _noSleep(Duration _) async {}
