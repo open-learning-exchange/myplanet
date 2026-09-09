@@ -237,6 +237,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             runBestEffort("SecurePrefs.warmUp") { SecurePrefs.warmUp(this@MainApplication) }
             runBestEffort("MarkdownUtils.warmUp") { MarkdownUtils.warmUp(this@MainApplication) }
             runBestEffort("Utilities.warmUp") { Utilities.warmUp() }
+            runBestEffort("defaultPref.warmUp") { defaultPref }
             runBestEffort("GifInfoHandle preload") { Class.forName("pl.droidsonroids.gif.GifInfoHandle") }
         }
         applicationScope.launch {
