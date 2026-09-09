@@ -48,6 +48,14 @@ open class TagEntity {
         )
     }
 
+    fun matches(other: TagEntity): Boolean {
+        return if (id.isNotEmpty() && other.id.isNotEmpty()) {
+            id == other.id
+        } else {
+            !name.isNullOrEmpty() && name == other.name
+        }
+    }
+
     companion object {
         fun getTagsArray(list: List<TagEntity>): JsonArray {
             val array = JsonArray()
