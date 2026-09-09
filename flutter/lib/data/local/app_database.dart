@@ -265,7 +265,9 @@ class AppDatabase extends _$AppDatabase {
     // used to claim ("the step tile is gone with the course"). Phase 143's own
     // implementation audit retracted that, and the retraction reached the
     // notes and not this copy of the sentence: `surveysProvider` filters
-    // `watchAll()` through [SurveysRepository.individualSurveys], whose
+    // its `watchAll()` stream against the ids [SurveysRepository
+    // .individualSurveys] returns (which reads `allRows()`, not the stream —
+    // the composition is the provider's), whose
     // predicate is `!row.teamShareAllowed && (row.teamId ?? '').isEmpty` —
     // **no `stepId` or `courseId` test at all**. A course-embedded survey
     // arrives with neither key set (`SurveyMapper.fromCourseDoc` reads
@@ -3774,7 +3776,7 @@ class NewsDao extends DatabaseAccessor<AppDatabase> with _$NewsDaoMixin {
   /// passes a non-null `userId`.
   ///
   /// Counterpart of `NewsDao.countDistinctCommunityVoiceDatesForUser`
-  /// (`NewsDao.kt:67-73`) — the same statement with `AND userId = :userId`.
+  /// (`NewsDao.kt:67-72`) — the same statement with `AND userId = :userId`.
   /// Everything [getInTimeRange]'s comment says about the missing community
   /// filter and the absent top-level predicate applies here too; the two
   /// statements are separate in both apps.
@@ -4180,7 +4182,7 @@ class HealthExaminationDao extends DatabaseAccessor<AppDatabase>
   /// **A null [rev] leaves the stored revision alone.** This method collapses
   /// Kotlin's two overloads into one, and the collapse has to keep the
   /// null-rev semantics of the one the app actually calls:
-  /// `HealthRepositoryImpl.markHealthExaminationsUploaded` (`:66-69`) passes a
+  /// `HealthRepositoryImpl.markHealthExaminationsUploaded` (`:67-69`) passes a
   /// `Map<String, String?>` to the `@Transaction`
   /// `HealthExaminationDao.markUploaded(idToRevMap)` (`:36-46`), which
   /// **partitions** the map and sends the null-rev ids to
