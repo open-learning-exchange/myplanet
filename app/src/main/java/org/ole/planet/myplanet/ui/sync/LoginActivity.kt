@@ -579,7 +579,8 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     }
     override fun onItemClick(user: User) {
         if (user.password?.isEmpty() == true && user.source != "guest") {
-            ImageUtils.loadPlaceholderImage(user.image, binding.userProfile)
+            val avatarSize = binding.userProfile.context.resources.getDimensionPixelSize(R.dimen._80dp)
+            ImageUtils.loadPlaceholderImage(user.image, binding.userProfile, avatarSize)
 
             binding.inputName.setText(user.name)
         } else {
