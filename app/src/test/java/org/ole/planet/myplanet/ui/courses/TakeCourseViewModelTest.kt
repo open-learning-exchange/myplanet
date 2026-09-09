@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.RatingEntry
 import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.RatingsRepository
-import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -34,7 +34,7 @@ class TakeCourseViewModelTest {
 
     private val coursesRepository: CoursesRepository = mockk()
     private val progressRepository: ProgressRepository = mockk()
-    private val userSessionManager: UserSessionManager = mockk()
+    private val userRepository: UserRepository = mockk()
     private val ratingsRepository: RatingsRepository = mockk()
 
     private lateinit var viewModel: TakeCourseViewModel
@@ -47,7 +47,7 @@ class TakeCourseViewModelTest {
         currentProgress: Int = 0,
         user: UserEntity? = UserEntity().apply { id = "user_1" }
     ) {
-        coEvery { userSessionManager.getUserModel() } returns user
+        coEvery { userRepository.getUserModel() } returns user
         coEvery { coursesRepository.getCourseById(courseId) } returns course
         coEvery { coursesRepository.getCourseSteps(courseId) } returns steps
         coEvery { progressRepository.getCourseProgress(listOf(courseId), user?.id) } returns
@@ -56,7 +56,7 @@ class TakeCourseViewModelTest {
 
     @Before
     fun setUp() {
-        viewModel = TakeCourseViewModel(coursesRepository, progressRepository, userSessionManager, ratingsRepository)
+        viewModel = TakeCourseViewModel(coursesRepository, progressRepository, userRepository, ratingsRepository)
     }
 
     @Test

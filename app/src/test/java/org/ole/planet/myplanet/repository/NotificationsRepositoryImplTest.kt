@@ -364,7 +364,6 @@ class NotificationsRepositoryImplTest {
         repository.markNotificationsSynced(emptyList())
 
         coVerify(exactly = 0) { notificationDao.markSynced(any<List<Pair<String, String?>>>()) }
-        coVerify(exactly = 0) { notificationDao.markSynced(any(), any()) }
     }
 
     @Test

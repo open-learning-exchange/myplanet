@@ -11,7 +11,16 @@ import com.google.gson.JsonArray
  * shared [org.ole.planet.myplanet.data.room.Converters]. Persistence goes through
  * [org.ole.planet.myplanet.data.room.dao.TagDao].
  */
-@Entity(tableName = "tag", indices = [Index("name"), Index("tagId"), Index("db")])
+@Entity(
+    tableName = "tag",
+    indices = [
+        Index("name"),
+        Index("tagId"),
+        Index("db"),
+        Index("linkId"),
+        Index(value = ["db", "linkId"])
+    ]
+)
 open class TagEntity {
     // @JvmField on id/_id so Room does not see ambiguous getId/get_id accessors.
     @PrimaryKey
@@ -37,6 +46,14 @@ open class TagEntity {
             id = this.id,
             name = this.name
         )
+    }
+
+    fun matches(other: TagEntity): Boolean {
+        return if (id.isNotEmpty() && other.id.isNotEmpty()) {
+            id == other.id
+        } else {
+            !name.isNullOrEmpty() && name == other.name
+        }
     }
 
     companion object {

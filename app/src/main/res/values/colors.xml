@@ -72,7 +72,6 @@
     <color name="dashboard_accent_blue">#1976D2</color>
     <color name="dashboard_sync_banner_bg">#E3F2FD</color>
 
-    <!-- myLibrary / myCourses cover-first redesign -->
     <color name="card_border">#E8E2D5</color>
     <color name="chip_selected_bg">#E3F2FD</color>
     <color name="chip_selected_border">#1976D2</color>
@@ -98,4 +97,10 @@
     <color name="list_status_in_progress_text">#8A6400</color>
     <color name="list_status_not_started_bg">#F4EFE6</color>
     <color name="list_status_not_started_text">#807868</color>
+
+    <color name="profile_avatar_ring">#E6FFFFFF</color>
+    <color name="profile_text_on_primary_secondary">#D1FFFFFF</color>
+    <color name="profile_button_stroke_on_primary">#B3FFFFFF</color>
+    <color name="profile_button_fill_on_primary">#1FFFFFFF</color>
+    <color name="profile_guest_pill_bg">#29FFFFFF</color>
 </resources>

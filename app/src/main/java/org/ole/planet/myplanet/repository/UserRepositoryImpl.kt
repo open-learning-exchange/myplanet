@@ -462,19 +462,22 @@ class UserRepositoryImpl @Inject constructor(
         }
 
         val model = getUserByAnyId(userId) ?: return
-        payload.keySet().forEach { key ->
-            when (key) {
-                "firstName" -> model.firstName = payload.get(key).asString
-                "lastName" -> model.lastName = payload.get(key).asString
-                "middleName" -> model.middleName = payload.get(key).asString
-                "email" -> model.email = payload.get(key).asString
-                "language" -> model.language = payload.get(key).asString
-                "phoneNumber" -> model.phoneNumber = payload.get(key).asString
-                "birthDate" -> model.dob = payload.get(key).asString
-                "birthPlace" -> model.birthPlace = payload.get(key).asString
-                "level" -> model.level = payload.get(key).asString
-                "gender" -> model.gender = payload.get(key).asString
-                "age" -> model.age = payload.get(key).asString
+        payload.entrySet().forEach { (key, value) ->
+            if (value != null && !value.isJsonNull && value.isJsonPrimitive) {
+                val strValue = value.asString
+                when (key) {
+                    "firstName" -> model.firstName = strValue
+                    "lastName" -> model.lastName = strValue
+                    "middleName" -> model.middleName = strValue
+                    "email" -> model.email = strValue
+                    "language" -> model.language = strValue
+                    "phoneNumber" -> model.phoneNumber = strValue
+                    "birthDate" -> model.dob = strValue
+                    "birthPlace" -> model.birthPlace = strValue
+                    "level" -> model.level = strValue
+                    "gender" -> model.gender = strValue
+                    "age" -> model.age = strValue
+                }
             }
         }
         model.isUpdated = true
