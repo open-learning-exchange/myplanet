@@ -37,7 +37,6 @@
     <dimen name="profile_name_text_size">22sp</dimen>
     <dimen name="profile_detail_text_size">16sp</dimen>
 
-    <!-- User profile — blue banner redesign -->
     <dimen name="profile_banner_padding_top">20dp</dimen>
     <dimen name="profile_banner_padding_bottom">44dp</dimen>
     <dimen name="profile_banner_gap">10dp</dimen>
@@ -77,7 +76,6 @@
     <dimen name="profile_label_text_size">13sp</dimen>
     <dimen name="profile_stat_value_max_width">200dp</dimen>
 
-    <!-- Edit profile dialog -->
     <dimen name="profile_dialog_max_width">620dp</dimen>
     <dimen name="profile_dialog_header_padding">14dp</dimen>
     <dimen name="profile_dialog_title_text_size">18sp</dimen>
@@ -95,7 +93,6 @@
     <dimen name="profile_dialog_gender_row_height">44dp</dimen>
     <dimen name="profile_dialog_label_text_size">12sp</dimen>
 
-    <!-- Photo picker bottom sheet -->
     <dimen name="profile_sheet_corner_radius">12dp</dimen>
     <dimen name="profile_sheet_title_text_size">16sp</dimen>
     <dimen name="profile_sheet_row_min_height">56dp</dimen>
@@ -115,7 +112,7 @@
     <dimen name="dashboard_chip_icon_size">16dp</dimen>
     <dimen name="dashboard_page_padding">12dp</dimen>
     <dimen name="dashboard_tile_gap">12dp</dimen>
-    <!-- Small-phone tier (sw &lt; 360dp); values-sw360dp/values-sw600dp override per breakpoint -->
+
     <dimen name="dashboard_tile_color_block_width">72dp</dimen>
     <dimen name="dashboard_chip_width">92dp</dimen>
     <dimen name="dashboard_rail_width">182dp</dimen>
