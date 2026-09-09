@@ -7,6 +7,7 @@ import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/core/network/network_result.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
+import 'package:myplanet/data/local/health_models.dart';
 import 'package:myplanet/repository/health_repository.dart';
 import 'package:myplanet/repository/health_uploader.dart';
 import 'package:myplanet/repository/outbox_drainer.dart';
@@ -279,6 +280,58 @@ void main() {
     );
   });
 
+  test('a stale profile revision is recovered instead of stranded', () async {
+    // Phase 152's headline, end to end through the real drain path.
+    //
+    // The profile blob is re-saved on every examination save under a stable
+    // `_id`, so once published its next write is an update — and
+    // `cacheDocuments` skips a locally dirty row
+    // (`health_repository.dart:772`), so nothing on the device can refresh
+    // the revision it carries. Before the recovery arm, a revision that went
+    // stale on another handset stranded every subsequent edit on this one,
+    // for the life of the install.
+    await repository.saveHealthProfileBlob(
+      patientId,
+      HealthRepository.initHealth(),
+    );
+    await queueAndDrain();
+    expect((await repository.getById(patientId))!.rev, isNotNull);
+
+    // Another clinician writes the same document, so this device's stored
+    // revision is now behind.
+    couch.documents[patientId] = {
+      ...couch.documents[patientId]!,
+      '_rev': '99-elsewhere',
+    };
+
+    // This device edits the profile again.
+    await repository.saveHealthProfileBlob(
+      patientId,
+      MyHealth(
+        profile: MyHealthProfile(emergencyContactName: 'Grace'),
+        userKey: HealthRepository.initHealth().userKey,
+        lastExamination: DateTime.now().millisecondsSinceEpoch,
+      ),
+    );
+    final postsBefore = couch.postCount;
+
+    await queueAndDrain();
+
+    // One GET and one re-send: the edit is on the server, not merely
+    // reported as delivered.
+    expect(couch.getCount, 1);
+    expect(couch.postCount, postsBefore + 2);
+    expect(couch.documents[patientId]!['_rev'], isNot('99-elsewhere'));
+    final stored = await repository.getById(patientId);
+    expect(stored!.isUpdated, isFalse);
+    expect(stored.rev, couch.documents[patientId]!['_rev']);
+    // And the queue is empty — no memo, because nothing was refused.
+    expect(
+      await database.outboxDao.forItem(HealthUploader.type, patientId),
+      isEmpty,
+    );
+  });
+
   test('creatorId is serialized from profileId, as Kotlin does', () async {
     // `JsonUtils.addString(object, "creatorId", health.profileId)`
     // (`HealthExamination.kt:111`). The columns are equal for anything either
@@ -351,6 +404,21 @@ class _FakeCouchDb extends Mock implements PlanetApi {
       (invocation) async =>
           _post(invocation.positionalArguments[1] as Map<String, dynamic>),
     );
+    // The document read the 409 recovery arm makes. Without it the arm's
+    // fetch would throw and the tests below would pass because of
+    // `ConflictRecovery`'s guard rather than because a create-conflict stands
+    // as a refusal — which is the thing they are meant to pin.
+    when(
+      () => getJsonObject(any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer((invocation) async {
+      getCount++;
+      final url = invocation.positionalArguments[0] as String;
+      final id = Uri.decodeComponent(url.split('/').last);
+      final doc = documents[id];
+      return doc == null
+          ? const NetworkError(404, 'not_found')
+          : NetworkSuccess({'_id': id, ...doc});
+    });
   }
 
   final Map<String, Map<String, dynamic>> documents = {};
@@ -359,6 +427,10 @@ class _FakeCouchDb extends Mock implements PlanetApi {
   /// Every POST that reached this fake, so a test can assert that a refused
   /// request was not asked a second time.
   var postCount = 0;
+
+  /// Every document read, so a test can tell a recovery that was attempted
+  /// from one that never fired.
+  var getCount = 0;
 
   /// Answers an accepted write with `id` and no `rev` — the shape
   /// `HealthUploader`'s handler refuses to interpret.

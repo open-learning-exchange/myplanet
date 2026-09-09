@@ -82,10 +82,17 @@ class SubmissionsUploader {
   }
 
   OutboxHandler get handler => (row, payload, authHeader) async {
-    final result = await _api.postJsonObject(
-      row.endpoint,
-      payload,
+    // The 409 arm. An answer sheet edited after its first upload is an update, and
+    // adopting would clear `uploaded`/`isUpdated` with the learner's added
+    // answers still on the handset.
+    // See [ConflictRecovery] for why a create stands as a refusal instead.
+    final result = await ConflictRecovery.send(
+      api: _api,
+      documentUrl: ConflictRecovery.documentUrlUnder(row.endpoint, payload),
+      payload: payload,
       authHeader: authHeader,
+      attempt: (body) =>
+          _api.postJsonObject(row.endpoint, body, authHeader: authHeader),
     );
     if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
       final couchId = data['id'];

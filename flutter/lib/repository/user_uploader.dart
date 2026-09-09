@@ -157,10 +157,21 @@ class UserUploader {
       }
     }
 
-    final result = await _api.putJsonObject(
-      row.endpoint,
-      body,
+    // The 409 arm, which here closes a race this handler opens itself: the
+    // `_rev` above was fetched moments ago, so a conflict means another write
+    // landed in between and the profile edit — name, photo — would otherwise
+    // be dropped with `isUpdated` cleared. The `_users` endpoint *is* the
+    // document URL, so no id derivation is needed. A creation carries no
+    // `_rev` and so stands as a refusal, which is right: a 409 on a create
+    // here means the account already exists and this device has never
+    // published it.
+    final result = await ConflictRecovery.send(
+      api: _api,
+      documentUrl: row.endpoint,
+      payload: body,
       authHeader: authHeader,
+      attempt: (sent) =>
+          _api.putJsonObject(row.endpoint, sent, authHeader: authHeader),
     );
     if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
       final id = data['id'];

@@ -196,10 +196,25 @@ class ConflictRecovery {
     // The drain's credential, not none: `outbox.endpoint` is stored
     // credential-free on purpose, so an unauthenticated read of a CouchDB
     // document is a 401 and this recovery would never fire.
-    final existing = await api.getJsonObject(
-      documentUrl,
-      authHeader: authHeader,
-    );
+    //
+    // The `try` is load-bearing rather than defensive, and it is the one part
+    // of this class that exists to protect Phase 148's policy rather than to
+    // extend it. `OutboxDrainer._send` wraps a handler in a catch-all and
+    // treats a throw as **transient** — correctly, since a throw is not
+    // evidence the server refused anything. But the server *has* refused
+    // something here: the 409 is already in hand. Letting a failed recovery
+    // throw out of the handler would relabel a terminal rejection as a
+    // retryable failure, and the row would be re-offered on every sweep until
+    // its attempts ran out — the accretion Phase 148 removed, re-entering
+    // through the recovery arm. `PlanetApi` returns a `NetworkException`
+    // rather than throwing, so this is not reachable through it; a fake or a
+    // future transport that throws would reach it.
+    final NetworkResult<Map<String, dynamic>> existing;
+    try {
+      existing = await api.getJsonObject(documentUrl, authHeader: authHeader);
+    } catch (_) {
+      return first;
+    }
     if (existing is! NetworkSuccess<Map<String, dynamic>>) return first;
 
     final rev = existing.data['_rev'];

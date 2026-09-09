@@ -52,10 +52,16 @@ class CourseProgressUploader {
   }
 
   OutboxHandler get handler => (row, payload, authHeader) async {
-    final result = await _api.postJsonObject(
-      row.endpoint,
-      payload,
+    // The 409 arm. A divergence from Kotlin worth noting: `serializeProgress` there emits no
+    // `_id` at all, so the Kotlin path can never conflict. The port's does.
+    // See [ConflictRecovery] for why a create stands as a refusal instead.
+    final result = await ConflictRecovery.send(
+      api: _api,
+      documentUrl: ConflictRecovery.documentUrlUnder(row.endpoint, payload),
+      payload: payload,
       authHeader: authHeader,
+      attempt: (body) =>
+          _api.postJsonObject(row.endpoint, body, authHeader: authHeader),
     );
     if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
       final remoteId = data['id']?.toString();

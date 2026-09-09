@@ -48,10 +48,16 @@ class TeamTasksUploader {
   }
 
   OutboxHandler get handler => (row, payload, authHeader) async {
-    final result = await _api.postJsonObject(
-      row.endpoint,
-      payload,
+    // The 409 arm. `pending()` is `isUpdated = true` unfiltered, so a rescheduled task that
+    // already has a `docId` is an ordinary update here.
+    // See [ConflictRecovery] for why a create stands as a refusal instead.
+    final result = await ConflictRecovery.send(
+      api: _api,
+      documentUrl: ConflictRecovery.documentUrlUnder(row.endpoint, payload),
+      payload: payload,
       authHeader: authHeader,
+      attempt: (body) =>
+          _api.postJsonObject(row.endpoint, body, authHeader: authHeader),
     );
     if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
       final id = data['id'];

@@ -181,6 +181,20 @@ void main() {
     expect(r.sent, hasLength(2));
   });
 
+  test('a fetch that throws leaves the refusal terminal', () async {
+    // `OutboxDrainer._send` treats a throw as transient, so an unguarded
+    // recovery would relabel a rejection the server has already made as a
+    // retryable failure and re-offer the row on every sweep — Phase 148's
+    // accretion, re-entering through the recovery arm.
+    final r = recorder([conflict]);
+    when(
+      () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+    ).thenThrow(StateError('transport blew up'));
+
+    expect((await run(r) as NetworkError).code, 409);
+    expect(r.sent, hasLength(1));
+  });
+
   group('a create conflict', () {
     const create = {'_id': 'patient-1', 'pulse': 70};
 

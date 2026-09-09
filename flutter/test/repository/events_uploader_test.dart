@@ -77,6 +77,80 @@ void main() {
     expect(uploaded?.meetupIdRev, '1-abc');
   });
 
+  test('an edited meetup conflicting on its revision is re-sent', () async {
+    // Once `meetupId` is set the payload names its document
+    // (`events_repository.dart:245-247`), so a second edit against a revision
+    // another device has moved past is a 409. Adopting would report the edit
+    // delivered with it still on the handset.
+    await events.create(
+      title: 'Meetup',
+      description: 'First',
+      startDate: 0,
+      endDate: 0,
+      startTime: '',
+      endTime: '',
+      location: '',
+      link: '',
+      recurring: 'none',
+      creator: 'Ada',
+    );
+    final created = (await events.pendingUploads()).single;
+    await events.markUploaded(created.id, 'remote-1', '1-abc');
+    await events.update(
+      created.id,
+      title: 'Meetup',
+      description: 'Second',
+      startDate: 0,
+      endDate: 0,
+      startTime: '',
+      endTime: '',
+      location: '',
+      link: '',
+      recurring: 'none',
+    );
+
+    await uploader.queuePending(config: config, userId: 'user-1');
+    final operation = (await outbox.due()).single;
+    final payload = jsonDecode(operation.payload) as Map<String, dynamic>;
+    expect(payload['_id'], 'remote-1');
+    expect(payload['_rev'], '1-abc', reason: 'an update, not a create');
+
+    final sent = <Map<String, dynamic>>[];
+    when(
+      () => api.postJsonObject(
+        any(),
+        any(),
+        authHeader: any(named: 'authHeader'),
+      ),
+    ).thenAnswer((invocation) async {
+      final body = Map<String, dynamic>.from(
+        invocation.positionalArguments[1] as Map<String, dynamic>,
+      );
+      sent.add(body);
+      return body['_rev'] == '5-server'
+          ? NetworkSuccess<Map<String, dynamic>>({
+              'id': 'remote-1',
+              'rev': '6-z',
+            })
+          : const NetworkError<Map<String, dynamic>>(409, 'conflict');
+    });
+    when(
+      () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer(
+      (_) async => NetworkSuccess<Map<String, dynamic>>({
+        '_id': 'remote-1',
+        '_rev': '5-server',
+      }),
+    );
+
+    final result = await uploader.handler(operation, payload, 'auth');
+
+    expect(result, isA<NetworkSuccess<Map<String, dynamic>>>());
+    expect(sent, hasLength(2));
+    expect(sent[1]['description'], 'Second');
+    expect((await events.getById(created.id))?.meetupIdRev, '6-z');
+  });
+
   test('queues an endpoint that carries no credentials', () async {
     // The endpoint is persisted in `outbox.endpoint`, and that table survives
     // schema upgrades, so a `satellite:PIN@` userinfo would leave the server
