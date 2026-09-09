@@ -84,6 +84,17 @@ class UploadRepositoryImplTest {
     }
 
     @Test
+    fun `markUploaded with empty succeeded list returns empty list`() = runTest {
+        val failed = repository.markUploaded(
+            UploadUpdateContract(UploadUpdateType.Exams),
+            emptyList()
+        )
+
+        assertEquals(emptyList<UploadedItemResult>(), failed)
+        coVerify(exactly = 0) { examDao.getByIds(any()) }
+    }
+
+    @Test
     fun `markUploaded updates exams and returns missing exams as failures`() = runTest {
         val existingExam = StepExam(id = "exam-1")
         coEvery { examDao.getByIds(listOf("exam-1", "exam-missing")) } returns listOf(existingExam)
@@ -175,5 +186,53 @@ class UploadRepositoryImplTest {
 
         assertEquals(expectedResponse, result)
         coVerify(exactly = 1) { apiInterface.uploadResource(any(), any(), any()) }
+    }
+
+    @Test
+    fun `uploadAttachment resolves correct mime type for pdf, jpg, png and extensionless files`() = runTest {
+        val testCases = listOf(
+            "test_file.pdf" to "application/pdf",
+            "test_file.jpg" to "image/jpeg",
+            "test_file.png" to "image/png"
+        )
+
+        for ((fileName, expectedMime) in testCases) {
+            val suffix = fileName.substring(fileName.lastIndexOf("."))
+            val prefix = fileName.substring(0, fileName.lastIndexOf("."))
+            val file = java.io.File.createTempFile(prefix, suffix)
+            file.writeText("test content")
+            file.deleteOnExit()
+
+            val slot = io.mockk.slot<Map<String, String>>()
+            coEvery { apiInterface.uploadResource(capture(slot), any(), any()) } returns mockk()
+
+            repository.uploadAttachment(
+                file = file,
+                destinationFormat = "%s/%s/%s",
+                id = "doc-1",
+                rev = "rev-1",
+                name = fileName
+            )
+
+            assertEquals(expectedMime, slot.captured["Content-Type"])
+        }
+
+        val extensionlessFile = java.io.File(System.getProperty("java.io.tmpdir"), "extensionless_test_file")
+        extensionlessFile.createNewFile()
+        extensionlessFile.writeText("test content")
+        extensionlessFile.deleteOnExit()
+
+        val slot = io.mockk.slot<Map<String, String>>()
+        coEvery { apiInterface.uploadResource(capture(slot), any(), any()) } returns mockk()
+
+        repository.uploadAttachment(
+            file = extensionlessFile,
+            destinationFormat = "%s/%s/%s",
+            id = "doc-1",
+            rev = "rev-1",
+            name = "extensionless_test_file"
+        )
+
+        assertEquals("application/octet-stream", slot.captured["Content-Type"])
     }
 }
