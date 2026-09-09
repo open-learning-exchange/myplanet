@@ -49,4 +49,16 @@ class NetworkModuleTest {
         assertEquals(20, okHttpClient.dispatcher.maxRequestsPerHost)
         assertNotNull(okHttpClient.connectionPool)
     }
+
+    @Test
+    fun `provideReachabilityOkHttpClient probes with short timeouts and no retries`() {
+        val okHttpClient = NetworkModule.provideReachabilityOkHttpClient()
+
+        assertEquals(5_000, okHttpClient.connectTimeoutMillis)
+        assertEquals(5_000, okHttpClient.readTimeoutMillis)
+        assertTrue(
+            "A reachability probe must not retry, or an unreachable server takes tens of seconds to report",
+            okHttpClient.interceptors.none { it is RetryInterceptor }
+        )
+    }
 }
