@@ -234,6 +234,11 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
     // With the shelf push, ahead of the pulls. See [queuePendingSubmissions].
     await queuePendingSubmissions();
 
+    // The foreground half of Kotlin's two `uploadResource` sweep sites (the
+    // other is `background_entrypoint`'s `drainOutbox`). Wired at integration:
+    // the lane that wrote the uploader owned neither file.
+    await queuePendingResources();
+
     for (final area in DashboardSyncArea.values) {
       await _syncArea(area);
     }
@@ -551,6 +556,44 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
           .drain(authHeader: PersonalsUploader.authHeaderFor(config));
     } catch (_) {
       // Deliberately ignored — see above.
+    }
+  }
+
+  /// The safety net for a resource this device authored but never sent.
+  ///
+  /// `add_resource_screen` enqueues on every save, so this sweep exists for
+  /// the save whose enqueue never ran -- a process death between the row write
+  /// and the outbox row, or a `queuePending` that threw. Kotlin has the same
+  /// belt and braces: `uploadResource` is called unconditionally from
+  /// `AutoSyncWorker:129` and `UserDataWorker:84` as well as from the write
+  /// path. **Without this the port had write-time call sites only**, which is
+  /// the shape Phase 134 found for answer sheets: every layer had passing
+  /// tests and nothing asked whether the sweep knew about the write.
+  ///
+  /// Shape follows [queuePendingVoices] deliberately, including the awaited
+  /// session -- this notifier never watches `sessionProvider`, so
+  /// `.valueOrNull` would be null on any pass that reached here first, and the
+  /// future can reject where it could not.
+  ///
+  /// A null user is **not** an early return, matching
+  /// [sweepPendingResources]: Kotlin passes `user?.id` and `user?.planetCode`
+  /// straight through, so a handset whose session has gone still sends the
+  /// resource minus its attribution -- and that handset is exactly the one
+  /// likely to be holding a stranded write.
+  Future<void> queuePendingResources() async {
+    final config = ref.read(serverConfigProvider);
+    if (config == null) return;
+    try {
+      final user = await ref.read(sessionProvider.future);
+      await ref
+          .read(resourcesUploaderProvider)
+          .queuePending(config: config, user: user);
+      await ref
+          .read(outboxDrainerProvider)
+          .drain(authHeader: PersonalsUploader.authHeaderFor(config));
+    } catch (_) {
+      // Deliberately ignored, for the reason [queuePendingVoices] gives: a
+      // throwing safety net must not flip a successful sync to failed.
     }
   }
 

@@ -256,6 +256,117 @@ void main() {
       completes,
     );
   });
+
+  /// **Reachability, not behaviour.** Every test above drives
+  /// [sweepPendingResources] directly, which is exactly the shape Phase 113
+  /// warned about and Phase 119 found four instances of: a function ported,
+  /// tested and green while nothing in the app calls it. When this file was
+  /// written `background_entrypoint.dart` and `dashboard_sync_provider.dart`
+  /// belonged to other lanes, so the sweep shipped with **no caller at all**
+  /// and the two call sites were reported rather than made. They were wired at
+  /// integration, and these two tests are what stop them being lost again.
+  ///
+  /// The source is read rather than the wiring built, for the reason
+  /// `pending_submissions_sweep_test` gives: `executeBackgroundTask` needs a
+  /// Flutter binding, real preferences and a WorkManager engine.
+  ///
+  /// Each asserts the *call site*, not merely that the name occurs — the trap
+  /// Phase 134 found was a window that included the function's own
+  /// declaration, so the assertion could never fail. The window here ends at
+  /// the top-level declarations.
+  test('the headless path calls the sweep from drainOutbox', () {
+    final source = File('lib/background_entrypoint.dart').readAsStringSync();
+    final wiring = source.substring(
+      source.indexOf('BackgroundTaskRunner('),
+      source.indexOf('@visibleForTesting'),
+    );
+
+    expect(
+      wiring,
+      contains('sweepPendingResources('),
+      reason:
+          'nothing in the headless path calls sweepPendingResources, so a '
+          'resource whose write-time enqueue never ran stays on the handset '
+          'for ever',
+    );
+
+    final swept = wiring.indexOf('sweepPendingResources(');
+    final drained = wiring.indexOf('drainer.drain(');
+
+    expect(drained, greaterThan(-1), reason: 'drainer.drain moved');
+    expect(
+      swept,
+      lessThan(drained),
+      reason:
+          'the sweep must queue before the drain that carries it, or the rows '
+          'wait for the next invocation',
+    );
+    expect(
+      swept,
+      lessThan(wiring.indexOf('syncSteps:')),
+      reason:
+          'the sweep must stay in drainOutbox rather than move into '
+          'syncSteps: those run only for a due autoSync task with auto-sync '
+          'enabled, which is precisely not the user most likely to be '
+          'holding an undelivered write',
+    );
+  });
+
+  /// The foreground half. Kotlin calls `uploadResource` unconditionally from
+  /// `AutoSyncWorker:129` **and** `UserDataWorker:84`, so one sweep site is
+  /// half a safety net — and the foreground one is the path a user who taps
+  /// Sync actually takes.
+  ///
+  /// The window is bounded to `_runPass` rather than searched file-wide, and
+  /// that is not tidiness: the first cut searched the whole file for
+  /// `for (final area in DashboardSyncArea.values)` and matched the
+  /// collection-`for` in `DashboardSyncState.idle()` two hundred lines above
+  /// the sweep, so its ordering assertion failed on correct code. Both bounds
+  /// are asserted found, so a rename breaks this loudly instead of silently
+  /// widening the window — the Phase 134 failure mode in reverse.
+  test('the sync pass calls the sweep before the area pulls', () {
+    final source = File(
+      'lib/providers/dashboard_sync_provider.dart',
+    ).readAsStringSync();
+
+    final passStart = source.indexOf('Future<void> _runPass() async {');
+    expect(
+      passStart,
+      greaterThan(-1),
+      reason: 'DashboardSyncNotifier._runPass was renamed or removed',
+    );
+    final passEnd = source.indexOf(
+      'Future<void> _markInteractiveSyncActive(',
+      passStart,
+    );
+    expect(
+      passEnd,
+      greaterThan(passStart),
+      reason: 'the method after _runPass was renamed; re-bound this window',
+    );
+    final pass = source.substring(passStart, passEnd);
+
+    expect(
+      pass,
+      contains('await queuePendingResources();'),
+      reason:
+          '_runPass must call queuePendingResources, or the foreground sync '
+          'has no resource safety net and a stranded write waits for a '
+          'headless invocation that may never come',
+    );
+
+    final swept = pass.indexOf('await queuePendingResources();');
+    final areas = pass.indexOf('for (final area in DashboardSyncArea.values)');
+
+    expect(areas, greaterThan(-1), reason: 'the area loop left _runPass');
+    expect(
+      swept,
+      lessThan(areas),
+      reason:
+          'the sweep must precede the pulls: markUploaded writes _rev, and a '
+          'resources pull that runs first sees the row without one',
+    );
+  });
 }
 
 class _ThrowingIdentity implements DeviceIdentitySource {

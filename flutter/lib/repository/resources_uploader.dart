@@ -1,6 +1,5 @@
 import 'dart:developer';
 
-import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mime/mime.dart';
 import 'package:path/path.dart' as p;
@@ -599,7 +598,10 @@ class ResourcesUploader {
 /// preferences and a WorkManager engine, so a body written inline in that
 /// closure is unreachable from a unit test — the same reason the sweeps it
 /// sits beside are.
-@visibleForTesting
+// Deliberately not `@visibleForTesting`: the production caller is
+// `background_entrypoint.dart`'s `drainOutbox`, in another library, which is
+// what the paragraph above means by "exposed". The sweeps it sits beside need
+// no annotation only because they are declared in that file already.
 Future<void> sweepPendingResources(
   ProviderContainer container, {
   required ServerConfig config,

@@ -12,6 +12,7 @@ import 'core/sync/sync_result.dart';
 import 'providers/app_providers.dart';
 import 'providers/heavy_sync_providers.dart';
 import 'repository/personals_uploader.dart';
+import 'repository/resources_uploader.dart';
 
 /// WorkManager launches this in a new isolate, so it must be a retained
 /// top-level entry point rather than a closure installed by the UI isolate.
@@ -127,6 +128,19 @@ Future<bool> executeBackgroundTask(String taskName) async {
             userId: prefs.loggedInUserId,
           );
           await sweepPendingSubmissions(
+            container,
+            config: config,
+            userId: prefs.loggedInUserId,
+          );
+          // The third sweep, wired at integration because the lane that wrote
+          // it did not own this file. Ordering against the two above is free:
+          // no sync step writes a `my_library` row over a locally authored one
+          // (`MyLibraryMapper.fromDoc` keys on the CouchDB `_id`, which a
+          // pending resource has none of). See [sweepPendingResources] for why
+          // this belongs here rather than in `syncSteps` -- those run only for
+          // a due `autoSync` task with auto-sync enabled, which is precisely
+          // not the user most likely to be holding an undelivered write.
+          await sweepPendingResources(
             container,
             config: config,
             userId: prefs.loggedInUserId,
