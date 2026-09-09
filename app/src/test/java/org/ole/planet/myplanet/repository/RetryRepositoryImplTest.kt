@@ -58,40 +58,12 @@ class RetryRepositoryImplTest {
     }
 
     @Test
-    fun `updateAttempt updates operation fields`() = runTest {
-        val operation = RetryOperation().apply { attemptCount = 1; maxAttempts = 5 }
-        coEvery { retryDao.findById("opId") } returns operation
+    fun `updateAttempt delegates to recordFailedAttempt`() = runTest {
+        coEvery { retryDao.recordFailedAttempt("opId", "Test Error", 503, timeProvider.now()) } returns 1
 
         repository.updateAttempt("opId", RetryFailure("itemId", "Test Error", 503))
 
-        assertEquals(2, operation.attemptCount)
-        assertEquals("Test Error", operation.errorMessage)
-        assertEquals(503, operation.httpCode)
-        assert(operation.nextRetryTime > 0)
-        coVerify { retryDao.update(operation) }
-    }
-
-    @Test
-    fun `updateAttempt changes status to abandoned when max attempts reached`() = runTest {
-        val operation = RetryOperation().apply {
-            attemptCount = 4; maxAttempts = 5; status = RetryOperation.STATUS_PENDING
-        }
-        coEvery { retryDao.findById("opId") } returns operation
-
-        repository.updateAttempt("opId", RetryFailure("itemId", "Unknown error", null))
-
-        assertEquals(5, operation.attemptCount)
-        assertEquals(RetryOperation.STATUS_ABANDONED, operation.status)
-        coVerify { retryDao.update(operation) }
-    }
-
-    @Test
-    fun `updateAttempt does nothing when operation not found`() = runTest {
-        coEvery { retryDao.findById("missingId") } returns null
-
-        repository.updateAttempt("missingId", RetryFailure("itemId", "Test Error", 503))
-
-        coVerify(exactly = 0) { retryDao.update(any()) }
+        coVerify { retryDao.recordFailedAttempt("opId", "Test Error", 503, timeProvider.now()) }
     }
 
     @Test
@@ -131,43 +103,12 @@ class RetryRepositoryImplTest {
     }
 
     @Test
-    fun `markFailed updates status to pending when attempts remain`() = runTest {
-        val operation = RetryOperation().apply {
-            attemptCount = 1; maxAttempts = 5; status = RetryOperation.STATUS_IN_PROGRESS
-        }
-        coEvery { retryDao.findById("opId") } returns operation
+    fun `markFailed delegates to recordFailedAttempt`() = runTest {
+        coEvery { retryDao.recordFailedAttempt("opId", "Fail reason", 404, timeProvider.now()) } returns 1
 
         repository.markFailed("opId", "Fail reason", 404)
 
-        assertEquals(2, operation.attemptCount)
-        assertEquals("Fail reason", operation.errorMessage)
-        assertEquals(404, operation.httpCode)
-        assertEquals(RetryOperation.STATUS_PENDING, operation.status)
-        assert(operation.nextRetryTime > 0)
-        coVerify { retryDao.update(operation) }
-    }
-
-    @Test
-    fun `markFailed updates status to abandoned when max attempts reached`() = runTest {
-        val operation = RetryOperation().apply {
-            attemptCount = 4; maxAttempts = 5; status = RetryOperation.STATUS_IN_PROGRESS
-        }
-        coEvery { retryDao.findById("opId") } returns operation
-
-        repository.markFailed("opId", "Fail reason", 500)
-
-        assertEquals(5, operation.attemptCount)
-        assertEquals(RetryOperation.STATUS_ABANDONED, operation.status)
-        coVerify { retryDao.update(operation) }
-    }
-
-    @Test
-    fun `markFailed does nothing when operation not found`() = runTest {
-        coEvery { retryDao.findById("missingId") } returns null
-
-        repository.markFailed("missingId", "Fail reason", 500)
-
-        coVerify(exactly = 0) { retryDao.update(any()) }
+        coVerify { retryDao.recordFailedAttempt("opId", "Fail reason", 404, timeProvider.now()) }
     }
 
     @Test

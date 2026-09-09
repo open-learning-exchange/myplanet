@@ -17,9 +17,7 @@ import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.decrypt
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
 
 data class HealthExaminationState(
     val isLoading: Boolean = true,
@@ -68,13 +66,7 @@ class HealthExaminationViewModel @Inject constructor(
                     }
                 }
 
-                if (pojo != null && pojo.data?.isNotEmpty() == true) {
-                    try {
-                        health = JsonUtils.gson.fromJson(decrypt(pojo.data, user?.key, user?.iv), MyHealth::class.java)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
+                health = healthRepository.getDecryptedHealth(pojo, user)
                 if (health == null) {
                     health = healthRepository.initHealth()
                 }
