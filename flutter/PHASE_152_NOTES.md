@@ -277,3 +277,49 @@ the shared arm and has four tests.
 9. **Phase 148's items 5, 6, 7, 8, 10, 11, 12 remain open**; none is in this
    lane's set.
 
+---
+
+## Tests
+
+Gate green: `dart format` clean, `flutter analyze` clean, **2790 tests pass**
+(2735 before).
+
+New: `test/repository/conflict_recovery_test.dart` (16) pins the rule itself —
+both arms, the `adoptExisting` opt-in, the three guards, and `documentUrlUnder`.
+`test/repository/adopted_surveys_uploader_test.dart` (4) is new because that
+uploader's own 409 arm had **no coverage at all** before this phase.
+
+One end-to-end test per armed uploader, added to its existing file. Each drives
+the payload production actually builds — seed the row, `queuePending`, decode
+the operation's stored payload — rather than a hand-written one, because a
+fixture that cannot reach the branch it names reads as coverage. Where that was
+not practical the payload is passed directly and the test says so.
+
+`test/repository/health_legacy_conflict_test.dart` gains
+*a stale profile revision is recovered instead of stranded* — the phase's
+headline through the real drain path, counting POSTs and GETs against a fake
+CouchDB that enforces `_id` uniqueness. Its fake also gained a **document read**;
+without it the new arm's fetch threw, and the five Phase 148 tests in that file
+would have passed because of `ConflictRecovery`'s throw guard rather than
+because a create-conflict stands as a refusal. That distinction is the whole
+point of those tests, so the fake serves documents now.
+
+### Mutations
+
+Eighteen, each applied alone with the suite run in between, then reverted.
+Every one failed the test it should.
+
+| Mutation | Tests killed |
+|---|---:|
+| health derives the doc URL from `row.itemId` instead of `payload['_id']` | 1 |
+| no split — always re-send, ignoring the create case | 9 |
+| **no split — always adopt, i.e. Kotlin's arm ported literally** | **22** |
+| drop the identical-re-ask guard (`rev == sentRev`) | 1 |
+| drop the null-`documentUrl` guard, so an append is recoverable | 1 |
+| drop the throwing-fetch guard | 1 |
+| `adoptExisting` ignored (always false) | 3 |
+| `adoptExisting` forced true everywhere | 5 |
+| un-arm each of the ten armed uploaders, one at a time | 1–2 each |
+
+The third row is the one worth keeping: **porting Kotlin's arm as written fails
+twenty-two tests in this port.** That is the phase's finding stated as a number.
