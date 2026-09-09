@@ -1,8 +1,12 @@
 package org.ole.planet.myplanet.utils
 
+import com.sun.net.httpserver.HttpServer
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import java.net.InetSocketAddress
+import java.util.Collections
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import okhttp3.Call
@@ -131,5 +135,71 @@ class ServerReachabilityProviderTest {
         assertTrue(secondCall)
 
         verify(exactly = 2) { okHttpClient.newCall(any()) }
+    }
+
+    @Test
+    fun `tryConnect uses HTTP HEAD when supported`() = runTest(testDispatcher) {
+        withLocalServer({ 200 }) { serverUrl, receivedMethods ->
+            assertTrue(realProvider().isPrimaryServerReachable(serverUrl))
+            assertEquals(listOf("HEAD"), receivedMethods)
+        }
+    }
+
+    @Test
+    fun `tryConnect falls back to HTTP GET when HEAD returns 405`() = runTest(testDispatcher) {
+        withLocalServer({ method -> if (method == "HEAD") 405 else 200 }) { serverUrl, receivedMethods ->
+            assertTrue(realProvider().isPrimaryServerReachable(serverUrl))
+            assertEquals(listOf("HEAD", "GET"), receivedMethods)
+        }
+    }
+
+    @Test
+    fun `tryConnect falls back to HTTP GET when HEAD returns 501`() = runTest(testDispatcher) {
+        withLocalServer({ method -> if (method == "HEAD") 501 else 200 }) { serverUrl, receivedMethods ->
+            assertTrue(realProvider().isPrimaryServerReachable(serverUrl))
+            assertEquals(listOf("HEAD", "GET"), receivedMethods)
+        }
+    }
+
+    @Test
+    fun `tryConnect returns false without GET fallback when HEAD returns 404`() = runTest(testDispatcher) {
+        withLocalServer({ 404 }) { serverUrl, receivedMethods ->
+            assertFalse(realProvider().isPrimaryServerReachable(serverUrl))
+            assertEquals(listOf("HEAD"), receivedMethods)
+        }
+    }
+
+    @Test
+    fun `isPrimaryServerReachable returns false for an unreachable host`() = runTest(testDispatcher) {
+        assertFalse(realProvider().isPrimaryServerReachable("invalid_url"))
+    }
+
+    private fun realProvider() = ServerReachabilityProvider(
+        OkHttpClient.Builder()
+            .connectTimeout(5, TimeUnit.SECONDS)
+            .readTimeout(5, TimeUnit.SECONDS)
+            .build(),
+        serverUrlMapper,
+        dispatcherProvider,
+        timeProvider
+    )
+
+    private suspend fun withLocalServer(
+        responseCode: (String) -> Int,
+        block: suspend (serverUrl: String, receivedMethods: List<String>) -> Unit
+    ) {
+        val receivedMethods = Collections.synchronizedList(mutableListOf<String>())
+        val server = HttpServer.create(InetSocketAddress("localhost", 0), 0)
+        server.createContext("/") { exchange ->
+            receivedMethods.add(exchange.requestMethod)
+            exchange.sendResponseHeaders(responseCode(exchange.requestMethod), -1)
+            exchange.close()
+        }
+        server.start()
+        try {
+            block("http://localhost:${server.address.port}", receivedMethods)
+        } finally {
+            server.stop(0)
+        }
     }
 }

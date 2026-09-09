@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Provider
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -46,7 +45,6 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.AutoSyncWorker
 import org.ole.planet.myplanet.services.NetworkMonitorWorker
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
-import org.ole.planet.myplanet.services.ServerReachabilityChecker
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.TaskNotificationWorker
 import org.ole.planet.myplanet.services.ThemeManager
@@ -187,19 +185,11 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             }
         }
         
-        private val serverReachabilityChecker: ServerReachabilityChecker by lazy {
-            ServerReachabilityChecker { coreDependenciesEntryPoint }
-        }
+        suspend fun isServerReachable(urlString: String): Boolean =
+            coreDependenciesEntryPoint.serverReachabilityProvider().isServerReachable(urlString)
 
-        suspend fun isServerReachable(
-            urlString: String,
-            ioDispatcher: CoroutineDispatcher = coreDependenciesEntryPoint.dispatcherProvider().io
-        ): Boolean = serverReachabilityChecker.isServerReachable(urlString, ioDispatcher)
-
-        suspend fun isPrimaryServerReachable(
-            urlString: String,
-            ioDispatcher: CoroutineDispatcher = coreDependenciesEntryPoint.dispatcherProvider().io
-        ): Boolean = serverReachabilityChecker.isPrimaryServerReachable(urlString, ioDispatcher)
+        suspend fun isPrimaryServerReachable(urlString: String): Boolean =
+            coreDependenciesEntryPoint.serverReachabilityProvider().isPrimaryServerReachable(urlString)
 
         fun persistCriticalLog(type: String, error: String) {
             val pendingFile = CrashLogStore.save(context, type, error, coreDependenciesEntryPoint.timeProvider())
@@ -397,7 +387,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     }
 
     private suspend fun checkServerAndStartDownload(serverUrl: String) {
-        val canReachServer = isServerReachable(serverUrl, dispatcherProvider.io)
+        val canReachServer = isServerReachable(serverUrl)
         if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
             resourceDownloadCoordinator.startBackgroundDownload(
                 downloadAllFiles(resourcesRepository.getAllLibrariesToSync())
