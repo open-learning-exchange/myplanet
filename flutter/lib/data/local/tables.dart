@@ -82,6 +82,7 @@ class Users extends Table {
 
 /// Port of `model/MyLibrary.kt` (`@Entity(tableName = "my_library")`).
 @DataClassName('MyLibraryRow')
+@TableIndex(name: 'my_library_course_id', columns: {#courseId})
 class MyLibraryTable extends Table {
   @override
   String get tableName => 'my_library';
@@ -160,10 +161,20 @@ class MyLibraryTable extends Table {
   /// cannot clear the link. Two writers, one column; see
   /// `mapper_preserves_local_columns_test.dart`.
   ///
-  /// Nullable with no default, and deliberately **not** indexed: Kotlin's
-  /// `@Entity` indexes only `_rev`, `titleNormal` and `resourceId`
-  /// (`MyLibrary.kt:32`), and an index here would drag `my_library` into the
-  /// migration's pre-`createAll` reconciliation block for no read it needs.
+  /// Both nullable with no default. `courseId` is indexed and `stepId` is not,
+  /// which is **not** a copy of Kotlin's `@Entity` list — that indexes only
+  /// `_rev`, `titleNormal` and `resourceId` (`MyLibrary.kt:32`), and citing it
+  /// here would be citing the wrong thing, because Kotlin never issues the
+  /// query the index is for. The port's courses walk releases stale step joins
+  /// once per course per page (up to 50), and Kotlin has no release step at
+  /// all; unindexed, that is fifty full scans of `my_library` per page, most
+  /// matching nothing. `stepId` needs none: it is read one step at a time from
+  /// a screen, not in a loop over a sync page.
+  ///
+  /// Safe to index because `my_library` is a cache: the upgrade drops it and
+  /// `createAll` rebuilds table and index together, so it never enters the
+  /// pre-`createAll` reconciliation block that exists for *preserved* tables
+  /// whose indexes name columns they may not have yet.
   TextColumn get stepId => text().nullable()();
   TextColumn get courseId => text().nullable()();
 

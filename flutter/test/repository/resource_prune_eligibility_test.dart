@@ -56,8 +56,12 @@ void main() {
   });
 
   test('the empty-walk branch carries the same guards', () async {
-    // `total_rows == 0` calls `deleteNotIn(const [])`, Kotlin's
-    // `deleteAllStalePublic` — which is guarded identically, not a bare wipe.
+    // `total_rows == 0` calls `deleteNotIn(const [])`. Kotlin's counterpart
+    // `deleteAllStalePublic` is guarded identically — but it is also
+    // **unreachable** (`removeDeletedResources` runs only when the id list is
+    // non-empty, `SyncManager.kt:416`), so on an empty walk Kotlin deletes
+    // nothing at all and the port still deletes the synced public rows. The
+    // guards narrow the blast radius; they do not make this branch parity.
     await seed();
 
     await db.myLibraryDao.deleteNotIn(const []);

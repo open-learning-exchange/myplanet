@@ -1436,9 +1436,8 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
   /// **Only rows the server has actually seen are eligible**, which this had
   /// never implemented. Kotlin's prune is not "delete what the walk did not
   /// list": `deleteStalePublicNotIn` is `WHERE _rev IS NOT NULL AND _rev != ''
-  /// AND isPrivate = 0 AND resourceId NOT IN (...)`, and its empty-list twin
-  /// `deleteAllStalePublic` carries the same two guards
-  /// (`MyLibraryDao.kt:170-178`). Without them the port deleted:
+  /// AND isPrivate = 0 AND resourceId NOT IN (...)`
+  /// (`MyLibraryDao.kt:171-175`). Without those guards the port deleted:
   ///
   /// * **a resource the user created offline.** [saveLocalResource] writes a
   ///   row with no `rev`, no CouchDB document and no outbox entry, so nothing
@@ -1452,14 +1451,30 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
   ///   ingest the row and the next resources walk would delete it, making the
   ///   join a one-sync artefact.
   ///
-  /// Matching on `id` rather than Kotlin's `resourceId` is kept: the two are
-  /// equal for every synced row ([MyLibraryMapper.fromDoc] writes the document
-  /// id into both), and the one writer that makes them differ
-  /// ([saveLocalResource], a UUID id and no `resourceId`) is now spared by the
-  /// `rev` guard anyway.
+  /// Matching on `id` rather than Kotlin's `resourceId` is kept, but not for
+  /// the reason first given here — no port writer makes the two differ at all
+  /// ([saveLocalResource] sets `resourceId` to its own generated `id`). The
+  /// column choice is therefore immaterial for every row the port can produce,
+  /// and `id` is the primary key. Where they *could* differ the port is
+  /// strictly the more aggressive of the two: Kotlin's `resourceId NOT IN (…)`
+  /// spares a row whose `resourceId` is NULL, and a primary key never is.
+  /// **The empty-list branch is not a port of anything Kotlin runs**, and
+  /// calling it one (as this comment first did) invited the next reader to stop
+  /// questioning it. Kotlin's `deleteAllStalePublic` (`MyLibraryDao.kt:177-178`)
+  /// carries the same two guards but is **unreachable**: its only caller is the
+  /// `else` of `removeDeletedResources`' `if (validCurrentIds.isNotEmpty())`
+  /// (`ResourcesRepositoryImpl.kt:537-544`), and `removeDeletedResources` is
+  /// itself called only when `validNewIds.isNotEmpty()` (`SyncManager.kt:416`).
+  /// So when the `resources` database reports zero documents Kotlin deletes
+  /// nothing, while the port deletes every public synced row — a re-provisioned
+  /// satellite, or any 200 whose body lacks `total_rows`, empties the library.
+  /// The guards narrow that from the whole table to the synced-and-public part;
+  /// closing it entirely means not pruning on an empty walk at all, which is a
+  /// behaviour change beyond the phase that found it. Recorded as a divergence,
+  /// not dressed up as parity.
   Future<int> deleteNotIn(List<String> keepIds) async {
-    // `isPrivate = 0 AND (_rev IS NOT NULL AND _rev != '')` — the eligibility
-    // half of both Kotlin statements, shared by the empty-list branch.
+    // `isPrivate = 0 AND (_rev IS NOT NULL AND _rev != '')` — Kotlin's
+    // eligibility half, applied to both branches.
     Expression<bool> prunable(MyLibraryTable r) =>
         r.isPrivate.equals(false) & r.rev.isNotNull() & r.rev.equals('').not();
 
@@ -1496,10 +1511,6 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
   Future<List<MyLibraryRow>> getByStepId(String stepId) =>
       (select(myLibraryTable)..where((r) => r.stepId.equals(stepId))).get();
 
-  /// Port of `MyLibraryDao.getByCourseId`.
-  Future<List<MyLibraryRow>> getByCourseId(String courseId) =>
-      (select(myLibraryTable)..where((r) => r.courseId.equals(courseId))).get();
-
   /// Port of `MyLibraryDao.getCourseResources(courseId, isOffline)` — the
   /// course-level download button's two lists
   /// (`CoursesRepositoryImpl.getCourseOnlineResources` / `…OfflineResources`).
@@ -1519,51 +1530,6 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
                 r.resourceLocalAddress.isNotNull(),
           ))
           .get();
-
-  /// Detaches every resource of [courseId] that [keepIds] does not name.
-  ///
-  /// The direct analogue of [ExamDao.releaseStepJoinsForCourse], and needed for
-  /// the same reason with a sharper edge. The port's step id is positional
-  /// (`CourseMapper.stepIdFor`, `'$courseId:$index'`), so **deleting** a step
-  /// shifts every later step's id down one. A resource belonging to the removed
-  /// step is never re-stamped, so it keeps an id that now names a *different,
-  /// live* step: `getByStepId` returns it, the inline list shows it and the
-  /// auto-download fetches it. Kotlin cannot reach that — its step ids hash the
-  /// step's own JSON, so a stale stamp matches no live step and merely dangles.
-  /// A pure reorder is safe in the port either way, because every surviving
-  /// step is re-stamped in the same pass; it is shortening that corrupts.
-  ///
-  /// `courseId` is nulled together with `stepId`, which for this table is the
-  /// only correct choice rather than symmetry with the exam DAO:
-  /// [getCourseResources] and [getByCourseId] read `courseId` on its own, so a
-  /// stale one left behind would keep over-filling the course download dialog.
-  ///
-  /// A partial-column update, never `toCompanion` — `my_library` rows carry
-  /// `userId`, `resourceOffline`, `downloadedRev` and `resourceLocalAddress`
-  /// that a whole-row write would clobber with sync-time values.
-  Future<void> releaseStepJoinsForCourse(
-    String courseId,
-    Set<String> keepIds,
-  ) async {
-    final stale =
-        await (selectOnly(myLibraryTable)
-              ..addColumns([myLibraryTable.id])
-              ..where(
-                myLibraryTable.courseId.equals(courseId) &
-                    myLibraryTable.stepId.isNotNull(),
-              ))
-            .map((row) => row.read(myLibraryTable.id)!)
-            .get();
-    final drop = stale.where((id) => !keepIds.contains(id)).toList();
-    for (final chunk in _chunked(drop, _sqliteVariableChunk)) {
-      await (update(myLibraryTable)..where((r) => r.id.isIn(chunk))).write(
-        const MyLibraryTableCompanion(
-          stepId: Value(null),
-          courseId: Value(null),
-        ),
-      );
-    }
-  }
 
   /// Gets a single resource by its local id.
   Future<MyLibraryRow?> getById(String id) =>
@@ -1652,7 +1618,7 @@ Iterable<List<T>> _chunked<T>(List<T> items, int size) sync* {
 }
 
 /// Port of `data/room/dao/MyCourseDao.kt` and `CourseStepDao.kt`.
-@DriftAccessor(tables: [Courses, CourseSteps])
+@DriftAccessor(tables: [Courses, CourseSteps, MyLibraryTable])
 class CourseDao extends DatabaseAccessor<AppDatabase> with _$CourseDaoMixin {
   CourseDao(super.db);
 
@@ -1689,6 +1655,33 @@ class CourseDao extends DatabaseAccessor<AppDatabase> with _$CourseDaoMixin {
           statement.where((s) => s.id.isNotIn(kept.toList()));
         }
         await statement.go();
+
+        // Every `my_library` stamp for this course is released here, and the
+        // courses walk re-writes the current ones immediately afterwards
+        // ([upsertCourseResources]).
+        //
+        // Clearing *all* of them rather than only those whose step id has
+        // vanished is the whole point, and the narrower version was tried
+        // first and was wrong: step ids are positional, so deleting a step
+        // hands its id to whichever step shifted up, and a resource left
+        // pointing at that id is not dangling — it is attached to the wrong
+        // live step, which `getByStepId` will happily return.
+        //
+        // The rule this encodes is that **only a writer that has the step's
+        // resources may leave a stamp standing**. The courses walk has them;
+        // `ShelfSyncRepository._pullShelfCourses` writes the same rows through
+        // this method and discards them, so after a shelf-only sync (the sync
+        // centre's per-tile retry) the stamps are simply absent until the next
+        // courses walk. An empty inline resource list is a cost worth paying
+        // to make a wrong one unreachable.
+        await (update(
+          myLibraryTable,
+        )..where((r) => r.courseId.equals(courseId))).write(
+          const MyLibraryTableCompanion(
+            stepId: Value(null),
+            courseId: Value(null),
+          ),
+        );
       }
     });
   }
@@ -1715,27 +1708,18 @@ class CourseDao extends DatabaseAccessor<AppDatabase> with _$CourseDaoMixin {
   /// minus the buffer: the port parses and writes in one page loop, so the rows
   /// arrive built.
   ///
-  /// [keptByCourse] is, per course on the page, the resource ids its document
-  /// still claims across **all** its steps — a union, so the release below
-  /// cannot un-stamp a row the upsert just wrote. Every course on the page is
-  /// passed, including those whose steps now carry no resources at all, or
-  /// removing a course's last resource would never clear the old join.
-  ///
-  /// One transaction, so a course's steps and its resources become visible
-  /// together.
+  /// No release step of its own. [upsertAll] has already cleared every stamp
+  /// belonging to the courses on this page, so writing the current rows here is
+  /// the whole of the update: a resource the document no longer claims is
+  /// simply one that is not re-stamped. A resource appearing in two steps of
+  /// one course keeps the **last** step, because there is one row per resource
+  /// id and the later companion wins the upsert — which is what Kotlin's
+  /// `REPLACE` over the twice-mutated entity does.
   Future<void> upsertCourseResources(
     List<MyLibraryTableCompanion> resourceRows,
-    Map<String, Set<String>> keptByCourse,
   ) async {
-    if (resourceRows.isEmpty && keptByCourse.isEmpty) return;
-    await transaction(() async {
-      if (resourceRows.isNotEmpty) {
-        await _library.upsertAll(resourceRows);
-      }
-      for (final entry in keptByCourse.entries) {
-        await _library.releaseStepJoinsForCourse(entry.key, entry.value);
-      }
-    });
+    if (resourceRows.isEmpty) return;
+    await _library.upsertAll(resourceRows);
   }
 
   Future<CourseRow?> getById(String courseId) =>

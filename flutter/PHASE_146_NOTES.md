@@ -125,24 +125,23 @@ stamp matches no live step and merely dangles. **The port's exposure is a false
 join where Kotlin's is accretion**, which is the difference between a wrong
 answer and a harmless one — so this needed fixing rather than documenting.
 
-`MyLibraryDao.releaseStepJoinsForCourse` is the direct analogue of
-`ExamDao.releaseStepJoinsForCourse`, whose own doc comment already explains this
-hazard for its table. Three details are not copied blindly:
+**The fix is not the one the exam and survey tables use, and the second audit is
+why.** Those DAOs carry a `releaseStepJoinsForCourse` that clears the joins a
+course's document no longer claims, and this phase shipped that shape first. It
+does not hold here, for two reasons the audit surfaced: `course_steps` has a
+second writer (`ShelfSyncRepository._pullShelfCourses`) that discards the
+resources, and — the reason the narrow version is wrong even in the courses
+walk — clearing only *vanished* step ids misses the actual hazard, because a
+deleted step's id does not vanish, it is inherited by the step that shifted up.
 
-* It runs for **every** course on the page, not only those that still have
-  resources — otherwise removing a course's last resource never clears the join.
-  (Mutation 6 pins this.)
-* Its keep set is the **union across the whole document**, so a resource
-  appearing in two steps is not un-stamped by the release that follows the
-  upsert that just wrote it.
-* It nulls `courseId` alongside `stepId`. For the exam and survey tables that
-  reads as symmetry; here it is the only correct choice, because
-  `getCourseResources` and `getByCourseId` read `courseId` on its own, so a
-  stale one would keep over-filling the course download dialog. (Mutation 5.)
-
-And it is a partial-column update, never `toCompanion` — `my_library` rows carry
-`userId`, `resourceOffline`, `downloadedRev` and `resourceLocalAddress` that a
-whole-row write would clobber.
+So `CourseDao.upsertAll` releases **every** stamp for each course it writes, and
+the courses walk re-stamps immediately after. The invariant is *only a writer
+that has the step's resources may leave a stamp standing*. It is a
+partial-column update, never `toCompanion` — `my_library` rows carry `userId`,
+`resourceOffline`, `downloadedRev` and `resourceLocalAddress` that a whole-row
+write would clobber — and it nulls `courseId` alongside `stepId`, because
+`getCourseResources` reads `courseId` on its own and a stale one would keep
+over-filling the course download dialog.
 
 ## The preservation mechanism, and why it is thinner than Kotlin's
 
@@ -226,16 +225,16 @@ so a failure in one shelf's flush discards another shelf's queued items.
 
 | file | change |
 |---|---|
-| `lib/data/local/tables.dart` | `MyLibraryTable` += `stepId`, `courseId` |
-| `lib/data/local/app_database.dart` | `schemaVersion` 48; `MyLibraryDao` += `getByStepId`, `getByCourseId`, `getCourseResources`, `releaseStepJoinsForCourse`; `deleteNotIn` eligibility guards; `CourseDao` += `existingResources`, `upsertCourseResources` |
+| `lib/data/local/tables.dart` | `MyLibraryTable` += `stepId`, `courseId`, and a `course_id` index |
+| `lib/data/local/app_database.dart` | `schemaVersion` 48; `MyLibraryDao` += `getByStepId`, `getCourseResources`; `deleteNotIn` eligibility guards; `CourseDao` += `existingResources`, `upsertCourseResources`, and the whole-course stamp release in `upsertAll` |
 | `lib/data/local/course_mapper.dart` | `CourseResourceDoc`, `ParsedCourse.resources`, `_parseStepResources` |
-| `lib/data/local/my_library_mapper.dart` | `stepId`/`courseId` params, `_stampOrAbsent` |
+| `lib/data/local/my_library_mapper.dart` | `stepId`/`courseId` params, `_stampOrAbsent`, and the attachment-address clobber fix |
 | `lib/repository/courses_repository.dart` | `_ingestCourseResources`, wired into the page loop |
 | `lib/repository/resources_repository.dart` | `getAllStepResources`, `getCourseResources` |
-| `test/repository/course_step_resources_test.dart` | new, 12 tests |
+| `test/repository/course_step_resources_test.dart` | new, 17 tests |
 | `test/repository/resource_prune_eligibility_test.dart` | new, 3 tests |
 | `test/data/local/course_mapper_test.dart` | +5 tests |
-| `test/data/local/my_library_mapper_test.dart` | +3 tests |
+| `test/data/local/my_library_mapper_test.dart` | +4 tests, one existing test's expectation moved |
 | `test/data/local/migration_test.dart` | +3 tests, frozen v47 `my_library` DDL |
 | `test/repository/resources_repository_test.dart` | `row()` fixture emits a `_rev` |
 
@@ -261,11 +260,13 @@ Every fix reverted, every test replayed.
 | # | mutation | reds |
 |---|---|---|
 | 1 | `_stampOrAbsent` returns `Value(null)` instead of `Value.absent()` | 3 tests, across 2 files — including the resources-re-pull round trip |
-| 2 | drop the `releaseStepJoinsForCourse` call | 2 tests |
+| 2 | drop the whole-course stamp release in `CourseDao.upsertAll` | 3 tests |
 | 3 | stop passing `existingUserIds` to the ingestion mapper call | 2 tests — the mechanical guard *and* the behavioural one |
 | 4 | revert the `deleteNotIn` eligibility guards | 3 tests |
-| 5 | release nulls `stepId` only, leaving a stale `courseId` | 2 tests |
-| 6 | seed the keep set only for courses that still have resources | 1 test |
+| 5 | release only the stamps whose step id has vanished | 1 test — **this was the first fix, and the test rejected it** |
+| 11 | `getCourseResources` drops `resourceLocalAddress IS NOT NULL` | 1 test — **survived until the audit; fixture added** |
+| 12 | `getCourseResources` drops the `isOffline` conjunct | 2 tests — **same** |
+| 13 | attachment addresses written unconditionally again | 2 tests |
 | 7 | drop the blank/`_design` resource-id filter | 2 tests — **after a fixture was added; see below** |
 | 8 | add `my_library` to `localAuthorityTables` | 5 tests |
 | 9 | remove the ingestion call from the walk (the original defect) | 4+ tests |
@@ -284,6 +285,103 @@ mutation red at both levels.
 **Mutation 10 was a non-red by accident**, the different and worse kind: a
 migration test that reads as coverage while being blind to whether the migration
 runs. Fixed rather than recorded.
+
+## What the second audit changed
+
+Aimed at the finished, already-green code. **Seventh consecutive round in which
+it found something**, and this time the top finding was a data loss the phase
+itself created.
+
+### The courses walk was nulling the download pointer on every sync
+
+`MyLibraryMapper.fromDoc` wrote `resourceRemoteAddress` and
+`resourceLocalAddress` **unconditionally**, as `Value(attachment?.…)`. Kotlin
+writes them only inside `if (params.doc.has("_attachments"))` and only for an
+attachment key with no `/` (`MyLibrary.kt:243`, `:260-262`), so an absent
+`_attachments`, an empty one, or one whose keys are all nested leaves the stored
+values alone.
+
+Latent since the resources walk landed, because that walk always sees the full
+document. **This phase made it live**: the courses walk is now a second writer
+of the same rows from a *thinner* document, and `resources` (area 0) runs before
+`courses` (area 1), so the clobber was the state left after every sync. The
+shape that triggers it is one myPlanet itself uploads —
+`MyLibrary.serializeResource` builds `_attachments` from
+`resourceLocalAddress?.let{…}`, so a device that has not downloaded the file
+emits `"_attachments": {}`.
+
+Result: the row claimed `resourceOffline` with no path to the file, the resource
+detail screen took its no-file branch, and **the phase's own new reader**
+`getCourseResources(courseId, isOffline: true)` returned nothing. Fixed by
+returning `Value.absent()` when the document carries no usable attachment —
+the same mechanism the stamp itself relies on. A second, smaller correction came
+with it: an unusable `couchDbUrl` now drops only the *remote* address, where it
+used to discard the attachment name too, losing the filename over a bad server
+URL that Kotlin keeps (`MyLibrary.kt:262` assigns it unconditionally).
+
+### The stale-join fix was the wrong shape, and its own test proved it
+
+Phase 146 shipped `MyLibraryDao.releaseStepJoinsForCourse`, mirroring the exam
+and survey DAOs: clear the stamps a course's document no longer claims. The
+audit pointed out that `ShelfSyncRepository._pullShelfCourses` is a **second
+writer of `course_steps`** — it shrinks the step list through
+`CourseDao.upsertAll` and discards the parsed resources — so on a shelf-only
+sync (the sync centre's per-tile retry) nothing releases anything.
+
+The first fix attempt was to release, inside `upsertAll`, the stamps whose step
+id no longer exists. **The test written for it failed, and the failure was the
+point:** deleting step A does not make `c1:0` disappear, it hands `c1:0` to
+step B. `res-1` still named a live step id, so the narrow release left the false
+join exactly where it was.
+
+So the rule changed to the one the situation actually implies: **only a writer
+that has the step's resources may leave a stamp standing.** `CourseDao.upsertAll`
+now releases *every* stamp for each course it writes, and the courses walk
+re-stamps immediately afterwards. A shelf-only sync therefore yields an empty
+inline resource list until the next courses walk, which is a cost worth paying
+to make a wrong list unreachable.
+
+That made `releaseStepJoinsForCourse` and its keep-set plumbing redundant —
+every case it covered is covered by "cleared, then not re-stamped" — so both are
+deleted rather than kept as a second mechanism nothing can pin. The phase's
+diff is smaller than it was before the audit.
+
+### Two predicates nothing pinned
+
+The audit mutated `getCourseResources`' two new conjuncts and **all 158 tests
+passed either way**: the reader would have been `WHERE course_id = ?` and the
+suite would not have noticed. The one test calling it only ever asked
+`isOffline: false` and never seeded a downloaded row, so the split that is the
+entire reason Kotlin has two methods was unexercised. Three tests now cover the
+offline list, the online list, and a resource with no attachment at all; both
+mutations red.
+
+### A claim of parity that was not parity
+
+`resource_prune_eligibility_test.dart` said the empty-walk branch was a port of
+Kotlin's `deleteAllStalePublic`. That function is **unreachable in Kotlin**: its
+only caller is the `else` of `removeDeletedResources`' `if
+(validCurrentIds.isNotEmpty())`, and `removeDeletedResources` itself runs only
+when `validNewIds.isNotEmpty()` (`SyncManager.kt:416`). So when the `resources`
+database reports zero documents Kotlin deletes **nothing**, while the port
+deletes every public synced row. The guards this phase added narrow that from
+the whole table to the synced-and-public part; they do not make it parity. The
+claim is corrected in both the test and the DAO doc, and the remaining
+divergence is reported below rather than relabelled.
+
+### Smaller corrections
+
+* An index on `my_library.course_id`. The stale-join release runs once per
+  course per page — up to 50 unindexed scans of the table per page, where Kotlin
+  has no release step at all. The comment justifying "not indexed" as parity
+  with Kotlin's `@Entity` list was citing the wrong thing, and is rewritten.
+* `MyLibraryDao.getByCourseId` had no caller anywhere, tests included. Deleted.
+* `deleteNotIn`'s doc claimed `saveLocalResource` writes "a UUID id and no
+  `resourceId`". It writes `resourceId: Value(id)`. No port writer makes the two
+  differ; the conclusion was safer than its stated reason, which is now correct.
+* `_parseStepResources`' doc said `insertMyLibrary` "returns a row only for an
+  empty document" — the opposite of the argument it supports. It bails out only
+  on an empty document.
 
 ## Reported, not fixed
 
@@ -313,11 +411,20 @@ runs. Fixed rather than recorded.
    was verified: `DashboardSyncArea` is ordered with `shelf` last, deliberately,
    and `syncAll` iterates declaration order. **One hole:**
    `DashboardSyncNotifier.retry(DashboardSyncArea.shelf)` — the sync centre's
-   per-tile retry button — runs the shelf pull with no courses walk, so a course
-   newly added to the shelf keeps its steps and gains no resource stamps until
-   the next full sync. Nothing is lost or corrupted (the shelf's own `my_library`
-   writes leave both columns absent); it is staleness. Fix is one line in that
-   file, in the shape of this phase's `_ingestCourseResources`.
+   per-tile retry button — runs the shelf pull with no courses walk.
+
+   **The first draft of this item said "nothing is lost or corrupted … it is
+   staleness", and the second audit showed that was wrong.** That path rewrites
+   `course_steps` through `CourseDao.upsertAll`, so a step deletion shifts the
+   positional ids while nothing revalidates the stamps: a deleted step's
+   resource would surface under the live step that inherited its id, and the
+   auto-download would fetch it. The corruption half is closed here, in this
+   lane's own file — `upsertAll` releases every stamp for the courses it writes,
+   so that path now leaves none standing rather than leaving wrong ones. What
+   remains is genuinely staleness: after a shelf-only retry the inline resource
+   list is empty until the next courses walk. Closing that is one call in
+   `shelf_sync_repository.dart`, in the shape of this phase's
+   `_ingestCourseResources`.
 3. **The port has no `reconcileHtmlResourceOffline`, anywhere.** Kotlin calls it
    from the course-resource drain (`CoursesRepositoryImpl.kt:852-861`) *and* from
    both `resources`-walk sites via `reconcileHtmlLibraries` (`:660`, `:703`). It
@@ -335,7 +442,36 @@ runs. Fixed rather than recorded.
    `serializeTeamDocument` carries no `courses` array), so this is latent — but
    whoever ports team-document upload inherits a correctness dependency on the
    stamp, and should read the release-joins reasoning above first.
-5. **`ResourcesRepository.getAllStepResources` and `getCourseResources` have no
+5. **`take_course_screen.dart:687-697` now says something false, and it is
+   aimed at the next lane.** Its comment reads *"The port cannot render either
+   of those yet, and the blocker is the data, not the widget … `my_library` has
+   no `stepId` column and `MyLibraryMapper` writes no `courseId` … Restoring a
+   tap target means porting that walk first."* All four claims were true when
+   Phase 145 wrote them and were made false by this commit. It is the comment
+   Lane D will read when deciding whether the inline resource list is buildable,
+   and it tells them it is not. Lane D's file, so reported rather than changed —
+   but it should not survive the round.
+6. **The empty-walk prune is a divergence, not parity, and the guards only
+   narrow it.** When the `resources` database reports zero documents (a
+   re-provisioned satellite, or any 200 whose body lacks `total_rows`, since
+   `JsonUtils.getInt` returns 0), Kotlin deletes nothing at all —
+   `deleteAllStalePublic` is unreachable, see above — while the port deletes
+   every public synced row. Closing it means not pruning on an empty walk, which
+   changes an existing intentional behaviour and its test, so it is a decision
+   for a round that can weigh it rather than a fix smuggled into this one.
+7. **`MyLibraryDao.getOfflineResourcesForCourses(courseIds)` has no port
+   counterpart.** Its predicate is `resourceOffline = 0` despite the name, and
+   it is what `CoursesFragment.kt:190` feeds the courses-list bulk download
+   from. This phase ported the singular `getCourseResources` and not the plural
+   one, so the reader the live Kotlin download button uses is still missing.
+8. **`isLocalOnlyPrivate` has no port counterpart** (`MyLibrary.kt:224`, `:285`).
+   Kotlin refuses to let a pull flip a locally-authored private team resource
+   (no `_rev`, `isPrivate`, `privateFor` set) back to public;
+   `MyLibraryMapper.fromDoc` writes `isPrivate` unconditionally. It now
+   interacts with this phase: the new prune guards keep such a row alive, and a
+   walk that flips it to `is_private = 0` makes it prunable on the next
+   resources sync.
+9. **`ResourcesRepository.getAllStepResources` and `getCourseResources` have no
    caller in `lib/` yet**, by design: the three screens that would call them are
    Lane D's files this round. The *writer* is on a live production path
    (`CoursesRepository.sync` ← `courseSyncProvider` ← `syncAll` and
@@ -344,7 +480,7 @@ runs. Fixed rather than recorded.
    left for a reachability audit to rediscover — and if the UI phase does not
    land, these two methods are the thing to delete rather than to keep as
    substrate.
-6. **The markdown image pre-download gap is untouched and neither easier nor
+10. **The markdown image pre-download gap is untouched and neither easier nor
    harder.** `CoursesRepositoryImpl:670,684` calls `DownloadUtils.extractLinks`
    on course and step descriptions and the port wires nothing
    (`PHASE_142_NOTES.md` item 1). This phase touched the same loop in
@@ -353,7 +489,7 @@ runs. Fixed rather than recorded.
    wants its own round. The one thing that changed in its favour: `ParsedCourse`
    now has a precedent for carrying non-row parse output back to the repository,
    which is the shape an extracted-links list would take.
-7. **Phase 145's items 1 and 3–11 are unchanged**, except that item 2 is this
+11. **Phase 145's items 1 and 3–11 are unchanged**, except that item 2 is this
    phase and item 3's premise (`course_detail_screen.dart:204` shows a number the
    port cannot substantiate) is now half-resolved: the port *can* substantiate
    it, and `course_step_resources_test.dart` pins the count against the rows

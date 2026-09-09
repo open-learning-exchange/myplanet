@@ -368,6 +368,76 @@ void main() {
       expect((await db.myLibraryDao.getById('res-1'))!.stepId, isNull);
     });
 
+    test('a second writer of course_steps cannot re-bind a stamp', () async {
+      // `ShelfSyncRepository._pullShelfCourses` writes the same course and
+      // step rows through `CourseDao.upsertAll` and **discards** the parsed
+      // resources, so the courses walk's release never runs for it. Because
+      // step ids are positional, shrinking the step list there would hand
+      // `course-1:0` to the step that shifted up while `res-1` still claimed
+      // it — a deleted step's resource surfacing under a live one. Driven
+      // through the DAO, which is the contract both writers share.
+      stubCoursesWalk([
+        courseDoc(
+          'course-1',
+          steps: [
+            {
+              'stepTitle': 'Intro',
+              'resources': [resourceDoc('res-1')],
+            },
+            {
+              'stepTitle': 'Deeper',
+              'resources': [resourceDoc('res-2', title: 'Aquifers')],
+            },
+          ],
+        ),
+      ]);
+      await repository.sync(config: config);
+      expect((await db.myLibraryDao.getById('res-1'))!.stepId, 'course-1:0');
+
+      // The shelf pull's write: course + the one surviving step, no
+      // resources.
+      final parsed = CourseMapper.fromDoc(
+        courseDoc(
+          'course-1',
+          steps: [
+            {
+              'stepTitle': 'Deeper',
+              'resources': [resourceDoc('res-2', title: 'Aquifers')],
+            },
+          ],
+        ),
+      )!;
+      await db.courseDao.upsertAll([parsed.course], parsed.steps);
+
+      // Both stamps are released, not re-pointed. A writer that discards
+      // the resources cannot validate any stamp, so it leaves none standing;
+      // the next courses walk re-stamps. An empty inline list beats a wrong
+      // one — and the narrower "clear only stamps whose step vanished" fix
+      // was tried first and failed exactly here, because `res-1` still named
+      // a live step id.
+      expect(await resources.getAllStepResources('course-1:0'), isEmpty);
+      expect((await db.myLibraryDao.getById('res-1'))!.stepId, isNull);
+      expect((await db.myLibraryDao.getById('res-2'))!.stepId, isNull);
+
+      // …and the next full courses walk restores the correct stamp.
+      stubCoursesWalk([
+        courseDoc(
+          'course-1',
+          steps: [
+            {
+              'stepTitle': 'Deeper',
+              'resources': [resourceDoc('res-2', title: 'Aquifers')],
+            },
+          ],
+        ),
+      ]);
+      await repository.sync(config: config);
+      expect(
+        (await resources.getAllStepResources('course-1:0')).map((r) => r.id),
+        ['res-2'],
+      );
+    });
+
     test('another course\'s stamp is left alone', () async {
       stubCoursesWalk([
         courseDoc(
@@ -393,6 +463,86 @@ void main() {
 
       expect((await db.myLibraryDao.getById('res-1'))!.courseId, 'course-1');
       expect((await db.myLibraryDao.getById('res-2'))!.courseId, 'course-2');
+    });
+  });
+
+  group('getCourseResources splits on the downloaded flag', () {
+    // Kotlin has two methods over one query for this
+    // (`getCourseOnlineResources` / `getCourseOfflineResources`,
+    // `CoursesRepositoryImpl.kt:180-186`), so both conjuncts are the point of
+    // the reader. Without a downloaded row and a pointer-less row in the
+    // fixture, deleting either conjunct left the whole suite green.
+    setUp(() async {
+      stubCoursesWalk([
+        courseDoc(
+          'course-1',
+          steps: [
+            {
+              'stepTitle': 'Intro',
+              'resources': [
+                resourceDoc('res-downloaded'),
+                resourceDoc('res-pending', title: 'Aquifers'),
+              ],
+            },
+          ],
+        ),
+      ]);
+      await repository.sync(config: config);
+      await db.myLibraryDao.markDownloaded(
+        'res-downloaded',
+        'rainfall.pdf',
+        '1-a',
+      );
+    });
+
+    test('the offline list is the downloaded ones', () async {
+      final offline = await resources.getCourseResources(
+        'course-1',
+        isOffline: true,
+      );
+      expect(offline.map((r) => r.id), ['res-downloaded']);
+    });
+
+    test('the online list is the ones still to fetch', () async {
+      final online = await resources.getCourseResources(
+        'course-1',
+        isOffline: false,
+      );
+      expect(online.map((r) => r.id), ['res-pending']);
+    });
+
+    test('a resource with no attachment is in neither list', () async {
+      // `resourceLocalAddress IS NOT NULL` is Kotlin's third conjunct: it says
+      // "this resource has something to download at all". A document with no
+      // `_attachments` has no such pointer.
+      stubCoursesWalk([
+        courseDoc(
+          'course-2',
+          steps: [
+            {
+              'stepTitle': 'Intro',
+              'resources': [
+                {'_id': 'res-linkless', '_rev': '1-a', 'title': 'A link'},
+              ],
+            },
+          ],
+        ),
+      ]);
+      await repository.sync(config: config);
+
+      expect(
+        await resources.getCourseResources('course-2', isOffline: false),
+        isEmpty,
+      );
+      expect(
+        await resources.getCourseResources('course-2', isOffline: true),
+        isEmpty,
+      );
+      // …but it is still a resource of the course, reachable by its step.
+      final byStep = await resources.getAllStepResources(
+        CourseMapper.stepIdFor('course-2', 0),
+      );
+      expect(byStep.map((r) => r.id), ['res-linkless']);
     });
   });
 
@@ -494,6 +644,57 @@ void main() {
         expect(row.stepId, CourseMapper.stepIdFor('course-1', 0));
       },
     );
+
+    test('ingesting a thin course copy keeps the download pointer', () async {
+      // A course document embeds a *thinner* copy of each resource, and
+      // `MyLibrary.serializeResource` builds its `_attachments` from
+      // `resourceLocalAddress?.let{…}` — so a device that has not downloaded
+      // the file uploads `"_attachments": {}`. Pulling that back through the
+      // courses walk used to write null over the pointer the resources walk
+      // had stored, leaving the row claiming `resourceOffline` with no path
+      // to the file and dropping it out of `getCourseResources` entirely.
+      await db.myLibraryDao.upsertAll([
+        MyLibraryTableCompanion.insert(
+          id: 'res-1',
+          rev: const Value('1-a'),
+          resourceLocalAddress: const Value('rainfall.pdf'),
+          resourceRemoteAddress: const Value(
+            'https://planet.example.org/resources/res-1/rainfall.pdf',
+          ),
+          resourceOffline: const Value(true),
+          downloadedRev: const Value('1-a'),
+        ),
+      ]);
+
+      stubCoursesWalk([
+        courseDoc(
+          'course-1',
+          steps: [
+            {
+              'stepTitle': 'Intro',
+              'resources': [
+                {
+                  '_id': 'res-1',
+                  '_rev': '1-a',
+                  'title': 'Rainfall',
+                  '_attachments': <String, dynamic>{},
+                },
+              ],
+            },
+          ],
+        ),
+      ]);
+      await repository.sync(config: config);
+
+      final row = await db.myLibraryDao.getById('res-1');
+      expect(row!.resourceLocalAddress, 'rainfall.pdf');
+      expect(row.resourceRemoteAddress, isNotNull);
+      expect(
+        await resources.getCourseResources('course-1', isOffline: true),
+        hasLength(1),
+        reason: 'the phase\'s own reader must still find it',
+      );
+    });
 
     test('a course-only resource is not put on anybody\'s shelf', () async {
       stubCoursesWalk([

@@ -130,7 +130,7 @@ void main() {
       expect(blank!.openWhichFile.value, isNull);
     });
 
-    test('has no attachment address when the CouchDB URL is unknown', () {
+    test('keeps the attachment name when the CouchDB URL is unknown', () {
       final row = MyLibraryMapper.fromDoc({
         '_id': 'res-1',
         'title': 'Doc',
@@ -141,7 +141,34 @@ void main() {
 
       // Better an absent URL than the unusable 'http:///resources/...'.
       expect(row!.resourceRemoteAddress.value, isNull);
-      expect(row.resourceLocalAddress.value, isNull);
+      // But the *local* address is the attachment name and does not depend on
+      // the base URL — Kotlin assigns it unconditionally inside the same loop
+      // (`MyLibrary.kt:262`). Dropping it too, as this once did, lost the
+      // filename over a bad server URL.
+      expect(row.resourceLocalAddress.value, 'main.epub');
+    });
+
+    test('a document with no usable attachment leaves both addresses alone', () {
+      // Not `Value(null)` — see `_primaryAttachment`. A course document embeds
+      // a thinner copy of the resource, and `serializeResource` emits
+      // `"_attachments": {}` for a device that has not downloaded the file, so
+      // writing null here erased the download pointer on every sync.
+      for (final doc in <Map<String, dynamic>>[
+        {'_id': 'res-1', 'title': 'Doc'},
+        {'_id': 'res-1', 'title': 'Doc', '_attachments': <String, dynamic>{}},
+        {
+          '_id': 'res-1',
+          'title': 'Doc',
+          // Every key nested, so Kotlin's `key.indexOf("/") < 0` never matches.
+          '_attachments': {
+            'sudoku/index.html': {'content_type': 'text/html'},
+          },
+        },
+      ]) {
+        final row = MyLibraryMapper.fromDoc(doc, couchDbUrl: couchDbUrl)!;
+        expect(row.resourceRemoteAddress, const Value<String?>.absent());
+        expect(row.resourceLocalAddress, const Value<String?>.absent());
+      }
     });
 
     test('returns null for empty, design and id-less documents', () {

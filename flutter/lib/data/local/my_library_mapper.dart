@@ -90,8 +90,14 @@ class MyLibraryMapper {
       resourceType: Value(JsonUtils.getStringOrNull('resourceType', doc)),
       medium: Value(JsonUtils.getStringOrNull('medium', doc)),
       timesRated: Value(JsonUtils.getInt('timesRated', doc)),
-      resourceRemoteAddress: Value(attachment?.remoteAddress),
-      resourceLocalAddress: Value(attachment?.localAddress),
+      // Absent, not `Value(null)`, when the document carries no usable
+      // attachment — see [_primaryAttachment].
+      resourceRemoteAddress: attachment == null
+          ? const Value<String?>.absent()
+          : Value(attachment.remoteAddress),
+      resourceLocalAddress: attachment == null
+          ? const Value<String?>.absent()
+          : Value(attachment.localAddress),
       userId: Value(mergeUserIds(existingUserIds, shelfId)),
       resourceFor: Value(
         _mergedList(
@@ -202,14 +208,34 @@ class MyLibraryMapper {
   /// The Kotlin walks `_attachments` and treats the first key without a `/` as
   /// the resource's own file, deriving the download URL from it.
   ///
+  /// Returning `null` means **"this document says nothing about an
+  /// attachment"**, and the caller must then leave both address columns alone
+  /// rather than writing null over them. That is what the Kotlin does, though
+  /// it never had to say so: the two assignments sit inside
+  /// `if (params.doc.has("_attachments"))` and inside `if (key.indexOf("/") <
+  /// 0)` (`MyLibrary.kt:243`, `:260-262`), so an absent `_attachments`, an
+  /// empty one, or one whose keys are all nested simply never reaches them.
+  ///
+  /// Writing `Value(null)` here instead was a live data loss the moment the
+  /// courses walk became a second writer of these rows. A course document
+  /// embeds a *thinner* copy of each resource, and `MyLibrary.serializeResource`
+  /// builds its `_attachments` from `resourceLocalAddress?.let{…}` — so a device
+  /// that has not downloaded the file uploads `"_attachments": {}`, and pulling
+  /// that back erased the download pointer the `resources` walk had written,
+  /// on every sync, leaving the row claiming `resourceOffline` with no path to
+  /// the file.
+  ///
   /// **Deviation from the Kotlin**, twice over:
   /// * The userinfo is stripped before the URL is stored. `couchDbUrl` carries
   ///   `satellite:<pin>@`, and the Kotlin writes that straight into
   ///   `resourceRemoteAddress` — putting the PIN in a database row for every
   ///   resource, from where it reaches anything that reads, exports or logs the
   ///   row. Credentials are attached at request time instead.
-  /// * An empty `couchDbUrl` yields `null` rather than the Kotlin's
-  ///   `http:///resources/...`, which is not a usable URL.
+  /// * An unusable `couchDbUrl` drops the *remote* address rather than storing
+  ///   the Kotlin's `http:///resources/...`, which is not a usable URL. The
+  ///   local address is still recorded, because it is the attachment name and
+  ///   does not depend on the base — the earlier version discarded both and so
+  ///   lost the filename over a bad server URL.
   static _Attachment? _primaryAttachment(
     Map<String, dynamic> doc,
     String resourceId,
@@ -219,16 +245,16 @@ class MyLibraryMapper {
     if (attachments == null) return null;
 
     final base = credentialFreeBase(couchDbUrl);
-    if (base == null) return null;
 
     for (final key in attachments.keys) {
       if (key.contains('/')) continue;
       return _Attachment(
         // Encoded to match UrlUtils.resourceUrl — both build the same download
         // path, and server-supplied filenames can contain spaces, '#' or '?'.
-        remoteAddress:
-            '$base/resources'
-            '/${Uri.encodeComponent(resourceId)}/${Uri.encodeComponent(key)}',
+        remoteAddress: base == null
+            ? null
+            : '$base/resources'
+                  '/${Uri.encodeComponent(resourceId)}/${Uri.encodeComponent(key)}',
         localAddress: key,
       );
     }
@@ -253,7 +279,9 @@ class MyLibraryMapper {
 class _Attachment {
   const _Attachment({required this.remoteAddress, required this.localAddress});
 
-  final String remoteAddress;
+  /// Null when `couchDbUrl` is unusable — the attachment exists, but no
+  /// download URL can be built for it.
+  final String? remoteAddress;
   final String localAddress;
 }
 

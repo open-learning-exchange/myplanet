@@ -166,8 +166,9 @@ class CourseMapper {
   ///   walk does not** (`:619` defaults to false). So one malformed element
   ///   aborts the whole `courses` table walk at that page, writing nothing and
   ///   skipping the drain.
-  /// * A blank or whitespace-only `_id` is skipped. `insertMyLibrary` returns a row only for an
-  ///   empty document (`MyLibrary.kt:220`), so Kotlin writes `id = ""` — and
+  /// * A blank or whitespace-only `_id` is skipped. `insertMyLibrary` bails out
+  ///   only on an *empty* document (`MyLibrary.kt:220`), so one with fields but
+  ///   no `_id` still yields a row and Kotlin writes `id = ""` — and
   ///   because the primary key collides, every `_id`-less resource in a batch
   ///   collapses into one row under `REPLACE`, leaving a phantom carrying the
   ///   last one's title and the last one's step.

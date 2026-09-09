@@ -187,11 +187,11 @@ class CoursesRepository {
 
       final courseRows = <CoursesCompanion>[];
       final stepRows = <CourseStepsCompanion>[];
-      // The resource documents embedded in this page's course steps, and per
-      // course the union of the ids its steps still claim — the keep set the
-      // stale-join release runs against.
+      // The resource documents embedded in this page's course steps.
+      // `CourseDao.upsertAll` has already released every stamp these courses
+      // held by the time these are written, so there is no keep set to carry:
+      // what is not re-stamped stays released.
       final parsedResources = <CourseResourceDoc>[];
-      final resourceIdsByCourse = <String, Set<String>>{};
       final examRows = <ExamsCompanion>[];
       final examQuestionRows = <String, List<ExamQuestionsCompanion>>{};
       final surveyRows = <SurveysCompanion>[];
@@ -234,12 +234,6 @@ class CoursesRepository {
         savedIds.add(parsed.course.id.value);
 
         parsedResources.addAll(parsed.resources);
-        // Seeded for every course, not only those that still carry resources,
-        // so a course whose last resource was removed still gets its old join
-        // released below.
-        resourceIdsByCourse
-            .putIfAbsent(courseId, () => <String>{})
-            .addAll(parsed.resources.map((r) => r.resourceId));
 
         // A question map entry is written only when the embedded object
         // actually carried questions. `ExamDao.upsertAll` deletes an exam's
@@ -283,7 +277,6 @@ class CoursesRepository {
       await _ingestCourseResources(
         config: config,
         parsedResources: parsedResources,
-        resourceIdsByCourse: resourceIdsByCourse,
       );
       // Written after the courses, so a step row always exists by the time an
       // exam claims to belong to it. Neither table is pruned here: the `exams`
@@ -347,17 +340,15 @@ class CoursesRepository {
   ///   sends no `userId` at all, so `setUserId` returns early
   ///   (`MyLibrary.kt:123-130`) and course ingestion never *adds* membership
   ///   either.
-  /// * **A resource in two steps of one course keeps the last step's stamp.**
-  ///   One row per resource id, so the later companion wins the upsert —
-  ///   exactly what Kotlin's `REPLACE` over the twice-mutated entity does. The
-  ///   keep set is a union across the document precisely so the release step
-  ///   does not then un-stamp it.
+  /// * **It runs after `CourseDao.upsertAll`, which has released every stamp
+  ///   these courses held.** So this writes the current set and nothing has to
+  ///   compute which old stamps to retire — a resource the document dropped is
+  ///   one this pass does not re-stamp.
   Future<void> _ingestCourseResources({
     required ServerConfig config,
     required List<CourseResourceDoc> parsedResources,
-    required Map<String, Set<String>> resourceIdsByCourse,
   }) async {
-    if (resourceIdsByCourse.isEmpty) return;
+    if (parsedResources.isEmpty) return;
 
     final existingById = {
       for (final row in await _dao.existingResources([
@@ -385,6 +376,6 @@ class CoursesRepository {
       rows.add(companion);
     }
 
-    await _dao.upsertCourseResources(rows, resourceIdsByCourse);
+    await _dao.upsertCourseResources(rows);
   }
 }
