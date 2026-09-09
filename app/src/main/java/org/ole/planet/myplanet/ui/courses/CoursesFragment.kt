@@ -38,7 +38,7 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
-import org.ole.planet.myplanet.ui.components.ListViewModeController
+import org.ole.planet.myplanet.ui.components.ViewModeToggleController
 import org.ole.planet.myplanet.ui.resources.CollectionsFragment
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
@@ -71,7 +71,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
 
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
 
-    private var viewModeController: ListViewModeController? = null
+    private var viewModeController: ViewModeToggleController? = null
 
     override fun getLayout(): Int = R.layout.fragment_my_course
 
@@ -154,7 +154,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
 
         additionalSetup()
         setupMyProgressButton()
-        viewModeController = ListViewModeController(
+        viewModeController = ViewModeToggleController(
             fragment = this,
             recyclerView = recyclerView,
             toggleGridButton = toggleGridButton,

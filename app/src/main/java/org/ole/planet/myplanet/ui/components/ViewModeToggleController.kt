@@ -13,7 +13,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.utils.GridSpanCalculator
 import org.ole.planet.myplanet.utils.ListViewMode
 
-class ListViewModeController(
+class ViewModeToggleController(
     private val fragment: Fragment, private val recyclerView: RecyclerView,
     private val toggleGridButton: ImageButton?, private val toggleListButton: ImageButton?,
     private val getMode: () -> ListViewMode, private val setMode: (ListViewMode) -> Unit,

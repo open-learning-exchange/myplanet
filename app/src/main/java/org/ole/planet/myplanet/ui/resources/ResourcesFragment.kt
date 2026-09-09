@@ -51,7 +51,7 @@ import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
-import org.ole.planet.myplanet.ui.components.ListViewModeController
+import org.ole.planet.myplanet.ui.components.ViewModeToggleController
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
@@ -105,7 +105,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private var refreshJob: Job? = null
     private var searchJob: Job? = null
 
-    private var viewModeController: ListViewModeController? = null
+    private var viewModeController: ViewModeToggleController? = null
 
     internal val addResourceLauncher = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
@@ -300,7 +300,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         clearTagsButton()
         setupUI(binding.myLibraryParentLayout, requireActivity())
         additionalSetup()
-        viewModeController = ListViewModeController(
+        viewModeController = ViewModeToggleController(
             fragment = this,
             recyclerView = recyclerView,
             toggleGridButton = toggleGridButton,
