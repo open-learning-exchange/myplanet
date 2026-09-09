@@ -23,7 +23,8 @@ data class FilterState(
     val grade: String,
     val subject: String,
     val tagNames: List<String>,
-    val progressFilter: String = ""
+    val progressFilter: String = "",
+    val tags: List<TagEntity> = emptyList()
 ) {
     val isActive: Boolean
         get() = searchText.isNotEmpty() || grade.isNotEmpty() || subject.isNotEmpty() || tagNames.isNotEmpty() || progressFilter.isNotEmpty()
@@ -91,6 +92,64 @@ class CourseFilterController(
         onScrollToTop()
     }
 
+    fun restoreFilterState(state: FilterState) {
+        val listener = spinnerListener
+        if (::spnGrade.isInitialized) spnGrade.onItemSelectedListener = null
+        if (::spnSubject.isInitialized) spnSubject.onItemSelectedListener = null
+
+        restoreSearchText(state.searchText)
+        if (::spnGrade.isInitialized) {
+            restoreSpinnerSelection(spnGrade, state.grade)
+        }
+        if (::spnSubject.isInitialized) {
+            restoreSpinnerSelection(spnSubject, state.subject)
+        }
+        restoreTags(state.tags, state.tagNames)
+        progressFilter = state.progressFilter
+        if (::tvSelected.isInitialized) {
+            refreshTagText()
+        }
+
+        if (::spnGrade.isInitialized) spnGrade.onItemSelectedListener = listener
+        if (::spnSubject.isInitialized) spnSubject.onItemSelectedListener = listener
+
+        _filterState.value = currentState()
+    }
+
+    private fun restoreSearchText(searchText: String) {
+        if (::etSearch.isInitialized && etSearch.text.toString() != searchText) {
+            etSearch.setText(searchText)
+        }
+    }
+
+    private fun restoreSpinnerSelection(spinner: Spinner, targetValue: String) {
+        val adapter = spinner.adapter ?: return
+        for (i in 0 until adapter.count) {
+            val itemStr = adapter.getItem(i).toString()
+            if (itemStr == targetValue || (targetValue.isEmpty() && i == 0)) {
+                spinner.setSelection(i)
+                break
+            }
+        }
+    }
+
+    private fun restoreTags(tags: List<TagEntity>, tagNames: List<String>) {
+        searchTags.clear()
+        if (tags.isNotEmpty()) {
+            tags.forEach { addTagInternal(it) }
+        } else {
+            tagNames.forEach { name ->
+                addTagInternal(TagEntity().apply { this.name = name })
+            }
+        }
+    }
+
+    private fun addTagInternal(tag: TagEntity) {
+        if (!searchTags.any { it.matches(tag) }) {
+            searchTags.add(tag)
+        }
+    }
+
     private fun setupSearchWatcher() {
         searchTextWatcher = object : TextWatcher {
             @Suppress("EmptyMethod")
@@ -117,7 +176,7 @@ class CourseFilterController(
     }
 
     fun addTag(tag: TagEntity) {
-        if (!searchTags.any { it.name == tag.name }) searchTags.add(tag)
+        addTagInternal(tag)
         _filterState.value = currentState()
         refreshTagText()
         onScrollToTop()
@@ -125,12 +184,7 @@ class CourseFilterController(
 
     fun setTags(list: List<TagEntity>) {
         searchTags.clear()
-        val seenNames = HashSet<String?>()
-        list.forEach { tag ->
-            if (seenNames.add(tag.name)) {
-                searchTags.add(tag)
-            }
-        }
+        list.forEach { addTagInternal(it) }
         _filterState.value = currentState()
         onScrollToTop()
     }
@@ -164,7 +218,8 @@ class CourseFilterController(
             grade = grade,
             subject = subject,
             tagNames = searchTags.mapNotNull { it.name },
-            progressFilter = progressFilter
+            progressFilter = progressFilter,
+            tags = searchTags.toList()
         )
     }
 
