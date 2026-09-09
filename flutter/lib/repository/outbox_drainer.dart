@@ -36,6 +36,116 @@ typedef OutboxHandler =
       String? authHeader,
     );
 
+/// The 409 arm: port of `UploadCoordinator.kt:169-204`, **corrected**.
+///
+/// Kotlin answers a conflict by GETting the document that already exists,
+/// adopting its `_rev` and reporting the upload as a **success** — it runs the
+/// same `afterUpload` callback the accepted path runs
+/// (`UploadCoordinator.kt:169-186`). Ported literally that is a data-loss bug
+/// for every uploader in this port but one, and the reason is worth stating
+/// before the mechanism.
+///
+/// **A 409 never means "your write is already there".** It means the document
+/// with this `_id` exists and the `_rev` you supplied — or the one you omitted
+/// — is not its current revision, so *your bytes were not stored*. Adopting
+/// the revision and reporting success marks the local row uploaded while the
+/// server holds somebody else's content. The examination's readings, the
+/// team document's edit, the achievement ledger: none of them ever leave the
+/// device, and the outbox row is deleted as delivered.
+///
+/// The one place adopting is equivalent is a document whose content is a pure
+/// function of shared inputs. `adopted_surveys_uploader.dart` is exactly that
+/// — the clone id is `'${surveyId}_$teamId'` and two leaders adopting the same
+/// survey for the same team author the *same* document — which is why the
+/// port's single existing arm is correct where a general one would not be.
+///
+/// So the rule this class implements is the one that subsumes Kotlin's without
+/// inheriting its loss: **GET the current revision and re-send the same
+/// content under it.** The write lands. Where the content was idempotent
+/// anyway the re-send is a harmless overwrite that yields the same `rev`
+/// adopting would have.
+///
+/// ### Why this does not weaken Phase 148's policy
+///
+/// That policy is: *an `outbox` item owns exactly one row, for ever; a
+/// terminal row is a memo, and nothing re-asks the identical question
+/// unattended. What re-arms it is a changed request.*
+///
+/// The re-send here **is** a changed request — it carries a `_rev` the first
+/// one did not, fetched from the server between the two. That is the recovery
+/// route the policy names, taken inline instead of waiting for a pull to
+/// supply the same revision. Three things keep it inside the policy rather
+/// than around it:
+///
+/// * **It is bounded.** One GET and at most one re-send per drain attempt,
+///   never a loop. A second 409 is returned as the refusal it is, and
+///   [OutboxRepository.classifyStatus] makes it terminal exactly as before.
+/// * **It never re-asks an identical question.** If the revision the server
+///   reports is the one already in the payload, the re-send is skipped and the
+///   original refusal is returned — there is nothing new to ask.
+/// * **It cannot duplicate a document.** The arm fires only for a request that
+///   names its own document, so the re-send is an update of that `_id`. An
+///   append with a server-minted id cannot 409 in the first place, which is
+///   why the eleven uploaders in that class are untouched and unaffected.
+///
+/// ### The trade it does make
+///
+/// Re-sending under the server's current revision is last-write-wins: a
+/// concurrent edit made on another device is overwritten. That is the port's
+/// existing stance everywhere else — `HealthRepository.cacheDocuments` skips a
+/// locally dirty row (`health_repository.dart:772`), so the local copy is
+/// already authoritative over the server's — and it is the better of the two
+/// available mistakes. The alternative loses the *local* edit, silently, in a
+/// queue whose entire purpose is delivering local writes; Kotlin's arm loses
+/// it and reports success as well.
+class ConflictRecovery {
+  const ConflictRecovery._();
+
+  /// Runs [attempt], and on a 409 fetches [documentUrl] and runs it once more
+  /// under the revision that comes back.
+  ///
+  /// [attempt] is the uploader's own send, passed as a closure so the verb,
+  /// the URL and any per-uploader decoration of the body stay where they
+  /// belong. Everything the recovery itself decides lives here, once.
+  ///
+  /// A GET that fails returns the **original** 409 rather than inventing a
+  /// verdict of its own — the same choice `adopted_surveys_uploader.dart`
+  /// made, and the same one Kotlin makes for a non-successful fetch
+  /// (`UploadCoordinator.kt:187-192`, `retryable = false`, `httpCode = 409`).
+  static Future<NetworkResult<Map<String, dynamic>>> send({
+    required PlanetApi api,
+    required String documentUrl,
+    required Map<String, dynamic> payload,
+    required Future<NetworkResult<Map<String, dynamic>>> Function(
+      Map<String, dynamic> body,
+    )
+    attempt,
+    String? authHeader,
+  }) async {
+    final first = await attempt(payload);
+    if (first is! NetworkError<Map<String, dynamic>> || first.code != 409) {
+      return first;
+    }
+
+    // The drain's credential, not none: `outbox.endpoint` is stored
+    // credential-free on purpose, so an unauthenticated read of a CouchDB
+    // document is a 401 and this recovery would never fire.
+    final existing = await api.getJsonObject(
+      documentUrl,
+      authHeader: authHeader,
+    );
+    if (existing is! NetworkSuccess<Map<String, dynamic>>) return first;
+
+    final rev = existing.data['_rev'];
+    if (rev is! String || rev.isEmpty) return first;
+    // Nothing new to ask. Re-sending the bytes the server has just refused is
+    // precisely what Phase 148's memo exists to stop.
+    if (rev == payload['_rev']) return first;
+
+    return attempt({...payload, '_rev': rev});
+  }
+}
+
 /// Replaces `services/retry/RetryQueueWorker.kt`.
 ///
 /// The queue remains SQLite-backed and therefore survives process death.
