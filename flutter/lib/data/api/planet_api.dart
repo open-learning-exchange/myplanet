@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -46,10 +47,52 @@ class PlanetApi {
       url,
       authHeader: authHeader,
       responseType: ResponseType.json,
-      convert: (data) => data is Map<String, dynamic>
-          ? data
-          : throw const FormatException('Expected a JSON object'),
+      convert: (data) {
+        final decoded = _decodeIfString(data);
+        return decoded is Map<String, dynamic>
+            ? decoded
+            : throw const FormatException('Expected a JSON object');
+      },
     );
+  }
+
+  /// Decodes a body Dio handed back as a `String` instead of parsed JSON.
+  ///
+  /// **This is why the port could not configure against any real Planet
+  /// server.** Dio's `ResponseType.json` only decodes when the response's
+  /// `Content-Type` announces JSON; otherwise it returns the raw string. Planet
+  /// serves `/versions` as **`text/plain`** with a JSON body:
+  ///
+  /// ```
+  /// content-type: text/plain
+  /// {"appname":"planet",...,"minapk":"v0.65.55",...}
+  /// ```
+  ///
+  /// so `getConfiguration('<url>/versions')` threw
+  /// `FormatException: Expected a JSON object` on the very first request the
+  /// app makes, and `checkConfigurationUrl` reported it as
+  /// "device couldn't reach the server".
+  ///
+  /// Kotlin does not have the problem: Retrofit's `GsonConverterFactory`
+  /// parses the body bytes and never consults `Content-Type`. Tolerating a
+  /// string body is what makes this a port of that behaviour rather than a
+  /// stricter reimplementation of it.
+  ///
+  /// **No test could have caught it** — every fixture stubs a
+  /// `NetworkSuccess<Map>` and so never exercises the decode. The one that
+  /// pins it now goes through a real Dio against a mock adapter that replies
+  /// `text/plain`.
+  static Object? _decodeIfString(Object? data) {
+    if (data is! String) return data;
+    final trimmed = data.trim();
+    if (trimmed.isEmpty) return data;
+    try {
+      return jsonDecode(trimmed);
+    } on FormatException {
+      // Not JSON at all — a captive portal's HTML, say. Hand the original
+      // back so the caller throws its own "expected an object/array".
+      return data;
+    }
   }
 
   /// Port of `ApiInterface.getConfiguration` — same shape, no auth header.
@@ -61,9 +104,12 @@ class PlanetApi {
     return _request<List<dynamic>>(
       url,
       responseType: ResponseType.json,
-      convert: (data) => data is List
-          ? data
-          : throw const FormatException('Expected a JSON array'),
+      convert: (data) {
+        final decoded = _decodeIfString(data);
+        return decoded is List
+            ? decoded
+            : throw const FormatException('Expected a JSON array');
+      },
     );
   }
 
