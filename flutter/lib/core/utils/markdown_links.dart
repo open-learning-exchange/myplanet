@@ -128,8 +128,45 @@ String prependBaseUrlToImages(
 /// resource downloader would write. The Kotlin's *render* side does not
 /// decode, so those two disagree there for an encoded path; here one
 /// derivation serves both, so they cannot.
+/// The image destination a markdown link actually points at, with a CommonMark
+/// title removed and a pointy-bracket destination unwrapped.
+///
+/// **This is where two parsers are reconciled, and it is load-bearing.** The
+/// collector is [extractImageLinks], a line-for-line port of Kotlin's
+/// `DownloadUtils.extractLinks` regex, whose lazy `(.*?)` captures everything
+/// up to the first `)` — so `![a](p "Title")` yields `p "Title"` and
+/// `![a](<p>)` yields `<p>`. The renderer's link comes from
+/// `flutter_markdown_plus`'s CommonMark parser, which yields `p` for both.
+/// Verified against the real parser rather than assumed.
+///
+/// Kotlin has the same regex quirk and is *self-consistent* with it, because
+/// `prependBaseUrlToImages` matches on the identical pattern: it downloads and
+/// renders the same wrong path, so a titled image simply never appears. The
+/// port cannot be self-consistent that way — its renderer is a real markdown
+/// parser — so the collector is normalised to what the renderer will ask for.
+/// Without this the prefetcher 404s on `…/c.png "Title"` while the renderer
+/// looks up `abc/c.png`, which nothing wrote: the exact writer/reader key
+/// disagreement of Phase 100, and just as silent.
+///
+/// Applied to a link the renderer supplies this is a no-op — a parsed
+/// destination carries neither a title nor brackets.
+String markdownImageDestination(String link) {
+  var value = link.trim();
+  // CommonMark: `<destination> "title"`, so the title comes off first. The
+  // title may be double-quoted, single-quoted or parenthesised, and must be
+  // separated from the destination by whitespace.
+  final title = _titleSuffix.firstMatch(value);
+  if (title != null) value = value.substring(0, title.start).trimRight();
+  if (value.length >= 2 && value.startsWith('<') && value.endsWith('>')) {
+    value = value.substring(1, value.length - 1).trim();
+  }
+  return value;
+}
+
+final RegExp _titleSuffix = RegExp(r"""\s+("[^"]*"|'[^']*'|\([^()]*\))$""");
+
 String? markdownImageCachePath(String link) {
-  final trimmed = link.trim();
+  final trimmed = markdownImageDestination(link);
   if (trimmed.isEmpty) return null;
   // A scheme means an absolute URL — including a `data:` URI, which is the
   // only absolute shape the per-segment checks below would otherwise let

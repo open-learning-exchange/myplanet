@@ -173,4 +173,72 @@ void main() {
       expect(markdownImageCachePath('abc//chart.png'), isNull);
     });
   });
+
+  group('markdownImageDestination', () {
+    test('is a no-op on what the renderer supplies', () {
+      // The renderer hands a parsed CommonMark destination, which carries
+      // neither a title nor brackets. Verified against the real parser.
+      expect(
+        markdownImageDestination('resources/abc/c.png'),
+        'resources/abc/c.png',
+      );
+    });
+
+    test('strips a title in any of CommonMark three forms', () {
+      for (final title in <String>["\"T\"", "'T'", '(T)']) {
+        expect(
+          markdownImageDestination('resources/abc/c.png $title'),
+          'resources/abc/c.png',
+          reason: title,
+        );
+      }
+    });
+
+    test('unwraps a pointy-bracket destination', () {
+      expect(
+        markdownImageDestination('<resources/abc/c.png>'),
+        'resources/abc/c.png',
+      );
+      expect(
+        markdownImageDestination('<resources/abc/c.png> "T"'),
+        'resources/abc/c.png',
+      );
+    });
+
+    test('leaves a quote that is part of the path alone', () {
+      // No whitespace before it, so it is not a title.
+      expect(markdownImageDestination('abc/say"hi".png'), 'abc/say"hi".png');
+    });
+
+    test('needs whitespace before a title, so a filename keeps its suffix', () {
+      // `photo(1)` is a real filename shape. Without the whitespace
+      // requirement the parenthesised-title branch would eat it.
+      expect(markdownImageDestination('abc/photo(1)'), 'abc/photo(1)');
+      expect(markdownImageDestination(r'abc/track[1]'), r'abc/track[1]');
+    });
+
+    test('leaves an unterminated quote alone', () {
+      expect(markdownImageDestination('abc/c.png "T'), 'abc/c.png "T');
+    });
+  });
+
+  group('markdownImageCachePath reconciles the two parsers', () {
+    test('a titled link resolves to the path the renderer asks for', () {
+      // extractImageLinks captures 'resources/abc/c.png "Title"' where
+      // flutter_markdown_plus yields 'resources/abc/c.png'. Both must land on
+      // the same cache path or the prefetch writes where nothing looks.
+      expect(
+        markdownImageCachePath('resources/abc/c.png "Title"'),
+        markdownImageCachePath('resources/abc/c.png'),
+      );
+      expect(
+        markdownImageCachePath('resources/abc/c.png "Title"'),
+        'abc/c.png',
+      );
+    });
+
+    test('a bracketed link resolves to the path the renderer asks for', () {
+      expect(markdownImageCachePath('<resources/abc/c.png>'), 'abc/c.png');
+    });
+  });
 }

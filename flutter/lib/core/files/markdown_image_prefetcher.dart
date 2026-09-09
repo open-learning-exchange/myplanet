@@ -1,6 +1,7 @@
 import '../../data/api/planet_api.dart';
 import '../config/server_config.dart';
 import '../network/network_result.dart';
+import '../utils/markdown_links.dart';
 import '../utils/url_utils.dart';
 import 'markdown_image_files.dart';
 
@@ -68,9 +69,11 @@ class MarkdownImagePrefetcher {
     // The *download* URL keeps the `resources/` prefix that the on-disk path
     // drops — the same asymmetry the Kotlin has, where the queued URL is
     // `"$baseUrl/$link"` from the unstripped link (`CoursesRepositoryImpl:671`)
-    // while the render base strips it.
+    // while the render base strips it. It does *not* keep a markdown title or
+    // pointy brackets, which the regex collector captures and the renderer's
+    // CommonMark parser does not — see [markdownImageDestination].
     final result = await _api.getBytes(
-      '${UrlUtils.dbUrl(config)}/$link',
+      '${UrlUtils.dbUrl(config)}/${markdownImageDestination(link)}',
       authHeader: UrlUtils.authHeader(config),
     );
     if (result is! NetworkSuccess<List<int>>) return false;

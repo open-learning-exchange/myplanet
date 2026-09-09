@@ -190,4 +190,55 @@ void main() {
       expect(await asTheRendererLooksItUp(link), isNull);
     },
   );
+
+  // Two parsers meet here, and that is the risk this group exists for: the
+  // collector is `extractImageLinks`, a line-for-line port of Kotlin's regex,
+  // while the renderer's link comes from `flutter_markdown_plus`'s CommonMark
+  // parser. Kotlin is self-consistent because *both* its sides use the same
+  // regex (and are both wrong together, so the image simply never renders);
+  // the port is not, so the collector has to be normalised to what the
+  // renderer will actually ask for. Verified against the real parser, not
+  // assumed — `imageBuilder` receives `resources/abc/c.png` for every shape
+  // below.
+  group('the collector agrees with the renderer about the path', () {
+    Future<void> syncOne(String span, String expectedDownloadPath) async {
+      stubWalk([
+        {'_id': 'course-1', 'courseTitle': 'Algebra', 'description': span},
+      ]);
+      when(
+        () => api.getBytes(
+          '$dbUrl/$expectedDownloadPath',
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer((_) async => const NetworkSuccess<List<int>>([1]));
+      await repository.sync(config: config);
+    }
+
+    test('a markdown title is not part of the path', () async {
+      // Without normalisation the prefetcher requests
+      // `.../c.png "Title"` — a 404 — and the renderer looks up `abc/c.png`,
+      // which nothing wrote. Silent: the image just stays online-only.
+      await syncOne('![a](resources/abc/c.png "Title")', 'resources/abc/c.png');
+      expect(await asTheRendererLooksItUp('resources/abc/c.png'), isNotNull);
+    });
+
+    test('a pointy-bracket destination is unwrapped', () async {
+      await syncOne('![a](<resources/abc/c.png>)', 'resources/abc/c.png');
+      expect(await asTheRendererLooksItUp('resources/abc/c.png'), isNotNull);
+    });
+
+    test(
+      'a title on an encoded path strips without disturbing the escape',
+      () async {
+        await syncOne(
+          '![a](resources/abc/c%20d.png "T")',
+          'resources/abc/c%20d.png',
+        );
+        expect(
+          await asTheRendererLooksItUp('resources/abc/c%20d.png'),
+          isNotNull,
+        );
+      },
+    );
+  });
 }

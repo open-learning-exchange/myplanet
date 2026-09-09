@@ -81,6 +81,43 @@ writer and a reader disagreed about a key and each half passed its own test).
   fetch on a miss, on a loading lookup, and on a file that vanished between the
   check and the read.
 
+### The defect the key derivation did not cover
+
+Worth its own heading, because it is the phase's one real bug and my own
+single-derivation defence walked straight past it. **The disagreement was
+upstream of the derivation: the two sides do not share a parser.**
+
+The collector is `extractImageLinks`, a line-for-line port of Kotlin's
+`DownloadUtils.extractLinks` regex, whose lazy `(.*?)` takes everything up to
+the first `)`. The renderer's link comes from `flutter_markdown_plus`'s
+CommonMark parser. Probed against the real parser rather than reasoned about:
+
+| markdown | collector sees | renderer asks for |
+|---|---|---|
+| `![a](resources/abc/c.png)` | `resources/abc/c.png` | `resources/abc/c.png` |
+| `![a](resources/abc/c.png "Title")` | `resources/abc/c.png "Title"` | `resources/abc/c.png` |
+| `![a](<resources/abc/c.png>)` | `<resources/abc/c.png>` | `resources/abc/c.png` |
+
+So for a titled or bracketed image the prefetcher requested
+`…/c.png "Title"` — a 404 — while the renderer looked up `abc/c.png`, which
+nothing had written. No wrong bytes, no crash, nothing in a log: the image
+simply stayed online-only, which is the exact condition this phase exists to
+remove. **The Phase 100 shape, at one remove.**
+
+**Kotlin does not have this bug, because it does not have a second parser.**
+`prependBaseUrlToImages` matches on the *identical* pattern, so Kotlin
+downloads and renders the same wrong path and a titled image never appears at
+all. Self-consistently broken is not a thing the port can be here, so
+`markdownImageDestination` normalises the collected link to the CommonMark
+destination — title stripped, pointy brackets unwrapped — and both the cache
+path and the download URL go through it. On a link the renderer supplies it is
+a no-op.
+
+Found by asking the question the brief told me to ask (*can the writer produce
+values the reader's predicate matches?*) and then **running the real parser**
+instead of answering it from the regex. The three round-trip tests were written
+failing first.
+
 ### Where the port deliberately differs from the Kotlin
 
 Recorded here rather than left for a later audit to flag as an undocumented
@@ -107,11 +144,15 @@ and the ground-truth audit is what caught it.
 
 ## Verification
 
-- **Every claim mutation-tested.** Fifteen mutations across the derivation, the
-  files helper, the prefetcher, the sync collection and the renderer; each
-  reverted in turn and the suite re-run. Fourteen were killed by the test named
-  for them. A no-op control mutation survived, which is what says the harness
-  can distinguish the two.
+- **Every claim mutation-tested.** Twenty-one mutations across the derivation,
+  the destination normaliser, the files helper, the prefetcher, the sync
+  collection and the renderer; each reverted in turn and the suite re-run.
+  Twenty were killed by the test named for them. A no-op control mutation
+  survived, which is what says the harness can distinguish the two.
+- **A third survivor was a real gap in a test, not in the code**: the
+  whitespace requirement before a CommonMark title (`\s+`, not `\s*`) was
+  unpinned until a case ending in a parenthesised group was added — `photo(1)`
+  is a real filename, and `\s*` eats it.
 - **Two mutations survived the first round, and both were real findings about
   my code rather than about the tests.** The raw pre-decode `..`/empty-segment
   check and the `startsWith('/')`/backslash early return were fully **subsumed**
