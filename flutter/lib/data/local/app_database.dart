@@ -1793,6 +1793,79 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
           .toList(growable: false),
     );
   }
+
+  /// Resources this device authored that have never reached the server.
+  ///
+  /// Port of `MyLibraryDao.getPendingUploads`, **with the predicate widened by
+  /// one clause**, and the extra clause is the whole point of this doc comment.
+  ///
+  /// Kotlin's query is exactly `SELECT * FROM my_library WHERE _rev IS NULL`
+  /// (`MyLibraryDao.kt:94-95`). Copying that literally into the port would
+  /// have uploaded the catalog. `my_library` has two writers and only one of
+  /// them sees a `_rev`: the `resources` walk pulls whole CouchDB documents,
+  /// while the courses walk pulls the *thinner* copy embedded in a course
+  /// step, and a sub-object carries no revision
+  /// (`CoursesRepository._ingestCourseResources`, and
+  /// [MyLibraryMapper._revOrAbsent], which documents the pair). So a course
+  /// resource the resources walk has not reached yet sits here with a genuinely
+  /// null `_rev` — and POSTing it to `resources` would file a **second copy of
+  /// a document that already exists on the server**, one per course resource,
+  /// on the first drain after the first courses sync.
+  ///
+  /// Kotlin is spared that by a quirk rather than by design.
+  /// `MyLibrary.insertMyLibrary` assigns `_rev = JsonUtils.getString("_rev",
+  /// doc)` unconditionally (`MyLibrary.kt:237`) and `getString` returns `""`
+  /// for a missing key, so Kotlin's course-embedded rows carry an *empty*
+  /// revision, which `_rev IS NULL` does not match. Phase 150 deliberately
+  /// fixed that quirk in the port — writing [Value.absent] instead, for good
+  /// reasons set out at [MyLibraryMapper._revOrAbsent] — and in doing so
+  /// removed the accidental guard that Kotlin's pending predicate leans on.
+  /// Nothing noticed, because until now the port had no resource uploader.
+  ///
+  /// The honest discriminator is therefore `_id`, not `_rev`: **every** sync
+  /// writer sets `couchId` from the document's own `_id` and
+  /// [MyLibraryMapper.fromDoc] returns null outright when that id is empty, so
+  /// a row with no `_id` cannot have come from the server. Only
+  /// [ResourcesRepository.saveLocalResource] leaves it unset. `_rev IS NULL` is
+  /// kept alongside it so a row that *has* been uploaded is never offered
+  /// twice, which is the clause Kotlin was actually relying on.
+  ///
+  /// The `_id = ''` arm covers a row an older build may have written with a
+  /// blank rather than absent id, the same way `deleteNotIn` spares both.
+  Future<List<MyLibraryRow>> pendingUploads() =>
+      (select(myLibraryTable)..where(
+            (r) => r.rev.isNull() & (r.couchId.isNull() | r.couchId.equals('')),
+          ))
+          .get();
+
+  /// Adopts the `_id` and `_rev` CouchDB assigned to a freshly POSTed
+  /// resource.
+  ///
+  /// Port of the first half of `ResourcesRepositoryImpl.markResourceUploaded`
+  /// (`:803-806`), which looks the row up by its local id, assigns `_id` and
+  /// `_rev`, and upserts. Writing both is what takes the row out of
+  /// [pendingUploads] — either clause alone would do it, and both are written
+  /// because the row genuinely has both now.
+  ///
+  /// Returns false when no row matched, mirroring Kotlin's
+  /// `myLibraryDao.getById(localId) ?: return false`. That return value is
+  /// load-bearing upstream: `UploadConfigs.getResourcesConfig`'s
+  /// `markUploaded` is `results.filter { !markResourceUploaded(...) }`, i.e. it
+  /// hands back the results whose local row could **not** be found, so a
+  /// vanished row is reported as a failure rather than silently succeeding.
+  ///
+  /// Kotlin also creates a team-resource-link document here for a private
+  /// resource, using the `planetCode` argument. That half is **not** ported:
+  /// `TeamsRepository.createLocalResourceLink` does not exist in the port at
+  /// all, so there is nothing to call. Reported rather than reached for —
+  /// `teams_repository.dart` belongs to no lane this round.
+  Future<bool> markUploaded(String id, String couchId, String rev) async {
+    final updated =
+        await (update(myLibraryTable)..where((r) => r.id.equals(id))).write(
+          MyLibraryTableCompanion(couchId: Value(couchId), rev: Value(rev)),
+        );
+    return updated > 0;
+  }
 }
 
 /// Comfortably under SQLite's 999-variable floor.
