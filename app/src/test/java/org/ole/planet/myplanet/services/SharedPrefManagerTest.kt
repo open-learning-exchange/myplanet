@@ -70,6 +70,17 @@ class SharedPrefManagerTest {
     }
 
     @Test
+    fun testGetSavedUsersMalformedJson() {
+        every { mockSharedPreferences.getString("savedUsers", null) } returns "invalid json {"
+        try {
+            sharedPrefManager.getSavedUsers()
+            org.junit.Assert.fail("Expected JsonSyntaxException or similar error on malformed json")
+        } catch (e: Exception) {
+            assertTrue(e is com.google.gson.JsonSyntaxException || e is com.google.gson.JsonParseException)
+        }
+    }
+
+    @Test
     fun testGetSelectedTeamId() {
         // Test non-empty string
         every { mockSharedPreferences.getString("selectedTeamId", "") } returns "team123"
@@ -240,6 +251,23 @@ class SharedPrefManagerTest {
         verify { mockEditor.remove("new_login_password") }
 
         unmockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
+    }
+
+    @Test
+    fun testUrlSettersInvalidateCache() {
+        mockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+        every { org.ole.planet.myplanet.utils.UrlUtils.invalidateCaches() } just Runs
+
+        sharedPrefManager.setCouchdbUrl("http://new-couch.com")
+        verify { org.ole.planet.myplanet.utils.UrlUtils.invalidateCaches() }
+
+        sharedPrefManager.setProcessedAlternativeUrl("http://new-alt.com")
+        verify(exactly = 2) { org.ole.planet.myplanet.utils.UrlUtils.invalidateCaches() }
+
+        sharedPrefManager.setIsAlternativeUrl(true)
+        verify(exactly = 3) { org.ole.planet.myplanet.utils.UrlUtils.invalidateCaches() }
+
+        unmockkObject(org.ole.planet.myplanet.utils.UrlUtils)
     }
 
 }
