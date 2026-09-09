@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.Configuration
-import android.net.TrafficStats
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
@@ -26,9 +25,6 @@ import androidx.work.WorkManager
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.HiltAndroidApp
 import java.lang.ref.WeakReference
-import java.net.HttpURLConnection
-import java.net.URL
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -50,12 +46,12 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.AutoSyncWorker
 import org.ole.planet.myplanet.services.NetworkMonitorWorker
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
+import org.ole.planet.myplanet.services.ServerReachabilityChecker
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.TaskNotificationWorker
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.utils.ANRWatchdog
-import org.ole.planet.myplanet.utils.Constants.NETWORK_TRAFFIC_TAG
 import org.ole.planet.myplanet.utils.CrashLogStore
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
@@ -191,92 +187,19 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             }
         }
         
-        private const val REACHABILITY_CACHE_TTL_MS = 30_000L
-        private val reachabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
+        private val serverReachabilityChecker: ServerReachabilityChecker by lazy {
+            ServerReachabilityChecker { coreDependenciesEntryPoint }
+        }
 
         suspend fun isServerReachable(
             urlString: String,
             ioDispatcher: CoroutineDispatcher = coreDependenciesEntryPoint.dispatcherProvider().io
-        ): Boolean {
-            if (urlString.isBlank()) return false
-
-            reachabilityCache[urlString]?.let { (reachable, checkedAt) ->
-                if (System.currentTimeMillis() - checkedAt < REACHABILITY_CACHE_TTL_MS) {
-                    return reachable
-                }
-            }
-
-            val serverUrlMapper = coreDependenciesEntryPoint.serverUrlMapper()
-            val mapping = serverUrlMapper.processUrl(urlString)
-            val urlsToTry = mutableListOf(urlString)
-            mapping.alternativeUrl?.let { urlsToTry.add(it) }
-
-            var reachable = false
-            for (url in urlsToTry) {
-                if (tryConnect(url, ioDispatcher)) {
-                    reachable = true
-                    break
-                }
-            }
-            reachabilityCache[urlString] = reachable to System.currentTimeMillis()
-            return reachable
-        }
+        ): Boolean = serverReachabilityChecker.isServerReachable(urlString, ioDispatcher)
 
         suspend fun isPrimaryServerReachable(
             urlString: String,
             ioDispatcher: CoroutineDispatcher = coreDependenciesEntryPoint.dispatcherProvider().io
-        ): Boolean {
-            if (urlString.isBlank()) return false
-            return tryConnect(urlString, ioDispatcher)
-        }
-
-        private suspend fun tryConnect(
-            urlString: String,
-            ioDispatcher: CoroutineDispatcher
-        ): Boolean {
-            return try {
-                val formattedUrl = if (!urlString.startsWith("http://") && !urlString.startsWith("https://")) {
-                    "http://$urlString"
-                } else {
-                    urlString
-                }
-                val url = URL(formattedUrl)
-                val responseCode = withContext(ioDispatcher) {
-                    getResponseCode(url)
-                }
-                responseCode in 200..299
-            } catch (e: Exception) {
-                if (e is kotlinx.coroutines.CancellationException) throw e
-                false
-            }
-        }
-
-        private fun getResponseCode(url: URL): Int {
-            TrafficStats.setThreadStatsTag(NETWORK_TRAFFIC_TAG)
-            return try {
-                val headCode = executeRequest(url, "HEAD")
-                if (headCode == HttpURLConnection.HTTP_BAD_METHOD || headCode == HttpURLConnection.HTTP_NOT_IMPLEMENTED) {
-                    executeRequest(url, "GET")
-                } else {
-                    headCode
-                }
-            } finally {
-                TrafficStats.clearThreadStatsTag()
-            }
-        }
-
-        private fun executeRequest(url: URL, method: String): Int {
-            val connection = url.openConnection() as HttpURLConnection
-            return try {
-                connection.requestMethod = method
-                connection.connectTimeout = 5000
-                connection.readTimeout = 5000
-                connection.connect()
-                connection.responseCode
-            } finally {
-                connection.disconnect()
-            }
-        }
+        ): Boolean = serverReachabilityChecker.isPrimaryServerReachable(urlString, ioDispatcher)
 
         fun persistCriticalLog(type: String, error: String) {
             val pendingFile = CrashLogStore.save(context, type, error, coreDependenciesEntryPoint.timeProvider())
