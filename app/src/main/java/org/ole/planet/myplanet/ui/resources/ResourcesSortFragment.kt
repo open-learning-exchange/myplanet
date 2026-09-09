@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentResourcesSortBinding
 
 class ResourcesSortFragment : BottomSheetDialogFragment() {
@@ -19,6 +20,8 @@ class ResourcesSortFragment : BottomSheetDialogFragment() {
     private val binding get() = _binding!!
     private var listener: SortSelectionListener? = null
     private var currentMode: ResourcesViewModel.SortMode = ResourcesViewModel.SortMode.NONE
+    private var isDateAscending: Boolean = true
+    private var isTitleAscending: Boolean = false
 
     fun setListener(listener: SortSelectionListener) {
         this.listener = listener
@@ -26,6 +29,11 @@ class ResourcesSortFragment : BottomSheetDialogFragment() {
 
     fun setCurrentMode(mode: ResourcesViewModel.SortMode) {
         currentMode = mode
+    }
+
+    fun setCurrentDirection(isDateAscending: Boolean, isTitleAscending: Boolean) {
+        this.isDateAscending = isDateAscending
+        this.isTitleAscending = isTitleAscending
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -52,6 +60,8 @@ class ResourcesSortFragment : BottomSheetDialogFragment() {
             ResourcesViewModel.SortMode.NONE -> Unit
         }
 
+        updateDirectionLabels()
+
         binding.sortOrderByDate.setOnClickListener {
             listener?.onSortSelected(ResourcesViewModel.SortMode.DATE)
             dismiss()
@@ -60,6 +70,13 @@ class ResourcesSortFragment : BottomSheetDialogFragment() {
             listener?.onSortSelected(ResourcesViewModel.SortMode.TITLE)
             dismiss()
         }
+    }
+
+    private fun updateDirectionLabels() {
+        val dateArrow = if (isDateAscending) "↑" else "↓"
+        val titleArrow = if (isTitleAscending) "↑" else "↓"
+        binding.sortOrderByDate.text = "${getString(R.string.order_by_date)} $dateArrow"
+        binding.sortOrderByTitle.text = "${getString(R.string.order_by_title)} $titleArrow"
     }
 
     override fun onDestroyView() {

@@ -509,7 +509,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     private fun updateFilterBadge() {
         if (_binding == null) return
-        val count = searchTags.size + subjects.size + languages.size + mediums.size + levels.size
+        val count = searchTags.size + subjects.size + languages.size + mediums.size + levels.size +
+            (if (selectedDownloadFilterIndex != 0) 1 else 0)
         if (count > 0) {
             filterBadge.text = count.toString()
             filterBadge.visibility = View.VISIBLE
@@ -713,7 +714,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         this.mediums = mediums
         this.levels = levels
         updateFilterBadge()
-        if (view == null) return getFilteredCount(subjects, languages, mediums, levels)
+        if (view == null) return lastFilteredCount
         searchJob?.cancel()
         return applyFiltersAndUpdateUI()
     }
@@ -817,6 +818,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private fun showSortSheet() {
         val f = ResourcesSortFragment()
         f.setCurrentMode(viewModel.currentSortMode)
+        f.setCurrentDirection(viewModel.isDateSortAscending, viewModel.isTitleSortAscending)
         f.setListener(ResourcesSortFragment.SortSelectionListener { mode ->
             viewLifecycleOwner.lifecycleScope.launch {
                 allResourceModels = when (mode) {
@@ -952,6 +954,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             chip.setOnClickListener {
                 selectedDownloadFilterIndex = label
                 renderDownloadChipSelection(chipRow)
+                updateFilterBadge()
                 applyFiltersAndUpdateUI()
             }
             chipRow.addView(chip)
