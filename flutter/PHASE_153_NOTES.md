@@ -142,17 +142,119 @@ agree. An earlier cut of this phase declined the shape on collision grounds;
 that was a **regression against the app being ported**, not a hardening of it,
 and the ground-truth audit is what caught it.
 
+## What the second audit found in my own finished, green code
+
+Eight defects, in code that passed format, analyze and 2784 tests. Two of them
+were the feature not working; one would have broken background sync outright.
+Recorded at this length because the pass is mandatory precisely because of
+rounds like this one.
+
+**1. A Latin-1 percent-escape threw out of `sync()` and permanently broke
+auto-sync.** `Uri.decodeComponent` throws **two** types: `ArgumentError` for bad
+hex, and **`FormatException` for valid hex that is not valid UTF-8**. I caught
+only the first. `caf%E9.png` is Latin-1 `café.png` — the shape any pre-UTF-8
+attachment name on an older Planet install has — and it threw straight through
+`_fetch` → `prefetch` → `CoursesRepository.sync`. Foreground that is a failed
+sync whose documents were already written. In the background isolate
+`BackgroundTaskRunner` records it as a failed step, `recordLastSync` is skipped,
+`run()` returns false, WorkManager retries, `_isDue()` is still true — **one bad
+character in one course description would stop auto-sync for as long as that
+document existed on the server.** Before this phase `CoursesRepository.sync`
+touched no filesystem at all, so this and two sibling throw sites
+(`path_provider`'s channel in a headless engine, a file vanishing between
+`exists()` and `length()`) were all new failure modes I introduced. Fixed twice
+over: the specific catch, and an unconditional per-link `try` in `prefetch` —
+the class doc claimed failures were swallowed and the code did not implement it.
+
+**2. The production wiring was pinned by nothing.** `markdownImages` is optional
+with a null default and the call site is `_markdownImages?.prefetch(...)`, so
+deleting the argument from `coursesRepositoryProvider` was a **silent no-op** —
+analyze clean, every prefetch test green (each builds its own repository), the
+feature simply absent from the app. That is the ported-tested-green-and-dead
+class this phase's brief warned about, reproduced by the phase that was warned.
+`test/providers/courses_repository_wiring_test.dart` now drives the real
+provider graph and asserts the bytes reach disk; the mutation that deletes the
+argument kills it.
+
+**3. `sync()` could hang forever.** `PlanetApi.getBytes` sets
+`receiveTimeout: null` — correct for a large user-initiated download, and an
+unbounded stall once it runs inside a sync, where `SyncNotifier` refuses a
+second attempt while one is running so the sync button never re-enables. Added
+a per-link timeout and an overall budget; deviation 6's "steady state is one
+`exists()` per link" was true and irrelevant, because a first sync on a fresh
+install is not steady state and WorkManager kills the task at ~10 minutes.
+Kotlin needs neither budget: the foreground service is how it outlives that.
+
+**4. The local copy never took over until the app restarted.**
+`markdownImageFileProvider` had no `.autoDispose`, and a `FutureProvider.family`
+caches per argument for the life of the container — so a first render while the
+image was still downloading cached `null` for the whole process, and the sync's
+file was never picked up. Open a course while the dashboard sync is walking
+`courses`, then go offline: the image is on disk and does not render. **The
+feature not working, in exactly the situation it exists for.** My own notes
+described this wrongly — I wrote that the local branch takes over "on the next
+rebuild", and a rebuild re-watches the *cached* instance; there was no rebuild
+that fixed it.
+
+**5. A 49-line dartdoc was attached to the wrong function.** The new
+`markdownImageDestination` doc ran into the `markdownImageCachePath` block with
+no separator, so Dart bound all 71 lines to `markdownImageDestination` and the
+single key derivation this phase is built on had **no doc at all**. Neither
+`dart format` nor `flutter analyze` catches it. Fixed by ordering the file so
+each doc sits on its own function.
+
+**6. A code comment asserted what these very notes disprove.** The prefetcher
+said Kotlin's link list "grows for the life of the install"; `SyncManager.kt:93`
+clears the pref on every sync, and what grows is the two process-lifetime
+collectors that repopulate it. The notes said this correctly and cited the line;
+the comment was never updated to match — and **the comment is what a future lane
+reads**. Same defect class this file takes credit for catching.
+
+**7. Two wrong Kotlin line citations** carried in from the brief:
+`VoicesRepositoryImpl:393` is `val baseUrl`, `extractLinks` is at **393**; and
+`TeamsRepositoryImpl:1187` is a closing brace, the call is at **1187**.
+Corrected in code and in these notes. (Every other citation on both sides was
+independently re-derived and holds.)
+
+**8. `_titleSuffix`'s parenthesised-title branch was unreachable.**
+`extractImageLinks`' lazy capture stops at the first `)`, so `![a](p (T))`
+yields `p (T` and never a string ending in `)`; the renderer's destinations are
+percent-encoded with no whitespace. Removed, with a test pinning that a
+parenthesised title is *not* stripped so its absence stays a decision. The
+`\s+`-vs-`\s*` distinction the earlier draft of these notes celebrated was
+pinned by `photo(1)` — an input no producer can generate — so that test was
+replaced with the reachable one, `![a](abc/"T")`. **Two sections of these notes
+were bragging about a guard of exactly the kind they claim to remove.**
+
+### Reported by the audit and deliberately not fixed
+
+Five further collector/renderer disagreements remain, all of which fall back to
+the network and lose nothing: a `#fragment` (the one case that writes a file
+nothing will read, at `<base>/ole/A/b.png#100x50`), an HTML entity
+(`b&amp;amp;c.png` vs `b&amp;c.png`), a backslash-escaped paren, a balanced-paren
+destination, and a reference-style `![a][ref]` link, which the regex collector
+does not see at all. Closing them properly means parsing markdown in the
+collector rather than pattern-matching it, which is a different change from this
+one. `markdownImageDestination`'s dartdoc names what it does and does not
+reconcile rather than implying it covers everything.
+
 ## Verification
 
-- **Every claim mutation-tested.** Twenty-one mutations across the derivation,
-  the destination normaliser, the files helper, the prefetcher, the sync
-  collection and the renderer; each reverted in turn and the suite re-run.
-  Twenty were killed by the test named for them. A no-op control mutation
-  survived, which is what says the harness can distinguish the two.
-- **A third survivor was a real gap in a test, not in the code**: the
-  whitespace requirement before a CommonMark title (`\s+`, not `\s*`) was
-  unpinned until a case ending in a parenthesised group was added — `photo(1)`
-  is a real filename, and `\s*` eats it.
+- **Every claim mutation-tested, twice** — once on the first cut and again on
+  everything the second audit's fixes added. Thirty mutations in total across
+  the derivation, the destination normaliser, the files helper, the prefetcher,
+  the sync collection, the renderer and the provider wiring; each reverted in
+  turn and the suite re-run. Twenty-nine were killed by the test named for
+  them. A no-op control mutation survived, which is what says the harness can
+  distinguish the two.
+- **Four survivors were real, and every one of them was a finding about my code
+  or my tests rather than a shrug.** Two dead guards (below), one unpinned
+  regex rule, and — the one worth repeating — **the test named "prefetches
+  once, after the walk rather than per page" could not fail for the property it
+  named**: `stubCount(2)` yields a single page, so `calls == 1` held whether the
+  prefetch sat after the loop or inside it. Rewritten with a real page boundary,
+  and the inside-the-loop mutation now kills it. That test was cited in the
+  first draft of these notes as evidence for a claim it did not test.
 - **Two mutations survived the first round, and both were real findings about
   my code rather than about the tests.** The raw pre-decode `..`/empty-segment
   check and the `startsWith('/')`/backslash early return were fully **subsumed**
@@ -204,7 +306,7 @@ Each names the file, the change, and why it was not made here.
    the second half needs already exists and is tested; it is three lines and a
    test once the renderer is there.
 2. **A team/community description's markdown images, same shape, one step
-   further back.** Kotlin's `TeamsRepositoryImpl.processDescription:1185`
+   further back.** Kotlin's `TeamsRepositoryImpl.processDescription:1185` (the `extractLinks` call at `:1187`)
    collects them and `CommunityServicesFragment:52` renders the description as
    markdown at 600×350 above the services list, with a `tvNoDescription` empty
    state. The port's `services_screen.dart` renders **only the list** — there is
@@ -224,13 +326,12 @@ Each names the file, the change, and why it was not made here.
    `preferences.edit` anywhere in the file — unlike `DownloadService.cleanupProcessedUrls`.
    No port impact today (the port keeps no such queue, deviation 1), but it is
    the kind of asymmetry a later "just port the worker" would inherit.
-5. **`markdownImageBytesProvider`'s cached bytes are not invalidated when a
-   prefetch lands.** A description rendered online caches its bytes under the
-   resolved URL; if a sync downloads the same image a moment later, the widget
-   keeps showing the in-memory copy until the provider is disposed. Harmless —
-   same pixels — but the local branch does not take over until the next rebuild
-   that re-reads `markdownImageFileProvider`. Noting it so a future reader does
-   not diagnose it as a broken join. `flutter/lib/ui/courses/course_markdown.dart`.
+5. **`markdownImageBytesProvider` is not `autoDispose`.** A description
+   rendered online caches its bytes under the resolved URL for the life of the
+   container. Genuinely harmless — the same pixels — and *unlike* its sibling
+   `markdownImageFileProvider`, which had the same shape and where it was the
+   feature not working (finding 4 above). Left alone to keep the diff to what
+   the audit showed was broken. `flutter/lib/ui/courses/course_markdown.dart`.
 6. **A server-side replacement of an image at the same path is never
    re-fetched**, in either app. `existingFileFor` is `exists() && length() > 0`,
    as Kotlin's `FileUtils.checkFileExist` is; neither carries a rev or mtime

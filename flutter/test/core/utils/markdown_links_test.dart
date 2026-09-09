@@ -164,6 +164,17 @@ void main() {
       expect(markdownImageCachePath('resources/abc/bad%zz.png'), isNull);
     });
 
+    test(
+      'declines a valid escape that is not valid UTF-8, without throwing',
+      () {
+        // `caf%E9.png` is Latin-1 `café.png`. Uri.decodeComponent throws
+        // FormatException here and ArgumentError only for bad hex, so catching
+        // ArgumentError alone let this escape all the way out of sync().
+        expect(markdownImageCachePath('resources/abc/caf%E9.png'), isNull);
+        expect(markdownImageCachePath('resources/abc/%FF.png'), isNull);
+      },
+    );
+
     test('declines an empty or blank link', () {
       expect(markdownImageCachePath(''), isNull);
       expect(markdownImageCachePath('   '), isNull);
@@ -184,8 +195,8 @@ void main() {
       );
     });
 
-    test('strips a title in any of CommonMark three forms', () {
-      for (final title in <String>["\"T\"", "'T'", '(T)']) {
+    test('strips a quoted title in either form', () {
+      for (final title in <String>["\"T\"", "'T'"]) {
         expect(
           markdownImageDestination('resources/abc/c.png $title'),
           'resources/abc/c.png',
@@ -210,11 +221,26 @@ void main() {
       expect(markdownImageDestination('abc/say"hi".png'), 'abc/say"hi".png');
     });
 
-    test('needs whitespace before a title, so a filename keeps its suffix', () {
-      // `photo(1)` is a real filename shape. Without the whitespace
-      // requirement the parenthesised-title branch would eat it.
-      expect(markdownImageDestination('abc/photo(1)'), 'abc/photo(1)');
-      expect(markdownImageDestination(r'abc/track[1]'), r'abc/track[1]');
+    test(
+      'leaves a parenthesised title alone, because no producer emits one',
+      () {
+        // CommonMark allows `p (T)`, and the branch for it is deliberately
+        // absent: extractImageLinks' lazy capture stops at the first ')', so
+        // `![a](p (T))` yields `p (T` and never a string ending in ')'. Pinned
+        // so removing the branch stays a decision rather than a regression.
+        expect(extractImageLinks('![a](p (T))'), ['p (T']);
+        expect(
+          markdownImageDestination('resources/abc/c.png (T)'),
+          'resources/abc/c.png (T)',
+        );
+      },
+    );
+
+    test('needs whitespace before a quoted title', () {
+      // A path whose last segment is quoted is reachable: `![a](abc/"T")`.
+      // Without the whitespace requirement the title branch would eat it.
+      expect(extractImageLinks(r'![a](abc/"T")'), [r'abc/"T"']);
+      expect(markdownImageDestination(r'abc/"T"'), r'abc/"T"');
     });
 
     test('leaves an unterminated quote alone', () {

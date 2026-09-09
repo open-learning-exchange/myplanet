@@ -95,7 +95,10 @@ class _MarkdownImage extends ConsumerWidget {
       }
       return _AuthedBytesImage(url: uri.toString(), config: config);
     }
-    // Relative path. Prefer the copy the sync pre-downloaded — that is the
+    // Anything left resolves against the server — a relative path, or an
+    // authority-less absolute one (`data:`, `mailto:`), which
+    // `markdownImageCachePath` declines so the lookup below simply misses.
+    // Prefer the copy the sync pre-downloaded — that is the
     // whole point of the prefetch, and it is the only branch that renders with
     // no network. Falls back to the authenticated fetch while the lookup is in
     // flight, when nothing has been downloaded yet, and when the derivation
@@ -136,9 +139,21 @@ class _MarkdownImage extends ConsumerWidget {
 ///
 /// Returns the *path* rather than the `File` so an override can be written
 /// without importing `dart:io`.
-final markdownImageFileProvider = FutureProvider.family<String?, String>(
-  (ref, link) async => (await MarkdownImageFiles.existingFileFor(link))?.path,
-);
+/// **`autoDispose` is load-bearing, not hygiene.** A plain `FutureProvider
+/// .family` caches per argument for the life of the `ProviderContainer`, so
+/// the first render of a description whose image is not yet downloaded would
+/// cache `null` for the rest of the process: the sync writes the file a minute
+/// later, the widget re-watches the same cached instance, and the local copy
+/// never takes over — the image goes on being fetched from the network, which
+/// renders nothing once the device is offline. That is the feature not
+/// working, in exactly the situation it exists for. Disposing when nothing is
+/// watching means the next screen that renders the description looks at the
+/// disk again.
+final markdownImageFileProvider = FutureProvider.autoDispose
+    .family<String?, String>(
+      (ref, link) async =>
+          (await MarkdownImageFiles.existingFileFor(link))?.path,
+    );
 
 /// The host of the active server, for deciding whether an absolute image URL
 /// is one of ours (authed) or external (plain network).

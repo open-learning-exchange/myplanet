@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myplanet/core/config/server_config.dart';
+import 'package:myplanet/core/files/markdown_image_files.dart';
+import 'package:myplanet/core/files/resource_files.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/ui/courses/course_markdown.dart';
 
@@ -24,6 +27,47 @@ class _TestServerConfig extends ServerConfigNotifier {
 }
 
 void main() {
+  group('markdownImageFileProvider re-reads the disk', () {
+    late Directory tempDir;
+    late Future<Directory> Function() savedBaseDirectory;
+    const link = 'resources/abc123/chart.png';
+
+    setUp(() async {
+      tempDir = await Directory.systemTemp.createTemp('markdown_provider');
+      savedBaseDirectory = ResourceFiles.baseDirectory;
+      ResourceFiles.baseDirectory = () async => tempDir;
+    });
+
+    tearDown(() async {
+      ResourceFiles.baseDirectory = savedBaseDirectory;
+      if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+    });
+
+    test('a miss is not cached for the life of the container', () async {
+      // The scenario: the user opens a course while the sync is still walking
+      // `courses`, so the first lookup misses; the sync writes the file a
+      // moment later; the user goes offline. Without autoDispose the null is
+      // cached for the whole process and the image never renders from disk
+      // again — the feature not working, in the situation it exists for.
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(
+        await container.read(markdownImageFileProvider(link).future),
+        isNull,
+      );
+
+      final file = (await MarkdownImageFiles.fileFor(link))!;
+      await file.parent.create(recursive: true);
+      await file.writeAsBytes(const [1, 2, 3]);
+
+      expect(
+        await container.read(markdownImageFileProvider(link).future),
+        file.path,
+      );
+    });
+  });
+
   const config = ServerConfig(
     serverUrl: 'https://planet.example',
     couchDbUrl: 'https://satellite:1234@planet.example:443',

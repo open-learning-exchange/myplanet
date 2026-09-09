@@ -18,6 +18,12 @@ class _RecordingPrefetcher implements MarkdownImagePrefetcher {
   int calls = 0;
 
   @override
+  Duration get perLinkTimeout => const Duration(seconds: 30);
+
+  @override
+  Duration get budget => const Duration(minutes: 3);
+
+  @override
   Future<int> prefetch(
     Iterable<String> links, {
     required ServerConfig config,
@@ -692,7 +698,20 @@ void main() {
     });
 
     test('prefetches once, after the walk rather than per page', () async {
-      stubCount(2);
+      // Two *pages*, not two rows: with one page `calls == 1` holds whether
+      // the prefetch sits after the loop or inside it, so the test would be
+      // green for the mutation it is named for.
+      stubCount(3);
+      stubPage(2, 50, [
+        {
+          'id': 'course-3',
+          'doc': {
+            '_id': 'course-3',
+            'courseTitle': 'C',
+            'description': '![c](resources/c/c.png)',
+          },
+        },
+      ]);
       stubPage(0, 50, [
         {
           'id': 'course-1',
@@ -715,7 +734,11 @@ void main() {
       await repository.sync(config: config);
 
       expect(prefetcher.calls, 1);
-      expect(prefetcher.links, ['resources/a/a.png', 'resources/b/b.png']);
+      expect(prefetcher.links, [
+        'resources/a/a.png',
+        'resources/b/b.png',
+        'resources/c/c.png',
+      ]);
     });
 
     test(

@@ -48,8 +48,18 @@ class MarkdownImageFiles {
   static Future<File?> existingFileFor(String link) async {
     final file = await fileFor(link);
     if (file == null) return null;
-    if (!await file.exists()) return null;
-    if (await file.length() <= 0) return null;
-    return file;
+    return await hasBytes(file) ? file : null;
+  }
+
+  /// Whether [file] is a usable download rather than an interrupted one.
+  ///
+  /// Split out so a caller that already holds the `File` does not derive it a
+  /// second time: [fileFor] awaits `ResourceFiles.oleDirectory()`, which goes
+  /// through `path_provider`'s platform channel and is not cached, so the
+  /// prefetcher's `fileFor`-then-`existingFileFor` pair was two channel hops
+  /// per link — in the headless isolate as well.
+  static Future<bool> hasBytes(File file) async {
+    if (!await file.exists()) return false;
+    return await file.length() > 0;
   }
 }

@@ -241,4 +241,65 @@ void main() {
       },
     );
   });
+
+  group('a bad link cannot fail the sync that already wrote the documents', () {
+    test('a Latin-1 percent-escape does not throw out of sync()', () async {
+      // `caf%E9.png` is Latin-1 `café.png` — valid hex, invalid UTF-8, from
+      // any pre-UTF-8 attachment name. Uri.decodeComponent throws
+      // FormatException for it and ArgumentError only for bad hex, so
+      // catching ArgumentError alone let it escape _fetch -> prefetch ->
+      // sync(). In the background isolate that leaves recordLastSync
+      // unwritten and WorkManager retrying the whole walk for as long as the
+      // document exists on the server.
+      stubWalk([
+        {
+          '_id': 'course-1',
+          'courseTitle': 'Algebra',
+          'description': '![logo](resources/abc/caf%E9.png)',
+        },
+      ]);
+
+      expect(await repository.sync(config: config), isA<SyncComplete>());
+      expect(await repository.localCount(), 1);
+    });
+
+    test('a download that throws does not throw out of sync()', () async {
+      stubWalk([
+        {
+          '_id': 'course-1',
+          'courseTitle': 'Algebra',
+          'description': '![a](resources/abc/c.png)',
+        },
+      ]);
+      when(
+        () => api.getBytes(
+          '$dbUrl/resources/abc/c.png',
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenThrow(StateError('transport exploded'));
+
+      expect(await repository.sync(config: config), isA<SyncComplete>());
+    });
+
+    test('one bad link does not stop the links after it', () async {
+      stubWalk([
+        {
+          '_id': 'course-1',
+          'courseTitle': 'Algebra',
+          'description':
+              '![bad](resources/abc/caf%E9.png) ![good](resources/xyz/ok.png)',
+        },
+      ]);
+      when(
+        () => api.getBytes(
+          '$dbUrl/resources/xyz/ok.png',
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer((_) async => const NetworkSuccess<List<int>>([1]));
+
+      await repository.sync(config: config);
+
+      expect(await asTheRendererLooksItUp('resources/xyz/ok.png'), isNotNull);
+    });
+  });
 }

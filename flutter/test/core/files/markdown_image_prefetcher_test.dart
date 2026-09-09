@@ -162,6 +162,56 @@ void main() {
     );
   });
 
+  test('stops requesting once the budget is spent', () async {
+    // The prefetch runs inside a sync now, and a first sync on a fresh
+    // install is not the steady state the skip-if-present check makes cheap.
+    // WorkManager kills the background task at around ten minutes; Kotlin
+    // needs no budget because it hands the queue to a foreground service.
+    final bounded = MarkdownImagePrefetcher(api, budget: Duration.zero);
+
+    expect(
+      await bounded.prefetch(const ['resources/abc/c.png'], config: config),
+      0,
+    );
+    verifyNever(
+      () => api.getBytes(any(), authHeader: any(named: 'authHeader')),
+    );
+  });
+
+  test(
+    'abandons a link whose download stalls past the per-link timeout',
+    () async {
+      // PlanetApi.getBytes sets receiveTimeout: null — right for a large
+      // user-initiated download, an unbounded stall inside a sync, where
+      // SyncNotifier refuses a second attempt while one is running so the
+      // button never re-enables.
+      final quick = MarkdownImagePrefetcher(
+        api,
+        perLinkTimeout: const Duration(milliseconds: 30),
+      );
+      when(
+        () => api.getBytes(
+          '$dbUrl/resources/abc/c.png',
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer(
+        (_) => Future<NetworkResult<List<int>>>.delayed(
+          const Duration(seconds: 30),
+          () => const NetworkSuccess<List<int>>([1]),
+        ),
+      );
+
+      expect(
+        await quick.prefetch(const ['resources/abc/c.png'], config: config),
+        0,
+      );
+      expect(
+        await MarkdownImageFiles.existingFileFor('resources/abc/c.png'),
+        isNull,
+      );
+    },
+  );
+
   test('never requests a link that names nothing local', () async {
     final written = await prefetcher.prefetch(const [
       'https://cdn.example/a.png',
