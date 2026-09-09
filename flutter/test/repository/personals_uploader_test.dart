@@ -120,6 +120,53 @@ void main() {
     expect(await outbox.due(), hasLength(2));
   });
 
+  test('the payload a sweep builds is stable across sweeps', () async {
+    // `OutboxRepository.enqueue`'s memo compares the request it is being
+    // handed against the one already recorded for this item, so a payload that
+    // is not a pure function of the local row defeats it silently: the memo
+    // never matches, and a note the server refused is POSTed again on every
+    // sweep. `PersonalsRepository.serialize` defaults `uploadDate` to
+    // `DateTime.now()`, so this was live until Phase 148 — and personals is
+    // the worst place for it, because a personal note is an append with a
+    // server-minted id and a duplicate cannot be detected afterwards.
+    await personals.create(userId: 'user-1', userName: 'ada', title: 'One');
+
+    await uploader.queuePending(config: config, userId: 'user-1');
+    final first = (await outbox.due()).single.payload;
+
+    // Wall-clock time moves between sweeps; nothing about the note does.
+    clock = clock.add(const Duration(hours: 3));
+    await uploader.queuePending(config: config, userId: 'user-1');
+
+    expect((await outbox.due()).single.payload, first);
+  });
+
+  test('a refused note is POSTed once, however many sweeps run', () async {
+    // The consequence of the test above, end to end. Five sweeps against a
+    // server that refuses the request must produce one POST — before Phase 148
+    // this produced five, each one a candidate duplicate document.
+    await personals.create(userId: 'user-1', userName: 'ada', title: 'One');
+    stubPost(const NetworkError<Map<String, dynamic>>(400, 'bad request'));
+
+    for (var sweep = 0; sweep < 5; sweep++) {
+      await uploader.queuePending(config: config, userId: 'user-1');
+      await drainer().drain();
+      clock = clock.add(const Duration(hours: 1));
+    }
+
+    verify(
+      () => api.postJsonObject(
+        any(),
+        any(),
+        authHeader: any(named: 'authHeader'),
+      ),
+    ).called(1);
+    expect(
+      await database.outboxDao.forItem(PersonalsUploader.type, 'note-0'),
+      hasLength(1),
+    );
+  });
+
   test('the endpoint carries no credentials', () {
     expect(
       PersonalsUploader.endpointFor(config),

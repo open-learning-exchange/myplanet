@@ -168,10 +168,20 @@ class OutboxDrainer {
         // builds a `NetworkError` only from a response it actually received,
         // and substitutes `0` for a missing status
         // (`planet_api.dart:249-252`), so every transport-authored error
-        // carries an int. A handler-authored one therefore means: the send
+        // carries an int. A handler-authored one usually means: the send
         // succeeded and the response was not something the handler could use.
         // The write may already be on the server, which is why that is
         // [OutboxRefusal.indeterminate] rather than a failure to deliver.
+        //
+        // *Usually*, not always — and the exception is worth knowing before
+        // relying on this. Three handlers return a null code **before making
+        // any request**: `user_uploader.dart:126` and `:143-147`, and
+        // `achievements_uploader.dart:63`. For those the write certainly did
+        // not land, so `indeterminate` overstates what is known; the effect is
+        // the same either way (terminal, not re-sent) and the first of them is
+        // genuinely terminal — the local row is gone — but a handler that has
+        // sent nothing should say so with [OutboxRepository.notSent] rather
+        // than let this branch guess. See `PHASE_148_NOTES.md`.
         //
         // The previous rule was `permanent = (code ?? 0) < 500`, a port of
         // `UploadCoordinator.kt:211`. It mapped null to 0 to "permanent" and

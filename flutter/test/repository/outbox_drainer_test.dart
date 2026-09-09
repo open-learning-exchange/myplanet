@@ -453,9 +453,11 @@ void main() {
 
   test('onlyTypes leaves every other type untouched', () async {
     // The public-survey case: a respondent with no server configuration has no
-    // credential, and posting the rest of the queue unauthenticated would earn a
-    // 401 — which the retry rule calls *permanent* and would abandon writes that
-    // are perfectly deliverable once the app is configured.
+    // credential, and posting the rest of the queue unauthenticated would earn
+    // a 401 on writes that are perfectly deliverable once the app is
+    // configured. Since Phase 148 a 401 is transient, so this no longer
+    // abandons them — it still spends attempts off their ladders, which is
+    // reason enough to keep the scoping.
     await enqueue(itemId: 'note-1');
     await outbox.enqueue(
       uploadType: 'public_survey',

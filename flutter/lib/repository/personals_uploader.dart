@@ -62,7 +62,25 @@ class PersonalsUploader {
         itemId: row.id,
         endpoint: endpoint,
         payload: {
-          ...PersonalsRepository.serialize(row),
+          // `uploadedAt` is passed, and passed *deterministically*, because
+          // `serialize`'s default is `DateTime.now()` — and this payload is
+          // re-serialized on every sweep, not once at send time as Kotlin's is
+          // (`Personal.serialize:39`). A drifting field makes the payload
+          // differ from the one already recorded against this note, so
+          // `OutboxRepository.enqueue`'s memo can never match and a note the
+          // server refused is POSTed again on every sweep. That is the
+          // duplicate this handler's own "carried no id/rev" branch exists to
+          // prevent, so of all twenty uploaders this was the worst one to
+          // leave volatile.
+          //
+          // The note's creation date is the honest value here. Kotlin's
+          // `Date().time` is the moment of the POST, which this app cannot
+          // know at enqueue time — the drain may be days later — so a captured
+          // `now` would be neither creation nor delivery.
+          ...PersonalsRepository.serialize(
+            row,
+            uploadedAt: DateTime.fromMillisecondsSinceEpoch(row.date),
+          ),
           ...identity!.documentFields,
         },
         userId: userId,

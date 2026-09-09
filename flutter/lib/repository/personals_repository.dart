@@ -90,7 +90,12 @@ class PersonalsRepository {
   /// Port of `Personal.serialize`.
   ///
   /// Device telemetry is deliberately added by [PersonalsUploader], where the
-  /// platform seam is available; this pure row serializer remains deterministic.
+  /// platform seam is available.
+  ///
+  /// **This is only deterministic if [uploadedAt] is passed.** The
+  /// `DateTime.now()` default made the same row serialize differently on every
+  /// call, which defeats `OutboxRepository.enqueue`'s memo — see the call site
+  /// in [PersonalsUploader.queuePending] for why that mattered enough to fix.
   static Map<String, dynamic> serialize(
     PersonalRow row, {
     DateTime? uploadedAt,

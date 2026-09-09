@@ -487,6 +487,232 @@ void main() {
     expect(rows.single.status, OutboxDao.statusAbandoned);
   });
 
+  group('rearm', () {
+    Future<String> queue() => repository.enqueue(
+      uploadType: 'personals',
+      itemId: 'note-1',
+      endpoint: 'e',
+      payload: const {},
+    );
+
+    test('is a no-op for an item with no row', () async {
+      expect(await repository.rearm('personals', 'note-1'), isFalse);
+    });
+
+    test('leaves a backing-off row alone, backoff included', () async {
+      final id = await queue();
+      await repository.markFailed(id, httpCode: 503, errorMessage: 'down');
+      final backedOff = (await database.outboxDao.getById(id))!.nextAttemptAt;
+
+      expect(await repository.rearm('personals', 'note-1'), isFalse);
+
+      final row = (await database.outboxDao.getById(id))!;
+      expect(
+        row.nextAttemptAt,
+        backedOff,
+        reason: 'Retry is not a backoff bypass',
+      );
+      expect(row.status, OutboxDao.statusPending);
+    });
+
+    test('leaves a claimed row alone', () async {
+      final id = await queue();
+      await repository.markInProgress(id);
+
+      expect(await repository.rearm('personals', 'note-1'), isFalse);
+      expect(
+        (await database.outboxDao.getById(id))?.status,
+        OutboxDao.statusInProgress,
+        reason: 'its request may already be on the wire',
+      );
+    });
+
+    test('puts a terminal row back with a clean slate', () async {
+      final id = await queue();
+      await repository.markFailed(
+        id,
+        httpCode: 409,
+        errorMessage: 'conflict',
+        refusal: OutboxRefusal.rejected,
+      );
+      clock = clock.add(const Duration(hours: 1));
+
+      expect(await repository.rearm('personals', 'note-1'), isTrue);
+
+      final row = (await database.outboxDao.getById(id))!;
+      expect(row.status, OutboxDao.statusPending);
+      expect(row.attemptCount, 0);
+      expect(row.httpCode, isNull);
+      expect(row.errorMessage, isNull);
+      expect(await repository.due(), hasLength(1));
+    });
+  });
+
+  test('an open row wins over a terminal one, whatever their ages', () async {
+    // `_soleRowFor`'s stated rule, which the surplus-collapse test above does
+    // not exercise: it seeds abandoned rows only, so `orElse` handles the
+    // whole thing and the `firstWhere` predicate is never reached.
+    for (var i = 0; i < 3; i++) {
+      await database.outboxDao.upsert(
+        OutboxEntriesCompanion.insert(
+          id: 'legacy-$i',
+          uploadType: 'personals',
+          itemId: 'note-1',
+          payload: '{}',
+          endpoint: 'e',
+          status: const Value(OutboxDao.statusAbandoned),
+          httpCode: const Value(409),
+          createdAt: 5000 + i,
+        ),
+      );
+    }
+    // Older than every abandoned row, and still the one that must survive.
+    await database.outboxDao.upsert(
+      OutboxEntriesCompanion.insert(
+        id: 'live',
+        uploadType: 'personals',
+        itemId: 'note-1',
+        payload: '{}',
+        endpoint: 'e',
+        status: const Value(OutboxDao.statusPending),
+        createdAt: 1,
+      ),
+    );
+
+    final id = await repository.enqueue(
+      uploadType: 'personals',
+      itemId: 'note-1',
+      endpoint: 'e',
+      payload: const {},
+    );
+
+    expect(id, 'live');
+    expect(
+      await database.outboxDao.forItem('personals', 'note-1'),
+      hasLength(1),
+    );
+  });
+
+  test(
+    'a claimed surplus row is never deleted out from under a drain',
+    () async {
+      // `deleteById` is the one delete in `OutboxDao` that is not status-scoped,
+      // and the others are scoped precisely so a row cannot be dropped with its
+      // request on the wire.
+      //
+      // The ages matter, and a first cut of this test had them the wrong way
+      // round: the row kept is the *first* open one in `createdAt` order, so a
+      // claimed row is only ever surplus when it is the younger of the two.
+      // With the older row claimed, the guard is never reached and removing it
+      // changes nothing — the mutation survived, and the fixture was the
+      // reason, not the clause.
+      await database.outboxDao.upsert(
+        OutboxEntriesCompanion.insert(
+          id: 'older-pending',
+          uploadType: 'personals',
+          itemId: 'note-1',
+          payload: '{}',
+          endpoint: 'e',
+          status: const Value(OutboxDao.statusPending),
+          createdAt: 2,
+        ),
+      );
+      await database.outboxDao.upsert(
+        OutboxEntriesCompanion.insert(
+          id: 'in-flight',
+          uploadType: 'personals',
+          itemId: 'note-1',
+          payload: '{}',
+          endpoint: 'e',
+          status: const Value(OutboxDao.statusInProgress),
+          createdAt: 9,
+        ),
+      );
+
+      await repository.enqueue(
+        uploadType: 'personals',
+        itemId: 'note-1',
+        endpoint: 'e',
+        payload: const {},
+      );
+
+      expect(
+        await database.outboxDao.getById('in-flight'),
+        isNotNull,
+        reason: 'the drainer still needs it to record the outcome against',
+      );
+    },
+  );
+
+  test('a pre-Phase-148 refusal with no status is retried once', () async {
+    // What the old drainer stored for a handler's verdict on a 2xx: a null
+    // `httpCode`, indistinguishable from a transport failure. `outbox` is
+    // preserved across schema bumps, so these rows arrive on an upgraded
+    // install and this is what happens to them — one more attempt, after
+    // which the new sentinel makes them terminal for good.
+    await database.outboxDao.upsert(
+      OutboxEntriesCompanion.insert(
+        id: 'legacy',
+        uploadType: 'personals',
+        itemId: 'note-1',
+        payload: '{}',
+        endpoint: 'e',
+        status: const Value(OutboxDao.statusAbandoned),
+        errorMessage: const Value('Upload response carried no rev'),
+        createdAt: 1,
+      ),
+    );
+
+    await repository.enqueue(
+      uploadType: 'personals',
+      itemId: 'note-1',
+      endpoint: 'e',
+      payload: const {},
+    );
+    expect(await repository.due(), hasLength(1));
+
+    await repository.markFailed(
+      'legacy',
+      errorMessage: 'Upload response carried no rev',
+      refusal: OutboxRefusal.indeterminate,
+    );
+    await repository.enqueue(
+      uploadType: 'personals',
+      itemId: 'note-1',
+      endpoint: 'e',
+      payload: const {},
+    );
+    expect(await repository.due(), isEmpty, reason: 'terminal from here on');
+  });
+
+  test('a terminal refusal keeps its reason across the round trip', () async {
+    // `rejected` and `indeterminate` behave identically today, so nothing else
+    // would notice them collapsing — and the notes' own highest-value
+    // follow-up, a 409-recovery arm, is exactly what needs to tell them apart.
+    Future<int?> codeAfter(OutboxRefusal refusal) async {
+      final id = await repository.enqueue(
+        uploadType: 'personals',
+        itemId: 'note-$refusal',
+        endpoint: 'e',
+        payload: const {},
+      );
+      await repository.markFailed(id, refusal: refusal);
+      return (await database.outboxDao.getById(id))?.httpCode;
+    }
+
+    expect(
+      OutboxRepository.classifyStatus(
+        await codeAfter(OutboxRefusal.indeterminate),
+      ),
+      OutboxRefusal.indeterminate,
+    );
+    expect(
+      OutboxRepository.classifyStatus(await codeAfter(OutboxRefusal.rejected)),
+      OutboxRefusal.rejected,
+    );
+    expect(await codeAfter(OutboxRefusal.transient), isNull);
+  });
+
   test('classifyStatus splits the caller from the request', () {
     for (final code in [null, 0, 500, 503, 401, 403, 404, 408, 429]) {
       expect(
@@ -505,6 +731,10 @@ void main() {
     expect(
       OutboxRepository.classifyStatus(OutboxRepository.noUsableResponse),
       OutboxRefusal.indeterminate,
+    );
+    expect(
+      OutboxRepository.classifyStatus(OutboxRepository.notSent),
+      OutboxRefusal.rejected,
     );
   });
 

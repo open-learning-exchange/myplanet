@@ -62,12 +62,29 @@ class OutboxRepository {
   /// `RetryOperation.DEFAULT_MAX_ATTEMPTS`.
   static const int defaultMaxAttempts = 5;
 
-  /// Recorded in `outbox.httpCode` when an attempt ended terminally without an
-  /// HTTP status of its own — a handler's verdict on a 2xx body, or a payload
-  /// that will not parse. Negative, so it cannot collide with a status code,
-  /// and distinct from `null`, which keeps its existing meaning: *no response
-  /// arrived*, which says nothing about the request and stays retryable.
+  /// Recorded in `outbox.httpCode` when the transport reported success and the
+  /// handler could not use what came back. Negative, so it cannot collide with
+  /// a status code, and distinct from `null`, which keeps its existing
+  /// meaning: *no response arrived*, which says nothing about the request and
+  /// stays retryable.
+  ///
+  /// `PlanetApi` builds every `NetworkError` as `NetworkError(status, …)` with
+  /// `status = response.statusCode ?? 0` (`planet_api.dart:202`, `:251`), so
+  /// no build past or present can have written a negative code by another
+  /// route.
   static const int noUsableResponse = -1;
+
+  /// Recorded in `outbox.httpCode` when the operation was refused terminally
+  /// **without ever reaching the server** — today only a payload that will not
+  /// parse.
+  ///
+  /// Distinct from [noUsableResponse] rather than folded into it, even though
+  /// the two behave identically here: `PHASE_148_NOTES.md`'s own
+  /// highest-value follow-up is a 409-recovery arm, and that needs to tell
+  /// "the server considered this and refused" from "the write may already have
+  /// landed". A sentinel that collapses the two would have taken the
+  /// distinction away before anything could use it.
+  static const int notSent = -2;
 
   /// The statuses that say something about the caller, the moment or the
   /// server's configuration rather than about the request. Retried, and
@@ -75,13 +92,28 @@ class OutboxRepository {
   ///
   /// 401 and 403 are a credential or a role, 408 and 429 are the moment, and
   /// 404 on a CouchDB *write* is the database not being there — a document
-  /// that does not exist is what a POST or a PUT is for, so a 404 can only be
-  /// about the endpoint. Every one of those is fixed on the server or in the
-  /// app's configuration, and none of those fixes changes the request; if they
-  /// were terminal, [enqueue]'s memo would have nothing to re-arm them with.
-  /// What remains terminal — 400, 409, 413, 415, 422 — is about the bytes, and
-  /// each has a local repair that *does* change them: an edit, or a pull that
-  /// supplies the revision the conflict was about.
+  /// that does not exist is what a POST or a PUT is for. Every one of those is
+  /// fixed on the server or in the app's configuration, and none of those
+  /// fixes changes the request; if they were terminal, [enqueue]'s memo would
+  /// have nothing to re-arm them with. What remains terminal — 400, 409, 413,
+  /// 415, 422 — is about the bytes, and each has a local repair that *does*
+  /// change them: an edit, or a pull that supplies the revision the conflict
+  /// was about.
+  ///
+  /// **Two of those readings are a trade, not a certainty, and the trade is
+  /// deliberate.** CouchDB has a second 403: a `validate_doc_update` function
+  /// answering `{forbidden: …}`, which is a permanent property of the
+  /// document's bytes. And one endpoint the outbox carries is not CouchDB at
+  /// all — `public_survey`'s
+  /// `<host>/api/public/surveys/<team>/<survey>/submissions`
+  /// (`surveys_repository.dart:633-638`), where a 404 means the team or the
+  /// survey does not exist. Reading either as transient costs wasted requests;
+  /// reading it as terminal costs a stranded write with nothing able to re-arm
+  /// it, because neither repair changes the request. Wasted requests are the
+  /// cheaper mistake — the row stays bounded at one either way — so both stay
+  /// here. Note what that does *not* concede: a transient failure being
+  /// retried across sweeps is the policy working, not the accretion returning.
+  /// The accretion was unbounded *rows*.
   ///
   /// **This is a deliberate deviation from Kotlin**, whose one rule is
   /// `retryable = response.code() >= 500` (`UploadCoordinator.kt:211`). Under
@@ -101,6 +133,7 @@ class OutboxRepository {
   static OutboxRefusal classifyStatus(int? httpCode) {
     if (httpCode == null) return OutboxRefusal.transient;
     if (httpCode == noUsableResponse) return OutboxRefusal.indeterminate;
+    if (httpCode == notSent) return OutboxRefusal.rejected;
     if (httpCode == 0 || httpCode >= 500) return OutboxRefusal.transient;
     if (retryableStatuses.contains(httpCode)) return OutboxRefusal.transient;
     return OutboxRefusal.rejected;
@@ -274,7 +307,17 @@ class OutboxRepository {
       orElse: () => rows.last,
     );
     for (final row in rows) {
-      if (row.id != keep.id) await _dao.deleteById(row.id);
+      if (row.id == keep.id) continue;
+      // `deleteById` is the one delete in `OutboxDao` that is not
+      // status-scoped, and `deletePending`'s doc comment says why the others
+      // are: a drain interleaves at every `await`, so a row can be claimed
+      // between the read above and this delete and would then be dropped with
+      // its request on the wire. A surplus row is only ever reachable through
+      // a simultaneous-insert race between the UI and headless isolates, so
+      // this is narrow — and skipping it costs one extra row until the next
+      // enqueue, which is exactly what this method is for.
+      if (row.status == OutboxDao.statusInProgress) continue;
+      await _dao.deleteById(row.id);
     }
     return keep;
   }
@@ -382,10 +425,10 @@ class OutboxRepository {
   /// point the operation is already queued.
   ///
   /// A terminal refusal is recorded so that [enqueue] can read it back later:
-  /// that is what [noUsableResponse] is for. Without it a handler's verdict on
-  /// a 2xx body and a transport failure would both store a null `httpCode`,
-  /// and the two want opposite treatment — the first must never be sent again,
-  /// the second must be.
+  /// that is what [noUsableResponse] and [notSent] are for. Without them a
+  /// handler's verdict on a 2xx body and a transport failure would both store
+  /// a null `httpCode`, and the two want opposite treatment — the first must
+  /// never be sent again, the second must be.
   Future<bool> markFailed(
     String id, {
     String? errorMessage,
@@ -410,11 +453,19 @@ class OutboxRepository {
         lastAttemptAt: Value(nowMs),
         nextAttemptAt: Value(nowMs + backoffFor(attempts).inMilliseconds),
         errorMessage: Value(errorMessage),
-        httpCode: Value(httpCode ?? (terminal ? noUsableResponse : null)),
+        httpCode: Value(httpCode ?? _sentinelFor(refusal)),
       ),
     );
     return abandoned;
   }
+
+  /// The code stored for a terminal refusal that carries no HTTP status of its
+  /// own. `null` for a transient one, which keeps its existing meaning.
+  static int? _sentinelFor(OutboxRefusal refusal) => switch (refusal) {
+    OutboxRefusal.transient => null,
+    OutboxRefusal.rejected => notSent,
+    OutboxRefusal.indeterminate => noUsableResponse,
+  };
 
   /// Port of `recoverStuckOperations`, for the startup path.
   Future<int> recoverStuck() => _dao.recoverStuck(

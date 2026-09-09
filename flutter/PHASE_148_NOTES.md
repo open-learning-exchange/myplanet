@@ -86,23 +86,36 @@ instead of repeating it.
 
 Two things make the fix worth having anyway.
 
-**The class is reachable elsewhere.** `chat_uploader.dart:69-87` posts to
-Planet's chat API, not to CouchDB, and branches on an application-level
-`data['status'] != 'Success'`. A 200 carrying `{"status":"error", …}` is an
-ordinary answer from that API, and until now it abandoned the row on its first
-attempt and re-POSTed on every subsequent chat write. That is the same branch,
-in production.
+**The class is reachable elsewhere, though not for the reason first written
+here.** `chat_uploader.dart:69-87` branches on an application-level
+`data['status'] != 'Success'` and on `data['couchdb']['id']` — the shape
+Planet's chat service answers with. An earlier revision of this section said
+the uploader posts to that service. It does not:
+`ChatUploader.endpointFor` is `credentialFreeDbUrl(config)/chat`, a **CouchDB**
+database path, while Kotlin's chat POST goes to `UrlUtils.hostUrl` —
+`<scheme>://<host>:5000/` or `<scheme>://<host>/ml/`
+(`UrlUtils.kt:102-106`, `ChatApiService.kt:54-57`) — a different service
+altogether. CouchDB answers `{ok, id, rev}`, which has no `status`, so *every*
+outbox chat upload takes that null-code branch. The branch is therefore
+reachable in production; what it reveals is a pre-existing endpoint defect,
+recorded under *Reported, not fixed*. Under this policy such a chat is POSTed
+once instead of on every subsequent chat write — better, and still broken.
 
 **The loop Job 1 describes is reachable without any unusual response at all.**
-The health document's `_id` *is* the patient's user id
-(`health_repository.dart:846`), so every examination after the first is an
-update needing the current `_rev`. Anything that leaves the local `rev` stale —
-Planet's web UI editing the record, a second handset filing for the same
-patient — yields a 409 on the first attempt. And `cacheDocuments` skips a
-locally dirty row (`health_repository.dart:771`), so the health sync-in is
-structurally unable to refresh that `rev`: the loop could not self-heal. That
-is stronger than the notes claimed, and it is why the same fix had to cover
-plain 4xx rejections and not only the null-code branch.
+An earlier revision of this section had the mechanism wrong, in a way worth
+recording because it is the kind of claim the next round would build on.
+Examinations do **not** share a document: `createExamination` defaults `userId`
+to the row's own generated id (`health_repository.dart:96-99`) and
+`health_provider.dart:468-471` passes none, so each examination is its own
+CouchDB document and cannot conflict with a previous one. What *is* keyed on
+the patient is the **profile** row — `saveHealthProfileBlob` writes
+`id = patientId, userId = user.couchId` (`:273-315`) — and it is re-saved on
+every examination save. So a 409 on the first attempt is reachable there, and
+on a legacy row whose `userId` was set to the patient. Either way
+`cacheDocuments` skips a locally dirty row (`health_repository.dart:772`), so
+the health sync-in is structurally unable to refresh that `rev` and the loop
+cannot self-heal. That is why the fix had to cover plain 4xx rejections and not
+only the null-code branch.
 
 **What the port cannot copy from Kotlin here.** Kotlin gates on `has("id")`,
 tolerates a null rev, and clears `isUpdated` while leaving `_rev` alone
@@ -119,9 +132,11 @@ Phase 138 said the accretion fires "once per *sync*". It is right for four
 upload types and wrong as a general statement. Of twenty-six types:
 
 * **per sync** (`dashboard_sync_provider.syncAll` and `background_entrypoint`):
-  `submissions`, `news` (voices), `adoptedSurvey`, plus the four `activities`
-  types via `recordSyncActivity`, and `searchActivity` when the sync moved
-  anything.
+  `submissions`, `news` (voices), `adoptedSurvey`, the four `activities` types
+  via `recordSyncActivity`, and `searchActivity` when the sync moved anything.
+  The four `activities` types are *also* swept from every resource open,
+  download and course visit (`activities_provider.dart:84`, `:107`,
+  `:131-134`), so their real cadence is closer to `teamLog`'s.
 * **per user write**: `health`, `personal`, `feedback`, `rating`,
   `achievement`, `chat`, `meetup`, `teamTask`, `courseProgress`,
   `submitPhoto`, `user`.
@@ -133,7 +148,10 @@ upload types and wrong as a general statement. Of twenty-six types:
   `teams_uploader.dart:15-19` documents as freezing the row at its local
   version.
 
-So twenty-two of twenty-six re-offered for ever. The cadence differs; the
+So **twenty** of twenty-six re-offered for ever — the three lists above sum
+to 20, and 26 minus the 6 bounded ones agrees. (An earlier revision of this
+file said twenty-two, from neither count. A number that is not the sum of the
+rows above it is a number nobody added up.) The cadence differs; the
 unboundedness did not.
 
 ---
@@ -211,20 +229,27 @@ path is special.
   `markUploaded(id, null)` is not the answer here).
 * `queuePending(retryRefused:)` for the banner's Retry button.
 
+**`flutter/lib/repository/personals_uploader.dart`** — a deterministic
+`uploadedAt`, added by the second audit pass. This is the one other
+`*_uploader.dart` touched, and it is touched because the policy requires it:
+without it the memo is inert for that type (see above).
+
 **Outside the lane's own set, and named because the brief asks:**
 `flutter/lib/providers/health_provider.dart` (thread `retryRefused`; correct a
-dartdoc that described the accretion as intended behaviour) and
+dartdoc that described the accretion as intended behaviour),
 `flutter/lib/ui/health/my_health_screen.dart` (pass `retryRefused: true`;
-correct the comment that said `enqueue` writes a fresh pending row). Both were
-required: without them the memo silently turns Retry into a no-op, and that
-button sits next to a count of stranded records. Neither file is any other
-lane's this round. **No `*_uploader.dart` other than `health_uploader.dart` was
-touched, and `voices_uploader.dart` was not opened for edit.**
+correct the comment that said `enqueue` writes a fresh pending row), and
+`flutter/lib/repository/personals_repository.dart` (one dartdoc, which claimed
+`serialize` "remains deterministic" — it did not). The first two were required:
+without them the memo silently turns Retry into a no-op, and that button sits
+next to a count of stranded records. None of the three is any other lane's this
+round. **`voices_uploader.dart` was not opened for edit**, and no uploader
+other than `health` and `personals` was touched at all.
 
 ## Tests
 
-Gate green: `dart format` clean, `flutter analyze` clean, **2648 tests pass**
-(2631 before — the three files below go 19 → 27, 14 → 21 and 7 → 9).
+Gate green: `dart format` clean, `flutter analyze` clean, **2658 tests pass**
+(2631 before).
 
 Every claim was mutation-tested: the fix reverted, the suite run, the named
 test confirmed failing, the fix restored. Where a mutation survived, the
@@ -262,6 +287,17 @@ fixture was strengthened rather than the clause deleted.
   `a 409 rejects the request the payload made`, with the misreading it carried
   written out at the test.
 
+**`test/repository/personals_uploader_test.dart`** (12, was 10) — added by the
+second audit pass, and both fail on the pre-fix code
+* `the payload a sweep builds is stable across sweeps` — the invariant the
+  whole policy rests on, pinned for the uploader that broke it.
+* `a refused note is POSTed once, however many sweeps run` — the consequence,
+  end to end.
+
+**`test/ui/health/my_health_screen_test.dart`** (22, unchanged count)
+* `the caution offers a retry that re-queues the record` — rewritten so it
+  *can* fail: the abandoned row now carries the request production builds.
+
 **`test/repository/health_legacy_conflict_test.dart`** (9, was 7)
 * `a record refused ten times leaves one row and one POST` — replaces
   `a record refused twice is one stranded record, not two`, which asserted
@@ -274,7 +310,8 @@ fixture was strengthened rather than the clause deleted.
 * `the clinician tapping Retry does override the memo` — a sweep does not
   re-ask, `retryRefused: true` does.
 
-Nine mutations, each reverted one at a time with the suite run in between:
+Thirteen mutations in total, each reverted one at a time with the suite run in
+between. The first nine, before the second audit pass:
 `enqueue` back to `findOpen` (11 failures), the drainer back to
 `(code ?? 0) < 500` (2), the `noUsableResponse` sentinel dropped (4),
 `sameRequest` ignoring the endpoint (1), `rearm` made a no-op (1), the
@@ -294,6 +331,12 @@ pinned by six tests. A reader who deletes `indeterminate` and folds it into
 `rejected` will not break the suite; they will break the reasoning, and the
 notes and the dartdoc are what stand in the way.
 
+The four added by the second audit pass: the personals `uploadedAt`
+(2 failures), the claimed-row guard in `_soleRowFor` (1, after the fixture was
+corrected — see above), the second sentinel (1), the `_soleRowFor` open-row
+preference (1), the `rearm` guard (2), and `retryRefused: true` removed from
+`my_health_screen.dart` (1).
+
 One mutation is worth recording because it survived at first. Reverting
 `_soleRowFor` to `findOpen` left `an unusable 2xx response is not asked again
 either` **passing**, because the first cut of that test counted outbox rows
@@ -301,6 +344,54 @@ rather than sends and the drainer's `due()` never re-offers an abandoned row —
 the accretion is one row *and one POST per sweep*, and only the POST count
 distinguishes the two policies. The test now counts sends. Same reason the
 health tests count `couch.postCount`.
+
+---
+
+## What the second audit pass changed
+
+The mandatory pass over this lane's own finished, already-green code found
+seven defects and seven wrong claims in this file. Four of the defects were
+fixed here; the pattern held for a fifth consecutive round — **an audit of the
+ground truth does not audit the implementation.**
+
+**The worst of them defeated the whole policy for one uploader, and it was the
+worst possible uploader to lose.** `PersonalsUploader.queuePending` built its
+payload with `PersonalsRepository.serialize(row)`, whose `uploadDate` defaults
+to `DateTime.now()`. The memo compares the request being enqueued against the
+one already recorded, so a payload that is not a pure function of the local row
+never matches: for `personals` the memo was inert and a refused note was POSTed
+on every sweep exactly as before. And `personals` is an **append** with a
+server-minted id — the class where the duplicate this policy exists to prevent
+cannot be detected afterwards, and where the handler's own comment says so.
+Fixed by passing the note's creation date, which is the honest value: Kotlin's
+`Date().time` is the moment of the POST, which a durable queue cannot know at
+enqueue time. **A payload that is not a pure function of its row silently
+disables the memo**, so `personals_uploader_test.dart` now pins the property
+directly, and it is the first thing to check when adding an uploader.
+
+Also fixed: `_soleRowFor`'s surplus-row `deleteById` could drop a row a drain
+had claimed (it is the one delete in `OutboxDao` that is not status-scoped, and
+the others are scoped for exactly that reason); `markFailed` stored one
+sentinel for both terminal reasons, so `rejected` read back as `indeterminate`
+and the 409-recovery follow-up below would have found the distinction already
+collapsed — there are two sentinels now; and the drainer's "a null code means
+the send succeeded" comment is a universal that three handlers falsify by
+returning one *before making any request*.
+
+**And the widget test that looked like it covered the Retry override could not
+fail.** `my_health_screen_test.dart`'s helper seeded the abandoned row with
+`payload: '{}'` while the production sweep serializes a real document, so
+`sameRequest` was false either way and the test passed with or without
+`retryRefused: true`. It now seeds
+`jsonEncode(HealthRepository.serialize(row))`, and removing the flag fails it.
+The same trap in miniature appeared in this phase's *own* new test for the
+claimed-surplus-row guard: it seeded the claimed row as the *older* of the two,
+and `_soleRowFor` keeps the first open row in `createdAt` order, so the guard
+was never reached and the mutation survived. **The fixture was the reason, not
+the clause** — the ages are swapped now and it fails as it should.
+
+Three of the audit's findings were argued and **not** taken; they are stated as
+trades under *Reported, not fixed* rather than silently accepted.
 
 ---
 
@@ -331,9 +422,11 @@ Each names the file, the change, and why it was not made here.
    `app_database.dart:1035` (`rev == null ? const Value.absent() : Value(rev)`).
    **Lane A's file this round.** Phase 142 item 7 reported the dead-code
    sibling `HealthRepository.markUploadedBatch`, which has the same bug and
-   still has zero callers.
+   still has zero callers. (The `rev == null ? const Value.absent() :
+   Value(rev)` pattern is at `app_database.dart:1198` and `:2066`; an earlier
+   revision of this file cited `:1035`, which is inside `UserDao.search`.)
 3. **`HealthRepository.cacheDocuments` skips a locally dirty row**
-   (`health_repository.dart:771`, `if (current?.isUpdated == true) continue;`),
+   (`health_repository.dart:772`, `if (current?.isUpdated == true) continue;`),
    and nothing else writes `health_examinations.rev`. So the one self-healing
    route this phase relies on — a pull supplies the revision, the payload
    changes, the memo re-arms — is **structurally unavailable for health**,
@@ -378,5 +471,54 @@ Each names the file, the change, and why it was not made here.
    permanently-set `isUpdated` freezing the row at its local version and
    exempting it from stale-row cleanup for good. The memo does not help there
    because nothing re-offers the row in the first place. Worth its own look.
-9. **Phase 142's items 1, 3, 4, 5, 7–10 and Phase 138's other items are still
+9. **`ChatUploader` posts to the wrong service, and the port's live chat path
+   does too.** `endpointFor` is `credentialFreeDbUrl(config)/chat` — CouchDB —
+   while the handler branches on `data['status'] == 'Success'` and
+   `data['couchdb']['id']`, the shape Planet's chat service returns. Kotlin
+   sends chat to `UrlUtils.hostUrl`, `<scheme>://<host>:5000/` or
+   `<scheme>://<host>/ml/` (`UrlUtils.kt:102-106`,
+   `ChatApiService.kt:54-57`), a different host and port. CouchDB answers
+   `{ok, id, rev}` with no `status`, so every outbox chat upload takes the
+   "not Success" branch. The same wrong base is on the live path at
+   `chat_repository.dart:354`. **Severity: high** — this is chat write-back not
+   working, not a policy question — but it is a chat slice, not an outbox one,
+   and fixing it needs the Planet chat API's real contract rather than a guess.
+   Found by the second audit pass while checking a claim this file made about
+   chat, which is the second time this round that checking my own citation
+   found something bigger than the citation.
+10. **Three handlers return a null code before sending anything**, so the
+   drainer reads them as `indeterminate` ("the write may already have landed")
+   when nothing was sent: `user_uploader.dart:126` and `:143-147`,
+   `achievements_uploader.dart:63`. The effect is the same today — terminal
+   either way — and the first is genuinely terminal, since the local row is
+   gone. But `'User document carries no _rev; cannot update'` is about the
+   *server's* current state and a later attempt could succeed, and `user` has
+   no payload-changing recovery route (`UserMapper.toDoc` emits no `_rev`;
+   the handler fetches it at send time), so a profile edit can now sit
+   abandoned where it used to be re-attempted. The clean fix is for those
+   handlers to say what they mean with `OutboxRepository.notSent` or a
+   retryable code rather than let the drainer guess — three one-line uploader
+   edits, which is per-uploader special-casing this lane deliberately avoided.
+   Reachability is low (a `_users` GET always carries `_rev`).
+11. **403-as-transient and 404-as-transient are trades, not certainties.**
+   CouchDB has a second 403 — `validate_doc_update` answering
+   `{forbidden: …}` — which is a permanent property of the document's bytes;
+   and `public_survey`'s endpoint is a Planet REST route
+   (`surveys_repository.dart:633-638`), where a 404 means the team or survey
+   does not exist. Both are read as transient here. The reasoning is at the
+   constant and worth repeating: reading them as terminal strands a write with
+   nothing able to re-arm it, because neither repair changes the request, while
+   reading them as transient costs wasted requests and leaves the row bounded
+   at one. Wasted requests are the cheaper mistake. If Planet is ever confirmed
+   to ship `validate_doc_update` on a database the port writes to, revisit —
+   and note that would want a *recovery* arm, not a reclassification.
+12. **A pre-Phase-148 abandoned row with a null `httpCode` gets one more
+   attempt on upgrade.** The old drainer stored `NULL` for a handler's verdict
+   on a 2xx, which is indistinguishable from a transport failure, so
+   `classifyStatus` reads it as transient and re-arms it once. It self-heals
+   immediately — the next failure writes the sentinel — and `outbox` is
+   preserved, so these rows do arrive on upgraded installs. Pinned by a test
+   rather than fixed, because the alternative is treating every legacy
+   null-code row as terminal, which would strand transport failures.
+13. **Phase 142's items 1, 3, 4, 5, 7–10 and Phase 138's other items are still
    open**; none is in this lane's set.
