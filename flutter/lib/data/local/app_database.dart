@@ -1793,6 +1793,129 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
           .toList(growable: false),
     );
   }
+
+  /// Resources this device authored that have never reached the server.
+  ///
+  /// Port of `MyLibraryDao.getPendingUploads`, **with the predicate widened by
+  /// one clause**, and the extra clause is the whole point of this doc comment.
+  ///
+  /// Kotlin's query is exactly `SELECT * FROM my_library WHERE _rev IS NULL`
+  /// (`MyLibraryDao.kt:94-95`). Copying that literally into the port would
+  /// have uploaded the catalog. `my_library` has two writers and only one of
+  /// them sees a `_rev`: the `resources` walk pulls whole CouchDB documents,
+  /// while the courses walk pulls the *thinner* copy embedded in a course
+  /// step, and a sub-object carries no revision
+  /// (`CoursesRepository._ingestCourseResources`, and
+  /// [MyLibraryMapper._revOrAbsent], which documents the pair). So a course
+  /// resource the resources walk has not reached yet sits here with a genuinely
+  /// null `_rev` — and POSTing it to `resources` would file a **second copy of
+  /// a document that already exists on the server**, one per course resource,
+  /// on the first drain after the first courses sync.
+  ///
+  /// Kotlin is spared that by a quirk rather than by design.
+  /// `MyLibrary.insertMyLibrary` assigns `_rev = JsonUtils.getString("_rev",
+  /// doc)` unconditionally (`MyLibrary.kt:237`) and `getString` returns `""`
+  /// for a missing key, so Kotlin's course-embedded rows carry an *empty*
+  /// revision, which `_rev IS NULL` does not match. Phase 150 deliberately
+  /// fixed that quirk in the port — writing [Value.absent] instead, for good
+  /// reasons set out at [MyLibraryMapper._revOrAbsent] — and in doing so
+  /// removed the accidental guard that Kotlin's pending predicate leans on.
+  /// Nothing noticed, because until now the port had no resource uploader.
+  ///
+  /// The honest discriminator is therefore `_id`, not `_rev`: **every** sync
+  /// writer sets `couchId` from the document's own `_id` and
+  /// [MyLibraryMapper.fromDoc] returns null outright when that id is empty, so
+  /// a row with no `_id` cannot have come from the server. Only
+  /// [ResourcesRepository.saveLocalResource] leaves it unset. `_rev IS NULL` is
+  /// kept alongside it so a row that *has* been uploaded is never offered
+  /// twice, which is the clause Kotlin was actually relying on.
+  ///
+  /// The `_id = ''` arm covers a row an older build may have written with a
+  /// blank rather than absent id, the same way `deleteNotIn` spares both.
+  Future<List<MyLibraryRow>> pendingUploads() =>
+      (select(myLibraryTable)..where(
+            (r) => r.rev.isNull() & (r.couchId.isNull() | r.couchId.equals('')),
+          ))
+          .get();
+
+  /// Adopts the `_id` and `_rev` CouchDB assigned to a freshly POSTed
+  /// resource.
+  ///
+  /// Port of the first half of `ResourcesRepositoryImpl.markResourceUploaded`
+  /// (`:803-806`), which looks the row up by its local id, assigns `_id` and
+  /// `_rev`, and upserts. Writing both is what takes the row out of
+  /// [pendingUploads] — either clause alone would do it, and both are written
+  /// because the row genuinely has both now.
+  ///
+  /// Returns false when no row matched, mirroring Kotlin's
+  /// `myLibraryDao.getById(localId) ?: return false`. That return value is
+  /// load-bearing upstream: `UploadConfigs.getResourcesConfig`'s
+  /// `markUploaded` is `results.filter { !markResourceUploaded(...) }`, i.e. it
+  /// hands back the results whose local row could **not** be found, so a
+  /// vanished row is reported as a failure rather than silently succeeding.
+  ///
+  /// Kotlin also creates a team-resource-link document here for a private
+  /// resource, using the `planetCode` argument. In the port that lives one
+  /// layer up, in `ResourcesUploader._linkPrivateResourceToTeam`, because the
+  /// link has to carry the CouchDB id and this DAO method is handed one — see
+  /// `ResourcesRepository.markResourceUploaded`. (An earlier revision of this
+  /// comment claimed the port had no equivalent of
+  /// `createLocalResourceLink`. It has `TeamsRepository.addResourceLink`; the
+  /// search that missed it was for the Kotlin name rather than the
+  /// behaviour.)
+  Future<bool> markUploaded(String id, String couchId, String rev) async {
+    final row = await getById(id);
+    if (row == null) return false;
+    await (update(myLibraryTable)..where((r) => r.id.equals(id))).write(
+      MyLibraryTableCompanion(
+        couchId: Value(couchId),
+        rev: Value(rev),
+        // `downloadedRev` moves with `rev` **when there are bytes on disk**,
+        // and leaving it behind would have introduced a defect rather than
+        // preserved one.
+        //
+        // [watchResourcesNeedingUpdateCount] counts a shelf row where
+        // `_rev IS NOT downloaded_rev`. Before a resource is uploaded both are
+        // null, and SQLite's `IS NOT` between two nulls is false, so the row is
+        // not counted. Writing `_rev` alone flips that to true and the bell
+        // starts asking the user to **download the resource they just
+        // created**, over the copy already sitting under `ole/<id>/`.
+        //
+        // The honest reading is that the two are equal: the file on disk *is*
+        // the attachment of the revision being recorded, because this device
+        // authored both. Kotlin leaves `downloadedRev` null here
+        // (`ResourcesRepositoryImpl.kt:804-806` writes only the two columns),
+        // which also makes `MyLibrary.isResourceOffline` read false for a
+        // resource whose file is present. A deliberate divergence: copying it
+        // would ship a prompt that cannot be satisfied.
+        //
+        // Only when there really are bytes. A metadata-only row — which the
+        // port's form allows and Kotlin's does not — has nothing downloaded,
+        // and saying otherwise is the `resourceOffline` lie Phase 150 removed.
+        downloadedRev: (row.resourceOffline && row.resourceLocalAddress != null)
+            ? Value(rev)
+            : const Value.absent(),
+      ),
+    );
+    return true;
+  }
+
+  /// Adopts the revision the **attachment** PUT returned.
+  ///
+  /// CouchDB bumps a document's revision when an attachment lands, and Kotlin
+  /// discards that response entirely — `FileUploader.onDataReceived` reads
+  /// only `ok` (`FileUploader.kt:70-78`). So the Kotlin row stays at the POST's
+  /// revision while the server has moved on, and the next resources sync pulls
+  /// the newer `_rev` over it, leaving `_rev != downloaded_rev` and the bell
+  /// asking to re-download a file the device already has.
+  ///
+  /// Recording it costs nothing and keeps the pair equal through that sync,
+  /// which is the point [markUploaded] makes above. Both columns move together
+  /// for the same reason they do there.
+  Future<void> adoptAttachmentRev(String id, String rev) =>
+      (update(myLibraryTable)..where((r) => r.id.equals(id))).write(
+        MyLibraryTableCompanion(rev: Value(rev), downloadedRev: Value(rev)),
+      );
 }
 
 /// Comfortably under SQLite's 999-variable floor.

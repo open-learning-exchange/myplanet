@@ -39,6 +39,7 @@ import '../repository/notifications_repository.dart';
 import '../repository/outbox_drainer.dart';
 import '../repository/outbox_repository.dart';
 import '../repository/personals_uploader.dart';
+import '../repository/resources_uploader.dart';
 import '../repository/personals_repository.dart';
 import '../repository/progress_repository.dart';
 import '../repository/public_survey_uploader.dart';
@@ -649,6 +650,23 @@ final personalsUploaderProvider = Provider<PersonalsUploader>(
   ),
 );
 
+/// Carries a resource the user created on this device to the server.
+///
+/// The direction did not exist before: `saveLocalResource` wrote the row and
+/// nothing sent it. See [ResourcesUploader] for the three places its Kotlin
+/// counterpart is wrong and this one deliberately differs.
+final resourcesUploaderProvider = Provider<ResourcesUploader>(
+  (ref) => ResourcesUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(resourcesRepositoryProvider),
+    // For the private-team-resource link Kotlin writes in the same step —
+    // see `ResourcesUploader._linkPrivateResourceToTeam`.
+    ref.watch(teamsRepositoryProvider),
+    ref.watch(outboxRepositoryProvider),
+    ref.watch(deviceIdentitySourceProvider),
+  ),
+);
+
 /// Replaces `RetryQueueWorker`'s WorkManager registration in `MainApplication`.
 ///
 /// Handlers are registered per `uploadType`; anything without one is replayed
@@ -692,6 +710,7 @@ final outboxDrainerProvider = Provider<OutboxDrainer>((ref) {
       AchievementsUploader.type: ref
           .watch(achievementsUploaderProvider)
           .handler,
+      ResourcesUploader.type: ref.watch(resourcesUploaderProvider).handler,
     },
   );
 });

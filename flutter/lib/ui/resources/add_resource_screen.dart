@@ -181,6 +181,55 @@ class _AddResourceScreenState extends ConsumerState<AddResourceScreen> {
       error = await repo.saveLocalResource(request);
     }
 
+    // Hand the row to the outbox. Until this landed nothing ever uploaded a
+    // resource the user created: `saveLocalResource` was a complete port whose
+    // output went nowhere, so the resource existed on this handset alone.
+    //
+    // `queuePending` rather than a single-row enqueue, for two reasons. The
+    // create path cannot name the row — `saveLocalResource` mints the id
+    // itself and returns only an error — and sweeping every pending resource
+    // is strictly more useful anyway: this is the one screen a user reliably
+    // reaches, so it also rescues a resource whose own enqueue was lost.
+    //
+    // It runs after an **edit** too, and deliberately. Kotlin re-serializes at
+    // upload time and so picks up an edit for free; the port stores the
+    // payload at enqueue time, so without this an edit to a not-yet-uploaded
+    // resource would be saved locally while the *pre-edit* document went to
+    // the server. For a resource that has already synced there is nothing
+    // pending to find and this does nothing — which matches Kotlin, whose only
+    // upload path is that same pending query, so it never sends an edit to an
+    // existing document either.
+    //
+    // Gated on a successful save because a failed one wrote no row, and on a
+    // configured server because the endpoint is built from it.
+    if (error == null) {
+      try {
+        final config = ref.read(serverConfigProvider);
+        if (config != null) {
+          await ref
+              .read(resourcesUploaderProvider)
+              .queuePending(config: config, user: user);
+        }
+      } catch (_) {
+        // The row is already written, so a failed enqueue must not turn a
+        // successful save into the form's error message — the honest outcome
+        // is "saved, not yet sent", which is what an offline-first app does
+        // all the time. `sweepPendingResources` is what then delivers it, and
+        // it swallows for the same reason.
+        //
+        // Not defensive padding: `queuePending` reads device identity, which
+        // rethrows on an engine with no platform channel and no primed cache,
+        // and `serverConfigProvider` itself reads `planetPrefsProvider`. This
+        // is also the Phase 75 harness shape — that transitive read is
+        // `UnimplementedError` in a widget test that has not overridden it —
+        // and swallowing it here would have made the enqueue *silently
+        // absent* from every screen test, which is the green-but-dead trap
+        // this project keeps finding. `add_resource_screen_test` overrides
+        // `serverConfigProvider` and asserts the outbox row exists, so the
+        // catch cannot hide the enqueue.
+      }
+    }
+
     if (!mounted) return;
     setState(() => _saving = false);
 
