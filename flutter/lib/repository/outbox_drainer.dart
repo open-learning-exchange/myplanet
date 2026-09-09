@@ -14,8 +14,10 @@ enum OutboxOutcome {
   /// Transient — it will be retried after the backoff.
   retryScheduled,
 
-  /// Permanent, or attempts exhausted. The row is kept as `abandoned` so the
-  /// failure is inspectable rather than silently discarded.
+  /// Terminal, or attempts exhausted. The row is kept as `abandoned` so the
+  /// failure is inspectable rather than silently discarded — and, since the
+  /// row is also the memo [OutboxRepository.enqueue] reads, so that an
+  /// identical request is not asked a second time.
   abandoned,
 }
 
@@ -69,9 +71,13 @@ class OutboxDrainer {
   /// [onlyTypes] restricts the pass to those `uploadType`s. It exists for one
   /// case: a public-survey respondent has no server configuration, so there is
   /// no credential for the rest of the queue and posting it unauthenticated
-  /// would earn a 401 — which the retry rule classifies as *permanent* and would
-  /// abandon writes that are perfectly deliverable later. Draining only the
-  /// credential-free type leaves those rows untouched.
+  /// would earn a 401 on writes that are perfectly deliverable later. Draining
+  /// only the credential-free type leaves those rows untouched.
+  ///
+  /// A 401 is [OutboxRefusal.transient] now, so this is no longer the only
+  /// thing standing between an unauthenticated pass and a queue of abandoned
+  /// rows — it still spends attempts from those rows' ladders, which is reason
+  /// enough to keep it.
   Future<List<OutboxOutcome>> drain({
     String? authHeader,
     Set<String>? onlyTypes,
@@ -127,7 +133,7 @@ class OutboxDrainer {
       await _outbox.markFailed(
         row.id,
         errorMessage: 'Malformed payload',
-        permanent: true,
+        refusal: OutboxRefusal.rejected,
       );
       return OutboxOutcome.abandoned;
     }
@@ -158,14 +164,38 @@ class OutboxDrainer {
         return OutboxOutcome.completed;
 
       case NetworkError<Map<String, dynamic>>(:final code, :final message):
-        // `UploadCoordinator` treats `code >= 500` as retryable and everything
-        // else — 409 conflict, 400, 401 — as permanent.
-        final permanent = (code ?? 0) < 500;
+        // A **null** code can only have come from a handler. `PlanetApi`
+        // builds a `NetworkError` only from a response it actually received,
+        // and substitutes `0` for a missing status
+        // (`planet_api.dart:249-252`), so every transport-authored error
+        // carries an int. A handler-authored one usually means: the send
+        // succeeded and the response was not something the handler could use.
+        // The write may already be on the server, which is why that is
+        // [OutboxRefusal.indeterminate] rather than a failure to deliver.
+        //
+        // *Usually*, not always — and the exception is worth knowing before
+        // relying on this. Three handlers return a null code **before making
+        // any request**: `user_uploader.dart:126` and `:143-147`, and
+        // `achievements_uploader.dart:63`. For those the write certainly did
+        // not land, so `indeterminate` overstates what is known; the effect is
+        // the same either way (terminal, not re-sent) and the first of them is
+        // genuinely terminal — the local row is gone — but a handler that has
+        // sent nothing should say so with [OutboxRepository.notSent] rather
+        // than let this branch guess. See `PHASE_148_NOTES.md`.
+        //
+        // The previous rule was `permanent = (code ?? 0) < 500`, a port of
+        // `UploadCoordinator.kt:211`. It mapped null to 0 to "permanent" and
+        // abandoned such a row on its first attempt, and — because
+        // `enqueue` used to mint a fresh row per sweep — re-POSTed it forever
+        // after. See [OutboxRefusal] and `PHASE_148_NOTES.md`.
+        final refusal = code == null
+            ? OutboxRefusal.indeterminate
+            : OutboxRepository.classifyStatus(code);
         final abandoned = await _outbox.markFailed(
           row.id,
           errorMessage: message,
           httpCode: code,
-          permanent: permanent,
+          refusal: refusal,
         );
         return abandoned
             ? OutboxOutcome.abandoned

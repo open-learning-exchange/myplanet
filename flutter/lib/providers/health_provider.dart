@@ -161,7 +161,11 @@ class HealthQueue {
 
   final Ref _ref;
 
-  Future<int> queuePending() async {
+  /// [retryRefused] is the clinician tapping *Retry* on the stranded-records
+  /// banner rather than the app sweeping. Only that overrides the memo
+  /// `OutboxRepository.enqueue` keeps against an already-refused request; see
+  /// [HealthUploader.queuePending].
+  Future<int> queuePending({bool retryRefused = false}) async {
     final config = _ref.read(serverConfigProvider);
     if (config == null) return 0;
     // `await`ed rather than read with `valueOrNull`: nothing on the
@@ -172,7 +176,11 @@ class HealthQueue {
     final session = await _ref.read(sessionProvider.future);
     return _ref
         .read(healthUploaderProvider)
-        .queuePending(config: config, userId: session?.id);
+        .queuePending(
+          config: config,
+          userId: session?.id,
+          retryRefused: retryRefused,
+        );
   }
 }
 
@@ -180,18 +188,21 @@ final healthQueueProvider = Provider<HealthQueue>(HealthQueue.new);
 
 /// How many health records the server has refused for good.
 ///
-/// [OutboxDrainer] treats any `code < 500` as permanent, so a 409 — the
-/// conflict a legacy row's `_id` collision produces — abandons the operation on
-/// its first attempt. The row is kept rather than deleted, and until now that
-/// keeping *was* the whole of the observability: nothing selected an abandoned
-/// row, nothing counted one, and no screen said a word. A reading a clinician
-/// took stayed on the handset while the app behaved as though it had been
-/// filed.
+/// A 409 — the conflict a legacy row's `_id` collision produces, and the one a
+/// stale `_rev` produces on any patient whose document another device has
+/// touched — is a rejection of the request as sent, so the operation is
+/// abandoned on its first attempt. The row is kept rather than deleted, and
+/// until Phase 107 that keeping *was* the whole of the observability: nothing
+/// selected an abandoned row, nothing counted one, and no screen said a word.
+/// A reading a clinician took stayed on the handset while the app behaved as
+/// though it had been filed.
 ///
-/// Counted by distinct `itemId`, not by row: [OutboxRepository.enqueue] only
-/// looks for an *open* operation, so a record refused again on every save
-/// leaves one abandoned row per attempt. What the clinician needs to know is
-/// how many records are stranded, not how many times the app has tried.
+/// Counted by distinct `itemId` rather than by row. Since Phase 148 an item
+/// owns exactly one outbox row, so the two agree on a current install — but
+/// `outbox` is preserved across schema bumps, so a device that accreted a row
+/// per sweep under the old policy still carries them until its next enqueue
+/// collapses them. What the clinician needs to know is how many records are
+/// stranded, not how many times the app has tried.
 ///
 /// A [FutureProvider] rather than a stream: the count only moves when a drain
 /// finishes, and holding a live drift query open for the life of the screen

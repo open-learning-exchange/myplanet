@@ -443,8 +443,10 @@ class _RejectedUploadsBanner extends ConsumerWidget {
             // sync (`UploadToShelfService.uploadHealth`, run from
             // `AutoSyncWorker`); the port re-queues only from the examination
             // form's own save, so a stranded record has no other way back onto
-            // the wire. `enqueue` ignores the abandoned row and writes a fresh
-            // pending one, so this is a real retry rather than a nudge.
+            // the wire. Since Phase 148 an identical request is not re-sent by
+            // a sweep, so this passes `retryRefused: true` — an explicit
+            // instruction from someone looking at the banner is the one thing
+            // entitled to override that. Still a real retry, not a nudge.
             TextButton(onPressed: () => _retry(ref), child: Text(l10n.retry)),
           ],
         ),
@@ -453,7 +455,7 @@ class _RejectedUploadsBanner extends ConsumerWidget {
   }
 
   Future<void> _retry(WidgetRef ref) async {
-    await ref.read(healthQueueProvider).queuePending();
+    await ref.read(healthQueueProvider).queuePending(retryRefused: true);
     final config = ref.read(serverConfigProvider);
     if (config != null) {
       await ref

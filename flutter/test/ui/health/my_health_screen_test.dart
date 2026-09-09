@@ -15,6 +15,7 @@ import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/session_provider.dart';
 import 'package:myplanet/repository/health_repository.dart';
+import 'package:myplanet/repository/health_uploader.dart';
 import 'package:myplanet/repository/outbox_drainer.dart';
 import 'package:myplanet/repository/outbox_repository.dart';
 import 'package:myplanet/ui/components/profile_avatar.dart';
@@ -52,13 +53,15 @@ class _UnreachableApi extends Mock implements PlanetApi {
   }) async => const NetworkException(SocketException('offline'));
 }
 
+const testConfig = ServerConfig(
+  serverUrl: 'https://planet.example',
+  couchDbUrl: 'https://satellite:1234@planet.example:443',
+  pin: '1234',
+);
+
 class _TestServerConfigNotifier extends ServerConfigNotifier {
   @override
-  ServerConfig? build() => const ServerConfig(
-    serverUrl: 'https://planet.example',
-    couchDbUrl: 'https://satellite:1234@planet.example:443',
-    pin: '1234',
-  );
+  ServerConfig? build() => testConfig;
 }
 
 void main() {
@@ -614,14 +617,19 @@ void main() {
     // collides with another document is abandoned on its first attempt. Nothing
     // read that state before — the reading stayed on the handset while the
     // screen listed it as recorded.
-    Future<void> abandon(AppDatabase db, String itemId) async {
+    Future<void> abandon(
+      AppDatabase db,
+      String itemId, {
+      String payload = '{}',
+      String id = '',
+    }) async {
       await db.outboxDao.upsert(
         OutboxEntriesCompanion.insert(
-          id: 'op-$itemId',
+          id: id.isEmpty ? 'op-$itemId' : id,
           uploadType: 'health',
           itemId: itemId,
-          payload: '{}',
-          endpoint: 'https://planet.example/db/health',
+          payload: payload,
+          endpoint: HealthUploader.endpointFor(testConfig),
           createdAt: 1000,
           status: const Value('abandoned'),
           httpCode: const Value(409),
@@ -705,7 +713,18 @@ void main() {
           isUpdated: const Value(true),
         ),
       );
-      await abandon(db, 'health-1');
+      // Seeded with the request `HealthUploader.queuePending` actually
+      // builds, not a `'{}'` placeholder. That is the whole point of this
+      // test since Phase 148: `OutboxRepository.enqueue` suppresses a re-send
+      // only when the request is byte-identical to the refused one, so a
+      // fixture that cannot match makes the assertion pass with or without
+      // `retryRefused: true` — coverage that cannot fail.
+      final examRow = (await db.healthExaminationDao.getById('health-1'))!;
+      await abandon(
+        db,
+        'health-1',
+        payload: jsonEncode(HealthRepository.serialize(examRow)),
+      );
       await pumpScreen(
         tester,
         session: user,
@@ -732,12 +751,17 @@ void main() {
       await tester.tap(find.widgetWithText(TextButton, 'Retry'));
       await tester.pumpAndSettle();
 
-      // A fresh operation alongside the abandoned one, because `enqueue`
-      // ignores an abandoned row rather than reusing it — which is what makes
-      // the retry a real re-attempt.
+      // The item's one row is back on the wire. A sweep would have left it
+      // abandoned — the request has not changed — so this passes only because
+      // the button asks for the memo to be overridden.
       final open = await db.outboxDao.findOpen('health', 'health-1');
       expect(open, isNotNull);
       expect(open!.status, OutboxDao.statusPending);
+      expect(
+        await db.outboxDao.forItem('health', 'health-1'),
+        hasLength(1),
+        reason: 'one row per item, re-armed rather than duplicated',
+      );
     });
 
     testWidgets('the count is of records, not of attempts', (tester) async {
@@ -753,7 +777,7 @@ void main() {
           uploadType: 'health',
           itemId: 'health-1',
           payload: '{}',
-          endpoint: 'https://planet.example/db/health',
+          endpoint: HealthUploader.endpointFor(testConfig),
           createdAt: 2000,
           status: const Value('abandoned'),
           httpCode: const Value(409),
