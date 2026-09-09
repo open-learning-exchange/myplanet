@@ -708,7 +708,7 @@ class ChatDetailFragment : Fragment() {
         val primaryUrl = serverUrl
         val prefManager = sharedPrefManager
         MainApplication.applicationScope.launch(dispatcherProvider.io) {
-            if (isPrimaryServerReachable(primaryUrl, dispatcherProvider.io)) {
+            if (isPrimaryServerReachable(primaryUrl)) {
                 prefManager.setAlternativeUrl("")
                 prefManager.setProcessedAlternativeUrl("")
                 prefManager.setIsAlternativeUrl(false)

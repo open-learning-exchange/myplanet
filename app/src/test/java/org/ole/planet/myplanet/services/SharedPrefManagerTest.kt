@@ -70,6 +70,17 @@ class SharedPrefManagerTest {
     }
 
     @Test
+    fun testGetSavedUsersMalformedJson() {
+        every { mockSharedPreferences.getString("savedUsers", null) } returns "invalid json {"
+        try {
+            sharedPrefManager.getSavedUsers()
+            org.junit.Assert.fail("Expected JsonSyntaxException or similar error on malformed json")
+        } catch (e: Exception) {
+            assertTrue(e is com.google.gson.JsonSyntaxException || e is com.google.gson.JsonParseException)
+        }
+    }
+
+    @Test
     fun testGetSelectedTeamId() {
         // Test non-empty string
         every { mockSharedPreferences.getString("selectedTeamId", "") } returns "team123"

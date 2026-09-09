@@ -153,7 +153,7 @@ class EnterprisesFinancesViewModelTest {
     }
 
     @Test
-    fun `getTeamTransactions calculates total and updates headerState correctly`() = runTest {
+    fun `getTeamTransactions calculates total and updates financeSummary correctly`() = runTest {
         val mockTransactions = listOf(
             Transaction("1", 0L, "credit entry", "credit", 500, 500),
             Transaction("2", 0L, "debit entry 1", "debit", 200, 300),
@@ -170,18 +170,24 @@ class EnterprisesFinancesViewModelTest {
             )
         } returns flowOf(mockTransactions)
 
+        val states = mutableListOf<FinanceSummaryUiState>()
+        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.financeSummary.collect { states.add(it) }
+        }
+
         viewModel.getTeamTransactions(teamId, true, null, null)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        val headerState = viewModel.headerState.first()
-        assertEquals(300, headerState.debit)
-        assertEquals(500, headerState.credit)
-        assertEquals(200, headerState.total)
-        assertEquals(false, headerState.isCautionVisible)
+        val summary = states.last()
+        assertEquals(300, summary.debit)
+        assertEquals(500, summary.credit)
+        assertEquals(200, summary.total)
+        assertEquals(false, summary.isCautionVisible)
+        job.cancel()
     }
 
     @Test
-    fun `headerState exhibits caution when total is negative`() = runTest {
+    fun `financeSummary exhibits caution when total is negative`() = runTest {
         val mockTransactions = listOf(
             Transaction("1", 0L, "credit entry", "credit", 100, 100),
             Transaction("2", 0L, "debit entry", "debit", 300, -200)
@@ -197,13 +203,19 @@ class EnterprisesFinancesViewModelTest {
             )
         } returns flowOf(mockTransactions)
 
+        val states = mutableListOf<FinanceSummaryUiState>()
+        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.financeSummary.collect { states.add(it) }
+        }
+
         viewModel.getTeamTransactions(teamId, true, null, null)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        val headerState = viewModel.headerState.first()
-        assertEquals(300, headerState.debit)
-        assertEquals(100, headerState.credit)
-        assertEquals(-200, headerState.total)
-        assertEquals(true, headerState.isCautionVisible)
+        val summary = states.last()
+        assertEquals(300, summary.debit)
+        assertEquals(100, summary.credit)
+        assertEquals(-200, summary.total)
+        assertEquals(true, summary.isCautionVisible)
+        job.cancel()
     }
 }
