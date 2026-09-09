@@ -1,12 +1,12 @@
 package org.ole.planet.myplanet.ui.community
 
-sealed class CommunityServiceRoute {
-    data class ExternalLink(val url: String) : CommunityServiceRoute()
-    data class TeamLink(val teamId: String) : CommunityServiceRoute()
-    data object Unhandled : CommunityServiceRoute()
+sealed class CommunityServicesRoute {
+    data class ExternalLink(val url: String) : CommunityServicesRoute()
+    data class TeamLink(val teamId: String) : CommunityServicesRoute()
+    data object Unhandled : CommunityServicesRoute()
 
     companion object {
-        fun resolve(route: String): CommunityServiceRoute {
+        fun resolve(route: String): CommunityServicesRoute {
             if (route.startsWith("http://") || route.startsWith("https://")) {
                 return ExternalLink(route)
             }

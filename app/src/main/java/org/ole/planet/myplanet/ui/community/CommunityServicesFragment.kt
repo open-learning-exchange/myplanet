@@ -87,14 +87,14 @@ class CommunityServicesFragment : BaseTeamFragment() {
             b.text = team.title
             b.setOnClickListener {
                 val rawRoute = team.route ?: return@setOnClickListener
-                when (val route = CommunityServiceRoute.resolve(rawRoute)) {
-                    is CommunityServiceRoute.ExternalLink -> {
+                when (val route = CommunityServicesRoute.resolve(rawRoute)) {
+                    is CommunityServicesRoute.ExternalLink -> {
                         startActivity(Intent(requireContext(), WebViewActivity::class.java).apply {
                             putExtra("link", route.url)
                             putExtra("title", team.title)
                         })
                     }
-                    is CommunityServiceRoute.TeamLink -> {
+                    is CommunityServicesRoute.TeamLink -> {
                         viewLifecycleOwner.lifecycleScope.launch {
                             val isMyTeam = teamsRepository.isMember(user?.id, route.teamId)
                             val f = TeamDetailFragment()
@@ -111,7 +111,7 @@ class CommunityServicesFragment : BaseTeamFragment() {
                             )
                         }
                     }
-                    is CommunityServiceRoute.Unhandled -> {
+                    is CommunityServicesRoute.Unhandled -> {
                         startActivity(Intent(requireContext(), WebViewActivity::class.java).apply {
                             putExtra("link", rawRoute)
                             putExtra("title", team.title)
