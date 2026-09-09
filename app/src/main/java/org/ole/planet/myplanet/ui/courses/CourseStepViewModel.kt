@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.StepExam
@@ -22,6 +23,7 @@ import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MarkdownUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 
@@ -48,7 +50,8 @@ class CourseStepViewModel @Inject constructor(
     private val resourcesRepository: ResourcesRepository,
     private val configurationsRepository: ConfigurationsRepository,
     private val progressRepository: ProgressRepository,
-    private val resourceDownloadCoordinator: ResourceDownloadCoordinator
+    private val resourceDownloadCoordinator: ResourceDownloadCoordinator,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CourseStepUiState())
@@ -66,7 +69,9 @@ class CourseStepViewModel @Inject constructor(
             val data = coursesRepository.getCourseStepData(stepId ?: "", user?.id)
             val title = data.step.courseId?.let { coursesRepository.getCourseTitleById(it) }
 
-            val baseDirPath = context.getExternalFilesDir(null)?.toString()
+            val baseDirPath = withContext(dispatcherProvider.io) {
+                context.getExternalFilesDir(null)?.toString()
+            }
 
             val markdownContentWithLocalPaths = MarkdownUtils.prependBaseUrlToImages(
                 data.step.description,

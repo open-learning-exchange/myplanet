@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.MainDispatcherRule
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -48,6 +49,7 @@ class CourseStepViewModelTest {
     private val progressRepository: ProgressRepository = mockk(relaxed = true)
     private val resourceDownloadCoordinator: ResourceDownloadCoordinator = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
+    private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
     private lateinit var viewModel: CourseStepViewModel
 
@@ -64,7 +66,8 @@ class CourseStepViewModelTest {
             resourcesRepository,
             configurationsRepository,
             progressRepository,
-            resourceDownloadCoordinator
+            resourceDownloadCoordinator,
+            dispatcherProvider
         )
     }
 
