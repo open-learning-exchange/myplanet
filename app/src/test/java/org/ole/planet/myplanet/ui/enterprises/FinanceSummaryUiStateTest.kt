@@ -1,15 +1,16 @@
-package org.ole.planet.myplanet.model
+package org.ole.planet.myplanet.ui.enterprises
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.ole.planet.myplanet.model.Transaction
 
-class TransactionTest {
+class FinanceSummaryUiStateTest {
 
     @Test
-    fun `calculateTotals with empty list returns zero state and caution false`() {
-        val result = Transaction.calculateTotals(emptyList())
+    fun `from with empty list returns zero state and caution false`() {
+        val result = FinanceSummaryUiState.from(emptyList())
 
         assertEquals(0, result.debit)
         assertEquals(0, result.credit)
@@ -18,13 +19,13 @@ class TransactionTest {
     }
 
     @Test
-    fun `calculateTotals with credit-only transactions computes credit correctly`() {
+    fun `from with credit-only transactions computes credit correctly`() {
         val transactions = listOf(
             Transaction("1", 0L, "credit 1", "credit", 100, 100),
             Transaction("2", 0L, "credit 2", "CREDIT", 250, 350)
         )
 
-        val result = Transaction.calculateTotals(transactions)
+        val result = FinanceSummaryUiState.from(transactions)
 
         assertEquals(0, result.debit)
         assertEquals(350, result.credit)
@@ -33,13 +34,13 @@ class TransactionTest {
     }
 
     @Test
-    fun `calculateTotals with debit-only transactions computes debit and sets caution true`() {
+    fun `from with debit-only transactions computes debit and sets caution true`() {
         val transactions = listOf(
             Transaction("1", 0L, "debit 1", "debit", 150, -150),
             Transaction("2", 0L, "debit 2", "DEBIT", 50, -200)
         )
 
-        val result = Transaction.calculateTotals(transactions)
+        val result = FinanceSummaryUiState.from(transactions)
 
         assertEquals(200, result.debit)
         assertEquals(0, result.credit)
@@ -48,14 +49,14 @@ class TransactionTest {
     }
 
     @Test
-    fun `calculateTotals with mixed transactions computes totals and sets caution appropriately`() {
+    fun `from with mixed transactions computes totals and sets caution appropriately`() {
         val positiveMixed = listOf(
             Transaction("1", 0L, "credit 1", "credit", 500, 500),
             Transaction("2", 0L, "debit 1", "debit", 200, 300),
             Transaction("3", 0L, "debit 2", "debit", 100, 200)
         )
 
-        val positiveResult = Transaction.calculateTotals(positiveMixed)
+        val positiveResult = FinanceSummaryUiState.from(positiveMixed)
 
         assertEquals(300, positiveResult.debit)
         assertEquals(500, positiveResult.credit)
@@ -67,7 +68,7 @@ class TransactionTest {
             Transaction("2", 0L, "debit 1", "debit", 300, -200)
         )
 
-        val negativeResult = Transaction.calculateTotals(negativeMixed)
+        val negativeResult = FinanceSummaryUiState.from(negativeMixed)
 
         assertEquals(300, negativeResult.debit)
         assertEquals(100, negativeResult.credit)

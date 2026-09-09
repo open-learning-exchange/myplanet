@@ -17,8 +17,35 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.Transaction
-import org.ole.planet.myplanet.model.TransactionTotals
 import org.ole.planet.myplanet.repository.TeamsFinancesRepository
+
+data class FinanceSummaryUiState(
+    val debit: Int = 0,
+    val credit: Int = 0,
+    val total: Int = 0,
+    val isCautionVisible: Boolean = false
+) {
+    companion object {
+        fun from(transactions: List<Transaction>): FinanceSummaryUiState {
+            var debit = 0
+            var credit = 0
+            for (transaction in transactions) {
+                if ("credit".equals(transaction.type, ignoreCase = true)) {
+                    credit += transaction.amount
+                } else {
+                    debit += transaction.amount
+                }
+            }
+            val total = credit - debit
+            return FinanceSummaryUiState(
+                debit = debit,
+                credit = credit,
+                total = total,
+                isCautionVisible = total < 0
+            )
+        }
+    }
+}
 
 @HiltViewModel
 class EnterprisesFinancesViewModel @Inject constructor(
@@ -28,12 +55,12 @@ class EnterprisesFinancesViewModel @Inject constructor(
     private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
     val transactions: StateFlow<List<Transaction>> = _transactions.asStateFlow()
 
-    val headerState: StateFlow<TransactionTotals> = transactions
-        .map { Transaction.calculateTotals(it) }
+    val financeSummary: StateFlow<FinanceSummaryUiState> = transactions
+        .map { FinanceSummaryUiState.from(it) }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = TransactionTotals()
+            initialValue = FinanceSummaryUiState()
         )
 
     private val _transactionCreated = MutableSharedFlow<Result<Unit>>(extraBufferCapacity = 1)
