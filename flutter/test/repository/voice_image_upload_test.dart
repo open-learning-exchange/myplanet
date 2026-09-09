@@ -231,6 +231,30 @@ void main() {
     expect(resource['addedBy'], 'org.couchdb.user:ada');
     expect(resource['sourcePlanet'], 'learning');
     expect(resource['resideOn'], 'earth');
+  });
+
+  test('a blank planet code is sent, not omitted', () async {
+    // `createImage` guards with `?.let`, so a **null** code omits the key and
+    // an empty one is still written. An `isNotEmpty` test would drop a key
+    // Kotlin sends for a user whose code is blank rather than absent.
+    final posts = stubPosts();
+    stubAttachments();
+    final id = await voices.createPost(
+      message: 'the well is dry',
+      userId: 'org.couchdb.user:ada',
+      userName: 'ada',
+      planetCode: '',
+      parentCode: '',
+      attachments: [VoiceImageAttachment(bytes: bytes, filename: 'well.png')],
+    );
+
+    await drainOnce(id);
+
+    final resource = posts.first.body;
+    expect(resource.containsKey('resideOn'), isTrue);
+    expect(resource['resideOn'], '');
+    expect(resource.containsKey('sourcePlanet'), isTrue);
+    expect(resource['sourcePlanet'], '');
     // `addDocumentOrigin()` plus the two device names, which is exactly what
     // `createImage` writes (UploadManager.kt:135-138).
     expect(resource['app'], isNotNull);

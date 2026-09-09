@@ -17,12 +17,12 @@ phase to start.
 | The challenge tally buckets by the device's day | `voices_repository.dart` | UTC where Kotlin uses `'localtime'` |
 | Three stale or false claims corrected at the code | `voices_uploader.dart`, `voices_repository.dart` | a correction has to reach every copy |
 
-**32 tests across five new files and four existing ones. 17 mutations, 17
+**33 tests across five new files and four existing ones. 18 mutations, 18
 caught — two only after the test they exposed was rewritten.** Two
 `parity-auditor` passes at `effort: max` ran, one on the Kotlin ground truth
 before implementing and one on the finished green code.
 
-**Four defects were in code this phase itself wrote**, found after the first
+**Five defects were in code this phase itself wrote**, found after the first
 cut was green and all of them in the image slice. They are worth reading before
 the rest, because three would only ever have shown up in production and the
 fourth was caught by a test that already existed:
@@ -45,6 +45,13 @@ fourth was caught by a test that already existed:
   channel throws a **`FlutterError`**, which is an `Error`, and headless
   WorkManager engines are where this drains. **Caught by the pre-existing
   `markUploaded` test**, not by anything this phase wrote.
+- **A blank planet code was omitted where Kotlin sends it.** `createImage`
+  guards each of `addedBy`/`resideOn`/`sourcePlanet` with `?.let`, so a
+  **null** code omits the key and an empty one is still written; the first cut
+  tested `isNotEmpty` and dropped a key Kotlin sends for a user whose code is
+  blank rather than absent. Read off the Kotlin by hand rather than taken from
+  the ground-truth report — which had the fields and the order right, and this
+  is the kind of detail a summary flattens.
 - **A transient attachment failure abandoned the whole post.** The handler
   wrapped every image failure in `NetworkError(null, …)`, and `OutboxDrainer`
   reads `(code ?? 0) < 500` as *permanent* — so one dropped connection
@@ -391,6 +398,7 @@ sweep and reported a false negative.
 | M15 | the comment's `userId` reverts to the bare local id | *the comment is filed under the id its author object carries* |
 | M16 | colliding filenames are not disambiguated | *two picks with the same name do not share one slot* |
 | M17 | de-duplicate on the raw name instead of the stored one | *two names that reduce to one slot do not collide* |
+| M18 | an empty planet code is omitted instead of sent | *a blank planet code is sent, not omitted* |
 
 **M7 and M13 survived their first run**, and both were the test's fault rather
 than a missing predicate — which is the whole reason to mutate. M7's assertion

@@ -346,9 +346,13 @@ class VoicesUploader {
     'createdDate': DateTime.now().millisecondsSinceEpoch,
     'filename': image.fileName,
     'private': true,
-    if ((post?.userId ?? '').isNotEmpty) 'addedBy': post!.userId,
-    if ((post?.parentCode ?? '').isNotEmpty) 'resideOn': post!.parentCode,
-    if ((post?.createdOn ?? '').isNotEmpty) 'sourcePlanet': post!.createdOn,
+    // `?.let`, so a **null** code omits the key and an empty one is still
+    // sent — `user?.parentCode?.let { addProperty("resideOn", it) }`. Testing
+    // `isNotEmpty` instead would drop a key Kotlin writes for a user whose
+    // code is blank rather than absent.
+    if (post?.userId != null) 'addedBy': post!.userId,
+    if (post?.parentCode != null) 'resideOn': post!.parentCode,
+    if (post?.createdOn != null) 'sourcePlanet': post!.createdOn,
     ...identity.documentFields,
     'privateFor': const <String, dynamic>{},
     'mediaType': 'image',
