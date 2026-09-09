@@ -34,7 +34,38 @@ android {
     }
 
     buildTypes {
+        debug {
+            // The port and the shipping Kotlin app share an applicationId, and
+            // this build is signed with the debug keys, so installing it beside
+            // the real myPlanet is *refused* on a signature mismatch rather
+            // than replacing it — you would have to uninstall the app you are
+            // trying to compare against. The suffix gives the debug build its
+            // own package identity so both sit on one handset.
+            //
+            // Nothing reads the id statically: `namespace` (and so
+            // `.MainActivity`, the R class and `MainActivity.kt`'s package) is
+            // unaffected by a suffix, the manifest interpolates no
+            // `${applicationId}`, and every runtime consumer asks the
+            // platform — `PlanetPlatformChannelsPlugin` passes
+            // `context.packageName` to `getPackageInfo` and to the
+            // tablet-usage filter, which is then correctly the usage of *this*
+            // app rather than its sibling's.
+            //
+            // Deliberately no `versionNameSuffix` to go with it.
+            // `ConfigurationsRepository` compares the **runtime** versionName
+            // against the server's `minapk` and reports anything unusable as
+            // an unreachable server (Phase 60), and `compareVersions` tolerates
+            // `-lite` specifically, not an arbitrary tag. A cosmetic suffix
+            // there risks the first screen saying it cannot reach Planet.
+            applicationIdSuffix = ".flutter"
+        }
         release {
+            // Left on the real applicationId on purpose: this build represents
+            // the eventual in-place cutover, so forking its identity would
+            // model something that is not going to happen. It therefore still
+            // cannot be installed beside the Kotlin app — use the debug APK for
+            // side-by-side work.
+
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
