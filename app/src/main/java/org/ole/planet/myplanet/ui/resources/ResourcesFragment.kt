@@ -93,6 +93,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private var lastLevels: Set<String>? = null
     private var lastLanguages: Set<String>? = null
     private var lastMediums: Set<String>? = null
+    private var lastFilteredCount: Int = 0
     @Inject
     lateinit var prefManager: SharedPrefManager
 
@@ -385,8 +386,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             .launchIn(viewLifecycleOwner.lifecycleScope)
     }
 
-    private fun applyFiltersAndUpdateUI(scrollToTop: Boolean = true, forceUpdate: Boolean = false) {
-        if (!::adapterLibrary.isInitialized || !isAdded || _binding == null) return
+    private fun applyFiltersAndUpdateUI(scrollToTop: Boolean = true, forceUpdate: Boolean = false): Int {
+        if (!::adapterLibrary.isInitialized || !isAdded || _binding == null) return lastFilteredCount
         val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
 
         val currentSearchTags = searchTags
@@ -401,7 +402,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             mediums == lastMediums &&
             selectedDownloadFilterIndex == lastDownloadFilterIndex
         ) {
-            return
+            return lastFilteredCount
         }
 
         lastDownloadFilterIndex = selectedDownloadFilterIndex
@@ -425,6 +426,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
         checkList(filteredList.size)
         showNoData(tvMessage, filteredList.size, "resources")
+        lastFilteredCount = filteredList.size
+        return lastFilteredCount
     }
 
     private fun setupSelectAllListener() {
@@ -704,18 +707,15 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
     }
 
-    override fun filter(subjects: MutableSet<String>, languages: MutableSet<String>, mediums: MutableSet<String>, levels: MutableSet<String>) {
+    override fun filter(subjects: MutableSet<String>, languages: MutableSet<String>, mediums: MutableSet<String>, levels: MutableSet<String>): Int {
         this.subjects = subjects
         this.languages = languages
         this.mediums = mediums
         this.levels = levels
         updateFilterBadge()
-        if (view != null) {
-            searchJob?.cancel()
-            searchJob = viewLifecycleOwner.lifecycleScope.launch {
-                applyFiltersAndUpdateUI()
-            }
-        }
+        if (view == null) return getFilteredCount(subjects, languages, mediums, levels)
+        searchJob?.cancel()
+        return applyFiltersAndUpdateUI()
     }
 
     override fun getFilteredCount(subjects: Set<String>, languages: Set<String>, mediums: Set<String>, levels: Set<String>): Int {

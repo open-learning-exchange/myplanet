@@ -135,8 +135,12 @@ class ResourcesFilterFragment : BottomSheetDialogFragment(), AdapterView.OnItemC
     }
 
     private fun updateResultCount() {
-        if (_binding == null) return
         val count = filterListener?.getFilteredCount(selectedSubs, selectedLang, selectedMeds, selectedLvls) ?: 0
+        showResultCount(count)
+    }
+
+    private fun showResultCount(count: Int) {
+        if (_binding == null) return
         binding.btnConfirmFilters.text = getString(R.string.show_n_results, count)
     }
 
@@ -168,8 +172,8 @@ class ResourcesFilterFragment : BottomSheetDialogFragment(), AdapterView.OnItemC
                 R.id.list_level -> addToList(s, selectedLvls)
                 R.id.list_medium -> addToList(s, selectedMeds)
             }
-            filterListener?.filter(selectedSubs, selectedLang, selectedMeds, selectedLvls)
-            updateResultCount()
+            val count = filterListener?.filter(selectedSubs, selectedLang, selectedMeds, selectedLvls) ?: 0
+            showResultCount(count)
         }
     }
 
