@@ -46,7 +46,16 @@ class TeamVoicesScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.teamDiscussions)),
-      floatingActionButton: membership != null
+      // Gated on the **team** as well as the membership. The two resolve
+      // independently — `teamMembershipsProvider` is a stream,
+      // `teamProvider` a one-shot future — so without this there is a window
+      // where the FAB renders with `team == null` and a tap composes an
+      // enterprise's post as `messageType: ''` with an empty `viewIn` name,
+      // which is exactly the mislabelling this screen was fixed to stop.
+      // Kotlin has no such window: `TeamsVoicesFragment` only enables
+      // `btnSubmit` from `updateCanPostMessage`, reached once
+      // `viewModel.teamPolicy` has emitted the resolved team.
+      floatingActionButton: membership != null && team != null
           ? FloatingActionButton.extended(
               onPressed: () => _compose(context, ref, team),
               icon: const Icon(Icons.campaign_outlined),
@@ -91,9 +100,11 @@ class TeamVoicesScreen extends ConsumerWidget {
   /// `TeamsVoicesFragment.kt:80` sends `getEffectiveTeamType()`, which is the
   /// nav argument or `team?.type`, falling back to `""`. This screen resolves
   /// the team directly rather than through Kotlin's tab pager, so there is no
-  /// nav argument to prefer — `team?.type` is the whole chain, and `''` when
-  /// the row has not resolved or carries no type, which is what Kotlin sends
-  /// there too.
+  /// nav argument to prefer — `team?.type` is the whole chain. The `''`
+  /// fallback covers a team document that omits `type`, which is the only case
+  /// Kotlin sends `""` for; an *unresolved* team cannot reach here, because
+  /// the FAB waits for it. An earlier version of this comment said Kotlin
+  /// sends `""` for an unloaded team as well, and it does not.
   Future<void> _compose(
     BuildContext context,
     WidgetRef ref,

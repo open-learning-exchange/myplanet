@@ -17,7 +17,7 @@ phase to start.
 | The challenge tally buckets by the device's day | `voices_repository.dart` | UTC where Kotlin uses `'localtime'` |
 | Three stale or false claims corrected at the code | `voices_uploader.dart`, `voices_repository.dart` | a correction has to reach every copy |
 
-**37 tests across five new files and four existing ones. 26 mutations, 26
+**38 tests across five new files and four existing ones. 27 mutations, 27
 caught — three only after the test they exposed was rewritten.** Two
 `parity-auditor` passes at `effort: max` ran, one on the Kotlin ground truth
 before implementing and one on the finished green code. **The second pass
@@ -474,6 +474,7 @@ sweep and reported a false negative.
 | M24 | a retryable image failure is treated as permanent | *a transient attachment failure is retried* + *…leaves the post queued* |
 | M25 | the dead `imageUrls` entry is left on the row | *a dead image is forgotten even when the post itself fails* |
 | M26 | the picker's `scaled_` prefix reaches Planet | *the picker's own rename does not reach Planet* |
+| M27 | the FAB renders before the team resolves | *the compose button waits for the team, not just membership* |
 
 **M25 survived too, and for a third distinct reason**: its assertion ran on the
 success path, where `markUploaded` clears `imageUrls` regardless, so the

@@ -143,6 +143,43 @@ void main() {
     expect(document['messageType'], 'team');
   });
 
+  testWidgets('the compose button waits for the team, not just membership', (
+    tester,
+  ) async {
+    // `teamMembershipsProvider` (a stream) and `teamProvider` (a one-shot
+    // future) resolve independently, so the FAB could render with
+    // `team == null` and a tap would compose an enterprise's post as
+    // `messageType: ''` — the mislabelling this file exists to stop. Kotlin
+    // has no such window: `TeamsVoicesFragment` enables `btnSubmit` only from
+    // `updateCanPostMessage`, reached once the team has resolved.
+    await tester.pumpWidget(
+      wrapScreen(
+        const TeamVoicesScreen(teamId: 'team-1'),
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          planetApiProvider.overrideWithValue(_MockPlanetApi()),
+          planetPrefsProvider.overrideWithValue(
+            PlanetPrefs(await SharedPreferences.getInstance()),
+          ),
+          deviceIdentitySourceProvider.overrideWithValue(testDeviceIdentity),
+          serverConfigProvider.overrideWith(_TestServerConfigNotifier.new),
+          sessionProvider.overrideWith(() => _TestSessionNotifier(ada)),
+          teamVoicesProvider.overrideWith(
+            (ref, teamId) => Stream.value(const []),
+          ),
+          // Membership has arrived; the team has not.
+          teamProvider.overrideWith((ref, teamId) async => null),
+          teamMembershipsProvider.overrideWith(
+            (ref) => Stream.value({'team-1': team(type: 'enterprise')}),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(FloatingActionButton), findsNothing);
+  });
+
   testWidgets('a team with no type sends the empty string, not "team"', (
     tester,
   ) async {
