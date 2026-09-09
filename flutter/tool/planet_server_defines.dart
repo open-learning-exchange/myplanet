@@ -69,6 +69,22 @@ void main(List<String> args) {
     }
   }
 
+  // `PLANET_SERVER_MAPPINGS`, the local-to-clone fallback table.
+  // `ServerUrlMapper` reads it from the environment and its keys are what
+  // `extractBaseUrl` produces — `scheme://host`, no default port — so they are
+  // built as `http://<primary>` exactly as
+  // `services/sync/ServerUrlMapper.kt:20-24` does. Without this the table is
+  // empty in every built APK, `alternativeUrl` is always null, and the clone
+  // fallback the Kotlin has simply does not exist in the port.
+  final mappings = <String>[];
+  for (final server in const <String>['SANPABLO', 'URIUR', 'EMBAKASI']) {
+    final primary = parsed['PLANET_${server}_URL'] ?? '';
+    final clone = parsed['PLANET_${server}_CLONE_URL'] ?? '';
+    if (primary.isEmpty || clone.isEmpty) continue;
+    mappings.add('http://$primary=https://$clone');
+  }
+  defines['PLANET_SERVER_MAPPINGS'] = mappings.join(',');
+
   final output = File(outputPath);
   output.parent.createSync(recursive: true);
   output.writeAsStringSync(
@@ -91,9 +107,7 @@ Map<String, String> _parseProperties(List<String> lines) {
   final result = <String, String>{};
   for (final line in lines) {
     final trimmed = line.trim();
-    if (trimmed.isEmpty ||
-        trimmed.startsWith('#') ||
-        trimmed.startsWith('!')) {
+    if (trimmed.isEmpty || trimmed.startsWith('#') || trimmed.startsWith('!')) {
       continue;
     }
     final separator = trimmed.indexOf('=');

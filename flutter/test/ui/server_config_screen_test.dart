@@ -26,19 +26,25 @@ void main() {
     name: '🌎 planet learning',
     host: 'planet.learning.example.org',
     pin: '1234',
-    scheme: 'https',
   );
+  // A real LAN address, because the scheme is now computed from the host:
+  // six of the eleven shipping servers are private addresses and two of them
+  // reach http only through `isLocalNetwork`. A synthetic public hostname
+  // would assert http while resolving https.
   const local = PlanetServer(
     name: '🇬🇹 planet san pablo',
-    host: 'sanpablo.example.org',
+    host: '192.168.48.253',
     pin: '5678',
-    scheme: 'http',
+  );
+  const belowFold = PlanetServer(
+    name: '🌎 planet below the fold',
+    host: 'below.example.org',
+    pin: '3456',
   );
   const fourth = PlanetServer(
     name: '🇸🇴 planet somalia',
     host: 'somalia.example.org',
     pin: '9012',
-    scheme: 'https',
   );
 
   Widget build({
@@ -92,7 +98,7 @@ void main() {
         .first
         .controller
         ?.text;
-    expect(url, 'http://sanpablo.example.org');
+    expect(url, 'http://192.168.48.253');
   });
 
   testWidgets('a build with no servers shows no picker at all', (tester) async {
@@ -138,5 +144,32 @@ void main() {
       'https://planet.learning.example.org',
       '1234',
     ]);
+  });
+
+  testWidgets('keeps the configured server visible when it is below the fold', (
+    tester,
+  ) async {
+    // Pinned by nothing until this existed: the pure function's prepend branch
+    // was covered, but the screen's `configuredHost:` argument could have been
+    // deleted without a single test noticing. Every other case here either has
+    // three servers or a configured host already in the top three.
+    await tester.pumpWidget(
+      build(
+        servers: const [learning, local, fourth, belowFold],
+        existing: const ServerConfig(
+          serverUrl: 'https://below.example.org',
+          pin: '3456',
+          couchDbUrl: 'https://satellite:3456@below.example.org:443',
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final titles = tester
+        .widgetList<ListTile>(find.byType(ListTile))
+        .map((t) => (t.title! as Text).data)
+        .toList();
+    expect(titles.first, '🌎 planet below the fold');
+    expect(titles, hasLength(4));
   });
 }

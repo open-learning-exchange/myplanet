@@ -53,10 +53,21 @@ class ConfigurationSuccess extends ConfigurationResult {
 }
 
 class ConfigurationFailure extends ConfigurationResult {
-  const ConfigurationFailure(this.reason, this.url);
+  const ConfigurationFailure(this.reason, this.url, {this.diagnostic});
 
   final ConfigurationFailureReason reason;
   final String url;
+
+  /// Which step failed and what it reported, un-localised, for a debug build
+  /// to show.
+  ///
+  /// Every failure in the handshake used to collapse into one sentence with
+  /// the status code, the exception type and even *which of the two requests*
+  /// discarded. Kotlin at least logs its cause to Logcat; the port had nowhere
+  /// to put it, so a failure that could not be reproduced off-device could
+  /// only be guessed at — and two of my guesses about one were wrong. This is
+  /// the cheapest thing that turns the next report into an answer.
+  final String? diagnostic;
 }
 
 /// Port of the configuration half of `repository/ConfigurationsRepositoryImpl.kt`.
@@ -158,11 +169,17 @@ class ConfigurationsRepository {
     final rejected = results.whereType<_UrlCheckFailure>().any(
       (failure) => failure.pinRejected,
     );
+    final diagnostics = results
+        .whereType<_UrlCheckFailure>()
+        .map((failure) => failure.diagnostic)
+        .whereType<String>()
+        .toList();
     return ConfigurationFailure(
       rejected
           ? ConfigurationFailureReason.pinRejected
           : _failureReasonFor(url),
       url,
+      diagnostic: diagnostics.isEmpty ? null : diagnostics.join('\n'),
     );
   }
 
@@ -173,7 +190,10 @@ class ConfigurationsRepository {
   ) async {
     final versionsResult = await _api.getConfiguration('$currentUrl/versions');
     if (versionsResult is! NetworkSuccess<Map<String, dynamic>>) {
-      return _UrlCheckFailure(currentUrl);
+      return _UrlCheckFailure(
+        currentUrl,
+        diagnostic: _describeFailure('$currentUrl/versions', versionsResult),
+      );
     }
 
     // Port of `SharedPrefManager.setVersionDetail`: keep the raw `/versions`
@@ -185,19 +205,33 @@ class ConfigurationsRepository {
       'minapk',
       versionsResult.data,
     );
+    final appVersion = await _resolveAppVersion();
     if (minApkVersion == null ||
-        !VersionUtils.isVersionAllowed(
-          await _resolveAppVersion(),
-          minApkVersion,
-        )) {
-      return _UrlCheckFailure(currentUrl);
+        !VersionUtils.isVersionAllowed(appVersion, minApkVersion)) {
+      return _UrlCheckFailure(
+        currentUrl,
+        diagnostic: minApkVersion == null
+            ? '$currentUrl/versions: no minapk'
+            : '$currentUrl: build $appVersion below minapk $minApkVersion',
+      );
     }
 
     final couchDbUrl = ServerConfig.buildCouchDbUrl(currentUrl, pin);
     final fetch = await _fetchConfiguration(couchDbUrl);
     final configuration = fetch.configuration;
     if (configuration == null) {
-      return _UrlCheckFailure(currentUrl, pinRejected: fetch.pinRejected);
+      // `buildCouchDbUrl` short-circuits on a URL that already carries
+      // `user:pass@`, so on that path the PIN field was never sent and a 401
+      // is not a verdict on it. Blaming it would point the user at a field
+      // that had no effect on the request.
+      final pinWasUsed = !currentUrl.contains('@');
+      return _UrlCheckFailure(
+        currentUrl,
+        pinRejected: fetch.pinRejected && pinWasUsed,
+        diagnostic: fetch.diagnostic == null
+            ? null
+            : '$currentUrl/db/configurations: ${fetch.diagnostic}',
+      );
     }
 
     return _UrlCheckSuccess(
@@ -226,11 +260,16 @@ class ConfigurationsRepository {
       final rejected =
           result is NetworkError<Map<String, dynamic>> &&
           (result.code == 401 || result.code == 403);
-      return _ConfigurationFetch.failed(pinRejected: rejected);
+      return _ConfigurationFetch.failed(
+        pinRejected: rejected,
+        diagnostic: _describeFailure('fetch', result),
+      );
     }
 
     final rows = result.data['rows'];
-    if (rows is! List || rows.isEmpty) return _ConfigurationFetch.failed();
+    if (rows is! List || rows.isEmpty) {
+      return _ConfigurationFetch.failed(diagnostic: 'no configuration rows');
+    }
 
     final firstRow = rows.first;
     if (firstRow is! Map<String, dynamic>) return _ConfigurationFetch.failed();
@@ -285,15 +324,19 @@ class ConfigurationsRepository {
 /// told from a server that never answered.
 @immutable
 class _ConfigurationFetch {
-  const _ConfigurationFetch(this.configuration) : pinRejected = false;
+  const _ConfigurationFetch(this.configuration)
+    : pinRejected = false,
+      diagnostic = null;
 
-  const _ConfigurationFetch.failed({this.pinRejected = false})
+  const _ConfigurationFetch.failed({this.pinRejected = false, this.diagnostic})
     : configuration = null;
 
   final _CommunityConfiguration? configuration;
 
   /// The server answered and refused the credentials.
   final bool pinRejected;
+
+  final String? diagnostic;
 }
 
 @immutable
@@ -334,10 +377,24 @@ class _UrlCheckSuccess extends _UrlCheckResult {
 }
 
 class _UrlCheckFailure extends _UrlCheckResult {
-  const _UrlCheckFailure(this.url, {this.pinRejected = false});
+  const _UrlCheckFailure(this.url, {this.pinRejected = false, this.diagnostic});
 
   final String url;
 
   /// The server was reached and rejected the PIN, rather than not answering.
   final bool pinRejected;
+
+  final String? diagnostic;
+}
+
+/// A short description of a failed request, for [ConfigurationFailure.diagnostic].
+String _describeFailure(String step, NetworkResult<dynamic> result) {
+  if (result is NetworkError) {
+    final message = result.message;
+    return '$step: HTTP ${result.code}${message == null ? '' : ' $message'}';
+  }
+  if (result is NetworkException) {
+    return '$step: ${result.error.runtimeType}: ${result.error}';
+  }
+  return step;
 }

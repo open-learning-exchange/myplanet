@@ -839,10 +839,21 @@ existing users and servers:
 
 Deliberate *deviations*, all flagged in code:
 
-- **`ServerUrlMapper` no longer reads `BuildConfig.PLANET_*`.** Those come from the tracked
-  `gradle.properties` -- the committed-secrets problem `CLAUDE.md` documents. The Dart version takes
-  its mapping table from `--dart-define=PLANET_SERVER_MAPPINGS=primary=alternative,...`, so nothing
-  sensitive is committed. **The exposed PINs still need rotating server-side** regardless of this port.
+- **The `PLANET_*` values reach Dart as `--dart-define`s, not `BuildConfig`.** Dart cannot read
+  `BuildConfig` without a platform channel, so `tool/planet_server_defines.dart` derives the defines
+  from the same tracked `gradle.properties` the Kotlin build reads: the eleven URL/PIN pairs behind
+  `lib/core/config/planet_servers.dart`, plus `PLANET_SERVER_MAPPINGS` for `ServerUrlMapper`'s
+  local-to-clone table. One source of truth, so the two apps cannot offer different servers.
+  **An earlier revision of this bullet claimed the port refused to embed these values at all**, on
+  the grounds that `gradle.properties` is the committed-secrets problem `CLAUDE.md` documents. That
+  was true only while the port had no server list -- and the price was that the port could not be
+  connected at all without knowing a four-character PIN by hand, which is how the first APK the
+  Flutter workflow produced turned out to be unusable. The PINs are recoverable from the built APK,
+  exactly as they already are from every shipped Kotlin one (`minifyEnabled = false` there, a
+  compile-time constant here), so this embeds nothing that is not already public -- and it is not a
+  secret store: **do not add anything to it that is not already in `gradle.properties`.**
+  **The exposed PINs still need rotating server-side** regardless of this port, and a PIN wants
+  runtime authentication rather than a build-time constant in either app.
 - **Failure reasons are enums, not pre-localised strings.** `LoginSyncManager` returns English
   literals and `ConfigurationsRepositoryImpl` calls `context.getString(...)` inside the repository.
   The Dart repositories return `LoginFailureReason` / `ConfigurationFailureReason` and the UI

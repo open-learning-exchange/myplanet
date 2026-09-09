@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -28,6 +29,10 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
   bool _showAllServers = false;
   String? _error;
 
+  /// Which request failed and what it said. Debug builds only — a release
+  /// build keeps the one clean sentence.
+  String? _diagnostic;
+
   @override
   void initState() {
     super.initState();
@@ -51,6 +56,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
     setState(() {
       _isChecking = true;
       _error = null;
+      _diagnostic = null;
     });
 
     final result = await ref
@@ -68,10 +74,11 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
           await ref.read(planetPrefsProvider).setVersionDetail(versionDetail);
         }
       // The router redirect takes it from here.
-      case ConfigurationFailure(:final reason):
+      case ConfigurationFailure(:final reason, :final diagnostic):
         setState(() {
           _isChecking = false;
           _error = _messageFor(AppLocalizations.of(context), reason);
+          _diagnostic = diagnostic;
         });
     }
   }
@@ -102,6 +109,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
       _urlController.text = server.url;
       _pinController.text = server.pin;
       _error = null;
+      _diagnostic = null;
     });
   }
 
@@ -212,6 +220,18 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
                           color: Theme.of(context).colorScheme.error,
                         ),
                       ),
+                      // Not localised and not shown in release: this is the
+                      // status code or exception the one sentence above used
+                      // to swallow, and without it a failure that cannot be
+                      // reproduced off-device can only be guessed at.
+                      if (kDebugMode && _diagnostic != null) ...[
+                        const SizedBox(height: 8),
+                        SelectableText(
+                          _diagnostic!,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(fontFamily: 'monospace'),
+                        ),
+                      ],
                       const SizedBox(height: 16),
                     ],
                     FilledButton(

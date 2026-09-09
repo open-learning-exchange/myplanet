@@ -25,32 +25,63 @@ void main() {
       },
     );
 
-    test('gives exactly the four http servers getDefaultProtocol names', () {
-      // `getDefaultProtocol` returns HTTP for xela, san pablo, uriur and
-      // embakasi and HTTPS for the rest. Offering any of those four over https
-      // would fail the handshake against a server that is up, which is the
-      // failure this whole slice exists to stop being mysterious.
-      final http = allPlanetServers
-          .where((s) => s.scheme == 'http')
-          .map((s) => s.name)
-          .toList();
-      expect(http, <String>[
-        '🇬🇹 planet san pablo',
-        '🇬🇹 planet xela',
-        '🇰🇪 planet uriur',
-        '🇰🇪 planet embakasi',
-      ]);
-      expect(allPlanetServers.where((s) => s.scheme == 'https'), hasLength(7));
+    test('resolves both arms of getDefaultProtocol, not just the named one', () {
+      // The bug this replaced: an earlier cut hardcoded four http servers,
+      // from `getDefaultProtocol`'s explicit-name arm alone, and asserted that
+      // `isLocalNetwork` could not fire "because every host is a public
+      // domain". Six of the eleven hosts in `gradle.properties` are private
+      // addresses. Ruiru (192.168.1.66) and Cambridge (192.168.68.126) are
+      // private but *not* named explicitly, so only the local-network arm
+      // makes them http — and offering a LAN box over TLS fails the handshake
+      // and reports "couldn't reach the server", the exact confusion this
+      // slice exists to end.
+      expect(defaultProtocolFor('192.168.1.66'), 'http');
+      expect(defaultProtocolFor('192.168.68.126'), 'http');
+      expect(defaultProtocolFor('10.82.1.31'), 'http');
+      expect(defaultProtocolFor('192.168.48.253'), 'http');
+      expect(defaultProtocolFor('planet.learning.ole.org'), 'https');
+      expect(defaultProtocolFor('planet.gt'), 'https');
     });
 
-    test('url joins the scheme to the bare host', () {
-      const server = PlanetServer(
-        name: 'x',
+    test('isLocalNetwork ports every arm Kotlin tests', () {
+      for (final host in const <String>[
+        '192.168.1.1',
+        '10.0.0.1',
+        '172.16.0.1',
+        '172.19.5.5',
+        '172.31.255.255',
+        'localhost',
+        '127.0.0.1',
+        'box.local',
+      ]) {
+        expect(isLocalNetwork(host), isTrue, reason: host);
+      }
+      for (final host in const <String>[
+        'planet.learning.ole.org',
+        '172.15.0.1', // just below the private block
+        '172.32.0.1', // just above it
+        '110.0.0.1', // starts with "1", not "10."
+        'notlocalhost',
+      ]) {
+        expect(isLocalNetwork(host), isFalse, reason: host);
+      }
+    });
+
+    test('isLocalNetwork strips a port and a path first, as Kotlin does', () {
+      expect(isLocalNetwork('192.168.1.50:5000'), isTrue);
+      expect(isLocalNetwork('192.168.1.50/db'), isTrue);
+      expect(isLocalNetwork('planet.gt:443'), isFalse);
+    });
+
+    test('url resolves the scheme from the host rather than storing one', () {
+      const lan = PlanetServer(name: 'x', host: '192.168.1.66', pin: '1234');
+      const public = PlanetServer(
+        name: 'y',
         host: 'planet.example.org',
         pin: '1234',
-        scheme: 'http',
       );
-      expect(server.url, 'http://planet.example.org');
+      expect(lan.url, 'http://192.168.1.66');
+      expect(public.url, 'https://planet.example.org');
     });
 
     test('a build with no dart-defines offers nothing rather than blanks', () {
@@ -69,7 +100,6 @@ void main() {
         name: 'server $i',
         host: 'host$i.example.org',
         pin: '$i$i$i$i',
-        scheme: 'https',
       ),
     );
 

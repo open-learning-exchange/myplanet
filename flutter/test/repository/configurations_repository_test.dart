@@ -402,4 +402,88 @@ void main() {
       );
     });
   });
+
+  group('the failure says which request failed', () {
+    const url = 'https://planet.example.org';
+    const couchDb = 'https://satellite:1234@planet.example.org:443';
+
+    test('a /versions failure names /versions and its code', () async {
+      when(() => api.getConfiguration('$url/versions')).thenAnswer(
+        (_) async => NetworkError<Map<String, dynamic>>(503, 'unavailable'),
+      );
+
+      final result =
+          await buildRepository().getMinApk(url, '1234')
+              as ConfigurationFailure;
+
+      expect(result.diagnostic, contains('/versions'));
+      expect(result.diagnostic, contains('503'));
+    });
+
+    test('a configurations failure names it and its code', () async {
+      stubVersions(url, minApk: 'v0.60.0');
+      when(
+        () => api.getConfiguration(
+          '$couchDb/db/configurations/_all_docs?include_docs=true',
+        ),
+      ).thenAnswer(
+        (_) async => NetworkError<Map<String, dynamic>>(401, 'unauthorized'),
+      );
+
+      final result =
+          await buildRepository().getMinApk(url, '1234')
+              as ConfigurationFailure;
+
+      expect(result.diagnostic, contains('configurations'));
+      expect(result.diagnostic, contains('401'));
+    });
+
+    test('a version below minapk says both versions', () async {
+      stubVersions(url, minApk: 'v9.99.99');
+
+      final result =
+          await buildRepository(appVersion: '0.70.11').getMinApk(url, '1234')
+              as ConfigurationFailure;
+
+      expect(result.diagnostic, contains('0.70.11'));
+      expect(result.diagnostic, contains('9.99.99'));
+    });
+
+    test('a success carries no diagnostic', () async {
+      stubVersions(url, minApk: 'v0.60.0');
+      stubConfigurations(couchDb);
+
+      expect(
+        await buildRepository().getMinApk(url, '1234'),
+        isA<ConfigurationSuccess>(),
+      );
+    });
+  });
+
+  group('a URL carrying its own credentials is not the PIN field', () {
+    test('a 401 there does not blame a PIN that was never sent', () async {
+      // `buildCouchDbUrl` short-circuits on `user:pass@`, so the PIN field had
+      // no effect on the request. Saying "the server rejected that PIN" points
+      // at a field that did nothing.
+      const url = 'https://alice:wrongpw@planet.example.org';
+      when(() => api.getConfiguration('$url/versions')).thenAnswer(
+        (_) async =>
+            NetworkSuccess<Map<String, dynamic>>({'minapk': 'v0.60.0'}),
+      );
+      when(
+        () => api.getConfiguration(
+          '$url/db/configurations/_all_docs?include_docs=true',
+        ),
+      ).thenAnswer(
+        (_) async => NetworkError<Map<String, dynamic>>(401, 'unauthorized'),
+      );
+
+      final result =
+          await buildRepository().getMinApk(url, '1234')
+              as ConfigurationFailure;
+
+      expect(result.reason, ConfigurationFailureReason.nationServerUnreachable);
+      expect(result.diagnostic, contains('401'));
+    });
+  });
 }
