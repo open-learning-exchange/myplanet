@@ -16,8 +16,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.FinanceHeaderState
 import org.ole.planet.myplanet.model.Transaction
+import org.ole.planet.myplanet.model.TransactionTotals
 import org.ole.planet.myplanet.repository.TeamsFinancesRepository
 
 @HiltViewModel
@@ -28,12 +28,12 @@ class EnterprisesFinancesViewModel @Inject constructor(
     private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
     val transactions: StateFlow<List<Transaction>> = _transactions.asStateFlow()
 
-    val headerState: StateFlow<FinanceHeaderState> = transactions
+    val headerState: StateFlow<TransactionTotals> = transactions
         .map { Transaction.calculateTotals(it) }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = FinanceHeaderState()
+            initialValue = TransactionTotals()
         )
 
     private val _transactionCreated = MutableSharedFlow<Result<Unit>>(extraBufferCapacity = 1)

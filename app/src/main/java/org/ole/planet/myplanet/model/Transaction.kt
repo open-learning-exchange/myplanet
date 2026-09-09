@@ -10,7 +10,7 @@ data class Transaction(
     val imageName: String? = null
 ) {
     companion object {
-        fun calculateTotals(transactions: List<Transaction>): FinanceHeaderState {
+        fun calculateTotals(transactions: List<Transaction>): TransactionTotals {
             var debit = 0
             var credit = 0
             for (transaction in transactions) {
@@ -21,7 +21,7 @@ data class Transaction(
                 }
             }
             val total = credit - debit
-            return FinanceHeaderState(
+            return TransactionTotals(
                 debit = debit,
                 credit = credit,
                 total = total,

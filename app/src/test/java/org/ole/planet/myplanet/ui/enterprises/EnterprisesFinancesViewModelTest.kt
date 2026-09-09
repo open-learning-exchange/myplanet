@@ -13,8 +13,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.ole.planet.myplanet.model.FinanceHeaderState
 import org.ole.planet.myplanet.model.Transaction
+import org.ole.planet.myplanet.model.TransactionTotals
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
@@ -171,7 +171,7 @@ class EnterprisesFinancesViewModelTest {
             )
         } returns flowOf(mockTransactions)
 
-        val states = mutableListOf<FinanceHeaderState>()
+        val states = mutableListOf<TransactionTotals>()
         val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.headerState.collect { states.add(it) }
         }
@@ -204,7 +204,7 @@ class EnterprisesFinancesViewModelTest {
             )
         } returns flowOf(mockTransactions)
 
-        val states = mutableListOf<FinanceHeaderState>()
+        val states = mutableListOf<TransactionTotals>()
         val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.headerState.collect { states.add(it) }
         }
