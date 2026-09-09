@@ -1,9 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Structure is identical across configurations (see layout/ and layout-land/): banner padding,
-     avatar size, card side padding and the details-grid column count all come from dimens/integers
-     overridden per qualifier, so this one file already serves phone portrait, phone landscape and
-     tablet/foldable. The qualified copies exist so the intent is explicit per breakpoint and to
-     guarantee the resource lookup for @integer/profile_grid_columns etc. -->
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -19,7 +14,6 @@
         android:orientation="vertical"
         android:paddingBottom="@dimen/profile_scroll_bottom_padding">
 
-        <!-- Banner -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -42,7 +36,6 @@
                     android:src="@drawable/profile"
                     app:civ_border_color="@color/profile_avatar_ring"
                     app:civ_border_width="@dimen/profile_avatar_ring_width" />
-
                 <ImageButton
                     android:id="@+id/bt_profile_pic"
                     android:layout_width="@dimen/profile_fab_size"
@@ -71,7 +64,6 @@
                 android:textColor="@color/md_white_1000"
                 android:textSize="@dimen/profile_name_text_size"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/txt_secondary"
                 android:layout_width="match_parent"
@@ -82,7 +74,6 @@
                 android:maxLines="1"
                 android:textColor="@color/profile_text_on_primary_secondary"
                 android:textSize="@dimen/profile_secondary_text_size" />
-
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btEditProfile"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
@@ -103,7 +94,6 @@
                 app:rippleColor="@color/profile_button_fill_on_primary"
                 app:strokeColor="@color/profile_button_stroke_on_primary"
                 app:strokeWidth="@dimen/dashboard_hairline_width" />
-
             <TextView
                 android:id="@+id/guest_pill"
                 android:layout_width="wrap_content"
@@ -121,7 +111,6 @@
                 tools:visibility="visible" />
         </LinearLayout>
 
-        <!-- Details card -->
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -159,7 +148,6 @@
                             android:layout_height="wrap_content"
                             android:layout_columnWeight="1"
                             android:layout_gravity="fill_horizontal" />
-
                         <include
                             android:id="@+id/row_dob"
                             layout="@layout/row_profile_detail"
@@ -167,7 +155,6 @@
                             android:layout_height="wrap_content"
                             android:layout_columnWeight="1"
                             android:layout_gravity="fill_horizontal" />
-
                         <include
                             android:id="@+id/row_gender"
                             layout="@layout/row_profile_detail"
@@ -175,7 +162,6 @@
                             android:layout_height="wrap_content"
                             android:layout_columnWeight="1"
                             android:layout_gravity="fill_horizontal" />
-
                         <include
                             android:id="@+id/row_language"
                             layout="@layout/row_profile_detail"
@@ -183,7 +169,6 @@
                             android:layout_height="wrap_content"
                             android:layout_columnWeight="1"
                             android:layout_gravity="fill_horizontal" />
-
                         <include
                             android:id="@+id/row_level"
                             layout="@layout/row_profile_detail"
@@ -196,7 +181,6 @@
             </org.ole.planet.myplanet.ui.components.MaxWidthFrameLayout>
         </FrameLayout>
 
-        <!-- Activity card -->
         <org.ole.planet.myplanet.ui.components.MaxWidthFrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -221,7 +205,6 @@
                     android:text="@string/profile_activity_section"
                     android:textColor="@color/hint_color"
                     android:textSize="@dimen/profile_label_text_size" />
-
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
