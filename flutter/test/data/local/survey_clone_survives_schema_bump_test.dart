@@ -281,7 +281,7 @@ void main() {
   /// nothing about.
   ///
   /// The document here is the one that reaches this handset in the two-leader
-  /// case `_adoptExistingDocument` exists for: another leader adopted the same
+  /// case the 409 recovery arm exists for: another leader adopted the same
   /// source for the same team and published first, so the walk delivers a
   /// document under the port's deterministic clone id while this device's own
   /// row is still pending.

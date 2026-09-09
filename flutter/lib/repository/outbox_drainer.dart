@@ -72,14 +72,33 @@ typedef OutboxHandler =
 ///
 /// ### Where this sits relative to Kotlin
 ///
-/// Only six of the port's twenty uploaders have a Kotlin counterpart that runs
-/// through `UploadCoordinator` at all. Kotlin's own health, achievements, news
-/// and teams paths swallow a 409 in silence
-/// (`HealthRepositoryImpl.kt:110-124`, `AchievementUploader.kt:32-42`,
-/// `UploadManager.kt:369-372`, `TeamsUploader.kt:73-75`), and
-/// `RetryQueueWorker.kt:234-238` discards the edit with a success log. So for
-/// most uploaders here this is **new behaviour, not restored parity**, and the
-/// update arm has no Kotlin precedent anywhere.
+/// **Six of the eleven uploaders armed here** have a Kotlin counterpart that
+/// runs through `UploadCoordinator` — `feedback`, `adopted_surveys` (`exams`),
+/// `submissions`, `events` (`meetups`), `team_tasks` (`tasks`) and `ratings`.
+/// The other five (`health`, `teams`, `achievements`, `user`, `voices`) have
+/// no config in `UploadConfigs.kt` at all, so for them this is **new
+/// behaviour, not restored parity** — and the *update* arm has no Kotlin
+/// precedent anywhere.
+///
+/// (Across all twenty port uploader files about eleven do have a coordinator
+/// counterpart, the append uploaders included. An earlier revision said "only
+/// six of twenty", which is the armed count wearing the wrong denominator and
+/// tells a reader the activity, search and photo uploaders have no
+/// counterpart — backwards.)
+///
+/// Where Kotlin does meet a 409 outside the coordinator it mishandles it, but
+/// not uniformly, and the difference is worth keeping straight:
+/// `HealthRepositoryImpl.kt:110-124` and `AchievementUploader.kt:32-42` do
+/// swallow it silently (a 409 body is null, so `has("id")` is false; and an
+/// `if (response.isSuccessful)` with no `else`). `TeamsUploader.kt:73-75`
+/// drops it too, though at `queueTeamRetry:118-119` — the bulk response's
+/// `httpCode` is 200, so `retryable` is false and it is never queued.
+/// **News is different, and an earlier revision had it wrong**:
+/// `UploadManager.kt:369-372` passes a non-null exception, and
+/// `queueNewsRetry`'s rule is `exception != null || httpCode >= 500`, so a
+/// per-doc conflict *is* queued — then discarded by
+/// `RetryQueueWorker.kt:234-238`, which deletes the queue row on a 409 and
+/// logs success. Queued-then-thrown-away, not swallowed.
 ///
 /// ### Why this does not weaken Phase 148's policy
 ///
@@ -96,24 +115,66 @@ typedef OutboxHandler =
 /// * **It is bounded.** One GET and at most one re-send per drain attempt,
 ///   never a loop. A second 409 is returned as the refusal it is, and
 ///   [OutboxRepository.classifyStatus] makes it terminal exactly as before.
+///
+///   Be precise about what that does *not* say: only a second **409** is
+///   terminal. If the re-send answers a 5xx, a transport failure or a throw,
+///   that is what the drainer classifies, and it is `transient` — so the item
+///   is retried, and because the *stored* payload still holds the stale
+///   `_rev`, each of the five attempts repeats POST → GET → POST. Up to
+///   fifteen requests for one write before it is abandoned. That is
+///   deliberate rather than an oversight, and it is why the re-send is *not*
+///   wrapped the way the fetch is: after a failed fetch a definitive 409 is
+///   still in hand, but after a failed re-send the last thing the server said
+///   was "unavailable", not "refused" — and a write the server never answered
+///   is exactly what `transient` is for. The cost is bounded requests; the
+///   alternative is stranding a deliverable write on a server hiccup.
 /// * **It never re-asks an identical question.** If the revision the server
 ///   reports is the one already in the payload, the re-send is skipped and the
 ///   original refusal stands — there is nothing new to ask.
-/// * **It cannot duplicate a document.** The arm fires only for a request that
-///   names its own document, so a re-send is an update of that `_id`. An
-///   append with a server-minted id cannot 409 in the first place, which is
-///   why the eight uploaders in that class are deliberately not armed —
-///   see [documentUrlUnder].
+/// * **It cannot duplicate a document.** A re-send is an update of a named
+///   `_id`, and an append with a server-minted id cannot 409 in the first
+///   place, which is why the append uploaders are deliberately not armed.
+///   **But be clear what enforces that: a caller convention, not this class.**
+///   [documentUrlUnder] returns null when the payload names no document, so
+///   its eight callers are safe by construction — three build the URL by hand
+///   (`user`, `achievements`, `adopted_surveys`) and [send] does not check
+///   that `payload['_id']` exists when it is handed a `documentUrl`. `user` is
+///   safe because its verb is a PUT to a fixed document URL, not because of
+///   anything here. A future POST-verb uploader passing a hand-built URL with
+///   no `_id` in the body would re-send an append.
 ///
 /// ### The trade the update arm makes
 ///
 /// Re-sending under the server's current revision is last-write-wins: a
-/// concurrent edit made on another device is overwritten. That is the port's
-/// existing stance elsewhere — `HealthRepository.cacheDocuments` skips a
-/// locally dirty row (`health_repository.dart:772`), so the local copy is
-/// already authoritative over the server's — and it is the better of the two
-/// available mistakes, because the alternative loses the *local* edit silently
-/// in a queue whose whole purpose is delivering local writes.
+/// concurrent edit made on another device is overwritten.
+///
+/// **The justification an earlier revision gave for that was too narrow, and
+/// the correction matters.** It cited `HealthRepository.cacheDocuments`
+/// skipping a locally dirty row (`health_repository.dart:772`) as "the port's
+/// existing stance elsewhere". That mechanism is health-only — most sync-ins
+/// have no dirty-row guard at all and end `isUpdated: false`, making the
+/// *server* authoritative on the way in.
+///
+/// The real reason last-write-wins was already the port's outcome is Phase
+/// 148's own recovery route: **a sync-in that writes `rev` unconditionally
+/// re-arms the memo with a changed request.** A pull hands the row the
+/// server's revision, the next sweep's payload therefore differs from the
+/// refused one, the memo re-arms, and the local content goes over the
+/// server's anyway — one sync later. This arm changes the *latency* of that
+/// outcome, not the outcome. Health is the one uploader where the route is
+/// closed (hence the `cacheDocuments` citation, which belongs there and only
+/// there), which is why health needs the arm most.
+///
+/// **The exception, and it is a real one.** Where the server's document holds
+/// content the payload cannot reconstruct, "one sync later" is still a loss
+/// and this arm still makes it sooner. `feedback` is that case: `messages` is
+/// an append array both Planet's web UI and the handset write, and
+/// `FeedbackMapper.fromDoc:27-31` deliberately keeps the local array on a
+/// pending reply while taking the server's `rev`. So an admin reply present
+/// on the server and absent locally is destroyed by the next send — with or
+/// without this arm. That is a pre-existing merge defect, not one the arm
+/// introduces, and it is written up under *Reported, not fixed* in
+/// `PHASE_152_NOTES.md` rather than papered over here.
 ///
 /// **One case deserves naming rather than falling out of the rule.** A team
 /// tombstone is `{_id, _rev, _deleted: true}` (`teams_provider.dart:295`), so
@@ -134,12 +195,19 @@ class ConflictRecovery {
   ///
   /// **The id is the payload's, not the outbox row's**, and conflating the two
   /// is the trap here. `outbox.itemId` is the *local* row's key; the CouchDB
-  /// `_id` is whatever the serializer chose, and for health those are
-  /// different values — the row's key is the examination's, while
-  /// `HealthRepository.serialize` writes the **patient's** user id as `_id`
-  /// (`health_repository.dart:845-849`). A recovery keyed on `itemId` would
-  /// GET a document that does not exist, take the 404, and quietly return the
-  /// original conflict for ever.
+  /// `_id` is whatever the serializer chose. A recovery keyed on `itemId`
+  /// where they differ would GET a document that does not exist, take the
+  /// 404, and quietly return the original conflict for ever — green, and dead.
+  ///
+  /// The health **profile blob** is the concrete case: `saveHealthProfileBlob`
+  /// writes `id = patientId, userId = user.couchId`
+  /// (`health_repository.dart:283-296`) and `serialize` sends `userId` as
+  /// `_id` (`:845-849`), so the two differ whenever the patient's local id is
+  /// not their CouchDB id. Note the narrowness — for an *examination* they are
+  /// the **same** value, since `createExamination` defaults `userId` to the
+  /// row's own id. Six of the eleven candidate uploaders differ in their
+  /// reachable case; do not generalise from either direction, read the
+  /// serializer.
   static String? documentUrlUnder(
     String sendUrl,
     Map<String, dynamic> payload,
@@ -193,6 +261,15 @@ class ConflictRecovery {
     // afterwards. [documentUrlUnder] returns null for exactly that case.
     if (documentUrl == null) return first;
 
+    // Decided before the fetch, because for a create that cannot adopt the
+    // fetch cannot change the outcome — issuing it first spent one
+    // authenticated round-trip per create-conflict on the five uploaders whose
+    // payload always names an `_id` (`health`, `feedback`, `teams`,
+    // `achievements`, `user`) to learn a revision that was then discarded.
+    final sentRev = payload['_rev'];
+    final isUpdate = sentRev is String && sentRev.isNotEmpty;
+    if (!isUpdate && !adoptExisting) return first;
+
     // The drain's credential, not none: `outbox.endpoint` is stored
     // credential-free on purpose, so an unauthenticated read of a CouchDB
     // document is a 401 and this recovery would never fire.
@@ -220,10 +297,7 @@ class ConflictRecovery {
     final rev = existing.data['_rev'];
     if (rev is! String || rev.isEmpty) return first;
 
-    final sentRev = payload['_rev'];
-    final isUpdate = sentRev is String && sentRev.isNotEmpty;
     if (!isUpdate) {
-      if (!adoptExisting) return first;
       // Kotlin's arm, shaped like the create response the handler expects: it
       // reads `id`/`rev` from a write, while a document read carries `_id` and
       // `_rev` (`UploadCoordinator.kt:177-182` does the same translation).

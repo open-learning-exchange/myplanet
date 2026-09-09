@@ -19,6 +19,7 @@ void main() {
   late MockPlanetApi api;
   late FeedbackUploader uploader;
   late OutboxRepository outbox;
+  late FeedbackRepositoryImpl repository;
 
   const config = ServerConfig(
     serverUrl: 'https://planet.example',
@@ -31,9 +32,13 @@ void main() {
     api = MockPlanetApi();
     registerFallbackValue(<String, dynamic>{});
     outbox = OutboxRepository(database.outboxDao);
+    repository = FeedbackRepositoryImpl(
+      feedbackDao: database.feedbackDao,
+      planetApi: api,
+    );
     uploader = FeedbackUploader(
       api,
-      FeedbackRepositoryImpl(feedbackDao: database.feedbackDao, planetApi: api),
+      repository,
       database.feedbackDao,
       outbox,
       testDeviceIdentity,
@@ -136,6 +141,133 @@ void main() {
       expect(sent[1]['title'], 'Sync fails offline');
       expect(sent[1]['_rev'], '3-server');
       expect((await database.feedbackDao.getById('feedback-1'))?.rev, '4-d');
+    },
+  );
+
+  test(
+    'a re-send drops a reply only the server has — pre-existing, not new',
+    () async {
+      // The trade the update arm makes, demonstrated rather than argued: the
+      // re-send carries the payload's own content, so anything the server has
+      // and the payload does not is overwritten.
+      //
+      // `feedback` is the one armed uploader where that is a *merge* loss rather
+      // than a revision bump — `messages` is an append array both Planet's web
+      // UI and the handset write. **And the loss is pre-existing.** The second
+      // half of this test is the proof: `FeedbackMapper.fromDoc` keeps the local
+      // array on a pending reply while taking the server's `rev`
+      // (`feedback_mapper.dart:27-31, 50-54`) and leaves `isUploaded = false`,
+      // so the next sweep's payload differs from the refused one, Phase 148's
+      // memo re-arms it, and the admin reply goes over the side one sync later
+      // with no recovery arm involved at all.
+      await seedPending();
+      await (database.update(
+        database.feedbackEntries,
+      )..where((f) => f.id.equals('feedback-1'))).write(
+        FeedbackEntriesCompanion(
+          rev: const Value('1-local'),
+          messages: Value(
+            jsonEncode([
+              {'message': 'mine'},
+            ]),
+          ),
+        ),
+      );
+
+      final sent = <Map<String, dynamic>>[];
+      when(
+        () => api.postJsonObject(
+          any(),
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer((invocation) async {
+        final body = Map<String, dynamic>.from(
+          invocation.positionalArguments[1] as Map<String, dynamic>,
+        );
+        sent.add(body);
+        return body['_rev'] == '2-admin'
+            ? NetworkSuccess<Map<String, dynamic>>({'rev': '3-x'})
+            : const NetworkError<Map<String, dynamic>>(409, 'conflict');
+      });
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer(
+        (_) async => NetworkSuccess<Map<String, dynamic>>({
+          '_id': 'feedback-1',
+          '_rev': '2-admin',
+          // The admin's reply, which this device has never seen.
+          'messages': [
+            {'message': 'mine'},
+            {'message': 'from the admin'},
+          ],
+        }),
+      );
+
+      await uploader.handler(rowFor('feedback-1'), {
+        '_id': 'feedback-1',
+        '_rev': '1-local',
+        'messages': [
+          {'message': 'mine'},
+        ],
+      }, 'auth');
+
+      // The re-send carries only this device's array. This is the documented
+      // trade, asserted so a future reader sees it rather than reading three
+      // paragraphs about it.
+      expect(sent, hasLength(2));
+      expect(sent[1]['messages'], [
+        {'message': 'mine'},
+      ]);
+    },
+  );
+
+  test(
+    'a pull already loses that reply, with no recovery arm involved',
+    () async {
+      // The proof that the loss above is **pre-existing**, and the reason it is
+      // reported rather than treated as something this phase introduced.
+      //
+      // `FeedbackMapper.fromDoc` keeps the local `messages` on a pending reply
+      // while taking the server's `rev` (`feedback_mapper.dart:27-31, 50-54`)
+      // and leaves `isUploaded = false`. So the admin's reply is gone locally
+      // the moment the pull lands, the row is still swept, and its payload now
+      // carries a revision the refused one did not — which is exactly what
+      // Phase 148's memo treats as a changed request. The next sweep sends the
+      // local array over the server's with no 409 and no arm in sight.
+      await seedPending();
+      await (database.update(
+        database.feedbackEntries,
+      )..where((f) => f.id.equals('feedback-1'))).write(
+        FeedbackEntriesCompanion(
+          rev: const Value('1-local'),
+          messages: Value(
+            jsonEncode([
+              {'message': 'mine'},
+            ]),
+          ),
+        ),
+      );
+
+      await repository.insertFromJson([
+        {
+          '_id': 'feedback-1',
+          '_rev': '9-admin',
+          'messages': [
+            {'message': 'mine'},
+            {'message': 'from the admin'},
+          ],
+        },
+      ]);
+
+      final pulled = await database.feedbackDao.getById('feedback-1');
+      expect(pulled!.rev, '9-admin', reason: "the server's revision is taken");
+      expect(pulled.isUploaded, isFalse, reason: 'so the row is still swept');
+      expect(
+        pulled.messages,
+        isNot(contains('from the admin')),
+        reason: 'the local array is kept, so the reply is already lost locally',
+      );
     },
   );
 

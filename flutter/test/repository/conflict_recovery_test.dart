@@ -210,6 +210,13 @@ void main() {
 
       expect((result as NetworkError).code, 409);
       expect(r.sent, hasLength(1), reason: 'nothing is overwritten');
+      // And no document is fetched. The decision turns on `payload['_rev']`,
+      // which is known before any request, so fetching first would spend an
+      // authenticated round-trip to learn a revision that is then discarded —
+      // once per create-conflict on every uploader that does not adopt.
+      verifyNever(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      );
     });
 
     test(

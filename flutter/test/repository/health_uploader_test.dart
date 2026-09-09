@@ -139,34 +139,45 @@ void main() {
   );
 
   test(
-    'a conflicting examination is re-sent under the server revision',
+    'a conflicting profile blob is re-sent under the server revision',
     () async {
-      // The loop Phase 148 could only make *safe*. The `health` document id is
-      // the patient's user id (`HealthRepository.serialize`), so every
-      // examination for a patient the server already holds a document for
-      // POSTs into a 409 — and `cacheDocuments` skips a locally dirty row
-      // (`health_repository.dart:772`), so nothing on the device can ever
-      // learn the revision that would unstick it. Before the recovery arm the
-      // reading stayed on the handset for the life of the install.
-      final id = await repository.createExamination(
-        userId: 'user-1',
-        temperature: 36.5,
-        pulse: 70,
-        height: 170,
-        weight: 65,
+      // **The reachable case, and not the one an earlier draft of this test
+      // claimed.** An *examination* cannot conflict with a previous one:
+      // `createExamination` defaults `userId` to the row's own generated id
+      // (`health_repository.dart:95-100`) and the only production caller passes
+      // none (`health_provider.dart:470`), so each examination is its own
+      // document. That is verbatim what `PHASE_148_NOTES.md` was written to
+      // retract, and this file had re-seeded it.
+      //
+      // What is keyed on the patient is the **profile blob**:
+      // `saveHealthProfileBlob` writes `id = patientId` and
+      // `userId = user.couchId` (`health_repository.dart:283-296`), it is
+      // re-saved on every examination save, and `serialize` sends `userId` as
+      // `_id`. So its `_id` differs from its row id *and* its next write after
+      // publication is an update — while `cacheDocuments` skips a locally dirty
+      // row (`health_repository.dart:772`), so no pull can refresh the revision
+      // it carries. Before the recovery arm that edit stayed on the handset for
+      // the life of the install.
+      await database.userDao.upsert(
+        UsersCompanion.insert(
+          id: 'patient-1',
+          name: const Value('bea'),
+          couchId: const Value('org.couchdb.user:bea'),
+        ),
       );
-      // The reachable case, per the audit: the *profile* blob is re-saved on
-      // every examination save under a stable `_id`, so once it has been
-      // published its next write is an update — and `cacheDocuments` skips a
-      // locally dirty row (`health_repository.dart:772`), so the revision it
-      // carries is the one the last successful upload left and can go stale
-      // with nothing on the device able to refresh it.
+      final row = await repository.saveHealthProfileBlob(
+        'patient-1',
+        HealthRepository.initHealth(),
+      );
       await (database.update(database.healthExaminations)
-            ..where((h) => h.id.equals(id)))
+            ..where((h) => h.id.equals(row!.id)))
           .write(const HealthExaminationsCompanion(rev: Value('2-stale')));
-      final row = await repository.getById(id);
-      final payload = HealthRepository.serialize(row!);
-      expect(payload['_id'], 'user-1');
+      final stored = await repository.getById('patient-1');
+      final payload = HealthRepository.serialize(stored!);
+      // The two ids differ — which is the whole reason the recovery URL must
+      // come from the payload rather than from `outbox.itemId`.
+      expect(stored.id, 'patient-1');
+      expect(payload['_id'], 'org.couchdb.user:bea');
       expect(payload['_rev'], '2-stale', reason: 'an update, not a create');
 
       final sent = <Map<String, dynamic>>[];
@@ -183,7 +194,7 @@ void main() {
         sent.add(body);
         return body['_rev'] == '7-a'
             ? NetworkSuccess<Map<String, dynamic>>({
-                'id': 'user-1',
+                'id': 'org.couchdb.user:bea',
                 'rev': '8-b',
               })
             : const NetworkError<Map<String, dynamic>>(409, 'conflict');
@@ -192,34 +203,38 @@ void main() {
         () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
       ).thenAnswer(
         (_) async => NetworkSuccess<Map<String, dynamic>>({
-          '_id': 'user-1',
+          '_id': 'org.couchdb.user:bea',
           '_rev': '7-a',
         }),
       );
 
-      final result = await uploader.handler(rowFor(id), payload, 'auth');
+      final result = await uploader.handler(
+        rowFor('patient-1'),
+        payload,
+        'auth',
+      );
 
       expect(result, isA<NetworkSuccess<Map<String, dynamic>>>());
-      // The reading reached the server, rather than the server's `_rev` being
-      // adopted over a document that never carried it.
+      // The profile reached the server, rather than the server's `_rev` being
+      // adopted over a document that never carried this device's edit.
       expect(sent, hasLength(2));
-      expect(sent[1]['pulse'], 70);
+      expect(sent[1]['data'], payload['data']);
       expect(sent[1]['_rev'], '7-a');
-      final after = await repository.getById(id);
+      final after = await repository.getById('patient-1');
       expect(after!.rev, '8-b');
       expect(after.isUpdated, isFalse);
 
-      // The document is fetched at the *patient's* id, not the examination
-      // row's — those are different values here, and keying on the row would
-      // GET a document that does not exist.
+      // Fetched at the *payload's* `_id`, not the row's. Keyed on the row this
+      // would GET a document that does not exist, take the 404, and quietly
+      // return the original conflict for ever.
       final url = verify(
         () => api.getJsonObject(
           captureAny(),
           authHeader: any(named: 'authHeader'),
         ),
       ).captured.single;
-      expect(url, endsWith('/health/user-1'));
-      expect(url, isNot(contains(id)));
+      expect(url, endsWith('/health/org.couchdb.user%3Abea'));
+      expect(url, isNot(contains('patient-1')));
     },
   );
 

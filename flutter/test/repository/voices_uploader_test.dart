@@ -101,10 +101,19 @@ void main() {
     expect(result, isA<NetworkSuccess<Map<String, dynamic>>>());
     expect(sent, hasLength(2));
     expect(sent[1]['message'], 'Hello again');
-    expect(
-      (await voices.getById(id))?.newsRev ?? (await voices.getById(id))?.rev,
-      isNotNull,
-    );
+    // The DAO write, asserted on the values the *recovered* send produced.
+    // An earlier cut of this test read `newsRev ?? rev` and asserted only
+    // `isNotNull` — but the fixture's own `markUploaded` above had already set
+    // `rev`, so it held whether or not the handler ran at all. Mutation-proven:
+    // skipping `markUploaded` in the success branch left it green.
+    final stored = await voices.getById(id);
+    expect(stored?.rev, '3-h');
+    expect(stored?.docId, 'news-couch');
+    expect(stored?.isEdited, isFalse);
+    // The half this uploader's own comment calls the highest-stakes in the
+    // port: `markUploaded` clears `imageUrls` and deletes the local bytes, so
+    // a recovered send must reach it rather than leaving the post half-done.
+    expect(stored?.imageUrls, isEmpty);
   });
 
   test('queues an endpoint that carries no credentials', () async {
