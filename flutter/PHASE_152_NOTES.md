@@ -206,9 +206,20 @@ is written once, and returns null rather than guessing.
 
 ## Armed, and not
 
-**Armed (11 types across 10 uploaders):** `health`, `teams` (5 types),
+**Armed — 11 uploader files, 15 upload types:** `health`, `teams` (5 types),
 `feedback`, `achievements`, `adopted_surveys` (`adoptExisting: true`),
 `submissions`, `voices`, `events`, `team_tasks`, `ratings`, `user`.
+
+**Unarmed — 9 files, 11 types**, in three groups: six append uploaders where a
+409 is impossible (`personals`, `chat`, `submit_photos`, `search_activity`,
+`activities`'s four types, `public_survey` — **9 types**, not the eight both my
+first draft and the ground-truth audit said); `course_progress` and `team_log`,
+unreachable by their pending predicates (items 1 and 2 below); and
+`myplanet_activities`, which is not an outbox uploader at all (item 3).
+
+The types reconcile: 15 + 9 + 1 + 1 = 26, which is Phase 148's count of outbox
+upload types, and 11 + 9 = 20 uploader files. *Counted, not remembered — a
+number that is not the sum of the rows above it is a number nobody added up.*
 
 Reachability was verified per uploader against its *pending predicate*, not
 just its serializer — that check is what caught `course_progress` below.
@@ -266,10 +277,10 @@ the shared arm and has four tests.
    REST route with no document to GET. Phase 148's items 4 and 9 (the chat
    endpoint pointing at CouchDB rather than Planet's chat service) are
    untouched and still open.
-7. **The eight append uploaders are deliberately unarmed** — `personals`,
-   `chat`, `submit_photos`, `search_activity`, the four `activities` types,
-   `public_survey`. A 409 is impossible for them (server-minted ids), and a
-   `documentUrl` there would be a lie a future reader acts on.
+7. **The six append uploaders (nine types) are deliberately unarmed** —
+   `personals`, `chat`, `submit_photos`, `search_activity`, `activities`'s
+   four types, `public_survey`. A 409 is impossible for them (server-minted
+   ids), and a `documentUrl` there would be a lie a future reader acts on.
 8. **`UploadConfig.additionalUpdates` is declared (`UploadConfig.kt:34`),
    assigned once (`UploadConfigs.kt:263-265`) and never invoked** by
    `UploadCoordinator`. Kotlin-side dead code found while reading the ground
