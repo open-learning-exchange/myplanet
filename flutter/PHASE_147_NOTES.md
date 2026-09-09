@@ -17,7 +17,7 @@ phase to start.
 | The challenge tally buckets by the device's day | `voices_repository.dart` | UTC where Kotlin uses `'localtime'` |
 | Three stale or false claims corrected at the code | `voices_uploader.dart`, `voices_repository.dart` | a correction has to reach every copy |
 
-**33 tests across five new files and four existing ones. 18 mutations, 18
+**33 tests across five new files and four existing ones. 22 mutations, 22
 caught — two only after the test they exposed was rewritten.** Two
 `parity-auditor` passes at `effort: max` ran, one on the Kotlin ground truth
 before implementing and one on the finished green code.
@@ -399,6 +399,10 @@ sweep and reported a false negative.
 | M16 | colliding filenames are not disambiguated | *two picks with the same name do not share one slot* |
 | M17 | de-duplicate on the raw name instead of the stored one | *two names that reduce to one slot do not collide* |
 | M18 | an empty planet code is omitted instead of sent | *a blank planet code is sent, not omitted* |
+| M19 | the `await` moves outside the `try` | *a rejecting session drops the tap instead of throwing* |
+| M20 | the offset is dropped (the pre-fix UTC bucketing) | all three challenge-day tests |
+| M21 | the offset is subtracted instead of added | all three challenge-day tests |
+| M22 | the team screen falls back to `'team'` instead of `''` | *a team with no type sends the empty string* |
 
 **M7 and M13 survived their first run**, and both were the test's fault rather
 than a missing predicate — which is the whole reason to mutate. M7's assertion
