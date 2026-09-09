@@ -30,7 +30,7 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.services.upload.AchievementUploader
-import org.ole.planet.myplanet.services.upload.BulkDocUploader
+import org.ole.planet.myplanet.services.upload.BulkDocsUploader
 import org.ole.planet.myplanet.services.upload.PhotoUploader
 import org.ole.planet.myplanet.services.upload.TeamsUploader
 import org.ole.planet.myplanet.services.upload.UploadConfigs
@@ -289,7 +289,7 @@ class UploadManager @Inject constructor(
         // then modifying the serialized JSON based on image upload responses. This doesn't fit the
         // standard UploadCoordinator pattern (a single serialize-then-POST/PUT per item), so the
         // per-item image handling stays custom here — but the bulk_docs POST and response walk now
-        // go through the same BulkDocUploader used by TeamsUploader, instead of a separate copy.
+        // go through the same BulkDocsUploader used by TeamsUploader, instead of a separate copy.
         val user = userRepository.getUserModel()
         val newsItems = voicesRepository.getNewsForUpload()
 
@@ -351,14 +351,14 @@ class UploadManager @Inject constructor(
                     }
                 }
 
-                BulkDocUploader.upload(
+                BulkDocsUploader.upload(
                     uploadRepository,
                     "${UrlUtils.getUrl()}/news/_bulk_docs",
                     processedNews.map { (news, imagesArray) -> (news to imagesArray) to news.newsJson }
                 ) { (news, imagesArray), outcome ->
                     val isCreate = TextUtils.isEmpty(news._id)
                     when (outcome) {
-                        is BulkDocUploader.Outcome.Accepted -> {
+                        is BulkDocsUploader.Outcome.Accepted -> {
                             successfulUpdates.add(NewsUpdateData(
                                 id = news.id,
                                 _id = getString("id", outcome.element),
@@ -366,11 +366,11 @@ class UploadManager @Inject constructor(
                                 imagesArray = imagesArray
                             ))
                         }
-                        is BulkDocUploader.Outcome.Rejected -> {
+                        is BulkDocsUploader.Outcome.Rejected -> {
                             val errorReason = outcome.element.get("error").asString
                             queueNewsRetry(news, news.newsJson, null, if (isCreate) "POST" else "PUT", Exception("Bulk upload error: $errorReason"))
                         }
-                        is BulkDocUploader.Outcome.RequestFailed -> {
+                        is BulkDocsUploader.Outcome.RequestFailed -> {
                             queueNewsRetry(news, news.newsJson, outcome.httpCode, if (isCreate) "POST" else "PUT", outcome.exception)
                         }
                     }

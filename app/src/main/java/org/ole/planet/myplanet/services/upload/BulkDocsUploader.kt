@@ -5,8 +5,8 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.repository.UploadRepository
 
-object BulkDocUploader {
-    private const val TAG = "BulkDocUploader"
+object BulkDocsUploader {
+    private const val TAG = "BulkDocsUploader"
 
     sealed class Outcome {
         data class Accepted(val element: JsonObject) : Outcome()

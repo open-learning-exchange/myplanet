@@ -41,9 +41,9 @@ class TeamsUploader @Inject constructor(
                 val deletedIds = mutableListOf<String>()
                 val uploadedTeams = mutableMapOf<String, String>()
 
-                BulkDocUploader.upload(uploadRepository, "${UrlUtils.getUrl()}/teams/_bulk_docs", batch.map { it to it.serialized }) { teamData, outcome ->
+                BulkDocsUploader.upload(uploadRepository, "${UrlUtils.getUrl()}/teams/_bulk_docs", batch.map { it to it.serialized }) { teamData, outcome ->
                     when (outcome) {
-                        is BulkDocUploader.Outcome.Accepted -> {
+                        is BulkDocsUploader.Outcome.Accepted -> {
                             val id = getString("id", outcome.element)
                             var rev = getString("rev", outcome.element)
                             if (teamData.isDeletePending) {
@@ -55,11 +55,11 @@ class TeamsUploader @Inject constructor(
                                 uploadedTeams[teamData.teamId ?: id] = rev
                             }
                         }
-                        is BulkDocUploader.Outcome.Rejected -> {
+                        is BulkDocsUploader.Outcome.Rejected -> {
                             val id = getString("id", outcome.element)
                             queueTeamRetry(teamData, outcome.httpCode, if (teamData.isDeletePending) "PUT" else "POST", id)
                         }
-                        is BulkDocUploader.Outcome.RequestFailed -> {
+                        is BulkDocsUploader.Outcome.RequestFailed -> {
                             queueTeamRetry(teamData, outcome.httpCode, if (teamData.isDeletePending) "PUT" else "POST", teamData.teamId, outcome.exception)
                         }
                     }

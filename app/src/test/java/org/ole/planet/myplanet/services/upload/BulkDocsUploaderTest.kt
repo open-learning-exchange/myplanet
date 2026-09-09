@@ -17,7 +17,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.repository.UploadRepository
 import retrofit2.Response
 
-class BulkDocUploaderTest {
+class BulkDocsUploaderTest {
 
     private val uploadRepository: UploadRepository = mockk()
     private val url = "http://mock.url/things/_bulk_docs"
@@ -37,7 +37,7 @@ class BulkDocUploaderTest {
     @Test
     fun `upload does nothing when items are empty`() = runTest {
         var calls = 0
-        BulkDocUploader.upload(uploadRepository, url, emptyList<Pair<String, JsonObject>>()) { _, _ -> calls++ }
+        BulkDocsUploader.upload(uploadRepository, url, emptyList<Pair<String, JsonObject>>()) { _, _ -> calls++ }
 
         assertEquals(0, calls)
         coVerify(exactly = 0) { uploadRepository.postUploadArray(any(), any()) }
@@ -49,7 +49,7 @@ class BulkDocUploaderTest {
         val docB = JsonObject().apply { addProperty("id", "b") }
         coEvery { uploadRepository.postUploadArray(url, any()) } returns Response.success(JsonArray())
 
-        BulkDocUploader.upload(uploadRepository, url, listOf("a" to docA, "b" to docB)) { _, _ -> }
+        BulkDocsUploader.upload(uploadRepository, url, listOf("a" to docA, "b" to docB)) { _, _ -> }
 
         coVerify(exactly = 1) {
             uploadRepository.postUploadArray(url, match { payload ->
@@ -66,16 +66,16 @@ class BulkDocUploaderTest {
         }
         coEvery { uploadRepository.postUploadArray(url, any()) } returns Response.success(bulkResponse)
 
-        val outcomes = mutableMapOf<String, BulkDocUploader.Outcome>()
-        BulkDocUploader.upload(
+        val outcomes = mutableMapOf<String, BulkDocsUploader.Outcome>()
+        BulkDocsUploader.upload(
             uploadRepository, url,
             listOf("a" to JsonObject(), "b" to JsonObject())
         ) { item, outcome -> outcomes[item] = outcome }
 
-        assertEquals(true, outcomes["a"] is BulkDocUploader.Outcome.Accepted)
-        assertEquals("rev-a", (outcomes["a"] as BulkDocUploader.Outcome.Accepted).element.get("rev").asString)
+        assertEquals(true, outcomes["a"] is BulkDocsUploader.Outcome.Accepted)
+        assertEquals("rev-a", (outcomes["a"] as BulkDocsUploader.Outcome.Accepted).element.get("rev").asString)
 
-        val rejected = outcomes["b"] as BulkDocUploader.Outcome.Rejected
+        val rejected = outcomes["b"] as BulkDocsUploader.Outcome.Rejected
         assertEquals(200, rejected.httpCode)
         assertEquals("conflict", rejected.element.get("error").asString)
     }
@@ -85,14 +85,14 @@ class BulkDocUploaderTest {
         val errorBody = ResponseBody.create(null, "boom")
         coEvery { uploadRepository.postUploadArray(url, any()) } returns Response.error(500, errorBody)
 
-        val outcomes = mutableMapOf<String, BulkDocUploader.Outcome>()
-        BulkDocUploader.upload(
+        val outcomes = mutableMapOf<String, BulkDocsUploader.Outcome>()
+        BulkDocsUploader.upload(
             uploadRepository, url,
             listOf("a" to JsonObject(), "b" to JsonObject())
         ) { item, outcome -> outcomes[item] = outcome }
 
         listOf("a", "b").forEach { key ->
-            val failure = outcomes.getValue(key) as BulkDocUploader.Outcome.RequestFailed
+            val failure = outcomes.getValue(key) as BulkDocsUploader.Outcome.RequestFailed
             assertEquals(500, failure.httpCode)
             assertEquals(null, failure.exception)
         }
@@ -103,13 +103,13 @@ class BulkDocUploaderTest {
         val exception = java.io.IOException("network down")
         coEvery { uploadRepository.postUploadArray(url, any()) } throws exception
 
-        val outcomes = mutableMapOf<String, BulkDocUploader.Outcome>()
-        BulkDocUploader.upload(
+        val outcomes = mutableMapOf<String, BulkDocsUploader.Outcome>()
+        BulkDocsUploader.upload(
             uploadRepository, url,
             listOf("a" to JsonObject())
         ) { item, outcome -> outcomes[item] = outcome }
 
-        val failure = outcomes.getValue("a") as BulkDocUploader.Outcome.RequestFailed
+        val failure = outcomes.getValue("a") as BulkDocsUploader.Outcome.RequestFailed
         assertEquals(null, failure.httpCode)
         assertEquals(exception, failure.exception)
     }
@@ -122,8 +122,8 @@ class BulkDocUploaderTest {
         }
         coEvery { uploadRepository.postUploadArray(url, any()) } returns Response.success(bulkResponse)
 
-        val outcomes = mutableMapOf<String, BulkDocUploader.Outcome>()
-        BulkDocUploader.upload(
+        val outcomes = mutableMapOf<String, BulkDocsUploader.Outcome>()
+        BulkDocsUploader.upload(
             uploadRepository, url,
             listOf("a" to JsonObject(), "b" to JsonObject())
         ) { item, outcome -> outcomes[item] = outcome }
