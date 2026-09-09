@@ -135,20 +135,18 @@ class CourseFilterController(
 
     private fun restoreTags(tags: List<TagEntity>, tagNames: List<String>) {
         searchTags.clear()
-        val seenNames = HashSet<String>()
         if (tags.isNotEmpty()) {
-            tags.forEach { tag ->
-                val name = tag.name
-                if (name != null && seenNames.add(name)) {
-                    searchTags.add(tag)
-                }
-            }
+            tags.forEach { addTagInternal(it) }
         } else {
             tagNames.forEach { name ->
-                if (seenNames.add(name)) {
-                    searchTags.add(TagEntity().apply { this.name = name })
-                }
+                addTagInternal(TagEntity().apply { this.name = name })
             }
+        }
+    }
+
+    private fun addTagInternal(tag: TagEntity) {
+        if (!searchTags.any { it.matches(tag) }) {
+            searchTags.add(tag)
         }
     }
 
@@ -178,7 +176,7 @@ class CourseFilterController(
     }
 
     fun addTag(tag: TagEntity) {
-        if (!searchTags.any { it.name == tag.name }) searchTags.add(tag)
+        addTagInternal(tag)
         _filterState.value = currentState()
         refreshTagText()
         onScrollToTop()
@@ -186,12 +184,7 @@ class CourseFilterController(
 
     fun setTags(list: List<TagEntity>) {
         searchTags.clear()
-        val seenNames = HashSet<String?>()
-        list.forEach { tag ->
-            if (seenNames.add(tag.name)) {
-                searchTags.add(tag)
-            }
-        }
+        list.forEach { addTagInternal(it) }
         _filterState.value = currentState()
         onScrollToTop()
     }

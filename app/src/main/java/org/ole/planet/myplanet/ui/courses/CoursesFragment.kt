@@ -222,7 +222,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         )
         filterController.setup()
 
-        val chipRow = view?.findViewById<LinearLayout>(R.id.chip_filter_row)
+        val chipRow = requireView().findViewById<LinearLayout>(R.id.chip_filter_row)
         val savedFilter = viewModel.currentFilterState
         if (savedFilter.isActive) {
             filterController.restoreFilterState(savedFilter)
