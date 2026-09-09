@@ -79,6 +79,62 @@ void main() {
     expect(endpoint, endsWith('/ratings'));
   });
 
+  test('a rating whose revision went stale is re-sent, not stranded', () async {
+    // A rating carries `_id`/`_rev` once a pull has supplied them
+    // (`ratings_uploader.dart:122-127`) — and the uploader records no
+    // revision of its own (`RatingDao.markUploaded` stores none), so the one
+    // it sends is whatever the last pull said and goes stale readily.
+    await database.ratingDao.upsert(
+      RatingsCompanion.insert(
+        id: 'rating-1',
+        time: DateTime.now().millisecondsSinceEpoch,
+        userId: 'user-1',
+        rate: 5,
+        item: 'resource-1',
+        type: 'resource',
+        couchId: const Value('rating-couch'),
+        rev: const Value('1-stale'),
+      ),
+    );
+    await uploader.queuePending(config: config);
+    final operation = (await outbox.due()).single;
+    final payload = jsonDecode(operation.payload) as Map<String, dynamic>;
+    expect(payload['_id'], 'rating-couch');
+    expect(payload['_rev'], '1-stale');
+
+    final sent = <Map<String, dynamic>>[];
+    when(
+      () => api.postJsonObject(
+        any(),
+        any(),
+        authHeader: any(named: 'authHeader'),
+      ),
+    ).thenAnswer((invocation) async {
+      final body = Map<String, dynamic>.from(
+        invocation.positionalArguments[1] as Map<String, dynamic>,
+      );
+      sent.add(body);
+      return body['_rev'] == '4-server'
+          ? NetworkSuccess<Map<String, dynamic>>({'rev': '5-e'})
+          : const NetworkError<Map<String, dynamic>>(409, 'conflict');
+    });
+    when(
+      () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer(
+      (_) async => NetworkSuccess<Map<String, dynamic>>({
+        '_id': 'rating-couch',
+        '_rev': '4-server',
+      }),
+    );
+
+    final result = await uploader.handler(operation, payload, 'auth');
+
+    expect(result, isA<NetworkSuccess<Map<String, dynamic>>>());
+    expect(sent, hasLength(2));
+    expect(sent[1]['rate'], 5);
+    expect((await database.ratingDao.findById('rating-1'))?.isUpdated, isFalse);
+  });
+
   test('queues only ratings that have not reached the server', () async {
     await seedPendingRating();
     await database.ratingDao.upsert(

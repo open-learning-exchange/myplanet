@@ -43,6 +43,71 @@ void main() {
   });
   tearDown(() => db.close());
 
+  test(
+    'an edited answer sheet conflicting on its revision is re-sent',
+    () async {
+      // `pendingUploads` is `isUpdated = true`, so a sheet edited after its
+      // first upload is re-offered carrying `_id` and `_rev`
+      // (`submissions_repository.dart:1263-1264`). Adopting the server's
+      // revision would set `uploaded: true, isUpdated: false` with the answers
+      // the learner added still on the handset.
+      final id = await repository.createDraft(
+        userId: 'user-1',
+        type: 'exam',
+        title: 'Draft',
+        answers: const [],
+      );
+      await repository.markUploaded(id, 'sub-couch', '1-stale');
+      // The edit that re-offers it.
+      await (db.update(db.submissions)..where((r) => r.id.equals(id))).write(
+        const SubmissionsCompanion(isUpdated: Value(true)),
+      );
+
+      expect(await uploader.queuePending(config: config, userId: 'user-1'), 1);
+      final operation = (await outbox.due()).single;
+      final payload = jsonDecode(operation.payload) as Map<String, dynamic>;
+      expect(payload['_id'], 'sub-couch');
+      expect(payload['_rev'], '1-stale');
+
+      final sent = <Map<String, dynamic>>[];
+      when(
+        () => api.postJsonObject(
+          any(),
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer((invocation) async {
+        final body = Map<String, dynamic>.from(
+          invocation.positionalArguments[1] as Map<String, dynamic>,
+        );
+        sent.add(body);
+        return body['_rev'] == '4-server'
+            ? NetworkSuccess<Map<String, dynamic>>({
+                'id': 'sub-couch',
+                'rev': '5-j',
+              })
+            : const NetworkError<Map<String, dynamic>>(409, 'conflict');
+      });
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer(
+        (_) async => NetworkSuccess<Map<String, dynamic>>({
+          '_id': 'sub-couch',
+          '_rev': '4-server',
+        }),
+      );
+
+      final result = await uploader.handler(operation, payload, 'auth');
+
+      expect(result, isA<NetworkSuccess<Map<String, dynamic>>>());
+      expect(sent, hasLength(2));
+      expect(sent[1]['_rev'], '4-server');
+      final stored = await db.submissionDao.getById(id);
+      expect(stored?.rev, '5-j');
+      expect(stored?.isUpdated, isFalse);
+    },
+  );
+
   test('queues a draft once and adopts CouchDB ids after upload', () async {
     final id = await repository.createDraft(
       userId: 'user-1',

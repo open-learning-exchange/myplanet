@@ -74,6 +74,32 @@ void main() {
     expect(endpoint, endsWith('/courses_progress'));
   });
 
+  test('a progress row that reached the server is never re-offered', () async {
+    // Why `course_progress` is not armed with the 409 recovery arm: the
+    // pending predicate is `couchId IS NULL`
+    // (`CourseProgressDao.getPendingUploads`), so once a row is acknowledged
+    // it leaves the sweep for good. `_toDoc`'s `_id`/`_rev` branch is
+    // therefore dead on this path and no request it builds can conflict.
+    //
+    // That also means a later edit to an acknowledged progress row never
+    // uploads at all — reported in `PHASE_152_NOTES.md` rather than fixed
+    // here, because changing the predicate is a sync-semantics decision.
+    await database.courseProgressDao.upsert(
+      CourseProgressCompanion.insert(
+        id: 'progress-1',
+        courseId: const Value('course-1'),
+        userId: const Value('user-1'),
+        stepNum: const Value(1),
+        passed: const Value(true),
+        couchId: const Value('progress-couch'),
+        rev: const Value('1-stale'),
+      ),
+    );
+
+    expect(await uploader.queuePending(config: config), 0);
+    expect(await outbox.due(), isEmpty);
+  });
+
   test('queues only progress rows that have not reached the server', () async {
     await seedPending();
     // A row the server already acknowledged carries a `couchId` and is not

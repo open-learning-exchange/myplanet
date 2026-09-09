@@ -52,6 +52,14 @@ class CourseProgressUploader {
   }
 
   OutboxHandler get handler => (row, payload, authHeader) async {
+    // **Deliberately not armed**, and the reason is a reachability finding
+    // rather than a preference. `CourseProgressDao.getPendingUploads` is
+    // `couchId IS NULL`, so a row the server has acknowledged is never
+    // re-offered — which makes `_toDoc`'s `_id`/`_rev` branch dead on this
+    // path and a 409 unreachable. An arm here would be inert code claiming a
+    // recovery that cannot happen. See `PHASE_152_NOTES.md`; the dead branch
+    // is reported there too, because it means a progress row's later edits
+    // never upload at all.
     final result = await _api.postJsonObject(
       row.endpoint,
       payload,

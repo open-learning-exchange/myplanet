@@ -92,6 +92,151 @@ void main() {
     expect(row?.isUpdated, isFalse);
   });
 
+  test(
+    'a conflicting team document is re-sent under the server revision',
+    () async {
+      // Team documents carry a device-generated `_id`
+      // (`TeamsRepository.serializeTeamDocument`), so a document the server
+      // already holds — a second device in the same team, or a row whose local
+      // `rev` went stale — conflicts. Kotlin would adopt the server's revision
+      // and report success, leaving this device's edit unsent and the row
+      // cleared as delivered.
+      await seedLocalReport();
+      final sent = <Map<String, dynamic>>[];
+      when(
+        () => api.postJsonObject(
+          any(),
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer((invocation) async {
+        final body = Map<String, dynamic>.from(
+          invocation.positionalArguments[1] as Map<String, dynamic>,
+        );
+        sent.add(body);
+        return body['_rev'] == '4-server'
+            ? NetworkSuccess<Map<String, dynamic>>({
+                'id': 'report-1',
+                'rev': '5-c',
+              })
+            : const NetworkError<Map<String, dynamic>>(409, 'conflict');
+      });
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer(
+        (_) async => NetworkSuccess<Map<String, dynamic>>({
+          '_id': 'report-1',
+          '_rev': '4-server',
+        }),
+      );
+
+      final result = await uploader.handler(rowFor('report-1'), const {
+        '_id': 'report-1',
+        '_rev': '3-stale',
+        'description': 'Q1',
+      }, 'auth');
+
+      expect(result, isA<NetworkSuccess<Map<String, dynamic>>>());
+      expect(sent, hasLength(2));
+      expect(sent[1]['description'], 'Q1', reason: 'the edit is what lands');
+      expect(sent[1]['_rev'], '4-server');
+      // The device fields still travel on the re-send.
+      for (final field in testDeviceFields.entries) {
+        expect(sent[1], containsPair(field.key, field.value));
+      }
+      final row = await database.teamDao.getById('report-1');
+      expect(row?.rev, '5-c');
+      expect(row?.isUpdated, isFalse);
+    },
+  );
+
+  test('a tombstone that lost its revision still deletes the document', () async {
+    // A tombstone is `{_id, _rev, _deleted: true}` (`teams_provider.dart:295`),
+    // so it is an *update* and the recovery arm re-sends it under the fetched
+    // revision. That is accepted deliberately: the user asked for the
+    // membership to be removed, and a revision bump from another device does
+    // not revoke the instruction. Adopting instead would report the delete as
+    // done while the document is still on the server *and* hand the row back
+    // to `deleteNotIn`.
+    //
+    // The early return on `_deleted` still applies afterwards: the subject is
+    // already gone locally, so there is no row to stamp and no attachment to
+    // push.
+    final sent = <Map<String, dynamic>>[];
+    when(
+      () => api.postJsonObject(
+        any(),
+        any(),
+        authHeader: any(named: 'authHeader'),
+      ),
+    ).thenAnswer((invocation) async {
+      final body = Map<String, dynamic>.from(
+        invocation.positionalArguments[1] as Map<String, dynamic>,
+      );
+      sent.add(body);
+      return body['_rev'] == '7-server'
+          ? NetworkSuccess<Map<String, dynamic>>({'id': 'report-1'})
+          : const NetworkError<Map<String, dynamic>>(409, 'conflict');
+    });
+    when(
+      () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer(
+      (_) async => NetworkSuccess<Map<String, dynamic>>({
+        '_id': 'report-1',
+        '_rev': '7-server',
+      }),
+    );
+
+    final result = await uploader.handler(rowFor('report-1'), const {
+      '_id': 'report-1',
+      '_rev': '6-stale',
+      '_deleted': true,
+    }, 'auth');
+
+    // The response carries no `rev`, which the early return tolerates for a
+    // tombstone — so this also pins that recovery does not push it down the
+    // "carried no rev" failure branch.
+    expect(result, isA<NetworkSuccess<Map<String, dynamic>>>());
+    expect(sent, hasLength(2));
+    expect(sent[1]['_deleted'], isTrue);
+    expect(sent[1]['_rev'], '7-server');
+  });
+
+  test(
+    'a tombstone for an already-deleted document stands as a refusal',
+    () async {
+      // The other half: another device deleted it first, so CouchDB 404s the
+      // read of a deleted document and there is no revision to re-send under.
+      // The refusal stands — terminal, one row, exactly as before this arm
+      // existed. Nothing is stranded that was not already gone locally.
+      var posts = 0;
+      when(
+        () => api.postJsonObject(
+          any(),
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer((_) async {
+        posts++;
+        return const NetworkError<Map<String, dynamic>>(409, 'conflict');
+      });
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer(
+        (_) async => const NetworkError<Map<String, dynamic>>(404, 'deleted'),
+      );
+
+      final result = await uploader.handler(rowFor('report-1'), const {
+        '_id': 'report-1',
+        '_rev': '6-stale',
+        '_deleted': true,
+      }, 'auth');
+
+      expect((result as NetworkError).code, 409);
+      expect(posts, 1);
+    },
+  );
+
   test('a response without a revision is not treated as uploaded', () async {
     await seedLocalReport();
     when(

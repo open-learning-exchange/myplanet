@@ -154,10 +154,20 @@ class VoicesUploader {
           NetworkError<Map<String, dynamic>>(null, failure.message);
     }
 
-    final result = await _api.postJsonObject(
-      row.endpoint,
-      document,
+    // The 409 arm. An edited post is an update once `docId` is set, and
+    // adopting would be worse here than anywhere else: `markUploaded` clears
+    // `imageUrls` and deletes the local image bytes
+    // (`voices_repository.dart:1053, 1062`), so the edit *and* the images
+    // would be unrecoverable while the server still shows the other device's
+    // text. Only the news document is armed — the image resource POSTs above
+    // are appends with server-minted ids and cannot conflict.
+    final result = await ConflictRecovery.send(
+      api: _api,
+      documentUrl: ConflictRecovery.documentUrlUnder(row.endpoint, document),
+      payload: document,
       authHeader: authHeader,
+      attempt: (body) =>
+          _api.postJsonObject(row.endpoint, body, authHeader: authHeader),
     );
 
     if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {

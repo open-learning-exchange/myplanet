@@ -63,10 +63,16 @@ class RatingsUploader {
   }
 
   OutboxHandler get handler => (row, payload, authHeader) async {
-    final result = await _api.postJsonObject(
-      row.endpoint,
-      payload,
+    // The 409 arm. The uploader records no revision of its own, so the `_rev` a rating
+    // carries is whatever the last pull said and goes stale readily.
+    // See [ConflictRecovery] for why a create stands as a refusal instead.
+    final result = await ConflictRecovery.send(
+      api: _api,
+      documentUrl: ConflictRecovery.documentUrlUnder(row.endpoint, payload),
+      payload: payload,
       authHeader: authHeader,
+      attempt: (body) =>
+          _api.postJsonObject(row.endpoint, body, authHeader: authHeader),
     );
     if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
       if (data['rev'] is! String) {

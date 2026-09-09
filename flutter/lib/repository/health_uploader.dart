@@ -61,10 +61,34 @@ class HealthUploader {
   }
 
   OutboxHandler get handler => (row, payload, authHeader) async {
-    final result = await _api.postJsonObject(
-      row.endpoint,
-      payload,
+    // The 409 arm, and this is the uploader that needs it most — though **not
+    // for the reason an earlier revision of this comment gave.** It said a
+    // second examination for the same patient conflicts by construction; it
+    // does not. `createExamination` defaults `userId` to the row's own
+    // generated id (`health_repository.dart:95-100`) and the one production
+    // caller passes none (`health_provider.dart:470`), so each examination is
+    // its own document. That is verbatim the claim `PHASE_148_NOTES.md` was
+    // written to retract, re-seeded here.
+    //
+    // What is keyed on the patient is the **profile blob**:
+    // `saveHealthProfileBlob` writes `id = patientId, userId = user.couchId`
+    // (`health_repository.dart:283-296`) and it is re-saved on every
+    // examination save, so its writes after the first are updates against a
+    // revision that can go stale. An edited examination is the other route.
+    //
+    // Health needs the arm most because it is the one uploader whose *pull*
+    // cannot supply the revision instead: `cacheDocuments` skips a locally
+    // dirty row (`health_repository.dart:772`), so the recovery route Phase
+    // 148 relies on — a pull changes the payload, the memo re-arms — is
+    // structurally unavailable here. Everywhere else it merely arrives a sync
+    // later. See [ConflictRecovery].
+    final result = await ConflictRecovery.send(
+      api: _api,
+      documentUrl: ConflictRecovery.documentUrlUnder(row.endpoint, payload),
+      payload: payload,
       authHeader: authHeader,
+      attempt: (body) =>
+          _api.postJsonObject(row.endpoint, body, authHeader: authHeader),
     );
     if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
       final rev = data['rev'];

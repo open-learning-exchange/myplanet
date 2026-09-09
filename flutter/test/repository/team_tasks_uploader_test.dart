@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:myplanet/core/network/network_result.dart';
 import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/repository/outbox_repository.dart';
@@ -51,6 +53,61 @@ void main() {
     expect(endpoint, isNot(contains('satellite')));
     expect(endpoint, isNot(contains('1234')));
     expect(endpoint, endsWith('/tasks'));
+  });
+
+  test('an edited task conflicting on its revision is re-sent', () async {
+    // `pending()` is `isUpdated = true` unfiltered, so a task already carrying
+    // a `docId` is re-offered after any edit — and that request is an update
+    // whose `_rev` can be stale.
+    await seedPending();
+    final created = (await tasks.pending()).single;
+    await tasks.markUploaded(created.id, 'task-couch', '1-stale');
+    await tasks.update(
+      created.id,
+      title: 'Fix the pump today',
+      description: 'Before the rains',
+      deadline: 900,
+    );
+
+    await uploader.queuePending(config: config);
+    final operation = (await outbox.due()).single;
+    final payload = jsonDecode(operation.payload) as Map<String, dynamic>;
+    expect(payload['_id'], 'task-couch');
+    expect(payload['_rev'], '1-stale');
+
+    final sent = <Map<String, dynamic>>[];
+    when(
+      () => api.postJsonObject(
+        any(),
+        any(),
+        authHeader: any(named: 'authHeader'),
+      ),
+    ).thenAnswer((invocation) async {
+      final body = Map<String, dynamic>.from(
+        invocation.positionalArguments[1] as Map<String, dynamic>,
+      );
+      sent.add(body);
+      return body['_rev'] == '2-server'
+          ? NetworkSuccess<Map<String, dynamic>>({
+              'id': 'task-couch',
+              'rev': '3-g',
+            })
+          : const NetworkError<Map<String, dynamic>>(409, 'conflict');
+    });
+    when(
+      () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer(
+      (_) async => NetworkSuccess<Map<String, dynamic>>({
+        '_id': 'task-couch',
+        '_rev': '2-server',
+      }),
+    );
+
+    final result = await uploader.handler(operation, payload, 'auth');
+
+    expect(result, isA<NetworkSuccess<Map<String, dynamic>>>());
+    expect(sent, hasLength(2));
+    expect(sent[1]['title'], 'Fix the pump today');
   });
 
   test('the queued task is stamped with its origin', () async {

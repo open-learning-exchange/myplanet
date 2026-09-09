@@ -56,10 +56,18 @@ class TeamsUploader {
 
   OutboxHandler get handler => (row, payload, authHeader) async {
     final document = {...payload, ...(await _identity.read()).documentFields};
-    final result = await _api.postJsonObject(
-      row.endpoint,
-      document,
+    // The 409 arm. A team document carries a device-generated `_id`, so a
+    // second device writing the same document — or a row whose local `rev`
+    // went stale — conflicts, and the edit would otherwise never leave the
+    // handset. See [ConflictRecovery] for why the arm re-sends rather than
+    // adopting the server's revision as Kotlin does.
+    final result = await ConflictRecovery.send(
+      api: _api,
+      documentUrl: ConflictRecovery.documentUrlUnder(row.endpoint, document),
+      payload: document,
       authHeader: authHeader,
+      attempt: (body) =>
+          _api.postJsonObject(row.endpoint, body, authHeader: authHeader),
     );
     if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
       // A tombstone's subject was already deleted locally; there is no row

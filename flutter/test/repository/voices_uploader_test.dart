@@ -52,6 +52,70 @@ void main() {
   Future<String> seedPost() =>
       voices.createPost(message: 'Hello', userId: 'user-1', userName: 'Ada');
 
+  test('an edited post conflicting on its revision is re-sent', () async {
+    // `pendingUploads` includes a row with a `docId` when `isEdited`, so an
+    // edit is an update whose `_rev` can be stale. Adopting would be worse
+    // here than anywhere else: `markUploaded` clears `imageUrls` and deletes
+    // the local image bytes, so the edit *and* the images would be
+    // unrecoverable while the server still shows the other device's text.
+    final id = await seedPost();
+    await voices.markUploaded(id, 'news-couch', '1-stale');
+    await voices.editPost(newsId: id, message: 'Hello again');
+
+    await uploader.queuePending(config: config, userId: 'user-1');
+    final operation = (await outbox.due()).single;
+    final payload = payloadOf(operation);
+    expect(payload['_id'], 'news-couch');
+    expect(payload['_rev'], '1-stale');
+
+    final sent = <Map<String, dynamic>>[];
+    when(
+      () => api.postJsonObject(
+        any(),
+        any(),
+        authHeader: any(named: 'authHeader'),
+      ),
+    ).thenAnswer((invocation) async {
+      final body = Map<String, dynamic>.from(
+        invocation.positionalArguments[1] as Map<String, dynamic>,
+      );
+      sent.add(body);
+      return body['_rev'] == '2-server'
+          ? NetworkSuccess<Map<String, dynamic>>({
+              'id': 'news-couch',
+              'rev': '3-h',
+            })
+          : const NetworkError<Map<String, dynamic>>(409, 'conflict');
+    });
+    when(
+      () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer(
+      (_) async => NetworkSuccess<Map<String, dynamic>>({
+        '_id': 'news-couch',
+        '_rev': '2-server',
+      }),
+    );
+
+    final result = await uploader.handler(operation, payload, 'auth');
+
+    expect(result, isA<NetworkSuccess<Map<String, dynamic>>>());
+    expect(sent, hasLength(2));
+    expect(sent[1]['message'], 'Hello again');
+    // The DAO write, asserted on the values the *recovered* send produced.
+    // An earlier cut of this test read `newsRev ?? rev` and asserted only
+    // `isNotNull` — but the fixture's own `markUploaded` above had already set
+    // `rev`, so it held whether or not the handler ran at all. Mutation-proven:
+    // skipping `markUploaded` in the success branch left it green.
+    final stored = await voices.getById(id);
+    expect(stored?.rev, '3-h');
+    expect(stored?.docId, 'news-couch');
+    expect(stored?.isEdited, isFalse);
+    // The half this uploader's own comment calls the highest-stakes in the
+    // port: `markUploaded` clears `imageUrls` and deletes the local bytes, so
+    // a recovered send must reach it rather than leaving the post half-done.
+    expect(stored?.imageUrls, isEmpty);
+  });
+
   test('queues an endpoint that carries no credentials', () async {
     // Persisted in `outbox.endpoint`, a table that survives schema upgrades.
     final endpoint = VoicesUploader.endpointFor(config);
