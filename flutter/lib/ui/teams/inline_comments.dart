@@ -6,6 +6,7 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/voices_provider.dart';
+import '../../repository/voices_repository.dart';
 import '../components/profile_avatar.dart';
 
 /// Inline comment thread for a team task or meetup. Port of the inline
@@ -132,8 +133,15 @@ class _InlineCommentsState extends ConsumerState<InlineComments> {
             parentId: widget.parentId,
             teamId: widget.teamId,
             message: text,
-            userId: user.id,
+            // `couchId ?? id`, as the three voice writers use, not the bare
+            // local id. `authorJson` puts the user's `couchId` in the author
+            // object's `_id`, and `NewsMapper.fromDoc` copies that back into
+            // `userId` — so writing the local id here means the first sync
+            // silently rewrites the column and the two halves disagree about
+            // who wrote the comment.
+            userId: user.couchId ?? user.id,
             userName: user.name,
+            userJson: VoicesRepository.authorJson(user),
             planetCode: user.planetCode,
             parentCode: user.parentCode,
           );

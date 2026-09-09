@@ -1,8 +1,10 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 
 import '../core/config/server_config.dart';
+import '../core/files/voice_images.dart';
 import '../core/network/network_result.dart';
 import '../core/sync/adaptive_batch_processor.dart';
 import '../core/sync/sync_result.dart';
@@ -12,6 +14,57 @@ import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
 import '../data/local/news_mapper.dart';
 import '../data/local/user_mapper.dart';
+
+/// An image the user picked for a post, before it has been written to disk.
+class VoiceImageAttachment {
+  const VoiceImageAttachment({required this.bytes, required this.filename});
+
+  final List<int> bytes;
+  final String filename;
+}
+
+/// One entry of the `imageUrls` column — a post's image that has not reached
+/// CouchDB yet.
+///
+/// The JSON shape is Kotlin's, authored at pick time in
+/// `BaseVoicesFragment.kt:153-156`: exactly `imageUrl` and `fileName`, where
+/// `imageUrl` is an absolute local path and `fileName` its basename.
+///
+/// The port keeps the shape but **keys on [fileName], not [imageUrl]**.
+/// Kotlin reopens the recorded absolute path at upload time
+/// (`UploadManager.kt:322`), which a durable outbox cannot rely on — the
+/// drain may happen after a process death or an app update, and on iOS the
+/// documents directory path changes between launches. [VoiceImages] owns the
+/// bytes instead, under `<newsId>/<fileName>`, and [imageUrl] is recorded for
+/// shape faithfulness and for `editPost`'s removal predicate, which matches on
+/// it (`VoicesRepositoryImpl.editPost`).
+class PendingVoiceImage {
+  const PendingVoiceImage({required this.imageUrl, required this.fileName});
+
+  final String imageUrl;
+  final String fileName;
+
+  /// Null for an entry that is not an object or carries no usable name — the
+  /// uploader skips those rather than PUTting to a URL with an empty last
+  /// segment, which is what Kotlin does when `getFileNameFromUrl` throws
+  /// (`FileUtils.kt:109-112` returns `""`).
+  static PendingVoiceImage? decode(String raw) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) return null;
+      final fileName = JsonUtils.getString('fileName', decoded);
+      if (fileName.isEmpty) return null;
+      return PendingVoiceImage(
+        imageUrl: JsonUtils.getString('imageUrl', decoded),
+        fileName: fileName,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String encode() => jsonEncode({'imageUrl': imageUrl, 'fileName': fileName});
+}
 
 /// Port of `repository/VoicesRepositoryImpl.kt` — the voices/discussion feed.
 class VoicesRepository {
@@ -32,13 +85,24 @@ class VoicesRepository {
 
   Future<NewsRow?> getById(String id) => _dao.getById(id);
 
-  /// Port of `VoicesRepositoryImpl.getCommunityVoiceDates`. Returns the
+  /// The port's counterpart to
+  /// `VoicesRepositoryImpl.getCommunityVoiceDateCount` (`:298-304`) — which
+  /// returns an `Int`, not dates; the port returns the dates and its caller
+  /// counts them. Returns the
   /// distinct `yyyy-MM-dd` dates of top-level community-section posts in a
   /// time window — one per day the user (or, when `userId` is null, the whole
   /// community) posted, used by the challenge dialog's voice-count check.
   ///
-  /// The Kotlin filters `isCommunitySection` in memory after the DAO query;
-  /// [isCommunityNews] is the port of that filter.
+  /// [isCommunityNews] stands in for the Kotlin's community predicate, which
+  /// is **in SQL**, not in memory: `countDistinctCommunityVoiceDates` filters
+  /// `viewIn LIKE '%"section":"community"%'` (`NewsDao.kt:61-72`). An
+  /// earlier version of this comment said the Kotlin filtered in memory after
+  /// the DAO query; it does not. Two *different* wrong claims sit on
+  /// `NewsDao.getInTimeRange` in `app_database.dart` — it cites a Kotlin
+  /// `NewsDao.getInTimeRange` that does not exist, and calls its result "all
+  /// top-level community voices", which neither query implements — alongside
+  /// the `_isTopLevel` predicate itself, which Kotlin's SQL has no equivalent
+  /// of. All three are another lane's file this round: reported, not fixed.
   Future<List<String>> getCommunityVoiceDates(
     int startTime,
     int endTime,
@@ -56,8 +120,41 @@ class VoicesRepository {
     return dates.toList();
   }
 
+  /// The device's UTC offset at [instant].
+  ///
+  /// Overridable because CI runs in UTC, where a local-day and a UTC-day
+  /// bucketing are indistinguishable and no test could fail on the defect
+  /// this seam exists to pin. The default reads the offset *at that instant*
+  /// rather than a fixed one, so it follows DST the way SQLite's `'localtime'`
+  /// modifier does.
+  @visibleForTesting
+  static Duration Function(DateTime instant) deviceUtcOffset =
+      _realDeviceUtcOffset;
+
+  @visibleForTesting
+  static void resetDeviceUtcOffset() => deviceUtcOffset = _realDeviceUtcOffset;
+
+  static Duration _realDeviceUtcOffset(DateTime instant) =>
+      instant.toLocal().timeZoneOffset;
+
+  /// The `yyyy-MM-dd` bucket a post at [millis] falls in, on the **device's**
+  /// day.
+  ///
+  /// Kotlin buckets in SQL —
+  /// `strftime('%Y-%m-%d', time / 1000, 'unixepoch', 'localtime')`
+  /// (`NewsDao.kt:61,68`) — and `'localtime'` is the device's zone, so a post
+  /// made after local midnight belongs to the new day even when the UTC
+  /// instant is still the old one. Formatting the UTC instant instead put two
+  /// posts either side of local midnight in one bucket, under-counting the
+  /// challenge's distinct-days tally by a day.
+  ///
+  /// The offset is added to a UTC `DateTime` rather than taken from
+  /// `DateTime.fromMillisecondsSinceEpoch(millis)` directly so [deviceUtcOffset]
+  /// can stand in for a device CI does not run on; the two are the same
+  /// calendar date for every real offset.
   static String _formatDate(int millis) {
-    final dt = DateTime.fromMillisecondsSinceEpoch(millis, isUtc: true);
+    final instant = DateTime.fromMillisecondsSinceEpoch(millis, isUtc: true);
+    final dt = instant.add(deviceUtcOffset(instant));
     return '${dt.year.toString().padLeft(4, '0')}'
         '-${dt.month.toString().padLeft(2, '0')}'
         '-${dt.day.toString().padLeft(2, '0')}';
@@ -180,9 +277,15 @@ class VoicesRepository {
     String? viewInSection,
     String? viewInName,
     List<String> imageUrls = const [],
+    List<VoiceImageAttachment> attachments = const [],
     bool chat = false,
   }) async {
     final id = _createId();
+    // The id is minted here and the bytes are written under it here, in one
+    // place, so the row and the files cannot disagree about the key. Handing
+    // the id to a caller to do the write is the shape Phase 100's
+    // verification-photo bug had, and its symptom was silence.
+    final pending = [...imageUrls, ...await _writeAttachments(id, attachments)];
     await _dao.upsert(
       NewsEntriesCompanion.insert(
         id: id,
@@ -203,10 +306,94 @@ class VoicesRepository {
         userId: Value(userId),
         replyTo: const Value(''),
         user: Value(userJson),
-        imageUrls: Value(imageUrls),
+        imageUrls: Value(pending),
       ),
     );
     return id;
+  }
+
+  /// Writes each picked image into the slot [VoiceImages] owns for [newsId]
+  /// and returns the `imageUrls` entries pointing at them.
+  ///
+  /// An image whose bytes cannot be written is **dropped from the list**
+  /// rather than recorded: an entry with no file behind it would make the
+  /// uploader take its "a missing file is a no-op" branch on every drain, and
+  /// the post would upload with a reference to nothing. Losing the image
+  /// visibly beats a document that claims an attachment it does not have.
+  Future<List<String>> _writeAttachments(
+    String newsId,
+    List<VoiceImageAttachment> attachments,
+  ) async {
+    final entries = <String>[];
+    final used = <String>{};
+    for (final attachment in attachments) {
+      // Two picks with the same name would share one slot and the second
+      // would overwrite the first, so both `imageUrls` entries would resolve
+      // to the same bytes and one image would be silently lost. Kotlin cannot
+      // reach this — its entries carry two different absolute source paths —
+      // so the disambiguation is the port's own, forced by keying on the name.
+      // De-duplicated on the **stored** name, not the picked one: the slot
+      // is `<newsId>/<_segment(name)>`, so two different raw names can reduce
+      // to one file. Keying on the raw name would let them collide, which is
+      // exactly what this guard exists to prevent.
+      final filename = _uniqueFilename(
+        VoiceImages.storedNameFor(attachment.filename),
+        used,
+      );
+      final file = await VoiceImages.write(
+        newsId: newsId,
+        filename: filename,
+        bytes: attachment.bytes,
+      );
+      if (file == null) continue;
+      used.add(filename);
+      entries.add(
+        PendingVoiceImage(imageUrl: file.path, fileName: filename).encode(),
+      );
+    }
+    return entries;
+  }
+
+  /// `photo.jpg`, `photo-2.jpg`, `photo-3.jpg` — the extension is preserved so
+  /// name-based MIME detection still resolves it.
+  static String _uniqueFilename(String filename, Set<String> used) {
+    if (!used.contains(filename)) return filename;
+    final dot = filename.lastIndexOf('.');
+    final stem = dot <= 0 ? filename : filename.substring(0, dot);
+    final extension = dot <= 0 ? '' : filename.substring(dot);
+    for (var n = 2; ; n++) {
+      final candidate = '$stem-$n$extension';
+      if (!used.contains(candidate)) return candidate;
+    }
+  }
+
+  /// Forgets one pending image, leaving the rest of the post intact.
+  ///
+  /// For an image that can **never** be delivered — its bytes are gone from
+  /// disk, or the server refused it permanently. Keeping the entry would make
+  /// the uploader fail the whole post on every attempt, and because
+  /// `OutboxDao.findOpen` ignores an `abandoned` row, the next sweep enqueues
+  /// a *fresh* row with `attemptCount: 0` — so the post would retry forever,
+  /// never arrive, and grow the outbox by a dead row per sync. Dropping the
+  /// image loses something already lost; blocking the post loses the text too.
+  Future<void> dropPendingImage(String newsId, String fileName) async {
+    final row = await _dao.getById(newsId);
+    if (row == null) return;
+    final remaining = row.imageUrls
+        .where((raw) => PendingVoiceImage.decode(raw)?.fileName != fileName)
+        .toList(growable: false);
+    if (remaining.length == row.imageUrls.length) return;
+    await _dao.upsert(
+      row.toCompanion(false).copyWith(imageUrls: Value(remaining)),
+    );
+    await VoiceImages.deleteOne(newsId: newsId, filename: fileName);
+  }
+
+  /// The images on [newsId] that have not reached the server yet.
+  Future<List<PendingVoiceImage>> pendingImagesFor(String newsId) async {
+    final row = await _dao.getById(newsId);
+    if (row == null) return const [];
+    return [for (final raw in row.imageUrls) ?PendingVoiceImage.decode(raw)];
   }
 
   /// Port of `getViewInJson`: an empty array unless a target was named.
@@ -497,10 +684,12 @@ class VoicesRepository {
     String? planetCode,
     String? parentCode,
     List<String> imageUrls = const [],
+    List<VoiceImageAttachment> attachments = const [],
   }) async {
     final parent = await _dao.getById(parentId);
     if (parent == null) return null;
     final id = _createId();
+    final pending = [...imageUrls, ...await _writeAttachments(id, attachments)];
     await _dao.upsert(
       NewsEntriesCompanion.insert(
         id: id,
@@ -524,7 +713,7 @@ class VoicesRepository {
         messageType: Value(parent.messageType ?? ''),
         messagePlanetCode: Value(parent.messagePlanetCode ?? ''),
         viewIn: Value(parent.viewIn ?? ''),
-        imageUrls: Value(imageUrls),
+        imageUrls: Value(pending),
       ),
     );
     return id;
@@ -824,7 +1013,9 @@ class VoicesRepository {
   /// Clearing `imageUrls` is what marks the attachments as delivered; the
   /// server's `images` array replaces them.
   ///
-  /// [delivered] is the document that actually went on the wire. When the row
+  /// [delivered] is the payload **as queued** — which for a post with images
+  /// is not the document that went on the wire, because the uploader derives
+  /// the message and `images` from the resource uploads first. When the row
   /// has changed since that payload was captured, the send carried a
   /// **superseded body** and the row is not in sync with the server, so
   /// `isEdited` is left set and the next sweep re-queues it — this time with
@@ -863,6 +1054,12 @@ class VoicesRepository {
             isEdited: Value(superseded),
           ),
     );
+    // The bytes have reached CouchDB as attachments on their resource
+    // documents, and `imageUrls` — the only thing that points at them — has
+    // just been cleared, so the slot is unreachable from here on. Kotlin has
+    // no equivalent because it never copied the file in the first place; it
+    // only forgets the picker's path.
+    if (row.imageUrls.isNotEmpty) await VoiceImages.deleteFor(id);
   }
 
   /// Whether [payload] still describes [row] — i.e. nothing local changed
@@ -911,15 +1108,32 @@ class VoicesRepository {
     );
   }
 
-  /// Port of `TeamsRepositoryImpl.addComment` — creates a `News` row as an
-  /// inline comment on a team task or meetup. `messageType = 'comment'`
-  /// and `replyTo = parentId` distinguish it from a voice post.
+  /// Creates a `News` row as an inline comment on a team task or meetup.
+  /// `messageType = 'comment'` and `replyTo = parentId` distinguish it from a
+  /// voice post.
+  ///
+  /// **Not a port.** An earlier version of this comment said "Port of
+  /// `TeamsRepositoryImpl.addComment`"; there is no such Kotlin method —
+  /// `grep -rn "fun addComment" app/src` is empty and `messageType =
+  /// "comment"` appears nowhere in the Kotlin. Inline comments are a
+  /// port-original from unmerged issue #15112 (Phase 74), so there is no
+  /// ground truth to check this against and a naming a Kotlin method that does
+  /// not exist is how a future audit reaches a wrong verdict.
+  ///
+  /// [userJson] is the author, and it is not optional in practice even though
+  /// the signature allows null: the nested `user` object is the **only**
+  /// author identity a news document carries, and `NewsMapper.fromDoc` reads
+  /// `user`, `userId` *and* `userName` back out of it unconditionally — so a
+  /// comment uploaded without it is anonymous on Planet **and** loses its
+  /// author here at the next sync-in. The three voice writers all pass
+  /// [authorJson]; this one did not.
   Future<NewsRow> addComment({
     required String parentId,
     String? teamId,
     required String message,
     required String userId,
     String? userName,
+    String? userJson,
     String? planetCode,
     String? parentCode,
   }) async {
@@ -934,6 +1148,7 @@ class VoicesRepository {
       replyTo: Value(parentId),
       userName: Value(userName),
       userId: Value(userId),
+      user: Value(userJson),
       createdOn: Value(planetCode),
       parentCode: Value(parentCode),
       messagePlanetCode: Value(planetCode),

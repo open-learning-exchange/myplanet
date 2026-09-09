@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/teams_provider.dart';
@@ -45,7 +46,16 @@ class TeamVoicesScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.teamDiscussions)),
-      floatingActionButton: membership != null
+      // Gated on the **team** as well as the membership. The two resolve
+      // independently — `teamMembershipsProvider` is a stream,
+      // `teamProvider` a one-shot future — so without this there is a window
+      // where the FAB renders with `team == null` and a tap composes an
+      // enterprise's post as `messageType: ''` with an empty `viewIn` name,
+      // which is exactly the mislabelling this screen was fixed to stop.
+      // Kotlin has no such window: `TeamsVoicesFragment` only enables
+      // `btnSubmit` from `updateCanPostMessage`, reached once
+      // `viewModel.teamPolicy` has emitted the resolved team.
+      floatingActionButton: membership != null && team != null
           ? FloatingActionButton.extended(
               onPressed: () => _compose(context, ref, team),
               icon: const Icon(Icons.campaign_outlined),
@@ -86,19 +96,30 @@ class TeamVoicesScreen extends ConsumerWidget {
     );
   }
 
+  /// The team's own `type` is what labels the post, not the literal `'team'`:
+  /// `TeamsVoicesFragment.kt:80` sends `getEffectiveTeamType()`, which is the
+  /// nav argument or `team?.type`, falling back to `""`. This screen resolves
+  /// the team directly rather than through Kotlin's tab pager, so there is no
+  /// nav argument to prefer — `team?.type` is the whole chain. The `''`
+  /// fallback covers a team document that omits `type`, which is the only case
+  /// Kotlin sends `""` for; an *unresolved* team cannot reach here, because
+  /// the FAB waits for it. An earlier version of this comment said Kotlin
+  /// sends `""` for an unloaded team as well, and it does not.
   Future<void> _compose(
     BuildContext context,
     WidgetRef ref,
-    dynamic team,
+    TeamRow? team,
   ) async {
-    final message = await showVoiceComposer(context);
-    if (message == null || message.isEmpty) return;
+    final composed = await showVoiceComposer(context, allowImages: true);
+    if (composed == null || composed.message.isEmpty) return;
     await ref
         .read(voicesActionsProvider)
         .createTeamPost(
           teamId: teamId,
           teamName: team?.name ?? '',
-          message: message,
+          teamType: team?.type ?? '',
+          message: composed.message,
+          attachments: composed.images,
         );
   }
 }

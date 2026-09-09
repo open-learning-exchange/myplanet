@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/voices_provider.dart';
@@ -62,18 +63,45 @@ class VoiceThreadScreen extends ConsumerWidget {
     );
   }
 
+  /// The session is **awaited**, and the `await` sits inside the `try`.
+  ///
+  /// This screen never watches `sessionProvider`, so
+  /// `ref.read(...).valueOrNull` was null until something else resolved it and
+  /// the tap was dropped before the composer even opened — no dialog, no
+  /// snackbar, no row. In the shipping app the router's `ref.listen` keeps it
+  /// resolved, which is what made this latent rather than visible; it is real
+  /// for any entry that does not, such as a deep link into a thread. The
+  /// `await` is inside the `try` because a future can reject where
+  /// `valueOrNull` could not.
+  ///
+  /// `VoicesActions.postReply` awaits the session for itself (Phase 144), so
+  /// the guard here is only about not opening a composer whose reply would be
+  /// discarded — but a guard that always fires discards the tap instead, which
+  /// is what it was doing.
   Future<void> _reply(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context);
-    final user = ref.read(sessionProvider).valueOrNull;
-    if (user == null) return;
-    final message = await showVoiceComposer(
+    final UserRow? user;
+    try {
+      user = await ref.read(sessionProvider.future);
+    } catch (_) {
+      return;
+    }
+    if (user == null || !context.mounted) return;
+    final composed = await showVoiceComposer(
       context,
       title: l10n.replyToVoice,
       hintText: l10n.writeAReply,
+      // `ReplyActivity` carries the same picker as the two compose screens
+      // (`ReplyActivity.kt:226-233` builds the identical `imageUrls` entry).
+      allowImages: true,
     );
-    if (message == null || message.isEmpty) return;
+    if (composed == null || composed.message.isEmpty) return;
     await ref
         .read(voicesActionsProvider)
-        .postReply(parentId: newsId, message: message);
+        .postReply(
+          parentId: newsId,
+          message: composed.message,
+          attachments: composed.images,
+        );
   }
 }

@@ -992,6 +992,7 @@
   "@shareYourVoice": {
     "x-mt": true
   },
+  "addImage": "Ajouter une image",
   "postVoice": "Poste",
   "@postVoice": {
     "x-mt": true
