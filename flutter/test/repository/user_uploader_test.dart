@@ -194,6 +194,57 @@ void main() {
     },
   );
 
+  test('a PUT that loses a race is re-sent under the newer revision', () async {
+    // This handler fetches `_rev` moments before it PUTs, so a 409 here is a
+    // genuine lost update: another write landed inside that window. Without
+    // the recovery arm the profile edit — name, photo — was abandoned with
+    // `isUpdated` left set and nothing able to re-arm the row, because
+    // `UserMapper.toDoc` emits no `_rev` and so a later sweep builds the
+    // identical request.
+    await seedEditedUser();
+    var revs = ['9-latest', '11-elsewhere'];
+    when(
+      () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer((_) async {
+      final rev = revs.first;
+      if (revs.length > 1) revs = revs.sublist(1);
+      return NetworkSuccess<Map<String, dynamic>>({
+        '_id': 'org.couchdb.user:ada',
+        '_rev': rev,
+      });
+    });
+
+    final sent = <Map<String, dynamic>>[];
+    when(
+      () =>
+          api.putJsonObject(any(), any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer((invocation) async {
+      final body = Map<String, dynamic>.from(
+        invocation.positionalArguments[1] as Map<String, dynamic>,
+      );
+      sent.add(body);
+      return body['_rev'] == '11-elsewhere'
+          ? NetworkSuccess<Map<String, dynamic>>({
+              'id': 'org.couchdb.user:ada',
+              'rev': '12-new',
+            })
+          : const NetworkError<Map<String, dynamic>>(409, 'conflict');
+    });
+
+    final result = await uploader.handler(rowFor('user-1'), {
+      'name': 'ada',
+    }, 'auth');
+
+    expect(result, isA<NetworkSuccess<Map<String, dynamic>>>());
+    expect(sent, hasLength(2));
+    expect(sent[0]['_rev'], '9-latest', reason: 'the rev that lost');
+    expect(sent[1]['_rev'], '11-elsewhere');
+    expect(sent[1]['name'], 'ada', reason: 'the edit is what lands');
+    final user = await database.userDao.getById('user-1');
+    expect(user?.rev, '12-new');
+    expect(user?.isUpdated, isFalse);
+  });
+
   test('a 404 on the GET falls back to a creation', () async {
     await seedEditedUser();
     when(

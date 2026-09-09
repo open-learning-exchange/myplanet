@@ -52,16 +52,18 @@ class CourseProgressUploader {
   }
 
   OutboxHandler get handler => (row, payload, authHeader) async {
-    // The 409 arm. A divergence from Kotlin worth noting: `serializeProgress` there emits no
-    // `_id` at all, so the Kotlin path can never conflict. The port's does.
-    // See [ConflictRecovery] for why a create stands as a refusal instead.
-    final result = await ConflictRecovery.send(
-      api: _api,
-      documentUrl: ConflictRecovery.documentUrlUnder(row.endpoint, payload),
-      payload: payload,
+    // **Deliberately not armed**, and the reason is a reachability finding
+    // rather than a preference. `CourseProgressDao.getPendingUploads` is
+    // `couchId IS NULL`, so a row the server has acknowledged is never
+    // re-offered — which makes `_toDoc`'s `_id`/`_rev` branch dead on this
+    // path and a 409 unreachable. An arm here would be inert code claiming a
+    // recovery that cannot happen. See `PHASE_152_NOTES.md`; the dead branch
+    // is reported there too, because it means a progress row's later edits
+    // never upload at all.
+    final result = await _api.postJsonObject(
+      row.endpoint,
+      payload,
       authHeader: authHeader,
-      attempt: (body) =>
-          _api.postJsonObject(row.endpoint, body, authHeader: authHeader),
     );
     if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
       final remoteId = data['id']?.toString();

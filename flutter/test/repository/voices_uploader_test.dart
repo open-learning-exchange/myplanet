@@ -52,6 +52,61 @@ void main() {
   Future<String> seedPost() =>
       voices.createPost(message: 'Hello', userId: 'user-1', userName: 'Ada');
 
+  test('an edited post conflicting on its revision is re-sent', () async {
+    // `pendingUploads` includes a row with a `docId` when `isEdited`, so an
+    // edit is an update whose `_rev` can be stale. Adopting would be worse
+    // here than anywhere else: `markUploaded` clears `imageUrls` and deletes
+    // the local image bytes, so the edit *and* the images would be
+    // unrecoverable while the server still shows the other device's text.
+    final id = await seedPost();
+    await voices.markUploaded(id, 'news-couch', '1-stale');
+    await voices.editPost(newsId: id, message: 'Hello again');
+
+    await uploader.queuePending(config: config, userId: 'user-1');
+    final operation = (await outbox.due()).single;
+    final payload = payloadOf(operation);
+    expect(payload['_id'], 'news-couch');
+    expect(payload['_rev'], '1-stale');
+
+    final sent = <Map<String, dynamic>>[];
+    when(
+      () => api.postJsonObject(
+        any(),
+        any(),
+        authHeader: any(named: 'authHeader'),
+      ),
+    ).thenAnswer((invocation) async {
+      final body = Map<String, dynamic>.from(
+        invocation.positionalArguments[1] as Map<String, dynamic>,
+      );
+      sent.add(body);
+      return body['_rev'] == '2-server'
+          ? NetworkSuccess<Map<String, dynamic>>({
+              'id': 'news-couch',
+              'rev': '3-h',
+            })
+          : const NetworkError<Map<String, dynamic>>(409, 'conflict');
+    });
+    when(
+      () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer(
+      (_) async => NetworkSuccess<Map<String, dynamic>>({
+        '_id': 'news-couch',
+        '_rev': '2-server',
+      }),
+    );
+
+    final result = await uploader.handler(operation, payload, 'auth');
+
+    expect(result, isA<NetworkSuccess<Map<String, dynamic>>>());
+    expect(sent, hasLength(2));
+    expect(sent[1]['message'], 'Hello again');
+    expect(
+      (await voices.getById(id))?.newsRev ?? (await voices.getById(id))?.rev,
+      isNotNull,
+    );
+  });
+
   test('queues an endpoint that carries no credentials', () async {
     // Persisted in `outbox.endpoint`, a table that survives schema upgrades.
     final endpoint = VoicesUploader.endpointFor(config);
