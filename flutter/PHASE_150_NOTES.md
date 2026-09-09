@@ -471,3 +471,24 @@ at risk.
     forgotten step loud — generalising would make those guards pass
     vacuously. Worth a slice with the column inventory extended to each table,
     not a side effect of this one.
+
+## Two notes on the gate
+
+**A "Build Android APK" job on a Flutter-only round is `flutter.yml`'s own,
+not the Kotlin build — and I nearly wrote the opposite down.** Seeing that job
+run beside *Analyze and test*, I drafted a note here saying a `.claude/**`
+edit escapes `build.yml`'s `paths-ignore` and rebuilds both Kotlin flavours.
+Both halves were wrong. The run is `.github/workflows/flutter.yml` (checked
+via the API rather than inferred from the job name), which builds an APK **of
+the port** — something CLAUDE.md already records under the
+`sqlite3_flutter_libs` refusal. And the pattern would not have leaked anyway:
+`build.yml` ignores `**.md` *and* `**/*.md`, and `**` matches across `/`, so
+`.claude/agents/parity-auditor.md` is covered. The filter worked exactly as
+documented. Kept as a note because a job *name* is not a workflow, and because
+this is the third claim this round that did not survive having its citation
+opened — the other two were mine as well.
+
+**Test count: 2735 → 2758.** Exactly the 23 added here (3 tally, 4 health rev,
+4 mapper rev, 6 file copy, 4 preservation, 2 migration guards), which is worth
+stating as arithmetic rather than "all green": a suite that loses a file still
+passes.
