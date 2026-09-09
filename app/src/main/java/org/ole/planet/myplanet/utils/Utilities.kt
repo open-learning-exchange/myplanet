@@ -90,4 +90,8 @@ object Utilities {
         val extension = FileUtils.getFileExtension(url)
         return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
     }
+
+    fun warmUp() {
+        MimeTypeMap.getSingleton().getMimeTypeFromExtension("txt")
+    }
 }

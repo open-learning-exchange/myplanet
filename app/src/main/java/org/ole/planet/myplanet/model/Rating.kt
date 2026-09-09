@@ -4,7 +4,6 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 
@@ -38,7 +37,7 @@ open class Rating {
     var user: String? = null
 
     companion object {
-        fun serializeRating(realmRating: Rating): JsonObject {
+        fun serializeRating(realmRating: Rating, customDeviceName: String): JsonObject {
             val ob = JsonObject()
             if (realmRating._id != null) ob.addProperty("_id", realmRating._id)
             if (realmRating._rev != null) ob.addProperty("_rev", realmRating._rev)
@@ -52,7 +51,7 @@ open class Rating {
             ob.addProperty("createdOn", realmRating.createdOn)
             ob.addProperty("parentCode", realmRating.parentCode)
             ob.addProperty("planetCode", realmRating.planetCode)
-            ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
+            ob.addProperty("customDeviceName", customDeviceName)
             ob.addProperty("deviceName", NetworkUtils.getDeviceName())
             ob.addDocumentOrigin()
             return ob
