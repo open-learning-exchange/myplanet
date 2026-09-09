@@ -18,7 +18,6 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewTreeObserver
-import android.widget.ImageButton
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
@@ -56,6 +55,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnNotificationsListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
+import org.ole.planet.myplanet.databinding.BannerOfflineVisitWarningBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.StepExam
@@ -364,8 +364,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (isFirstLaunch) {
             lifecycleScope.launch {
                 delay(50)
-                val offlineVisits = user?.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0
-                if (!(user?.id?.startsWith("guest") == true && offlineVisits >= 3) &&
+                val state = dashboardViewModel.getGuestVisitState(user?.id).await()
+                if (state.shouldAutoOpenDrawer &&
                     resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
                 ) {
                     result?.recyclerView?.scrollToPosition(0)
@@ -740,13 +740,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             return
         }
         lifecycleScope.launch {
-            val offlineVisits = user?.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0
-            if (user?.id?.startsWith("guest") == true) {
-                when {
-                    offlineVisits >= 4 -> showGuestDialog()
-                    offlineVisits == 2 -> showBanner(R.string.guest_visit_limit_warning)
-                    offlineVisits == 3 -> showBanner(R.string.last_login_message)
-                }
+            val state = dashboardViewModel.getGuestVisitState(user?.id).await()
+            val bannerMessageRes = state.bannerMessageRes
+            when {
+                state.shouldShowTrialEndedDialog -> showGuestDialog()
+                bannerMessageRes != null -> showBanner(bannerMessageRes)
             }
         }
     }
@@ -755,17 +753,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val container = binding.bannerContainer
         container.removeAllViews()
 
-        // Inflate the banner layout
-        val inflatedView = LayoutInflater.from(this)
-            .inflate(R.layout.banner_offline_visit_warning, container, true)
-
-        // Set the message
-        val messageView = inflatedView.findViewById<TextView>(R.id.banner_message)
-        messageView.text = getString(messageRes)
-
-        // Close button wiring
-        val closeButton = inflatedView.findViewById<ImageButton>(R.id.banner_close)
-        closeButton.setOnClickListener {
+        val bannerBinding = BannerOfflineVisitWarningBinding.inflate(layoutInflater, container, true)
+        bannerBinding.bannerMessage.text = getString(messageRes)
+        bannerBinding.bannerClose.setOnClickListener {
             binding.bannerContainer.removeAllViews()
         }
     }

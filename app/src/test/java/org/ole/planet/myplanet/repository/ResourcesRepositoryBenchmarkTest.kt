@@ -23,7 +23,6 @@ class ResourcesRepositoryBenchmarkTest {
     private val context: Context = mockk(relaxed = true)
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
-    private val ratingsRepository: RatingsRepository = mockk(relaxed = true)
     private val tagsRepository: TagsRepository = mockk(relaxed = true)
     private val searchActivityDao: SearchActivityDao = mockk(relaxed = true)
     private val resourceActivityDao: ResourceActivityDao = mockk(relaxed = true)
@@ -42,7 +41,6 @@ class ResourcesRepositoryBenchmarkTest {
             context,
             activitiesRepository,
             sharedPrefManager,
-            ratingsRepository,
             tagsRepository,
             searchActivityDao,
             resourceActivityDao,

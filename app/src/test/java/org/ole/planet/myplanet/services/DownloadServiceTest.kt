@@ -30,12 +30,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.runBlocking
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -216,5 +220,90 @@ class DownloadServiceTest {
         val isQueueRunning = isQueueRunningField.get(service) as Boolean
 
         assertFalse("isQueueRunning should be false after exception", isQueueRunning)
+    }
+
+    @Test
+    fun `test sendNotification uses cached count and avoids SharedPreferences and NotificationManagerCompat checks`() {
+        val service = spyk(DownloadService())
+
+        // Set up field values
+        val currentDownloadUrlField = DownloadService::class.java.getDeclaredField("currentDownloadUrl")
+        currentDownloadUrlField.isAccessible = true
+        currentDownloadUrlField.set(service, "http://example.com/file.pdf")
+
+        val cachedRemainingCountField = DownloadService::class.java.getDeclaredField("cachedRemainingCount")
+        cachedRemainingCountField.isAccessible = true
+        cachedRemainingCountField.set(service, 5)
+
+        val areNotificationsEnabledField = DownloadService::class.java.getDeclaredField("areNotificationsEnabled")
+        areNotificationsEnabledField.isAccessible = true
+        areNotificationsEnabledField.set(service, true)
+
+        val sessionCompletedCountField = DownloadService::class.java.getDeclaredField("sessionCompletedCount")
+        sessionCompletedCountField.isAccessible = true
+        sessionCompletedCountField.set(service, 2)
+
+        val currentFileProgressField = DownloadService::class.java.getDeclaredField("currentFileProgress")
+        currentFileProgressField.isAccessible = true
+        currentFileProgressField.set(service, 50)
+
+        val mockNotificationManager = mockk<NotificationManager>(relaxed = true)
+        val notificationManagerField = DownloadService::class.java.getDeclaredField("notificationManager")
+        notificationManagerField.isAccessible = true
+        notificationManagerField.set(service, mockNotificationManager)
+
+        val mockBuilder = mockk<NotificationCompat.Builder>(relaxed = true)
+        every { mockBuilder.build() } returns mockk()
+        val notificationBuilderField = DownloadService::class.java.getDeclaredField("notificationBuilder")
+        notificationBuilderField.isAccessible = true
+        notificationBuilderField.set(service, mockBuilder)
+
+        val mockBroadcast = mockk<BroadcastService>(relaxed = true)
+        val broadcastServiceField = DownloadService::class.java.getDeclaredField("broadcastService")
+        broadcastServiceField.isAccessible = true
+        broadcastServiceField.set(service, mockBroadcast)
+
+        val appScopeField = DownloadService::class.java.getDeclaredField("appScope")
+        appScopeField.isAccessible = true
+        appScopeField.set(service, CoroutineScope(SupervisorJob() + Dispatchers.Unconfined))
+
+        mockkStatic(NotificationManagerCompat::class)
+
+        val download = Download()
+        val sendNotificationMethod = DownloadService::class.java.getDeclaredMethod("sendNotification", Download::class.java)
+        sendNotificationMethod.isAccessible = true
+        sendNotificationMethod.invoke(service, download)
+
+        verify(exactly = 0) { mockPreferences.getStringSet(any(), any()) }
+        verify(exactly = 0) { NotificationManagerCompat.from(any()) }
+        verify { mockBuilder.setSubText("2 completed, 5 remaining") }
+    }
+
+    @Test
+    fun `test updateNotificationForBatchDownload reuses existing notificationBuilder`() {
+        val service = spyk(DownloadService())
+
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val mockNotificationManager = mockk<NotificationManager>(relaxed = true)
+        val notificationManagerField = DownloadService::class.java.getDeclaredField("notificationManager")
+        notificationManagerField.isAccessible = true
+        notificationManagerField.set(service, mockNotificationManager)
+
+        val existingBuilder = spyk(NotificationCompat.Builder(context, "DownloadChannel"))
+        val notificationBuilderField = DownloadService::class.java.getDeclaredField("notificationBuilder")
+        notificationBuilderField.isAccessible = true
+        notificationBuilderField.set(service, existingBuilder)
+
+        val cachedRemainingCountField = DownloadService::class.java.getDeclaredField("cachedRemainingCount")
+        cachedRemainingCountField.isAccessible = true
+        cachedRemainingCountField.set(service, 3)
+
+        val updateMethod = DownloadService::class.java.getDeclaredMethod("updateNotificationForBatchDownload")
+        updateMethod.isAccessible = true
+        updateMethod.invoke(service)
+
+        val resultBuilder = notificationBuilderField.get(service) as NotificationCompat.Builder
+        assertSame("Existing notification builder instance should be reused", existingBuilder, resultBuilder)
+        verify { existingBuilder.setContentText("Starting downloads (0/4)") }
     }
 }
