@@ -24,6 +24,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
 import org.ole.planet.myplanet.model.HealthExamination
+import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -208,6 +209,30 @@ class HealthRepositoryImplTest {
     }
 
     @Test
+    fun getExaminationConditions_handles_empty_object_and_null_values() = testScope.runTest {
+        // Empty object
+        val emptyExamination = HealthExamination().apply {
+            conditions = "{}"
+        }
+        val emptyResult = repository.getExaminationConditions(emptyExamination)
+        advanceUntilIdle()
+        assertTrue(emptyResult.isEmpty())
+
+        // Null, string-boolean, and non-boolean values in JSON
+        val nullValExamination = HealthExamination().apply {
+            conditions = "{\"Fever\": true, \"Cough\": null, \"Headache\": \"true\", \"Chills\": \"false\"}"
+        }
+        val nullResult = repository.getExaminationConditions(nullValExamination)
+        advanceUntilIdle()
+
+        assertEquals(4, nullResult.size)
+        assertEquals(true, nullResult["Fever"])
+        assertEquals(false, nullResult["Cough"])
+        assertEquals(true, nullResult["Headache"])
+        assertEquals(false, nullResult["Chills"])
+    }
+
+    @Test
     fun bulkInsertFromSync_inserts_non_design_docs() = testScope.runTest {
         val jsonArray = JsonArray().apply {
             add(JsonObject().apply {
@@ -329,5 +354,59 @@ class HealthRepositoryImplTest {
         advanceUntilIdle()
 
         coVerify { healthExaminationDao.upsert(examination) }
+    }
+
+    @Test
+    fun getDecryptedHealth_encryptedFixture_returnsParsedMyHealth() = testScope.runTest {
+        val key = AndroidDecrypter.generateKey()!!
+        val iv = AndroidDecrypter.generateIv()
+        val user = UserEntity().apply {
+            this.key = key
+            this.iv = iv
+        }
+        val myHealth = MyHealth().apply {
+            userKey = "test_user_key_123"
+        }
+        val json = Gson().toJson(myHealth)
+        val encryptedData = AndroidDecrypter.encrypt(json, key, iv)
+        val pojo = HealthExamination().apply {
+            data = encryptedData
+        }
+
+        val result = repository.getDecryptedHealth(pojo, user)
+
+        assertNotNull(result)
+        assertEquals("test_user_key_123", result?.userKey)
+    }
+
+    @Test
+    fun getDecryptedHealth_emptyData_returnsNull() = testScope.runTest {
+        val user = UserEntity().apply {
+            key = AndroidDecrypter.generateKey()
+            iv = AndroidDecrypter.generateIv()
+        }
+
+        assertEquals(null, repository.getDecryptedHealth(null, user))
+
+        val pojoNullData = HealthExamination().apply { data = null }
+        assertEquals(null, repository.getDecryptedHealth(pojoNullData, user))
+
+        val pojoEmptyData = HealthExamination().apply { data = "" }
+        assertEquals(null, repository.getDecryptedHealth(pojoEmptyData, user))
+    }
+
+    @Test
+    fun getDecryptedHealth_garbageData_returnsNullWithoutThrowing() = testScope.runTest {
+        val user = UserEntity().apply {
+            key = AndroidDecrypter.generateKey()
+            iv = AndroidDecrypter.generateIv()
+        }
+        val pojoGarbageData = HealthExamination().apply {
+            data = "not_valid_hex_or_encrypted_data!@#$"
+        }
+
+        val result = repository.getDecryptedHealth(pojoGarbageData, user)
+
+        assertEquals(null, result)
     }
 }
