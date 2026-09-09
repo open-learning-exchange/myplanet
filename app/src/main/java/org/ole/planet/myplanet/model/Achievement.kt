@@ -93,10 +93,6 @@ class Achievement {
             }
         )
 
-        // Keyed by the source string, so the key fully determines the value and one entry serves
-        // every record holding it. deepCopy() keeps a cached instance from ever escaping; it is
-        // free for primitives and nulls, which return the receiver, so only mutable objects and
-        // arrays are copied, exactly the ones that are unsafe to share.
         private fun parseStringListToJsonArray(list: List<String>?): JsonArray {
             val array = JsonArray()
             for (s in list ?: emptyList()) {
