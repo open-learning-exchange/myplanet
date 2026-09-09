@@ -69,6 +69,7 @@ import org.ole.planet.myplanet.utils.PdfThumbnailLoader
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.ThemeMode
 import org.ole.planet.myplanet.utils.UrlUtils.init
+import org.ole.planet.myplanet.utils.Utilities
 
 @HiltAndroidApp
 class MainApplication : Application(), WorkManagerConfiguration.Provider {
@@ -322,6 +323,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             runBestEffort("FileUtils.warmUp") { FileUtils.warmUp(this@MainApplication) }
             runBestEffort("SecurePrefs.warmUp") { SecurePrefs.warmUp(this@MainApplication) }
             runBestEffort("MarkdownUtils.warmUp") { MarkdownUtils.warmUp(this@MainApplication) }
+            runBestEffort("Utilities.warmUp") { Utilities.warmUp() }
             runBestEffort("GifInfoHandle preload") { Class.forName("pl.droidsonroids.gif.GifInfoHandle") }
         }
         applicationScope.launch {
