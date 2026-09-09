@@ -9,6 +9,7 @@ import 'courses_providers.dart';
 import 'events_provider.dart';
 import 'feedback_provider.dart';
 import 'health_provider.dart';
+import 'heavy_sync_providers.dart';
 import 'notifications_provider.dart';
 import 'resources_providers.dart';
 import 'surveys_provider.dart';
@@ -167,11 +168,21 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
   Future<void> syncAll() async {
     if (state.running) return;
 
+    final startedAt = DateTime.now();
     state = DashboardSyncState.idle().copyWith(
       running: true,
-      startedAt: DateTime.now(),
+      startedAt: startedAt,
       clearFinishedAt: true,
     );
+
+    // Stands in for `SyncManager.start`'s `isSyncing.compareAndSet(false, true)`
+    // (`SyncManager:91`), which `HeavyTableSyncWorker` reads to decline running
+    // beside an interactive sync. [state.running] is the port's own version of
+    // that flag and would be enough if the worker lived here — it does not: a
+    // `workmanager` task is a separate Flutter isolate with its own Riverpod
+    // graph, so the flag has to be on disk to cross the boundary. See
+    // `HeavyTableSync.isInteractiveSyncActive`.
+    await _markInteractiveSyncActive(startedAt);
 
     // First, as `startFullSync` has it -- and before the challenge write
     // below, which reads the session with `.valueOrNull`: resolving
@@ -209,7 +220,61 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
     await _uploadMyPlanetActivities();
     await _queueSearchActivities();
 
+    // Cleared *before* the heavy tables are scheduled, which is one ordering
+    // the port improves on deliberately. Kotlin enqueues at `SyncManager:209`,
+    // inside the `try`, and only clears `isSyncing` in the `finally` at `:233`
+    // — so a worker WorkManager starts promptly sees `isMainSyncActive()` true
+    // and burns a `Result.retry()` with a 30-second backoff having done
+    // nothing. Nothing depends on the Kotlin's order; reversing it costs a
+    // heavy walk one guaranteed wasted cycle less.
+    await _clearInteractiveSyncActive();
+    await _scheduleHeavyTables();
+
     state = state.copyWith(running: false, finishedAt: DateTime.now());
+  }
+
+  Future<void> _markInteractiveSyncActive(DateTime startedAt) async {
+    try {
+      await ref.read(planetPrefsProvider).markInteractiveSyncStarted(startedAt);
+    } catch (_) {
+      // A preference write that fails must not stop the sync. The cost is a
+      // heavy walk that may overlap this pass — which the Kotlin also permits
+      // for a sync started mid-walk, since its guard is read once.
+    }
+  }
+
+  Future<void> _clearInteractiveSyncActive() async {
+    try {
+      await ref.read(planetPrefsProvider).clearInteractiveSyncStarted();
+    } catch (_) {
+      // Deliberately ignored. A flag left set decays after
+      // `HeavyTableSync.interactiveSyncTimeout` rather than blocking heavy
+      // walks for ever, which is exactly what that bound is for.
+    }
+  }
+
+  /// Port of `HeavyTableSyncWorker.schedule(context)` at `SyncManager:209` —
+  /// the end of a completed full sync, after the notification-read upload and
+  /// the activity record, which is where the Kotlin has it.
+  ///
+  /// Unconditional on the pass's outcome. The Kotlin's own condition is only
+  /// "`startFullSync` did not throw", and this pass cannot throw: every area
+  /// reports failure through its own state. Gating on `successCount > 0` — the
+  /// rule [_uploadMyPlanetActivities] follows — would be worse than useless
+  /// here, because a pass that failed everywhere is precisely when a resumable
+  /// walk should be queued. A heavy job scheduled against an unreachable
+  /// server fails its first page, reports success and does not retry, so there
+  /// is no storm to avoid.
+  Future<void> _scheduleHeavyTables() async {
+    if (ref.read(serverConfigProvider) == null) return;
+    try {
+      await ref.read(heavyTableSyncSchedulerProvider).scheduleAll();
+    } catch (_) {
+      // Swallowed like the telemetry uploads above: losing the scheduling of a
+      // background walk must not flip a finished sync to failed. The next
+      // completed sync, and every headless invocation's `scheduleIfPending`,
+      // try again.
+    }
   }
 
   /// Port of `SyncManager.pushCurrentUserShelf`, which `startFullSync` runs

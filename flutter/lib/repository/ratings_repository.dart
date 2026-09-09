@@ -166,13 +166,24 @@ class RatingsRepository {
   /// (`:242-244`), which `HeavyTableSyncWorker` runs after a full sync
   /// (`HeavyTableSyncWorker.ALL_HEAVY_TABLES`).
   ///
-  /// The port has no background heavy-table worker, so this runs as an area of
-  /// the sync centre instead. Without it the only writer of the table is the
-  /// local [submit], whose one caller always passes the signed-in user — so
-  /// the read predicate (`type = ? AND item = ?`, deliberately unscoped by
-  /// user, because it computes a community average) could only ever see this
-  /// device's own rating, and every "average" was a single number the user had
-  /// typed themselves.
+  /// **This stays an area of the sync centre even though the port now has the
+  /// heavy-table worker** (`HeavyTableSync`), and `ratings` is deliberately
+  /// absent from `HeavyTableSync.tables`. Three reasons, in order of weight:
+  /// the table is 116 documents on planet.learning — 6 pages at the Kotlin's
+  /// size of 20 — so a resumable checkpoint solves a problem it does not have;
+  /// the sync-centre row is the only place a user is *told* the walk failed,
+  /// where a background task is silent; and scheduling it there as well would
+  /// walk the same table twice on every sync. If a server ever carries a
+  /// `ratings` table large enough to abort at depth, the fix is to add it to
+  /// `HeavyTableSync.tables` and drop the area — deliberately not done on
+  /// speculation.
+  ///
+  /// Without this walk the only writer of the table is the local [submit],
+  /// whose one caller always passes the signed-in user — so the read predicate
+  /// (`type = ? AND item = ?`, deliberately unscoped by user, because it
+  /// computes a community average) could only ever see this device's own
+  /// rating, and every "average" was a single number the user had typed
+  /// themselves.
   ///
   /// **Never prunes.** The Kotlin's walk issues no delete, and a prune here
   /// would destroy the user's own unsent ratings: a rating submitted on this

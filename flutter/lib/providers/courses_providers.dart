@@ -660,14 +660,21 @@ class CourseSyncNotifier extends SyncNotifier {
     // because there is no checkpoint the next attempt started again at zero.
     // It could never finish, and the whole courses area failed with it.
     //
-    // **What this costs until the heavy-table path exists**, stated rather
-    // than left to be discovered: nothing pulls `courses_progress` any more,
-    // so Planet's own grading no longer reaches the handset - the route
-    // `take_exam_screen` documents for a step exam becoming `passed`. Local
-    // progress is still written and still uploaded by
-    // `CourseProgressUploader`; only the pull is gone. Restoring it needs the
-    // resumable checkpoint, not a re-add here: put it back inline and the
-    // courses sync breaks again.
+    // **Where the pull lives instead.** `HeavyTableSync` walks the table in a
+    // background WorkManager task from a persisted
+    // `heavy_sync_skip_courses_progress`, scheduled at the end of every
+    // completed sync (`HeavyTableSyncScheduler.scheduleAll`, the port's
+    // `SyncManager:209`) and resumed on any headless invocation
+    // (`scheduleIfPending`, the port's `ServerReachabilityWorker:201`). So
+    // Planet's own grading does reach the handset - the route
+    // `take_exam_screen` documents for a step exam becoming `passed` - it just
+    // does not reach it from here. Local progress is still written and still
+    // uploaded by `CourseProgressUploader`.
+    //
+    // Adding the call back to this list would not be a fix even now: inline it
+    // has no checkpoint, so it would break the courses area again exactly as
+    // before. `test/providers/courses_sync_excludes_heavy_table_test.dart`
+    // guards that.
     final courseResult = courses.sync(config: config, onProgress: onProgress);
     final certResult = progress.syncCertifications(
       config: config,

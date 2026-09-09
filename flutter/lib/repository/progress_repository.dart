@@ -491,8 +491,25 @@ class ProgressRepository {
       final docId = doc['_id']?.toString() ?? '';
       if (docId.isEmpty || docId.startsWith('_design/')) continue;
 
-      final courseId = doc['courseId']?.toString();
-      final userId = doc['userId']?.toString();
+      // `getStringOrNull`, so the lookup key below is read exactly as
+      // `CourseProgressMapper.fromDoc` writes the column. `doc['userId']
+      // ?.toString()` differs for one input — a `userId` that is present but
+      // empty, where it yields `''` and the mapper stores NULL — and the
+      // triple lookup then searches for a value nothing in this port writes.
+      //
+      // **This changes no outcome today**, and the note says so rather than
+      // implying a fix: the lookup misses either way (`''` matches no row,
+      // and a null skips the lookup via the guard below), so both readings
+      // end at `localRecord == null` and a row keyed by `_id`. What it buys
+      // is that the two halves of the method agree, and agreement with the
+      // Kotlin: `courseProgressFromJson` assigns `JsonUtils.getString`
+      // (`ProgressRepositoryImpl.kt:260`, hence `""` where this stores NULL),
+      // and its local-record lookup filters the keys with
+      // `keys.userId.takeIf { it.isNotEmpty() }` (`:290`) — so an empty
+      // `userId` means "no user" there too, which is what a null means here.
+      // A reader comparing the trees should not have to work that out twice.
+      final courseId = JsonUtils.getStringOrNull('courseId', doc);
+      final userId = JsonUtils.getStringOrNull('userId', doc);
       final stepNum = (doc['stepNum'] is int)
           ? doc['stepNum'] as int
           : int.tryParse('${doc['stepNum']}') ?? 0;
@@ -527,11 +544,16 @@ class ProgressRepository {
   /// Port of the `courses_progress` pull in
   /// `services/sync/TransactionSyncManager.kt`'s `syncDb`.
   ///
-  /// **This has no caller, deliberately, and it must not be given one here.**
-  /// Recorded loudly because an uncalled sync writer is exactly the shape this
-  /// project keeps paying for — Phase 119 found four of them, plumbing laid
-  /// for a pull nobody wrote. This one is the inverse: the pull exists and its
-  /// *scheduler* is what is missing.
+  /// **This is not the path production takes, and it must not be given an
+  /// interactive caller.** The scheduler it was waiting for now exists:
+  /// `HeavyTableSync` walks this table in a background WorkManager task from a
+  /// persisted `heavy_sync_skip_courses_progress` checkpoint, writing each page
+  /// through [insertCourseProgressFromSync] — the same merge this method uses.
+  /// What remains here is the un-checkpointed walk, kept because it is the
+  /// Kotlin's own second shape (`syncDb(table)` with `useCheckpoint = false`,
+  /// which `SyncActivity:671` uses for `login_activities`) and because a caller
+  /// that wants one bounded pull rather than a resumable one has something to
+  /// call. It is not wired to anything today.
   ///
   /// `courses_progress` is one of the five tables Kotlin keeps out of the
   /// interactive sync entirely (`HeavyTableSyncWorker.ALL_HEAVY_TABLES`:
@@ -550,10 +572,12 @@ class ProgressRepository {
   /// at zero — so it could never complete, and it failed the whole courses
   /// sync with it.
   ///
-  /// To bring it back, port the worker, not the call site: a background job
-  /// per heavy table plus a persisted skip. Until then Planet's grading does
-  /// not reach the handset (see `take_exam_screen`), which is a known,
-  /// recorded gap rather than a silent one.
+  /// That is what the worker fixes, and why the fix was the worker rather than
+  /// the call site: `HeavyTableSync.walk` resumes at the page it left off at,
+  /// so a walk that gets 23,600 documents in before the connection drops keeps
+  /// them and continues. Planet's grading reaches the handset again through it
+  /// (the route `take_exam_screen` documents for a step exam becoming
+  /// `passed`).
   ///
   /// Paginates `_all_docs` with a batch size of 200 (the Kotlin's page size for
   /// this table) and merges each page via [insertCourseProgressFromSync]. There

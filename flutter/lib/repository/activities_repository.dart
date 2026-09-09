@@ -351,15 +351,22 @@ class ActivitiesRepository {
   Future<int> markCourseUploaded(String localId, String remoteId, String rev) =>
       _courseDao.markUploaded(localId, remoteId, rev);
 
-  /// **This has no caller, deliberately — see the note on
+  /// **This is not the path production takes — see the note on
   /// `ProgressRepository.syncCourseProgress`, which is the same story.**
   /// `login_activities` is one of `HeavyTableSyncWorker.ALL_HEAVY_TABLES` and
   /// appears in no interactive step in Kotlin either. On planet.learning it is
   /// **19,324 documents**: 97 `_all_docs` pages with a deepening `skip`, which
   /// failed on a real device at `skip=10400` with the connection aborted and
-  /// no checkpoint to resume from. It needs the background worker with a
-  /// persisted skip, not a caller here. Login rows are still written locally
-  /// and still uploaded; only the pull is absent.
+  /// no checkpoint to resume from. `HeavyTableSync` now walks it in a
+  /// background task from a persisted `heavy_sync_skip_login_activities`, page
+  /// by page through [insertLoginActivitiesFromSync] — the same merge this
+  /// method uses — so an interrupted walk resumes rather than restarting.
+  ///
+  /// This un-checkpointed walk is kept rather than deleted because Kotlin has
+  /// the same pair: `SyncActivity:671` calls `syncDb("login_activities")` with
+  /// `useCheckpoint = false` from a connectivity collector, outside
+  /// `SyncManager` entirely. It has no caller in the port, and giving it an
+  /// interactive one would restore the failure above.
   ///
   /// Pulls the `login_activities` database, the direction this port lacked:
   /// Phase 33 wrote login rows and Phase 34 uploaded them, but nothing brought

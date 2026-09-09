@@ -10,6 +10,7 @@ import 'core/network/network_result.dart';
 import 'core/prefs/planet_prefs.dart';
 import 'core/sync/sync_result.dart';
 import 'providers/app_providers.dart';
+import 'providers/heavy_sync_providers.dart';
 import 'repository/personals_uploader.dart';
 
 /// WorkManager launches this in a new isolate, so it must be a retained
@@ -30,6 +31,24 @@ Future<bool> executeBackgroundTask(String taskName) async {
     overrides: [planetPrefsProvider.overrideWithValue(prefs)],
   );
   try {
+    // Port of `HeavyTableSyncWorker.doWork`, ahead of everything else because
+    // a heavy task is not a sync run: it walks exactly one table from its
+    // checkpoint and reports the retry verdict that checkpoint implies.
+    //
+    // The reload is the port's tax for the isolate boundary. `PlanetPrefs`
+    // caches every value at `getInstance()`, and this is the one path that
+    // reads state the *UI* isolate authored — the interactive-sync flag
+    // standing in for `SyncManager.isSyncing`, plus any checkpoint a previous
+    // engine wrote. Kotlin's worker shares the process and the
+    // `SharedPreferences` object with the UI and needs no equivalent.
+    final heavyTable = BackgroundTaskNames.heavyTableSyncTable(taskName);
+    if (heavyTable != null) {
+      await prefs.reload();
+      return await container
+          .read(heavyTableSyncProvider)
+          .run(heavyTable, config: prefs.serverConfig);
+    }
+
     final config = prefs.serverConfig;
     if (taskName == BackgroundTaskNames.download) {
       if (config == null) return true;
@@ -54,6 +73,27 @@ Future<bool> executeBackgroundTask(String taskName) async {
       }
       return succeeded;
     }
+    // Port of `ServerReachabilityWorker:201`'s `scheduleIfPending` call, whose
+    // job is resuming a walk that stopped mid-table. Placed here for the
+    // reason the Kotlin's placement carries: it sits between two
+    // `if (!syncAlreadyRunning)` blocks and is therefore deliberately *not*
+    // gated on a sync being in flight — `keep` and the worker's own guard make
+    // an overlapping call harmless. Kotlin's trigger is a network
+    // reconnection; the port's nearest equivalent is any headless invocation,
+    // which is also what `sweepPendingSubmissions` is placed against.
+    //
+    // Swallowed: a scheduling failure must not turn a run that still has real
+    // work to do into an OS retry.
+    if (config != null) {
+      try {
+        await container
+            .read(heavyTableSyncSchedulerProvider)
+            .scheduleIfPending();
+      } catch (_) {
+        // Deliberately ignored — see above.
+      }
+    }
+
     final drainer = container.read(outboxDrainerProvider);
     bool completed(SyncResult result) => result is SyncComplete;
     return await BackgroundTaskRunner(
@@ -192,6 +232,21 @@ Future<bool> executeBackgroundTask(String taskName) async {
                       .sync(config: config),
                 ),
               ),
+              // **`submissions` stays inline, and that is a deliberate
+              // divergence from Kotlin**, which walks it in
+              // `HeavyTableSyncWorker` like the other four heavy tables. The
+              // reason is the ordering immediately above: this step must run
+              // *after* `sweepPendingSubmissions`, because `upsertDocuments`
+              // writes `isUpdated: false` over every row it writes and keys
+              // each on the server `_id`, so a pull that lands before the
+              // sweep strips the dirty flag from a server-originated sheet the
+              // user edited locally and it never uploads. A background walk
+              // cannot be ordered against this invocation at all. The table is
+              // 1,975 documents in 20 pages and was never one of the two that
+              // aborted at depth, so it gains little from the checkpoint —
+              // see [HeavyTableSync.tables], and
+              // `test/providers/pending_submissions_sweep_test.dart`, which is
+              // what caught the first cut moving it.
               BackgroundSyncStep(
                 'submissions',
                 () async => completed(
@@ -216,6 +271,27 @@ Future<bool> executeBackgroundTask(String taskName) async {
       onSyncComplete: config == null
           ? null
           : () async {
+              // Port of `SyncManager:209`'s `HeavyTableSyncWorker.schedule`,
+              // and it belongs on this hook rather than in the step list for
+              // the same reason: the Kotlin call sits at the end of
+              // `startFullSync`'s `try`, so a sync that threw never reaches
+              // it. `onSyncComplete` fires only when every step succeeded,
+              // which is the closest this runner has to "the sync finished".
+              //
+              // Unconditional over the tables, checkpoints unread: that is
+              // what recovers a table whose walk died on its first page,
+              // which `scheduleIfPending` structurally cannot see.
+              //
+              // Ahead of the telemetry upload, so a throwing upload cannot
+              // cost the heavy tables their scheduling — this whole closure is
+              // swallowed by the runner as one unit.
+              try {
+                await container
+                    .read(heavyTableSyncSchedulerProvider)
+                    .scheduleAll();
+              } catch (_) {
+                // Deliberately ignored, as above.
+              }
               final userId = prefs.loggedInUserId;
               if (userId == null) return;
               final user = await container
