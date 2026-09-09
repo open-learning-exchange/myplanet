@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/config/server_config.dart';
+import '../../core/files/markdown_image_files.dart';
+import '../../core/files/markdown_image_prefetcher.dart';
 import '../../core/network/network_result.dart';
 import '../../core/utils/url_utils.dart';
 import '../../providers/app_providers.dart';
@@ -16,12 +18,17 @@ import '../../providers/app_providers.dart';
 ///
 /// The Kotlin rewrites each `![alt](path)` to `<img src=file://…/ole/path>`
 /// and relies on the sync's concatenated-links download to materialise those
-/// files locally; Markwon then reads them off disk. The Flutter port has no
-/// such pre-download path yet, so images are resolved against the server and
-/// fetched as bytes through the authenticated [PlanetApi.getBytes] path — the
-/// same pattern [profileImageProvider] and [courseCoverImageProvider] use —
-/// because a CouchDB attachment is behind Basic auth and `Image.network`
-/// cannot send the header.
+/// files locally; Markwon then reads them off disk. Phase 153 gave the port
+/// the same pre-download ([MarkdownImagePrefetcher], driven from the courses
+/// sync walk), so a relative image resolves to that local copy first — which
+/// is what makes a description's images readable offline.
+///
+/// When there is no local copy the image is still resolved against the server
+/// and fetched as bytes through the authenticated [PlanetApi.getBytes] path —
+/// the same pattern [profileImageProvider] and [courseCoverImageProvider] use
+/// — because a CouchDB attachment is behind Basic auth and `Image.network`
+/// cannot send the header. That fallback is a **superset** of the Kotlin,
+/// which renders nothing at all when the pre-download has not run.
 ///
 /// Text formatting (headers, lists, bold, code) renders regardless of network
 /// state, which is the immediate improvement over the plain `Text` the screens
@@ -88,12 +95,65 @@ class _MarkdownImage extends ConsumerWidget {
       }
       return _AuthedBytesImage(url: uri.toString(), config: config);
     }
-    // Relative path — resolve against the server's /db root.
-    if (config == null) return const SizedBox.shrink();
-    final resolved = '${UrlUtils.dbUrl(config)}/${uri.toString()}';
-    return _AuthedBytesImage(url: resolved, config: config);
+    // Anything left resolves against the server — a relative path, or an
+    // authority-less absolute one (`data:`, `mailto:`), which
+    // `markdownImageCachePath` declines so the lookup below simply misses.
+    // Prefer the copy the sync pre-downloaded — that is the
+    // whole point of the prefetch, and it is the only branch that renders with
+    // no network. Falls back to the authenticated fetch while the lookup is in
+    // flight, when nothing has been downloaded yet, and when the derivation
+    // declines the link.
+    final link = uri.toString();
+    final local = ref.watch(markdownImageFileProvider(link));
+    final networkFallback = config == null
+        ? const SizedBox.shrink()
+        : _AuthedBytesImage(
+            url: '${UrlUtils.dbUrl(config)}/$link',
+            config: config,
+          );
+    return local.maybeWhen(
+      data: (path) => path == null
+          ? networkFallback
+          : Image.file(
+              File(path),
+              // A file that vanished between the check and the read is not a
+              // reason to show a broken-image icon; fall back rather than
+              // shrink, so an online device still renders it.
+              errorBuilder: (_, _, _) => networkFallback,
+            ),
+      orElse: () => networkFallback,
+    );
   }
 }
+
+/// The pre-downloaded copy of a relative markdown image link, or `null` when
+/// there is none on disk.
+///
+/// A seam, not a convenience: [MarkdownImageFiles.existingFileFor] is real
+/// `dart:io`, whose futures never complete inside a widget test's fake-async
+/// zone — `pumpAndSettle` then spins to its ten-minute default and looks
+/// exactly like a hang (the trap `resource_viewer_screen` and
+/// `take_exam_screen` both documented). Overriding this provider lets a widget
+/// test drive both branches with no filesystem, the same shape as
+/// `resourceContentReaderProvider`.
+///
+/// Returns the *path* rather than the `File` so an override can be written
+/// without importing `dart:io`.
+/// **`autoDispose` is load-bearing, not hygiene.** A plain `FutureProvider
+/// .family` caches per argument for the life of the `ProviderContainer`, so
+/// the first render of a description whose image is not yet downloaded would
+/// cache `null` for the rest of the process: the sync writes the file a minute
+/// later, the widget re-watches the same cached instance, and the local copy
+/// never takes over — the image goes on being fetched from the network, which
+/// renders nothing once the device is offline. That is the feature not
+/// working, in exactly the situation it exists for. Disposing when nothing is
+/// watching means the next screen that renders the description looks at the
+/// disk again.
+final markdownImageFileProvider = FutureProvider.autoDispose
+    .family<String?, String>(
+      (ref, link) async =>
+          (await MarkdownImageFiles.existingFileFor(link))?.path,
+    );
 
 /// The host of the active server, for deciding whether an absolute image URL
 /// is one of ours (authed) or external (plain network).
