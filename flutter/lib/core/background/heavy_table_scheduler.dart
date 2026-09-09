@@ -25,7 +25,18 @@ import 'background_task_names.dart';
 /// which is also what makes a retry-pending walk immune to being restarted
 /// from zero by an unrelated sync.
 abstract interface class HeavyTableWorkScheduler {
-  Future<void> enqueueUnique(String table);
+  /// [taskName] is both the WorkManager unique name and the task name the
+  /// dispatcher will parse the table back out of.
+  ///
+  /// The name is resolved by the caller rather than here so that the one thing
+  /// that must hold — the name scheduled is a name
+  /// `BackgroundTaskNames.heavyTableSyncTable` can parse — is a fact a test can
+  /// assert instead of a source-text guess. An audit made this method schedule
+  /// the bare table name and the whole suite stayed green: the walk then never
+  /// ran, because the dispatcher parsed no table and
+  /// `BackgroundTaskRunner.run` answers `true` for a name it does not
+  /// recognise.
+  Future<void> enqueueUnique(String taskName);
 }
 
 class WorkmanagerHeavyTableScheduler implements HeavyTableWorkScheduler {
@@ -42,21 +53,28 @@ class WorkmanagerHeavyTableScheduler implements HeavyTableWorkScheduler {
   /// many sessions should not also wait for a charged battery.
   ///
   /// **Not expedited.** The Kotlin asks for
-  /// `setExpedited(RUN_AS_NON_EXPEDITED_WORK_REQUEST)`, and that call is a
-  /// latent bug on this app's whole supported floor: below API 31 WorkManager
-  /// serves an expedited request as a foreground service and calls
-  /// `getForegroundInfo()`, which `CoroutineWorker` implements by throwing —
-  /// and `HeavyTableSyncWorker` overrides neither it nor
-  /// `setForeground`. With `minSdk` 26 that throws before `doWork` runs
-  /// whenever expedited quota is available. Copying the flag would reproduce
-  /// a bug rather than a behaviour, and non-expedited is the fallback the flag
-  /// itself names.
+  /// `setExpedited(RUN_AS_NON_EXPEDITED_WORK_REQUEST)`, and that call looks
+  /// like a bug on this app's whole supported floor. Below API 31 WorkManager
+  /// takes the foreground-service path for any expedited request and calls
+  /// `getForegroundInfoAsync()` — unconditionally, *not* subject to the quota
+  /// the `RUN_AS_NON_EXPEDITED_WORK_REQUEST` policy governs, which is a
+  /// JobScheduler concern from API 31 up. `CoroutineWorker`'s default
+  /// implementation throws, and `HeavyTableSyncWorker` overrides neither it
+  /// nor `setForeground` (nothing in `app/src/main` does). So on API 26-30
+  /// the worker should throw before `doWork` runs *every* time, which would
+  /// mean the Kotlin's whole checkpoint feature never runs there at all.
+  ///
+  /// An earlier revision of this comment said "whenever expedited quota is
+  /// available", which understates it in the direction that matters. Either
+  /// way copying the flag would reproduce a bug rather than a behaviour, and
+  /// non-expedited is the fallback the flag itself names — so the port is
+  /// ahead of the Kotlin here, and the Kotlin side is worth reporting
+  /// upstream rather than filing as a port note.
   @override
-  Future<void> enqueueUnique(String table) {
-    final name = BackgroundTaskNames.heavyTableSyncTask(table);
+  Future<void> enqueueUnique(String taskName) {
     return Workmanager().registerOneOffTask(
-      name,
-      name,
+      taskName,
+      taskName,
       existingWorkPolicy: ExistingWorkPolicy.keep,
       backoffPolicy: BackoffPolicy.linear,
       backoffPolicyDelay: const Duration(seconds: 30),
@@ -85,7 +103,9 @@ class HeavyTableSyncScheduler {
     List<String> tables = HeavyTableSync.tables,
   }) async {
     for (final table in tables) {
-      await _scheduler.enqueueUnique(table);
+      await _scheduler.enqueueUnique(
+        BackgroundTaskNames.heavyTableSyncTask(table),
+      );
     }
   }
 

@@ -14,6 +14,10 @@ import '../../support/mock_planet_api.dart';
 /// claims to pin was flipped and the test confirmed red. Where a mutation is
 /// not obvious the test says which one it survives, because a test that cannot
 /// fail reads as coverage.
+/// Stands in for the 1s/2s/4s page backoff so the retry tests cost no
+/// wall-clock time; the delays themselves are pinned as a constant.
+Future<void> _noSleep(Duration _) async {}
+
 void main() {
   const config = ServerConfig(
     serverUrl: 'https://planet.example.org',
@@ -41,10 +45,15 @@ void main() {
     DateTime Function()? now,
     Set<String>? tables,
     Future<void> Function(List<Map<String, dynamic>> docs)? writer,
+    Future<void> Function(Duration)? sleep,
   }) => HeavyTableSync(
     api: api,
     prefs: prefs,
     now: now,
+    // No test wants the real 1s/2s/4s backoff: it would add ~28 seconds of
+    // wall clock across the failure cases, and the delays are pinned as a
+    // constant instead.
+    sleep: sleep ?? _noSleep,
     writers: {
       for (final table in tables ?? const {'courses_progress', 'submissions'})
         table:
@@ -63,7 +72,12 @@ void main() {
     int total, {
     Set<int> failAtSkip = const {},
     Set<int> designAtSkip = const {},
+    Map<int, int> failTimes = const {},
+    Map<int, int> throwTimes = const {},
+    int failStatus = 503,
   }) {
+    final remainingFailures = {...failTimes};
+    final remainingThrows = {...throwTimes};
     when(
       () => api.getJsonObject(
         any(that: contains('/$table/_all_docs')),
@@ -76,7 +90,19 @@ void main() {
       final limit = int.parse(query['limit']!);
       final skip = int.parse(query['skip']!);
       if (failAtSkip.contains(skip)) {
+        return NetworkError<Map<String, dynamic>>(failStatus, 'refused');
+      }
+      final failuresLeft = remainingFailures[skip] ?? 0;
+      if (failuresLeft > 0) {
+        remainingFailures[skip] = failuresLeft - 1;
         return const NetworkError<Map<String, dynamic>>(503, 'upstream down');
+      }
+      final throwsLeft = remainingThrows[skip] ?? 0;
+      if (throwsLeft > 0) {
+        remainingThrows[skip] = throwsLeft - 1;
+        return NetworkException<Map<String, dynamic>>(
+          Exception('connection closed'),
+        );
       }
       final end = (skip + limit) > total ? total : skip + limit;
       return NetworkSuccess<Map<String, dynamic>>({
@@ -216,6 +242,12 @@ void main() {
       expect(requested.where((url) => url.contains('limit=0')), isEmpty);
       expect(requested, hasLength(2));
       expect(requested.first, startsWith('$dbUrl/courses_progress/_all_docs'));
+      // `include_docs=true` was pinned by nothing: the fixture matches on the
+      // path alone. Dropping it makes every page yield zero documents while
+      // `skip` still advances by `rows.length`, so the walk completes, clears
+      // the checkpoint, and has written nothing — silent, and indistinguishable
+      // from an empty table.
+      expect(requested.first, contains('include_docs=true'));
     });
 
     test(
@@ -251,6 +283,69 @@ void main() {
       expect(skipsRequested(), [0, 200]);
       expect(result.completedFully, isTrue);
       expect(store.containsKey('heavy_sync_skip_courses_progress'), isFalse);
+    });
+  });
+
+  group('page retries', () {
+    test('a 5xx page is retried, and a later attempt lands', () async {
+      // `RetryInterceptor` whitelists `_all_docs` for POST retry and retries
+      // three times at 1s/2s/4s on a 5xx or an `IOException`, so Kotlin's
+      // `break` is reached only after four attempts. The port's `PlanetApi`
+      // has no interceptor, so the walk does it — and with a checkpoint the
+      // difference is not cosmetic: one attempt per page would freeze the walk
+      // at the first flaky page for ever, every WorkManager retry re-trying
+      // the same page once.
+      stubCorpus('courses_progress', 300, failTimes: {0: 2});
+
+      final result = await build().walk(
+        table: 'courses_progress',
+        config: config,
+      );
+
+      expect(result.completedFully, isTrue);
+      // Three requests at skip=0 (two refused, one served) then the rest.
+      expect(skipsRequested(), [0, 0, 0, 200]);
+    });
+
+    test('a transport failure is retried', () async {
+      stubCorpus('courses_progress', 100, throwTimes: {0: 1});
+
+      final result = await build().walk(
+        table: 'courses_progress',
+        config: config,
+      );
+
+      expect(result.completedFully, isTrue);
+      expect(skipsRequested(), [0, 0]);
+    });
+
+    test('four failed attempts leave the checkpoint and stop', () async {
+      stubCorpus('courses_progress', 500, failAtSkip: {200});
+
+      final result = await build().walk(
+        table: 'courses_progress',
+        config: config,
+      );
+
+      expect(result.completedFully, isFalse);
+      expect(prefs.heavyTableSkip('courses_progress'), 200);
+      // One attempt plus the three retries, and no more: an unbounded retry
+      // here would hold the worker's execution window open against a server
+      // that is simply down.
+      expect(skipsRequested().where((skip) => skip == 200), hasLength(4));
+      expect(HeavyTableSync.pageRetryDelays, hasLength(3));
+    });
+
+    test('a 404 is not retried', () async {
+      // The interceptor retries an `IOException` or a 5xx and nothing else;
+      // Retrofit hands `syncDb` a null body for a 401/404, which is its other
+      // `break`. Retrying a missing database would spend the whole window on
+      // a request that cannot start succeeding.
+      stubCorpus('courses_progress', 500, failAtSkip: {0}, failStatus: 404);
+
+      await build().walk(table: 'courses_progress', config: config);
+
+      expect(skipsRequested(), [0]);
     });
   });
 

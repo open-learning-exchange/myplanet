@@ -570,14 +570,22 @@ class PlanetPrefs {
   Future<void> clearInteractiveSyncStarted() =>
       _prefs.remove(_keyInteractiveSyncStartedAt);
 
-  /// Re-reads the backing store, discarding this instance's in-memory cache.
+  /// Re-reads the `SharedPreferences` store, discarding the values this
+  /// isolate cached at `getInstance()`.
   ///
-  /// `SharedPreferences` caches every value per isolate at
-  /// `getInstance()`, so a value another isolate has written since is
-  /// invisible to this one. The Kotlin has no analogue to need because its
-  /// workers run in the app process and read the same `SharedPreferences`
-  /// object the UI writes — a `HeavyTableSyncWorker` reading
-  /// `heavy_sync_skip_*` and `isSyncing` sees the UI's writes for free.
+  /// **The secrets cache is not refreshed** — `_cachedPin` and
+  /// `_cachedCouchDbUrl` come from [hydrateSecrets] and are untouched here, so
+  /// a caller that relied on this to pick up a server change would get the new
+  /// `serverURL` beside the old PIN and CouchDB URL. Call [hydrateSecrets] for
+  /// those. No caller needs it today: the one call site runs moments after
+  /// [load], which hydrates both.
+  ///
+  /// It exists because `SharedPreferences` caches per isolate, so a value
+  /// another isolate has written since is invisible to this one. The Kotlin
+  /// has no analogue to need: its workers run in the app process, sharing both
+  /// the `SharedPreferences` object the UI writes `heavy_sync_skip_*` into and
+  /// the `SyncManager` instance whose `isSyncing` field — a field, not a
+  /// preference — the heavy worker reads directly.
   ///
   /// Called by the heavy-table entry point, which is the one path that reads
   /// state the *other* isolate authors. Everything else reads what it wrote.

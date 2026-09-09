@@ -516,14 +516,7 @@ class ProgressRepository {
 
       final existing = (await _progressDao.getByIds([docId])).firstOrNull;
       final localRecord =
-          existing ??
-          (courseId != null && userId != null
-              ? (await _progressDao.findByCourseUserAndStep(
-                  courseId,
-                  userId,
-                  stepNum,
-                ))
-              : null);
+          existing ?? await _localRecordFor(courseId, userId, stepNum, docId);
 
       companions.add(
         CourseProgressMapper.fromDoc(
@@ -538,66 +531,47 @@ class ProgressRepository {
     return companions.length;
   }
 
+  /// The local row a synced document should merge onto when no row carries its
+  /// `_id` yet: matched on `(courseId, userId, stepNum)` **and** filtered to a
+  /// row that is either unsynced or already this document's.
+  ///
+  /// That filter is Kotlin's, and the port had dropped it:
+  /// `localRecordsByKey[Triple(...)]?.find { it._id == null || it._id ==
+  /// keys.docId }` (`ProgressRepositoryImpl.kt:310-311`), which
+  /// `CourseProgressMapper.fromDoc`'s own dartdoc already described. Without
+  /// it, two documents sharing the triple — routine on a server holding
+  /// 114,219 rows for a table that is logically one row per step — fight over
+  /// one local row: the second rewrites the first's `couchId` and `rev`, and
+  /// the first document ends up with no local representation at all. Kotlin
+  /// gives the second its own row. Newly worth fixing because until this phase
+  /// nothing walked the table.
+  ///
+  /// Uses `getByCourseUsersAndSteps`, which existed for exactly this and had
+  /// no caller; `findByCourseUserAndStep` cannot serve it, because its
+  /// `limit(1)` picks a row before the filter can reject it.
+  Future<CourseProgressRow?> _localRecordFor(
+    String? courseId,
+    String? userId,
+    int stepNum,
+    String docId,
+  ) async {
+    // Kotlin filters empty ids out of the key set before looking anything up
+    // (`:290`), so a document with no course or no user has no local record to
+    // find rather than matching every row that also lacks one.
+    if (courseId == null || userId == null) return null;
+    final candidates = await _progressDao.getByCourseUsersAndSteps(
+      [courseId],
+      [userId],
+      [stepNum],
+    );
+    for (final row in candidates) {
+      if (row.couchId == null || row.couchId == docId) return row;
+    }
+    return null;
+  }
+
   Future<void> upsertCertifications(List<CertificationsCompanion> rows) =>
       _certificationDao.upsertAll(rows);
-
-  /// Port of the `courses_progress` pull in
-  /// `services/sync/TransactionSyncManager.kt`'s `syncDb`.
-  ///
-  /// **This is not the path production takes, and it must not be given an
-  /// interactive caller.** The scheduler it was waiting for now exists:
-  /// `HeavyTableSync` walks this table in a background WorkManager task from a
-  /// persisted `heavy_sync_skip_courses_progress` checkpoint, writing each page
-  /// through [insertCourseProgressFromSync] — the same merge this method uses.
-  /// What remains here is the un-checkpointed walk, kept because it is the
-  /// Kotlin's own second shape (`syncDb(table)` with `useCheckpoint = false`,
-  /// which `SyncActivity:671` uses for `login_activities`) and because a caller
-  /// that wants one bounded pull rather than a resumable one has something to
-  /// call. It is not wired to anything today.
-  ///
-  /// `courses_progress` is one of the five tables Kotlin keeps out of the
-  /// interactive sync entirely (`HeavyTableSyncWorker.ALL_HEAVY_TABLES`:
-  /// `ratings`, `courses_progress`, `submissions`, `login_activities`,
-  /// `team_activities`); none appear in `startFullSync`'s `parallelTables`.
-  /// They run as one-shot WorkManager jobs calling
-  /// `syncDb(table, useCheckpoint = true)`, and the checkpoint is the point —
-  /// a `heavy_sync_skip_<table>` preference lets an interrupted walk resume
-  /// instead of restarting, and the worker returns `Result.retry()` while any
-  /// remains.
-  ///
-  /// On planet.learning this table holds **114,219 documents**: 572 pages at
-  /// the batch size below, each with a deeper `skip` that CouchDB answers in
-  /// O(n). Called inline from the courses area it reached `skip=23600`, the
-  /// connection aborted, and with no checkpoint the next attempt began again
-  /// at zero — so it could never complete, and it failed the whole courses
-  /// sync with it.
-  ///
-  /// That is what the worker fixes, and why the fix was the worker rather than
-  /// the call site: `HeavyTableSync.walk` resumes at the page it left off at,
-  /// so a walk that gets 23,600 documents in before the connection drops keeps
-  /// them and continues. Planet's grading reaches the handset again through it
-  /// (the route `take_exam_screen` documents for a step exam becoming
-  /// `passed`).
-  ///
-  /// Paginates `_all_docs` with a batch size of 200 (the Kotlin's page size for
-  /// this table) and merges each page via [insertCourseProgressFromSync]. There
-  /// is deliberately **no** `deleteNotIn` cleanup — the Kotlin does not run one
-  /// for `courses_progress`, so a row that drops off the server lingers locally,
-  /// and replicating that here keeps the behaviour identical. A locally-authored
-  /// row that the server has not echoed back would be discarded by a cleanup,
-  /// which is exactly the data the preserved-table rule exists to protect.
-  Future<SyncResult> syncCourseProgress({
-    required ServerConfig config,
-    void Function(SyncProgress)? onProgress,
-  }) async {
-    return _pullTable(
-      config: config,
-      table: 'courses_progress',
-      batchSize: 200,
-      onProgress: onProgress,
-      insert: (docs) => insertCourseProgressFromSync(docs),
-    );
-  }
 
   /// Port of the `certifications` pull in `TransactionSyncManager.syncDb`.
   ///
@@ -689,69 +663,6 @@ class ProgressRepository {
   /// Shared pagination loop for `_all_docs` pulls whose insert step takes raw
   /// docs. Used by [syncCourseProgress]; `syncCertifications` has its own body
   /// because it counts ids for the cleanup and parses with a different mapper.
-  Future<SyncResult> _pullTable({
-    required ServerConfig config,
-    required String table,
-    required int batchSize,
-    required void Function(SyncProgress)? onProgress,
-    required Future<int> Function(List<Map<String, dynamic>> docs) insert,
-  }) async {
-    final dbUrl = UrlUtils.dbUrl(config);
-    final authHeader = UrlUtils.authHeader(config);
-
-    final countResult = await _api.getJsonObject(
-      '$dbUrl/$table/_all_docs?limit=0',
-      authHeader: authHeader,
-    );
-    if (countResult is! NetworkSuccess<Map<String, dynamic>>) {
-      return SyncFailed(describeNetworkFailure(countResult));
-    }
-    final totalRows = JsonUtils.getInt('total_rows', countResult.data);
-    if (totalRows == 0) {
-      onProgress?.call(const SyncProgress(completed: 0, total: 0));
-      return const SyncComplete(0);
-    }
-
-    final batchSizer = AdaptiveBatchProcessor(initialSize: batchSize);
-    var skip = 0;
-    var totalSaved = 0;
-
-    while (skip < totalRows) {
-      final size = batchSizer.currentSize;
-      final stopwatch = Stopwatch()..start();
-      final pageResult = await _api.getJsonObject(
-        '$dbUrl/$table/_all_docs?include_docs=true&limit=$size&skip=$skip',
-        authHeader: authHeader,
-      );
-      stopwatch.stop();
-
-      if (pageResult is! NetworkSuccess<Map<String, dynamic>>) {
-        batchSizer.recordFailure();
-        return SyncFailed(describeNetworkFailure(pageResult));
-      }
-      batchSizer.recordSuccess(stopwatch.elapsedMilliseconds);
-
-      final rows = pageResult.data['rows'];
-      if (rows is! List || rows.isEmpty) break;
-
-      final docs = <Map<String, dynamic>>[
-        for (final row in rows)
-          if (row is Map<String, dynamic>)
-            JsonUtils.getObject('doc', row) ?? const <String, dynamic>{},
-      ];
-      totalSaved += await insert(docs);
-
-      skip += rows.length;
-      onProgress?.call(
-        SyncProgress(
-          completed: skip > totalRows ? totalRows : skip,
-          total: totalRows,
-        ),
-      );
-      if (rows.length < size) break;
-    }
-    return SyncComplete(totalSaved);
-  }
 }
 
 /// Port of `model/CourseProgressData.kt` — everything

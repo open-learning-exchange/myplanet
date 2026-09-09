@@ -21,12 +21,12 @@ final heavyTableSyncSchedulerProvider = Provider<HeavyTableSyncScheduler>(
 ///
 /// The writers are the repositories' existing `insert…FromSync` merges —
 /// exactly the dispatch `TransactionSyncManager.syncDb`'s `when (table)` does,
-/// with the pagination and the checkpoint kept out of the repositories. Two of
-/// the three have sat here uncalled since the inline pulls were removed
-/// (`ProgressRepository.syncCourseProgress`'s dartdoc and
-/// `ActivitiesRepository.sync`'s both name this worker as what they were
-/// waiting for), which is why they are wired *here* rather than given a caller
-/// back inside the interactive sync.
+/// with the pagination and the checkpoint kept out of the repositories. Both
+/// merges were already here and reachable from nothing that runs: the walks
+/// that called them were removed as a stopgap and their dartdocs named this
+/// worker as what they were waiting for. They are wired *here* rather than
+/// given a caller back inside the interactive sync, which is what could not
+/// finish.
 ///
 /// `submissions` is deliberately absent even though Kotlin walks it here —
 /// see [HeavyTableSync.tables] for why its inline pull is worth more than the

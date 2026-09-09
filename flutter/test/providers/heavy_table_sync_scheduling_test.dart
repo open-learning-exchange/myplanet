@@ -4,10 +4,12 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:myplanet/core/background/background_task_names.dart';
 import 'package:myplanet/core/background/heavy_table_scheduler.dart';
 import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/core/prefs/planet_prefs.dart';
 import 'package:myplanet/core/sync/heavy_table_sync.dart';
+import 'package:myplanet/core/network/network_result.dart';
 import 'package:myplanet/core/sync/sync_result.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
@@ -118,6 +120,59 @@ void main() {
     );
   });
 
+  test('the wired writers actually land rows in their tables', () async {
+    // The reachability question the `writableTables` assertion above cannot
+    // answer. An audit replaced both writers with `(docs) async {}` and the
+    // whole slice stayed green: nothing drove a closure, so nothing showed
+    // that a `courses_progress` document reaches `course_progress` or that a
+    // `login_activities` document reaches `offline_activity`. Every layer
+    // beneath is silent by design — a throwing writer is caught inside `walk`
+    // and its error discarded, `run` discards the walk result, a heavy task
+    // never writes a `recordBackgroundRun` row, and a writer that fails on
+    // page 1 reports success — so a dead writer would sync nothing, for ever,
+    // with no test failure and no log line.
+    final container = await containerFor();
+    final api = _StubApi({
+      'courses_progress': [
+        {
+          '_id': 'cp-1',
+          '_rev': '1-a',
+          'courseId': 'course-1',
+          'userId': 'user-ada',
+          'stepNum': 2,
+          'passed': true,
+        },
+      ],
+      'login_activities': [
+        {
+          '_id': 'la-1',
+          '_rev': '1-b',
+          'user': 'ada',
+          'type': 'login',
+          'loginTime': 1757000000000,
+        },
+      ],
+    });
+    final sync = HeavyTableSync(
+      api: api,
+      prefs: prefs,
+      writers: container.read(heavyTableSyncProvider).writers,
+    );
+
+    for (final table in HeavyTableSync.tables) {
+      final result = await sync.walk(table: table, config: config);
+      expect(
+        result.completedFully,
+        isTrue,
+        reason: 'the $table walk did not finish',
+      );
+      expect(result.savedCount, 1, reason: 'the $table page was not written');
+    }
+
+    expect(await db.courseProgressDao.getByIds(['cp-1']), hasLength(1));
+    expect(await db.offlineActivityDao.getByCouchIds(['la-1']), hasLength(1));
+  });
+
   test('no configured server schedules nothing', () async {
     final container = await containerFor(serverConfig: null);
 
@@ -196,9 +251,45 @@ void _headlessEntryPointTests() {
     expect(source, contains('prefs.reload()'));
   });
 
-  test('resumes pending walks on every invocation', () {
-    // Port of `ServerReachabilityWorker:201`.
-    expect(source, contains('scheduleIfPending()'));
+  test('resumes pending walks after its own walks, not before them', () {
+    // Port of `ServerReachabilityWorker:201` — but the *placement* is the
+    // finding. Kotlin's call lives in a different worker from its sync, so it
+    // can never start a heavy walk alongside the sync in its own process. The
+    // first cut called it at the top of the invocation, where `keep` has
+    // nothing to keep and the network constraint is satisfied by definition,
+    // so WorkManager could start walking `courses_progress` in a second
+    // Flutter engine while this one wrote `resources` — two writers on one
+    // SQLite file with no WAL and no busy timeout.
+    final pending = source.indexOf('scheduleIfPending()');
+    final runner = source.indexOf('BackgroundTaskRunner(');
+
+    expect(pending, isNonNegative);
+    expect(pending, greaterThan(runner));
+  });
+
+  test('marks the sync-active flag for its own run too', () {
+    // Kotlin needs one flag site because both of `syncManager.start`'s callers
+    // set it — `SyncActivity:415` and `AutoSyncWorker:106` — so
+    // `isMainSyncActive()` is true during a headless sync as well. The port's
+    // first cut wrote it only in `syncAll`, which left the *usual* overlap
+    // unguarded: nothing stopped a heavy task walking a table while this
+    // invocation walked its own.
+    // The *call*, not the declaration: an audit deleted the call and an
+    // earlier `contains('_markSyncActive(')` still matched the function's own
+    // signature further down the file.
+    final marked = source.indexOf('await _markSyncActive(prefs)');
+    final runner = source.indexOf('BackgroundTaskRunner(');
+    expect(marked, isNonNegative);
+    expect(marked, lessThan(runner));
+    // Cleared in a `finally`, as `SyncManager.destroy` is, so a run that
+    // throws cannot leave every heavy walk answering retry until the flag
+    // decays.
+    final clear = source.indexOf('_clearSyncActive(prefs)');
+    final finallyBlock = source.indexOf(
+      '} finally {',
+      source.indexOf('_markSyncActive('),
+    );
+    expect(clear, greaterThan(finallyBlock));
   });
 
   test('schedules all heavy tables after a clean sync', () {
@@ -225,7 +316,6 @@ void _headlessEntryPointTests() {
       source.indexOf('recordLastSync:'),
     );
     expect(steps, contains("'submissions'"));
-    expect(steps, contains("'health'"));
     expect(HeavyTableSync.tables, isNot(contains('submissions')));
   });
 }
@@ -236,21 +326,58 @@ class _RecordingScheduler implements HeavyTableWorkScheduler {
   _RecordingScheduler(this._prefs);
 
   final PlanetPrefs _prefs;
-  final enqueued = <String>[];
+  final taskNames = <String>[];
   final flagWhenEnqueued = <DateTime?>[];
 
+  /// The tables the recorded task names parse back to, so a name the
+  /// dispatcher could not route reads as `null` rather than as a table.
+  List<String?> get enqueued =>
+      taskNames.map(BackgroundTaskNames.heavyTableSyncTable).toList();
+
   @override
-  Future<void> enqueueUnique(String table) async {
-    enqueued.add(table);
+  Future<void> enqueueUnique(String taskName) async {
+    taskNames.add(taskName);
     flagWhenEnqueued.add(_prefs.interactiveSyncStartedAt);
   }
 }
 
+/// Answers one page per table and an empty page after it, so a walk over it
+/// completes. Deliberately a hand-written stub rather than a mock: the point of
+/// the test using it is that real repository writers run, so nothing about the
+/// path may be faked below the api.
+class _StubApi implements PlanetApi {
+  _StubApi(this.pages);
+
+  final Map<String, List<Map<String, dynamic>>> pages;
+
+  @override
+  Future<NetworkResult<Map<String, dynamic>>> getJsonObject(
+    String url, {
+    String? authHeader,
+  }) async {
+    final table = pages.keys.firstWhere(
+      (name) => url.contains('/$name/_all_docs'),
+      orElse: () => throw StateError('unexpected url: $url'),
+    );
+    final skip = int.parse(Uri.parse(url).queryParameters['skip']!);
+    final docs = skip == 0 ? pages[table]! : const <Map<String, dynamic>>[];
+    return NetworkSuccess<Map<String, dynamic>>({
+      'rows': [
+        for (final doc in docs) {'id': doc['_id'], 'doc': doc},
+      ],
+    });
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw StateError('unexpected ${invocation.memberName}');
+}
+
 class MockShelfRepository extends Mock implements ShelfRepository {}
 
-/// Every call returns null, which the implicit downcast to
-/// `Future<NetworkResult<…>>` turns into a `TypeError` — that is what keeps
-/// the table pulls off the network here.
+/// Unstubbed, so mocktail throws `MissingStubError` on every call — that is
+/// what keeps the table pulls off the network here. `SyncNotifier.sync`
+/// catches it and records the area as errored.
 class _UnusablePlanetApi extends Mock implements PlanetApi {}
 
 class _TestServerConfigNotifier extends ServerConfigNotifier {

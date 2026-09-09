@@ -8,10 +8,17 @@ import 'package:myplanet/core/sync/heavy_table_sync.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _RecordingScheduler implements HeavyTableWorkScheduler {
-  final enqueued = <String>[];
+  final taskNames = <String>[];
+
+  /// The tables the recorded task names parse back to — the round trip the
+  /// dispatcher performs. A `null` here is a name `executeBackgroundTask`
+  /// would fail to route, which is why the assertions read this rather than
+  /// the raw strings.
+  List<String?> get enqueued =>
+      taskNames.map(BackgroundTaskNames.heavyTableSyncTable).toList();
 
   @override
-  Future<void> enqueueUnique(String table) async => enqueued.add(table);
+  Future<void> enqueueUnique(String taskName) async => taskNames.add(taskName);
 }
 
 void main() {
@@ -36,14 +43,15 @@ void main() {
 
     test('are one per table, so each gets its own unique work', () {
       // The unique name is what makes `keep` collapse a second enqueue into
-      // the walk already running. One shared name would make the five tables
-      // compete for a single job and four of them would never run.
-      final names = {
-        for (final table in HeavyTableSync.tables)
-          BackgroundTaskNames.heavyTableSyncTask(table),
-      };
-
-      expect(names, hasLength(HeavyTableSync.tables.length));
+      // the walk already running; one shared name would make the tables
+      // compete for a single job and all but one would never run. The
+      // uniqueness itself is injective by construction — the interesting half
+      // is that a *scheduled* name round-trips through the dispatcher's
+      // parser, which is what the source assertion below adds.
+      for (final table in HeavyTableSync.tables) {
+        final name = BackgroundTaskNames.heavyTableSyncTask(table);
+        expect(BackgroundTaskNames.heavyTableSyncTable(name), table);
+      }
     });
 
     test('reject a name that is not a heavy task', () {
@@ -72,6 +80,16 @@ void main() {
       await build().scheduleAll();
 
       expect(scheduler.enqueued, HeavyTableSync.tables);
+      // The round trip, which is the half that was pinned by nothing: an audit
+      // made the scheduler pass the bare table as the task name and the whole
+      // suite stayed green, while in production the dispatcher parsed no table
+      // and the walk never ran.
+      expect(
+        scheduler.taskNames,
+        HeavyTableSync.tables
+            .map(BackgroundTaskNames.heavyTableSyncTask)
+            .toList(),
+      );
     });
 
     test('is what recovers a table whose walk died on page 1', () async {
@@ -119,7 +137,19 @@ void main() {
     final source = File(
       'lib/core/background/heavy_table_scheduler.dart',
     ).readAsStringSync();
-    final call = source.substring(source.indexOf('registerOneOffTask'));
+    // The concrete implementation's body: from `enqueueUnique` *inside*
+    // `WorkmanagerHeavyTableScheduler`, so the name construction a line above
+    // `registerOneOffTask` is in scope while the doc comments — which discuss
+    // `append` and `expedited` by name — are not. Anchoring on the first
+    // `enqueueUnique` in the file finds the abstract member and swallows the
+    // comment that explains why the flag is absent, which then reads as the
+    // flag being present.
+    final call = source.substring(
+      source.indexOf(
+        'Future<void> enqueueUnique',
+        source.indexOf('class WorkmanagerHeavyTableScheduler'),
+      ),
+    );
 
     test('keeps existing work rather than appending to it', () {
       // `append` (the policy the download queue needs, and the only one

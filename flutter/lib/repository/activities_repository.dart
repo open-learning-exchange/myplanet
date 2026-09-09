@@ -351,8 +351,9 @@ class ActivitiesRepository {
   Future<int> markCourseUploaded(String localId, String remoteId, String rev) =>
       _courseDao.markUploaded(localId, remoteId, rev);
 
-  /// **This is not the path production takes — see the note on
-  /// `ProgressRepository.syncCourseProgress`, which is the same story.**
+  /// **This is not the path production takes.** Its `courses_progress`
+  /// counterpart was deleted in the same phase for being unreachable; this one
+  /// survives for the Kotlin reason below.
   /// `login_activities` is one of `HeavyTableSyncWorker.ALL_HEAVY_TABLES` and
   /// appears in no interactive step in Kotlin either. On planet.learning it is
   /// **19,324 documents**: 97 `_all_docs` pages with a deepening `skip`, which
@@ -365,8 +366,18 @@ class ActivitiesRepository {
   /// This un-checkpointed walk is kept rather than deleted because Kotlin has
   /// the same pair: `SyncActivity:671` calls `syncDb("login_activities")` with
   /// `useCheckpoint = false` from a connectivity collector, outside
-  /// `SyncManager` entirely. It has no caller in the port, and giving it an
-  /// interactive one would restore the failure above.
+  /// `SyncManager` entirely — so an un-checkpointed walk of this table is a
+  /// shape the Kotlin has, not one the port invented.
+  ///
+  /// **Its one caller is dead**, and the distinction matters because "no
+  /// caller" is what an earlier revision of this sentence claimed:
+  /// `ActivitiesSyncNotifier.runSync` calls it
+  /// (`activities_provider.dart:200`), but `activitiesSyncProvider` has no
+  /// reader anywhere in `lib/` or `test/` and `DashboardSyncArea` has no
+  /// `activities` member — the area was removed when the inline pull was.
+  /// Deleting the notifier is a change to a file this lane does not own; it is
+  /// reported instead. Either way, giving this walk an interactive caller
+  /// would restore the failure above.
   ///
   /// Pulls the `login_activities` database, the direction this port lacked:
   /// Phase 33 wrote login rows and Phase 34 uploaded them, but nothing brought

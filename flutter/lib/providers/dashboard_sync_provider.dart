@@ -56,9 +56,11 @@ import 'voices_provider.dart';
 /// (`skip=10400`, connection aborted, no checkpoint to resume from).
 /// `login_activities` is a `HeavyTableSyncWorker` table in Kotlin and appears
 /// in no interactive step there either, so removing the area is the port
-/// matching it rather than dropping a feature. Local login rows are still
-/// written and still uploaded; only the pull is gone, and
-/// `ActivitiesRepository.sync` records what restoring it needs.
+/// matching it rather than dropping a feature. **The pull is not gone** — an
+/// earlier revision of this note said it was, and stopped being true when
+/// `HeavyTableSync` landed: the table is walked in a background task from a
+/// persisted `heavy_sync_skip_login_activities`, resuming rather than
+/// restarting. It is simply not walked from here.
 ///
 /// **`shelf` must stay last.** It pulls the shelf document and stamps rows
 /// that `resources` and `courses` write and prune, so it has to follow both —
@@ -183,7 +185,34 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
     // graph, so the flag has to be on disk to cross the boundary. See
     // `HeavyTableSync.isInteractiveSyncActive`.
     await _markInteractiveSyncActive(startedAt);
+    try {
+      await _runPass();
+    } finally {
+      // In a `finally`, as `SyncManager`'s `destroy()` is (`SyncManager:233`),
+      // and for a sharper reason than symmetry: a flag left standing makes
+      // *every* heavy walk answer retry until it decays, so it must not
+      // depend on the pass reaching its last statement. Nothing in the pass
+      // throws today — each step carries its own `catch` — which is exactly
+      // the state in which an unguarded clear looks fine.
+      //
+      // Cleared before [_scheduleHeavyTables], which runs after this block:
+      // a job enqueued while the flag still stood would start, read it, and
+      // stand down for a backoff having done nothing. Kotlin has the same
+      // window in the other order (it enqueues at `SyncManager:209` and
+      // clears in the `finally` at `:233`) and it costs it little, since only
+      // a few log lines separate the two; the port simply has no reason to
+      // reproduce the ordering rather than the intent.
+      await _clearInteractiveSyncActive();
+    }
 
+    await _scheduleHeavyTables();
+
+    state = state.copyWith(running: false, finishedAt: DateTime.now());
+  }
+
+  /// The pass itself, so [syncAll] can guarantee the interactive-sync flag is
+  /// cleared however it ends.
+  Future<void> _runPass() async {
     // First, as `startFullSync` has it -- and before the challenge write
     // below, which reads the session with `.valueOrNull`: resolving
     // `sessionProvider` here means that read finds a value rather than the
@@ -219,18 +248,6 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
     await _recordSyncActivity();
     await _uploadMyPlanetActivities();
     await _queueSearchActivities();
-
-    // Cleared *before* the heavy tables are scheduled, which is one ordering
-    // the port improves on deliberately. Kotlin enqueues at `SyncManager:209`,
-    // inside the `try`, and only clears `isSyncing` in the `finally` at `:233`
-    // — so a worker WorkManager starts promptly sees `isMainSyncActive()` true
-    // and burns a `Result.retry()` with a 30-second backoff having done
-    // nothing. Nothing depends on the Kotlin's order; reversing it costs a
-    // heavy walk one guaranteed wasted cycle less.
-    await _clearInteractiveSyncActive();
-    await _scheduleHeavyTables();
-
-    state = state.copyWith(running: false, finishedAt: DateTime.now());
   }
 
   Future<void> _markInteractiveSyncActive(DateTime startedAt) async {
