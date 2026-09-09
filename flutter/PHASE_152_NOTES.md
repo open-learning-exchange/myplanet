@@ -165,6 +165,13 @@ tombstone is `{_id, _rev, _deleted: true}` (`teams_provider.dart:295`), so it
 is an update, and re-sending deletes a document whose latest content this
 device has never seen. Accepted deliberately: the user asked for the membership
 to be removed, and a revision bump elsewhere does not revoke that instruction.
+Adopting instead would report the delete as done while the document is still on
+the server *and* hand the row back to `deleteNotIn`. Both halves are pinned —
+a tombstone recovered under a fresh revision, and a tombstone for a document
+another device already deleted, where the read 404s and the refusal stands
+exactly as it did before this arm existed. The second also shows the arm does
+not disturb the handler's `_deleted` early return, which tolerates a response
+carrying no `rev`.
 
 ---
 
@@ -304,11 +311,11 @@ the shared arm and has four tests.
 
 ## Tests
 
-Gate green: `dart format` clean, `flutter analyze` clean, **2767 tests pass**
-(2735 before — the 32 added reconcile: 16 in the new
+Gate green: `dart format` clean, `flutter analyze` clean, **2769 tests pass**
+(2735 before — the 34 added reconcile: 16 in the new
 `conflict_recovery_test.dart`, 4 in the new `adopted_surveys_uploader_test.dart`,
 and one each in eleven existing uploader test files plus
-`health_legacy_conflict_test.dart`). *Counted from the run, not remembered.*
+`health_legacy_conflict_test.dart`, plus two for the tombstone paths). *Counted from the run, not remembered.*
 
 New: `test/repository/conflict_recovery_test.dart` (16) pins the rule itself —
 both arms, the `adoptExisting` opt-in, the three guards, and `documentUrlUnder`.
@@ -345,7 +352,8 @@ Every one failed the test it should.
 | drop the throwing-fetch guard | 1 |
 | `adoptExisting` ignored (always false) | 3 |
 | `adoptExisting` forced true everywhere | 5 |
-| un-arm each of the ten armed uploaders, one at a time | 1–2 each |
+| un-arm each of the eleven armed uploaders, one at a time | 1–2 each |
+| adopt instead of re-sending, checked against the tombstone path | 2 |
 
 The third row is the one worth keeping: **porting Kotlin's arm as written fails
 twenty-two tests in this port.** That is the phase's finding stated as a number.
