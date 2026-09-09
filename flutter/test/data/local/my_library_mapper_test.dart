@@ -130,7 +130,7 @@ void main() {
       expect(blank!.openWhichFile.value, isNull);
     });
 
-    test('has no attachment address when the CouchDB URL is unknown', () {
+    test('keeps the attachment name when the CouchDB URL is unknown', () {
       final row = MyLibraryMapper.fromDoc({
         '_id': 'res-1',
         'title': 'Doc',
@@ -141,7 +141,34 @@ void main() {
 
       // Better an absent URL than the unusable 'http:///resources/...'.
       expect(row!.resourceRemoteAddress.value, isNull);
-      expect(row.resourceLocalAddress.value, isNull);
+      // But the *local* address is the attachment name and does not depend on
+      // the base URL — Kotlin assigns it unconditionally inside the same loop
+      // (`MyLibrary.kt:262`). Dropping it too, as this once did, lost the
+      // filename over a bad server URL.
+      expect(row.resourceLocalAddress.value, 'main.epub');
+    });
+
+    test('a document with no usable attachment leaves both addresses alone', () {
+      // Not `Value(null)` — see `_primaryAttachment`. A course document embeds
+      // a thinner copy of the resource, and `serializeResource` emits
+      // `"_attachments": {}` for a device that has not downloaded the file, so
+      // writing null here erased the download pointer on every sync.
+      for (final doc in <Map<String, dynamic>>[
+        {'_id': 'res-1', 'title': 'Doc'},
+        {'_id': 'res-1', 'title': 'Doc', '_attachments': <String, dynamic>{}},
+        {
+          '_id': 'res-1',
+          'title': 'Doc',
+          // Every key nested, so Kotlin's `key.indexOf("/") < 0` never matches.
+          '_attachments': {
+            'sudoku/index.html': {'content_type': 'text/html'},
+          },
+        },
+      ]) {
+        final row = MyLibraryMapper.fromDoc(doc, couchDbUrl: couchDbUrl)!;
+        expect(row.resourceRemoteAddress, const Value<String?>.absent());
+        expect(row.resourceLocalAddress, const Value<String?>.absent());
+      }
     });
 
     test('returns null for empty, design and id-less documents', () {
@@ -274,6 +301,57 @@ void main() {
       expect(row!.privateFor.present, isTrue);
       expect(row.privateFor.value, isNull);
     });
+  });
+
+  group('the course-step stamp', () {
+    // Port of the two non-blank guards in `insertMyLibrary`
+    // (`MyLibrary.kt:231-236`). The courses walk stamps; the resources walk
+    // passes nothing and must not clear what the courses walk wrote.
+    test('a non-blank stamp is written', () {
+      final companion = MyLibraryMapper.fromDoc(
+        {'_id': 'res-1', 'title': 'Doc'},
+        couchDbUrl: couchDbUrl,
+        stepId: 'course-1:0',
+        courseId: 'course-1',
+      )!;
+
+      expect(companion.stepId, const Value('course-1:0'));
+      expect(companion.courseId, const Value('course-1'));
+    });
+
+    test('no stamp leaves both columns absent', () {
+      final companion = MyLibraryMapper.fromDoc({
+        '_id': 'res-1',
+        'title': 'Doc',
+      }, couchDbUrl: couchDbUrl)!;
+
+      expect(
+        companion.stepId,
+        const Value<String?>.absent(),
+        reason: 'a Value(null) here is written, and would clear the link',
+      );
+      expect(companion.courseId, const Value<String?>.absent());
+    });
+
+    test(
+      'a blank stamp is folded into absent, not written as an empty string',
+      () {
+        // `isNullOrBlank()` is what the Kotlin tests, and `WHERE stepId = \'\''
+        // matches nothing — an empty stamp is a link that reads as broken
+        // rather than as unset.
+        for (final blank in ['', '   ']) {
+          final companion = MyLibraryMapper.fromDoc(
+            {'_id': 'res-1', 'title': 'Doc'},
+            couchDbUrl: couchDbUrl,
+            stepId: blank,
+            courseId: blank,
+          )!;
+
+          expect(companion.stepId, const Value<String?>.absent());
+          expect(companion.courseId, const Value<String?>.absent());
+        }
+      },
+    );
   });
 
   group('credentialFreeBase', () {

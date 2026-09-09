@@ -1629,4 +1629,131 @@ void main() {
       expect(row!.subType, 'join_request');
     },
   );
+
+  /// The `my_library` DDL **frozen at v47**, the shape a device that has never
+  /// run v48 carries. Dumped from `sqlite_master` on the v47 schema, not
+  /// retyped.
+  ///
+  /// v48 adds `step_id` and `course_id` for the course-step resource
+  /// ingestion, and writes **no** hand-written migration step — because
+  /// `my_library` is a CouchDB cache, so the drop loop deletes it and
+  /// `createAll` rebuilds it carrying both columns. That reasoning is a fact
+  /// about [AppDatabase.localAuthorityTables], and it is exactly the kind of
+  /// fact a later phase changes without noticing what depended on it: add
+  /// `my_library` to the preserved set and the drop is skipped, `CREATE TABLE
+  /// IF NOT EXISTS` no-ops over the old shape, and the two columns never
+  /// appear. These tests red when that happens.
+  const myLibraryDdlFrozenAtV47 =
+      'CREATE TABLE "my_library" ("id" TEXT NOT NULL, "_id" TEXT NULL'
+      ', "_rev" TEXT NULL, "user_id" TEXT NOT NULL DEFAULT \'[]\''
+      ', "title" TEXT NULL, "title_normal" TEXT NULL'
+      ', "description" TEXT NULL, "resource_id" TEXT NULL'
+      ', "resource_remote_address" TEXT NULL'
+      ', "resource_local_address" TEXT NULL'
+      ', "resource_offline" INTEGER NOT NULL DEFAULT 0 CHECK ("resource_offline" IN (0, 1))'
+      ', "downloaded_rev" TEXT NULL, "filename" TEXT NULL'
+      ', "average_rating" TEXT NULL, "upload_date" TEXT NULL'
+      ', "year" TEXT NULL, "added_by" TEXT NULL'
+      ', "publisher" TEXT NULL, "link_to_license" TEXT NULL'
+      ', "open_with" TEXT NULL, "open_which_file" TEXT NULL'
+      ', "article_date" TEXT NULL, "kind" TEXT NULL'
+      ', "created_date" INTEGER NOT NULL DEFAULT 0'
+      ', "language" TEXT NULL, "author" TEXT NULL'
+      ', "media_type" TEXT NULL, "resource_type" TEXT NULL'
+      ', "medium" TEXT NULL, "times_rated" INTEGER NOT NULL DEFAULT 0'
+      ', "resource_for" TEXT NOT NULL DEFAULT \'[]\''
+      ', "subject" TEXT NOT NULL DEFAULT \'[]\''
+      ', "level" TEXT NOT NULL DEFAULT \'[]\''
+      ', "tag" TEXT NOT NULL DEFAULT \'[]\''
+      ', "languages" TEXT NOT NULL DEFAULT \'[]\''
+      ', "is_private" INTEGER NOT NULL DEFAULT 0 CHECK ("is_private" IN (0, 1))'
+      ', "private_for" TEXT NULL, PRIMARY KEY ("id"))';
+
+  /// The columns v48 adds on top of the frozen shape.
+  const myLibraryColumnsAddedAtV48 = {'step_id', 'course_id'};
+
+  /// Replaces the freshly-created `my_library` with its v47 shape, the way an
+  /// on-device upgrade would find it.
+  Future<void> installMyLibraryShapeBeforeV48() async {
+    await database.customStatement('SELECT 1');
+    // Same guard the surveys shape carries: a frozen literal that has drifted
+    // from what drift emits would make every assertion below vacuous.
+    expect(
+      await liveDdl('my_library'),
+      _withMyLibraryV48Columns(myLibraryDdlFrozenAtV47),
+      reason: 'the frozen my_library DDL no longer matches what drift creates',
+    );
+    await database.customStatement('DROP TABLE my_library');
+    await database.customStatement(myLibraryDdlFrozenAtV47);
+  }
+
+  test('the resource cache gains the course-step columns on upgrade', () async {
+    // The columns reach a device that already has the app only if the version
+    // actually moves: drift calls `onUpgrade` on a difference, so leaving
+    // `schemaVersion` at 47 while adding columns delivers them to fresh
+    // installs and to nobody else. Asserted here because these tests invoke
+    // `onUpgrade` directly and would otherwise stay green through exactly that
+    // mistake.
+    expect(
+      database.schemaVersion,
+      greaterThanOrEqualTo(48),
+      reason: 'my_library gained step_id/course_id at v48',
+    );
+
+    await installMyLibraryShapeBeforeV48();
+    expect(
+      await columnsOf('my_library'),
+      isNot(containsAll(myLibraryColumnsAddedAtV48)),
+      reason: 'the frozen shape is meant to predate them',
+    );
+
+    await runUpgrade(from: 47);
+
+    expect(
+      await columnsOf('my_library'),
+      containsAll(myLibraryColumnsAddedAtV48),
+    );
+  });
+
+  test('a stamped resource row is writable after the upgrade', () async {
+    // The column existing is not the same as the write path working: a
+    // preserved-but-unaltered table would still be missing them here, and this
+    // is the assertion that says so in the language the ingestion uses.
+    await installMyLibraryShapeBeforeV48();
+    await runUpgrade(from: 47);
+
+    await database.myLibraryDao.upsertAll([
+      MyLibraryTableCompanion.insert(
+        id: 'res-1',
+        title: const Value('Rainfall'),
+        stepId: const Value('course-1:0'),
+        courseId: const Value('course-1'),
+      ),
+    ]);
+
+    final byStep = await database.myLibraryDao.getByStepId('course-1:0');
+    expect(byStep.map((row) => row.id), ['res-1']);
+  });
+
+  test('the cached resource rows themselves are still dropped', () async {
+    // The other half of the claim: `my_library` is *not* preserved, and this
+    // upgrade discards its rows for the next sync to refill. Stated as a test
+    // so that adding it to the preserved set is a deliberate, visible change
+    // rather than something the two assertions above quietly tolerate.
+    await installMyLibraryShapeBeforeV48();
+    await database.customStatement(
+      "INSERT INTO my_library (id, title) VALUES ('res-1', 'Rainfall')",
+    );
+
+    await runUpgrade(from: 47);
+
+    expect(await database.myLibraryDao.getAll(), isEmpty);
+  });
 }
+
+/// The frozen v47 literal with v48's two columns spliced in, for the
+/// drift-drift guard above.
+String _withMyLibraryV48Columns(String frozen) => frozen.replaceFirst(
+  ', PRIMARY KEY ("id"))',
+  ', "step_id" TEXT NULL, "course_id" TEXT NULL, PRIMARY KEY ("id"))',
+);

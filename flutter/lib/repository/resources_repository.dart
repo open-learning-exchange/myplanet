@@ -62,6 +62,33 @@ class ResourcesRepository {
 
   Future<int> localCount() => _dao.count();
 
+  /// Port of `ResourcesRepositoryImpl.getAllStepResources` (`:208-211`) — the
+  /// resources embedded in one course step, written by the courses walk.
+  ///
+  /// The null guard is the Kotlin's, quirk included: it tests `stepId == null`
+  /// and not `isNullOrBlank`. A blank id would fall through to the query and
+  /// match nothing, since [MyLibraryMapper] folds a blank stamp into "unset".
+  Future<List<MyLibraryRow>> getAllStepResources(String? stepId) async {
+    if (stepId == null) return const [];
+    return _dao.getByStepId(stepId);
+  }
+
+  /// Port of `CoursesRepositoryImpl.getCourseOnlineResources` /
+  /// `getCourseOfflineResources` (`:180-192`) — the two lists behind the
+  /// course-level download button (`BaseContainerFragment.setResourceButton`).
+  ///
+  /// Placed here rather than on [CoursesRepository] because that is where the
+  /// `my_library` DAO lives; the Kotlin split follows its own repository's DAO
+  /// injection, not a domain boundary. The blank guard is the Kotlin's
+  /// `isNullOrEmpty` at `:245`.
+  Future<List<MyLibraryRow>> getCourseResources(
+    String? courseId, {
+    required bool isOffline,
+  }) async {
+    if (courseId == null || courseId.isEmpty) return const [];
+    return _dao.getCourseResources(courseId, isOffline: isOffline);
+  }
+
   /// Port of `ResourcesRepositoryImpl.countLibrariesNeedingUpdate`
   /// (`:213-216`) — how many of the user's shelf resources are missing from
   /// the device or stale on it. Feeds the bell's *"You have N resources not

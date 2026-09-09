@@ -82,6 +82,7 @@ class Users extends Table {
 
 /// Port of `model/MyLibrary.kt` (`@Entity(tableName = "my_library")`).
 @DataClassName('MyLibraryRow')
+@TableIndex(name: 'my_library_course_id', columns: {#courseId})
 class MyLibraryTable extends Table {
   @override
   String get tableName => 'my_library';
@@ -146,6 +147,36 @@ class MyLibraryTable extends Table {
 
   BoolColumn get isPrivate => boolean().withDefault(const Constant(false))();
   TextColumn get privateFor => text().nullable()();
+
+  /// The course step this resource is embedded in, and that step's course.
+  ///
+  /// Port of `MyLibrary.stepId` / `.courseId`, written by the courses walk from
+  /// a step's embedded `resources` array (`CoursesRepositoryImpl
+  /// .queueCourseResources:792-798` → `flushPendingCourseResources:819-863`).
+  /// The `resources` walk knows nothing about courses and must leave both
+  /// alone: `MyLibrary.insertMyLibrary` assigns each only when non-blank
+  /// (`MyLibrary.kt:231-236`), and [MyLibraryMapper.fromDoc] does the same by
+  /// leaving them [Value.absent] — which drift excludes from both the INSERT
+  /// column list and the `ON CONFLICT DO UPDATE SET` clause, so a re-pull
+  /// cannot clear the link. Two writers, one column; see
+  /// `mapper_preserves_local_columns_test.dart`.
+  ///
+  /// Both nullable with no default. `courseId` is indexed and `stepId` is not,
+  /// which is **not** a copy of Kotlin's `@Entity` list — that indexes only
+  /// `_rev`, `titleNormal` and `resourceId` (`MyLibrary.kt:32`), and citing it
+  /// here would be citing the wrong thing, because Kotlin never issues the
+  /// query the index is for. The port's courses walk releases stale step joins
+  /// once per course per page (up to 50), and Kotlin has no release step at
+  /// all; unindexed, that is fifty full scans of `my_library` per page, most
+  /// matching nothing. `stepId` needs none: it is read one step at a time from
+  /// a screen, not in a loop over a sync page.
+  ///
+  /// Safe to index because `my_library` is a cache: the upgrade drops it and
+  /// `createAll` rebuilds table and index together, so it never enters the
+  /// pre-`createAll` reconciliation block that exists for *preserved* tables
+  /// whose indexes name columns they may not have yet.
+  TextColumn get stepId => text().nullable()();
+  TextColumn get courseId => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

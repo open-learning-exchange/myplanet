@@ -188,6 +188,127 @@ void main() {
     });
   });
 
+  group('fromDoc — embedded step resources', () {
+    // Port of `queueCourseResources` (`CoursesRepositoryImpl.kt:792-798`).
+    // The mapper kept `resources.length` and discarded the documents, so
+    // `noOfResources` counted rows `my_library` did not hold.
+    test('collects each step resource stamped with its step and course', () {
+      final parsed = CourseMapper.fromDoc(
+        courseDoc(
+          steps: [
+            {
+              'stepTitle': 'One',
+              'resources': [
+                {'_id': 'r1', 'title': 'First'},
+                {'_id': 'r2', 'title': 'Second'},
+              ],
+            },
+            {
+              'stepTitle': 'Two',
+              'resources': [
+                {'_id': 'r3', 'title': 'Third'},
+              ],
+            },
+          ],
+        ),
+      )!;
+
+      expect(parsed.resources.map((r) => r.resourceId), ['r1', 'r2', 'r3']);
+      expect(parsed.resources.map((r) => r.stepId), [
+        'course-1:0',
+        'course-1:0',
+        'course-1:1',
+      ]);
+      expect(parsed.resources.map((r) => r.courseId), everyElement('course-1'));
+      // The stamp keys on the port's own positional id, not Kotlin's
+      // `Base64(stepElement.toString())`.
+      expect(
+        parsed.resources.first.stepId,
+        CourseMapper.stepIdFor('course-1', 0),
+      );
+    });
+
+    test('the collected count agrees with noOfResources', () {
+      final parsed = CourseMapper.fromDoc(
+        courseDoc(
+          steps: [
+            {
+              'stepTitle': 'One',
+              'resources': [
+                {'_id': 'r1'},
+                {'_id': 'r2'},
+              ],
+            },
+          ],
+        ),
+      )!;
+
+      expect(parsed.resources, hasLength(parsed.steps[0].noOfResources.value));
+    });
+
+    test('a step with no resources contributes none', () {
+      final parsed = CourseMapper.fromDoc(
+        courseDoc(
+          steps: [
+            {'stepTitle': 'One'},
+            {'stepTitle': 'Two', 'resources': <dynamic>[]},
+            {'stepTitle': 'Three', 'resources': 'not a list'},
+          ],
+        ),
+      )!;
+
+      expect(parsed.resources, isEmpty);
+    });
+
+    test('skips elements Kotlin would corrupt or throw on', () {
+      // Kotlin filters nothing here: `.asJsonObject` throws on a primitive
+      // (aborting the whole sync walk, since `continueOnError` is false), and
+      // an `_id`-less object writes `id = ""` where the primary key collides.
+      final parsed = CourseMapper.fromDoc(
+        courseDoc(
+          steps: [
+            {
+              'stepTitle': 'One',
+              'resources': [
+                'a bare string',
+                42,
+                null,
+                {'title': 'no id'},
+                {'_id': '', 'title': 'blank id'},
+                {'_id': '   ', 'title': 'whitespace id'},
+                {'_id': '_design/x'},
+                {'_id': 'r1'},
+              ],
+            },
+          ],
+        ),
+      )!;
+
+      expect(parsed.resources.map((r) => r.resourceId), ['r1']);
+    });
+
+    test('the step count is unaffected by what the filter drops', () {
+      // `noOfResources` is the array length, as Kotlin has it — the filter
+      // governs what is written, not what is counted.
+      final parsed = CourseMapper.fromDoc(
+        courseDoc(
+          steps: [
+            {
+              'stepTitle': 'One',
+              'resources': [
+                'junk',
+                {'_id': 'r1'},
+              ],
+            },
+          ],
+        ),
+      )!;
+
+      expect(parsed.steps[0].noOfResources.value, 2);
+      expect(parsed.resources, hasLength(1));
+    });
+  });
+
   group('mergeUserIds', () {
     test('adds the shelf id without dropping existing members', () {
       expect(
