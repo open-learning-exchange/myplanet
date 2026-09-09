@@ -336,7 +336,15 @@ void main() {
       },
     ]);
     final synced = await submissions.getById('adopt-doc-1');
-    expect(synced!.status, isNull, reason: 'the pull nulls an empty status');
+    // Phase 151 moved this: the pull used to fold `''` to null and now stores
+    // Kotlin's `''` verbatim. The assertion below is unaffected either way,
+    // which is the point of `_repairSurveyParentId`'s
+    // `coalesce(status, '') != ''` — it skipped the NULL and skips the `''`.
+    expect(
+      synced!.status,
+      '',
+      reason: 'the pull stores the empty status Kotlin stores',
+    );
 
     expect(
       await submissions.hasUnfinishedSurveys(

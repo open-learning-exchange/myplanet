@@ -158,7 +158,7 @@ void main() {
         isNull,
         reason:
             'deferred deliberately; Kotlin stores "" here '
-            '(SubmissionsRepositoryImpl.kt:671)',
+            '(SubmissionsRepositoryImpl.kt:673)',
       );
     });
 

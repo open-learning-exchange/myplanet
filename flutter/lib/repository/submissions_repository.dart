@@ -799,16 +799,21 @@ class SubmissionsRepository {
   /// (`expression.dart:118-120` → `:148-154`), and `NULL IS NOT ''` is **true**
   /// — so the first cut of this admitted exactly the rows it existed to skip.
   ///
-  /// A marker reaches null status by an ordinary route, not a corner case.
+  /// A marker reaches an empty status by an ordinary route, not a corner case.
   /// [createSurveyAdoptionSubmission] writes `status: ''` **and**
   /// `isUpdated: true`, so the generic `pendingUploads` sweep uploads it;
-  /// [serialize] sends `'status': ''`; and [upsertDocuments] reads it back
-  /// through `JsonUtils.getStringOrNull`, which maps the empty string to null
-  /// (`json_utils.dart:19-22`). Every marker that has round-tripped — and
-  /// every marker a Kotlin handset in the same deployment published, since
-  /// Kotlin writes them bare on purpose — arrives with `status = NULL`. In a
-  /// real mixed fleet that is the repair's *most likely* match, where a bare-id
-  /// answer sheet can only come from a pre-Phase-125 build.
+  /// [serialize] sends `'status': ''`; and [upsertDocuments] stores that back
+  /// verbatim. In a real mixed fleet that is the repair's *most likely* match,
+  /// where a bare-id answer sheet can only come from a pre-Phase-125 build —
+  /// and a marker a Kotlin handset in the same deployment published arrives
+  /// the same way, since Kotlin writes them bare on purpose.
+  ///
+  /// **A round-tripped marker used to arrive with `status = NULL`**, because
+  /// the sync-in folded `''` to null through `getStringOrNull`. Phase 151
+  /// removed that fold for this column, so both states now mean the same
+  /// thing here — which is why the `coalesce` stays: rows a pre-Phase-151
+  /// build stored as NULL are still on devices, and only a submissions pull
+  /// rewrites them.
   ///
   /// `coalesce` on the status is the same idiom, for the same reason, as
   /// `SubmissionDao.pendingUploads`' coalesced guest operands.
@@ -1782,10 +1787,21 @@ class SubmissionsRepository {
           // Only one side had drifted, so only one side moved — which is also
           // why no DAO predicate changed.
           //
-          // Self-healing on already-synced handsets: [sync] walks
-          // `_all_docs?include_docs=true` in full every run and re-upserts
-          // every page, so a row a shipped build stored as NULL is rewritten
-          // to `''` by the next ordinary sync. Nothing has to migrate it.
+          // Rows a shipped build already stored as NULL are **not** repaired
+          // by this, and the first draft of this comment said they were "by
+          // the next ordinary sync". They are not. [sync] does walk
+          // `_all_docs?include_docs=true` in full every run and re-upsert
+          // every page — so no migration is needed and the repair is free
+          // *when it runs* — but it has exactly one caller in the port, the
+          // refresh icon on the Submissions screen
+          // (`submissions_screen.dart:122`). `DashboardSyncArea` has no
+          // `submissions` member and `dashboard_sync_provider.dart:276` says
+          // so outright, where Kotlin pulls this table on every full sync
+          // (`SyncManager.kt:209` → `HeavyTableSyncWorker`'s
+          // `ALL_HEAVY_TABLES`). So an existing NULL survives until the
+          // learner opens Submissions and taps refresh. That the port does
+          // not pull `submissions` in the sync center is a separate gap,
+          // recorded where it lives.
           //
           // `type`, `sender`, `source`, `parentCode` and `teamId` carry the
           // same divergence and are deliberately left alone this round —

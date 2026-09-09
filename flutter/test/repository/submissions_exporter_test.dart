@@ -29,6 +29,41 @@ void main() {
   });
   tearDown(() => db.close());
 
+  // The Status cell cannot be asserted through the PDF: content streams are
+  // compressed, so `String.fromCharCodes(bytes).contains('Pending')` is false
+  // however the cell is drawn — verified, not assumed. (The document's
+  // *metadata* does survive as plain text, which is what the title test below
+  // relies on and why that one can genuinely fail.) So the label is a
+  // top-level function and this is what pins it, the same reasoning as Phase
+  // 99's `reportExportDateSuffix`.
+  group('submissionStatusLabel', () {
+    SubmissionRow rowWith(String? status) => SubmissionRow(
+      id: 'r',
+      startTime: 0,
+      lastUpdateTime: 0,
+      grade: 0,
+      uploaded: false,
+      isUpdated: false,
+      status: status,
+    );
+
+    test('shows the status the server sent', () {
+      expect(submissionStatusLabel(rowWith('graded')), 'graded');
+    });
+
+    test('falls back for a null status, as it always did', () {
+      expect(submissionStatusLabel(rowWith(null)), 'Pending');
+    });
+
+    test('falls back for the empty status the sync-in now stores', () {
+      // Phase 151: `upsertDocuments` stores Kotlin's `''` for a document that
+      // omits `status`, so `row.status ?? 'Pending'` stopped covering the case
+      // it was written for. Both states mean the server told us nothing.
+      expect(submissionStatusLabel(rowWith('')), 'Pending');
+      expect(submissionStatusLabel(rowWith('   ')), 'Pending');
+    });
+  });
+
   test('generates a valid PDF containing submission questions', () async {
     await repository.upsertDocuments([
       {

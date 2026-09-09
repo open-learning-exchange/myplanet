@@ -195,12 +195,13 @@ class SurveysRepository {
         ? await _submissions.submissionsForTeam(teamId)
         : await _submissions.submissionsForUserWithoutTeam(userId);
     // `it.status.orEmpty().isEmpty()` (`SurveysRepositoryImpl.kt:206`) — a
-    // **null** status counts as empty, and null is the normal state for a
-    // marker that has round-tripped: [SubmissionsRepository.serialize] sends
-    // `'status': ''` and `upsertDocuments` reads the empty string back as null
-    // (`json_utils.dart:19-22`). `row.status == ''` missed those and rewrote
-    // the marker on every adopt tap, re-queueing it for upload. Same shape as
-    // the `coalesce(status, '')` that `_repairSurveyParentId` needs.
+    // **null** status counts as empty, so both states have to match here.
+    // A round-tripped marker was null until Phase 151, which stopped the
+    // sync-in folding Kotlin's `''` to null for this column; it is `''` now,
+    // and rows a pre-Phase-151 build stored are still null on device. Reading
+    // `row.status == ''` missed the null ones and rewrote the marker on every
+    // adopt tap, re-queueing it for upload. Same shape as the
+    // `coalesce(status, '')` that `_repairSurveyParentId` needs.
     final exists = candidates.any(
       (row) =>
           row.userId == userId &&
