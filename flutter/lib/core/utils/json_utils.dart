@@ -9,7 +9,18 @@ import 'dart:convert';
 class JsonUtils {
   const JsonUtils._();
 
-  /// Port of `JsonUtils.getString` — missing/null becomes `''`.
+  /// Port of `JsonUtils.getString` — missing key, explicit JSON `null`, and a
+  /// non-primitive all become `''`, as Kotlin's does (`JsonUtils.kt:65-68`).
+  ///
+  /// **One deliberate divergence.** Kotlin's map overload also returns `''`
+  /// for a non-string *primitive*, because its lambda is
+  /// `if (el.isJsonPrimitive && el.asJsonPrimitive.isString) el.asString else ""`
+  /// — so `{"year": 2019}` reads as `''` there and `'2019'` here. The port's
+  /// value is the useful one, and the Kotlin app really does drop the year on
+  /// a resource whose `year` is a JSON number (`MyLibrary.kt:274`). Kotlin's
+  /// sibling `getString(array, index)` overload omits that test, which is what
+  /// shows the map overload's is intentional rather than an oversight. Do not
+  /// "correct" this toward Kotlin.
   static String getString(String key, Map<String, dynamic>? json) {
     final value = json?[key];
     if (value == null) return '';

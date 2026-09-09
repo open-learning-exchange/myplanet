@@ -1,4 +1,4 @@
-# Phase 151 — `""` and null are not the same thing, and a learner paid for it
+# Phase 151 — `""` and null are not the same thing
 
 Lane B of a four-lane round. One defect, traced end to end, fixed on one line,
 with the rest of its reach measured and handed on rather than half-closed.
@@ -25,7 +25,12 @@ SELECT COUNT(*) FROM submissions
 ```
 
 `'' != 'pending'` is true, the count is 1, `isStepCompleted` returns true and the
-course step's **Next** button unlocks.
+course step's **Next** button unlocks. The whole chain is
+`SubmissionsRepositoryImpl.isStepCompleted:359-365` →
+`CoursesRepositoryImpl.kt:577` → `TakeCourseViewModel.kt:67` →
+`TakeCourseFragment.changeNextButtonState:317-336`, whose body is gated on the
+MyPlanet Onboarding course id; count 0 means `isNextStepLocked = true` and a
+`please_complete_test` snackbar instead of advancing.
 
 The port stored `getStringOrNull('status', json)`, which is null for a missing
 key *and* for `""` (`json_utils.dart`). `NOT (NULL = 'pending')` is SQL **NULL**,
@@ -68,13 +73,22 @@ Three further arguments, all checked rather than asserted:
 2. **`''` and NULL select identically under every positive equality**, so the
    change can only ever *include* rows Kotlin includes. It cannot strand
    anything, which is the failure mode this project keeps paying for.
-3. **It is self-healing on handsets that have already synced.** `sync()` walks
-   `_all_docs?include_docs=true` in full every run and re-upserts every page
-   (and there is deliberately no `deleteNotIn`), so a row a shipped build stored
-   as NULL is rewritten to `''` by the next ordinary sync. Neither option
-   repairs an existing row *retroactively* — the brief was right to ask — but
-   the writer fix needs no migration to converge, where the reader fix would
-   have to be correct for both states for ever.
+3. **It needs no migration to converge** — but *not* "self-healing on the next
+   sync", which is what my first draft of this said and what the code comment
+   claimed until the audit caught it. `sync()` does walk
+   `_all_docs?include_docs=true` in full every run and re-upsert every page
+   (there is deliberately no `deleteNotIn`), so the repair is free **when it
+   runs**. It has exactly one caller: the refresh icon on the Submissions
+   screen (`submissions_screen.dart:122`). `DashboardSyncArea` has no
+   `submissions` member and `dashboard_sync_provider.dart:276` says so
+   outright, where Kotlin pulls this table on **every** full sync
+   (`SyncManager.kt:209` → `HeavyTableSyncWorker`). So a device that already
+   synced keeps its NULL statuses until the learner opens Submissions and taps
+   refresh. Neither option repairs an existing row retroactively — the brief
+   was right to ask — but the reader fix would have to stay correct for both
+   states for ever, where this one converges as soon as the table is pulled.
+   **I checked that the walk was complete and never checked who calls it.
+   Verifying a mechanism is not verifying that it runs.**
 
 ### The one place the argument could have failed, verified rather than reasoned
 
@@ -90,6 +104,14 @@ argument, so it is **pinned by three tests** rather than left as a paragraph: a
 round-tripped marker is not re-queued, a local marker is still excluded, and a
 genuinely NULL-status local row is still swept (the case that predicate's
 strictness exists for).
+
+Mutating that predicate the other way is the useful part. Rewriting
+`isATeamAdoptionMarker` as `coalesce([status, ''])  == ''` — which is precisely
+the reader-side fix (R) would have applied — makes *a status-less local row is
+still swept* fail: the row is stranded on the handset with no outbox entry.
+So (R) is not merely more call sites than (W); on this column, applied
+uniformly, it would have created a data-loss defect of the class this project
+keeps paying for. That is an experiment, not an argument.
 
 ### What the fix does *not* change
 
@@ -160,7 +182,8 @@ local edit sets `isUpdated` on a synced typeless row.
    `submission_detail_screen.dart:80` and `:91` made `''`-aware with the
    `row.type?.trim().isNotEmpty == true ? … : …` idiom the list screen and now
    the exporter both use. One slice, one owner, three lines.
-2. **`submission_detail_screen.dart:84` is now the odd one out on `status`.**
+2. **Three surfaces now disagree about a status-less submission's label, and
+   `submission_detail_screen.dart:84` is the one left behind.**
    `row.status ?? l10n.pending` does not catch `''`, so a status-less synced
    submission shows a blank status label there while the list and the PDF say
    "Pending". It matches Kotlin, which shows blank too
@@ -177,34 +200,133 @@ local edit sets `isUpdated` on a synced typeless row.
    `teamId.isNull() | teamId.equals('')` and accept both. Moving them is parity
    tidying with no behavioural payload — worth doing in one pass with item 1,
    not worth a phase.
-4. **The port-wide sweep found no second live instance, and that is a
-   measurement rather than an impression.** `getStringOrNull` has **198 call
-   sites**, which is not auditable one by one, so the sweep ran from the
-   *readers* instead — the only predicates that can distinguish `''` from NULL
-   are a negated equality, `LIKE`, `IS NOT`, and a Dart `??` fallback. Every
-   such site in the port is one of: already explicitly null-safe
-   (`teams.status`' four `isNull() | …not()` readers, `health.getUpdated`'s
-   `userId.isNotNull()`, the two `rev.isNotNull() & rev.equals('').not()`
-   pairs); on a **non-nullable** column (`teamTasks.status`, default `'active'`,
-   whose comment already records this exact reasoning; `achievements.id`, a
-   primary key); written by `getString` already (`tags.name`, so `parentTags`'
-   `name IS NOT ''` — which is **true** for NULL — is safe); deliberately
-   matching Kotlin (`offlineActivities.pendingLoginUploads`, where Kotlin's
-   `getUnuploadedLoginActivities` drops null-`userId` rows after the query too);
-   or **latent but unreachable**: `ratings.pendingUploads` and
+4. **`course_progress.userId` is a second live instance, and my first sweep
+   missed it.** Kotlin's `ProgressRepositoryImpl.kt:260` writes
+   `JsonUtils.getString("userId", act)` → `''`; the port's
+   `course_progress_mapper.dart:54` writes `getStringOrNull` → NULL. The reader
+   `CourseProgressDao.getByUserAndCourseIds` (`app_database.dart:4005-4015`)
+   uses `equalsNullable`, drift's spelling of `IS`, matching Kotlin's `IS` — so
+   on a `courses_progress` document that omits `userId`, **Kotlin's
+   `userId IS NULL` finds nothing and the port's finds the row**, attributing
+   its `passed`/`stepNum` to every null-user progress read. Already documented
+   in the port at `app_database.dart:3993-4002`, which names
+   `PHASE_135_NOTES.md` and says the mapper is the side that should move.
+   Verified here against both sources.
+
+   **Why my sweep missed it, because the method matters more than the miss.**
+   I swept from the readers rather than the 198 writers, which was right, but
+   with an incomplete list of distinguishing predicates: negated equality,
+   `LIKE`, `IS NOT`, and a Dart `??`. **`IS NULL` / `equalsNullable` also
+   distinguishes** — it matches NULL and not `''` — and it is a *positive*
+   predicate, so it did not look like a candidate. Anything with a null-safe
+   comparison belongs on that list. `teamId`'s
+   `isNull() | equals('')` disjuncts in item 3 are the same family, already
+   written to accept both.
+5. **Everything else in the reader sweep is clear, and that is a measurement
+   rather than an impression.** With the corrected predicate list, every
+   remaining site that can distinguish `''` from NULL is one of: already
+   explicitly null-safe (`teams.status`' four `isNull() | …not()` readers,
+   `health.getUpdated`'s `userId.isNotNull()`, the `rev.isNotNull() &
+   rev.equals('').not()` pairs, the generic distinct helper); on a
+   **non-nullable** column (`teamTasks.status`, default `'active'`, whose
+   comment already records this exact reasoning; `achievements.id`, a primary
+   key); written by `getString` already (`tags.name`, so `parentTags`'
+   `name IS NOT ''` — **true** for NULL — is safe; `newsEntries.docId`, which
+   matters because it feeds a destructive `deleteNotIn`); deliberately matching
+   Kotlin (`offlineActivities.pendingLoginUploads`, where Kotlin's
+   `getUnuploadedLoginActivities` drops null-`userId` rows after the query
+   too); or **latent but unreachable**: `ratings.pendingUploads` and
    `courseProgress.getPendingUploads` both negate `userId LIKE 'guest%'` on a
-   nullable column, and a NULL there would be silently stranded rather than
-   uploaded — but the rating writer takes a `required String userId` and only
+   nullable column, where a NULL would be silently stranded rather than
+   uploaded — but the rating writer takes a `required String userId`, only
    local writes set `isUpdated`, and the progress query additionally requires
    `couchId IS NULL`, which excludes every synced row. Both are one careless
-   writer away from being real; neither is real today. All of these live in
-   `app_database.dart`, Lane A's file, so all are report-only either way.
-5. **The trap is now documented at the helper**, since that is the layer with
+   writer away from real; neither is real today.
+
+   Two general rules fell out of it. **`_id` and `_rev` can never diverge on
+   this axis** — CouchDB always returns a non-empty `_rev` from
+   `_all_docs?include_docs=true` — so only optional document fields can, which
+   cuts the 198 call sites down sharply. And **sometimes the port's null is
+   better and must not be "fixed" toward Kotlin**: `my_library_mapper.dart:73`
+   reads `year`, and Kotlin's `getString` blanks a JSON *number* (its
+   `isString` test's false branch returns `""`), so a resource with
+   `"year": 2019` shows no year in the Kotlin app and shows `2019` here. The
+   port's `getString` differs from Kotlin's in exactly that case, which the
+   helper's own doc comment described incompletely; same class for any
+   numeric-valued string column.
+6. **A counter-precedent to blanket-(W), worth knowing before the next one.**
+   `surveys.rev`/`exams.rev` carried this same fold and were fixed on the
+   **reader/schema** side instead: Kotlin's `ExamDao.kt:21`
+   (`sourceSurveyId IS NOT NULL AND _rev IS NULL`) names one writer only
+   because its sync writers store `''`, while the port's `getStringOrNull`
+   made `rev` NULL for every course-embedded survey — and Phase 138 found the
+   resulting sweep POSTing another team's private copy under the signed-in
+   user's credentials. The remedy chosen there was a new local-authority
+   column, `Surveys.needsSync`, not a writer change. So (W) is the right call
+   for `status` on the argument above, and it is not automatically the right
+   call for the next column: **ask whether the port needs to distinguish local
+   authorship, and if it does, say so with a column rather than with `''`.**
+7. **`app_database.dart:2946-2954` explains `isATeamAdoptionMarker`'s
+   strictness with a clause this fix makes false**: *"the sync-in stores null
+   for a document that omits the key"*. It no longer does, for `status`. **The
+   predicate should stay** — rows a pre-Phase-151 build stored are still NULL
+   on device, and two of that table's own tests build a status-less row to
+   probe the guest test — but its argument now rests on those two things
+   rather than on the sync-in. Handed over rather than edited: *making an
+   existing statement true* is a stop-and-report carve-out, but
+   `app_database.dart` is **Lane A's named file this round**, and a carve-out
+   is not a licence to edit into a live collision. (The same correction in
+   `submissions_repository.dart` and `surveys_repository.dart` is done — the
+   first is this lane's file, the second is unowned and comment-only.)
+8. **The port does not pull `submissions` in the sync center at all**, which
+   is how item 3's caveat arises and is a bigger gap than the caveat.
+   `DashboardSyncArea` has sixteen members and no `submissions`
+   (`dashboard_sync_provider.dart:30-47`, and `:276` records it), while Kotlin
+   pulls the table on every full sync (`SyncManager.kt:209` →
+   `HeavyTableSyncWorker.ALL_HEAVY_TABLES`). So a submission made on Planet
+   web or another handset reaches this device only when the learner opens the
+   Submissions screen and taps refresh. Pre-existing and already noted in that
+   file; repeated here because this phase's repair depends on it.
+9. **Kotlin's one negated `type` predicate belongs to a feature the port does
+   not have.** `SubmissionDao.kt:32`'s `type != 'survey'` — where `'' !=
+   'survey'` is true, so Kotlin *deletes* a typeless submission and the port
+   would keep it — is reached only from
+   `CoursesRepositoryImpl.deleteCoursesProgress`, when a learner removes a
+   course from their shelf. The port has no counterpart to that method at all.
+   A separate pre-existing gap, and the reason item 1's `type` change stays
+   safe in the meantime.
+10. **The port's `JsonUtils.getString` is not quite Kotlin's.** Kotlin's
+   returns `""` for a non-string primitive (the `isString` test's false
+   branch); the port's does `value.toString()`. The port's behaviour is the
+   better one — see item 5's `year` example — but the helper's doc comment
+   said only "missing/null becomes `''`", which is half the Kotlin. Left as
+   is, deliberately, and now described accurately.
+11. **The trap is now documented at the helper**, since that is the layer with
    198 callers: `getStringOrNull`'s dartdoc states the three-valued-logic
    mechanism, names this defect as the instance that reached a learner, lists
    the three earlier reader-side patches, and says to prefer `getString` on a
    sync-in path unless the column's readers are all positive equalities and
    nothing reads it with a `??` fallback.
+
+## Two process notes, both mine
+
+**A mechanism verified is not a mechanism that runs.** I established that the
+submissions walk is a complete `_all_docs` re-upsert, correctly, and wrote
+"self-healing by the next ordinary sync" into both the code and these notes
+without checking `sync()`'s callers. It has one, behind a refresh icon. The
+audit caught it. This is the same shape as Phase 149's inherited-citation
+mistake and Phase 148's — the sentence looked finished, so nothing re-read it.
+
+**Do not `git checkout <file>` to revert a mutation while the fix is
+uncommitted.** Twice it restored HEAD and silently deleted the change under
+test — once the whole writer fix and its comment, once the exporter
+extraction — and each time the next test run passed for the wrong reason,
+because the mutation *and* the fix were gone together. `git status` caught
+both, which is why `CLAUDE.md` says to read the tree after an audit rather
+than stage it. The fix is to **commit before mutation-testing**, so a revert
+restores the fix instead of erasing it; after that, every mutation behaved.
+Seven mutations (M1–M7) then each failed exactly one test, and the two
+predicate mutations were run against a committed tree deliberately.
 
 ## Method
 
