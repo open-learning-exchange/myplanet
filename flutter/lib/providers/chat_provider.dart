@@ -406,9 +406,23 @@ enum ChatShareOutcome {
 }
 
 /// The write path for a chat share, keeping "build the payload", "write the
-/// voices row" and "queue it for upload" together — the shape
-/// `VoicesActions` uses, and the reason a shared chat cannot sit undelivered
-/// on the device.
+/// voices row" and "queue it for upload" together — the shape `VoicesActions`
+/// uses.
+///
+/// **The delivery guarantee is not in this class**, and an earlier revision of
+/// this comment said it was. [share] skips the enqueue entirely when
+/// `serverConfigProvider` is null and still reports
+/// [ChatShareOutcome.shared] — the claim was withdrawn in `PHASE_140_NOTES.md`
+/// item 4, when nothing swept the row afterwards either.
+///
+/// What makes that report honest today is elsewhere: `createFromShareMap`
+/// leaves the row with no `_id`, so `VoicesRepository.pendingUploads` finds it,
+/// and Phase 144's voices sweep picks it up on the first pass that has a server
+/// config — `DashboardSyncNotifier.queuePendingVoices` in the foreground,
+/// `sweepPendingVoices` from `drainOutbox` when the app is not running. That
+/// is the port of Kotlin's `uploadNews()`, which is likewise the only thing
+/// that ever sends a composed voice. So a shared chat does not sit undelivered;
+/// the reason is the sweep, not the write path here.
 class ChatShareActions {
   ChatShareActions(this.ref);
 

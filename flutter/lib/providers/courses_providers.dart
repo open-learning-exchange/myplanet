@@ -460,15 +460,18 @@ typedef StepNextLock = ({bool locked, bool blockedByTest});
 ///    finished. `saveExamAnswer` writes `complete` for a survey's last answer
 ///    and `requires grading` for an exam's, both of which pass; a half-answered
 ///    attempt is `pending` and does not. In SQL `status != 'pending'` is NULL —
-///    so false — for a NULL status, which [_isStepCompleted] reproduces
-///    explicitly; the team-adoption marker (`status: ''`) does pass, as it does
-///    in Kotlin.
+///    so false — for a NULL status; the team-adoption marker (`status: ''`)
+///    does pass, as it does in Kotlin.
 ///  * `parentId LIKE '%' || :examId || '%'` (`SubmissionDao.kt:24`), against
 ///    `hasSubmission`'s exact `"$examId@$courseId"`. The `LIKE` is
-///    deliberately loose and [_isStepCompleted] keeps it as a `contains`: it
-///    matches the compound key every current writer stores (Phase 125), a bare
-///    id an older build wrote, and — as Kotlin does — any other `parentId`
-///    carrying the id as a substring.
+///    deliberately loose: it matches the compound key every current writer
+///    stores (Phase 125), a bare id an older build wrote, and — as Kotlin does
+///    — any other `parentId` carrying the id as a substring.
+///
+/// Both are read off the Kotlin query, and since Phase 149 [_isStepCompleted]
+/// **runs that query** rather than reproducing it in Dart; an earlier revision
+/// of these two bullets said it kept the `contains` and the NULL test
+/// explicitly, which the swap made false in the same file.
 ///
 /// It also takes no `courseId` and no `type`, and answers **true** for a step
 /// with no assessment row at all (`?: return true`) — which is why a step
@@ -548,28 +551,40 @@ final stepNextLockProvider = FutureProvider.autoDispose
 ///    documented deviation; this is the reader that extends it from the
 ///    buttons to the lock.
 ///
-/// The submission read picks its table from the row's own, the way
-/// [SubmissionsRepository.hasSubmission] picks its question table. **Kotlin's
-/// count has no `type` predicate at all** (`SubmissionDao.kt:24`), so this is
-/// a divergence rather than a translation: a submission whose `type` is null or
-/// unexpected, but whose `parentId` carries the assessment id, releases
-/// Kotlin's lock and not this one. Unreachable today — every port writer sets
-/// `'exam'` or `'survey'` and the sync-in copies Planet's own value — and the
-/// DAO method named in `PHASE_139_NOTES.md` would drop the filter and close it.
+/// **The submission read is now Kotlin's own query.** It used to pick a
+/// submissions table by the assessment row's type and filter the rest in Dart,
+/// which diverged from Kotlin on three axes at once; Phase 143 added
+/// `SubmissionDao.countCompletedByUserAndExamId` (`SubmissionDao.kt:24`) and
+/// this is the call site it was added for. Taking it closes all three, each in
+/// the direction of the Kotlin:
 ///
-/// Two more axes on which `contains` is not `LIKE`, both unreachable for the
-/// same reason (`parentId` is always minted from the same `exam.id` through
-/// `examParentId`) and both worth knowing before anyone rewrites this as SQL:
-/// SQLite's `LIKE` is **case-insensitive** for ASCII where `contains` is not,
-/// and it treats `%`/`_` in the pattern as wildcards, which Kotlin does not
-/// escape.
+///  * **No `type` predicate.** Kotlin's count has none, so a submission whose
+///    `type` is null or unexpected, but whose `parentId` carries the
+///    assessment id, releases Kotlin's lock. It did not release this one. That
+///    is reachable rather than theoretical: `upsertDocuments` stores
+///    `getStringOrNull('type', json)`, so a Planet document that omits `type`
+///    lands here with a null one — pinned by *a synced submission with no type
+///    releases the lock*.
+///  * **`LIKE` is ASCII-case-insensitive** where Dart's `contains` is not.
+///  * **`%` and `_` inside the exam id are wildcards**, because Kotlin
+///    interpolates the id unescaped; escaping would make the port *stricter*
+///    than the app it ports. Unreachable while `parentId` is minted from the
+///    same `exam.id` through `examParentId`, and preserved deliberately.
 ///
-/// **This reads a list where Kotlin reads a `COUNT(*)`.** The faithful query
-/// is `SubmissionDao.countCompletedByUserAndExamId`, which the port does not
-/// have; adding it means editing `app_database.dart`, which another lane owns
-/// this round. The set is one user's submissions of one type, so the read is
-/// bounded — but it is a workaround, and `PHASE_139_NOTES.md` names the method
-/// that should replace it.
+/// The NULL-`status` case is unchanged, and the *predicate* was already right:
+/// `NOT (status = 'pending')` is NULL for a NULL status and `WHERE NULL`
+/// excludes the row, which is what the explicit `status != null` test did in
+/// Dart. **The outcome still diverges, one layer down, and this swap does not
+/// touch it**: Kotlin's sync-in stores `JsonUtils.getString('status', …)`,
+/// which is `""` for a missing key, and `'' != 'pending'` counts; the port's
+/// `upsertDocuments` stores `getStringOrNull`, which is null for a missing key
+/// *and* for `""`, and does not. So a Planet submission carrying no `status`
+/// unlocks the step in Kotlin and locks it here. That is a `""`-vs-null
+/// decision every submission reader shares — see `PHASE_149_NOTES.md`,
+/// *Reported, not fixed* item 1.
+///
+/// Which *row* is interrogated stays this function's own judgement, above —
+/// the query takes an id, not a step.
 Future<bool> _isStepCompleted({
   required AppDatabase db,
   required List<ExamRow> exams,
@@ -588,15 +603,11 @@ Future<bool> _isStepCompleted({
   // function reads as a port of `isStepCompleted` rather than as a helper for
   // one call site; its lack of coverage is deliberate, not a gap.
   if (assessmentId == null) return true;
-  final rows = fromExam
-      ? await db.submissionDao.getExamSubmissionsByUser(userId)
-      : await db.submissionDao.getSurveySubmissionsByUser(userId ?? '');
-  return rows.any((row) {
-    final status = row.status;
-    return (row.parentId ?? '').contains(assessmentId) &&
-        status != null &&
-        status != 'pending';
-  });
+  return await db.submissionDao.countCompletedByUserAndExamId(
+        userId,
+        assessmentId,
+      ) >
+      0;
 }
 
 /// Distinct grade levels present locally, for the filter spinner.

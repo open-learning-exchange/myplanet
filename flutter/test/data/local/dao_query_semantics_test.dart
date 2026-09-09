@@ -2,10 +2,14 @@ import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/data/local/app_database.dart';
 
-/// The three DAO queries Phase 143 added have no callers yet — their call sites
-/// are other lanes' files — so these pin the SQL semantics their doc-comments
-/// claim, and pin two of them against the **raw Kotlin statement** run on the
-/// same rows rather than against a reading of it.
+/// The three DAO queries Phase 143 added, pinned against the SQL semantics
+/// their doc-comments claim — and two of them against the **raw Kotlin
+/// statement** run on the same rows, rather than against a reading of it.
+///
+/// They had no callers when this file was written, which is why the pins live
+/// here rather than at a call site. `countCompletedByUserAndExamId` has one
+/// since Phase 149 (`_isStepCompleted`, in `courses_providers.dart`); the other
+/// two still do not.
 ///
 /// The three-valued cases are the point. A Dart `status != 'pending'` filter
 /// counts a NULL status and SQL does not; a `userId ?? ''` fallback matches

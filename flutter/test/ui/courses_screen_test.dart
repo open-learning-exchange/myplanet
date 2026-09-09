@@ -669,9 +669,15 @@ void main() {
       expect(find.text('First'), findsOneWidget);
       expect(find.text('Second'), findsOneWidget);
       expect(find.text('2 steps'), findsOneWidget);
-      // Resource counts are pluralised per step.
-      expect(find.text('2 resources'), findsOneWidget);
-      expect(find.text('No resources'), findsOneWidget);
+      // **No per-step resource count**, as of Phase 149. Kotlin's step row
+      // (`CoursesStepsAdapter.bind`) carries the title and a second line that
+      // is never visible, and no resource count anywhere —
+      // `CourseStep.noOfResources` is read nowhere in `app/src/main`. The
+      // count survives on `take_course_screen`, where it stands in for the
+      // inline resource list the port cannot build yet; see
+      // `step_resources_tile_test.dart` for both halves.
+      expect(find.text('2 resources'), findsNothing);
+      expect(find.text('No resources'), findsNothing);
     });
 
     testWidgets('shows a not-found message for an unknown course', (

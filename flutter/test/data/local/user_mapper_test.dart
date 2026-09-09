@@ -585,23 +585,101 @@ void main() {
     });
 
     /// The half of `UserEntity.isGuest()` this helper deliberately does not
-    /// carry. Kotlin returns true for a `guest` role without a `learner` role
-    /// (`UserEntity.kt:177-181`), and the gates that read it — `TeamFragment`,
-    /// `CoursesFragment`, `TakeCourseFragment` — have no port counterpart, so
-    /// porting the clause here would widen the settings and voices gates past
-    /// their Kotlin originals. Pinned so the omission is visible rather than
-    /// forgotten.
-    test('a role-only guest is not caught: isGuest() role clause unported', () {
+    /// carry — it is [UserMapper.isGuestAccount] instead, and the split is the
+    /// point. Every settings and voices gate in the port is a counterpart of
+    /// Kotlin's narrower `startsWith("guest")` family, so folding the role
+    /// clause in here would widen those past their originals.
+    ///
+    /// An earlier revision of this test said the role-clause gates "have no
+    /// port counterpart"; Phase 145 landed the counterpart of
+    /// `TakeCourseFragment:213` on both course screens, which is why
+    /// `isGuestAccount` now exists.
+    test('a role-only guest is not caught by the narrow rule', () {
       final roleOnly = user(
         id: 'org.couchdb.user:ada',
         couchId: 'org.couchdb.user:ada',
         roles: const ['guest'],
       );
       expect(UserMapper.isGuest(roleOnly), isFalse);
-      // What Kotlin's `isGuest()` would answer for the same row.
+      // And the wide rule, which is the one Kotlin's `isGuest()` is, does.
+      expect(UserMapper.isGuestAccount(roleOnly), isTrue);
+    });
+  });
+
+  /// Port of `UserEntity.isGuest()` (`UserEntity.kt:178-182`).
+  ///
+  /// The role comparisons are `equals(..., ignoreCase = true)` and the learner
+  /// clause is `!= true`, so the cases below are the Kotlin's own, not a
+  /// reading of it: an empty role list, a mixed list, and casing.
+  group('UserMapper.isGuestAccount', () {
+    UserRow user({
+      String id = 'org.couchdb.user:ada',
+      String? couchId = 'org.couchdb.user:ada',
+      List<String> roles = const [],
+    }) => UserRow(
+      id: id,
+      couchId: couchId,
+      name: 'ada',
+      rolesList: roles,
+      userAdmin: false,
+      joinDate: 0,
+      isArchived: false,
+      isUpdated: false,
+    );
+
+    test('a guest role with no learner role is a guest', () {
+      expect(UserMapper.isGuestAccount(user(roles: const ['guest'])), isTrue);
+    });
+
+    test('a guest role alongside learner is not', () {
+      // `rolesList?.any { it.equals("learner", ...) } != true` — the learner
+      // role wins, which is what lets Planet grant a real member both.
       expect(
-        roleOnly.rolesList.any((r) => r.toLowerCase() == 'guest') &&
-            !roleOnly.rolesList.any((r) => r.toLowerCase() == 'learner'),
+        UserMapper.isGuestAccount(user(roles: const ['guest', 'learner'])),
+        isFalse,
+      );
+    });
+
+    test('the role comparison ignores case, and the id prefix does not', () {
+      expect(UserMapper.isGuestAccount(user(roles: const ['GUEST'])), isTrue);
+      expect(
+        UserMapper.isGuestAccount(user(roles: const ['Guest', 'Learner'])),
+        isFalse,
+      );
+      // `startsWith("guest_")` carries no `ignoreCase`.
+      expect(
+        UserMapper.isGuestAccount(user(id: 'Guest_ada', couchId: 'Guest_ada')),
+        isFalse,
+      );
+    });
+
+    test('an empty or learner-only role list is not a guest', () {
+      // `hasGuestRole` is false, so the conjunction short-circuits and the
+      // learner clause — which is `true` for a null list — never decides.
+      expect(UserMapper.isGuestAccount(user()), isFalse);
+      expect(
+        UserMapper.isGuestAccount(user(roles: const ['learner'])),
+        isFalse,
+      );
+      expect(
+        UserMapper.isGuestAccount(user(roles: const ['manager'])),
+        isFalse,
+      );
+    });
+
+    test('the id rule still stands on its own, roles or not', () {
+      expect(
+        UserMapper.isGuestAccount(
+          user(id: 'guest_ada', couchId: 'guest_ada', roles: const ['learner']),
+        ),
+        isTrue,
+        reason: 'the disjunction is `hasGuestId || (...)`, not a conjunction',
+      );
+      // Both id columns, as `isGuest` does — Kotlin reads `_id` alone.
+      expect(
+        UserMapper.isGuestAccount(
+          user(id: '1700000000000', couchId: 'guest_ada'),
+        ),
         isTrue,
       );
     });

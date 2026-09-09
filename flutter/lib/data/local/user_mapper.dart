@@ -349,15 +349,59 @@ class UserMapper {
   /// one.
   ///
   /// **Not** a port of `UserEntity.isGuest()`, which is this rule *or* a
-  /// `guest` role without a `learner` role. That role clause is unported
-  /// because every gate the port has is a counterpart of Kotlin's narrower
-  /// `user.id.startsWith("guest")` family; the gates that read the role clause
-  /// (`TeamFragment:235`, `CoursesFragment:135`, `TakeCourseFragment:212`)
-  /// have no port counterpart yet. When they land, the role clause belongs
-  /// here as a second predicate beside this one — not folded into it, or the
-  /// settings and voices gates silently widen past their Kotlin counterparts.
+  /// `guest` role without a `learner` role — that is [isGuestAccount], and the
+  /// two are deliberately separate. Kotlin spells the question two ways and
+  /// the narrow spelling is the more common by far: 41 `startsWith("guest")`
+  /// occurrences against 12 `isGuest()` calls, and **every** settings gate
+  /// (`SettingsActivity:221`, `:249`, `:286` — including reset app) and every
+  /// voices gate (`VoicesFragment:94`, `VoicesAdapter:526`, `:664`,
+  /// `TeamsVoicesFragment:105`) reads the narrow one. So this is what those
+  /// port gates are counterparts of; folding the role clause in here would
+  /// silently widen them past their Kotlin originals.
+  ///
+  /// The two families are not partitioned by feature — `ResourcesFragment`
+  /// and `CoursesFragment` each use both, in different methods — so which
+  /// predicate a new gate wants is decided by reading its own Kotlin site,
+  /// never by which screen it is on.
   static bool isGuest(UserRow user) =>
       isGuestId(user.id) || isGuestId(user.couchId);
+
+  /// Port of `UserEntity.isGuest()` (`UserEntity.kt:178-182`), the **wider**
+  /// of Kotlin's two guest predicates:
+  ///
+  /// ```kotlin
+  /// val hasGuestId = _id?.startsWith("guest_") == true
+  /// val hasGuestRole = rolesList?.any { it.equals("guest", ignoreCase = true) } == true
+  /// return hasGuestId || (hasGuestRole && rolesList?.any { it.equals("learner", ignoreCase = true) } != true)
+  /// ```
+  ///
+  /// Read it only where the Kotlin site reads `isGuest()`. Today that is the
+  /// join/leave affordance on both course screens, whose original is
+  /// `TakeCourseFragment:213`; the other Kotlin sites (`TeamFragment:235`,
+  /// `:253`, `CoursesFragment:135`, `:141`, `:250`, `ResourcesFragment:208`,
+  /// `:217`, `:524`, `:535`, `ResourceDetailFragment:215`,
+  /// `BaseContainerFragment:154`) have no port counterpart yet.
+  ///
+  /// Three details, each of which a naive port gets wrong:
+  ///
+  ///  * The **role** comparisons are case-insensitive (`ignoreCase = true`)
+  ///    where the id prefix is not.
+  ///  * A **null or empty** role list is not a guest: `hasGuestRole` is false
+  ///    and the conjunction short-circuits, so the learner clause never
+  ///    decides anything on its own.
+  ///  * The learner clause is `!= true`, i.e. *does not have* the learner
+  ///    role — a user carrying both `guest` and `learner` is **not** a guest.
+  ///
+  /// The id half delegates to [isGuest], so it tests both id columns where
+  /// Kotlin's reads `_id` alone. That is the same deliberate widening [isGuest]
+  /// documents, kept here rather than narrowed: on every row Kotlin can produce
+  /// the two columns agree, and where they could not, erring towards "guest"
+  /// withholds a privilege instead of granting one.
+  static bool isGuestAccount(UserRow user) {
+    if (isGuest(user)) return true;
+    final roles = user.rolesList.map((role) => role.toLowerCase());
+    return roles.contains('guest') && !roles.contains('learner');
+  }
 
   /// Port of `VoicesAdapter.matchesCurrentUser` (`VoicesAdapter.kt:666-669`):
   ///

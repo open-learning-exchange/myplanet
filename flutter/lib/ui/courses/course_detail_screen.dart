@@ -92,7 +92,11 @@ class _CourseBody extends ConsumerWidget {
     final theme = Theme.of(context);
     final isMyCourse = userId != null && course.userId.contains(userId);
     final user = ref.watch(sessionProvider).valueOrNull;
-    final isGuest = user != null && UserMapper.isGuest(user);
+    // `UserMapper.isGuestAccount`, the port of `UserEntity.isGuest()` —
+    // the id prefix **or** a `guest` role with no `learner` role. The narrow
+    // `UserMapper.isGuest` was what this gate read until Phase 149, which
+    // matched neither this site's Kotlin nor the other course screen's.
+    final isGuest = user != null && UserMapper.isGuestAccount(user);
     final target = (type: 'course', itemId: course.id);
     final rating = ref.watch(ratingSummaryProvider(target)).valueOrNull;
 
@@ -147,11 +151,12 @@ class _CourseBody extends ConsumerWidget {
               // and Phase 145 gated the other one first. `take_course_screen`'s
               // `_toggleMembership` writes locally; this one writes *and*
               // pushes the shelf, so an ungated guest tap here reached the
-              // server. The guard is `UserMapper.isGuest`, whose id-prefix rule
-              // no port writer can currently satisfy — so this is hardening
-              // rather than a live bug closed, and it is narrower than
-              // `UserEntity.isGuest()`, which is that rule *or* a `guest` role
-              // without a `learner` role. See `PHASE_145_NOTES.md`.
+              // server. The guard is `UserMapper.isGuestAccount`, the full
+              // `UserEntity.isGuest()`: the id-prefix rule no port writer can
+              // currently satisfy, **or** a `guest` role without a `learner`
+              // role, which the sync-in writes straight from the account
+              // document. Phase 145 landed this gate on the narrow rule and
+              // Phase 149 widened it. See `PHASE_149_NOTES.md`.
               if (!isGuest)
                 FilledButton.tonalIcon(
                   onPressed: () => _toggleMembership(ref, joined: !isMyCourse),
@@ -218,7 +223,32 @@ class _StepTile extends ConsumerWidget {
       child: ExpansionTile(
         leading: CircleAvatar(child: Text('$number')),
         title: Text(step.stepTitle ?? l10n.stepNumber(number)),
-        subtitle: Text(l10n.resourcesInStep(step.noOfResources)),
+        // **No subtitle, because Kotlin's row has no second line the learner
+        // ever sees.** `CoursesStepsAdapter.bind` (`:51-55`) fills
+        // `row_steps.xml`'s `tv_description` from `R.string.test_size` —
+        // "This test has %d questions", with `step.questionCount` — and never
+        // a resource count: `CourseStep.noOfResources` is written at
+        // `CoursesRepositoryImpl.kt:695` and read nowhere in `app/src/main`.
+        //
+        // The test-size line is not ported either, because it is dead code.
+        // `tv_description` is `visibility="gone"` in the layout and
+        // `updateDescriptionVisibility` keys on `StepItem.isDescriptionVisible`
+        // (default `false`), whose only writer is
+        // `CourseDetailViewModel.toggleStepDescription` — reached only from
+        // `CourseDetailFragment:140`'s `else`, which cannot run:
+        // `CourseDetailFragment` exists only as page 0 of
+        // `CoursesPagerAdapter(this@TakeCourseFragment, courseId)`
+        // (`CoursesPagerAdapter.kt:44`, `TakeCourseFragment.kt:122`), so
+        // `parentFragment as? TakeCourseFragment` is never null and a tap
+        // always navigates. Porting a line no user sees would also mean
+        // porting its mislabel: `questionCount` is
+        // `examDao.getFirstByStepId(stepId)?.noOfQuestions`, a query with no
+        // `type` filter, so on a survey-only step it reports the *survey's*
+        // question count under "This test has …".
+        //
+        // Phase 139 item 5 read this slot as having "no analogue" and Phase
+        // 145 as showing "the wrong datum". The analogue exists; it renders
+        // nothing.
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         children: [
           if (step.description != null && step.description!.isNotEmpty)

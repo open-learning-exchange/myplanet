@@ -740,13 +740,25 @@ not built, or needs a primitive the port lacks):
   cache of CouchDB, so the Flutter app starts with an empty database and re-pulls from the
   server. There is no Room → Drift data migration path, and none is planned.
 
-  **Except where the row is not a cache.** `AppDatabase._localAuthorityTables` exempts `outbox`,
-  `my_personal`, `removed_log` and `my_life` from the drop: they hold un-pushed writes, private
-  notes that may never have been uploaded, the "leave" records that keep the shelf merge from
-  re-adding something, and the user's own ordering. No sync can give any of that back, so
-  dropping it would silently discard work done offline. The exemption has a cost worth knowing:
-  `createAll` will not *alter* a preserved table, so changing one of their shapes needs a
-  hand-written migration step.
+  **Except where the row is not a cache.** `AppDatabase._localAuthorityTables` exempts a named
+  set of tables from the drop — **27 of them as of Phase 143**, not the four (`outbox`,
+  `my_personal`, `removed_log`, `my_life`) this paragraph listed for far longer than they were
+  the whole set. **Read the set itself** in `flutter/lib/data/local/app_database.dart`: it is the
+  authority and it grows most rounds. **Most** entries past the first four carry the argument for
+  their own membership as a comment; six do not — `submissions`, `submission_answers`,
+  `submission_questions`, `meetups`, `news` and `team_tasks` are bare literals, and
+  `course_activity` and `survey_questions` lean on the entry above them — which is a gap worth
+  closing rather than a reason to trust this paragraph instead. What they have in common is that no sync can put the row back
+  — un-pushed writes waiting on the outbox, private notes and the user's own ordering, the
+  "leave" records that keep the shelf merge from re-adding something, medical records and the
+  device-generated key without which the ones already written are unreadable, offline course
+  progress and the activity logs whose CouchDB databases this app only ever writes to, and the
+  *mixed* tables (`teams`, `surveys`, `submissions`, `news`, …) where a locally authored row
+  sits in the same table as the server catalogue and the next walk's `deleteNotIn` evicts the
+  stale cache half. Dropping any of it would silently discard work done offline. The exemption
+  has a cost worth knowing: `createAll` will not *alter* a preserved table, so **every** new
+  column on one needs a hand-written `_addColumnIfMissing` step alongside the schema bump, and
+  `migration_test.dart`'s frozen-DDL guard fails until it has one.
 
 ## What is ported
 
@@ -1374,9 +1386,13 @@ back* -- kept passing them, because CouchDB genuinely does hold the data:
 The operative question is not who authored the row, it is whether the next sync
 can put it back. A cache with no sync path is local-only in practice, whatever
 its provenance. Both later cases were caught by the guard test added after the
-`my_life` omission: adding a name to the preserved set fails the suite until a
-preservation test exists, which is how the coverage held while the set grew from
-nine tables to twelve.
+`my_life` omission: it asserts `AppDatabase.localAuthorityTables` equals a set
+listed by hand in `migration_test.dart` beside the preservation tests, so adding
+a name to the preserved set fails the suite until someone goes to the file where
+the tests live. That is how the coverage held while the set grew from nine
+tables to the **27** it holds today (Phase 143, `surveys` and
+`survey_questions`) — and the list in that test is not the place to read the
+set, because it is a copy; `app_database.dart` is.
 
 Three related defects clustered around the same code, all from copy-paste:
 
@@ -4576,9 +4592,14 @@ port lacks.
 - `3c6a76aed` (guest user role handling) — `UserEntity.isGuest()` swaps
   `it?.lowercase() == "guest"` for `it.equals("guest", ignoreCase = true)`
   (semantically identical) and `android.util.Base64` for `java.util.Base64`
-  (same NO_WRAP output). The port detects guests by the `guest_` id prefix
-  alone and does not consult `rolesList`, a pre-existing deliberate
-  simplification this refactor does not change.
+  (same NO_WRAP output). **True when written, and no longer:** the port detected
+  guests by the `guest_` id prefix alone until Phase 149 added
+  `UserMapper.isGuestAccount`, which is the whole `isGuest()`, role clause
+  included. It is a second predicate rather than a widening of the first —
+  `UserMapper.isGuest` still reads the id prefix alone, because every settings
+  and voices gate in the port is a counterpart of Kotlin's narrower
+  `startsWith("guest")` family. Which of the two a gate wants is decided by
+  reading its own Kotlin site.
 - `d9e400bf7` (voices sorting) — moves `filterNotNull()` into `sortNews` and
   drops the redundant call-site filters. The port's `watchCommunityFeed` already
   returns `List<NewsRow>` (non-nullable) sorted by `sortDateOf` descending. No
@@ -5152,6 +5173,82 @@ resource viewer's failure-that-looks-like-a-hang, from a different cause. Use
 the rest of the file: `SubmitPhotosFiles` is genuine `dart:io`, and
 `Directory.create` + `writeAsBytes` + the row that follows them want noticeably
 more wall-clock time than drift's in-memory reads.
+
+---
+
+## Three shapes in Kotlin's `uploadNews()` a harvest must not port as parity
+
+Recorded because the port's outbox has none of them and a future harvest,
+finding the port "missing" this behaviour, could add it. All three were read
+directly rather than taken from the phase notes that reported them, and every
+line number below is against the current tree.
+
+**(a) Responses are paired to documents positionally, over the *response*
+length.** `UploadManager.kt:365-367`:
+
+```kotlin
+for (i in 0 until responseBody.size()) {
+    val itemResponse = responseBody.get(i).asJsonObject
+    val (news, imagesArray) = processedNews[i]
+```
+
+A short `_bulk_docs` response leaves the tail of `processedNews` unvisited, so
+those rows never enter `successfulUpdates` and `markNewsUploaded` never stamps
+their `_id`. `getNewsForUpload` (`VoicesRepositoryImpl.kt:35-47`) is
+`newsDao.getAll()` minus guests, with **no unsynced predicate at all**, so the
+next sweep re-serializes them — and `serializeNews` writes `_id`/`_rev` only
+when present, so a row that never got one is POSTed as a fresh document.
+
+The same file's teams path guards both directions, and the contrast is the
+useful part: `TeamsUploader.kt:65-67` logs the short response explicitly, and
+`:71` reads `batch.getOrNull(i) ?: continue` where news use a bare
+`processedNews[i]` — which throws `IndexOutOfBoundsException` on a *longer*
+response. That throw is caught at `UploadManager.kt:388`, whose handler queues
+**all** of `processedNews` for retry while the `successfulUpdates` gathered
+before the throw are still applied — so those rows are marked uploaded *and*
+left queued, and the retry re-sends them.
+
+**(b) A retry never writes the id back.** `RetryQueueWorker.kt:230-233` marks
+the operation completed and logs it without reading `response.body()`; nothing
+anywhere reads `RetryOperation.modelClassName`, so this is not a News omission
+but the design of the queue. A create that failed once therefore retries as a
+POST forever, and — because `getNewsForUpload` has no unsynced predicate — the
+sweep after a *successful* retry-POST posts it again. The duplicate is
+deterministic, not a race.
+
+**(c) A per-document `{"error":"conflict"}` is retried with the stale `_rev`,
+and the 409 is logged as success.** CouchDB answers `_bulk_docs` **201** with
+per-document errors, so `response.isSuccessful` is true and
+`UploadManager.kt:369-372` queues the document with a constructed `Exception`.
+That matters because `queueNewsRetry`'s gate (`:412`) is
+`exception != null || httpCode >= 500` — the exception alone makes it
+retryable. Teams face the identical response and decide the opposite, passing
+`response.code()` with no exception and a comment saying so
+(`TeamsUploader.kt:73-75`). The retry PUTs `news.newsJson`, the object
+serialized *before* the conflict and carrying the same stale `_rev`; CouchDB
+answers 409; and `RetryQueueWorker.kt:234-238` reads:
+
+```kotlin
+} else if (response.code() == 409) {
+    // 409 Conflict means document already exists - data is already synced
+    retryQueue.markCompleted(operation.id)
+    Log.d(TAG, "Operation ${operation.id} already synced (409 conflict)")
+```
+
+The user's edit is discarded and counted as a success. It also recurs without
+bound: `RetryDao.findExisting` (`:37-41`) excludes `completed`, so each sweep
+enqueues a *new* operation at `attemptCount = 1` rather than counting toward
+the five-attempt ceiling.
+
+Concretely: two handsets edit one voice; the second to sync PUTs a stale
+`_rev`, and its text never leaves the device, with a success in the log.
+
+**A note on citing this.** The phase notes that reported these three carried
+`UploadManager.kt:485-487`, which was right when written and is now past the
+end of a 462-line file, and described the teams guard as "ten lines up" when it
+was 203 lines away in a different function and is now in a different file. The
+mechanisms survived the refactor and the locators did not, which is the argument
+for citing a *function and a mechanism* here rather than a line range.
 
 ---
 
