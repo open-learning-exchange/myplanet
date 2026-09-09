@@ -467,11 +467,12 @@ above, and items 2 and 3 below.
 
 ## Tests
 
-Gate green: `dart format` clean, `flutter analyze` clean, **2769 tests pass**
-(2735 before — the 34 added reconcile: 16 in the new
+Gate green: `dart format` clean, `flutter analyze` clean, **2771 tests pass**
+(2735 before — the 36 added reconcile: 16 in the new
 `conflict_recovery_test.dart`, 4 in the new `adopted_surveys_uploader_test.dart`,
 and one each in eleven existing uploader test files plus
-`health_legacy_conflict_test.dart`, plus two for the tombstone paths). *Counted from the run, not remembered.*
+`health_legacy_conflict_test.dart`, two for the tombstone paths, and two the
+implementation audit prompted in `feedback_uploader_test.dart`). *Counted from the run, not remembered.*
 
 New: `test/repository/conflict_recovery_test.dart` (16) pins the rule itself —
 both arms, the `adoptExisting` opt-in, the three guards, and `documentUrlUnder`.
