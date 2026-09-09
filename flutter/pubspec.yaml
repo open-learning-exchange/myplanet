@@ -23,7 +23,7 @@ dependencies:
   # declarations across 152 files here) and wants a round with no other lane
   # running; see PHASE_137_NOTES.md. The exact pin stops any resolution — direct
   # or transitive — from moving it while that round is unscheduled.
-  flutter_riverpod: 2.6.1
+  flutter_riverpod: 3.4.3
 
   # Networking — replaces Retrofit + OkHttp.
   dio: ^5.7.0

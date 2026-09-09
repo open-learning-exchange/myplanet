@@ -87,6 +87,7 @@ void main() {
           // whole exit path stayed untested.
           serverConfigProvider.overrideWith(() => _StubServerConfig(null)),
         ],
+        fallbackDatabase: false,
       ),
     );
     await tester.pumpAndSettle();
@@ -252,6 +253,7 @@ void main() {
             // an offline handset has, and it skips the queue step.
             serverConfigProvider.overrideWith(() => _StubServerConfig(null)),
           ],
+          fallbackDatabase: false,
         ),
       );
       await tester.pumpAndSettle();

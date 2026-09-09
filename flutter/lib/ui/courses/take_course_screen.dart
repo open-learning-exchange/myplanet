@@ -60,11 +60,11 @@ class _TakeCourseScreenState extends ConsumerState<TakeCourseScreen> {
     final l10n = AppLocalizations.of(context);
     final course = ref.watch(courseProvider(widget.courseId));
     final steps = ref.watch(courseStepsProvider(widget.courseId));
-    final userId = ref.watch(sessionProvider).valueOrNull?.id;
+    final userId = ref.watch(sessionProvider).value?.id;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(course.valueOrNull?.courseTitle ?? l10n.courses),
+        title: Text(course.value?.courseTitle ?? l10n.courses),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
@@ -189,7 +189,7 @@ class _CourseContentState extends ConsumerState<_CourseContent> {
 
   /// Unconditional, not gated on `currentStep` having changed, and that is
   /// load-bearing. `userId` comes from the parent's
-  /// `ref.watch(sessionProvider).valueOrNull?.id`, so it is **null on the
+  /// `ref.watch(sessionProvider).value?.id`, so it is **null on the
   /// first frame** — `_isMyCourse` is false, `initState`'s attempt bails, and
   /// the rebuild that carries the resolved session does not change
   /// `currentStep`. A `currentStep`-only gate therefore recorded nothing at
@@ -249,7 +249,7 @@ class _CourseContentState extends ConsumerState<_CourseContent> {
     // (`TakeCourseFragment:213`), which is the id prefix **or** a `guest` role
     // with no `learner` role. Phase 145 landed this gate on the narrow rule,
     // so a role-only guest was offered a button Kotlin withholds.
-    final user = ref.watch(sessionProvider).valueOrNull;
+    final user = ref.watch(sessionProvider).value;
     final canChangeMembership =
         user != null && !UserMapper.isGuestAccount(user);
 
@@ -400,7 +400,7 @@ class _CourseContentState extends ConsumerState<_CourseContent> {
             userId: userId,
           )),
         )
-        .valueOrNull;
+        .value;
   }
 
   /// Port of `CourseStepFragment.launchSaveCourseProgress` — landing on a step
@@ -614,7 +614,7 @@ class _StepContent extends ConsumerWidget {
       userId: userId,
     );
     final assessment = isMyCourse
-        ? ref.watch(stepAssessmentProvider(assessmentKey)).valueOrNull
+        ? ref.watch(stepAssessmentProvider(assessmentKey)).value
         : null;
 
     /// Re-reads the step's assessment state, which each tile calls after the

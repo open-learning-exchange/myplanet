@@ -26,17 +26,17 @@ class SettingsScreen extends ConsumerWidget {
     final server = ref.watch(serverConfigProvider);
     final background = ref.watch(backgroundSettingsProvider);
     final backgroundRun = ref.watch(planetPrefsProvider).lastBackgroundRun;
-    final versionInfo = ref.watch(appVersionInfoProvider).valueOrNull;
+    final versionInfo = ref.watch(appVersionInfoProvider).value;
     final textScale = ref.watch(textScaleProvider);
     final clearState = ref.watch(clearDataProvider);
     // Watched, not read. Both guest gates below used to call
-    // `ref.read(sessionProvider).valueOrNull` from inside their `onTap`, and
+    // `ref.read(sessionProvider).value` from inside their `onTap`, and
     // this screen watches `sessionProvider` nowhere else — so the session was
     // `null` until something outside the screen resolved it, the gate fell
     // through, and a guest reached the reset-app confirmation. Latent in the
     // shipping app only because the router holds a `ref.listen` on the same
     // provider; the fifth instance of that shape in this port.
-    final session = ref.watch(sessionProvider).valueOrNull;
+    final session = ref.watch(sessionProvider).value;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settings)),

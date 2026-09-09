@@ -214,7 +214,7 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
   /// cleared however it ends.
   Future<void> _runPass() async {
     // First, as `startFullSync` has it -- and before the challenge write
-    // below, which reads the session with `.valueOrNull`: resolving
+    // below, which reads the session with `.value`: resolving
     // `sessionProvider` here means that read finds a value rather than the
     // null it would otherwise see on the first pass.
     await pushCurrentUserShelf();
@@ -322,10 +322,10 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
   ///
   /// The session is awaited rather than read: Kotlin resolves its own user
   /// (`userRepository.getUserModel()`) before deciding whether to push, and
-  /// `ref.read(sessionProvider).valueOrNull` is null on any pass that reaches
+  /// `ref.read(sessionProvider).value` is null on any pass that reaches
   /// this before something else has resolved it — which would silently skip
   /// the push. The `await` sits inside the `try` because the future can reject
-  /// where `valueOrNull` could not.
+  /// where `value` could not.
   Future<void> pushCurrentUserShelf() async {
     final config = ref.read(serverConfigProvider);
     if (config == null) return;
@@ -438,9 +438,9 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
     if (config == null) return;
     try {
       // Awaited rather than read: this notifier never watches
-      // `sessionProvider`, so `.valueOrNull` would be null on any pass that
+      // `sessionProvider`, so `.value` would be null on any pass that
       // reached here first. The `await` is inside the `try` because the future
-      // can reject where `valueOrNull` could not.
+      // can reject where `value` could not.
       final user = await ref.read(sessionProvider.future);
       // Ahead of the submissions sweep, as `SubmissionsUploader.kt:83-84` has
       // it — and, unlike in Kotlin, ahead of the surveys pull below, which is
@@ -545,7 +545,7 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
     if (config == null) return;
     try {
       // Awaited rather than read, and inside the `try`: this notifier never
-      // watches `sessionProvider`, so `.valueOrNull` would be null on any pass
+      // watches `sessionProvider`, so `.value` would be null on any pass
       // that reached here first, and the future can reject where it could not.
       final user = await ref.read(sessionProvider.future);
       await ref
@@ -572,7 +572,7 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
   ///
   /// Shape follows [queuePendingVoices] deliberately, including the awaited
   /// session -- this notifier never watches `sessionProvider`, so
-  /// `.valueOrNull` would be null on any pass that reached here first, and the
+  /// `.value` would be null on any pass that reached here first, and the
   /// future can reject where it could not.
   ///
   /// A null user is **not** an early return, matching
@@ -632,7 +632,7 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
   Future<void> _uploadMyPlanetActivities() async {
     if (state.successCount == 0) return;
     final config = ref.read(serverConfigProvider);
-    final user = ref.read(sessionProvider).valueOrNull;
+    final user = ref.read(sessionProvider).value;
     if (config == null || user == null) return;
     try {
       await ref
@@ -652,7 +652,7 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
   Future<void> _queueSearchActivities() async {
     if (state.successCount == 0) return;
     final config = ref.read(serverConfigProvider);
-    final user = ref.read(sessionProvider).valueOrNull;
+    final user = ref.read(sessionProvider).value;
     if (config == null) return;
     try {
       await ref

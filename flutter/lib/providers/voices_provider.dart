@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../core/config/server_config.dart';
 import '../core/sync/sync_result.dart';
@@ -35,7 +36,7 @@ String communityViewerIdentifier({
 /// against each post's `viewIn` — so this watches the session rather than
 /// taking an identifier, and re-filters when the user changes.
 final communityFeedProvider = StreamProvider<List<NewsRow>>((ref) async* {
-  final user = ref.watch(sessionProvider).valueOrNull;
+  final user = ref.watch(sessionProvider).value;
   if (user == null) {
     yield const [];
     return;
@@ -142,11 +143,11 @@ class VoicesActions {
   /// The session is **awaited**, and the `await` sits inside the `try`.
   ///
   /// This provider never watches `sessionProvider`, so
-  /// `ref.read(...).valueOrNull` was null until something else resolved it and
+  /// `ref.read(...).value` was null until something else resolved it and
   /// the composed post was dropped with no error, no snackbar and no row. In
   /// the shipping app the router's `ref.listen` keeps it resolved, which is
   /// what made this latent rather than visible. The `await` is inside the
-  /// `try` because a future can reject where `valueOrNull` could not.
+  /// `try` because a future can reject where `value` could not.
   ///
   /// The screen with the live window is `VoicesScreen`, whose compose FAB is
   /// **ungated** and renders while `communityFeedProvider` is still loading.
@@ -349,7 +350,7 @@ class VoicesActions {
     // Awaited like the writers', though this one is only the outbox row's tag
     // and nothing reads it back (`tables.dart:368`). `editPost` and
     // `deletePost` reach here without having resolved the session, so a plain
-    // `.valueOrNull` tagged those rows null.
+    // `.value` tagged those rows null.
     return ref
         .read(voicesUploaderProvider)
         .queuePending(config: config, userId: (await _author())?.id);

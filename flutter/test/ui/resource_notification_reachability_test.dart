@@ -1,8 +1,10 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/core/prefs/planet_prefs.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/l10n/app_localizations.dart';
 import 'package:myplanet/providers/app_providers.dart';
@@ -307,6 +309,7 @@ void main() {
     // live stream costs nothing. This is the only one that writes.
     const userId = 'org.couchdb.user:alice';
     final container = ProviderContainer(
+      retry: noProviderRetry,
       overrides: [appDatabaseProvider.overrideWithValue(database)],
     );
     addTearDown(container.dispose);

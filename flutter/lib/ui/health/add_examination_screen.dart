@@ -61,7 +61,7 @@ class _AddExaminationScreenState extends ConsumerState<AddExaminationScreen> {
 
   /// The resolved patient id, and whether the notifier's initial load has
   /// arrived. Both are read where the screen used to reach for
-  /// `sessionProvider.valueOrNull` on every build: that changed identity as
+  /// `sessionProvider.value` on every build: that changed identity as
   /// the session resolved, so the form and the save could address two
   /// different notifiers.
   String? _patientId;
@@ -149,7 +149,7 @@ class _AddExaminationScreenState extends ConsumerState<AddExaminationScreen> {
   Future<void> _loadExistingData() async {
     // `intent.getStringExtra("userId")` first, and the session only as the
     // fallback — awaited inside the try, because a screen that never watches
-    // `sessionProvider` reads `AsyncLoading` and `valueOrNull` is null there.
+    // `sessionProvider` reads `AsyncLoading` and `value` is null there.
     late final ExaminationState state;
     try {
       final session = await ref.read(sessionProvider.future);

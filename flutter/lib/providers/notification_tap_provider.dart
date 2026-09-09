@@ -145,9 +145,9 @@ class NotificationTapHandler {
         // coroutine, so the Android app reaches here with a null user too.
         //
         // Awaited rather than read: this handler runs from a scope that never
-        // watches `sessionProvider`, and `ref.read(...).valueOrNull` would be
+        // watches `sessionProvider`, and `ref.read(...).value` would be
         // null until something else resolved it. The `await` is inside the
-        // `try` because a future can reject where `valueOrNull` could not —
+        // `try` because a future can reject where `value` could not —
         // the correction Phase 100's fix needed on harvest.
         final user = await ref.read(sessionProvider.future);
         await repository.markNotificationAsRead(

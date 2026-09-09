@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myplanet/core/notifications/notification_tap.dart';
 import 'package:myplanet/core/prefs/planet_prefs.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/providers/notification_tap_provider.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/ui/notification_tap_scope.dart';
@@ -45,6 +46,7 @@ void main() {
     final config = router ?? buildRouter();
     await tester.pumpWidget(
       ProviderScope(
+        retry: noProviderRetry,
         overrides: [
           planetPrefsProvider.overrideWithValue(prefs),
           notificationTapSourceProvider.overrideWithValue(source),
@@ -228,10 +230,14 @@ class _FakeHandler extends NotificationTapHandler {
 }
 
 /// The superclass takes a `Ref` it never uses once `handle` is overridden.
-final Ref _unusedRef = _NoRef();
+///
+/// Riverpod 3 seals [Ref], so this is a real one borrowed from a container
+/// that is disposed immediately — nothing ever reads a provider through it.
+final Ref _unusedRef = _borrowRef();
 
-class _NoRef implements Ref {
-  @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      throw UnsupportedError('the fake handler reads no providers');
+Ref _borrowRef() {
+  final container = ProviderContainer(retry: noProviderRetry);
+  final ref = container.read(Provider<Ref>((ref) => ref));
+  container.dispose();
+  return ref;
 }

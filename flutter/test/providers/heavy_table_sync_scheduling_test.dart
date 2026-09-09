@@ -8,6 +8,7 @@ import 'package:myplanet/core/background/background_task_names.dart';
 import 'package:myplanet/core/background/heavy_table_scheduler.dart';
 import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/core/prefs/planet_prefs.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/core/sync/heavy_table_sync.dart';
 import 'package:myplanet/core/network/network_result.dart';
 import 'package:myplanet/core/sync/sync_result.dart';
@@ -58,6 +59,7 @@ void main() {
     MockShelfRepository? shelf,
   }) async {
     final container = ProviderContainer(
+      retry: noProviderRetry,
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         planetApiProvider.overrideWithValue(_UnusablePlanetApi()),

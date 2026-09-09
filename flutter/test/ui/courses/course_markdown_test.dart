@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/core/files/markdown_image_files.dart';
 import 'package:myplanet/core/files/resource_files.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/ui/courses/course_markdown.dart';
 
@@ -49,7 +50,7 @@ void main() {
       // moment later; the user goes offline. Without autoDispose the null is
       // cached for the whole process and the image never renders from disk
       // again — the feature not working, in the situation it exists for.
-      final container = ProviderContainer();
+      final container = ProviderContainer(retry: noProviderRetry);
       addTearDown(container.dispose);
 
       expect(
@@ -84,6 +85,7 @@ void main() {
   }) async {
     await tester.pumpWidget(
       ProviderScope(
+        retry: noProviderRetry,
         overrides: [
           serverConfigProvider.overrideWith(() => _TestServerConfig(config)),
           markdownImageFileProvider.overrideWith((ref, _) async => localPath),
@@ -142,6 +144,7 @@ void main() {
     // gap on every rebuild.
     await tester.pumpWidget(
       ProviderScope(
+        retry: noProviderRetry,
         overrides: [
           serverConfigProvider.overrideWith(() => _TestServerConfig(config)),
           markdownImageFileProvider.overrideWith(
@@ -167,6 +170,7 @@ void main() {
     final requested = <String>[];
     await tester.pumpWidget(
       ProviderScope(
+        retry: noProviderRetry,
         overrides: [
           serverConfigProvider.overrideWith(() => _TestServerConfig(config)),
           markdownImageFileProvider.overrideWith((ref, _) async => null),
@@ -193,6 +197,7 @@ void main() {
     var lookups = 0;
     await tester.pumpWidget(
       ProviderScope(
+        retry: noProviderRetry,
         overrides: [
           serverConfigProvider.overrideWith(() => _TestServerConfig(config)),
           markdownImageFileProvider.overrideWith((ref, _) async {

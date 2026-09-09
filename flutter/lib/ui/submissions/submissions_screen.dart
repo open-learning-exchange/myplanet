@@ -170,7 +170,7 @@ class _SubmissionsScreenState extends ConsumerState<SubmissionsScreen> {
       ),
     );
     if (submitted != true || title.text.trim().isEmpty || !mounted) return;
-    final user = ref.read(sessionProvider).valueOrNull;
+    final user = ref.read(sessionProvider).value;
     if (user == null) return;
     await ref
         .read(submissionsRepositoryProvider)

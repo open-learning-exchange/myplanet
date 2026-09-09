@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/core/prefs/planet_prefs.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/app_providers.dart';
@@ -59,6 +60,7 @@ void main() {
 
   Future<ProviderContainer> containerFor({UserRow? user}) async {
     final container = ProviderContainer(
+      retry: noProviderRetry,
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         planetApiProvider.overrideWithValue(MockPlanetApi()),
@@ -164,6 +166,7 @@ void main() {
     // production never reaches, and leaves the branch dead.
     test('the community id comes from the configuration code', () async {
       final container = ProviderContainer(
+        retry: noProviderRetry,
         overrides: [
           appDatabaseProvider.overrideWithValue(db),
           planetApiProvider.overrideWithValue(MockPlanetApi()),
@@ -193,6 +196,7 @@ void main() {
       final prefs = PlanetPrefs(await SharedPreferences.getInstance());
       await prefs.setCommunityName('lc');
       final container = ProviderContainer(
+        retry: noProviderRetry,
         overrides: [
           appDatabaseProvider.overrideWithValue(db),
           planetApiProvider.overrideWithValue(MockPlanetApi()),
@@ -430,9 +434,10 @@ void main() {
   });
 
   // The `await` sits inside the enclosing `try` precisely because a future can
-  // reject where `valueOrNull` could not. Nothing pinned that until now.
+  // reject where `value` could not. Nothing pinned that until now.
   test('a rejecting session is reported, not thrown', () async {
     final container = ProviderContainer(
+      retry: noProviderRetry,
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         planetApiProvider.overrideWithValue(MockPlanetApi()),

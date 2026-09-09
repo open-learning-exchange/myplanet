@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/data/local/course_mapper.dart';
@@ -136,17 +136,25 @@ const _pngBytes = [
 ];
 
 void main() {
+  /// [defaultSession] and [fallbackDatabase] exist for the same reason
+  /// `wrapScreen`'s own flag does: Riverpod 3 asserts on a provider overridden
+  /// twice in one container, so a caller replacing one of this helper's
+  /// defaults has to switch the default off rather than shadow it.
   Future<void> pumpScreen(
     WidgetTester tester, {
     required CourseRow course,
     List<CourseStepRow> steps = const [],
     List<Override> overrides = const [],
+    bool defaultSession = true,
+    bool fallbackDatabase = true,
   }) async {
     await tester.pumpWidget(
       wrapScreen(
         CourseDetailScreen(courseId: course.id),
+        fallbackDatabase: fallbackDatabase,
         overrides: [
-          sessionProvider.overrideWith(() => _TestSessionNotifier(_user())),
+          if (defaultSession)
+            sessionProvider.overrideWith(() => _TestSessionNotifier(_user())),
           courseProvider(course.id).overrideWith((ref) => Stream.value(course)),
           courseStepsProvider(
             course.id,
@@ -352,6 +360,7 @@ void main() {
         course: buildCourseRow(id: 'c1', courseTitle: 'Water'),
         steps: steps,
         overrides: [appDatabaseProvider.overrideWithValue(db)],
+        fallbackDatabase: false,
       );
 
       await tester.tap(find.text('Assessment'));
@@ -377,6 +386,7 @@ void main() {
         overrides: [
           sessionProvider.overrideWith(() => _TestSessionNotifier(_guest())),
         ],
+        defaultSession: false,
       );
 
       expect(find.text('Add to my courses'), findsNothing);
@@ -411,6 +421,7 @@ void main() {
             () => _TestSessionNotifier(_roleGuest()),
           ),
         ],
+        defaultSession: false,
       );
 
       expect(find.text('Add to my courses'), findsNothing);
@@ -433,6 +444,7 @@ void main() {
             ),
           ),
         ],
+        defaultSession: false,
       );
 
       expect(find.text('Add to my courses'), findsOneWidget);

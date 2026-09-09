@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/core/network/network_result.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/app_providers.dart';
@@ -44,6 +46,7 @@ void main() {
 
   Widget wrap(UserRow row, {List<Override> overrides = const []}) =>
       ProviderScope(
+        retry: noProviderRetry,
         overrides: [planetApiProvider.overrideWithValue(api), ...overrides],
         child: MaterialApp(
           home: Scaffold(body: ProfileAvatar(user: row, radius: 24)),

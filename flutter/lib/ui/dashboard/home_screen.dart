@@ -69,7 +69,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // user first loads (`wasUserNull` in `onViewCreated`); listening to the
     // session is the same trigger.
     ref.listenManual(sessionProvider, fireImmediately: true, (previous, next) {
-      final user = next.valueOrNull;
+      final user = next.value;
       if (user != null) {
         WidgetsBinding.instance.addPostFrameCallback(
           (_) => _checkPendingSurveys(user),
@@ -96,7 +96,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // `observeSurveyReminders` — a snoozed set reappears when its time comes,
     // with the "Reminder:" title and no hourly throttle.
     ref.listenManual(dueSurveyRemindersProvider, (previous, next) {
-      final due = next.valueOrNull;
+      final due = next.value;
       if (due == null || due.isEmpty) return;
       WidgetsBinding.instance.addPostFrameCallback((_) => _showDue(due));
     });
@@ -105,7 +105,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// Port of `handleDueReminders` — resolves each snoozed id set back to the
   /// submissions that are *still* pending and re-shows the dialog for it.
   Future<void> _showDue(List<String> due) async {
-    final session = ref.read(sessionProvider).valueOrNull;
+    final session = ref.read(sessionProvider).value;
     if (session == null || !mounted) return;
 
     // Re-reading the pending set rather than trusting the stored ids is what
@@ -307,8 +307,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// if the user has shelf items, open the "My Library" (shelf) view; if not,
   /// open the full catalog so they can browse and join resources.
   void _openLibraryCard(BuildContext context, String userId) {
-    final shelf =
-        ref.read(myLibraryStreamProvider(userId)).valueOrNull ?? const [];
+    final shelf = ref.read(myLibraryStreamProvider(userId)).value ?? const [];
     ref.read(resourceShelfOnlyProvider.notifier).state = shelf.isNotEmpty;
     context.go(Routes.resources);
   }
@@ -318,8 +317,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// not, open the full catalog so they can browse and join. The library card
   /// got the same my/call split in `08e18ffdc` (see [_openLibraryCard]).
   void _openCoursesCard(BuildContext context, String userId) {
-    final courses =
-        ref.read(myCoursesStreamProvider(userId)).valueOrNull ?? const [];
+    final courses = ref.read(myCoursesStreamProvider(userId)).value ?? const [];
     ref
         .read(courseFilterProvider.notifier)
         .setMyCoursesOnly(courses.isNotEmpty);
@@ -329,9 +327,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final session = ref.watch(sessionProvider).valueOrNull;
+    final session = ref.watch(sessionProvider).value;
     final prefs = ref.watch(planetPrefsProvider);
-    final unread = ref.watch(unreadNotificationCountProvider).valueOrNull ?? 0;
+    final unread = ref.watch(unreadNotificationCountProvider).value ?? 0;
     final lastSync = ref.watch(lastSyncProvider);
 
     // `DashboardActivity.updateAppTitle`: "Planet <planetCode>", falling back
@@ -495,7 +493,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     label: l10n.homeMyLibrary,
                     count: ref
                         .watch(myLibraryStreamProvider(session.id))
-                        .valueOrNull
+                        .value
                         ?.length,
                     onHeaderTap: () => isGuest
                         ? showGuestDialog(context)
@@ -510,7 +508,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     label: l10n.homeMyCourses,
                     count: ref
                         .watch(myCoursesStreamProvider(session.id))
-                        .valueOrNull
+                        .value
                         ?.length,
                     onHeaderTap: () {
                       if (isGuest) {
@@ -529,7 +527,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     label: l10n.homeMyTeams,
                     count: ref
                         .watch(myTeamsStreamProvider(session.id))
-                        .valueOrNull
+                        .value
                         ?.length,
                     // The Kotlin myTeams header is not guest-gated.
                     onHeaderTap: () => context.push(Routes.teams),
@@ -777,8 +775,7 @@ class _ProfileCard extends ConsumerWidget {
     // contributes no count — and the Kotlin renders `user_name` regardless,
     // showing "(0)".
     final logins =
-        ref.watch(offlineLoginCountProvider(session.name ?? '')).valueOrNull ??
-        0;
+        ref.watch(offlineLoginCountProvider(session.name ?? '')).value ?? 0;
 
     return Card(
       margin: const EdgeInsets.all(8),
@@ -1091,7 +1088,7 @@ class _LibraryTiles extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final resources =
-        ref.watch(myLibraryStreamProvider(userId)).valueOrNull ?? const [];
+        ref.watch(myLibraryStreamProvider(userId)).value ?? const [];
 
     if (resources.isEmpty) {
       return _TileGrid(
@@ -1138,7 +1135,7 @@ class _CourseTiles extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final courses =
-        ref.watch(myCoursesStreamProvider(userId)).valueOrNull ?? const [];
+        ref.watch(myCoursesStreamProvider(userId)).value ?? const [];
 
     if (courses.isEmpty) {
       return _TileGrid(
@@ -1187,8 +1184,7 @@ class _TeamTiles extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final teams =
-        ref.watch(myTeamsStreamProvider(userId)).valueOrNull ?? const [];
+    final teams = ref.watch(myTeamsStreamProvider(userId)).value ?? const [];
 
     if (teams.isEmpty) {
       return _TileGrid(
@@ -1207,7 +1203,7 @@ class _TeamTiles extends ConsumerWidget {
     }
 
     final notifications =
-        ref.watch(teamNotificationsProvider(userId)).valueOrNull ?? const {};
+        ref.watch(teamNotificationsProvider(userId)).value ?? const {};
 
     return _TileGrid(
       children: [
@@ -1281,7 +1277,7 @@ class _LifeTiles extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final rows = (ref.watch(lifeItemsProvider).valueOrNull ?? const [])
+    final rows = (ref.watch(lifeItemsProvider).value ?? const [])
         .where((row) => row.isVisible)
         .toList(growable: false);
 

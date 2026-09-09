@@ -88,7 +88,7 @@ class SessionNotifier extends AsyncNotifier<UserRow?> {
     required String gender,
     required String dateOfBirth,
   }) async {
-    final current = state.valueOrNull;
+    final current = state.value;
     if (current == null) return;
 
     final updated = current.copyWith(
@@ -116,7 +116,7 @@ class SessionNotifier extends AsyncNotifier<UserRow?> {
   /// `UserRepositoryImpl.updateUserImage` — stores the picked image path and
   /// flags the row for upload, exactly as a profile-field edit does.
   Future<void> setUserImage(String path) async {
-    final current = state.valueOrNull;
+    final current = state.value;
     if (current == null) return;
     final updated = current.copyWith(userImage: Value(path));
     await ref

@@ -33,7 +33,7 @@ class _RatingDialogState extends ConsumerState<RatingDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final summary = ref.watch(ratingSummaryProvider(widget.target));
-    final existing = summary.valueOrNull;
+    final existing = summary.value;
     if (!_initialized && existing != null) {
       _initialized = true;
       _rating = existing.userRating ?? 0;

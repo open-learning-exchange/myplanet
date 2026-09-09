@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/core/prefs/planet_prefs.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/session_provider.dart';
@@ -49,6 +50,7 @@ void main() {
 
   ProviderContainer container() {
     final c = ProviderContainer(
+      retry: noProviderRetry,
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         planetPrefsProvider.overrideWithValue(prefs),
@@ -102,7 +104,7 @@ void main() {
       expect(prefs.serverConfig, isNull);
       expect(prefs.loggedInUserId, isNull);
       expect(c.read(serverConfigProvider), isNull);
-      expect(c.read(sessionProvider).valueOrNull, isNull);
+      expect(c.read(sessionProvider).value, isNull);
     },
   );
 

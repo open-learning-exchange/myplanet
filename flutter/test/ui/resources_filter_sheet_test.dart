@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/l10n/app_localizations.dart';
 import 'package:myplanet/providers/resources_providers.dart';
@@ -58,6 +59,7 @@ void main() {
     List<MyLibraryRow> rows,
   ) async {
     final container = ProviderContainer(
+      retry: noProviderRetry,
       overrides: [
         resourcesStreamProvider.overrideWith((ref) => Stream.value(rows)),
       ],

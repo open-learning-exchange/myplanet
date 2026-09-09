@@ -42,7 +42,7 @@ class TeamReportsScreen extends ConsumerWidget {
     // use here, so any member of an enterprise may add and edit its reports.
     final canManage = fromCommunity
         ? _isManager(ref)
-        : ref.watch(teamMembershipsProvider).valueOrNull?[teamId] != null;
+        : ref.watch(teamMembershipsProvider).value?[teamId] != null;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.financialReports)),
       body: reports.when(
@@ -108,7 +108,7 @@ class TeamReportsScreen extends ConsumerWidget {
   /// the community path, so the team path never builds [sessionProvider] (and
   /// the team screen tests need no session override).
   bool _isManager(WidgetRef ref) {
-    final session = ref.watch(sessionProvider).valueOrNull;
+    final session = ref.watch(sessionProvider).value;
     return session != null && UserMapper.isManager(session) == true;
   }
 

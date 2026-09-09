@@ -173,7 +173,7 @@ class _CoursesScreenState extends ConsumerState<CoursesScreen> {
     final courses = ref.watch(filteredSortedCoursesProvider);
     final syncState = ref.watch(courseSyncProvider);
     final viewMode = ref.watch(courseViewModeProvider);
-    final userId = ref.watch(sessionProvider).valueOrNull?.id;
+    final userId = ref.watch(sessionProvider).value?.id;
 
     ref.listen<SyncUiState>(courseSyncProvider, (previous, next) {
       final messenger = ScaffoldMessenger.of(context);
@@ -207,12 +207,10 @@ class _CoursesScreenState extends ConsumerState<CoursesScreen> {
         ref
             .watch(
               courseTagsProvider(
-                [
-                  for (final c in courses.valueOrNull ?? const []) c.id,
-                ].join('\n'),
+                [for (final c in courses.value ?? const []) c.id].join('\n'),
               ),
             )
-            .valueOrNull ??
+            .value ??
         const {};
 
     return Scaffold(
@@ -462,8 +460,8 @@ class _CourseFilterBar extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final filter = ref.watch(courseFilterProvider);
     final notifier = ref.read(courseFilterProvider.notifier);
-    final grades = ref.watch(gradeLevelsProvider).valueOrNull ?? const [];
-    final subjects = ref.watch(subjectLevelsProvider).valueOrNull ?? const [];
+    final grades = ref.watch(gradeLevelsProvider).value ?? const [];
+    final subjects = ref.watch(subjectLevelsProvider).value ?? const [];
     final sort = ref.watch(courseSortProvider);
     final progressFilter = ref.watch(courseProgressFilterProvider);
 

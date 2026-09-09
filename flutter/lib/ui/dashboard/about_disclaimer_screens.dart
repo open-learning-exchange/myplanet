@@ -19,7 +19,7 @@ class AboutScreen extends ConsumerWidget {
     // The Kotlin reads `BuildConfig.VERSION_NAME`; the port reads the same
     // value at runtime through `package_info_plus` so the line tracks pubspec
     // rather than a hardcoded constant.
-    final versionInfo = ref.watch(appVersionInfoProvider).valueOrNull;
+    final versionInfo = ref.watch(appVersionInfoProvider).value;
     final versionLine = l10n.appVersion(versionInfo?.version ?? '…');
     final body = '${l10n.aboutContent}\n\n#### $versionLine';
     return Scaffold(

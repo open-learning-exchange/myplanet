@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/courses_providers.dart';
@@ -34,6 +35,7 @@ void main() {
   setUp(() async {
     database = AppDatabase.memory();
     container = ProviderContainer(
+      retry: noProviderRetry,
       overrides: [
         appDatabaseProvider.overrideWithValue(database),
         sessionProvider.overrideWith(() => _TestSessionNotifier(_user())),
@@ -56,7 +58,7 @@ void main() {
     ], const []);
 
     // Read without resolving `sessionProvider` first. This used to read the
-    // session as `.valueOrNull`, so the first pass ran with a null user — and
+    // session as `.value`, so the first pass ran with a null user — and
     // `CourseDao.watchCourses` drops the `shelfUserId` predicate when it is
     // null, which is not "no courses" but "every course". Before the fix this
     // call never completed at all (the pending first future is discarded when

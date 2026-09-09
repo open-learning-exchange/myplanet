@@ -106,7 +106,7 @@ class _Details extends StatelessWidget {
                     for (var index = 0; index < rows.length; index++)
                       _AnswerTile(
                         answer: rows[index],
-                        question: questions.valueOrNull
+                        question: questions.value
                             ?.where(
                               (question) => question.id.endsWith(
                                 ':${rows[index].questionId}',

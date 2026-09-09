@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/core/notifications/notification_config.dart';
 import 'package:myplanet/core/notifications/notification_tap.dart';
 import 'package:myplanet/core/prefs/planet_prefs.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/notification_tap_provider.dart';
@@ -59,6 +60,7 @@ void main() {
     bool sessionFails = false,
   }) {
     final container = ProviderContainer(
+      retry: noProviderRetry,
       overrides: [
         planetPrefsProvider.overrideWithValue(prefs),
         appDatabaseProvider.overrideWithValue(database),
@@ -205,7 +207,7 @@ void main() {
     test('resolves the session rather than reading it unwatched', () async {
       // The rule this project turned into a rule after four independent
       // instances: nothing here watches `sessionProvider`, so
-      // `ref.read(sessionProvider).valueOrNull` is null while it loads. A null
+      // `ref.read(sessionProvider).value` is null while it loads. A null
       // user routes a `summary_` id to `markSummaryAsRead(null, type)`, which
       // matches no row — so the read-marking silently does nothing.
       await insertNotification(id: 'n-1', type: 'storage');
@@ -228,7 +230,7 @@ void main() {
 
     test('a rejecting session still navigates', () async {
       // The correction Phase 100's fix needed on harvest: the `await` belongs
-      // *inside* the `try`, because a future can reject where `valueOrNull`
+      // *inside* the `try`, because a future can reject where `value`
       // could not. Kotlin's read-mark is wrapped in its own try/catch and the
       // navigation follows regardless.
       await insertTask();

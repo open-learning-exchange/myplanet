@@ -326,7 +326,7 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
 
   Widget _buildActionButtons(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final session = ref.watch(sessionProvider).valueOrNull;
+    final session = ref.watch(sessionProvider).value;
     final resource = _resource!;
 
     return Column(
@@ -443,7 +443,7 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
 
   Future<void> _toggleLibraryMembership(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
-    final session = ref.read(sessionProvider).valueOrNull;
+    final session = ref.read(sessionProvider).value;
     if (session == null || _resource == null) return;
 
     final isCurrentlyOnShelf = _isOnShelf(session.id);

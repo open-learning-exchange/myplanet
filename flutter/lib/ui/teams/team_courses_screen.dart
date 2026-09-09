@@ -15,7 +15,7 @@ class TeamCoursesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final courses = ref.watch(teamCoursesProvider(teamId));
-    final membership = ref.watch(teamMembershipsProvider).valueOrNull?[teamId];
+    final membership = ref.watch(teamMembershipsProvider).value?[teamId];
     // Kotlin's add has no gate in `TeamCoursesFragment` at all — it is driven
     // by `btnAddDoc`, which `setupMyTeamButtons` shows to any **member**
     // (`TeamDetailFragment.kt:286-289`).
@@ -26,8 +26,8 @@ class TeamCoursesScreen extends ConsumerWidget {
     // not the leader. The port gated it on `isLeader`, which both offered the
     // unlink to a leader who did not create the team and withheld it from a
     // creator who is not the leader.
-    final creatorId = ref.watch(teamProvider(teamId)).valueOrNull?.userId;
-    final currentUserId = ref.watch(sessionProvider).valueOrNull?.id;
+    final creatorId = ref.watch(teamProvider(teamId)).value?.userId;
+    final currentUserId = ref.watch(sessionProvider).value?.id;
     // Both sides must be non-empty as well as non-null. Kotlin's
     // `sharedPrefManager.getUserId().ifEmpty { "--" }` sentinel exists to
     // stop an empty id matching an empty creator; without it a team document
@@ -80,11 +80,9 @@ class TeamCoursesScreen extends ConsumerWidget {
   Future<void> _chooseCourse(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context);
     final linked =
-        ref.read(teamCoursesProvider(teamId)).valueOrNull ??
-        const <CourseRow>[];
+        ref.read(teamCoursesProvider(teamId)).value ?? const <CourseRow>[];
     final linkedIds = linked.map((row) => row.id).toSet();
-    final all =
-        ref.read(coursesStreamProvider).valueOrNull ?? const <CourseRow>[];
+    final all = ref.read(coursesStreamProvider).value ?? const <CourseRow>[];
     final available = all.where((row) => !linkedIds.contains(row.id)).toList();
     final selected = await showDialog<CourseRow>(
       context: context,

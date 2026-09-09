@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../data/local/app_database.dart';
 import '../core/sync/sync_result.dart';
@@ -70,7 +71,7 @@ class EventsActions {
     final repository = ref.read(eventsRepositoryProvider);
     String? savedId = id;
     if (id == null) {
-      final user = ref.read(sessionProvider).valueOrNull;
+      final user = ref.read(sessionProvider).value;
       savedId = await repository.create(
         title: title,
         description: description,
@@ -105,7 +106,7 @@ class EventsActions {
   }
 
   Future<void> toggleAttendance(MeetupRow row) async {
-    final user = ref.read(sessionProvider).valueOrNull;
+    final user = ref.read(sessionProvider).value;
     await ref
         .read(eventsRepositoryProvider)
         .toggleAttendance(row.meetupId ?? row.id, user?.id);
@@ -125,7 +126,7 @@ class EventsActions {
         .read(eventsUploaderProvider)
         .queuePending(
           config: config,
-          userId: ref.read(sessionProvider).valueOrNull?.id,
+          userId: ref.read(sessionProvider).value?.id,
         );
   }
 }

@@ -21,8 +21,7 @@ class TeamsScreen extends ConsumerWidget {
     final rows = ref.watch(teamsProvider);
     final sync = ref.watch(teamsSyncProvider);
     final type = ref.watch(teamsTypeProvider);
-    final memberships =
-        ref.watch(teamMembershipsProvider).valueOrNull ?? const {};
+    final memberships = ref.watch(teamMembershipsProvider).value ?? const {};
     return Scaffold(
       appBar: AppBar(
         title: Text(type == 'enterprise' ? l10n.enterprises : l10n.teams),
@@ -180,7 +179,7 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
         // dropped the visit for the whole mount with nothing to retry it.
         // `createTeamLog` (`TeamDetailFragment.kt:426-441`) awaits its own
         // `getUserModel()`; the await is inside the `try` because a future
-        // can reject where `valueOrNull` could not.
+        // can reject where `value` could not.
         final user = await ref.read(sessionProvider.future);
         if (user == null || !mounted) return;
         final config = ref.read(serverConfigProvider);
@@ -236,14 +235,11 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final memberCount = ref
-        .watch(teamMemberCountProvider(widget.teamId))
-        .valueOrNull;
-    final memberships =
-        ref.watch(teamMembershipsProvider).valueOrNull ?? const {};
+    final memberCount = ref.watch(teamMemberCountProvider(widget.teamId)).value;
+    final memberships = ref.watch(teamMembershipsProvider).value ?? const {};
     final requests =
-        ref.watch(teamRequestsProvider(widget.teamId)).valueOrNull ?? const [];
-    final currentUser = ref.watch(sessionProvider).valueOrNull;
+        ref.watch(teamRequestsProvider(widget.teamId)).value ?? const [];
+    final currentUser = ref.watch(sessionProvider).value;
     final currentUserId = currentUser?.id;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.teamDetails)),

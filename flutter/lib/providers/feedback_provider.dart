@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../core/config/server_config.dart';
 import '../core/sync/sync_result.dart';
@@ -12,7 +13,7 @@ import 'sync_state.dart';
 /// Provider for the current user's feedback list.
 final feedbackListProvider = StreamProvider<List<FeedbackRow>>((ref) {
   final repo = ref.watch(feedbackRepositoryProvider);
-  final session = ref.watch(sessionProvider).valueOrNull;
+  final session = ref.watch(sessionProvider).value;
 
   if (session != null && UserMapper.isManager(session) == true) {
     return repo.getFeedback(isManager: true);
@@ -129,7 +130,7 @@ class FeedbackQueue {
         .read(feedbackUploaderProvider)
         .queuePending(
           config: config,
-          userId: _ref.read(sessionProvider).valueOrNull?.id,
+          userId: _ref.read(sessionProvider).value?.id,
         );
   }
 }
@@ -220,7 +221,7 @@ class FeedbackCreateNotifier extends Notifier<FeedbackCreateState> {
   }
 
   Future<bool> submit({String? item, String? feedbackState}) async {
-    final session = ref.read(sessionProvider).valueOrNull;
+    final session = ref.read(sessionProvider).value;
     if (session == null) {
       state = state.copyWith(error: 'Not logged in');
       return false;

@@ -9,6 +9,7 @@ import 'package:myplanet/core/deeplinks/deep_link.dart';
 import 'package:myplanet/core/notifications/notification_config.dart';
 import 'package:myplanet/core/notifications/notification_tap.dart';
 import 'package:myplanet/core/prefs/planet_prefs.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/deep_link_provider.dart';
@@ -58,6 +59,7 @@ void main() {
     final prefs = PlanetPrefs(await SharedPreferences.getInstance());
     final database = AppDatabase.memory();
     container = ProviderContainer(
+      retry: noProviderRetry,
       overrides: [
         planetPrefsProvider.overrideWithValue(prefs),
         appDatabaseProvider.overrideWithValue(database),

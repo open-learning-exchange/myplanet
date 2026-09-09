@@ -210,7 +210,7 @@ void main() {
   /// actions on `user?.id?.startsWith("guest") == true` and offers
   /// `DialogUtils.guestDialog` instead (`SettingsActivity.kt:221`, `:249`,
   /// `:286`). Neither gate had a test, and both read
-  /// `ref.read(sessionProvider).valueOrNull` on a screen that never watches
+  /// `ref.read(sessionProvider).value` on a screen that never watches
   /// `sessionProvider` — so the session resolved to `null`, the gate fell
   /// through, and a guest reached the only destructive action in the app.
   group('guest gates', () {

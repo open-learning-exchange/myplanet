@@ -115,6 +115,7 @@ void main() {
               ),
             ),
         ],
+        fallbackDatabase: false,
       ),
     );
     await tester.pumpAndSettle();

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myplanet/core/prefs/planet_prefs.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/data/local/course_mapper.dart';
 import 'package:myplanet/data/local/exam_mapper.dart';
@@ -147,6 +148,7 @@ void main() {
               'course-1',
             ).overrideWith((ref) => Stream.value(steps)),
           ],
+          fallbackDatabase: false,
         ),
       );
       await tester.pumpAndSettle();
@@ -219,6 +221,7 @@ void main() {
               ),
             ),
           ],
+          fallbackDatabase: false,
         ),
       );
       await tester.pumpAndSettle();
@@ -259,6 +262,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       final prefs = PlanetPrefs(await SharedPreferences.getInstance());
       final container = ProviderContainer(
+        retry: noProviderRetry,
         overrides: [
           planetPrefsProvider.overrideWithValue(prefs),
           appDatabaseProvider.overrideWithValue(db),
@@ -291,6 +295,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       final prefs = PlanetPrefs(await SharedPreferences.getInstance());
       final container = ProviderContainer(
+        retry: noProviderRetry,
         overrides: [
           planetPrefsProvider.overrideWithValue(prefs),
           appDatabaseProvider.overrideWithValue(db),
@@ -320,6 +325,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       final prefs = PlanetPrefs(await SharedPreferences.getInstance());
       final container = ProviderContainer(
+        retry: noProviderRetry,
         overrides: [
           planetPrefsProvider.overrideWithValue(prefs),
           appDatabaseProvider.overrideWithValue(db),

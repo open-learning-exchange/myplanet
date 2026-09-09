@@ -124,6 +124,7 @@ void main() {
           appDatabaseProvider.overrideWith((ref) => db),
           serverConfigProvider.overrideWith(() => _TestServerConfig(config)),
         ],
+        fallbackDatabase: false,
       ),
     );
     if (settle) await settleViewer(tester);
@@ -175,6 +176,7 @@ void main() {
                 ({required docId, required filename}) async => content,
           ),
         ],
+        fallbackDatabase: false,
       ),
     );
     await settleViewer(tester);
@@ -362,6 +364,7 @@ void main() {
             serverConfigProvider.overrideWith(() => _TestServerConfig(server)),
             planetPrefsProvider.overrideWithValue(PlanetPrefs(prefs)),
           ],
+          fallbackDatabase: false,
         ),
       );
       await settleViewer(tester);

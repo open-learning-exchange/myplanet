@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/core/config/server_config.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/session_provider.dart';
@@ -16,7 +17,7 @@ class _TestServerConfig extends ServerConfigNotifier {
 }
 
 /// A session whose `build` rejects — an unavailable `planetPrefs`, a failed
-/// `userDao` read. `.valueOrNull` was null here and every action returned
+/// `userDao` read. `.value` was null here and every action returned
 /// `false`; a `.future` rejects instead, which is a different contract.
 class _FailingSessionNotifier extends SessionNotifier {
   @override
@@ -25,7 +26,7 @@ class _FailingSessionNotifier extends SessionNotifier {
 
 /// A session that resolves only after a delay. `TeamMembershipActions` is a
 /// plain `Provider`, so nothing it holds ever *watches* `sessionProvider`; a
-/// bare `ref.read(...).valueOrNull` is null for this whole window.
+/// bare `ref.read(...).value` is null for this whole window.
 class _DelayedSessionNotifier extends SessionNotifier {
   _DelayedSessionNotifier(this.user);
   final UserRow? user;
@@ -57,6 +58,7 @@ void main() {
   setUp(() {
     database = AppDatabase.memory();
     container = ProviderContainer(
+      retry: noProviderRetry,
       overrides: [
         appDatabaseProvider.overrideWithValue(database),
         outboxRepositoryProvider.overrideWithValue(
@@ -151,11 +153,12 @@ void main() {
 
   test('leaving works before anything else has resolved the session', () async {
     // The tests above `await container.read(sessionProvider.future)` first,
-    // which makes `.valueOrNull` non-null and so cannot catch a regression of
+    // which makes `.value` non-null and so cannot catch a regression of
     // the read-but-never-watched shape. This one deliberately does not
     // pre-resolve it: `TeamMembershipActions` must resolve the session itself.
     await seedMembership(id: 'm-synced', rev: '2-abc');
     final container = ProviderContainer(
+      retry: noProviderRetry,
       overrides: [
         appDatabaseProvider.overrideWithValue(database),
         outboxRepositoryProvider.overrideWithValue(
@@ -193,6 +196,7 @@ void main() {
 
   ProviderContainer failingSessionContainer() {
     final c = ProviderContainer(
+      retry: noProviderRetry,
       overrides: [
         appDatabaseProvider.overrideWithValue(database),
         outboxRepositoryProvider.overrideWithValue(
@@ -209,7 +213,7 @@ void main() {
   test('a rejecting session reports failure rather than throwing', () async {
     // Before the session fix these returned `false` on a null read, and
     // `team_members_screen`'s `_handleMemberAction` showed an "Operation
-    // failed" snackbar off that. A future *rejects* where `valueOrNull` could
+    // failed" snackbar off that. A future *rejects* where `value` could
     // not, and no caller wraps the await — the join button and the leave
     // dialog are both fire-and-forget — so a throw loses the message and
     // escapes as an uncaught async error.

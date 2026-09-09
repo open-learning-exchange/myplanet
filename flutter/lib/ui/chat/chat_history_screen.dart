@@ -303,9 +303,9 @@ enum _ShareBranch { community, teams, enterprises }
 /// dialog.
 ///
 /// The two providers are awaited, not read: nothing on this screen watches
-/// them, so `valueOrNull` would be null on the first tap and the dialog would
+/// them, so `value` would be null on the first tap and the dialog would
 /// silently offer no destinations. Both awaits are inside the `try`, because a
-/// future can reject where `valueOrNull` could not.
+/// future can reject where `value` could not.
 @visibleForTesting
 Future<void> startChatShare(
   BuildContext context,

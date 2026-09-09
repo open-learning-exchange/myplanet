@@ -55,8 +55,7 @@ class _TeamFinancesScreenState extends ConsumerState<TeamFinancesScreen> {
     // use here, so any member of an enterprise may add a transaction.
     final canManage = widget.fromCommunity
         ? _isManager()
-        : ref.watch(teamMembershipsProvider).valueOrNull?[widget.teamId] !=
-              null;
+        : ref.watch(teamMembershipsProvider).value?[widget.teamId] != null;
 
     return Scaffold(
       appBar: AppBar(
@@ -159,7 +158,7 @@ class _TeamFinancesScreenState extends ConsumerState<TeamFinancesScreen> {
   /// `user?.isManager()` — the `manager` role or the admin flag. Only read on
   /// the community path, so the team path never builds [sessionProvider].
   bool _isManager() {
-    final session = ref.watch(sessionProvider).valueOrNull;
+    final session = ref.watch(sessionProvider).value;
     return session != null && UserMapper.isManager(session) == true;
   }
 

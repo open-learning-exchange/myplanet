@@ -117,6 +117,7 @@ void main() {
         (ref, teamId) => coursesFuture ?? Future.value(courses),
       ),
     ],
+    fallbackDatabase: false,
   );
 
   testWidgets('shows the empty state when the team has no members', (

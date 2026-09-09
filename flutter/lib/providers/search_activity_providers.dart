@@ -10,7 +10,7 @@ import 'session_provider.dart';
 Future<void> _queuePending(ProviderContainer container) async {
   final config = container.read(serverConfigProvider);
   if (config == null) return;
-  final user = container.read(sessionProvider).valueOrNull;
+  final user = container.read(sessionProvider).value;
   await container
       .read(searchActivityUploaderProvider)
       .queuePending(config: config, userId: user?.id);
@@ -30,7 +30,7 @@ Future<void> saveCourseSearchActivity(
   String? grade,
   String? subject,
 }) async {
-  final user = container.read(sessionProvider).valueOrNull;
+  final user = container.read(sessionProvider).value;
   if (user == null) return;
   final name = user.name;
   final planetCode = user.planetCode;
@@ -66,7 +66,7 @@ Future<void> saveResourceSearchActivity(
   Set<String> levels = const {},
   Set<String> mediums = const {},
 }) async {
-  final user = container.read(sessionProvider).valueOrNull;
+  final user = container.read(sessionProvider).value;
   if (user == null) return;
   final name = user.name;
   final planetCode = user.planetCode;

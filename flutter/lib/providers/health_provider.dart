@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../core/config/server_config.dart';
 import '../core/utils/time_utils.dart';
@@ -168,11 +169,11 @@ class HealthQueue {
   Future<int> queuePending({bool retryRefused = false}) async {
     final config = _ref.read(serverConfigProvider);
     if (config == null) return 0;
-    // `await`ed rather than read with `valueOrNull`: nothing on the
+    // `await`ed rather than read with `value`: nothing on the
     // examination form watches the session, so the synchronous read was still
     // `AsyncLoading` and every queued row carried a null user. The `await`
     // sits inside the caller's `try` for the reason Phase 100 records — a
-    // future can reject where `valueOrNull` could not.
+    // future can reject where `value` could not.
     final session = await _ref.read(sessionProvider.future);
     return _ref
         .read(healthUploaderProvider)
@@ -249,7 +250,7 @@ class HealthKeyIvSyncNotifier extends Notifier<SyncUiState> {
     if (state is SyncRunning) return;
 
     final config = ref.read(serverConfigProvider);
-    final session = ref.read(sessionProvider).valueOrNull;
+    final session = ref.read(sessionProvider).value;
     if (config == null || session == null) return;
 
     state = const SyncRunning(SyncProgress(completed: 0, total: 0));

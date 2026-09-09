@@ -46,7 +46,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     final l10n = AppLocalizations.of(context);
     final filter = ref.watch(notificationFilterProvider);
     final notifications = ref.watch(notificationsProvider);
-    final unread = ref.watch(unreadNotificationCountProvider).valueOrNull ?? 0;
+    final unread = ref.watch(unreadNotificationCountProvider).value ?? 0;
     final expansion = ref.watch(notificationExpansionProvider);
 
     return Scaffold(
@@ -236,7 +236,7 @@ class _GroupedList extends ConsumerWidget {
     // render, just without the `<b>Team</b>:` prefix, which is what an
     // uncached row shows in the Kotlin too.
     final formatContext =
-        ref.watch(notificationFormatContextProvider).valueOrNull ??
+        ref.watch(notificationFormatContextProvider).value ??
         const NotificationFormatContext.empty();
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 24),
@@ -275,7 +275,7 @@ class _GroupHeader extends ConsumerWidget {
           .read(notificationExpansionProvider.notifier)
           .toggle(
             header.type,
-            ref.read(notificationsProvider).valueOrNull ?? const [],
+            ref.read(notificationsProvider).value ?? const [],
           ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

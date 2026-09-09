@@ -25,7 +25,7 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final session = ref.watch(sessionProvider);
-    final unread = ref.watch(unreadNotificationCountProvider).valueOrNull ?? 0;
+    final unread = ref.watch(unreadNotificationCountProvider).value ?? 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -45,11 +45,10 @@ class ProfileScreen extends ConsumerWidget {
             onPressed: () => context.push(Routes.settings),
             icon: const Icon(Icons.settings_outlined),
           ),
-          if (session.valueOrNull != null)
+          if (session.value != null)
             IconButton(
               tooltip: l10n.editProfile,
-              onPressed: () =>
-                  _showProfileEditor(context, ref, session.valueOrNull!),
+              onPressed: () => _showProfileEditor(context, ref, session.value!),
               icon: const Icon(Icons.edit_outlined),
             ),
           const LogoutAction(),
@@ -332,7 +331,7 @@ class _ProfileBody extends ConsumerWidget {
   List<Widget> _activitySection(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final stats = ref.watch(profileActivityStatsProvider).valueOrNull;
+    final stats = ref.watch(profileActivityStatsProvider).value;
     if (stats == null) return const [];
 
     final lastVisit = stats.lastVisit;

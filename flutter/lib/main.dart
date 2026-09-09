@@ -1,3 +1,4 @@
+import 'core/providers/provider_retry.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -38,6 +39,7 @@ Future<void> main() async {
 
   runApp(
     ProviderScope(
+      retry: noProviderRetry,
       overrides: [planetPrefsProvider.overrideWithValue(prefs)],
       child: const MyPlanetApp(),
     ),

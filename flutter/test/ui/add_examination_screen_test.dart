@@ -303,6 +303,7 @@ void main() {
           pushTargets: {
             '/examination': (_) => const AddExaminationScreen(userId: 'pat-1'),
           },
+          fallbackDatabase: false,
         ),
       );
       await tester.pumpAndSettle();

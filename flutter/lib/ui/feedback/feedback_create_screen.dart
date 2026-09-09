@@ -37,7 +37,7 @@ class _FeedbackCreateScreenState extends ConsumerState<FeedbackCreateScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final session = ref.watch(sessionProvider).valueOrNull;
+    final session = ref.watch(sessionProvider).value;
 
     return Scaffold(
       appBar: AppBar(
@@ -199,7 +199,7 @@ class _FeedbackCreateScreenState extends ConsumerState<FeedbackCreateScreen> {
 
     if (hasError) return;
 
-    final session = ref.read(sessionProvider).valueOrNull;
+    final session = ref.read(sessionProvider).value;
     if (session == null) return;
 
     final messenger = ScaffoldMessenger.of(context);

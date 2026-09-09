@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' hide isNull;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/dashboard_providers.dart';
@@ -15,6 +16,7 @@ void main() {
   setUp(() {
     db = AppDatabase.memory();
     container = ProviderContainer(
+      retry: noProviderRetry,
       overrides: [appDatabaseProvider.overrideWithValue(db)],
     );
   });

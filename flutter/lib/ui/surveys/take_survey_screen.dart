@@ -117,7 +117,7 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
     final survey = ref.watch(surveyProvider(widget.surveyId));
     final questions = ref.watch(surveyQuestionsProvider(widget.surveyId));
     return Scaffold(
-      appBar: AppBar(title: Text(survey.valueOrNull?.name ?? l10n.takeSurvey)),
+      appBar: AppBar(title: Text(survey.value?.name ?? l10n.takeSurvey)),
       body: questions.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, _) => Center(child: Text(l10n.surveyLoadFailed)),
@@ -132,10 +132,10 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
               : ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    if (survey.valueOrNull?.description?.isNotEmpty == true)
+                    if (survey.value?.description?.isNotEmpty == true)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 16),
-                        child: Text(survey.valueOrNull!.description!),
+                        child: Text(survey.value!.description!),
                       ),
                     for (var index = 0; index < rows.length; index++)
                       _QuestionCard(
@@ -200,7 +200,7 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
     String? id;
     var askWhoTheyAre = false;
     try {
-      // `ref.read(sessionProvider).valueOrNull` is null until something else
+      // `ref.read(sessionProvider).value` is null until something else
       // resolves that provider, and this screen never watches it: the early
       // `if (user == null) return` then dropped the answered sheet with no
       // dialog, no snackbar and no row — the Phase 100 shape, latent in the
@@ -221,7 +221,7 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
       //
       // Awaited rather than read off the `AsyncValue` this screen watches:
       // the title falls back to a label while the survey loads, so the form
-      // can be submitted before it resolves, and `.valueOrNull` would read
+      // can be submitted before it resolves, and `.value` would read
       // null and decide the gate on a value it does not have yet. The await
       // is inside the `try` because the future can reject.
       final survey = await ref.read(surveyProvider(widget.surveyId).future);

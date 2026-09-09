@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myplanet/core/config/server_config.dart';
@@ -332,6 +332,7 @@ void main() {
           ),
           ...overrides,
         ],
+        fallbackDatabase: false,
       ),
     );
     await settleExam(tester);
@@ -827,7 +828,7 @@ void main() {
     });
 
     /// The exam session awaits `sessionProvider.future` — which, unlike the
-    /// `ref.read(...).valueOrNull` it replaced, can also *reject*. Left
+    /// `ref.read(...).value` it replaced, can also *reject*. Left
     /// uncaught that reproduces the silence the await was introduced to
     /// remove: the attempt gone with nothing on screen.
     testWidgets('a rejecting session reports the failure instead of silence', (

@@ -109,7 +109,7 @@ class VoiceCard extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final replies = ref.watch(voiceReplyCountProvider(row.id));
-    final user = ref.watch(sessionProvider).valueOrNull;
+    final user = ref.watch(sessionProvider).value;
 
     // The Kotlin gates run on `VoicesAdapter.canEdit/canDelete/canShare`; the
     // moderator and shared-by widenings it allows are not ported, so an author
@@ -202,7 +202,7 @@ class VoiceCard extends ConsumerWidget {
                 child: TextButton.icon(
                   onPressed: () => context.push('${Routes.voices}/${row.id}'),
                   icon: const Icon(Icons.mode_comment_outlined, size: 18),
-                  label: Text(l10n.repliesCount(replies.valueOrNull ?? 0)),
+                  label: Text(l10n.repliesCount(replies.value ?? 0)),
                 ),
               ),
             ],
