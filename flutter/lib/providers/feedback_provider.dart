@@ -144,9 +144,24 @@ class FeedbackSyncNotifier extends SyncNotifier {
   Future<SyncResult> runSync(
     ServerConfig config,
     void Function(SyncProgress) onProgress,
-  ) => ref
-      .read(feedbackRepositoryProvider)
-      .sync(config: config, onProgress: onProgress);
+  ) async {
+    final result = await ref
+        .read(feedbackRepositoryProvider)
+        .sync(config: config, onProgress: onProgress);
+
+    // The pull merges an admin's replies into a thread this device has not
+    // finished uploading (`FeedbackMapper._mergePendingReplies`), but the
+    // outbox holds a *snapshot* of the payload taken when the reply was
+    // written — and nothing else re-queues feedback, so that snapshot would
+    // drain the pre-merge array over the server's document and undo the merge
+    // there. Re-queuing refreshes it: `OutboxRepository.enqueue` replaces the
+    // payload of the row this item already owns, and puts an in-flight row
+    // back to `pending` so the edit still goes out.
+    if (result is SyncComplete) {
+      await ref.read(feedbackQueueProvider).queuePending();
+    }
+    return result;
+  }
 }
 
 final feedbackSyncProvider =

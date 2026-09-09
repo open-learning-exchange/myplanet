@@ -153,13 +153,16 @@ void main() {
       //
       // `feedback` is the one armed uploader where that is a *merge* loss rather
       // than a revision bump — `messages` is an append array both Planet's web
-      // UI and the handset write. **And the loss is pre-existing.** The second
-      // half of this test is the proof: `FeedbackMapper.fromDoc` keeps the local
-      // array on a pending reply while taking the server's `rev`
-      // (`feedback_mapper.dart:27-31, 50-54`) and leaves `isUploaded = false`,
-      // so the next sweep's payload differs from the refused one, Phase 148's
-      // memo re-arms it, and the admin reply goes over the side one sync later
-      // with no recovery arm involved at all.
+      // UI and the handset write. What this test drives is the **recovery
+      // arm**, which re-sends the payload it was handed, so it can only carry
+      // what that payload holds.
+      //
+      // The pull no longer feeds it a payload missing the admin's reply:
+      // `FeedbackMapper._mergePendingReplies` puts the server's copy back
+      // together with the unsent local tail, and `FeedbackSyncNotifier`
+      // re-queues so the outbox snapshot is refreshed rather than draining the
+      // pre-merge array. The test below this one pins that. Here the payload
+      // is constructed by hand, which is why the loss still shows.
       await seedPending();
       await (database.update(
         database.feedbackEntries,
@@ -222,51 +225,101 @@ void main() {
     },
   );
 
+  test('a pull merges the admin reply into the unsent local thread', () async {
+    // The report this lane was handed: "the port loses an admin reply".
+    //
+    // The mechanism was real and used to be pinned here as a loss. On the
+    // pending branch Kotlin keeps the local array, discards the server's
+    // (`FeedbackRepositoryImpl.kt:154`) and adopts the server's `_rev`
+    // (`:152`); the upload then POSTs the local array back and CouchDB
+    // replaces the document, so the admin's reply is destroyed **on the
+    // server** and reaches no device at all. Both apps did that. The port now
+    // merges instead: the server's copy whole, then the local tail after the
+    // shared prefix.
+    await seedPending();
+    await (database.update(
+      database.feedbackEntries,
+    )..where((f) => f.id.equals('feedback-1'))).write(
+      FeedbackEntriesCompanion(
+        rev: const Value('1-local'),
+        messages: Value(
+          jsonEncode([
+            {'message': 'the question', 'time': '1', 'user': 'ada'},
+            {'message': 'my unsent reply', 'time': '3', 'user': 'ada'},
+          ]),
+        ),
+      ),
+    );
+
+    await repository.insertFromJson([
+      {
+        '_id': 'feedback-1',
+        '_rev': '9-admin',
+        'messages': [
+          {'message': 'the question', 'time': '1', 'user': 'ada'},
+          {'message': 'from the admin', 'time': '2', 'user': 'admin'},
+        ],
+      },
+    ]);
+
+    final pulled = await database.feedbackDao.getById('feedback-1');
+    expect(pulled!.rev, '9-admin', reason: "the server's revision is taken");
+    expect(pulled.isUploaded, isFalse, reason: 'so the row is still swept');
+    expect(
+      FeedbackMapper.parseMessages(pulled.messages).map((m) => m.message),
+      ['the question', 'from the admin', 'my unsent reply'],
+      reason: 'the admin reply survives and the unsent reply keeps its place',
+    );
+
+    // And what the outbox would send now carries both.
+    final payload = FeedbackMapper.toDoc(pulled);
+    expect(
+      (payload['messages'] as List<dynamic>).map(
+        (m) => (m as Map<String, dynamic>)['message'],
+      ),
+      ['the question', 'from the admin', 'my unsent reply'],
+    );
+  });
+
   test(
-    'a pull already loses that reply, with no recovery arm involved',
+    'a second pull of the echoed thread does not duplicate the reply',
     () async {
-      // The proof that the loss above is **pre-existing**, and the reason it is
-      // reported rather than treated as something this phase introduced.
-      //
-      // `FeedbackMapper.fromDoc` keeps the local `messages` on a pending reply
-      // while taking the server's `rev` (`feedback_mapper.dart:27-31, 50-54`)
-      // and leaves `isUploaded = false`. So the admin's reply is gone locally
-      // the moment the pull lands, the row is still swept, and its payload now
-      // carries a revision the refused one did not — which is exactly what
-      // Phase 148's memo treats as a changed request. The next sweep sends the
-      // local array over the server's with no 409 and no arm in sight.
+      // The merge has to be idempotent, because a pull runs on every sync. Once
+      // the reply has landed, the local array is a prefix of the server's and
+      // the tail is empty.
       await seedPending();
       await (database.update(
         database.feedbackEntries,
       )..where((f) => f.id.equals('feedback-1'))).write(
         FeedbackEntriesCompanion(
-          rev: const Value('1-local'),
           messages: Value(
             jsonEncode([
-              {'message': 'mine'},
+              {'message': 'the question', 'time': '1', 'user': 'ada'},
+              {'message': 'my unsent reply', 'time': '3', 'user': 'ada'},
             ]),
           ),
         ),
       );
 
-      await repository.insertFromJson([
-        {
-          '_id': 'feedback-1',
-          '_rev': '9-admin',
-          'messages': [
-            {'message': 'mine'},
-            {'message': 'from the admin'},
-          ],
-        },
-      ]);
+      for (var i = 0; i < 2; i++) {
+        await repository.insertFromJson([
+          {
+            '_id': 'feedback-1',
+            '_rev': '9-admin',
+            'messages': [
+              {'message': 'the question', 'time': '1', 'user': 'ada'},
+              // The server echoes our reply back with its keys reordered, which
+              // is why the merge compares fields rather than encoded bytes.
+              {'user': 'ada', 'message': 'my unsent reply', 'time': '3'},
+            ],
+          },
+        ]);
+      }
 
       final pulled = await database.feedbackDao.getById('feedback-1');
-      expect(pulled!.rev, '9-admin', reason: "the server's revision is taken");
-      expect(pulled.isUploaded, isFalse, reason: 'so the row is still swept');
       expect(
-        pulled.messages,
-        isNot(contains('from the admin')),
-        reason: 'the local array is kept, so the reply is already lost locally',
+        FeedbackMapper.parseMessages(pulled!.messages).map((m) => m.message),
+        ['the question', 'my unsent reply'],
       );
     },
   );

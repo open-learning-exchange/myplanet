@@ -100,7 +100,7 @@ class FeedbackMapper {
   ]) {
     final id = idOf(doc);
     final hasPendingLocalReply = existing != null && !existing.isUploaded;
-    final messages = hasPendingLocalReply ? null : doc['messages'];
+    final serverMessages = doc['messages'];
     final isUploaded =
         !hasPendingLocalReply && doc.containsKey('_rev') && doc['_rev'] != null;
 
@@ -119,12 +119,63 @@ class FeedbackMapper {
       isUploaded: Value(isUploaded),
       messages: Value(
         hasPendingLocalReply
-            ? existing.messages
-            : (messages != null ? jsonEncode(messages) : null),
+            ? _mergePendingReplies(existing.messages, serverMessages)
+            : (serverMessages != null ? jsonEncode(serverMessages) : null),
       ),
       item: Value(_string('item', doc)),
       state: Value(_string('state', doc)),
     );
+  }
+
+  /// Puts the server's copy of a thread back together with the replies this
+  /// device has not sent yet.
+  ///
+  /// **A deliberate divergence, and the one place the port refuses to copy
+  /// Kotlin.** On the pending branch Kotlin keeps the local array and throws
+  /// the server's away (`FeedbackRepositoryImpl.kt:154`) while still adopting
+  /// the server's `_rev` (`:152`); the upload then POSTs that local array back
+  /// under the fresh revision, and CouchDB replaces the document
+  /// (`UploadConfigs.kt:198-208`, no `dbIdExtractor`, so it is always a POST
+  /// of the whole body). An admin who replies through the web UI while a
+  /// handset has an unsent reply therefore loses their reply **on the server**,
+  /// for every device and the web UI too. Both apps did this; the port stops.
+  ///
+  /// Both arrays are append-only in normal use, so they share a prefix and
+  /// diverge into "the admin's replies" and "ours". Keeping the server's copy
+  /// whole and re-appending only our tail after that prefix is what makes the
+  /// merge idempotent: once our reply has landed and been pulled back, the
+  /// local array is a **prefix** of the server's, the tail is empty, and the
+  /// server's copy is adopted unchanged — so a reply cannot be duplicated by
+  /// repeated syncs.
+  ///
+  /// Elements are compared on `message`/`user`/`time` through the same readers
+  /// the rest of this file uses, not on their bytes: the server may echo a
+  /// reply back with its keys in a different order, and comparing encoded
+  /// bytes would read that as a divergence and append our copy a second time.
+  static String? _mergePendingReplies(
+    String? localJson,
+    Object? serverMessages,
+  ) {
+    if (serverMessages is! List) return localJson;
+    final local = _decodeMessages(localJson);
+
+    var shared = 0;
+    while (shared < local.length &&
+        shared < serverMessages.length &&
+        _sameMessage(local[shared], serverMessages[shared])) {
+      shared++;
+    }
+
+    if (shared == local.length) return jsonEncode(serverMessages);
+    return jsonEncode([...serverMessages, ...local.skip(shared)]);
+  }
+
+  /// Whether two message elements are the same reply.
+  static bool _sameMessage(Object? a, Object? b) {
+    if (a is! Map<String, dynamic> || b is! Map<String, dynamic>) return false;
+    return _string('message', a) == _string('message', b) &&
+        _userString('user', a) == _userString('user', b) &&
+        _string('time', a) == _string('time', b);
   }
 
   /// Creates a new feedback entry.
