@@ -4,15 +4,12 @@ import android.Manifest
 import android.app.Activity.RESULT_OK
 import android.app.DatePickerDialog
 import android.app.Dialog
-import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.os.Environment
-import android.provider.MediaStore
 import android.provider.Settings
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -24,6 +21,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -38,6 +36,7 @@ import com.bumptech.glide.request.target.Target
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
+import java.io.File
 import java.lang.String.format
 import java.util.ArrayList
 import java.util.Calendar
@@ -110,7 +109,6 @@ class UserProfileFragment : Fragment() {
         captureImageLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { isSuccess ->
             val uri = photoURI
             if (isSuccess && uri != null) {
-                binding.image.setImageURI(uri)
                 viewLifecycleOwner.lifecycleScope.launch {
                     val appContext = requireContext().applicationContext
                     val filesDir = requireContext().filesDir
@@ -119,6 +117,8 @@ class UserProfileFragment : Fragment() {
                     }
                     if (path != null) {
                         startIntent(path)
+                        val imageSize = resources.getDimensionPixelSize(R.dimen.profile_image_size)
+                        ImageUtils.loadProfileImage(path, binding.image, imageSize)
                     }
                 }
             }
@@ -532,15 +532,18 @@ class UserProfileFragment : Fragment() {
             requestCameraLauncher.launch(Manifest.permission.CAMERA)
             return
         }
-        val values = ContentValues().apply {
-            put(MediaStore.Images.Media.TITLE, "Photo_${UUID.randomUUID()}")
-            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/ole/photo")
+        val context = requireContext()
+        viewLifecycleOwner.lifecycleScope.launch {
+            photoURI = withContext(dispatcherProvider.io) {
+                val directory = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "ole/photo")
+                if (!directory.exists()) {
+                    directory.mkdirs()
+                }
+                val photoFile = File(directory, "Photo_${UUID.randomUUID()}.jpg")
+                FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", photoFile)
             }
+            photoURI?.let { captureImageLauncher.launch(it) }
         }
-        photoURI = requireActivity().contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-        photoURI?.let { captureImageLauncher.launch(it) }
     }
 
     private fun startIntent(path: String?) {
