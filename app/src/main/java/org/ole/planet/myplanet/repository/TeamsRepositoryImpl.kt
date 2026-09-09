@@ -136,7 +136,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 entity.apply {
                     _rev = uploadedTeams[_id]
                     updated = false
-                }.requireRoomEntity()
+                }
             }
         if (teamsToUpdate.isNotEmpty()) {
             teamDao.upsertAll(teamsToUpdate)
@@ -179,7 +179,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 teamType = request.teamType
                 updated = true
             }
-            teamDao.upsertAll(listOf(team.requireRoomEntity(), membership.requireRoomEntity()))
+            teamDao.upsertAll(listOf(team, membership))
             teamId
         }
     }
@@ -522,7 +522,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 docType = "transaction"
                 updated = true
             }
-            teamDao.upsert(transaction.requireRoomEntity())
+            teamDao.upsert(transaction)
             if (imageName != null && imageData != null) {
                 attachTeamImage(transactionId, imageName, imageData)
             }
@@ -623,7 +623,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 isDeletePending = false
                 updated = false
             }
-            teamDao.upsert(updatedMembership.requireRoomEntity())
+            teamDao.upsert(updatedMembership)
             return
         }
 
@@ -638,7 +638,7 @@ class TeamsRepositoryImpl @Inject constructor(
             teamPlanetCode = userPlanetCode
             this.userPlanetCode = userPlanetCode
         }
-        teamDao.upsert(request.requireRoomEntity())
+        teamDao.upsert(request)
     }
 
     override suspend fun respondToMemberRequest(
@@ -659,7 +659,7 @@ class TeamsRepositoryImpl @Inject constructor(
                     docType = "membership"
                     updated = true
                 }
-                teamDao.upsert(accepted.requireRoomEntity())
+                teamDao.upsert(accepted)
             } else {
                 teamDao.deleteById(request._id)
             }
@@ -711,7 +711,7 @@ class TeamsRepositoryImpl @Inject constructor(
             this.resourceId = ""
             updated = true
         }
-        teamDao.upsert(updatedResource.requireRoomEntity())
+        teamDao.upsert(updatedResource)
     }
 
     override suspend fun createLocalResourceLink(
@@ -734,7 +734,7 @@ class TeamsRepositoryImpl @Inject constructor(
             docType = "resourceLink"
             updated = true
         }
-        teamDao.upsert(resourceLink.requireRoomEntity())
+        teamDao.upsert(resourceLink)
     }
 
     override suspend fun getPendingTasksForUser(
@@ -868,7 +868,7 @@ class TeamsRepositoryImpl @Inject constructor(
             updatedBy?.let { team.createdBy = it }
             team.limit = 12
             team.updated = true
-            teamDao.upsert(team.requireRoomEntity())
+            teamDao.upsert(team)
             true
         }
     }
@@ -893,7 +893,7 @@ class TeamsRepositoryImpl @Inject constructor(
         team.isPublic = isPublic
         team.createdBy = createdBy.takeIf { it.isNotBlank() } ?: team.createdBy
         team.updated = true
-        teamDao.upsert(team.requireRoomEntity())
+        teamDao.upsert(team)
         return true
     }
 
@@ -1241,9 +1241,8 @@ class TeamsRepositoryImpl @Inject constructor(
         val model = existingTeam ?: MyTeam().apply { _id = teamId }
         MyTeam.populateTeamFields(doc, model, true)
         processDescription(model.description)
-        val entity = model.requireRoomEntity()
-        teamDao.upsert(entity)
-        existingTeams?.put(teamId, entity)
+        teamDao.upsert(model)
+        existingTeams?.put(teamId, model)
     }
 
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
@@ -1291,7 +1290,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private suspend fun updateTeamEntityById(id: String, updater: (MyTeam) -> Unit): Boolean {
         val entity = teamDao.getById(id) ?: return false
         updater(entity)
-        teamDao.upsert(entity.requireRoomEntity())
+        teamDao.upsert(entity)
         return true
     }
 
@@ -1306,13 +1305,9 @@ class TeamsRepositoryImpl @Inject constructor(
                     isDeletePending = true
                     updated = true
                 }
-                teamDao.upsert(updatedMembership.requireRoomEntity())
+                teamDao.upsert(updatedMembership)
             }
         }
-    }
-
-    private fun MyTeam.requireRoomEntity(): MyTeam {
-        return this
     }
 
     private fun MyTeam.toSummary(): TeamSummary {
