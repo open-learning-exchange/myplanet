@@ -19,7 +19,7 @@
 
 ### Flutter port (in progress)
 
-**Migration progress: ≈90/100.** Report this figure whenever you report on the
+**Migration progress: ≈94/100.** Report this figure whenever you report on the
 port; it is the whole migration effort on a 1-to-100 scale, not a phase count.
 The basis, so it can be argued with rather than repeated:
 
@@ -27,11 +27,11 @@ The basis, so it can be argued with rather than repeated:
 |---|---|---|
 | Feature breadth | all 28 UI packages have screens (enterprises is a team *type*, not a gap — Phase 99) | ~95 |
 | Behavioural parity | the limiter, and the lowest-confidence row: **reachability** audits keep finding ported, green, *dead* code — see below | ~72 |
-| Test coverage | 2457 tests / 209 test files vs 248 Kotlin test files | ~88 |
-| Localisation | ar/es/fr 851–886 of 906 keys but **416–469 of those are unreviewed machine translation** (`"x-mt": true`, so the set is queryable); ne/so 444 | ~55 |
+| Test coverage | 2735 tests / 234 test files vs 260 Kotlin test files | ~90 |
+| Localisation | ar/es/fr 858–894 of 916 keys but **416–469 of those are unreviewed machine translation** (`"x-mt": true`, so the set is queryable); ne/so 451. Phase 141 measured the recoverable pool and found it **exhausted** — the next 42 values a looser matcher reaches are degradations | ~55 |
 | Background work | WorkManager gaps closed through Phase 94, platform channels in-tree | ~95 |
 
-Breadth is measurable and depth is not — 247 hand-written Dart files against 550
+Breadth is measurable and depth is not — 250 hand-written Dart files against 551
 Kotlin sources mostly reflects Dart folding Fragment + ViewModel + Adapter + XML
 into one screen file, so it says little about parity. Depth is only ever revealed
 by auditing, and **every audit so far has found something**, which is why the
@@ -871,6 +871,63 @@ while the port has neither half and `SurveyDao.deleteNotIn` prunes it. Phase 136
 probed it — clone and question rows gone after one surveys sync, answer sheets
 orphaned. **A wrong `parentId` mis-files answers; a deleted survey loses them.**
 
+Phases 138–149 were four-lane rounds briefed almost entirely from the previous
+round's *Reported, not fixed* lists — eight consecutive rounds now. The defects
+are in the notes; what belongs here is the handful of things that changed how
+the work is done.
+
+**Trace the caller chain to its end before porting a line.** Phase 149 was told
+to fix a step row showing the wrong datum, and found the slot is **never drawn
+in the shipping Kotlin app**: the view is `visibility="gone"`, its flag defaults
+false, its only writer is a ViewModel method whose only caller is the `else` arm
+of `parentFragment as? TakeCourseFragment`, and that fragment is constructed in
+exactly one place — as a page of a `FragmentStateAdapter` hosted *by*
+`TakeCourseFragment`, so the cast never fails. Five hops to establish that the
+right fix was **removal**, and the ARB key already added for the line was
+reverted before commit. `CourseStep.noOfResources` is written and read nowhere
+in `app/src/main` either. Same shape as Phase 61 declining the master's progress
+dialog, whose `di` is never assigned.
+
+**A supplied replacement sentence is a claim, not a patch — its citations need
+opening.** The lane whose entire job was making documentation true committed
+this on its second target: it pasted a hand-off sentence *including its
+citation* without reading the citation, which said the opposite. The shipped
+text would have pointed a future lane at adding two columns to a **preserved**
+table — a bump, two hand-written steps, migration churn — to close a hole Phase
+123 had argued should stay open. It caught itself, and put the finding ahead of
+its fixes. Three of the six reports it was handed did not survive first reading
+at all. **This is the fourth round in which a brief propagated an inherited
+error; the wording carries the mistake with it.**
+
+**One rule at the right layer beat twenty special cases.** Phase 148 was handed
+two items reported by three consecutive rounds — a health upload answering `id`
+without `rev` that re-POSTs for ever, and a permanent refusal accreting a dead
+row per sweep across ~20 uploaders — and found they are **one defect**: the
+health case is the only class where re-sending can create a second document,
+reached through a branch fourteen uploaders share. The policy, worth quoting
+because the next uploader author needs it:
+
+> An `outbox` item owns exactly one row, for ever. A terminal row is a memo: the
+> request it holds has been answered, and nothing re-asks the identical question
+> unattended. What re-arms it is a *changed request* — a different payload,
+> endpoint or verb — or a person explicitly asking for a retry.
+
+Refusals classify as `transient` (5xx, transport, 401/403/404/408/429 — about
+the caller or the moment), `rejected` (other 4xx — about the bytes) or
+`indeterminate` (a handler's verdict on a **2xx**). The last is deliberately not
+retried **against its own auditor's advice**: eleven uploaders are appends with
+server-assigned ids, so a duplicate is undetectable afterwards, and the
+transport already said the write landed. Bounded by one row per
+`(uploadType, itemId)`, which matters because `outbox` is preserved.
+
+**Two lanes reached outside their file sets and both were right.** One made the
+stale preserved-table count true in `.claude/agents/parity-auditor.md` — the
+highest-leverage copy, since every parity audit reads it — adding *"do not trust
+a count quoted anywhere else, this line included."* The other derived its own
+new ARB keys into all five locales rather than leaving the hand-off. **The
+"stop and report" rule should carve both out:** making an existing statement
+true, and deriving keys you added, cannot collide with another lane.
+
 ### Harvesting master rebuilds the Kotlin app, and that is correct
 
 `build.yml` and `test.yml` carry `paths-ignore: flutter/**, docs/**, **.md`, so a
@@ -959,6 +1016,11 @@ established, at the cost of a regression and five failing tests:
 - **`outcome_branch` needs `source_url` and `source_revision`.** A
   `create_session` call with only `outcome_branch` is refused with
   *"outcome_branch requires a github.com git source"*.
+- **"Stop and report" has two carve-outs**, both established by lanes that
+  breached it correctly: *making an existing statement true* (a stale comment,
+  a wrong count) and *running the ARB derivation for keys you added yourself*.
+  Neither can collide with another lane, and both otherwise cost the integrator
+  a round-trip. Everything else outside your set still stops and reports.
 - **A round's highest-value targets are often blocked on the lane in flight.**
   Twice the top two items from a round both needed the file a running lane
   owned, so the honest answer was to wait rather than spin up lower-value
@@ -1339,7 +1401,7 @@ There is no generic base repository; each implementation talks to its Room DAO(s
 
 ### Flutter port toolchain
 
-**Current Drift `schemaVersion` is 47** (`flutter/lib/data/local/app_database.dart`).
+**Current Drift `schemaVersion` is 48** (`flutter/lib/data/local/app_database.dart`).
 Bump it only when you have been allocated a number — parallel lanes must not each
 pick one, and a bump discards unsynced local writes on any device that has not
 synced, which is what `localAuthorityTables` and the hand-written
@@ -1744,6 +1806,6 @@ Note: SYSTEM_ALERT_WINDOW is **not** declared (removed at some point; older docs
 
 ---
 
-**Last Updated**: 2026-09-08
+**Last Updated**: 2026-09-09
 **Version**: 0.69.18
 **Maintainer**: Open Learning Exchange
