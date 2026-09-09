@@ -202,6 +202,18 @@ examination row's. A row-keyed GET would 404, the arm would return the original
 `ConflictRecovery.documentUrlUnder(sendUrl, payload)` exists so that derivation
 is written once, and returns null rather than guessing.
 
+It percent-encodes the id with `Uri.encodeComponent`, which is the port's
+established convention for a CouchDB document id (`personals_uploader.dart:151`,
+`submit_photos_uploader.dart:131`, `teams_uploader.dart:123`,
+`teams_repository.dart:707`, `voices_uploader.dart:331`, and the arm this
+phase replaced). **One consequence is worth stating because it is new:** for
+`health` the id is a user id like `org.couchdb.user:ada`, so the URL carries
+`%3A` where `user_uploader.dart:80` deliberately leaves the `_users` prefix's
+colon literal and encodes only the name. CouchDB percent-decodes a path
+segment, so both resolve to the same document — but that is a *checked
+assumption*, not something the suite proves, and it is the kind of thing that
+would fail exactly as a green dead arm.
+
 ---
 
 ## Armed, and not
@@ -292,8 +304,11 @@ the shared arm and has four tests.
 
 ## Tests
 
-Gate green: `dart format` clean, `flutter analyze` clean, **2790 tests pass**
-(2735 before).
+Gate green: `dart format` clean, `flutter analyze` clean, **2767 tests pass**
+(2735 before — the 32 added reconcile: 16 in the new
+`conflict_recovery_test.dart`, 4 in the new `adopted_surveys_uploader_test.dart`,
+and one each in eleven existing uploader test files plus
+`health_legacy_conflict_test.dart`). *Counted from the run, not remembered.*
 
 New: `test/repository/conflict_recovery_test.dart` (16) pins the rule itself —
 both arms, the `adoptExisting` opt-in, the three guards, and `documentUrlUnder`.
