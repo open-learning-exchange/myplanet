@@ -15,6 +15,9 @@ interface TagDao {
     )
     suspend fun getParentTags(db: String?): List<TagEntity>
 
+    @Query("SELECT * FROM tag WHERE isAttached = 1 AND (:db IS NULL OR db = :db)")
+    suspend fun getAttachedForDb(db: String?): List<TagEntity>
+
     @Query("SELECT * FROM tag")
     suspend fun getAll(): List<TagEntity>
 
