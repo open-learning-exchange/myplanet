@@ -42,7 +42,7 @@ class _TeamCalendarScreenState extends ConsumerState<TeamCalendarScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final allMeetups = ref.watch(eventsProvider).valueOrNull ?? [];
+    final allMeetups = ref.watch(eventsProvider).value ?? [];
     final teamMeetups = allMeetups
         .where((m) => m.teamId == widget.teamId)
         .toList();

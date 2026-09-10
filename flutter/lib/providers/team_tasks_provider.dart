@@ -62,7 +62,7 @@ class TeamTaskActions {
             itemId: id,
             endpoint: TeamTasksUploader.endpointFor(config),
             payload: {'_id': row.docId, '_rev': row.rev, '_deleted': true},
-            userId: ref.read(sessionProvider).valueOrNull?.id,
+            userId: ref.read(sessionProvider).value?.id,
           );
     }
     await repository.delete(id);
@@ -70,7 +70,7 @@ class TeamTaskActions {
 
   Future<int> queuePending() async {
     final config = ref.read(serverConfigProvider);
-    final user = ref.read(sessionProvider).valueOrNull;
+    final user = ref.read(sessionProvider).value;
     if (config == null) return 0;
     return ref
         .read(teamTasksUploaderProvider)

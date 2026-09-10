@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/prefs/planet_prefs.dart';
@@ -85,6 +85,7 @@ void main() {
           }),
           ...await overrides(user: _user()),
         ],
+        fallbackDatabase: false,
       ),
     );
     await tester.pumpAndSettle();
@@ -116,6 +117,7 @@ void main() {
           }),
           ...await overrides(user: null),
         ],
+        fallbackDatabase: false,
       ),
     );
     await tester.pumpAndSettle();

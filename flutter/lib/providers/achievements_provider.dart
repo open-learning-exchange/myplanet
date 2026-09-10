@@ -11,7 +11,7 @@ import 'session_provider.dart';
 /// screen wires together each load. The ledger row is auto-initialized here
 /// so the edit form always opens against a row.
 final achievementEntryProvider = FutureProvider<AchievementRow?>((ref) async {
-  final user = ref.watch(sessionProvider).valueOrNull;
+  final user = ref.watch(sessionProvider).value;
   if (user == null) return null;
   final id = AchievementsRepository.idFor(user.id, user.planetCode ?? '');
   return ref.read(achievementsRepositoryProvider).getOrInitialize(id);
@@ -36,7 +36,7 @@ class AchievementActions {
     String? birthPlace,
     String? birthDate,
   }) async {
-    final user = ref.read(sessionProvider).valueOrNull;
+    final user = ref.read(sessionProvider).value;
     if (user == null) return;
     final repository = ref.read(achievementsRepositoryProvider);
     final id = AchievementsRepository.idFor(user.id, user.planetCode ?? '');

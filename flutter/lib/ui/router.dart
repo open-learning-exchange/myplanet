@@ -201,7 +201,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Hold position until the persisted session has been read back.
       if (session.isLoading) return null;
 
-      final isSignedIn = session.valueOrNull != null;
+      final isSignedIn = session.value != null;
       if (location == Routes.onboarding) {
         return hasServer ? Routes.login : Routes.server;
       }

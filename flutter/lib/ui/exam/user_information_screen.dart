@@ -17,7 +17,7 @@ import '../../providers/session_provider.dart';
 /// `initViews` sets no text on any field and the gender radios ship unchecked,
 /// so `createUserProfile` reports only what the respondent typed. The port did
 /// carry a prefill, but it was dead — it read `sessionProvider` with
-/// `valueOrNull` from `initState`, where that provider is still loading — and
+/// `value` from `initState`, where that provider is still loading — and
 /// waking it up is worse than leaving it: `sessionProvider` restores the last
 /// account that logged in on the device, so a public-survey link opened by a
 /// stranger would have filed the device owner's name, email, phone, birth date,
@@ -446,7 +446,7 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
   /// snackbars on the one path that reaches this screen today.
   ///
   /// Swallowed on purpose, and awaited on the session's **future** rather than
-  /// its `valueOrNull`: a screen that only reads `sessionProvider` sees it
+  /// its `value`: a screen that only reads `sessionProvider` sees it
   /// still loading, and a failure to queue is not a failure to save — the
   /// submission is already complete, and the next sync picks it up.
   ///

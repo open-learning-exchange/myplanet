@@ -113,7 +113,7 @@ void main() {
   });
 
   // The awaits sit inside `startChatShare`'s `try` because a future can reject
-  // where `valueOrNull` could not. Nothing pinned that until now.
+  // where `value` could not. Nothing pinned that until now.
   testWidgets('a rejecting targets provider does not take the screen down', (
     tester,
   ) async {

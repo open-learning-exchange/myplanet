@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/core/network/network_result.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/dashboard_providers.dart';
@@ -31,6 +32,7 @@ void main() {
   });
 
   ProviderContainer container({ServerConfig? config}) => ProviderContainer(
+    retry: noProviderRetry,
     overrides: [
       planetApiProvider.overrideWithValue(api),
       serverConfigProvider.overrideWith(

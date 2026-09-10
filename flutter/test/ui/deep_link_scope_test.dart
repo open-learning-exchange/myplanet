@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myplanet/core/prefs/planet_prefs.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/deep_link_provider.dart';
@@ -57,6 +58,7 @@ void main() {
     final config = router ?? buildRouter();
     await tester.pumpWidget(
       ProviderScope(
+        retry: noProviderRetry,
         overrides: [
           planetPrefsProvider.overrideWithValue(prefs),
           deepLinkSourceProvider.overrideWithValue(source),

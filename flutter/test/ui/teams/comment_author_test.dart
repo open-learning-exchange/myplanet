@@ -67,6 +67,7 @@ void main() {
           ),
           sessionProvider.overrideWith(() => _TestSessionNotifier(ada)),
         ],
+        fallbackDatabase: false,
       ),
     );
     await tester.pumpAndSettle();

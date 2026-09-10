@@ -392,6 +392,7 @@ void main() {
             (ref) => Stream.value(1),
           ),
         ],
+        fallbackDatabase: false,
       ),
     );
     await tester.pumpAndSettle();

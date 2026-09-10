@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../core/sync/sync_result.dart';
 import '../data/local/app_database.dart';
@@ -20,7 +21,7 @@ final notificationFilterProvider = StateProvider<NotificationFilter>(
 );
 
 final notificationsProvider = StreamProvider<List<NotificationRow>>((ref) {
-  final user = ref.watch(sessionProvider).valueOrNull;
+  final user = ref.watch(sessionProvider).value;
   if (user == null) return Stream.value(const []);
   final filter = ref.watch(notificationFilterProvider);
   return ref
@@ -29,7 +30,7 @@ final notificationsProvider = StreamProvider<List<NotificationRow>>((ref) {
 });
 
 final unreadNotificationCountProvider = StreamProvider<int>((ref) {
-  final user = ref.watch(sessionProvider).valueOrNull;
+  final user = ref.watch(sessionProvider).value;
   if (user == null) return Stream.value(0);
   return ref
       .watch(notificationsRepositoryProvider)
@@ -52,7 +53,7 @@ class NotificationActions {
   }
 
   Future<void> markAllAsRead() async {
-    final user = ref.read(sessionProvider).valueOrNull;
+    final user = ref.read(sessionProvider).value;
     if (user == null) return;
     await ref.read(notificationsRepositoryProvider).markAllAsRead(user.id);
     // Port of `markAllAsRead`: clearing both override sets collapses every

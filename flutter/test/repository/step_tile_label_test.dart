@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/data/local/course_mapper.dart';
@@ -413,6 +414,7 @@ void main() {
 
     setUp(() {
       container = ProviderContainer(
+        retry: noProviderRetry,
         overrides: [appDatabaseProvider.overrideWithValue(database)],
       );
       addTearDown(container.dispose);

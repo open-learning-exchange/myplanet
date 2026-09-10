@@ -811,7 +811,7 @@ the same polarity under the clearer name `onboardingComplete`.
 
 | Concern | Kotlin/Android | Flutter/Dart | Notes |
 |---|---|---|---|
-| DI | Dagger Hilt 2.60 + `@EntryPoint` | Riverpod 2 providers | Runtime graph, no kapt/KSP. `@EntryPoint` escape hatches for Workers become unnecessary. |
+| DI | Dagger Hilt 2.60 + `@EntryPoint` | Riverpod 3 providers | Runtime graph, no kapt/KSP. `@EntryPoint` escape hatches for Workers become unnecessary. |
 | Local DB | Room 2.8.4 (was Realm) | Drift 2.28 | Both are SQLite + DAOs + compile-checked queries. `Flow<List<T>>` → `Stream<List<T>>`. |
 | Networking | Retrofit 3 + OkHttp 5 | Dio 5 | Retrofit's annotated interface becomes thin methods; `NetworkResult` sealed class ports directly. |
 | Async | Coroutines + `StateFlow` | `Future`/`Stream` + Riverpod `Notifier` | `suspend fun` → `Future`, `StateFlow` → `Notifier`, `SharedFlow` → `Stream`. |
@@ -1589,13 +1589,20 @@ succeeds, it just doesn't do what the Kotlin did.
   `NotificationsRepository` has to pass `isRead: const Value(false)` explicitly to match
   `NotificationsRepositoryImpl`.
 - **Widget tests fall through to the real database.** `wrapScreen` redirects
-  `appDatabaseProvider` to `AppDatabase.memory()` ahead of the caller's overrides. Without it a
-  screen that reads an un-overridden DAO -- an unread badge, a rating summary, a filter list --
-  reaches `AppDatabase.open()`, whose `path_provider` lookup has no platform channel under
-  `flutter test`; screens read those through `.valueOrNull ?? <default>`, so the error is
-  swallowed and the test passes while asserting against nothing. The backstop turns that into a
-  "Timer is still pending" failure at teardown: when you see it, override the provider the screen
-  actually reads.
+  `appDatabaseProvider` to `AppDatabase.memory()`. Without it a screen that reads an un-overridden
+  DAO -- an unread badge, a rating summary, a filter list -- reaches `AppDatabase.open()`, whose
+  `path_provider` lookup has no platform channel under `flutter test`; screens read those through
+  `.value ?? <default>`, so the error is swallowed and the test passes while asserting against
+  nothing. The backstop turns that into a "Timer is still pending" failure at teardown: when you
+  see it, override the provider the screen actually reads.
+
+  **Supplying your own database now needs `wrapScreen(fallbackDatabase: false)`.** It used to be
+  enough to put `appDatabaseProvider.overrideWith(...)` in `overrides` and let it shadow the
+  backstop, because Riverpod 2 took the last of two entries for the same provider. Riverpod 3
+  asserts `Tried to override a provider twice within the same container`, so the flag switches
+  the default off instead. Three test-local helpers carry the same shape for their own defaults
+  (`defaultSession`, `defaultPrefs`, `defaultCourse`). An `assert` in `wrapScreen` catches
+  `fallbackDatabase: false` with no database of your own.
 
 ## Phase 37 — notifications grouping
 

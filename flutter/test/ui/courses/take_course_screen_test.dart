@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' show Value;
@@ -70,10 +70,16 @@ void main() {
   /// Pushes the take-course screen onto a router so `context.pop()` (the finish
   /// handler and the back button) has somewhere to return to — the pattern
   /// `become_member_screen_test.dart` uses for the same reason.
+  /// [defaultPrefs] exists because Riverpod 3 asserts on a provider overridden
+  /// twice in one container: a caller supplying its own `planetPrefsProvider`
+  /// has to switch this helper's default off rather than shadow it.
   Future<void> pumpScreen(
     WidgetTester tester, {
     List<Override> overrides = const [],
     Map<String, WidgetBuilder> extraTargets = const {},
+    bool defaultPrefs = true,
+    bool fallbackDatabase = true,
+    bool defaultCourse = true,
   }) async {
     await tester.pumpWidget(
       wrapScreen(
@@ -93,33 +99,37 @@ void main() {
             return const Scaffold(body: Text('ROOT_PAGE'));
           },
         ),
+        fallbackDatabase: fallbackDatabase,
         pushTargets: {
           '/take': (context) => const TakeCourseScreen(courseId: 'course-1'),
           ...extraTargets,
         },
         overrides: [
-          await _prefsOverride(),
+          if (defaultPrefs) await _prefsOverride(),
           sessionProvider.overrideWith(() => _TestSessionNotifier(_user())),
-          courseProvider('course-1').overrideWith(
-            (ref) => Stream.value(
-              // A **member** row, deliberately. These fixtures used
-              // `buildCourseRow`'s default empty `userId` and so were
-              // non-members by accident, which was harmless until Phase 145
-              // gated the navigation bar on membership: from then on five
-              // tests named for a learner finishing a course were silently
-              // propping up the *ungated Finish* decision, and mutating that
-              // gate reddened all five instead of the one test that is
-              // actually about it (`non_member_navigation_test.dart`).
-              buildCourseRow(
-                id: 'course-1',
-                courseTitle: 'Algebra',
-                userId: const ['user-1'],
+          if (defaultCourse)
+            courseProvider('course-1').overrideWith(
+              (ref) => Stream.value(
+                // A **member** row, deliberately. These fixtures used
+                // `buildCourseRow`'s default empty `userId` and so were
+                // non-members by accident, which was harmless until Phase 145
+                // gated the navigation bar on membership: from then on five
+                // tests named for a learner finishing a course were silently
+                // propping up the *ungated Finish* decision, and mutating that
+                // gate reddened all five instead of the one test that is
+                // actually about it (`non_member_navigation_test.dart`).
+                buildCourseRow(
+                  id: 'course-1',
+                  courseTitle: 'Algebra',
+                  userId: const ['user-1'],
+                ),
               ),
             ),
-          ),
-          courseStepsProvider('course-1').overrideWith(
-            (ref) => Stream.value([buildStepRow(id: 's1', stepTitle: 'First')]),
-          ),
+          if (defaultCourse)
+            courseStepsProvider('course-1').overrideWith(
+              (ref) =>
+                  Stream.value([buildStepRow(id: 's1', stepTitle: 'First')]),
+            ),
           ...overrides,
         ],
       ),
@@ -155,6 +165,8 @@ void main() {
           ),
         ),
       ],
+      defaultPrefs: false,
+      fallbackDatabase: false,
     );
 
     expect(find.text('Algebra'), findsOneWidget);
@@ -189,6 +201,8 @@ void main() {
           ),
         ),
       ],
+      defaultPrefs: false,
+      fallbackDatabase: false,
     );
 
     await tester.tap(finishButton);
@@ -220,6 +234,8 @@ void main() {
         // dialog (if it had opened) would watch it. Seed a real rating so the
         // repo's `summary` reports the user has rated.
       ],
+      defaultPrefs: false,
+      fallbackDatabase: false,
     );
 
     // Seed an existing course rating for the signed-in user.
@@ -309,6 +325,7 @@ void main() {
             ),
           ),
         ],
+        fallbackDatabase: false,
       ),
     );
     await tester.pumpAndSettle();
@@ -415,6 +432,7 @@ void main() {
             ),
           ),
         ],
+        fallbackDatabase: false,
       ),
     );
     await tester.pumpAndSettle();
@@ -540,6 +558,9 @@ void main() {
           'course-1',
         ).overrideWith((ref) => Stream.value(steps)),
       ],
+      defaultPrefs: false,
+      fallbackDatabase: false,
+      defaultCourse: false,
     );
   }
 
@@ -792,6 +813,7 @@ void main() {
             'course-1',
           ).overrideWith((ref) => Stream.value(steps)),
         ],
+        fallbackDatabase: false,
       ),
     );
     await tester.pumpAndSettle();

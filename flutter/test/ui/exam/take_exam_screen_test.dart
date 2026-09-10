@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:myplanet/core/config/server_config.dart';
@@ -288,6 +288,12 @@ void main() {
     UserRow? session,
     ServerConfig? config = server,
     List<Override> overrides = const [],
+    // Riverpod 3 asserts on a provider overridden twice in one container, so a
+    // test supplying its own session notifier switches this default off rather
+    // than shadowing it. `session:` above configures *this* default, so the
+    // two are alternatives: with `defaultSession: false` the `session:`
+    // argument is ignored and your own override decides.
+    bool defaultSession = true,
   }) async {
     await tester.pumpWidget(
       wrapScreen(
@@ -315,9 +321,10 @@ void main() {
         },
         overrides: [
           appDatabaseProvider.overrideWith((ref) => db),
-          sessionProvider.overrideWith(
-            () => _TestSessionNotifier(session ?? user),
-          ),
+          if (defaultSession)
+            sessionProvider.overrideWith(
+              () => _TestSessionNotifier(session ?? user),
+            ),
           serverConfigProvider.overrideWith(() => _TestServerConfig(config)),
           // The real source reaches `planetPrefs`, which is `UnimplementedError`
           // in the harness; the uploaders read it at queue time.
@@ -332,6 +339,7 @@ void main() {
           ),
           ...overrides,
         ],
+        fallbackDatabase: false,
       ),
     );
     await settleExam(tester);
@@ -827,7 +835,7 @@ void main() {
     });
 
     /// The exam session awaits `sessionProvider.future` — which, unlike the
-    /// `ref.read(...).valueOrNull` it replaced, can also *reject*. Left
+    /// `ref.read(...).value` it replaced, can also *reject*. Left
     /// uncaught that reproduces the silence the await was introduced to
     /// remove: the attempt gone with nothing on screen.
     testWidgets('a rejecting session reports the failure instead of silence', (
@@ -843,6 +851,7 @@ void main() {
       await pumpExam(
         tester,
         overrides: [sessionProvider.overrideWith(_FailingSessionNotifier.new)],
+        defaultSession: false,
       );
 
       await tester.enterText(find.byType(TextField), 'anything at all');

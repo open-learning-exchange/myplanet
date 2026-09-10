@@ -6,7 +6,7 @@ import 'session_provider.dart';
 
 /// State for the port of `ui/submissions/SubmissionsFragment.kt`.
 final submissionsProvider = StreamProvider<List<SubmissionRow>>((ref) {
-  final user = ref.watch(sessionProvider).valueOrNull;
+  final user = ref.watch(sessionProvider).value;
   if (user == null) return Stream.value(const []);
   return ref.watch(submissionsRepositoryProvider).watchForUser(user.id);
 });

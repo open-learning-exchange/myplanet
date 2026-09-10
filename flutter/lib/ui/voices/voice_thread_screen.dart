@@ -41,12 +41,12 @@ class VoiceThreadScreen extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: Text(
-                    l10n.repliesCount(replies.valueOrNull?.length ?? 0),
+                    l10n.repliesCount(replies.value?.length ?? 0),
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                 ),
                 const SizedBox(height: 8),
-                ...?replies.valueOrNull?.map(
+                ...?replies.value?.map(
                   (reply) => Padding(
                     padding: const EdgeInsetsDirectional.only(
                       start: 16,
@@ -66,13 +66,13 @@ class VoiceThreadScreen extends ConsumerWidget {
   /// The session is **awaited**, and the `await` sits inside the `try`.
   ///
   /// This screen never watches `sessionProvider`, so
-  /// `ref.read(...).valueOrNull` was null until something else resolved it and
+  /// `ref.read(...).value` was null until something else resolved it and
   /// the tap was dropped before the composer even opened — no dialog, no
   /// snackbar, no row. In the shipping app the router's `ref.listen` keeps it
   /// resolved, which is what made this latent rather than visible; it is real
   /// for any entry that does not, such as a deep link into a thread. The
   /// `await` is inside the `try` because a future can reject where
-  /// `valueOrNull` could not.
+  /// `value` could not.
   ///
   /// `VoicesActions.postReply` awaits the session for itself (Phase 144), so
   /// the guard here is only about not opening a composer whose reply would be

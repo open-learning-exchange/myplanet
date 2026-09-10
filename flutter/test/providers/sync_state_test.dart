@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/core/prefs/planet_prefs.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/core/sync/sync_result.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/sync_state.dart';
@@ -42,6 +43,7 @@ void main() {
       () => _ResultSyncNotifier(result),
     );
     final container = ProviderContainer(
+      retry: noProviderRetry,
       overrides: [
         planetPrefsProvider.overrideWithValue(prefs),
         serverConfigProvider.overrideWith(_ConfiguredServerNotifier.new),

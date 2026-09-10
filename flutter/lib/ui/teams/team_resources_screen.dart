@@ -14,7 +14,7 @@ class TeamResourcesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final resources = ref.watch(teamResourcesProvider(teamId));
-    final membership = ref.watch(teamMembershipsProvider).valueOrNull?[teamId];
+    final membership = ref.watch(teamMembershipsProvider).value?[teamId];
     // Two different gates, as `TeamResourcesFragment` has: the add FAB is
     // `isVisible = isMember` (`:51-52`, `isMemberFlow` → plain membership),
     // while remove is `isTeamLeader` (`:73`). One `isLeader` flag drove both
@@ -66,10 +66,9 @@ class TeamResourcesScreen extends ConsumerWidget {
 
   Future<void> _chooseResource(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context);
-    final linked =
-        ref.read(teamResourcesProvider(teamId)).valueOrNull ?? const [];
+    final linked = ref.read(teamResourcesProvider(teamId)).value ?? const [];
     final linkedIds = linked.map((row) => row.resourceId).toSet();
-    final all = ref.read(resourcesStreamProvider).valueOrNull ?? const [];
+    final all = ref.read(resourcesStreamProvider).value ?? const [];
     final available = all
         .where((row) => !linkedIds.contains(row.resourceId))
         .toList();

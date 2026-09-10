@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/core/prefs/planet_prefs.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/core/system/device_stats.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/activities_provider.dart';
@@ -40,6 +41,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final prefs = PlanetPrefs(await SharedPreferences.getInstance());
     final container = ProviderContainer(
+      retry: noProviderRetry,
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         deviceStatsProvider.overrideWithValue(_FakeDeviceStats()),

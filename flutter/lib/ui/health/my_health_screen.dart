@@ -26,8 +26,7 @@ class MyHealthScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final detail = ref.watch(patientDetailProvider);
     final syncState = ref.watch(healthSyncProvider);
-    final isHealthProvider =
-        ref.watch(isHealthProviderProvider).valueOrNull ?? false;
+    final isHealthProvider = ref.watch(isHealthProviderProvider).value ?? false;
     // Both editors take the *selected* patient, as `MyHealthFragment` passes
     // it (`putExtra("userId", userId)`); without it they fell back to the
     // signed-in user, so a health provider read and wrote their own record.
@@ -417,7 +416,7 @@ class _RejectedUploadsBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final count = ref.watch(rejectedHealthRecordCountProvider).valueOrNull ?? 0;
+    final count = ref.watch(rejectedHealthRecordCountProvider).value ?? 0;
     if (count == 0) return const SizedBox.shrink();
 
     final theme = Theme.of(context);

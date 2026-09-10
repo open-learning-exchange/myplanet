@@ -175,7 +175,7 @@ final courseFilterProvider =
 /// Offline-first course list, filtered by [courseFilterProvider].
 ///
 /// The session is awaited, but **only** when the shelf filter is on. Read as
-/// `.valueOrNull` it is null for the first pass, and `CourseDao.watchCourses`
+/// `.value` it is null for the first pass, and `CourseDao.watchCourses`
 /// drops the shelf predicate on a null `shelfUserId` — which is not "no
 /// courses" but *every* course, so the first frame of the My Courses tab was
 /// the whole catalogue: the same defect this phase fixed in
@@ -211,7 +211,7 @@ final filteredSortedCoursesProvider = StreamProvider<List<CourseRow>>((
   final sort = ref.watch(courseSortProvider);
   final progressFilter = ref.watch(courseProgressFilterProvider);
 
-  final items = courses.valueOrNull;
+  final items = courses.value;
   if (items == null || items.isEmpty) {
     yield items ?? const [];
     return;
@@ -221,14 +221,14 @@ final filteredSortedCoursesProvider = StreamProvider<List<CourseRow>>((
   // Kotlin's `if (progressFilter.isEmpty() || progressMap == null) baseCourses`.
   var filtered = items;
   if (progressFilter != CourseProgressFilter.all) {
-    // Deliberately left as `.valueOrNull` — the one place in this file where
+    // Deliberately left as `.value` — the one place in this file where
     // awaiting the session is the *worse* option. An unresolved session here
     // costs one frame in which every course reads "Not Started"; awaiting it
     // makes a session that rejects (or that no test harness resolves) fail
     // this provider and render an **empty** course list, where the Kotlin's
     // fallback for unavailable progress is `baseCourses` — show the list
     // unfiltered. A one-frame cosmetic flash is the cheaper failure.
-    final userId = ref.watch(sessionProvider).valueOrNull?.id;
+    final userId = ref.watch(sessionProvider).value?.id;
     final summary = await ref
         .watch(progressRepositoryProvider)
         .courseProgressSummary([for (final c in items) c.id], userId);
@@ -482,7 +482,7 @@ typedef StepNextLock = ({bool locked, bool blockedByTest});
 /// step row (`CoursesRepositoryImpl.kt:527-528`) and
 /// `changeNextButtonState`'s `lifecycleScope.launch` (`:318`) has no `try`, so
 /// Kotlin's `isNextStepLocked` keeps the `false` that `onPageSelected:306` had
-/// just assigned. A caller reading `.valueOrNull` gets null here and treats it
+/// just assigned. A caller reading `.value` gets null here and treats it
 /// as unlocked, which is Kotlin's outcome without Kotlin's crash. The same
 /// mapping covers the still-loading case, which reproduces Kotlin's own race:
 /// `:306` clears the flag synchronously and `:318` sets it from a coroutine,
@@ -745,7 +745,7 @@ class CoursesProgressRow {
 final courseProgressStreamProvider = StreamProvider.autoDispose<List<CoursesProgressRow>>((
   ref,
 ) async* {
-  // `ref.watch(sessionProvider).valueOrNull` — which this used to read — is
+  // `ref.watch(sessionProvider).value` — which this used to read — is
   // `null` for the whole first pass, and a null `shelfUserId` makes
   // `CourseDao.watchCourses` drop the shelf predicate altogether. So the first
   // thing "My Progress" emitted was **the entire course catalogue**, every
@@ -891,7 +891,7 @@ final courseProgressStreamProvider = StreamProvider.autoDispose<List<CoursesProg
 /// lifetime and show stale cells forever (Phase 113's defect D, on the exam
 /// join).
 ///
-/// The session is awaited via `.future`, not read as `.valueOrNull`. The
+/// The session is awaited via `.future`, not read as `.value`. The
 /// screen never watches `sessionProvider`, so an unwatched read yields `null`
 /// until something else resolves it, and a grid built for "no user" is not
 /// empty — it is a full grid of blank cells over a "Progress 0 of N" header,

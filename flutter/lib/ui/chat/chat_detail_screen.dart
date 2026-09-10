@@ -43,7 +43,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final session = ref.watch(sessionProvider).valueOrNull;
+    final session = ref.watch(sessionProvider).value;
     final chatState = ref.watch(chatConversationProvider);
     final aiProviders = ref.watch(aiProvidersProvider);
 
@@ -53,7 +53,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
           chatState.id.isEmpty ? l10n.newChat : l10n.chatConversation,
         ),
         actions: [
-          if (aiProviders.valueOrNull?.isNotEmpty == true)
+          if (aiProviders.value?.isNotEmpty == true)
             PopupMenuButton<String>(
               icon: const Icon(Icons.psychology),
               tooltip: l10n.selectAiProvider,
@@ -65,7 +65,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                   .read(chatConversationProvider.notifier)
                   .setAiProvider(AiProviderConfig(name: provider, model: '')),
               itemBuilder: (context) {
-                final providers = aiProviders.valueOrNull ?? {};
+                final providers = aiProviders.value ?? {};
                 return [
                   for (final entry in providers.entries)
                     PopupMenuItem(

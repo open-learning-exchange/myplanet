@@ -35,7 +35,7 @@ class _FeedbackDetailScreenState extends ConsumerState<FeedbackDetailScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final feedbackAsync = ref.watch(feedbackByIdProvider(widget.feedbackId));
-    final session = ref.watch(sessionProvider).valueOrNull;
+    final session = ref.watch(sessionProvider).value;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.feedback)),

@@ -45,7 +45,7 @@ NewsRow _post(String id) => NewsRow(
 ///
 /// The fifth-plus instance of the class: **a provider a screen reads but never
 /// watches is null.** `voice_thread_screen._reply` opened with
-/// `ref.read(sessionProvider).valueOrNull` and returned early on null, so the
+/// `ref.read(sessionProvider).value` and returned early on null, so the
 /// tap was dropped before the composer even opened — no dialog, no snackbar,
 /// no row. Phase 144 made `VoicesActions.postReply` itself safe, which is why
 /// the screen's own early return was the last thing standing between the tap
@@ -121,7 +121,7 @@ void main() {
   testWidgets('a rejecting session drops the tap instead of throwing', (
     tester,
   ) async {
-    // A future can reject where `valueOrNull` could not, which is why the
+    // A future can reject where `value` could not, which is why the
     // `await` has to sit inside the `try` rather than in front of it.
     await pumpThread(tester, session: _RejectingSessionNotifier.new);
 

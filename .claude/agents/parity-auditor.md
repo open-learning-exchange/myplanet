@@ -43,7 +43,7 @@ does not do what the Kotlin did:
   a partial upsert must name the columns it resets.
 - **Widget tests fall through to the real database.** Without `wrapScreen` redirecting
   `appDatabaseProvider` to `AppDatabase.memory()`, a screen reading an un-overridden DAO hits
-  `AppDatabase.open()`; screens read through `.valueOrNull ?? <default>`, so the error is
+  `AppDatabase.open()`; screens read through `.value ?? <default>`, so the error is
   swallowed and the test passes while asserting against nothing.
 - **Preserved tables.** `AppDatabase._localAuthorityTables` exempts a named set from
   drop-and-resync — **28 tables as of Phase 150**, not the four (`outbox`, `my_personal`,

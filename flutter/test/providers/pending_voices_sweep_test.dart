@@ -7,6 +7,7 @@ import 'package:myplanet/background_entrypoint.dart';
 import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/core/network/network_result.dart';
 import 'package:myplanet/core/prefs/planet_prefs.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/core/system/device_identity.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
@@ -63,6 +64,7 @@ void main() {
     ServerConfig? serverConfig = config,
   }) async {
     final container = ProviderContainer(
+      retry: noProviderRetry,
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         planetApiProvider.overrideWithValue(api),

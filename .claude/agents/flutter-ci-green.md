@@ -42,7 +42,7 @@ Keep fixes minimal and local to the failure. Two failure modes here mislead:
 - **"Timer is still pending" at teardown** usually means a widget test reached the real database
   instead of an override. The screen reads a DAO nobody overrode — override the provider the
   screen actually reads. Do not silence the teardown.
-- **A test that passes while asserting nothing.** Screens read through `.valueOrNull ?? <default>`,
+- **A test that passes while asserting nothing.** Screens read through `.value ?? <default>`,
   so a swallowed database error looks like a pass. If you "fixed" a test by making the assertion
   weaker, you did not fix it.
 

@@ -28,12 +28,10 @@ class CourseDetailScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final course = ref.watch(courseProvider(courseId));
     final steps = ref.watch(courseStepsProvider(courseId));
-    final userId = ref.watch(sessionProvider).valueOrNull?.id;
+    final userId = ref.watch(sessionProvider).value?.id;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(course.valueOrNull?.courseTitle ?? l10n.courses),
-      ),
+      appBar: AppBar(title: Text(course.value?.courseTitle ?? l10n.courses)),
       body: course.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text(l10n.syncFailed('$error'))),
@@ -43,7 +41,7 @@ class CourseDetailScreen extends ConsumerWidget {
           }
           return _CourseBody(
             course: data,
-            steps: steps.valueOrNull ?? const [],
+            steps: steps.value ?? const [],
             userId: userId,
           );
         },
@@ -78,7 +76,7 @@ class _CourseBody extends ConsumerWidget {
         .setShelfMembership(course.id, id, joined: joined);
 
     final config = ref.read(serverConfigProvider);
-    final session = ref.read(sessionProvider).valueOrNull;
+    final session = ref.read(sessionProvider).value;
     if (config == null || session?.couchId == null) return;
 
     await ref
@@ -91,14 +89,14 @@ class _CourseBody extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final isMyCourse = userId != null && course.userId.contains(userId);
-    final user = ref.watch(sessionProvider).valueOrNull;
+    final user = ref.watch(sessionProvider).value;
     // `UserMapper.isGuestAccount`, the port of `UserEntity.isGuest()` —
     // the id prefix **or** a `guest` role with no `learner` role. The narrow
     // `UserMapper.isGuest` was what this gate read until Phase 149, which
     // matched neither this site's Kotlin nor the other course screen's.
     final isGuest = user != null && UserMapper.isGuestAccount(user);
     final target = (type: 'course', itemId: course.id);
-    final rating = ref.watch(ratingSummaryProvider(target)).valueOrNull;
+    final rating = ref.watch(ratingSummaryProvider(target)).value;
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -256,7 +254,7 @@ class _StepTile extends ConsumerWidget {
               alignment: AlignmentDirectional.centerStart,
               child: CourseMarkdownBody(data: step.description!),
             ),
-          if (exam.valueOrNull != null)
+          if (exam.value != null)
             Align(
               alignment: AlignmentDirectional.centerStart,
               child: Padding(

@@ -102,6 +102,7 @@ void main() {
               () => _TestServerConfig(serverConfig),
             ),
         ],
+        fallbackDatabase: false,
       ),
     );
     await tester.pumpAndSettle();

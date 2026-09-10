@@ -130,7 +130,7 @@ class _AddResourceScreenState extends ConsumerState<AddResourceScreen> {
     });
 
     final repo = ref.read(resourcesRepositoryProvider);
-    // `ref.read(sessionProvider).valueOrNull` is null until something else
+    // `ref.read(sessionProvider).value` is null until something else
     // resolves the provider, and this screen never watches it — in the app the
     // router's `ref.listen` happens to keep it resolved, so the loss was
     // invisible. Awaiting the future is what `AddResourceActivity` does

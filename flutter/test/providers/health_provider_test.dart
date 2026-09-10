@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/core/utils/time_utils.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
@@ -73,6 +74,7 @@ void main() {
     HealthRepository? repository,
   }) {
     final container = ProviderContainer(
+      retry: noProviderRetry,
       overrides: [
         appDatabaseProvider.overrideWith((ref) {
           ref.onDispose(db.close);
@@ -624,7 +626,7 @@ void main() {
 
   group('HealthQueue', () {
     test('every queued row carries the signed-in user', () async {
-      // `_ref.read(sessionProvider).valueOrNull` on a path where nothing
+      // `_ref.read(sessionProvider).value` on a path where nothing
       // watches the session: it was still `AsyncLoading`, so the id was null
       // on every row the examination form queued.
       final db = AppDatabase.memory();
@@ -659,6 +661,7 @@ void main() {
         weight: 65,
       );
       final container = ProviderContainer(
+        retry: noProviderRetry,
         overrides: [
           appDatabaseProvider.overrideWith((ref) {
             ref.onDispose(db.close);

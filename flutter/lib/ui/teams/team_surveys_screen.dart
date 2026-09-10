@@ -22,11 +22,10 @@ class TeamSurveysScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final owned = ref.watch(teamOwnedSurveysProvider(teamId));
     final adoptable = ref.watch(teamAdoptableSurveysProvider(teamId));
-    final team = ref.watch(teamProvider(teamId)).valueOrNull;
-    final user = ref.watch(sessionProvider).valueOrNull;
+    final team = ref.watch(teamProvider(teamId)).value;
+    final user = ref.watch(sessionProvider).value;
     final userId = user?.id;
-    final memberships =
-        ref.watch(teamMembershipsProvider).valueOrNull ?? const {};
+    final memberships = ref.watch(teamMembershipsProvider).value ?? const {};
     final membership =
         memberships[teamId] ??
         (team?.teamId == null ? null : memberships[team!.teamId]);

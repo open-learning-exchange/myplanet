@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../core/config/server_config.dart';
 import '../core/utils/time_utils.dart';
@@ -168,11 +169,11 @@ class HealthQueue {
   Future<int> queuePending({bool retryRefused = false}) async {
     final config = _ref.read(serverConfigProvider);
     if (config == null) return 0;
-    // `await`ed rather than read with `valueOrNull`: nothing on the
+    // `await`ed rather than read with `value`: nothing on the
     // examination form watches the session, so the synchronous read was still
     // `AsyncLoading` and every queued row carried a null user. The `await`
     // sits inside the caller's `try` for the reason Phase 100 records — a
-    // future can reject where `valueOrNull` could not.
+    // future can reject where `value` could not.
     final session = await _ref.read(sessionProvider.future);
     return _ref
         .read(healthUploaderProvider)
@@ -249,7 +250,7 @@ class HealthKeyIvSyncNotifier extends Notifier<SyncUiState> {
     if (state is SyncRunning) return;
 
     final config = ref.read(serverConfigProvider);
-    final session = ref.read(sessionProvider).valueOrNull;
+    final session = ref.read(sessionProvider).value;
     if (config == null || session == null) return;
 
     state = const SyncRunning(SyncProgress(completed: 0, total: 0));
@@ -320,6 +321,12 @@ class ExaminationNotifier extends StateNotifier<ExaminationState> {
       final exam = _examinationId == null
           ? null
           : await _repo.getById(_examinationId);
+      // Same guard, same reason, as `PatientDetailNotifier.selectPatient`.
+      // Not a substitute for the caller holding the provider open — a
+      // disposed notifier that returns quietly still leaves the form blank —
+      // but without it the `state=` throws out of a future nobody awaits, and
+      // so does the `catch` below.
+      if (!mounted) return;
       state = state.copyWith(
         isLoading: false,
         examination: exam,
@@ -327,7 +334,9 @@ class ExaminationNotifier extends StateNotifier<ExaminationState> {
         examData: await _decryptExamination(exam),
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      if (mounted) {
+        state = state.copyWith(isLoading: false, error: e.toString());
+      }
     } finally {
       if (!_loaded.isCompleted) _loaded.complete();
     }
@@ -502,9 +511,12 @@ class ExaminationNotifier extends StateNotifier<ExaminationState> {
         await _onSaved?.call();
       } catch (_) {}
 
+      if (!mounted) return;
       state = state.copyWith(isSaving: false, saved: true);
     } catch (e) {
-      state = state.copyWith(isSaving: false, error: e.toString());
+      if (mounted) {
+        state = state.copyWith(isSaving: false, error: e.toString());
+      }
     }
   }
 }
@@ -582,6 +594,10 @@ class PatientListNotifier extends StateNotifier<AsyncValue<List<UserRow>>> {
   int _request = 0;
 
   Future<void> _fetch(Future<List<UserRow>> Function() query) async {
+    // Same guard, same reason, as `PatientDetailNotifier.selectPatient`: the
+    // picker's sort and search reach this from a widget callback, which can
+    // outlive the notifier.
+    if (!mounted) return;
     final request = ++_request;
     state = const AsyncValue.loading();
     try {
@@ -650,7 +666,14 @@ class PatientDetailNotifier extends StateNotifier<PatientDetailState> {
 
   Future<void> _loadInitial() async {
     final currentUser = await _ref.read(loggedInUserProvider.future);
-    if (currentUser == null) return;
+    // The screen can be gone by the time the session resolves — an
+    // `autoDispose` notifier started from its own constructor has no other
+    // way to notice. Riverpod 3 made this reachable rather than theoretical:
+    // it disposes a listener-less provider on a different beat, and the
+    // unguarded `state` write below then threw
+    // `Tried to use PatientDetailNotifier after dispose was called` out of a
+    // future nobody awaits.
+    if (!mounted || currentUser == null) return;
     final uid = patientIdOf(currentUser);
     if (uid.isNotEmpty) {
       await selectPatient(uid);
@@ -678,6 +701,7 @@ class PatientDetailNotifier extends StateNotifier<PatientDetailState> {
   int _request = 0;
 
   Future<void> selectPatient(String userId) async {
+    if (!mounted) return;
     final request = ++_request;
     state = state.copyWith(isLoading: true);
     try {

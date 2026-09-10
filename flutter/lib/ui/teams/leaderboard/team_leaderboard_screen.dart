@@ -74,7 +74,7 @@ class _TeamLeaderboardScreenState extends ConsumerState<TeamLeaderboardScreen> {
     final progressRepo = ref.read(progressRepositoryProvider);
     final surveysRepo = ref.read(surveysRepositoryProvider);
     // `sessionProvider` is read here but never watched, and `_load` runs from
-    // `initState` — so `.valueOrNull` was null on every load and the current
+    // `initState` — so `.value` was null on every load and the current
     // user was never highlighted. Awaiting the future resolves it.
     final currentUser = await ref.read(sessionProvider.future);
 

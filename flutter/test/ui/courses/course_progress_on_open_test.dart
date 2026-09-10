@@ -152,6 +152,7 @@ void main() {
           planetPrefsProvider.overrideWithValue(prefs),
           sessionProvider.overrideWith(() => _TestSessionNotifier(_user())),
         ],
+        fallbackDatabase: false,
       ),
     );
     await settle(tester);

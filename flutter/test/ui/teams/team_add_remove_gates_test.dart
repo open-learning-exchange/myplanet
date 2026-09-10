@@ -94,6 +94,7 @@ void main() {
                   _TestSessionNotifier(buildUserRow(id: 'user-1', name: 'ada')),
             ),
           ],
+          fallbackDatabase: false,
         ),
       );
       await tester.pumpAndSettle();

@@ -93,8 +93,8 @@ class _DeepLinkScopeState extends ConsumerState<DeepLinkScope> {
     // A link that arrived before sign-in was persisted; this is the moment the
     // Kotlin's `DashboardActivity` reads it back.
     ref.listen(sessionProvider, (previous, next) {
-      final wasSignedIn = previous?.valueOrNull != null;
-      if (!wasSignedIn && next.valueOrNull != null) {
+      final wasSignedIn = previous?.value != null;
+      if (!wasSignedIn && next.value != null) {
         unawaited(_applyPending());
       }
     });

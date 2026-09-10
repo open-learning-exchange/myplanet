@@ -22,7 +22,7 @@ class TeamVoicesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final team = ref.watch(teamProvider(teamId)).valueOrNull;
+    final team = ref.watch(teamProvider(teamId)).value;
     final voices = ref.watch(teamVoicesProvider(teamId));
 
     // Opening this screen is what clears the dashboard's chat badge for the
@@ -34,14 +34,13 @@ class TeamVoicesScreen extends ConsumerWidget {
     // after this build and the listener catches it; a later post re-emits and
     // moves the watermark again.
     ref.listen(teamVoicesProvider(teamId), (previous, next) {
-      final rows = next.valueOrNull;
+      final rows = next.value;
       if (rows == null) return;
       ref
           .read(notificationsRepositoryProvider)
           .updateTeamNotification(teamId, rows.length);
     });
-    final memberships =
-        ref.watch(teamMembershipsProvider).valueOrNull ?? const {};
+    final memberships = ref.watch(teamMembershipsProvider).value ?? const {};
     final membership = memberships[teamId];
 
     return Scaffold(

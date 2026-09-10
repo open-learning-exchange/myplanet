@@ -61,11 +61,31 @@ class _AddExaminationScreenState extends ConsumerState<AddExaminationScreen> {
 
   /// The resolved patient id, and whether the notifier's initial load has
   /// arrived. Both are read where the screen used to reach for
-  /// `sessionProvider.valueOrNull` on every build: that changed identity as
+  /// `sessionProvider.value` on every build: that changed identity as
   /// the session resolved, so the form and the save could address two
   /// different notifiers.
   String? _patientId;
   bool _loaded = false;
+
+  /// Holds [examinationNotifierProvider] open across the gap between
+  /// `_loadExistingData` creating it and `build`'s first `ref.watch` of it.
+  ///
+  /// The gap is real and it is not a microtask: `_patientId` is only known
+  /// after the session resolves, so the frame already on screen watched the
+  /// provider for a *different* argument tuple, and the tuple this load reads
+  /// has no watcher until the `setState` below is rebuilt. Riverpod 3 sweeps
+  /// an unlistened `autoDispose` provider on the next **microtask**
+  /// (`provider_scope.dart:351`, `Future.microtask(_callTask)`) where
+  /// Riverpod 2 waited for the next **frame** (`framework.dart:336`,
+  /// `markNeedsBuild`) — and a drift read does not finish inside a microtask.
+  /// So the notifier was disposed mid-load and the screen then re-created a
+  /// second one, whose empty state nothing prefilled from: editing an
+  /// examination opened a blank form, and Save takes the *update* branch when
+  /// `state.examination != null`, overwriting the record with the blanks.
+  ///
+  /// Closed in [dispose]; keeping it for the screen's lifetime costs nothing,
+  /// because `build` watches the same provider anyway.
+  ProviderSubscription<ExaminationState>? _examinationSubscription;
 
   // Conditions checkboxes — port of Kotlin's R.array.diagnosis_list.
   static const List<String> _conditionOptions = [
@@ -149,7 +169,7 @@ class _AddExaminationScreenState extends ConsumerState<AddExaminationScreen> {
   Future<void> _loadExistingData() async {
     // `intent.getStringExtra("userId")` first, and the session only as the
     // fallback — awaited inside the try, because a screen that never watches
-    // `sessionProvider` reads `AsyncLoading` and `valueOrNull` is null there.
+    // `sessionProvider` reads `AsyncLoading` and `value` is null there.
     late final ExaminationState state;
     try {
       final session = await ref.read(sessionProvider.future);
@@ -165,6 +185,9 @@ class _AddExaminationScreenState extends ConsumerState<AddExaminationScreen> {
         userId: patientId,
         examId: widget.examinationId,
       ));
+      // Before the await, not after: see [_examinationSubscription].
+      _examinationSubscription?.close();
+      _examinationSubscription = ref.listenManual(provider, (_, _) {});
       // `viewModel.state.first { !it.isLoading }`. Reading the state straight
       // after creating the notifier — which is what this did — always read
       // the `isLoading: true` state with nothing in it, so editing an
@@ -227,6 +250,7 @@ class _AddExaminationScreenState extends ConsumerState<AddExaminationScreen> {
 
   @override
   void dispose() {
+    _examinationSubscription?.close();
     _temperatureController.dispose();
     _pulseController.dispose();
     _bpController.dispose();

@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/core/system/device_identity.dart';
 import 'package:myplanet/core/prefs/planet_prefs.dart';
 import 'package:myplanet/data/api/planet_api.dart';
@@ -156,6 +157,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       final prefs = PlanetPrefs(await SharedPreferences.getInstance());
       container = ProviderContainer(
+        retry: noProviderRetry,
         overrides: [
           planetPrefsProvider.overrideWithValue(prefs),
           appDatabaseProvider.overrideWithValue(db),
@@ -262,6 +264,7 @@ void main() {
           ),
         },
         overrides: overrides,
+        fallbackDatabase: false,
       ),
     );
     await tester.pumpAndSettle();
@@ -369,6 +372,7 @@ void main() {
               ),
             ),
           ],
+          fallbackDatabase: false,
         ),
       );
       await tester.pumpAndSettle();

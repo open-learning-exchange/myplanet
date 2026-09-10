@@ -94,7 +94,7 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(exam.valueOrNull?.name ?? l10n.takeExam),
+        title: Text(exam.value?.name ?? l10n.takeExam),
         actions: [
           IconButton(
             icon: const Icon(Icons.close),
@@ -444,7 +444,7 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
     // Awaited rather than read off the current `AsyncValue`. Kotlin's
     // `initializeExamData` resolves its own user (`userSessionManager
     // .getUserModel()`) before the exam is usable; a bare
-    // `ref.read(sessionProvider).valueOrNull` instead reports `null` whenever
+    // `ref.read(sessionProvider).value` instead reports `null` whenever
     // nothing else has resolved the provider yet — and this screen never
     // watches it. That silently dropped the whole attempt: no dialog, no
     // snackbar, the graded answers discarded. It only stays hidden in the
@@ -536,7 +536,7 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
       return;
     }
 
-    final exam = ref.read(examProvider(widget.examId)).valueOrNull;
+    final exam = ref.read(examProvider(widget.examId)).value;
     final submissionId = _submissionId;
     if (exam == null || submissionId == null) return;
 

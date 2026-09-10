@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:myplanet/core/prefs/planet_prefs.dart';
@@ -16,6 +17,7 @@ void main() {
     SharedPreferences.setMockInitialValues(initial);
     final prefs = PlanetPrefs(await SharedPreferences.getInstance());
     final container = ProviderContainer(
+      retry: noProviderRetry,
       overrides: [planetPrefsProvider.overrideWithValue(prefs)],
     );
     addTearDown(container.dispose);

@@ -208,6 +208,7 @@ void main() {
           ),
           serverConfigProvider.overrideWith(() => _TestServerConfig(config)),
         ],
+        fallbackDatabase: false,
       ),
     );
     await settle(tester, rounds: 4);

@@ -46,7 +46,7 @@ class _InlineCommentsState extends ConsumerState<InlineComments> {
     final l10n = AppLocalizations.of(context);
     final comments = ref.watch(commentsForParentProvider(widget.parentId));
 
-    final count = comments.valueOrNull?.length ?? 0;
+    final count = comments.value?.length ?? 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -88,7 +88,7 @@ class _InlineCommentsState extends ConsumerState<InlineComments> {
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             )
-          else if (comments.valueOrNull?.isEmpty == true)
+          else if (comments.value?.isEmpty == true)
             Padding(
               padding: const EdgeInsets.only(left: 24, bottom: 4),
               child: Text(
@@ -97,7 +97,7 @@ class _InlineCommentsState extends ConsumerState<InlineComments> {
               ),
             )
           else
-            for (final comment in comments.valueOrNull ?? const <NewsRow>[])
+            for (final comment in comments.value ?? const <NewsRow>[])
               _CommentTile(
                 comment: comment,
                 parentId: widget.parentId,
@@ -120,11 +120,11 @@ class _InlineCommentsState extends ConsumerState<InlineComments> {
     _sending = true;
     try {
       // This widget never *watches* `sessionProvider`, so
-      // `ref.read(...).valueOrNull` is null until something else resolves it
+      // `ref.read(...).value` is null until something else resolves it
       // and the comment was dropped with no error and no record. In the app
       // the router holds a `ref.listen`, which is what made it latent.
       // The await sits inside the `try` because a future can reject where
-      // `valueOrNull` could not.
+      // `value` could not.
       final user = await ref.read(sessionProvider.future);
       if (user == null) return;
       await ref

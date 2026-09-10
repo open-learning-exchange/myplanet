@@ -55,7 +55,7 @@ class DictionaryNotifier extends AsyncNotifier<DictionaryState> {
   }
 
   Future<void> download() async {
-    final current = state.valueOrNull ?? const DictionaryState();
+    final current = state.value ?? const DictionaryState();
     state = AsyncData(current.copyWith(loading: true, importFailed: false));
     final result = await ref.read(dictionaryRepositoryProvider).download();
     state = AsyncData(

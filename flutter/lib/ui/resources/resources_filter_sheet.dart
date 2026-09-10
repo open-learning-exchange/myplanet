@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
@@ -170,7 +171,7 @@ class _ResourcesFilterSheetState extends ConsumerState<ResourcesFilterSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final resources = ref.watch(resourcesStreamProvider).valueOrNull ?? [];
+    final resources = ref.watch(resourcesStreamProvider).value ?? [];
     final options = ref.watch(resourceFilterOptionsProvider(resources));
 
     return DraggableScrollableSheet(

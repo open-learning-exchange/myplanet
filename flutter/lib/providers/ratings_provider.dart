@@ -13,7 +13,7 @@ typedef RatingTarget = ({String type, String itemId});
 
 final ratingSummaryProvider =
     StreamProvider.family<RatingSummary, RatingTarget>((ref, target) {
-      final userId = ref.watch(sessionProvider).valueOrNull?.id;
+      final userId = ref.watch(sessionProvider).value?.id;
       return ref
           .watch(ratingsRepositoryProvider)
           .watchSummary(target.type, target.itemId, userId);
@@ -29,7 +29,7 @@ class RatingActions {
     required int rate,
     String? comment,
   }) async {
-    final user = ref.read(sessionProvider).valueOrNull;
+    final user = ref.read(sessionProvider).value;
     if (user == null) return;
     await ref
         .read(ratingsRepositoryProvider)

@@ -16,8 +16,7 @@ class TeamPlanScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final team = ref.watch(teamProvider(teamId));
-    final memberships =
-        ref.watch(teamMembershipsProvider).valueOrNull ?? const {};
+    final memberships = ref.watch(teamMembershipsProvider).value ?? const {};
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.plan)),

@@ -33,7 +33,7 @@ class ActivityLog {
       _logResource(resource, ActivityTypes.download);
 
   Future<void> _logResource(MyLibraryRow resource, String type) async {
-    final user = ref.read(sessionProvider).valueOrNull;
+    final user = ref.read(sessionProvider).value;
     if (user == null) return;
     final now = DateTime.now().millisecondsSinceEpoch;
     // Failure is swallowed for the same reason `UserSessionManager` swallows
@@ -66,7 +66,7 @@ class ActivityLog {
     required String courseId,
     required String? title,
   }) async {
-    final user = ref.read(sessionProvider).valueOrNull;
+    final user = ref.read(sessionProvider).value;
     if (user == null) return;
     try {
       await ref
@@ -91,7 +91,7 @@ class ActivityLog {
   /// sync. The port's equivalent of one `SyncManager` run is the dashboard Sync
   /// center's whole pass, not a single table pull, so it is called from there.
   Future<void> recordSyncActivity() async {
-    final user = ref.read(sessionProvider).valueOrNull;
+    final user = ref.read(sessionProvider).value;
     if (user == null) return;
     try {
       await ref
@@ -116,7 +116,7 @@ class ActivityLog {
   /// counts it. Failure is swallowed for the same reason `recordSyncActivity`
   /// swallows it — a lost row costs a checkbox, not a sync.
   Future<void> recordSyncChallengeAction() async {
-    final user = ref.read(sessionProvider).valueOrNull;
+    final user = ref.read(sessionProvider).value;
     if (user == null || UserMapper.isGuest(user)) return;
     try {
       await ref
@@ -171,7 +171,7 @@ class ProfileActivityStats {
 final profileActivityStatsProvider = FutureProvider<ProfileActivityStats>((
   ref,
 ) async {
-  final user = ref.watch(sessionProvider).valueOrNull;
+  final user = ref.watch(sessionProvider).value;
   if (user == null) return const ProfileActivityStats();
   final activities = ref.watch(activitiesRepositoryProvider);
   final name = user.name ?? '';

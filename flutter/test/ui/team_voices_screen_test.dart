@@ -51,6 +51,7 @@ void main() {
             ),
             voiceReplyCountProvider.overrideWith((ref, newsId) async => 0),
           ],
+          fallbackDatabase: false,
         ),
       );
       await tester.pumpAndSettle();

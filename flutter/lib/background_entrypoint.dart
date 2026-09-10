@@ -1,3 +1,4 @@
+import 'core/providers/provider_retry.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:workmanager/workmanager.dart';
@@ -29,6 +30,7 @@ Future<bool> executeBackgroundTask(String taskName) async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await PlanetPrefs.load();
   final container = ProviderContainer(
+    retry: noProviderRetry,
     overrides: [planetPrefsProvider.overrideWithValue(prefs)],
   );
   try {

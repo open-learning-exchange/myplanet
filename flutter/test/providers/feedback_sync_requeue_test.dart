@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/core/sync/sync_result.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/app_providers.dart';
@@ -49,6 +50,7 @@ void main() {
 
   ProviderContainer containerFor() {
     final container = ProviderContainer(
+      retry: noProviderRetry,
       overrides: [
         feedbackRepositoryProvider.overrideWithValue(repository),
         feedbackUploaderProvider.overrideWithValue(uploader),

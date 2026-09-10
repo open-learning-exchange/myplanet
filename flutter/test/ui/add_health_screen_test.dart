@@ -70,6 +70,7 @@ void main() {
           }),
           healthRepositoryProvider.overrideWith((ref) => repoFor(db)),
         ],
+        fallbackDatabase: false,
       ),
     );
     await tester.pumpAndSettle();

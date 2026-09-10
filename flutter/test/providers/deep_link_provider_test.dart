@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/core/deeplinks/deep_link.dart';
 import 'package:myplanet/core/prefs/planet_prefs.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/deep_link_provider.dart';
@@ -24,6 +25,7 @@ void main() {
 
   Future<ProviderContainer> containerFor({UserRow? current}) async {
     final container = ProviderContainer(
+      retry: noProviderRetry,
       overrides: [
         planetPrefsProvider.overrideWithValue(prefs),
         sessionProvider.overrideWith(() => _TestSessionNotifier(current)),

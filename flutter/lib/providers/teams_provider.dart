@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../core/sync/sync_result.dart';
 import '../data/local/app_database.dart';
@@ -13,7 +14,7 @@ final teamsSearchProvider = StateProvider<String>((ref) => '');
 final teamsTypeProvider = StateProvider<String>((ref) => 'team');
 
 final teamMembershipsProvider = StreamProvider<Map<String, TeamRow>>((ref) {
-  final userId = ref.watch(sessionProvider).valueOrNull?.id;
+  final userId = ref.watch(sessionProvider).value?.id;
   if (userId == null || userId.isEmpty) return Stream.value(const {});
   return ref
       .watch(teamsRepositoryProvider)
@@ -188,7 +189,7 @@ class TeamFinancesActions {
           itemId: row.id,
           endpoint: '${UrlUtils.credentialFreeDbUrl(config)}/teams',
           payload: TeamsRepository.serializeTeamDocument(row),
-          userId: ref.read(sessionProvider).valueOrNull?.id,
+          userId: ref.read(sessionProvider).value?.id,
         );
     return true;
   }
@@ -225,13 +226,13 @@ class TeamMembershipActions {
   final Ref ref;
 
   /// `TeamMembershipActions` is a plain `Provider`, so its `ref` never
-  /// *watches* `sessionProvider` — `ref.read(sessionProvider).valueOrNull` is
+  /// *watches* `sessionProvider` — `ref.read(sessionProvider).value` is
   /// null until something else resolves it, and every action below then took
   /// its `return false` branch silently. Latent in the app only because the
   /// router holds a `ref.listen`; not a guarantee this class can rely on.
   ///
   /// **The rejection is swallowed here, deliberately.** Awaiting `.future`
-  /// resolves the session properly, but a future rejects where `valueOrNull`
+  /// resolves the session properly, but a future rejects where `value`
   /// could only be null — and not one of the five call sites wraps the await:
   /// `team_members_screen`'s `_handleMemberAction` shows its "operation
   /// failed" snackbar off the returned `false`, and the join button and the
@@ -398,7 +399,7 @@ class TeamResourceActions {
           teamId: teamId,
           resourceId: resource.resourceId!,
           title: resource.title ?? '',
-          planetCode: ref.read(sessionProvider).valueOrNull?.planetCode,
+          planetCode: ref.read(sessionProvider).value?.planetCode,
         );
     if (row == null) return false;
     await ref
@@ -408,7 +409,7 @@ class TeamResourceActions {
           itemId: row.id,
           endpoint: '${UrlUtils.credentialFreeDbUrl(config)}/teams',
           payload: TeamsRepository.serializeTeamDocument(row),
-          userId: ref.read(sessionProvider).valueOrNull?.id,
+          userId: ref.read(sessionProvider).value?.id,
         );
     return true;
   }
@@ -458,7 +459,7 @@ class TeamCourseActions {
           itemId: team.id,
           endpoint: '${UrlUtils.credentialFreeDbUrl(config)}/teams',
           payload: TeamsRepository.serializeTeamDocument(team),
-          userId: ref.read(sessionProvider).valueOrNull?.id,
+          userId: ref.read(sessionProvider).value?.id,
         );
     ref.invalidate(teamProvider(team.id));
     ref.invalidate(teamCoursesProvider(team.id));
@@ -492,7 +493,7 @@ class TeamReportActions {
           itemId: report.id,
           endpoint: '${UrlUtils.credentialFreeDbUrl(config)}/teams',
           payload: TeamsRepository.serializeTeamDocument(report),
-          userId: ref.read(sessionProvider).valueOrNull?.id,
+          userId: ref.read(sessionProvider).value?.id,
         );
     return true;
   }
@@ -547,7 +548,7 @@ final teamsProvider = StreamProvider<List<TeamRow>>((ref) async* {
   // follows the Kotlin exactly.
   final search = ref.watch(teamsSearchProvider).trim().toLowerCase();
   final type = ref.watch(teamsTypeProvider);
-  final userId = ref.watch(sessionProvider).valueOrNull?.id;
+  final userId = ref.watch(sessionProvider).value?.id;
   final repo = ref.watch(teamsRepositoryProvider);
   await for (final rows in repo.watchCatalog(type: type)) {
     final filtered = rows

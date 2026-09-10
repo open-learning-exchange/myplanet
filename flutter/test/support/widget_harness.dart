@@ -2,7 +2,9 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/l10n/app_localizations.dart';
 import 'package:myplanet/providers/app_providers.dart';
@@ -12,13 +14,28 @@ import 'package:myplanet/ui/components/list_view_mode.dart';
 /// Wraps a widget in the localisation delegates and a [ProviderScope], so
 /// screen tests only have to declare the overrides they care about.
 ///
-/// [appDatabaseProvider] is always redirected to an in-memory database, ahead
-/// of the caller's [overrides] so a test can still swap in its own. Without it
-/// a screen that reads an un-overridden DAO — an unread badge, a filter list —
-/// falls through to `AppDatabase.open()`, whose `path_provider` lookup has no
-/// platform channel under `flutter test`. Screens tend to read those through
-/// `.valueOrNull ?? <default>`, so the failure is swallowed and the test passes
+/// [appDatabaseProvider] is redirected to an in-memory database unless the
+/// caller sets [fallbackDatabase] to false. Without it a screen that reads an
+/// un-overridden DAO — an unread badge, a filter list — falls through to
+/// `AppDatabase.open()`, whose `path_provider` lookup has no platform channel
+/// under `flutter test`. Screens tend to read those through
+/// `.value ?? <default>`, so the failure is swallowed and the test passes
 /// while silently exercising nothing.
+///
+/// **[fallbackDatabase] exists because Riverpod 3 made the old arrangement
+/// illegal.** Riverpod 2 let the same provider appear twice in one override
+/// list and quietly took the last entry, so this backstop could sit ahead of
+/// `...overrides` and be shadowed by a caller's own database. Riverpod 3
+/// asserts `Tried to override a provider twice within the same container`,
+/// which is 266 of this suite's screen tests.
+///
+/// Nesting the caller's overrides in a child scope looks like the fix and is
+/// not: a child's override is only seen by providers instantiated in that
+/// child, so any provider the screen reads *transitively* still resolves
+/// against the parent's un-overridden database. That was measured — it turns
+/// 266 failures into 199 different ones. One flat list is the semantics the
+/// suite was written against; the flag is how a caller opts out of the
+/// default entry rather than colliding with it.
 ///
 /// If a test fails with "A Timer is still pending even after the widget tree
 /// was disposed", that is this backstop firing: the screen opened a drift
@@ -33,7 +50,21 @@ Widget wrapScreen(
   List<Override> overrides = const [],
   Locale? locale,
   Map<String, WidgetBuilder> pushTargets = const {},
+  bool fallbackDatabase = true,
 }) {
+  // `fallbackDatabase: false` without your own database sends the screen to
+  // the real `AppDatabase.open()`, whose `path_provider` lookup has no
+  // platform channel here — the exact failure the backstop exists to prevent,
+  // and one keyword away now that the flag exists.
+  assert(
+    fallbackDatabase ||
+        overrides.any(
+          (override) => override.toString().contains('AppDatabase'),
+        ),
+    'fallbackDatabase: false requires the caller to override '
+    'appDatabaseProvider themselves.',
+  );
+
   final router = pushTargets.isEmpty
       ? null
       : GoRouter(
@@ -47,12 +78,14 @@ Widget wrapScreen(
           ],
         );
   return ProviderScope(
+    retry: noProviderRetry,
     overrides: [
-      appDatabaseProvider.overrideWith((ref) {
-        final database = AppDatabase.memory();
-        ref.onDispose(database.close);
-        return database;
-      }),
+      if (fallbackDatabase)
+        appDatabaseProvider.overrideWith((ref) {
+          final database = AppDatabase.memory();
+          ref.onDispose(database.close);
+          return database;
+        }),
       courseViewModeProvider.overrideWith(_TestCourseViewModeNotifier.new),
       libraryViewModeProvider.overrideWith(_TestLibraryViewModeNotifier.new),
       ...overrides,

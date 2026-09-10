@@ -7,6 +7,7 @@ import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/core/files/markdown_image_files.dart';
 import 'package:myplanet/core/files/resource_files.dart';
 import 'package:myplanet/core/network/network_result.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/app_providers.dart';
@@ -87,6 +88,7 @@ void main() {
       ).thenAnswer((_) async => const NetworkSuccess<List<int>>([1, 2, 3]));
 
       final container = ProviderContainer(
+        retry: noProviderRetry,
         overrides: [
           appDatabaseProvider.overrideWithValue(db),
           planetApiProvider.overrideWithValue(api),

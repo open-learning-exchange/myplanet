@@ -10,7 +10,7 @@ import 'session_provider.dart';
 /// Riverpod already scopes the repository call to the widget that reads it, so
 /// the actions only need to forward the signed-in user.
 final personalsProvider = StreamProvider<List<PersonalRow>>((ref) {
-  final user = ref.watch(sessionProvider).valueOrNull;
+  final user = ref.watch(sessionProvider).value;
   if (user == null) return Stream.value(const []);
   return ref.watch(personalsRepositoryProvider).watch(user.id);
 });
@@ -24,7 +24,7 @@ class PersonalActions {
     String? description,
     String? path,
   }) async {
-    final user = ref.read(sessionProvider).valueOrNull;
+    final user = ref.read(sessionProvider).value;
     if (user == null) return;
     await ref
         .read(personalsRepositoryProvider)
@@ -55,7 +55,7 @@ class PersonalActions {
   }
 
   Future<void> _queuePending() async {
-    final user = ref.read(sessionProvider).valueOrNull;
+    final user = ref.read(sessionProvider).value;
     final config = ref.read(serverConfigProvider);
     if (user == null || config == null) return;
     await ref

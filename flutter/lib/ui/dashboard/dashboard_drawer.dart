@@ -20,7 +20,7 @@ class DashboardDrawer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final session = ref.watch(sessionProvider).valueOrNull;
+    final session = ref.watch(sessionProvider).value;
     final isGuest = session != null && UserMapper.isGuest(session);
 
     return NavigationDrawer(

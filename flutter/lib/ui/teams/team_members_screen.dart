@@ -24,8 +24,7 @@ class TeamMembersScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final members = ref.watch(teamMembersProvider(teamId));
     final requests = ref.watch(teamRequestsProvider(teamId));
-    final memberships =
-        ref.watch(teamMembershipsProvider).valueOrNull ?? const {};
+    final memberships = ref.watch(teamMembershipsProvider).value ?? const {};
     final canManage = (memberships[teamId]?.isLeader ?? false);
     return DefaultTabController(
       length: canManage ? 2 : 1,
@@ -87,7 +86,7 @@ class _MembersList extends ConsumerWidget {
                 // name is set.
                 final user = userId.isEmpty
                     ? null
-                    : ref.watch(userByIdProvider(userId)).valueOrNull;
+                    : ref.watch(userByIdProvider(userId)).value;
                 // `profile_avatar.dart` is the port's single source for a
                 // user's name and initial. The local copies this replaces
                 // were the third in this directory and broken the same two
@@ -97,10 +96,7 @@ class _MembersList extends ConsumerWidget {
                 // `isEmpty ? '?'` guard never fired.
                 final name = user == null ? userId : displayName(user);
                 final initial = initialFor(name);
-                final currentUserId = ref
-                    .watch(sessionProvider)
-                    .valueOrNull
-                    ?.id;
+                final currentUserId = ref.watch(sessionProvider).value?.id;
                 final isOwnCard = userId == currentUserId;
                 return ListTile(
                   leading: CircleAvatar(child: Text(initial)),

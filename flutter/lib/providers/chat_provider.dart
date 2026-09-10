@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../data/local/app_database.dart';
 import '../data/local/chat_mapper.dart';
@@ -19,7 +20,7 @@ final aiProvidersProvider = FutureProvider<Map<String, bool>?>((ref) async {
 
 /// Provider for chat history for the current user.
 final chatHistoryProvider = FutureProvider<List<ChatRow>>((ref) async {
-  final session = ref.watch(sessionProvider).valueOrNull;
+  final session = ref.watch(sessionProvider).value;
   final repo = ref.watch(chatRepositoryProvider);
   return repo.getChatHistoryForUser(session?.name);
 });
@@ -152,7 +153,7 @@ class ChatConversationNotifier extends Notifier<ChatConversationState> {
 
   /// Sends a message.
   Future<void> sendMessage(String message) async {
-    final session = ref.read(sessionProvider).valueOrNull;
+    final session = ref.read(sessionProvider).value;
     if (session == null || message.trim().isEmpty) return;
 
     final repo = ref.read(chatRepositoryProvider);
@@ -245,7 +246,7 @@ class ChatQueue {
 
   Future<int> queuePending() async {
     final config = _ref.read(serverConfigProvider);
-    final user = _ref.read(sessionProvider).valueOrNull;
+    final user = _ref.read(sessionProvider).value;
     if (config == null || user == null) return 0;
     return _ref
         .read(chatUploaderProvider)
@@ -294,7 +295,7 @@ class ChatShareTargets {
 /// offered even on a device that has never synced a community team.
 ///
 /// The session is awaited rather than read: this provider never watches
-/// `sessionProvider` for its value, and `valueOrNull` is null until something
+/// `sessionProvider` for its value, and `value` is null until something
 /// else resolves it.
 final chatShareTargetsProvider = FutureProvider<ChatShareTargets>((ref) async {
   final session = await ref.watch(sessionProvider.future);

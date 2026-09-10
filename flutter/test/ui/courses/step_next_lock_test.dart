@@ -201,6 +201,7 @@ void main() {
             courseId,
           ).overrideWith((ref) => Stream.value(steps)),
         ],
+        fallbackDatabase: false,
       ),
     );
     await tester.pumpAndSettle();

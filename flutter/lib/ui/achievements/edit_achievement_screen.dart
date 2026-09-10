@@ -69,8 +69,8 @@ class _EditAchievementScreenState extends ConsumerState<EditAchievementScreen> {
 
   void _initialize() {
     if (_initialized) return;
-    final user = ref.read(sessionProvider).valueOrNull;
-    final row = ref.read(achievementEntryProvider).valueOrNull;
+    final user = ref.read(sessionProvider).value;
+    final row = ref.read(achievementEntryProvider).value;
     if (user == null || row == null) return;
     _firstName.text = user.firstName ?? '';
     _middleName.text = user.middleName ?? '';
@@ -147,7 +147,7 @@ class _EditAchievementScreenState extends ConsumerState<EditAchievementScreen> {
       _toast(l10n.fillRequiredFields(missing.join(', ')));
       return;
     }
-    final user = ref.read(sessionProvider).valueOrNull;
+    final user = ref.read(sessionProvider).value;
     if (user == null) return;
     setState(() => _saving = true);
     try {
@@ -248,7 +248,7 @@ class _EditAchievementScreenState extends ConsumerState<EditAchievementScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final entry = ref.watch(achievementEntryProvider);
-    if (!_initialized && entry.valueOrNull != null) {
+    if (!_initialized && entry.value != null) {
       _initialize();
     }
     // `tvCvFilename` names whatever is pending; `llCurrentCv` — the row

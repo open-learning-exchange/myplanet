@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/core/prefs/planet_prefs.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/challenge_provider.dart';
@@ -28,6 +29,7 @@ void main() {
   }) async {
     SharedPreferences.setMockInitialValues({});
     final container = ProviderContainer(
+      retry: noProviderRetry,
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         sessionProvider.overrideWith(
@@ -140,6 +142,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       final prefs = PlanetPrefs(await SharedPreferences.getInstance());
       final container = ProviderContainer(
+        retry: noProviderRetry,
         overrides: [
           appDatabaseProvider.overrideWithValue(db),
           planetPrefsProvider.overrideWithValue(prefs),
@@ -164,13 +167,18 @@ void main() {
   });
 }
 
-/// A tiny container-less evaluator for the pure `courseStatusString` tests.
-ChallengeEvaluator _evaluator() => ChallengeEvaluator(_DummyRef());
-
-class _DummyRef implements Ref {
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+/// A tiny evaluator for the pure `courseStatusString` tests.
+///
+/// Riverpod 3 seals [Ref], so the fake that used to stand in here cannot
+/// exist. A real one is borrowed from a throwaway container instead: the
+/// evaluator only stores it, and `courseStatusString` never reads a provider.
+ChallengeEvaluator _evaluator() {
+  final container = ProviderContainer(retry: noProviderRetry);
+  addTearDown(container.dispose);
+  return ChallengeEvaluator(container.read(_refProbeProvider));
 }
+
+final _refProbeProvider = Provider<Ref>((ref) => ref);
 
 class _TestSessionNotifier extends SessionNotifier {
   _TestSessionNotifier(this._user);

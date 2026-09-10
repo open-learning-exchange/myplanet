@@ -101,6 +101,7 @@ void main() {
             (ref) => Stream.value({'team-1': row}),
           ),
         ],
+        fallbackDatabase: false,
       ),
     );
     await tester.pumpAndSettle();
@@ -173,6 +174,7 @@ void main() {
             (ref) => Stream.value({'team-1': team(type: 'enterprise')}),
           ),
         ],
+        fallbackDatabase: false,
       ),
     );
     await tester.pumpAndSettle();

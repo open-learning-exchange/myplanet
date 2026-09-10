@@ -61,6 +61,7 @@ void main() {
           appDatabaseProvider.overrideWithValue(database),
           sessionProvider.overrideWith(() => _TestSessionNotifier(_user())),
         ],
+        fallbackDatabase: false,
       ),
     );
   }

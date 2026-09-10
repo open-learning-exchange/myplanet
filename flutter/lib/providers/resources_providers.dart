@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../core/config/server_config.dart';
 import '../core/system/disk_stats.dart';
@@ -102,7 +103,7 @@ List<MyLibraryRow> applyResourceSort(
 final resourcesStreamProvider = StreamProvider<List<MyLibraryRow>>((ref) {
   final query = ref.watch(resourceSearchQueryProvider);
   final shelfOnly = ref.watch(resourceShelfOnlyProvider);
-  final userId = ref.watch(sessionProvider).valueOrNull?.id;
+  final userId = ref.watch(sessionProvider).value?.id;
   return ref
       .watch(resourcesRepositoryProvider)
       .watchResources(query: query, shelfUserId: userId, myLibrary: shelfOnly);
@@ -116,7 +117,7 @@ class ResourceShelfActions {
     Iterable<String> resourceIds, {
     required bool joined,
   }) async {
-    final user = ref.read(sessionProvider).valueOrNull;
+    final user = ref.read(sessionProvider).value;
     if (user == null) return;
     await ref
         .read(resourcesRepositoryProvider)

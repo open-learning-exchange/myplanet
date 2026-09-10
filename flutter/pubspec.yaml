@@ -19,11 +19,21 @@ dependencies:
   cupertino_icons: ^1.0.8
 
   # State management — replaces Hilt + ViewModel/StateFlow.
-  # Phase 137 pin. Riverpod 3 is a rewrite of the provider surface (203 provider
-  # declarations across 152 files here) and wants a round with no other lane
-  # running; see PHASE_137_NOTES.md. The exact pin stops any resolution — direct
-  # or transitive — from moving it while that round is unscheduled.
-  flutter_riverpod: 2.6.1
+  # Taken in the Riverpod 3 round, on its own, because it touches every one of
+  # the 275 provider declarations across 39 files. (The old comment here said
+  # "203 across 152" and described the round as unscheduled; both were stale
+  # long before the round ran — the same shelf-life failure `go_router`'s pin
+  # had, which sent a lane to redo work already done.)
+  #
+  # Still exact rather than `^3.4.3`, and this is the reason: the port opts out
+  # of Riverpod 3's automatic provider retry at every root
+  # (`lib/core/providers/provider_retry.dart`), and that opt-out is written
+  # against `ProviderContainer.defaultRetry`'s current shape. A minor bump is
+  # free to change retry, subscription-pause or dispose timing — all three
+  # moved between 2.6.1 and 3.4.3 — so it wants a deliberate read, not a
+  # resolver decision. Move it with `test/core/provider_retry_policy_test.dart`
+  # green and the harness flags in `test/support/widget_harness.dart` re-checked.
+  flutter_riverpod: 3.4.3
 
   # Networking — replaces Retrofit + OkHttp.
   dio: ^5.7.0

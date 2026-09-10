@@ -9,7 +9,7 @@ import 'session_provider.dart';
 /// Seeding runs before the first read, mirroring the Fragment's behaviour of
 /// creating the default My life rows for a user who has none yet.
 final lifeItemsProvider = StreamProvider<List<MyLifeRow>>((ref) async* {
-  final user = ref.watch(sessionProvider).valueOrNull;
+  final user = ref.watch(sessionProvider).value;
   if (user == null) {
     yield const [];
     return;

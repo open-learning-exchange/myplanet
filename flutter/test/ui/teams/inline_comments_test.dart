@@ -227,7 +227,7 @@ void main() {
     'submitting before the session resolves still posts the comment',
     (tester) async {
       // `InlineComments` never *watches* `sessionProvider`, so a bare
-      // `ref.read(...).valueOrNull` is null until something else resolves it.
+      // `ref.read(...).value` is null until something else resolves it.
       // In the app the router holds a `ref.listen`, which is why this is
       // latent there; the comment must not be silently dropped.
       final repository = _MockVoicesRepository();

@@ -55,7 +55,7 @@ class _PendingSessionNotifier extends SessionNotifier {
 }
 
 /// A session whose future rejects — the shape Phase 100 found on the exam
-/// screen, where `valueOrNull` could only ever be null but the future can
+/// screen, where `value` could only ever be null but the future can
 /// throw.
 class _FailingSessionNotifier extends SessionNotifier {
   @override
@@ -212,6 +212,7 @@ void main() {
             ),
           ),
         ],
+        fallbackDatabase: false,
       ),
     );
     await tester.pumpAndSettle();
@@ -635,7 +636,7 @@ void main() {
     testWidgets('a session prefills nothing', (tester) async {
       // `initViews` sets no text on any field and the gender radios ship
       // unchecked, so `createUserProfile` reports only what was typed. The
-      // port's prefill was dead code — `valueOrNull` from `initState` — and
+      // port's prefill was dead code — `value` from `initState` — and
       // waking it up would have filed the device owner's demographics as the
       // respondent's: `sessionProvider` restores the last account that logged
       // in on this device, which for a public-survey link is not the person

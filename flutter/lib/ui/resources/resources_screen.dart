@@ -102,18 +102,16 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
         ref
             .watch(
               resourceTagsProvider(
-                [
-                  for (final r in resources.valueOrNull ?? const []) r.id,
-                ].join('\n'),
+                [for (final r in resources.value ?? const []) r.id].join('\n'),
               ),
             )
-            .valueOrNull ??
+            .value ??
         const {};
 
     // #15572: when the shelf has no rows at all, the search bar, the list/grid
     // toggle, and the filter button offer nothing to act on. Hiding them
     // leaves only the sync button, which is the one thing the user can do.
-    final hasData = resources.valueOrNull?.isNotEmpty ?? false;
+    final hasData = resources.value?.isNotEmpty ?? false;
 
     ref.listen<SyncUiState>(resourceSyncProvider, (previous, next) {
       final messenger = ScaffoldMessenger.of(context);

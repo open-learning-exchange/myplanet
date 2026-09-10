@@ -111,6 +111,7 @@ void main() {
           planetApiProvider.overrideWithValue(api),
           sessionProvider.overrideWith(() => _StubSession(user)),
         ],
+        fallbackDatabase: false,
       ),
     );
     await tester.pumpAndSettle();
@@ -502,7 +503,7 @@ void main() {
     ) async {
       // `navigateOnwardAndFinish` branches on `prefData.isLoggedIn()`. The
       // screen never watches `sessionProvider`, so reading it with
-      // `.valueOrNull` yielded null and sent a signed-in respondent to the
+      // `.value` yielded null and sent a signed-in respondent to the
       // login screen — the Phase 100 shape again, now awaited.
       stubPost(succeeds: true);
       stubFetch(surveyDoc([textQuestion('q1', 'What do you need?')]));
