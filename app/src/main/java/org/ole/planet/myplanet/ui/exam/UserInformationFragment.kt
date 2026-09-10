@@ -13,6 +13,7 @@ import android.widget.ArrayAdapter
 import android.widget.RadioButton
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
@@ -26,22 +27,18 @@ import org.ole.planet.myplanet.base.BaseDialogFragment
 import org.ole.planet.myplanet.databinding.FragmentUserInformationBinding
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.UserSurveyProfile
-import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.SubmissionsUploader
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     private lateinit var fragmentUserInformationBinding: FragmentUserInformationBinding
     var dob: String? = ""
-    @Inject
-    lateinit var submissionsRepository: SubmissionsRepository
-    @Inject
-    lateinit var userRepository: UserRepository
+    private val viewModel: UserInformationViewModel by viewModels()
     @Inject
     lateinit var userSessionManager: UserSessionManager
     var userModel: UserEntity? = null
@@ -79,6 +76,40 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
             userModel = userSessionManager.getUserModel()
+        }
+        collectWhenStarted(viewModel.resultEvent) { result ->
+            when (result) {
+                is UserInformationResult.UpdateProfileSuccess -> {
+                    Utilities.toast(MainApplication.context, getString(R.string.user_profile_updated))
+                    if (isAdded) dialog?.dismiss()
+                }
+                is UserInformationResult.UpdateProfileError -> {
+                    Utilities.toast(MainApplication.context, getString(R.string.unable_to_update_user))
+                    if (isAdded) dialog?.dismiss()
+                }
+                is UserInformationResult.MarkSubmissionSuccess -> {
+                    Log.d("UserInformationFragment", "Submission marked complete, about to dismiss dialog")
+                    Utilities.toast(
+                        MainApplication.context,
+                        getString(R.string.thank_you_for_taking_this_survey)
+                    )
+                    if (isAdded) {
+                        Log.d("UserInformationFragment", "Dismissing dialog, this will trigger onDismiss()")
+                        dialog?.dismiss()
+                    }
+                }
+                is UserInformationResult.MarkSubmissionError -> {
+                    if (result.message == "no ID provided") {
+                        Utilities.toast(
+                            MainApplication.context,
+                            "Error: Unable to save submission - no ID provided"
+                        )
+                    } else {
+                        Utilities.toast(MainApplication.context, "Error saving submission: ${result.message}")
+                    }
+                    if (isAdded) dialog?.dismiss()
+                }
+            }
         }
     }
 
@@ -158,16 +189,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             saveSubmission(user)
         } else if (TextUtils.isEmpty(id)) {
             val userId = userModel?.id
-            viewLifecycleOwner.lifecycleScope.launch {
-                try {
-                    userRepository.updateProfileFields(userId, user)
-                    Utilities.toast(MainApplication.context, getString(R.string.user_profile_updated))
-                    if (isAdded) dialog?.dismiss()
-                } catch (_: Exception) {
-                    Utilities.toast(MainApplication.context, getString(R.string.unable_to_update_user))
-                    if (isAdded) dialog?.dismiss()
-                }
-            }
+            viewModel.updateProfile(userId, user)
         } else {
             saveSubmission(user)
         }
@@ -255,39 +277,9 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     private fun saveSubmission(user: JsonObject) {
         Log.d("UserInformationFragment", "saveSubmission called, syncStartTime: $syncStartTime")
-        viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val submissionId = id
-                if (submissionId.isNullOrEmpty()) {
-                    Utilities.toast(
-                        MainApplication.context,
-                        "Error: Unable to save submission - no ID provided"
-                    )
-                    if (isAdded) dialog?.dismiss()
-                    return@launch
-                }
-
-                Log.d("UserInformationFragment", "Marking submission complete for ID: $submissionId")
-                submissionsRepository.markSubmissionComplete(submissionId, user)
-                Log.d("UserInformationFragment", "Submission marked complete, about to dismiss dialog")
-
-                Utilities.toast(
-                    MainApplication.context,
-                    getString(R.string.thank_you_for_taking_this_survey)
-                )
-                if (isAdded) {
-                    Log.d("UserInformationFragment", "Dismissing dialog, this will trigger onDismiss()")
-                    dialog?.dismiss()
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                Log.e("UserInformationFragment", "Error in saveSubmission", e)
-                Utilities.toast(MainApplication.context, "Error saving submission: ${e.message}")
-                if (isAdded) {
-                    dialog?.dismiss()
-                }
-            }
-        }
+        val submissionId = id
+        Log.d("UserInformationFragment", "Marking submission complete for ID: $submissionId")
+        viewModel.markSubmissionComplete(submissionId, user)
     }
 
     override fun onDismiss(dialog: DialogInterface) {
