@@ -607,6 +607,7 @@
     <string name="please_select_starting_date">"कृपया सुरु मिति छनौट गर्नुहोस्: "</string>
     <string name="read_offline_news_from">"अफलाइन समाचार पढ्नुहोस्: "</string>
     <string name="downloading_started_please_check_notification">डाउनलोड सुरु भयो, कृपया सूचना जाँच गर्नुहोस्…</string>
+    <string name="dictionary_parsing_failed">शब्दकोश पार्सिङ असफल भयो</string>
     <string name="file_already_exists">फाइल पहिले नै अवस्थित छ…</string>
     <string name="feature_not_available">विशेषता उपलब्ध छैन</string>
     <string name="sync">सिंक</string>
