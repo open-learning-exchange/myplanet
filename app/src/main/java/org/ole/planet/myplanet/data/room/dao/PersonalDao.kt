@@ -21,7 +21,7 @@ interface PersonalDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: Personal)
 
-    @Query("SELECT * FROM my_personal WHERE userId = :userId")
+    @Query("SELECT * FROM my_personal WHERE userId = :userId ORDER BY date DESC, title COLLATE NOCASE ASC")
     fun getByUserIdFlow(userId: String): Flow<List<Personal>>
 
     @Query("SELECT * FROM my_personal WHERE userId = :userId AND isUploaded = 0")
