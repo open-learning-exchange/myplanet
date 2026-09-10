@@ -83,7 +83,7 @@ class LifeFragment : BaseRecyclerFragment<MyLife?>(), OnStartDragListener {
         collectWhenStarted(viewModel.myLifeList) { list ->
             lifeAdapter.submitList(list)
         }
-        viewModel.loadMyLifeList()
+        viewModel.loadMyLifeList(requireContext()::getString)
     }
 
     override fun onDestroyView() {
