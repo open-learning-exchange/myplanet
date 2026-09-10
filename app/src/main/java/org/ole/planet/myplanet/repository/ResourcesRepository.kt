@@ -49,8 +49,8 @@ interface ResourcesRepository {
     fun getPendingDownloads(userId: String): Flow<List<String>>
     suspend fun countLibrariesNeedingUpdate(userId: String?): Int
     suspend fun resourceTitleExists(title: String): Boolean
+    suspend fun resolveLibraryItem(id: String): MyLibrary?
     suspend fun saveLocalResource(request: LocalResourceRequest): Result<Unit>
-    suspend fun markResourceAdded(userId: String?, resourceId: String)
     suspend fun updateUserLibrary(resourceId: String, userId: String, isAdd: Boolean): MyLibrary?
     suspend fun setUserLibrary(resourceId: String, add: Boolean): MyLibrary?
     suspend fun updateLibraryItem(id: String, updater: (MyLibrary) -> Unit)
@@ -92,7 +92,6 @@ interface ResourcesRepository {
     suspend fun removeResourceFromShelf(resourceId: String, userId: String)
     suspend fun removeResourcesFromShelf(resourceIds: List<String>, userId: String): Result<Unit>
     suspend fun getHtmlResourceDownloadUrls(resourceId: String): ResourceUrlsResponse
-    suspend fun getFilterFacets(libraries: List<MyLibrary>): Map<String, Set<String>>
     suspend fun batchInsertResources(documents: List<JsonObject>): List<String>
     suspend fun batchInsertMyLibrary(shelfId: String?, documents: List<JsonObject>): Int
     suspend fun getResourceListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel>

@@ -123,6 +123,7 @@ class ResourcesRepositoryImplTest {
             id = "res-id"
             userId = listOf("user-123")
         }
+        coEvery { myLibraryDao.getById("res-id") } returns null
         coEvery { myLibraryDao.getByResourceId("res-id") } returns mockLibrary
 
         val result = repository.setUserLibrary("res-id", true)
@@ -140,6 +141,7 @@ class ResourcesRepositoryImplTest {
             id = "res-id"
             userId = emptyList()
         }
+        coEvery { myLibraryDao.getById("res-id") } returns null
         coEvery { myLibraryDao.getByResourceId("res-id") } returns mockLibrary
 
         val result = repository.setUserLibrary("res-id", false)
@@ -310,6 +312,22 @@ class ResourcesRepositoryImplTest {
 
         assertEquals(1, result.size)
         assertEquals("Test Library", result[0].title)
+    }
+
+    @Test
+    fun `resolveLibraryItem resolves by id or falls back to resourceId`() = runTest {
+        val libById = MyLibrary().apply { id = "id1"; title = "By ID" }
+        val libByResId = MyLibrary().apply { id = "id2"; resourceId = "res2"; title = "By Res ID" }
+
+        coEvery { myLibraryDao.getById("id1") } returns libById
+        coEvery { myLibraryDao.getById("res2") } returns null
+        coEvery { myLibraryDao.getByResourceId("res2") } returns libByResId
+
+        val resultById = repository.resolveLibraryItem("id1")
+        val resultByResId = repository.resolveLibraryItem("res2")
+
+        assertEquals("By ID", resultById?.title)
+        assertEquals("By Res ID", resultByResId?.title)
     }
 
     @Test
