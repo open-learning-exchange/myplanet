@@ -1,0 +1,133 @@
+name: Flutter
+
+# Guards the Flutter port under flutter/. The Kotlin app's build.yml and
+# test.yml are untouched and keep running alongside this.
+on:
+  push:
+    paths:
+      - 'flutter/**'
+      - '.github/workflows/flutter.yml'
+  pull_request:
+    paths:
+      - 'flutter/**'
+      - '.github/workflows/flutter.yml'
+  workflow_dispatch:
+    inputs:
+      build_mode:
+        description: 'APK build mode (a manual run uploads the APK as an artifact)'
+        type: choice
+        options: [debug, release]
+        default: debug
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: flutter
+
+jobs:
+  analyze-and-test:
+    name: Analyze and test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.8
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Generated sources are gitignored, so they are rebuilt here before
+      # anything reads them.
+      - name: Generate code
+        run: |
+          rm -rf .dart_tool/build
+          dart run build_runner build --delete-conflicting-outputs
+          flutter gen-l10n
+
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed lib test
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.8
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate code
+        run: |
+          rm -rf .dart_tool/build
+          dart run build_runner build --delete-conflicting-outputs
+          flutter gen-l10n
+
+      # The preconfigured Planet servers, derived from the Kotlin app's own
+      # `gradle.properties` so the two cannot offer different servers. Without
+      # them the built APK has no server list and a user has to know a PIN,
+      # which is what made the first APK this workflow handed out unusable.
+      # The output holds real `satellite` PINs and lands under the gitignored
+      # `build/`; the script prints counts, never a value.
+      - name: Derive the preconfigured server defines
+        run: dart run tool/planet_server_defines.dart
+
+      # `inputs.build_mode` is empty on push and pull_request, so those runs
+      # keep building --debug exactly as before; only a manual dispatch can
+      # ask for --release.
+      - name: Build APK
+        run: |
+          flutter build apk \
+            ${{ inputs.build_mode == 'release' && '--release' || '--debug' }} \
+            --dart-define-from-file=build/planet_server_defines.json
+
+      # Dispatch-only, mirroring release.yml: a push run's APK is a
+      # by-product nobody asks for, and ~50 MB per run for 9 days across
+      # every push is real storage. A manual run is someone asking for the
+      # file, so that is the run that keeps it.
+      - name: Name the APK with version, branch and mode
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          version=$(grep -m1 '^version:' pubspec.yaml | cut -d' ' -f2)
+          mode=${{ inputs.build_mode }}
+          branch=${GITHUB_REF##*/}
+          mkdir -p output
+          mv build/app/outputs/flutter-apk/app-$mode.apk \
+             "output/myPlanet-flutter-$version-$branch-$mode.apk"
+          ls -al output
+          echo "ARTIFACT_NAME=myPlanet-flutter-$version-$branch-$mode" >> $GITHUB_ENV
+
+      - name: Upload APK as build artifact
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: flutter/output/*.apk
+          retention-days: 9
+          if-no-files-found: error

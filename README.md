@@ -11,10 +11,42 @@
 **myPlanet** is a mobile app designed to complement the [Open Learning Exchange](https://ole.org)’s Learning Management System, [Planet](https://github.com/open-learning-exchange/planet). Tailored for both offline and online use, myPlanet ensures continuous learning and community engagement even in areas with limited internet access. It seamlessly integrates with Planet's community and nation instances, offering a mobile platform to access user-created educational resources such as books, videos, and courses.
 
 - [Feature Highlights](#feature-highlights)
+- [Flutter/Dart development](#flutterdart-development)
 - [About myPlanet](#about-myplanet)
 - [How To Use](#how-to-use)
 - [Development](#development)
 - [Contact](#contact)
+
+## Flutter/Dart development
+
+myPlanet is being migrated from its legacy Kotlin/Android implementation to Flutter and Dart.
+New cross-platform application work lives in [`flutter/`](flutter/); the Kotlin application in
+[`app/`](app/) remains available while feature parity is completed. The Flutter application
+currently covers:
+
+- server configuration, and online and offline login
+- resources and courses, with shelf write-back to CouchDB
+- the calendar, first-launch onboarding, and references
+- an offline-editable user profile and persisted appearance settings
+- a downloadable offline dictionary
+- reactive notifications and personalized My life navigation
+- private offline personal items and offline course ratings
+- a durable upload queue that survives restarts and retries with backoff
+
+To run the Flutter application:
+
+```bash
+cd flutter
+flutter pub get
+dart run build_runner build
+flutter gen-l10n
+flutter run
+```
+
+Use `flutter analyze` and `flutter test` for the standard development checks. See the
+[Flutter README](flutter/README.md) for project structure and configuration, and the
+[migration tracker](docs/kotlin-to-flutter-migration.md) for feature-parity status and technology
+decisions.
 
 ## Feature Highlights
 

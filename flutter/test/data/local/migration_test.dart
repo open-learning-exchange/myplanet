@@ -1,0 +1,1994 @@
+import 'package:drift/drift.dart';
+import 'package:drift/native.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:myplanet/data/local/app_database.dart';
+
+/// The upgrade path drops and recreates the CouchDB caches so the next sync
+/// refills them. These tests pin the exception to that rule: a table holding
+/// work the user did offline must survive, because no sync can give it back.
+void main() {
+  late NativeDatabase executor;
+  late AppDatabase database;
+
+  setUp(() {
+    // One executor shared across both "runs" so the file-level state persists,
+    // the way an on-device upgrade would see it.
+    executor = NativeDatabase.memory();
+    database = AppDatabase(executor);
+  });
+  tearDown(() => database.close());
+
+  Future<void> runUpgrade({int? from}) =>
+      database.customStatement('SELECT 1').then((_) async {
+        final migrator = database.createMigrator();
+        await database.migration.onUpgrade(
+          migrator,
+          from ?? database.schemaVersion - 1,
+          database.schemaVersion,
+        );
+      });
+
+  test('an un-pushed outbox operation survives a schema upgrade', () async {
+    await database.outboxDao.upsert(
+      OutboxEntriesCompanion.insert(
+        id: 'op-1',
+        uploadType: 'personals',
+        itemId: 'note-1',
+        payload: '{"title":"offline note"}',
+        endpoint: 'https://planet.example.org/db/resources',
+        createdAt: 1000,
+      ),
+    );
+
+    await runUpgrade();
+
+    final survivors = await database.outboxDao.due(9999);
+    expect(
+      survivors.map((row) => row.id),
+      ['op-1'],
+      reason: 'dropping the queue would discard a write the user already made',
+    );
+  });
+
+  test('a queued resource download survives a schema upgrade', () async {
+    await database.downloadQueueDao.enqueue('resource-1', createdAt: 1000);
+
+    await runUpgrade();
+
+    expect(
+      (await database.downloadQueueDao.pending()).map((row) => row.resourceId),
+      ['resource-1'],
+      reason: 'the server cannot reconstruct a download the user requested',
+    );
+  });
+
+  test('an un-uploaded personal note survives a schema upgrade', () async {
+    await database.personalDao.upsert(
+      PersonalEntriesCompanion.insert(
+        id: 'note-1',
+        title: 'Private',
+        titleNormalized: 'private',
+        date: 1000,
+        userId: 'user-1',
+      ),
+    );
+
+    await runUpgrade();
+
+    expect((await database.personalDao.getById('note-1'))?.title, 'Private');
+  });
+
+  test('a removed-log entry survives, so a leave is not re-added', () async {
+    await database.removedLogDao.record(
+      type: 'courses',
+      docId: 'course-1',
+      userId: 'user-1',
+    );
+
+    await runUpgrade();
+
+    expect(
+      await database.removedLogDao.removedDocIds('courses', 'user-1'),
+      contains('course-1'),
+    );
+  });
+
+  test('a meetup that has not reached the server survives', () async {
+    // `EventsRepository.create` writes these before any upload, so a drop
+    // would discard a meetup that exists nowhere else.
+    await database.meetupDao.upsert(
+      MeetupsCompanion.insert(
+        id: 'local-1',
+        title: const Value('Offline meetup'),
+        updated: const Value(true),
+      ),
+    );
+
+    await runUpgrade();
+
+    final survivors = await database.meetupDao.pendingUploads();
+    expect(survivors.map((row) => row.id), contains('local-1'));
+  });
+
+  test('a voices post that has not reached the server survives', () async {
+    await database.newsDao.upsert(
+      NewsEntriesCompanion.insert(
+        id: 'local-1',
+        message: const Value('Written offline'),
+        userId: const Value('user-1'),
+      ),
+    );
+
+    await runUpgrade();
+
+    final survivor = await database.newsDao.getById('local-1');
+    expect(survivor?.message, 'Written offline');
+  });
+
+  test('an offline team task survives a schema upgrade', () async {
+    await database.teamTaskDao.upsert(
+      TeamTasksCompanion.insert(
+        id: 'task-1',
+        teamId: 'team-1',
+        title: const Value('Offline task'),
+        isUpdated: const Value(true),
+      ),
+    );
+    await runUpgrade();
+    expect(
+      (await database.teamTaskDao.getById('task-1'))?.title,
+      'Offline task',
+    );
+  });
+
+  test('a team document authored offline survives a schema upgrade', () async {
+    // The `teams` table is a hybrid: dropping it takes the CouchDB catalog,
+    // which the next sync refills, but also the report/request/membership rows
+    // that only exist here. The stale cache rows left behind are pruned by
+    // `deleteNotIn` on that same sync.
+    await database.teamDao.upsert(
+      TeamsCompanion.insert(
+        id: 'report-1',
+        teamId: const Value('team-1'),
+        docType: const Value('report'),
+        description: const Value('Q1 offline'),
+        isUpdated: const Value(true),
+      ),
+    );
+
+    await runUpgrade();
+
+    expect(
+      (await database.teamDao.getById('report-1'))?.description,
+      'Q1 offline',
+    );
+  });
+
+  test('a My life ordering choice survives', () async {
+    await database.myLifeDao.seedIfEmpty('user-1', [
+      MyLifeEntriesCompanion.insert(
+        id: 'user-1:health',
+        feature: 'health',
+        userId: 'user-1',
+        weight: 3,
+        isVisible: const Value(false),
+      ),
+    ]);
+
+    await runUpgrade();
+
+    final rows = await database.myLifeDao.watchForUser('user-1').first;
+    expect(rows.single.weight, 3);
+    expect(rows.single.isVisible, isFalse);
+  });
+
+  test('an un-uploaded submission survives with its answers', () async {
+    await database.submissionDao.upsertAll(
+      [
+        SubmissionsCompanion.insert(
+          id: 'sub-1',
+          userId: const Value('user-1'),
+          type: const Value('survey'),
+          status: const Value('complete'),
+          uploaded: const Value(false),
+        ),
+      ],
+      questions: {
+        'sub-1': [
+          SubmissionQuestionsCompanion.insert(
+            id: 'sub-1:q1',
+            submissionId: 'sub-1',
+            header: const Value('H'),
+            position: 0,
+          ),
+        ],
+      },
+      answers: {
+        'sub-1': [
+          SubmissionAnswersCompanion.insert(
+            id: 'sub-1:q1',
+            submissionId: 'sub-1',
+            questionId: const Value('q1'),
+            value: const Value('Yes'),
+          ),
+        ],
+      },
+    );
+
+    await runUpgrade();
+
+    // All three tables are preserved together: a submission whose answers were
+    // dropped would upload as an empty response, which is worse than losing it.
+    expect(await database.submissionDao.getById('sub-1'), isA<SubmissionRow>());
+    expect(await database.submissionDao.answersFor('sub-1'), hasLength(1));
+    expect(
+      (await database.submissionDao.watchQuestions('sub-1').first),
+      hasLength(1),
+    );
+  });
+
+  test('a chat conversation survives a schema upgrade', () async {
+    // There is no chat sync, so a drop here is permanent even though CouchDB
+    // still holds the document.
+    await database.chatDao.upsertAll([
+      ChatEntriesCompanion.insert(
+        id: 'chat-1',
+        docId: const Value('chat-1'),
+        user: const Value('ada'),
+        title: const Value('Capital of Iceland?'),
+      ),
+    ]);
+
+    await runUpgrade();
+
+    expect(
+      (await database.chatDao.getByUser('ada')).single.title,
+      'Capital of Iceland?',
+    );
+  });
+
+  test('feedback filed offline survives a schema upgrade', () async {
+    await database.feedbackDao.upsert(
+      FeedbackEntriesCompanion.insert(
+        id: 'feedback-1',
+        title: const Value('App crashes on sync'),
+        owner: const Value('ada'),
+        isUploaded: const Value(false),
+      ),
+    );
+
+    await runUpgrade();
+
+    expect(
+      (await database.feedbackDao.getById('feedback-1'))?.title,
+      'App crashes on sync',
+    );
+  });
+
+  test('a health examination survives a schema upgrade', () async {
+    // A clinician's reading, recorded offline. No health sync had a caller
+    // until this slice, and even with one the record is authored here — the
+    // server has nothing to give back.
+    await database.healthExaminationDao.upsert(
+      HealthExaminationsCompanion.insert(
+        id: 'exam-1',
+        userId: const Value('user-1'),
+        pulse: const Value(72),
+      ),
+    );
+
+    await runUpgrade();
+
+    expect((await database.healthExaminationDao.getById('exam-1'))?.pulse, 72);
+  });
+
+  group('the v45 legacy-examination repair', () {
+    // Before Phase 105 the examination form wrote the *patient's* id into a new
+    // row's `userId`, which is the column `HealthRepository.serialize` keys the
+    // uploaded document on — so the row claimed the patient's profile document
+    // and took a 409 nothing surfaced. `health_legacy_conflict_test.dart` holds
+    // the end-to-end loss; these pin the predicate's edges, because re-keying
+    // the wrong row would cause the same conflict in the other direction.
+    Future<void> seedUser() => database.userDao.upsert(
+      UsersCompanion.insert(
+        id: 'local-9',
+        name: const Value('ada'),
+        couchId: const Value('org.couchdb.user:ada'),
+      ),
+    );
+
+    /// The patient's profile row — the document a legacy examination collides
+    /// with, and the reason the collision exists at all.
+    Future<void> seedProfileRow() => database.healthExaminationDao.upsert(
+      HealthExaminationsCompanion.insert(
+        id: 'org.couchdb.user:ada',
+        userId: const Value('org.couchdb.user:ada'),
+        data: const Value('profile-ciphertext'),
+        isUpdated: const Value(true),
+      ),
+    );
+
+    test('re-keys a legacy examination onto its own id', () async {
+      await seedUser();
+      await seedProfileRow();
+      await database.healthExaminationDao.upsert(
+        HealthExaminationsCompanion.insert(
+          id: 'health-1725000000000000',
+          userId: const Value('org.couchdb.user:ada'),
+          pulse: const Value(72),
+          isUpdated: const Value(true),
+        ),
+      );
+
+      await runUpgrade(from: 44);
+
+      final row = await database.healthExaminationDao.getById(
+        'health-1725000000000000',
+      );
+      expect(row!.userId, 'health-1725000000000000');
+      expect(row.pulse, 72, reason: 'the reading itself is untouched');
+    });
+
+    test('leaves a legacy row that became the profile row alone', () async {
+      // `saveHealthProfileBlob` resolves the profile row with
+      // `getByIdOrUserId`, which matches a legacy examination row through its
+      // `userId` column — and then keeps `id: Value(existing.id)`. So on a
+      // device with no separate profile row, the first post-Phase-105 save
+      // turns the legacy examination row *into* the patient's profile row,
+      // keeping its `health-…` id. Every other conjunct of the repair matches
+      // that row; re-keying it would publish the health profile under a
+      // millisecond timestamp no server can resolve to a person, which is the
+      // harm this repair exists to prevent.
+      await seedUser();
+      await database.healthExaminationDao.upsert(
+        HealthExaminationsCompanion.insert(
+          id: 'health-1725000000000005',
+          userId: const Value('org.couchdb.user:ada'),
+          data: const Value('profile-ciphertext'),
+          isUpdated: const Value(true),
+        ),
+      );
+
+      await runUpgrade(from: 44);
+
+      expect(
+        (await database.healthExaminationDao.getById(
+          'health-1725000000000005',
+        ))!.userId,
+        'org.couchdb.user:ada',
+        reason: 'no row is keyed on that userId, so there is no collision',
+      );
+    });
+
+    test("leaves a locally-registered member's profile row alone", () async {
+      // The row this predicate exists to protect: its id is the member's local
+      // user key and its `userId` is the CouchDB id the account was given, so
+      // the two legitimately differ. Re-keying it would post the profile under
+      // a millisecond timestamp no server can resolve to a person.
+      await seedUser();
+      await database.healthExaminationDao.upsert(
+        HealthExaminationsCompanion.insert(
+          id: 'local-9',
+          userId: const Value('org.couchdb.user:ada'),
+          isUpdated: const Value(true),
+        ),
+      );
+
+      await runUpgrade(from: 44);
+
+      expect(
+        (await database.healthExaminationDao.getById('local-9'))!.userId,
+        'org.couchdb.user:ada',
+      );
+    });
+
+    test('leaves a profile row keyed on the CouchDB id alone', () async {
+      // `UserDao.getById` matches `_id` as well as `id`, so a profile row can
+      // be keyed on either. Both columns are checked.
+      await database.userDao.upsert(
+        UsersCompanion.insert(
+          id: 'local-8',
+          name: const Value('bea'),
+          couchId: const Value('org.couchdb.user:bea'),
+        ),
+      );
+      await database.healthExaminationDao.upsert(
+        HealthExaminationsCompanion.insert(
+          id: 'org.couchdb.user:bea',
+          userId: const Value('local-8'),
+          isUpdated: const Value(true),
+        ),
+      );
+
+      await runUpgrade(from: 44);
+
+      expect(
+        (await database.healthExaminationDao.getById(
+          'org.couchdb.user:bea',
+        ))!.userId,
+        'local-8',
+      );
+    });
+
+    test('leaves a row that already uploaded alone', () async {
+      // Its `_rev` belongs to the document its old `userId` names. Re-keying
+      // it while keeping that revision would post a revision of a document
+      // that does not exist under the new id — the same 409, newly ours.
+      await seedUser();
+      await seedProfileRow();
+      await database.healthExaminationDao.upsert(
+        HealthExaminationsCompanion.insert(
+          id: 'health-1725000000000001',
+          userId: const Value('org.couchdb.user:ada'),
+          couchId: const Value('org.couchdb.user:ada'),
+          rev: const Value('3-abc'),
+          isUpdated: const Value(true),
+        ),
+      );
+
+      await runUpgrade(from: 44);
+
+      expect(
+        (await database.healthExaminationDao.getById(
+          'health-1725000000000001',
+        ))!.userId,
+        'org.couchdb.user:ada',
+      );
+    });
+
+    test('leaves a row carrying a profileId alone', () async {
+      // A row with a `profileId` is either recorded after Phase 105 or pulled
+      // from the server; neither is the shape being repaired.
+      await seedUser();
+      await seedProfileRow();
+      await database.healthExaminationDao.upsert(
+        HealthExaminationsCompanion.insert(
+          id: 'health-1725000000000002',
+          userId: const Value('org.couchdb.user:ada'),
+          profileId: const Value('user-key-1'),
+          isUpdated: const Value(true),
+        ),
+      );
+
+      await runUpgrade(from: 44);
+
+      expect(
+        (await database.healthExaminationDao.getById(
+          'health-1725000000000002',
+        ))!.userId,
+        'org.couchdb.user:ada',
+      );
+    });
+
+    test('leaves a clean row alone', () async {
+      // Nothing queues it, so it is not in the collision.
+      await seedUser();
+      await seedProfileRow();
+      await database.healthExaminationDao.upsert(
+        HealthExaminationsCompanion.insert(
+          id: 'health-1725000000000003',
+          userId: const Value('org.couchdb.user:ada'),
+        ),
+      );
+
+      await runUpgrade(from: 44);
+
+      expect(
+        (await database.healthExaminationDao.getById(
+          'health-1725000000000003',
+        ))!.userId,
+        'org.couchdb.user:ada',
+      );
+    });
+
+    test('the repair does not cost the record it repairs', () async {
+      // `health_examinations` is preserved, so the upgrade that carries the
+      // repair must not be the thing that discards the reading.
+      await seedUser();
+      await seedProfileRow();
+      await database.healthExaminationDao.upsert(
+        HealthExaminationsCompanion.insert(
+          id: 'health-1725000000000004',
+          userId: const Value('org.couchdb.user:ada'),
+          pulse: const Value(88),
+          data: const Value('ciphertext'),
+          isUpdated: const Value(true),
+        ),
+      );
+
+      await runUpgrade(from: 44);
+
+      final row = await database.healthExaminationDao.getById(
+        'health-1725000000000004',
+      );
+      expect(row!.pulse, 88);
+      expect(row.data, 'ciphertext');
+      expect(row.isUpdated, isTrue, reason: 'it still has to be uploaded');
+    });
+  });
+
+  test('the health encryption key survives a schema upgrade', () async {
+    // `key`/`iv` are generated on this device and never uploaded. Dropping
+    // them would leave every health record already encrypted with them
+    // unreadable — and would sign the user out, since the session restores by
+    // looking their id up in this table.
+    await database.userDao.upsert(
+      UsersCompanion.insert(id: 'user-1', name: const Value('ada')),
+    );
+    final before = await database.userDao.ensureSecurityKeys('user-1');
+
+    await runUpgrade();
+
+    final after = await database.userDao.getById('user-1');
+    expect(after?.key, before?.key);
+    expect(after?.iv, before?.iv);
+  });
+
+  test(
+    'a column added to a preserved table reaches an existing install',
+    () async {
+      // `createAll` emits `CREATE TABLE IF NOT EXISTS`, and a preserved table is
+      // skipped by the drop loop — so a new column on one only ever exists on
+      // installs created after the change unless `onUpgrade` adds it by hand.
+      // `chat_history.is_uploaded` arrived without that step; every chat query
+      // then failed on the missing column.
+      await runUpgrade(from: 24);
+
+      final columns = await database
+          .customSelect('PRAGMA table_info(chat_history)')
+          .get();
+      expect(
+        columns.map((row) => row.read<String>('name')),
+        contains('is_uploaded'),
+      );
+    },
+  );
+
+  test(
+    'an un-uploaded course-progress row survives a schema upgrade',
+    () async {
+      // The step-view path writes a `passed=false` row the moment a step is
+      // opened, and the exam flips it to `true`. Dropping the table between
+      // the two would discard the pass — the server has nothing to give back
+      // for a row the exam just authored.
+      await database.courseProgressDao.upsert(
+        CourseProgressCompanion.insert(
+          id: 'progress-1',
+          courseId: const Value('course-1'),
+          userId: const Value('user-1'),
+          stepNum: const Value(1),
+          passed: const Value(true),
+        ),
+      );
+
+      await runUpgrade();
+
+      final survivor = await database.courseProgressDao.findByCourseUserAndStep(
+        'course-1',
+        'user-1',
+        1,
+      );
+      expect(survivor?.passed, isTrue);
+    },
+  );
+
+  test('an already-uploaded chat is not re-queued after the upgrade', () async {
+    // A chat carries a `_rev` only once the server acknowledged it. Leaving
+    // those at the column default would mark every synced conversation pending
+    // and post a duplicate of each on the next drain.
+    await database.chatDao.upsertAll([
+      ChatEntriesCompanion.insert(
+        id: 'chat-1',
+        docId: const Value('chat-1'),
+        rev: const Value('1-a'),
+        user: const Value('ada'),
+      ),
+    ]);
+    await database.customStatement(
+      'ALTER TABLE chat_history DROP COLUMN is_uploaded',
+    );
+
+    await runUpgrade(from: 24);
+
+    expect(await database.chatDao.getPending(), isEmpty);
+  });
+
+  test('a users row keeps its data and gains the v30 upload columns', () async {
+    // `users` is preserved (the health key cannot be re-synced), so adding
+    // `isUpdated`/`age`/`birthPlace` needs a hand-written `ALTER TABLE` step.
+    // A row already on the server must not become pending just because the
+    // dirty-flag column appeared.
+    await database.userDao.upsert(
+      UsersCompanion.insert(
+        id: 'user-1',
+        name: const Value('ada'),
+        rolesList: const Value(['learner']),
+        userAdmin: const Value(false),
+        joinDate: const Value(123),
+        couchId: const Value('org.couchdb.user:ada'),
+        rev: const Value('2-abc'),
+      ),
+    );
+    // Strip the v30 columns to simulate an install upgrading from v29.
+    await database.customStatement('ALTER TABLE users DROP COLUMN is_updated');
+    await database.customStatement('ALTER TABLE users DROP COLUMN age');
+    await database.customStatement('ALTER TABLE users DROP COLUMN birth_place');
+
+    await runUpgrade(from: 29);
+
+    final survivor = await database.userDao.getById('user-1');
+    expect(survivor?.name, 'ada');
+    expect(survivor?.couchId, 'org.couchdb.user:ada');
+    expect(survivor?.rev, '2-abc');
+    expect(survivor?.isUpdated, isFalse);
+    expect(survivor?.age, equals(null));
+    expect(survivor?.birthPlace, equals(null));
+    // A synced row is not pending — only local edits set the flag.
+    expect(await database.userDao.pendingSyncUsers(), isEmpty);
+  });
+
+  test('an offline login record survives a schema upgrade', () async {
+    // `ActivitiesUploader` carries these to `login_activities`, but nothing
+    // syncs that database back in, so an uploaded row still exists only here —
+    // and a pending one exists nowhere at all. A drop would silently reset the
+    // dashboard's login count and empty the activity chart.
+    await database.offlineActivityDao.insert(
+      OfflineActivitiesCompanion.insert(
+        id: 'login-1',
+        userName: const Value('ada'),
+        userId: const Value('user-1'),
+        type: const Value('login'),
+        loginTime: const Value(1000),
+      ),
+    );
+
+    await runUpgrade();
+
+    expect(
+      await database.offlineActivityDao.countByUserNameAndType('ada', 'login'),
+      1,
+    );
+  });
+
+  test('resource and course activity rows survive a schema upgrade', () async {
+    // Same test as `offline_activity`: can a sync put this back? It cannot in
+    // either direction — a pending row exists nowhere else, and
+    // `resource_activities`/`admin_activities`/`course_activities` are
+    // write-only from this app's side.
+    await database.resourceActivityDao.insert(
+      ResourceActivitiesCompanion.insert(
+        id: 'visit-1',
+        user: const Value('ada'),
+        type: const Value('visit'),
+        resourceId: const Value('res-1'),
+        title: const Value('Algebra'),
+        time: const Value(1000),
+      ),
+    );
+    await database.courseActivityDao.insert(
+      CourseActivitiesCompanion.insert(
+        id: 'course-1',
+        user: const Value('ada'),
+        type: const Value('visit'),
+        courseId: const Value('c1'),
+        time: const Value(1000),
+      ),
+    );
+
+    await runUpgrade();
+
+    expect(
+      (await database.resourceActivityDao.byUserAndType(
+        'ada',
+        'visit',
+      )).single.id,
+      'visit-1',
+    );
+    expect(
+      (await database.courseActivityDao.pendingUploads()).single.id,
+      'course-1',
+    );
+  });
+
+  test('a team chat watermark is dropped, as Room drops it', () async {
+    // Deliberately *not* preserved: the Kotlin's Room database drops
+    // `team_notification` too. Losing the watermark only suppresses a badge
+    // until the user next opens that team's voices.
+    await database.teamNotificationDao.upsert(
+      TeamNotificationsCompanion.insert(
+        id: 'team-1:chat',
+        parentId: const Value('team-1'),
+        type: const Value('chat'),
+        lastCount: const Value(5),
+      ),
+    );
+
+    await runUpgrade();
+
+    // `isNull` would be ambiguous here — drift's query builder exports one too.
+    expect(
+      await database.teamNotificationDao.findByParentAndType('team-1', 'chat'),
+      null,
+    );
+  });
+
+  test(
+    'a team finance document keeps its attachment name across v31',
+    () async {
+      // `teams` is preserved, so v31's `imageName` column is added by a
+      // hand-written `_addColumnIfMissing` step rather than `createAll`. A
+      // pending transaction that already carries a receipt name must keep it —
+      // losing the name would orphan the local file and stop the upload
+      // write-back from finding the bytes to PUT.
+      await database.teamDao.upsert(
+        TeamsCompanion.insert(
+          id: 'tx-1',
+          teamId: const Value('team-1'),
+          docType: const Value('transaction'),
+          type: const Value('credit'),
+          description: const Value('sale'),
+          amount: const Value(100),
+          isUpdated: const Value(true),
+        ),
+      );
+      // The v30 schema has no `image_name` column, so the name is written
+      // directly after the upgrade lands — the row itself survives from before.
+      await runUpgrade(from: 30);
+      await database.customStatement(
+        "UPDATE teams SET image_name = 'receipt.jpg' WHERE _id = 'tx-1'",
+      );
+
+      final survivor = await database.teamDao.getById('tx-1');
+      expect(survivor?.description, 'sale');
+      expect(survivor?.imageName, 'receipt.jpg');
+      expect(survivor?.isUpdated, isTrue);
+    },
+  );
+
+  test('a team task survives v32 and starts out un-notified', () async {
+    // `team_tasks` is preserved too, so v32's `isNotified` column needs the same
+    // hand-written `_addColumnIfMissing` step. Two things matter here: the task
+    // itself must survive (it may be a locally-created row the outbox has not
+    // pushed yet), and it must land with `isNotified` false so the deadline
+    // reminder still fires. Defaulting to true would silently swallow the first
+    // reminder for every task already on the device.
+    await database.teamTaskDao.upsert(
+      TeamTasksCompanion.insert(
+        id: 'task-1',
+        teamId: 'team-1',
+        title: const Value('Submit the report'),
+        assignee: const Value('user-1'),
+        deadline: const Value(1770000000000),
+        isUpdated: const Value(true),
+      ),
+    );
+
+    await runUpgrade(from: 31);
+
+    final survivor = await database.teamTaskDao.getById('task-1');
+    expect(survivor?.title, 'Submit the report');
+    expect(survivor?.deadline, 1770000000000);
+    expect(survivor?.isUpdated, isTrue, reason: 'still owed to the server');
+    expect(survivor?.isNotified, isFalse);
+  });
+
+  /// Rebuilds `team_tasks` in its pre-v46 shape: the live DDL with the two
+  /// new columns removed.
+  ///
+  /// Without this the v46 tests are **tautological**, and were: the test
+  /// database is created at the current `schemaVersion`, so `team_tasks`
+  /// already has `sync` and `link` before `onUpgrade` runs,
+  /// `_addColumnIfMissing` finds them present and skips, and deleting the
+  /// migration step entirely leaves every assertion green. Verified by
+  /// deleting it.
+  ///
+  /// The column list is hand-written because there is no v45 schema artefact
+  /// to read it from, so it is checked against the live table rather than
+  /// trusted — a column added to [TeamTasks] later, without a migration step,
+  /// fails here instead of silently widening the "v45" shape to include it.
+  Future<void> recreateTeamTasksWithoutV46Columns() async {
+    final live = await database
+        .customSelect("PRAGMA table_info('team_tasks')")
+        .get();
+    final liveNames = live.map((r) => r.read<String>('name')).toSet();
+    expect(
+      liveNames.difference({'sync', 'link'}),
+      {
+        'id',
+        '_id',
+        '_rev',
+        'title',
+        'description',
+        'team_id',
+        'assignee',
+        'deadline',
+        'completed_time',
+        'status',
+        'completed',
+        'is_updated',
+        'is_notified',
+      },
+      reason: 'the hand-written v45 shape below has drifted from the table',
+    );
+
+    await database.customStatement('DROP TABLE team_tasks');
+    await database.customStatement(
+      'CREATE TABLE team_tasks ('
+      'id TEXT NOT NULL, _id TEXT NULL, _rev TEXT NULL, title TEXT NULL, '
+      'description TEXT NULL, team_id TEXT NOT NULL, assignee TEXT NULL, '
+      'deadline INTEGER NOT NULL DEFAULT 0, '
+      'completed_time INTEGER NOT NULL DEFAULT 0, '
+      "status TEXT NOT NULL DEFAULT 'active', "
+      'completed INTEGER NOT NULL DEFAULT 0, '
+      'is_updated INTEGER NOT NULL DEFAULT 0, '
+      'is_notified INTEGER NOT NULL DEFAULT 0, '
+      'PRIMARY KEY (id))',
+    );
+  }
+
+  test('v46 adds sync and link to a real pre-v46 team_tasks', () async {
+    // The step is a hand-written `_addColumnIfMissing`, because `createAll`
+    // does not alter a preserved table. This is the test that fails when it
+    // is removed.
+    await database.customStatement('SELECT 1');
+    await recreateTeamTasksWithoutV46Columns();
+    await database.customStatement(
+      "INSERT INTO team_tasks (id, team_id, title, is_updated) "
+      "VALUES ('task-1', 'team-1', 'Older task', 1)",
+    );
+
+    await runUpgrade(from: 45);
+
+    final columns =
+        (await database.customSelect("PRAGMA table_info('team_tasks')").get())
+            .map((r) => r.read<String>('name'))
+            .toSet();
+    expect(columns, containsAll(['sync', 'link']));
+
+    // The row survives the ALTER, and lands with no backfill — which is what
+    // makes `TeamTasksRepository.serialize` fall back to the `upsertTask`
+    // rebuild for it.
+    final survivor = await database.teamTaskDao.getById('task-1');
+    expect(survivor?.title, 'Older task');
+    expect(survivor?.isUpdated, isTrue);
+    expect(survivor?.sync, null);
+    expect(survivor?.link, null);
+
+    // Writable, not merely readable as null.
+    await database.teamTaskDao.upsert(
+      TeamTasksCompanion.insert(
+        id: 'task-2',
+        teamId: 'team-1',
+        sync: const Value('{"type":"local","planetCode":"gua"}'),
+      ),
+    );
+    expect(
+      (await database.teamTaskDao.getById('task-2'))?.sync,
+      '{"type":"local","planetCode":"gua"}',
+    );
+  });
+
+  test('a team task keeps its sync and link across v46', () async {
+    // `team_tasks` is preserved, so v46's `sync`/`link` columns need the same
+    // hand-written `_addColumnIfMissing` step `isNotified` needed at v32. Both
+    // are JSON sub-objects the server authored and nothing on the device can
+    // reconstruct — `sync.planetCode` names the planet the task came from —
+    // so losing them would silently re-stamp another planet's task as locally
+    // authored on its next upload.
+    await database.teamTaskDao.upsert(
+      TeamTasksCompanion.insert(
+        id: 'task-1',
+        teamId: 'team-1',
+        title: const Value('Submit the report'),
+        isUpdated: const Value(true),
+        sync: const Value('{"type":"local","planetCode":"gua"}'),
+        link: const Value('{"teams":"team-1"}'),
+      ),
+    );
+
+    await runUpgrade(from: 45);
+
+    final survivor = await database.teamTaskDao.getById('task-1');
+    expect(survivor?.title, 'Submit the report');
+    expect(survivor?.isUpdated, isTrue, reason: 'still owed to the server');
+    expect(survivor?.sync, '{"type":"local","planetCode":"gua"}');
+    expect(survivor?.link, '{"teams":"team-1"}');
+  });
+
+  test('the v46 columns are added, not defaulted, on an old row', () async {
+    // The migration writes no backfill: a row that predates v46 lands with
+    // null in both columns, and `TeamTasksRepository.serialize` falls back to
+    // the `upsertTask` rebuild for it — byte-for-byte what the port uploaded
+    // for every task before this version, so no existing task changes shape.
+    await database.teamTaskDao.upsert(
+      TeamTasksCompanion.insert(
+        id: 'task-old',
+        teamId: 'team-1',
+        title: const Value('Older task'),
+      ),
+    );
+    await database.customStatement(
+      'UPDATE team_tasks SET sync = NULL, link = NULL',
+    );
+
+    await runUpgrade(from: 45);
+
+    final survivor = await database.teamTaskDao.getById('task-old');
+    // `isNull` is ambiguous in this file — drift's query builder exports one
+    // too — so the bare literal stands in for it, as elsewhere here.
+    expect(survivor?.sync, null);
+    expect(survivor?.link, null);
+  });
+
+  test('feedback indexes are present after an upgrade', () async {
+    // The Kotlin `all: smoother model database indexing` commit (8f993472e)
+    // added `openTime` and `isUploaded` indices to the feedback table. Both
+    // land on a preserved table, so they are created by the drop-all-indexes
+    // then `createAll` step in the migration — not by a hand-written ALTER.
+    await database.feedbackDao.upsert(
+      FeedbackEntriesCompanion.insert(
+        id: 'fb-1',
+        title: const Value('broken login'),
+        openTime: const Value(1723000000),
+        isUploaded: const Value(false),
+      ),
+    );
+
+    await runUpgrade();
+
+    final indexes = await database
+        .customSelect(
+          "SELECT name FROM sqlite_master "
+          "WHERE type = 'index' AND tbl_name = 'feedback'",
+        )
+        .get();
+    final names = indexes.map((r) => r.read<String>('name')).toSet();
+    expect(names, containsAll(['feedback_open_time', 'feedback_is_uploaded']));
+    // The row survives — it is a preserved table.
+    expect((await database.feedbackDao.getById('fb-1'))?.id, 'fb-1');
+  });
+
+  // A captured exam-verification photo is local intent: it exists only on this
+  // device until the `SubmitPhotosUploader` delivers it, and the JPEG it
+  // points at lives only on this device's filesystem. Dropping the table on a
+  // schema bump would discard a photo the user was never warned had not
+  // reached the server, so the table is preserved and the row must survive.
+  test('a captured submit_photo survives a schema bump', () async {
+    await database.submitPhotosDao.insert(
+      SubmitPhotosTableCompanion.insert(
+        id: 'photo-1',
+        submissionId: const Value('sub-1'),
+        examId: const Value('exam-1'),
+        courseId: const Value('course-1'),
+        memberId: const Value('user-1'),
+        photoLocation: const Value('/tmp/capture.jpg'),
+        uploaded: const Value(false),
+      ),
+    );
+
+    await runUpgrade();
+
+    final survivor = await database.submitPhotosDao.getById('photo-1');
+    expect(survivor?.id, 'photo-1');
+    expect(survivor?.submissionId, 'sub-1');
+    expect(survivor?.uploaded, isFalse);
+  });
+
+  // A `teamVisit` the user made exists only on this device until the
+  // `TeamLogUploader` delivers it to `team_activities`. Dropping the table on
+  // a schema bump would silently lose an action the user took, so the table
+  // is preserved and the row must survive.
+  test('an un-uploaded team_log row survives a schema bump', () async {
+    await database.teamLogDao.insert(
+      TeamLogTableCompanion.insert(
+        id: 'visit-1',
+        teamId: const Value('team-1'),
+        user: const Value('ada'),
+        type: const Value('teamVisit'),
+        teamType: const Value('team'),
+        createdOn: const Value('earth'),
+        parentCode: const Value('sol'),
+        time: const Value(1000),
+        uploaded: const Value(false),
+      ),
+    );
+
+    await runUpgrade();
+
+    final survivor = await database.teamLogDao.pendingUploads();
+    expect(survivor.single.id, 'visit-1');
+    expect(survivor.single.teamId, 'team-1');
+    expect(survivor.single.uploaded, isFalse);
+  });
+
+  // A filtered search the user ran exists only on this device until the
+  // `SearchActivityUploader` delivers it to `search_activities`. Dropping the
+  // table on a schema bump would silently lose the analytics event, so the
+  // table is preserved and the row must survive.
+  test('an un-uploaded search_activity row survives a schema bump', () async {
+    await database.searchActivityDao.insert(
+      SearchActivitiesCompanion.insert(
+        id: 'search-1',
+        user: const Value('ada'),
+        searchText: const Value('math'),
+        type: const Value('resources'),
+        time: const Value(1000),
+        createdOn: const Value('earth'),
+        parentCode: const Value('sol'),
+        filterJson: const Value('{"subjects":[]}'),
+      ),
+    );
+
+    await runUpgrade();
+
+    final survivor = await database.searchActivityDao.pendingUploads();
+    expect(survivor.single.id, 'search-1');
+    expect(survivor.single.searchText, 'math');
+    expect(survivor.single.type, 'resources');
+  });
+
+  // An achievements ledger the user edited exists only on this device until
+  // the `AchievementsUploader` delivers it. Dropping the table on a schema
+  // bump would silently lose the user's lists, so the table is preserved and
+  // the row must survive.
+  test('an un-uploaded achievements row survives a schema bump', () async {
+    await database.achievementDao.upsert(
+      AchievementsCompanion(
+        id: const Value('user-1@earth'),
+        achievementsJson: const Value('[{"title":"First"}]'),
+        referencesJson: const Value('[{"name":"Mo"}]'),
+        couchId: const Value(''),
+        rev: const Value(''),
+        resumeFileName: const Value(''),
+      ),
+    );
+
+    await runUpgrade();
+
+    final survivor = await database.achievementDao.getById('user-1@earth');
+    expect(survivor?.id, 'user-1@earth');
+    expect(survivor?.achievementsJson, contains('First'));
+    expect(survivor?.uploaded, isFalse);
+  });
+
+  test('a voice post keeps its reactions across v42', () async {
+    // `news` is preserved, so v42's `reactions` column is added by a
+    // hand-written `_addColumnIfMissing` step. A voice that already carries
+    // a reaction must keep it — losing it would silently drop every reaction
+    // on the device.
+    await database.newsDao.upsert(
+      NewsEntriesCompanion.insert(
+        id: 'voice-1',
+        message: const Value('hello'),
+        time: const Value(1000),
+        docType: const Value('message'),
+        avatar: const Value(''),
+        sharedBy: const Value(''),
+        imageUrls: const Value([]),
+        labels: const Value([]),
+        isEdited: const Value(false),
+        editedTime: const Value(0),
+        chat: const Value(false),
+      ),
+    );
+    await runUpgrade(from: 41);
+    // The reactions column exists now, but the row itself survived.
+    final survivor = await database.newsDao.getById('voice-1');
+    expect(survivor?.message, 'hello');
+    expect(survivor?.reactions, isA<String?>().having((v) => v, 'value', null));
+    // Writing a reaction after the upgrade works.
+    await database.customStatement(
+      r"""UPDATE news SET reactions = '{"like":["user-1"]}' WHERE id = 'voice-1'""",
+    );
+    final withReaction = await database.newsDao.getById('voice-1');
+    expect(withReaction?.reactions, isA<String>());
+  });
+
+  test('an un-uploaded challenge sync action survives a schema bump', () async {
+    // `user_challenge_actions` is preserved: a sync action the user recorded
+    // but has not yet uploaded must survive a schema bump, or the challenge
+    // dialog's "sync completed" check would silently flip back to false.
+    await database.userChallengeActionDao.insert(
+      UserChallengeActionsCompanion.insert(
+        id: 'challenge-1',
+        userId: const Value('user-1'),
+        actionType: const Value('sync'),
+        time: const Value(1000),
+      ),
+    );
+
+    await runUpgrade();
+
+    final survivor = await database.userChallengeActionDao.countByUserAndType(
+      'user-1',
+      'sync',
+    );
+    expect(survivor, 1);
+  });
+
+  test('every preserved table has a preservation test', () {
+    // `my_life` and the submissions tables were added to the preserved set
+    // without one. This fails the moment another name is added, so the next
+    // slice cannot repeat that quietly.
+    const covered = {
+      'outbox',
+      'my_personal',
+      'removed_log',
+      'my_life',
+      'submissions',
+      'submission_answers',
+      'submission_questions',
+      'meetups',
+      'news',
+      'team_tasks',
+      'teams',
+      'chat_history',
+      'feedback',
+      'health_examinations',
+      'users',
+      'course_progress',
+      'offline_activity',
+      'resource_activity',
+      'course_activity',
+      'download_queue',
+      'submit_photos',
+      'team_log',
+      'search_activity',
+      'achievements',
+      'user_challenge_actions',
+      'surveys',
+      'survey_questions',
+      'my_library',
+    };
+    expect(
+      AppDatabase.localAuthorityTables,
+      covered,
+      reason: 'add a preservation test above, then list the table here',
+    );
+  });
+
+  // `surveys` and `survey_questions` used to be dropped here, and the test
+  // above this one asserted it. They are preserved now — an adopted team
+  // survey clone that has not published exists nowhere else — so the rule the
+  // rest of the file pins applies instead: the row survives the bump, and the
+  // next walk's `deleteNotIn` evicts the stale cache half.
+  //
+  // The clone path itself is driven end-to-end through the production
+  // `adoptSurvey` in `survey_clone_survives_schema_bump_test.dart`; these two
+  // cover the DAO-level shape and the upgrade path's column reconciliation.
+  test(
+    'a survey the server sent survives the bump, walk-pruned after',
+    () async {
+      await database.surveyDao.upsertAll(
+        [SurveysCompanion.insert(id: 'survey-1', name: const Value('Survey'))],
+        const {
+          'survey-1': [
+            SurveyQuestionsCompanion(
+              id: Value('survey-1:q1'),
+              surveyId: Value('survey-1'),
+              header: Value('How was it?'),
+              position: Value(0),
+            ),
+          ],
+        },
+      );
+      // `isNull`/`isNotNull` are ambiguous here — drift exports its own.
+      expect(await database.surveyDao.getById('survey-1'), isA<SurveyRow>());
+
+      await runUpgrade();
+
+      expect(
+        await database.surveyDao.getById('survey-1'),
+        isA<SurveyRow>(),
+        reason: 'the migration no longer decides which survey rows are stale',
+      );
+      expect(await database.surveyDao.questionsFor('survey-1'), hasLength(1));
+
+      // The walk does, and it takes the question rows in the same transaction.
+      await database.surveyDao.deleteNotIn(const []);
+
+      expect(await database.surveyDao.getById('survey-1'), equals(null));
+      expect(await database.surveyDao.questionsFor('survey-1'), isEmpty);
+    },
+  );
+
+  /// The `surveys` and `survey_questions` DDL **frozen** at v47, the last
+  /// version that shipped before either table became preserved, minus the
+  /// columns later versions added.
+  ///
+  /// **Do not update these literals when a column is added to either table.**
+  /// They are the fixture that makes a forgotten [_addColumnIfMissing] step
+  /// fail loudly: a new Drift column absent from this text and absent from the
+  /// migration is absent from `PRAGMA table_info` after the upgrade, and the
+  /// two tests below say so. Keeping the literal in step with the table would
+  /// turn them into coverage that cannot fail — the thing Phase 122 fixed by
+  /// hand and Phase 134 found again.
+  ///
+  /// `_rev` is quoted because it is a drift-named column; the rest matches what
+  /// `Migrator.createTable` emits, `CHECK` constraints included, so a device
+  /// that upgrades is indistinguishable from one created fresh.
+  const surveysDdlBeforeV35 =
+      'CREATE TABLE "surveys" ("id" TEXT NOT NULL, "_rev" TEXT NULL, '
+      '"name" TEXT NULL, "description" TEXT NULL, '
+      '"created_date" INTEGER NOT NULL DEFAULT 0, '
+      '"updated_date" INTEGER NOT NULL DEFAULT 0, '
+      '"adoption_date" INTEGER NOT NULL DEFAULT 0, '
+      '"created_by" TEXT NULL, "total_marks" INTEGER NOT NULL DEFAULT 0, '
+      '"passing_percentage" TEXT NULL, "source_planet" TEXT NULL, '
+      '"is_from_nation" INTEGER NOT NULL DEFAULT 0 '
+      'CHECK ("is_from_nation" IN (0, 1)), "team_id" TEXT NULL, '
+      '"team_share_allowed" INTEGER NOT NULL DEFAULT 0 '
+      'CHECK ("team_share_allowed" IN (0, 1)), '
+      '"source_survey_id" TEXT NULL, PRIMARY KEY ("id"))';
+
+  const surveyQuestionsDdlFrozen =
+      'CREATE TABLE "survey_questions" ("id" TEXT NOT NULL, '
+      '"survey_id" TEXT NOT NULL, "question_id" TEXT NULL, '
+      '"header" TEXT NULL, "body" TEXT NULL, "type" TEXT NULL, '
+      '"choices" TEXT NOT NULL DEFAULT \'[]\', '
+      '"required" INTEGER NOT NULL DEFAULT 0 CHECK ("required" IN (0, 1)), '
+      '"position" INTEGER NOT NULL, PRIMARY KEY ("id"))';
+
+  /// The same literal with v35's two columns and without v47's — the shape a
+  /// handset running the last shipped build actually has on disk, and the one
+  /// the `needs_sync` backfill has to work from.
+  const surveysDdlBeforeV47 =
+      'CREATE TABLE "surveys" ("id" TEXT NOT NULL, "_rev" TEXT NULL, '
+      '"name" TEXT NULL, "description" TEXT NULL, '
+      '"created_date" INTEGER NOT NULL DEFAULT 0, '
+      '"updated_date" INTEGER NOT NULL DEFAULT 0, '
+      '"adoption_date" INTEGER NOT NULL DEFAULT 0, '
+      '"created_by" TEXT NULL, "total_marks" INTEGER NOT NULL DEFAULT 0, '
+      '"passing_percentage" TEXT NULL, "source_planet" TEXT NULL, '
+      '"is_from_nation" INTEGER NOT NULL DEFAULT 0 '
+      'CHECK ("is_from_nation" IN (0, 1)), "team_id" TEXT NULL, '
+      '"team_share_allowed" INTEGER NOT NULL DEFAULT 0 '
+      'CHECK ("team_share_allowed" IN (0, 1)), '
+      '"source_survey_id" TEXT NULL, "course_id" TEXT NULL, '
+      '"step_id" TEXT NULL, PRIMARY KEY ("id"))';
+
+  /// The columns the frozen literals carry, and the three the migration steps
+  /// are responsible for adding on top of them.
+  ///
+  /// Checked against the live table before the literals are installed, the way
+  /// [recreateTeamTasksWithoutV46Columns] checks its own hand-written shape.
+  /// There is no v34 schema artefact to read, so this is the only thing keeping
+  /// the literals honest.
+  ///
+  /// Exact equality, so a new column fails **at the fixture** rather than at
+  /// the outcome — the earliest and clearest place to be told a step is owed.
+  /// (A rename would red the `containsAll` assertions anyway, since the new
+  /// name is absent after the upgrade; a removal would not, but an extra column
+  /// on an upgraded table is harmless, because drift maps by name. So the value
+  /// here is the early, specific failure, not catching a case the outcome
+  /// assertions miss — an earlier revision of this comment claimed the latter
+  /// and was wrong on both halves.)
+  const frozenSurveyColumns = {
+    'id',
+    '_rev',
+    'name',
+    'description',
+    'created_date',
+    'updated_date',
+    'adoption_date',
+    'created_by',
+    'total_marks',
+    'passing_percentage',
+    'source_planet',
+    'is_from_nation',
+    'team_id',
+    'team_share_allowed',
+    'source_survey_id',
+  };
+  const migratedSurveyColumns = {'course_id', 'step_id', 'needs_sync'};
+
+  Future<String> liveDdl(String table) async {
+    final row = await database
+        .customSelect(
+          "SELECT sql FROM sqlite_master WHERE type = 'table' "
+          "AND name = '$table'",
+        )
+        .getSingle();
+    return row.read<String>('sql');
+  }
+
+  Future<Set<String>> columnsOf(String table) async {
+    final rows = await database.customSelect('PRAGMA table_info($table)').get();
+    return rows.map((row) => row.read<String>('name')).toSet();
+  }
+
+  /// The adoption marker `SurveysRepository.adoptSurvey` writes beside every
+  /// clone, via `createSurveyAdoptionSubmission`: `parentId` is the **source**
+  /// survey's id and `teamId` the team. The v47 backfill requires it, because
+  /// the clone id shape alone is not authorship — a publicly shared clone is
+  /// served back under the same id (see `app_database.dart`'s backfill, and
+  /// `survey_clone_survives_schema_bump_test.dart`, which drives that path
+  /// through the production `saveSurveyFromPublicApi` rather than a literal).
+  ///
+  /// Written by hand here because this file has no repository harness. The
+  /// production-driven version of the positive case lives in that other file;
+  /// what this fixture is for is the **negative** set.
+  Future<void> insertAdoptionMarker({
+    required String sourceId,
+    required String teamId,
+  }) => database.customStatement(
+    'INSERT INTO submissions (id, parent_id, team_id, type, status) '
+    "VALUES ('${sourceId}_${teamId}_adoption', '$sourceId', '$teamId', "
+    "'survey', '')",
+  );
+
+  /// Replaces the freshly-created tables with a frozen historical shape, the
+  /// way an on-device upgrade would find them. Dropping a table drops its
+  /// indexes, so `surveys_course_id` goes with the pre-v35 one — which is the
+  /// point: `createAll` recreates it with a bare `CREATE INDEX`, and that
+  /// aborts unless `course_id` is back by then.
+  Future<void> installSurveyShape(String surveysDdl) async {
+    await database.customStatement('SELECT 1');
+    expect(
+      await columnsOf('surveys'),
+      frozenSurveyColumns.union(migratedSurveyColumns),
+      reason: 'the frozen literals below have drifted from the live table',
+    );
+    // The name set is not enough: a column whose *type* changed keeps its name,
+    // no `_addColumnIfMissing` step can ALTER a type, and every other
+    // assertion in this file would stay green while an upgraded device carried
+    // the old type and a fresh one the new. So compare the DDL text drift
+    // actually emits, which is what these literals claim to be.
+    expect(
+      await liveDdl('surveys'),
+      surveysDdlBeforeV47.replaceFirst(
+        ', PRIMARY KEY ("id"))',
+        ', "needs_sync" INTEGER NOT NULL DEFAULT 0 '
+            'CHECK ("needs_sync" IN (0, 1)), PRIMARY KEY ("id"))',
+      ),
+      reason: 'the frozen surveys DDL no longer matches what drift creates',
+    );
+    expect(
+      await liveDdl('survey_questions'),
+      surveyQuestionsDdlFrozen,
+      reason: 'the frozen survey_questions DDL no longer matches drift',
+    );
+    await database.customStatement('DROP TABLE surveys');
+    await database.customStatement('DROP TABLE survey_questions');
+    await database.customStatement(surveysDdl);
+    await database.customStatement(surveyQuestionsDdlFrozen);
+  }
+
+  Future<void> installSurveyShapeBeforeV35() =>
+      installSurveyShape(surveysDdlBeforeV35);
+
+  test('a preserved survey table gains every column it is missing', () async {
+    await installSurveyShapeBeforeV35();
+    // A clone as a pre-v35 device would hold it: no course join, no rev.
+    await database.customStatement(
+      "INSERT INTO surveys (id, name, source_survey_id, team_id) "
+      "VALUES ('survey-1_team-1', 'Water needs - Team One', "
+      "'survey-1', 'team-1')",
+    );
+    await insertAdoptionMarker(sourceId: 'survey-1', teamId: 'team-1');
+    await database.customStatement(
+      "INSERT INTO survey_questions (id, survey_id, header, position) "
+      "VALUES ('survey-1_team-1:q1', 'survey-1_team-1', 'How was it?', 0)",
+    );
+
+    await runUpgrade(from: 34);
+
+    expect(
+      await columnsOf('surveys'),
+      containsAll(database.surveys.$columns.map((column) => column.name)),
+      reason:
+          'a column with no migration step is absent on every upgrade, '
+          'and every query naming it fails — silently, until now',
+    );
+    expect(
+      await columnsOf('survey_questions'),
+      containsAll(
+        database.surveyQuestions.$columns.map((column) => column.name),
+      ),
+    );
+    // The row was preserved, not recreated — the whole reason for the steps.
+    final survivor = await database.surveyDao.getById('survey-1_team-1');
+    expect(survivor?.name, 'Water needs - Team One');
+    expect(survivor?.sourceSurveyId, 'survey-1');
+    expect(
+      await database.surveyDao.questionsFor('survey-1_team-1'),
+      hasLength(1),
+    );
+    // And the v47 step's backfill recognised it as this device's own work, so
+    // it publishes rather than sitting unswept until a prune reaches it. The
+    // rows that must *not* be flagged are covered separately below.
+    expect(
+      (await database.surveyDao.pendingAdoptedSurveys()).map((row) => row.id),
+      ['survey-1_team-1'],
+    );
+  });
+
+  // Inserts the four rows the `needs_sync` backfill has to tell apart, into a
+  // pre-v47 `surveys` table (so no `needs_sync` column to set). Shapes taken
+  // from their producers, not invented:
+  //
+  //  * `adoptSurvey` mints `id = '<sourceSurveyId>_<teamId>'` with an explicit
+  //    `_rev = null` and no `stepId` (`surveys_repository.dart:105`, `:144`).
+  //  * A survey the `exams` walk sent carries no `sourceSurveyId`.
+  //  * An adopted copy *Planet* published carries a `_rev`, and Kotlin mints
+  //    its clone ids with `UUID.randomUUID()`
+  //    (`SurveysRepositoryImpl.kt:85`), so it cannot match the id shape.
+  //  * A course-embedded survey carries a `stepId` from the courses walk.
+  //  * And the adversarial one, `survey-3_team-1`: a clone that *published*
+  //    and was then attached to a course step on Planet. The courses walk
+  //    writes it back with the clone's own id and `sourceSurveyId`, with a
+  //    `stepId`, and with `rev` NULL — a course document's embedded survey is
+  //    a sub-object and carries no `_rev` of its own (the ownership conflict
+  //    Phase 138 recorded at `SurveyMapper._build`). So it matches the id
+  //    shape *and* the rev clause, and `step_id IS NULL` is the only thing
+  //    that keeps the backfill from re-publishing a document the server
+  //    already has.
+  Future<void> insertPreV47SurveyRows() async {
+    await database.customStatement(
+      'INSERT INTO surveys (id, name, _rev, source_survey_id, team_id, '
+      'step_id, course_id) VALUES '
+      "('survey-1_team-1', 'Water needs - Team One', NULL, 'survey-1', "
+      "'team-1', NULL, 'course-1'), "
+      "('survey-1', 'Water needs', '3-server', NULL, NULL, NULL, NULL), "
+      "('a1b2c3d4-uuid', 'Kotlin clone', NULL, 'survey-1', 'team-2', "
+      'NULL, NULL), '
+      "('survey-9_team-1', 'Published clone', '2-abc', 'survey-9', "
+      "'team-1', NULL, NULL), "
+      "('survey-5', 'Step survey', NULL, NULL, NULL, 'course-1:0', "
+      "'course-1'), "
+      "('survey-3_team-1', 'Published clone on a step', NULL, 'survey-3', "
+      "'team-1', 'course-1:0', 'course-1')",
+    );
+    // Only the first row gets a marker — this device adopted that one and
+    // nothing else. Its absence is what excludes every other row that happens
+    // to share the id shape.
+    await insertAdoptionMarker(sourceId: 'survey-1', teamId: 'team-1');
+  }
+
+  test(
+    'a clone adopted before v47 is handed to the uploader, not the prune',
+    () async {
+      // The defect this closes: preserving the table saves the row from the
+      // bump, and `needs_sync` then defaults to 0 — so
+      // `pendingAdoptedSurveys()` cannot see it and `deleteNotIn`'s spare clause
+      // (`stepId IS NULL AND needsSync = 0`) no longer covers it. The very next
+      // surveys walk deletes it. The loss would have been deferred, not
+      // prevented.
+      await installSurveyShape(surveysDdlBeforeV47);
+      await insertPreV47SurveyRows();
+
+      await runUpgrade(from: 46);
+
+      expect(
+        (await database.surveyDao.pendingAdoptedSurveys()).map((row) => row.id),
+        ['survey-1_team-1'],
+        reason:
+            'the id shape is a positive identification of a local clone — '
+            'and it is one Kotlin cannot make, since its clone ids are UUIDs',
+      );
+
+      // Which is also what keeps it out of the prune's reach.
+      await database.surveyDao.deleteNotIn(['survey-1', 'survey-9_team-1']);
+      expect(
+        await database.surveyDao.getById('survey-1_team-1'),
+        isA<SurveyRow>(),
+      );
+    },
+  );
+
+  test('the backfill leaves every row it cannot positively identify', () async {
+    await installSurveyShape(surveysDdlBeforeV47);
+    await insertPreV47SurveyRows();
+
+    await runUpgrade(from: 46);
+
+    // Flagging any of these would POST a survey this device did not author to
+    // `exams` under the user's credentials — the leak `Surveys.needsSync`
+    // exists to prevent, recreated by the repair meant to use it.
+    for (final id in const [
+      'survey-1',
+      'a1b2c3d4-uuid',
+      'survey-9_team-1',
+      'survey-5',
+      'survey-3_team-1',
+    ]) {
+      final row = await database.surveyDao.getById(id);
+      expect(row, isA<SurveyRow>(), reason: '$id was dropped');
+      expect(row!.needsSync, isFalse, reason: '$id must not be published');
+    }
+  });
+
+  test('the backfill does not touch a handset already on v47', () async {
+    // A v47 device's clone is already flagged, and the branch must not run
+    // again — `from < 47` is false. Nothing here should change.
+    await database.surveyDao.upsertAll([
+      SurveysCompanion.insert(
+        id: 'survey-2_team-1',
+        sourceSurveyId: const Value('survey-2'),
+        teamId: const Value('team-1'),
+      ),
+    ], const {});
+
+    await runUpgrade(from: 47);
+
+    expect(
+      (await database.surveyDao.getById('survey-2_team-1'))?.needsSync,
+      isFalse,
+      reason:
+          'the id shape alone is not authorship — on v47 the flag is '
+          'authoritative, and a row without it was not adopted here',
+    );
+  });
+
+  test('the surveys indexes are rebuilt on a preserved table', () async {
+    await installSurveyShapeBeforeV35();
+
+    await runUpgrade(from: 34);
+
+    final indexes = await database
+        .customSelect(
+          "SELECT name FROM sqlite_master WHERE type = 'index' "
+          "AND tbl_name IN ('surveys', 'survey_questions')",
+        )
+        .get();
+    expect(
+      indexes.map((row) => row.read<String>('name')),
+      containsAll(<String>[
+        'surveys_created_date',
+        'surveys_course_id',
+        'survey_questions_survey',
+      ]),
+      reason:
+          'createAll emits a bare CREATE INDEX, so course_id has to exist '
+          'by the time it runs',
+    );
+  });
+
+  test('a table added after the running version is created complete', () async {
+    // The `_addColumnIfMissing` calls that precede `createAll` have to tolerate
+    // a table SQLite does not have yet — an upgrade from a version predating
+    // it. `createAll` then builds it with every column, so the steps no-op.
+    await database.customStatement('SELECT 1');
+    await database.customStatement('DROP TABLE surveys');
+
+    await runUpgrade(from: 34);
+
+    expect(
+      await columnsOf('surveys'),
+      containsAll(database.surveys.$columns.map((column) => column.name)),
+    );
+  });
+
+  test(
+    'a CouchDB cache is still dropped and refilled by the next sync',
+    () async {
+      // This example has now moved twice, and the moves are the history of the
+      // preserved set. `users` was first — it is preserved for the
+      // locally-generated health key. Then `my_library`, until Phase 150
+      // preserved that too, for a resource the user created offline and for
+      // the download flags no sync re-derives. So the rule needs a table that
+      // is genuinely nothing but a cache, and `tag` is one: every row comes
+      // from the `tags` database and nothing authors one on the device.
+      await database.tagDao.upsertAll([
+        TagsCompanion.insert(id: 'tag-1', name: const Value('Algebra')),
+      ]);
+      expect((await database.tagDao.allTags()).map((row) => row.id), ['tag-1']);
+
+      await runUpgrade();
+
+      expect(
+        await database.tagDao.allTags(),
+        isEmpty,
+        reason:
+            'a pure CouchDB cache is refilled by the next sync, so the '
+            'drop-and-resync policy still applies',
+      );
+    },
+  );
+
+  test(
+    'the resource cache gains the openWhichFile column after the upgrade',
+    () async {
+      // v36 adds `openWhichFile`, the nested HTML entry-file field. This used
+      // to say "the table is a cache so it is dropped and recreated", which
+      // stopped being true when Phase 150 preserved it. The column now
+      // reaches an existing install through the reconciliation loop, and the
+      // test below that installs the frozen v47 shape is the one that proves
+      // it; this one only checks that a synced row carries the value through.
+      await runUpgrade();
+      await database.myLibraryDao.upsertAll([
+        MyLibraryTableCompanion.insert(
+          id: 'html-1',
+          title: const Value('Sudoku'),
+          openWhichFile: const Value('sudoku/index.html'),
+        ),
+      ]);
+      final row = await database.myLibraryDao.getById('html-1');
+      expect(row, isNot(equals(null)));
+      expect(row!.openWhichFile, 'sudoku/index.html');
+    },
+  );
+
+  test(
+    'the notifications cache gains the subType column after the upgrade',
+    () async {
+      // v37 adds `subType`, the locale-independent join-request signal the
+      // server sends in `linkParams.activeTab`. The table is a cache so it is
+      // dropped and recreated — the column appears on the new table, and a row
+      // synced after the upgrade carries the value through.
+      await runUpgrade();
+      await database.notificationDao.upsert(
+        NotificationsCompanion.insert(
+          id: 'team-1',
+          userId: 'user-1',
+          type: const Value('team'),
+          subType: const Value('join_request'),
+          createdAt: 0,
+        ),
+      );
+      final row = await database.notificationDao.getById('team-1');
+      expect(row, isNot(equals(null)));
+      expect(row!.subType, 'join_request');
+    },
+  );
+
+  /// The `my_library` DDL **frozen at v47**, the shape a device that has never
+  /// run v48 carries. Dumped from `sqlite_master` on the v47 schema, not
+  /// retyped.
+  ///
+  /// v48 added `step_id` and `course_id` for the course-step resource
+  /// ingestion and wrote **no** hand-written migration step, because
+  /// `my_library` was a CouchDB cache: the drop loop deleted it and
+  /// `createAll` rebuilt it carrying both columns. Phase 146 wrote that down
+  /// as *"exactly the kind of fact a later phase changes without noticing what
+  /// depended on it: add `my_library` to the preserved set and the drop is
+  /// skipped, `CREATE TABLE IF NOT EXISTS` no-ops over the old shape, and the
+  /// two columns never appear. These tests red when that happens."*
+  ///
+  /// **It was right, and Phase 150 is that phase.** The table is preserved
+  /// now; the drop *is* skipped, and the columns arrive through the
+  /// reconciliation loop in `AppDatabase.migration` instead — which runs
+  /// before `createAll` because `my_library_course_id` names one of them.
+  /// These literals stay frozen for the same reason as the surveys pair: they
+  /// are the fixture that makes a *missing* reconciliation fail loudly, and
+  /// `installMyLibraryShapeBeforeV48` pins them against what drift emits so
+  /// they cannot go stale unnoticed.
+  ///
+  /// The prediction is left quoted rather than deleted, because a guard that
+  /// fired is worth more as a record than as a removed comment.
+  const myLibraryDdlFrozenAtV47 =
+      'CREATE TABLE "my_library" ("id" TEXT NOT NULL, "_id" TEXT NULL'
+      ', "_rev" TEXT NULL, "user_id" TEXT NOT NULL DEFAULT \'[]\''
+      ', "title" TEXT NULL, "title_normal" TEXT NULL'
+      ', "description" TEXT NULL, "resource_id" TEXT NULL'
+      ', "resource_remote_address" TEXT NULL'
+      ', "resource_local_address" TEXT NULL'
+      ', "resource_offline" INTEGER NOT NULL DEFAULT 0 CHECK ("resource_offline" IN (0, 1))'
+      ', "downloaded_rev" TEXT NULL, "filename" TEXT NULL'
+      ', "average_rating" TEXT NULL, "upload_date" TEXT NULL'
+      ', "year" TEXT NULL, "added_by" TEXT NULL'
+      ', "publisher" TEXT NULL, "link_to_license" TEXT NULL'
+      ', "open_with" TEXT NULL, "open_which_file" TEXT NULL'
+      ', "article_date" TEXT NULL, "kind" TEXT NULL'
+      ', "created_date" INTEGER NOT NULL DEFAULT 0'
+      ', "language" TEXT NULL, "author" TEXT NULL'
+      ', "media_type" TEXT NULL, "resource_type" TEXT NULL'
+      ', "medium" TEXT NULL, "times_rated" INTEGER NOT NULL DEFAULT 0'
+      ', "resource_for" TEXT NOT NULL DEFAULT \'[]\''
+      ', "subject" TEXT NOT NULL DEFAULT \'[]\''
+      ', "level" TEXT NOT NULL DEFAULT \'[]\''
+      ', "tag" TEXT NOT NULL DEFAULT \'[]\''
+      ', "languages" TEXT NOT NULL DEFAULT \'[]\''
+      ', "is_private" INTEGER NOT NULL DEFAULT 0 CHECK ("is_private" IN (0, 1))'
+      ', "private_for" TEXT NULL, PRIMARY KEY ("id"))';
+
+  /// The columns v48 adds on top of the frozen shape.
+  const myLibraryColumnsAddedAtV48 = {'step_id', 'course_id'};
+
+  /// Replaces the freshly-created `my_library` with its v47 shape, the way an
+  /// on-device upgrade would find it.
+  Future<void> installMyLibraryShapeBeforeV48() async {
+    await database.customStatement('SELECT 1');
+    // Same guard the surveys shape carries: a frozen literal that has drifted
+    // from what drift emits would make every assertion below vacuous.
+    expect(
+      await liveDdl('my_library'),
+      _withMyLibraryV48Columns(myLibraryDdlFrozenAtV47),
+      reason: 'the frozen my_library DDL no longer matches what drift creates',
+    );
+    await database.customStatement('DROP TABLE my_library');
+    await database.customStatement(myLibraryDdlFrozenAtV47);
+  }
+
+  test('the resource cache gains the course-step columns on upgrade', () async {
+    // The columns reach a device that already has the app only if the version
+    // actually moves: drift calls `onUpgrade` on a difference, so leaving
+    // `schemaVersion` at 47 while adding columns delivers them to fresh
+    // installs and to nobody else. Asserted here because these tests invoke
+    // `onUpgrade` directly and would otherwise stay green through exactly that
+    // mistake.
+    expect(
+      database.schemaVersion,
+      greaterThanOrEqualTo(49),
+      reason:
+          'my_library gained step_id/course_id at v48, and v49 repairs the '
+          'rows preserving the table would otherwise keep wrong — a device '
+          'already on v48 reaches that repair only if the version moves',
+    );
+
+    await installMyLibraryShapeBeforeV48();
+    expect(
+      await columnsOf('my_library'),
+      isNot(containsAll(myLibraryColumnsAddedAtV48)),
+      reason: 'the frozen shape is meant to predate them',
+    );
+
+    await runUpgrade(from: 47);
+
+    expect(
+      await columnsOf('my_library'),
+      containsAll(myLibraryColumnsAddedAtV48),
+    );
+  });
+
+  test('a stamped resource row is writable after the upgrade', () async {
+    // The column existing is not the same as the write path working: a
+    // preserved-but-unaltered table would still be missing them here, and this
+    // is the assertion that says so in the language the ingestion uses.
+    await installMyLibraryShapeBeforeV48();
+    await runUpgrade(from: 47);
+
+    await database.myLibraryDao.upsertAll([
+      MyLibraryTableCompanion.insert(
+        id: 'res-1',
+        title: const Value('Rainfall'),
+        stepId: const Value('course-1:0'),
+        courseId: const Value('course-1'),
+      ),
+    ]);
+
+    final byStep = await database.myLibraryDao.getByStepId('course-1:0');
+    expect(byStep.map((row) => row.id), ['res-1']);
+  });
+
+  test('a resource row survives the upgrade, walk-pruned after', () async {
+    // This test used to assert the opposite — `the cached resource rows
+    // themselves are still dropped` — and Phase 146 wrote it that way
+    // deliberately, "so that adding it to the preserved set is a deliberate,
+    // visible change rather than something the two assertions above quietly
+    // tolerate". It was, and this is the change. Phase 150 preserves the
+    // table, so the rule the rest of this file pins applies instead: the row
+    // survives the bump, and the next walk's `deleteNotIn` evicts the stale
+    // cache half.
+    await installMyLibraryShapeBeforeV48();
+    await database.customStatement(
+      "INSERT INTO my_library (id, title, _rev, is_private) "
+      "VALUES ('res-1', 'Rainfall', '3-abc', 0)",
+    );
+    await database.customStatement(
+      "INSERT INTO my_library (id, title, is_private) "
+      "VALUES ('res-2', 'Well survey notes', 0)",
+    );
+
+    await runUpgrade(from: 47);
+
+    expect(
+      (await database.myLibraryDao.getAll()).map((row) => row.id),
+      unorderedEquals(['res-1', 'res-2']),
+      reason: 'the migration no longer decides which resource rows are stale',
+    );
+
+    // The walk does, and its eligibility is what makes preserving the table
+    // safe: the synced row goes, the one with no server document behind it —
+    // the resource the user created offline — stays.
+    await database.myLibraryDao.deleteNotIn(const ['res-3']);
+
+    expect((await database.myLibraryDao.getAll()).map((row) => row.id), [
+      'res-2',
+    ]);
+  });
+
+  test('a pre-v36 resource table gains every column it is missing', () async {
+    // The reconciliation loop is exhaustive rather than version-gated, and
+    // this is what says so: `open_which_file` arrived at v36, twelve versions
+    // before the pair v48 added, and a version-gated list written from the
+    // frozen v47 shape alone would have delivered the pair and not this.
+    //
+    // The clone this repository is developed in is shallow, so when each older
+    // column arrived cannot be established from git — which is the argument
+    // for the loop, and the reason this test drops a column from the frozen
+    // shape by hand rather than freezing a v35 literal it cannot verify.
+    await installMyLibraryShapeBeforeV48();
+    await database.customStatement('DROP TABLE my_library');
+    await database.customStatement(
+      myLibraryDdlFrozenAtV47.replaceFirst(', "open_which_file" TEXT NULL', ''),
+    );
+    expect(await columnsOf('my_library'), isNot(contains('open_which_file')));
+    await database.customStatement(
+      "INSERT INTO my_library (id, title) VALUES ('res-1', 'Sudoku')",
+    );
+
+    await runUpgrade(from: 35);
+
+    expect(
+      await columnsOf('my_library'),
+      containsAll({'open_which_file', ...myLibraryColumnsAddedAtV48}),
+    );
+    expect(
+      (await database.myLibraryDao.getAll()).single.openWhichFile,
+      equals(null),
+      reason: 'the row survives the reconciliation, with the column unset',
+    );
+  });
+
+  test('a pre-fix local resource stops claiming a file it never had', () async {
+    // The defect the *implementation* audit found in this phase's own headline
+    // change, and it is Phase 143's shape aimed back at me: preserving a table
+    // keeps every row, including the ones an older build wrote wrong.
+    //
+    // Before Phase 150 `saveLocalResource` copied no file: it stored the raw
+    // `FilePicker` path in `resource_local_address` and set
+    // `resource_offline = 1` over the top. The bump used to delete that row.
+    // Preserving the table keeps it — and the row is then a permanent dead
+    // end: My Library shows it with the offline pin (the list sorts
+    // `resource_offline DESC`), the detail screen offers **View** rather than
+    // Download because `_shouldShowDownloadButton` sees a non-empty address
+    // and `_isResourceOffline` is true, the viewer resolves
+    // `<base>/ole/<id>/<filename>` and finds nothing, and the Download it
+    // falls back to cannot work either because `urlFor` needs a `couchId` a
+    // locally created row has never had.
+    //
+    // **A dead end that lies is worse than the absence it replaced**, so the
+    // migration normalises those rows onto the shape the fixed writer
+    // produces: metadata kept, offline claim dropped.
+    await installMyLibraryShapeBeforeV48();
+    await database.customStatement(
+      "INSERT INTO my_library (id, title, resource_local_address, "
+      "resource_offline, filename) VALUES "
+      "('local-1', 'Well survey notes', "
+      "'/data/user/0/org.ole.planet.myplanet/cache/file_picker/well.pdf', "
+      "1, 'well.pdf')",
+    );
+
+    await runUpgrade(from: 47);
+
+    final row = (await database.myLibraryDao.getById('local-1'))!;
+    expect(
+      row.title,
+      'Well survey notes',
+      reason: 'the metadata the user typed is the part worth preserving',
+    );
+    expect(row.resourceOffline, isFalse);
+    expect(
+      row.resourceLocalAddress,
+      equals(null),
+      reason:
+          'an address pointing outside ole/ is what made the row claim a file '
+          'nothing had copied',
+    );
+  });
+
+  test('the repair cannot reach a row that owns a real file', () async {
+    // The discriminator is `_id IS NULL`, not `_rev IS NULL`, and the
+    // difference is load-bearing. The audit that found the defect above
+    // proposed `_rev IS NULL AND resource_local_address LIKE '%/%'`, which has
+    // a false positive: a resource embedded **only** in a course document
+    // arrives with `_rev` NULL (a step sub-object carries none) while
+    // `MyLibraryMapper` still writes its `couchId`, so `urlFor` can build a
+    // URL, the user can download it, and `markDownloaded` then writes an
+    // absolute path onto a rev-less row. That is a genuine download, and the
+    // proposed clause would have cleared it.
+    //
+    // `_id IS NULL` cannot: every mapper-written row carries a `couchId`, and
+    // only `saveLocalResource` leaves it unset. This is the third instance
+    // this round of "`_rev IS NULL` is authorship in Kotlin and is not in the
+    // port" — here it caught a proposed fix rather than a shipped one.
+    await installMyLibraryShapeBeforeV48();
+    await database.customStatement(
+      "INSERT INTO my_library (id, _id, title, resource_local_address, "
+      "resource_offline, filename) VALUES "
+      "('course-res-1', 'course-res-1', 'Rainfall', "
+      "'/data/user/0/org.ole.planet.myplanet/app_flutter/ole/course-res-1/r.pdf', "
+      "1, 'r.pdf')",
+    );
+    // And a downloaded synced row, whose address is also a path.
+    await database.customStatement(
+      "INSERT INTO my_library (id, _id, _rev, title, resource_local_address, "
+      "resource_offline, downloaded_rev) VALUES "
+      "('synced-1', 'synced-1', '3-abc', 'Algebra', "
+      "'/data/user/0/org.ole.planet.myplanet/app_flutter/ole/synced-1/a.pdf', "
+      "1, '3-abc')",
+    );
+
+    await runUpgrade(from: 47);
+
+    for (final id in ['course-res-1', 'synced-1']) {
+      final row = (await database.myLibraryDao.getById(id))!;
+      expect(row.resourceOffline, isTrue, reason: '$id owns its bytes');
+      expect(row.resourceLocalAddress, isNot(equals(null)));
+    }
+  });
+
+  test('the repair leaves a post-fix local resource alone', () async {
+    // The fixed writer stores a basename, which has no separator — so the
+    // `LIKE '%/%'` half is what keeps the repair off rows the current code
+    // wrote. Without it every locally created resource would be un-flagged on
+    // the next bump, which is the defect running in reverse.
+    await installMyLibraryShapeBeforeV48();
+    await database.customStatement(
+      "INSERT INTO my_library (id, title, resource_local_address, "
+      "resource_offline, filename) VALUES "
+      "('local-2', 'Budget scan', 'budget.pdf', 1, 'budget.pdf')",
+    );
+
+    await runUpgrade(from: 47);
+
+    final row = (await database.myLibraryDao.getById('local-2'))!;
+    expect(row.resourceOffline, isTrue);
+    expect(row.resourceLocalAddress, 'budget.pdf');
+  });
+
+  test('every my_library column is either old or a deliberate decision', () {
+    // The loop adds a missing column; it cannot *backfill* one. So a new
+    // column whose default is wrong for existing rows is the
+    // `surveys.needs_sync` shape — preserved rows kept, then stranded — and
+    // nothing about the loop would make that visible. This inventory is what
+    // makes it visible: adding a column to `MyLibraryTable` reds this test,
+    // and the fix is to decide whether existing rows need an `UPDATE` beside
+    // the loop and then list the column here.
+    expect(
+      database.myLibraryTable.$columns.map((column) => column.name).toSet(),
+      {
+        'id',
+        '_id',
+        '_rev',
+        'user_id',
+        'title',
+        'title_normal',
+        'description',
+        'resource_id',
+        'resource_remote_address',
+        'resource_local_address',
+        'resource_offline',
+        'downloaded_rev',
+        'filename',
+        'average_rating',
+        'upload_date',
+        'year',
+        'added_by',
+        'publisher',
+        'link_to_license',
+        'open_with',
+        'open_which_file',
+        'article_date',
+        'kind',
+        'created_date',
+        'language',
+        'author',
+        'media_type',
+        'resource_type',
+        'medium',
+        'times_rated',
+        'resource_for',
+        'subject',
+        'level',
+        'tag',
+        'languages',
+        'is_private',
+        'private_for',
+        'step_id',
+        'course_id',
+      },
+      reason:
+          'a new column on a preserved table needs a backfill decision first; '
+          'make it, then add the name here',
+    );
+  });
+}
+
+/// The frozen v47 literal with v48's two columns spliced in, for the
+/// drift-drift guard above.
+String _withMyLibraryV48Columns(String frozen) => frozen.replaceFirst(
+  ', PRIMARY KEY ("id"))',
+  ', "step_id" TEXT NULL, "course_id" TEXT NULL, PRIMARY KEY ("id"))',
+);

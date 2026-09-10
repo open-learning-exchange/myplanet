@@ -1,0 +1,72 @@
+import '../core/config/server_config.dart';
+import '../core/network/network_result.dart';
+import '../core/system/device_identity.dart';
+import '../core/utils/url_utils.dart';
+import '../data/api/planet_api.dart';
+import 'outbox_drainer.dart';
+import 'outbox_repository.dart';
+import 'team_tasks_repository.dart';
+
+class TeamTasksUploader {
+  TeamTasksUploader(this._api, this._tasks, this._outbox, this._identity);
+  static const type = 'teamTasks';
+  final PlanetApi _api;
+  final TeamTasksRepository _tasks;
+  final OutboxRepository _outbox;
+  final DeviceIdentitySource _identity;
+
+  static String endpointFor(ServerConfig config) =>
+      '${UrlUtils.credentialFreeDbUrl(config)}/tasks';
+
+  /// Queues every task that has not reached the server.
+  ///
+  /// `TeamTask.serialize` gained `addDocumentOrigin()` in `27c0470`, a pure
+  /// addition — `androidId` and `app` are both new on the wire, with no
+  /// device name ([DeviceIdentity.originFields], not `documentFields`). The
+  /// identity read is guarded on an empty list so a pass with nothing to send
+  /// makes no platform-channel call.
+  Future<int> queuePending({
+    required ServerConfig config,
+    String? userId,
+    String? planetCode,
+  }) async {
+    final rows = await _tasks.pending();
+    final identity = rows.isEmpty ? null : await _identity.read();
+    for (final row in rows) {
+      await _outbox.enqueue(
+        uploadType: type,
+        itemId: row.id,
+        endpoint: endpointFor(config),
+        payload: {
+          ...TeamTasksRepository.serialize(row, planetCode: planetCode),
+          ...identity!.originFields,
+        },
+        userId: userId,
+      );
+    }
+    return rows.length;
+  }
+
+  OutboxHandler get handler => (row, payload, authHeader) async {
+    // The 409 arm. `pending()` is `isUpdated = true` unfiltered, so a rescheduled task that
+    // already has a `docId` is an ordinary update here.
+    // See [ConflictRecovery] for why a create stands as a refusal instead.
+    final result = await ConflictRecovery.send(
+      api: _api,
+      documentUrl: ConflictRecovery.documentUrlUnder(row.endpoint, payload),
+      payload: payload,
+      authHeader: authHeader,
+      attempt: (body) =>
+          _api.postJsonObject(row.endpoint, body, authHeader: authHeader),
+    );
+    if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
+      final id = data['id'];
+      final rev = data['rev'];
+      if (id is! String || rev is! String) {
+        return const NetworkError(null, 'Upload response carried no id/rev');
+      }
+      await _tasks.markUploaded(row.itemId, id, rev);
+    }
+    return result;
+  };
+}

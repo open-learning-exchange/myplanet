@@ -1,0 +1,623 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:xml/xml.dart';
+import 'package:myplanet/providers/settings_provider.dart';
+
+/// Guards the *values* in the locale files, which nothing checked before.
+///
+/// `test/l10n/locale_coverage_test.dart` guards the locale set and the key set:
+/// that every language the picker offers has an `.arb`, that no locale invents
+/// a key, that none is blank or declared twice. All of it is structural — it
+/// looks at which keys exist, never at what is inside them.
+///
+/// That gap shipped a real regression. An external translation pass filled the
+/// five locale files from ~250 keys to ~850, and it tokenised placeholders
+/// before translating without restoring them afterwards: Arabic carried 38
+/// strings with a literal `__0____` where a value belongs
+/// (`ratingOutOfFive` → `'التقييم: __0____ من 5'`), and 20 more across all five
+/// locales simply dropped a placeholder the template declares. 58 strings that
+/// could not render their own data.
+///
+/// `flutter analyze` caught **one** of the 58, and only by accident: a dropped
+/// placeholder is a lint solely when `gen-l10n` happens to emit an unused local
+/// for it. The other 57 compiled, analyzed clean, and would have shipped. These
+/// tests are what should have caught them.
+void main() {
+  final template = _readArb('en');
+
+  /// Every locale that ships a translation file. `en` is the template, so it
+  /// is the authority here rather than a subject.
+  final locales = LocaleNotifier.supportedLanguageCodes
+      .where((code) => code != 'en')
+      .toList();
+
+  test('no locale value carries a tokenisation artefact', () {
+    // The failure this exists for. A translator that swaps `{count}` for a
+    // sentinel and never swaps it back leaves text that renders literally —
+    // the user sees `__0____`, not their rating.
+    //
+    // No value in any locale legitimately contains a doubled underscore or a
+    // printf specifier today, so the nets are deliberately wider than the one
+    // shape that got through: the next tokeniser will use a different sentinel.
+    final defects = <String>[];
+    for (final code in locales) {
+      final arb = _readArb(code);
+      for (final key in _messageKeys(arb)) {
+        final value = arb[key] as String;
+        for (final artefact in _artefacts) {
+          if (RegExp(artefact.pattern).hasMatch(value)) {
+            defects.add('$code:$key contains ${artefact.name} — "$value"');
+          }
+        }
+      }
+    }
+
+    // Every defect at once, not just the first: the point of this guard is that
+    // one run tells you the whole extent of the damage.
+    expect(
+      defects,
+      isEmpty,
+      reason:
+          '${defects.length} value(s) carry a placeholder that was tokenised '
+          'for translation and never restored:\n${defects.join("\n")}\n'
+          'Put the ICU placeholder back, or drop the key so it falls back to '
+          'English.',
+    );
+  });
+
+  test('every locale value keeps the placeholders the template declares', () {
+    // The other half of the same regression, and the half nothing could see:
+    // a value that quietly omits `{count}` renders as a grammatical sentence
+    // with the number missing.
+    //
+    // The authority is `app_en.arb`'s `@<key>.placeholders` metadata, **not** a
+    // regex over `{...}` in the English text. An ICU plural body is full of
+    // braces that are not placeholders — `{count, plural, =1{one file} other{}}`
+    // yields spurious names like `1`, `No` and `Are`, and the first pass at
+    // this analysis reported 54 "missing" placeholders where only 20 were real.
+    // The metadata says exactly which names are values.
+    final defects = <String>[];
+    for (final code in locales) {
+      final arb = _readArb(code);
+      for (final key in _messageKeys(arb)) {
+        final value = arb[key] as String;
+        for (final name in _declaredPlaceholders(template, key)) {
+          if (!_usesPlaceholder(value, name)) {
+            defects.add('$code:$key drops "$name" — "$value"');
+          }
+        }
+      }
+    }
+
+    expect(
+      defects,
+      isEmpty,
+      reason:
+          '${defects.length} value(s) drop a placeholder app_en.arb declares:'
+          '\n${defects.join("\n")}\n'
+          'The generated getter still takes the argument, so the value it was '
+          'given is silently discarded at render time.',
+    );
+  });
+
+  // ---------------------------------------------------------------------
+  // Machine-translation marking (Phase 109).
+  //
+  // 496–545 keys in Arabic, Spanish and French are Google-Translate output
+  // with no human review, sitting indistinguishably beside the strings derived
+  // from the Kotlin `values-*/strings.xml` — translations already shipping in
+  // the Android app. `"@<key>": {"x-mt": true}` in the locale file marks the
+  // unreviewed ones, so a reviewer can list precisely what still needs a human.
+  //
+  // Nepali and Somali carry 26 each, and that is not because they were
+  // reviewed: the external pass never translated them at all. It emitted
+  // `[Nepali] `/`[Somali] ` plus the English for 899 keys, which Phase 118
+  // deleted (see the marker test above), leaving 26 whose machine output
+  // happened to equal the English.
+  // ---------------------------------------------------------------------
+
+  test('every locale marks its machine-translated strings', () {
+    for (final code in locales) {
+      expect(
+        _machineTranslatedKeys(_readArb(code)),
+        isNotEmpty,
+        reason:
+            'app_$code.arb carries no "x-mt" flags at all. Either every string '
+            'has been human-reviewed — in which case say so in the phase notes '
+            '— or a regeneration stripped the marking.',
+      );
+    }
+  });
+
+  test('no x-mt flag outlives the string it marks', () {
+    // A flag is attached to its key rather than kept in a central list
+    // precisely so the two cannot drift apart. This is the one way they still
+    // can: delete the translation, leave the `@key` block behind, and the flag
+    // then lands on whatever value is added for that key next — mislabelling a
+    // human translation as unreviewed.
+    for (final code in locales) {
+      final arb = _readArb(code);
+      final translated = _messageKeys(arb).toSet();
+      for (final key in _machineTranslatedKeys(arb)) {
+        expect(
+          translated,
+          contains(key),
+          reason:
+              'app_$code.arb flags "$key" as machine-translated but has no '
+              '"$key" value — delete the orphaned "@$key" block',
+        );
+      }
+    }
+  });
+
+  test('no locale value carries an Android escape', () {
+    // Android escapes an apostrophe in `strings.xml` as `\'`, because the
+    // platform's own string reader would otherwise treat it as quoting. The
+    // backslash belongs to Android, not to the sentence — but XML parsing
+    // leaves it alone (it is not XML syntax) and JSON has no objection to it
+    // either, so `tool/arb_from_strings_xml.dart` carried it into the locale
+    // files before it learned to strip it.
+    //
+    // Fourteen French strings and one Somali one shipped that way, rendering a
+    // literal backslash on screen: `Demandes d\'adhésion`, `Su\'aal`. Nothing
+    // could see it — the value is well-formed JSON, `gen-l10n` compiles it, and
+    // no analyzer looks inside a string. Only a reader of French would notice.
+    final defects = <String>[];
+    for (final code in locales) {
+      final arb = _readArb(code);
+      for (final key in _messageKeys(arb)) {
+        final value = arb[key] as String;
+        if (RegExp("""\\\\['\\"]""").hasMatch(value)) {
+          defects.add('$code:$key — "$value"');
+        }
+      }
+    }
+
+    expect(
+      defects,
+      isEmpty,
+      reason:
+          '${defects.length} value(s) carry an Android escape that the Kotlin '
+          'XML needed and the ARB does not:\n${defects.join("\n")}\n'
+          'Run `dart tool/arb_from_strings_xml.dart --adopt`, which repairs '
+          'them.',
+    );
+  });
+
+  test('the incorrect-answer retry hint is the Kotlin string, everywhere', () {
+    // The instance this recovery pass started from, pinned so a regeneration
+    // cannot quietly take it back.
+    //
+    // The port minted its own "Incorrect answer" and had it machine-translated
+    // five ways, while Kotlin has shipped `incorrect_ans` — "Incorrect answer,
+    // please try again" — with a real translation in every locale for years.
+    // Under the exam retry gate this snackbar is the only thing telling a
+    // learner to try again, so the hint is the string, not a flourish.
+    //
+    // The Kotlin XML is read rather than the six strings copied here: the point
+    // is that the ARB tracks Kotlin, and a hardcoded expectation would pass
+    // just as happily against a stale value.
+    for (final code in [...locales, 'en']) {
+      final kotlin = _kotlinString(code == 'en' ? 'values' : 'values-$code');
+      expect(
+        _readArb(code)['incorrectAnswer'],
+        kotlin,
+        reason:
+            'app_$code.arb has drifted from `incorrect_ans` in '
+            'app/src/main/res/values${code == 'en' ? '' : '-$code'}/strings.xml',
+      );
+    }
+  });
+
+  test('no locale value is a language marker wearing a translation\'s clothes', () {
+    // The other half of the external pass's damage, and the larger half. Where
+    // the tokenisation defect broke 58 strings that tried to render data, this
+    // one filled 899 keys with the tool's own "nothing here" output: the value
+    // was `[Nepali] ` or `[Somali] ` followed by the English template verbatim,
+    // flagged `x-mt`, present in the file, and therefore *preferred over the
+    // English fallback*. A Somali user read `[Somali] Join requests` — not a
+    // translation, not even a clean untranslated string, but a bracketed tag
+    // that reads as a bug.
+    //
+    // Nothing could see it. The value is well-formed JSON with the right
+    // placeholders, `gen-l10n` compiles it, and every structural test passes:
+    // the key exists, is non-empty, and is honestly flagged unreviewed. Only
+    // reading the text finds it. Phase 114 named two instances; Phase 118
+    // counted the rest and deleted them, so those keys fall back to English —
+    // the same words, without the tag.
+    //
+    // The net is wider than the two markers that shipped, because the next tool
+    // will pick a different one: no legitimate value in any locale, the
+    // template included, opens with a bracketed word.
+    final defects = <String>[];
+    for (final code in locales) {
+      final arb = _readArb(code);
+      for (final key in _messageKeys(arb)) {
+        final value = arb[key] as String;
+        if (RegExp(r'^\s*\[[^\]]{1,20}\]').hasMatch(value)) {
+          defects.add('$code:$key opens with a marker — "$value"');
+        }
+      }
+    }
+
+    expect(
+      defects,
+      isEmpty,
+      reason:
+          'A value that only labels the language it was not translated into is '
+          'worse than no value at all: it displaces the English fallback with '
+          'the same English plus a tag. Delete the key (and its "@key" block) '
+          'so the fallback serves it, or translate it.\n${defects.join('\n')}',
+    );
+  });
+
+  test('no locale value is an untranslated Kotlin source string', () {
+    // Phase 141, and the other end of `format_derivation_test`'s trust-floor
+    // guard: that one pins the predicate against the real XML, this one pins the
+    // shipped files, so a bad value fails however it got there.
+    //
+    // 47 of the Kotlin app's 1055 translatable strings are byte-identical to
+    // their English in at least four of the five locales. The `my*` compound
+    // family is the worst — `my_survey` is the token `mySurveys` in ar/fr/ne/so
+    // and `my_library` is `mylibrary` in the same four (Spanish translates
+    // both) — and it is also exactly what a tier looser than `casing` reaches,
+    // because the port re-spaced Kotlin's `myLibrary`/`mySurveys` into
+    // "My Library"/"My surveys". Adopting one would replace `استطلاعاتي` and
+    // `Mes enquêtes` with English and report it as a recovered translation.
+    //
+    // **The match has to be looser than the tool's**, or this guard cannot see
+    // the keys it exists for. Its first cut keyed on `_camelCase` alone, which
+    // maps `my_survey` to `mySurvey` — not a template key — and read the XML
+    // with a regex that left Android's quoting on, so `my_library` came back as
+    // `"mylibrary"` with the quotes. Between them, `ai_chat` was the only thing
+    // the test could ever have found. Matching loosely here is safe: it only
+    // selects which pairs to *check*, and the policy of refusing to adopt at
+    // that looseness lives in the tool.
+    //
+    // **What this cannot see, and why the tool holds the real line.** The
+    // comparison below is byte-exact, so it catches a value that *is* the source
+    // string. It does not catch the case-aligned form the tool would actually
+    // write (`Mylibrary`, `MySurveys`), and it cannot: at the ARB level "the
+    // untranslated Kotlin source" and "the port's own English" are the same
+    // string modulo case and spacing for precisely this class — the port's
+    // English *is* a re-spacing of Kotlin's. Loosening the comparison to reach
+    // `Mylibrary` also reaches `appTitle` ("myPlanet" against `app_name`'s
+    // "My Planet"), which is correct as it stands. Only the tool sees what a
+    // proposal would *overwrite*, which is where the damage is, so
+    // `isUntranslatedSource` is the guard that matters and this one is the
+    // backstop for the verbatim case.
+    final english = _kotlinStrings('values');
+    final byTight = <String, List<String>>{};
+    for (final name in english.keys) {
+      byTight.putIfAbsent(_tight(name), () => []).add(name);
+      byTight.putIfAbsent(_tight(english[name]!), () => []).add(name);
+    }
+
+    final defects = <String>[];
+    for (final code in locales) {
+      final localised = _kotlinStrings('values-$code');
+      final arb = _readArb(code);
+      for (final key in _messageKeys(arb)) {
+        final value = (arb[key] as String).trim();
+        final templateValue = template[key];
+        if (templateValue is! String) continue;
+        final names =
+            {
+              ...?byTight[_tight(key)],
+              ...?byTight[_tight(templateValue)],
+              if (english.containsKey(key)) key,
+            }..removeWhere(
+              (n) =>
+                  _camelCase(n) != key &&
+                  _tight(n) != _tight(key) &&
+                  _tight(english[n]!) != _tight(templateValue),
+            );
+        for (final name in names) {
+          final source = english[name]!.trim();
+          // Only a *source* string left in place is evidence. A locale value
+          // equal to its English where the template says the same thing is an
+          // invariant translation ("HTML", "N/A"), not a missing one.
+          if (source.isEmpty || localised[name]?.trim() != source) continue;
+          if (templateValue.trim() == source) continue;
+          if (value != source) continue;
+          defects.add(
+            '$code:$key is the untranslated Kotlin source "$name" ("$source"), '
+            'not a translation of the template\'s "$templateValue"',
+          );
+        }
+      }
+    }
+
+    expect(
+      defects,
+      isEmpty,
+      reason:
+          '${defects.length} locale value(s) are untranslated Kotlin source '
+          'strings:\n${defects.join("\n")}\n'
+          'Adopting one of these replaces a real translation with English — see '
+          'the trust floor in tool/arb_from_strings_xml.dart.',
+    );
+  });
+
+  test('the template declares no review state of its own', () {
+    // `app_en.arb` is the source text, not a translation of anything. An
+    // `x-mt` flag there would mean the English itself is machine output.
+    expect(_machineTranslatedKeys(template), isEmpty);
+  });
+
+  test('the human-reviewed string counts are what the notes claim', () {
+    // Pins the marking against silent staleness. A future harvest that adds
+    // translations without deciding their review state shows up here as a
+    // count that moved, rather than as several hundred unreviewed strings
+    // indistinguishable from the reviewed ones — which is exactly the state
+    // this phase was opened to end.
+    //
+    // Adding a *reviewed* translation is meant to move these numbers: update
+    // the map and say in the commit message who reviewed it. Adding an
+    // unreviewed one means flagging it `x-mt`, which leaves them alone.
+    //
+    // Phase 121 moved all five, in two ways worth separating. 36 values across
+    // the five locales are human translations newly written from the Kotlin
+    // XML, 25 of them for keys carrying an ICU placeholder — a class the
+    // derivation tool used to skip outright. The other 250 (ar 60, es 118,
+    // fr 72) are values that were *already* byte-identical to the translation
+    // shipping in the Android app and were nonetheless flagged unreviewed
+    // machine output. The
+    // flag means "a human still has to look at this", and one has; nothing a
+    // user sees changed when they were cleared. If that reading is ever
+    // rejected, `_reconcileMachineTranslationFlags`' `already` branch is the
+    // one line to revert.
+    //
+    // Phase 124 adds 6 per locale: the notification-format strings
+    // (`resource_notification`, `task_notification`, `storage_running_low`,
+    // `storage_available`, `join_request_prefix`,
+    // `user_requested_to_join_team`), all derived from the Kotlin XML by the
+    // tool and therefore human translations already shipping in the Android
+    // app. Its two remaining keys, `unknownUser`/`unknownTeam`, have no Kotlin
+    // string to derive from — the Kotlin hardcodes those two in
+    // `NotificationsRepositoryImpl` — so they fall back to English.
+    // Phase 124's second pass adds one more, `markAsRead` — the row's own
+    // Mark-as-read button, derived from the Kotlin `mark_as_read`.
+    //
+    // Phase 127 adds 4 per locale for the notification row's relative
+    // timestamp: `minutesAgo`, `hoursAgo`, `daysAgo` and the new `yesterday`,
+    // all four derived from the Kotlin `minutes_ago`/`hours_ago`/`days_ago`/
+    // `yesterday` and therefore human translations already shipping in the
+    // Android app. Three of them could not derive before, because those ARB
+    // keys held the port's own ICU *plurals* — a shape the tool skips for good
+    // reason — under the camelCase names of Kotlin's single-form strings. The
+    // plurals moved to `relativeMinutesAgo`/`relativeHoursAgo`/
+    // `relativeDaysAgo`, keeping their `x-mt` flags (their values were still
+    // bare English in every locale), and the Kotlin names now hold the Kotlin
+    // strings.
+    //
+    // Selection mode adds three more per locale — `selectedCount`,
+    // `markSelectedAsRead`, `cancelSelection`, from the Kotlin
+    // `selected_count`/`mark_selected_as_read`/`cancel_selection` — and repairs
+    // `markAllRead`, which was named and worded just differently enough from
+    // Kotlin's `mark_all_as_read` ("Mark all read" against "Mark all as read")
+    // that neither derivation rule could fire. Renamed to `markAllAsRead` with
+    // the Kotlin English: Nepali and Somali had no value at all, Arabic and
+    // French carried `x-mt` machine output (French's happened to equal the
+    // human translation, Arabic's did not), so all four derive now. Spanish
+    // already held the Kotlin value unflagged and is left alone — replacing one
+    // valid translation with another is not a repair. That makes es +3 where
+    // the rest are +4.
+    //
+    // Phase 130 adds two per locale, both incidental to its trailing-space fix
+    // and both real: `playbackSpeed` and `playbackSpeedValue` derive from the
+    // Kotlin `playback_speed`/`playback_speed_format` and had simply never been
+    // through the tool — the phase that added the English keys did not re-run
+    // it. `playbackSpeedValue` is `{speed}x` in all five locales, identical to
+    // the English because the Kotlin string is `%1$sx` in all five: a
+    // multiplier suffix nobody translates. That is the translation, not a
+    // missing one.
+    // Phase 133 adds six per locale, all recovered rather than generated.
+    // Upstream `64140ca` gave the resources media-type filter localised labels
+    // instead of raw server strings, and every key it needs -- `filter_pdfs`,
+    // `filter_videos`, `filter_audio` and the two the commit itself added,
+    // `medium_text_html` and `medium_html` -- already ships a human translation
+    // in all five `values-*/strings.xml`. Recovering those beats generating
+    // machine output for them, which is why the count moves by the same five
+    // everywhere including Nepali and Somali. The sixth is `filterOther`,
+    // which carries the Kotlin `other` for the filter's own chip rather than
+    // borrowing `storageOther` — that key is the port of `storage_other`
+    // ("Other Files") and its value is wrong, so the chip must not ride on it.
+    //
+    // Phase 141 adds 3 per locale and one more for Arabic. The three are
+    // `takeTestCount`, `retakeTestCount` and `redoSurvey` — template keys added
+    // after Phase 121's derivation run, whose Kotlin `take_test`/`retake_test`/
+    // `redo_survey` ship human translations in all five locales; they needed no
+    // new rule, only a re-run. French gains a fourth, `storagePdfs`, where the
+    // `.arb` carried the English "PDFs" and `values-fr` says "PDF". Arabic's
+    // extra is not a value at all: `progressFilterCompleted` already held
+    // `status_completed`'s Arabic word for word while flagged unreviewed
+    // machine output, because the recovery pass tested unanimity before it
+    // tested whether the value was already one of the candidates, and Kotlin's
+    // `completed` and `status_completed` disagree in Arabic. Marking only.
+    // Phase 138-141's round adds four more per locale, all recovered rather
+    // than generated, and all verified against `values-*/strings.xml` by hand
+    // before the pin moved. `pleaseCompleteTest` (Phase 139's per-step Next
+    // lock) and `joinTeamFirst`/`joinEnterpriseFirst` (Phase 140's chat share)
+    // derive **by name** from `please_complete_test`/`join_team_first`/
+    // `join_enterprise_first`. `chatAlreadyShared` derives by **shared
+    // English**: Kotlin calls it `chat_already_shared_to_destination`, a
+    // different key name carrying the identical English string, which is the
+    // case that path exists for. Nothing existing changed value — the only
+    // other diff line per locale was a trailing comma.
+    // Phase 147 adds one per locale: `addImage`, the voice composer's new
+    // attach-an-image button. Recovered rather than generated — the Kotlin
+    // `add_image` labels the same button on `fragment_voices.xml` and ships a
+    // human translation in all five `values-*/strings.xml`, so the port's own
+    // affordance can borrow the words the Android app already shows. Nothing
+    // existing changed value.
+    // The server-list round adds three per locale, all recovered rather than
+    // generated: `syncToServer`, `showMore` and `showLess` derive **by name**
+    // from Kotlin's `sync_to_server`/`show_more`/`show_less`, which label the
+    // same header and the same expand toggle on the sync dialog and ship human
+    // translations in all five `values-*/strings.xml`. Counted from the tree
+    // after the derivation run, not remembered. Nothing existing changed value.
+    //
+    // The same change adds a fourth template key, `serverPinRejected`, which
+    // is **deliberately absent from all five** and so moves no count here.
+    // Kotlin folds a refused PIN into its unreachable-server string and has no
+    // counterpart to derive from, and an English fallback beats machine
+    // translating a sentence that tells someone their credential was rejected.
+    //
+    // The server-switch round adds three more per locale, again recovered
+    // rather than generated: `clearData`, `clearingData` and
+    // `youWantToConnectToADifferentServer` derive by name from Kotlin's
+    // `clear_data`/`clearing_data`/`you_want_to_connect_to_a_different_server`,
+    // the wipe dialog's button, progress text and message, all three of which
+    // ship human translations in every `values-*/strings.xml`. Counted from
+    // the tree after the derivation run. Nothing existing changed value.
+    const humanReviewed = {
+      'ar': 432,
+      'es': 484,
+      'fr': 430,
+      'ne': 432,
+      'so': 432,
+    };
+
+    for (final code in locales) {
+      final arb = _readArb(code);
+      final unflagged =
+          _messageKeys(arb).length - _machineTranslatedKeys(arb).length;
+      expect(
+        unflagged,
+        humanReviewed[code],
+        reason:
+            'app_$code.arb has $unflagged strings with no "x-mt" flag, i.e. '
+            '$unflagged claimed as human-reviewed, but the pinned count is '
+            '${humanReviewed[code]}. If you reviewed strings or added a '
+            'reviewed translation, update this map. If you added a translation '
+            'nobody has reviewed, flag it "x-mt" instead.',
+      );
+    }
+  });
+}
+
+/// Patterns that mean "a value was substituted out and never substituted back".
+const _artefacts = [
+  (
+    name: 'a tokenisation sentinel (__0__)',
+    // The exact shape that shipped: `__0____`, `__1__`.
+    pattern: r'_{2,}\d+_{2,}',
+  ),
+  (
+    name: 'a run of underscores',
+    // Wider net for the same class of failure with a different sentinel. No
+    // legitimate value in any locale contains one.
+    pattern: r'_{2,}',
+  ),
+  (
+    name: 'a printf format specifier',
+    // Kotlin's `%1$s`/`%1$d`, which ICU does not interpolate. Three template
+    // keys (`communityEarnings`, `perSurvey`, `yourEarnings`) still carry these
+    // in their *English* text while declaring ICU placeholders, so they render
+    // the literal specifier and drop the argument in every language. Deriving a
+    // translation for one of them from the Kotlin XML would carry the defect
+    // into the locale files; `tool/arb_from_strings_xml.dart` skips them for
+    // that reason, and this fails if anything else reintroduces one.
+    pattern: r'%\d*\$?[sd]',
+  ),
+];
+
+Map<String, Object?> _readArb(String locale) =>
+    jsonDecode(File('lib/l10n/app_$locale.arb').readAsStringSync())
+        as Map<String, Object?>;
+
+/// Translatable entries — everything that is not `@@locale` or an `@key` block.
+Iterable<String> _messageKeys(Map<String, Object?> arb) =>
+    arb.keys.where((key) => !key.startsWith('@') && arb[key] is String);
+
+/// Placeholder names `app_en.arb` declares for [key], in declaration order.
+Iterable<String> _declaredPlaceholders(Map<String, Object?> arb, String key) {
+  final meta = arb['@$key'];
+  if (meta is! Map<String, Object?>) return const [];
+  final placeholders = meta['placeholders'];
+  if (placeholders is! Map<String, Object?>) return const [];
+  return placeholders.keys;
+}
+
+/// Keys the locale file flags as unreviewed machine output.
+Iterable<String> _machineTranslatedKeys(Map<String, Object?> arb) => arb.keys
+    .where((key) => key.startsWith('@') && key != '@@locale')
+    .where((key) {
+      final meta = arb[key];
+      return meta is Map<String, Object?> && meta['x-mt'] == true;
+    })
+    .map((key) => key.substring(1));
+
+/// Whether [value] interpolates [name].
+///
+/// `{name}` and the ICU forms that qualify it — `{count, plural, ...}`,
+/// `{choice, select, ...}` — all count; whitespace inside the braces is legal
+/// ICU and appears in the wild.
+bool _usesPlaceholder(String value, String name) =>
+    RegExp('\\{\\s*${RegExp.escape(name)}\\s*[,}]').hasMatch(value);
+
+/// `incorrect_ans` as the Kotlin app ships it for one `values*` directory.
+///
+/// A regex rather than an XML parser: the test needs one string, `strings.xml`
+/// writes it on one line, and pulling a parser into the test tree to read it
+/// would be the larger dependency.
+/// Every translatable `<string>` in a `values*` directory, read exactly as
+/// `tool/arb_from_strings_xml.dart` reads it: inline markup flattened, Android's
+/// whitespace quoting undone, `translatable="false"` skipped.
+///
+/// The first cut of this was a regex, and it misread the real file four ways.
+/// `<string name="empty_text" />` is self-closing, so the opener matched and
+/// `(.*?)` ran on to the *next* `</string>` — swallowing `message_placeholder`,
+/// which then existed nowhere in the map. CDATA came back wrapped in its own
+/// `<![CDATA[…]]>`, entities came back unresolved, and the quoting this
+/// function now undoes made `my_library` read as `"mylibrary"` *with* the
+/// quotes, so it could never equal an ARB value — which is what blinded the
+/// guard below to the very key its comment names.
+Map<String, String> _kotlinStrings(String valuesDir) {
+  final document = XmlDocument.parse(
+    File('../app/src/main/res/$valuesDir/strings.xml').readAsStringSync(),
+  );
+  final result = <String, String>{};
+  for (final element in document.findAllElements('string')) {
+    final name = element.getAttribute('name');
+    if (name == null) continue;
+    if (element.getAttribute('translatable') == 'false') continue;
+    final raw = element.innerText;
+    result[name] = raw.length > 1 && raw.startsWith('"') && raw.endsWith('"')
+        ? raw.substring(1, raw.length - 1)
+        : raw;
+  }
+  return result;
+}
+
+/// `snake_case` → `camelCase`, the ARB key naming the derivation tool uses.
+String _camelCase(String snakeCase) {
+  final parts = snakeCase.split('_');
+  return parts.first +
+      parts
+          .skip(1)
+          .map((p) => p.isEmpty ? '' : p[0].toUpperCase() + p.substring(1))
+          .join();
+}
+
+/// A key reduced to letters and digits only, lower-cased — the loosest match
+/// anybody could reasonably propose. Used here to *find* keys worth checking,
+/// never to adopt one: `my_survey`'s English is `mySurveys` and the template's
+/// is `My surveys`, so neither the name nor the text links them, which is
+/// precisely why the guard could not see the case it was written for.
+String _tight(String value) =>
+    value.replaceAll(RegExp(r'[^\p{L}\p{N}]', unicode: true), '').toLowerCase();
+
+/// The `incorrect_ans` string alone, for the retry-hint test above.
+String _kotlinString(String valuesDir) {
+  final xml = File(
+    '../app/src/main/res/$valuesDir/strings.xml',
+  ).readAsStringSync();
+  final match = RegExp(
+    r'<string name="incorrect_ans">(.*?)</string>',
+  ).firstMatch(xml);
+  return match!.group(1)!;
+}

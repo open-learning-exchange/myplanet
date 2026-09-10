@@ -1,0 +1,93 @@
+import '../core/config/server_config.dart';
+import '../core/network/network_result.dart';
+import '../core/system/device_identity.dart';
+import '../core/utils/url_utils.dart';
+import '../data/api/planet_api.dart';
+import '../data/local/app_database.dart';
+import '../data/local/feedback_mapper.dart';
+import 'feedback_repository.dart';
+import 'outbox_drainer.dart';
+import 'outbox_repository.dart';
+
+/// Durable write-back for the `feedback` database.
+///
+/// Kotlin uploads feedback from `AutoSyncWorker` through
+/// `UploadManager.uploadFeedback`. The outbox carries it here: queued on write,
+/// then drained on app resume or by the constraint-aware background job.
+/// Without this the port filed feedback that never left the device —
+/// `getPendingFeedback` existed but nothing called it.
+class FeedbackUploader {
+  FeedbackUploader(
+    this._api,
+    this._repository,
+    this._dao,
+    this._outbox,
+    this._identity,
+  );
+
+  static const type = 'feedback';
+
+  final PlanetApi _api;
+  final FeedbackRepository _repository;
+  final FeedbackDao _dao;
+  final OutboxRepository _outbox;
+  final DeviceIdentitySource _identity;
+
+  /// Credential-free: this string is persisted in `outbox.endpoint`, a table
+  /// that deliberately survives schema upgrades. The PIN travels as the
+  /// `Authorization` header at send time instead.
+  static String endpointFor(ServerConfig config) =>
+      '${UrlUtils.credentialFreeDbUrl(config)}/feedback';
+
+  /// Queues every filed-but-unsent feedback thread.
+  ///
+  /// `Feedback.serializeFeedback` gained `addDocumentOrigin()` in `27c0470`,
+  /// a pure addition — so `androidId` and `app` are both new on the wire, and
+  /// the Kotlin sends no device name here ([DeviceIdentity.originFields], not
+  /// `documentFields`). The read is guarded on an empty list so a pass with
+  /// nothing to send makes no platform-channel call.
+  Future<int> queuePending({
+    required ServerConfig config,
+    String? userId,
+  }) async {
+    final rows = await _repository.getPendingFeedback();
+    final identity = rows.isEmpty ? null : await _identity.read();
+    for (final row in rows) {
+      await _outbox.enqueue(
+        uploadType: type,
+        itemId: row.id,
+        endpoint: endpointFor(config),
+        payload: {...FeedbackMapper.toDoc(row), ...identity!.originFields},
+        userId: userId,
+      );
+    }
+    return rows.length;
+  }
+
+  OutboxHandler get handler => (row, payload, authHeader) async {
+    // The 409 arm: `FeedbackMapper.toDoc` sends a device-generated `_id` so a
+    // reply updates the thread rather than duplicating it, which also means a
+    // stale `_rev` conflicts. See [ConflictRecovery].
+    final result = await ConflictRecovery.send(
+      api: _api,
+      documentUrl: ConflictRecovery.documentUrlUnder(row.endpoint, payload),
+      payload: payload,
+      authHeader: authHeader,
+      attempt: (body) =>
+          _api.postJsonObject(row.endpoint, body, authHeader: authHeader),
+    );
+    if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
+      final rev = data['rev'];
+      if (rev is! String) {
+        return const NetworkError<Map<String, dynamic>>(
+          null,
+          'Upload response carried no rev',
+        );
+      }
+      // Recording the revision is what lets a later reply update the same
+      // document instead of conflicting against a stale `_rev`.
+      await _dao.markUploaded(row.itemId, rev);
+    }
+    return result;
+  };
+}

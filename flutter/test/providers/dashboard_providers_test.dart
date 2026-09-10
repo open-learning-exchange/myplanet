@@ -1,0 +1,213 @@
+import 'package:drift/drift.dart' hide isNull;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
+import 'package:myplanet/data/local/app_database.dart';
+import 'package:myplanet/providers/app_providers.dart';
+import 'package:myplanet/providers/dashboard_providers.dart';
+import 'package:myplanet/repository/submissions_repository.dart';
+
+import '../support/mock_planet_api.dart';
+import '../support/stream_provider_reads.dart';
+
+void main() {
+  late AppDatabase db;
+  late ProviderContainer container;
+
+  setUp(() {
+    db = AppDatabase.memory();
+    container = ProviderContainer(
+      retry: noProviderRetry,
+      overrides: [appDatabaseProvider.overrideWithValue(db)],
+    );
+  });
+
+  tearDown(() async {
+    container.dispose();
+    await db.close();
+  });
+
+  group('pendingSurveysProvider', () {
+    SubmissionsCompanion submission(
+      String id,
+      String surveyId, {
+      String status = 'pending',
+      String? teamId,
+      String userId = 'user-1',
+    }) => SubmissionsCompanion.insert(
+      id: id,
+      parentId: Value(surveyId),
+      type: const Value('survey'),
+      status: Value(status),
+      userId: Value(userId),
+      teamId: Value(teamId),
+    );
+
+    SurveysCompanion survey(String id, String name) =>
+        SurveysCompanion.insert(id: id, name: Value(name));
+
+    test('counts pending answer sheets and dedupes per survey', () async {
+      await db.surveyDao.upsertAll([
+        survey('survey-1', 'Health check'),
+        survey('survey-2', 'Feedback'),
+      ], const {});
+      await db.submissionDao.upsertAll([
+        submission('sub-1', 'survey-1', status: 'pending'),
+        submission('sub-2', 'survey-1', status: 'pending'),
+        submission('sub-3', 'survey-2'),
+        submission('sub-4', 'survey-2', status: 'complete'),
+      ]);
+
+      final pending = await container.read(
+        pendingSurveysProvider('user-1').future,
+      );
+
+      expect(pending.map((p) => p.name), ['Health check', 'Feedback']);
+    });
+
+    test(
+      'does not present blank-status adoption records as assignments',
+      () async {
+        await db.surveyDao.upsertAll([
+          survey('survey-1', 'Adopted survey'),
+        ], const {});
+        await db.submissionDao.upsertAll([
+          submission('adoption-1', 'survey-1', status: ''),
+        ]);
+
+        final pending = await container.read(
+          pendingSurveysProvider('user-1').future,
+        );
+
+        expect(pending, isEmpty);
+      },
+    );
+
+    test('drops team submissions and surveys that no longer exist', () async {
+      await db.surveyDao.upsertAll([
+        survey('survey-1', 'Individual'),
+      ], const {});
+      await db.submissionDao.upsertAll([
+        submission('sub-1', 'survey-1'),
+        submission('sub-2', 'survey-1', teamId: 'team-9'),
+        submission('sub-3', 'survey-gone'),
+        submission('sub-4', 'survey-1', userId: 'someone-else'),
+      ]);
+
+      final pending = await container.read(
+        pendingSurveysProvider('user-1').future,
+      );
+
+      expect(pending, hasLength(1));
+      expect(pending.single.name, 'Individual');
+      expect(pending.single.submissionId, 'sub-1');
+    });
+
+    /// Seeds one pending sheet for a course-attached survey **through the
+    /// production writer**, so the key under test is the one the app mints.
+    Future<void> sendCourseSurvey() async {
+      await db.surveyDao.upsertAll([
+        SurveysCompanion.insert(
+          id: 'survey-1',
+          courseId: const Value('course-1'),
+          name: const Value('Onboarding'),
+        ),
+      ], const {});
+      await SubmissionsRepository(
+        MockPlanetApi(),
+        db.submissionDao,
+        db.submitPhotosDao,
+        db.surveyDao,
+        db.examDao,
+        teamDao: db.teamDao,
+      ).createBulkSurveySubmissions('survey-1', const ['user-1']);
+    }
+
+    test('resolves a course-attached survey through the composite key', () async {
+      // Phase 125, and the **pair**: the writer that mints the key and the
+      // reader that has to strip it. A course-attached survey's `parentId` is
+      // `"$surveyId@$courseId"`, and `getUniquePendingSurveys` dedupes and
+      // resolves by `examIdFromParentId()`
+      // (`SubmissionsRepositoryImpl.kt:108-121`), never by the whole column.
+      // Keying on the raw value sent the composite to `getByIds`, which
+      // matched nothing, so the prompt silently dropped every pending survey
+      // belonging to a course. Demonstrated red by reverting this reader alone
+      // with the writers left correct: `Expected: length of <1> / Actual: []`.
+      await sendCourseSurvey();
+
+      final pending = await container.read(
+        pendingSurveysProvider('user-1').future,
+      );
+
+      expect(pending, hasLength(1));
+      expect(pending.single.surveyId, 'survey-1');
+      expect(pending.single.name, 'Onboarding');
+    });
+
+    test('a leftover bare-id sheet folds into the same prompt entry', () async {
+      // The shape a pre-Phase-125 build, or a Kotlin handset that lost
+      // `exams.courseId`, leaves behind: two pending sheets for one survey
+      // under two different keys. The learner must be prompted once, not
+      // twice. A behavioural guarantee rather than failing-first evidence —
+      // the raw reader also yields one entry here, because the bare row
+      // resolves while the composite one does not, which is exactly why the
+      // test above deliberately seeds no legacy row.
+      await sendCourseSurvey();
+      await db.submissionDao.upsertAll([submission('legacy', 'survey-1')]);
+
+      final pending = await container.read(
+        pendingSurveysProvider('user-1').future,
+      );
+
+      expect(pending, hasLength(1));
+      expect(pending.single.surveyId, 'survey-1');
+    });
+  });
+
+  group('myTeamsStreamProvider', () {
+    TeamsCompanion teamDoc(String id, String name, {String? status}) =>
+        TeamsCompanion.insert(
+          id: id,
+          name: Value(name),
+          type: const Value('team'),
+          status: Value(status),
+        );
+
+    TeamsCompanion membership(String id, String teamId, String userId) =>
+        TeamsCompanion.insert(
+          id: id,
+          teamId: Value(teamId),
+          userId: Value(userId),
+          docType: const Value('membership'),
+        );
+
+    test('resolves memberships to team documents, skipping archived', () async {
+      await db.teamDao.upsertAll([
+        teamDoc('team-1', 'Gardeners'),
+        teamDoc('team-2', 'Archived crew', status: 'archived'),
+        teamDoc('team-3', 'Not mine'),
+        membership('m-1', 'team-1', 'user-1'),
+        membership('m-2', 'team-2', 'user-1'),
+        membership('m-3', 'team-3', 'someone-else'),
+      ]);
+
+      final teams = await readStreamValue(
+        container,
+        myTeamsStreamProvider('user-1'),
+      );
+
+      expect(teams.map((t) => t.name), ['Gardeners']);
+    });
+
+    test('emits empty for a user with no memberships', () async {
+      await db.teamDao.upsertAll([teamDoc('team-1', 'Gardeners')]);
+
+      final teams = await readStreamValue(
+        container,
+        myTeamsStreamProvider('user-1'),
+      );
+
+      expect(teams, isEmpty);
+    });
+  });
+}
