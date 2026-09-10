@@ -730,6 +730,66 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
+    fun `batchInsertResources skips blank ids and design docs and returns accepted ids in input order`() = runTest {
+        val docBlank = com.google.gson.JsonObject().apply { addProperty("_id", "  ") }
+        val docDesign = com.google.gson.JsonObject().apply { addProperty("_id", "_design/lib") }
+        val doc1 = com.google.gson.JsonObject().apply {
+            addProperty("_id", "id_1")
+            addProperty("_rev", "1-rev")
+            addProperty("title", "Resource 1")
+        }
+        val doc2 = com.google.gson.JsonObject().apply {
+            addProperty("_id", "id_2")
+            addProperty("_rev", "1-rev")
+            addProperty("title", "Resource 2")
+        }
+
+        val documents = listOf(docBlank, doc1, docDesign, doc2)
+
+        coEvery { myLibraryDao.getByIds(listOf("id_1", "id_2")) } returns emptyList()
+        coEvery { myLibraryDao.upsertAll(any()) } returns Unit
+
+        val savedIds = repository.batchInsertResources(documents)
+
+        assertEquals(listOf("id_1", "id_2"), savedIds)
+        coVerify(exactly = 1) { myLibraryDao.getByIds(listOf("id_1", "id_2")) }
+        coVerify(exactly = 1) { myLibraryDao.upsertAll(match { it.size == 2 }) }
+    }
+
+    @Test
+    fun `batchInsertResources continues when insertMyLibrary returns null or throws and excludes failed ids from savedIds`() = runTest {
+        val docValid1 = com.google.gson.JsonObject().apply {
+            addProperty("_id", "valid_1")
+            addProperty("_rev", "1-rev")
+            addProperty("title", "Valid 1")
+        }
+        val docNull = mockk<com.google.gson.JsonObject>()
+        every { docNull.entrySet() } returns mutableSetOf()
+        every { docNull.has("_id") } returns true
+        every { docNull.get("_id") } returns com.google.gson.JsonPrimitive("null_doc")
+        val docThrow = com.google.gson.JsonObject().apply {
+            addProperty("_id", "throw_doc")
+            addProperty("_attachments", "invalid_type_causes_throw")
+        }
+        val docValid2 = com.google.gson.JsonObject().apply {
+            addProperty("_id", "valid_2")
+            addProperty("_rev", "1-rev")
+            addProperty("title", "Valid 2")
+        }
+
+        val documents = listOf(docValid1, docNull, docThrow, docValid2)
+
+        coEvery { myLibraryDao.getByIds(listOf("valid_1", "null_doc", "throw_doc", "valid_2")) } returns emptyList()
+        coEvery { myLibraryDao.upsertAll(any()) } returns Unit
+
+        val savedIds = repository.batchInsertResources(documents)
+
+        assertEquals(listOf("valid_1", "valid_2"), savedIds)
+        coVerify(exactly = 1) { myLibraryDao.getByIds(listOf("valid_1", "null_doc", "throw_doc", "valid_2")) }
+        coVerify(exactly = 1) { myLibraryDao.upsertAll(match { it.size == 2 }) }
+    }
+
+    @Test
     fun `batchInsertMyLibrary avoids N plus one queries`() = runTest {
         val documents = (1..5).map {
             val doc = com.google.gson.JsonObject()

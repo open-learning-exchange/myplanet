@@ -674,11 +674,15 @@ class ResourcesRepositoryImpl @Inject constructor(
     override suspend fun batchInsertResources(documents: List<JsonObject>): List<String> {
         val savedIds = mutableListOf<String>()
 
-        val validDocs = documents.filter {
-            val _id = JsonUtils.getString("_id", it)
-            _id.isNotBlank() && !_id.startsWith("_design")
+        val validDocs = ArrayList<Pair<JsonObject, String>>(documents.size)
+        val resourceIds = ArrayList<String>(documents.size)
+        for (doc in documents) {
+            val id = JsonUtils.getString("_id", doc)
+            if (id.isNotBlank() && !id.startsWith("_design")) {
+                validDocs.add(doc to id)
+                resourceIds.add(id)
+            }
         }
-        val resourceIds = validDocs.map { JsonUtils.getString("_id", it) }
         val existingItems = mutableMapOf<String, MyLibrary>()
         if (resourceIds.isNotEmpty()) {
             resourceIds.chunked(900).forEach { chunk ->
@@ -687,9 +691,8 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
 
         val librariesToUpsert = mutableListOf<MyLibrary>()
-        validDocs.forEach { doc ->
+        validDocs.forEach { (doc, _id) ->
             try {
-                val _id = JsonUtils.getString("_id", doc)
                 val existing = existingItems[_id]
                 val library = MyLibrary.insertMyLibrary(
                     MyLibrary.Companion.InsertParams(
