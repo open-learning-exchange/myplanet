@@ -5,6 +5,7 @@ import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.CourseProgress
@@ -218,9 +219,10 @@ class UploadConfigs @Inject constructor(
         serializer = UploadSerializer.Simple { log -> ApkLog.serialize(log, customDeviceName) },
         idExtractor = { it.id },
         markUploaded = { results ->
-            // A row is "pending" until it has a _rev; set it here. Rows that no longer exist
-            // (0 updated) are reported back as local failures.
-            results.filter { result -> !diagnosticsRepository.markApkLogUploaded(result.localId, result.remoteRev) }
+            if (results.isEmpty()) return@RoomUploadConfig emptyList()
+            val updates = results.map { ApkLogDao.UploadUpdate(it.localId, it.remoteRev) }
+            val unappliedIds = diagnosticsRepository.markApkLogsUploaded(updates)
+            results.filter { it.localId in unappliedIds }
         }
     )
 

@@ -23,6 +23,11 @@ class DiagnosticsRepositoryImpl @Inject constructor(
         return apkLogDao.markUploaded(localId, rev) != 0
     }
 
+    override suspend fun markApkLogsUploaded(updates: List<ApkLogDao.UploadUpdate>): Set<String> {
+        if (updates.isEmpty()) return emptySet()
+        return apkLogDao.markUploadedBatch(updates)
+    }
+
     private fun buildApkLog(
         parentCode: String,
         planetCode: String,
