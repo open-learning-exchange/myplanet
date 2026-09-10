@@ -71,7 +71,7 @@ class PersonalsRepositoryImpl @Inject constructor(
         personalDao.updateUploadedStatus(id, newId, rev)
     }
 
-    suspend fun uploadPersonalDocument(personal: Personal): Pair<String, String>? {
+    internal suspend fun uploadPersonalDocument(personal: Personal): Pair<String, String>? {
         val response = uploadRepository.postUpload(
             "${UrlUtils.getUrl()}/resources",
             Personal.serialize(personal, deviceNameProvider.getCustomDeviceName())
