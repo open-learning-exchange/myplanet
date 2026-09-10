@@ -27,7 +27,7 @@ The basis, so it can be argued with rather than repeated:
 |---|---|---|
 | Feature breadth | all 28 UI packages have screens (enterprises is a team *type*, not a gap — Phase 99) | ~95 |
 | Behavioural parity | still the limiter and the lowest-confidence row: **reachability** audits keep finding ported, green, *dead* code — see below. Phase 154 closed two whole missing *directions*, which is why this moved | ~76 |
-| Test coverage | 3065 tests / 260 test files vs 260 Kotlin test files — the file counts are now equal, which is a coincidence of counting and **not** a parity claim | ~93 |
+| Test coverage | 3071 tests / 261 test files vs 260 Kotlin test files. The file counts being near-equal is a coincidence of counting and **not** a parity claim — Phase 155 is the standing reminder: 15 tests covered `add_examination_screen` and not one passed an `examinationId`, so a blank edit form that overwrote the record was green | ~93 |
 | Localisation | template is 923 keys; ar 864, es 900, fr 899, but **416–469 of those are unreviewed machine translation** (`"x-mt": true`, so the set is queryable); ne/so 457 with 25 each. Phase 141 measured the recoverable pool and found it **exhausted** — the next 42 values a looser matcher reaches are degradations | ~55 |
 | Background work | WorkManager gaps closed through Phase 94, platform channels in-tree | ~95 |
 
