@@ -766,6 +766,44 @@ class NotificationsRepositoryImplTest {
     }
 
     @Test
+    fun `getTeamNotifications returns empty map when teamIds is empty`() = runTest {
+        val result = repository.getTeamNotifications(emptyList(), "user1")
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 0) { teamNotificationDao.getByTypeAndParentIds(any(), any()) }
+        coVerify(exactly = 0) { voicesRepository.countTopLevelByTeam(any()) }
+    }
+
+    @Test
+    fun `getTeamNotifications fetches chat counts concurrently for multiple tracked teams`() = runTest {
+        val team1 = "team1"
+        val team2 = "team2"
+        val team3 = "team3"
+        val teamIds = listOf(team1, team2, team3)
+        val userId = "user1"
+
+        val notif1 = TeamNotification().apply { parentId = team1; type = "chat"; lastCount = 2 }
+        val notif2 = TeamNotification().apply { parentId = team2; type = "chat"; lastCount = 5 }
+        val notif3 = TeamNotification().apply { parentId = team3; type = "chat"; lastCount = 10 }
+
+        coEvery { teamNotificationDao.getByTypeAndParentIds("chat", teamIds) } returns listOf(notif1, notif2, notif3)
+        coEvery { voicesRepository.countTopLevelByTeam(team1) } returns 5L
+        coEvery { voicesRepository.countTopLevelByTeam(team2) } returns 3L
+        coEvery { voicesRepository.countTopLevelByTeam(team3) } returns 10L
+        coEvery { teamTaskDao.getTasksForUserBetween(eq(userId), any(), any()) } returns emptyList()
+
+        val result = repository.getTeamNotifications(teamIds, userId)
+
+        coVerify(exactly = 1) { voicesRepository.countTopLevelByTeam(team1) }
+        coVerify(exactly = 1) { voicesRepository.countTopLevelByTeam(team2) }
+        coVerify(exactly = 1) { voicesRepository.countTopLevelByTeam(team3) }
+
+        assertEquals(3, result.size)
+        assertTrue(result[team1]?.hasChat == true)   // 2 < 5
+        assertFalse(result[team2]?.hasChat == true)  // 5 >= 3
+        assertFalse(result[team3]?.hasChat == true)  // 10 >= 10
+    }
+
+    @Test
     fun `resolveType falls back to message sniffing for unknown types`() {
         assertEquals("task", repository.resolveType("other", "Report is due tomorrow", null))
         assertEquals("storage", repository.resolveType("other", "Low storage", null))
