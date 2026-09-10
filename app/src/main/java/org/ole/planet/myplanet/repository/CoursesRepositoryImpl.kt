@@ -138,12 +138,26 @@ class CoursesRepositoryImpl @Inject constructor(
             val downloadedResources = getCourseOfflineResources(courseId)
             val rawSteps = getCourseSteps(courseId)
 
+            val stepIds = rawSteps.mapNotNull { it.id }
+            val questionCountsByStepId = if (stepIds.isEmpty()) {
+                emptyMap()
+            } else {
+                val exams = examDao.getByStepIds(stepIds)
+                val countsMap = mutableMapOf<String, Int>()
+                exams.forEach { exam ->
+                    val sId = exam.stepId
+                    if (sId != null && !countsMap.containsKey(sId)) {
+                        countsMap[sId] = exam.noOfQuestions
+                    }
+                }
+                countsMap
+            }
+
             val steps = rawSteps.map { step ->
-                val count = step.id.let { submissionsRepository.getExamQuestionCount(it) }
                 StepItem(
                     id = step.id,
                     stepTitle = step.stepTitle,
-                    questionCount = count
+                    questionCount = questionCountsByStepId[step.id] ?: 0
                 )
             }
 
