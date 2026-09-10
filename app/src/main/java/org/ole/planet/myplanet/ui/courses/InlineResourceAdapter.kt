@@ -205,10 +205,12 @@ class InlineResourceAdapter(
     private suspend fun showImagePreview(binding: ItemInlineResourceBinding, context: Context, file: File) {
         val exists = withContext(dispatcherProvider.io) { file.exists() }
         if (exists) {
+            val previewSizePx = getPreviewDecodeSizePx(context)
             binding.ivResourcePreview.visibility = View.VISIBLE
             Glide.with(context)
                 .load(file)
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .override(previewSizePx)
                 .centerCrop()
                 .placeholder(R.drawable.ole_logo)
                 .error(R.drawable.ole_logo)
@@ -220,9 +222,11 @@ class InlineResourceAdapter(
         binding.videoThumbnailContainer.visibility = View.VISIBLE
         val exists = withContext(dispatcherProvider.io) { file.exists() }
         if (exists) {
+            val previewSizePx = getPreviewDecodeSizePx(context)
             Glide.with(context)
                 .load(file)
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .override(previewSizePx)
                 .centerCrop()
                 .into(binding.ivVideoThumbnail)
         }
@@ -252,10 +256,12 @@ class InlineResourceAdapter(
             }
         }
         if (coverImage != null) {
+            val previewSizePx = getPreviewDecodeSizePx(context)
             binding.ivResourcePreview.visibility = View.VISIBLE
             Glide.with(context)
                 .load(coverImage)
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .override(previewSizePx)
                 .centerCrop()
                 .placeholder(R.drawable.ole_logo)
                 .error(R.drawable.ole_logo)
@@ -313,10 +319,16 @@ class InlineResourceAdapter(
 
     private fun getCacheKey(file: File): String = "${file.absolutePath}_${file.lastModified()}_${file.length()}"
 
+    private fun getPreviewDecodeSizePx(context: Context): Int {
+        val density = context.resources.displayMetrics.density
+        return (PREVIEW_DECODE_SIZE_DP * density).toInt()
+    }
+
     companion object {
         const val PAYLOAD_TITLE = "PAYLOAD_TITLE"
         const val PAYLOAD_ADDRESS = "PAYLOAD_ADDRESS"
         const val PAYLOAD_STATUS = "PAYLOAD_STATUS"
         private const val PDF_PREVIEW_WIDTH_DP = 240
+        private const val PREVIEW_DECODE_SIZE_DP = 360
     }
 }
