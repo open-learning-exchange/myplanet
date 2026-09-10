@@ -154,7 +154,8 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun searchChats(query: String, mode: ChatSearchMode, chats: List<ChatHistory>): List<ChatHistory> {
+    override suspend fun searchChats(query: String, mode: ChatSearchMode, userName: String?): List<ChatHistory> {
+        val chats = getChatHistoryForUser(userName)
         val precomputedChats = buildPrecomputedChats(chats)
         return if (mode == ChatSearchMode.TITLE) {
             searchByTitle(query, precomputedChats)

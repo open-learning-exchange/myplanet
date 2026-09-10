@@ -157,7 +157,7 @@ class ChatViewModel @Inject constructor(
             } else {
                 ChatSearchMode.RESPONSE
             }
-            val results = chatRepository.searchChats(query, mode, allChats)
+            val results = chatRepository.searchChats(query, mode, cachedUser?.name)
             _filteredChats.value = results
         }
     }
