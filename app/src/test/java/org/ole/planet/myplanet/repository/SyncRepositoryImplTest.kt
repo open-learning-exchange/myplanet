@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
-import android.os.SystemClock
 import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -12,7 +10,9 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -22,11 +22,14 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.UserDataWorker
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
+import org.ole.planet.myplanet.services.sync.UserDataUploadScheduler
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
+import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
@@ -34,7 +37,6 @@ import retrofit2.Response
 @OptIn(ExperimentalCoroutinesApi::class)
 class SyncRepositoryImplTest {
 
-    private val context: Context = mockk(relaxed = true)
     private val apiInterface: ApiInterface = mockk(relaxed = true)
     private val testDispatcher: TestDispatcher = UnconfinedTestDispatcher()
     private val dispatcherProvider: DispatcherProvider = TestDispatcherProvider(testDispatcher)
@@ -44,6 +46,7 @@ class SyncRepositoryImplTest {
     private val teamsSyncRepository: TeamsSyncRepository = mockk(relaxed = true)
     private val transactionSyncManager: dagger.Lazy<TransactionSyncManager> = mockk(relaxed = true)
     private val syncTimeLogger: SyncTimeLogger = mockk(relaxed = true)
+    private val userDataUploadScheduler: UserDataUploadScheduler = mockk(relaxed = true)
 
     private lateinit var sharedPrefManager: SharedPrefManager
     private lateinit var timeProvider: TimeProvider
@@ -61,11 +64,8 @@ class SyncRepositoryImplTest {
         every { Log.d(any(), any()) } returns 0
         every { Log.i(any(), any()) } returns 0
 
-        mockkStatic(SystemClock::class)
-        every { SystemClock.elapsedRealtime() } returns 1000L
-
         sharedPrefManager = mockk(relaxed = true)
-        timeProvider = mockk(relaxed = true)
+        timeProvider = TestTimeProvider(1000L)
 
         storedStringMap.clear()
         storedLongMap.clear()
@@ -97,7 +97,6 @@ class SyncRepositoryImplTest {
         UrlUtils.init(sharedPrefManager)
 
         syncRepository = SyncRepositoryImpl(
-            context = context,
             apiInterface = apiInterface,
             dispatcherProvider = dispatcherProvider,
             resourcesRepository = resourcesRepository,
@@ -107,7 +106,8 @@ class SyncRepositoryImplTest {
             transactionSyncManager = transactionSyncManager,
             syncTimeLogger = syncTimeLogger,
             sharedPrefManager = sharedPrefManager,
-            timeProvider = timeProvider
+            timeProvider = timeProvider,
+            userDataUploadScheduler = userDataUploadScheduler
         )
     }
 
@@ -115,6 +115,36 @@ class SyncRepositoryImplTest {
     fun tearDown() {
         UrlUtils.resetForTesting()
         unmockkAll()
+    }
+
+    @Test
+    fun `uploadLoginData delegates to UserDataUploadScheduler`() {
+        val expectedFlow = flowOf(SyncUiState.Loading)
+        every {
+            userDataUploadScheduler.enqueueUserDataUpload("UploadUserData_Login", UserDataWorker.UPLOAD_TYPE_LOGIN)
+        } returns expectedFlow
+
+        val result = syncRepository.uploadLoginData()
+
+        assertEquals(expectedFlow, result)
+        verify(exactly = 1) {
+            userDataUploadScheduler.enqueueUserDataUpload("UploadUserData_Login", UserDataWorker.UPLOAD_TYPE_LOGIN)
+        }
+    }
+
+    @Test
+    fun `uploadBulkData delegates to UserDataUploadScheduler`() {
+        val expectedFlow = flowOf(SyncUiState.Loading)
+        every {
+            userDataUploadScheduler.enqueueUserDataUpload("UploadUserData_Bulk", UserDataWorker.UPLOAD_TYPE_BULK)
+        } returns expectedFlow
+
+        val result = syncRepository.uploadBulkData()
+
+        assertEquals(expectedFlow, result)
+        verify(exactly = 1) {
+            userDataUploadScheduler.enqueueUserDataUpload("UploadUserData_Bulk", UserDataWorker.UPLOAD_TYPE_BULK)
+        }
     }
 
     @Test
@@ -214,7 +244,7 @@ class SyncRepositoryImplTest {
     fun `getCachedShelvesWithData returns stored list when cache is within 6 hours`() {
         val now = 1000000000000L
         val cacheTime = now - (5 * 60 * 60 * 1000L) // 5 hours ago
-        every { timeProvider.now() } returns now
+        (timeProvider as TestTimeProvider).currentTime = now
 
         storedLongMap["shelves_cache_time"] = cacheTime
         storedStringMap["shelves_with_data"] = "shelf1,shelf2,shelf3"
@@ -228,7 +258,7 @@ class SyncRepositoryImplTest {
     fun `getCachedShelvesWithData returns empty list when cache is older than 6 hours`() {
         val now = 1000000000000L
         val cacheTime = now - (6 * 60 * 60 * 1000L + 1L) // 6 hours and 1 millisecond ago
-        every { timeProvider.now() } returns now
+        (timeProvider as TestTimeProvider).currentTime = now
 
         storedLongMap["shelves_cache_time"] = cacheTime
         storedStringMap["shelves_with_data"] = "shelf1,shelf2,shelf3"
@@ -241,7 +271,7 @@ class SyncRepositoryImplTest {
     @Test
     fun `getCachedShelvesWithData returns empty list when cache time is not set`() {
         val now = 1000000000000L
-        every { timeProvider.now() } returns now
+        (timeProvider as TestTimeProvider).currentTime = now
 
         val result = syncRepository.getCachedShelvesWithData()
 
@@ -251,7 +281,7 @@ class SyncRepositoryImplTest {
     @Test
     fun `cacheShelvesWithData stores comma joined string and current timestamp`() {
         val now = 1000000000000L
-        every { timeProvider.now() } returns now
+        (timeProvider as TestTimeProvider).currentTime = now
 
         val shelves = listOf("shelf_a", "shelf_b", "shelf_c")
         syncRepository.cacheShelvesWithData(shelves)
@@ -263,7 +293,7 @@ class SyncRepositoryImplTest {
     @Test
     fun `roundtrip caching and retrieving preserves shelf list`() {
         val now = 1000000000000L
-        every { timeProvider.now() } returns now
+        (timeProvider as TestTimeProvider).currentTime = now
 
         val inputShelves = listOf("shelf_1", "shelf_2", "shelf_3")
         syncRepository.cacheShelvesWithData(inputShelves)
