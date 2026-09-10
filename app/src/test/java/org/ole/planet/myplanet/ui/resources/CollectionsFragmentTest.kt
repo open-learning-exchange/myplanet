@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.resources
 import java.lang.reflect.Field
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
@@ -90,6 +91,81 @@ class CollectionsFragmentTest {
         assertEquals(2, result.size)
         assertFalse((result[0] as TagData.Parent).isSelected)
         assertTrue((result[1] as TagData.Parent).isSelected)
+    }
+
+    @Test
+    fun `reconciliation matches selection with empty id to loaded tag with non-empty id and shows as selected`() {
+        val selectedTag = tag("", "Math")
+        val loadedTag = tag("t1", "Math")
+        val parents = listOf(loadedTag)
+        val fragment = newFragment(parents, selected = listOf(selectedTag))
+
+        val reconciled = fragment.reconcileSelections(listOf(selectedTag), parents, emptyMap())
+        assertEquals(1, reconciled.size)
+        assertSame(loadedTag, reconciled[0])
+
+        setField(fragment, "selectedItemsList", ArrayList(reconciled))
+        val tagDataList = buildTagDataList(fragment, parents)
+        assertEquals(1, tagDataList.size)
+        assertTrue((tagDataList[0] as TagData.Parent).isSelected)
+    }
+
+    @Test
+    fun `reconciliation matches selection with id to loaded tag with empty id and shows as selected`() {
+        val selectedTag = tag("t1", "Math")
+        val loadedTag = tag("", "Math")
+        val parents = listOf(loadedTag)
+        val fragment = newFragment(parents, selected = listOf(selectedTag))
+
+        val reconciled = fragment.reconcileSelections(listOf(selectedTag), parents, emptyMap())
+        assertEquals(1, reconciled.size)
+        assertSame(loadedTag, reconciled[0])
+
+        setField(fragment, "selectedItemsList", ArrayList(reconciled))
+        val tagDataList = buildTagDataList(fragment, parents)
+        assertEquals(1, tagDataList.size)
+        assertTrue((tagDataList[0] as TagData.Parent).isSelected)
+    }
+
+    @Test
+    fun `reconciliation matches selection with same id`() {
+        val selectedTag = tag("t1", "Math")
+        val loadedTag = tag("t1", "Mathematics")
+        val parents = listOf(loadedTag)
+        val fragment = newFragment(parents, selected = listOf(selectedTag))
+
+        val reconciled = fragment.reconcileSelections(listOf(selectedTag), parents, emptyMap())
+        assertEquals(1, reconciled.size)
+        assertSame(loadedTag, reconciled[0])
+
+        setField(fragment, "selectedItemsList", ArrayList(reconciled))
+        val tagDataList = buildTagDataList(fragment, parents)
+        assertEquals(1, tagDataList.size)
+        assertTrue((tagDataList[0] as TagData.Parent).isSelected)
+    }
+
+    @Test
+    fun `reconciliation keeps unmatched selection as prior object in place`() {
+        val unmatchedTag = tag("u1", "Unmatched")
+        val selectedTag = tag("t1", "Math")
+        val loadedTag = tag("t1", "Math")
+        val parents = listOf(loadedTag)
+        val fragment = newFragment(parents, selected = listOf(unmatchedTag, selectedTag))
+
+        val reconciled = fragment.reconcileSelections(listOf(unmatchedTag, selectedTag), parents, emptyMap())
+        assertEquals(2, reconciled.size)
+        assertSame(unmatchedTag, reconciled[0])
+        assertSame(loadedTag, reconciled[1])
+    }
+
+    @Test
+    fun `reconciliation handles empty tag list without error`() {
+        val selectedTag = tag("t1", "Math")
+        val fragment = newFragment(emptyList(), selected = listOf(selectedTag))
+
+        val reconciled = fragment.reconcileSelections(listOf(selectedTag), emptyList(), emptyMap())
+        assertEquals(1, reconciled.size)
+        assertSame(selectedTag, reconciled[0])
     }
 }
 
