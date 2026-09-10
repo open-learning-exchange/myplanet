@@ -220,16 +220,14 @@ object NetworkUtils {
 
     fun getCurrentNetworkId(context: Context): Int {
         var networkId = -1
-        val connManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val network = connManager.activeNetwork
-        val capabilities = connManager.getNetworkCapabilities(network)
+        val network = connectivityManager.activeNetwork
+        val capabilities = connectivityManager.getNetworkCapabilities(network)
         if (capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true) {
             val connectionInfo: WifiInfo? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 capabilities.transportInfo as? WifiInfo
             } else {
-                val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager?
                 @Suppress("DEPRECATION")
-                wifiManager?.connectionInfo
+                wifiManager.connectionInfo
             }
 
             if (connectionInfo != null && !connectionInfo.ssid.isNullOrEmpty()) {
