@@ -2,12 +2,12 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import io.mockk.coEvery
-import io.mockk.verify
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
+import io.mockk.verify
 import java.nio.file.Files
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first

@@ -551,6 +551,8 @@
     <string name="subject_level">Niveau du sujet</string>
     <string name="order_by_date">Trier par date</string>
     <string name="order_by_title">Trier par titre</string>
+    <string name="sort">Trier</string>
+    <string name="show_n_results">Afficher %1$d résultats</string>
     <string name="exams">Examens</string>
     <string name="survey">Enquête</string>
     <string name="submitted_by">Soumis par</string>

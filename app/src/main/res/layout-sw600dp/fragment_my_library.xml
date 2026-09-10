@@ -84,18 +84,6 @@
                     app:drawableTint="@color/daynight_textColor"
                     app:tint="@color/textColorPrimary"
                     android:minWidth="120dp" />
-                <ImageButton
-                    android:id="@+id/filter"
-                    style="@style/YellowButtons"
-                    android:layout_width="@dimen/_50dp"
-                    android:layout_height="@dimen/_50dp"
-                    android:layout_margin="@dimen/padding_normal"
-                    android:background="@drawable/buttonyellow"
-                    android:padding="@dimen/padding_normal"
-                    android:text="@string/more_action"
-                    android:contentDescription="@string/more_action"
-                    android:textColor="@color/textColorPrimary"
-                    app:srcCompat="@drawable/ic_filter" />
             </LinearLayout>
         </LinearLayout>
 
@@ -158,7 +146,9 @@
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/recycler"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent" />
+                    android:layout_height="match_parent"
+                    android:clipToPadding="false"
+                    android:paddingBottom="96dp" />
             </org.ole.planet.myplanet.ui.components.MaxWidthFrameLayout>
 
             <LinearLayout
@@ -193,138 +183,110 @@
         </FrameLayout>
     </LinearLayout>
 
-    <androidx.cardview.widget.CardView
-        android:id="@+id/card_filter"
-        android:layout_width="380dp"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:animateLayoutChanges="true"
-        android:visibility="gone"
-        app:cardCornerRadius="8dp">
-
-        <androidx.core.widget.NestedScrollView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:scrollbars="vertical">
-
-            <LinearLayout
-                android:id="@+id/ll_filter"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="right"
-                android:background="@drawable/custom_border"
-                android:gravity="right"
-                android:orientation="vertical"
-                android:padding="@dimen/padding_normal"
-                app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:padding="@dimen/padding_normal"
-                        android:text="@string/filter"
-                        android:textColor="@color/daynight_textColor"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
-                    <ImageView
-                        android:id="@+id/btn_close_filter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center_vertical"
-                        android:padding="@dimen/padding_normal"
-                        android:contentDescription="@string/close"
-                        android:src="@drawable/outline_close_24"
-                        app:tint="@color/daynight_textColor" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <Button
-                        android:id="@+id/order_by_date_button"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_margin="4dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/buttonblue"
-                        android:text="@string/order_by_date"
-                        android:textColor="@color/textColorPrimary" />
-                    <Button
-                        android:id="@+id/order_by_title_button"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_margin="4dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/buttonblue"
-                        android:text="@string/order_by_title"
-                        android:textColor="@color/textColorPrimary" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="8dp">
-
-                    <Button
-                        android:id="@+id/filterCategories"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_margin="4dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/buttonblue"
-                        android:text="@string/filter_by_category"
-                        android:textColor="@color/textColorPrimary" />
-                    <Button
-                        android:id="@+id/btn_collections"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_margin="4dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/buttonblue"
-                        android:text="@string/collections"
-                        android:textColor="@color/textColorPrimary" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <Button
-                        android:id="@+id/btn_clear_tags"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_margin="4dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/buttonblue"
-                        android:text="@string/clear_tags"
-                        android:textColor="@color/textColorPrimary" />
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_margin="4dp"
-                        android:layout_weight="1" />
-                </LinearLayout>
-            </LinearLayout>
-        </androidx.core.widget.NestedScrollView>
-    </androidx.cardview.widget.CardView>
-
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/addResource"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="@dimen/padding_large"
+        android:layout_marginEnd="@dimen/padding_large"
+        android:layout_marginBottom="88dp"
         android:contentDescription="@string/add_res"
         android:src="@drawable/ic_add_white"
         app:tint="@color/md_white_1000" />
+    <androidx.cardview.widget.CardView
+        android:id="@+id/sort_filter_capsule"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginStart="@dimen/padding_very_large"
+        android:layout_marginEnd="@dimen/padding_very_large"
+        android:layout_marginBottom="20dp"
+        android:minHeight="52dp"
+        app:cardBackgroundColor="@color/ink_1"
+        app:cardCornerRadius="26dp"
+        app:cardElevation="4dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:minHeight="52dp"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:id="@+id/btn_capsule_sort"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:minWidth="44dp"
+                android:minHeight="52dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:paddingStart="@dimen/padding_large"
+                android:paddingEnd="@dimen/padding_large">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:drawablePadding="6dp"
+                    android:gravity="center"
+                    android:text="@string/sort"
+                    android:textAllCaps="false"
+                    android:textColor="@color/md_white_1000"
+                    android:textSize="@dimen/text_size_mid"
+                    app:drawableStartCompat="@drawable/down_arrow"
+                    app:drawableTint="@color/md_white_1000" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center_vertical"
+                android:alpha="0.3"
+                android:background="@color/md_white_1000" />
+            <LinearLayout
+                android:id="@+id/btn_capsule_filters"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:minWidth="44dp"
+                android:minHeight="52dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:paddingStart="@dimen/padding_large"
+                android:paddingEnd="@dimen/padding_large">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:drawablePadding="6dp"
+                    android:gravity="center"
+                    android:text="@string/filter"
+                    android:textAllCaps="false"
+                    android:textColor="@color/md_white_1000"
+                    android:textSize="@dimen/text_size_mid"
+                    app:drawableStartCompat="@drawable/ic_filter"
+                    app:drawableTint="@color/md_white_1000" />
+                <TextView
+                    android:id="@+id/tv_capsule_filter_badge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:minWidth="20dp"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="6dp"
+                    android:gravity="center"
+                    android:background="@drawable/bg_chip_selected"
+                    android:textColor="@color/chip_selected_text"
+                    android:textSize="12sp"
+                    android:visibility="gone"
+                    tools:text="2" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

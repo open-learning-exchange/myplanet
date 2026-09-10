@@ -551,6 +551,8 @@
     <string name="subject_level">Nivel de asignatura</string>
     <string name="order_by_date">Ordenar por fecha</string>
     <string name="order_by_title">Ordenar por título</string>
+    <string name="sort">Ordenar</string>
+    <string name="show_n_results">Mostrar %1$d resultados</string>
     <string name="exams">Exámenes</string>
     <string name="survey">Encuestas</string>
     <string name="submitted_by">Enviado por</string>

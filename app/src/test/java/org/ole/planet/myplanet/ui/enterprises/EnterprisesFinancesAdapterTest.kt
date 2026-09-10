@@ -9,6 +9,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.every
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
+import java.io.File
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -18,7 +19,6 @@ import org.ole.planet.myplanet.databinding.RowFinanceBinding
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TestTimeProvider
-import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 class EnterprisesFinancesAdapterTest {

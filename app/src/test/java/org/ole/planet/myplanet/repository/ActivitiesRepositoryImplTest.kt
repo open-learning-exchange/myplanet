@@ -28,6 +28,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
@@ -41,7 +42,6 @@ import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.ResourceActivity
 import org.ole.planet.myplanet.model.UserChallengeActions
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -259,6 +259,13 @@ class ActivitiesRepositoryImplTest {
     }
 
     @Test
+    fun `getResourceOpenCount without type defaults to visit`() = runTest {
+        coEvery { resourceActivityDao.countByUserAndType("john", UserSessionManager.KEY_RESOURCE_OPEN) } returns 7L
+        val result = repository.getResourceOpenCount("john")
+        assertEquals(7L, result)
+    }
+
+    @Test
     fun `getMostOpenedResource returns null when no activities`() = testScope.runTest {
         coEvery { resourceActivityDao.getMostOpenedResource("john", "pdf") } returns null
         val result = repository.getMostOpenedResource("john", "pdf")
@@ -274,6 +281,34 @@ class ActivitiesRepositoryImplTest {
 
         assertEquals("Res 1", result?.first)
         assertEquals(2, result?.second)
+    }
+
+    @Test
+    fun `getMostOpenedResource without type defaults to visit`() = testScope.runTest {
+        coEvery {
+            resourceActivityDao.getMostOpenedResource("john", UserSessionManager.KEY_RESOURCE_OPEN)
+        } returns ResourceOpenCount("Res 1", 1)
+
+        val result = repository.getMostOpenedResource("john")
+
+        assertEquals("Res 1", result?.first)
+        assertEquals(1, result?.second)
+    }
+
+    @Test
+    fun `getProfileActivityStats aggregates mostOpened lastVisit and openCount`() = testScope.runTest {
+        coEvery {
+            resourceActivityDao.getMostOpenedResource("john", UserSessionManager.KEY_RESOURCE_OPEN)
+        } returns ResourceOpenCount("Res 1", 1)
+        coEvery { offlineActivityDao.getGlobalLastVisit() } returns 123456L
+        coEvery { resourceActivityDao.countByUserAndType("john", UserSessionManager.KEY_RESOURCE_OPEN) } returns 3L
+
+        val stats = repository.getProfileActivityStats("john")
+
+        assertEquals("Res 1", stats.mostOpenedResource?.first)
+        assertEquals(1, stats.mostOpenedResource?.second)
+        assertEquals(123456L, stats.lastVisit)
+        assertEquals(3L, stats.resourceOpenCount)
     }
 
     @Test

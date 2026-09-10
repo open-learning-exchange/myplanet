@@ -551,6 +551,8 @@
     <string name="subject_level">Darajo Mawduuc</string>
     <string name="order_by_date">Ku qoraalka Taariikhda</string>
     <string name="order_by_title">Ku qoraalka Cinwaanka</string>
+    <string name="sort">Kala sooc</string>
+    <string name="show_n_results">Tus %1$d natiijo</string>
     <string name="exams">Imtixaanada</string>
     <string name="survey">Soo Gudbi</string>
     <string name="submitted_by">La Diyaariyay</string>

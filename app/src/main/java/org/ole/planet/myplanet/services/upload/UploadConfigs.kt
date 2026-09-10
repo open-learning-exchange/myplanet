@@ -34,7 +34,6 @@ import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.VersionUtils
 
 @Singleton
