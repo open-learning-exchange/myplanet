@@ -193,7 +193,6 @@
         android:contentDescription="@string/add_res"
         android:src="@drawable/ic_add_white"
         app:tint="@color/md_white_1000" />
-
     <androidx.cardview.widget.CardView
         android:id="@+id/sort_filter_capsule"
         android:layout_width="match_parent"
@@ -247,7 +246,6 @@
                 android:layout_gravity="center_vertical"
                 android:alpha="0.3"
                 android:background="@color/md_white_1000" />
-
             <LinearLayout
                 android:id="@+id/btn_capsule_filters"
                 android:layout_width="0dp"
@@ -274,7 +272,6 @@
                     android:textSize="@dimen/text_size_mid"
                     app:drawableStartCompat="@drawable/ic_filter"
                     app:drawableTint="@color/md_white_1000" />
-
                 <TextView
                     android:id="@+id/tv_capsule_filter_badge"
                     android:layout_width="wrap_content"
