@@ -121,6 +121,21 @@ class ResourcesViewModel @Inject constructor(
         resourcesRepository.getFilterFacets(libraries)
     }
 
+    private val listFilter = ResourcesListFilter()
+
+    fun applyFilter(models: List<ResourceListModel>, criteria: ResourcesFilterCriteria, locallyOfflineIds: Set<String>): List<ResourceListModel> =
+        listFilter.apply(models, criteria, locallyOfflineIds)
+
+    fun filterIfChanged(models: List<ResourceListModel>, criteria: ResourcesFilterCriteria, locallyOfflineIds: Set<String>): List<ResourceListModel>? =
+        listFilter.filterIfChanged(models, criteria, locallyOfflineIds)
+
+    fun countMatching(models: List<ResourceListModel>, criteria: ResourcesFilterCriteria, locallyOfflineIds: Set<String>): Int =
+        listFilter.countMatching(models, criteria, locallyOfflineIds)
+
+    fun resetFilter() {
+        listFilter.reset()
+    }
+
     suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String): Result<Unit> {
         return resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
     }
