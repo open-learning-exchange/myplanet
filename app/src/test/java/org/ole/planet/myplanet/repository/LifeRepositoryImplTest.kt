@@ -16,6 +16,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
+import org.ole.planet.myplanet.datasource.CachedMyLifeItem
+import org.ole.planet.myplanet.datasource.MyLifeCacheDataSource
 import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.services.SharedPrefManager
 
@@ -26,6 +28,7 @@ class LifeRepositoryImplTest {
     private lateinit var mockSharedPreferences: SharedPreferences
     private lateinit var mockEditor: SharedPreferences.Editor
     private lateinit var gson: Gson
+    private lateinit var myLifeCacheDataSource: MyLifeCacheDataSource
     private lateinit var repository: LifeRepositoryImpl
     private val testDispatcher = UnconfinedTestDispatcher()
 
@@ -42,11 +45,11 @@ class LifeRepositoryImplTest {
         every { mockEditor.apply() } returns Unit
 
         gson = Gson()
+        myLifeCacheDataSource = MyLifeCacheDataSource(mockSharedPreferences, gson)
         repository = LifeRepositoryImpl(
             myLifeDao,
             sharedPrefManager,
-            gson
-
+            myLifeCacheDataSource
         )
     }
 

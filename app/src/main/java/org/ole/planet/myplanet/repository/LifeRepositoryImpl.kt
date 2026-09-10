@@ -1,29 +1,20 @@
 package org.ole.planet.myplanet.repository
 
-import androidx.core.content.edit
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
+import org.ole.planet.myplanet.datasource.MyLifeCacheDataSource
 import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.services.SharedPrefManager
 
-data class CachedMyLifeItem(
-    var imageId: String?,
-    var title: String?,
-    var isVisible: Boolean,
-    var weight: Int
-)
 class LifeRepositoryImpl @Inject constructor(
     private val myLifeDao: MyLifeDao,
     private val sharedPrefManager: SharedPrefManager,
-    private val gson: Gson
+    private val myLifeCacheDataSource: MyLifeCacheDataSource
 ) : LifeRepository {
 
-    private val MY_LIFE_CACHE_PREFIX = "myLifeCache_"
     private val seedMutex = Mutex()
 
     private fun normalizeUserId(userId: String?): String? {
@@ -36,7 +27,7 @@ class LifeRepositoryImpl @Inject constructor(
         val rawUserId = managedLives.firstOrNull()?.userId ?: sharedPrefManager.getUserId()
         val effectiveUserId = normalizeUserId(rawUserId)
         val updatedLives = getMyLifeByUserId(effectiveUserId)
-        cacheMyLifeItems(effectiveUserId ?: "--", updatedLives)
+        myLifeCacheDataSource.write(effectiveUserId ?: "--", updatedLives)
         return updatedLives
     }
 
@@ -67,7 +58,7 @@ class LifeRepositoryImpl @Inject constructor(
             myLifeDao.update(changed)
         }
         val updatedLives = getMyLifeByUserId(effectiveUserId)
-        cacheMyLifeItems(effectiveUserId ?: "--", updatedLives)
+        myLifeCacheDataSource.write(effectiveUserId ?: "--", updatedLives)
     }
 
     private fun MyLife.dedupKey(): Any {
@@ -106,38 +97,25 @@ class LifeRepositoryImpl @Inject constructor(
         }
 
         val cacheKey = effectiveUserId ?: "--"
-        val json = sharedPrefManager.rawPreferences.getString("$MY_LIFE_CACHE_PREFIX$cacheKey", null)
-        if (json != null) {
-            val cached: List<CachedMyLifeItem>? = try {
-                val type = object : TypeToken<List<CachedMyLifeItem>>() {}.type
-                gson.fromJson(json, type)
-            } catch (e: Exception) {
-                null
-            }
-            if (cached != null) {
-                return cached.mapNotNull { item ->
-                    if (item.isVisible) {
-                        MyLife(item.imageId, effectiveUserId, item.title).apply {
-                            isVisible = item.isVisible
-                            weight = item.weight
-                        }
-                    } else {
-                        null
+        val cached = myLifeCacheDataSource.read(cacheKey)
+        if (cached != null) {
+            return cached.mapNotNull { item ->
+                if (item.isVisible) {
+                    MyLife(item.imageId, effectiveUserId, item.title).apply {
+                        isVisible = item.isVisible
+                        weight = item.weight
                     }
-                }.sortedBy { it.weight }
-            }
+                } else {
+                    null
+                }
+            }.sortedBy { it.weight }
         }
 
         val seeded = seedMyLifeIfEmpty(effectiveUserId, seedBase).ifEmpty {
             getMyLifeByUserId(effectiveUserId)
         }
-        cacheMyLifeItems(cacheKey, seeded)
+        myLifeCacheDataSource.write(cacheKey, seeded)
         return seeded.filter { it.isVisible }.sortedBy { it.weight }
-    }
-
-    private fun cacheMyLifeItems(userId: String, items: List<MyLife>) {
-        val cached = items.map { CachedMyLifeItem(it.imageId, it.title, it.isVisible, it.weight) }
-        sharedPrefManager.rawPreferences.edit { putString("$MY_LIFE_CACHE_PREFIX$userId", gson.toJson(cached)) }
     }
 
     override suspend fun seedMyLifeIfEmpty(userId: String?, items: List<MyLife>): List<MyLife> {

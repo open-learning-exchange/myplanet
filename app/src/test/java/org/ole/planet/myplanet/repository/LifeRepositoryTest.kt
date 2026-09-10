@@ -1,9 +1,7 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.Gson
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.every
 import io.mockk.mockk
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -14,6 +12,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
+import org.ole.planet.myplanet.datasource.MyLifeCacheDataSource
 import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.services.SharedPrefManager
 
@@ -29,12 +28,11 @@ class LifeRepositoryTest {
         Logger.getLogger("io.mockk").level = Level.OFF
         myLifeDao = mockk(relaxed = true)
         val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
-        every { sharedPrefManager.rawPreferences } returns mockk(relaxed = true)
+        val myLifeCacheDataSource: MyLifeCacheDataSource = mockk(relaxed = true)
         repository = LifeRepositoryImpl(
             myLifeDao,
             sharedPrefManager,
-            Gson()
-
+            myLifeCacheDataSource
         )
     }
 
