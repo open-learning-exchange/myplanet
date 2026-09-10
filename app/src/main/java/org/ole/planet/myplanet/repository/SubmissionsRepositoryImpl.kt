@@ -100,13 +100,12 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     override suspend fun getUniquePendingSurveys(userId: String?): List<Submission> {
         if (userId == null) return emptyList()
 
-        val pendingSurveys = hydrateSubmissions(submissionDao.getUniquePendingSurveyCandidates(userId))
-
-        if (pendingSurveys.isEmpty()) {
+        val candidates = submissionDao.getUniquePendingSurveyCandidates(userId)
+        if (candidates.isEmpty()) {
             return emptyList()
         }
 
-        val examIds = pendingSurveys.mapNotNullTo(LinkedHashSet()) { it.examIdFromParentId() }.toList()
+        val examIds = candidates.mapNotNullTo(LinkedHashSet()) { it.examIdFromParentId() }.toList()
         if (examIds.isEmpty()) {
             return emptyList()
         }
@@ -115,13 +114,13 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         val validExamIds = exams.map { it.id }.toSet()
 
         val uniqueSurveys = linkedMapOf<String, Submission>()
-        pendingSurveys.forEach { submission ->
+        candidates.forEach { submission ->
             val examId = submission.examIdFromParentId()
             if (examId != null && validExamIds.contains(examId) && !uniqueSurveys.containsKey(examId)) {
                 uniqueSurveys[examId] = submission
             }
         }
-        return uniqueSurveys.values.toList()
+        return hydrateSubmissions(uniqueSurveys.values.toList())
     }
 
     override suspend fun getSurveyTitlesFromSubmissions(
