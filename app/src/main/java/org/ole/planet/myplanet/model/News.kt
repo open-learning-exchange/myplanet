@@ -82,7 +82,25 @@ open class News {
 
     @get:Ignore
     val imagesArray: JsonArray
-        get() = if (images == null) JsonArray() else JsonUtils.gson.fromJson(images, JsonArray::class.java)
+        get() {
+            val currentImages = images
+            val cached = parsedImagesArray
+            if (cached != null && rawImages == currentImages) {
+                return cached
+            }
+            val parsed = if (currentImages == null) {
+                JsonArray()
+            } else {
+                try {
+                    JsonUtils.gson.fromJson(currentImages, JsonArray::class.java) ?: JsonArray()
+                } catch (e: Exception) {
+                    JsonArray()
+                }
+            }
+            rawImages = currentImages
+            parsedImagesArray = parsed
+            return parsed
+        }
 
     @get:Ignore
     val labelsArray: JsonArray
@@ -111,16 +129,22 @@ open class News {
     @get:Ignore
     val isCommunityNews: Boolean
         get() {
-            val array = JsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
-            var isCommunity = false
-            for (e in array) {
-                val `object` = e.asJsonObject
-                if (`object`.has("section") && `object`["section"].asString.equals("community", ignoreCase = true)) {
-                    isCommunity = true
-                    break
+            try {
+                val array = parsedViewIn ?: if (!viewIn.isNullOrEmpty()) {
+                    JsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
+                } else null
+                if (array != null) {
+                    for (e in array) {
+                        val `object` = e.asJsonObject
+                        if (`object`.has("section") && `object`["section"].asString.equals("community", ignoreCase = true)) {
+                            return true
+                        }
+                    }
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            return isCommunity
+            return false
         }
 
     fun calculateSortDate(): Long {
