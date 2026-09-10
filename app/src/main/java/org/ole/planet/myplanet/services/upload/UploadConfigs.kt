@@ -5,7 +5,6 @@ import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
-import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.CourseProgress
@@ -23,6 +22,7 @@ import org.ole.planet.myplanet.model.TeamLog
 import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.ApkLogUpload
 import org.ole.planet.myplanet.repository.DiagnosticsRepository
 import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
@@ -220,7 +220,7 @@ class UploadConfigs @Inject constructor(
         idExtractor = { it.id },
         markUploaded = { results ->
             if (results.isEmpty()) return@RoomUploadConfig emptyList()
-            val updates = results.map { ApkLogDao.UploadUpdate(it.localId, it.remoteRev) }
+            val updates = results.map { ApkLogUpload(it.localId, it.remoteRev) }
             val unappliedIds = diagnosticsRepository.markApkLogsUploaded(updates)
             results.filter { it.localId in unappliedIds }
         }

@@ -36,9 +36,7 @@ interface ApkLogDao {
         if (updates.isEmpty()) return emptySet()
         val ids = updates.map { it.id }
         val existingIds = ids.chunked(900).flatMap { chunk -> getExistingIds(chunk) }.toSet()
-        updates.chunked(900).forEach { chunk ->
-            markUploadedBatchInternal(chunk)
-        }
+        markUploadedBatchInternal(updates)
         return ids.filterNot { it in existingIds }.toSet()
     }
 

@@ -13,7 +13,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.NewsLog
@@ -21,6 +20,7 @@ import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.ResourceActivity
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.ApkLogUpload
 import org.ole.planet.myplanet.repository.DiagnosticsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
@@ -256,8 +256,8 @@ class UploadConfigsTest {
         )
 
         val expectedUpdates = listOf(
-            ApkLogDao.UploadUpdate("log-local-1", "1-rev"),
-            ApkLogDao.UploadUpdate("log-local-2", "2-rev")
+            ApkLogUpload("log-local-1", "1-rev"),
+            ApkLogUpload("log-local-2", "2-rev")
         )
         coEvery { diagnosticsRepository.markApkLogsUploaded(expectedUpdates) } returns emptySet()
 
@@ -283,8 +283,8 @@ class UploadConfigsTest {
         )
 
         val expectedUpdates = listOf(
-            ApkLogDao.UploadUpdate("log-local-1", "1-rev"),
-            ApkLogDao.UploadUpdate("log-local-2", "2-rev")
+            ApkLogUpload("log-local-1", "1-rev"),
+            ApkLogUpload("log-local-2", "2-rev")
         )
         coEvery { diagnosticsRepository.markApkLogsUploaded(expectedUpdates) } returns setOf("log-local-2")
 
