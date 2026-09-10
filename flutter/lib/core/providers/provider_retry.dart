@@ -7,8 +7,9 @@
 /// declines only an `Error` or a `ProviderException`. Anything that
 /// `implements Exception` is retried, which in this tree includes
 /// `MissingPluginException`, `SqliteException` and `FileSystemException`.
-/// `ProviderElement.buildState` (`src/core/element.dart:757`) is on the common
-/// base, so this covers synchronous `Provider`s too, not only the async ones.
+/// `ProviderElement.buildState` (`src/core/element.dart:734`, the retry call at
+/// `:757`) is on the common base, so this covers synchronous `Provider`s too,
+/// not only the async ones.
 ///
 /// This port opts out, globally, and preserves the 2.6.1 behaviour it was
 /// written against. The reason is a rule this codebase already has, from

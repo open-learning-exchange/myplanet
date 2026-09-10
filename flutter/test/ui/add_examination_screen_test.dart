@@ -266,6 +266,7 @@ void main() {
       required HealthRepository repository,
       required AppDatabase database,
       required UserRow session,
+      String? examinationId,
     }) async {
       final built = <_RecordingDetail>[];
       await tester.pumpWidget(
@@ -301,7 +302,10 @@ void main() {
             }),
           ],
           pushTargets: {
-            '/examination': (_) => const AddExaminationScreen(userId: 'pat-1'),
+            '/examination': (_) => AddExaminationScreen(
+              userId: 'pat-1',
+              examinationId: examinationId,
+            ),
           },
           fallbackDatabase: false,
         ),
@@ -362,6 +366,61 @@ void main() {
       // finishes; without it the record was saved and invisible.
       expect(built.single.refreshes, 1);
       expect(find.text('ROOT_PAGE'), findsOneWidget);
+    });
+
+    /// Opening the screen with an `examinationId` — the Edit button in
+    /// `MyHealthScreen`'s examination dialog — must show the record being
+    /// edited, because `save` takes the *update* branch when
+    /// `state.examination != null` and writes whatever the form holds.
+    ///
+    /// This is the case the file never covered: fifteen tests and not one
+    /// passed an `examinationId`, which is why a blank edit form was green.
+    /// `_loadExistingData` resolves the session, `setState`s `_patientId`, and
+    /// only then reads the notifier — so the element is created with no
+    /// watcher until the next build, and Riverpod 3 sweeps an unlistened
+    /// `autoDispose` provider on the next *microtask*
+    /// (`provider_scope.dart:351`) where Riverpod 2 waited for the next frame
+    /// (`framework.dart:336`). The drift read does not finish inside a
+    /// microtask, so the notifier was disposed mid-load, its `state=` threw,
+    /// and the screen re-created a second notifier whose value nothing
+    /// prefilled from.
+    testWidgets('editing an examination opens on the record being edited', (
+      tester,
+    ) async {
+      final db = AppDatabase.memory();
+      final repo = HealthRepository(
+        _NoopApi(),
+        db.healthExaminationDao,
+        db.userDao,
+        createId: () => 'exam-unused',
+      );
+      await db.userDao.upsert(
+        UsersCompanion.insert(id: 'pat-1', couchId: const Value('pat-1')),
+      );
+      await db
+          .into(db.healthExaminations)
+          .insert(
+            HealthExaminationsCompanion.insert(
+              id: 'exam-1',
+              userId: const Value('pat-1'),
+              temperature: const Value(37.5),
+              pulse: const Value(72),
+              bp: const Value('118/76'),
+            ),
+          );
+      final patient = (await db.userDao.getById('pat-1'))!;
+
+      await pumpPushedScreen(
+        tester,
+        repository: repo,
+        database: db,
+        session: patient,
+        examinationId: 'exam-1',
+      );
+
+      expect(find.text('37.5'), findsOneWidget);
+      expect(find.text('72'), findsOneWidget);
+      expect(find.text('118/76'), findsOneWidget);
     });
 
     testWidgets('a failed save says so and keeps the form open', (

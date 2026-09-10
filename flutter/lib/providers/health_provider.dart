@@ -321,6 +321,12 @@ class ExaminationNotifier extends StateNotifier<ExaminationState> {
       final exam = _examinationId == null
           ? null
           : await _repo.getById(_examinationId);
+      // Same guard, same reason, as `PatientDetailNotifier.selectPatient`.
+      // Not a substitute for the caller holding the provider open — a
+      // disposed notifier that returns quietly still leaves the form blank —
+      // but without it the `state=` throws out of a future nobody awaits, and
+      // so does the `catch` below.
+      if (!mounted) return;
       state = state.copyWith(
         isLoading: false,
         examination: exam,
@@ -328,7 +334,9 @@ class ExaminationNotifier extends StateNotifier<ExaminationState> {
         examData: await _decryptExamination(exam),
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      if (mounted) {
+        state = state.copyWith(isLoading: false, error: e.toString());
+      }
     } finally {
       if (!_loaded.isCompleted) _loaded.complete();
     }
@@ -503,9 +511,12 @@ class ExaminationNotifier extends StateNotifier<ExaminationState> {
         await _onSaved?.call();
       } catch (_) {}
 
+      if (!mounted) return;
       state = state.copyWith(isSaving: false, saved: true);
     } catch (e) {
-      state = state.copyWith(isSaving: false, error: e.toString());
+      if (mounted) {
+        state = state.copyWith(isSaving: false, error: e.toString());
+      }
     }
   }
 }

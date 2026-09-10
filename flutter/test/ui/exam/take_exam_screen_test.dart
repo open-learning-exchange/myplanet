@@ -290,7 +290,9 @@ void main() {
     List<Override> overrides = const [],
     // Riverpod 3 asserts on a provider overridden twice in one container, so a
     // test supplying its own session notifier switches this default off rather
-    // than shadowing it.
+    // than shadowing it. `session:` above configures *this* default, so the
+    // two are alternatives: with `defaultSession: false` the `session:`
+    // argument is ignored and your own override decides.
     bool defaultSession = true,
   }) async {
     await tester.pumpWidget(

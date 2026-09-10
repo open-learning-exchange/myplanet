@@ -732,7 +732,9 @@ latent in the app only because the router holds a `ref.listen`. **A provider a
 screen reads but never watches is null. Await its `.future`, and put the
 `await` inside the enclosing `try`, because a future can reject where
 `valueOrNull` could not.** When you touch a screen, grep it for
-`.valueOrNull` before anything else.
+`.value` before anything else — the getter was called `.valueOrNull` until the
+Riverpod 3 round removed that name, so grepping the old one now finds nothing,
+which is not the same as finding nothing wrong.
 
 Phases 106–121 ran as parallel lanes throughout, three or four at a time, and
 the pattern held: **the highest-yield source of work is the previous round's
@@ -996,7 +998,8 @@ deprecated here and `overrideWith2` is not needed. `StateProvider`,
 
 - **`AsyncValue.valueOrNull` is gone — removed, not deprecated.** Use `.value`,
   which in 3.x is "previous value, else null" (`async_value.dart:557`), exactly
-  what `valueOrNull` was. 198 sites moved. The rename is only safe because the
+  what `valueOrNull` was. 161 code sites moved (224 textual occurrences, 63 of
+  them prose in doc comments — quote the one you mean). The rename is only safe because the
   port had **no** pre-existing `.value` read on an `AsyncValue`; 2.6.1's `.value`
   *rethrew* on error, so anywhere that had one, the meaning silently changed
   from "throws" to "null". Check before assuming a future upgrade is a rename.
@@ -1008,8 +1011,8 @@ deprecated here and `overrideWith2` is not needed. `StateProvider`,
   to a 6400 ms cap, `maxRetries` 10), declining only an `Error` or a
   `ProviderException` — so `MissingPluginException`, `SqliteException` and
   `FileSystemException` all retry, and `ProviderElement.buildState`
-  (`element.dart:757`) is on the common base, so **synchronous `Provider`s
-  retry too**. That default is the opposite of Phase 148's policy, so
+  (`element.dart:734`, its retry call at `:757`) is on the common base, so
+  **synchronous `Provider`s retry too**. That default is the opposite of Phase 148's policy, so
   `lib/core/providers/provider_retry.dart` opts out at every root and
   `test/core/provider_retry_policy_test.dart` scans `lib/` and `test/` to keep
   it that way — `retry` is inherited only from a *parent* container, and every
@@ -1028,13 +1031,30 @@ deprecated here and `overrideWith2` is not needed. `StateProvider`,
   identically in 2.6.1 and 3.4.3 — which is why the port's four
   `StateNotifier`s stayed on `legacy.dart` rather than being migrated inside a
   dependency bump.
-- **`ProviderException` wraps an error only on three paths** — a synchronous
-  provider's own init failure, `requireValue` on an `AsyncError`, and
-  `await provider.future` on a provider in error state (`stack_trace.dart:20`).
-  `AsyncValue.when(error:)`, `ref.listen(onError:)` and observers get the
-  unaltered error, so the port's `Text(l10n.syncFailed('$error'))` sites are
-  untouched. `on Exception` still fires, since `ProviderException implements
-  Exception`.
+- **`ProviderException` wraps at the `ref.watch`/`ref.read` boundary**, not
+  wherever an error surfaces — and riverpod's own dartdoc on the class is
+  imprecise enough that an earlier revision of *this* entry copied it and got
+  it backwards. Probed, three shapes: `await ref.read(p.future)` where `p`'s
+  **own body** throws gives the **raw** error; `ref.read(p)` on a synchronous
+  provider that threw gives a `ProviderException`; and
+  `await ref.read(p.future)` where `p` merely *watched* something that threw
+  gives a `ProviderException`, because the wrap happened at that inner
+  `watch`. So the port's `await ref.read(sessionProvider.future)` idiom — 50
+  sites — still catches the underlying error, since `sessionProvider`'s build
+  throws on its own account. `AsyncValue.when(error:)`, `ref.listen(onError:)`
+  and observers always get the unaltered error, so the
+  `Text(l10n.syncFailed('$error'))` sites are untouched, and `on Exception`
+  still fires (`ProviderException implements Exception`). **Probe it before
+  you write it down**: `stack_trace.dart:20` lists the three cases and does
+  not say which boundary applies.
+
+One more that no migration note mentions: **async providers'
+`updateShouldNotify` went from "always notify" to `previous != next`.** 2.6.1's
+`async_notifier/base.dart:177` returned `true` for every data→data transition;
+3.4.3 has no async override, so `FutureProvider`, `StreamProvider` and
+`AsyncNotifier` fall through to the `==` default. Benign here — every
+drift-backed provider yields a fresh `List`/`Map`, so identity `==` still
+notifies — but it does suppress re-emission of an `==`-equal scalar.
 
 **And the trap that costs a whole afternoon: the test harness.** Riverpod 2 let
 one provider appear twice in an override list and quietly took the last entry.
@@ -1063,11 +1083,31 @@ layered a fallback database *under* the caller's own. Two things to know:
   on a stream in `lib/` are `ref.watch(...)` from inside another provider, and
   watching does listen.
 
-One production defect fell out of the upgrade rather than the framework:
-`PatientDetailNotifier.selectPatient` wrote `state` before its `mounted` check,
-reachable from `_loadInitial` after an await, and 3.x's disposal beat turned
-that from theoretical into `Tried to use PatientDetailNotifier after dispose`.
-Guarded, along with the same shape in `PatientListNotifier._fetch`.
+**The disposal beat is the part that bites production, and the second audit
+pass is what found it.** 2.6.1 swept an unlistened `autoDispose` provider on
+the next *frame* (`flutter_riverpod/src/framework.dart:336`, `markNeedsBuild`);
+3.4.3 sweeps it on the next *microtask*
+(`src/core/provider_scope.dart:351`, `Future.microtask(_callTask)`), and a
+drift read does not finish inside a microtask. Three of the port's providers
+are `StateNotifierProvider.autoDispose` and all three wrote `state` after an
+await with no `mounted` check. Two were merely noisy. The third —
+`examinationNotifierProvider`, created by `add_examination_screen` between
+resolving the session and the next `build`, so with no watcher — was disposed
+mid-load, threw out of an unawaited future, and left the screen to build a
+*second* notifier that nothing prefilled from: **editing an examination opened
+a blank form, and Save takes the update branch when `state.examination != null`,
+so it overwrote the record with the blanks.** Fifteen tests in that file and
+not one passed an `examinationId`, which is why it was green.
+
+Two things about the fix are worth copying. **The `mounted` guard alone is not
+it** — mutation-tested: with the guards and without the rest, the `StateError`
+disappears and the form is still blank, which is the *"a fix that relocates a
+data loss reads exactly like a fix that removes one"* shape from Phase 143.
+What fixes it is holding the provider open across the gap
+(`ref.listenManual`, closed in `dispose`). And **when a screen creates a
+provider outside `build` and only watches it on the next frame, that gap is
+now a real window** — look for `ref.read(x.notifier)` before the first
+`ref.watch(x)` with an `await` between them.
 
 ### Running parallel lanes
 

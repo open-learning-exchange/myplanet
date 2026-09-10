@@ -35,7 +35,10 @@ void main() {
             // carries the policy, and the negative lookbehind above lets it
             // through; nothing else may be exempt.
             final args = _balanced(source, match.end - 1);
-            if (args.contains('retry:')) continue;
+            // The policy, not merely the parameter: `retry: defaultRetry` or
+            // an inline callback would satisfy a bare `retry:` check and
+            // reinstate exactly what this file exists to prevent.
+            if (RegExp(r'retry:\s*noProviderRetry').hasMatch(args)) continue;
             final line =
                 '\n'.allMatches(source.substring(0, match.start)).length + 1;
             offenders.add('${entity.path}:$line  ${match.group(1)}(');
@@ -57,19 +60,27 @@ void main() {
       // as coverage. The scan is only evidence if a site without the policy
       // is detected, so feed it one.
       const withoutPolicy = 'final c = ProviderContainer(overrides: []);';
+      const wrongPolicy =
+          'final c = ProviderContainer('
+          'retry: ProviderContainer.defaultRetry, overrides: []);';
       const withPolicy =
           'final c = ProviderContainer(retry: noProviderRetry, overrides: []);';
       final pattern = RegExp(
         r'(?<![A-Za-z0-9_])(ProviderContainer|ProviderScope)\(',
       );
-      expect(
-        _balanced(withoutPolicy, pattern.firstMatch(withoutPolicy)!.end - 1),
-        isNot(contains('retry:')),
-      );
-      expect(
-        _balanced(withPolicy, pattern.firstMatch(withPolicy)!.end - 1),
-        contains('retry:'),
-      );
+      final policy = RegExp(r'retry:\s*noProviderRetry');
+      for (final (source, expected) in [
+        (withoutPolicy, false),
+        (wrongPolicy, false),
+        (withPolicy, true),
+      ]) {
+        final args = _balanced(source, pattern.firstMatch(source)!.end - 1);
+        expect(
+          policy.hasMatch(args),
+          expected,
+          reason: 'the scan misjudged: $source',
+        );
+      }
     });
   });
 

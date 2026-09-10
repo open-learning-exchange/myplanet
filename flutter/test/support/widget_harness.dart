@@ -52,6 +52,19 @@ Widget wrapScreen(
   Map<String, WidgetBuilder> pushTargets = const {},
   bool fallbackDatabase = true,
 }) {
+  // `fallbackDatabase: false` without your own database sends the screen to
+  // the real `AppDatabase.open()`, whose `path_provider` lookup has no
+  // platform channel here — the exact failure the backstop exists to prevent,
+  // and one keyword away now that the flag exists.
+  assert(
+    fallbackDatabase ||
+        overrides.any(
+          (override) => override.toString().contains('AppDatabase'),
+        ),
+    'fallbackDatabase: false requires the caller to override '
+    'appDatabaseProvider themselves.',
+  );
+
   final router = pushTargets.isEmpty
       ? null
       : GoRouter(
