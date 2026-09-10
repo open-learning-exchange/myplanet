@@ -74,6 +74,14 @@ object ServiceModule {
 
     @Provides
     @Singleton
+    fun provideUserDataUploadScheduler(
+        @ApplicationContext context: Context
+    ): org.ole.planet.myplanet.services.sync.UserDataUploadScheduler {
+        return org.ole.planet.myplanet.services.sync.UserDataUploadSchedulerImpl(context)
+    }
+
+    @Provides
+    @Singleton
     fun provideTransactionSyncManager(
         apiInterface: ApiInterface,
         @ApplicationContext context: Context,
