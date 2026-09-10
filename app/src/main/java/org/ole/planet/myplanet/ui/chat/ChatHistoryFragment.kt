@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.chat
 import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
@@ -33,8 +32,6 @@ import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
-
-private data class Quartet<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 
 @AndroidEntryPoint
 class ChatHistoryFragment : BaseBindingFragment<FragmentChatHistoryBinding>(FragmentChatHistoryBinding::inflate) {
