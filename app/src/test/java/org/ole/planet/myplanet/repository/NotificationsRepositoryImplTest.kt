@@ -948,4 +948,41 @@ class NotificationsRepositoryImplTest {
         coVerify { notificationDao.deleteById("user1:storage") }
         coVerify(exactly = 0) { notificationDao.upsert(any()) }
     }
+
+    @Test
+    fun `updateTeamNotification creates new team notification using top level count`() = runTest {
+        val teamId = "team123"
+        coEvery { voicesRepository.countTopLevelByTeam(teamId) } returns 5L
+        coEvery { teamNotificationDao.findByParentAndType(teamId, "chat") } returns null
+        val slot = slot<TeamNotification>()
+        coEvery { teamNotificationDao.insert(capture(slot)) } returns Unit
+
+        repository.updateTeamNotification(teamId)
+
+        val inserted = slot.captured
+        assertEquals(teamId, inserted.parentId)
+        assertEquals("chat", inserted.type)
+        assertEquals(5, inserted.lastCount)
+    }
+
+    @Test
+    fun `updateTeamNotification updates existing team notification using top level count`() = runTest {
+        val teamId = "team123"
+        val existing = TeamNotification().apply {
+            id = "tn1"
+            parentId = teamId
+            type = "chat"
+            lastCount = 2
+        }
+        coEvery { voicesRepository.countTopLevelByTeam(teamId) } returns 7L
+        coEvery { teamNotificationDao.findByParentAndType(teamId, "chat") } returns existing
+        val slot = slot<TeamNotification>()
+        coEvery { teamNotificationDao.update(capture(slot)) } returns Unit
+
+        repository.updateTeamNotification(teamId)
+
+        val updated = slot.captured
+        assertEquals("tn1", updated.id)
+        assertEquals(7, updated.lastCount)
+    }
 }

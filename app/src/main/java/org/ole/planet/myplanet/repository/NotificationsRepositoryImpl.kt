@@ -282,7 +282,8 @@ class NotificationsRepositoryImpl @Inject constructor(
         return map
     }
 
-    override suspend fun updateTeamNotification(teamId: String, count: Int) {
+    override suspend fun updateTeamNotification(teamId: String) {
+        val count = voicesRepository.countTopLevelByTeam(teamId).toInt()
         val existing = teamNotificationDao.findByParentAndType(teamId, "chat")
         if (existing != null) {
             existing.lastCount = count
