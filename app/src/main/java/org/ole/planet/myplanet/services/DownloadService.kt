@@ -48,7 +48,7 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.FileUtils.availableExternalMemorySize
 import org.ole.planet.myplanet.utils.FileUtils.externalMemoryAvailable
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
-import org.ole.planet.myplanet.utils.UrlUtils.header
+import org.ole.planet.myplanet.utils.UrlUtils
 
 @AndroidEntryPoint
 class DownloadService : Service() {
@@ -234,7 +234,7 @@ class DownloadService : Service() {
                 return true
             }
 
-            val authHeader = header
+            val authHeader = UrlUtils.header
             if (authHeader.isBlank()) {
                 Log.e(TAG, "initDownload: auth header is blank — user may not be logged in")
                 downloadFailed("Authentication header not available", fromSync)
@@ -248,7 +248,7 @@ class DownloadService : Service() {
                 Log.w(TAG, "initDownload: primary failed with network error (${primaryResult.message}), checking for alternative URL")
                 val altUrl = resolveAlternativeUrl(url, fileName)
                 if (altUrl != null) {
-                    Log.d(TAG, "initDownload: retrying with $altUrl")
+                    Log.d(TAG, "initDownload: retrying with ${UrlUtils.redactForLog(altUrl)}")
                     currentDownloadUrl = altUrl
                     val altResult = downloadRepository.downloadFileResponse(altUrl, authHeader)
                     return tryDownloadFromResult(altResult, altUrl, fromSync, fileName, isAlternative = true)
