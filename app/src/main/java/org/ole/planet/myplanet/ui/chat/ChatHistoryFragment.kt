@@ -3,12 +3,10 @@ package org.ole.planet.myplanet.ui.chat
 import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
@@ -21,6 +19,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.OnChatHistoryItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryBinding
@@ -34,12 +33,8 @@ import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
 
-private data class Quartet<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
-
 @AndroidEntryPoint
-class ChatHistoryFragment : Fragment() {
-    private var _binding: FragmentChatHistoryBinding? = null
-    private val binding get() = _binding!!
+class ChatHistoryFragment : BaseBindingFragment<FragmentChatHistoryBinding>(FragmentChatHistoryBinding::inflate) {
     private val sharedViewModel: ChatViewModel by activityViewModels()
     var user: UserEntity? = null
     private var isFullSearch: Boolean = false
@@ -55,11 +50,6 @@ class ChatHistoryFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-    }
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentChatHistoryBinding.inflate(inflater, container, false)
-        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -241,7 +231,6 @@ class ChatHistoryFragment : Fragment() {
         sharedNewsMessages = emptyList()
         shareTargets = ChatShareTargets(null, emptyList(), emptyList())
         user = null
-        _binding = null
         super.onDestroyView()
     }
 }

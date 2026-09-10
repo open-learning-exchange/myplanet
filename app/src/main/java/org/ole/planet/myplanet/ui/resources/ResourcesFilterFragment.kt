@@ -18,16 +18,14 @@ import androidx.core.view.isGone
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import java.util.Locale
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingBottomSheetFragment
 import org.ole.planet.myplanet.callback.OnFilterListener
 import org.ole.planet.myplanet.databinding.FragmentLibraryFilterBinding
 
-class ResourcesFilterFragment : BottomSheetDialogFragment(), AdapterView.OnItemClickListener {
-    private var _binding: FragmentLibraryFilterBinding? = null
-    private val binding get() = _binding!!
+class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFilterBinding>(FragmentLibraryFilterBinding::inflate), AdapterView.OnItemClickListener {
     var languages: Set<String>? = null
     var subjects: Set<String>? = null
     var mediums: Set<String>? = null
@@ -47,7 +45,7 @@ class ResourcesFilterFragment : BottomSheetDialogFragment(), AdapterView.OnItemC
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentLibraryFilterBinding.inflate(inflater, container, false)
+        val view = super.onCreateView(inflater, container, savedInstanceState)
         binding.listMedium.onItemClickListener = this
         binding.listLang.onItemClickListener = this
         binding.listLevel.onItemClickListener = this
@@ -92,12 +90,7 @@ class ResourcesFilterFragment : BottomSheetDialogFragment(), AdapterView.OnItemC
         binding.btnConfirmFilters.setOnClickListener {
             dismiss()
         }
-        return binding.root
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
+        return view
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

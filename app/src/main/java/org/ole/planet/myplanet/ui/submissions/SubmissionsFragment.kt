@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentMySubmissionBinding
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
@@ -23,9 +24,7 @@ import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
 @OptIn(kotlinx.coroutines.FlowPreview::class)
-class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
-    private var _binding: FragmentMySubmissionBinding? = null
-    private val binding get() = _binding!!
+class SubmissionsFragment : BaseBindingFragment<FragmentMySubmissionBinding>(FragmentMySubmissionBinding::inflate), CompoundButton.OnCheckedChangeListener {
     private val viewModel: SubmissionViewModel by viewModels()
 
     private lateinit var adapter: SubmissionsAdapter
@@ -34,11 +33,6 @@ class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) type = requireArguments().getString("type")
-    }
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentMySubmissionBinding.inflate(inflater, container, false)
-        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -125,7 +119,6 @@ class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     override fun onDestroyView() {
         binding.rbExam.setOnCheckedChangeListener(null)
         binding.rbSurvey.setOnCheckedChangeListener(null)
-        _binding = null
         super.onDestroyView()
     }
 

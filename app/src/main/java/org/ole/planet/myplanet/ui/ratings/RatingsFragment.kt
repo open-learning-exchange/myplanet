@@ -8,19 +8,17 @@ import android.view.ViewGroup
 import android.widget.RatingBar
 import android.widget.RatingBar.OnRatingBarChangeListener
 import androidx.core.view.isVisible
-import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.viewModels
 import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingDialogFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentRatingBinding
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
-class RatingsFragment : DialogFragment() {
-    private var _binding: FragmentRatingBinding? = null
-    private val binding get() = _binding!!
+class RatingsFragment : BaseBindingDialogFragment<FragmentRatingBinding>(FragmentRatingBinding::inflate) {
     private val viewModel: RatingsViewModel by viewModels()
     var id: String? = ""
     var type: String? = ""
@@ -50,11 +48,6 @@ class RatingsFragment : DialogFragment() {
             type = requireArguments().getString("type")
             title = requireArguments().getString("title")
         }
-    }
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentRatingBinding.inflate(inflater, container, false)
-        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -135,11 +128,6 @@ class RatingsFragment : DialogFragment() {
         val t = type ?: return
         val i = id ?: return
         viewModel.loadRatingData(t, i)
-    }
-
-    override fun onDestroyView() {
-        _binding = null
-        super.onDestroyView()
     }
 
     private fun submitRating() {

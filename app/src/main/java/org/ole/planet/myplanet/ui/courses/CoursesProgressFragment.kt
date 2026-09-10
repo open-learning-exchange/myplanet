@@ -1,27 +1,18 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.databinding.FragmentCoursesProgressBinding
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
-class CoursesProgressFragment : Fragment() {
-    private var _binding: FragmentCoursesProgressBinding? = null
-    private val binding get() = _binding!!
+class CoursesProgressFragment : BaseBindingFragment<FragmentCoursesProgressBinding>(FragmentCoursesProgressBinding::inflate) {
     private val progressViewModel: ProgressViewModel by viewModels()
     private lateinit var progressAdapter: CoursesProgressAdapter
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentCoursesProgressBinding.inflate(inflater, container, false)
-        return binding.root
-    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -36,10 +27,5 @@ class CoursesProgressFragment : Fragment() {
         collectWhenStarted(progressViewModel.courseData) { courseData ->
             progressAdapter.submitList(courseData)
         }
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
     }
 }

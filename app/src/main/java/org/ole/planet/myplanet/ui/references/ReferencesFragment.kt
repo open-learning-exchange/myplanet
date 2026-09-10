@@ -5,16 +5,14 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentReferenceBinding
 import org.ole.planet.myplanet.model.Reference
 
-class ReferencesFragment : Fragment() {
-    private var _binding: FragmentReferenceBinding? = null
-    private val binding get() = _binding!!
+class ReferencesFragment : BaseBindingFragment<FragmentReferenceBinding>(FragmentReferenceBinding::inflate) {
     private var homeItemClickListener: OnHomeItemClickListener? = null
 
     override fun onAttach(context: Context) {
@@ -23,7 +21,7 @@ class ReferencesFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentReferenceBinding.inflate(inflater, container, false)
+        val view = super.onCreateView(inflater, container, savedInstanceState)
         val list = listOf(
             Reference(getString(R.string.maps), android.R.drawable.ic_dialog_map),
             Reference(getString(R.string.english_dictionary), R.drawable.ic_dictionary)
@@ -31,15 +29,10 @@ class ReferencesFragment : Fragment() {
         binding.rvReferences.layoutManager = GridLayoutManager(activity, 3)
         binding.rvReferences.adapter = ReferencesAdapter()
         setRecyclerAdapter(list)
-        return binding.root
+        return view
     }
 
     private fun setRecyclerAdapter(list: List<Reference>) {
         (binding.rvReferences.adapter as ReferencesAdapter).submitList(list)
-    }
-
-    override fun onDestroyView() {
-        _binding = null
-        super.onDestroyView()
     }
 }

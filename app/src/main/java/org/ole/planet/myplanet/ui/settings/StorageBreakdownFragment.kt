@@ -14,7 +14,6 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import javax.inject.Inject
@@ -23,6 +22,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingBottomSheetFragment
 import org.ole.planet.myplanet.databinding.FragmentStorageBreakdownBinding
 import org.ole.planet.myplanet.databinding.ItemStorageCategoryBinding
 import org.ole.planet.myplanet.services.FreeSpaceWorker
@@ -33,10 +33,7 @@ import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
-class StorageBreakdownFragment : BottomSheetDialogFragment() {
-
-    private var _binding: FragmentStorageBreakdownBinding? = null
-    private val binding get() = _binding!!
+class StorageBreakdownFragment : BaseBindingBottomSheetFragment<FragmentStorageBreakdownBinding>(FragmentStorageBreakdownBinding::inflate) {
 
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
@@ -62,11 +59,6 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
             skipCollapsed = true
         }
         return dialog
-    }
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentStorageBreakdownBinding.inflate(inflater, container, false)
-        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -270,7 +262,6 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
         super.onDestroyView()
         progressDialog?.dismiss()
         progressDialog = null
-        _binding = null
     }
 
     companion object {
