@@ -44,7 +44,7 @@ class PersonalsRepositoryImpl @Inject constructor(
         personalDao.insert(personal)
     }
 
-    override suspend fun getPersonalResources(userId: String?): Flow<List<Personal>> {
+    override fun getPersonalResources(userId: String?): Flow<List<Personal>> {
         if (userId.isNullOrBlank()) {
             return flowOf(emptyList())
         }
@@ -71,7 +71,7 @@ class PersonalsRepositoryImpl @Inject constructor(
         personalDao.updateUploadedStatus(id, newId, rev)
     }
 
-    override suspend fun uploadPersonalDocument(personal: Personal): Pair<String, String>? {
+    suspend fun uploadPersonalDocument(personal: Personal): Pair<String, String>? {
         val response = uploadRepository.postUpload(
             "${UrlUtils.getUrl()}/resources",
             Personal.serialize(personal, deviceNameProvider.getCustomDeviceName())

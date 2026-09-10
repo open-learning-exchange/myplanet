@@ -19,11 +19,10 @@ interface PersonalsRepository {
         description: String?
     )
 
-    suspend fun getPersonalResources(userId: String?): Flow<List<Personal>>
+    fun getPersonalResources(userId: String?): Flow<List<Personal>>
     suspend fun deletePersonalResource(id: String)
     suspend fun updatePersonalResource(id: String, update: PersonalUpdate)
     suspend fun getPendingPersonalUploads(userId: String): List<Personal>
     suspend fun updatePersonalAfterSync(id: String, newId: String, rev: String)
-    suspend fun uploadPersonalDocument(personal: Personal): Pair<String, String>?
     suspend fun uploadPersonal(personal: Personal): String
 }
