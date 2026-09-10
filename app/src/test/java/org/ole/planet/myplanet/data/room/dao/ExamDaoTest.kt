@@ -136,4 +136,43 @@ class ExamDaoTest {
         val resultWithoutExclusion = examDao.getAdoptableTeamSurveys()
         assertEquals(listOf("1", "2"), resultWithoutExclusion.map { it.id })
     }
+
+    @Test
+    fun getIndividualSurveys_filtersCorrectly() = runBlocking {
+        val exam1 = StepExam().apply {
+            id = "1"
+            type = "surveys"
+            isTeamShareAllowed = false
+            teamId = null
+        }
+        val exam2 = StepExam().apply {
+            id = "2"
+            type = "surveys"
+            isTeamShareAllowed = true
+            teamId = null
+        }
+        val exam3 = StepExam().apply {
+            id = "3"
+            type = "surveys"
+            isTeamShareAllowed = false
+            teamId = "team1"
+        }
+        val exam4 = StepExam().apply {
+            id = "4"
+            type = "surveys"
+            isTeamShareAllowed = false
+            teamId = ""
+        }
+        val exam5 = StepExam().apply {
+            id = "5"
+            type = "other"
+            isTeamShareAllowed = false
+            teamId = null
+        }
+
+        examDao.upsertAll(listOf(exam1, exam2, exam3, exam4, exam5))
+
+        val result = examDao.getIndividualSurveys()
+        assertEquals(listOf("1", "4"), result.map { it.id })
+    }
 }
