@@ -50,6 +50,7 @@ interface ResourcesRepository {
     suspend fun countLibrariesNeedingUpdate(userId: String?): Int
     suspend fun resourceTitleExists(title: String): Boolean
     suspend fun resolveLibraryItem(id: String): MyLibrary?
+    suspend fun resolveLibraryItemByResourceId(resourceId: String): MyLibrary?
     suspend fun saveLocalResource(request: LocalResourceRequest): Result<Unit>
     suspend fun updateUserLibrary(resourceId: String, userId: String, isAdd: Boolean): MyLibrary?
     suspend fun setUserLibrary(resourceId: String, add: Boolean): MyLibrary?

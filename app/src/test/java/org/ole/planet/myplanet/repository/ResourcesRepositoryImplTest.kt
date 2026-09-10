@@ -315,19 +315,29 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
-    fun `resolveLibraryItem resolves by id or falls back to resourceId`() = runTest {
-        val libById = MyLibrary().apply { id = "id1"; title = "By ID" }
-        val libByResId = MyLibrary().apply { id = "id2"; resourceId = "res2"; title = "By Res ID" }
+    fun `resolveLibraryItem resolves by id first and falls back to resourceId`() = runTest {
+        val libById = MyLibrary().apply { id = "collisionKey"; resourceId = "other1"; title = "By ID" }
+        val libByResId = MyLibrary().apply { id = "other2"; resourceId = "collisionKey"; title = "By Res ID" }
 
-        coEvery { myLibraryDao.getById("id1") } returns libById
-        coEvery { myLibraryDao.getById("res2") } returns null
-        coEvery { myLibraryDao.getByResourceId("res2") } returns libByResId
+        coEvery { myLibraryDao.getById("collisionKey") } returns libById
+        coEvery { myLibraryDao.getByResourceId("collisionKey") } returns libByResId
 
-        val resultById = repository.resolveLibraryItem("id1")
-        val resultByResId = repository.resolveLibraryItem("res2")
+        val result = repository.resolveLibraryItem("collisionKey")
 
-        assertEquals("By ID", resultById?.title)
-        assertEquals("By Res ID", resultByResId?.title)
+        assertEquals("By ID", result?.title)
+    }
+
+    @Test
+    fun `resolveLibraryItemByResourceId resolves by resourceId first and falls back to id`() = runTest {
+        val libById = MyLibrary().apply { id = "collisionKey"; resourceId = "other1"; title = "By ID" }
+        val libByResId = MyLibrary().apply { id = "other2"; resourceId = "collisionKey"; title = "By Res ID" }
+
+        coEvery { myLibraryDao.getById("collisionKey") } returns libById
+        coEvery { myLibraryDao.getByResourceId("collisionKey") } returns libByResId
+
+        val result = repository.resolveLibraryItemByResourceId("collisionKey")
+
+        assertEquals("By Res ID", result?.title)
     }
 
     @Test

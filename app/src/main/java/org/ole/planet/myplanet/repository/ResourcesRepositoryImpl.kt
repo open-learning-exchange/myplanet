@@ -162,6 +162,10 @@ class ResourcesRepositoryImpl @Inject constructor(
         return getLibraryItemById(id) ?: getLibraryItemByResourceId(id)
     }
 
+    override suspend fun resolveLibraryItemByResourceId(resourceId: String): MyLibrary? {
+        return getLibraryItemByResourceId(resourceId) ?: getLibraryItemById(resourceId)
+    }
+
     override suspend fun getLibraryItemById(id: String): MyLibrary? {
         return myLibraryDao.getById(id)
     }
@@ -314,7 +318,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun setUserLibrary(resourceId: String, add: Boolean): MyLibrary? {
         val userId = userRepository.getUserModel()?.id ?: return null
-        val library = resolveLibraryItem(resourceId)
+        val library = resolveLibraryItemByResourceId(resourceId)
         if (library != null) {
             val contains = library.userId?.contains(userId) == true
             if (add && contains) return library
@@ -343,7 +347,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         } else {
             activitiesRepository.markResourceRemoved(userId, resourceId)
         }
-        return resolveLibraryItem(resourceId)
+        return resolveLibraryItemByResourceId(resourceId)
     }
 
     override suspend fun updateLibraryItem(id: String, updater: (MyLibrary) -> Unit) {
