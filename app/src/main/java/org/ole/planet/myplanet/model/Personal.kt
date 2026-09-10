@@ -4,7 +4,6 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
-import java.util.Date
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
@@ -36,7 +35,7 @@ open class Personal {
         fun serialize(personal: Personal, customDeviceName: String): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("title", personal.title)
-            `object`.addProperty("uploadDate", Date().time)
+            `object`.addProperty("uploadDate", System.currentTimeMillis())
             `object`.addProperty("createdDate", personal.date)
             `object`.addProperty("filename", FileUtils.getFileNameFromUrl(personal.path))
             `object`.addProperty("author", personal.userName)

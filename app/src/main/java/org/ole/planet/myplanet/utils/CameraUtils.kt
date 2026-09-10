@@ -22,7 +22,6 @@ import android.view.Surface
 import androidx.core.content.ContextCompat
 import java.io.File
 import java.io.FileOutputStream
-import java.util.Date
 import java.util.concurrent.Executor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -103,7 +102,7 @@ object CameraUtils {
             if (!pictureFileDir.exists() && !pictureFileDir.mkdirs()) {
                 pictureFileDir.mkdirs()
             }
-            val photoFile = "${Date().time}.jpg"
+            val photoFile = "${System.currentTimeMillis()}.jpg"
             val filename = "${pictureFileDir.path}${File.separator}$photoFile"
             val mainPicture = File(filename)
             try {
