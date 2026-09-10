@@ -37,7 +37,7 @@ object CrashLogStore {
         return try {
             val logDir = dir(context)
             if (!logDir.exists() && !logDir.mkdirs()) return null
-            if ((logDir.listFiles()?.count { isValidLogFile(it) } ?: 0) >= MAX_PENDING_FILES) return null
+            if ((logDir.listFiles()?.asSequence()?.filter { isValidLogFile(it) }?.take(MAX_PENDING_FILES)?.count() ?: 0) >= MAX_PENDING_FILES) return null
             val file = File(logDir, "${timeProvider.now()}_$type$FILE_EXTENSION")
             file.writeText(error)
             file
