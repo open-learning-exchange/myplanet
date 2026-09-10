@@ -176,7 +176,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/scrollView" />
-
     <LinearLayout
         android:id="@+id/filter_footer"
         android:layout_width="match_parent"
@@ -198,7 +197,6 @@
             android:text="@string/clear_tags"
             android:textAllCaps="false"
             android:textColor="@color/daynight_textColor" />
-
         <Button
             android:id="@+id/btn_confirm_filters"
             android:layout_width="0dp"
