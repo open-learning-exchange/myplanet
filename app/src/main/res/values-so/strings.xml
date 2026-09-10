@@ -607,6 +607,7 @@
     <string name="please_select_starting_date">"Fadlan dooro taariikhda hore : "</string>
     <string name="read_offline_news_from">"Akhri wararka gudaha ka hor : "</string>
     <string name="downloading_started_please_check_notification">Degsaday soo degista, fadlan check notifikishanka…</string>
+    <string name="dictionary_parsing_failed">Falanqaynta qaamuuska way fashilantay</string>
     <string name="file_already_exists">Faylku horey ayaa jira…</string>
     <string name="feature_not_available">Fayraska Ma heli karaan</string>
     <string name="sync">Dib u hagrees</string>
