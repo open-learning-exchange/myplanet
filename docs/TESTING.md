@@ -42,7 +42,7 @@ From `app/build.gradle` (`testImplementation` block) and what's actually importe
 | JUnit 4 (`org.junit.Test`, `org.junit.Assert.*`) | Test runner and assertions | Used everywhere |
 | **MockK** (`io.mockk.*`) | Mocking | **The standard.** Used in 173 of the 269 files. |
 | Mockito (`org.mockito.*`) | Mocking | Legacy — exactly 2 files (`CoursesAdapterTest`, `SubmissionViewModelTest`). Don't introduce new Mockito usage; use MockK. |
-| Robolectric (`org.robolectric.*`) | Android framework on the JVM | 43 files — wherever a test needs real Android classes (`Context`, `View`, resource strings, Room) without an emulator |
+| Robolectric (`org.robolectric.*`) | Android framework on the JVM | 78 files — wherever a test needs real Android classes (`Context`, `View`, resource strings, Room) without an emulator |
 | `kotlinx-coroutines-test` | `runTest`, `TestDispatcher`, `UnconfinedTestDispatcher`, `StandardTestDispatcher` | For suspend functions and Flow/StateFlow-based ViewModels |
 | `androidx.test` (`ApplicationProvider`, `AndroidJUnit4`) | Application context access | Used inside Robolectric JVM tests |
 | `androidx.room:room-testing` | Room test helpers | Backs the in-memory Room tests |
