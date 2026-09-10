@@ -7,7 +7,6 @@ import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -44,7 +43,6 @@ class UserInformationViewModelTest {
         coEvery { userRepository.updateProfileFields(userId, jsonUser) } returns Unit
 
         viewModel.updateProfile(userId, jsonUser)
-        advanceUntilIdle()
 
         val result = viewModel.resultEvent.first()
         assertEquals(UserInformationResult.UpdateProfileSuccess, result)
@@ -59,7 +57,6 @@ class UserInformationViewModelTest {
         coEvery { userRepository.updateProfileFields(userId, jsonUser) } throws Exception(errorMessage)
 
         viewModel.updateProfile(userId, jsonUser)
-        advanceUntilIdle()
 
         val result = viewModel.resultEvent.first()
         assertTrue(result is UserInformationResult.UpdateProfileError)
@@ -71,7 +68,6 @@ class UserInformationViewModelTest {
         val jsonUser = JsonObject()
 
         viewModel.markSubmissionComplete(null, jsonUser)
-        advanceUntilIdle()
 
         val result = viewModel.resultEvent.first()
         assertTrue(result is UserInformationResult.MarkSubmissionError)
@@ -86,7 +82,6 @@ class UserInformationViewModelTest {
         coEvery { submissionsRepository.markSubmissionComplete(submissionId, jsonUser) } returns Unit
 
         viewModel.markSubmissionComplete(submissionId, jsonUser)
-        advanceUntilIdle()
 
         val result = viewModel.resultEvent.first()
         assertEquals(UserInformationResult.MarkSubmissionSuccess, result)
@@ -101,7 +96,6 @@ class UserInformationViewModelTest {
         coEvery { submissionsRepository.markSubmissionComplete(submissionId, jsonUser) } throws Exception(errorMessage)
 
         viewModel.markSubmissionComplete(submissionId, jsonUser)
-        advanceUntilIdle()
 
         val result = viewModel.resultEvent.first()
         assertTrue(result is UserInformationResult.MarkSubmissionError)
