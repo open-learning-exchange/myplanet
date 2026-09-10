@@ -605,6 +605,7 @@
     <string name="please_select_starting_date">"يرجى تحديد تاريخ البدء: "</string>
     <string name="read_offline_news_from">"قراءة الأخبار غير المتصلة من: "</string>
     <string name="downloading_started_please_check_notification">بدأ التنزيل، يرجى التحقق من الإشعار…</string>
+    <string name="dictionary_parsing_failed">فشل تحليل القاموس.</string>
     <string name="file_already_exists">الملف موجود بالفعل…</string>
     <string name="feature_not_available">الميزة غير متاحة</string>
     <string name="sync">مزامنة</string>
