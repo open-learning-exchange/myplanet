@@ -1,4 +1,5 @@
 <resources>
+    <dimen name="inline_resource_preview_height">180dp</dimen>
     <dimen name="menu_item_icon_size">24dp</dimen>
     <dimen name="user_image_size">150dp</dimen>
     <dimen name="padding_normal">8dp</dimen>
