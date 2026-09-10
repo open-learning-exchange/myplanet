@@ -1174,7 +1174,7 @@ class ResourcesRepositoryImplTest {
         val res1Item = videoItems[0]
         assertEquals("res1", res1Item.resourceId)
         assertEquals("Video Resource", res1Item.title)
-        assertEquals(15L, res1Item.totalSize)
+        assertEquals(15L, res1Item.totalSizeBytes)
         assertEquals(listOf(file1.absolutePath, file2.absolutePath), res1Item.filePaths)
 
         // Test fallback extension category (extensions.isEmpty() -> not in knownExtensions)
@@ -1183,7 +1183,7 @@ class ResourcesRepositoryImplTest {
         val res2Item = otherItems[0]
         assertEquals("res2", res2Item.resourceId)
         assertEquals("Unknown Resource", res2Item.title)
-        assertEquals(1L, res2Item.totalSize)
+        assertEquals(1L, res2Item.totalSizeBytes)
         assertEquals(listOf(file4.absolutePath), res2Item.filePaths)
     }
 
