@@ -10,7 +10,16 @@ import org.ole.planet.myplanet.model.MyCourse
 interface CourseDao {
     @Query("SELECT * FROM courses") suspend fun getAll(): List<MyCourse>
     @Query("SELECT * FROM courses WHERE courseId = :courseId OR id = :courseId LIMIT 1") suspend fun getByCourseId(courseId: String): MyCourse?
-    @Query("SELECT * FROM courses WHERE courseId IN (:courseIds) OR id IN (:courseIds) OR _id IN (:courseIds)") suspend fun getByCourseIds(courseIds: List<String>): List<MyCourse>
+    @Query("SELECT * FROM courses WHERE courseId IN (:courseIds) OR id IN (:courseIds) OR _id IN (:courseIds)")
+    suspend fun getByCourseIdsInternal(courseIds: List<String>): List<MyCourse>
+
+    suspend fun getByCourseIds(courseIds: List<String>): List<MyCourse> {
+        if (courseIds.isEmpty()) return emptyList()
+        // Chunk size 300: query uses 3 IN clauses over courseIds, so 300 * 3 = 900 parameters < SQLITE_MAX_VARIABLE_NUMBER (999).
+        return courseIds.chunked(300)
+            .flatMap { getByCourseIdsInternal(it) }
+            .distinctBy { it.id }
+    }
     @Query("SELECT * FROM courses") fun observeAll(): Flow<List<MyCourse>>
     @Query("SELECT * FROM courses WHERE courseId = :courseId OR id = :courseId LIMIT 1") fun observeByCourseId(courseId: String): Flow<MyCourse?>
 
