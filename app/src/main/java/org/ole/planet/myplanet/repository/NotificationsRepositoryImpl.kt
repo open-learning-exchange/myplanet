@@ -13,6 +13,7 @@ import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.model.AppNotification
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotification
@@ -282,8 +283,8 @@ class NotificationsRepositoryImpl @Inject constructor(
         return map
     }
 
-    override suspend fun updateTeamNotification(teamId: String) {
-        val count = voicesRepository.countTopLevelByTeam(teamId).toInt()
+    override suspend fun updateTeamNotification(teamId: String, news: List<News>) {
+        val count = news.size
         val existing = teamNotificationDao.findByParentAndType(teamId, "chat")
         if (existing != null) {
             existing.lastCount = count

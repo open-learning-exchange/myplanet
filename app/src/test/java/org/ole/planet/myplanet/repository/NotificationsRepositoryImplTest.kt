@@ -950,39 +950,46 @@ class NotificationsRepositoryImplTest {
     }
 
     @Test
-    fun `updateTeamNotification creates new team notification using top level count`() = runTest {
+    fun `updateTeamNotification creates new team notification using news list size`() = runTest {
         val teamId = "team123"
-        coEvery { voicesRepository.countTopLevelByTeam(teamId) } returns 5L
+        val news = listOf(
+            org.ole.planet.myplanet.model.News(),
+            org.ole.planet.myplanet.model.News()
+        )
         coEvery { teamNotificationDao.findByParentAndType(teamId, "chat") } returns null
         val slot = slot<TeamNotification>()
         coEvery { teamNotificationDao.insert(capture(slot)) } returns Unit
 
-        repository.updateTeamNotification(teamId)
+        repository.updateTeamNotification(teamId, news)
 
         val inserted = slot.captured
         assertEquals(teamId, inserted.parentId)
         assertEquals("chat", inserted.type)
-        assertEquals(5, inserted.lastCount)
+        assertEquals(2, inserted.lastCount)
     }
 
     @Test
-    fun `updateTeamNotification updates existing team notification using top level count`() = runTest {
+    fun `updateTeamNotification updates existing team notification using news list size`() = runTest {
         val teamId = "team123"
+        val news = listOf(
+            org.ole.planet.myplanet.model.News(),
+            org.ole.planet.myplanet.model.News(),
+            org.ole.planet.myplanet.model.News()
+        )
         val existing = TeamNotification().apply {
             id = "tn1"
             parentId = teamId
             type = "chat"
-            lastCount = 2
+            lastCount = 1
         }
-        coEvery { voicesRepository.countTopLevelByTeam(teamId) } returns 7L
         coEvery { teamNotificationDao.findByParentAndType(teamId, "chat") } returns existing
         val slot = slot<TeamNotification>()
         coEvery { teamNotificationDao.update(capture(slot)) } returns Unit
 
-        repository.updateTeamNotification(teamId)
+        repository.updateTeamNotification(teamId, news)
 
         val updated = slot.captured
         assertEquals("tn1", updated.id)
-        assertEquals(7, updated.lastCount)
+        assertEquals(3, updated.lastCount)
     }
 }
