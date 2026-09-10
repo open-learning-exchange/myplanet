@@ -30,9 +30,6 @@ class CoursesProgressAdapter(private val context: Context) : ListAdapter<Courses
         holder.binding.tvTitle.text = item.courseName
         if (item.progressCurrent != null && item.progressMax != null) {
             holder.binding.tvDescription.text = context.getString(R.string.step_progress, item.progressCurrent, item.progressMax)
-            holder.itemView.setOnClickListener {
-                context.startActivity(Intent(context, CourseProgressActivity::class.java).putExtra("courseId", item.courseId))
-            }
         }
         if (item.mistakes != null) holder.binding.tvTotal.text = item.mistakes.toString()
         else holder.binding.tvTotal.text = context.getString(R.string.message_placeholder, "0")
@@ -100,6 +97,22 @@ class CoursesProgressAdapter(private val context: Context) : ListAdapter<Courses
         val tvTitle = binding.tvTitle
         val tvTotal = binding.tvTotal
         val tvDescription = binding.tvDescription
+
+        init {
+            itemView.setOnClickListener {
+                val position = bindingAdapterPosition
+                if (position != RecyclerView.NO_POSITION) {
+                    val item = getItem(position)
+                    if (item.progressCurrent != null && item.progressMax != null) {
+                        context.startActivity(
+                            Intent(context, CourseProgressActivity::class.java)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                .putExtra("courseId", item.courseId)
+                        )
+                    }
+                }
+            }
+        }
     }
 
     companion object {

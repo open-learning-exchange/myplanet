@@ -5,15 +5,19 @@ import android.content.Context
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.CoursesProgressRow
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
@@ -27,6 +31,13 @@ class CoursesProgressAdapterTest {
     fun setup() {
         context = ApplicationProvider.getApplicationContext()
         adapter = CoursesProgressAdapter(context)
+    }
+
+    private fun setupRecyclerView(adapter: CoursesProgressAdapter): RecyclerView {
+        val recyclerView = RecyclerView(context)
+        recyclerView.layoutManager = LinearLayoutManager(context)
+        recyclerView.adapter = adapter
+        return recyclerView
     }
 
     @Test
@@ -83,6 +94,89 @@ class CoursesProgressAdapterTest {
 
         adapter.onBindViewHolder(holder, 2)
         assertEquals(0, holder.binding.llProgress.childCount)
+    }
+
+    @Test
+    fun `click row with progress launches CourseProgressActivity`() {
+        val withProgressItem = CoursesProgressRow(
+            courseId = "course123",
+            courseName = "Course 1",
+            progressCurrent = 2,
+            progressMax = 5,
+            mistakes = null,
+            stepMistake = null
+        )
+
+        adapter.submitList(listOf(withProgressItem))
+        val recyclerView = setupRecyclerView(adapter)
+        recyclerView.measure(0, 0)
+        recyclerView.layout(0, 0, 1000, 1000)
+
+        val holder = recyclerView.findViewHolderForAdapterPosition(0)
+        assertNotEquals(null, holder)
+        holder!!.itemView.performClick()
+
+        val nextStartedActivity = shadowOf(context as Application).nextStartedActivity
+        assertNotEquals(null, nextStartedActivity)
+        assertEquals(CourseProgressActivity::class.java.name, nextStartedActivity.component?.className)
+        assertEquals("course123", nextStartedActivity.getStringExtra("courseId"))
+    }
+
+    @Test
+    fun `click row without progress does nothing`() {
+        val noProgressItem = CoursesProgressRow(
+            courseId = "course456",
+            courseName = "Course 2",
+            progressCurrent = null,
+            progressMax = null,
+            mistakes = null,
+            stepMistake = null
+        )
+
+        adapter.submitList(listOf(noProgressItem))
+        val recyclerView = setupRecyclerView(adapter)
+        recyclerView.measure(0, 0)
+        recyclerView.layout(0, 0, 1000, 1000)
+
+        val holder = recyclerView.findViewHolderForAdapterPosition(0)
+        assertNotEquals(null, holder)
+        holder!!.itemView.performClick()
+
+        val nextStartedActivity = shadowOf(context as Application).nextStartedActivity
+        assertNull(nextStartedActivity)
+    }
+
+    @Test
+    fun `recycled holder from row with progress to row without progress does nothing on click`() {
+        val withProgressItem = CoursesProgressRow(
+            courseId = "course123",
+            courseName = "Course 1",
+            progressCurrent = 2,
+            progressMax = 5,
+            mistakes = null,
+            stepMistake = null
+        )
+
+        val noProgressItem = CoursesProgressRow(
+            courseId = "course456",
+            courseName = "Course 2",
+            progressCurrent = null,
+            progressMax = null,
+            mistakes = null,
+            stepMistake = null
+        )
+
+        adapter.submitList(listOf(withProgressItem, noProgressItem))
+        val recyclerView = setupRecyclerView(adapter)
+        recyclerView.measure(0, 0)
+        recyclerView.layout(0, 0, 1000, 1000)
+
+        val holder1 = recyclerView.findViewHolderForAdapterPosition(1)
+        assertNotEquals(null, holder1)
+        holder1!!.itemView.performClick()
+
+        val nextStartedActivity = shadowOf(context as Application).nextStartedActivity
+        assertNull(nextStartedActivity)
     }
 
     @Test
