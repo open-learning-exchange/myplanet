@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.utils
 
 import android.content.Context
+import android.util.Log
 import java.io.File
 
 /**
@@ -10,6 +11,7 @@ import java.io.File
  * next app start.
  */
 object CrashLogStore {
+    private const val TAG = "CrashLogStore"
     private const val DIR_NAME = "pending_logs"
     private const val FILE_EXTENSION = ".log"
     private const val MAX_PENDING_FILES = 20
@@ -42,7 +44,7 @@ object CrashLogStore {
             file.writeText(error)
             file
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "failed to save crash log", e)
             null
         }
     }
@@ -54,7 +56,7 @@ object CrashLogStore {
             try {
                 PendingLog(file, parsed.type, parsed.time, file.readText())
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "failed to read pending crash log", e)
                 null
             }
         }
