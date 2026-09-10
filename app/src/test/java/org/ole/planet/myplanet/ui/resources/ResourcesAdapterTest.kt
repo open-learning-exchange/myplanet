@@ -107,4 +107,35 @@ class ResourcesAdapterTest {
         assertEquals(android.view.View.GONE, holder.binding.checkbox.visibility)
         assertEquals(false, holder.binding.checkbox.hasOnClickListeners())
     }
+
+    @Test
+    fun `test setLibraryList drops null elements and updates flags on valid elements`() {
+        adapter.markItemAsOffline("2")
+        adapter.setOpenedResourceIds(setOf("1"))
+
+        val item1 = ResourceItem(
+            id = "1", title = "Res 1", description = "desc", createdDate = 0L, averageRating = "0",
+            timesRated = 0, resourceId = "res1", isOffline = false, _rev = "rev1", uploadDate = "date",
+            filename = "file"
+        )
+        val item2 = ResourceItem(
+            id = "2", title = "Res 2", description = "desc", createdDate = 0L, averageRating = "0",
+            timesRated = 0, resourceId = "res2", isOffline = false, _rev = "rev2", uploadDate = "date",
+            filename = "file"
+        )
+        val model1 = ResourceListModel(MyLibrary().apply { id = "1" }, item1, emptyList())
+        val model2 = ResourceListModel(MyLibrary().apply { id = "2" }, item2, emptyList())
+
+        adapter.setLibraryList(listOf(model1, null, model2))
+
+        val currentList = adapter.currentList
+        assertEquals(2, currentList.size)
+        assertEquals("1", currentList[0].item.id)
+        assertEquals(true, currentList[0].isOpened)
+        assertEquals(false, currentList[0].isLocallyOffline)
+
+        assertEquals("2", currentList[1].item.id)
+        assertEquals(false, currentList[1].isOpened)
+        assertEquals(true, currentList[1].isLocallyOffline)
+    }
 }
