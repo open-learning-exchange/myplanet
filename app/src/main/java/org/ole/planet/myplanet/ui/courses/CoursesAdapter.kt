@@ -307,17 +307,26 @@ class CoursesAdapter(
         ivSubjectIcon.visibility = View.GONE
         ivCover.visibility = View.VISIBLE
 
-        val density = context.resources.displayMetrics.density
+        val fallbackHeight = if (viewMode == ListViewMode.GRID) {
+            context.resources.getDimensionPixelSize(R.dimen.course_grid_cover_height)
+        } else {
+            context.resources.getDimensionPixelSize(R.dimen.course_list_cover_size)
+        }
+
         val targetWidth = when {
             coverContainer.width > 0 -> coverContainer.width
             coverContainer.layoutParams?.width != null && coverContainer.layoutParams.width > 0 -> coverContainer.layoutParams.width
-            else -> (context.resources.displayMetrics.widthPixels / 2).coerceAtLeast((160 * density).toInt())
+            else -> if (viewMode == ListViewMode.GRID) {
+                (context.resources.displayMetrics.widthPixels / 2).coerceAtLeast(fallbackHeight)
+            } else {
+                fallbackHeight
+            }
         }.coerceAtLeast(1)
 
         val targetHeight = when {
             coverContainer.height > 0 -> coverContainer.height
             coverContainer.layoutParams?.height != null && coverContainer.layoutParams.height > 0 -> coverContainer.layoutParams.height
-            else -> (84 * density).toInt()
+            else -> fallbackHeight
         }.coerceAtLeast(1)
 
         Glide.with(context)
