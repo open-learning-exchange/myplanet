@@ -23,8 +23,10 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.ole.planet.myplanet.model.Answer
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.AnswerDao
@@ -927,5 +929,66 @@ class SubmissionsRepositoryImplTest {
     fun `markPhotosUploadedBatch does not call dao for empty batch`() = runTest {
         repository.markPhotosUploadedBatch(emptyList())
         coVerify(exactly = 0) { submitPhotosDao.markUploadedBatch(any()) }
+    }
+
+    @Test
+    fun `getPendingExamResults fetches answers in one batched query`() = runTest {
+        val s1 = Submission().apply { id = "s1" }
+        val s2 = Submission().apply { id = "s2" }
+        val s3 = Submission().apply { id = "s3" }
+        coEvery { submissionDao.getPendingExamResults() } returns listOf(s1, s2, s3)
+
+        val a1 = Answer(id = "a1", submissionId = "s1")
+        val a3 = Answer(id = "a3", submissionId = "s3")
+        coEvery { answerDao.getBySubmissionIds(listOf("s1", "s2", "s3")) } returns listOf(a1, a3)
+
+        val results = repository.getPendingExamResults()
+
+        assertEquals(3, results.size)
+        assertEquals(listOf(a1), results[0].answers)
+        assertTrue(results[1].answers.isNullOrEmpty())
+        assertEquals(listOf(a3), results[2].answers)
+
+        coVerify(exactly = 1) { answerDao.getBySubmissionIds(any()) }
+        coVerify(exactly = 0) { answerDao.getBySubmissionId(any()) }
+    }
+
+    @Test
+    fun `getPendingSubmissionsForUpload fetches answers in one batched query`() = runTest {
+        val s1 = Submission().apply { id = "s1" }
+        val s2 = Submission().apply { id = "s2" }
+        val s3 = Submission().apply { id = "s3" }
+        coEvery { submissionDao.getPendingSubmissions() } returns listOf(s1, s2, s3)
+
+        val a1 = Answer(id = "a1", submissionId = "s1")
+        val a3 = Answer(id = "a3", submissionId = "s3")
+        coEvery { answerDao.getBySubmissionIds(listOf("s1", "s2", "s3")) } returns listOf(a1, a3)
+
+        val results = repository.getPendingSubmissionsForUpload()
+
+        assertEquals(3, results.size)
+        assertEquals(listOf(a1), results[0].answers)
+        assertTrue(results[1].answers.isNullOrEmpty())
+        assertEquals(listOf(a3), results[2].answers)
+
+        coVerify(exactly = 1) { answerDao.getBySubmissionIds(any()) }
+        coVerify(exactly = 0) { answerDao.getBySubmissionId(any()) }
+    }
+
+    @Test
+    fun `getPendingExamResults preserves the DAO order and sets membershipDoc from teamId`() = runTest {
+        val s1 = Submission().apply { id = "s1" }
+        val s2 = Submission().apply { id = "s2"; teamId = "team123" }
+        val s3 = Submission().apply { id = "s3" }
+        coEvery { submissionDao.getPendingExamResults() } returns listOf(s1, s2, s3)
+        coEvery { answerDao.getBySubmissionIds(listOf("s1", "s2", "s3")) } returns emptyList()
+
+        val results = repository.getPendingExamResults()
+
+        assertEquals(listOf("s1", "s2", "s3"), results.map { it.id })
+        assertNull(results[0].membershipDoc)
+        assertNotNull(results[1].membershipDoc)
+        assertEquals("team123", results[1].membershipDoc?.teamId)
+        assertNull(results[2].membershipDoc)
     }
 }
