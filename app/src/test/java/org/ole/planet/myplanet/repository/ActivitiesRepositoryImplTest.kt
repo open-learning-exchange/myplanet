@@ -131,6 +131,28 @@ class ActivitiesRepositoryImplTest {
     }
 
     @Test
+    fun `getMemberVisitStats returns correct count and last visit`() = runTest {
+        coEvery { offlineActivityDao.countByUserIdAndType("user1", UserSessionManager.KEY_LOGIN) } returns 5
+        coEvery { offlineActivityDao.getLastVisit("john") } returns 2000L
+
+        val result = repository.getMemberVisitStats("user1", "john")
+
+        assertEquals(5, result.offlineVisitCount)
+        assertEquals(2000L, result.lastVisit)
+    }
+
+    @Test
+    fun `getMemberVisitStats handles null or empty inputs`() = runTest {
+        val resultNull = repository.getMemberVisitStats(null, null)
+        assertEquals(0, resultNull.offlineVisitCount)
+        assertNull(resultNull.lastVisit)
+
+        val resultEmpty = repository.getMemberVisitStats("", "")
+        assertEquals(0, resultEmpty.offlineVisitCount)
+        assertNull(resultEmpty.lastVisit)
+    }
+
+    @Test
     fun `getOfflineLoginCount returns correct count`() = runTest {
         coEvery { offlineActivityDao.countByUserNameAndType("john", UserSessionManager.KEY_LOGIN) } returns 3
         val result = repository.getOfflineLoginCount("john")
