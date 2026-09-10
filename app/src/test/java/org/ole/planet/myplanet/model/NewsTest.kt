@@ -6,7 +6,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -107,7 +106,7 @@ class NewsTest {
     }
 
     @Test
-    fun `imagesArray memoizes parsedImagesArray and rawImages when called multiple times`() {
+    fun `imagesArray memoizes parsed JsonArray when called multiple times`() {
         val news = News()
         val jsonString = """[{"resourceId":"res123"}]"""
         news.images = jsonString
@@ -117,29 +116,41 @@ class NewsTest {
         assertEquals(1, firstCall.size())
         assertEquals("res123", firstCall[0].asJsonObject.get("resourceId").asString)
 
-        assertEquals(jsonString, news.rawImages)
-        assertSame(firstCall, news.parsedImagesArray)
-
         val secondCall = news.imagesArray
-        assertSame(firstCall, secondCall)
+        assertEquals(firstCall, secondCall)
     }
 
     @Test
-    fun `imagesArray invalidates cache and re-parses when images is updated`() {
+    fun `imagesArray defensive copy prevents mutating cached instance`() {
+        val news = News()
+        news.images = """[{"resourceId":"res123"}]"""
+
+        val firstCall = news.imagesArray
+        firstCall.add(JsonObject().apply { addProperty("resourceId", "mutated") })
+        assertEquals(2, firstCall.size())
+
+        val secondCall = news.imagesArray
+        assertEquals(1, secondCall.size())
+        assertEquals("res123", secondCall[0].asJsonObject.get("resourceId").asString)
+    }
+
+    @Test
+    fun `imagesArray invalidates cache and re-parses when images is reassigned`() {
         val news = News()
         news.images = """[{"resourceId":"res123"}]"""
 
         val firstCall = news.imagesArray
         assertEquals("res123", firstCall[0].asJsonObject.get("resourceId").asString)
 
-        val newJsonString = """[{"resourceId":"res456"}]"""
-        news.images = newJsonString
+        news.images = """[{"resourceId":"res456"}]"""
 
         val secondCall = news.imagesArray
         assertEquals(1, secondCall.size())
         assertEquals("res456", secondCall[0].asJsonObject.get("resourceId").asString)
-        assertEquals(newJsonString, news.rawImages)
-        assertSame(secondCall, news.parsedImagesArray)
+
+        news.images = null
+        val thirdCall = news.imagesArray
+        assertTrue(thirdCall.isEmpty)
     }
 
     @Test
@@ -150,8 +161,6 @@ class NewsTest {
         val result = news.imagesArray
         assertNotNull(result)
         assertTrue(result.isEmpty)
-        assertEquals(null, news.rawImages)
-        assertSame(result, news.parsedImagesArray)
     }
 
     @Test

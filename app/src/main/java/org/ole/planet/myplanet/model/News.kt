@@ -74,19 +74,21 @@ open class News {
     @Ignore
     var rawImageUrls: List<String>? = null
     @Ignore
-    var rawImages: String? = null
-    @Ignore
-    var parsedImagesArray: JsonArray? = null
-    @Ignore
     var parsedSharedTeamName: String? = null
+
+    private data class ImagesCache(val raw: String?, val parsed: JsonArray)
+
+    @Ignore
+    @Volatile
+    private var imagesCache: ImagesCache? = null
 
     @get:Ignore
     val imagesArray: JsonArray
         get() {
             val currentImages = images
-            val cached = parsedImagesArray
-            if (cached != null && rawImages == currentImages) {
-                return cached
+            val cache = imagesCache
+            if (cache != null && cache.raw == currentImages) {
+                return cache.parsed.deepCopy()
             }
             val parsed = if (currentImages == null) {
                 JsonArray()
@@ -97,9 +99,8 @@ open class News {
                     JsonArray()
                 }
             }
-            rawImages = currentImages
-            parsedImagesArray = parsed
-            return parsed
+            imagesCache = ImagesCache(currentImages, parsed)
+            return parsed.deepCopy()
         }
 
     @get:Ignore

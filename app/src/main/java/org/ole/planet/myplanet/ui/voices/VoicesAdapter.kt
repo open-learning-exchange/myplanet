@@ -636,11 +636,6 @@ class VoicesAdapter(
                         it.rawImageUrls = null
                     }
                 }
-                if (it.parsedImagesArray == null || it.rawImages != it.images) {
-                    it.parsedImagesArray = it.imagesArray
-                    it.rawImages = it.images
-                }
-
                 it.parsedSharedTeamName = JsonUtils.extractSharedTeamName(it)
             } catch (e: Exception) {
                 // Catch any parsing exceptions so one bad row doesn't break submitList
@@ -871,7 +866,7 @@ class VoicesAdapter(
             }
         }
 
-        val imagesToLoad = news?.parsedImagesArray ?: news?.imagesArray
+        val imagesToLoad = news?.imagesArray
         imagesToLoad?.let { imagesArray ->
             val size = imagesArray.size()
             if (!imagesArray.isEmpty()) {
