@@ -314,7 +314,7 @@ class UserSessionManagerTest {
                 lastName = "Doe",
                 middleName = "A",
                 isUserAdmin = false,
-                lastLogin = 1000L
+                lastLogin = 0L
             )
         }
 

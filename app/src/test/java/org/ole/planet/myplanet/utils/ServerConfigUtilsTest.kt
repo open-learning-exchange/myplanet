@@ -156,7 +156,7 @@ class ServerConfigUtilsTest {
                 urlScheme = "",
                 urlHost = "",
                 alternativeUrl = url,
-                processedAlternativeUrl = "://satellite:testPassword@:443",
+                processedAlternativeUrl = "null://satellite:testPassword@null:443",
                 isAlternativeUrl = true
             )
         }
