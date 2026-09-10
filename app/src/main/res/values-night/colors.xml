@@ -61,7 +61,6 @@
     <color name="dashboard_hairline">#4E4F50</color>
     <color name="dashboard_sync_banner_bg">@color/field_fill</color>
 
-    <!-- myLibrary / myCourses cover-first redesign -->
     <color name="card_border">#4D4D4D</color>
     <color name="chip_selected_bg">#1E3A5F</color>
     <color name="chip_selected_border">#64B5F6</color>
@@ -88,6 +87,5 @@
     <color name="list_status_not_started_bg">#3A3B3C</color>
     <color name="list_status_not_started_text">@color/status_not_started</color>
 
-    <!-- resources (myLibrary) sort/filter capsule -->
     <color name="ink_1">@color/card_bg</color>
 </resources>
