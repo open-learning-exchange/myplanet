@@ -151,4 +151,7 @@ class TagsRepositoryImpl @Inject constructor(
         tag.isAttached = attachedTo.isNotEmpty()
         return tag
     }
+
+    override suspend fun getCourseLinkIds(tagNames: List<String>): Set<String> =
+        getLinkIdsForTagNames("courses", tagNames).toSet()
 }

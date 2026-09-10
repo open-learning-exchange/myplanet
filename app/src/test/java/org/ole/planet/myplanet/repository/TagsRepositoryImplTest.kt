@@ -377,4 +377,23 @@ class TagsRepositoryImplTest {
 
         coVerify(exactly = 0) { tagDao.upsertAll(any()) }
     }
+
+    @Test
+    fun `getCourseLinkIds delegates to getLinkIdsForTagNames with courses and returns deduplicated set`() = runTest {
+        val tagNames = listOf("Tag 1", "Tag 2")
+        val tag1 = TagEntity().apply { id = "tag1"; name = "Tag 1" }
+        val tag2 = TagEntity().apply { id = "tag2"; name = "Tag 2" }
+
+        val linkTag1 = TagEntity().apply { linkId = "course1"; tagId = "tag1" }
+        val linkTag2 = TagEntity().apply { linkId = "course2"; tagId = "tag2" }
+        val linkTag3 = TagEntity().apply { linkId = "course1"; tagId = "tag2" }
+
+        coEvery { tagDao.getByNames(tagNames) } returns listOf(tag1, tag2)
+        coEvery { tagDao.getByDbAndTagIds("courses", listOf("tag1", "tag2")) } returns listOf(linkTag1, linkTag2, linkTag3)
+
+        val result = repository.getCourseLinkIds(tagNames)
+
+        assertEquals(setOf("course1", "course2"), result)
+        coVerify { tagDao.getByDbAndTagIds("courses", listOf("tag1", "tag2")) }
+    }
 }

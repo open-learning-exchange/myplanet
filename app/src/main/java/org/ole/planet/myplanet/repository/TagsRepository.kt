@@ -12,4 +12,5 @@ interface TagsRepository {
     suspend fun getTagsForCourses(courseIds: List<String>): Map<String, List<TagEntity>>
     suspend fun insert(documentList: List<JsonObject>)
     suspend fun getLinkIdsForTagNames(dbType: String, tagNames: List<String>): List<String>
+    suspend fun getCourseLinkIds(tagNames: List<String>): Set<String>
 }
