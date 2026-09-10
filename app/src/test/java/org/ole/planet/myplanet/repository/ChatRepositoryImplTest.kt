@@ -93,54 +93,6 @@ class ChatRepositoryImplTest {
         coVerify(exactly = 1) { chatDao.getByUser(userName) }
     }
 
-    @Test
-    fun `searchChats by title correctly filters list`() = runTest(testDispatcher) {
-        val userName = "testUser"
-        val chat1 = ChatHistory().apply { title = "First Chat"; user = userName }
-        val chat2 = ChatHistory().apply { title = "Second Discussion"; user = userName }
-        val chats = listOf(chat1, chat2)
-        coEvery { chatDao.getByUser(userName) } returns chats
-
-        val result = chatRepository.searchChats("First", ChatSearchMode.TITLE, userName)
-
-        assertEquals(1, result.size)
-        assertEquals("First Chat", result[0].title)
-    }
-
-    @Test
-    fun `searchChats by full conversation filters by question`() = runTest(testDispatcher) {
-        val userName = "testUser"
-        val chat1 = ChatHistory().apply {
-            title = "Chat 1"
-            user = userName
-            conversations = listOf(Conversation().apply { query = "How is the weather?" })
-        }
-        val chat2 = ChatHistory().apply {
-            title = "Chat 2"
-            user = userName
-            conversations = listOf(Conversation().apply { query = "Tell me a joke." })
-        }
-        val chats = listOf(chat1, chat2)
-        coEvery { chatDao.getByUser(userName) } returns chats
-
-        val result = chatRepository.searchChats("weather", ChatSearchMode.QUESTION, userName)
-
-        assertEquals(1, result.size)
-        assertEquals("Chat 1", result[0].title)
-    }
-
-    @Test
-    fun `searchChats with empty query returns empty when filtered list logic is applied`() = runTest(testDispatcher) {
-        val userName = "testUser"
-        val chat1 = ChatHistory().apply { title = "Chat 1"; user = userName }
-        val chat2 = ChatHistory().apply { title = "Chat 2"; user = userName }
-        val chats = listOf(chat1, chat2)
-        coEvery { chatDao.getByUser(userName) } returns chats
-
-        val result = chatRepository.searchChats("", ChatSearchMode.TITLE, userName)
-
-        assertEquals(2, result.size)
-    }
 
     @Test
     fun getLatestRev_findsHighestRevByNumericPrefix() = runTest {

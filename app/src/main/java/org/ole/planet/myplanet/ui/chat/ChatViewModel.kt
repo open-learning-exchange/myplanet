@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+import org.ole.planet.myplanet.utils.ChatSearch
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.RetryUtils
@@ -157,7 +158,7 @@ class ChatViewModel @Inject constructor(
             } else {
                 ChatSearchMode.RESPONSE
             }
-            val results = chatRepository.searchChats(query, mode, cachedUser?.name)
+            val results = ChatSearch.search(query, mode, allChats, dispatcherProvider.default)
             _filteredChats.value = results
         }
     }

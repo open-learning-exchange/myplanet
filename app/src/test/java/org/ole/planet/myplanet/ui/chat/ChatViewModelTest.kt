@@ -233,12 +233,11 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `searchChats delegates to repository correctly and empty query resets filtered list`() = runTest {
+    fun `searchChats filters allChats correctly and empty query resets filtered list`() = runTest {
         val chat1 = ChatHistory().apply { title = "Chat 1" }
         val chat2 = ChatHistory().apply { title = "Chat 2" }
 
         coEvery { chatRepository.getChatHistoryForUser(any()) } returns listOf(chat1, chat2)
-        coEvery { chatRepository.searchChats("Chat 1", org.ole.planet.myplanet.repository.ChatSearchMode.TITLE, any()) } returns listOf(chat1)
 
         viewModel.loadChatHistoryScreenData("user123", null, null)
         testScheduler.advanceUntilIdle()
@@ -246,12 +245,11 @@ class ChatViewModelTest {
         viewModel.searchChats("Chat 1", isFullSearch = false, isQuestion = false)
         testScheduler.advanceUntilIdle()
         assertEquals(1, viewModel.filteredChats.value.size)
+        assertEquals("Chat 1", viewModel.filteredChats.value[0].title)
 
         viewModel.searchChats("", isFullSearch = false, isQuestion = false)
         testScheduler.advanceUntilIdle()
         assertEquals(2, viewModel.filteredChats.value.size)
-
-        coVerify { chatRepository.searchChats("Chat 1", org.ole.planet.myplanet.repository.ChatSearchMode.TITLE, any()) }
     }
 
     @Test
