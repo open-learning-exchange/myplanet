@@ -52,7 +52,6 @@
             android:text="@string/order_by_date"
             android:textColor="@color/daynight_textColor"
             android:textSize="@dimen/text_size_mid" />
-
         <RadioButton
             android:id="@+id/sort_order_by_title"
             android:layout_width="match_parent"
