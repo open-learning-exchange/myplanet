@@ -853,7 +853,12 @@ class ResourcesRepositoryImpl @Inject constructor(
 
         val titleMap = getResourceTitlesMap()
 
-        val grouped = mutableMapOf<String, MutableList<File>>()
+        class ResourceAccumulator {
+            val filePaths = mutableListOf<String>()
+            var totalSize = 0L
+        }
+
+        val grouped = mutableMapOf<String, ResourceAccumulator>()
         oleDir.walkTopDown().filter { it.isFile }.forEach { file ->
             val ext = file.extension.lowercase()
             val matchesCategory = if (extensions.isEmpty()) {
@@ -863,14 +868,15 @@ class ResourcesRepositoryImpl @Inject constructor(
             }
             if (matchesCategory) {
                 val resourceId = file.parentFile?.name ?: return@forEach
-                grouped.getOrPut(resourceId) { mutableListOf() }.add(file)
+                val accumulator = grouped.getOrPut(resourceId) { ResourceAccumulator() }
+                accumulator.filePaths.add(file.absolutePath)
+                accumulator.totalSize += file.length()
             }
         }
 
-        return@withContext grouped.map { (resourceId, files) ->
-            val totalSize = files.sumOf { it.length() }
+        return@withContext grouped.map { (resourceId, accumulator) ->
             val title = titleMap[resourceId]?.takeIf { it.isNotBlank() } ?: context.getString(R.string.storage_unknown_resource)
-            OfflineResourceItem(resourceId, title, files.map { it.absolutePath }, totalSize)
+            OfflineResourceItem(resourceId, title, accumulator.filePaths, accumulator.totalSize)
         }.sortedBy { it.title }
     }
 
