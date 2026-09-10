@@ -167,6 +167,41 @@ class CollectionsFragmentTest {
         assertEquals(1, reconciled.size)
         assertSame(selectedTag, reconciled[0])
     }
+
+    @Test
+    fun `reconciliation does not match selection with id t1 to loaded tag with id t3 even if same name`() {
+        val selectedTag = tag("t1", "Math")
+        val loadedTag = tag("t3", "Math")
+        val parents = listOf(loadedTag)
+        val fragment = newFragment(parents, selected = listOf(selectedTag))
+
+        val reconciled = fragment.reconcileSelections(listOf(selectedTag), parents, emptyMap())
+        assertEquals(1, reconciled.size)
+        assertSame(selectedTag, reconciled[0])
+
+        setField(fragment, "selectedItemsList", ArrayList(reconciled))
+        val tagDataList = buildTagDataList(fragment, parents)
+        assertEquals(1, tagDataList.size)
+        assertFalse((tagDataList[0] as TagData.Parent).isSelected)
+    }
+
+    @Test
+    fun `reconciliation matches selection with id t1 to loaded tag B with empty id when loaded tag A has id t3`() {
+        val selectedTag = tag("t1", "Math")
+        val tagA = tag("t3", "Math")
+        val tagB = tag("", "Math")
+        val parents = listOf(tagA, tagB)
+        val fragment = newFragment(parents, selected = listOf(selectedTag))
+
+        val reconciled = fragment.reconcileSelections(listOf(selectedTag), parents, emptyMap())
+        assertEquals(1, reconciled.size)
+        assertSame(tagB, reconciled[0])
+
+        setField(fragment, "selectedItemsList", ArrayList(reconciled))
+        val tagDataList = buildTagDataList(fragment, parents)
+        assertEquals(2, tagDataList.size)
+        assertTrue((tagDataList[1] as TagData.Parent).isSelected)
+    }
 }
 
 private fun setField(target: Any, name: String, value: Any) {

@@ -125,14 +125,17 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
         childMap: Map<String, List<TagEntity>>
     ): List<TagEntity> {
         val tagsById = HashMap<String, TagEntity>()
-        val tagsByName = HashMap<String, TagEntity>()
+        val namesOfEmptyIdTags = HashMap<String, TagEntity>()
+        val allTagsByName = HashMap<String, TagEntity>()
 
         fun indexTag(tag: TagEntity) {
             if (tag.id.isNotEmpty()) {
                 tagsById.putIfAbsent(tag.id, tag)
+            } else if (!tag.name.isNullOrEmpty()) {
+                namesOfEmptyIdTags.putIfAbsent(tag.name!!, tag)
             }
             if (!tag.name.isNullOrEmpty()) {
-                tagsByName.putIfAbsent(tag.name!!, tag)
+                allTagsByName.putIfAbsent(tag.name!!, tag)
             }
         }
 
@@ -146,9 +149,14 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
         }
 
         return selectedItems.map { selected ->
-            (if (selected.id.isNotEmpty()) tagsById[selected.id] else null)
-                ?: (if (!selected.name.isNullOrEmpty()) tagsByName[selected.name] else null)
-                ?: selected
+            if (selected.id.isNotEmpty()) {
+                tagsById[selected.id]
+                    ?: (if (!selected.name.isNullOrEmpty()) namesOfEmptyIdTags[selected.name] else null)
+                    ?: selected
+            } else {
+                (if (!selected.name.isNullOrEmpty()) allTagsByName[selected.name] else null)
+                    ?: selected
+            }
         }
     }
 
@@ -162,26 +170,35 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
             }
         }
         val selectedIds = HashSet<String>()
-        val selectedNames = HashSet<String>()
+        val namesOfEmptyIdSelected = HashSet<String>()
+        val allSelectedNames = HashSet<String>()
         for (selected in selectedItemsList) {
             if (selected.id.isNotEmpty()) {
                 selectedIds.add(selected.id)
+            } else if (!selected.name.isNullOrEmpty()) {
+                namesOfEmptyIdSelected.add(selected.name!!)
             }
             if (!selected.name.isNullOrEmpty()) {
-                selectedNames.add(selected.name!!)
+                allSelectedNames.add(selected.name!!)
+            }
+        }
+        fun isTagSelected(tag: TagEntity): Boolean {
+            return if (tag.id.isNotEmpty()) {
+                selectedIds.contains(tag.id) ||
+                        (!tag.name.isNullOrEmpty() && namesOfEmptyIdSelected.contains(tag.name))
+            } else {
+                !tag.name.isNullOrEmpty() && allSelectedNames.contains(tag.name)
             }
         }
         for (parentTag in parents) {
-            val isSelected = (parentTag.id.isNotEmpty() && selectedIds.contains(parentTag.id)) ||
-                    (!parentTag.name.isNullOrEmpty() && selectedNames.contains(parentTag.name))
+            val isSelected = isTagSelected(parentTag)
             val parent = parentMap[parentTag.id] ?: TagData.Parent(parentTag, false, isSelected, isSelectMultiple)
 
             tagDataList.add(parent.copy(isSelected = isSelected, isSelectMultiple = isSelectMultiple))
 
             if (parent.isExpanded) {
                 childMap[parent.tag.id]?.forEach { childTag ->
-                    val isChildSelected = (childTag.id.isNotEmpty() && selectedIds.contains(childTag.id)) ||
-                            (!childTag.name.isNullOrEmpty() && selectedNames.contains(childTag.name))
+                    val isChildSelected = isTagSelected(childTag)
                     tagDataList.add(TagData.Child(childTag, isChildSelected, isSelectMultiple))
                 }
             }
