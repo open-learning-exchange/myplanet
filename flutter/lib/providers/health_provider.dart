@@ -583,6 +583,10 @@ class PatientListNotifier extends StateNotifier<AsyncValue<List<UserRow>>> {
   int _request = 0;
 
   Future<void> _fetch(Future<List<UserRow>> Function() query) async {
+    // Same guard, same reason, as `PatientDetailNotifier.selectPatient`: the
+    // picker's sort and search reach this from a widget callback, which can
+    // outlive the notifier.
+    if (!mounted) return;
     final request = ++_request;
     state = const AsyncValue.loading();
     try {
@@ -651,7 +655,14 @@ class PatientDetailNotifier extends StateNotifier<PatientDetailState> {
 
   Future<void> _loadInitial() async {
     final currentUser = await _ref.read(loggedInUserProvider.future);
-    if (currentUser == null) return;
+    // The screen can be gone by the time the session resolves — an
+    // `autoDispose` notifier started from its own constructor has no other
+    // way to notice. Riverpod 3 made this reachable rather than theoretical:
+    // it disposes a listener-less provider on a different beat, and the
+    // unguarded `state` write below then threw
+    // `Tried to use PatientDetailNotifier after dispose was called` out of a
+    // future nobody awaits.
+    if (!mounted || currentUser == null) return;
     final uid = patientIdOf(currentUser);
     if (uid.isNotEmpty) {
       await selectPatient(uid);
@@ -679,6 +690,7 @@ class PatientDetailNotifier extends StateNotifier<PatientDetailState> {
   int _request = 0;
 
   Future<void> selectPatient(String userId) async {
+    if (!mounted) return;
     final request = ++_request;
     state = state.copyWith(isLoading: true);
     try {

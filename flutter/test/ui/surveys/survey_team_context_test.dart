@@ -264,6 +264,7 @@ void main() {
           ),
         },
         overrides: overrides,
+        fallbackDatabase: false,
       ),
     );
     await tester.pumpAndSettle();

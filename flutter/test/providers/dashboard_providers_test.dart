@@ -8,6 +8,7 @@ import 'package:myplanet/providers/dashboard_providers.dart';
 import 'package:myplanet/repository/submissions_repository.dart';
 
 import '../support/mock_planet_api.dart';
+import '../support/stream_provider_reads.dart';
 
 void main() {
   late AppDatabase db;
@@ -190,8 +191,9 @@ void main() {
         membership('m-3', 'team-3', 'someone-else'),
       ]);
 
-      final teams = await container.read(
-        myTeamsStreamProvider('user-1').future,
+      final teams = await readStreamValue(
+        container,
+        myTeamsStreamProvider('user-1'),
       );
 
       expect(teams.map((t) => t.name), ['Gardeners']);
@@ -200,8 +202,9 @@ void main() {
     test('emits empty for a user with no memberships', () async {
       await db.teamDao.upsertAll([teamDoc('team-1', 'Gardeners')]);
 
-      final teams = await container.read(
-        myTeamsStreamProvider('user-1').future,
+      final teams = await readStreamValue(
+        container,
+        myTeamsStreamProvider('user-1'),
       );
 
       expect(teams, isEmpty);

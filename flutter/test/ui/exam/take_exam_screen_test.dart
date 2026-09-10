@@ -288,6 +288,10 @@ void main() {
     UserRow? session,
     ServerConfig? config = server,
     List<Override> overrides = const [],
+    // Riverpod 3 asserts on a provider overridden twice in one container, so a
+    // test supplying its own session notifier switches this default off rather
+    // than shadowing it.
+    bool defaultSession = true,
   }) async {
     await tester.pumpWidget(
       wrapScreen(
@@ -315,9 +319,10 @@ void main() {
         },
         overrides: [
           appDatabaseProvider.overrideWith((ref) => db),
-          sessionProvider.overrideWith(
-            () => _TestSessionNotifier(session ?? user),
-          ),
+          if (defaultSession)
+            sessionProvider.overrideWith(
+              () => _TestSessionNotifier(session ?? user),
+            ),
           serverConfigProvider.overrideWith(() => _TestServerConfig(config)),
           // The real source reaches `planetPrefs`, which is `UnimplementedError`
           // in the harness; the uploaders read it at queue time.
@@ -844,6 +849,7 @@ void main() {
       await pumpExam(
         tester,
         overrides: [sessionProvider.overrideWith(_FailingSessionNotifier.new)],
+        defaultSession: false,
       );
 
       await tester.enterText(find.byType(TextField), 'anything at all');

@@ -978,8 +978,96 @@ The two majors this file has called load-bearing for several rounds were then
   bucket 1, because `pub upgrade` obeys an exact pin. It was the one hosted
   dependency written without a caret and without a comment explaining why.
   **A dependency pinned without a stated reason is a bug with a shelf life.**
-- **`flutter_riverpod` 2.6.1 → 3.4.3 is the real one** and still wants a phase
-  with no other lane running, because it touches every provider in the port.
+- **`flutter_riverpod` 2.6.1 → 3.4.3 was taken** in Phase 155, on its own round.
+  It resolves on the pinned Flutter 3.44.8 / Dart 3.12.2, so no SDK move was
+  needed. What that round learned is below — read it before touching a provider
+  or a screen test.
+
+### Riverpod 3, and the four things it actually changed here
+
+The mechanical surface was **smaller** than the pin's comment claimed (275
+provider declarations across 39 files, not "203 across 152"), because the
+costliest 3.x chapters are absent: zero `@riverpod`/`riverpod_generator`, zero
+`Ref` subclasses, and zero class families, so `family.overrideWith` is not
+deprecated here and `overrideWith2` is not needed. `StateProvider`,
+`StateNotifierProvider` and `StateController` come from
+`package:flutter_riverpod/legacy.dart`; `Override`, `ProviderException`,
+`Family` and `Refreshable` from `misc.dart`.
+
+- **`AsyncValue.valueOrNull` is gone — removed, not deprecated.** Use `.value`,
+  which in 3.x is "previous value, else null" (`async_value.dart:557`), exactly
+  what `valueOrNull` was. 198 sites moved. The rename is only safe because the
+  port had **no** pre-existing `.value` read on an `AsyncValue`; 2.6.1's `.value`
+  *rethrew* on error, so anywhere that had one, the meaning silently changed
+  from "throws" to "null". Check before assuming a future upgrade is a rename.
+  The port's standing rule is unchanged and now reads: **a provider a screen
+  reads but never watches is null — await its `.future`, with the `await`
+  inside the enclosing `try`.**
+- **Automatic retry is on by default, and this port turns it off.**
+  `ProviderContainer.defaultRetry` is 11 attempts over 38.2 s (200 ms doubling
+  to a 6400 ms cap, `maxRetries` 10), declining only an `Error` or a
+  `ProviderException` — so `MissingPluginException`, `SqliteException` and
+  `FileSystemException` all retry, and `ProviderElement.buildState`
+  (`element.dart:757`) is on the common base, so **synchronous `Provider`s
+  retry too**. That default is the opposite of Phase 148's policy, so
+  `lib/core/providers/provider_retry.dart` opts out at every root and
+  `test/core/provider_retry_policy_test.dart` scans `lib/` and `test/` to keep
+  it that way — `retry` is inherited only from a *parent* container, and every
+  test container is a root, so there is nothing the framework can carry.
+  Opt one provider back in with `retry:` on its own constructor.
+  **Retry only ever re-runs `build`/create, never a method on a notifier** —
+  which is why category (c), a provider that writes to a server from its build,
+  is empty here: every write-back path is a method. That was established by
+  hand; a first pass by regex missed four network reads and a local write.
+- **Notifier recreation on rebuild did NOT ship.** Every migration guide still
+  says notifiers are recreated whenever the provider rebuilds; 3.0.0-dev.16
+  reverted it (`CHANGELOG.md:180`, *"They are once again preserved across
+  rebuilds"*) and `notifier_provider.dart:549` creates through `??=` on a field
+  nothing resets. So a notifier's instance fields survive a rebuild in 3.4.3.
+  The genuine recreate-per-rebuild class is `StateNotifier`, which behaves
+  identically in 2.6.1 and 3.4.3 — which is why the port's four
+  `StateNotifier`s stayed on `legacy.dart` rather than being migrated inside a
+  dependency bump.
+- **`ProviderException` wraps an error only on three paths** — a synchronous
+  provider's own init failure, `requireValue` on an `AsyncError`, and
+  `await provider.future` on a provider in error state (`stack_trace.dart:20`).
+  `AsyncValue.when(error:)`, `ref.listen(onError:)` and observers get the
+  unaltered error, so the port's `Text(l10n.syncFailed('$error'))` sites are
+  untouched. `on Exception` still fires, since `ProviderException implements
+  Exception`.
+
+**And the trap that costs a whole afternoon: the test harness.** Riverpod 2 let
+one provider appear twice in an override list and quietly took the last entry.
+Riverpod 3 **asserts** — `Tried to override a provider twice within the same
+container` — which was 266 of this suite's screen tests, because `wrapScreen`
+layered a fallback database *under* the caller's own. Two things to know:
+
+- **Nesting the caller's overrides in a child `ProviderScope` is not the fix.**
+  A child's override is invisible to providers instantiated in the parent, so
+  anything the screen reads transitively still resolves against the parent's
+  un-overridden value. Measured: it turns 266 failures into 199 different ones.
+  The fix is one flat list plus a flag that switches the default *off* —
+  `wrapScreen(fallbackDatabase: false)`, and `defaultSession` / `defaultPrefs` /
+  `defaultCourse` on the three test-local helpers with the same shape.
+- **`container.read(streamProvider.future)` no longer completes without a
+  listener.** With nothing listening the element is never driven, the future
+  stays pending, the test times out at 30 s, and the teardown then reports
+  `disposed during loading state` — which reads like a disposal bug and is the
+  missing listener. Use `test/support/stream_provider_reads.dart`'s
+  `readStreamValue`, which listens, awaits, and **closes the listener again**:
+  leaving it open is worse than the bug, because an `autoDispose` provider with
+  a listener is never swept and `courseProgressStreamProvider` yields once and
+  completes, so a leaked listener freezes My Progress for the process lifetime.
+  `autoDispose` itself is unchanged — that was probed directly before anything
+  was blamed on it. Production is unaffected either way: both `.future` reads
+  on a stream in `lib/` are `ref.watch(...)` from inside another provider, and
+  watching does listen.
+
+One production defect fell out of the upgrade rather than the framework:
+`PatientDetailNotifier.selectPatient` wrote `state` before its `mounted` check,
+reachable from `_loadInitial` after an await, and 3.x's disposal beat turned
+that from theoretical into `Tried to use PatientDetailNotifier after dispose`.
+Guarded, along with the same shape in `PatientListNotifier._fetch`.
 
 ### Running parallel lanes
 

@@ -137,7 +137,11 @@ void main() {
   /// makes that ordering harmless: the row outlives the widget.
   Future<void> mountDashboard(WidgetTester tester, UserRow user) async {
     await tester.pumpWidget(
-      wrapScreen(const HomeScreen(), overrides: await overrides(user)),
+      wrapScreen(
+        const HomeScreen(),
+        overrides: await overrides(user),
+        fallbackDatabase: false,
+      ),
     );
     await tester.pumpAndSettle();
     await tester.pumpWidget(const SizedBox.shrink());

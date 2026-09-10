@@ -6,6 +6,7 @@ import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/courses_providers.dart';
 import 'package:myplanet/providers/session_provider.dart';
+import '../support/stream_provider_reads.dart';
 
 /// Returns a fixed user, resolving on a microtask like the real notifier.
 class _TestSessionNotifier extends SessionNotifier {
@@ -64,9 +65,10 @@ void main() {
     // call never completed at all (the pending first future is discarded when
     // the session lands and the provider rebuilds), which is how the wrong
     // first pass shows up in a test.
-    final rows = await container
-        .read(courseProgressStreamProvider.future)
-        .timeout(const Duration(seconds: 10));
+    final rows = await readStreamValue(
+      container,
+      courseProgressStreamProvider,
+    ).timeout(const Duration(seconds: 10));
 
     expect(rows.map((row) => row.courseId), ['mine']);
   });
@@ -147,8 +149,9 @@ void main() {
         },
       );
 
-      final row = (await container.read(
-        courseProgressStreamProvider.future,
+      final row = (await readStreamValue(
+        container,
+        courseProgressStreamProvider,
       )).single;
       // Exam `beta` is second, so its key is 1 and the row shows "2".
       expect(row.stepMistakes, {1: 5});
@@ -223,8 +226,9 @@ void main() {
       await attempt('sub-1', 'alpha', 'qa', 2);
       await attempt('sub-2', 'beta', 'qb', 3);
 
-      final row = (await container.read(
-        courseProgressStreamProvider.future,
+      final row = (await readStreamValue(
+        container,
+        courseProgressStreamProvider,
       )).single;
       // The oval totals both attempts...
       expect(row.mistakes, 5);
@@ -271,8 +275,9 @@ void main() {
         },
       );
 
-      final row = (await container.read(
-        courseProgressStreamProvider.future,
+      final row = (await readStreamValue(
+        container,
+        courseProgressStreamProvider,
       )).single;
       expect(row.mistakes, 0);
       expect(row.stepMistakes, isNull);
@@ -332,8 +337,9 @@ void main() {
       // A mounted screen holds a listener; navigating away drops it.
       final mounted = container.listen(courseProgressStreamProvider, (_, _) {});
       expect(
-        (await container.read(
-          courseProgressStreamProvider.future,
+        (await readStreamValue(
+          container,
+          courseProgressStreamProvider,
         )).single.mistakes,
         1,
       );
@@ -349,8 +355,9 @@ void main() {
       );
       addTearDown(reopened.close);
       expect(
-        (await container.read(
-          courseProgressStreamProvider.future,
+        (await readStreamValue(
+          container,
+          courseProgressStreamProvider,
         )).single.mistakes,
         3,
       );
