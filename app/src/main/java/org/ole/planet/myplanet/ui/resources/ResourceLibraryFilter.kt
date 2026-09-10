@@ -22,7 +22,8 @@ class ResourceLibraryFilter {
         val levels: Set<String>,
         val languages: Set<String>,
         val mediums: Set<String>,
-        val downloadFilterIndex: Int
+        val downloadFilterIndex: Int,
+        val locallyOfflineIds: Set<String>
     )
 
     private var lastSignature: Signature? = null
@@ -32,14 +33,14 @@ class ResourceLibraryFilter {
     }
 
     fun filterIfChanged(models: List<ResourceListModel>, criteria: ResourceFilterCriteria, locallyOfflineIds: Set<String>): List<ResourceListModel>? {
-        val signature = criteria.toSignature()
+        val signature = criteria.toSignature(locallyOfflineIds)
         if (signature == lastSignature) return null
         lastSignature = signature
         return filter(models, criteria, locallyOfflineIds)
     }
 
     fun apply(models: List<ResourceListModel>, criteria: ResourceFilterCriteria, locallyOfflineIds: Set<String>): List<ResourceListModel> {
-        lastSignature = criteria.toSignature()
+        lastSignature = criteria.toSignature(locallyOfflineIds)
         return filter(models, criteria, locallyOfflineIds)
     }
 
@@ -80,13 +81,14 @@ class ResourceLibraryFilter {
         }
     }
 
-    private fun ResourceFilterCriteria.toSignature() = Signature(
+    private fun ResourceFilterCriteria.toSignature(locallyOfflineIds: Set<String>) = Signature(
         searchQuery = searchQuery,
         searchTagIds = searchTags.map { it.id }.sorted(),
         subjects = HashSet(subjects),
         levels = HashSet(levels),
         languages = HashSet(languages),
         mediums = HashSet(mediums),
-        downloadFilterIndex = downloadFilterIndex
+        downloadFilterIndex = downloadFilterIndex,
+        locallyOfflineIds = HashSet(locallyOfflineIds)
     )
 }

@@ -59,7 +59,6 @@ import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
-import kotlin.time.Duration.Companion.milliseconds
 
 @AndroidEntryPoint
 class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelectedListener,
@@ -190,6 +189,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     override suspend fun getAdapter(): ListAdapter<*, *> {
         val user = viewModel.getCurrentUser()
+        // The adapter caches the Context (Activity) which outlives onCreateView,
+        // but Fragments and their host Activities are re-created together so this is safe from leaks.
         if (!::adapterLibrary.isInitialized) {
             val factory = adapterFactory ?: DefaultBaseAdapterFactory()
             adapterLibrary = factory.createResourcesAdapter(
@@ -373,7 +374,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     private fun setupSearchTextListener() {
         etSearch.textChanges()
-            .debounce(300L.milliseconds)
+            .debounce(300L)
             .distinctUntilChanged()
             .onEach {
                 if (!::adapterLibrary.isInitialized || !isAdded || _binding == null) return@onEach

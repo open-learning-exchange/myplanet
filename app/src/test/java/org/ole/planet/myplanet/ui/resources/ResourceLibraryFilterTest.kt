@@ -162,6 +162,19 @@ class ResourceLibraryFilterTest {
     }
 
     @Test
+    fun `filterIfChanged recomputes when the locally offline ids change`() {
+        val models = listOf(model(id = "1", title = "A"), model(id = "2", title = "B"))
+        val filter = ResourceLibraryFilter()
+        val downloadedOnly = criteria(downloadFilterIndex = 1)
+
+        val first = filter.filterIfChanged(models, downloadedOnly, setOf("1"))
+        val afterDownload = filter.filterIfChanged(models, downloadedOnly, setOf("1", "2"))
+
+        assertEquals(listOf("1"), first?.map { it.item.id })
+        assertEquals(listOf("1", "2"), afterDownload?.map { it.item.id })
+    }
+
+    @Test
     fun `reset forces the next filterIfChanged call to recompute`() {
         val models = listOf(model(id = "1", title = "A"))
         val filter = ResourceLibraryFilter()
