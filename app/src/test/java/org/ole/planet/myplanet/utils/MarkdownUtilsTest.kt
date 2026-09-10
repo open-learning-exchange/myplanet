@@ -131,4 +131,11 @@ class MarkdownUtilsTest {
 
         assertSame(firstMovementMethod, secondMovementMethod)
     }
+
+    @Test
+    fun prependBaseUrlToImages_returns_identical_string_when_no_image_markup() {
+        val markdown = "plain text with (parens) and a ! and [brackets]"
+        val result = MarkdownUtils.prependBaseUrlToImages(markdown, "http://base.url/")
+        assertEquals(markdown, result)
+    }
 }
