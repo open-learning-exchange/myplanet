@@ -87,6 +87,54 @@ class MyPlanetTest {
         assertEquals(3000L, statJson.get("firstTimeUsed").asLong)
         assertEquals(1000L, statJson.get("totalForegroundTime").asLong)
         assertEquals(2000L, statJson.get("totalUsed").asLong)
+        assertEquals("mock_custom_device", statJson.get("customDeviceName").asString)
+        assertEquals("mock_device", statJson.get("deviceName").asString)
+        assertEquals(pinnedNow, statJson.get("time").asLong)
+    }
+
+    @Test
+    fun `getTabletUsages carries identical time across matching rows and skips non-matching packages`() {
+        val lastUsageUploaded = 1000L
+        val pinnedNow = 9999L
+        every { sharedPrefManager.getLastUsageUploaded() } returns lastUsageUploaded
+
+        val matchingStats1 = mockk<UsageStats>(relaxed = true) {
+            every { packageName } returns "org.ole.planet.myplanet"
+            every { lastTimeUsed } returns 4000L
+            every { firstTimeStamp } returns 2000L
+            every { lastTimeStamp } returns 3000L
+            every { totalTimeInForeground } returns 1000L
+        }
+
+        val nonMatchingStats = mockk<UsageStats>(relaxed = true) {
+            every { packageName } returns "com.other.app"
+        }
+
+        val matchingStats2 = mockk<UsageStats>(relaxed = true) {
+            every { packageName } returns "org.ole.planet.myplanet"
+            every { lastTimeUsed } returns 8000L
+            every { firstTimeStamp } returns 5000L
+            every { lastTimeStamp } returns 6000L
+            every { totalTimeInForeground } returns 3000L
+        }
+
+        every {
+            usageStatsManager.queryUsageStats(
+                UsageStatsManager.INTERVAL_DAILY,
+                lastUsageUploaded,
+                pinnedNow
+            )
+        } returns listOf(matchingStats1, nonMatchingStats, matchingStats2)
+
+        val result = MyPlanet.getTabletUsages(context, sharedPrefManager, now = pinnedNow)
+
+        assertEquals(2, result.size())
+        for (elem in result) {
+            val statJson = elem.asJsonObject
+            assertEquals(pinnedNow, statJson.get("time").asLong)
+            assertEquals("mock_custom_device", statJson.get("customDeviceName").asString)
+            assertEquals("mock_device", statJson.get("deviceName").asString)
+        }
     }
 
     @Test
