@@ -35,9 +35,15 @@ class ResourcesListFilterTest {
         return ResourceListModel(library, item, tags = tags, isLocallyOffline = isLocallyOffline)
     }
 
-    private fun criteria(searchQuery: String = "", searchTags: List<TagEntity> = emptyList(),
-        subjects: Set<String> = emptySet(), levels: Set<String> = emptySet(), languages: Set<String> = emptySet(), mediums: Set<String> = emptySet(), downloadFilterIndex: Int = 0
-    ) = ResourcesFilterCriteria(searchQuery, searchTags, subjects, levels, languages, mediums, downloadFilterIndex)
+    private val noFilters = ResourcesFilterCriteria(
+        searchQuery = "",
+        searchTags = emptyList(),
+        subjects = emptySet(),
+        levels = emptySet(),
+        languages = emptySet(),
+        mediums = emptySet(),
+        downloadFilterIndex = 0
+    )
 
     @Test
     fun `apply filters by search text`() {
@@ -47,7 +53,7 @@ class ResourcesListFilterTest {
         )
         val filter = ResourcesListFilter()
 
-        val result = filter.apply(models, criteria(searchQuery = "algebra"), emptySet())
+        val result = filter.apply(models, noFilters.copy(searchQuery = "algebra"), emptySet())
 
         assertEquals(1, result.size)
         assertEquals("1", result[0].item.id)
@@ -61,7 +67,7 @@ class ResourcesListFilterTest {
         )
         val filter = ResourcesListFilter()
 
-        val result = filter.apply(models, criteria(searchTags = listOf(TagEntity().apply { id = "t1" })), emptySet())
+        val result = filter.apply(models, noFilters.copy(searchTags = listOf(TagEntity().apply { id = "t1" })), emptySet())
 
         assertEquals(1, result.size)
         assertEquals("1", result[0].item.id)
@@ -83,7 +89,7 @@ class ResourcesListFilterTest {
 
         val result = filter.apply(
             listOf(matching, nonMatching),
-            criteria(
+            noFilters.copy(
                 subjects = setOf("Math"),
                 levels = setOf("Grade 1"),
                 languages = setOf("English"),
@@ -105,7 +111,7 @@ class ResourcesListFilterTest {
 
         val result = filter.apply(
             listOf(downloaded, notDownloaded, locallyOffline),
-            criteria(downloadFilterIndex = 1),
+            noFilters.copy(downloadFilterIndex = 1),
             locallyOfflineIds = setOf("2")
         )
 
@@ -118,7 +124,7 @@ class ResourcesListFilterTest {
         val notDownloaded = model(id = "2", title = "B", isOffline = false)
         val filter = ResourcesListFilter()
 
-        val result = filter.apply(listOf(downloaded, notDownloaded), criteria(downloadFilterIndex = 2), emptySet())
+        val result = filter.apply(listOf(downloaded, notDownloaded), noFilters.copy(downloadFilterIndex = 2), emptySet())
 
         assertEquals(listOf("2"), result.map { it.item.id })
     }
@@ -127,7 +133,7 @@ class ResourcesListFilterTest {
     fun `filterIfChanged returns null when criteria are unchanged since the last call`() {
         val models = listOf(model(id = "1", title = "A"))
         val filter = ResourcesListFilter()
-        val criteria = criteria(searchQuery = "a")
+        val criteria = noFilters.copy(searchQuery = "a")
 
         val first = filter.filterIfChanged(models, criteria, emptySet())
         val second = filter.filterIfChanged(models, criteria, emptySet())
@@ -143,8 +149,8 @@ class ResourcesListFilterTest {
         val tagA = TagEntity().apply { id = "a" }
         val tagB = TagEntity().apply { id = "b" }
 
-        val first = filter.filterIfChanged(models, criteria(searchTags = listOf(tagA, tagB)), emptySet())
-        val second = filter.filterIfChanged(models, criteria(searchTags = listOf(tagB, tagA)), emptySet())
+        val first = filter.filterIfChanged(models, noFilters.copy(searchTags = listOf(tagA, tagB)), emptySet())
+        val second = filter.filterIfChanged(models, noFilters.copy(searchTags = listOf(tagB, tagA)), emptySet())
 
         assertEquals(1, first?.size)
         assertNull(second)
@@ -155,8 +161,8 @@ class ResourcesListFilterTest {
         val models = listOf(model(id = "1", title = "A"), model(id = "2", title = "B"))
         val filter = ResourcesListFilter()
 
-        filter.filterIfChanged(models, criteria(searchQuery = "a"), emptySet())
-        val second = filter.filterIfChanged(models, criteria(searchQuery = "b"), emptySet())
+        filter.filterIfChanged(models, noFilters.copy(searchQuery = "a"), emptySet())
+        val second = filter.filterIfChanged(models, noFilters.copy(searchQuery = "b"), emptySet())
 
         assertEquals(listOf("2"), second?.map { it.item.id })
     }
@@ -165,7 +171,7 @@ class ResourcesListFilterTest {
     fun `filterIfChanged recomputes when the locally offline ids change`() {
         val models = listOf(model(id = "1", title = "A"), model(id = "2", title = "B"))
         val filter = ResourcesListFilter()
-        val downloadedOnly = criteria(downloadFilterIndex = 1)
+        val downloadedOnly = noFilters.copy(downloadFilterIndex = 1)
 
         val first = filter.filterIfChanged(models, downloadedOnly, setOf("1"))
         val afterDownload = filter.filterIfChanged(models, downloadedOnly, setOf("1", "2"))
@@ -178,7 +184,7 @@ class ResourcesListFilterTest {
     fun `reset forces the next filterIfChanged call to recompute`() {
         val models = listOf(model(id = "1", title = "A"))
         val filter = ResourcesListFilter()
-        val sameCriteria = criteria(searchQuery = "a")
+        val sameCriteria = noFilters.copy(searchQuery = "a")
 
         filter.filterIfChanged(models, sameCriteria, emptySet())
         filter.reset()
@@ -195,8 +201,8 @@ class ResourcesListFilterTest {
         )
         val filter = ResourcesListFilter()
 
-        assertEquals(1, filter.countMatching(models, criteria(subjects = setOf("Math")), emptySet()))
-        assertEquals(2, filter.countMatching(models, criteria(), emptySet()))
+        assertEquals(1, filter.countMatching(models, noFilters.copy(subjects = setOf("Math")), emptySet()))
+        assertEquals(2, filter.countMatching(models, noFilters, emptySet()))
     }
 
     @Test
@@ -206,7 +212,7 @@ class ResourcesListFilterTest {
             model(id = "2", title = "B", subject = listOf("Science"))
         )
         val filter = ResourcesListFilter()
-        val sameCriteria = criteria(subjects = setOf("Math"))
+        val sameCriteria = noFilters.copy(subjects = setOf("Math"))
 
         filter.countMatching(models, sameCriteria, emptySet())
         val filtered = filter.filterIfChanged(models, sameCriteria, emptySet())

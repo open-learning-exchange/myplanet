@@ -64,22 +64,29 @@ class ResourcesListFilter {
 
     private fun filterByFacetsAndDownloadStatus(models: List<ResourceListModel>, criteria: ResourcesFilterCriteria, locallyOfflineIds: Set<String>): List<ResourceListModel> {
         return models.filter { model ->
-            val l = model.library
-            val sub = criteria.subjects.isEmpty() || criteria.subjects.let { l.subject?.containsAll(it) } == true
-            val lev = criteria.levels.isEmpty() || l.level?.containsAll(criteria.levels) == true
-            val lan = criteria.languages.isEmpty() || criteria.languages.contains(l.language)
-            val med = criteria.mediums.isEmpty() || criteria.mediums.contains(l.mediaType)
-
-            val isDownloaded = model.item.isOffline || locallyOfflineIds.contains(model.item.id) || model.isLocallyOffline
-            val passesDownloadFilter = when (criteria.downloadFilterIndex) {
-                1 -> isDownloaded
-                2 -> !isDownloaded
-                else -> true
-            }
-
-            sub && lev && lan && med && passesDownloadFilter
+            matchesFacets(model, criteria) && matchesDownloadFilter(model, criteria.downloadFilterIndex, locallyOfflineIds)
         }
     }
+
+    private fun matchesFacets(model: ResourceListModel, criteria: ResourcesFilterCriteria): Boolean {
+        val library = model.library
+        val subject = criteria.subjects.isEmpty() || library.subject?.containsAll(criteria.subjects) == true
+        val level = criteria.levels.isEmpty() || library.level?.containsAll(criteria.levels) == true
+        val language = criteria.languages.isEmpty() || criteria.languages.contains(library.language)
+        val medium = criteria.mediums.isEmpty() || criteria.mediums.contains(library.mediaType)
+        return subject && level && language && medium
+    }
+
+    private fun matchesDownloadFilter(model: ResourceListModel, downloadFilterIndex: Int, locallyOfflineIds: Set<String>): Boolean {
+        return when (downloadFilterIndex) {
+            1 -> isDownloaded(model, locallyOfflineIds)
+            2 -> !isDownloaded(model, locallyOfflineIds)
+            else -> true
+        }
+    }
+
+    private fun isDownloaded(model: ResourceListModel, locallyOfflineIds: Set<String>): Boolean =
+        model.item.isOffline || locallyOfflineIds.contains(model.item.id) || model.isLocallyOffline
 
     private fun ResourcesFilterCriteria.toSignature(locallyOfflineIds: Set<String>) = Signature(
         searchQuery = searchQuery,
