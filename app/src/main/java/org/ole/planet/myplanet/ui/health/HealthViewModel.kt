@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -52,6 +53,7 @@ class HealthViewModel @Inject constructor(
 
     private var searchJob: Job? = null
     private var selectPatientJob: Job? = null
+    private var currentPatientId: String? = null
 
     fun loadPatients(sortBy: String = "joinDate", descending: Boolean = true) {
         viewModelScope.launch {
@@ -86,17 +88,43 @@ class HealthViewModel @Inject constructor(
     }
 
     fun selectPatient(userId: String) {
+        if (userId == currentPatientId && (selectPatientJob?.isActive == true || _patientDetailState.value.user != null)) {
+            return
+        }
+        fetchPatientData(userId)
+    }
+
+    fun refreshSelectedPatient(userId: String? = null) {
+        val targetId = userId?.trim()?.ifEmpty { null }
+            ?: currentPatientId
+            ?: _loggedInUser.value?.effectiveId?.trim()
+        if (!targetId.isNullOrEmpty()) {
+            fetchPatientData(targetId)
+        }
+    }
+
+    private fun fetchPatientData(userId: String) {
+        currentPatientId = userId
         selectPatientJob?.cancel()
         selectPatientJob = viewModelScope.launch {
             _isLoading.value = true
-            val user = healthRepository.getPatientById(userId)
-            if (user != null) {
-                val record = healthRepository.getPatientHealthRecords(userId, user)
-                _patientDetailState.value = PatientDetailState(user, record)
-            } else {
+            try {
+                val user = healthRepository.getPatientById(userId)
+                if (user != null) {
+                    val record = healthRepository.getPatientHealthRecords(userId, user)
+                    _patientDetailState.value = PatientDetailState(user, record)
+                } else {
+                    currentPatientId = null
+                    _patientDetailState.value = PatientDetailState(null, null)
+                }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                currentPatientId = null
                 _patientDetailState.value = PatientDetailState(null, null)
+                throw e
+            } finally {
+                _isLoading.value = false
             }
-            _isLoading.value = false
         }
     }
 

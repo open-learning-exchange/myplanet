@@ -31,7 +31,8 @@ class HealthExaminationAdapter(
     private var mh: HealthExamination,
     private var userModel: UserEntity?,
     private var userMap: Map<String, UserEntity>,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val onEditClick: ((Intent) -> Unit)? = null
 ) : ListAdapter<HealthExaminationAdapter.HealthExaminationItem, HealthExaminationViewHolder>(DIFF_CALLBACK) {
 
     data class HealthExaminationItem(
@@ -149,9 +150,14 @@ class HealthExaminationAdapter(
         dialog.window?.setBackgroundDrawable(colorMultiSelectGrey.toDrawable())
 
         dialog.setButton(DialogInterface.BUTTON_NEUTRAL, context.getString(R.string.edit)) { _: DialogInterface?, _: Int ->
-            context.startActivity(Intent(context, HealthExaminationActivity::class.java)
+            val intent = Intent(context, HealthExaminationActivity::class.java)
                 .putExtra("id", realmExamination._id)
-                .putExtra("userId", mh._id))
+                .putExtra("userId", mh._id)
+            if (onEditClick != null) {
+                onEditClick.invoke(intent)
+            } else {
+                context.startActivity(intent)
+            }
         }
 
         dialog.show()
