@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.settings
 
 import android.app.Dialog
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -175,11 +176,18 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
         binding.contentLayout.visibility = View.GONE
         binding.emptyText.visibility = View.GONE
 
-        binding.availableSpaceText.text = getString(R.string.available_space_colon) +
-            " " + FileUtils.availableOverTotalMemoryFormattedString(requireContext())
+        val context = requireContext().applicationContext
 
         loadJob = viewLifecycleOwner.lifecycleScope.launch {
-            val result = withContext(dispatcherProvider.io) { scanStorage() }
+            val availableSpaceText = withContext(dispatcherProvider.io) {
+                FileUtils.availableOverTotalMemoryFormattedString(context)
+            }
+            binding.availableSpaceText.text = getString(R.string.available_space_colon) +
+                " " + availableSpaceText
+
+            val result = withContext(dispatcherProvider.io) {
+                scanStorage(context)
+            }
 
             categories.forEachIndexed { index, category ->
                 category.sizeBytes = result.sizes[index]
@@ -202,8 +210,8 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
 
     internal data class ScanResult(val totalBytes: Long, val sizes: LongArray, val counts: IntArray)
 
-    private fun scanStorage(): ScanResult {
-        return scanStorage(File(FileUtils.getOlePath(requireContext())))
+    private fun scanStorage(context: Context): ScanResult {
+        return scanStorage(File(FileUtils.getOlePath(context)))
     }
 
     internal fun scanStorage(oleDir: File): ScanResult {
