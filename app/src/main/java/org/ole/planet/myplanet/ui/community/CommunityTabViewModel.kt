@@ -29,17 +29,15 @@ class CommunityTabViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            val parentCode = configurationsRepository.getParentCode()
-            val communityName = configurationsRepository.getCommunityName()
-            val planetType = configurationsRepository.getPlanetType()
+            val config = configurationsRepository.getCommunityConfiguration()
             val user = userRepository.getUserModel()
             val planetCode = user?.planetCode.orEmpty()
 
             _state.value = CommunityTabState(
                 planetCode = planetCode,
-                parentCode = parentCode,
-                communityName = communityName,
-                planetType = planetType
+                parentCode = config.parentCode,
+                communityName = config.communityName,
+                planetType = config.planetType
             )
         }
     }

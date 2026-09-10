@@ -823,6 +823,22 @@ class ConfigurationsRepositoryImplTest {
     }
 
     @Test
+    fun `getCommunityConfiguration returns snapshot with all fields matching individual getters`() {
+        every { sharedPrefManager.getParentCode() } returns "parent_123"
+        every { sharedPrefManager.getCommunityName() } returns "community_abc"
+        every { sharedPrefManager.getRawString("planetType") } returns "planet_xyz"
+
+        val config = repository.getCommunityConfiguration()
+
+        assertEquals("parent_123", config.parentCode)
+        assertEquals("community_abc", config.communityName)
+        assertEquals("planet_xyz", config.planetType)
+        assertEquals(repository.getParentCode(), config.parentCode)
+        assertEquals(repository.getCommunityName(), config.communityName)
+        assertEquals(repository.getPlanetType(), config.planetType)
+    }
+
+    @Test
     fun `getParentCode delegates to sharedPrefManager`() {
         every { sharedPrefManager.getParentCode() } returns "parent_123"
 
