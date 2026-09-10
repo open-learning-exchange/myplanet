@@ -166,8 +166,16 @@ class ActivitiesRepositoryImpl @Inject constructor(
         )
     }
 
+    override suspend fun getResourceOpenCount(userName: String): Long {
+        return getResourceOpenCount(userName, UserSessionManager.KEY_RESOURCE_OPEN)
+    }
+
     override suspend fun getResourceOpenCount(userName: String, type: String): Long {
         return resourceActivityDao.countByUserAndType(userName, type)
+    }
+
+    override suspend fun getMostOpenedResource(userName: String): Pair<String, Int>? {
+        return getMostOpenedResource(userName, UserSessionManager.KEY_RESOURCE_OPEN)
     }
 
     override suspend fun getMostOpenedResource(userName: String, type: String): Pair<String, Int>? = withContext(dispatcherProvider.io) {
@@ -177,6 +185,18 @@ class ActivitiesRepositoryImpl @Inject constructor(
         } else {
             null
         }
+    }
+
+    override suspend fun getProfileActivityStats(userName: String): ProfileActivityStats = coroutineScope {
+        val mostOpenedDeferred = async { getMostOpenedResource(userName) }
+        val lastVisitDeferred = async { getGlobalLastVisit() }
+        val countDeferred = async { getResourceOpenCount(userName) }
+
+        ProfileActivityStats(
+            mostOpenedResource = mostOpenedDeferred.await(),
+            lastVisit = lastVisitDeferred.await(),
+            resourceOpenCount = countDeferred.await()
+        )
     }
 
     private suspend fun getUnuploadedLoginActivities(): List<LoginActivityData> {
