@@ -99,10 +99,11 @@ class SubmissionsRepositoryImplTest {
 
     @Test
     fun `getPendingSurveysFlow handles null userId`() = runTest {
-        every { submissionDao.observePendingSurveys(null) } returns kotlinx.coroutines.flow.flowOf(emptyList())
+        every { submissionDao.observePendingSurveys("") } returns kotlinx.coroutines.flow.flowOf(emptyList())
 
         val result = repository.getPendingSurveysFlow(null).first()
         assertTrue(result.isEmpty())
+        verify { submissionDao.observePendingSurveys("") }
     }
 
     @Test

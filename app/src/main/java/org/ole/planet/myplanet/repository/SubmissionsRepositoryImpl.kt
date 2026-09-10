@@ -78,7 +78,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override fun getPendingSurveysFlow(userId: String?): Flow<List<Submission>> {
-        return submissionDao.observePendingSurveys(userId)
+        return submissionDao.observePendingSurveys(userId ?: "")
     }
 
     override fun getSubmissionsFlow(userId: String): Flow<List<Submission>> {
