@@ -67,6 +67,51 @@ class HealthViewModelTest {
     }
 
     @Test
+    fun `selectPatient superseding load keeps isLoading true while second load is in flight`() = runTest {
+        val user1 = UserEntity().apply { id = "1"; name = "Patient 1" }
+        val user2 = UserEntity().apply { id = "2"; name = "Patient 2" }
+        val record2 = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
+
+        coEvery { healthRepository.getPatientById("1") } coAnswers {
+            kotlinx.coroutines.delay(1000)
+            user1
+        }
+        coEvery { healthRepository.getPatientById("2") } coAnswers {
+            kotlinx.coroutines.delay(1000)
+            user2
+        }
+        coEvery { healthRepository.getPatientHealthRecords("2", user2) } returns record2
+
+        viewModel.selectPatient("1")
+        testScheduler.advanceTimeBy(100)
+        assertEquals(true, viewModel.isLoading.value)
+
+        viewModel.selectPatient("2")
+        testScheduler.advanceTimeBy(100)
+
+        assertEquals(true, viewModel.isLoading.value)
+
+        advanceUntilIdle()
+        assertEquals(false, viewModel.isLoading.value)
+        assertEquals(user2, viewModel.patientDetailState.first().user)
+    }
+
+    @Test
+    fun `refreshSelectedPatient on cold start falls back to loadInitialPatient`() = runTest {
+        val currentUser = UserEntity().apply { id = "user1"; name = "Logged In User" }
+        val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
+
+        coEvery { userRepository.getUserModel() } returns currentUser
+        coEvery { healthRepository.getPatientById("user1") } returns currentUser
+        coEvery { healthRepository.getPatientHealthRecords("user1", currentUser) } returns record
+
+        viewModel.refreshSelectedPatient()
+        advanceUntilIdle()
+
+        assertEquals(currentUser, viewModel.patientDetailState.first().user)
+    }
+
+    @Test
     fun `refreshSelectedPatient forces re-query for current patient`() = runTest {
         val user = UserEntity().apply { id = "1"; name = "Test Patient" }
         val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())

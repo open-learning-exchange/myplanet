@@ -100,13 +100,16 @@ class HealthViewModel @Inject constructor(
             ?: _loggedInUser.value?.effectiveId?.trim()
         if (!targetId.isNullOrEmpty()) {
             fetchPatientData(targetId)
+        } else {
+            loadInitialPatient()
         }
     }
 
     private fun fetchPatientData(userId: String) {
         currentPatientId = userId
         selectPatientJob?.cancel()
-        selectPatientJob = viewModelScope.launch {
+        var job: Job? = null
+        job = viewModelScope.launch {
             _isLoading.value = true
             try {
                 val user = healthRepository.getPatientById(userId)
@@ -123,9 +126,12 @@ class HealthViewModel @Inject constructor(
                 _patientDetailState.value = PatientDetailState(null, null)
                 throw e
             } finally {
-                _isLoading.value = false
+                if (selectPatientJob === job) {
+                    _isLoading.value = false
+                }
             }
         }
+        selectPatientJob = job
     }
 
     fun loadHealthData(userId: String) {
