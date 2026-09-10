@@ -106,6 +106,8 @@ class CoursesProgressAdapter(private val context: Context) : ListAdapter<Courses
                     if (item.progressCurrent != null && item.progressMax != null) {
                         context.startActivity(
                             Intent(context, CourseProgressActivity::class.java)
+                                // Defensive: allows launching if a non-Activity context is ever passed.
+                                // From an Activity context this flag alone does not start a new task.
                                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 .putExtra("courseId", item.courseId)
                         )
