@@ -224,12 +224,7 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
 
         oleDir.walkTopDown().filter { it.isFile }.forEach { file ->
             val ext = file.extension
-            val index = if (ext.isEmpty()) {
-                StorageCategories.OTHER_INDEX
-            } else {
-                val idx = StorageCategories.indexOf(ext)
-                if (idx != StorageCategories.OTHER_INDEX) idx else StorageCategories.indexOf(ext.lowercase())
-            }
+            val index = if (ext.isEmpty()) StorageCategories.OTHER_INDEX else StorageCategories.indexOf(ext)
             val size = file.length()
             total += size
             sizes[index] += size
