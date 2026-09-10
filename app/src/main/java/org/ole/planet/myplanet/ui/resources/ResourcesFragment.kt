@@ -85,7 +85,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
     private var allResourceModels: List<ResourceListModel> = emptyList()
-    private val resourceLibraryFilter = ResourceLibraryFilter()
 
     private var lastFilteredCount: Int = 0
     @Inject
@@ -174,7 +173,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         refreshResourcesData()
     }
 
-    private fun currentFilterCriteria(): ResourceFilterCriteria = ResourceFilterCriteria(
+    private fun currentFilterCriteria(): ResourcesFilterCriteria = ResourcesFilterCriteria(
         searchQuery = etSearch.text?.toString()?.trim().orEmpty(),
         searchTags = searchTags,
         subjects = subjects,
@@ -213,14 +212,14 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
         if (cached.isNotEmpty()) {
             allResourceModels = cached
-            val filteredList = resourceLibraryFilter.apply(allResourceModels, currentFilterCriteria(), currentLocallyOfflineIds())
+            val filteredList = viewModel.applyFilter(allResourceModels, currentFilterCriteria(), currentLocallyOfflineIds())
             adapterLibrary.setLibraryList(filteredList)
 
             checkList(filteredList.size)
             showNoData(tvMessage, filteredList.size, "resources")
             changeButtonStatus()
         } else {
-            resourceLibraryFilter.reset()
+            viewModel.resetFilter()
         }
 
         viewModel.loadResources(isMyCourseLib, model?.id)
@@ -397,9 +396,9 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         val criteria = currentFilterCriteria()
         val locallyOfflineIds = currentLocallyOfflineIds()
         val filteredList = if (forceUpdate) {
-            resourceLibraryFilter.apply(allResourceModels, criteria, locallyOfflineIds)
+            viewModel.applyFilter(allResourceModels, criteria, locallyOfflineIds)
         } else {
-            resourceLibraryFilter.filterIfChanged(allResourceModels, criteria, locallyOfflineIds)
+            viewModel.filterIfChanged(allResourceModels, criteria, locallyOfflineIds)
                 ?: return lastFilteredCount
         }
 
@@ -683,7 +682,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             languages = languages,
             mediums = mediums
         )
-        return resourceLibraryFilter.countMatching(allResourceModels, criteria, currentLocallyOfflineIds())
+        return viewModel.countMatching(allResourceModels, criteria, currentLocallyOfflineIds())
     }
 
     override suspend fun getData(): Map<String, Set<String>> {
@@ -722,7 +721,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             adapterLibrary.setListener(null)
         }
 
-        resourceLibraryFilter.reset()
+        viewModel.resetFilter()
 
         layoutViewToggle = null
         toggleGridButton = null

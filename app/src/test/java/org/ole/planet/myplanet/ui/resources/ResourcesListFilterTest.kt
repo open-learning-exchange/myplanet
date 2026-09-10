@@ -9,7 +9,7 @@ import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.TagItem
 
-class ResourceLibraryFilterTest {
+class ResourcesListFilterTest {
 
     private fun model(id: String, title: String, subject: List<String>? = null, level: List<String>? = null, language: String? = null, mediaType: String? = null, isOffline: Boolean = false, isLocallyOffline: Boolean = false, tags: List<TagItem> = emptyList()): ResourceListModel {
         val library = MyLibrary().apply {
@@ -37,7 +37,7 @@ class ResourceLibraryFilterTest {
 
     private fun criteria(searchQuery: String = "", searchTags: List<TagEntity> = emptyList(),
         subjects: Set<String> = emptySet(), levels: Set<String> = emptySet(), languages: Set<String> = emptySet(), mediums: Set<String> = emptySet(), downloadFilterIndex: Int = 0
-    ) = ResourceFilterCriteria(searchQuery, searchTags, subjects, levels, languages, mediums, downloadFilterIndex)
+    ) = ResourcesFilterCriteria(searchQuery, searchTags, subjects, levels, languages, mediums, downloadFilterIndex)
 
     @Test
     fun `apply filters by search text`() {
@@ -45,7 +45,7 @@ class ResourceLibraryFilterTest {
             model(id = "1", title = "Algebra Basics"),
             model(id = "2", title = "Chemistry 101")
         )
-        val filter = ResourceLibraryFilter()
+        val filter = ResourcesListFilter()
 
         val result = filter.apply(models, criteria(searchQuery = "algebra"), emptySet())
 
@@ -59,7 +59,7 @@ class ResourceLibraryFilterTest {
             model(id = "1", title = "A", tags = listOf(TagItem(id = "t1", name = "Math"))),
             model(id = "2", title = "B", tags = listOf(TagItem(id = "t2", name = "Science")))
         )
-        val filter = ResourceLibraryFilter()
+        val filter = ResourcesListFilter()
 
         val result = filter.apply(models, criteria(searchTags = listOf(TagEntity().apply { id = "t1" })), emptySet())
 
@@ -79,7 +79,7 @@ class ResourceLibraryFilterTest {
             subject = listOf("Science"), level = listOf("Grade 2"),
             language = "Spanish", mediaType = "Audio"
         )
-        val filter = ResourceLibraryFilter()
+        val filter = ResourcesListFilter()
 
         val result = filter.apply(
             listOf(matching, nonMatching),
@@ -101,7 +101,7 @@ class ResourceLibraryFilterTest {
         val downloaded = model(id = "1", title = "A", isOffline = true)
         val notDownloaded = model(id = "2", title = "B", isOffline = false)
         val locallyOffline = model(id = "3", title = "C", isLocallyOffline = true)
-        val filter = ResourceLibraryFilter()
+        val filter = ResourcesListFilter()
 
         val result = filter.apply(
             listOf(downloaded, notDownloaded, locallyOffline),
@@ -116,7 +116,7 @@ class ResourceLibraryFilterTest {
     fun `apply filters to not-downloaded-only when download filter index is 2`() {
         val downloaded = model(id = "1", title = "A", isOffline = true)
         val notDownloaded = model(id = "2", title = "B", isOffline = false)
-        val filter = ResourceLibraryFilter()
+        val filter = ResourcesListFilter()
 
         val result = filter.apply(listOf(downloaded, notDownloaded), criteria(downloadFilterIndex = 2), emptySet())
 
@@ -126,7 +126,7 @@ class ResourceLibraryFilterTest {
     @Test
     fun `filterIfChanged returns null when criteria are unchanged since the last call`() {
         val models = listOf(model(id = "1", title = "A"))
-        val filter = ResourceLibraryFilter()
+        val filter = ResourcesListFilter()
         val criteria = criteria(searchQuery = "a")
 
         val first = filter.filterIfChanged(models, criteria, emptySet())
@@ -139,7 +139,7 @@ class ResourceLibraryFilterTest {
     @Test
     fun `filterIfChanged treats different tag order as the same criteria`() {
         val models = listOf(model(id = "1", title = "A", tags = listOf(TagItem(id = "a", name = "A"))))
-        val filter = ResourceLibraryFilter()
+        val filter = ResourcesListFilter()
         val tagA = TagEntity().apply { id = "a" }
         val tagB = TagEntity().apply { id = "b" }
 
@@ -153,7 +153,7 @@ class ResourceLibraryFilterTest {
     @Test
     fun `filterIfChanged recomputes once any criterion changes`() {
         val models = listOf(model(id = "1", title = "A"), model(id = "2", title = "B"))
-        val filter = ResourceLibraryFilter()
+        val filter = ResourcesListFilter()
 
         filter.filterIfChanged(models, criteria(searchQuery = "a"), emptySet())
         val second = filter.filterIfChanged(models, criteria(searchQuery = "b"), emptySet())
@@ -164,7 +164,7 @@ class ResourceLibraryFilterTest {
     @Test
     fun `filterIfChanged recomputes when the locally offline ids change`() {
         val models = listOf(model(id = "1", title = "A"), model(id = "2", title = "B"))
-        val filter = ResourceLibraryFilter()
+        val filter = ResourcesListFilter()
         val downloadedOnly = criteria(downloadFilterIndex = 1)
 
         val first = filter.filterIfChanged(models, downloadedOnly, setOf("1"))
@@ -177,7 +177,7 @@ class ResourceLibraryFilterTest {
     @Test
     fun `reset forces the next filterIfChanged call to recompute`() {
         val models = listOf(model(id = "1", title = "A"))
-        val filter = ResourceLibraryFilter()
+        val filter = ResourcesListFilter()
         val sameCriteria = criteria(searchQuery = "a")
 
         filter.filterIfChanged(models, sameCriteria, emptySet())
@@ -193,7 +193,7 @@ class ResourceLibraryFilterTest {
             model(id = "1", title = "A", subject = listOf("Math")),
             model(id = "2", title = "B", subject = listOf("Science"))
         )
-        val filter = ResourceLibraryFilter()
+        val filter = ResourcesListFilter()
 
         assertEquals(1, filter.countMatching(models, criteria(subjects = setOf("Math")), emptySet()))
         assertEquals(2, filter.countMatching(models, criteria(), emptySet()))
@@ -205,7 +205,7 @@ class ResourceLibraryFilterTest {
             model(id = "1", title = "A", subject = listOf("Math")),
             model(id = "2", title = "B", subject = listOf("Science"))
         )
-        val filter = ResourceLibraryFilter()
+        val filter = ResourcesListFilter()
         val sameCriteria = criteria(subjects = setOf("Math"))
 
         filter.countMatching(models, sameCriteria, emptySet())
