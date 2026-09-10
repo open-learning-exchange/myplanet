@@ -56,7 +56,6 @@ import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.utils.ResourcesSearchUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
@@ -87,12 +86,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private var confirmation: AlertDialog? = null
     private var allResourceModels: List<ResourceListModel> = emptyList()
 
-    private var lastSearchQuery: String? = null
-    private var lastSearchTags: List<String>? = null
-    private var lastSubjects: Set<String>? = null
-    private var lastLevels: Set<String>? = null
-    private var lastLanguages: Set<String>? = null
-    private var lastMediums: Set<String>? = null
     private var lastFilteredCount: Int = 0
     @Inject
     lateinit var prefManager: SharedPrefManager
@@ -102,7 +95,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     lateinit var realtimeSyncManager: RealtimeSyncManager
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal var selectedDownloadFilterIndex: Int = 0   // 0 = All
-    private var lastDownloadFilterIndex: Int = 0
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
     private var refreshJob: Job? = null
     private var searchJob: Job? = null
@@ -181,6 +173,19 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         refreshResourcesData()
     }
 
+    private fun currentFilterCriteria(): ResourcesFilterCriteria = ResourcesFilterCriteria(
+        searchQuery = etSearch.text?.toString()?.trim().orEmpty(),
+        searchTags = searchTags,
+        subjects = subjects,
+        levels = levels,
+        languages = languages,
+        mediums = mediums,
+        downloadFilterIndex = selectedDownloadFilterIndex
+    )
+
+    private fun currentLocallyOfflineIds(): Set<String> =
+        if (::adapterLibrary.isInitialized) adapterLibrary.getLocallyOfflineIds() else emptySet()
+
     override suspend fun getAdapter(): ListAdapter<*, *> {
         val user = viewModel.getCurrentUser()
         // The adapter caches the Context (Activity) which outlives onCreateView,
@@ -202,28 +207,19 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
         adapterLibrary.setListener(this)
 
-        val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
-        val currentSearchTags = searchTags
-        val searchTagIds = currentSearchTags.map { it.id }.sorted()
-        lastSearchQuery = searchQuery
-        lastSearchTags = searchTagIds
-        lastSubjects = HashSet(subjects)
-        lastLevels = HashSet(levels)
-        lastLanguages = HashSet(languages)
-        lastMediums = HashSet(mediums)
-        lastDownloadFilterIndex = selectedDownloadFilterIndex
-
         val cached = viewModel.resourcesState.value.ifEmpty {
             viewModel.getCachedResources(isMyCourseLib, model?.id) ?: emptyList()
         }
         if (cached.isNotEmpty()) {
             allResourceModels = cached
-            val filteredList = applyFilterModels(filterLocalLibraryByTag(allResourceModels, searchQuery, currentSearchTags))
+            val filteredList = viewModel.applyFilter(allResourceModels, currentFilterCriteria(), currentLocallyOfflineIds())
             adapterLibrary.setLibraryList(filteredList)
 
             checkList(filteredList.size)
             showNoData(tvMessage, filteredList.size, "resources")
             changeButtonStatus()
+        } else {
+            viewModel.resetFilter()
         }
 
         viewModel.loadResources(isMyCourseLib, model?.id)
@@ -386,35 +382,25 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             .launchIn(viewLifecycleOwner.lifecycleScope)
     }
 
+    private fun scheduleFilterRefresh() {
+        if (view == null) return
+        searchJob?.cancel()
+        searchJob = viewLifecycleOwner.lifecycleScope.launch {
+            applyFiltersAndUpdateUI()
+        }
+    }
+
     private fun applyFiltersAndUpdateUI(scrollToTop: Boolean = true, forceUpdate: Boolean = false): Int {
         if (!::adapterLibrary.isInitialized || !isAdded || _binding == null) return lastFilteredCount
-        val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
 
-        val currentSearchTags = searchTags
-        val searchTagIds = currentSearchTags.map { it.id }.sorted()
-
-        if (!forceUpdate &&
-            searchQuery == lastSearchQuery &&
-            searchTagIds == lastSearchTags &&
-            subjects == lastSubjects &&
-            levels == lastLevels &&
-            languages == lastLanguages &&
-            mediums == lastMediums &&
-            selectedDownloadFilterIndex == lastDownloadFilterIndex
-        ) {
-            return lastFilteredCount
+        val criteria = currentFilterCriteria()
+        val locallyOfflineIds = currentLocallyOfflineIds()
+        val filteredList = if (forceUpdate) {
+            viewModel.applyFilter(allResourceModels, criteria, locallyOfflineIds)
+        } else {
+            viewModel.filterIfChanged(allResourceModels, criteria, locallyOfflineIds)
+                ?: return lastFilteredCount
         }
-
-        lastDownloadFilterIndex = selectedDownloadFilterIndex
-
-        lastSearchQuery = searchQuery
-        lastSearchTags = searchTagIds
-        lastSubjects = HashSet(subjects)
-        lastLevels = HashSet(levels)
-        lastLanguages = HashSet(languages)
-        lastMediums = HashSet(mediums)
-
-        val filteredList = applyFilterModels(filterLocalLibraryByTag(allResourceModels, searchQuery, currentSearchTags))
 
         if (scrollToTop) {
             adapterLibrary.setLibraryList(filteredList) {
@@ -587,10 +573,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         subjects.clear()
         languages.clear()
         updateFilterBadge()
-        searchJob?.cancel()
-        searchJob = viewLifecycleOwner.lifecycleScope.launch {
-            applyFiltersAndUpdateUI()
-        }
+        scheduleFilterRefresh()
     }
 
     override fun onSelectedListChange(list: List<ResourceItem>) {
@@ -632,12 +615,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     override fun onTagClicked(tag: TagEntity) {
         if (!searchTags.any { it.name == tag.name }) searchTags.add(tag)
         renderSearchTagsUi()
-        if (view != null) {
-            searchJob?.cancel()
-            searchJob = viewLifecycleOwner.lifecycleScope.launch {
-                applyFiltersAndUpdateUI()
-            }
-        }
+        scheduleFilterRefresh()
     }
 
     private fun renderTagChips() {
@@ -651,12 +629,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
                 setOnCloseIconClickListener {
                     searchTags.remove(tag)
                     renderSearchTagsUi()
-                    if (view != null) {
-                        searchJob?.cancel()
-                        searchJob = viewLifecycleOwner.lifecycleScope.launch {
-                            applyFiltersAndUpdateUI()
-                        }
-                    }
+                    scheduleFilterRefresh()
                 }
             }
             flexBoxTags.addView(chip)
@@ -666,36 +639,19 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     override fun onTagSelected(tag: TagEntity) {
         searchTags = mutableListOf(tag)
         renderSearchTagsUi()
-        if (view != null) {
-            searchJob?.cancel()
-            searchJob = viewLifecycleOwner.lifecycleScope.launch {
-                applyFiltersAndUpdateUI()
-            }
-        }
+        scheduleFilterRefresh()
     }
 
     override fun onOkClicked(list: List<TagEntity>?) {
         if (list?.isEmpty() == true) {
             searchTags.clear()
-            renderSearchTagsUi()
-            if (view != null) {
-                searchJob?.cancel()
-                searchJob = viewLifecycleOwner.lifecycleScope.launch {
-                    applyFiltersAndUpdateUI()
-                }
-            }
         } else {
             for (tag in list ?: emptyList()) {
                 if (!searchTags.any { it.name == tag.name }) searchTags.add(tag)
             }
-            renderSearchTagsUi()
-            if (view != null) {
-                searchJob?.cancel()
-                searchJob = viewLifecycleOwner.lifecycleScope.launch {
-                    applyFiltersAndUpdateUI()
-                }
-            }
         }
+        renderSearchTagsUi()
+        scheduleFilterRefresh()
     }
 
     private fun changeButtonStatus() {
@@ -720,11 +676,13 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     override fun getFilteredCount(subjects: Set<String>, languages: Set<String>, mediums: Set<String>, levels: Set<String>): Int {
-        val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
-        return applyFilterModels(
-            filterLocalLibraryByTag(allResourceModels, searchQuery, searchTags),
-            subjects, levels, languages, mediums
-        ).size
+        val criteria = currentFilterCriteria().copy(
+            subjects = subjects,
+            levels = levels,
+            languages = languages,
+            mediums = mediums
+        )
+        return viewModel.countMatching(allResourceModels, criteria, currentLocallyOfflineIds())
     }
 
     override suspend fun getData(): Map<String, Set<String>> {
@@ -763,13 +721,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             adapterLibrary.setListener(null)
         }
 
-        lastSearchQuery = null
-        lastSearchTags = null
-        lastSubjects = null
-        lastLevels = null
-        lastLanguages = null
-        lastMediums = null
-        lastDownloadFilterIndex = -1
+        viewModel.resetFilter()
 
         layoutViewToggle = null
         toggleGridButton = null
@@ -850,45 +802,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     
     override fun getSyncRecyclerView(): RecyclerView? {
         return if (::recyclerView.isInitialized) recyclerView else null
-    }
-
-    private fun filterLocalLibraryByTag(models: List<ResourceListModel>, s: String, tags: List<TagEntity>): List<ResourceListModel> {
-        var filteredList = ResourcesSearchUtils.searchLocalModels(models, s)
-
-        if (tags.isNotEmpty()) {
-            filteredList = filteredList.filter { model ->
-                tags.any { searchTag -> model.tags.any { it.id == searchTag.id } }
-            }
-        }
-        return filteredList
-    }
-
-    private fun applyFilterModels(
-        models: List<ResourceListModel>,
-        subjects: Set<String> = this.subjects,
-        levels: Set<String> = this.levels,
-        languages: Set<String> = this.languages,
-        mediums: Set<String> = this.mediums
-    ): List<ResourceListModel> {
-        val locallyOfflineIds = if (::adapterLibrary.isInitialized) adapterLibrary.getLocallyOfflineIds() else emptySet()
-        return models.filter { model ->
-            val l = model.library
-            val sub = subjects.isEmpty() || subjects.let { l.subject?.containsAll(it) } == true
-            val lev = levels.isEmpty() || l.level?.containsAll(levels) == true
-            val lan = languages.isEmpty() || languages.contains(l.language)
-            val med = mediums.isEmpty() || mediums.contains(l.mediaType)
-
-            val isDownloaded = model.item.isOffline ||
-                    locallyOfflineIds.contains(model.item.id) ||
-                    model.isLocallyOffline
-            val passesDownloadFilter = when (selectedDownloadFilterIndex) {
-                1 -> isDownloaded
-                2 -> !isDownloaded
-                else -> true
-            }
-
-            sub && lev && lan && med && passesDownloadFilter
-        }
     }
 
     override fun deleteSelected(deleteProgress: Boolean) {

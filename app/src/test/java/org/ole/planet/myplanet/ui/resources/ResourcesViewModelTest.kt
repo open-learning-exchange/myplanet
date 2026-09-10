@@ -12,6 +12,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -197,6 +198,29 @@ class ResourcesViewModelTest {
 
         val secondToggleResult = viewModel.toggleSortOrder(firstToggleResult)
         assertEquals(listOf(100L, 200L, 300L), secondToggleResult.map { it.item.createdDate })
+    }
+
+    @Test
+    fun `filterIfChanged memoizes the criteria in the view model until resetFilter`() = runTest {
+        val models = listOf(createResourceModel("a", 1), createResourceModel("b", 2))
+        val notDownloaded = ResourcesFilterCriteria(
+            searchQuery = "",
+            searchTags = emptyList(),
+            subjects = emptySet(),
+            levels = emptySet(),
+            languages = emptySet(),
+            mediums = emptySet(),
+            downloadFilterIndex = 2
+        )
+
+        val first = viewModel.filterIfChanged(models, notDownloaded, setOf("a"))
+        val second = viewModel.filterIfChanged(models, notDownloaded, setOf("a"))
+        viewModel.resetFilter()
+        val afterReset = viewModel.filterIfChanged(models, notDownloaded, setOf("a"))
+
+        assertEquals(listOf("b"), first?.map { it.item.id })
+        assertNull(second)
+        assertEquals(listOf("b"), afterReset?.map { it.item.id })
     }
 
     private fun createResourceModel(title: String, createdDate: Long): ResourceListModel {
