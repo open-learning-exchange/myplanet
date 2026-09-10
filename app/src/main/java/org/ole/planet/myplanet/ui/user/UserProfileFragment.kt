@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.user
 
+import android.Manifest
 import android.app.Activity.RESULT_OK
 import android.app.DatePickerDialog
 import android.app.Dialog
@@ -48,7 +49,8 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.language
 import org.ole.planet.myplanet.R.array.subject_level
-import org.ole.planet.myplanet.base.BasePermissionActivity
+import org.ole.planet.myplanet.base.hasPermission
+import org.ole.planet.myplanet.base.showPermissionDeniedFeedback
 import org.ole.planet.myplanet.databinding.DialogPhotoPickerBinding
 import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
 import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding
@@ -82,6 +84,7 @@ class UserProfileFragment : Fragment() {
     var date: String? = null
     private var photoURI: Uri? = null
     private lateinit var captureImageLauncher: ActivityResultLauncher<Uri>
+    private lateinit var requestCameraLauncher: ActivityResultLauncher<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -120,6 +123,17 @@ class UserProfileFragment : Fragment() {
             }
         }
 
+        requestCameraLauncher =
+            registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+                if (granted) {
+                    capturePhoto()
+                } else {
+                    requireActivity().showPermissionDeniedFeedback(
+                        Manifest.permission.CAMERA,
+                        R.string.camera_permission_required,
+                    )
+                }
+            }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -499,17 +513,23 @@ class UserProfileFragment : Fragment() {
     }
 
     private fun takePhoto() {
-        (requireActivity() as BasePermissionActivity).requestCameraPermission {
-            val values = ContentValues().apply {
-                put(MediaStore.Images.Media.TITLE, "Photo_${UUID.randomUUID()}")
-                put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/ole/photo")
-                }
-            }
-            photoURI = requireActivity().contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-            photoURI?.let { captureImageLauncher.launch(it) }
+        if (requireContext().hasPermission(Manifest.permission.CAMERA)) {
+            capturePhoto()
+        } else {
+            requestCameraLauncher.launch(Manifest.permission.CAMERA)
         }
+    }
+
+    private fun capturePhoto() {
+        val values = ContentValues().apply {
+            put(MediaStore.Images.Media.TITLE, "Photo_${UUID.randomUUID()}")
+            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/ole/photo")
+            }
+        }
+        photoURI = requireActivity().contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+        photoURI?.let { captureImageLauncher.launch(it) }
     }
 
     private fun startIntent(path: String?) {

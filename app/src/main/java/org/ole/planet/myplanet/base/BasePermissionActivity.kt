@@ -6,18 +6,14 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Process
 import android.provider.Settings
 import android.util.Log
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import javax.inject.Inject
 import kotlinx.coroutines.launch
@@ -37,63 +33,8 @@ abstract class BasePermissionActivity : AppCompatActivity() {
     @Inject
     open lateinit var timeProvider: TimeProvider
 
-    private var pendingPermissionRequest: PermissionRequest? = null
-
-    private val singlePermissionLauncher: ActivityResultLauncher<String> =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            val request = pendingPermissionRequest
-            pendingPermissionRequest = null
-            if (granted) request?.onGranted?.invoke() else request?.onDenied?.invoke()
-        }
-
-    private class PermissionRequest(val onGranted: () -> Unit, val onDenied: () -> Unit)
-
-    fun checkPermission(strPermission: String?): Boolean {
-        val result = strPermission?.let { ContextCompat.checkSelfPermission(this, it) }
-        return result == PackageManager.PERMISSION_GRANTED
-    }
-
-    /**
-     * Single-permission request via the modern [ActivityResultContracts.RequestPermission]
-     * launcher. Fragments should call this through their host activity instead of registering
-     * their own permission launcher, so denial/rationale handling stays in one place.
-     */
-    fun requestPermission(permission: String, onGranted: () -> Unit, onDenied: () -> Unit = {}) {
-        if (checkPermission(permission)) {
-            onGranted()
-        } else {
-            pendingPermissionRequest = PermissionRequest(onGranted, onDenied)
-            singlePermissionLauncher.launch(permission)
-        }
-    }
-
-    fun requestCameraPermission(onGranted: () -> Unit) {
-        requestPermission(Manifest.permission.CAMERA, onGranted) {
-            if (!shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
-                showPermissionSettingsDialog(R.string.camera_permission_required)
-            } else {
-                Utilities.toast(this, "camera permission is required.")
-            }
-        }
-    }
-
-    fun requestRecordAudioPermission(onGranted: () -> Unit) {
-        requestPermission(Manifest.permission.RECORD_AUDIO, onGranted) {
-            Utilities.toast(this, getString(R.string.microphone_permission_required))
-        }
-    }
-
-    private fun showPermissionSettingsDialog(messageRes: Int) {
-        AlertDialog.Builder(this, R.style.AlertDialogTheme)
-            .setTitle(R.string.permission_required)
-            .setMessage(messageRes)
-            .setPositiveButton(R.string.settings) { dialog, _ ->
-                dialog.dismiss()
-                openAppSettings()
-            }
-            .setNegativeButton(R.string.cancel) { dialog, _ -> dialog.dismiss() }
-            .show()
-    }
+    fun checkPermission(strPermission: String?): Boolean =
+        strPermission?.let { hasPermission(it) } == true
 
     fun checkUsagesPermission() {
         if (!getUsagesPermission(this)) {
@@ -404,18 +345,6 @@ abstract class BasePermissionActivity : AppCompatActivity() {
         } catch (e: ActivityNotFoundException) {
             startActivity(Intent(Settings.ACTION_SETTINGS))
             Log.e("BasePermissionActivity", "ActivityNotFoundException for notification settings", e)
-        }
-    }
-
-    fun openAppSettings() {
-        try {
-            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                data = Uri.fromParts("package", packageName, null)
-            }
-            startActivity(intent)
-        } catch (e: ActivityNotFoundException) {
-            startActivity(Intent(Settings.ACTION_SETTINGS))
-            Log.e("BasePermissionActivity", "ActivityNotFoundException for app settings", e)
         }
     }
 

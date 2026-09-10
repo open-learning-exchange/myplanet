@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.resources
 
+import android.Manifest
 import android.app.Dialog
 import android.content.ContentValues
 import android.content.Context
@@ -34,7 +35,8 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BasePermissionActivity
+import org.ole.planet.myplanet.base.hasPermission
+import org.ole.planet.myplanet.base.showPermissionDeniedFeedback
 import org.ole.planet.myplanet.callback.OnAudioRecordListener
 import org.ole.planet.myplanet.databinding.AlertSoundRecorderBinding
 import org.ole.planet.myplanet.databinding.FragmentAddResourceBinding
@@ -57,6 +59,8 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     private lateinit var captureImageLauncher: ActivityResultLauncher<Uri>
     private lateinit var captureVideoLauncher: ActivityResultLauncher<Uri>
     private lateinit var openFolderLauncher: ActivityResultLauncher<String>
+    private lateinit var requestCameraForPhotoLauncher: ActivityResultLauncher<String>
+    private lateinit var requestCameraForVideoLauncher: ActivityResultLauncher<String>
     private var type: Int = 0
     private var teamId: String? = null
     @Inject
@@ -92,9 +96,25 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                 Utilities.toast(activity, "no file selected")
             }
         }
+        requestCameraForPhotoLauncher = registerCameraPermissionLauncher { capturePhoto() }
+        requestCameraForVideoLauncher = registerCameraPermissionLauncher { captureVideo() }
         audioRecorder = AudioRecorder()
         audioRecorder?.setCaller(this, requireContext())
     }
+
+    private fun registerCameraPermissionLauncher(
+        onGranted: () -> Unit,
+    ): ActivityResultLauncher<String> =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                onGranted()
+            } else {
+                requireActivity().showPermissionDeniedFeedback(
+                    Manifest.permission.CAMERA,
+                    R.string.camera_permission_required,
+                )
+            }
+        }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val bottomSheetDialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
@@ -174,12 +194,18 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     }
 
     private fun dispatchTakeVideoIntent() {
-        (requireActivity() as BasePermissionActivity).requestCameraPermission {
-            val takeVideoIntent = Intent(MediaStore.ACTION_VIDEO_CAPTURE)
-            videoUri = createVideoFileUri()
-            takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, videoUri)
-            captureVideoLauncher.launch(videoUri)
+        if (requireContext().hasPermission(Manifest.permission.CAMERA)) {
+            captureVideo()
+        } else {
+            requestCameraForVideoLauncher.launch(Manifest.permission.CAMERA)
         }
+    }
+
+    private fun captureVideo() {
+        val takeVideoIntent = Intent(MediaStore.ACTION_VIDEO_CAPTURE)
+        videoUri = createVideoFileUri()
+        takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, videoUri)
+        captureVideoLauncher.launch(videoUri)
     }
 
     private fun createVideoFileUri(): Uri? {
@@ -194,17 +220,23 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     }
 
     private fun takePhoto() {
-        (requireActivity() as BasePermissionActivity).requestCameraPermission {
-            val values = ContentValues().apply {
-                put(MediaStore.Images.Media.TITLE, "Photo_" + UUID.randomUUID().toString())
-                put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/ole/photo")
-                }
-            }
-            photoURI = requireActivity().contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-            photoURI?.let { captureImageLauncher.launch(it) }
+        if (requireContext().hasPermission(Manifest.permission.CAMERA)) {
+            capturePhoto()
+        } else {
+            requestCameraForPhotoLauncher.launch(Manifest.permission.CAMERA)
         }
+    }
+
+    private fun capturePhoto() {
+        val values = ContentValues().apply {
+            put(MediaStore.Images.Media.TITLE, "Photo_" + UUID.randomUUID().toString())
+            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/ole/photo")
+            }
+        }
+        photoURI = requireActivity().contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+        photoURI?.let { captureImageLauncher.launch(it) }
     }
 
     private fun handleUri(uri: Uri?, requestCode: Int) {

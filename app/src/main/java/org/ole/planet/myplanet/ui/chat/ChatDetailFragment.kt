@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.chat
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.graphics.Typeface
@@ -16,6 +17,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.LinearLayout
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.view.isNotEmpty
 import androidx.fragment.app.Fragment
@@ -33,12 +35,13 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isPrimaryServerReachable
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.hasPermission
+import org.ole.planet.myplanet.base.showPermissionDeniedFeedback
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.base.BasePermissionActivity
 import org.ole.planet.myplanet.repository.ChatResult
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -86,6 +89,18 @@ class ChatDetailFragment : Fragment() {
     private var speechRecognizer: SpeechRecognizer? = null
     private var isListening = false
     private var textBeforeVoice: String = ""
+
+    private val requestMicPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                startSpeechToText()
+            } else {
+                requireActivity().showPermissionDeniedFeedback(
+                    Manifest.permission.RECORD_AUDIO,
+                    R.string.microphone_permission_required,
+                )
+            }
+        }
 
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
@@ -145,10 +160,10 @@ class ChatDetailFragment : Fragment() {
         binding.buttonGchatMic.setOnClickListener {
             if (isListening) {
                 stopSpeechToText()
+            } else if (requireContext().hasPermission(Manifest.permission.RECORD_AUDIO)) {
+                startSpeechToText()
             } else {
-                (requireActivity() as BasePermissionActivity).requestRecordAudioPermission {
-                    startSpeechToText()
-                }
+                requestMicPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
             }
         }
         initSpeechRecognizer()
