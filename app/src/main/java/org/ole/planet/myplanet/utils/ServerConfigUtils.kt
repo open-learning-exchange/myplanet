@@ -110,14 +110,16 @@ object ServerConfigUtils {
             Triple(user, password, dbUrl)
         }
 
-        sharedPrefManager.setServerPin(password)
-        sharedPrefManager.setUrlUser(urlUser)
-        sharedPrefManager.setUrlPwd(urlPwd)
-        sharedPrefManager.setUrlScheme(uri.scheme ?: "")
-        sharedPrefManager.setUrlHost(uri.host ?: "")
-        sharedPrefManager.setAlternativeUrl(url)
-        sharedPrefManager.setProcessedAlternativeUrl(couchdbURL)
-        sharedPrefManager.setIsAlternativeUrl(true)
+        sharedPrefManager.saveAlternativeServerConfig(
+            serverPin = password,
+            urlUser = urlUser,
+            urlPwd = urlPwd,
+            urlScheme = uri.scheme ?: "",
+            urlHost = uri.host ?: "",
+            alternativeUrl = url,
+            processedAlternativeUrl = couchdbURL,
+            isAlternativeUrl = true
+        )
 
         return couchdbURL
     }
