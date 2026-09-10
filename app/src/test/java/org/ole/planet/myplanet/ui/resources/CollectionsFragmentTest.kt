@@ -91,6 +91,62 @@ class CollectionsFragmentTest {
         assertFalse((result[0] as TagData.Parent).isSelected)
         assertTrue((result[1] as TagData.Parent).isSelected)
     }
+
+    @Test
+    fun `buildTagDataList reflects child selection state correctly`() {
+        val parents = listOf(tag("p1", "Math"))
+        val child = tag("c1", "Algebra")
+        val childMap = mapOf("p1" to listOf(child))
+        val fragment = newFragment(parents, childMap, selected = listOf(tag("c1", "Algebra")))
+
+        val initialResult = buildTagDataList(fragment, parents)
+        val parent = initialResult[0] as TagData.Parent
+        parent.isExpanded = true
+        setCurrentTagDataList(fragment, initialResult)
+
+        val result = buildTagDataList(fragment, parents)
+        assertEquals(2, result.size)
+        assertFalse((result[0] as TagData.Parent).isSelected)
+        assertTrue((result[1] as TagData.Child).isSelected)
+    }
+
+    @Test
+    fun `reconcile tags preserves order and keeps unmatched tags`() {
+        val loadedParent = tag("p1", "Math (Loaded)")
+        val loadedChild = tag("c1", "Algebra (Loaded)")
+        val parents = listOf(loadedParent)
+        val childMap = mapOf("p1" to listOf(loadedChild))
+
+        val unmappedSelected = tag("x99", "Unknown")
+        val staleChildSelected = tag("c1", "Algebra (Stale)")
+        val staleParentSelected = tag("p1", "Math (Stale)")
+
+        val selected = listOf(unmappedSelected, staleChildSelected, staleParentSelected)
+        val fragment = newFragment(parents, childMap, selected)
+
+        val getMatchKeyMethod = CollectionsFragment::class.java.getDeclaredMethod("getMatchKey", TagEntity::class.java).apply { isAccessible = true }
+
+        val tagMap = HashMap<String, TagEntity>()
+        parents.forEach { tag ->
+            (getMatchKeyMethod.invoke(fragment, tag) as? String)?.let { tagMap.putIfAbsent(it, tag) }
+        }
+        childMap.values.forEach { children ->
+            children.forEach { tag ->
+                (getMatchKeyMethod.invoke(fragment, tag) as? String)?.let { tagMap.putIfAbsent(it, tag) }
+            }
+        }
+
+        val reconciled = selected.map { sel ->
+            val key = getMatchKeyMethod.invoke(fragment, sel) as? String
+            if (key != null) tagMap[key] ?: sel else sel
+        }
+
+        assertEquals(3, reconciled.size)
+        // Order preserved: [unmapped, c1, p1]
+        assertEquals(unmappedSelected, reconciled[0])
+        assertEquals(loadedChild, reconciled[1])
+        assertEquals(loadedParent, reconciled[2])
+    }
 }
 
 private fun setField(target: Any, name: String, value: Any) {

@@ -53,6 +53,10 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
         return binding.root
     }
 
+    private fun getMatchKey(tag: TagEntity): String? {
+        return tag.id.ifEmpty { tag.name?.takeIf { it.isNotEmpty() } }
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -67,9 +71,18 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
                 is CollectionsState.Success -> {
                     list = state.list
                     childMap = state.childMap
-                    val allTags = list + childMap.values.flatten()
+                    val tagMap = HashMap<String, TagEntity>()
+                    list.forEach { tag ->
+                        getMatchKey(tag)?.let { tagMap.putIfAbsent(it, tag) }
+                    }
+                    childMap.values.forEach { children ->
+                        children.forEach { tag ->
+                            getMatchKey(tag)?.let { tagMap.putIfAbsent(it, tag) }
+                        }
+                    }
                     val reconciledList = selectedItemsList.map { selected ->
-                        allTags.find { selected.matches(it) } ?: selected
+                        val key = getMatchKey(selected)
+                        if (key != null) tagMap[key] ?: selected else selected
                     }
                     selectedItemsList.clear()
                     selectedItemsList.addAll(reconciledList)
@@ -131,15 +144,18 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
                 parentMap[it.tag.id] = it
             }
         }
+        val selectedKeys = selectedItemsList.mapNotNullTo(HashSet()) { getMatchKey(it) }
         for (parentTag in parents) {
-            val isSelected = selectedItemsList.any { it.matches(parentTag) }
+            val parentKey = getMatchKey(parentTag)
+            val isSelected = parentKey != null && selectedKeys.contains(parentKey)
             val parent = parentMap[parentTag.id] ?: TagData.Parent(parentTag, false, isSelected, isSelectMultiple)
 
             tagDataList.add(parent.copy(isSelected = isSelected, isSelectMultiple = isSelectMultiple))
 
             if (parent.isExpanded) {
                 childMap[parent.tag.id]?.forEach { childTag ->
-                    val isChildSelected = selectedItemsList.any { it.matches(childTag) }
+                    val childKey = getMatchKey(childTag)
+                    val isChildSelected = childKey != null && selectedKeys.contains(childKey)
                     tagDataList.add(TagData.Child(childTag, isChildSelected, isSelectMultiple))
                 }
             }
