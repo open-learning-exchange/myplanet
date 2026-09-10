@@ -25,7 +25,6 @@ import org.ole.planet.myplanet.utils.UrlUtils
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import org.robolectric.shadows.ShadowLooper
 
 @HiltAndroidTest
 @RunWith(RobolectricTestRunner::class)
@@ -60,8 +59,27 @@ class ResourcesFragmentActionTest {
         }
     }
 
+    private fun launchFragment(): ResourcesFragment {
+        val activity = Robolectric.buildActivity(TestDashboardElementActivity::class.java).setup().get()
+        val fragment = ResourcesFragment()
+        activity.openCallFragment(fragment, "library")
+        activity.supportFragmentManager.executePendingTransactions()
+        return fragment
+    }
+
     @Test
-    fun testCollectionsButton_showsCollectionsFragmentAndDismissesCardFilter() {
+    fun testSortCapsule_showsSortSheet() {
+        val fragment = launchFragment()
+
+        fragment.requireView().findViewById<View>(R.id.btn_capsule_sort).performClick()
+        fragment.childFragmentManager.executePendingTransactions()
+
+        val sheet = fragment.childFragmentManager.fragments.firstOrNull { it is ResourcesSortFragment }
+        assertNotNull(sheet)
+    }
+
+    @Test
+    fun testFilterCapsule_showsFilterSheet() {
         runBlocking {
             tagDao.upsertAll(
                 listOf(
@@ -75,78 +93,45 @@ class ResourcesFragmentActionTest {
             )
         }
 
-        val activity = Robolectric.buildActivity(TestDashboardElementActivity::class.java).setup().get()
-        val fm = activity.supportFragmentManager
+        val fragment = launchFragment()
 
-        val fragment = ResourcesFragment()
-        activity.openCallFragment(fragment, "library")
-        fm.executePendingTransactions()
-
-        val cardFilter = fragment.requireView().findViewById<View>(R.id.card_filter)
-        cardFilter.visibility = View.VISIBLE
-
-        val btnCollections = fragment.requireView().findViewById<View>(R.id.btn_collections)
-        btnCollections.performClick()
+        fragment.requireView().findViewById<View>(R.id.btn_capsule_filters).performClick()
         fragment.childFragmentManager.executePendingTransactions()
 
-        assertEquals(View.GONE, cardFilter.visibility)
-        val dialog = fragment.childFragmentManager.fragments.firstOrNull { it is CollectionsFragment }
-        assertNotNull(dialog)
+        val sheet = fragment.childFragmentManager.fragments.firstOrNull { it is ResourcesFilterFragment }
+        assertNotNull(sheet)
     }
 
     @Test
-    fun testClearTagsButton_clearsTagsAndDismissesCardFilter() {
-        val activity = Robolectric.buildActivity(TestDashboardElementActivity::class.java).setup().get()
-        val fm = activity.supportFragmentManager
+    fun testFilterBadge_reflectsSelectedTagCount() {
+        val fragment = launchFragment()
+        val badge = fragment.requireView().findViewById<View>(R.id.tv_capsule_filter_badge)
 
-        val fragment = ResourcesFragment()
-        activity.openCallFragment(fragment, "library")
-        fm.executePendingTransactions()
+        assertEquals(View.GONE, badge.visibility)
 
-        fragment.searchTags.add(TagEntity().apply {
+        fragment.onTagSelected(TagEntity().apply {
             id = "test_tag"
             name = "Test Tag"
         })
+        fragment.childFragmentManager.executePendingTransactions()
 
-        val cardFilter = fragment.requireView().findViewById<View>(R.id.card_filter)
-        cardFilter.visibility = View.VISIBLE
-
-        val btnClearTags = fragment.requireView().findViewById<View>(R.id.btn_clear_tags)
-        btnClearTags.performClick()
-
-        assertEquals(View.GONE, cardFilter.visibility)
-        assertTrue(fragment.searchTags.isEmpty())
+        assertEquals(View.VISIBLE, badge.visibility)
     }
 
     @Test
-    fun testCollectionsButton_whenNoCollections_dismissesDialog() {
-        val activity = Robolectric.buildActivity(TestDashboardElementActivity::class.java).setup().get()
-        val fm = activity.supportFragmentManager
+    fun testClearAllFilters_clearsTagsAndHidesBadge() {
+        val fragment = launchFragment()
+        val badge = fragment.requireView().findViewById<View>(R.id.tv_capsule_filter_badge)
 
-        val fragment = ResourcesFragment()
-        activity.openCallFragment(fragment, "library")
-        fm.executePendingTransactions()
+        fragment.onTagSelected(TagEntity().apply {
+            id = "test_tag"
+            name = "Test Tag"
+        })
+        assertTrue(fragment.searchTags.isNotEmpty())
 
-        val cardFilter = fragment.requireView().findViewById<View>(R.id.card_filter)
-        cardFilter.visibility = View.VISIBLE
+        fragment.clearAllFilters()
 
-        val btnCollections = fragment.requireView().findViewById<View>(R.id.btn_collections)
-        btnCollections.performClick()
-        fragment.childFragmentManager.executePendingTransactions()
-
-        assertEquals(View.GONE, cardFilter.visibility)
-
-        val start = System.currentTimeMillis()
-        while (System.currentTimeMillis() - start < 3000) {
-            ShadowLooper.idleMainLooper()
-            fragment.childFragmentManager.executePendingTransactions()
-            if (fragment.childFragmentManager.fragments.none { it is CollectionsFragment }) {
-                break
-            }
-            Thread.sleep(50)
-        }
-
-        val dialog = fragment.childFragmentManager.fragments.firstOrNull { it is CollectionsFragment }
-        assertEquals(null, dialog)
+        assertTrue(fragment.searchTags.isEmpty())
+        assertEquals(View.GONE, badge.visibility)
     }
 }

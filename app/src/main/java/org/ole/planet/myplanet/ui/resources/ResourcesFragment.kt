@@ -14,7 +14,6 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.annotation.VisibleForTesting
 import androidx.core.content.ContextCompat
-import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -72,9 +71,11 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private val layoutSearch get() = binding.layoutSearch.root
     private val etSearch get() = binding.layoutSearch.etSearch
     private val flexBoxTags get() = binding.layoutSearch.flexboxTags
-    private val clearTags get() = binding.btnClearTags
     private val selectAll get() = binding.selectAll
-    private val filter get() = binding.filter
+    private val sortFilterCapsule get() = binding.sortFilterCapsule
+    private val capsuleSort get() = binding.btnCapsuleSort
+    private val capsuleFilters get() = binding.btnCapsuleFilters
+    private val filterBadge get() = binding.tvCapsuleFilterBadge
     private var layoutViewToggle: View? = null
     private var toggleGridButton: ImageButton? = null
     private var toggleListButton: ImageButton? = null
@@ -92,6 +93,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private var lastLevels: Set<String>? = null
     private var lastLanguages: Set<String>? = null
     private var lastMediums: Set<String>? = null
+    private var lastFilteredCount: Int = 0
     @Inject
     lateinit var prefManager: SharedPrefManager
 
@@ -305,7 +307,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             changeButtonStatus()
             checkList()
         }
-        clearTagsButton()
         setupUI(binding.myLibraryParentLayout, requireActivity())
         additionalSetup()
         viewModeController = ViewModeToggleController(
@@ -350,7 +351,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         setupAddToLibListener()
         setupDeleteListener()
         setupSearchTextListener()
-        setupCollectionsButton()
         setupSelectAllListener()
         setupAddResourceButtonListener()
     }
@@ -386,8 +386,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             .launchIn(viewLifecycleOwner.lifecycleScope)
     }
 
-    private fun applyFiltersAndUpdateUI(scrollToTop: Boolean = true, forceUpdate: Boolean = false) {
-        if (!::adapterLibrary.isInitialized || !isAdded || _binding == null) return
+    private fun applyFiltersAndUpdateUI(scrollToTop: Boolean = true, forceUpdate: Boolean = false): Int {
+        if (!::adapterLibrary.isInitialized || !isAdded || _binding == null) return lastFilteredCount
         val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
 
         val currentSearchTags = searchTags
@@ -402,7 +402,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             mediums == lastMediums &&
             selectedDownloadFilterIndex == lastDownloadFilterIndex
         ) {
-            return
+            return lastFilteredCount
         }
 
         lastDownloadFilterIndex = selectedDownloadFilterIndex
@@ -426,15 +426,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
         checkList(filteredList.size)
         showNoData(tvMessage, filteredList.size, "resources")
-    }
-
-    private fun setupCollectionsButton() {
-        binding.btnCollections.setOnClickListener {
-            binding.cardFilter.visibility = View.GONE
-            val f = CollectionsFragment.getInstance(searchTags, "resources")
-            f.setListener(this@ResourcesFragment)
-            f.show(childFragmentManager, "")
-        }
+        lastFilteredCount = filteredList.size
+        return lastFilteredCount
     }
 
     private fun setupSelectAllListener() {
@@ -493,37 +486,37 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             layoutSearch.visibility = View.GONE
             layoutViewToggle?.visibility = View.GONE
             tvSelected.visibility = View.GONE
-            binding.btnCollections.visibility = View.GONE
-            filter.visibility = View.GONE
-            clearTags.visibility = View.GONE
+            sortFilterCapsule.visibility = View.GONE
             tvDelete?.visibility = View.GONE
             scrollChipFilter?.visibility = View.GONE
         } else {
             selectAll.visibility = if (isGuest) View.GONE else View.VISIBLE
             layoutSearch.visibility = View.VISIBLE
             layoutViewToggle?.visibility = View.VISIBLE
-            binding.btnCollections.visibility = View.VISIBLE
-            filter.visibility = View.VISIBLE
-            clearTags.visibility = if (hasActiveFilters()) View.VISIBLE else View.GONE
+            sortFilterCapsule.visibility = View.VISIBLE
             scrollChipFilter?.visibility = View.VISIBLE
         }
         hideButton()
     }
-
-    private fun hasActiveFilters(): Boolean =
-        etSearch.text?.isNotBlank() == true ||
-                searchTags.isNotEmpty() ||
-                subjects.isNotEmpty() ||
-                levels.isNotEmpty() ||
-                languages.isNotEmpty() ||
-                mediums.isNotEmpty() ||
-                selectedDownloadFilterIndex != 0
 
     private fun renderSearchTagsUi() {
         if (_binding == null) return
         tvSelected.visibility = if (searchTags.isNotEmpty()) View.VISIBLE else View.GONE
         renderTagChips()
         showTagText(searchTags, tvSelected)
+        updateFilterBadge()
+    }
+
+    private fun updateFilterBadge() {
+        if (_binding == null) return
+        val count = searchTags.size + subjects.size + languages.size + mediums.size + levels.size +
+            (if (selectedDownloadFilterIndex != 0) 1 else 0)
+        if (count > 0) {
+            filterBadge.text = count.toString()
+            filterBadge.visibility = View.VISIBLE
+        } else {
+            filterBadge.visibility = View.GONE
+        }
     }
 
     private fun createAlertDialog(): AlertDialog {
@@ -579,26 +572,24 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
     }
 
-    private fun clearTagsButton() {
-        clearTags.setOnClickListener {
-            binding.cardFilter.visibility = View.GONE
-            saveSearchActivity()
-            selectedDownloadFilterIndex = 0
-            val chipRow = binding.chipFilterRow
-            if (chipRow != null) {
-                renderDownloadChipSelection(chipRow)
-            }
-            searchTags.clear()
-            renderSearchTagsUi()
-            etSearch.setText(R.string.empty_text)
-            levels.clear()
-            mediums.clear()
-            subjects.clear()
-            languages.clear()
-            searchJob?.cancel()
-            searchJob = viewLifecycleOwner.lifecycleScope.launch {
-                applyFiltersAndUpdateUI()
-            }
+    override fun clearAllFilters() {
+        saveSearchActivity()
+        selectedDownloadFilterIndex = 0
+        val chipRow = binding.chipFilterRow
+        if (chipRow != null) {
+            renderDownloadChipSelection(chipRow)
+        }
+        searchTags.clear()
+        renderSearchTagsUi()
+        etSearch.setText(R.string.empty_text)
+        levels.clear()
+        mediums.clear()
+        subjects.clear()
+        languages.clear()
+        updateFilterBadge()
+        searchJob?.cancel()
+        searchJob = viewLifecycleOwner.lifecycleScope.launch {
+            applyFiltersAndUpdateUI()
         }
     }
 
@@ -717,17 +708,23 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
     }
 
-    override fun filter(subjects: MutableSet<String>, languages: MutableSet<String>, mediums: MutableSet<String>, levels: MutableSet<String>) {
+    override fun filter(subjects: MutableSet<String>, languages: MutableSet<String>, mediums: MutableSet<String>, levels: MutableSet<String>): Int {
         this.subjects = subjects
         this.languages = languages
         this.mediums = mediums
         this.levels = levels
-        if (view != null) {
-            searchJob?.cancel()
-            searchJob = viewLifecycleOwner.lifecycleScope.launch {
-                applyFiltersAndUpdateUI()
-            }
-        }
+        updateFilterBadge()
+        if (view == null) return lastFilteredCount
+        searchJob?.cancel()
+        return applyFiltersAndUpdateUI()
+    }
+
+    override fun getFilteredCount(subjects: Set<String>, languages: Set<String>, mediums: Set<String>, levels: Set<String>): Int {
+        val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
+        return applyFilterModels(
+            filterLocalLibraryByTag(allResourceModels, searchQuery, searchTags),
+            subjects, levels, languages, mediums
+        ).size
     }
 
     override suspend fun getData(): Map<String, Set<String>> {
@@ -814,34 +811,31 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     private fun additionalSetup() {
-        val bottomSheet = binding.cardFilter
-        filter.setOnClickListener {
-            bottomSheet.visibility = if (bottomSheet.isVisible) View.GONE else View.VISIBLE
-        }
-        binding.root.findViewById<View>(R.id.btn_close_filter)?.setOnClickListener {
-            bottomSheet.visibility = View.GONE
-        }
+        capsuleSort.setOnClickListener { showSortSheet() }
+        capsuleFilters.setOnClickListener { showFilterSheet() }
+    }
 
-        binding.filterCategories.setOnClickListener {
-            val f = ResourcesFilterFragment()
-            f.setListener(this)
-            f.show(childFragmentManager, "")
-            bottomSheet.visibility = View.GONE
-        }
-        binding.orderByDateButton.setOnClickListener {
-            bottomSheet.visibility = View.GONE
+    private fun showSortSheet() {
+        val f = ResourcesSortFragment()
+        f.setCurrentMode(viewModel.currentSortMode)
+        f.setCurrentDirection(viewModel.isDateSortAscending, viewModel.isTitleSortAscending)
+        f.setListener(ResourcesSortFragment.SortSelectionListener { mode ->
             viewLifecycleOwner.lifecycleScope.launch {
-                allResourceModels = viewModel.toggleSortOrder(allResourceModels)
+                allResourceModels = when (mode) {
+                    ResourcesViewModel.SortMode.DATE -> viewModel.toggleSortOrder(allResourceModels)
+                    ResourcesViewModel.SortMode.TITLE -> viewModel.toggleTitleSortOrder(allResourceModels)
+                    ResourcesViewModel.SortMode.NONE -> allResourceModels
+                }
                 applyFiltersAndUpdateUI(scrollToTop = true, forceUpdate = true)
             }
-        }
-        binding.orderByTitleButton.setOnClickListener {
-            bottomSheet.visibility = View.GONE
-            viewLifecycleOwner.lifecycleScope.launch {
-                allResourceModels = viewModel.toggleTitleSortOrder(allResourceModels)
-                applyFiltersAndUpdateUI(scrollToTop = true, forceUpdate = true)
-            }
-        }
+        })
+        f.show(childFragmentManager, "resources_sort")
+    }
+
+    private fun showFilterSheet() {
+        val f = ResourcesFilterFragment()
+        f.setListener(this)
+        f.show(childFragmentManager, "resources_filter")
     }
     
     override fun getWatchedTables(): List<String> {
@@ -869,7 +863,13 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         return filteredList
     }
 
-    private fun applyFilterModels(models: List<ResourceListModel>): List<ResourceListModel> {
+    private fun applyFilterModels(
+        models: List<ResourceListModel>,
+        subjects: Set<String> = this.subjects,
+        levels: Set<String> = this.levels,
+        languages: Set<String> = this.languages,
+        mediums: Set<String> = this.mediums
+    ): List<ResourceListModel> {
         val locallyOfflineIds = if (::adapterLibrary.isInitialized) adapterLibrary.getLocallyOfflineIds() else emptySet()
         return models.filter { model ->
             val l = model.library
@@ -954,6 +954,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             chip.setOnClickListener {
                 selectedDownloadFilterIndex = label
                 renderDownloadChipSelection(chipRow)
+                updateFilterBadge()
                 applyFiltersAndUpdateUI()
             }
             chipRow.addView(chip)
