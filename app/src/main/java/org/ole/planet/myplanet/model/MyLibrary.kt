@@ -7,15 +7,11 @@ import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
-import java.util.Calendar
 import java.util.UUID
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.Utilities
-import org.ole.planet.myplanet.utils.addDocumentOrigin
 
 /**
  * Room replacement for the former `MyLibrary` model (resources).
@@ -159,43 +155,6 @@ open class MyLibrary {
     }
 
     companion object {
-        fun serialize(personal: MyLibrary, user: UserEntity?): JsonObject {
-            return JsonObject().apply {
-                addProperty("title", personal.title)
-                addProperty("uploadDate", System.currentTimeMillis())
-                addProperty("createdDate", personal.createdDate)
-                addProperty("filename", FileUtils.getFileNameFromUrl(personal.resourceLocalAddress))
-                addProperty("author", personal.author ?: "")
-                addProperty("addedBy", user?.id)
-                addProperty("medium", personal.medium)
-                addProperty("description", personal.description)
-                addProperty("year", personal.year)
-                addProperty("language", personal.language)
-                addProperty("publisher", personal.publisher ?: "")
-                addProperty("linkToLicense", personal.linkToLicense ?: "")
-                add("subject", JsonUtils.getAsJsonArray(personal.subject))
-                add("level", JsonUtils.getAsJsonArray(personal.level))
-                addProperty("resourceType", personal.resourceType)
-                addProperty("openWith", personal.openWith)
-                addProperty("mediaType", personal.mediaType ?: "other")
-                add("resourceFor", JsonUtils.getAsJsonArray(personal.resourceFor))
-                addProperty("private", personal.isPrivate)
-                if (personal.isPrivate && personal.privateFor != null) {
-                    val privateForObj = JsonObject()
-                    privateForObj.addProperty("teams", personal.privateFor)
-                    add("privateFor", privateForObj)
-                }
-                addProperty("isDownloadable", true)
-                addProperty("sourcePlanet", user?.planetCode)
-                addProperty("resideOn", user?.planetCode)
-                addProperty("updatedDate", Calendar.getInstance().timeInMillis)
-                addProperty("createdDate", personal.createdDate)
-                addDocumentOrigin()
-                addProperty("deviceName", NetworkUtils.getDeviceName())
-                addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
-            }
-        }
-
         data class InsertParams(
             val doc: JsonObject,
             val spm: SharedPrefManager,
@@ -268,7 +227,7 @@ open class MyLibrary {
                         if (key.indexOf("/") < 0) {
                             resourceRemoteAddress = "${params.spm.getCouchdbUrl().ifEmpty { "http://" }}/resources/$resourceId/$key"
                             resourceLocalAddress = key
-                            resourceOffline = FileUtils.checkFileExist(context, resourceRemoteAddress)
+                            resourceOffline = FileUtils.checkFileExist(org.ole.planet.myplanet.MainApplication.context, resourceRemoteAddress)
                             if (resourceOffline) {
                                 downloadedRev = JsonUtils.getString("_rev", params.doc)
                             }

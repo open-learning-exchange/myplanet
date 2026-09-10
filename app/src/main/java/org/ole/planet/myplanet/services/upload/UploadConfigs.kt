@@ -275,8 +275,8 @@ class UploadConfigs @Inject constructor(
             endpoint = "resources",
             modelClassName = "MyLibrary",
             fetchPendingItems = { resourcesRepository.getPendingResourceUploads() },
-            serializer = UploadSerializer.Simple { library ->
-                MyLibrary.serialize(library, user)
+            serializer = UploadSerializer.Async { library ->
+                resourcesRepository.serializeForUpload(library, user)
             },
             idExtractor = { it.id },
             markUploaded = { results ->

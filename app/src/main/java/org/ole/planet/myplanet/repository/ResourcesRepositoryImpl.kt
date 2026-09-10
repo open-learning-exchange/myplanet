@@ -31,14 +31,18 @@ import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.TagItem
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.distinctByContent
 
 class ResourcesRepositoryImpl @Inject constructor(
@@ -55,7 +59,8 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val teamsRepositoryLazy: dagger.Lazy<TeamsRepository>,
     private val userSessionManager: UserSessionManager,
     private val configurationsRepository: ConfigurationsRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val deviceNameProvider: DeviceNameProvider
 ) : ResourcesRepository {
 
     // Shelf membership is stored as a JSON userId list; match a single entry with LIKE %"id"%.
@@ -890,5 +895,42 @@ class ResourcesRepositoryImpl @Inject constructor(
     override suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String> {
         return myLibraryDao.getPrivateImagesCreatedAfter(timestamp)
             .mapNotNull { it.resourceRemoteAddress }
+    }
+
+    override suspend fun serializeForUpload(personal: MyLibrary, user: UserEntity?): JsonObject {
+        return JsonObject().apply {
+            addProperty("title", personal.title)
+            addProperty("uploadDate", System.currentTimeMillis())
+            addProperty("createdDate", personal.createdDate)
+            addProperty("filename", FileUtils.getFileNameFromUrl(personal.resourceLocalAddress))
+            addProperty("author", personal.author ?: "")
+            addProperty("addedBy", user?.id)
+            addProperty("medium", personal.medium)
+            addProperty("description", personal.description)
+            addProperty("year", personal.year)
+            addProperty("language", personal.language)
+            addProperty("publisher", personal.publisher ?: "")
+            addProperty("linkToLicense", personal.linkToLicense ?: "")
+            add("subject", JsonUtils.getAsJsonArray(personal.subject))
+            add("level", JsonUtils.getAsJsonArray(personal.level))
+            addProperty("resourceType", personal.resourceType)
+            addProperty("openWith", personal.openWith)
+            addProperty("mediaType", personal.mediaType ?: "other")
+            add("resourceFor", JsonUtils.getAsJsonArray(personal.resourceFor))
+            addProperty("private", personal.isPrivate)
+            if (personal.isPrivate && personal.privateFor != null) {
+                val privateForObj = JsonObject()
+                privateForObj.addProperty("teams", personal.privateFor)
+                add("privateFor", privateForObj)
+            }
+            addProperty("isDownloadable", true)
+            addProperty("sourcePlanet", user?.planetCode)
+            addProperty("resideOn", user?.planetCode)
+            addProperty("updatedDate", Calendar.getInstance().timeInMillis)
+            addProperty("createdDate", personal.createdDate)
+            addDocumentOrigin()
+            addProperty("deviceName", NetworkUtils.getDeviceName())
+            addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())
+        }
     }
 }

@@ -7,6 +7,7 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TagEntity
+import org.ole.planet.myplanet.model.UserEntity
 
 data class LibraryWithMetadata(
     val library: MyLibrary,
@@ -109,6 +110,7 @@ interface ResourcesRepository {
     suspend fun getOfflineResourceItems(oleDirPath: String, extensions: Set<String>, allKnownExtensions: Set<String>): List<OfflineResourceItem>
     suspend fun deleteOfflineResources(oleDirPath: String, items: List<OfflineResourceItem>)
     suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String>
+    suspend fun serializeForUpload(library: MyLibrary, user: UserEntity?): JsonObject
 }
 
 sealed class ResourceUrlsResponse {

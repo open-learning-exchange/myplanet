@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import android.util.Log
 import com.google.gson.JsonParser
 import dagger.Lazy
 import io.mockk.coEvery
@@ -8,6 +9,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.unmockkObject
 import io.mockk.verify
@@ -40,12 +42,16 @@ import org.ole.planet.myplanet.data.room.dao.ResourceTitleProjection
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.SearchActivity
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.VersionUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ResourcesRepositoryImplTest {
@@ -65,6 +71,7 @@ class ResourcesRepositoryImplTest {
     private val userSessionManager: UserSessionManager = mockk(relaxed = true)
     private val configurationsRepository: ConfigurationsRepository = mockk(relaxed = true)
     private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
+    private val deviceNameProvider: DeviceNameProvider = mockk(relaxed = true)
 
     @get:Rule
     val temporaryFolder = TemporaryFolder()
@@ -74,6 +81,15 @@ class ResourcesRepositoryImplTest {
     @Before
     fun setup() {
         Logger.getLogger("io.mockk").level = Level.OFF
+        mockkStatic(Log::class)
+        every { Log.e(any(), any(), any()) } returns 0
+        every { Log.e(any(), any()) } returns 0
+        every { Log.w(any(), any<String>()) } returns 0
+        every { Log.w(any(), any<Throwable>()) } returns 0
+        every { Log.d(any(), any()) } returns 0
+        every { Log.i(any(), any()) } returns 0
+        MainApplication.testContext = context
+        NetworkUtils.resetForTesting()
 
         repository = ResourcesRepositoryImpl(
             context,
@@ -89,7 +105,8 @@ class ResourcesRepositoryImplTest {
             teamsRepositoryLazy,
             userSessionManager,
             configurationsRepository,
-            dispatcherProvider
+            dispatcherProvider,
+            deviceNameProvider
         )
         every { dispatcherProvider.io } returns testDispatcher
     }
@@ -1123,6 +1140,67 @@ class ResourcesRepositoryImplTest {
             verify(exactly = 1) { DownloadUtils.openPriorityDownloadService(context, arrayListOf("http://example.com/file3.pdf")) }
         } finally {
             unmockkObject(DownloadUtils)
+        }
+    }
+
+    @Test
+    fun `serializeForUpload formats library JSON payload correctly with custom device name`() = runTest {
+        every { deviceNameProvider.getCustomDeviceName() } returns "My Custom Device"
+
+        val library = MyLibrary().apply {
+            title = "Test Library Resource"
+            createdDate = 1600000000000L
+            resourceLocalAddress = "http://example.com/files/resource.pdf"
+            author = "Test Author"
+            medium = "PDF"
+            description = "Sample Description"
+            year = "2023"
+            language = "English"
+            publisher = "OLE"
+            linkToLicense = "MIT"
+            subject = listOf("Math", "Science")
+            level = listOf("Primary")
+            resourceType = "Book"
+            openWith = "PDF Reader"
+            mediaType = "document"
+            resourceFor = listOf("Students")
+            isPrivate = true
+            privateFor = "team123"
+        }
+
+        val user = UserEntity().apply {
+            id = "user_456"
+            planetCode = "planet_789"
+        }
+
+        mockkObject(VersionUtils)
+        mockkObject(NetworkUtils)
+        mockkObject(FileUtils)
+        try {
+            every { VersionUtils.getAndroidId(any()) } returns "test-android-id"
+            every { NetworkUtils.getDeviceName() } returns "TEST_DEVICE"
+            every { FileUtils.getFileNameFromUrl(any()) } returns "resource.pdf"
+
+            val json = repository.serializeForUpload(library, user)
+
+            assertEquals("Test Library Resource", json.get("title").asString)
+            assertEquals("user_456", json.get("addedBy").asString)
+            assertEquals("planet_789", json.get("sourcePlanet").asString)
+            assertEquals("planet_789", json.get("resideOn").asString)
+            assertEquals("resource.pdf", json.get("filename").asString)
+            assertEquals("My Custom Device", json.get("customDeviceName").asString)
+            assertEquals("Test Author", json.get("author").asString)
+            assertEquals("OLE", json.get("publisher").asString)
+            assertEquals("MIT", json.get("linkToLicense").asString)
+            assertEquals(true, json.get("private").asBoolean)
+            assertEquals("team123", json.getAsJsonObject("privateFor").get("teams").asString)
+            assertEquals(2, json.getAsJsonArray("subject").size())
+            assertEquals("Math", json.getAsJsonArray("subject").get(0).asString)
+            assertEquals("Science", json.getAsJsonArray("subject").get(1).asString)
+        } finally {
+            unmockkObject(FileUtils)
+            unmockkObject(NetworkUtils)
+            unmockkObject(VersionUtils)
         }
     }
 
