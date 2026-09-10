@@ -1,13 +1,18 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import android.provider.Settings
 import com.google.gson.JsonObject
 import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.slot
+import io.mockk.unmockkObject
+import io.mockk.unmockkStatic
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -16,12 +21,14 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
@@ -38,8 +45,10 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TimeProvider
+import org.ole.planet.myplanet.utils.UrlUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ActivitiesRepositoryImplTest {
@@ -65,7 +74,16 @@ class ActivitiesRepositoryImplTest {
     @Before
     fun setup() {
         Logger.getLogger("io.mockk").level = Level.OFF
+        mockkStatic(Settings.Secure::class)
+        every { Settings.Secure.getString(any(), Settings.Secure.ANDROID_ID) } returns "mock_android_id"
+
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "mock_unique_id"
+        every { NetworkUtils.getDeviceName() } returns "mock_device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "mock_custom_device"
+
         context = mockk(relaxed = true)
+        MainApplication.testContext = context
         userRepository = mockk(relaxed = true)
         val lazyUserRepository = Lazy { userRepository }
         apiInterface = mockk(relaxed = true)
@@ -79,6 +97,8 @@ class ActivitiesRepositoryImplTest {
         searchActivityDao = mockk(relaxed = true)
         userDao = mockk(relaxed = true)
         dispatcherProvider = TestDispatcherProvider(testDispatcher)
+
+        UrlUtils.init(sharedPrefManager)
 
         repository = ActivitiesRepositoryImpl(
             context,
@@ -97,11 +117,39 @@ class ActivitiesRepositoryImplTest {
         )
     }
 
+    @After
+    fun tearDown() {
+        unmockkObject(NetworkUtils)
+        unmockkStatic(Settings.Secure::class)
+    }
+
     @Test
     fun `getOfflineVisitCount returns correct count`() = runTest {
         coEvery { offlineActivityDao.countByUserIdAndType("user1", UserSessionManager.KEY_LOGIN) } returns 5
         val result = repository.getOfflineVisitCount("user1")
         assertEquals(5, result)
+    }
+
+    @Test
+    fun `getMemberVisitStats returns correct count and last visit`() = runTest {
+        coEvery { offlineActivityDao.countByUserIdAndType("user1", UserSessionManager.KEY_LOGIN) } returns 5
+        coEvery { offlineActivityDao.getLastVisit("john") } returns 2000L
+
+        val result = repository.getMemberVisitStats("user1", "john")
+
+        assertEquals(5, result.offlineVisitCount)
+        assertEquals(2000L, result.lastVisit)
+    }
+
+    @Test
+    fun `getMemberVisitStats handles null or empty inputs`() = runTest {
+        val resultNull = repository.getMemberVisitStats(null, null)
+        assertEquals(0, resultNull.offlineVisitCount)
+        assertNull(resultNull.lastVisit)
+
+        val resultEmpty = repository.getMemberVisitStats("", "")
+        assertEquals(0, resultEmpty.offlineVisitCount)
+        assertNull(resultEmpty.lastVisit)
     }
 
     @Test
@@ -233,6 +281,13 @@ class ActivitiesRepositoryImplTest {
     }
 
     @Test
+    fun `getResourceOpenCount without type defaults to visit`() = runTest {
+        coEvery { resourceActivityDao.countByUserAndType("john", UserSessionManager.KEY_RESOURCE_OPEN) } returns 7L
+        val result = repository.getResourceOpenCount("john")
+        assertEquals(7L, result)
+    }
+
+    @Test
     fun `getMostOpenedResource returns null when no activities`() = testScope.runTest {
         coEvery { resourceActivityDao.getMostOpenedResource("john", "pdf") } returns null
         val result = repository.getMostOpenedResource("john", "pdf")
@@ -248,6 +303,34 @@ class ActivitiesRepositoryImplTest {
 
         assertEquals("Res 1", result?.first)
         assertEquals(2, result?.second)
+    }
+
+    @Test
+    fun `getMostOpenedResource without type defaults to visit`() = testScope.runTest {
+        coEvery {
+            resourceActivityDao.getMostOpenedResource("john", UserSessionManager.KEY_RESOURCE_OPEN)
+        } returns ResourceOpenCount("Res 1", 1)
+
+        val result = repository.getMostOpenedResource("john")
+
+        assertEquals("Res 1", result?.first)
+        assertEquals(1, result?.second)
+    }
+
+    @Test
+    fun `getProfileActivityStats aggregates mostOpened lastVisit and openCount`() = testScope.runTest {
+        coEvery {
+            resourceActivityDao.getMostOpenedResource("john", UserSessionManager.KEY_RESOURCE_OPEN)
+        } returns ResourceOpenCount("Res 1", 1)
+        coEvery { offlineActivityDao.getGlobalLastVisit() } returns 123456L
+        coEvery { resourceActivityDao.countByUserAndType("john", UserSessionManager.KEY_RESOURCE_OPEN) } returns 3L
+
+        val stats = repository.getProfileActivityStats("john")
+
+        assertEquals("Res 1", stats.mostOpenedResource?.first)
+        assertEquals(1, stats.mostOpenedResource?.second)
+        assertEquals(123456L, stats.lastVisit)
+        assertEquals(3L, stats.resourceOpenCount)
     }
 
     @Test
@@ -423,6 +506,51 @@ class ActivitiesRepositoryImplTest {
         coVerify(exactly = 0) { offlineActivityDao.getByRemoteIds(any()) }
         coVerify(exactly = 0) { offlineActivityDao.getByLoginTimesAndUserNames(any(), any()) }
         coVerify(exactly = 0) { offlineActivityDao.upsertAll(any()) }
+    }
+
+    @Test
+    fun `uploadMyPlanetActivities posts activities and usage stats when existing doc found`() = testScope.runTest {
+        val usageStatsManager = mockk<android.app.usage.UsageStatsManager>(relaxed = true)
+        every { context.getSystemService(Context.USAGE_STATS_SERVICE) } returns usageStatsManager
+        every { usageStatsManager.queryUsageStats(any(), any(), any()) } returns emptyList()
+
+        val mockResponseBody = JsonObject().apply {
+            add("usages", com.google.gson.JsonArray())
+        }
+        val mockResponse = mockk<retrofit2.Response<JsonObject>>()
+        every { mockResponse.body() } returns mockResponseBody
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns mockResponse
+
+        val userModel = UserEntity().apply {
+            parentCode = "parent"
+            planetCode = "planet"
+        }
+
+        repository.uploadMyPlanetActivities(userModel)
+
+        coVerify(exactly = 2) { apiInterface.postDoc(any(), eq("application/json"), any(), any()) }
+        coVerify(exactly = 1) { apiInterface.getJsonObject(any(), any()) }
+    }
+
+    @Test
+    fun `uploadMyPlanetActivities posts fallback activities when no existing doc found`() = testScope.runTest {
+        val usageStatsManager = mockk<android.app.usage.UsageStatsManager>(relaxed = true)
+        every { context.getSystemService(Context.USAGE_STATS_SERVICE) } returns usageStatsManager
+        every { usageStatsManager.queryUsageStats(any(), any(), any()) } returns emptyList()
+
+        val mockResponse = mockk<retrofit2.Response<JsonObject>>()
+        every { mockResponse.body() } returns null
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns mockResponse
+
+        val userModel = UserEntity().apply {
+            parentCode = "parent"
+            planetCode = "planet"
+        }
+
+        repository.uploadMyPlanetActivities(userModel)
+
+        coVerify(exactly = 2) { apiInterface.postDoc(any(), eq("application/json"), any(), any()) }
+        coVerify(exactly = 1) { apiInterface.getJsonObject(any(), any()) }
     }
 
     @Test

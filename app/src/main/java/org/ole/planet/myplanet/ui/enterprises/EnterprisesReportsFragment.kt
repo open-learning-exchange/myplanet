@@ -5,7 +5,6 @@ import android.app.DatePickerDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -33,6 +32,7 @@ import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.FragmentReportsBinding
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -66,7 +66,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
 
         binding.exportCSV.setOnClickListener {
             val formattedDate = LocalDate.now().format(dateFormatter)
-            val teamName = teamsRepository.getTeamNameFromPrefs()?.replace(" ", "_")
+            val teamName = getEffectiveTeamName().replace(" ", "_")
 
             val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
                 addCategory(Intent.CATEGORY_OPENABLE)
@@ -81,7 +81,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                 result.data?.data?.let { uri ->
                     viewLifecycleOwner.lifecycleScope.launch {
                         try {
-                            val csvContent = viewModel.exportReportsAsCsv(teamId, teamsRepository.getTeamNameFromPrefs() ?: "")
+                            val csvContent = viewModel.exportReportsAsCsv(teamId, getEffectiveTeamName())
                             requireContext().contentResolver.openOutputStream(uri)?.use { outputStream ->
                                 outputStream.write(csvContent.toByteArray())
                             }
@@ -111,7 +111,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         super.onViewCreated(view, savedInstanceState)
         reportsAdapter = EnterprisesReportsAdapter(
             requireContext(),
-            teamsRepository.getTeamNameFromPrefs(),
+            getEffectiveTeamName(),
             onEdit = { report -> showEditReportDialog(report) },
             onDelete = { report -> showDeleteReportDialog(report) }
         )
@@ -293,14 +293,13 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
 
     private fun showDeleteReportDialog(report: MyTeam) {
         report._id?.let { reportId ->
-            val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-            builder.setTitle(getString(R.string.delete_report))
-                .setMessage(R.string.delete_record)
-                .setPositiveButton(R.string.ok) { _, _ ->
-                    viewModel.archiveReport(reportId = reportId)
-                }
-                .setNegativeButton("Cancel", null)
-                .show()
+            requireContext().confirmDialog(
+                title = getString(R.string.delete_report),
+                message = getString(R.string.delete_record),
+                positiveText = getString(R.string.ok),
+                onPositive = { viewModel.archiveReport(reportId = reportId) },
+                negativeText = "Cancel"
+            )
         }
     }
 
@@ -344,27 +343,27 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                 binding.endDate.error = "end date is required"
                 false
             }
-            TextUtils.isEmpty("${binding.summary.text}") -> {
+            "${binding.summary.text}".isNullOrEmpty() -> {
                 binding.summary.error = "summary is required"
                 false
             }
-            TextUtils.isEmpty("${binding.beginningBalance.text}") -> {
+            "${binding.beginningBalance.text}".isNullOrEmpty() -> {
                 binding.beginningBalance.error = "beginning balance is required"
                 false
             }
-            TextUtils.isEmpty("${binding.sales.text}") -> {
+            "${binding.sales.text}".isNullOrEmpty() -> {
                 binding.sales.error = "sales is required"
                 false
             }
-            TextUtils.isEmpty("${binding.otherIncome.text}") -> {
+            "${binding.otherIncome.text}".isNullOrEmpty() -> {
                 binding.otherIncome.error = "other income is required"
                 false
             }
-            TextUtils.isEmpty("${binding.personnel.text}") -> {
+            "${binding.personnel.text}".isNullOrEmpty() -> {
                 binding.personnel.error = "personnel is required"
                 false
             }
-            TextUtils.isEmpty("${binding.nonPersonnel.text}") -> {
+            "${binding.nonPersonnel.text}".isNullOrEmpty() -> {
                 binding.nonPersonnel.error = "non-personnel is required"
                 false
             }

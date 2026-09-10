@@ -84,6 +84,33 @@ class TransactionSyncManager @Inject constructor(
     // same inserts that take ~1ms/doc uncontended balloon to >100ms/doc under contention. This
     // mutex serializes only the DB-write portion of each batch; network fetches still overlap.
     private val dbWriteMutex = Mutex()
+    
+    private val tableSyncHandlers: Map<String, suspend (JsonArray) -> Unit> = mapOf(
+        "news" to { arr -> voicesRepository.insertNewsList(extractDocs(arr)) },
+        "feedback" to { arr -> feedbackRepository.insertFeedbackList(extractDocs(arr)) },
+        "chat_history" to { arr -> chatRepository.insertChatHistoryFromSync(arr.map { it.asJsonObject }) },
+        "tablet_users" to { arr -> userSyncRepository.insertUsersFromSync(arr.map { it.asJsonObject }) },
+        "meetups" to { arr -> communityRepository.insertMeetupsFromSync(extractDocs(arr)) },
+        "login_activities" to { arr -> activitiesRepository.insertLoginActivitiesFromSync(extractDocs(arr)) },
+        "courses_progress" to { arr -> progressRepository.insertCourseProgressFromSync(extractDocs(arr)) },
+        "ratings" to { arr -> ratingsRepository.insertRatingsFromSync(extractDocs(arr)) },
+        "certifications" to { arr -> coursesRepository.insertCertificationsFromSync(arr) },
+        "tags" to { arr -> tagsRepository.insert(extractDocs(arr)) },
+        "team_activities" to { arr -> teamsSyncRepository.get().bulkInsertTeamActivitiesFromSync(arr) },
+        "tasks" to { arr -> teamsSyncRepository.get().bulkInsertTasksFromSync(arr) },
+        "notifications" to { arr -> notificationsRepository.bulkInsertFromSync(arr) },
+        "achievements" to { arr -> userSyncRepository.bulkInsertAchievementsFromSync(arr) },
+        "health" to { arr -> healthRepository.bulkInsertFromSync(arr) },
+        "courses" to { arr ->
+            val insertStartTime = SystemClock.elapsedRealtime()
+            coursesRepository.bulkInsertFromSync(arr)
+            val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
+            Log.d("SyncPerf", "    courses insertDuration: ${insertDuration}ms for ${arr.size()} items")
+        },
+        "exams" to { arr -> surveysRepository.bulkInsertExamsFromSync(arr) },
+        "submissions" to { arr -> submissionsRepository.bulkInsertFromSync(arr) },
+        "teams" to { arr -> teamsSyncRepository.get().bulkInsertFromSync(arr) }
+    )
 
     suspend fun authenticate(): Boolean {
         try {
@@ -217,76 +244,11 @@ class TransactionSyncManager @Inject constructor(
                     response.isSuccessful,
                     arr.size()
                 )
-                when (table) {
-                    "news" -> timedBatchInsert(table, arr.size()) {
-                        voicesRepository.insertNewsList(extractDocs(arr))
-                    }
-                    "feedback" -> timedBatchInsert(table, arr.size()) {
-                        feedbackRepository.insertFeedbackList(extractDocs(arr))
-                    }
-                    "chat_history" -> timedBatchInsert(table, arr.size()) {
-                        chatRepository.insertChatHistoryFromSync(arr.map { it.asJsonObject })
-                    }
-                    "tablet_users" -> timedBatchInsert(table, arr.size()) {
-                        userSyncRepository.insertUsersFromSync(arr.map { it.asJsonObject })
-                    }
-                    "meetups" -> timedBatchInsert(table, arr.size()) {
-                        communityRepository.insertMeetupsFromSync(extractDocs(arr))
-                    }
-                    "login_activities" -> timedBatchInsert(table, arr.size()) {
-                        activitiesRepository.insertLoginActivitiesFromSync(extractDocs(arr))
-                    }
-                    "courses_progress" -> timedBatchInsert(table, arr.size()) {
-                        progressRepository.insertCourseProgressFromSync(extractDocs(arr))
-                    }
-                    "ratings" -> timedBatchInsert(table, arr.size()) {
-                        ratingsRepository.insertRatingsFromSync(extractDocs(arr))
-                    }
-                    "certifications" -> timedBatchInsert(table, arr.size()) {
-                        coursesRepository.insertCertificationsFromSync(arr)
-                    }
-                    "tags" -> timedBatchInsert(table, arr.size()) {
-                        tagsRepository.insert(extractDocs(arr))
-                    }
-                    "team_activities" -> timedBatchInsert(table, arr.size()) {
-                        teamsSyncRepository.get().bulkInsertTeamActivitiesFromSync(arr)
-                    }
-                    "tasks" -> timedBatchInsert(table, arr.size()) {
-                        teamsSyncRepository.get().bulkInsertTasksFromSync(arr)
-                    }
-                    "notifications" -> timedBatchInsert(table, arr.size()) {
-                        notificationsRepository.bulkInsertFromSync(arr)
-                    }
-                    "achievements" -> timedBatchInsert(table, arr.size()) {
-                        userSyncRepository.bulkInsertAchievementsFromSync(arr)
-                    }
-                    "health" -> timedBatchInsert(table, arr.size()) {
-                        healthRepository.bulkInsertFromSync(arr)
-                    }
-                    "courses" -> timedBatchInsert(table, arr.size()) {
-                        val insertStartTime = SystemClock.elapsedRealtime()
-                        coursesRepository.bulkInsertFromSync(arr)
-                        val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
-                        Log.d("SyncPerf", "    $table insertDuration: ${insertDuration}ms for ${arr.size()} items")
-                    }
-                    else -> {
-                        val insertStartTime = SystemClock.elapsedRealtime()
-                        dbWriteMutex.withLock {
-                            when (table) {
-                                "exams" -> surveysRepository.bulkInsertExamsFromSync(arr)
-                                "submissions" -> submissionsRepository.bulkInsertFromSync(arr)
-                                "teams" -> teamsSyncRepository.get().bulkInsertFromSync(arr)
-                                else -> Log.e("SyncPerf", "Unknown table: $table")
-                            }
-                        }
-                        val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
-                        syncTimeLogger.logDbOperation(
-                            "insert_batch",
-                            table,
-                            insertDuration,
-                            arr.size()
-                        )
-                    }
+                val handler = tableSyncHandlers[table]
+                if (handler != null) {
+                    timedBatchInsert(table, arr.size()) { handler(arr) }
+                } else {
+                    Log.e("SyncPerf", "Unknown table: $table")
                 }
 
                 if (table == "achievements") {

@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.model
 
 import androidx.room.Entity
-import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
@@ -31,9 +30,6 @@ class Achievement {
 
     val achievementsArray: JsonArray
         get() = parseStringListToJsonArray(achievements)
-
-    @Ignore
-    private var cachedReferencesArray: JsonArray? = null
 
     fun getReferencesArray(): JsonArray {
         return parseStringListToJsonArray(references)
@@ -78,7 +74,6 @@ class Achievement {
     }
 
     fun setReferences(of: JsonArray?) {
-        cachedReferencesArray = null
         if (of == null) {
             references = mutableListOf()
             return

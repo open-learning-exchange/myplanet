@@ -70,6 +70,8 @@ class ChatDetailFragment : Fragment() {
     private var lastAiProvidersError: Boolean? = null
     private var lastAiProviders: Map<String, Boolean>? = null
 
+    private var cachedRawModelsString: String? = null
+    private var cachedModelsMap: Map<String, String>? = null
 
     private var isUserLoaded = false
     private var isAiUnavailable = false
@@ -168,9 +170,11 @@ class ChatDetailFragment : Fragment() {
             speechRecognizer?.setRecognitionListener(object : RecognitionListener {
                 override fun onReadyForSpeech(params: Bundle?) {
                     isListening = true
-                    binding.buttonGchatMic.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_red_500))
-                    binding.textGchatIndicator.text = getString(R.string.voice_to_text)
-                    binding.textGchatIndicator.visibility = View.VISIBLE
+                    _binding?.let { binding ->
+                        binding.buttonGchatMic.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_red_500))
+                        binding.textGchatIndicator.text = getString(R.string.voice_to_text)
+                        binding.textGchatIndicator.visibility = View.VISIBLE
+                    }
                 }
 
                 override fun onBeginningOfSpeech() {}
@@ -181,7 +185,7 @@ class ChatDetailFragment : Fragment() {
                 }
 
                 override fun onError(error: Int) {
-                    stopSpeechToText()
+                    resetListeningUi()
                     val message = when (error) {
                         SpeechRecognizer.ERROR_AUDIO -> "Audio recording error"
                         SpeechRecognizer.ERROR_CLIENT -> "Client side error"
@@ -202,8 +206,10 @@ class ChatDetailFragment : Fragment() {
                     if (!matches.isNullOrEmpty()) {
                         val finalMatch = matches[0]
                         val newText = if (textBeforeVoice.isEmpty()) finalMatch else "$textBeforeVoice $finalMatch"
-                        binding.editGchatMessage.setText(newText)
-                        binding.editGchatMessage.setSelection(newText.length)
+                        _binding?.let { binding ->
+                            binding.editGchatMessage.setText(newText)
+                            binding.editGchatMessage.setSelection(newText.length)
+                        }
                     }
                 }
 
@@ -212,8 +218,10 @@ class ChatDetailFragment : Fragment() {
                     if (!matches.isNullOrEmpty()) {
                         val partialMatch = matches[0]
                         val newText = if (textBeforeVoice.isEmpty()) partialMatch else "$textBeforeVoice $partialMatch"
-                        binding.editGchatMessage.setText(newText)
-                        binding.editGchatMessage.setSelection(newText.length)
+                        _binding?.let { binding ->
+                            binding.editGchatMessage.setText(newText)
+                            binding.editGchatMessage.setSelection(newText.length)
+                        }
                     }
                 }
 
@@ -235,9 +243,15 @@ class ChatDetailFragment : Fragment() {
 
     private fun stopSpeechToText() {
         speechRecognizer?.stopListening()
+        resetListeningUi()
+    }
+
+    private fun resetListeningUi() {
         isListening = false
-        binding.buttonGchatMic.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_500))
-        binding.textGchatIndicator.visibility = View.GONE
+        _binding?.let { binding ->
+            binding.buttonGchatMic.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_500))
+            binding.textGchatIndicator.visibility = View.GONE
+        }
     }
 
     private fun initChatComponents() {
@@ -594,12 +608,18 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun getModelsMap(): Map<String, String> {
-        val modelsString = sharedPrefManager.getRawString("ai_models").takeIf { it.isNotEmpty() }
-        return if (modelsString != null) {
-            JsonUtils.gson.fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type)
+        val modelsString = sharedPrefManager.getRawString("ai_models")
+        if (modelsString == cachedRawModelsString && cachedModelsMap != null) {
+            return cachedModelsMap!!
+        }
+        val parsedMap: Map<String, String> = if (modelsString.isNotEmpty()) {
+            JsonUtils.gson.fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type) ?: emptyMap()
         } else {
             emptyMap()
         }
+        cachedRawModelsString = modelsString
+        cachedModelsMap = parsedMap
+        return parsedMap
     }
 
     private fun getCachedProviderAvailability(): Map<String, Boolean>? {
@@ -688,6 +708,9 @@ class ChatDetailFragment : Fragment() {
         lastAiProvidersError = null
         lastAiProviders = null
 
+        cachedRawModelsString = null
+        cachedModelsMap = null
+
         _binding = null
         super.onDestroyView()
     }
@@ -697,7 +720,7 @@ class ChatDetailFragment : Fragment() {
         val primaryUrl = serverUrl
         val prefManager = sharedPrefManager
         MainApplication.applicationScope.launch(dispatcherProvider.io) {
-            if (isPrimaryServerReachable(primaryUrl, dispatcherProvider.io)) {
+            if (isPrimaryServerReachable(primaryUrl)) {
                 prefManager.setAlternativeUrl("")
                 prefManager.setProcessedAlternativeUrl("")
                 prefManager.setIsAlternativeUrl(false)

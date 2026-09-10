@@ -1,15 +1,15 @@
 package org.ole.planet.myplanet.repository
 
-import android.util.Base64
 import android.util.Log
+import androidx.room.withTransaction
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import java.util.Base64
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import androidx.room.withTransaction
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.room.dao.AnswerDao
@@ -289,7 +289,7 @@ class CoursesRepositoryImpl @Inject constructor(
         tagNames: List<String>
     ): List<MyCourse> {
         val courseIdsWithTags = if (tagNames.isNotEmpty()) {
-            tagsRepository.getLinkIdsForTagNames("courses", tagNames).toSet()
+            tagsRepository.getCourseLinkIds(tagNames)
         } else {
             null
         }
@@ -678,7 +678,7 @@ class CoursesRepositoryImpl @Inject constructor(
         val stepsJson = JsonUtils.getJsonArray("steps", doc)
         for (i in 0 until stepsJson.size()) {
             val stepElement = stepsJson[i]
-            val stepId = Base64.encodeToString(stepElement.toString().toByteArray(), Base64.NO_WRAP)
+            val stepId = Base64.getEncoder().encodeToString(stepElement.toString().toByteArray())
             val stepJson = stepElement.asJsonObject
             val stepDescription = JsonUtils.getString("description", stepJson)
             extractLinks(stepDescription).forEach { link ->
@@ -824,7 +824,7 @@ class CoursesRepositoryImpl @Inject constructor(
             pendingCourseResources.clear()
         }
 
-        val resourceIds = batch.map { JsonUtils.getString("_id", it.doc) }.filter { it.isNotBlank() }
+        val resourceIds = batch.mapNotNull { pending -> JsonUtils.getString("_id", pending.doc).takeIf { it.isNotBlank() } }
         val existingMap = if (resourceIds.isNotEmpty()) {
             resourceIds.distinct()
                 .chunked(300)

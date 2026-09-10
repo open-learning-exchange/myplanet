@@ -20,12 +20,14 @@ class EnterprisesReportsAdapterTest {
 
     private lateinit var adapter: EnterprisesReportsAdapter
     private lateinit var context: Context
+    private lateinit var timeProvider: org.ole.planet.myplanet.utils.TestTimeProvider
 
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
         context.setTheme(AppCompatR.style.Theme_AppCompat)
-        adapter = EnterprisesReportsAdapter(context, "Test Team", {}, {})
+        timeProvider = org.ole.planet.myplanet.utils.TestTimeProvider(currentTime = 1000L)
+        adapter = EnterprisesReportsAdapter(context, "Test Team", {}, {}, timeProvider)
     }
 
     @Test
@@ -90,6 +92,170 @@ class EnterprisesReportsAdapterTest {
             adapter.onBindViewHolder(viewHolder, 0, payloads)
 
             assertEquals(context.getString(R.string.team_financial_report, "Test Team"), viewHolder.binding.tvReportTitle.text.toString())
+        }
+    }
+
+    @Test
+    fun testReportTotals_calculatesIncomeExpensesProfitLossAndEndingBalance() {
+        val report = MyTeam().apply {
+            sales = 500
+            otherIncome = 100
+            wages = 200
+            otherExpenses = 50
+            beginningBalance = 1000
+        }
+
+        val totals = reportTotals(report)
+
+        assertEquals(600, totals.totalIncome)
+        assertEquals(250, totals.totalExpenses)
+        assertEquals(350, totals.profitLoss)
+        assertEquals(1350, totals.endingBalance)
+    }
+
+    @Test
+    fun testReportTotals_withNegativeBeginningBalance_calculatesEndingBalanceCorrectly() {
+        val report = MyTeam().apply {
+            sales = 200
+            otherIncome = 50
+            wages = 100
+            otherExpenses = 50
+            beginningBalance = -500
+        }
+
+        val totals = reportTotals(report)
+
+        assertEquals(250, totals.totalIncome)
+        assertEquals(150, totals.totalExpenses)
+        assertEquals(100, totals.profitLoss)
+        assertEquals(-400, totals.endingBalance)
+    }
+
+    @Test
+    fun testOnBindViewHolder_bindsReportTotalsToViews() {
+        val report = MyTeam().apply {
+            _id = "report1"
+            sales = 300
+            otherIncome = 50
+            wages = 100
+            otherExpenses = 20
+            beginningBalance = -100
+        }
+
+        adapter.submitList(listOf(report)) {
+            val binding = ReportListItemBinding.inflate(LayoutInflater.from(context))
+            val viewHolder = EnterprisesReportsAdapter.ReportsViewHolder(binding)
+
+            adapter.onBindViewHolder(viewHolder, 0)
+
+            assertEquals(context.getString(R.string.number_placeholder, 350), viewHolder.binding.totalIncomeValue.text.toString())
+            assertEquals(context.getString(R.string.number_placeholder, 120), viewHolder.binding.totalExpensesValue.text.toString())
+            assertEquals(context.getString(R.string.number_placeholder, 230), viewHolder.binding.profitLossValue.text.toString())
+            assertEquals(context.getString(R.string.number_placeholder, 130), viewHolder.binding.endingBalanceValue.text.toString())
+        }
+    }
+
+    @Test
+    fun testBindReportImage_missingFile_visibilityGone() {
+        val report = MyTeam().apply {
+            _id = "report1"
+            imageName = "missing.jpg"
+        }
+
+        adapter.submitList(listOf(report)) {
+            val binding = ReportListItemBinding.inflate(LayoutInflater.from(context))
+            val viewHolder = EnterprisesReportsAdapter.ReportsViewHolder(binding)
+
+            adapter.onBindViewHolder(viewHolder, 0)
+
+            assertEquals(View.GONE, viewHolder.binding.reportImage.visibility)
+        }
+    }
+
+    @Test
+    fun testBindReportImage_existingFile_cachesAndInvalidatesOnListChange() {
+        val tempDir = java.io.File(context.cacheDir, "test_ole_reports_${System.currentTimeMillis()}").apply { mkdirs() }
+        io.mockk.mockkObject(org.ole.planet.myplanet.utils.FileUtils)
+        io.mockk.every { org.ole.planet.myplanet.utils.FileUtils.getOlePath(any()) } returns "${tempDir.absolutePath}/"
+
+        try {
+            val teamAttachmentsDir = java.io.File(tempDir, "team_attachments/report1").apply { mkdirs() }
+            val imageFile = java.io.File(teamAttachmentsDir, "report.jpg")
+            imageFile.createNewFile()
+
+            val report = MyTeam().apply {
+                _id = "report1"
+                imageName = "report.jpg"
+            }
+
+            adapter.submitList(listOf(report)) {
+                val binding = ReportListItemBinding.inflate(LayoutInflater.from(context))
+                val viewHolder = EnterprisesReportsAdapter.ReportsViewHolder(binding)
+
+                // First bind detects existing file and makes image visible
+                adapter.onBindViewHolder(viewHolder, 0)
+                assertEquals(View.VISIBLE, viewHolder.binding.reportImage.visibility)
+
+                // File is deleted on disk
+                imageFile.delete()
+
+                // Second bind within TTL uses cached exists value (true) so image remains visible
+                adapter.onBindViewHolder(viewHolder, 0)
+                assertEquals(View.VISIBLE, viewHolder.binding.reportImage.visibility)
+
+                // Re-submitting list invalidates cache via onCurrentListChanged
+                adapter.submitList(listOf(report)) {
+                    adapter.onBindViewHolder(viewHolder, 0)
+                    // Cache was cleared, so disk re-check detects file is deleted and sets visibility to GONE
+                    assertEquals(View.GONE, viewHolder.binding.reportImage.visibility)
+                }
+            }
+        } finally {
+            io.mockk.unmockkObject(org.ole.planet.myplanet.utils.FileUtils)
+            tempDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun testBindReportImage_cacheExpiresAfterTtl() {
+        val tempDir = java.io.File(context.cacheDir, "test_ole_reports_ttl_${System.currentTimeMillis()}").apply { mkdirs() }
+        io.mockk.mockkObject(org.ole.planet.myplanet.utils.FileUtils)
+        io.mockk.every { org.ole.planet.myplanet.utils.FileUtils.getOlePath(any()) } returns "${tempDir.absolutePath}/"
+
+        try {
+            val teamAttachmentsDir = java.io.File(tempDir, "team_attachments/report1").apply { mkdirs() }
+            val imageFile = java.io.File(teamAttachmentsDir, "report.jpg")
+
+            val report = MyTeam().apply {
+                _id = "report1"
+                imageName = "report.jpg"
+            }
+
+            adapter.submitList(listOf(report)) {
+                val binding = ReportListItemBinding.inflate(LayoutInflater.from(context))
+                val viewHolder = EnterprisesReportsAdapter.ReportsViewHolder(binding)
+
+                // File doesn't exist initially -> GONE (and cached false)
+                adapter.onBindViewHolder(viewHolder, 0)
+                assertEquals(View.GONE, viewHolder.binding.reportImage.visibility)
+
+                // File appears on disk (e.g. downloaded)
+                imageFile.createNewFile()
+
+                // Immediate re-bind within TTL uses cached false -> still GONE
+                adapter.onBindViewHolder(viewHolder, 0)
+                assertEquals(View.GONE, viewHolder.binding.reportImage.visibility)
+
+                // Advance time past the 5000ms TTL deterministically without Thread.sleep
+                timeProvider.advanceBy(5001L)
+
+                // Re-bind after TTL expires re-stats disk -> VISIBLE
+                adapter.onBindViewHolder(viewHolder, 0)
+                assertEquals(View.VISIBLE, viewHolder.binding.reportImage.visibility)
+            }
+        } finally {
+            io.mockk.unmockkObject(org.ole.planet.myplanet.utils.FileUtils)
+            tempDir.deleteRecursively()
         }
     }
 }

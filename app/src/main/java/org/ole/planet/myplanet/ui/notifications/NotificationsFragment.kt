@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.ArrayList
 import java.util.Locale
+import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.status_options
@@ -29,10 +30,14 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ChatPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.voices.ReplyActivity
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class NotificationsFragment : Fragment() {
+    @Inject
+    lateinit var timeProvider: TimeProvider
+
     private var _binding: FragmentNotificationsBinding? = null
     private val binding get() = _binding!!
     private val viewModel: NotificationsViewModel by viewModels()
@@ -55,7 +60,8 @@ class NotificationsFragment : Fragment() {
             onMarkAsReadClick = { notificationId -> viewModel.markAsRead(notificationId) },
             onNotificationClick = { notification -> handleNotificationClick(notification) },
             onToggleSelection = { notificationId -> viewModel.toggleSelection(notificationId) },
-            onToggleGroupExpansion = { type -> viewModel.toggleGroupExpansion(type) }
+            onToggleGroupExpansion = { type -> viewModel.toggleGroupExpansion(type) },
+            now = { timeProvider.now() }
         )
         binding.rvNotifications.adapter = adapter
         binding.rvNotifications.layoutManager = LinearLayoutManager(requireContext())

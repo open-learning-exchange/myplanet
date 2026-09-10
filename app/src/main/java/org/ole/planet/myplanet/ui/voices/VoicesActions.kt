@@ -90,7 +90,7 @@ object VoicesActions {
         }
 
         val request = Glide.with(context)
-        val target = if (imagePath.lowercase(Locale.getDefault()).endsWith(".gif")) {
+        val target = if (imagePath.endsWith(".gif", ignoreCase = true)) {
             request.asGif().load(if (File(imagePath).exists()) File(imagePath) else imagePath)
         } else {
             request.load(if (File(imagePath).exists()) File(imagePath) else imagePath)
@@ -214,14 +214,15 @@ object VoicesActions {
     ): MembersDetailFragment? {
         if (userModel == null) return null
         val userName = "${userModel.firstName} ${userModel.lastName}".trim().ifBlank { userModel.name }
+        val visitStats = activitiesRepository.getMemberVisitStats(userModel.id, userModel.name)
         val fragment = MembersDetailFragment.newInstance(
             userName.toString(),
             userModel.email.toString(),
             userModel.dob.toString().substringBefore("T"),
             userModel.language.toString(),
             userModel.phoneNumber.toString(),
-            (userModel.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0).toString(),
-            (activitiesRepository.getLastVisit(userModel.name ?: "")?.let { dateFormatter.get()?.format(Date(it)) } ?: "No logout record found"),
+            visitStats.offlineVisitCount.toString(),
+            (visitStats.lastVisit?.let { dateFormatter.get()?.format(Date(it)) } ?: "No logout record found"),
             "${userModel.firstName} ${userModel.lastName}",
             userModel.level.toString(),
             userModel.userImage

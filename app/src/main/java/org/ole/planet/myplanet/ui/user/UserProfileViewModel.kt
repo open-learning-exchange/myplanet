@@ -4,8 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,7 +11,6 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.services.UserSessionManager
 
 sealed class ProfileUpdateState {
     object Idle : ProfileUpdateState()
@@ -127,18 +124,12 @@ class UserProfileViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             val fullName = userRepository.getUserModel()?.name ?: ""
-            coroutineScope {
-                val resultDeferred = async { activitiesRepository.getMostOpenedResource(fullName, UserSessionManager.KEY_RESOURCE_OPEN) }
-                val lastVisitDeferred = async { activitiesRepository.getGlobalLastVisit() }
-                val countDeferred = async { activitiesRepository.getResourceOpenCount(fullName, UserSessionManager.KEY_RESOURCE_OPEN) }
-
-                val result = resultDeferred.await()
-                _maxOpenedResource.value = if (result == null) "" else "${result.first} opened ${result.second} times"
-                _lastVisit.value = lastVisitDeferred.await()
-
-                val count = countDeferred.await()
-                _numberOfResourceOpen.value = if (count == 0L) "" else "Resource opened $count times."
-            }
+            val stats = activitiesRepository.getProfileActivityStats(fullName)
+            val result = stats.mostOpenedResource
+            _maxOpenedResource.value = if (result == null) "" else "${result.first} opened ${result.second} times"
+            _lastVisit.value = stats.lastVisit
+            val count = stats.resourceOpenCount
+            _numberOfResourceOpen.value = if (count == 0L) "" else "Resource opened $count times."
         }
     }
 

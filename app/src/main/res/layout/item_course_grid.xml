@@ -63,7 +63,7 @@
                 android:paddingTop="3dp"
                 android:paddingEnd="8dp"
                 android:paddingBottom="3dp"
-                android:textColor="@color/daynight_textColor"
+                android:textColor="@color/md_black_1000"
                 android:textSize="11sp"
                 android:textStyle="bold" />
             <CheckBox

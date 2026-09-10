@@ -551,6 +551,8 @@
     <string name="subject_level">Niveau du sujet</string>
     <string name="order_by_date">Trier par date</string>
     <string name="order_by_title">Trier par titre</string>
+    <string name="sort">Trier</string>
+    <string name="show_n_results">Afficher %1$d résultats</string>
     <string name="exams">Examens</string>
     <string name="survey">Enquête</string>
     <string name="submitted_by">Soumis par</string>
@@ -605,6 +607,7 @@
     <string name="please_select_starting_date">Veuillez sélectionner la date de début: </string>
     <string name="read_offline_news_from">Lire les actualités hors ligne depuis: </string>
     <string name="downloading_started_please_check_notification">Téléchargement commencé, veuillez vérifier les notifications…</string>
+    <string name="dictionary_parsing_failed">L\'analyse du dictionnaire a échoué.</string>
     <string name="file_already_exists">Le fichier existe déjà…</string>
     <string name="feature_not_available">Fonctionnalité non disponible</string>
     <string name="sync">Synchroniser</string>
@@ -1123,6 +1126,9 @@
     <string name="user_verification_in_progress">Vérification de l\'utilisateur en cours. Veuillez patienter pendant que nous traitons les données.</string>
     <string name="go_to_mylibrary">Aller à Ma Bibliothèque</string>
     <string name="choose_an_option">Choisissez une option</string>
+    <string name="profile_guest_banner_message">Invité — connectez-vous pour enregistrer votre profil</string>
+    <string name="profile_label_level">Niveau</string>
+    <string name="profile_activity_section">Activité</string>
     <string name="welcome">Bienvenue %1$s</string>
     <string name="edit_plan">Modifier le plan</string>
     <string name="show_additional_fields">afficher les champs supplémentaires</string>

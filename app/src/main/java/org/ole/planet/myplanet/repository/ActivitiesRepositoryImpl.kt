@@ -62,6 +62,12 @@ class ActivitiesRepositoryImpl @Inject constructor(
         return offlineActivityDao.countByUserIdAndType(userId, UserSessionManager.KEY_LOGIN)
     }
 
+    override suspend fun getMemberVisitStats(userId: String?, userName: String?): MemberVisitStats {
+        val count = if (!userId.isNullOrEmpty()) getOfflineVisitCount(userId) else 0
+        val lastVisit = if (!userName.isNullOrEmpty()) getLastVisit(userName) else null
+        return MemberVisitStats(count, lastVisit)
+    }
+
     override suspend fun getOfflineLoginCount(userName: String): Int {
         return offlineActivityDao.countByUserNameAndType(userName, UserSessionManager.KEY_LOGIN)
     }
@@ -166,8 +172,16 @@ class ActivitiesRepositoryImpl @Inject constructor(
         )
     }
 
+    override suspend fun getResourceOpenCount(userName: String): Long {
+        return getResourceOpenCount(userName, UserSessionManager.KEY_RESOURCE_OPEN)
+    }
+
     override suspend fun getResourceOpenCount(userName: String, type: String): Long {
         return resourceActivityDao.countByUserAndType(userName, type)
+    }
+
+    override suspend fun getMostOpenedResource(userName: String): Pair<String, Int>? {
+        return getMostOpenedResource(userName, UserSessionManager.KEY_RESOURCE_OPEN)
     }
 
     override suspend fun getMostOpenedResource(userName: String, type: String): Pair<String, Int>? = withContext(dispatcherProvider.io) {
@@ -177,6 +191,18 @@ class ActivitiesRepositoryImpl @Inject constructor(
         } else {
             null
         }
+    }
+
+    override suspend fun getProfileActivityStats(userName: String): ProfileActivityStats = coroutineScope {
+        val mostOpenedDeferred = async { getMostOpenedResource(userName) }
+        val lastVisitDeferred = async { getGlobalLastVisit() }
+        val countDeferred = async { getResourceOpenCount(userName) }
+
+        ProfileActivityStats(
+            mostOpenedResource = mostOpenedDeferred.await(),
+            lastVisit = lastVisitDeferred.await(),
+            resourceOpenCount = countDeferred.await()
+        )
     }
 
     private suspend fun getUnuploadedLoginActivities(): List<LoginActivityData> {
@@ -419,10 +445,15 @@ class ActivitiesRepositoryImpl @Inject constructor(
 
         if (`object` != null) {
             val usages = `object`.getAsJsonArray("usages")
-            usages.addAll(MyPlanet.getTabletUsages(context, sharedPrefManager))
+            val tabletUsages = withContext(dispatcherProvider.io) {
+                MyPlanet.getTabletUsages(context, sharedPrefManager)
+            }
+            usages.addAll(tabletUsages)
             `object`.add("usages", usages)
         } else {
-            `object` = MyPlanet.getMyPlanetActivities(context, sharedPrefManager, userModel)
+            `object` = withContext(dispatcherProvider.io) {
+                MyPlanet.getMyPlanetActivities(context, sharedPrefManager, userModel)
+            }
         }
 
         apiInterface.postDoc(

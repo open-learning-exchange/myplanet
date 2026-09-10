@@ -551,6 +551,8 @@
     <string name="subject_level">Darajo Mawduuc</string>
     <string name="order_by_date">Ku qoraalka Taariikhda</string>
     <string name="order_by_title">Ku qoraalka Cinwaanka</string>
+    <string name="sort">Kala sooc</string>
+    <string name="show_n_results">Tus %1$d natiijo</string>
     <string name="exams">Imtixaanada</string>
     <string name="survey">Soo Gudbi</string>
     <string name="submitted_by">La Diyaariyay</string>
@@ -605,6 +607,7 @@
     <string name="please_select_starting_date">"Fadlan dooro taariikhda hore : "</string>
     <string name="read_offline_news_from">"Akhri wararka gudaha ka hor : "</string>
     <string name="downloading_started_please_check_notification">Degsaday soo degista, fadlan check notifikishanka…</string>
+    <string name="dictionary_parsing_failed">Falanqaynta qaamuuska way fashilantay</string>
     <string name="file_already_exists">Faylku horey ayaa jira…</string>
     <string name="feature_not_available">Fayraska Ma heli karaan</string>
     <string name="sync">Dib u hagrees</string>
@@ -1122,6 +1125,9 @@
     <string name="user_verification_in_progress">Hubinta isticmaalaha ayaa socota. Fadlan sug inta aan xogta ka shaqeynayno.</string>
     <string name="go_to_mylibrary">Tag Maktabaddayda</string>
     <string name="choose_an_option">Dooro ikhtiyaar</string>
+    <string name="profile_guest_banner_message">Marti — soo gal si aad u kaydiso astaantaada</string>
+    <string name="profile_label_level">Heerka</string>
+    <string name="profile_activity_section">Firfircoonaanta</string>
     <string name="welcome">Soo dhawoow %1$s</string>
     <string name="edit_plan">Wax ka beddel qorshaha</string>
     <string name="show_additional_fields">muuji beeraha dheeraadka ah</string>

@@ -551,6 +551,8 @@
     <string name="subject_level">مستوى الموضوع</string>
     <string name="order_by_date">ترتيب حسب التاريخ</string>
     <string name="order_by_title">ترتيب حسب العنوان</string>
+    <string name="sort">فرز</string>
+    <string name="show_n_results">عرض %1$d نتيجة</string>
     <string name="exams">الامتحانات</string>
     <string name="survey">الاستبيان</string>
     <string name="submitted_by">تم الإرسال بواسطة</string>
@@ -605,6 +607,7 @@
     <string name="please_select_starting_date">"يرجى تحديد تاريخ البدء: "</string>
     <string name="read_offline_news_from">"قراءة الأخبار غير المتصلة من: "</string>
     <string name="downloading_started_please_check_notification">بدأ التنزيل، يرجى التحقق من الإشعار…</string>
+    <string name="dictionary_parsing_failed">فشل تحليل القاموس.</string>
     <string name="file_already_exists">الملف موجود بالفعل…</string>
     <string name="feature_not_available">الميزة غير متاحة</string>
     <string name="sync">مزامنة</string>
@@ -1126,6 +1129,9 @@
     <string name="user_verification_in_progress">جارٍ التحقق من المستخدم. يرجى الانتظار أثناء معالجة البيانات.</string>
     <string name="go_to_mylibrary">انتقل إلى مكتبتي</string>
     <string name="choose_an_option">اختر خيارًا</string>
+    <string name="profile_guest_banner_message">ضيف — سجّل الدخول لحفظ ملفك الشخصي</string>
+    <string name="profile_label_level">المستوى</string>
+    <string name="profile_activity_section">النشاط</string>
     <string name="welcome">%1$s بعودتك</string>
     <string name="edit_plan">تعديل الخطة</string>
     <string name="show_additional_fields">عرض الحقول الإضافية</string>

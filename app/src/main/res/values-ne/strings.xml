@@ -551,6 +551,8 @@
     <string name="subject_level">विषय स्तर</string>
     <string name="order_by_date">मिति अनुसार आदेश गर्नुहोस्</string>
     <string name="order_by_title">शीर्षक अनुसार आदेश गर्नुहोस्</string>
+    <string name="sort">क्रमबद्ध गर्नुहोस्</string>
+    <string name="show_n_results">%1$d नतिजा देखाउनुहोस्</string>
     <string name="exams">परीक्षाहरू</string>
     <string name="survey">सर्वेक्षण</string>
     <string name="submitted_by">पेश गर्ने:</string>
@@ -605,6 +607,7 @@
     <string name="please_select_starting_date">"कृपया सुरु मिति छनौट गर्नुहोस्: "</string>
     <string name="read_offline_news_from">"अफलाइन समाचार पढ्नुहोस्: "</string>
     <string name="downloading_started_please_check_notification">डाउनलोड सुरु भयो, कृपया सूचना जाँच गर्नुहोस्…</string>
+    <string name="dictionary_parsing_failed">शब्दकोश पार्सिङ असफल भयो</string>
     <string name="file_already_exists">फाइल पहिले नै अवस्थित छ…</string>
     <string name="feature_not_available">विशेषता उपलब्ध छैन</string>
     <string name="sync">सिंक</string>
@@ -1122,6 +1125,9 @@
     <string name="user_verification_in_progress">प्रयोगकर्ता प्रमाणीकरण प्रक्रिया भइरहेको छ। कृपया डेटा प्रशोधन भइरहेसम्म प्रतीक्षा गर्नुहोस्।</string>
     <string name="go_to_mylibrary">मेरो पुस्तकालयमा जानुहोस्</string>
     <string name="choose_an_option">एउटा विकल्प छान्नुहोस्</string>
+    <string name="profile_guest_banner_message">अतिथि — प्रोफाइल सुरक्षित गर्न साइन इन गर्नुहोस्</string>
+    <string name="profile_label_level">स्तर</string>
+    <string name="profile_activity_section">गतिविधि</string>
     <string name="welcome">स्वागतम् %1$s</string>
     <string name="edit_plan">योजना सम्पादन गर्नुहोस्</string>
     <string name="show_additional_fields">थप क्षेत्रहरू देखाउनुहोस्</string>

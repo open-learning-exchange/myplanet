@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.ui.resources
 
-import com.google.gson.JsonObject
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -11,6 +11,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -114,20 +115,60 @@ class ResourcesViewModelTest {
             title = "Library 1"
             resourceOffline = true
         }
-        val mockRating = mockk<JsonObject>(relaxed = true)
         val mockTag = TagEntity().apply {
             id = "tag1"
             name = "Tag 1"
         }
         val mockResourceItem = mockk<ResourceItem>(relaxed = true)
         coEvery { resourcesRepository.getResourceListModels(any(), any()) } returns listOf(
-            ResourceListModel(mockLibrary, mockResourceItem, mockRating, listOf(TagItem(mockTag.id, mockTag.name)))
+            ResourceListModel(mockLibrary, mockResourceItem, listOf(TagItem(mockTag.id, mockTag.name)))
         )
 
         val result = viewModel.getLibraryListModels(true, "modelId")
 
         assertEquals(1, result.size)
         assertEquals("lib1", result[0].library.id)
+        assertEquals(1, viewModel.resourcesState.value.size)
+    }
+
+    @Test
+    fun `loadResources asynchronously updates resourcesState`() = runTest {
+        val mockLibrary = MyLibrary().apply {
+            id = "lib1"
+            title = "Library 1"
+            resourceOffline = true
+        }
+        val mockTag = TagEntity().apply {
+            id = "tag1"
+            name = "Tag 1"
+        }
+        val mockResourceItem = mockk<ResourceItem>(relaxed = true)
+        coEvery { resourcesRepository.getResourceListModels(any(), any()) } returns listOf(
+            ResourceListModel(mockLibrary, mockResourceItem, listOf(TagItem(mockTag.id, mockTag.name)))
+        )
+
+        viewModel.loadResources(true, "modelId")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(1, viewModel.resourcesState.value.size)
+        assertEquals("lib1", viewModel.resourcesState.value[0].library.id)
+    }
+
+    @Test
+    fun `getCachedResources returns cached items from repository`() = runTest {
+        val mockLibrary = MyLibrary().apply {
+            id = "lib1"
+            title = "Library 1"
+        }
+        val mockResourceItem = mockk<ResourceItem>(relaxed = true)
+        val cached = listOf(
+            ResourceListModel(mockLibrary, mockResourceItem, emptyList())
+        )
+        every { resourcesRepository.getCachedResourceListModels(true, "modelId") } returns cached
+
+        val result = viewModel.getCachedResources(true, "modelId")
+        assertEquals(1, result?.size)
+        assertEquals("lib1", result?.get(0)?.library?.id)
     }
 
     @Test
@@ -158,6 +199,29 @@ class ResourcesViewModelTest {
         assertEquals(listOf(100L, 200L, 300L), secondToggleResult.map { it.item.createdDate })
     }
 
+    @Test
+    fun `filterIfChanged memoizes the criteria in the view model until resetFilter`() = runTest {
+        val models = listOf(createResourceModel("a", 1), createResourceModel("b", 2))
+        val notDownloaded = ResourcesFilterCriteria(
+            searchQuery = "",
+            searchTags = emptyList(),
+            subjects = emptySet(),
+            levels = emptySet(),
+            languages = emptySet(),
+            mediums = emptySet(),
+            downloadFilterIndex = 2
+        )
+
+        val first = viewModel.filterIfChanged(models, notDownloaded, setOf("a"))
+        val second = viewModel.filterIfChanged(models, notDownloaded, setOf("a"))
+        viewModel.resetFilter()
+        val afterReset = viewModel.filterIfChanged(models, notDownloaded, setOf("a"))
+
+        assertEquals(listOf("b"), first?.map { it.item.id })
+        assertNull(second)
+        assertEquals(listOf("b"), afterReset?.map { it.item.id })
+    }
+
     private fun createResourceModel(title: String, createdDate: Long): ResourceListModel {
         val library = MyLibrary().apply {
             this.title = title
@@ -175,6 +239,6 @@ class ResourcesViewModelTest {
             uploadDate = null,
             filename = null
         )
-        return ResourceListModel(library, item, null, emptyList<TagItem>())
+        return ResourceListModel(library, item, emptyList<TagItem>())
     }
 }

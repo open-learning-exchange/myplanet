@@ -551,6 +551,8 @@
     <string name="subject_level">Nivel de asignatura</string>
     <string name="order_by_date">Ordenar por fecha</string>
     <string name="order_by_title">Ordenar por título</string>
+    <string name="sort">Ordenar</string>
+    <string name="show_n_results">Mostrar %1$d resultados</string>
     <string name="exams">Exámenes</string>
     <string name="survey">Encuestas</string>
     <string name="submitted_by">Enviado por</string>
@@ -605,6 +607,7 @@
     <string name="please_select_starting_date">"Por favor, selecciona la fecha de inicio: "</string>
     <string name="read_offline_news_from">"Leer noticias sin conexión desde: "</string>
     <string name="downloading_started_please_check_notification">Descarga iniciada, por favor revisa las notificaciones…</string>
+    <string name="dictionary_parsing_failed">Error al analizar el diccionario.</string>
     <string name="file_already_exists">El archivo ya existe…</string>
     <string name="feature_not_available">Función no disponible</string>
     <string name="sync">Sincronizar</string>
@@ -1122,6 +1125,9 @@
     <string name="user_verification_in_progress">Verificación de usuario en progreso. Por favor, espere mientras procesamos los datos.</string>
     <string name="go_to_mylibrary">Ir a Mi Biblioteca</string>
     <string name="choose_an_option">Elige una opción</string>
+    <string name="profile_guest_banner_message">Invitado: inicia sesión para guardar tu perfil</string>
+    <string name="profile_label_level">Nivel</string>
+    <string name="profile_activity_section">Actividad</string>
     <string name="welcome">Bienvenido %1$s</string>
     <string name="edit_plan">Editar plan</string>
     <string name="show_additional_fields">Mostrar campos adicionales</string>

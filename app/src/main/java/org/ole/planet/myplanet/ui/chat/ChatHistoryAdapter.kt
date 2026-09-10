@@ -20,13 +20,11 @@ import org.ole.planet.myplanet.databinding.RowChatHistoryBinding
 import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.ChatSharePayload
 import org.ole.planet.myplanet.model.ChatShareTargets
-import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.teams.TeamsSelectionAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
-import org.ole.planet.myplanet.utils.JsonUtils
 
 class ChatHistoryAdapter(
     private val context: Context,
@@ -152,7 +150,7 @@ class ChatHistoryAdapter(
                 if (clickedItem.isGroup) {
                     val currentFlatList = shareTargetAdapter.currentList
                     val currentlyExpanded = currentFlatList.firstOrNull { it.isGroup && it.title == clickedItem.title }?.isExpanded ?: false
-                    val expandedGroups = currentFlatList.filter { it.isGroup && it.isExpanded }.map { it.title }.toMutableSet()
+                    val expandedGroups = currentFlatList.mapNotNullTo(mutableSetOf()) { if (it.isGroup && it.isExpanded) it.title else null }
                     if (currentlyExpanded) {
                         expandedGroups.remove(clickedItem.title)
                     } else {
