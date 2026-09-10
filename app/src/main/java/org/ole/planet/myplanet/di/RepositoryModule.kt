@@ -19,6 +19,8 @@ import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.CoursesRepositoryImpl
 import org.ole.planet.myplanet.repository.DiagnosticsRepository
 import org.ole.planet.myplanet.repository.DiagnosticsRepositoryImpl
+import org.ole.planet.myplanet.repository.DictionaryAssetDataSource
+import org.ole.planet.myplanet.repository.DictionaryAssetDataSourceImpl
 import org.ole.planet.myplanet.repository.DictionaryRepository
 import org.ole.planet.myplanet.repository.DictionaryRepositoryImpl
 import org.ole.planet.myplanet.repository.DownloadRepository
@@ -80,6 +82,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindDiagnosticsRepository(impl: DiagnosticsRepositoryImpl): DiagnosticsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindDictionaryAssetDataSource(impl: DictionaryAssetDataSourceImpl): DictionaryAssetDataSource
 
     @Binds
     @Singleton
