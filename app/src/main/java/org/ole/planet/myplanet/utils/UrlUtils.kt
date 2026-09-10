@@ -1,10 +1,10 @@
 package org.ole.planet.myplanet.utils
 
 import android.util.Log
-import java.util.Base64
 import androidx.annotation.VisibleForTesting
 import androidx.core.net.toUri
 import java.net.URLEncoder
+import java.util.Base64
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.services.SharedPrefManager
 
