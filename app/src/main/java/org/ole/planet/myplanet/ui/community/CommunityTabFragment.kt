@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.tabs.TabLayoutMediator
@@ -12,18 +11,12 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 
 @AndroidEntryPoint
-class CommunityTabFragment : Fragment() {
-    private var _binding: FragmentTeamDetailBinding? = null
-    private val binding get() = _binding!!
+class CommunityTabFragment : BaseBindingFragment<FragmentTeamDetailBinding>(FragmentTeamDetailBinding::inflate) {
     private val viewModel: CommunityTabViewModel by viewModels()
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentTeamDetailBinding.inflate(inflater, container, false)
-        return binding.root
-    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -37,10 +30,5 @@ class CommunityTabFragment : Fragment() {
             binding.subtitle.text = state.planetType
             binding.llActionButtons.visibility = View.GONE
         }
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
     }
 }

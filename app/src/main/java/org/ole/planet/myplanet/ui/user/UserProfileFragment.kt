@@ -22,7 +22,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -51,6 +50,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.language
 import org.ole.planet.myplanet.R.array.subject_level
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.databinding.DialogPhotoPickerBinding
 import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
 import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding
@@ -65,9 +65,7 @@ import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
-class UserProfileFragment : Fragment() {
-    private var _binding: FragmentUserProfileBinding? = null
-    private val binding get() = _binding!!
+class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(FragmentUserProfileBinding::inflate) {
     private val viewModel: UserProfileViewModel by viewModels()
     @Inject
     lateinit var userSessionManager: UserSessionManager
@@ -173,12 +171,6 @@ class UserProfileFragment : Fragment() {
                 setupStatsRecycler()
             }
         }
-    }
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentUserProfileBinding.inflate(inflater, container, false)
-
-        return binding.root
     }
 
     private fun initializeDependencies() {
@@ -553,7 +545,6 @@ class UserProfileFragment : Fragment() {
     override fun onDestroyView() {
         editProfileDialog?.dismiss()
         editProfileDialog = null
-        _binding = null
         super.onDestroyView()
     }
 }

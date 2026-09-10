@@ -11,7 +11,6 @@ import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.text.TextUtils
 import android.util.Rational
-import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
@@ -30,7 +29,6 @@ import androidx.core.graphics.createBitmap
 import androidx.core.net.toUri
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -61,6 +59,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.callback.OnAudioRecordListener
 import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
 import org.ole.planet.myplanet.databinding.FragmentResourceViewerBinding
@@ -76,14 +75,12 @@ import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
-class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
+class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding>(FragmentResourceViewerBinding::inflate), AuthSessionUpdater.AuthCallback {
 
     enum class ResourceType {
         VIDEO, AUDIO, PDF, IMAGE, TEXT, MARKDOWN, CSV, UNKNOWN
     }
 
-    private var _binding: FragmentResourceViewerBinding? = null
-    private val binding get() = _binding!!
     private var resourceId: String? = null
     private var filePath: String? = null
     private var title: String? = null
@@ -157,11 +154,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             isFullPath = it.getBoolean(ARG_IS_FULL_PATH, false)
             auth = it.getString(ARG_AUTH) ?: ""
         }
-    }
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentResourceViewerBinding.inflate(inflater, container, false)
-        return binding.root
     }
 
     private var lastSavedPositionMs: Long = -1L
@@ -696,7 +688,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             noisyReceiverRegistered = false
         }
         super.onDestroyView()
-        _binding = null
     }
 
     companion object {

@@ -5,7 +5,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CompoundButton
-import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
@@ -17,6 +16,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingDialogFragment
 import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.databinding.FragmentCollectionsBinding
 import org.ole.planet.myplanet.model.TagData
@@ -27,10 +27,7 @@ import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
-class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton.OnCheckedChangeListener {
-    private var _binding: FragmentCollectionsBinding? = null
-    private val binding get() = _binding!!
-
+class CollectionsFragment : BaseBindingDialogFragment<FragmentCollectionsBinding>(FragmentCollectionsBinding::inflate), OnTagClickListener, CompoundButton.OnCheckedChangeListener {
     private val viewModel: CollectionsViewModel by viewModels()
 
     private var list: List<TagEntity> = emptyList()
@@ -48,9 +45,9 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentCollectionsBinding.inflate(inflater, container, false)
+        val view = super.onCreateView(inflater, container, savedInstanceState)
         KeyboardUtils.hideSoftKeyboard(requireActivity())
-        return binding.root
+        return view
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -178,11 +175,6 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
         currentTagDataList = buildTagDataList(list)
         adapter.submitList(currentTagDataList)
         binding.btnOk.visibility = if (b) View.VISIBLE else View.GONE
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
     }
 
     companion object {

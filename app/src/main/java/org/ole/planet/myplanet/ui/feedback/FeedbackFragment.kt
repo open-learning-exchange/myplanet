@@ -6,20 +6,17 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.RadioButton
 import androidx.core.widget.doAfterTextChanged
-import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.viewModels
 import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingDialogFragment
 import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.databinding.FragmentFeedbackBinding
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
-class FeedbackFragment : DialogFragment(), View.OnClickListener {
-    private var _binding: FragmentFeedbackBinding? = null
-    private val binding get() = _binding!!
-
+class FeedbackFragment : BaseBindingDialogFragment<FragmentFeedbackBinding>(FragmentFeedbackBinding::inflate), View.OnClickListener {
     private val viewModel: FeedbackComposerViewModel by viewModels()
 
     private var mListener: OnChangedListener? = null
@@ -33,11 +30,11 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentFeedbackBinding.inflate(inflater, container, false)
+        val view = super.onCreateView(inflater, container, savedInstanceState)
         binding.btnSubmit.setOnClickListener(this)
         binding.btnCancel.setOnClickListener(this)
         setupFormValidation()
-        return binding.root
+        return view
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -77,11 +74,6 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
         binding.rgType.setOnCheckedChangeListener { _, _ ->
             binding.tlType.error = null
         }
-    }
-
-    override fun onDestroyView() {
-        _binding = null
-        super.onDestroyView()
     }
 
     override fun onClick(view: View) {

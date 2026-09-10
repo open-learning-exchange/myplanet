@@ -29,7 +29,6 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.UUID
@@ -37,6 +36,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingBottomSheetFragment
 import org.ole.planet.myplanet.callback.OnAudioRecordListener
 import org.ole.planet.myplanet.databinding.AlertSoundRecorderBinding
 import org.ole.planet.myplanet.databinding.FragmentAddResourceBinding
@@ -48,9 +48,7 @@ import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
-class AddResourceFragment : BottomSheetDialogFragment() {
-    private var _binding: FragmentAddResourceBinding? = null
-    private val binding get() = _binding!!
+class AddResourceFragment : BaseBindingBottomSheetFragment<FragmentAddResourceBinding>(FragmentAddResourceBinding::inflate) {
     var tvTime: TextView? = null
     var floatingActionButton: FloatingActionButton? = null
     private var audioRecorder: AudioRecorder? = null
@@ -134,17 +132,12 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentAddResourceBinding.inflate(inflater, container, false)
+        val view = super.onCreateView(inflater, container, savedInstanceState)
         binding.llRecordVideo.setOnClickListener { dispatchTakeVideoIntent() }
         binding.llRecordAudio.setOnClickListener { showAudioRecordAlert() }
         binding.llCaptureImage.setOnClickListener { takePhoto() }
         binding.llDraft.setOnClickListener { openFolderLauncher.launch("*/*") }
-        return binding.root
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
+        return view
     }
 
     private fun showAudioRecordAlert() {
