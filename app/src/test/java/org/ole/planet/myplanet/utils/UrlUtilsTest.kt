@@ -450,4 +450,54 @@ class UrlUtilsTest {
         assertEquals("http://example.com/db/resources/r2/f2", urls[1])
         verify(exactly = 1) { spm.getCouchdbUrl() }
     }
+
+    @Test
+    fun `redactForLog strips userinfo from standard CouchDB URL`() {
+        unmockkObject(UrlUtils)
+        val input = "http://satellite:1234@host.org:5984/db/resources/abc/file.pdf"
+        val result = UrlUtils.redactForLog(input)
+        assertEquals("http://host.org:5984/db/resources/abc/file.pdf", result)
+        assert(!result.contains("satellite"))
+        assert(!result.contains("1234"))
+        assert(!result.contains("@"))
+    }
+
+    @Test
+    fun `redactForLog handles https URL with port`() {
+        unmockkObject(UrlUtils)
+        val input = "https://user:pass@securehost.com:8443/db/teams/_bulk_docs"
+        val result = UrlUtils.redactForLog(input)
+        assertEquals("https://securehost.com:8443/db/teams/_bulk_docs", result)
+        assert(!result.contains("user"))
+        assert(!result.contains("pass"))
+        assert(!result.contains("@"))
+    }
+
+    @Test
+    fun `redactForLog returns URL without userinfo unchanged in substance`() {
+        unmockkObject(UrlUtils)
+        val input = "http://host.org:5984/db/resources/abc/file.pdf"
+        val result = UrlUtils.redactForLog(input)
+        assertEquals("http://host.org:5984/db/resources/abc/file.pdf", result)
+    }
+
+    @Test
+    fun `redactForLog handles empty and malformed URLs safely`() {
+        unmockkObject(UrlUtils)
+        assertEquals("<unparseable url>", UrlUtils.redactForLog(""))
+        assertEquals("<unparseable url>", UrlUtils.redactForLog(null))
+        assertEquals("<unparseable url>", UrlUtils.redactForLog("not a url"))
+        assertEquals("<unparseable url>", UrlUtils.redactForLog(":::invalid::"))
+    }
+
+    @Test
+    fun `redactForLog redacts password containing at sign or colon`() {
+        unmockkObject(UrlUtils)
+        val input = "http://admin:p%40ss%3Aword@server.com/db"
+        val result = UrlUtils.redactForLog(input)
+        assertEquals("http://server.com/db", result)
+        assert(!result.contains("admin"))
+        assert(!result.contains("p%40ss%3Aword"))
+        assert(!result.contains("@"))
+    }
 }
