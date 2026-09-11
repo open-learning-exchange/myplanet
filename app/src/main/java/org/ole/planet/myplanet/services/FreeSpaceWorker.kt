@@ -64,19 +64,17 @@ class FreeSpaceWorker @AssistedInject constructor(
         fileOrDirectory.walkBottomUp().forEach { file ->
             if (isStopped) return
 
-            if (file.exists()) {
-                val length = file.length()
-                if (file.delete()) {
-                    deletedFiles++
-                    freedBytes += length
+            val length = file.length()
+            if (file.delete()) {
+                deletedFiles++
+                freedBytes += length
 
-                    // Report progress every 10 files or so to avoid spamming updates
-                    if (deletedFiles % 10 == 0) {
-                         setProgress(workDataOf(
-                             "deletedFiles" to deletedFiles,
-                             "freedBytes" to freedBytes
-                         ))
-                    }
+                // Report progress every 10 files or so to avoid spamming updates
+                if (deletedFiles % 10 == 0) {
+                     setProgress(workDataOf(
+                         "deletedFiles" to deletedFiles,
+                         "freedBytes" to freedBytes
+                     ))
                 }
             }
         }
