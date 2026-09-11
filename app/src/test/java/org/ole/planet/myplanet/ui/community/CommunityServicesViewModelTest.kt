@@ -15,7 +15,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
@@ -26,7 +25,6 @@ class CommunityServicesViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val teamsRepository: TeamsRepository = mockk()
-    private val userRepository: UserRepository = mockk()
     private val dispatcherProvider = TestDispatcherProvider(mainDispatcherRule.testDispatcher)
 
     @Before
@@ -39,7 +37,7 @@ class CommunityServicesViewModelTest {
         val mockTeam = MyTeam().apply { title = "Health Services" }
         coEvery { teamsRepository.getTeamLinks() } returns listOf(mockTeam)
 
-        val viewModel = CommunityServicesViewModel(teamsRepository, userRepository, dispatcherProvider)
+        val viewModel = CommunityServicesViewModel(teamsRepository, dispatcherProvider)
         advanceUntilIdle()
 
         val links = viewModel.teamLinks.first()
@@ -53,7 +51,7 @@ class CommunityServicesViewModelTest {
         coEvery { teamsRepository.isMember("user_123", "team_456") } returns true
         coEvery { teamsRepository.isMember(null, "team_456") } returns false
 
-        val viewModel = CommunityServicesViewModel(teamsRepository, userRepository, dispatcherProvider)
+        val viewModel = CommunityServicesViewModel(teamsRepository, dispatcherProvider)
         advanceUntilIdle()
 
         val isMemberUser = viewModel.isMember("user_123", "team_456")
