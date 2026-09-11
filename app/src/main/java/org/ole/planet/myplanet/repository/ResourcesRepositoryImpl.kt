@@ -656,7 +656,8 @@ class ResourcesRepositoryImpl @Inject constructor(
                         doc = doc,
                         spm = sharedPrefManager,
                         userId = shelfId,
-                        existing = existing
+                        existing = existing,
+                        context = context
                     )
                 )
                 if (library != null) {
@@ -700,7 +701,8 @@ class ResourcesRepositoryImpl @Inject constructor(
                     MyLibrary.Companion.InsertParams(
                         doc = doc,
                         spm = sharedPrefManager,
-                        existing = existing
+                        existing = existing,
+                        context = context
                     )
                 )
                 if (library != null) {
@@ -897,7 +899,8 @@ class ResourcesRepositoryImpl @Inject constructor(
             .mapNotNull { it.resourceRemoteAddress }
     }
 
-    override suspend fun serializeForUpload(personal: MyLibrary, user: UserEntity?): JsonObject {
+    override fun serializeForUpload(library: MyLibrary, user: UserEntity?): JsonObject {
+        val personal = library
         return JsonObject().apply {
             addProperty("title", personal.title)
             addProperty("uploadDate", System.currentTimeMillis())
@@ -926,8 +929,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             addProperty("isDownloadable", true)
             addProperty("sourcePlanet", user?.planetCode)
             addProperty("resideOn", user?.planetCode)
-            addProperty("updatedDate", Calendar.getInstance().timeInMillis)
-            addProperty("createdDate", personal.createdDate)
+            addProperty("updatedDate", System.currentTimeMillis())
             addDocumentOrigin()
             addProperty("deviceName", NetworkUtils.getDeviceName())
             addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())

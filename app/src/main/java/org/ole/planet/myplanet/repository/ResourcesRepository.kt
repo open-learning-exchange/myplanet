@@ -110,7 +110,7 @@ interface ResourcesRepository {
     suspend fun getOfflineResourceItems(oleDirPath: String, extensions: Set<String>, allKnownExtensions: Set<String>): List<OfflineResourceItem>
     suspend fun deleteOfflineResources(oleDirPath: String, items: List<OfflineResourceItem>)
     suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String>
-    suspend fun serializeForUpload(library: MyLibrary, user: UserEntity?): JsonObject
+    fun serializeForUpload(library: MyLibrary, user: UserEntity?): JsonObject
 }
 
 sealed class ResourceUrlsResponse {

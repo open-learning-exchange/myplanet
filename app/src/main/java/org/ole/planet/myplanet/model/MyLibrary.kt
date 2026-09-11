@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import android.content.Context
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
@@ -161,7 +162,8 @@ open class MyLibrary {
             val userId: String? = "",
             val stepId: String? = "",
             val courseId: String? = "",
-            val existing: MyLibrary? = null
+            val existing: MyLibrary? = null,
+            val context: Context? = null
         )
 
         private fun JsonArray?.mergeInto(target: MutableList<String>) {
@@ -227,7 +229,7 @@ open class MyLibrary {
                         if (key.indexOf("/") < 0) {
                             resourceRemoteAddress = "${params.spm.getCouchdbUrl().ifEmpty { "http://" }}/resources/$resourceId/$key"
                             resourceLocalAddress = key
-                            resourceOffline = FileUtils.checkFileExist(org.ole.planet.myplanet.MainApplication.context, resourceRemoteAddress)
+                            resourceOffline = params.context?.let { FileUtils.checkFileExist(it, resourceRemoteAddress) } ?: false
                             if (resourceOffline) {
                                 downloadedRev = JsonUtils.getString("_rev", params.doc)
                             }
