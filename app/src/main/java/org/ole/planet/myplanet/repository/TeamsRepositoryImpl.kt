@@ -218,25 +218,19 @@ class TeamsRepositoryImpl @Inject constructor(
             .toHashSet()
     }
 
-    private suspend fun getShareableTeams(userId: String?): List<MyTeam> {
-        return if (userId.isNullOrBlank()) {
-            teamDao.getRootTeamsByType("team")
-        } else {
-            val memberIds = getMemberTeamIds(userId)
-            if (memberIds.isEmpty()) {
-                emptyList()
-            } else {
-                teamDao.getRootTeamsByTypeAndIds("team", memberIds)
-            }
+    private suspend fun getShareableRootTeams(type: String, userId: String?): List<MyTeam> {
+        if (userId.isNullOrBlank()) {
+            return teamDao.getRootTeamsByType(type)
         }
+        val memberIds = getMemberTeamIds(userId)
+        if (memberIds.isEmpty()) {
+            return emptyList()
+        }
+        return teamDao.getRootTeamsByTypeAndIds(type, memberIds)
     }
 
     override suspend fun getTeamSummaries(userId: String?): List<TeamSummary> {
-        return getShareableTeams(userId).map { it.toSummary() }
-    }
-
-    private suspend fun getShareableEnterprises(): List<MyTeam> {
-        return teamDao.getRootTeamsByType("enterprise")
+        return getShareableRootTeams("team", userId).map { it.toSummary() }
     }
 
     private suspend fun mapToTeamDetails(teams: List<MyTeam>, userId: String?): List<TeamDetails> {
@@ -317,17 +311,7 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getShareableEnterpriseSummaries(userId: String?): List<TeamSummary> {
-        val filtered = if (userId.isNullOrBlank()) {
-            getShareableEnterprises()
-        } else {
-            val memberIds = getMemberTeamIds(userId)
-            if (memberIds.isEmpty()) {
-                emptyList()
-            } else {
-                teamDao.getRootTeamsByTypeAndIds("enterprise", memberIds)
-            }
-        }
-        return filtered.map { it.toSummary() }
+        return getShareableRootTeams("enterprise", userId).map { it.toSummary() }
     }
 
     override suspend fun getTeamResources(teamId: String): List<MyLibrary> {
