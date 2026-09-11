@@ -7,7 +7,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.StringRes
-import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
@@ -27,6 +26,7 @@ import org.ole.planet.myplanet.databinding.FragmentStorageBreakdownBinding
 import org.ole.planet.myplanet.databinding.ItemStorageCategoryBinding
 import org.ole.planet.myplanet.services.FreeSpaceWorker
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -82,12 +82,11 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
         }
 
         binding.freeUpSpaceButton.setOnClickListener {
-            AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-                .setTitle(R.string.are_you_sure)
-                .setMessage(R.string.are_you_sure_want_to_delete_all_the_files)
-                .setPositiveButton(R.string.yes) { _, _ -> freeUpSpace() }
-                .setNegativeButton(R.string.no, null)
-                .show()
+            requireContext().confirmDialog(
+                title = getString(R.string.are_you_sure),
+                message = getString(R.string.are_you_sure_want_to_delete_all_the_files),
+                onPositive = ::freeUpSpace
+            )
         }
 
         loadStorage()

@@ -10,6 +10,7 @@ import android.media.AudioManager
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.text.TextUtils
+import android.util.Log
 import android.util.Rational
 import android.view.LayoutInflater
 import android.view.Menu
@@ -508,14 +509,27 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
     private fun renderPdf() {
         val file = File(externalFilesDir, "ole/$filePath")
-        if (file.exists()) {
-            try {
-                val fileDescriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
-                val pdfRenderer = PdfRenderer(fileDescriptor)
-                val page = pdfRenderer.openPage(0)
-                val bitmap = createBitmap(page.width, page.height)
-                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+        if (!file.exists()) return
 
+        viewLifecycleOwner.lifecycleScope.launch {
+            val bitmap = withContext(dispatcherProvider.io) {
+                try {
+                    ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { fileDescriptor ->
+                        PdfRenderer(fileDescriptor).use { pdfRenderer ->
+                            pdfRenderer.openPage(0).use { page ->
+                                val bmp = createBitmap(page.width, page.height)
+                                page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                                bmp
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to render PDF page", e)
+                    null
+                }
+            }
+
+            if (bitmap != null && isAdded) {
                 val pdfPlaceholder = binding.root.findViewById<TextView>(R.id.pdfPlaceholder)
                 pdfPlaceholder.visibility = View.GONE
                 val parent = pdfPlaceholder.parent as ViewGroup
@@ -524,12 +538,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
                 imageView.scaleType = ImageView.ScaleType.FIT_CENTER
                 parent.addView(imageView, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0))
                 (imageView.layoutParams as LinearLayout.LayoutParams).weight = 1f
-
-                page.close()
-                pdfRenderer.close()
-                fileDescriptor.close()
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
         }
     }
@@ -700,6 +708,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     }
 
     companion object {
+        private const val TAG = "ResourceViewerFragment"
         private val UUID_PATTERN = Pattern.compile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/")
         private const val MIN_PIP_ASPECT_RATIO = 1.0 / 2.39
         private const val MAX_PIP_ASPECT_RATIO = 2.39 / 1.0

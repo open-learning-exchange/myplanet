@@ -173,7 +173,7 @@ class CoursesRepositoryImplTest {
             MyCourse(id = "3", courseId = "3", courseTitle = "cherry", courseTitleNormal = "cherry")
         )
         coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
-        coEvery { tagsRepository.getLinkIdsForTagNames(any(), any()) } returns emptyList()
+        coEvery { tagsRepository.getCourseLinkIds(any()) } returns emptySet()
 
         val result = repository.filterCourses("", "", "", emptyList())
 
