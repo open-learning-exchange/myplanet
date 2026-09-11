@@ -222,9 +222,11 @@ class InlineResourceAdapter(
         binding.videoThumbnailContainer.visibility = View.VISIBLE
         val exists = withContext(dispatcherProvider.io) { file.exists() }
         if (exists) {
+            val (widthPx, heightPx) = getPreviewDimensions(context)
             Glide.with(context)
                 .load(file)
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .override(widthPx, heightPx)
                 .centerCrop()
                 .into(binding.ivVideoThumbnail)
         }
