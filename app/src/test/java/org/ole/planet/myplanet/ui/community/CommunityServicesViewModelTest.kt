@@ -9,6 +9,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -40,9 +41,10 @@ class CommunityServicesViewModelTest {
         val viewModel = CommunityServicesViewModel(teamsRepository, dispatcherProvider)
         advanceUntilIdle()
 
-        val links = viewModel.teamLinks.first()
-        assertEquals(1, links.size)
-        assertEquals("Health Services", links[0].title)
+        val links = viewModel.teamLinks.first { it != null }
+        assertNotNull(links)
+        assertEquals(1, links?.size)
+        assertEquals("Health Services", links?.get(0)?.title)
         coVerify { teamsRepository.getTeamLinks() }
     }
 

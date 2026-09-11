@@ -61,6 +61,7 @@ class CommunityServicesFragment : BaseTeamFragment() {
         binding?.let { setMarkdownText(it.tvDescription, markdownContentWithLocalPaths) }
 
         collectWhenStarted(viewModel.teamLinks) { links ->
+            if (links == null) return@collectWhenStarted
             val currentBinding = binding ?: return@collectWhenStarted
             if (links.isEmpty()) {
                 currentBinding.llServices.visibility = View.GONE

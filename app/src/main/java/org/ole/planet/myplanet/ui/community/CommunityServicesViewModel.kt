@@ -19,8 +19,8 @@ class CommunityServicesViewModel @Inject constructor(
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
-    private val _teamLinks = MutableStateFlow<List<MyTeam>>(emptyList())
-    val teamLinks: StateFlow<List<MyTeam>> = _teamLinks.asStateFlow()
+    private val _teamLinks = MutableStateFlow<List<MyTeam>?>(null)
+    val teamLinks: StateFlow<List<MyTeam>?> = _teamLinks.asStateFlow()
 
     init {
         loadTeamLinks()
