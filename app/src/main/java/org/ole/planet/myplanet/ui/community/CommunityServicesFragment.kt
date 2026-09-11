@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -19,9 +20,11 @@ import org.ole.planet.myplanet.ui.viewer.WebViewActivity
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 class CommunityServicesFragment : BaseTeamFragment() {
     private var binding: FragmentCommunityServicesBinding? = null
+    private val viewModel: CommunityServicesViewModel by viewModels()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val b = FragmentCommunityServicesBinding.inflate(inflater, container, false)
@@ -57,9 +60,9 @@ class CommunityServicesFragment : BaseTeamFragment() {
         )
         binding?.let { setMarkdownText(it.tvDescription, markdownContentWithLocalPaths) }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            val links = teamsRepository.getTeamLinks()
-            val currentBinding = binding ?: return@launch
+        collectWhenStarted(viewModel.teamLinks) { links ->
+            if (links == null) return@collectWhenStarted
+            val currentBinding = binding ?: return@collectWhenStarted
             if (links.isEmpty()) {
                 currentBinding.llServices.visibility = View.GONE
                 currentBinding.tvNoLinks.visibility = View.VISIBLE
@@ -96,7 +99,7 @@ class CommunityServicesFragment : BaseTeamFragment() {
                     }
                     is CommunityServicesRoute.TeamLink -> {
                         viewLifecycleOwner.lifecycleScope.launch {
-                            val isMyTeam = teamsRepository.isMember(user?.id, route.teamId)
+                            val isMyTeam = viewModel.isMember(user?.id, route.teamId)
                             val f = TeamDetailFragment()
                             f.arguments = Bundle().apply {
                                 putString("id", route.teamId)
