@@ -29,7 +29,7 @@ There is currently **no `app/src/androidTest/` (instrumented) source set** — t
 
 When you need to verify real database behavior (actual SQL, `Converters`, transactions), you don't need a device: use **Robolectric + `Room.inMemoryDatabaseBuilder`** inside `src/test/` — see [DAO / Room round-trip tests](#daos--room-round-trip-tests) below.
 
-Package breakdown (166 files = 163 test classes + 3 shared infra): `utils/` 44, `ui/` 39, `repository/` 32, `services/` 22, `model/` 11, `data/` 8, `base/` 7, `di/` 2, root 1.
+Package breakdown (269 files = 265 test classes + 4 shared infra; `.kt` files under subpackages are counted recursively): `utils/` 57, `ui/` 90, `repository/` 37, `services/` 34, `model/` 21, `data/` 18, `base/` 9, `di/` 2, root 1.
 
 ---
 
@@ -40,9 +40,9 @@ From `app/build.gradle` (`testImplementation` block) and what's actually importe
 | Library | Purpose | Notes |
 |---------|---------|-------|
 | JUnit 4 (`org.junit.Test`, `org.junit.Assert.*`) | Test runner and assertions | Used everywhere |
-| **MockK** (`io.mockk.*`) | Mocking | **The standard.** Used in 113 of the 166 files. |
+| **MockK** (`io.mockk.*`) | Mocking | **The standard.** Used in 173 of the 269 files. |
 | Mockito (`org.mockito.*`) | Mocking | Legacy — exactly 2 files (`CoursesAdapterTest`, `SubmissionViewModelTest`). Don't introduce new Mockito usage; use MockK. |
-| Robolectric (`org.robolectric.*`) | Android framework on the JVM | 43 files — wherever a test needs real Android classes (`Context`, `View`, resource strings, Room) without an emulator |
+| Robolectric (`org.robolectric.*`) | Android framework on the JVM | 78 files — wherever a test needs real Android classes (`Context`, `View`, resource strings, Room) without an emulator |
 | `kotlinx-coroutines-test` | `runTest`, `TestDispatcher`, `UnconfinedTestDispatcher`, `StandardTestDispatcher` | For suspend functions and Flow/StateFlow-based ViewModels |
 | `androidx.test` (`ApplicationProvider`, `AndroidJUnit4`) | Application context access | Used inside Robolectric JVM tests |
 | `androidx.room:room-testing` | Room test helpers | Backs the in-memory Room tests |
