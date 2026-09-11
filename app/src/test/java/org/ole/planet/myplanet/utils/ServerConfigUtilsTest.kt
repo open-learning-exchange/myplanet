@@ -172,4 +172,48 @@ class ServerConfigUtilsTest {
             assertEquals("expected https for $host", "https://", ServerConfigUtils.getDefaultProtocol(host))
         }
     }
+
+    @Test
+    fun getTrustedServerHosts_returnsMemoizedListMatchingBuildConfig() {
+        val list1 = ServerConfigUtils.getTrustedServerHosts()
+        val list2 = ServerConfigUtils.getTrustedServerHosts()
+
+        org.junit.Assert.assertSame(list1, list2)
+
+        val expectedHosts = listOfNotNull(
+            org.ole.planet.myplanet.BuildConfig.PLANET_LEARNING_URL.takeIf { it.isNotEmpty() },
+            org.ole.planet.myplanet.BuildConfig.PLANET_GUATEMALA_URL.takeIf { it.isNotEmpty() },
+            org.ole.planet.myplanet.BuildConfig.PLANET_SANPABLO_URL.takeIf { it.isNotEmpty() },
+            org.ole.planet.myplanet.BuildConfig.PLANET_SANPABLO_CLONE_URL.takeIf { it.isNotEmpty() },
+            org.ole.planet.myplanet.BuildConfig.PLANET_EARTH_URL.takeIf { it.isNotEmpty() },
+            org.ole.planet.myplanet.BuildConfig.PLANET_SOMALIA_URL.takeIf { it.isNotEmpty() },
+            org.ole.planet.myplanet.BuildConfig.PLANET_VI_URL.takeIf { it.isNotEmpty() },
+            org.ole.planet.myplanet.BuildConfig.PLANET_XELA_URL.takeIf { it.isNotEmpty() },
+            org.ole.planet.myplanet.BuildConfig.PLANET_URIUR_URL.takeIf { it.isNotEmpty() },
+            org.ole.planet.myplanet.BuildConfig.PLANET_URIUR_CLONE_URL.takeIf { it.isNotEmpty() },
+            org.ole.planet.myplanet.BuildConfig.PLANET_RUIRU_URL.takeIf { it.isNotEmpty() },
+            org.ole.planet.myplanet.BuildConfig.PLANET_EMBAKASI_URL.takeIf { it.isNotEmpty() },
+            org.ole.planet.myplanet.BuildConfig.PLANET_EMBAKASI_CLONE_URL.takeIf { it.isNotEmpty() },
+            org.ole.planet.myplanet.BuildConfig.PLANET_CAMBRIDGE_URL.takeIf { it.isNotEmpty() }
+        )
+        assertEquals(expectedHosts, list1)
+    }
+
+    @Test
+    fun getChallengeServerUrls_returnsMemoizedListMatchingBuildConfig() {
+        val list1 = ServerConfigUtils.getChallengeServerUrls()
+        val list2 = ServerConfigUtils.getChallengeServerUrls()
+
+        org.junit.Assert.assertSame(list1, list2)
+
+        val expectedUrls = listOfNotNull(
+            org.ole.planet.myplanet.BuildConfig.PLANET_GUATEMALA_URL.takeIf { it.isNotEmpty() }?.let { "https://$it" },
+            org.ole.planet.myplanet.BuildConfig.PLANET_XELA_URL.takeIf { it.isNotEmpty() }?.let { "http://$it" },
+            org.ole.planet.myplanet.BuildConfig.PLANET_URIUR_URL.takeIf { it.isNotEmpty() }?.let { "http://$it" },
+            org.ole.planet.myplanet.BuildConfig.PLANET_SANPABLO_URL.takeIf { it.isNotEmpty() }?.let { "http://$it" },
+            org.ole.planet.myplanet.BuildConfig.PLANET_EMBAKASI_URL.takeIf { it.isNotEmpty() }?.let { "http://$it" },
+            org.ole.planet.myplanet.BuildConfig.PLANET_VI_URL.takeIf { it.isNotEmpty() }?.let { "https://$it" }
+        )
+        assertEquals(expectedUrls, list1)
+    }
 }
