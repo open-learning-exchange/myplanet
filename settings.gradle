@@ -1,5 +1,6 @@
 pluginManagement {
     repositories {
+        maven { url = uri('https://maven-central.storage-download.googleapis.com/maven2/') }
         google()
         mavenCentral()
         gradlePluginPortal()
@@ -10,6 +11,7 @@ plugins {
 }
 dependencyResolutionManagement {
     repositories {
+        maven { url = uri('https://maven-central.storage-download.googleapis.com/maven2/') }
         google()
         mavenCentral()
         maven { url = uri('https://jitpack.io') }

@@ -8,10 +8,12 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsMembersRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -21,6 +23,26 @@ data class RequestsUiState(
     val isLeader: Boolean = false,
     val memberCount: Int = 0
 )
+
+data class MembersUiState(
+    val members: List<JoinedMemberData> = emptyList(),
+    val currentUserId: String? = null,
+    val isLeader: Boolean = false
+)
+
+enum class MemberAction {
+    LEAVE_TEAM,
+    REMOVE_MEMBER,
+    MAKE_LEADER
+}
+
+sealed interface MemberActionResult {
+    data object LeftTeam : MemberActionResult
+    data object MemberRemoved : MemberActionResult
+    data object CannotRemoveLastLeader : MemberActionResult
+    data object LeaderChanged : MemberActionResult
+    data class Failed(val action: MemberAction, val message: String?) : MemberActionResult
+}
 
 @HiltViewModel
 class RequestsViewModel @Inject constructor(
@@ -32,6 +54,73 @@ class RequestsViewModel @Inject constructor(
     val uiState: StateFlow<RequestsUiState> = _uiState.asStateFlow()
     private val _successAction = MutableSharedFlow<Unit>()
     val successAction = _successAction.asSharedFlow()
+
+    private val _membersState = MutableStateFlow(MembersUiState())
+    val membersState: StateFlow<MembersUiState> = _membersState.asStateFlow()
+
+    private val _actionResults = MutableSharedFlow<MemberActionResult>()
+    val actionResults: SharedFlow<MemberActionResult> = _actionResults.asSharedFlow()
+
+    fun loadJoinedMembers(teamId: String) {
+        viewModelScope.launch {
+            val members = teamsRepository.getJoinedMembersWithVisitInfo(teamId)
+            val currentUserId = userRepository.getUserModel()?.id
+            _membersState.value = MembersUiState(
+                members = members,
+                currentUserId = currentUserId,
+                isLeader = members.any { it.user.id == currentUserId && it.isLeader }
+            )
+        }
+    }
+
+    fun leaveTeam(teamId: String) {
+        viewModelScope.launch {
+            try {
+                val currentUserId = userRepository.getUserModel()?.id
+                val nextLeader = teamsRepository.getNextLeaderCandidate(teamId, currentUserId)
+                nextLeader?.id?.let { teamsRepository.updateTeamLeader(teamId, it) }
+                currentUserId?.let { teamsRepository.removeMember(teamId, it) }
+                loadJoinedMembers(teamId)
+                _actionResults.emit(MemberActionResult.LeftTeam)
+            } catch (e: Exception) {
+                _actionResults.emit(MemberActionResult.Failed(MemberAction.LEAVE_TEAM, e.message))
+            }
+        }
+    }
+
+    fun removeMember(teamId: String, memberId: String) {
+        viewModelScope.launch {
+            try {
+                val currentUserId = userRepository.getUserModel()?.id
+                if (currentUserId == memberId) {
+                    val nextLeader = teamsRepository.getNextLeaderCandidate(teamId, memberId)
+                    if (nextLeader != null) {
+                        nextLeader.id?.let { teamsRepository.updateTeamLeader(teamId, it) }
+                    } else {
+                        _actionResults.emit(MemberActionResult.CannotRemoveLastLeader)
+                        return@launch
+                    }
+                }
+                teamsRepository.removeMember(teamId, memberId)
+                loadJoinedMembers(teamId)
+                _actionResults.emit(MemberActionResult.MemberRemoved)
+            } catch (e: Exception) {
+                _actionResults.emit(MemberActionResult.Failed(MemberAction.REMOVE_MEMBER, e.message))
+            }
+        }
+    }
+
+    fun makeLeader(teamId: String, userId: String) {
+        viewModelScope.launch {
+            try {
+                teamsRepository.updateTeamLeader(teamId, userId)
+                loadJoinedMembers(teamId)
+                _actionResults.emit(MemberActionResult.LeaderChanged)
+            } catch (e: Exception) {
+                _actionResults.emit(MemberActionResult.Failed(MemberAction.MAKE_LEADER, e.message))
+            }
+        }
+    }
 
     fun fetchMembers(teamId: String) {
         viewModelScope.launch {
