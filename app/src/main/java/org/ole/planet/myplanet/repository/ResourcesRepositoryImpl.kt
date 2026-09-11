@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.addDocumentOrigin
@@ -60,7 +61,8 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val userSessionManager: UserSessionManager,
     private val configurationsRepository: ConfigurationsRepository,
     private val dispatcherProvider: DispatcherProvider,
-    private val deviceNameProvider: DeviceNameProvider
+    private val deviceNameProvider: DeviceNameProvider,
+    private val timeProvider: TimeProvider
 ) : ResourcesRepository {
 
     // Shelf membership is stored as a JSON userId list; match a single entry with LIKE %"id"%.
@@ -655,9 +657,9 @@ class ResourcesRepositoryImpl @Inject constructor(
                     MyLibrary.Companion.InsertParams(
                         doc = doc,
                         spm = sharedPrefManager,
+                        context = context,
                         userId = shelfId,
-                        existing = existing,
-                        context = context
+                        existing = existing
                     )
                 )
                 if (library != null) {
@@ -701,8 +703,8 @@ class ResourcesRepositoryImpl @Inject constructor(
                     MyLibrary.Companion.InsertParams(
                         doc = doc,
                         spm = sharedPrefManager,
-                        existing = existing,
-                        context = context
+                        context = context,
+                        existing = existing
                     )
                 )
                 if (library != null) {
@@ -903,7 +905,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         val personal = library
         return JsonObject().apply {
             addProperty("title", personal.title)
-            addProperty("uploadDate", System.currentTimeMillis())
+            addProperty("uploadDate", timeProvider.now())
             addProperty("createdDate", personal.createdDate)
             addProperty("filename", FileUtils.getFileNameFromUrl(personal.resourceLocalAddress))
             addProperty("author", personal.author ?: "")
@@ -929,7 +931,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             addProperty("isDownloadable", true)
             addProperty("sourcePlanet", user?.planetCode)
             addProperty("resideOn", user?.planetCode)
-            addProperty("updatedDate", System.currentTimeMillis())
+            addProperty("updatedDate", timeProvider.now())
             addDocumentOrigin()
             addProperty("deviceName", NetworkUtils.getDeviceName())
             addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())

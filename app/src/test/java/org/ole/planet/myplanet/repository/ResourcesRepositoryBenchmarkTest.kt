@@ -52,6 +52,7 @@ class ResourcesRepositoryBenchmarkTest {
             userSessionManager,
             configurationsRepository,
             dispatcherProvider,
+            mockk(relaxed = true),
             mockk(relaxed = true)
         )
     }

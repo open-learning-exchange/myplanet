@@ -50,6 +50,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.VersionUtils
 
@@ -72,6 +73,7 @@ class ResourcesRepositoryImplTest {
     private val configurationsRepository: ConfigurationsRepository = mockk(relaxed = true)
     private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
     private val deviceNameProvider: DeviceNameProvider = mockk(relaxed = true)
+    private val timeProvider: TimeProvider = mockk(relaxed = true)
 
     @get:Rule
     val temporaryFolder = TemporaryFolder()
@@ -106,7 +108,8 @@ class ResourcesRepositoryImplTest {
             userSessionManager,
             configurationsRepository,
             dispatcherProvider,
-            deviceNameProvider
+            deviceNameProvider,
+            timeProvider
         )
         every { dispatcherProvider.io } returns testDispatcher
     }

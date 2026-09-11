@@ -159,11 +159,11 @@ open class MyLibrary {
         data class InsertParams(
             val doc: JsonObject,
             val spm: SharedPrefManager,
+            val context: Context,
             val userId: String? = "",
             val stepId: String? = "",
             val courseId: String? = "",
-            val existing: MyLibrary? = null,
-            val context: Context? = null
+            val existing: MyLibrary? = null
         )
 
         private fun JsonArray?.mergeInto(target: MutableList<String>) {
@@ -229,7 +229,7 @@ open class MyLibrary {
                         if (key.indexOf("/") < 0) {
                             resourceRemoteAddress = "${params.spm.getCouchdbUrl().ifEmpty { "http://" }}/resources/$resourceId/$key"
                             resourceLocalAddress = key
-                            resourceOffline = params.context?.let { FileUtils.checkFileExist(it, resourceRemoteAddress) } ?: false
+                            resourceOffline = FileUtils.checkFileExist(params.context, resourceRemoteAddress)
                             if (resourceOffline) {
                                 downloadedRev = JsonUtils.getString("_rev", params.doc)
                             }
