@@ -206,8 +206,8 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         userIds.chunked(500).forEach { chunk ->
             val existingSubmissions = submissionDao.getPendingByUsersAndParent(chunk, parentId)
             val existingUserIds = existingSubmissions.mapNotNull { it.userId }.toSet()
-            val newSubmissions = chunk.filter { it !in existingUserIds }.map { userId ->
-                Submission().apply {
+            val newSubmissions = chunk.mapNotNull { userId ->
+                if (userId in existingUserIds) null else Submission().apply {
                     id = UUID.randomUUID().toString()
                     this.userId = userId
                     this.parentId = parentId

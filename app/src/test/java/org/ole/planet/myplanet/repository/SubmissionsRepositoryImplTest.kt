@@ -252,7 +252,7 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
-    fun `createBulkSurveySubmissions with mixed users only inserts new users`() = runTest {
+    fun `createBulkSurveySubmissions with mixed users only inserts new users preserving input order`() = runTest {
         val examId = "examId"
         val userIds = listOf("user1", "user2", "user3")
         val parentId = "examId@courseId"
@@ -266,7 +266,8 @@ class SubmissionsRepositoryImplTest {
         coVerify(exactly = 1) {
             submissionDao.upsertAll(match {
                 it.size == 2 &&
-                it.map { sub -> sub.userId }.containsAll(listOf("user1", "user3"))
+                it[0].userId == "user1" &&
+                it[1].userId == "user3"
             })
         }
     }

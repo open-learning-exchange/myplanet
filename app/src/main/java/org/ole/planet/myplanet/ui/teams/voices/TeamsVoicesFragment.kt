@@ -259,7 +259,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
             realmNewsList?.let { adapterNews?.submitList(it.filterNotNull()) }
             binding.rvDiscussion.adapter = adapterNews
             shouldScrollToTopNextUpdate = false
-            showNoData(binding.tvNodata, realmNewsList?.filterNotNull()?.size ?: 0, "discussions")
+            showNoData(binding.tvNodata, realmNewsList?.count { it != null } ?: 0, "discussions")
         } else {
             (existingAdapter as? VoicesAdapter)?.let { adapter ->
                 adapter.setCurrentUser(user)
@@ -270,7 +270,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                             shouldScrollToTopNextUpdate = false
                         }
                     }
-                    showNoData(binding.tvNodata, it.filterNotNull().size, "discussions")
+                    showNoData(binding.tvNodata, it.count { news -> news != null }, "discussions")
                 }
             }
         }
