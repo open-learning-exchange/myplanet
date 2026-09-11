@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -12,12 +11,14 @@ import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.distinctByContent
 
 @Singleton
 class FeedbackRepositoryImpl @Inject constructor(
     private val feedbackDao: FeedbackDao,
-    private val gson: Gson
+    private val gson: Gson,
+    private val timeProvider: TimeProvider
 ) : FeedbackRepository, FeedbackSyncWriter {
 
     override suspend fun createAndSaveFeedback(
@@ -51,7 +52,7 @@ class FeedbackRepositoryImpl @Inject constructor(
             feedback.title = "Question regarding /"
             feedback.url = "/"
         }
-        val timestamp = Date().time
+        val timestamp = timeProvider.now()
         feedback.openTime = timestamp
         feedback.owner = user
         feedback.source = user
@@ -99,7 +100,7 @@ class FeedbackRepositoryImpl @Inject constructor(
             val feedback = feedbackDao.findById(it) ?: return
             val obj = JsonObject().apply {
                 addProperty("message", message)
-                addProperty("time", Date().time.toString())
+                addProperty("time", timeProvider.now().toString())
                 addProperty("user", user ?: "")
             }
             val messages = feedback.messages
