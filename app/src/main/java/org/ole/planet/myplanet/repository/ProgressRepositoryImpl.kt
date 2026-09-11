@@ -286,9 +286,13 @@ class ProgressRepositoryImpl @Inject constructor(
         }
 
         val docIds = syncKeys.mapNotNullTo(LinkedHashSet()) { keys -> keys.docId.takeIf { it.isNotEmpty() } }.toList()
-        val courseIds = syncKeys.mapNotNullTo(LinkedHashSet()) { keys -> keys.courseId.takeIf { it.isNotEmpty() } }.toList()
-        val userIds = syncKeys.mapNotNullTo(LinkedHashSet()) { keys -> keys.userId.takeIf { it.isNotEmpty() } }.toList()
-        val stepNums = syncKeys.mapTo(LinkedHashSet()) { keys -> keys.stepNum }.toList()
+        val requestedTuples = syncKeys.mapNotNull { keys ->
+            if (keys.courseId.isNotEmpty() && keys.userId.isNotEmpty()) {
+                Triple(keys.courseId, keys.userId, keys.stepNum)
+            } else {
+                null
+            }
+        }.distinct()
 
         val existingProgresses = if (docIds.isNotEmpty()) {
             courseProgressDao.getByIds(docIds).associateBy { it.id }
@@ -296,8 +300,8 @@ class ProgressRepositoryImpl @Inject constructor(
             emptyMap()
         }
 
-        val localRecords = if (courseIds.isNotEmpty() && userIds.isNotEmpty() && stepNums.isNotEmpty()) {
-            courseProgressDao.getByCourseUsersAndSteps(courseIds, userIds, stepNums)
+        val localRecords = if (requestedTuples.isNotEmpty()) {
+            courseProgressDao.getByCourseUsersAndSteps(requestedTuples)
         } else {
             emptyList()
         }
