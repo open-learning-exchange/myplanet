@@ -81,7 +81,8 @@ class VoicesAdapter(
                         oldItem.userName == newItem.userName && oldItem.userId == newItem.userId &&
                         oldItem.sharedBy == newItem.sharedBy && oldItem.labels == newItem.labels &&
                         oldItem.avatar == newItem.avatar && oldItem.imageUrls == newItem.imageUrls &&
-                        oldItem.images == newItem.images && oldItem.replyTo == newItem.replyTo
+                        oldItem.images == newItem.images && oldItem.replyTo == newItem.replyTo &&
+                        oldItem.viewIn == newItem.viewIn
             } catch (e: Exception) {
                 false
             }
@@ -102,6 +103,10 @@ class VoicesAdapter(
                 payloads.add(PAYLOAD_EDIT_ACTION)
             }
 
+            if (oldItem.viewIn != newItem.viewIn) {
+                payloads.add(PAYLOAD_VIEW_IN_CHANGED)
+            }
+
             // Every field checked in areContentsTheSame is covered by the buckets above.
             // If payloads is empty here, it means a future field was added to areContentsTheSame
             // without a corresponding bucket. We MUST return null to trigger a full rebind to prevent stale UI.
@@ -118,6 +123,7 @@ class VoicesAdapter(
         const val PAYLOAD_EDIT_ACTION = "PAYLOAD_EDIT_ACTION"
         const val PAYLOAD_LABELS_CHANGED = "PAYLOAD_LABELS_CHANGED"
         const val PAYLOAD_IMAGES_CHANGED = "PAYLOAD_IMAGES_CHANGED"
+        const val PAYLOAD_VIEW_IN_CHANGED = "PAYLOAD_VIEW_IN_CHANGED"
     }
 
     private data class RowState(
@@ -311,6 +317,11 @@ class VoicesAdapter(
                         configureEditDeleteButtons(holder, news)
                         showReplyButton(holder, news, position)
                         handleChat(holder, news)
+                    }
+                    PAYLOAD_VIEW_IN_CHANGED -> {
+                        showShareButton(holder, news)
+                        val sharedTeamName = news.parsedSharedTeamName ?: JsonUtils.extractSharedTeamName(news)
+                        setMessageAndDate(holder, news, sharedTeamName)
                     }
                 }
             }
