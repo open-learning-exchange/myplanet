@@ -200,6 +200,29 @@ class ResourcesViewModelTest {
     }
 
     @Test
+    fun `getFilterFacets extracts languages, subjects, mediums, and levels correctly`() = runTest {
+        val lib1 = MyLibrary().apply {
+            language = "English"
+            subject = listOf("Math", "Science")
+            mediaType = "PDF"
+            level = listOf("Primary")
+        }
+        val lib2 = MyLibrary().apply {
+            language = "Spanish"
+            subject = listOf("Science", "History")
+            mediaType = "Video"
+            level = listOf("Secondary")
+        }
+
+        val facets = viewModel.getFilterFacets(listOf(lib1, lib2))
+
+        assertEquals(setOf("English", "Spanish"), facets["languages"])
+        assertEquals(setOf("Math", "Science", "History"), facets["subjects"])
+        assertEquals(setOf("PDF", "Video"), facets["mediums"])
+        assertEquals(setOf("Primary", "Secondary"), facets["levels"])
+    }
+
+    @Test
     fun `filterIfChanged memoizes the criteria in the view model until resetFilter`() = runTest {
         val models = listOf(createResourceModel("a", 1), createResourceModel("b", 2))
         val notDownloaded = ResourcesFilterCriteria(
