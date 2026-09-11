@@ -19,8 +19,10 @@ class DiagnosticsRepositoryImpl @Inject constructor(
         return apkLogDao.getPending()
     }
 
-    override suspend fun markApkLogUploaded(localId: String, rev: String): Boolean {
-        return apkLogDao.markUploaded(localId, rev) != 0
+    override suspend fun markApkLogsUploaded(updates: List<ApkLogUpload>): Set<String> {
+        if (updates.isEmpty()) return emptySet()
+        val daoUpdates = updates.map { ApkLogDao.UploadUpdate(it.id, it.rev) }
+        return apkLogDao.markUploadedBatch(daoUpdates)
     }
 
     private fun buildApkLog(
