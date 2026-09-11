@@ -371,6 +371,28 @@ class UserRepositoryImplTest {
     }
 
     @Test
+    fun `searchUsers escapes LIKE wildcards before querying`() = runTest(testDispatcher) {
+        coEvery { userDao.search(any()) } returns emptyList()
+
+        repository.searchUsers("100%_a\\b", "joinDate", true)
+
+        val slot = slot<String>()
+        coVerify { userDao.search(capture(slot)) }
+        assertEquals("%100\\%\\_a\\\\b%", slot.captured)
+    }
+
+    @Test
+    fun `searchUsers leaves a plain query unchanged apart from surrounding wildcards`() = runTest(testDispatcher) {
+        coEvery { userDao.search(any()) } returns emptyList()
+
+        repository.searchUsers("john", "joinDate", true)
+
+        val slot = slot<String>()
+        coVerify { userDao.search(capture(slot)) }
+        assertEquals("%john%", slot.captured)
+    }
+
+    @Test
     fun `updateProfileFields handles empty objects and converts primitive values while skipping nulls`() = runTest(testDispatcher) {
         val user = UserEntity().apply {
             id = "user1"

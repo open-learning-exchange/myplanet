@@ -166,8 +166,16 @@ class UserRepositoryImpl @Inject constructor(
         return sortUsers(getAllUsers(), fieldName, descending)
     }
 
+    private fun searchPattern(query: String): String {
+        val escaped = query
+            .replace("\\", "\\\\")
+            .replace("%", "\\%")
+            .replace("_", "\\_")
+        return "%$escaped%"
+    }
+
     override suspend fun searchUsers(query: String, sortField: String, descending: Boolean): List<UserEntity> {
-        val users = userDao.search(query)
+        val users = userDao.search(searchPattern(query))
         return sortUsers(users, sortField, descending)
     }
 
