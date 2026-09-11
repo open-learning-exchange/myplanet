@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.utils.CourseSubject
 import org.ole.planet.myplanet.utils.CourseSubjectClassifier
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.GridSpanCalculator
 import org.ole.planet.myplanet.utils.ListViewMode
 import org.ole.planet.myplanet.utils.SelectionUtils
 import org.ole.planet.myplanet.utils.StableIdGenerator
@@ -317,7 +318,10 @@ class CoursesAdapter(
             coverContainer.width > 0 -> coverContainer.width
             coverContainer.layoutParams?.width != null && coverContainer.layoutParams.width > 0 -> coverContainer.layoutParams.width
             else -> if (viewMode == ListViewMode.GRID) {
-                (context.resources.displayMetrics.widthPixels / 2).coerceAtLeast(fallbackHeight)
+                val displayMetrics = context.resources.displayMetrics
+                val widthDp = (displayMetrics.widthPixels / displayMetrics.density).toInt()
+                val cols = GridSpanCalculator.columnCount(widthDp)
+                (displayMetrics.widthPixels / cols).coerceAtLeast(fallbackHeight)
             } else {
                 fallbackHeight
             }
