@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.repository.PersonalUpdate
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
@@ -134,15 +135,16 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
     }
 
     override fun onDeletePersonal(personal: Personal) {
-        AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-            .setMessage(R.string.delete_record)
-            .setPositiveButton(R.string.ok) { _, _ ->
+        requireContext().confirmDialog(
+            message = getString(R.string.delete_record),
+            positiveText = getString(R.string.ok),
+            onPositive = {
                 val id = personal.id ?: personal._id
                 if (id != null) {
                     viewModel.deletePersonalResource(id)
                 }
-            }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
+            },
+            negativeText = getString(R.string.cancel)
+        )
     }
 }

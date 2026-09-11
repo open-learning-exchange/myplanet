@@ -6,7 +6,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
@@ -21,6 +20,7 @@ import org.ole.planet.myplanet.databinding.FragmentCombinedMembersBinding
 import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
@@ -104,9 +104,9 @@ class MembersFragment : BaseTeamFragment() {
     }
 
     private fun handleLeaveTeam() {
-        AlertDialog.Builder(requireContext())
-            .setMessage(R.string.confirm_exit)
-            .setPositiveButton(R.string.yes) { _, _ ->
+        requireContext().confirmDialog(
+            message = getString(R.string.confirm_exit),
+            onPositive = {
                 viewLifecycleOwner.lifecycleScope.launch {
                     try {
                         val nextLeader = teamsRepository.getNextLeaderCandidate(teamId, user?.id)
@@ -120,8 +120,7 @@ class MembersFragment : BaseTeamFragment() {
                     }
                 }
             }
-            .setNegativeButton(R.string.no, null)
-            .show()
+        )
     }
 
     private fun handleRemoveMember(member: JoinedMemberData) {
