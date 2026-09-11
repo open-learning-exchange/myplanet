@@ -124,7 +124,6 @@ class HealthViewModel @Inject constructor(
                 if (e is CancellationException) throw e
                 currentPatientId = null
                 _patientDetailState.value = PatientDetailState(null, null)
-                throw e
             } finally {
                 if (selectPatientJob === job) {
                     _isLoading.value = false

@@ -153,6 +153,19 @@ class HealthViewModelTest {
     }
 
     @Test
+    fun `selectPatient handles non-cancellation exception gracefully leaving state empty`() = runTest {
+        coEvery { healthRepository.getPatientById("1") } throws RuntimeException("Database error")
+
+        viewModel.selectPatient("1")
+        advanceUntilIdle()
+
+        val state = viewModel.patientDetailState.first()
+        assertNull(state.user)
+        assertNull(state.healthRecord)
+        assertEquals(false, viewModel.isLoading.first())
+    }
+
+    @Test
     fun `selectPatient resets tracked ID on failure so retry works`() = runTest {
         val user = UserEntity().apply { id = "1"; name = "Test Patient" }
         val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
