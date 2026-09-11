@@ -67,10 +67,7 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
                 is CollectionsState.Success -> {
                     list = state.list
                     childMap = state.childMap
-                    val allTags = list + childMap.values.flatten()
-                    val reconciledList = selectedItemsList.map { selected ->
-                        allTags.find { selected.matches(it) } ?: selected
-                    }
+                    val reconciledList = reconcileSelections(selectedItemsList, list, childMap)
                     selectedItemsList.clear()
                     selectedItemsList.addAll(reconciledList)
                     currentTagDataList = buildTagDataList(list)
@@ -122,6 +119,47 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
         adapter.submitList(currentTagDataList)
     }
 
+    internal fun reconcileSelections(
+        selectedItems: List<TagEntity>,
+        list: List<TagEntity>,
+        childMap: Map<String, List<TagEntity>>
+    ): List<TagEntity> {
+        val tagsById = HashMap<String, TagEntity>()
+        val namesOfEmptyIdTags = HashMap<String, TagEntity>()
+        val allTagsByName = HashMap<String, TagEntity>()
+
+        fun indexTag(tag: TagEntity) {
+            if (tag.id.isNotEmpty()) {
+                tagsById.putIfAbsent(tag.id, tag)
+            } else if (!tag.name.isNullOrEmpty()) {
+                namesOfEmptyIdTags.putIfAbsent(tag.name!!, tag)
+            }
+            if (!tag.name.isNullOrEmpty()) {
+                allTagsByName.putIfAbsent(tag.name!!, tag)
+            }
+        }
+
+        for (parent in list) {
+            indexTag(parent)
+        }
+        for (children in childMap.values) {
+            for (child in children) {
+                indexTag(child)
+            }
+        }
+
+        return selectedItems.map { selected ->
+            if (selected.id.isNotEmpty()) {
+                tagsById[selected.id]
+                    ?: (if (!selected.name.isNullOrEmpty()) namesOfEmptyIdTags[selected.name] else null)
+                    ?: selected
+            } else {
+                (if (!selected.name.isNullOrEmpty()) allTagsByName[selected.name] else null)
+                    ?: selected
+            }
+        }
+    }
+
     private fun buildTagDataList(parents: List<TagEntity>): List<TagData> {
         val tagDataList = mutableListOf<TagData>()
         val isSelectMultiple = MainApplication.isCollectionSwitchOn
@@ -131,15 +169,36 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
                 parentMap[it.tag.id] = it
             }
         }
+        val selectedIds = HashSet<String>()
+        val namesOfEmptyIdSelected = HashSet<String>()
+        val allSelectedNames = HashSet<String>()
+        for (selected in selectedItemsList) {
+            if (selected.id.isNotEmpty()) {
+                selectedIds.add(selected.id)
+            } else if (!selected.name.isNullOrEmpty()) {
+                namesOfEmptyIdSelected.add(selected.name!!)
+            }
+            if (!selected.name.isNullOrEmpty()) {
+                allSelectedNames.add(selected.name!!)
+            }
+        }
+        fun isTagSelected(tag: TagEntity): Boolean {
+            return if (tag.id.isNotEmpty()) {
+                selectedIds.contains(tag.id) ||
+                        (!tag.name.isNullOrEmpty() && namesOfEmptyIdSelected.contains(tag.name))
+            } else {
+                !tag.name.isNullOrEmpty() && allSelectedNames.contains(tag.name)
+            }
+        }
         for (parentTag in parents) {
-            val isSelected = selectedItemsList.any { it.matches(parentTag) }
+            val isSelected = isTagSelected(parentTag)
             val parent = parentMap[parentTag.id] ?: TagData.Parent(parentTag, false, isSelected, isSelectMultiple)
 
             tagDataList.add(parent.copy(isSelected = isSelected, isSelectMultiple = isSelectMultiple))
 
             if (parent.isExpanded) {
                 childMap[parent.tag.id]?.forEach { childTag ->
-                    val isChildSelected = selectedItemsList.any { it.matches(childTag) }
+                    val isChildSelected = isTagSelected(childTag)
                     tagDataList.add(TagData.Child(childTag, isChildSelected, isSelectMultiple))
                 }
             }
