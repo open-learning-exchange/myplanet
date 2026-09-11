@@ -55,8 +55,9 @@ class ResourcesListFilter {
     private fun filterBySearchAndTags(models: List<ResourceListModel>, searchQuery: String, tags: List<TagEntity>): List<ResourceListModel> {
         var filteredList = ResourcesSearchUtils.searchLocalModels(models, searchQuery)
         if (tags.isNotEmpty()) {
+            val searchTagIds = tags.mapTo(HashSet()) { it.id }
             filteredList = filteredList.filter { model ->
-                tags.any { searchTag -> model.tags.any { it.id == searchTag.id } }
+                model.tags.any { it.id in searchTagIds }
             }
         }
         return filteredList
