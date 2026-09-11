@@ -29,5 +29,5 @@ object StorageCategories {
         }
     }
 
-    fun indexOf(extension: String): Int = extensionToIndex[extension] ?: OTHER_INDEX
+    fun indexOf(extension: String): Int = extensionToIndex[extension.lowercase()] ?: OTHER_INDEX
 }
