@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.AppNotification
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotificationInfo
@@ -22,7 +23,7 @@ interface NotificationsRepository {
     suspend fun getTaskTeamNamesByTaskIds(taskIds: List<String>): Map<String, String>
     suspend fun getJoinRequestDetailsBatch(relatedIds: List<String>): Map<String, Pair<String, String>>
     suspend fun getTeamNotifications(teamIds: List<String>, userId: String): Map<String, TeamNotificationInfo>
-    suspend fun updateTeamNotification(teamId: String, count: Int)
+    suspend fun updateTeamNotification(teamId: String, news: List<News>)
     suspend fun getTaskTeamNamesByTaskTitles(taskTitles: List<String>): Map<String, String>
     suspend fun getPendingSyncNotifications(): List<AppNotification>
     suspend fun markNotificationsSynced(syncResults: List<Pair<String, String?>>)

@@ -103,7 +103,7 @@ class TeamChatBadgeIntegrationTest {
         assertFalse(before[teamId]?.hasChat == true)
 
         // Opening the feed writes the watermark = number of top-level posts shown (1).
-        notificationsRepository.updateTeamNotification(teamId, voicesRepository.countTopLevelByTeam(teamId).toInt())
+        notificationsRepository.updateTeamNotification(teamId, voicesRepository.getFilteredNews(teamId))
 
         // No new posts since → chatCount equals the watermark → badge cleared.
         val after = notificationsRepository.getTeamNotifications(listOf(teamId), "user1")
@@ -116,7 +116,7 @@ class TeamChatBadgeIntegrationTest {
 
         val first = topLevel(viewableBy = "teams", viewableId = teamId)
         newsDao.upsertAll(listOf(first))
-        notificationsRepository.updateTeamNotification(teamId, voicesRepository.countTopLevelByTeam(teamId).toInt())
+        notificationsRepository.updateTeamNotification(teamId, voicesRepository.getFilteredNews(teamId))
 
         assertFalse(notificationsRepository.getTeamNotifications(listOf(teamId), "user1")[teamId]?.hasChat == true)
 
@@ -131,7 +131,7 @@ class TeamChatBadgeIntegrationTest {
         val teamId = "teamC"
         val root = topLevel(viewIn = "[{\"_id\":\"$teamId\",\"section\":\"teams\"}]")
         newsDao.upsertAll(listOf(root))
-        notificationsRepository.updateTeamNotification(teamId, voicesRepository.countTopLevelByTeam(teamId).toInt())
+        notificationsRepository.updateTeamNotification(teamId, voicesRepository.getFilteredNews(teamId))
 
         newsDao.upsertAll(listOf(replyTo(root, viewIn = "[{\"_id\":\"$teamId\",\"section\":\"teams\"}]")))
         val result = notificationsRepository.getTeamNotifications(listOf(teamId), "user1")
