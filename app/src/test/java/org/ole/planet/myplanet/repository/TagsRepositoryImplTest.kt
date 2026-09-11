@@ -266,7 +266,7 @@ class TagsRepositoryImplTest {
     }
 
     @Test
-    fun `getLinkIdsForTagNames returns linkIds for matching tags`() = runTest {
+    fun `getCourseLinkIds returns linkIds for matching tags`() = runTest {
         val tagNames = listOf("Tag 1", "Tag 2")
         val tag1 = TagEntity().apply { id = "tag1"; name = "Tag 1" }
         val tag2 = TagEntity().apply { id = "tag2"; name = "Tag 2" }
@@ -275,9 +275,9 @@ class TagsRepositoryImplTest {
         val linkTag2 = TagEntity().apply { linkId = "link2"; tagId = "tag2" }
 
         coEvery { tagDao.getByNames(tagNames) } returns listOf(tag1, tag2)
-        coEvery { tagDao.getByDbAndTagIds("resources", listOf("tag1", "tag2")) } returns listOf(linkTag1, linkTag2)
+        coEvery { tagDao.getByDbAndTagIds("courses", listOf("tag1", "tag2")) } returns listOf(linkTag1, linkTag2)
 
-        val result = repository.getLinkIdsForTagNames("resources", tagNames)
+        val result = repository.getCourseLinkIds(tagNames)
 
         assertEquals(2, result.size)
         assertTrue(result.contains("link1"))
@@ -285,27 +285,27 @@ class TagsRepositoryImplTest {
     }
 
     @Test
-    fun `getLinkIdsForTagNames returns empty list when no matching tags`() = runTest {
+    fun `getCourseLinkIds returns empty set when no matching tags`() = runTest {
         val tagNames = listOf("NonExistent Tag")
         coEvery { tagDao.getByNames(tagNames) } returns emptyList()
 
-        val result = repository.getLinkIdsForTagNames("resources", tagNames)
+        val result = repository.getCourseLinkIds(tagNames)
 
         assertTrue(result.isEmpty())
         coVerify(exactly = 0) { tagDao.getByDbAndTagIds(any(), any()) }
     }
 
     @Test
-    fun `getLinkIdsForTagNames ignores tags without linkId`() = runTest {
+    fun `getCourseLinkIds ignores tags without linkId`() = runTest {
         val tagNames = listOf("Tag 1")
         val tag1 = TagEntity().apply { id = "tag1"; name = "Tag 1" }
 
         val linkTagWithoutId = TagEntity().apply { linkId = null; tagId = "tag1" }
 
         coEvery { tagDao.getByNames(tagNames) } returns listOf(tag1)
-        coEvery { tagDao.getByDbAndTagIds("resources", listOf("tag1")) } returns listOf(linkTagWithoutId)
+        coEvery { tagDao.getByDbAndTagIds("courses", listOf("tag1")) } returns listOf(linkTagWithoutId)
 
-        val result = repository.getLinkIdsForTagNames("resources", tagNames)
+        val result = repository.getCourseLinkIds(tagNames)
 
         assertTrue(result.isEmpty())
     }
@@ -376,5 +376,24 @@ class TagsRepositoryImplTest {
         repository.insert(emptyList())
 
         coVerify(exactly = 0) { tagDao.upsertAll(any()) }
+    }
+
+    @Test
+    fun `getCourseLinkIds delegates to getLinkIdsForTagNames with courses and returns deduplicated set`() = runTest {
+        val tagNames = listOf("Tag 1", "Tag 2")
+        val tag1 = TagEntity().apply { id = "tag1"; name = "Tag 1" }
+        val tag2 = TagEntity().apply { id = "tag2"; name = "Tag 2" }
+
+        val linkTag1 = TagEntity().apply { linkId = "course1"; tagId = "tag1" }
+        val linkTag2 = TagEntity().apply { linkId = "course2"; tagId = "tag2" }
+        val linkTag3 = TagEntity().apply { linkId = "course1"; tagId = "tag2" }
+
+        coEvery { tagDao.getByNames(tagNames) } returns listOf(tag1, tag2)
+        coEvery { tagDao.getByDbAndTagIds("courses", listOf("tag1", "tag2")) } returns listOf(linkTag1, linkTag2, linkTag3)
+
+        val result = repository.getCourseLinkIds(tagNames)
+
+        assertEquals(setOf("course1", "course2"), result)
+        coVerify { tagDao.getByDbAndTagIds("courses", listOf("tag1", "tag2")) }
     }
 }
