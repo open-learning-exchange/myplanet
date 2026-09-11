@@ -29,9 +29,11 @@ class CommunityTabViewModelTest {
 
     @Before
     fun setup() {
-        every { configurationsRepository.getParentCode() } returns "parent_code_123"
-        every { configurationsRepository.getCommunityName() } returns "community_abc"
-        every { configurationsRepository.getPlanetType() } returns "planet_xyz"
+        every { configurationsRepository.getCommunityConfiguration() } returns org.ole.planet.myplanet.repository.CommunityConfiguration(
+            parentCode = "parent_code_123",
+            communityName = "community_abc",
+            planetType = "planet_xyz"
+        )
     }
 
     @Test
@@ -48,9 +50,29 @@ class CommunityTabViewModelTest {
         assertEquals("community_abc", state?.communityName)
         assertEquals("planet_xyz", state?.planetType)
 
-        verify { configurationsRepository.getParentCode() }
-        verify { configurationsRepository.getCommunityName() }
-        verify { configurationsRepository.getPlanetType() }
+        verify { configurationsRepository.getCommunityConfiguration() }
+        coVerify { userRepository.getUserModel() }
+    }
+
+    @Test
+    fun `init takes planetCode from user model and handles null planetType from configuration snapshot`() = runTest {
+        every { configurationsRepository.getCommunityConfiguration() } returns org.ole.planet.myplanet.repository.CommunityConfiguration(
+            parentCode = "parent_code_123",
+            communityName = "community_abc",
+            planetType = null
+        )
+        coEvery { userRepository.getUserModel() } returns null
+
+        val viewModel = CommunityTabViewModel(configurationsRepository, userRepository)
+        advanceUntilIdle()
+
+        val state = viewModel.state.first()
+        assertEquals("", state?.planetCode)
+        assertEquals("parent_code_123", state?.parentCode)
+        assertEquals("community_abc", state?.communityName)
+        assertEquals(null, state?.planetType)
+
+        verify { configurationsRepository.getCommunityConfiguration() }
         coVerify { userRepository.getUserModel() }
     }
 }
