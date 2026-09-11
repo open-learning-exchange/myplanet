@@ -384,7 +384,11 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     }
 
     private fun renderCourseChipSelection(chipRow: LinearLayout) {
-        val selected = if (::filterController.isInitialized) filterController.currentState().progressFilter else ""
+        val selected = if (::filterController.isInitialized) {
+            filterController.currentState().progressFilter
+        } else {
+            viewModel.currentFilterState.progressFilter
+        }
         for (i in 0 until chipRow.childCount) {
             val chip = chipRow.getChildAt(i) as? TextView ?: continue
             val isSelected = (chip.tag as? String)?.let { it == selected || (selected.isEmpty() && i == 0) } == true

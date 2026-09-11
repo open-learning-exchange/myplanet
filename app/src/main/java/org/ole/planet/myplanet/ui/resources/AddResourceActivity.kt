@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.repository.LocalResourceRequest
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
+import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.Utilities.toast
@@ -282,12 +283,10 @@ class AddResourceActivity : AppCompatActivity() {
     }
 
     private fun showExitConfirmationDialog() {
-        AlertDialog.Builder(this,R.style.AlertDialogTheme)
-            .setMessage(R.string.are_you_sure_you_want_to_exit_your_data_will_be_lost)
-            .setPositiveButton(R.string.yes_i_want_to_exit) { _, _ ->
-                finish()
-            }
-            .setNegativeButton(R.string.no, null)
-            .show()
+        confirmDialog(
+            message = getString(R.string.are_you_sure_you_want_to_exit_your_data_will_be_lost),
+            positiveText = getString(R.string.yes_i_want_to_exit),
+            onPositive = ::finish
+        )
     }
 }

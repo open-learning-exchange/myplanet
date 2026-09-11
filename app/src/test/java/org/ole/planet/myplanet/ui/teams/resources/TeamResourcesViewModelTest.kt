@@ -1,14 +1,11 @@
 package org.ole.planet.myplanet.ui.teams.resources
 
-import android.util.Log
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
-import io.mockk.unmockkStatic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -34,15 +31,11 @@ class TeamResourcesViewModelTest {
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        mockkStatic(Log::class)
-        every { Log.w(any(), any<String>()) } returns 0
-        every { Log.w(any(), any<String>(), any()) } returns 0
         viewModel = TeamResourcesViewModel(teamsRepository)
     }
 
     @After
     fun tearDown() {
-        unmockkStatic(Log::class)
         Dispatchers.resetMain()
     }
 
@@ -151,11 +144,11 @@ class TeamResourcesViewModelTest {
     fun `loadResources executes queries concurrently`() = runTest(testDispatcher) {
         val libraries = listOf(MyLibrary().apply { id = "r1"; title = "Resource 1" })
         coEvery { teamsRepository.getTeamResources("team1") } coAnswers {
-            kotlinx.coroutines.delay(100)
+            delay(100)
             libraries
         }
         coEvery { teamsRepository.isTeamLeader("team1", "user1") } coAnswers {
-            kotlinx.coroutines.delay(100)
+            delay(100)
             true
         }
 
@@ -165,5 +158,84 @@ class TeamResourcesViewModelTest {
         val state = viewModel.uiState.value
         assertEquals(1, state?.resources?.size)
         assertTrue(state?.canRemove == true)
+    }
+
+    @Test
+    fun `loadResources ignores duplicate calls while loadJob is active for same team and user`() = runTest(testDispatcher) {
+        val libraries = listOf(MyLibrary().apply { id = "r1"; title = "Resource 1" })
+        coEvery { teamsRepository.getTeamResources("team1") } coAnswers {
+            delay(100)
+            libraries
+        }
+        coEvery { teamsRepository.isTeamLeader("team1", "user1") } coAnswers {
+            delay(100)
+            true
+        }
+
+        viewModel.loadResources("team1", "user1")
+        viewModel.loadResources("team1", "user1")
+
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { teamsRepository.getTeamResources("team1") }
+        coVerify(exactly = 1) { teamsRepository.isTeamLeader("team1", "user1") }
+    }
+
+    @Test
+    fun `reload cancels active loadJob and triggers new queries`() = runTest(testDispatcher) {
+        val firstLibraries = listOf(MyLibrary().apply { id = "r1"; title = "Resource 1" })
+        val secondLibraries = listOf(
+            MyLibrary().apply { id = "r1"; title = "Resource 1" },
+            MyLibrary().apply { id = "r2"; title = "Resource 2" }
+        )
+
+        var callCount = 0
+        coEvery { teamsRepository.getTeamResources("team1") } coAnswers {
+            if (callCount++ == 0) firstLibraries else secondLibraries
+        }
+        coEvery { teamsRepository.isTeamLeader("team1", "user1") } returns true
+
+        viewModel.loadResources("team1", "user1")
+        advanceUntilIdle()
+
+        viewModel.reload("team1", "user1")
+        advanceUntilIdle()
+
+        coVerify(exactly = 2) { teamsRepository.getTeamResources("team1") }
+        assertEquals(2, viewModel.uiState.value?.resources?.size)
+    }
+
+    @Test
+    fun `loadResources for different team cancels superseded loadJob`() = runTest(testDispatcher) {
+        val team1Libraries = listOf(MyLibrary().apply { id = "r1"; title = "Team 1 Resource" })
+        val team2Libraries = listOf(MyLibrary().apply { id = "r2"; title = "Team 2 Resource" })
+
+        coEvery { teamsRepository.getTeamResources("team1") } coAnswers {
+            delay(200)
+            team1Libraries
+        }
+        coEvery { teamsRepository.isTeamLeader("team1", "user1") } coAnswers {
+            delay(200)
+            true
+        }
+
+        coEvery { teamsRepository.getTeamResources("team2") } coAnswers {
+            delay(50)
+            team2Libraries
+        }
+        coEvery { teamsRepository.isTeamLeader("team2", "user1") } coAnswers {
+            delay(50)
+            false
+        }
+
+        viewModel.loadResources("team1", "user1")
+        viewModel.loadResources("team2", "user1")
+
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(1, state?.resources?.size)
+        assertEquals("Team 2 Resource", state?.resources?.get(0)?.title)
+        assertTrue(state?.canRemove == false)
     }
 }

@@ -62,6 +62,12 @@ class ActivitiesRepositoryImpl @Inject constructor(
         return offlineActivityDao.countByUserIdAndType(userId, UserSessionManager.KEY_LOGIN)
     }
 
+    override suspend fun getMemberVisitStats(userId: String?, userName: String?): MemberVisitStats {
+        val count = if (!userId.isNullOrEmpty()) getOfflineVisitCount(userId) else 0
+        val lastVisit = if (!userName.isNullOrEmpty()) getLastVisit(userName) else null
+        return MemberVisitStats(count, lastVisit)
+    }
+
     override suspend fun getOfflineLoginCount(userName: String): Int {
         return offlineActivityDao.countByUserNameAndType(userName, UserSessionManager.KEY_LOGIN)
     }
