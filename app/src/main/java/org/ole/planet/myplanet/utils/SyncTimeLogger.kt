@@ -226,8 +226,8 @@ class SyncTimeLogger @Inject constructor(
         summaryBuilder.append("=== SYNC TIME SUMMARY ===\n")
         summaryBuilder.append("Total sync time: $totalMinutes min $totalSeconds sec (${formatTime(totalDuration)})\n\n")
 
-        val allApiCallLogs = apiCallTimes.values.flatten()
-        val allDbOpLogs = dbOperationTimes.values.flatten()
+        val totalApiTime = apiCallTimes.values.sumOf { logs -> logs.sumOf { it.duration } }
+        val totalDbTime = dbOperationTimes.values.sumOf { logs -> logs.sumOf { it.duration } }
 
         // Process times
         summaryBuilder.append("PROCESS BREAKDOWN:\n")
@@ -253,8 +253,7 @@ class SyncTimeLogger @Inject constructor(
         if (apiCallTimes.isNotEmpty()) {
             summaryBuilder.append("\nAPI CALL STATISTICS:\n")
             val totalApiCalls = apiCallTimes.values.sumOf { it.size }
-            val totalApiTime = allApiCallLogs.sumOf { it.duration }
-            val successfulCalls = allApiCallLogs.count { it.success }
+            val successfulCalls = apiCallTimes.values.sumOf { logs -> logs.count { it.success } }
 
             summaryBuilder.append(String.format(Locale.US, "  Total API calls: %d (Success: %d, Failed: %d)\n",
                 totalApiCalls, successfulCalls, totalApiCalls - successfulCalls))
@@ -274,8 +273,7 @@ class SyncTimeLogger @Inject constructor(
         if (dbOperationTimes.isNotEmpty()) {
             summaryBuilder.append("\nDB OPERATION STATISTICS:\n")
             val totalDbOps = dbOperationTimes.values.sumOf { it.size }
-            val totalDbTime = allDbOpLogs.sumOf { it.duration }
-            val totalDbItems = allDbOpLogs.sumOf { it.itemCount }
+            val totalDbItems = dbOperationTimes.values.sumOf { logs -> logs.sumOf { it.itemCount } }
 
             summaryBuilder.append(String.format(Locale.US, "  Total Db operations: %d\n", totalDbOps))
             summaryBuilder.append(String.format(Locale.US, "  Total Db time: %s (%.1f%% of total sync)\n",
@@ -294,10 +292,10 @@ class SyncTimeLogger @Inject constructor(
         // Performance insights
         summaryBuilder.append("\nPERFORMANCE INSIGHTS:\n")
         val apiPercentage = if (apiCallTimes.isNotEmpty()) {
-            (allApiCallLogs.sumOf { it.duration }.toDouble() / totalDuration * 100)
+            (totalApiTime.toDouble() / totalDuration * 100)
         } else 0.0
         val dbPercentage = if (dbOperationTimes.isNotEmpty()) {
-            (allDbOpLogs.sumOf { it.duration }.toDouble() / totalDuration * 100)
+            (totalDbTime.toDouble() / totalDuration * 100)
         } else 0.0
 
         summaryBuilder.append(String.format(Locale.US, "  Network time: %.1f%%\n", apiPercentage))
