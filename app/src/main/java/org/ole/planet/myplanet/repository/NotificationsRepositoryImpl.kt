@@ -9,6 +9,9 @@ import java.util.LinkedHashSet
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
@@ -312,9 +315,10 @@ class NotificationsRepositoryImpl @Inject constructor(
             }
         }
 
-        val chatCountsById = mutableMapOf<String, Long>()
-        for (teamId in notificationsById.keys) {
-            chatCountsById[teamId] = voicesRepository.countTopLevelByTeam(teamId)
+        val chatCountsById = coroutineScope {
+            notificationsById.keys.map { teamId ->
+                async { teamId to voicesRepository.countTopLevelByTeam(teamId) }
+            }.awaitAll().toMap()
         }
 
         val current = timeProvider.now()

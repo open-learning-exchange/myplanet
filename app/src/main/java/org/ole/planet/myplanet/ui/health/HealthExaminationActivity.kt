@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.health
 
-import android.content.DialogInterface
 import android.os.Bundle
 import android.view.ContextThemeWrapper
 import android.view.MenuItem
@@ -8,7 +7,6 @@ import android.view.View
 import android.widget.CheckBox
 import android.widget.CompoundButton
 import androidx.activity.viewModels
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.widget.doOnTextChanged
@@ -30,6 +28,7 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.encrypt
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateKey
+import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DimenUtils.dpToPx
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -396,11 +395,12 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
     }
 
     override fun finish() {
-        val alertDialogBuilder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
-        alertDialogBuilder.setMessage(R.string.cancel_adding_examination)
-        alertDialogBuilder.setPositiveButton(getString(R.string.yes_i_want_to_exit)) { _: DialogInterface?, _: Int -> super.finish() }
-            .setNegativeButton(getString(R.string.cancel), null)
-        alertDialogBuilder.show()
+        confirmDialog(
+            message = getString(R.string.cancel_adding_examination),
+            positiveText = getString(R.string.yes_i_want_to_exit),
+            onPositive = { super.finish() },
+            negativeText = getString(R.string.cancel)
+        )
     }
 
     override fun onCheckedChanged(compoundButton: CompoundButton, b: Boolean) {
