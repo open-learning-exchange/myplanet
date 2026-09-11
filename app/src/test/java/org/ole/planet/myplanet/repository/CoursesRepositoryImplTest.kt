@@ -375,7 +375,7 @@ class CoursesRepositoryImplTest {
         coEvery { myLibraryDao.getCourseResources("course_id", false) } returns emptyList()
         coEvery { myLibraryDao.getCourseResources("course_id", true) } returns emptyList()
         coEvery { courseStepDao.getByCourseId("course_id") } returns listOf(org.ole.planet.myplanet.model.CourseStep().apply { id = "step_1"; stepTitle = "Title" })
-        coEvery { submissionsRepository.getExamQuestionCount("step_1") } returns 3
+        coEvery { examDao.getByStepIds(listOf("step_1")) } returns listOf(org.ole.planet.myplanet.model.StepExam().apply { stepId = "step_1"; noOfQuestions = 3 })
 
         coEvery { ratingsRepository.getRatingSummary("course", "course_id", "user_1") } returns RatingSummary(
             existingRating = null,
