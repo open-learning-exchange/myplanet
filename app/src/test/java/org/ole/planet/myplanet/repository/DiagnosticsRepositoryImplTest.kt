@@ -239,15 +239,6 @@ class DiagnosticsRepositoryImplTest {
     }
 
     @Test
-    fun `markApkLogUploaded delegates to apkLogDao markUploaded`() = runTest {
-        coEvery { apkLogDao.markUploaded("log-1", "rev-1") } returns 1
-        coEvery { apkLogDao.markUploaded("log-2", "rev-2") } returns 0
-
-        assertTrue(repository.markApkLogUploaded("log-1", "rev-1"))
-        assertFalse(repository.markApkLogUploaded("log-2", "rev-2"))
-    }
-
-    @Test
     fun `markApkLogsUploaded returns empty set when updates is empty`() = runTest {
         val result = repository.markApkLogsUploaded(emptyList())
 

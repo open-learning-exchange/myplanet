@@ -21,10 +21,6 @@ interface ApkLogDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(logs: List<ApkLog>)
 
-    /** Returns the number of rows updated (0 means the local row was gone). */
-    @Query("UPDATE apk_log SET _rev = :rev WHERE id = :id")
-    suspend fun markUploaded(id: String, rev: String): Int
-
     @Query("SELECT id FROM apk_log WHERE id IN (:ids)")
     suspend fun getExistingIds(ids: List<String>): List<String>
 
