@@ -65,7 +65,7 @@ class TagsRepositoryImplTest {
 
         coEvery { tagDao.getParentTags("resources") } returns
             listOf(parentTag1, parentTag2, childlessParentTag)
-        coEvery { tagDao.getAttachedForDb("resources") } returns
+        coEvery { tagDao.getAttached() } returns
             listOf(child1, child2)
 
         val result = repository.getTagsWithChildren("resources")

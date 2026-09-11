@@ -16,7 +16,7 @@ class TagsRepositoryImpl @Inject constructor(
 
     override suspend fun getTagsWithChildren(dbType: String?): Map<TagEntity, List<TagEntity>> {
         val parentTags = getTags(dbType)
-        val attachedTags = tagDao.getAttachedForDb(dbType)
+        val attachedTags = tagDao.getAttached()
         val childMap = mutableMapOf<String, MutableList<TagEntity>>()
 
         for (t in attachedTags) {
