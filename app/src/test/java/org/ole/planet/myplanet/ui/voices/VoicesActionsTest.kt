@@ -7,6 +7,9 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import java.util.Locale
+import java.util.TimeZone
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertSame
@@ -27,11 +30,23 @@ import org.robolectric.annotation.Config
 class VoicesActionsTest {
 
     private lateinit var context: Context
+    private lateinit var originalTimeZone: TimeZone
+    private lateinit var originalLocale: Locale
 
     @Before
     fun setUp() {
+        originalTimeZone = TimeZone.getDefault()
+        originalLocale = Locale.getDefault()
+        TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
+        Locale.setDefault(Locale.US)
         context = ApplicationProvider.getApplicationContext()
         context.setTheme(com.google.android.material.R.style.Theme_MaterialComponents)
+    }
+
+    @After
+    fun tearDown() {
+        TimeZone.setDefault(originalTimeZone)
+        Locale.setDefault(originalLocale)
     }
 
     @Test
@@ -109,5 +124,54 @@ class VoicesActionsTest {
         coVerify(exactly = 1) { activitiesRepository.getMemberVisitStats("user123", "john_doe") }
         coVerify(exactly = 0) { activitiesRepository.getOfflineVisitCount(any()) }
         coVerify(exactly = 0) { activitiesRepository.getLastVisit(any()) }
+    }
+
+    @Test
+    fun `showMemberDetails formats lastVisit in default zone and locale`() = runTest {
+        val activitiesRepository: ActivitiesRepository = mockk()
+        val user = UserEntity().apply {
+            id = "user123"
+            name = "john_doe"
+            firstName = "John"
+            lastName = "Doe"
+            email = "john@example.com"
+            dob = "2000-01-01T00:00:00"
+            language = "en"
+            phoneNumber = "1234567890"
+            level = "Level 1"
+            userImage = "image_url"
+        }
+
+        // 1700000000000 L -> Nov 14, 2023 10:13 PM UTC
+        coEvery { activitiesRepository.getMemberVisitStats("user123", "john_doe") } returns MemberVisitStats(
+            offlineVisitCount = 2,
+            lastVisit = 1700000000000L
+        )
+
+        val fragment = VoicesActions.showMemberDetails(user, activitiesRepository)
+
+        assertNotNull(fragment)
+        assertEquals("November 14, 2023 10:13 PM", fragment?.arguments?.getString("last_login"))
+    }
+
+    @Test
+    fun `showMemberDetails falls back when lastVisit is null`() = runTest {
+        val activitiesRepository: ActivitiesRepository = mockk()
+        val user = UserEntity().apply {
+            id = "user123"
+            name = "john_doe"
+            firstName = "John"
+            lastName = "Doe"
+        }
+
+        coEvery { activitiesRepository.getMemberVisitStats("user123", "john_doe") } returns MemberVisitStats(
+            offlineVisitCount = 0,
+            lastVisit = null
+        )
+
+        val fragment = VoicesActions.showMemberDetails(user, activitiesRepository)
+
+        assertNotNull(fragment)
+        assertEquals("No logout record found", fragment?.arguments?.getString("last_login"))
     }
 }
