@@ -303,7 +303,7 @@ class CoursesRepositoryImpl @Inject constructor(
         tagNames: List<String>
     ): List<MyCourse> {
         val courseIdsWithTags = if (tagNames.isNotEmpty()) {
-            tagsRepository.getLinkIdsForTagNames("courses", tagNames).toSet()
+            tagsRepository.getCourseLinkIds(tagNames)
         } else {
             null
         }
