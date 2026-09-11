@@ -446,6 +446,85 @@ class ProgressRepositoryImplTest {
     }
 
     @Test
+    fun testGetCompletedCourses_duplicatePassedRecordsCountOnce() = testScope.runTest {
+        val myCourses = listOf(
+            MyCourse().apply {
+                courseId = "course1"
+                courseTitle = "Course 1"
+                courseSteps = mutableListOf(
+                    CourseStep().apply { courseId = "course1" },
+                    CourseStep().apply { courseId = "course1" }
+                )
+            }
+        )
+
+        val progresses = listOf(
+            CourseProgress().apply { courseId = "course1"; stepNum = 1; passed = true },
+            CourseProgress().apply { courseId = "course1"; stepNum = 1; passed = true },
+            CourseProgress().apply { courseId = "course1"; stepNum = 2; passed = true }
+        )
+
+        coEvery { mockCoursesRepository.getMyCourses("user1") } returns myCourses
+        coEvery { courseProgressDao.getByUser("user1") } returns progresses
+
+        val result = repository.getCompletedCourses("user1")
+        advanceUntilIdle()
+
+        assertEquals(1, result.size)
+        assertEquals("course1", result[0].courseId)
+    }
+
+    @Test
+    fun testGetCompletedCourses_failedRecordsIgnored() = testScope.runTest {
+        val myCourses = listOf(
+            MyCourse().apply {
+                courseId = "course1"
+                courseTitle = "Course 1"
+                courseSteps = mutableListOf(
+                    CourseStep().apply { courseId = "course1" },
+                    CourseStep().apply { courseId = "course1" }
+                )
+            }
+        )
+
+        val progresses = listOf(
+            CourseProgress().apply { courseId = "course1"; stepNum = 1; passed = true },
+            CourseProgress().apply { courseId = "course1"; stepNum = 2; passed = false }
+        )
+
+        coEvery { mockCoursesRepository.getMyCourses("user1") } returns myCourses
+        coEvery { courseProgressDao.getByUser("user1") } returns progresses
+
+        val result = repository.getCompletedCourses("user1")
+        advanceUntilIdle()
+
+        assertEquals(0, result.size)
+    }
+
+    @Test
+    fun testGetCompletedCourses_zeroTotalStepsExcluded() = testScope.runTest {
+        val myCourses = listOf(
+            MyCourse().apply {
+                courseId = "course1"
+                courseTitle = "Course 1"
+                courseSteps = mutableListOf()
+            }
+        )
+
+        val progresses = listOf(
+            CourseProgress().apply { courseId = "course1"; stepNum = 1; passed = true }
+        )
+
+        coEvery { mockCoursesRepository.getMyCourses("user1") } returns myCourses
+        coEvery { courseProgressDao.getByUser("user1") } returns progresses
+
+        val result = repository.getCompletedCourses("user1")
+        advanceUntilIdle()
+
+        assertEquals(0, result.size)
+    }
+
+    @Test
     fun testFindProgressForCourse() {
         val jsonArray = JsonArray()
         val course1 = JsonObject().apply {
