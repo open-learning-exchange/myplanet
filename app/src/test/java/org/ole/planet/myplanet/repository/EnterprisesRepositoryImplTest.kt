@@ -20,6 +20,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.TeamDao
+import org.ole.planet.myplanet.model.EnterpriseReportCsvProjection
 import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -70,23 +71,19 @@ class EnterprisesRepositoryImplTest {
     @Test
     fun `exportReportsAsCsv calculates correct profitLoss and endingBalance`() = runTest {
         val teamId = "team123"
-        val report = MyTeam().apply {
-            startDate = 1000L
-            endDate = 2000L
-            createdDate = 3000L
-            updatedDate = 4000L
-            beginningBalance = 100
-            sales = 50
-            otherIncome = 20
-            wages = 10
+        val reportProjection = EnterpriseReportCsvProjection(
+            startDate = 1000L,
+            endDate = 2000L,
+            createdDate = 3000L,
+            updatedDate = 4000L,
+            beginningBalance = 100,
+            sales = 50,
+            otherIncome = 20,
+            wages = 10,
             otherExpenses = 15
-        }
-        val archivedReport = MyTeam().apply {
-            status = "archived"
-            createdDate = 4000L
-        }
+        )
 
-        coEvery { teamDao.getNonArchivedReportsByTeamId(teamId) } returns listOf(report)
+        coEvery { teamDao.getNonArchivedReportCsvProjectionsByTeamId(teamId) } returns listOf(reportProjection)
 
         val result = repository.exportReportsAsCsv(teamId, "Test Team")
 
