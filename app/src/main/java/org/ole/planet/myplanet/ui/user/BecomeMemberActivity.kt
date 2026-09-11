@@ -15,7 +15,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.callback.OnChangedListener
@@ -124,7 +123,7 @@ class BecomeMemberActivity : BaseActivity() {
                     startUpload("becomeMember", userName, securityCallback)
 
                     if (result.second == getString(R.string.not_connect_to_planet_created_user_offline)) {
-                        Utilities.toast(MainApplication.context, result.second)
+                        Utilities.toast(this@BecomeMemberActivity, result.second)
                         securityCallback.onChanged()
                     }
                     Utilities.toast(this@BecomeMemberActivity, result.second)
