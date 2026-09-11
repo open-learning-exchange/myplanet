@@ -209,6 +209,74 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
+    fun `getUniquePendingSurveys deduplicates candidates across exams returning one per exam in candidate order with answers`() = runTest {
+        val candidate1 = Submission(id = "sub1", parentId = "exam1@course1")
+        val candidate2 = Submission(id = "sub2", parentId = "exam1@course2")
+        val candidate3 = Submission(id = "sub3", parentId = "exam2@course1")
+
+        coEvery { submissionDao.getUniquePendingSurveyCandidates("user") } returns listOf(
+            candidate1, candidate2, candidate3
+        )
+        coEvery { examDao.getByIds(listOf("exam1", "exam2")) } returns listOf(
+            StepExam(id = "exam1", name = "Exam 1"),
+            StepExam(id = "exam2", name = "Exam 2")
+        )
+        val answer1 = org.ole.planet.myplanet.model.Answer(id = "ans1", submissionId = "sub1", value = "ans1_val")
+        val answer3 = org.ole.planet.myplanet.model.Answer(id = "ans3", submissionId = "sub3", value = "ans3_val")
+        coEvery { answerDao.getBySubmissionIds(listOf("sub1", "sub3")) } returns listOf(answer1, answer3)
+
+        val result = repository.getUniquePendingSurveys("user")
+
+        assertEquals(2, result.size)
+        assertEquals("sub1", result[0].id)
+        assertEquals("sub3", result[1].id)
+        assertEquals(1, result[0].answers?.size)
+        assertEquals("ans1_val", result[0].answers?.get(0)?.value)
+        assertEquals(1, result[1].answers?.size)
+        assertEquals("ans3_val", result[1].answers?.get(0)?.value)
+        coVerify(exactly = 1) { answerDao.getBySubmissionIds(listOf("sub1", "sub3")) }
+    }
+
+    @Test
+    fun `getUniquePendingSurveys drops candidate whose exam id is not returned by examDao`() = runTest {
+        val candidate1 = Submission(id = "sub1", parentId = "exam1@course1")
+        val candidate2 = Submission(id = "sub2", parentId = "invalid_exam@course1")
+
+        coEvery { submissionDao.getUniquePendingSurveyCandidates("user") } returns listOf(candidate1, candidate2)
+        coEvery { examDao.getByIds(listOf("exam1", "invalid_exam")) } returns listOf(
+            StepExam(id = "exam1", name = "Exam 1")
+        )
+        coEvery { answerDao.getBySubmissionIds(listOf("sub1")) } returns emptyList()
+
+        val result = repository.getUniquePendingSurveys("user")
+
+        assertEquals(1, result.size)
+        assertEquals("sub1", result[0].id)
+        coVerify(exactly = 1) { answerDao.getBySubmissionIds(listOf("sub1")) }
+    }
+
+    @Test
+    fun `getUniquePendingSurveys narrows hydration to surviving submission ids only`() = runTest {
+        val candidate1 = Submission(id = "sub1", parentId = "exam1@course1")
+        val candidate2 = Submission(id = "sub2", parentId = "exam1@course2")
+        val candidate3 = Submission(id = "sub3", parentId = "exam2@course1")
+
+        coEvery { submissionDao.getUniquePendingSurveyCandidates("user") } returns listOf(
+            candidate1, candidate2, candidate3
+        )
+        coEvery { examDao.getByIds(listOf("exam1", "exam2")) } returns listOf(
+            StepExam(id = "exam1", name = "Exam 1"),
+            StepExam(id = "exam2", name = "Exam 2")
+        )
+        coEvery { answerDao.getBySubmissionIds(any()) } returns emptyList()
+
+        repository.getUniquePendingSurveys("user")
+
+        coVerify(exactly = 1) { answerDao.getBySubmissionIds(listOf("sub1", "sub3")) }
+        coVerify(exactly = 0) { answerDao.getBySubmissionIds(match { it.contains("sub2") }) }
+    }
+
+    @Test
     fun `getSurveyTitlesFromSubmissions returns empty list when examIds is empty`() = runTest {
         val result = repository.getSurveyTitlesFromSubmissions(emptyList())
         assertTrue(result.isEmpty())
