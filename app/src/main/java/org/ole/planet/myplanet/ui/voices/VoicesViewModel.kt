@@ -36,7 +36,7 @@ class VoicesViewModel @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val userRepository: UserRepository,
     private val resourcesRepository: ResourcesRepository
-) : ViewModel(), LabelManipulator by DefaultLabelManipulator(voicesRepository, dispatcherProvider) {
+) : ViewModel(), LabelManipulator by DefaultLabelManipulator(voicesRepository) {
 
     private val _searchQuery = MutableStateFlow("")
 
