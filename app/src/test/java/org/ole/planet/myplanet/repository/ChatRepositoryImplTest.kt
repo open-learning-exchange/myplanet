@@ -82,14 +82,30 @@ class ChatRepositoryImplTest {
     }
 
     @Test
-    fun getChatHistoryForUser_delegatesToDao() = runTest {
+    fun getChatHistoryForUser_delegatesToDaoAndSortsByRepositoryOrdering() = runTest {
         val userName = "testUser"
-        val mockHistoryList = listOf(ChatHistory().apply { user = userName })
-        coEvery { chatDao.getByUser(userName) } returns mockHistoryList
+        val oldestChat = ChatHistory().apply {
+            user = userName
+            createdDate = "1000"
+            updatedDate = "1000"
+        }
+        val middleChat = ChatHistory().apply {
+            user = userName
+            createdDate = "2000"
+            updatedDate = "1500"
+        }
+        val newestChat = ChatHistory().apply {
+            user = userName
+            createdDate = "1000"
+            updatedDate = "3000"
+        }
+
+        val reversedDaoList = listOf(oldestChat, middleChat, newestChat)
+        coEvery { chatDao.getByUser(userName) } returns reversedDaoList
 
         val result = chatRepository.getChatHistoryForUser(userName)
 
-        assertEquals(mockHistoryList, result)
+        assertEquals(listOf(newestChat, middleChat, oldestChat), result)
         coVerify(exactly = 1) { chatDao.getByUser(userName) }
     }
 
