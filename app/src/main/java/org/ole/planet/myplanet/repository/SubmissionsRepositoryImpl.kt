@@ -864,16 +864,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun getPendingExamResults(): List<Submission> {
-        return submissionDao.getPendingExamResults().map { entity ->
-            val answers = answerDao.getBySubmissionId(entity.id)
-            entity.apply { this.answers = answers.toMutableList(); teamId?.let { membershipDoc = MembershipDoc().apply { this.teamId = it } } }
-        }
+        return hydrateSubmissions(submissionDao.getPendingExamResults())
     }
 
     override suspend fun getPendingSubmissionsForUpload(): List<Submission> {
-        return submissionDao.getPendingSubmissions().map { entity ->
-            val answers = answerDao.getBySubmissionId(entity.id)
-            entity.apply { this.answers = answers.toMutableList(); teamId?.let { membershipDoc = MembershipDoc().apply { this.teamId = it } } }
-        }
+        return hydrateSubmissions(submissionDao.getPendingSubmissions())
     }
 }
