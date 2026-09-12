@@ -117,4 +117,7 @@
     <dimen name="dashboard_tile_color_block_width">72dp</dimen>
     <dimen name="dashboard_chip_width">92dp</dimen>
     <dimen name="dashboard_rail_width">182dp</dimen>
+
+    <dimen name="course_grid_cover_height">84dp</dimen>
+    <dimen name="course_list_cover_size">44dp</dimen>
 </resources>

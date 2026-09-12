@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.utils.CourseSubject
 import org.ole.planet.myplanet.utils.CourseSubjectClassifier
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.GridSpanCalculator
 import org.ole.planet.myplanet.utils.ListViewMode
 import org.ole.planet.myplanet.utils.SelectionUtils
 import org.ole.planet.myplanet.utils.StableIdGenerator
@@ -306,10 +307,37 @@ class CoursesAdapter(
         }
         ivSubjectIcon.visibility = View.GONE
         ivCover.visibility = View.VISIBLE
+
+        val fallbackHeight = if (viewMode == ListViewMode.GRID) {
+            context.resources.getDimensionPixelSize(R.dimen.course_grid_cover_height)
+        } else {
+            context.resources.getDimensionPixelSize(R.dimen.course_list_cover_size)
+        }
+
+        val targetWidth = when {
+            coverContainer.width > 0 -> coverContainer.width
+            coverContainer.layoutParams?.width != null && coverContainer.layoutParams.width > 0 -> coverContainer.layoutParams.width
+            else -> if (viewMode == ListViewMode.GRID) {
+                val displayMetrics = context.resources.displayMetrics
+                val widthDp = (displayMetrics.widthPixels / displayMetrics.density).toInt()
+                val cols = GridSpanCalculator.columnCount(widthDp)
+                (displayMetrics.widthPixels / cols).coerceAtLeast(fallbackHeight)
+            } else {
+                fallbackHeight
+            }
+        }.coerceAtLeast(1)
+
+        val targetHeight = when {
+            coverContainer.height > 0 -> coverContainer.height
+            coverContainer.layoutParams?.height != null && coverContainer.layoutParams.height > 0 -> coverContainer.layoutParams.height
+            else -> fallbackHeight
+        }.coerceAtLeast(1)
+
         Glide.with(context)
             .load(model)
             .diskCacheStrategy(DiskCacheStrategy.ALL)
             .signature(ObjectKey(course.courseRev.orEmpty()))
+            .override(targetWidth, targetHeight)
             .centerCrop()
             .error(R.drawable.ole_logo)
             .into(ivCover)

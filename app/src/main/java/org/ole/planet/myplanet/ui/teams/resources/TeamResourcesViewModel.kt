@@ -1,10 +1,10 @@
 package org.ole.planet.myplanet.ui.teams.resources
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,8 +28,18 @@ class TeamResourcesViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<TeamResourcesUiState?>(null)
     val uiState: StateFlow<TeamResourcesUiState?> = _uiState.asStateFlow()
 
-    fun loadResources(teamId: String, userId: String?) {
-        viewModelScope.launch {
+    private var loadJob: Job? = null
+    private var lastTeamId: String? = null
+    private var lastUserId: String? = null
+
+    fun loadResources(teamId: String, userId: String?, force: Boolean = false) {
+        if (!force && loadJob?.isActive == true && teamId == lastTeamId && userId == lastUserId) {
+            return
+        }
+        loadJob?.cancel()
+        lastTeamId = teamId
+        lastUserId = userId
+        loadJob = viewModelScope.launch {
             coroutineScope {
                 val librariesDeferred = async { teamsRepository.getTeamResources(teamId) }
                 val canRemoveDeferred = async { teamsRepository.isTeamLeader(teamId, userId) }
@@ -39,6 +49,10 @@ class TeamResourcesViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    fun reload(teamId: String, userId: String?) {
+        loadResources(teamId, userId, force = true)
     }
 
     suspend fun addResources(teamId: String, resources: List<TeamResourceDto>, userId: String?) {
@@ -57,10 +71,5 @@ class TeamResourcesViewModel @Inject constructor(
 
     private suspend fun recordActivitySafely() {
         runCatching { teamsRepository.recordTeamActivity() }
-            .onFailure { Log.w(TAG, "Failed to record team activity", it) }
-    }
-
-    private companion object {
-        const val TAG = "TeamResourcesViewModel"
     }
 }

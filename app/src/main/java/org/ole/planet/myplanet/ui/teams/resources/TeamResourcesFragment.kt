@@ -69,9 +69,13 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
         llImage?.removeAllViews()
     }
 
-    private fun showLibraryList() {
+    private fun showLibraryList(force: Boolean = false) {
         if (!isAdded || activity == null) return
-        viewModel.loadResources(teamId, user?.id)
+        if (force) {
+            viewModel.reload(teamId, user?.id)
+        } else {
+            viewModel.loadResources(teamId, user?.id)
+        }
     }
 
     private fun renderResources(state: TeamResourcesUiState) {
@@ -123,7 +127,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
                         }
                     viewLifecycleOwner.lifecycleScope.launch {
                         viewModel.addResources(teamId, selectedResources, user?.id)
-                        showLibraryList()
+                        showLibraryList(force = true)
                     }
                 }
                 .setNeutralButton(R.string.create_new_resource) { _: DialogInterface?, _: Int ->
@@ -147,7 +151,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
             override fun onFragmentDetached(fm: FragmentManager, f: Fragment) {
                 if (f === fragment) {
                     fm.unregisterFragmentLifecycleCallbacks(this)
-                    showLibraryList()
+                    showLibraryList(force = true)
                 }
             }
         }, false)
