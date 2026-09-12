@@ -35,10 +35,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private var lastKnownRating: RatingSummary? = null
     private lateinit var library: MyLibrary
     var userModel: UserEntity? = null
-    private suspend fun fetchLibrary(libraryId: String): MyLibrary? {
-        return resourcesRepository.getLibraryItemById(libraryId)
-            ?: resourcesRepository.getLibraryItemByResourceId(libraryId)
-    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -92,7 +89,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 return@launch
             }
 
-            val fetchedLibrary = fetchLibrary(id)
+            val fetchedLibrary = resourcesRepository.resolveLibraryItem(id)
 
             if (fetchedLibrary == null) {
                 handleLibraryNotFound()

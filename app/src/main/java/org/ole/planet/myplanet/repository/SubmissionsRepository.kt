@@ -23,7 +23,6 @@ interface SubmissionsRepository {
     suspend fun getSubmissionById(id: String): Submission?
     suspend fun getSubmissionsByIds(ids: List<String>): List<Submission>
     suspend fun getExamMap(submissions: List<Submission>): Map<String?, StepExam>
-    suspend fun getExamQuestionCount(stepId: String): Int
     suspend fun hasSubmission(
         stepExamId: String?,
         courseId: String?,

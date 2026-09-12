@@ -123,6 +123,7 @@ class ResourcesRepositoryImplTest {
             id = "res-id"
             userId = listOf("user-123")
         }
+        coEvery { myLibraryDao.getById("res-id") } returns null
         coEvery { myLibraryDao.getByResourceId("res-id") } returns mockLibrary
 
         val result = repository.setUserLibrary("res-id", true)
@@ -140,6 +141,7 @@ class ResourcesRepositoryImplTest {
             id = "res-id"
             userId = emptyList()
         }
+        coEvery { myLibraryDao.getById("res-id") } returns null
         coEvery { myLibraryDao.getByResourceId("res-id") } returns mockLibrary
 
         val result = repository.setUserLibrary("res-id", false)
@@ -310,6 +312,32 @@ class ResourcesRepositoryImplTest {
 
         assertEquals(1, result.size)
         assertEquals("Test Library", result[0].title)
+    }
+
+    @Test
+    fun `resolveLibraryItem resolves by id first and falls back to resourceId`() = runTest {
+        val libById = MyLibrary().apply { id = "collisionKey"; resourceId = "other1"; title = "By ID" }
+        val libByResId = MyLibrary().apply { id = "other2"; resourceId = "collisionKey"; title = "By Res ID" }
+
+        coEvery { myLibraryDao.getById("collisionKey") } returns libById
+        coEvery { myLibraryDao.getByResourceId("collisionKey") } returns libByResId
+
+        val result = repository.resolveLibraryItem("collisionKey")
+
+        assertEquals("By ID", result?.title)
+    }
+
+    @Test
+    fun `resolveLibraryItemByResourceId resolves by resourceId first and falls back to id`() = runTest {
+        val libById = MyLibrary().apply { id = "collisionKey"; resourceId = "other1"; title = "By ID" }
+        val libByResId = MyLibrary().apply { id = "other2"; resourceId = "collisionKey"; title = "By Res ID" }
+
+        coEvery { myLibraryDao.getById("collisionKey") } returns libById
+        coEvery { myLibraryDao.getByResourceId("collisionKey") } returns libByResId
+
+        val result = repository.resolveLibraryItemByResourceId("collisionKey")
+
+        assertEquals("By Res ID", result?.title)
     }
 
     @Test
