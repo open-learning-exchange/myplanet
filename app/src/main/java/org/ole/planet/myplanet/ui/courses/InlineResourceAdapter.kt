@@ -205,10 +205,12 @@ class InlineResourceAdapter(
     private suspend fun showImagePreview(binding: ItemInlineResourceBinding, context: Context, file: File) {
         val exists = withContext(dispatcherProvider.io) { file.exists() }
         if (exists) {
+            val (widthPx, heightPx) = getPreviewDimensions(context)
             binding.ivResourcePreview.visibility = View.VISIBLE
             Glide.with(context)
                 .load(file)
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .override(widthPx, heightPx)
                 .centerCrop()
                 .placeholder(R.drawable.ole_logo)
                 .error(R.drawable.ole_logo)
@@ -220,9 +222,11 @@ class InlineResourceAdapter(
         binding.videoThumbnailContainer.visibility = View.VISIBLE
         val exists = withContext(dispatcherProvider.io) { file.exists() }
         if (exists) {
+            val (widthPx, heightPx) = getPreviewDimensions(context)
             Glide.with(context)
                 .load(file)
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .override(widthPx, heightPx)
                 .centerCrop()
                 .into(binding.ivVideoThumbnail)
         }
@@ -252,10 +256,12 @@ class InlineResourceAdapter(
             }
         }
         if (coverImage != null) {
+            val (widthPx, heightPx) = getPreviewDimensions(context)
             binding.ivResourcePreview.visibility = View.VISIBLE
             Glide.with(context)
                 .load(coverImage)
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .override(widthPx, heightPx)
                 .centerCrop()
                 .placeholder(R.drawable.ole_logo)
                 .error(R.drawable.ole_logo)
@@ -312,6 +318,12 @@ class InlineResourceAdapter(
     }
 
     private fun getCacheKey(file: File): String = "${file.absolutePath}_${file.lastModified()}_${file.length()}"
+
+    private fun getPreviewDimensions(context: Context): Pair<Int, Int> {
+        val widthPx = context.resources.displayMetrics.widthPixels
+        val heightPx = context.resources.getDimensionPixelSize(R.dimen.inline_resource_preview_height)
+        return Pair(widthPx, heightPx)
+    }
 
     companion object {
         const val PAYLOAD_TITLE = "PAYLOAD_TITLE"
