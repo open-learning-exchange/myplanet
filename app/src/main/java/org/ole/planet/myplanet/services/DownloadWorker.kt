@@ -62,17 +62,24 @@ class DownloadWorker @AssistedInject constructor(
             val authHeader = UrlUtils.header
 
             urls.forEachIndexed { index, url ->
-                try {
-                    val success = downloadFile(url, authHeader, index, urls.size)
-                    results.add(success)
-                    completedCount++
-
-                    showProgressNotification(completedCount - 1, urls.size, context.getString(R.string.downloaded_files, "$completedCount", "${urls.size}"), 100)
-                    sendDownloadUpdate(url, success, completedCount >= urls.size, fromSync)
+                val success = try {
+                    downloadFile(url, authHeader, index, urls.size)
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to download $url", e)
-                    results.add(false)
-                    completedCount++
+                    false
+                }
+                results.add(success)
+                completedCount++
+
+                try {
+                    showProgressNotification(completedCount - 1, urls.size, context.getString(R.string.downloaded_files, "$completedCount", "${urls.size}"), 100)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to update progress notification for $url", e)
+                }
+                try {
+                    sendDownloadUpdate(url, success, completedCount >= urls.size, fromSync)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to send download update for $url", e)
                 }
             }
 
@@ -101,6 +108,7 @@ class DownloadWorker @AssistedInject constructor(
                     true
                 }
                 is DownloadResult.Error -> {
+                    Log.e(TAG, "Failed to download file: $url (code=${response.code}) ${response.message}")
                     false
                 }
             }
@@ -154,7 +162,15 @@ class DownloadWorker @AssistedInject constructor(
         val notification = DownloadUtils.buildProgressNotification(
             context, current + 1, total, text, forWorker = true, fileProgress = fileProgress
         )
-        setForeground(ForegroundInfo(WORKER_NOTIFICATION_ID, notification))
+        if (DownloadUtils.canStartForegroundService(context)) {
+            try {
+                setForeground(ForegroundInfo(WORKER_NOTIFICATION_ID, notification))
+                return
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to promote download worker to foreground, showing plain notification", e)
+            }
+        }
+        notificationManager.notify(WORKER_NOTIFICATION_ID, notification)
     }
 
     private fun showCompletionNotification(completed: Int, total: Int, hadErrors: Boolean) {
