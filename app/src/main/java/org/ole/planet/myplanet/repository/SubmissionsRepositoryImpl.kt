@@ -32,6 +32,7 @@ import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.SubmissionDetail
 import org.ole.planet.myplanet.model.SubmissionItem
+import org.ole.planet.myplanet.model.SubmissionRowProjection
 import org.ole.planet.myplanet.model.SubmitPhotos
 import org.ole.planet.myplanet.model.TeamReference
 import org.ole.planet.myplanet.model.UserEntity
@@ -44,6 +45,7 @@ import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class SubmissionsRepositoryImpl @Inject internal constructor(
     private val teamsRepositoryProvider: Provider<TeamsRepository>,
+    private val userRepository: UserRepository,
     @ApplicationContext private val context: Context,
     private val sharedPrefManager: SharedPrefManager,
     private val exporter: SubmissionsRepositoryExporter,
@@ -85,6 +87,48 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return submissionDao.observeByUserId(userId).distinctUntilChanged { old, new ->
             old.size == new.size && old.zip(new).all { (o, n) -> o.id == n.id && o.lastUpdateTime == n.lastUpdateTime }
         }
+    }
+
+    override suspend fun getSubmissionProjections(
+        submissions: List<Submission>,
+        userId: String,
+        type: String,
+        query: String,
+        examMap: Map<String?, StepExam>,
+    ): List<SubmissionRowProjection> {
+        var filtered = when (type) {
+            "survey" -> submissions.filter { it.userId == userId && it.type == "survey" }
+            "survey_submission" -> submissions.filter {
+                it.userId == userId && it.type == "survey" && it.status != "pending"
+            }
+            else -> submissions.filter { it.userId == userId && it.type != "survey" }
+        }.sortedByDescending { it.lastUpdateTime }
+
+        if (query.isNotEmpty()) {
+            val examIds = examMap.mapNotNullTo(HashSet()) { (id, exam) ->
+                if (exam.name?.contains(query, ignoreCase = true) == true) id else null
+            }
+            filtered = filtered.filter { examIds.contains(it.parentId) }
+        }
+
+        val uniqueRawSubmissions = mutableListOf<Submission>()
+        val submissionCountMap = HashMap<String?, Int>()
+        for (group in filtered.groupBy { it.parentId }.values) {
+            val newest = group.maxByOrNull { it.lastUpdateTime } ?: continue
+            uniqueRawSubmissions.add(newest)
+            submissionCountMap[newest.id] = group.size
+        }
+
+        val userIds = uniqueRawSubmissions.mapNotNull { it.userId }.distinct()
+        val fallbackUsersMap = userRepository.getUsersByIds(userIds).associateBy { it.id }
+
+        return uniqueRawSubmissions.map { sub ->
+            val name = getNormalizedSubmitterName(sub)
+            val fallback = sub.userId?.let { fallbackUsersMap[it]?.name }
+            val submitterName = name ?: fallback ?: ""
+            val count = submissionCountMap[sub.id] ?: 1
+            SubmissionRowProjection(sub, submitterName, count)
+        }.sortedByDescending { it.submission.lastUpdateTime }
     }
 
     override suspend fun getPendingSurveys(userId: String?): List<Submission> {
