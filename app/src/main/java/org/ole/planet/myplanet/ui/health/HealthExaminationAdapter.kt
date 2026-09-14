@@ -40,7 +40,7 @@ class HealthExaminationAdapter(
         val formattedDate: String,
         val isSelfExamination: Boolean,
         val resolvedName: String,
-        val hasEncryptedData: Boolean
+        val encrypted: JsonObject?
     )
 
     private val colorGrey50 by lazy { ContextCompat.getColor(context, R.color.md_grey_50) }
@@ -78,7 +78,7 @@ class HealthExaminationAdapter(
                     formattedDate = formattedDate,
                     isSelfExamination = isSelfExamination,
                     resolvedName = resolvedName,
-                    hasEncryptedData = encrypted != null
+                    encrypted = encrypted
                 )
             }
         }
@@ -117,8 +117,7 @@ class HealthExaminationAdapter(
         binding.txtVision.text = realmExamination.vision
 
         holder.itemView.setOnClickListener {
-            if (item.hasEncryptedData) {
-                val encrypted = userModel?.let { user -> item.examination.getEncryptedDataAsJson(user) } ?: JsonObject()
+            item.encrypted?.let { encrypted ->
                 showAlert(binding, item, encrypted)
             }
         }

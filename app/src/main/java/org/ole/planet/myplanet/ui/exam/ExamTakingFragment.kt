@@ -18,7 +18,6 @@ import android.widget.CompoundButton
 import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
@@ -43,6 +42,7 @@ import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utils.CameraUtils.capturePhoto
+import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
@@ -755,13 +755,15 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     }
 
     private suspend fun askResumeOrRestart(): Boolean = suspendCancellableCoroutine { cont ->
-        val dialog = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-            .setTitle(R.string.resume_survey)
-            .setMessage(R.string.resume_survey_message)
-            .setPositiveButton(R.string.continuation) { _, _ -> if (cont.isActive) cont.resume(true) }
-            .setNegativeButton(R.string.start_over) { _, _ -> if (cont.isActive) cont.resume(false) }
-            .setCancelable(false)
-            .show()
+        val dialog = requireContext().confirmDialog(
+            title = getString(R.string.resume_survey),
+            message = getString(R.string.resume_survey_message),
+            cancelable = false,
+            positiveText = getString(R.string.continuation),
+            onPositive = { if (cont.isActive) cont.resume(true) },
+            negativeText = getString(R.string.start_over),
+            onNegative = { if (cont.isActive) cont.resume(false) }
+        )
         cont.invokeOnCancellation { dialog.dismiss() }
     }
 

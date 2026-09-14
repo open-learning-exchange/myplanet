@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.voices
 import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Context
-import android.content.DialogInterface
 import android.os.Build
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -11,7 +10,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.annotation.RequiresApi
-import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
@@ -37,6 +35,7 @@ import org.ole.planet.myplanet.repository.VoicesEditActions
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -473,15 +472,16 @@ class VoicesAdapter(
                 val pos = holder.bindingAdapterPosition
                 val snapshotList = currentList.toMutableList()
                 val newsToDelete = snapshotList.getOrNull(pos)
-                AlertDialog.Builder(context, R.style.AlertDialogTheme)
-                    .setMessage(R.string.delete_record)
-                    .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
+                context.confirmDialog(
+                    message = context.getString(R.string.delete_record),
+                    positiveText = context.getString(R.string.ok),
+                    onPositive = {
                         newsToDelete?.id?.let { id ->
                             deletePostFn(id)
                         }
-                    }
-                    .setNegativeButton(R.string.cancel, null)
-                    .show()
+                    },
+                    negativeText = context.getString(R.string.cancel)
+                )
             }
         }
 
@@ -791,21 +791,21 @@ class VoicesAdapter(
         viewHolder.binding.btnShare.setVisibility(canShare(news))
 
         viewHolder.binding.btnShare.setOnClickListener {
-            AlertDialog.Builder(context, R.style.AlertDialogTheme)
-                .setTitle(R.string.share_with_community)
-                .setMessage(R.string.confirm_share_community)
-                .setPositiveButton(R.string.yes) { _, _ ->
-                     val newsId = news?.id
-                     val userId = currentUser?.id
-                     val planetCode = currentUser?.planetCode ?: ""
-                     val parentCode = currentUser?.parentCode ?: ""
+            context.confirmDialog(
+                title = context.getString(R.string.share_with_community),
+                message = context.getString(R.string.confirm_share_community),
+                onPositive = {
+                    val newsId = news?.id
+                    val userId = currentUser?.id
+                    val planetCode = currentUser?.planetCode ?: ""
+                    val parentCode = currentUser?.parentCode ?: ""
 
-                     if (newsId != null && userId != null) {
-                         shareNewsFn(newsId, userId, planetCode, parentCode, teamName)
-                     }
-                }
-                .setNegativeButton(R.string.cancel, null)
-                .show()
+                    if (newsId != null && userId != null) {
+                        shareNewsFn(newsId, userId, planetCode, parentCode, teamName)
+                    }
+                },
+                negativeText = context.getString(R.string.cancel)
+            )
         }
     }
 

@@ -24,7 +24,6 @@ import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.NewsUpdateData
 import org.ole.planet.myplanet.repository.NewsUploadData
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
@@ -53,7 +52,6 @@ private inline fun <T> Iterable<T>.processInBatches(action: (List<T>) -> Unit) {
 @Singleton
 class UploadManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val submissionsRepository: SubmissionsRepository,
     private val gson: Gson,
     private val uploadCoordinator: UploadCoordinator,
     private val uploadRepository: UploadRepository,
