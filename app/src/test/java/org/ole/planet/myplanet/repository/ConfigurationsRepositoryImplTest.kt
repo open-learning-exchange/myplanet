@@ -47,9 +47,9 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.Sha256Utils
+import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
@@ -66,6 +66,7 @@ class ConfigurationsRepositoryImplTest {
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val appDatabase: AppDatabase = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
+    private val storagePathResolver: StoragePathResolver = mockk(relaxed = true)
     // Handed to the repository under test; cancelled in @After so nothing escapes the fork.
     private val serviceScope = CoroutineScope(SupervisorJob() + testDispatcher)
 
@@ -101,6 +102,7 @@ class ConfigurationsRepositoryImplTest {
             serverUrlMapper,
             dispatcherProvider,
             TestTimeProvider(),
+            storagePathResolver,
             Gson()
         )
     }
@@ -489,9 +491,8 @@ class ConfigurationsRepositoryImplTest {
         val response = Response.success(200, mockBody)
         coEvery { apiInterface.getChecksum(any()) } returns response
 
-        io.mockk.mockkObject(FileUtils)
         val mockFile = mockk<java.io.File>()
-        every { FileUtils.getSDPathFromUrl(context, path) } returns mockFile
+        every { storagePathResolver.resolveFileFromUrl(path) } returns mockFile
         every { mockFile.exists() } returns true
 
         io.mockk.mockkConstructor(Sha256Utils::class)
@@ -501,7 +502,6 @@ class ConfigurationsRepositoryImplTest {
 
         assertTrue(result)
 
-        io.mockk.unmockkObject(FileUtils)
         io.mockk.unmockkConstructor(Sha256Utils::class)
     }
 
@@ -522,9 +522,8 @@ class ConfigurationsRepositoryImplTest {
         val response = Response.success(200, mockBody)
         coEvery { apiInterface.getChecksum(any()) } returns response
 
-        io.mockk.mockkObject(FileUtils)
         val mockFile = mockk<java.io.File>()
-        every { FileUtils.getSDPathFromUrl(context, path) } returns mockFile
+        every { storagePathResolver.resolveFileFromUrl(path) } returns mockFile
         every { mockFile.exists() } returns true
 
         io.mockk.mockkConstructor(Sha256Utils::class)
@@ -534,7 +533,6 @@ class ConfigurationsRepositoryImplTest {
 
         assertFalse(result)
 
-        io.mockk.unmockkObject(FileUtils)
         io.mockk.unmockkConstructor(Sha256Utils::class)
     }
 
@@ -556,9 +554,8 @@ class ConfigurationsRepositoryImplTest {
         io.mockk.mockkStatic(android.util.Log::class)
         every { android.util.Log.w(any(), any<String>()) } returns 0
 
-        io.mockk.mockkObject(FileUtils)
         val mockFile = mockk<java.io.File>()
-        every { FileUtils.getSDPathFromUrl(context, path) } returns mockFile
+        every { storagePathResolver.resolveFileFromUrl(path) } returns mockFile
         every { mockFile.exists() } returns true
 
         io.mockk.mockkConstructor(Sha256Utils::class)
@@ -569,7 +566,6 @@ class ConfigurationsRepositoryImplTest {
         assertFalse(result)
 
         io.mockk.unmockkStatic(android.util.Log::class)
-        io.mockk.unmockkObject(FileUtils)
         io.mockk.unmockkConstructor(Sha256Utils::class)
     }
 
@@ -589,16 +585,13 @@ class ConfigurationsRepositoryImplTest {
         val response = Response.success(200, mockBody)
         coEvery { apiInterface.getChecksum(any()) } returns response
 
-        io.mockk.mockkObject(FileUtils)
         val mockFile = mockk<java.io.File>()
-        every { FileUtils.getSDPathFromUrl(context, path) } returns mockFile
+        every { storagePathResolver.resolveFileFromUrl(path) } returns mockFile
         every { mockFile.exists() } returns false
 
         val result = repository.checkCheckSum(path)
 
         assertFalse(result)
-
-        io.mockk.unmockkObject(FileUtils)
     }
 
     @Test
@@ -767,20 +760,15 @@ class ConfigurationsRepositoryImplTest {
         every { sharedPrefManager.getFirstRun() } returns true
         every { sharedPrefManager.setFirstRun(false) } just runs
 
-        mockkObject(FileUtils)
-        every { FileUtils.getOlePath(context) } returns oleDir.absolutePath
+        every { storagePathResolver.resolveOleDirectory() } returns oleDir
 
-        try {
-            repository.clearFirstRunStorageAndSetFlag(true)
+        repository.clearFirstRunStorageAndSetFlag(true)
 
-            assertFalse(looseFile.exists())
-            assertFalse(nestedFile.exists())
-            assertFalse(nested.exists())
-            assertTrue(oleDir.exists())
-            verify { sharedPrefManager.setFirstRun(false) }
-        } finally {
-            unmockkObject(FileUtils)
-        }
+        assertFalse(looseFile.exists())
+        assertFalse(nestedFile.exists())
+        assertFalse(nested.exists())
+        assertTrue(oleDir.exists())
+        verify { sharedPrefManager.setFirstRun(false) }
     }
 
     @Test
