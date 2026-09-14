@@ -7,7 +7,6 @@ import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.File
 import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
@@ -35,10 +34,10 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.Sha256Utils
+import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
@@ -52,6 +51,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     private val serverUrlMapper: ServerUrlMapper,
     private val dispatcherProvider: DispatcherProvider,
     private val timeProvider: TimeProvider,
+    private val storagePathResolver: StoragePathResolver,
     @PlainGson private val gson: Gson
 ) : ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
@@ -246,7 +246,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             if (response.isSuccessful) {
                 val checksum = withContext(dispatcherProvider.io) { response.body()?.string() }
                 if (!checksum.isNullOrEmpty()) {
-                    val f = FileUtils.getSDPathFromUrl(context, path)
+                    val f = storagePathResolver.resolveFileFromUrl(path)
                     if (f.exists()) {
                         val sha256 = withContext(dispatcherProvider.io) {
                             Sha256Utils().getCheckSumFromFile(f)
@@ -413,7 +413,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     override suspend fun clearFirstRunStorageAndSetFlag(hasWritePermission: Boolean) {
         withContext(dispatcherProvider.io) {
             if (hasWritePermission && sharedPrefManager.getFirstRun()) {
-                val myDir = File(FileUtils.getOlePath(context))
+                val myDir = storagePathResolver.resolveOleDirectory()
                 if (myDir.isDirectory) {
                     myDir.listFiles()?.forEach { it.deleteRecursively() }
                 }
