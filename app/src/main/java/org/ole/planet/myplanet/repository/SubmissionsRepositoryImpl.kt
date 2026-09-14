@@ -203,10 +203,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }.toMap()
     }
 
-    override suspend fun getExamQuestionCount(stepId: String): Int {
-        return examDao.getFirstByStepId(stepId)?.noOfQuestions ?: 0
-    }
-
     override suspend fun getSubmissionById(id: String): Submission? {
         return hydrateSubmission(submissionDao.getByIdOrRemoteId(id))
     }
