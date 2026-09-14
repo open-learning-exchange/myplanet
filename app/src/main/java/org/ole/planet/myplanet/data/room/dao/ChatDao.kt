@@ -9,8 +9,6 @@ import org.ole.planet.myplanet.model.ChatHistory
 
 @Dao
 interface ChatDao {
-    // Note: ChatRepositoryImpl.sortChats owns ordering for user chats because
-    // createdDate and updatedDate are string-typed, so a SQL ORDER BY would not be numerically correct.
     @Query("SELECT * FROM chat_history WHERE user = :user")
     suspend fun getByUser(user: String): List<ChatHistory>
 
