@@ -48,6 +48,8 @@ class SyncTimeLoggerTest {
         currentTime = 2000L
         logger.stopLogging()
 
+        assertTrue(logger.isVerbose)
+
         val summary = logger.generateSummary()
 
         assertTrue(summary.contains("Total API calls: 2 (Success: 1, Failed: 1)"))
@@ -100,6 +102,56 @@ class SyncTimeLoggerTest {
         val summary = logger.generateSummary()
         assertTrue(summary.contains("validProcess"))
         assertTrue(!summary.contains("nonExistentProcess"))
+    }
+
+    @Test
+    fun testWhenTagNotLoggableNoPerEventLogOutput() {
+        mockkStatic(Log::class)
+        every { Log.isLoggable("SyncPerf", Log.DEBUG) } returns false
+        every { Log.d(any(), any()) } returns 0
+
+        var currentTime = 1000L
+        val timeProvider = mockk<TimeProvider> {
+            every { now() } answers { currentTime }
+        }
+
+        val testDispatcher = UnconfinedTestDispatcher()
+        val logger = SyncTimeLogger(
+            timeProvider = timeProvider,
+            appScope = CoroutineScope(testDispatcher),
+            dispatcherProvider = TestDispatcherProvider(testDispatcher),
+            sharedPrefManager = mockk(relaxed = true),
+            serverUrlMapper = mockk(relaxed = true),
+            diagnosticsRepository = mockk(relaxed = true),
+            serverReachabilityProvider = mockk(relaxed = true)
+        )
+
+        logger.startLogging()
+
+        assertTrue(!logger.isVerbose)
+
+        currentTime = 1200L
+        logger.startProcess("testProcess")
+
+        currentTime = 1400L
+        logger.logApiCall("http://server/api/v1/courses", duration = 200L, success = true, itemsReturned = 1)
+
+        currentTime = 1600L
+        logger.logDbOperation("INSERT", "CourseModel", duration = 150L, itemCount = 1)
+
+        currentTime = 1800L
+        logger.logDetail("context", "message")
+
+        currentTime = 2000L
+        logger.endProcess("testProcess", itemCount = 1)
+
+        currentTime = 2200L
+        logger.stopLogging()
+
+        io.mockk.verify(exactly = 0) { Log.d("SyncPerf", any()) }
+
+        val summary = logger.generateSummary()
+        assertTrue(summary.contains("Total API calls: 1"))
     }
 
     @Test
