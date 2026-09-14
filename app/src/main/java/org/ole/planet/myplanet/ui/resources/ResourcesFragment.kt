@@ -54,6 +54,7 @@ import org.ole.planet.myplanet.ui.components.ViewModeToggleController
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
+import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.Utilities
@@ -362,12 +363,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     private fun setupDeleteListener() {
         tvDelete?.setOnClickListener {
-            AlertDialog.Builder(this.context, R.style.AlertDialogTheme)
-                .setMessage(R.string.confirm_removal)
-                .setPositiveButton(R.string.yes) { _, _ ->
-                    deleteSelected(true)
-                }
-                .setNegativeButton(R.string.no, null).show()
+            requireContext().confirmDialog(
+                message = getString(R.string.confirm_removal),
+                onPositive = { deleteSelected(true) }
+            )
         }
     }
 
