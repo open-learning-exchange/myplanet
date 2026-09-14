@@ -4,7 +4,6 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.Personal
 
@@ -32,9 +31,6 @@ interface PersonalDao {
 
     @Query("SELECT * FROM my_personal WHERE id = :id LIMIT 1")
     suspend fun findById(id: String): Personal?
-
-    @Update
-    suspend fun update(item: Personal)
 
     @Query("DELETE FROM my_personal WHERE _id = :id OR id = :id")
     suspend fun deleteByIdOrDocId(id: String)
