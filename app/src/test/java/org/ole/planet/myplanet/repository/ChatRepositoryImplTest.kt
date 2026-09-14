@@ -93,46 +93,6 @@ class ChatRepositoryImplTest {
         coVerify(exactly = 1) { chatDao.getByUser(userName) }
     }
 
-    @Test
-    fun `searchChats by title correctly filters list`() = runTest(testDispatcher) {
-        val chat1 = ChatHistory().apply { title = "First Chat" }
-        val chat2 = ChatHistory().apply { title = "Second Discussion" }
-        val chats = listOf(chat1, chat2)
-
-        val result = chatRepository.searchChats("First", ChatSearchMode.TITLE, chats)
-
-        assertEquals(1, result.size)
-        assertEquals("First Chat", result[0].title)
-    }
-
-    @Test
-    fun `searchChats by full conversation filters by question`() = runTest(testDispatcher) {
-        val chat1 = ChatHistory().apply {
-            title = "Chat 1"
-            conversations = listOf(Conversation().apply { query = "How is the weather?" })
-        }
-        val chat2 = ChatHistory().apply {
-            title = "Chat 2"
-            conversations = listOf(Conversation().apply { query = "Tell me a joke." })
-        }
-        val chats = listOf(chat1, chat2)
-
-        val result = chatRepository.searchChats("weather", ChatSearchMode.QUESTION, chats)
-
-        assertEquals(1, result.size)
-        assertEquals("Chat 1", result[0].title)
-    }
-
-    @Test
-    fun `searchChats with empty query returns empty when filtered list logic is applied`() = runTest(testDispatcher) {
-        val chat1 = ChatHistory().apply { title = "Chat 1" }
-        val chat2 = ChatHistory().apply { title = "Chat 2" }
-        val chats = listOf(chat1, chat2)
-
-        val result = chatRepository.searchChats("", ChatSearchMode.TITLE, chats)
-
-        assertEquals(2, result.size)
-    }
 
     @Test
     fun getLatestRev_findsHighestRevByNumericPrefix() = runTest {

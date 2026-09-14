@@ -9,10 +9,14 @@ import java.util.LinkedHashSet
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.model.AppNotification
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotification
@@ -282,7 +286,8 @@ class NotificationsRepositoryImpl @Inject constructor(
         return map
     }
 
-    override suspend fun updateTeamNotification(teamId: String, count: Int) {
+    override suspend fun updateTeamNotification(teamId: String, news: List<News>) {
+        val count = news.size
         val existing = teamNotificationDao.findByParentAndType(teamId, "chat")
         if (existing != null) {
             existing.lastCount = count
@@ -312,9 +317,10 @@ class NotificationsRepositoryImpl @Inject constructor(
             }
         }
 
-        val chatCountsById = mutableMapOf<String, Long>()
-        for (teamId in notificationsById.keys) {
-            chatCountsById[teamId] = voicesRepository.countTopLevelByTeam(teamId)
+        val chatCountsById = coroutineScope {
+            notificationsById.keys.map { teamId ->
+                async { teamId to voicesRepository.countTopLevelByTeam(teamId) }
+            }.awaitAll().toMap()
         }
 
         val current = timeProvider.now()
