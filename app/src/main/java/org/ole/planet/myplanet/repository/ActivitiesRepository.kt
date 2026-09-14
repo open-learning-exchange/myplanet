@@ -14,8 +14,14 @@ data class ProfileActivityStats(
     val resourceOpenCount: Long
 )
 
+data class MemberVisitStats(
+    val offlineVisitCount: Int,
+    val lastVisit: Long?
+)
+
 interface ActivitiesRepository {
     suspend fun getOfflineVisitCount(userId: String): Int
+    suspend fun getMemberVisitStats(userId: String?, userName: String?): MemberVisitStats
     suspend fun getOfflineLoginCount(userName: String): Int
     fun getOfflineLogins(userName: String): Flow<List<OfflineActivity>>
     suspend fun markResourceAdded(userId: String?, resourceId: String)

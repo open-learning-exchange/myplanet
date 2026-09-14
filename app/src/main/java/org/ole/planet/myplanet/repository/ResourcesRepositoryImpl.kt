@@ -158,6 +158,14 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun resolveLibraryItem(id: String): MyLibrary? {
+        return getLibraryItemById(id) ?: getLibraryItemByResourceId(id)
+    }
+
+    override suspend fun resolveLibraryItemByResourceId(resourceId: String): MyLibrary? {
+        return getLibraryItemByResourceId(resourceId) ?: getLibraryItemById(resourceId)
+    }
+
     override suspend fun getLibraryItemById(id: String): MyLibrary? {
         return myLibraryDao.getById(id)
     }
@@ -304,13 +312,13 @@ class ResourcesRepositoryImpl @Inject constructor(
         return Result.success(Unit)
     }
 
-    override suspend fun markResourceAdded(userId: String?, resourceId: String) {
+    private suspend fun markResourceAdded(userId: String?, resourceId: String) {
         activitiesRepository.markResourceAdded(userId, resourceId)
     }
 
     override suspend fun setUserLibrary(resourceId: String, add: Boolean): MyLibrary? {
         val userId = userRepository.getUserModel()?.id ?: return null
-        val library = getLibraryItemByResourceId(resourceId) ?: getLibraryItemById(resourceId)
+        val library = resolveLibraryItemByResourceId(resourceId)
         if (library != null) {
             val contains = library.userId?.contains(userId) == true
             if (add && contains) return library
@@ -339,8 +347,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         } else {
             activitiesRepository.markResourceRemoved(userId, resourceId)
         }
-        return getLibraryItemByResourceId(resourceId)
-            ?: getLibraryItemById(resourceId)
+        return resolveLibraryItemByResourceId(resourceId)
     }
 
     override suspend fun updateLibraryItem(id: String, updater: (MyLibrary) -> Unit) {
@@ -609,27 +616,6 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getFilterFacets(libraries: List<MyLibrary>): Map<String, Set<String>> {
-        val languages = mutableSetOf<String>()
-        val subjects = mutableSetOf<String>()
-        val mediums = mutableSetOf<String>()
-        val levels = mutableSetOf<String>()
-
-        libraries.forEach { library ->
-            library.language?.takeIf { it.isNotBlank() }?.let { languages.add(it) }
-            library.subject?.let { subjects.addAll(it) }
-            library.mediaType?.takeIf { it.isNotBlank() }?.let { mediums.add(it) }
-            library.level?.let { levels.addAll(it) }
-        }
-
-        return mapOf(
-            "languages" to languages,
-            "subjects" to subjects,
-            "mediums" to mediums,
-            "levels" to levels
-        )
-    }
-
     override suspend fun batchInsertMyLibrary(shelfId: String?, documents: List<JsonObject>): Int {
         var processedCount = 0
 
@@ -856,7 +842,12 @@ class ResourcesRepositoryImpl @Inject constructor(
 
         val titleMap = getResourceTitlesMap()
 
-        val grouped = mutableMapOf<String, MutableList<File>>()
+        class ResourceAccumulator {
+            val filePaths = mutableListOf<String>()
+            var totalSize = 0L
+        }
+
+        val grouped = mutableMapOf<String, ResourceAccumulator>()
         oleDir.walkTopDown().filter { it.isFile }.forEach { file ->
             val ext = file.extension.lowercase()
             val matchesCategory = if (extensions.isEmpty()) {
@@ -866,14 +857,15 @@ class ResourcesRepositoryImpl @Inject constructor(
             }
             if (matchesCategory) {
                 val resourceId = file.parentFile?.name ?: return@forEach
-                grouped.getOrPut(resourceId) { mutableListOf() }.add(file)
+                val accumulator = grouped.getOrPut(resourceId) { ResourceAccumulator() }
+                accumulator.filePaths.add(file.absolutePath)
+                accumulator.totalSize += file.length()
             }
         }
 
-        return@withContext grouped.map { (resourceId, files) ->
-            val totalSize = files.sumOf { it.length() }
+        return@withContext grouped.map { (resourceId, accumulator) ->
             val title = titleMap[resourceId]?.takeIf { it.isNotBlank() } ?: context.getString(R.string.storage_unknown_resource)
-            OfflineResourceItem(resourceId, title, files.map { it.absolutePath }, totalSize)
+            OfflineResourceItem(resourceId, title, accumulator.filePaths, accumulator.totalSize)
         }.sortedBy { it.title }
     }
 
