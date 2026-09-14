@@ -402,6 +402,14 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         return sharedPrefManager.getCommunityName()
     }
 
+    override fun getCommunityConfiguration(): CommunityConfiguration {
+        return CommunityConfiguration(
+            parentCode = getParentCode(),
+            communityName = getCommunityName(),
+            planetType = getPlanetType()
+        )
+    }
+
     override fun getCommunityLeaders(): List<UserEntity> {
         return UserEntity.parseLeadersJson(sharedPrefManager.getCommunityLeaders())
     }
