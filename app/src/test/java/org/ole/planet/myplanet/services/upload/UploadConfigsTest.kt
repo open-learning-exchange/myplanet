@@ -13,12 +13,14 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.NewsLog
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.ResourceActivity
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.ApkLogUpload
 import org.ole.planet.myplanet.repository.DiagnosticsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
@@ -31,6 +33,7 @@ import org.ole.planet.myplanet.utils.VersionUtils
 class UploadConfigsTest {
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val voicesRepository: VoicesRepository = mockk(relaxed = true)
+    private val diagnosticsRepository: DiagnosticsRepository = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private lateinit var uploadConfigs: UploadConfigs
 
@@ -58,7 +61,7 @@ class UploadConfigsTest {
             ratingsRepository = mockk(relaxed = true),
             eventsRepository = mockk(relaxed = true),
             resourcesRepository = mockk(relaxed = true),
-            diagnosticsRepository = mockk<DiagnosticsRepository>(relaxed = true),
+            diagnosticsRepository = diagnosticsRepository,
             progressRepository = mockk<ProgressRepository>(relaxed = true)
         )
     }
@@ -225,6 +228,70 @@ class UploadConfigsTest {
 
         val json2 = serializer.serialize(newsLog)
         assertEquals("updated-custom-device", json2.get("customDeviceName").asString)
+    }
+
+    @Test
+    fun `CrashLog config fetches pending Room rows from DAO`() = runTest {
+        val pending = listOf(ApkLog().apply { id = "log-local-1" })
+        coEvery { diagnosticsRepository.getPendingApkLogs() } returns pending
+
+        val result = uploadConfigs.CrashLog.fetchPendingItems()
+
+        assertEquals(pending, result)
+    }
+
+    @Test
+    fun `CrashLog config marks successful uploads using single batched call`() = runTest {
+        val result1 = UploadedItemResult(
+            localId = "log-local-1",
+            remoteId = "log-remote-1",
+            remoteRev = "1-rev",
+            response = mockk(relaxed = true)
+        )
+        val result2 = UploadedItemResult(
+            localId = "log-local-2",
+            remoteId = "log-remote-2",
+            remoteRev = "2-rev",
+            response = mockk(relaxed = true)
+        )
+
+        val expectedUpdates = listOf(
+            ApkLogUpload("log-local-1", "1-rev"),
+            ApkLogUpload("log-local-2", "2-rev")
+        )
+        coEvery { diagnosticsRepository.markApkLogsUploaded(expectedUpdates) } returns emptySet()
+
+        val failures = uploadConfigs.CrashLog.markUploaded(listOf(result1, result2))
+
+        assertTrue(failures.isEmpty())
+        coVerify(exactly = 1) { diagnosticsRepository.markApkLogsUploaded(expectedUpdates) }
+    }
+
+    @Test
+    fun `CrashLog config returns failed item results when diagnosticsRepository reports unapplied ids`() = runTest {
+        val result1 = UploadedItemResult(
+            localId = "log-local-1",
+            remoteId = "log-remote-1",
+            remoteRev = "1-rev",
+            response = mockk(relaxed = true)
+        )
+        val result2 = UploadedItemResult(
+            localId = "log-local-2",
+            remoteId = "log-remote-2",
+            remoteRev = "2-rev",
+            response = mockk(relaxed = true)
+        )
+
+        val expectedUpdates = listOf(
+            ApkLogUpload("log-local-1", "1-rev"),
+            ApkLogUpload("log-local-2", "2-rev")
+        )
+        coEvery { diagnosticsRepository.markApkLogsUploaded(expectedUpdates) } returns setOf("log-local-2")
+
+        val failures = uploadConfigs.CrashLog.markUploaded(listOf(result1, result2))
+
+        assertEquals(listOf(result2), failures)
+        coVerify(exactly = 1) { diagnosticsRepository.markApkLogsUploaded(expectedUpdates) }
     }
 
 }
