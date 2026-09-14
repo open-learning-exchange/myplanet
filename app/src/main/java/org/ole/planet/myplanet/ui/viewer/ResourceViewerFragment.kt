@@ -267,8 +267,9 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         view?.post {
             if (!isAdded) return@post
             hideVideoLoading()
+            val titleRes = if (type == ResourceType.AUDIO) R.string.unable_to_play_audio else R.string.unable_to_play_video
             AlertDialog.Builder(requireContext())
-                .setTitle(getString(R.string.unable_to_play_video))
+                .setTitle(getString(titleRes))
                 .setMessage(message)
                 .setPositiveButton(getString(R.string.go_back)) { _, _ -> requireActivity().finish() }
                 .setCancelable(false)
@@ -366,8 +367,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     }
 
     @OptIn(UnstableApi::class)
-    private fun streamVideoFromUrl(videoUrl: String, authCookie: String) {
-        val uri = videoUrl.toUri()
+    private fun streamMediaFromUrl(mediaUrl: String, authCookie: String) {
+        val uri = mediaUrl.toUri()
         val requestProperties = hashMapOf("Cookie" to authCookie)
         val httpDataSourceFactory = DefaultHttpDataSource.Factory()
             .setUserAgent("ExoPlayer")
@@ -382,9 +383,12 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         exoPlayer = null
         exoPlayer = createExoPlayer()
 
-        val playerView = binding.root.findViewById<PlayerView>(R.id.video_player)
+        val playerViewId = if (type == ResourceType.AUDIO) R.id.audio_player_view else R.id.video_player
+        val playerView = binding.root.findViewById<PlayerView>(playerViewId)
         playerView.player = exoPlayer
-        setupDragToPipGesture(playerView)
+        if (type == ResourceType.VIDEO) {
+            setupDragToPipGesture(playerView)
+        }
         exoPlayer?.apply {
             setPlaybackSpeed(viewModel.getPlaybackSpeed())
             setMediaSource(mediaSource)
@@ -408,7 +412,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
         player.addListener(object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
-                navigateBackWithError(getString(R.string.video_playback_error))
+                val messageRes = if (type == ResourceType.AUDIO) R.string.audio_playback_error else R.string.video_playback_error
+                navigateBackWithError(getString(messageRes))
             }
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 if (!isPlaying && player.playbackState != Player.STATE_BUFFERING) {
@@ -431,7 +436,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         return player
     }
 
-    private fun setupAudioViewer() {
+    private suspend fun setupAudioViewer() {
         binding.stubAudio.visibility = View.VISIBLE
         val trackTitle = binding.root.findViewById<TextView>(R.id.trackTitle)
         val artistName = binding.root.findViewById<TextView>(R.id.artistName)
@@ -445,7 +450,15 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         val bgRes = if (isDarkMode) R.drawable.bg_player_dark else R.drawable.bg_player_white
         Glide.with(this).load(bgRes).into(backgroundImage)
 
-        initializeAudioPlayer(playerView)
+        if (isOnline) {
+            viewModel.ensureServerUrlUpdated()
+            if (::library.isInitialized) {
+                filePath = UrlUtils.getUrl(library)
+            }
+            authSessionUpdater = viewModel.getAuthSessionUpdater(this)
+        } else {
+            initializeAudioPlayer(playerView)
+        }
     }
 
     @OptIn(UnstableApi::class)
@@ -621,7 +634,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
                 return@launch
             }
             if (exoPlayer == null) {
-                streamVideoFromUrl(url, auth)
+                streamMediaFromUrl(url, auth)
             } else {
                 streamingHttpDataSourceFactory?.setDefaultRequestProperties(hashMapOf("Cookie" to auth))
             }
@@ -632,7 +645,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     }
 
     override fun onError(s: String) {
-        navigateBackWithError(getString(R.string.video_unavailable))
+        val messageRes = if (type == ResourceType.AUDIO) R.string.audio_unavailable else R.string.video_unavailable
+        navigateBackWithError(getString(messageRes))
     }
 
     private fun setupDragToPipGesture(playerView: PlayerView) {
