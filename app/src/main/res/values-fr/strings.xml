@@ -607,6 +607,7 @@
     <string name="please_select_starting_date">Veuillez sélectionner la date de début: </string>
     <string name="read_offline_news_from">Lire les actualités hors ligne depuis: </string>
     <string name="downloading_started_please_check_notification">Téléchargement commencé, veuillez vérifier les notifications…</string>
+    <string name="dictionary_parsing_failed">L\'analyse du dictionnaire a échoué.</string>
     <string name="file_already_exists">Le fichier existe déjà…</string>
     <string name="feature_not_available">Fonctionnalité non disponible</string>
     <string name="sync">Synchroniser</string>
