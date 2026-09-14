@@ -191,11 +191,9 @@ class ProgressRepositoryImpl @Inject constructor(
             val courseProgressRecords = progressByCourse[course.courseId].orEmpty()
 
             // Count UNIQUE steps that are passed (matches web: step.passed === true)
-            val passedStepNumbers = courseProgressRecords
-                .filter { it.passed }
-                .map { it.stepNum }
-                .toSet()
-            val passedSteps = passedStepNumbers.size
+            val passedSteps = courseProgressRecords
+                .mapNotNullTo(HashSet()) { if (it.passed) it.stepNum else null }
+                .size
             val totalSteps = course.courseSteps?.size ?: 0
 
             // Web logic: ALL steps must be passed AND course must have at least one step
