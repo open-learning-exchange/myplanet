@@ -104,5 +104,6 @@
     <color name="profile_button_fill_on_primary">#1FFFFFFF</color>
     <color name="profile_guest_pill_bg">#29FFFFFF</color>
 
+    <!-- courses / resources sort/filter capsule -->
     <color name="ink_1">#1A1814</color>
 </resources>
