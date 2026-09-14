@@ -23,6 +23,9 @@ android {
                 test.maxParallelForks = requested ? requested.toInteger()
                     : Math.min(Runtime.runtime.availableProcessors(), 4)
                 test.maxHeapSize = "1536m"
+                // Robolectric 4.17's FileDescriptorInterceptor reflects into jdk.internal.access.SharedSecrets
+                // for the ApplicationSharedMemory shadow; JDK 17+ blocks that without this opt-in.
+                test.jvmArgs += ["--add-opens=java.base/jdk.internal.access=ALL-UNNAMED"]
                 test.testLogging {
                     events "failed"
                     exceptionFormat = "short"
