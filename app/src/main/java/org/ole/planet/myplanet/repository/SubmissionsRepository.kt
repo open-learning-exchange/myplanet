@@ -11,19 +11,26 @@ import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.SubmissionDetail
 import org.ole.planet.myplanet.model.SubmissionItem
+import org.ole.planet.myplanet.model.SubmissionRowProjection
 import org.ole.planet.myplanet.model.SubmitPhotos
 import org.ole.planet.myplanet.model.UserEntity
 
 interface SubmissionsRepository {
     fun getPendingSurveysFlow(userId: String?): Flow<List<Submission>>
     fun getSubmissionsFlow(userId: String): Flow<List<Submission>>
+    suspend fun getSubmissionProjections(
+        submissions: List<Submission>,
+        userId: String,
+        type: String,
+        query: String,
+        examMap: Map<String?, StepExam>,
+    ): List<SubmissionRowProjection>
     suspend fun getPendingSurveys(userId: String?): List<Submission>
     suspend fun getUniquePendingSurveys(userId: String?): List<Submission>
     suspend fun getSurveyTitlesFromSubmissions(submissions: List<Submission>): List<String>
     suspend fun getSubmissionById(id: String): Submission?
     suspend fun getSubmissionsByIds(ids: List<String>): List<Submission>
     suspend fun getExamMap(submissions: List<Submission>): Map<String?, StepExam>
-    suspend fun getExamQuestionCount(stepId: String): Int
     suspend fun hasSubmission(
         stepExamId: String?,
         courseId: String?,
