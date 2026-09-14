@@ -1,10 +1,8 @@
 package org.ole.planet.myplanet.ui.life
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +16,6 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class LifeViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val lifeRepository: LifeRepository,
     private val userRepository: UserRepository,
     private val dispatcherProvider: DispatcherProvider
@@ -33,11 +30,11 @@ class LifeViewModel @Inject constructor(
         return raw.takeIf { it.isNotBlank() && it != "--" }
     }
 
-    fun loadMyLifeList() {
+    fun loadMyLifeList(resolveLabel: (Int) -> String) {
         viewModelScope.launch {
             val list = withContext(dispatcherProvider.io) {
                 val userId = resolveUserId()
-                lifeRepository.getMyLifeByUserId(userId, MyLife.defaultItems(userId, context::getString))
+                lifeRepository.getMyLifeByUserId(userId, MyLife.defaultItems(userId, resolveLabel))
             }
             _myLifeList.value = list
         }
