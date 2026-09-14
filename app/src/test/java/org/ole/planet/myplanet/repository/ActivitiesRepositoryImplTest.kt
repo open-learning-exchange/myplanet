@@ -203,6 +203,7 @@ class ActivitiesRepositoryImplTest {
 
     @Test
     fun `logCourseVisit inserts course activity`() = runTest {
+        every { timeProvider.now() } returns 123456789L
         val mockUser = UserEntity().apply {
             parentCode = "parent"
             planetCode = "planet"
@@ -219,10 +220,12 @@ class ActivitiesRepositoryImplTest {
         assertEquals("visit", slot.captured.type)
         assertEquals("parent", slot.captured.parentCode)
         assertEquals("planet", slot.captured.createdOn)
+        assertEquals(123456789L, slot.captured.time)
     }
 
     @Test
     fun `logLogin inserts offline activity`() = runTest {
+        every { timeProvider.now() } returns 123456789L
         val slot = slot<OfflineActivity>()
         repository.logLogin("user1", "john", "parent", "planet")
 
@@ -233,16 +236,18 @@ class ActivitiesRepositoryImplTest {
         assertEquals("planet", slot.captured.createdOn)
         assertEquals(UserSessionManager.KEY_LOGIN, slot.captured.type)
         assertEquals("Member login on offline application", slot.captured.description)
+        assertEquals(123456789L, slot.captured.loginTime)
     }
 
     @Test
     fun `logLogout updates logout time`() = runTest {
+        every { timeProvider.now() } returns 987654321L
         val mockActivity = OfflineActivity().apply { id = "act1" }
         coEvery { offlineActivityDao.getLatestByType(UserSessionManager.KEY_LOGIN) } returns mockActivity
 
         repository.logLogout("john")
 
-        coVerify { offlineActivityDao.updateLogoutTime(eq("act1"), any()) }
+        coVerify { offlineActivityDao.updateLogoutTime("act1", 987654321L) }
     }
 
     @Test
@@ -261,6 +266,7 @@ class ActivitiesRepositoryImplTest {
 
     @Test
     fun `logResourceOpen inserts resource activity`() = runTest {
+        every { timeProvider.now() } returns 123456789L
         val slot = slot<ResourceActivity>()
         repository.logResourceOpen("john", "parent", "planet", "Res Title", "res1", "pdf")
 
@@ -271,6 +277,7 @@ class ActivitiesRepositoryImplTest {
         assertEquals("Res Title", slot.captured.title)
         assertEquals("res1", slot.captured.resourceId)
         assertEquals("pdf", slot.captured.type)
+        assertEquals(123456789L, slot.captured.time)
     }
 
     @Test
@@ -349,6 +356,7 @@ class ActivitiesRepositoryImplTest {
 
     @Test
     fun `recordSyncActivity inserts resource activity`() = runTest {
+        every { timeProvider.now() } returns 123456789L
         val mockUser = UserEntity().apply {
             id = "user1"
             name = "john"
@@ -365,6 +373,7 @@ class ActivitiesRepositoryImplTest {
         assertEquals("parent", slot.captured.parentCode)
         assertEquals("planet", slot.captured.createdOn)
         assertEquals("sync", slot.captured.type)
+        assertEquals(123456789L, slot.captured.time)
     }
 
     @Test
