@@ -32,6 +32,7 @@ import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.FragmentReportsBinding
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -292,14 +293,13 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
 
     private fun showDeleteReportDialog(report: MyTeam) {
         report._id?.let { reportId ->
-            val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-            builder.setTitle(getString(R.string.delete_report))
-                .setMessage(R.string.delete_record)
-                .setPositiveButton(R.string.ok) { _, _ ->
-                    viewModel.archiveReport(reportId = reportId)
-                }
-                .setNegativeButton("Cancel", null)
-                .show()
+            requireContext().confirmDialog(
+                title = getString(R.string.delete_report),
+                message = getString(R.string.delete_record),
+                positiveText = getString(R.string.ok),
+                onPositive = { viewModel.archiveReport(reportId = reportId) },
+                negativeText = "Cancel"
+            )
         }
     }
 
