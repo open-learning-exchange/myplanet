@@ -9,6 +9,7 @@ import android.provider.Settings
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
+import androidx.annotation.StyleRes
 import androidx.appcompat.app.AlertDialog
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.CoroutineScope
@@ -59,6 +60,43 @@ object DialogUtils {
         cancel.setOnClickListener {
             dialog.dismiss()
         }
+    }
+
+    fun Context.confirmDialog(
+        message: CharSequence,
+        title: CharSequence? = null,
+        @StyleRes styleRes: Int = R.style.AlertDialogTheme,
+        cancelable: Boolean = true,
+        positiveText: CharSequence = getString(R.string.yes),
+        positiveContentDescription: CharSequence = positiveText,
+        onPositive: (() -> Unit)? = null,
+        negativeText: CharSequence = getString(R.string.no),
+        negativeContentDescription: CharSequence = negativeText,
+        onNegative: (() -> Unit)? = null
+    ): AlertDialog {
+        val builder = AlertDialog.Builder(this, styleRes)
+        title?.let { builder.setTitle(it) }
+        builder.setMessage(message)
+        builder.setCancelable(cancelable)
+        builder.setPositiveButton(positiveText, null)
+        builder.setNegativeButton(negativeText, null)
+
+        val dialog = builder.show()
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).apply {
+            contentDescription = positiveContentDescription
+            setOnClickListener {
+                dialog.dismiss()
+                onPositive?.invoke()
+            }
+        }
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).apply {
+            contentDescription = negativeContentDescription
+            setOnClickListener {
+                dialog.dismiss()
+                onNegative?.invoke()
+            }
+        }
+        return dialog
     }
 
     fun showError(prgDialog: CustomProgressDialog?, message: String?) {
