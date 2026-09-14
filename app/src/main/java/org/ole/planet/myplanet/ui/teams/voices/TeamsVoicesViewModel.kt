@@ -25,17 +25,15 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.repository.toVoicePostingPolicy
 import org.ole.planet.myplanet.ui.voices.DefaultLabelManipulator
 import org.ole.planet.myplanet.ui.voices.LabelManipulator
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class TeamsVoicesViewModel @Inject constructor(
     private val voicesRepository: VoicesRepository,
     private val teamsRepository: TeamsRepository,
-    private val dispatcherProvider: DispatcherProvider,
     private val userRepository: UserRepository,
     private val resourcesRepository: ResourcesRepository,
     private val notificationsRepository: NotificationsRepository
-) : ViewModel(), LabelManipulator by DefaultLabelManipulator(voicesRepository, dispatcherProvider) {
+) : ViewModel(), LabelManipulator by DefaultLabelManipulator(voicesRepository) {
 
     private val _teamPolicy = MutableStateFlow<Pair<MyTeam?, VoicePostingPolicy?>?>(null)
     val teamPolicy: StateFlow<Pair<MyTeam?, VoicePostingPolicy?>?> = _teamPolicy.asStateFlow()
