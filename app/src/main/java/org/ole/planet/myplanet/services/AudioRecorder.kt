@@ -14,7 +14,6 @@ import androidx.activity.result.ActivityResultCaller
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
-import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale
 import androidx.core.content.ContextCompat
 import java.io.File
@@ -23,6 +22,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnAudioRecordListener
+import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.Utilities
 
 class AudioRecorder {
@@ -117,18 +117,18 @@ class AudioRecorder {
                 else {
                     val activity = context as? Activity
                     if (activity != null && !shouldShowRequestPermissionRationale(activity, Manifest.permission.RECORD_AUDIO)) {
-                        AlertDialog.Builder(activity, R.style.AlertDialogTheme)
-                            .setTitle(R.string.permission_required)
-                            .setMessage(R.string.microphone_permission_required)
-                            .setPositiveButton(R.string.settings) { dialog, _ ->
-                                dialog.dismiss()
+                        activity.confirmDialog(
+                            title = activity.getString(R.string.permission_required),
+                            message = activity.getString(R.string.microphone_permission_required),
+                            positiveText = activity.getString(R.string.settings),
+                            onPositive = {
                                 val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
                                 val uri: Uri = Uri.fromParts("package", context.packageName, null)
                                 intent.data = uri
                                 context.startActivity(intent)
-                            }
-                            .setNegativeButton(R.string.cancel) { dialog, _ -> dialog.dismiss() }
-                            .show()
+                            },
+                            negativeText = activity.getString(R.string.cancel)
+                        )
                     } else {
                         Utilities.toast(context, "Microphone permission is required to record audio.")
                     }
