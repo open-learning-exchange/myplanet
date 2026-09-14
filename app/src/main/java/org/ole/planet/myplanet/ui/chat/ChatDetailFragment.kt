@@ -170,9 +170,11 @@ class ChatDetailFragment : Fragment() {
             speechRecognizer?.setRecognitionListener(object : RecognitionListener {
                 override fun onReadyForSpeech(params: Bundle?) {
                     isListening = true
-                    binding.buttonGchatMic.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_red_500))
-                    binding.textGchatIndicator.text = getString(R.string.voice_to_text)
-                    binding.textGchatIndicator.visibility = View.VISIBLE
+                    _binding?.let { binding ->
+                        binding.buttonGchatMic.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_red_500))
+                        binding.textGchatIndicator.text = getString(R.string.voice_to_text)
+                        binding.textGchatIndicator.visibility = View.VISIBLE
+                    }
                 }
 
                 override fun onBeginningOfSpeech() {}
@@ -183,7 +185,7 @@ class ChatDetailFragment : Fragment() {
                 }
 
                 override fun onError(error: Int) {
-                    stopSpeechToText()
+                    resetListeningUi()
                     val message = when (error) {
                         SpeechRecognizer.ERROR_AUDIO -> "Audio recording error"
                         SpeechRecognizer.ERROR_CLIENT -> "Client side error"
@@ -204,8 +206,10 @@ class ChatDetailFragment : Fragment() {
                     if (!matches.isNullOrEmpty()) {
                         val finalMatch = matches[0]
                         val newText = if (textBeforeVoice.isEmpty()) finalMatch else "$textBeforeVoice $finalMatch"
-                        binding.editGchatMessage.setText(newText)
-                        binding.editGchatMessage.setSelection(newText.length)
+                        _binding?.let { binding ->
+                            binding.editGchatMessage.setText(newText)
+                            binding.editGchatMessage.setSelection(newText.length)
+                        }
                     }
                 }
 
@@ -214,8 +218,10 @@ class ChatDetailFragment : Fragment() {
                     if (!matches.isNullOrEmpty()) {
                         val partialMatch = matches[0]
                         val newText = if (textBeforeVoice.isEmpty()) partialMatch else "$textBeforeVoice $partialMatch"
-                        binding.editGchatMessage.setText(newText)
-                        binding.editGchatMessage.setSelection(newText.length)
+                        _binding?.let { binding ->
+                            binding.editGchatMessage.setText(newText)
+                            binding.editGchatMessage.setSelection(newText.length)
+                        }
                     }
                 }
 
@@ -237,9 +243,15 @@ class ChatDetailFragment : Fragment() {
 
     private fun stopSpeechToText() {
         speechRecognizer?.stopListening()
+        resetListeningUi()
+    }
+
+    private fun resetListeningUi() {
         isListening = false
-        binding.buttonGchatMic.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_500))
-        binding.textGchatIndicator.visibility = View.GONE
+        _binding?.let { binding ->
+            binding.buttonGchatMic.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_500))
+            binding.textGchatIndicator.visibility = View.GONE
+        }
     }
 
     private fun initChatComponents() {
