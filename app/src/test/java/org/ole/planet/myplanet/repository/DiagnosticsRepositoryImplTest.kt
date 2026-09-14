@@ -237,4 +237,30 @@ class DiagnosticsRepositoryImplTest {
         verify(exactly = 0) { sharedPrefManager.getParentCode() }
         verify(exactly = 0) { sharedPrefManager.getPlanetCode() }
     }
+
+    @Test
+    fun `markApkLogsUploaded returns empty set when updates is empty`() = runTest {
+        val result = repository.markApkLogsUploaded(emptyList())
+
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 0) { apkLogDao.markUploadedBatch(any()) }
+    }
+
+    @Test
+    fun `markApkLogsUploaded delegates batch updates to apkLogDao`() = runTest {
+        val updates = listOf(
+            ApkLogUpload("log-1", "rev-1"),
+            ApkLogUpload("log-2", "rev-2")
+        )
+        val expectedDaoUpdates = listOf(
+            ApkLogDao.UploadUpdate("log-1", "rev-1"),
+            ApkLogDao.UploadUpdate("log-2", "rev-2")
+        )
+        coEvery { apkLogDao.markUploadedBatch(expectedDaoUpdates) } returns setOf("log-2")
+
+        val unapplied = repository.markApkLogsUploaded(updates)
+
+        assertEquals(setOf("log-2"), unapplied)
+        coVerify(exactly = 1) { apkLogDao.markUploadedBatch(expectedDaoUpdates) }
+    }
 }
