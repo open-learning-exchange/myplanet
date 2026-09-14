@@ -35,11 +35,10 @@ internal class CommunityLeadersAdapter(
 
     override fun onBindViewHolder(holder: CommunityLeadersViewHolder, position: Int) {
         val leader = getItem(position)
-        if (leader.firstName == null) {
-            holder.title.text = leader.name
-        } else {
-            holder.title.text = context.getString(R.string.message_placeholder, leader)
-        }
+        holder.title.text = listOfNotNull(leader.firstName, leader.middleName, leader.lastName)
+            .filter { it.isNotBlank() }
+            .joinToString(" ")
+            .ifBlank { leader.name }
         holder.tvDescription.text = leader.email
 
         holder.itemView.setOnClickListener {

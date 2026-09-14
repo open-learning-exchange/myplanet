@@ -163,4 +163,55 @@ class TeamDaoTest {
 
         assertEquals(listOf("mine"), result.map { it._id })
     }
+
+    @Test
+    fun `getNonArchivedReportCsvProjectionsByTeamId projects fields and orders descending`() = runBlocking {
+        val r1 = report("r1", createdDate = 100L).apply {
+            startDate = 10L
+            endDate = 20L
+            updatedDate = 30L
+            beginningBalance = 100
+            sales = 50
+            otherIncome = 20
+            wages = 10
+            otherExpenses = 15
+        }
+        val r2 = report("r2", createdDate = 200L).apply {
+            startDate = 40L
+            endDate = 50L
+            updatedDate = 60L
+            beginningBalance = 200
+            sales = 80
+            otherIncome = 30
+            wages = 20
+            otherExpenses = 25
+        }
+        val archived = report("archived", createdDate = 300L, status = "archived")
+        val otherTeam = report("otherTeam", teamId = "team2", createdDate = 400L)
+
+        teamDao.upsertAll(listOf(r1, r2, archived, otherTeam))
+
+        val projections = teamDao.getNonArchivedReportCsvProjectionsByTeamId("team1")
+
+        assertEquals(2, projections.size)
+        assertEquals(200L, projections[0].createdDate)
+        assertEquals(40L, projections[0].startDate)
+        assertEquals(50L, projections[0].endDate)
+        assertEquals(60L, projections[0].updatedDate)
+        assertEquals(200, projections[0].beginningBalance)
+        assertEquals(80, projections[0].sales)
+        assertEquals(30, projections[0].otherIncome)
+        assertEquals(20, projections[0].wages)
+        assertEquals(25, projections[0].otherExpenses)
+
+        assertEquals(100L, projections[1].createdDate)
+        assertEquals(10L, projections[1].startDate)
+        assertEquals(20L, projections[1].endDate)
+        assertEquals(30L, projections[1].updatedDate)
+        assertEquals(100, projections[1].beginningBalance)
+        assertEquals(50, projections[1].sales)
+        assertEquals(20, projections[1].otherIncome)
+        assertEquals(10, projections[1].wages)
+        assertEquals(15, projections[1].otherExpenses)
+    }
 }
