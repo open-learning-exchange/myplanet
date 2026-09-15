@@ -154,10 +154,6 @@ open class MyLibrary {
         this.userId = this.userId?.filterNot { it == id }
     }
 
-    fun needToUpdate(): Boolean {
-        return !resourceOffline || resourceLocalAddress != null && _rev != downloadedRev
-    }
-
     companion object {
         fun serialize(personal: MyLibrary, user: UserEntity?): JsonObject {
             return JsonObject().apply {

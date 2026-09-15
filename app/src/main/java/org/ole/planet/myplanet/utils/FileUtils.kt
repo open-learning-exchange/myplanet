@@ -329,10 +329,6 @@ object FileUtils {
         return Formatter.formatFileSize(context, size)
     }
 
-    fun totalMemoryCapacity(context: Context): Long = getStorageStats(context).first
-
-    fun totalAvailableMemory(context: Context): Long = getStorageStats(context).second
-
     fun totalAvailableMemoryRatio(context: Context): Long {
         val (total, available) = getStorageStats(context)
         return (available.toDouble() / total.toDouble() * 100).roundToLong()
