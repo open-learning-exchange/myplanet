@@ -122,7 +122,7 @@ class SyncTimeLogger @Inject constructor(
             try {
                 uploadManager?.uploadCrashLog()
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "crash log upload failed", e)
             }
         }
     }
