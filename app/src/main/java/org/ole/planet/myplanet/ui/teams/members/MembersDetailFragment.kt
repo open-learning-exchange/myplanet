@@ -1,25 +1,15 @@
 package org.ole.planet.myplanet.ui.teams.members
 
 import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import androidx.appcompat.widget.AppCompatTextView
-import androidx.fragment.app.Fragment
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.databinding.FragmentMemberDetailBinding
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.ImageUtils
 
-class MembersDetailFragment : Fragment() {
-    private var _binding: FragmentMemberDetailBinding? = null
-    private val binding get() = _binding!!
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentMemberDetailBinding.inflate(inflater, container, false)
-        return binding.root
-    }
-
+class MembersDetailFragment : BaseBindingFragment<FragmentMemberDetailBinding>(FragmentMemberDetailBinding::inflate) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -47,11 +37,6 @@ class MembersDetailFragment : Fragment() {
         binding.btnClose.setOnClickListener {
             activity?.supportFragmentManager?.let { FragmentNavigator.popBackStack(it) }
         }
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
     }
 
     private fun setFieldOrHide(view: View, value: String?) {

@@ -317,4 +317,7 @@ class ChatViewModel @Inject constructor(
     suspend fun getUserById(userId: String): UserEntity? {
         return userRepository.getUserById(userId)
     }
+    fun extractSharedViewInIds(sharedNewsMessages: List<News>): Map<String, Set<String>> {
+        return chatRepository.extractSharedViewInIds(sharedNewsMessages)
+    }
 }

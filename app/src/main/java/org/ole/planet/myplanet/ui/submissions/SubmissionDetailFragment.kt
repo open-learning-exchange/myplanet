@@ -4,24 +4,17 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.databinding.FragmentSubmissionDetailBinding
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
-class SubmissionDetailFragment : Fragment() {
-    private var _binding: FragmentSubmissionDetailBinding? = null
-    private val binding get() = _binding!!
+class SubmissionDetailFragment : BaseBindingFragment<FragmentSubmissionDetailBinding>(FragmentSubmissionDetailBinding::inflate) {
     private val viewModel: SubmissionDetailViewModel by viewModels()
     private lateinit var adapter: QuestionAnswerAdapter
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentSubmissionDetailBinding.inflate(inflater, container, false)
-        return binding.root
-    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -52,10 +45,5 @@ class SubmissionDetailFragment : Fragment() {
             binding.tvSubmissionDate.text = uiState.date
             binding.tvSubmittedBy.text = uiState.submittedBy
         }
-    }
-
-    override fun onDestroyView() {
-        _binding = null
-        super.onDestroyView()
     }
 }
