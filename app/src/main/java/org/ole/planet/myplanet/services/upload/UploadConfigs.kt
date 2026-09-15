@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.model.TeamLog
 import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.ApkLogUpload
 import org.ole.planet.myplanet.repository.DiagnosticsRepository
 import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
@@ -218,9 +219,10 @@ class UploadConfigs @Inject constructor(
         serializer = UploadSerializer.Simple { log -> ApkLog.serialize(log, customDeviceName) },
         idExtractor = { it.id },
         markUploaded = { results ->
-            // A row is "pending" until it has a _rev; set it here. Rows that no longer exist
-            // (0 updated) are reported back as local failures.
-            results.filter { result -> !diagnosticsRepository.markApkLogUploaded(result.localId, result.remoteRev) }
+            if (results.isEmpty()) return@RoomUploadConfig emptyList()
+            val updates = results.map { ApkLogUpload(it.localId, it.remoteRev) }
+            val unappliedIds = diagnosticsRepository.markApkLogsUploaded(updates)
+            results.filter { it.localId in unappliedIds }
         }
     )
 

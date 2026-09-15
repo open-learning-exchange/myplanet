@@ -118,7 +118,24 @@ class ResourcesViewModel @Inject constructor(
     }
 
     suspend fun getFilterFacets(libraries: List<MyLibrary>): Map<String, Set<String>> = withContext(dispatcherProvider.default) {
-        resourcesRepository.getFilterFacets(libraries)
+        val languages = mutableSetOf<String>()
+        val subjects = mutableSetOf<String>()
+        val mediums = mutableSetOf<String>()
+        val levels = mutableSetOf<String>()
+
+        libraries.forEach { library ->
+            library.language?.takeIf { it.isNotBlank() }?.let { languages.add(it) }
+            library.subject?.let { subjects.addAll(it) }
+            library.mediaType?.takeIf { it.isNotBlank() }?.let { mediums.add(it) }
+            library.level?.let { levels.addAll(it) }
+        }
+
+        mapOf(
+            "languages" to languages,
+            "subjects" to subjects,
+            "mediums" to mediums,
+            "levels" to levels
+        )
     }
 
     private val listFilter = ResourcesListFilter()
