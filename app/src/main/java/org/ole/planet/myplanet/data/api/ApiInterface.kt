@@ -22,7 +22,8 @@ interface ApiInterface {
     suspend fun downloadFile(
         @Header("Authorization") header: String?,
         @Url fileUrl: String?,
-        @Header("Range") range: String? = null
+        @Header("Range") range: String? = null,
+        @Header("If-Range") ifRange: String? = null
     ): Response<ResponseBody>
 
     @GET

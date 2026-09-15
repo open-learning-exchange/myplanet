@@ -53,6 +53,7 @@ class DownloadServiceResumeTest {
 
     private lateinit var finalFile: File
     private lateinit var tempFile: File
+    private lateinit var validatorFile: File
     private val url = "http://example.com/resources/course.zip"
 
     private class SingleShotThrowingBody(
@@ -108,16 +109,21 @@ class DownloadServiceResumeTest {
         return service
     }
 
-    private fun invokeDownloadFile(service: DownloadService, body: ResponseBody, isPartial: Boolean) {
+    private fun invokeDownloadFile(service: DownloadService, body: ResponseBody, isPartial: Boolean, validator: String? = null) {
         val method = DownloadService::class.java.getDeclaredMethod(
-            "downloadFile", ResponseBody::class.java, String::class.java, Boolean::class.javaPrimitiveType, Continuation::class.java
+            "downloadFile",
+            ResponseBody::class.java,
+            String::class.java,
+            Boolean::class.javaPrimitiveType,
+            String::class.java,
+            Continuation::class.java
         )
         method.isAccessible = true
         val completion = object : Continuation<Any?> {
             override val context = EmptyCoroutineContext
             override fun resumeWith(result: Result<Any?>) {}
         }
-        method.invoke(service, body, url, isPartial, completion)
+        method.invoke(service, body, url, isPartial, validator, completion)
     }
 
     @Before
@@ -130,6 +136,7 @@ class DownloadServiceResumeTest {
 
         finalFile = File(temporaryFolder.newFolder("resources"), "course.zip")
         tempFile = File(finalFile.parentFile, "${finalFile.name}.tmp")
+        validatorFile = File(finalFile.parentFile, "${finalFile.name}.tmp.etag")
 
         mockkObject(FileUtils)
         every { FileUtils.getSDPathFromUrl(any(), any()) } returns finalFile
@@ -146,16 +153,63 @@ class DownloadServiceResumeTest {
         val existingBytes = "first-half-".toByteArray()
         tempFile.parentFile?.mkdirs()
         tempFile.writeBytes(existingBytes)
+        validatorFile.writeText("\"etag-123\"")
 
         val remainingBytes = "second-half".toByteArray()
         val body = remainingBytes.toResponseBody(null)
 
         val service = newService()
-        invokeDownloadFile(service, body, true)
+        invokeDownloadFile(service, body, true, "\"etag-123\"")
 
         assertFalse("temp file should be renamed away after a successful download", tempFile.exists())
         assertTrue(finalFile.exists())
         assertEquals("first-half-second-half", finalFile.readText())
+        assertFalse("validator file should be cleaned up once the download completes", validatorFile.exists())
+    }
+
+    @Test
+    fun `downloadFile persists the response validator so a later resume can send If-Range`() {
+        val service = newService()
+        val body = "whole-file".toByteArray().toResponseBody(null)
+
+        try {
+            invokeDownloadFile(service, body, false, "\"fresh-etag\"")
+        } catch (e: java.lang.reflect.InvocationTargetException) {
+            // Not expected here, but keep the failure path from masking assertion output below.
+        }
+
+        assertTrue(finalFile.exists())
+        assertFalse("validator file should be removed once the temp file is finalized", validatorFile.exists())
+    }
+
+    @Test
+    fun `downloadFile keeps the validator file alongside a partial temp file on write failure`() {
+        val goodBytes = "partial-bytes-before-drop-".toByteArray()
+        val body = SingleShotThrowingBody(goodBytes, declaredContentLength = 1_000L)
+
+        val service = newService()
+        try {
+            invokeDownloadFile(service, body, false, "\"etag-for-resume\"")
+        } catch (e: java.lang.reflect.InvocationTargetException) {
+            // Expected: the simulated network drop propagates out of downloadFile.
+        }
+
+        assertTrue("interrupted download must leave the .tmp file behind for resume", tempFile.exists())
+        assertTrue("the validator that matches the kept partial must survive too", validatorFile.exists())
+        assertEquals("\"etag-for-resume\"", validatorFile.readText())
+    }
+
+    @Test
+    fun `resumeValidatorFor reads a persisted validator and null otherwise`() {
+        val service = newService()
+        val method = DownloadService::class.java.getDeclaredMethod("resumeValidatorFor", String::class.java)
+        method.isAccessible = true
+
+        assertEquals(null, method.invoke(service, url))
+
+        tempFile.parentFile?.mkdirs()
+        validatorFile.writeText("\"stored-etag\"")
+        assertEquals("\"stored-etag\"", method.invoke(service, url))
     }
 
     @Test
@@ -214,6 +268,7 @@ class DownloadServiceResumeTest {
     fun `tryDownloadFromResult deletes the tmp file when the server rejects the resume offset with 416`() {
         tempFile.parentFile?.mkdirs()
         tempFile.writeBytes("stale-or-mismatched-partial".toByteArray())
+        validatorFile.writeText("\"mismatched-etag\"")
 
         val service = newService()
         val method = DownloadService::class.java.getDeclaredMethod(
@@ -235,6 +290,7 @@ class DownloadServiceResumeTest {
         method.invoke(service, error, url, false, "course.zip", false, tempFile.length(), completion)
 
         assertFalse("a 416 must discard the mismatched partial file so the next attempt starts clean", tempFile.exists())
+        assertFalse("a 416 must discard the stale validator alongside the partial file", validatorFile.exists())
     }
 
     @Test

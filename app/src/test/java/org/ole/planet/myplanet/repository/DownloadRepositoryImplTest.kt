@@ -84,6 +84,101 @@ class DownloadRepositoryImplTest {
     }
 
     @Test
+    fun `downloadFileResponse sends If-Range alongside Range when a validator is available`() = runTest {
+        val testDispatcher = UnconfinedTestDispatcher(testScheduler)
+        val mockDispatcherProvider = mockk<DispatcherProvider> {
+            every { io } returns testDispatcher
+        }
+        val mockApiInterface = mockk<ApiInterface>()
+
+        val url = "http://example.com/file"
+        val authHeader = "auth"
+        val mockResponseBody = "second half".toResponseBody(null)
+        val mockResponse = Response.success(206, mockResponseBody)
+
+        coEvery { mockApiInterface.downloadFile(authHeader, url, "bytes=100-", "\"etag-123\"") } returns mockResponse
+
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
+
+        val result = repository.downloadFileResponse(url, authHeader, resumeOffset = 100L, ifRange = "\"etag-123\"")
+
+        assertTrue(result is DownloadResult.Success)
+        coVerify { mockApiInterface.downloadFile(authHeader, url, "bytes=100-", "\"etag-123\"") }
+    }
+
+    @Test
+    fun `downloadFileResponse omits If-Range when there is no resume offset`() = runTest {
+        val testDispatcher = UnconfinedTestDispatcher(testScheduler)
+        val mockDispatcherProvider = mockk<DispatcherProvider> {
+            every { io } returns testDispatcher
+        }
+        val mockApiInterface = mockk<ApiInterface>()
+
+        val url = "http://example.com/file"
+        val authHeader = "auth"
+        val mockResponseBody = "whole file".toResponseBody(null)
+        val mockResponse = Response.success(mockResponseBody)
+
+        coEvery { mockApiInterface.downloadFile(authHeader, url, null, null) } returns mockResponse
+
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
+
+        val result = repository.downloadFileResponse(url, authHeader, ifRange = "\"stale-etag\"")
+
+        assertTrue(result is DownloadResult.Success)
+        coVerify { mockApiInterface.downloadFile(authHeader, url, null, null) }
+    }
+
+    @Test
+    fun `downloadFileResponse captures the ETag from a successful response as the validator`() = runTest {
+        val testDispatcher = UnconfinedTestDispatcher(testScheduler)
+        val mockDispatcherProvider = mockk<DispatcherProvider> {
+            every { io } returns testDispatcher
+        }
+        val mockApiInterface = mockk<ApiInterface>()
+
+        val url = "http://example.com/file"
+        val authHeader = "auth"
+        val mockResponseBody = "whole file".toResponseBody(null)
+        val mockResponse = Response.success(mockResponseBody, okhttp3.Headers.headersOf("ETag", "\"abc123\""))
+
+        coEvery { mockApiInterface.downloadFile(authHeader, url, null, null) } returns mockResponse
+
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
+
+        val result = repository.downloadFileResponse(url, authHeader)
+
+        assertTrue(result is DownloadResult.Success)
+        assertEquals("\"abc123\"", (result as DownloadResult.Success).validator)
+    }
+
+    @Test
+    fun `downloadFileResponse falls back to Last-Modified when there is no ETag`() = runTest {
+        val testDispatcher = UnconfinedTestDispatcher(testScheduler)
+        val mockDispatcherProvider = mockk<DispatcherProvider> {
+            every { io } returns testDispatcher
+        }
+        val mockApiInterface = mockk<ApiInterface>()
+
+        val url = "http://example.com/file"
+        val authHeader = "auth"
+        val mockResponseBody = "whole file".toResponseBody(null)
+        val mockResponse = Response.success(
+            mockResponseBody,
+            okhttp3.Headers.headersOf("Last-Modified", "Wed, 21 Oct 2015 07:28:00 GMT")
+        )
+
+        coEvery { mockApiInterface.downloadFile(authHeader, url, null, null) } returns mockResponse
+
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
+
+        val result = repository.downloadFileResponse(url, authHeader)
+
+        assertTrue(result is DownloadResult.Success)
+        assertEquals("Wed, 21 Oct 2015 07:28:00 GMT", (result as DownloadResult.Success).validator)
+    }
+
+    @Test
     fun `downloadFileResponse omits the Range header when there is no resume offset`() = runTest {
         val testDispatcher = UnconfinedTestDispatcher(testScheduler)
         val mockDispatcherProvider = mockk<DispatcherProvider> {
