@@ -59,6 +59,77 @@ class DownloadRepositoryImplTest {
     }
 
     @Test
+    fun `downloadFileResponse sends a Range header and surfaces 206 when resuming`() = runTest {
+        val testDispatcher = UnconfinedTestDispatcher(testScheduler)
+        val mockDispatcherProvider = mockk<DispatcherProvider> {
+            every { io } returns testDispatcher
+        }
+        val mockApiInterface = mockk<ApiInterface>()
+
+        val url = "http://example.com/file"
+        val authHeader = "auth"
+        val mockResponseBody = "second half".toResponseBody(null)
+        val mockResponse = Response.success(206, mockResponseBody)
+
+        coEvery { mockApiInterface.downloadFile(authHeader, url, "bytes=100-") } returns mockResponse
+
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
+
+        val result = repository.downloadFileResponse(url, authHeader, resumeOffset = 100L)
+
+        assertTrue(result is DownloadResult.Success)
+        val successResult = result as DownloadResult.Success
+        assertEquals(206, successResult.code)
+        coVerify { mockApiInterface.downloadFile(authHeader, url, "bytes=100-") }
+    }
+
+    @Test
+    fun `downloadFileResponse omits the Range header when there is no resume offset`() = runTest {
+        val testDispatcher = UnconfinedTestDispatcher(testScheduler)
+        val mockDispatcherProvider = mockk<DispatcherProvider> {
+            every { io } returns testDispatcher
+        }
+        val mockApiInterface = mockk<ApiInterface>()
+
+        val url = "http://example.com/file"
+        val authHeader = "auth"
+        val mockResponseBody = "whole file".toResponseBody(null)
+        val mockResponse = Response.success(mockResponseBody)
+
+        coEvery { mockApiInterface.downloadFile(authHeader, url, null) } returns mockResponse
+
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
+
+        val result = repository.downloadFileResponse(url, authHeader)
+
+        assertTrue(result is DownloadResult.Success)
+        assertEquals(200, (result as DownloadResult.Success).code)
+        coVerify { mockApiInterface.downloadFile(authHeader, url, null) }
+    }
+
+    @Test
+    fun `downloadFileResponse maps 416 to a distinct error message`() = runTest {
+        val testDispatcher = UnconfinedTestDispatcher(testScheduler)
+        val mockDispatcherProvider = mockk<DispatcherProvider> {
+            every { io } returns testDispatcher
+        }
+        val mockApiInterface = mockk<ApiInterface>()
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
+
+        val url = "http://example.com/file"
+        val authHeader = "auth"
+
+        val mockResponse = Response.error<okhttp3.ResponseBody>(416, "error".toResponseBody(null))
+        coEvery { mockApiInterface.downloadFile(authHeader, url, "bytes=500-") } returns mockResponse
+
+        val result = repository.downloadFileResponse(url, authHeader, resumeOffset = 500L)
+
+        assertTrue(result is DownloadResult.Error)
+        assertEquals("Requested range not satisfiable", (result as DownloadResult.Error).message)
+        assertEquals(416, result.code)
+    }
+
+    @Test
     fun `downloadFileResponse returns empty body error`() = runTest {
         val testDispatcher = UnconfinedTestDispatcher(testScheduler)
         val mockDispatcherProvider = mockk<DispatcherProvider> {
