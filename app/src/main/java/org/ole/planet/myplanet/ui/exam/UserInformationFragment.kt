@@ -21,7 +21,6 @@ import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDialogFragment
 import org.ole.planet.myplanet.databinding.FragmentUserInformationBinding
@@ -80,17 +79,17 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         collectWhenStarted(viewModel.resultEvent) { result ->
             when (result) {
                 is UserInformationResult.UpdateProfileSuccess -> {
-                    Utilities.toast(MainApplication.context, getString(R.string.user_profile_updated))
+                    Utilities.toast(requireContext(), getString(R.string.user_profile_updated))
                     if (isAdded) dialog?.dismiss()
                 }
                 is UserInformationResult.UpdateProfileError -> {
-                    Utilities.toast(MainApplication.context, getString(R.string.unable_to_update_user))
+                    Utilities.toast(requireContext(), getString(R.string.unable_to_update_user))
                     if (isAdded) dialog?.dismiss()
                 }
                 is UserInformationResult.MarkSubmissionSuccess -> {
                     Log.d("UserInformationFragment", "Submission marked complete, about to dismiss dialog")
                     Utilities.toast(
-                        MainApplication.context,
+                        requireContext(),
                         getString(R.string.thank_you_for_taking_this_survey)
                     )
                     if (isAdded) {
@@ -101,11 +100,11 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                 is UserInformationResult.MarkSubmissionError -> {
                     if (result.message == "no ID provided") {
                         Utilities.toast(
-                            MainApplication.context,
+                            requireContext(),
                             "Error: Unable to save submission - no ID provided"
                         )
                     } else {
-                        Utilities.toast(MainApplication.context, "Error saving submission: ${result.message}")
+                        Utilities.toast(requireContext(), "Error saving submission: ${result.message}")
                     }
                     if (isAdded) dialog?.dismiss()
                 }
