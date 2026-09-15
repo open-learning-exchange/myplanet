@@ -130,8 +130,9 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun markTeamsUploaded(uploadedTeams: Map<String, String>) {
         if (uploadedTeams.isEmpty()) return
-        val teamsToUpdate = teamDao.getAll()
-            .filter { it._id in uploadedTeams.keys }
+        val teamsToUpdate = uploadedTeams.keys.toList().chunked(500)
+            .flatMap { chunk -> teamDao.getByIds(chunk) }
+            .distinctBy { it._id }
             .map { entity ->
                 entity.apply {
                     _rev = uploadedTeams[_id]
@@ -218,25 +219,19 @@ class TeamsRepositoryImpl @Inject constructor(
             .toHashSet()
     }
 
-    private suspend fun getShareableTeams(userId: String?): List<MyTeam> {
-        return if (userId.isNullOrBlank()) {
-            teamDao.getRootTeamsByType("team")
-        } else {
-            val memberIds = getMemberTeamIds(userId)
-            if (memberIds.isEmpty()) {
-                emptyList()
-            } else {
-                teamDao.getRootTeamsByTypeAndIds("team", memberIds)
-            }
+    private suspend fun getShareableRootTeams(type: String, userId: String?): List<MyTeam> {
+        if (userId.isNullOrBlank()) {
+            return teamDao.getRootTeamsByType(type)
         }
+        val memberIds = getMemberTeamIds(userId)
+        if (memberIds.isEmpty()) {
+            return emptyList()
+        }
+        return teamDao.getRootTeamsByTypeAndIds(type, memberIds)
     }
 
     override suspend fun getTeamSummaries(userId: String?): List<TeamSummary> {
-        return getShareableTeams(userId).map { it.toSummary() }
-    }
-
-    private suspend fun getShareableEnterprises(): List<MyTeam> {
-        return teamDao.getRootTeamsByType("enterprise")
+        return getShareableRootTeams("team", userId).map { it.toSummary() }
     }
 
     private suspend fun mapToTeamDetails(teams: List<MyTeam>, userId: String?): List<TeamDetails> {
@@ -317,17 +312,7 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getShareableEnterpriseSummaries(userId: String?): List<TeamSummary> {
-        val filtered = if (userId.isNullOrBlank()) {
-            getShareableEnterprises()
-        } else {
-            val memberIds = getMemberTeamIds(userId)
-            if (memberIds.isEmpty()) {
-                emptyList()
-            } else {
-                teamDao.getRootTeamsByTypeAndIds("enterprise", memberIds)
-            }
-        }
-        return filtered.map { it.toSummary() }
+        return getShareableRootTeams("enterprise", userId).map { it.toSummary() }
     }
 
     override suspend fun getTeamResources(teamId: String): List<MyLibrary> {
@@ -1195,9 +1180,11 @@ class TeamsRepositoryImpl @Inject constructor(
                 val id = JsonUtils.getString("_id", doc)
                 id.isNotEmpty() && !id.startsWith("_design")
             }
+            if (validDocuments.isEmpty()) return 0
             val ids = validDocuments.map { JsonUtils.getString("_id", it) }
-            val existingTeams = teamDao.getAll()
-                .filter { it._id in ids }
+            val existingTeams = ids.chunked(500)
+                .flatMap { chunk -> teamDao.getByIds(chunk) }
+                .distinctBy { it._id }
                 .associateBy { it._id }
                 .toMutableMap()
 
@@ -1247,9 +1234,11 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
         val syncDocs = jsonArray.toSyncDocuments()
+        if (syncDocs.isEmpty()) return
         val ids = syncDocs.map { it.first }
-        val existingTeams = teamDao.getAll()
-            .filter { it._id in ids }
+        val existingTeams = ids.chunked(500)
+            .flatMap { chunk -> teamDao.getByIds(chunk) }
+            .distinctBy { it._id }
             .associateBy { it._id }
             .toMutableMap()
         // Wrap the whole batch in a single Room transaction. insertMyTeam upserts one row at a
