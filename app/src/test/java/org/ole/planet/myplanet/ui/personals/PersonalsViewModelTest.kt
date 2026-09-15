@@ -2,7 +2,9 @@ package org.ole.planet.myplanet.ui.personals
 
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
@@ -44,7 +46,7 @@ class PersonalsViewModelTest {
         val user = UserEntity().apply { id = "user-123" }
         val personal = Personal().apply { id = "p-1"; title = "My Personal" }
         coEvery { userRepository.getUserModel() } returns user
-        coEvery { personalsRepository.getPersonalResources("user-123") } returns flowOf(listOf(personal))
+        every { personalsRepository.getPersonalResources("user-123") } returns flowOf(listOf(personal))
 
         val collected = mutableListOf<List<Personal>>()
         val job = launch { viewModel.personals.collect { collected.add(it) } }
@@ -52,14 +54,14 @@ class PersonalsViewModelTest {
 
         assertTrue(collected.isNotEmpty())
         assertEquals(listOf(personal), collected.last())
-        coVerify { personalsRepository.getPersonalResources("user-123") }
+        verify { personalsRepository.getPersonalResources("user-123") }
         job.cancel()
     }
 
     @Test
     fun `personals flow falls back to empty list when there is no current user`() = runTest {
         coEvery { userRepository.getUserModel() } returns null
-        coEvery { personalsRepository.getPersonalResources(null) } returns flowOf(emptyList())
+        every { personalsRepository.getPersonalResources(null) } returns flowOf(emptyList())
 
         val collected = mutableListOf<List<Personal>>()
         val job = launch { viewModel.personals.collect { collected.add(it) } }
@@ -67,7 +69,7 @@ class PersonalsViewModelTest {
 
         assertTrue(collected.isNotEmpty())
         assertEquals(0, collected.last().size)
-        coVerify { personalsRepository.getPersonalResources(null) }
+        verify { personalsRepository.getPersonalResources(null) }
         job.cancel()
     }
 

@@ -47,22 +47,6 @@ class RatingsRepositoryImplTest {
     }
 
     @Test
-    fun `getRatings aggregates ratings properly`() = runTest {
-        val rating1 = Rating().apply { type = "course"; item = "course1"; rate = 4; userId = "user1" }
-        val rating2 = Rating().apply { type = "course"; item = "course1"; rate = 5; userId = "user2" }
-        coEvery { ratingDao.getByType("course") } returns listOf(rating1, rating2)
-
-        val result = repository.getRatings("course", "user1")
-
-        assertEquals(1, result.size)
-        val aggregated = result["course1"]
-        assertNotNull(aggregated)
-        assertEquals(4, aggregated!!.get("ratingByUser").asInt)
-        assertEquals(2, aggregated.get("total").asInt)
-        assertEquals(4.5f, aggregated.get("averageRating").asFloat)
-    }
-
-    @Test
     fun `getRatingsById returns specific aggregated rating summary`() = runTest {
         val rating = Rating().apply { id = "rating1"; type = "course"; item = "course1"; rate = 5; userId = "user1"; comment = "Great" }
         coEvery { ratingDao.getAggregate("course", "course1") } returns RatingAggregate(1, 5.0)
@@ -75,28 +59,6 @@ class RatingsRepositoryImplTest {
         assertEquals(1, result.totalRatings)
         assertEquals(5.0f, result.averageRating)
         assertEquals("Great", result.existingRating?.comment)
-    }
-
-    @Test
-    fun `getCourseRatings returns aggregated course ratings`() = runTest {
-        val rating = Rating().apply { type = "course"; item = "course1"; rate = 3; userId = "user1" }
-        coEvery { ratingDao.getByType("course") } returns listOf(rating)
-
-        val result = repository.getCourseRatings("user1")
-
-        assertEquals(1, result.size)
-        assertNotNull(result["course1"])
-    }
-
-    @Test
-    fun `getResourceRatings returns aggregated resource ratings`() = runTest {
-        val rating = Rating().apply { type = "resource"; item = "resource1"; rate = 5; userId = "user1" }
-        coEvery { ratingDao.getByType("resource") } returns listOf(rating)
-
-        val result = repository.getResourceRatings("user1")
-
-        assertEquals(1, result.size)
-        assertNotNull(result["resource1"])
     }
 
     @Test

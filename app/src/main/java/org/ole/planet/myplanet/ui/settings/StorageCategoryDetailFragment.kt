@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
@@ -19,6 +18,7 @@ import org.ole.planet.myplanet.databinding.FragmentStorageCategoryDetailBinding
 import org.ole.planet.myplanet.databinding.ItemDownloadedResourceBinding
 import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
@@ -162,12 +162,11 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
     }
 
     private fun confirmDelete(count: Int, message: String, onConfirm: () -> Unit) {
-        AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-            .setTitle(R.string.are_you_sure)
-            .setMessage(message)
-            .setPositiveButton(R.string.yes) { _, _ -> onConfirm() }
-            .setNegativeButton(R.string.no, null)
-            .show()
+        requireContext().confirmDialog(
+            title = getString(R.string.are_you_sure),
+            message = message,
+            onPositive = onConfirm
+        )
     }
 
     private val DIFF_CALLBACK = DiffUtils.itemCallback<OfflineResourceItem>(
