@@ -28,7 +28,6 @@ interface CourseDao {
     @Query("SELECT * FROM courses WHERE userId LIKE :userPattern ESCAPE '\\'")
     fun observeForUserPattern(userPattern: String): Flow<List<MyCourse>>
 
-    @Query("DELETE FROM courses WHERE courseId = :courseId") suspend fun deleteByCourseId(courseId: String): Int
     @Upsert suspend fun upsertAll(items: List<MyCourse>)
     @Upsert fun upsertAllBlocking(items: List<MyCourse>)
     @Upsert suspend fun upsert(item: MyCourse)
