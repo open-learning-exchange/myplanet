@@ -181,17 +181,16 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     private fun submitForm() {
         val profile = createUserProfile() ?: return
-        val user = profile.toJson()
 
         val teamId = arguments?.getString("teamId")
 
         if (!teamId.isNullOrEmpty()) {
-            saveSubmission(user)
+            saveSubmission(profile.toJson())
         } else if (TextUtils.isEmpty(id)) {
             val userId = userModel?.id
-            viewModel.updateProfile(userId, user)
+            viewModel.updateProfile(userId, profile.toProfileFieldsUpdate())
         } else {
-            saveSubmission(user)
+            saveSubmission(profile.toJson())
         }
     }
 

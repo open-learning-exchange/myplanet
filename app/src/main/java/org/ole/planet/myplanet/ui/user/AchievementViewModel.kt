@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ProfileFieldsUpdate
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
@@ -31,7 +32,7 @@ data class AchievementSaveRequest(
     val username: String,
     val parentCode: String,
     val resumeFileName: String,
-    val profileFields: JsonObject,
+    val profileFields: ProfileFieldsUpdate,
 )
 
 @HiltViewModel

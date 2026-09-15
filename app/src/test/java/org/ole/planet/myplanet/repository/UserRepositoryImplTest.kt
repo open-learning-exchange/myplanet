@@ -355,12 +355,12 @@ class UserRepositoryImplTest {
         }
         coEvery { userDao.getById("user1") } returns user
 
-        val validPayload = JsonObject().apply {
-            addProperty("firstName", "NewFirst")
-            addProperty("lastName", "NewLast")
-            addProperty("email", "test@example.com")
-        }
-        repository.updateProfileFields("user1", validPayload)
+        val update = ProfileFieldsUpdate(
+            firstName = "NewFirst",
+            lastName = "NewLast",
+            email = "test@example.com"
+        )
+        repository.updateProfileFields("user1", update)
 
         val slot = slot<UserEntity>()
         coVerify { userDao.upsert(capture(slot)) }
@@ -371,7 +371,7 @@ class UserRepositoryImplTest {
     }
 
     @Test
-    fun `updateProfileFields handles empty objects and converts primitive values while skipping nulls`() = runTest(testDispatcher) {
+    fun `updateProfileFields handles empty update objects and leaves fields untouched while setting isUpdated true`() = runTest(testDispatcher) {
         val user = UserEntity().apply {
             id = "user1"
             firstName = "OriginalFirst"
@@ -379,18 +379,13 @@ class UserRepositoryImplTest {
         }
         coEvery { userDao.getById("user1") } returns user
 
-        val payload = JsonObject().apply {
-            add("firstName", com.google.gson.JsonNull.INSTANCE)
-            addProperty("lastName", "UpdatedLast")
-            addProperty("age", 25)
-        }
-        repository.updateProfileFields("user1", payload)
+        val update = ProfileFieldsUpdate()
+        repository.updateProfileFields("user1", update)
 
         val slot = slot<UserEntity>()
         coVerify { userDao.upsert(capture(slot)) }
         assertEquals("OriginalFirst", slot.captured.firstName)
-        assertEquals("UpdatedLast", slot.captured.lastName)
-        assertEquals("25", slot.captured.age)
+        assertEquals("OriginalLast", slot.captured.lastName)
         assertEquals(true, slot.captured.isUpdated)
     }
 }

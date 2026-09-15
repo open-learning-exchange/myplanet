@@ -63,7 +63,7 @@ interface UserRepository {
 
     suspend fun updateProfileFields(
         userId: String?,
-        payload: JsonObject
+        update: ProfileFieldsUpdate
     )
 
     suspend fun createMember(user: MemberInfo): Pair<Boolean, String>
