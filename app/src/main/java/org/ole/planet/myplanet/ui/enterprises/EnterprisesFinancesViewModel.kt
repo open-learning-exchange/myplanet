@@ -66,6 +66,14 @@ class EnterprisesFinancesViewModel @Inject constructor(
     private val _transactionCreated = MutableSharedFlow<Result<Unit>>(extraBufferCapacity = 1)
     val transactionCreated: SharedFlow<Result<Unit>> = _transactionCreated.asSharedFlow()
 
+    private data class TransactionQuery(
+        val teamId: String,
+        val sortAscending: Boolean,
+        val startDate: Long?,
+        val endDate: Long?
+    )
+
+    private var lastQuery: TransactionQuery? = null
     private var transactionsJob: Job? = null
 
     fun getTeamTransactions(
@@ -74,6 +82,11 @@ class EnterprisesFinancesViewModel @Inject constructor(
         startDate: Long?,
         endDate: Long?
     ) {
+        val query = TransactionQuery(teamId, sortAscending, startDate, endDate)
+        if (lastQuery == query && transactionsJob?.isActive == true) {
+            return
+        }
+        lastQuery = query
         transactionsJob?.cancel()
         transactionsJob = viewModelScope.launch {
             teamsRepository.getTeamTransactionsWithBalance(
