@@ -73,15 +73,26 @@ class MyPlanet : Serializable {
             val mUsageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
             val queryUsageStats = mUsageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, cal.timeInMillis, now)
             if (queryUsageStats != null) {
+                val packageName = context.packageName
+                val customDeviceName = NetworkUtils.getCustomDeviceName(context)
+                val deviceName = NetworkUtils.getDeviceName()
                 for (s in queryUsageStats) {
-                    addStats(s, arr, context)
+                    addStats(s, arr, context, packageName, customDeviceName, deviceName, now)
                 }
             }
             return arr
         }
 
-        private fun addStats(s: UsageStats, arr: JsonArray, context: Context) {
-            if (s.packageName == context.packageName) {
+        private fun addStats(
+            s: UsageStats,
+            arr: JsonArray,
+            context: Context,
+            packageName: String,
+            customDeviceName: String,
+            deviceName: String,
+            now: Long
+        ) {
+            if (s.packageName == packageName) {
                 val `object` = JsonObject()
                 `object`.addProperty("lastTimeUsed", if (s.lastTimeUsed > 0) s.lastTimeUsed else 0)
                 `object`.addProperty("firstTimeUsed", if (s.firstTimeStamp > 0) s.lastTimeStamp else 0)
@@ -91,9 +102,9 @@ class MyPlanet : Serializable {
                 `object`.addProperty("version", VersionUtils.getVersionCode(context))
                 `object`.addProperty("versionName", VersionUtils.getVersionName(context))
                 `object`.addDocumentOrigin()
-                `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
-                `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
-                `object`.addProperty("time", Date().time)
+                `object`.addProperty("customDeviceName", customDeviceName)
+                `object`.addProperty("deviceName", deviceName)
+                `object`.addProperty("time", now)
                 arr.add(`object`)
             }
         }

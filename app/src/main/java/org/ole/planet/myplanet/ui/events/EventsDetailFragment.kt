@@ -11,7 +11,6 @@ import android.widget.ListView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -20,6 +19,7 @@ import java.util.Calendar
 import java.util.HashMap
 import java.util.Locale
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.databinding.AddMeetupBinding
 import org.ole.planet.myplanet.databinding.FragmentEventsDetailBinding
 import org.ole.planet.myplanet.model.Meetup
@@ -31,9 +31,7 @@ import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
-class EventsDetailFragment : Fragment(), View.OnClickListener {
-    private var _binding: FragmentEventsDetailBinding? = null
-    private val binding get() = _binding!!
+class EventsDetailFragment : BaseBindingFragment<FragmentEventsDetailBinding>(FragmentEventsDetailBinding::inflate), View.OnClickListener {
     private val viewModel: EventsDetailViewModel by viewModels()
     private var meetUpId: String? = null
     private var listUsers: ListView? = null
@@ -53,7 +51,7 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentEventsDetailBinding.inflate(inflater, container, false)
+        val view = super.onCreateView(inflater, container, savedInstanceState)
         listDesc = binding.root.findViewById(R.id.list_desc)
         listUsers = binding.root.findViewById(R.id.list_users)
         tvJoined = binding.root.findViewById(R.id.tv_joined)
@@ -62,7 +60,7 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
         binding.btnLeave.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
         binding.btnLeave.setOnClickListener(this)
         binding.btnEdit.setOnClickListener { showEditDialog() }
-        return binding.root
+        return view
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -234,11 +232,6 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
         val isJoined = !meetup?.userId.isNullOrEmpty()
         binding.btnLeave.setText(if (isJoined) R.string.leave else R.string.join)
         binding.btnLeave.isEnabled = user?.id?.isNotBlank() == true && isEventActive
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
     }
 
     override fun onDestroy() {

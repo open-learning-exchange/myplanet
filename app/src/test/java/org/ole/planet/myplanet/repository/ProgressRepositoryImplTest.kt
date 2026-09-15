@@ -373,7 +373,7 @@ class ProgressRepositoryImplTest {
             addProperty("passed", true)
         }
         coEvery { courseProgressDao.getByIds(listOf("doc1")) } returns emptyList()
-        coEvery { courseProgressDao.getByCourseUsersAndSteps(listOf("course1"), listOf("user1"), listOf(1)) } returns emptyList()
+        coEvery { courseProgressDao.getByCourseUsersAndSteps(listOf(Triple("course1", "user1", 1))) } returns emptyList()
 
         repository.insertCourseProgressFromSync(listOf(doc1))
 
@@ -408,7 +408,7 @@ class ProgressRepositoryImplTest {
             stepNum = 1
         }
         coEvery { courseProgressDao.getByIds(listOf("doc1")) } returns emptyList()
-        coEvery { courseProgressDao.getByCourseUsersAndSteps(listOf("course1"), listOf("user1"), listOf(1)) } returns listOf(existingProgress)
+        coEvery { courseProgressDao.getByCourseUsersAndSteps(listOf(Triple("course1", "user1", 1))) } returns listOf(existingProgress)
 
         repository.insertCourseProgressFromSync(listOf(doc1))
 
@@ -429,6 +429,85 @@ class ProgressRepositoryImplTest {
                 courseId = "course1"
                 courseTitle = "Course 1"
                 courseSteps = null
+            }
+        )
+
+        val progresses = listOf(
+            CourseProgress().apply { courseId = "course1"; stepNum = 1; passed = true }
+        )
+
+        coEvery { mockCoursesRepository.getMyCourses("user1") } returns myCourses
+        coEvery { courseProgressDao.getByUser("user1") } returns progresses
+
+        val result = repository.getCompletedCourses("user1")
+        advanceUntilIdle()
+
+        assertEquals(0, result.size)
+    }
+
+    @Test
+    fun testGetCompletedCourses_duplicatePassedRecordsCountOnce() = testScope.runTest {
+        val myCourses = listOf(
+            MyCourse().apply {
+                courseId = "course1"
+                courseTitle = "Course 1"
+                courseSteps = mutableListOf(
+                    CourseStep().apply { courseId = "course1" },
+                    CourseStep().apply { courseId = "course1" }
+                )
+            }
+        )
+
+        val progresses = listOf(
+            CourseProgress().apply { courseId = "course1"; stepNum = 1; passed = true },
+            CourseProgress().apply { courseId = "course1"; stepNum = 1; passed = true },
+            CourseProgress().apply { courseId = "course1"; stepNum = 2; passed = true }
+        )
+
+        coEvery { mockCoursesRepository.getMyCourses("user1") } returns myCourses
+        coEvery { courseProgressDao.getByUser("user1") } returns progresses
+
+        val result = repository.getCompletedCourses("user1")
+        advanceUntilIdle()
+
+        assertEquals(1, result.size)
+        assertEquals("course1", result[0].courseId)
+    }
+
+    @Test
+    fun testGetCompletedCourses_failedRecordsIgnored() = testScope.runTest {
+        val myCourses = listOf(
+            MyCourse().apply {
+                courseId = "course1"
+                courseTitle = "Course 1"
+                courseSteps = mutableListOf(
+                    CourseStep().apply { courseId = "course1" },
+                    CourseStep().apply { courseId = "course1" }
+                )
+            }
+        )
+
+        val progresses = listOf(
+            CourseProgress().apply { courseId = "course1"; stepNum = 1; passed = true },
+            CourseProgress().apply { courseId = "course1"; stepNum = 2; passed = false }
+        )
+
+        coEvery { mockCoursesRepository.getMyCourses("user1") } returns myCourses
+        coEvery { courseProgressDao.getByUser("user1") } returns progresses
+
+        val result = repository.getCompletedCourses("user1")
+        advanceUntilIdle()
+
+        assertEquals(0, result.size)
+    }
+
+    @Test
+    fun testGetCompletedCourses_zeroTotalStepsExcluded() = testScope.runTest {
+        val myCourses = listOf(
+            MyCourse().apply {
+                courseId = "course1"
+                courseTitle = "Course 1"
+                courseSteps = mutableListOf()
             }
         )
 
@@ -696,13 +775,13 @@ class ProgressRepositoryImplTest {
         }
 
         coEvery { courseProgressDao.getByIds(listOf("doc1", "doc2")) } returns emptyList()
-        coEvery { courseProgressDao.getByCourseUsersAndSteps(listOf("course1", "course2"), listOf("user1"), listOf(1, 2)) } returns emptyList()
+        coEvery { courseProgressDao.getByCourseUsersAndSteps(listOf(Triple("course1", "user1", 1), Triple("course2", "user1", 2))) } returns emptyList()
 
         repository.insertCourseProgressFromSync(listOf(doc1, doc2, doc3))
 
         coVerify {
             courseProgressDao.getByIds(listOf("doc1", "doc2"))
-            courseProgressDao.getByCourseUsersAndSteps(listOf("course1", "course2"), listOf("user1"), listOf(1, 2))
+            courseProgressDao.getByCourseUsersAndSteps(listOf(Triple("course1", "user1", 1), Triple("course2", "user1", 2)))
             courseProgressDao.upsertAll(match { progresses ->
                 progresses.size == 3 &&
                     progresses[0].id == "doc1" &&
