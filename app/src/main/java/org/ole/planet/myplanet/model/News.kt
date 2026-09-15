@@ -44,6 +44,8 @@ open class News {
     var parentCode: String? = null
     var imageUrls: List<String>? = null
     var images: String? = null
+    var videoUrls: List<String>? = null
+    var videos: String? = null
     var labels: List<String>? = null
     var viewIn: String? = null
     var newsId: String? = null
@@ -104,6 +106,10 @@ open class News {
         }
 
     @get:Ignore
+    val videosArray: JsonArray
+        get() = if (videos == null) JsonArray() else JsonUtils.gson.fromJson(videos, JsonArray::class.java) ?: JsonArray()
+
+    @get:Ignore
     val labelsArray: JsonArray
         get() {
             val array = JsonArray()
@@ -126,6 +132,19 @@ open class News {
         }
         labels = newLabels
     }
+
+    @get:Ignore
+    val messageWithoutMarkdown: String?
+        get() {
+            var ms = message
+            for (ob in imagesArray) {
+                ms = ms?.replace(JsonUtils.getString("markdown", ob.asJsonObject), "")
+            }
+            for (ob in videosArray) {
+                ms = ms?.replace(JsonUtils.getString("markdown", ob.asJsonObject), "")
+            }
+            return ms
+        }
 
     @get:Ignore
     val isCommunityNews: Boolean
@@ -173,6 +192,7 @@ open class News {
             map: HashMap<String?, String>,
             user: UserEntity?,
             imageUrls: List<String>?,
+            videoUrls: List<String>? = null,
             isReply: Boolean = false
         ): News {
             val news = News()
@@ -204,6 +224,7 @@ open class News {
             news.replyTo = map["replyTo"] ?: ""
             news.user = JsonUtils.gson.toJson(user?.serialize())
             news.imageUrls = imageUrls?.toList() ?: emptyList()
+            news.videoUrls = videoUrls?.toList() ?: emptyList()
 
             map["news"]?.let { newsObj ->
                 try {

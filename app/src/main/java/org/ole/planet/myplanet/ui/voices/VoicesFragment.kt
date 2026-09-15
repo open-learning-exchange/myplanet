@@ -59,6 +59,7 @@ class VoicesFragment : BaseVoicesFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentVoicesBinding.inflate(inflater, container, false)
         llImage = binding.llImages
+        llVideo = binding.llVideos
         setupUI(binding.voicesFragmentParentLayout, requireActivity())
         etSearch = binding.root.findViewById(R.id.et_search)
         binding.btnNewVoice.setOnClickListener {
@@ -123,7 +124,9 @@ class VoicesFragment : BaseVoicesFragment() {
                 binding.llAddNews.visibility = View.GONE
                 binding.btnNewVoice.text = getString(R.string.new_voice)
                 imageList.clear()
+                videoList.clear()
                 llImage?.removeAllViews()
+                llVideo?.removeAllViews()
                 shouldScrollToTopNextUpdate = true
             } else {
                 Utilities.toast(requireContext(), getString(R.string.error, "Failed to create news"))
@@ -144,13 +147,14 @@ class VoicesFragment : BaseVoicesFragment() {
 
             binding.btnSubmit.isEnabled = false
 
-            user?.let { it1 -> voicesViewModel.createNews(map, it1, imageList.toList()) }
+            user?.let { it1 -> voicesViewModel.createNews(map, it1, imageList.toList(), videoList.toList()) }
         }
 
-        binding.addNewsImage.setOnClickListener {
+        binding.addNewsMedia.setOnClickListener {
             llImage = binding.llImages
+            llVideo = binding.llVideos
             val openFolderIntent = FileUtils.openOleFolder(requireContext())
-            openFolderLauncher.launch(openFolderIntent)
+            openMediaLauncher.launch(openFolderIntent)
         }
     }
 
@@ -278,6 +282,11 @@ class VoicesFragment : BaseVoicesFragment() {
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
+    }
+
+    override fun clearVideos() {
+        videoList.clear()
+        llVideo?.removeAllViews()
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {

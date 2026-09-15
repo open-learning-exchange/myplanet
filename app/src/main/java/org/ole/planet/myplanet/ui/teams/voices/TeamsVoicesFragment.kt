@@ -44,11 +44,14 @@ class TeamsVoicesFragment : BaseTeamFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentDiscussionListBinding.inflate(inflater, container, false)
+        llImage = binding.llImages
+        llVideo = binding.llVideos
         binding.addMessage.setOnClickListener {
             binding.llAddNews.visibility = if (binding.llAddNews.isVisible) {
                 binding.etMessage.setText("")
                 binding.tlMessage.error = null
                 clearImages()
+                clearVideos()
                 View.GONE
             } else {
                 View.VISIBLE
@@ -60,10 +63,11 @@ class TeamsVoicesFragment : BaseTeamFragment() {
             }
         }
 
-        binding.addNewsImage.setOnClickListener {
+        binding.addNewsMedia.setOnClickListener {
             llImage = binding.llImages
+            llVideo = binding.llVideos
             val openFolderIntent = FileUtils.openOleFolder(requireContext())
-            openFolderLauncher.launch(openFolderIntent)
+            openMediaLauncher.launch(openFolderIntent)
         }
 
         binding.btnSubmit.setOnClickListener {
@@ -82,7 +86,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
             map["name"] = getEffectiveTeamName()
 
             user?.let { userModel ->
-                viewModel.createTeamNews(map, userModel, imageList)
+                viewModel.createTeamNews(map, userModel, imageList, videoList)
             }
         }
 
@@ -118,8 +122,8 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         viewModel.observeDiscussions(getEffectiveTeamId())
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val realmNewsList = viewModel.getFilteredNews(getEffectiveTeamId())
-            showRecyclerView(realmNewsList)
+            val newsList = viewModel.getFilteredNews(getEffectiveTeamId())
+            showRecyclerView(newsList)
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -137,7 +141,9 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                             }
                             binding.etMessage.text?.clear()
                             imageList.clear()
+                            videoList.clear()
                             llImage?.removeAllViews()
+                            llVideo?.removeAllViews()
                             shouldScrollToTopNextUpdate = true
                             binding.llAddNews.visibility = View.GONE
                             binding.tlMessage.error = null
@@ -176,6 +182,11 @@ class TeamsVoicesFragment : BaseTeamFragment() {
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
+    }
+
+    override fun clearVideos() {
+        videoList.clear()
+        llVideo?.removeAllViews()
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {

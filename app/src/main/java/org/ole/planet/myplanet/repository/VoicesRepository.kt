@@ -12,6 +12,7 @@ data class NewsUploadData(
     val _id: String?,
     val message: String?,
     val imageUrls: List<String>,
+    val videoUrls: List<String> = emptyList(),
     val newsJson: JsonObject
 )
 
@@ -19,7 +20,8 @@ data class NewsUpdateData(
     val id: String?,
     val _id: String?,
     val _rev: String?,
-    val imagesArray: JsonArray
+    val imagesArray: JsonArray,
+    val videosArray: JsonArray = JsonArray()
 )
 
 interface VoicesRepository : VoicesEditActions {
@@ -28,8 +30,8 @@ interface VoicesRepository : VoicesEditActions {
     suspend fun getCommunityNews(userIdentifier: String): Flow<List<News>>
     suspend fun getNewsWithReplies(newsId: String): Pair<News?, List<News>>
     suspend fun isAlreadyShared(chatId: String, viewInId: String): Boolean
-    suspend fun createNews(map: HashMap<String?, String>, user: UserEntity?, imageList: List<String>?): News
-    suspend fun createTeamNews(newsData: HashMap<String?, String>, user: UserEntity, imageList: List<String>?): Boolean
+    suspend fun createNews(map: HashMap<String?, String>, user: UserEntity?, imageList: List<String>?, videoList: List<String>? = null): News
+    suspend fun createTeamNews(newsData: HashMap<String?, String>, user: UserEntity, imageList: List<String>?, videoList: List<String>? = null): Boolean
     suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<News>>
     suspend fun shareNewsToCommunity(newsId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit>
     suspend fun getFilteredNews(teamId: String): List<News>

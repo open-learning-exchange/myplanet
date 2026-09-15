@@ -84,10 +84,10 @@ class VoicesViewModel @Inject constructor(
         _selectedLabel.value = label
     }
 
-    fun createNews(map: HashMap<String?, String>, user: UserEntity, imageList: List<String>) {
+    fun createNews(map: HashMap<String?, String>, user: UserEntity, imageList: List<String>, videoList: List<String> = emptyList()) {
         viewModelScope.launch {
             try {
-                val news = voicesRepository.createNews(map, user, imageList)
+                val news = voicesRepository.createNews(map, user, imageList, videoList)
                 _createNewsSuccess.send(news)
             } catch (e: Exception) {
                 _createNewsSuccess.send(null)

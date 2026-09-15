@@ -141,6 +141,24 @@ class UploadManager @Inject constructor(
         return `object`
     }
 
+    private fun createVideo(user: UserEntity?, vidObject: JsonObject?): JsonObject {
+        val `object` = JsonObject()
+        `object`.addProperty("title", getString("fileName", vidObject))
+        `object`.addProperty("createdDate", timeProvider.now())
+        `object`.addProperty("filename", getString("fileName", vidObject))
+        `object`.addProperty("private", true)
+        user?.id?.let { `object`.addProperty("addedBy", it) }
+        user?.parentCode?.let { `object`.addProperty("resideOn", it) }
+        user?.planetCode?.let { `object`.addProperty("sourcePlanet", it) }
+        val object1 = JsonObject()
+        `object`.addDocumentOrigin()
+        `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
+        `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
+        `object`.add("privateFor", object1)
+        `object`.addProperty("mediaType", "video")
+        return `object`
+    }
+
     suspend fun uploadAchievement() {
         achievementUploader.uploadAchievement()
     }
@@ -283,13 +301,14 @@ class UploadManager @Inject constructor(
         withContext(dispatcherProvider.io) {
             newsItems.processInBatches { batch ->
                 val successfulUpdates = mutableListOf<NewsUpdateData>()
-                val processedNews = mutableListOf<Pair<NewsUploadData, JsonArray>>()
+                val processedNews = mutableListOf<Triple<NewsUploadData, JsonArray, JsonArray>>()
 
                 batch.forEach { news ->
                     try {
                         // Upload images first and collect metadata
                         val imagesArray = JsonArray()
-                        val messageWithImages = StringBuilder(news.message ?: "")
+                        val videosArray = JsonArray()
+                        val messageWithMedia = StringBuilder(news.message ?: "")
 
                         news.imageUrls.forEach { imageUrl ->
                             val imgObject = gson.fromJson(imageUrl, JsonObject::class.java)
@@ -323,14 +342,54 @@ class UploadManager @Inject constructor(
                             resourceObject.addProperty("markdown", markdown)
                             imagesArray.add(resourceObject)
 
-                            messageWithImages.append("\n").append(markdown)
+                            // Append markdown to message
+                            messageWithMedia.append("\n").append(markdown)
+                        }
+
+                        // Upload videos and collect metadata
+                        news.videoUrls.forEach { videoUrl ->
+                            val vidObject = gson.fromJson(videoUrl, JsonObject::class.java)
+
+                            // Create video resource document
+                            val videoDoc = createVideo(user, vidObject)
+                            val videoResponse = uploadRepository.postUpload(
+                                "${UrlUtils.getUrl()}/resources",
+                                videoDoc
+                            ).body()
+
+                            val resourceId = getString("id", videoResponse)
+                            val resourceRev = getString("rev", videoResponse)
+
+                            // Upload video file as attachment
+                            val videoFile = File(getString("videoUrl", vidObject))
+                            val fileName = FileUtils.getFileNameFromUrl(getString("videoUrl", vidObject))
+                            val mimeType = FileUtils.getMimeType(fileName) ?: "video/mp4"
+                            val fileBody = videoFile.asRequestBody("application/octet-stream".toMediaTypeOrNull())
+
+                            uploadRepository.uploadResource(
+                                getHeaderMap(mimeType, resourceRev),
+                                "${UrlUtils.getUrl()}/resources/$resourceId/$fileName",
+                                fileBody
+                            )
+
+                            // Build video metadata and markdown
+                            val resourceObject = JsonObject()
+                            resourceObject.addProperty("resourceId", resourceId)
+                            resourceObject.addProperty("filename", fileName)
+                            val markdown = "![](resources/$resourceId/$fileName)"
+                            resourceObject.addProperty("markdown", markdown)
+                            videosArray.add(resourceObject)
+
+                            // Append markdown to message
+                            messageWithMedia.append("\n").append(markdown)
                         }
 
                         val newsJson = news.newsJson
-                        newsJson.addProperty("message", messageWithImages.toString())
+                        newsJson.addProperty("message", messageWithMedia.toString())
                         newsJson.add("images", imagesArray)
+                        newsJson.add("videos", videosArray)
 
-                        processedNews.add(Pair(news, imagesArray))
+                        processedNews.add(Triple(news, imagesArray, videosArray))
                     } catch (e: Exception) {
                         Log.e(TAG, "Exception in UploadManager processing images for news", e)
                         val isCreate = TextUtils.isEmpty(news._id)
@@ -341,8 +400,8 @@ class UploadManager @Inject constructor(
                 BulkDocsUploader.upload(
                     uploadRepository,
                     "${UrlUtils.getUrl()}/news/_bulk_docs",
-                    processedNews.map { (news, imagesArray) -> (news to imagesArray) to news.newsJson }
-                ) { (news, imagesArray), outcome ->
+                    processedNews.map { (news, imagesArray, videosArray) -> Triple(news, imagesArray, videosArray) to news.newsJson }
+                ) { (news, imagesArray, videosArray), outcome ->
                     val isCreate = TextUtils.isEmpty(news._id)
                     when (outcome) {
                         is BulkDocsUploader.Outcome.Accepted -> {
@@ -350,7 +409,8 @@ class UploadManager @Inject constructor(
                                 id = news.id,
                                 _id = getString("id", outcome.element),
                                 _rev = getString("rev", outcome.element),
-                                imagesArray = imagesArray
+                                imagesArray = imagesArray,
+                                videosArray = videosArray
                             ))
                         }
                         is BulkDocsUploader.Outcome.Rejected -> {
