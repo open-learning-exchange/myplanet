@@ -2,7 +2,9 @@ package org.ole.planet.myplanet.data.room.dao
 
 import androidx.room.Dao
 import androidx.room.Query
+import androidx.room.RawQuery
 import androidx.room.Upsert
+import androidx.sqlite.db.SupportSQLiteQuery
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.MyCourse
 
@@ -19,6 +21,9 @@ interface CourseDao {
 
     @Query("SELECT * FROM courses WHERE userId LIKE :userPattern ESCAPE '\\'")
     fun observeForUserPattern(userPattern: String): Flow<List<MyCourse>>
+
+    @RawQuery
+    suspend fun filterByTitleNormal(query: SupportSQLiteQuery): List<MyCourse>
 
     @Query("DELETE FROM courses WHERE courseId = :courseId") suspend fun deleteByCourseId(courseId: String): Int
     @Upsert suspend fun upsertAll(items: List<MyCourse>)

@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.util.Log
 import androidx.room.withTransaction
+import androidx.sqlite.db.SimpleSQLiteQuery
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Base64
@@ -267,33 +268,38 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun search(query: String): List<MyCourse> {
-        val allCourses = mapCourses(courseDao.getAll())
         if (query.isEmpty()) {
-            return allCourses
+            return mapCourses(courseDao.getAll())
         }
 
         val queryParts = query.split(" ").filterNot { it.isEmpty() }
         val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
         val normalizedQuery = Utilities.normalizeText(query)
 
-        val data = allCourses.filter { course ->
-            val title = course.courseTitleNormal ?: course.courseTitle?.let { Utilities.normalizeText(it) }
-            title != null && normalizedQueryParts.all { title.contains(it) }
+        val queryBuilder = StringBuilder("SELECT * FROM courses WHERE 1 = 1")
+        val bindArgs = mutableListOf<Any>()
+        normalizedQueryParts.forEach { token ->
+            val escapedToken = token
+                .replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_")
+            queryBuilder.append(" AND courseTitleNormal LIKE ? ESCAPE '\\'")
+            bindArgs.add("%${escapedToken}%")
         }
+
+        val matching = courseDao.filterByTitleNormal(SimpleSQLiteQuery(queryBuilder.toString(), bindArgs.toTypedArray()))
 
         val startsWithQuery = mutableListOf<MyCourse>()
         val containsQuery = mutableListOf<MyCourse>()
-
-        for (item in data) {
-            val title = item.courseTitleNormal ?: item.courseTitle?.let { Utilities.normalizeText(it) } ?: continue
-
+        for (item in matching) {
+            val title = item.courseTitleNormal ?: continue
             if (title.startsWith(normalizedQuery)) {
                 startsWithQuery.add(item)
-            } else if (matchesAllParts(title, normalizedQueryParts)) {
+            } else {
                 containsQuery.add(item)
             }
         }
-        return startsWithQuery + containsQuery
+        return mapCourses(startsWithQuery + containsQuery)
     }
 
     override suspend fun filterCourses(
