@@ -32,6 +32,7 @@ import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.SubmissionDetail
 import org.ole.planet.myplanet.model.SubmissionItem
+import org.ole.planet.myplanet.model.SubmissionRowProjection
 import org.ole.planet.myplanet.model.SubmitPhotos
 import org.ole.planet.myplanet.model.TeamReference
 import org.ole.planet.myplanet.model.UserEntity
@@ -44,6 +45,7 @@ import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class SubmissionsRepositoryImpl @Inject internal constructor(
     private val teamsRepositoryProvider: Provider<TeamsRepository>,
+    private val userRepository: UserRepository,
     @ApplicationContext private val context: Context,
     private val sharedPrefManager: SharedPrefManager,
     private val exporter: SubmissionsRepositoryExporter,
@@ -87,6 +89,48 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
+    override suspend fun getSubmissionProjections(
+        submissions: List<Submission>,
+        userId: String,
+        type: String,
+        query: String,
+        examMap: Map<String?, StepExam>,
+    ): List<SubmissionRowProjection> {
+        var filtered = when (type) {
+            "survey" -> submissions.filter { it.userId == userId && it.type == "survey" }
+            "survey_submission" -> submissions.filter {
+                it.userId == userId && it.type == "survey" && it.status != "pending"
+            }
+            else -> submissions.filter { it.userId == userId && it.type != "survey" }
+        }.sortedByDescending { it.lastUpdateTime }
+
+        if (query.isNotEmpty()) {
+            val examIds = examMap.mapNotNullTo(HashSet()) { (id, exam) ->
+                if (exam.name?.contains(query, ignoreCase = true) == true) id else null
+            }
+            filtered = filtered.filter { examIds.contains(it.parentId) }
+        }
+
+        val uniqueRawSubmissions = mutableListOf<Submission>()
+        val submissionCountMap = HashMap<String?, Int>()
+        for (group in filtered.groupBy { it.parentId }.values) {
+            val newest = group.maxByOrNull { it.lastUpdateTime } ?: continue
+            uniqueRawSubmissions.add(newest)
+            submissionCountMap[newest.id] = group.size
+        }
+
+        val userIds = uniqueRawSubmissions.mapNotNull { it.userId }.distinct()
+        val fallbackUsersMap = userRepository.getUsersByIds(userIds).associateBy { it.id }
+
+        return uniqueRawSubmissions.map { sub ->
+            val name = getNormalizedSubmitterName(sub)
+            val fallback = sub.userId?.let { fallbackUsersMap[it]?.name }
+            val submitterName = name ?: fallback ?: ""
+            val count = submissionCountMap[sub.id] ?: 1
+            SubmissionRowProjection(sub, submitterName, count)
+        }.sortedByDescending { it.submission.lastUpdateTime }
+    }
+
     override suspend fun getPendingSurveys(userId: String?): List<Submission> {
         if (userId == null) return emptyList()
         return hydrateSubmissions(submissionDao.getPendingSurveys(userId))
@@ -100,13 +144,12 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     override suspend fun getUniquePendingSurveys(userId: String?): List<Submission> {
         if (userId == null) return emptyList()
 
-        val pendingSurveys = hydrateSubmissions(submissionDao.getUniquePendingSurveyCandidates(userId))
-
-        if (pendingSurveys.isEmpty()) {
+        val candidates = submissionDao.getUniquePendingSurveyCandidates(userId)
+        if (candidates.isEmpty()) {
             return emptyList()
         }
 
-        val examIds = pendingSurveys.mapNotNullTo(LinkedHashSet()) { it.examIdFromParentId() }.toList()
+        val examIds = candidates.mapNotNullTo(LinkedHashSet()) { it.examIdFromParentId() }.toList()
         if (examIds.isEmpty()) {
             return emptyList()
         }
@@ -115,13 +158,13 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         val validExamIds = exams.map { it.id }.toSet()
 
         val uniqueSurveys = linkedMapOf<String, Submission>()
-        pendingSurveys.forEach { submission ->
+        candidates.forEach { submission ->
             val examId = submission.examIdFromParentId()
             if (examId != null && validExamIds.contains(examId) && !uniqueSurveys.containsKey(examId)) {
                 uniqueSurveys[examId] = submission
             }
         }
-        return uniqueSurveys.values.toList()
+        return hydrateSubmissions(uniqueSurveys.values.toList())
     }
 
     override suspend fun getSurveyTitlesFromSubmissions(
@@ -206,8 +249,8 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         userIds.chunked(500).forEach { chunk ->
             val existingSubmissions = submissionDao.getPendingByUsersAndParent(chunk, parentId)
             val existingUserIds = existingSubmissions.mapNotNull { it.userId }.toSet()
-            val newSubmissions = chunk.filter { it !in existingUserIds }.map { userId ->
-                Submission().apply {
+            val newSubmissions = chunk.mapNotNull { userId ->
+                if (userId in existingUserIds) null else Submission().apply {
                     id = UUID.randomUUID().toString()
                     this.userId = userId
                     this.parentId = parentId
@@ -864,16 +907,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun getPendingExamResults(): List<Submission> {
-        return submissionDao.getPendingExamResults().map { entity ->
-            val answers = answerDao.getBySubmissionId(entity.id)
-            entity.apply { this.answers = answers.toMutableList(); teamId?.let { membershipDoc = MembershipDoc().apply { this.teamId = it } } }
-        }
+        return hydrateSubmissions(submissionDao.getPendingExamResults())
     }
 
     override suspend fun getPendingSubmissionsForUpload(): List<Submission> {
-        return submissionDao.getPendingSubmissions().map { entity ->
-            val answers = answerDao.getBySubmissionId(entity.id)
-            entity.apply { this.answers = answers.toMutableList(); teamId?.let { membershipDoc = MembershipDoc().apply { this.teamId = it } } }
-        }
+        return hydrateSubmissions(submissionDao.getPendingSubmissions())
     }
 }

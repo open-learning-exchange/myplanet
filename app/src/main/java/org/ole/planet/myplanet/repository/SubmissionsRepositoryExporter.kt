@@ -7,8 +7,9 @@ import android.graphics.pdf.PdfDocument
 import android.os.Environment
 import java.io.File
 import java.io.FileOutputStream
-import java.text.SimpleDateFormat
-import java.util.Date
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
 import org.json.JSONObject
@@ -31,7 +32,9 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
 ) {
 
     companion object {
-        private val dateFormatter = ThreadLocal.withInitial { SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()) }
+        private val dateFormatter: DateTimeFormatter =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.getDefault())
+                .withZone(ZoneId.systemDefault())
 
         private const val PAGE_WIDTH = 595
         private const val PAGE_HEIGHT = 842
@@ -172,7 +175,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
 
                 canvas.drawText("Total Submissions: ${submissions.size}", MARGIN, yPosition, normalPaint)
                 yPosition += LINE_HEIGHT
-                canvas.drawText("Generated: ${dateFormatter.get()?.format(Date())}", MARGIN, yPosition, normalPaint)
+                canvas.drawText("Generated: ${dateFormatter.format(Instant.now())}", MARGIN, yPosition, normalPaint)
                 yPosition += LINE_HEIGHT * 3
 
                 val examId = getExamId(submissions.firstOrNull()?.parentId)

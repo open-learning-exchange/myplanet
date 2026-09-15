@@ -70,6 +70,7 @@ class CoursesRepositoryImplTest {
         every { sharedPrefManager.getConcatenatedLinks() } returns "[]"
         org.ole.planet.myplanet.utils.UrlUtils.init(sharedPrefManager)
         repository = CoursesRepositoryImpl(
+            mockk(relaxed = true),
             progressRepository,
             activitiesRepository,
             submissionsRepository,
@@ -90,8 +91,8 @@ class CoursesRepositoryImplTest {
             myLibraryDao,
             userRepository,
             dispatcherProvider,
-        realtimeSyncManager,
-        mockk(relaxed = true)
+            realtimeSyncManager,
+            mockk(relaxed = true)
         )
     }
 
