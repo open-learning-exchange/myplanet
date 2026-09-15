@@ -214,14 +214,15 @@ object VoicesActions {
     ): MembersDetailFragment? {
         if (userModel == null) return null
         val userName = "${userModel.firstName} ${userModel.lastName}".trim().ifBlank { userModel.name }
+        val visitStats = activitiesRepository.getMemberVisitStats(userModel.id, userModel.name)
         val fragment = MembersDetailFragment.newInstance(
             userName.toString(),
             userModel.email.toString(),
             userModel.dob.toString().substringBefore("T"),
             userModel.language.toString(),
             userModel.phoneNumber.toString(),
-            (userModel.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0).toString(),
-            (activitiesRepository.getLastVisit(userModel.name ?: "")?.let { dateFormatter.get()?.format(Date(it)) } ?: "No logout record found"),
+            visitStats.offlineVisitCount.toString(),
+            (visitStats.lastVisit?.let { dateFormatter.get()?.format(Date(it)) } ?: "No logout record found"),
             "${userModel.firstName} ${userModel.lastName}",
             userModel.level.toString(),
             userModel.userImage

@@ -131,4 +131,16 @@ class MarkdownUtilsTest {
 
         assertSame(firstMovementMethod, secondMovementMethod)
     }
+
+    @Test
+    fun prependBaseUrlToImages_returns_identical_string_when_no_bracket_present() {
+        val markdown = "plain text with no bracket at all"
+        assertSame(markdown, MarkdownUtils.prependBaseUrlToImages(markdown, "http://base.url/"))
+    }
+
+    @Test
+    fun prependBaseUrlToImages_returns_identical_string_when_brackets_present_without_image_markup() {
+        val markdown = "plain text with (parens) and a ! and [brackets]"
+        assertSame(markdown, MarkdownUtils.prependBaseUrlToImages(markdown, "http://base.url/"))
+    }
 }
