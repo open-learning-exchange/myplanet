@@ -5075,17 +5075,24 @@ class TeamLogDao extends DatabaseAccessor<AppDatabase> with _$TeamLogDaoMixin {
 
   /// Merges a page of `team_activities` documents.
   ///
-  /// Wrapped in one transaction so a 200-document page commits once — the
-  /// reason Kotlin wraps its own bulk team insert in `withTransaction`
-  /// (`TeamsRepositoryImpl.kt:1258-1265`), where it notes that a per-row
-  /// commit turns one page into minutes of fsync.
+  /// One `batch` — which is itself transactional — rather than a per-row
+  /// insert, so a 200-document page commits once. That is the reason Kotlin
+  /// wraps its own bulk team insert in `withTransaction`
+  /// (`TeamsRepositoryImpl.kt:1258-1265`), where it notes a per-row commit
+  /// turns one page into minutes of fsync, and it is the form
+  /// `OfflineActivityDao.upsertAll` already uses for the sibling walk.
+  ///
+  /// **The shape matters more here than the comparison suggests.** The first
+  /// cut hand-rolled `transaction` + `insertOnConflictUpdate` per row, which
+  /// holds the single write lock open across 200 round trips. The database is
+  /// opened with `NativeDatabase.createInBackground` and no `setup:` callback,
+  /// so there is no WAL and no busy timeout — and a heavy walk runs in the
+  /// `workmanager` isolate, a *second* engine on the same SQLite file. Every
+  /// millisecond that lock is held is a millisecond the UI isolate's own write
+  /// can fail outright rather than wait.
   Future<void> upsertAllFromSync(List<TeamLogTableCompanion> rows) async {
     if (rows.isEmpty) return;
-    await transaction(() async {
-      for (final row in rows) {
-        await into(teamLogTable).insertOnConflictUpdate(row);
-      }
-    });
+    await batch((b) => b.insertAllOnConflictUpdate(teamLogTable, rows));
   }
 }
 
