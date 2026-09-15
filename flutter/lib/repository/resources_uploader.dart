@@ -104,6 +104,12 @@ class ResourcesUploader {
   /// The `uploadType` these operations carry in the outbox.
   static const String type = 'resources';
 
+  /// The `uploadType` of the **attachment** retry row, filed only when a PUT
+  /// is refused — see [attachmentHandler]. Keyed on the document's CouchDB id
+  /// rather than the local one, because by the time it is written the row has
+  /// adopted that identity.
+  static const String attachmentType = 'resource_attachment';
+
   final PlanetApi _api;
   final ResourcesRepository _resources;
   final TeamsRepository _teams;
@@ -331,6 +337,30 @@ class ResourcesUploader {
           'Upload response carried no id/rev',
         );
       }
+
+      // **The bytes move with the key.** [MyLibraryDao.markUploaded] rekeys
+      // the row onto the CouchDB id, and every file reader in the port
+      // resolves `couchId ?? id`, so leaving the files under the old uuid
+      // would hand the viewer a directory that does not exist — the Phase 100
+      // shape, with each half correct and the pair wrong. Done first, so that
+      // the window in which the row and the files disagree is the failure of
+      // this call rather than the gap between two of them.
+      //
+      // A false answer is not fatal and deliberately does not stop the mark:
+      // the document is already on the server, and a row left un-marked would
+      // be POSTed again by the next sweep, which is strictly worse than local
+      // bytes the user can re-download. [_uploadAttachment] is told where the
+      // files actually are so the server still gets them.
+      final bytesMoved = await ResourceFiles.moveResourceDirectory(
+        fromDocId: row.itemId,
+        toDocId: couchId,
+      );
+      if (!bytesMoved) {
+        log(
+          'Resource ${row.itemId} kept its files under the old id: '
+          'the move to $couchId failed',
+        );
+      }
       // Port of `ResourcesRepositoryImpl.markResourceUploaded:803-806`. Its
       // false return means the local row vanished between the POST and now,
       // which Kotlin surfaces as a failed item via `markUploaded`'s
@@ -347,8 +377,17 @@ class ResourcesUploader {
         log('Resource ${row.itemId} disappeared before its id could be stored');
         return result;
       }
+      // The row answers to [couchId] from here on, not to `row.itemId`, which
+      // is the local uuid the outbox row was keyed on and which no longer
+      // names a `my_library` row.
       await _linkPrivateResourceToTeam(row, couchId, payload);
-      await _uploadAttachment(row, couchId, rev, authHeader);
+      await _uploadAttachment(
+        row,
+        couchId,
+        rev,
+        authHeader,
+        fileDocId: bytesMoved ? couchId : row.itemId,
+      );
     }
     return result;
   };
@@ -399,7 +438,10 @@ class ResourcesUploader {
     String couchId,
     Map<String, dynamic> payload,
   ) async {
-    final resource = await _resources.getLibraryItemById(row.itemId);
+    // Read under the **CouchDB** id: [ResourcesRepository.markResourceUploaded]
+    // has already rekeyed the row, and `row.itemId` is the local uuid the
+    // outbox entry was filed under.
+    final resource = await _resources.getLibraryItemById(couchId);
     final teamId = resource?.privateFor;
     // Kotlin's condition is `library.isPrivate && !library.privateFor
     // .isNullOrBlank()` (`ResourcesRepositoryImpl.kt:809`), and
@@ -445,15 +487,17 @@ class ResourcesUploader {
   /// MyLibrary)`, with its path bug fixed.
   ///
   /// **The one key.** The bytes were written by
-  /// [ResourcesRepository.saveLocalResource] through
-  /// [ResourceFiles.fileFor] under the row's **local** id, and they are read
-  /// back here through [ResourceFiles.existingFileFor] under
-  /// `row.itemId` — which *is* that local id, because
-  /// [OutboxRepository.enqueue] is keyed on `MyLibraryRow.id`. One derivation,
-  /// one helper, both sides. Phase 100's verification photo is what happens
-  /// when the two sides each pick their own key, and
-  /// `resources_uploader_test.dart`'s *the round trip* group drives the writer and this method
-  /// together rather than trusting either half's own fixture.
+  /// [ResourcesRepository.saveLocalResource] through [ResourceFiles.fileFor]
+  /// under the row's **local** id, and [handler] has just moved them to the
+  /// CouchDB id along with the row itself
+  /// ([ResourceFiles.moveResourceDirectory]), so [fileDocId] is normally
+  /// [couchId]. It is a parameter rather than an assumption because the move
+  /// can fail: the bytes are then still under the old uuid, and sending them
+  /// from there is better than filing a document with no attachment. One
+  /// derivation, handed down, never re-guessed — Phase 100's verification
+  /// photo is what happens when the two sides each pick their own key, and
+  /// `resources_uploader_test.dart`'s *the round trip* group drives the writer
+  /// and this method together rather than trusting either half's own fixture.
   ///
   /// A row with **no file** is a no-op, not an error, and that case is real
   /// here rather than defensive: Kotlin refuses to save a resource without one
@@ -461,14 +505,29 @@ class ResourcesUploader {
   /// a metadata-only row can exist and its document is still worth filing.
   /// Kotlin reaches the same outcome by accident — its `File(basename)` never
   /// exists either, so every attachment took this branch.
+  ///
+  /// **A refusal is no longer the end of it**, which is the hole this closes.
+  /// Kotlin's attachment PUT is best-effort with no failure channel at all
+  /// (`uploadDoc` reports "Unable to upload resource" through `onSuccess`), and
+  /// so was the port's: `adoptAttachmentRev` keeps `rev == downloadedRev` on
+  /// success and [MyLibraryDao.markUploaded] keeps them equal when there is
+  /// nothing to send, so **nothing downstream can even tell the difference**
+  /// between an attachment that landed and one that never will. The document
+  /// sits on Planet with no `_attachments` for ever, the bytes sit on the one
+  /// handset that authored them, and the user is told the resource uploaded.
+  /// A refused PUT now files its own outbox row ([attachmentType]) so the next
+  /// drain tries again. See [attachmentHandler] for what that row is allowed
+  /// to do.
   Future<void> _uploadAttachment(
     OutboxRow row,
     String couchId,
     String rev,
-    String? authHeader,
-  ) async {
+    String? authHeader, {
+    required String fileDocId,
+  }) async {
+    // Read under the CouchDB id: the row was rekeyed a few lines up.
     final localAddress = (await _resources.getLibraryItemById(
-      row.itemId,
+      couchId,
     ))?.resourceLocalAddress;
     if (localAddress == null || localAddress.isEmpty) return;
 
@@ -480,26 +539,61 @@ class ResourcesUploader {
     // though it were the guarantee invites the next reader to stop checking.
     final filename = p.basename(localAddress.replaceAll(r'\', '/'));
 
-    final file = await ResourceFiles.existingFileFor(
-      docId: row.itemId,
+    final result = await _sendAttachment(
+      endpoint: row.endpoint,
+      couchId: couchId,
+      fileDocId: fileDocId,
+      filename: filename,
+      rev: rev,
+      authHeader: authHeader,
+    );
+
+    // Null is "there are no bytes under either key", which is not a failure
+    // and must not queue a retry that can never find anything to send.
+    if (result == null) return;
+    if (result is NetworkSuccess<Map<String, dynamic>>) return;
+
+    log('Resource attachment upload failed: $result');
+    await _enqueueAttachmentRetry(
+      row: row,
+      couchId: couchId,
       filename: filename,
     );
-    if (file == null) return;
+  }
 
-    late final List<int> bytes;
+  /// The PUT itself, shared by the inline attempt and by [attachmentHandler]
+  /// so a retry cannot drift from the send it is retrying.
+  ///
+  /// Returns null when there is no usable file — distinct from a failed send,
+  /// because only one of the two is worth queueing.
+  Future<NetworkResult<Map<String, dynamic>>?> _sendAttachment({
+    required String endpoint,
+    required String couchId,
+    required String fileDocId,
+    required String filename,
+    required String rev,
+    required String? authHeader,
+  }) async {
+    final file = await ResourceFiles.existingFileFor(
+      docId: fileDocId,
+      filename: filename,
+    );
+    if (file == null) return null;
+
+    final List<int> bytes;
     try {
       bytes = await file.readAsBytes();
     } on Exception catch (e, stack) {
       log('Could not read local resource file', error: e, stackTrace: stack);
-      return;
+      return null;
     }
 
-    // `row.endpoint` is already `<db>/resources`, so the document id and the
+    // `endpoint` is already `<db>/resources`, so the document id and the
     // attachment name append directly — the same construction
     // `SubmitPhotosUploader` uses, and the same
     // `String.format("%s/resources/%s/%s", url, id, name)` Kotlin builds.
     final attachmentUrl =
-        '${row.endpoint}/${Uri.encodeComponent(couchId)}'
+        '$endpoint/${Uri.encodeComponent(couchId)}'
         '/${Uri.encodeComponent(filename)}';
     final contentType = lookupMimeType(filename) ?? 'application/octet-stream';
 
@@ -520,12 +614,94 @@ class ResourcesUploader {
       // [MyLibraryDao.adoptAttachmentRev].
       final newRev = data['rev'];
       if (newRev is String && newRev.isNotEmpty) {
-        await _resources.adoptAttachmentRev(row.itemId, newRev);
+        await _resources.adoptAttachmentRev(couchId, newRev);
       }
-    } else {
-      log('Resource attachment upload failed: $attachResult');
+    }
+    return attachResult;
+  }
+
+  Future<void> _enqueueAttachmentRetry({
+    required OutboxRow row,
+    required String couchId,
+    required String filename,
+  }) async {
+    try {
+      await _outbox.enqueue(
+        uploadType: attachmentType,
+        // The **document** id, because that is what the row is keyed on now
+        // and what [attachmentHandler] reads its current revision from.
+        itemId: couchId,
+        endpoint: row.endpoint,
+        // Deliberately just the name. The revision is *not* stored: it moves
+        // whenever anything touches the document, and a stored one would make
+        // every later attempt a guaranteed 409 while also changing the request
+        // on each refresh, which is precisely what [OutboxRepository.enqueue]'s
+        // memo is unable to match. [attachmentHandler] reads the live one.
+        payload: {'filename': filename},
+        userId: row.userId,
+      );
+    } on Exception catch (e, stack) {
+      // The document is filed and the bytes are on the device; a failure to
+      // record the retry must not be reported as a failure to upload, which
+      // would re-POST the document and duplicate it.
+      log(
+        'Could not queue resource attachment retry',
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
+
+  /// The [OutboxHandler] for [attachmentType] — the durable half of the
+  /// attachment PUT.
+  ///
+  /// It is enqueued only by [_uploadAttachment] after a refused send, so an
+  /// attachment that lands first time never files a row at all.
+  ///
+  /// Three states end the row without a send, all reported as success so no
+  /// dead row accretes for a question that can never be re-asked: the resource
+  /// is gone locally, it has no revision to match against, or its bytes are no
+  /// longer on disk. The Phase 148 policy is what shapes the rest — a
+  /// transport failure or a 5xx is `transient` and tries again, another 4xx is
+  /// `rejected` and stops. **This is a PUT to a known URL, not an append**, so
+  /// unlike the document POST above a retry cannot create a second anything:
+  /// the worst case is the same bytes written twice under the same name.
+  ///
+  /// The revision comes from the local row at drain time rather than from the
+  /// payload, so a document whose revision moved on (the resource was edited,
+  /// or a sync pulled a newer one) is still matched correctly.
+  OutboxHandler get attachmentHandler => (row, payload, authHeader) async {
+    const nothingToSend = NetworkSuccess<Map<String, dynamic>>(
+      <String, dynamic>{},
+    );
+
+    final filename = payload['filename'];
+    if (filename is! String || filename.isEmpty) return nothingToSend;
+
+    final resource = await _resources.getLibraryItemById(row.itemId);
+    final rev = resource?.rev;
+    if (rev == null || rev.isEmpty) return nothingToSend;
+
+    final result = await _sendAttachment(
+      endpoint: row.endpoint,
+      couchId: row.itemId,
+      fileDocId: row.itemId,
+      filename: filename,
+      rev: rev,
+      authHeader: authHeader,
+    );
+    return result ?? nothingToSend;
+  };
+
+  /// Both handlers this uploader owns, for the drainer's registration map.
+  ///
+  /// A map rather than two getters for the same reason `ActivitiesUploader`
+  /// exposes one: the registration site then cannot pick up a new type's
+  /// handler by editing one line and forget the other.
+  Map<String, OutboxHandler> get handlers => {
+    type: handler,
+    attachmentType: attachmentHandler,
+  };
 
   static String authHeaderFor(ServerConfig config) =>
       UrlUtils.authHeader(config);
