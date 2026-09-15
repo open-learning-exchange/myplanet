@@ -1,6 +1,6 @@
 [versions]
 gradle = "9.3.1"
-room = "2.8.4"
+room = "2.8.5"
 hilt = "2.60.1"
 ksp = "2.3.11"
 kotlin = "2.4.20"
