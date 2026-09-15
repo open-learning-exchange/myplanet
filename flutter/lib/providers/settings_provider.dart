@@ -255,19 +255,23 @@ class ClearDataNotifier extends AsyncNotifier<void> {
 /// Whether this device holds synced data at all — the data-presence half of
 /// `ServerAddressAdapter`'s `isServerAlreadyConfigured`.
 ///
-/// Kotlin can use the configured URL itself
+/// Kotlin uses the configured URL itself
 /// (`!urlWithoutProtocol.isNullOrEmpty()`, `ServerDialogExtensions.kt:193`)
-/// because its server dialog opens *over* a configured device. The port
-/// cannot: the only way to reach `ServerConfigScreen` on a configured device
-/// is the login screen's "change server" action, and that clears the
-/// persisted config to make the router's redirect fire — so by the time the
-/// screen builds, the signal Kotlin reads has already been destroyed while the
-/// database is still full of the old server's documents.
+/// because its server dialog opens *over* a configured device, and so does
+/// this now — `ref.watch(serverConfigProvider) != null` is that same signal.
+/// It did not always: the only way to reach `ServerConfigScreen` on a
+/// configured device was the login screen's "change server", which cleared the
+/// persisted config to make the router's redirect fire, so by the time the
+/// screen built, the signal Kotlin reads had been destroyed while the database
+/// was still full of the old server's documents. [Routes.changeServer]
+/// navigates instead.
 ///
-/// `lastSync` survives `clearServerConfig()` and is 0 on a fresh install and
-/// after a reset, so "this device has synced with some server" is a question
-/// the port can still answer. It says nothing about *which* server, which is
-/// what [localPlanetCodesProvider] is for.
+/// The `lastSync` arm stays, and is no longer the load-bearing one. It answers
+/// "this device has synced with *some* server" where the configuration is
+/// absent — after a partial wipe, or a preference store that lost the URL but
+/// not the rows — and it is 0 on a fresh install and after a reset. It says
+/// nothing about *which* server, which is what [localPlanetCodesProvider] is
+/// for.
 ///
 /// Reading this touches [planetPrefsProvider], which throws unless overridden:
 /// a widget test of the server-config screen must override this provider.
@@ -280,23 +284,30 @@ final deviceHoldsServerDataProvider = Provider<bool>((ref) {
 /// device, read out of the data itself rather than out of a preference.
 ///
 /// This is the port's answer to the half of Kotlin's gate that
-/// [deviceHoldsServerDataProvider] cannot supply: `position !=
-/// selectedPosition`, i.e. "is the server being adopted the one this data came
-/// from?". Kotlin answers it from the configured URL, which the port's "change
-/// server" destroys before this screen is built, and no preference survives
-/// that — so the question is asked of the database being protected instead.
-/// `users.planetCode` is written from each synced user document
-/// (`UserMapper`), and a member created on the device gets `config.code`
-/// (`UserRepository`), so the column and a `ServerConfig.code` are the same
-/// namespace.
+/// [deviceHoldsServerDataProvider] cannot supply: "is the server being adopted
+/// the one this data came from?". `users.planetCode` is written from each
+/// synced user document (`UserMapper`), and a member created on the device
+/// gets `config.code` (`UserRepository`), so the column and a
+/// `ServerConfig.code` are the same namespace.
 ///
-/// Kotlin has a comparison of exactly this shape and it is not the URL one:
-/// `SyncConfigurationCoordinator` raises `clearDataDialog` when the `minapk`
-/// check succeeded but the server returned a `configurations` document id
-/// different from the stored one (`SyncActivity.kt:245`). Comparing the
-/// community rather than the host is also the more correct question — a
-/// Planet's clone URL is a different host serving the same community, and
-/// nothing should be wiped for switching to it.
+/// **Kotlin does not have this comparison, and an earlier version of this
+/// comment said it did.** It claimed `SyncConfigurationCoordinator` compares
+/// the community, citing `SyncActivity.kt:245` — which is only the
+/// `onClearDataDialog()` callback override. The decision is
+/// `handleConfigurationSuccess` (`SyncConfigurationCoordinator.kt:63-110`) and
+/// it compares `id == savedId`, the CouchDB `_id` of the first
+/// `configurations` row against the stored `configurationId`; the `code`
+/// beside it is written as `communityName` and never compared. The right
+/// Kotlin citation for "the host is the wrong question" is that the check is
+/// not on the host either.
+///
+/// Asking the community is still the choice here, for a reason Kotlin's
+/// preference-based check does not have: this reads the data being protected.
+/// A Planet's clone URL is a different host serving the same community, and a
+/// configuration id is a preference — absent on any device configured through
+/// Kotlin's own "Save" path, which never writes one
+/// (`SyncConfigurationCoordinator.kt:86` is its only writer, on the "sync"
+/// path with `savedId == null`).
 final localPlanetCodesProvider = FutureProvider<Set<String>>((ref) async {
   final users = await ref.watch(userDaoProvider).getAllUsers();
   return users

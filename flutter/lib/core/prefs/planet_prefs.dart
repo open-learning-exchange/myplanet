@@ -200,8 +200,12 @@ class PlanetPrefs {
 
   /// Forgets the configured server entirely.
   ///
-  /// Without this the "change server" action only clears in-memory state, and
-  /// the next cold start reads the old server straight back out of storage.
+  /// One caller: the wipe in `ClearDataNotifier`, where the configuration
+  /// should genuinely be gone because the data it identifies is going too.
+  /// "Change server" used to call it as well — not to forget anything, but so
+  /// the router's redirect would fire and carry the user to the configuration
+  /// screen. That destroyed the identity of the server the on-device database
+  /// belongs to and left the database full; it navigates now.
   Future<void> clearServerConfig() async {
     await _prefs.remove(_keyServerUrl);
     await _prefs.remove(_keyAlternativeUrl);

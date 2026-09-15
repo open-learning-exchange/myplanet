@@ -123,8 +123,14 @@ void main() {
     /// Routes with no `context.push`/`go` in `lib/`, and why that is correct.
     const allowed = <String, String>{
       // Reached by the router's own redirect rather than by a navigation.
+      //
+      // `/server` is deliberately **not** here. It used to be — it was a pure
+      // redirect target, reachable only by clearing the persisted
+      // configuration so `redirect` would fire, which is how three ported and
+      // green code paths behind it came to be dead. `Routes.changeServer`
+      // navigates there now, so this rule holds the entry point open: delete
+      // that navigation and this test fails rather than shrugging.
       '/onboarding': 'redirect target on a first launch',
-      '/server': 'redirect target when no server is configured',
       '/login': 'redirect target when there is no session',
       '/home': 'initialLocation, and the redirect target once signed in',
       // Built by DeepLinkHandler.publicSurveyLocation, covered by the deep-link

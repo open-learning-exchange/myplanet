@@ -50,12 +50,23 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
   /// than by index because the list is reordered on every `setState` and an
   /// index does not survive that. `-1` becomes `null`.
   ///
-  /// Kotlin's companion `lastSelectedPosition` and its `revertSelection` are
-  /// **not** ported, and the reason is where the gate had to move to: they
-  /// exist only to undo a selection when the user declines the clear-data
-  /// dialog, and in this port that dialog is raised from the Connect button
-  /// rather than from the row tap. Porting them would have added an undo with
-  /// no caller. See `_connect` for why the gate sits there.
+  /// Kotlin's companion `lastSelectedPosition` and its `revertSelection`
+  /// (`ServerAddressAdapter.kt:25-26, 35-56`) stay unported, and the reason is
+  /// no longer "the row tap warns about nothing here" — since
+  /// [Routes.changeServer] it does warn, exactly where Kotlin warns. It is
+  /// that **`revertSelection` reverts nothing.** It is the `onCancel` of the
+  /// row tap's clear-data dialog, and the branch that raises that dialog
+  /// returns *before* `setSelectedPosition`, so the selection it is asked to
+  /// undo was never made. What it actually does is assign the selection from
+  /// one step further back: in the normal flow `lastSelectedPosition ==
+  /// selectedPosition` and the call is a no-op, and where they differ it moves
+  /// the highlight to a stale row. `ServerAddressAdapterTest.kt:71-86` calls it
+  /// and asserts nothing about it, so nothing pins those semantics either.
+  ///
+  /// Following the caller chain to its end (the Phase 149 rule) makes the
+  /// honest port of that pair *nothing*, not a faithful reimplementation of a
+  /// no-op — so declining the dialog here simply leaves the selection alone,
+  /// which is what Kotlin's own working case does.
   String? _selectedHost;
 
   /// The host of the persisted configuration, when there is one. Kotlin's
@@ -82,11 +93,24 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
       _urlController.text = existing.serverUrl;
       _pinController.text = existing.pin;
       // Port of the `submitList` completion callback
-      // (`ServerDialogExtensions.kt:196-205`): the initial selection is
+      // (`ServerDialogExtensions.kt:196-210`): the initial selection is
       // resolved only once the list exists, and only for a stored URL. The
       // `!syncFailed` half of that guard has no counterpart — `syncFailed` is
       // a `SyncActivity` field set when a sync attempt failed, and the port's
       // route carries no such state.
+      //
+      // Two knowing differences, both consequences of this being a form
+      // rather than Kotlin's two-mode dialog. Kotlin fills the fields *only*
+      // when the stored URL matches a row the list is currently showing
+      // (`:203-205`) and then **disables both** (`:211-212`); a hand-typed
+      // server is prefilled instead by manual mode's `setupManualUi`
+      // (`:153-165`), which is the shape this screen has. So filling them
+      // unconditionally and leaving them editable is `setupManualUi`, not a
+      // relaxation of the list path.
+      //
+      // The prefill is also what the old "change server" made impossible:
+      // it cleared the configuration to navigate here, so `existing` was null
+      // on every reachable path and this whole branch was dead.
       _configuredHost = hostWithoutScheme(existing.serverUrl);
       _selectedHost = _configuredHost;
     }
@@ -107,16 +131,27 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
   /// the wipe. This port's form is always editable, so the equivalent single
   /// rule is: never adopt a configuration over another community's data.
   ///
-  /// The comparison is the **community code**, not the host. Kotlin has this
-  /// exact comparison as its other clear-data trigger — `clearDataDialog` from
-  /// `SyncConfigurationCoordinator` when the `minapk` check succeeded and the
-  /// server answered with a `configurations` id other than the stored one
-  /// (`SyncActivity.kt:245`) — and it is the more correct question anyway,
-  /// because a Planet's clone URL is a different host serving the same
-  /// community and nothing should be wiped for switching to it. It also
-  /// survives the thing that destroys the host: "change server" clears the
-  /// persisted config, but `users.planetCode` is in the database this is
-  /// protecting. See [localPlanetCodesProvider].
+  /// The comparison is the **community code**, not the host, and it is asked
+  /// of the database rather than of a preference. Kotlin's analogous
+  /// trigger is close to this but not the same, and an earlier version of this
+  /// comment got it wrong in a way worth recording: it said Kotlin "has this
+  /// exact comparison" at `SyncActivity.kt:245`. That line is only the
+  /// `onClearDataDialog()` callback override. The decision is in
+  /// `SyncConfigurationCoordinator.handleConfigurationSuccess`
+  /// (`:63-110`), and it compares `id == savedId` — the CouchDB `_id` of the
+  /// first `configurations` row against the stored `configurationId`. The
+  /// `code` alongside it is only ever written as `communityName` and is never
+  /// compared. So Kotlin asks *"is this a different configuration document?"*
+  /// where this asks *"is this a different community than the one whose users
+  /// are on this device?"*.
+  ///
+  /// Keeping the community question is deliberate. A Planet's clone URL is a
+  /// different host serving the same community, so the host is the wrong
+  /// question; and reading `users.planetCode` interrogates the data being
+  /// protected rather than a preference that could be absent, stale or — as
+  /// the old "change server" proved — deleted. See [localPlanetCodesProvider],
+  /// and the PR's "Reported, not fixed" for the narrow case the id comparison
+  /// catches and this one does not.
   Future<void> _connect() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
@@ -220,7 +255,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
   }
 
   /// Port of the click listener in `ServerAddressAdapter.onBindViewHolder`
-  /// (`ServerAddressAdapter.kt:88-97`), which is **two** branches:
+  /// (`ServerAddressAdapter.kt:83-96`), which is **two** branches:
   ///
   /// ```kotlin
   /// if (isServerAlreadyConfigured && position != selectedPosition) {
@@ -230,19 +265,57 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
   /// }
   /// ```
   ///
-  /// Only the `else` arm is ported **here**, and that is deliberate: in Kotlin
-  /// the row tap *is* the commit — `serverCheck` is `true` and never assigned
-  /// (`SyncActivity.kt:122`), the URL and PIN fields are disabled and the
-  /// submit button is `GONE` in list mode (`ServerDialogExtensions.kt:211-212`,
-  /// `:32`), so tapping a row fills both fields, writes the protocol and fires
-  /// the sync. This port has an editable form and a separate Connect button,
-  /// so a tap commits nothing and warning about one would warn about nothing.
-  /// The warn arm therefore moves to the place that does commit: see
-  /// [_connect].
-  void _onServerTapped(PlanetServer server) {
+  /// **Both arms, now.** Only the `else` arm used to be reachable, and not
+  /// because the warn arm was judged wrong: it needs to know which server the
+  /// device is currently on, and the old "change server" cleared exactly that
+  /// before this screen was built. With the configuration intact
+  /// ([Routes.changeServer]) the early warning is portable, so it is back
+  /// where Kotlin has it — and the commit gate in [_connect] stays where it
+  /// is, because in *this* port a tap still commits nothing.
+  ///
+  /// The two gates ask different questions on purpose, and the difference is
+  /// the information available at each moment. A tap knows only a **host**,
+  /// which is what Kotlin compares here too (`isServerAlreadyConfigured` is
+  /// "the `serverURL` preference is non-empty", `ServerDialogExtensions.kt:193`).
+  /// The community code only exists after the handshake, which is why the
+  /// binding gate is at Connect. So a tap on a clone of the same Planet warns
+  /// where Connect would not — Kotlin warns there too — and declining costs
+  /// nothing: the fields are still editable, and Connect then asks the more
+  /// accurate question and lets the switch through.
+  ///
+  /// One deliberate divergence on accept. Kotlin **throws the tapped server
+  /// away**: `onClearDataDialog = { _, _ -> ... }` ignores both parameters
+  /// (`ServerDialogExtensions.kt:188`), the wipe ends in
+  /// `Runtime.getRuntime().exit(0)`, and the user picks again after the
+  /// relaunch. That is a consequence of the process kill, not a decision — the
+  /// port has no restart to lose the tap across, so the tap it was given is
+  /// honoured.
+  Future<void> _onServerTapped(PlanetServer server) async {
+    if (_warnsBeforeLeaving(server.host)) {
+      final cleared = await _showClearDataDialog();
+      if (!mounted) return;
+      // Declined. Kotlin's `revertSelection()` runs here and undoes nothing;
+      // see [_selectedHost]. Leaving the selection and the fields untouched is
+      // what that no-op amounts to.
+      if (!cleared) return;
+      setState(() {
+        _holdsServerData = false;
+        _configuredHost = null;
+      });
+    }
     _useServer(server);
     setState(() => _selectedHost = server.host);
   }
+
+  /// Kotlin's `isServerAlreadyConfigured && position != selectedPosition`.
+  ///
+  /// `_holdsServerData` is redundant while `_configuredHost` is non-null — a
+  /// persisted configuration makes [deviceHoldsServerDataProvider] true on its
+  /// own — and it is named anyway, because a wipe clears both and the pair
+  /// reads as the question being asked: is there data, and is it another
+  /// server's?
+  bool _warnsBeforeLeaving(String host) =>
+      _holdsServerData && _configuredHost != null && host != _selectedHost;
 
   /// Port of `SyncActivity.clearDataDialog(message, config, onCancel)`
   /// (`SyncActivity.kt:270-300`). Returns whether the data was actually
