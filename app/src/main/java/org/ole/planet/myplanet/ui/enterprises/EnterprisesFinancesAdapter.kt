@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.databinding.RowFinanceBinding
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.FileExistenceCache
 import org.ole.planet.myplanet.utils.ImageViewerUtils
 import org.ole.planet.myplanet.utils.SystemTimeProvider
 import org.ole.planet.myplanet.utils.TimeProvider
@@ -30,7 +31,7 @@ class EnterprisesFinancesAdapter(
         areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
     )
 ) {
-    private val attachmentPresenceCache = AttachmentPresenceCache()
+    private val attachmentPresenceCache = FileExistenceCache()
 
     override fun onCurrentListChanged(
         previousList: MutableList<Transaction>,

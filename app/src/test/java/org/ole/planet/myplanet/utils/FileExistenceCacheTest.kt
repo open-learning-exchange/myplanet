@@ -1,6 +1,5 @@
-package org.ole.planet.myplanet.ui.enterprises
+package org.ole.planet.myplanet.utils
 
-import java.io.File
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -8,16 +7,16 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
-class AttachmentPresenceCacheTest {
+class FileExistenceCacheTest {
 
     @get:Rule
     val tempFolder = TemporaryFolder()
 
-    private lateinit var cache: AttachmentPresenceCache
+    private lateinit var cache: FileExistenceCache
 
     @Before
     fun setUp() {
-        cache = AttachmentPresenceCache(ttlMs = 5000L)
+        cache = FileExistenceCache(ttlMs = 5000L)
     }
 
     @Test

@@ -11,6 +11,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ReportListItemBinding
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.FileExistenceCache
 import org.ole.planet.myplanet.utils.ImageViewerUtils
 import org.ole.planet.myplanet.utils.SystemTimeProvider
 import org.ole.planet.myplanet.utils.TimeProvider
@@ -24,7 +25,7 @@ class EnterprisesReportsAdapter(
     private val timeProvider: TimeProvider = SystemTimeProvider(),
 ) : ListAdapter<MyTeam, EnterprisesReportsAdapter.ReportsViewHolder>(diffCallback) {
     private var nonTeamMember = false
-    private val attachmentPresenceCache = AttachmentPresenceCache()
+    private val attachmentPresenceCache = FileExistenceCache()
 
     override fun onCurrentListChanged(
         previousList: MutableList<MyTeam>,
