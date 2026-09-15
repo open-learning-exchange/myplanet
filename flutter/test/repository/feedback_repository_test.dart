@@ -276,6 +276,128 @@ void main() {
   });
 
   test(
+    'the cleanup removes an uploaded row the server no longer has',
+    () async {
+      // The prune is a deliberate divergence — Kotlin's `FeedbackDao` has no
+      // delete at all — so it is pinned rather than left to be "corrected" in
+      // either direction. A row that reached the server and is then absent from
+      // a complete walk is a thread deleted on the server.
+      await database.feedbackDao.upsert(
+        FeedbackEntriesCompanion.insert(
+          id: 'fb-deleted-on-server',
+          isUploaded: const Value(true),
+        ),
+      );
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer((invocation) async {
+        final url = invocation.positionalArguments[0] as String;
+        if (url.contains('limit=0')) {
+          return const NetworkSuccess<Map<String, dynamic>>({'total_rows': 1});
+        }
+        return const NetworkSuccess<Map<String, dynamic>>({
+          'rows': [
+            {
+              'doc': {'_id': 'fb-still-there', '_rev': '1-a'},
+            },
+          ],
+        });
+      });
+
+      await repository.sync(config: config);
+
+      final stored = await database.feedbackDao.watchAllSorted().first;
+      expect(stored.map((row) => row.id), ['fb-still-there']);
+    },
+  );
+
+  test('the cleanup spares a row uploaded while the walk was running', () async {
+    // Writer and reader driven together. `deleteNotIn` spares `isUploaded =
+    // false` as it is *when the cleanup runs*, but the outbox drains on its
+    // own schedule: a thread that was pending when the walk began can be
+    // uploaded while the pages are in flight, and those pages were read from a
+    // server that did not have its document yet. Without the snapshot taken
+    // before the walk, the thread the user filed a minute ago is deleted from
+    // their own list.
+    await database.feedbackDao.upsert(
+      FeedbackEntriesCompanion.insert(
+        id: 'fb-just-filed',
+        isUploaded: const Value(false),
+      ),
+    );
+    when(
+      () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer((invocation) async {
+      final url = invocation.positionalArguments[0] as String;
+      if (url.contains('limit=0')) {
+        return const NetworkSuccess<Map<String, dynamic>>({'total_rows': 1});
+      }
+      // The outbox drains mid-walk: the row is now uploaded, but the page
+      // below was read before the server had it.
+      await database.feedbackDao.markUploaded('fb-just-filed', '1-fresh');
+      return const NetworkSuccess<Map<String, dynamic>>({
+        'rows': [
+          {
+            'doc': {'_id': 'fb-other', '_rev': '1-a'},
+          },
+        ],
+      });
+    });
+
+    await repository.sync(config: config);
+
+    final stored = await database.feedbackDao.watchAllSorted().first;
+    expect(
+      stored.map((row) => row.id),
+      containsAll(['fb-just-filed', 'fb-other']),
+    );
+  });
+
+  test(
+    'a pull that omits `_rev` keeps the revision the row is holding',
+    () async {
+      // `upsertAll` is an insert-or-replace, so a `Value(null)` here would wipe
+      // the revision a pending reply needs to update the document under — the
+      // Phase 56 shape. Unreachable from `_all_docs?include_docs=true`; this
+      // pins the guard for the next caller of `insertFromJson`.
+      await repository.insertFromJson([
+        {'_id': 'fb1', '_rev': '3-c', 'title': 'from the server'},
+      ]);
+      await repository.addReply('fb1', 'pending reply', 'user1');
+
+      await repository.insertFromJson([
+        {'_id': 'fb1', 'title': 'no revision on this one'},
+      ]);
+
+      final stored = await repository.getFeedbackById('fb1');
+      expect(stored!.rev, '3-c');
+      expect(stored.isUploaded, isFalse);
+    },
+  );
+
+  test('a reply is signed by its author, not by the thread owner', () async {
+    // Kotlin passes `feedback?.owner` (`FeedbackDetailActivity.kt:82`), so an
+    // admin answering ada's question posts a reply that reads as ada's. The
+    // port signs with the signed-in user; this is here so the divergence is
+    // not "corrected" back by a later parity pass.
+    await database.feedbackDao.upsert(
+      FeedbackEntriesCompanion.insert(
+        id: 'fb1',
+        owner: const Value('ada'),
+        messages: const Value('[]'),
+        isUploaded: const Value(true),
+      ),
+    );
+
+    await repository.addReply('fb1', 'looking into it', 'admin');
+
+    final stored = await repository.getFeedbackById('fb1');
+    final parsed = FeedbackMapper.parseMessages(stored!.messages);
+    expect(parsed.single.user, 'admin');
+    expect(stored.owner, 'ada');
+  });
+
+  test(
     'closeFeedback marks status as closed and resets isUploaded to false',
     () async {
       final entry = FeedbackEntriesCompanion.insert(

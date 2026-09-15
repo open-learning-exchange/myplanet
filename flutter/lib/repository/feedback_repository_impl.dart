@@ -62,18 +62,52 @@ class FeedbackRepositoryImpl implements FeedbackRepository {
     await feedbackDao.upsert(feedback);
   }
 
+  /// Closes the thread **and queues the close for upload** — a deliberate
+  /// divergence, not an oversight to be tidied away.
+  ///
+  /// Kotlin writes the status and stops (`FeedbackDao.kt:29-30`,
+  /// `UPDATE feedback SET status = 'Closed' WHERE id = :id`, and
+  /// `FeedbackRepositoryImpl.closeFeedback` calls nothing else). The row keeps
+  /// `isUploaded = true`, so the upload sweep — which selects on
+  /// `isUploaded = 0` — never sees it: the close never reaches the server, and
+  /// the next pull maps the server's still-open document back over the row and
+  /// reverts it on the device too. Closing a thread in the Android app is a
+  /// gesture that undoes itself.
+  ///
+  /// Marking the row pending is what makes the close mean something. The
+  /// caller queues it (`feedback_detail_screen._closeFeedback`), the outbox
+  /// sends the document back under its carried `_rev`, and the thread is
+  /// closed for the manager and every other device.
+  ///
+  /// The write is second on purpose: while the row reads `Closed` with
+  /// `isUploaded` still true, it is a row the uploader will not collect, so
+  /// the pending flag is what has to be written last.
   @override
   Future<void> closeFeedback(String id) async {
     await feedbackDao.closeById(id);
-    final existing = await feedbackDao.getById(id);
-    if (existing != null) {
-      // Mark as needing re-upload after closing
-      await feedbackDao.updateRow(
-        FeedbackEntriesCompanion(id: Value(id), isUploaded: const Value(false)),
-      );
-    }
+    // No existence check ahead of this: `updateRow` is an `UPDATE … WHERE id`,
+    // so a missing row is zero rows written rather than a row conjured up.
+    await feedbackDao.updateRow(
+      FeedbackEntriesCompanion(id: Value(id), isUploaded: const Value(false)),
+    );
   }
 
+  /// Appends a reply signed by [user] — **the signed-in user**, which is the
+  /// second deliberate divergence in this file.
+  ///
+  /// Kotlin signs every reply with the thread's *owner*:
+  /// `FeedbackDetailActivity.kt:82` passes `feedback?.owner` to
+  /// `viewModel.addReply`, so an admin answering ada's question posts a reply
+  /// that reads as if ada wrote it — to the manager list, to the web UI, and to
+  /// ada. The port's detail screen passes `session.name`
+  /// (`feedback_detail_screen.dart:137-141`).
+  ///
+  /// Nothing downstream depends on the two matching: the reply's `user` is a
+  /// display field, `watchByOwner` filters on the row's `owner` column and not
+  /// on any reply, and the merge in [FeedbackMapper._mergePendingReplies]
+  /// compares a reply's own `message`/`user`/`time` on both sides. So the only
+  /// effect of the divergence is that the name on a reply is the name of who
+  /// wrote it.
   @override
   Future<void> addReply(String id, String message, String user) async {
     final existing = await feedbackDao.getById(id);
@@ -162,6 +196,12 @@ class FeedbackRepositoryImpl implements FeedbackRepository {
 
     final batchSizer = AdaptiveBatchProcessor(initialSize: initialBatchSize);
     final savedIds = <String>[];
+    // Taken before the first page is read, and spared from the cleanup by
+    // identity — see the comment at `deleteNotIn` below for why the flag alone
+    // is not enough.
+    final pendingAtStart = {
+      for (final row in await feedbackDao.getPending()) row.id,
+    };
     var skip = 0;
     var walkedEveryPage = true;
 
@@ -229,9 +269,42 @@ class FeedbackRepositoryImpl implements FeedbackRepository {
       );
     }
 
-    // Clean up local rows not present on server if we walked all pages.
+    // The prune Kotlin does not have, kept deliberately, on three conditions.
+    //
+    // `FeedbackDao.kt` carries no delete of any kind and the Kotlin walk only
+    // inserts (`TransactionSyncManager.kt:224-226`), so a thread deleted on
+    // the server lives on an Android handset for ever. That is an omission
+    // rather than a decision, and this table really is a cache of the
+    // `feedback` database — so the port prunes, but only where all three of
+    // these hold:
+    //
+    // 1. **Only after a walk that read every page.** A failed page returns
+    //    `SyncFailed` above and a page that comes back empty leaves
+    //    `walkedEveryPage` false, so a short walk cannot reach this line.
+    //    That is the Phase 52 shape: a `deleteNotIn` over a keep set the walk
+    //    never finished filling is how a sync deletes what it merely failed to
+    //    read.
+    // 2. **Only rows the server is authoritative for.** Every column on this
+    //    table is derived from the document, so a row removed here that does
+    //    still exist on the server comes back whole on the next walk. Nothing
+    //    is lost that a pull cannot restore.
+    // 3. **Never a row this device is still holding.** `deleteNotIn` spares
+    //    `isUploaded = false`, which covers all three of the port's local
+    //    writes — a thread filed offline, a reply, and a close. But it spares
+    //    them as they are *when the cleanup runs*, and the outbox drains
+    //    independently of this walk: a row that was pending when the walk
+    //    began and was uploaded while it ran now reads `isUploaded = true`,
+    //    while the pages were read from a server that did not have its
+    //    document yet. It would be collected by nothing and deleted here —
+    //    the thread the user filed a minute ago disappearing from their own
+    //    list, to return on some later sync. `pendingAtStart` spares those ids
+    //    by identity, which closes that window.
+    //
+    // Condition 2 is also why an empty keep set is not treated as "the server
+    // has no feedback": a walk that collected nothing is far more likely to
+    // have gone wrong than to have found an empty database.
     if (walkedEveryPage && savedIds.isNotEmpty) {
-      await feedbackDao.deleteNotIn(savedIds);
+      await feedbackDao.deleteNotIn([...savedIds, ...pendingAtStart]);
     }
 
     return SyncComplete(savedIds.length);

@@ -123,12 +123,30 @@ class FeedbackMapper {
     final id = idOf(doc);
     final hasPendingLocalReply = existing != null && !existing.isUploaded;
     final serverMessages = doc['messages'];
-    final isUploaded =
-        !hasPendingLocalReply && doc.containsKey('_rev') && doc['_rev'] != null;
+    // One read of `_rev` for both the column and the flag. They used to be two
+    // expressions that disagreed: the column went through [_string] while the
+    // flag was a raw `doc.containsKey('_rev') && doc['_rev'] != null`, so an
+    // object-valued `_rev` stored the row as `isUploaded = true, rev = null` —
+    // on the server, and with no revision to update it under. It was the last
+    // raw read left in this mapper. Unreachable from CouchDB; a row whose two
+    // halves describe different states is worth not leaving behind.
+    final rev = _string('_rev', doc);
+    final isUploaded = !hasPendingLocalReply && rev != null;
 
     return FeedbackEntriesCompanion(
       id: Value(id),
-      rev: Value(_string('_rev', doc)),
+      // `Value.absent()`, not `Value(null)`: `FeedbackDao.upsertAll` is an
+      // insert-or-replace, so a null here writes over the revision the stored
+      // row is holding — and that row may be pending, in which case its reply
+      // then uploads against no revision and CouchDB answers 409. The Phase 56
+      // shape: a fetch that omits a field must not wipe the stored one.
+      //
+      // Not reachable today — every caller of `insertFromJson` comes from
+      // `_all_docs?include_docs=true`, which always carries `_rev` — so this
+      // guards the next caller rather than fixing a live defect. Kotlin writes
+      // `""` here (`FeedbackRepositoryImpl.kt:150`), which has the same
+      // wiping effect; the port keeps the revision instead.
+      rev: rev == null ? const Value.absent() : Value(rev),
       title: Value(_string('title', doc)),
       source: Value(_userString('source', doc)),
       status: Value(_string('status', doc) ?? 'Open'),
@@ -285,12 +303,11 @@ class FeedbackMapper {
 
   /// The messages array exactly as stored, elements untouched.
   ///
-  /// A column that decodes to something other than a list is `[]` here, which
-  /// [addReply] then appends to — so a reply on a thread whose stored
-  /// `messages` is a JSON object or a JSON *string* still replaces it. Kotlin
-  /// has the same hole from the other side (`getJsonArray` normalises any
-  /// non-array to `"[]"`, `JsonUtils.kt:126-129`), so this is not a parity
-  /// gap; it is the one shape the array-preserving fix does not reach.
+  /// A column that decodes to something other than a list reads as `[]`, which
+  /// is what Kotlin stores for the same document (`getJsonArray` normalises any
+  /// non-array to `"[]"`, `JsonUtils.kt:126-129`) and what both apps' reply
+  /// lists therefore show. [_messagesForAppend] is the one caller that must not
+  /// use this, because *writing* that `[]` back is what destroys the value.
   static List<dynamic> _decodeMessages(String? messagesJson) {
     if (messagesJson == null || messagesJson.isEmpty) return [];
     try {
@@ -299,6 +316,42 @@ class FeedbackMapper {
     } catch (_) {
       return [];
     }
+  }
+
+  /// The stored thread as a list an appended reply cannot destroy.
+  ///
+  /// A well-formed column decodes to a list and is returned untouched, so
+  /// nothing about an ordinary thread changes here. The case this exists for is
+  /// a `messages` that is a JSON **object** or a JSON **string**: [fromDoc]
+  /// stores whatever the server sent, [_decodeMessages] reads it as `[]`, and
+  /// appending to that `[]` used to produce an array holding only the new
+  /// reply — which [toDoc] then sends back under the document's `_rev`, so the
+  /// value was gone from the server and every other device as well.
+  ///
+  /// Both apps already fail to *read* such a column (Kotlin normalises it to
+  /// `"[]"` at pull, `JsonUtils.kt:126-129`), so this is not a parity gap and
+  /// making it readable is not on offer. What is on offer is which of the two
+  /// values survives the reply, and the reply is the one that cannot be
+  /// recovered from anywhere: it is what the user just typed. So the
+  /// unreadable value is carried as the array's first element rather than
+  /// dropped — it stays in the document, on the server and on disk, at the
+  /// cost of one blank row in the thread where neither app can read it.
+  ///
+  /// Bytes that are not JSON at all are the one thing not preserved: [toDoc]
+  /// cannot decode them either, so they never reach the server under any
+  /// behaviour, and wrapping them would change a broken column into a
+  /// different broken column.
+  static List<dynamic> _messagesForAppend(String? messagesJson) {
+    if (messagesJson == null || messagesJson.isEmpty) return [];
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(messagesJson);
+    } catch (_) {
+      return [];
+    }
+    if (decoded is List) return decoded;
+    if (decoded == null) return [];
+    return [decoded];
   }
 
   /// Gets the first message from the messages list.
@@ -323,7 +376,7 @@ class FeedbackMapper {
     String message,
     String user,
   ) {
-    final messages = _decodeMessages(existingMessagesJson);
+    final messages = _messagesForAppend(existingMessagesJson);
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     messages.add({
       'message': message,
