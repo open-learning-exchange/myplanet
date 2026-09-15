@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.services.sync
+package org.ole.planet.myplanet.services
 
 import android.content.Context
 import androidx.work.ExistingWorkPolicy
@@ -6,20 +6,23 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import dagger.Binds
+import dagger.Module
+import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.repository.SyncUiState
-import org.ole.planet.myplanet.services.UserDataWorker
 
 interface UserDataUploadScheduler {
     fun enqueueUserDataUpload(uniqueWorkName: String, uploadType: String): Flow<SyncUiState>
 }
 
 @Singleton
-class UserDataUploadSchedulerImpl @Inject constructor(
+class WorkManagerUserDataUploadScheduler @Inject constructor(
     @ApplicationContext private val context: Context
 ) : UserDataUploadScheduler {
 
@@ -50,4 +53,14 @@ class UserDataUploadSchedulerImpl @Inject constructor(
             else -> SyncUiState.Idle
         }
     }
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class UserDataUploadSchedulerModule {
+    @Binds
+    @Singleton
+    abstract fun bindUserDataUploadScheduler(
+        impl: WorkManagerUserDataUploadScheduler
+    ): UserDataUploadScheduler
 }
