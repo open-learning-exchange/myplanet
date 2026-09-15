@@ -26,6 +26,7 @@ class LifeRepositoryImplTest {
     private lateinit var mockSharedPreferences: SharedPreferences
     private lateinit var mockEditor: SharedPreferences.Editor
     private lateinit var gson: Gson
+    private lateinit var lifeCache: LifeCache
     private lateinit var repository: LifeRepositoryImpl
     private val testDispatcher = UnconfinedTestDispatcher()
 
@@ -42,11 +43,11 @@ class LifeRepositoryImplTest {
         every { mockEditor.apply() } returns Unit
 
         gson = Gson()
+        lifeCache = LifeCache(mockSharedPreferences, gson)
         repository = LifeRepositoryImpl(
             myLifeDao,
             sharedPrefManager,
-            gson
-
+            lifeCache
         )
     }
 
