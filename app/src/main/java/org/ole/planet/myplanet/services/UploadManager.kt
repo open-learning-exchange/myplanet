@@ -24,7 +24,6 @@ import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.NewsUpdateData
 import org.ole.planet.myplanet.repository.NewsUploadData
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
@@ -38,6 +37,7 @@ import org.ole.planet.myplanet.services.upload.UploadConstants.BATCH_SIZE
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
 import org.ole.planet.myplanet.services.upload.UploadError
 import org.ole.planet.myplanet.services.upload.UploadResult
+import org.ole.planet.myplanet.services.upload.UploadedItem
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
@@ -53,7 +53,6 @@ private inline fun <T> Iterable<T>.processInBatches(action: (List<T>) -> Unit) {
 @Singleton
 class UploadManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val submissionsRepository: SubmissionsRepository,
     private val gson: Gson,
     private val uploadCoordinator: UploadCoordinator,
     private val uploadRepository: UploadRepository,
@@ -165,6 +164,18 @@ class UploadManager @Inject constructor(
             notifyListener(listener, it)
         }
     }
+    private suspend fun uploadAttachments(items: List<UploadedItem>, listener: OnSuccessListener?) {
+        if (listener == null || items.isEmpty()) return
+        val libraryIds = items.map { it.localId }
+        val libraries = resourcesRepository.getLibraryItemsByIds(libraryIds)
+        val libMap = libraries.associateBy { it.id }
+        items.forEach { item ->
+            libMap[item.localId]?.let { library ->
+                uploadAttachment(item.remoteId, item.remoteRev, library, listener)
+            }
+        }
+    }
+
     suspend fun uploadResource(listener: OnSuccessListener?) {
         try {
             val user = userRepository.getUserModel()
@@ -172,35 +183,11 @@ class UploadManager @Inject constructor(
 
             when (result) {
                 is UploadResult.Success -> {
-                    listener?.let { l ->
-                        val libraryIds = result.items.map { it.localId }
-                        if (libraryIds.isNotEmpty()) {
-                            val libraries = resourcesRepository.getLibraryItemsByIds(libraryIds)
-                            val libMap = libraries.associateBy { it.id }
-
-                            result.items.forEach { item ->
-                                libMap[item.localId]?.let { library ->
-                                    uploadAttachment(item.remoteId, item.remoteRev, library, l)
-                                }
-                            }
-                        }
-                    }
+                    uploadAttachments(result.items, listener)
                     notifyListener(listener, "Uploaded ${result.items.size} resources successfully")
                 }
                 is UploadResult.PartialSuccess -> {
-                    listener?.let { l ->
-                        val libraryIds = result.succeeded.map { it.localId }
-                        if (libraryIds.isNotEmpty()) {
-                            val libraries = resourcesRepository.getLibraryItemsByIds(libraryIds)
-                            val libMap = libraries.associateBy { it.id }
-
-                            result.succeeded.forEach { item ->
-                                libMap[item.localId]?.let { library ->
-                                    uploadAttachment(item.remoteId, item.remoteRev, library, l)
-                                }
-                            }
-                        }
-                    }
+                    uploadAttachments(result.succeeded, listener)
                     notifyListener(listener, "Partial success: ${result.succeeded.size} succeeded, ${result.failed.size} failed")
                 }
                 is UploadResult.Failure -> {
