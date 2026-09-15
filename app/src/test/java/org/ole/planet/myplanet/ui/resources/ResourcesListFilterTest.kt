@@ -63,7 +63,8 @@ class ResourcesListFilterTest {
     fun `apply filters by selected tag`() {
         val models = listOf(
             model(id = "1", title = "A", tags = listOf(TagItem(id = "t1", name = "Math"))),
-            model(id = "2", title = "B", tags = listOf(TagItem(id = "t2", name = "Science")))
+            model(id = "2", title = "B", tags = listOf(TagItem(id = "t2", name = "Science"))),
+            model(id = "3", title = "C", tags = listOf(TagItem(id = "t3", name = "History"), TagItem(id = "t2", name = "Science")))
         )
         val filter = ResourcesListFilter()
 
@@ -71,6 +72,10 @@ class ResourcesListFilterTest {
 
         assertEquals(1, result.size)
         assertEquals("1", result[0].item.id)
+
+        val multiTagResult = filter.apply(models, noFilters.copy(searchTags = listOf(TagEntity().apply { id = "t1" }, TagEntity().apply { id = "t3" })), emptySet())
+        assertEquals(2, multiTagResult.size)
+        assertEquals(setOf("1", "3"), multiTagResult.map { it.item.id }.toSet())
     }
 
     @Test

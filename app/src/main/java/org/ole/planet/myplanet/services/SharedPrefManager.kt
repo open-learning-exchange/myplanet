@@ -201,6 +201,73 @@ class SharedPrefManager @Inject constructor(
         UrlUtils.invalidateCaches()
     }
 
+    fun saveServerConfig(
+        serverPin: String,
+        urlScheme: String,
+        urlHost: String,
+        serverUrl: String,
+        couchdbUrl: String,
+        urlUser: String,
+        urlPwd: String
+    ) {
+        pref.edit {
+            putString(SERVER_PIN, serverPin)
+            putString(URL_SCHEME, urlScheme)
+            putString(URL_HOST, urlHost)
+            putString(SERVER_URL, serverUrl)
+            putString(COUCHDB_URL, couchdbUrl)
+            putString(URL_USER, urlUser)
+            putString(URL_PWD, urlPwd)
+        }
+        UrlUtils.invalidateCaches()
+    }
+
+    fun saveAlternativeServerConfig(
+        serverPin: String,
+        urlUser: String,
+        urlPwd: String,
+        urlScheme: String,
+        urlHost: String,
+        alternativeUrl: String,
+        processedAlternativeUrl: String,
+        isAlternativeUrl: Boolean = true
+    ) {
+        pref.edit {
+            putString(SERVER_PIN, serverPin)
+            putString(URL_USER, urlUser)
+            putString(URL_PWD, urlPwd)
+            putString(URL_SCHEME, urlScheme)
+            putString(URL_HOST, urlHost)
+            putString(ALTERNATIVE_URL, alternativeUrl)
+            putString(PROCESSED_ALTERNATIVE_URL, processedAlternativeUrl)
+            putBoolean(IS_ALTERNATIVE_URL, isAlternativeUrl)
+        }
+        UrlUtils.invalidateCaches()
+    }
+
+    fun saveUserInfo(
+        userId: String,
+        userName: String,
+        firstName: String?,
+        lastName: String?,
+        middleName: String?,
+        isUserAdmin: Boolean?,
+        lastLogin: Long
+    ) {
+        pref.edit {
+            putString(USER_ID, userId)
+            putString(USER_NAME, userName)
+            remove("password")
+            putString("firstName", firstName)
+            putString("lastName", lastName)
+            putString("middleName", middleName)
+            if (isUserAdmin != null) {
+                putBoolean("isUserAdmin", isUserAdmin)
+            }
+            putLong("lastLogin", lastLogin)
+        }
+    }
+
     fun getPinnedServerUrl(): String? = pref.getString(PINNED_SERVER_URL, null)
     fun setPinnedServerUrl(url: String) = pref.edit { putString(PINNED_SERVER_URL, url) }
 
