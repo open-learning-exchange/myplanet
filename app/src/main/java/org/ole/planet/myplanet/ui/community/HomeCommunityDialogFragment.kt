@@ -9,28 +9,21 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingBottomSheetFragment
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 
 @AndroidEntryPoint
-class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
-    private var _binding: FragmentTeamDetailBinding? = null
-    private val binding get() = _binding!!
+class HomeCommunityDialogFragment : BaseBindingBottomSheetFragment<FragmentTeamDetailBinding>(FragmentTeamDetailBinding::inflate) {
     private val viewModel: CommunityTabViewModel by viewModels()
     private var bottomSheetBehavior: BottomSheetBehavior<View>? = null
     private var bottomSheetCallback: BottomSheetBehavior.BottomSheetCallback? = null
     private var tabLayoutMediator: TabLayoutMediator? = null
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentTeamDetailBinding.inflate(inflater, container, false)
-        return binding.root
-    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -106,12 +99,11 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
     }
 
     override fun onDestroyView() {
-        super.onDestroyView()
         bottomSheetCallback?.let { bottomSheetBehavior?.removeBottomSheetCallback(it) }
         bottomSheetCallback = null
         tabLayoutMediator?.detach()
         tabLayoutMediator = null
         binding.viewPager2.adapter = null
-        _binding = null
+        super.onDestroyView()
     }
 }
