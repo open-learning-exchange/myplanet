@@ -30,12 +30,6 @@ interface NewsDao {
     @Query("SELECT * FROM news WHERE id IN (:ids)")
     suspend fun getByIds(ids: List<String>): List<News>
 
-    @Query("SELECT * FROM news WHERE replyTo IS NULL OR replyTo = '' ORDER BY time DESC")
-    suspend fun getTopLevel(): List<News>
-
-    @Query("SELECT * FROM news WHERE replyTo IS NULL OR replyTo = '' ORDER BY time DESC")
-    fun getTopLevelFlow(): Flow<List<News>>
-
     @Query("SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') AND ((viewableBy = 'teams' COLLATE NOCASE AND viewableId = :teamId COLLATE NOCASE) OR viewIn LIKE :teamPattern ESCAPE '\\') ORDER BY time DESC")
     suspend fun getTopLevelByTeam(teamId: String, teamPattern: String): List<News>
 
@@ -50,9 +44,6 @@ interface NewsDao {
 
     @Query("SELECT * FROM news WHERE replyTo = :newsId COLLATE NOCASE ORDER BY time DESC")
     suspend fun getReplies(newsId: String): List<News>
-
-    @Query("SELECT * FROM news WHERE replyTo = :newsId")
-    suspend fun getDirectReplies(newsId: String): List<News>
 
     @Query("SELECT COUNT(*) FROM news WHERE replyTo = :newsId COLLATE NOCASE")
     suspend fun getReplyCount(newsId: String): Int
