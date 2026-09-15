@@ -191,14 +191,29 @@ class FeedbackRepositoryImpl implements FeedbackRepository {
       for (final row in rows) {
         if (row is! Map<String, dynamic>) continue;
         final doc = JsonUtils.getObject('doc', row);
-        if (doc != null) {
-          docs.add(doc);
-          // Through `idOf`, like the row key: `deleteNotIn` spares what is in
-          // this set, so a document the mapper stores under a key this set
-          // does not hold is inserted and then deleted in the same sync.
-          final id = FeedbackMapper.idOf(doc);
-          if (id.isNotEmpty) savedIds.add(id);
-        }
+        if (doc == null) continue;
+        // Through `idOf`, like the row key: `deleteNotIn` spares what is in
+        // this set, so a document the mapper stores under a key this set
+        // does not hold is inserted and then deleted in the same sync. It is
+        // also what the `_design` test below has to read, for the same reason
+        // — filtering on a differently-derived id would let a design document
+        // into the keep set while keeping it out of the insert, or worse.
+        final id = FeedbackMapper.idOf(doc);
+        // CouchDB's own view documents are not feedback. Kotlin drops them
+        // before the insert (`TransactionSyncManager.extractDocs:355-364`,
+        // `!getString("_id", doc).startsWith("_design")`); the port spells it
+        // the same way in `notifications_repository.dart:241`,
+        // `tags_repository.dart:45` and `chat_repository_impl.dart:286`, with
+        // **no trailing slash**, which also covers the `_design` id CouchDB
+        // itself never writes but a hand-edited database can hold.
+        //
+        // Without this a `_design/…` document became a row, and since a
+        // manager reads `watchAllSorted()` it drew as an "Untitled feedback /
+        // Open" thread they could tap — kept for ever, because the same walk
+        // put it in the keep set `deleteNotIn` spares.
+        if (id.startsWith('_design')) continue;
+        docs.add(doc);
+        if (id.isNotEmpty) savedIds.add(id);
       }
 
       if (docs.isNotEmpty) {

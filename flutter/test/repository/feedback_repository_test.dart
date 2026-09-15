@@ -233,6 +233,48 @@ void main() {
     );
   });
 
+  test('the sync skips the `_design` documents CouchDB keeps', () async {
+    // A `feedback` database holds CouchDB's own view documents alongside the
+    // threads. Kotlin drops them before the insert
+    // (`TransactionSyncManager.extractDocs:355-364`); the port did not, so a
+    // manager — who reads `watchAllSorted()` — saw one bogus "Untitled
+    // feedback / Open" row per design document, tappable and permanent.
+    //
+    // The ordinary document is here so the walk reaches `deleteNotIn` with a
+    // non-empty keep set: the design row must be absent because it was never
+    // inserted, not because the cleanup happened to sweep it.
+    when(
+      () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer((invocation) async {
+      final url = invocation.positionalArguments[0] as String;
+      if (url.contains('limit=0')) {
+        return const NetworkSuccess<Map<String, dynamic>>({'total_rows': 3});
+      }
+      return const NetworkSuccess<Map<String, dynamic>>({
+        'rows': [
+          {
+            'doc': {'_id': '_design/feedback', '_rev': '1-a', 'views': {}},
+          },
+          {
+            'doc': {'_id': 'fb-normal', '_rev': '1-b', 'title': 'ordinary'},
+          },
+          // No slash: `_design` is a prefix test in both apps, so an id that
+          // is exactly `_design` is a view document too.
+          {
+            'doc': {'_id': '_design', '_rev': '1-c'},
+          },
+        ],
+      });
+    });
+
+    final result = await repository.sync(config: config);
+
+    expect(result, isA<SyncComplete>());
+    expect((result as SyncComplete).savedCount, 1);
+    final stored = await database.feedbackDao.watchAllSorted().first;
+    expect(stored.map((row) => row.id), ['fb-normal']);
+  });
+
   test(
     'closeFeedback marks status as closed and resets isUploaded to false',
     () async {
