@@ -52,11 +52,20 @@ class StorageCategoriesTest {
     }
 
     @Test
+    fun `indexOf is case-insensitive for known extensions`() {
+        assertEquals(3, StorageCategories.indexOf("JPG"))
+        assertEquals(3, StorageCategories.indexOf("Jpg"))
+        assertEquals(3, StorageCategories.indexOf("jpg"))
+        assertEquals(2, StorageCategories.indexOf("PDF"))
+    }
+
+    @Test
     fun `indexOf falls back to the other category for unknown extensions`() {
         assertEquals(StorageCategories.OTHER_INDEX, StorageCategories.indexOf("zip"))
         assertEquals(StorageCategories.OTHER_INDEX, StorageCategories.indexOf("txt"))
         assertEquals(StorageCategories.OTHER_INDEX, StorageCategories.indexOf(""))
-        assertEquals(StorageCategories.OTHER_INDEX, StorageCategories.indexOf("MKV"))
+        assertEquals(StorageCategories.OTHER_INDEX, StorageCategories.indexOf("xyz"))
+        assertEquals(StorageCategories.OTHER_INDEX, StorageCategories.indexOf("XYZ"))
     }
 
     @Test
