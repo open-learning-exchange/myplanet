@@ -23,14 +23,13 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDashboardFragment
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.CourseCompletion
-import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.Submission
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
@@ -41,22 +40,23 @@ import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
+import org.ole.planet.myplanet.utils.TimeUtils
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class BellDashboardFragment : BaseDashboardFragment() {
     private var _binding: FragmentHomeBellBinding? = null
     private val binding get() = _binding!!
     private var networkStatusJob: Job? = null
+    private var lastSyncStatusJob: Job? = null
     private val viewModel: BellDashboardViewModel by viewModels()
-    var user: RealmUser? = null
+    var user: UserEntity? = null
     private var surveyListDialog: AlertDialog? = null
 
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
 
-    companion object {
-        private val SURVEY_DIALOG_INTERVAL_MS = TimeUnit.HOURS.toMillis(1)
-    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentHomeBellBinding.inflate(inflater, container, false)
@@ -70,18 +70,19 @@ class BellDashboardFragment : BaseDashboardFragment() {
         super.onViewCreated(view, savedInstanceState)
         initView(view)
         setupNetworkStatusMonitoring()
+        startLastSyncStatusTicker()
         (activity as DashboardActivity?)?.supportActionBar?.hide()
         observeCompletedCourses()
         observeSurveyReminders()
         viewLifecycleOwner.lifecycleScope.launch {
             val wasUserNull = user == null
-            user = profileDbHandler.getUserModel()
+            user = viewModel.getUserModel()
             binding.cardProfileBell.txtCommunityName.text = user?.planetCode
             user?.id?.let {
                 viewModel.loadCompletedCourses(it)
             }
             if (wasUserNull && (user?.id?.startsWith("guest") != true) && !DashboardActivity.isFromNotificationAction) {
-                checkPendingSurveys()
+                viewModel.checkPendingSurveys(user?.id)
             }
             if (user?.id?.startsWith("guest") == false && TextUtils.isEmpty(user?.key)) {
                 syncKeyId()
@@ -91,12 +92,8 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun setupNetworkStatusMonitoring() {
         networkStatusJob?.cancel()
-        networkStatusJob = viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.networkStatus.collect { status ->
-                    updateNetworkIndicator(status)
-                }
-            }
+        networkStatusJob = collectWhenStarted(viewModel.networkStatus) { status ->
+            updateNetworkIndicator(status)
         }
     }
 
@@ -146,27 +143,8 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
     }
 
-    private fun checkPendingSurveys() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val lastShown = surveysRepository.getLastSurveyDialogShown()
-            if (System.currentTimeMillis() - lastShown < SURVEY_DIALOG_INTERVAL_MS) return@launch
 
-            val pendingSurveys = submissionsRepository.getUniquePendingSurveys(user?.id)
-            if (pendingSurveys.isNotEmpty()) {
-                val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
-                if (surveysRepository.isReminderScheduled(surveyIds)) return@launch
-                val title = getString(
-                    R.string.surveys_to_complete,
-                    pendingSurveys.size,
-                    if (pendingSurveys.size > 1) "surveys" else "survey"
-                )
-                val surveyTitles = submissionsRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
-                showSurveyListDialog(pendingSurveys, title, surveyTitles)
-            }
-        }
-    }
-
-    private fun showRemindLaterDialog(pendingSurveys: List<RealmSubmission>,previousDialog: AlertDialog) {
+    private fun showRemindLaterDialog(pendingSurveys: List<Submission>,previousDialog: AlertDialog) {
         val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_remind_later, null)
         val radioGroup: RadioGroup = dialogView.findViewById(R.id.radioGroupRemindOptions)
         val numberPicker: NumberPicker = dialogView.findViewById(R.id.numberPickerTime)
@@ -217,53 +195,36 @@ class BellDashboardFragment : BaseDashboardFragment() {
             .window?.setBackgroundDrawableResource(R.color.card_bg)
     }
 
-    private fun scheduleReminder(pendingSurveys: List<RealmSubmission>, value: Int, timeUnit: TimeUnit) {
+    private fun scheduleReminder(pendingSurveys: List<Submission>, value: Int, timeUnit: TimeUnit) {
         val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
         viewLifecycleOwner.lifecycleScope.launch {
-            surveysRepository.scheduleSurveyReminder(surveyIds, timeUnit, value)
+            viewModel.scheduleSurveyReminder(surveyIds, timeUnit, value)
         }
     }
 
     private fun observeSurveyReminders() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                surveysRepository.dueRemindersFlow().collect { ids ->
-                    handleDueReminders(ids)
+        collectWhenStarted(viewModel.surveyPrompt) { prompt ->
+            val pendingSurveys = prompt.pendingSurveys
+                val surveyTitles = prompt.surveyTitles
+                val title = if (prompt.isReminder) {
+                    getString(
+                        R.string.reminder_surveys_to_complete,
+                        pendingSurveys.size,
+                        if (pendingSurveys.size > 1) "surveys" else "survey"
+                    )
+                } else {
+                    getString(
+                        R.string.surveys_to_complete,
+                        pendingSurveys.size,
+                        if (pendingSurveys.size > 1) "surveys" else "survey"
+                    )
                 }
-            }
-        }
-    }
-
-    private suspend fun handleDueReminders(remindersToShow: List<String>) {
-        for (surveyIds in remindersToShow) {
-            val surveyIdList = surveyIds.split(",").filter { it.isNotBlank() }
-            if (surveyIdList.isEmpty()) continue
-            val submissions = submissionsRepository.getSubmissionsByIds(surveyIdList)
-            val submissionsById = submissions.associateBy { it.id }
-            val pendingSurveys = surveyIdList.mapNotNull { submissionsById[it] }.filter { it.status == "pending" }
-
-            if (pendingSurveys.isNotEmpty()) {
-                showPendingSurveysReminder(pendingSurveys)
-            }
-        }
-    }
-
-    private fun showPendingSurveysReminder(pendingSurveys: List<RealmSubmission>) {
-        if (pendingSurveys.isEmpty()) return
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            val title = getString(
-                R.string.reminder_surveys_to_complete,
-                pendingSurveys.size,
-                if (pendingSurveys.size > 1) "surveys" else "survey"
-            )
-            val surveyTitles = submissionsRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
-            showSurveyListDialog(pendingSurveys, title, surveyTitles, dismissOnNeutral = true)
+                showSurveyListDialog(pendingSurveys, title, surveyTitles, dismissOnNeutral = prompt.isReminder)
         }
     }
 
     private fun showSurveyListDialog(
-        pendingSurveys: List<RealmSubmission>,
+        pendingSurveys: List<Submission>,
         title: String,
         surveyTitles: List<String>,
         dismissOnNeutral: Boolean = false
@@ -271,9 +232,10 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
         val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
         recyclerView.layoutManager = LinearLayoutManager(requireActivity())
+        recyclerView.setHasFixedSize(true)
 
         viewLifecycleOwner.lifecycleScope.launch {
-            surveysRepository.setLastSurveyDialogShown(System.currentTimeMillis())
+            viewModel.markSurveyDialogShown()
         }
 
         surveyListDialog?.dismiss()
@@ -307,14 +269,10 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private fun observeCompletedCourses() {
         binding.cardProfileBell.progressBarBadges?.visibility = View.VISIBLE
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.completedCourses.collectLatest { courses ->
-                    if (courses.isNotEmpty()) {
-                        showBadges(courses)
-                        binding.cardProfileBell.progressBarBadges?.visibility = View.GONE
-                    }
-                }
+        collectLatestWhenStarted(viewModel.completedCourses) { courses ->
+            if (courses.isNotEmpty()) {
+                showBadges(courses)
+                binding.cardProfileBell.progressBarBadges?.visibility = View.GONE
             }
         }
 
@@ -354,7 +312,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun setColor(courseId: String?, star: ImageView) {
         viewLifecycleOwner.lifecycleScope.launch {
-            if (courseId != null && coursesRepository.isCourseCertified(courseId)) {
+            if (courseId != null && viewModel.isCourseCertified(courseId)) {
                 star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
             } else {
                 star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_grey_300))
@@ -363,30 +321,70 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun declareElements() {
-        binding.homeCardTeams.llHomeTeam.setOnClickListener {
-            val fragment = TeamFragment().apply {
-                arguments = Bundle().apply {
-                    putBoolean("fromDashboard", true)
+        val openTeamsAction = {
+            if (userTeams.isNotEmpty()) {
+                val fragment = TeamFragment().apply {
+                    arguments = Bundle().apply {
+                        putBoolean("fromDashboard", true)
+                    }
+                }
+                homeItemClickListener?.openMyFragment(fragment)
+            } else {
+                homeItemClickListener?.openCallFragment(TeamFragment())
+            }
+        }
+        binding.homeCardTeams.llHomeTeam.setOnClickListener { openTeamsAction() }
+        binding.homeCardTeams.myTeamsImageButton.setOnClickListener { openTeamsAction() }
+        val openLibraryAction = {
+            if (user?.id?.startsWith("guest") == true) {
+                guestDialog(requireContext())
+            } else {
+                if (userLibrary.isNotEmpty()) {
+                    homeItemClickListener?.openMyFragment(ResourcesFragment())
+                } else {
+                    homeItemClickListener?.openCallFragment(ResourcesFragment())
                 }
             }
-            homeItemClickListener?.openMyFragment(fragment)
         }
-        binding.homeCardLibrary.myLibraryImageButton.setOnClickListener {
+        val openCoursesAction = {
             if (user?.id?.startsWith("guest") == true) {
-                guestDialog(requireContext(), profileDbHandler)
+                guestDialog(requireContext())
             } else {
-                homeItemClickListener?.openMyFragment(ResourcesFragment())
+                if (userCourses.isNotEmpty()) {
+                    homeItemClickListener?.openMyFragment(CoursesFragment())
+                } else {
+                    homeItemClickListener?.openCallFragment(CoursesFragment())
+                }
             }
         }
-        binding.homeCardCourses.myCoursesImageButton.setOnClickListener {
-            if (user?.id?.startsWith("guest") == true) {
-                guestDialog(requireContext(), profileDbHandler)
-            } else {
-                homeItemClickListener?.openMyFragment(CoursesFragment())
-            }
-        }
+        binding.homeCardLibrary.llHomeLibrary.setOnClickListener { openLibraryAction() }
+        binding.homeCardLibrary.myLibraryImageButton.setOnClickListener { openLibraryAction() }
+        binding.homeCardCourses.myCoursesImageButton.setOnClickListener { openCoursesAction() }
         binding.fabMyActivity.setOnClickListener { openHelperFragment(ActivitiesFragment()) }
         binding.homeCardMyLife.myLifeImageButton.setOnClickListener { homeItemClickListener?.openCallFragment(LifeFragment()) }
+    }
+
+    private fun updateRailSyncStatus() {
+        val railSyncStatus = binding.cardProfileBell.railSyncStatus ?: return
+        val lastSyncMillis = prefData.getLastSync()
+        val timeText = if (lastSyncMillis <= 0L) {
+            getString(R.string.last_synced_never)
+        } else {
+            TimeUtils.getRelativeTime(lastSyncMillis, timeProvider)
+        }
+        railSyncStatus.text = getString(R.string.dashboard_sync_status, timeText)
+    }
+
+    private fun startLastSyncStatusTicker() {
+        lastSyncStatusJob?.cancel()
+        lastSyncStatusJob = viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                while (true) {
+                    delay(LAST_SYNC_STATUS_REFRESH_INTERVAL_MS)
+                    updateRailSyncStatus()
+                }
+            }
+        }
     }
 
     private fun openHelperFragment(f: Fragment) {
@@ -398,9 +396,10 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     override fun onResume() {
         super.onResume()
+        updateRailSyncStatus()
         user?.let { u ->
             if (u.id?.startsWith("guest") != true && !DashboardActivity.isFromNotificationAction) {
-                checkPendingSurveys()
+                viewModel.checkPendingSurveys(user?.id)
             }
         }
     }
@@ -415,6 +414,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         surveyListDialog?.dismiss()
         surveyListDialog = null
         networkStatusJob?.cancel()
+        lastSyncStatusJob?.cancel()
         super.onDestroyView()
         _binding = null
     }
@@ -423,7 +423,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         if (f is TeamDetailFragment) {
             v.text = title
             v.setOnClickListener {
-                lifecycleScope.launch {
+                viewLifecycleOwner.lifecycleScope.launch {
                     val teamObject = id?.let { viewModel.getTeamById(it) }
                     val optimizedFragment = TeamDetailFragment.newInstance(
                         teamId = id ?: "",
@@ -438,5 +438,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
         } else {
             super.handleClick(id, title, f, v)
         }
+    }
+
+    companion object {
+        private const val LAST_SYNC_STATUS_REFRESH_INTERVAL_MS = 60_000L
     }
 }

@@ -1,87 +1,94 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonObject
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
-import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.RealmDispatcher
-import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.data.room.dao.TagDao
+import org.ole.planet.myplanet.model.TagEntity
+import org.ole.planet.myplanet.utils.JsonUtils
 
 class TagsRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher
-) : RealmRepository(databaseService, realmDispatcher), TagsRepository {
+    private val tagDao: TagDao,
+) : TagsRepository {
 
-    override suspend fun getTags(dbType: String?): List<RealmTag> {
-        return queryList(RealmTag::class.java) {
-            dbType?.let { equalTo("db", it) }
-            isNotEmpty("name")
-            equalTo("isAttached", false)
-        }
+    override suspend fun getTags(dbType: String?): List<TagEntity> {
+        return tagDao.getParentTags(dbType)
     }
 
-    override suspend fun buildChildMap(): HashMap<String, List<RealmTag>> {
-        val allTags = queryList(RealmTag::class.java)
-        val childMap = HashMap<String, List<RealmTag>>()
-        val seenParents = HashSet<String>()
-        allTags.forEach { t ->
-            seenParents.clear()
-            t.attachedTo?.forEach { parent ->
-                if (seenParents.add(parent)) {
-                    val list = childMap.getOrPut(parent) { mutableListOf() } as MutableList<RealmTag>
-                    list.add(t)
+    override suspend fun getTagsWithChildren(dbType: String?): Map<TagEntity, List<TagEntity>> {
+        val parentTags = getTags(dbType)
+        val allTags = tagDao.getAll()
+        val childMap = mutableMapOf<String, MutableList<TagEntity>>()
+
+        for (t in allTags) {
+            val attached = t.attachedTo
+            if (attached.isNullOrEmpty()) continue
+
+            for (parentId in attached) {
+                if (parentId != null) {
+                    val list = childMap.getOrPut(parentId) { ArrayList() }
+                    if (list.isEmpty() || list.last() !== t) {
+                        list.add(t)
+                    }
                 }
             }
         }
-        return childMap
+
+        return parentTags.associateWith { parent ->
+            childMap[parent.id] ?: emptyList()
+        }
     }
 
-    override suspend fun getTagsForResource(resourceId: String): List<RealmTag> {
+    override suspend fun getTagsForResource(resourceId: String): List<TagEntity> {
         return getLinkedTags("resources", resourceId)
     }
 
-    override suspend fun getTagsForCourse(courseId: String): List<RealmTag> {
+    override suspend fun getTagsForCourse(courseId: String): List<TagEntity> {
         return getLinkedTags("courses", courseId)
     }
 
-    override suspend fun getTagsForResources(resourceIds: List<String>): Map<String, List<RealmTag>> {
+    override suspend fun getTagsForResources(resourceIds: List<String>): Map<String, List<TagEntity>> {
         return getLinkedTagsBulk("resources", resourceIds)
     }
 
-    override suspend fun getTagsForCourses(courseIds: List<String>): Map<String, List<RealmTag>> {
+    override suspend fun getTagsForCourses(courseIds: List<String>): Map<String, List<TagEntity>> {
         return getLinkedTagsBulk("courses", courseIds)
     }
 
-    private suspend fun getLinkedTagsBulk(db: String, linkIds: List<String>): Map<String, List<RealmTag>> {
+    private suspend fun getLinkIdsForTagNames(dbType: String, tagNames: List<String>): List<String> {
+        val matchingTags = tagDao.getByNames(tagNames)
+        if (matchingTags.isEmpty()) {
+            return emptyList()
+        }
+        val matchingTagIds = matchingTags.map { it.id }
+        return tagDao.getByDbAndTagIds(dbType, matchingTagIds).mapNotNull { it.linkId }
+    }
+
+    private suspend fun getLinkedTagsBulk(db: String, linkIds: List<String>): Map<String, List<TagEntity>> {
         if (linkIds.isEmpty()) {
             return emptyMap()
         }
 
-        val links = queryList(RealmTag::class.java) {
-            equalTo("db", db)
-            `in`("linkId", linkIds.toTypedArray())
-        }
+        val links = tagDao.getByDbAndLinkIds(db, linkIds)
         if (links.isEmpty()) {
             return emptyMap()
         }
 
-        val allTagIds = links.mapNotNull { it.tagId }.distinct()
+        val allTagIds = links.mapNotNullTo(LinkedHashSet()) { it.tagId }.toList()
         if (allTagIds.isEmpty()) {
             return emptyMap()
         }
 
-        val allParentTags = queryList(RealmTag::class.java) {
-            `in`("id", allTagIds.toTypedArray())
-        }
-        val parentTagsById = allParentTags.associateBy { it.id }
+        val parentTagsById = tagDao.getByIds(allTagIds).associateBy { it.id }
 
-        val tagsByLinkId = mutableMapOf<String, MutableList<RealmTag>>()
+        val tagsByLinkId = mutableMapOf<String, MutableList<TagEntity>>()
+        val tagsSetByLinkId = mutableMapOf<String, MutableSet<String>>()
         links.forEach { link ->
             link.linkId?.let { linkId ->
                 link.tagId?.let { tagId ->
                     parentTagsById[tagId]?.let { parentTag ->
-                        val list = tagsByLinkId.getOrPut(linkId) { mutableListOf() }
-                        if (list.none { it.id == parentTag.id }) {
-                            list.add(parentTag)
+                        val set = tagsSetByLinkId.getOrPut(linkId) { mutableSetOf() }
+                        if (set.add(parentTag.id)) {
+                            tagsByLinkId.getOrPut(linkId) { mutableListOf() }.add(parentTag)
                         }
                     }
                 }
@@ -91,22 +98,17 @@ class TagsRepositoryImpl @Inject constructor(
         return tagsByLinkId
     }
 
-    private suspend fun getLinkedTags(db: String, linkId: String): List<RealmTag> {
-        val links = queryList(RealmTag::class.java) {
-            equalTo("db", db)
-            equalTo("linkId", linkId)
-        }
+    private suspend fun getLinkedTags(db: String, linkId: String): List<TagEntity> {
+        val links = tagDao.getByDbAndLinkId(db, linkId)
         if (links.isEmpty()) {
             return emptyList()
         }
-        val tagIds = links.mapNotNull { it.tagId }.distinct()
+        val tagIds = links.mapNotNullTo(LinkedHashSet()) { it.tagId }.toList()
         if (tagIds.isEmpty()) {
             return emptyList()
         }
 
-        val parents = queryList(RealmTag::class.java) {
-            `in`("id", tagIds.toTypedArray())
-        }
+        val parents = tagDao.getByIds(tagIds)
         if (parents.isEmpty()) {
             return emptyList()
         }
@@ -115,76 +117,41 @@ class TagsRepositoryImpl @Inject constructor(
         return tagIds.mapNotNull { parentsById[it] }
     }
 
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
-        val ids = ArrayList<String>(jsonArray.size())
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-                ids.add(id)
-            }
-        }
-
-        val tagCache = mutableMapOf<String, RealmTag>()
-        // Fetch existing tags upfront to avoid N+1 queries
-        if (ids.isNotEmpty()) {
-            val existingTags = realm.where(RealmTag::class.java).`in`("_id", ids.toTypedArray()).findAll()
-            for (tag in existingTags) {
-                tag._id?.let { tagCache[it] = tag }
-            }
-        }
-
-        for (jsonDoc in documentList) {
-            insertIntoRealm(realm, jsonDoc, tagCache)
-        }
-    }
-
-    override suspend fun insert(documentList: List<com.google.gson.JsonObject>) {
+    override suspend fun insert(documentList: List<JsonObject>) {
         if (documentList.isEmpty()) return
-        executeTransaction { realm ->
-            val ids = documentList.map { org.ole.planet.myplanet.utils.JsonUtils.getString("_id", it) }.filter { it.isNotEmpty() }
-            val tagCache = mutableMapOf<String, RealmTag>()
-            if (ids.isNotEmpty()) {
-                val existingTags = realm.where(RealmTag::class.java).`in`("_id", ids.toTypedArray()).findAll()
-                for (tag in existingTags) {
-                    tag._id?.let { tagCache[it] = tag }
-                }
-            }
-            for (act in documentList) {
-                insertIntoRealm(realm, act, tagCache)
-            }
+        val tagsToInsert = documentList
+            .filter { !JsonUtils.getString("_id", it).startsWith("_design") }
+            .map { createUnmanagedTag(it) }
+        if (tagsToInsert.isNotEmpty()) {
+            tagDao.upsertAll(tagsToInsert)
         }
     }
 
-    private fun insertIntoRealm(mRealm: io.realm.Realm, act: com.google.gson.JsonObject, cache: MutableMap<String, RealmTag>) {
-        val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act)
-        var tag = cache[id]
-        if (tag == null) {
-            tag = mRealm.createObject(RealmTag::class.java, id)
-            cache[id] = tag
-        }
-        if (tag != null) {
-            tag._rev = org.ole.planet.myplanet.utils.JsonUtils.getString("_rev", act)
-            tag._id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act)
-            tag.name = org.ole.planet.myplanet.utils.JsonUtils.getString("name", act)
-            tag.db = org.ole.planet.myplanet.utils.JsonUtils.getString("db", act)
-            tag.docType = org.ole.planet.myplanet.utils.JsonUtils.getString("docType", act)
-            tag.tagId = org.ole.planet.myplanet.utils.JsonUtils.getString("tagId", act)
-            tag.linkId = org.ole.planet.myplanet.utils.JsonUtils.getString("linkId", act)
-            val el = act["attachedTo"]
-            if (el != null && el.isJsonArray) {
-                val attachedTo = org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("attachedTo", act)
-                tag.attachedTo = io.realm.RealmList()
-                for (i in 0 until attachedTo.size()) {
-                    tag.attachedTo?.add(org.ole.planet.myplanet.utils.JsonUtils.getString(attachedTo, i))
-                }
-            } else {
-                tag.attachedTo?.add(org.ole.planet.myplanet.utils.JsonUtils.getString("attachedTo", act))
+    private fun createUnmanagedTag(act: JsonObject): TagEntity {
+        val tag = TagEntity()
+        tag.id = JsonUtils.getString("_id", act)
+        tag._rev = JsonUtils.getString("_rev", act)
+        tag._id = JsonUtils.getString("_id", act)
+        tag.name = JsonUtils.getString("name", act)
+        tag.db = JsonUtils.getString("db", act)
+        tag.docType = JsonUtils.getString("docType", act)
+        tag.tagId = JsonUtils.getString("tagId", act)
+        tag.linkId = JsonUtils.getString("linkId", act)
+        val el = act["attachedTo"]
+        val attachedTo = ArrayList<String>()
+        if (el != null && el.isJsonArray) {
+            val arr = JsonUtils.getJsonArray("attachedTo", act)
+            for (i in 0 until arr.size()) {
+                attachedTo.add(JsonUtils.getString(arr, i))
             }
-            tag.isAttached = (tag.attachedTo?.size ?: 0) > 0
+        } else {
+            attachedTo.add(JsonUtils.getString("attachedTo", act))
         }
+        tag.attachedTo = attachedTo
+        tag.isAttached = attachedTo.isNotEmpty()
+        return tag
     }
+
+    override suspend fun getCourseLinkIds(tagNames: List<String>): Set<String> =
+        getLinkIdsForTagNames("courses", tagNames).toSet()
 }

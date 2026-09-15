@@ -3,35 +3,32 @@ package org.ole.planet.myplanet.ui.surveys
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.text.Normalizer
-import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.SurveyFormState
 import org.ole.planet.myplanet.model.SurveyInfo
+import org.ole.planet.myplanet.model.SurveyRow
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.services.sync.SyncManager
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
-
-private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
+import org.ole.planet.myplanet.utils.Utilities
 
 @HiltViewModel
 class SurveysViewModel @Inject constructor(
     private val surveysRepository: SurveysRepository,
-    private val syncManager: SyncManager,
-    private val userSessionManager: UserSessionManager,
-    private val sharedPrefManager: SharedPrefManager,
-    private val serverUrlMapper: ServerUrlMapper,
+    private val submissionsRepository: SubmissionsRepository,
+    private val userRepository: UserRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
@@ -39,20 +36,26 @@ class SurveysViewModel @Inject constructor(
         DATE_ASC, DATE_DESC, TITLE_ASC, TITLE_DESC
     }
 
-    private var rawSurveys: List<RealmStepExam> = emptyList()
+    private var rawSurveys: List<StepExam> = emptyList()
     private var currentSearchQuery: String = ""
     private var currentSortOption: SortOption = SortOption.DATE_DESC
     private var isTeam: Boolean = false
     private var teamId: String? = null
+    private var filterSortJob: Job? = null
 
-    private val _surveys = MutableStateFlow<List<RealmStepExam>>(emptyList())
-    val surveys: StateFlow<List<RealmStepExam>> = _surveys.asStateFlow()
+    private val _surveys = MutableStateFlow<List<StepExam>>(emptyList())
 
     private val _surveyInfos = MutableStateFlow<Map<String, SurveyInfo>>(emptyMap())
     val surveyInfos: StateFlow<Map<String, SurveyInfo>> = _surveyInfos.asStateFlow()
 
     private val _bindingData = MutableStateFlow<Map<String, SurveyFormState>>(emptyMap())
     val bindingData: StateFlow<Map<String, SurveyFormState>> = _bindingData.asStateFlow()
+
+    val surveys: StateFlow<List<SurveyRow>> = combine(_surveys, _surveyInfos, _bindingData) { surveys, infos, bindingData ->
+        surveys.map { exam ->
+            SurveyRow(exam, infos[exam.id], bindingData[exam.id])
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -65,6 +68,12 @@ class SurveysViewModel @Inject constructor(
 
     private val _userMessage = MutableStateFlow<String?>(null)
     val userMessage: StateFlow<String?> = _userMessage.asStateFlow()
+
+    private val _users = MutableStateFlow<List<UserEntity>>(emptyList())
+    val users: StateFlow<List<UserEntity>> = _users.asStateFlow()
+
+    private val _surveySent = MutableStateFlow(false)
+    val surveySent: StateFlow<Boolean> = _surveySent.asStateFlow()
 
     fun loadSurveys(isTeam: Boolean, teamId: String?, isTeamShareAllowed: Boolean) {
         this.isTeam = isTeam
@@ -79,7 +88,7 @@ class SurveysViewModel @Inject constructor(
                     else -> surveysRepository.getIndividualSurveys()
                 }
 
-                val userModel = userSessionManager.getUserModel()
+                val userModel = userRepository.getUserModel()
                 val surveyInfos = surveysRepository.getSurveyInfos(
                     isTeam,
                     teamId,
@@ -121,23 +130,30 @@ class SurveysViewModel @Inject constructor(
     }
 
     private fun applyFilterAndSort() {
-        var list = if (currentSearchQuery.isNotEmpty()) {
-            filter(currentSearchQuery, rawSurveys)
-        } else {
-            rawSurveys
-        }
+        filterSortJob?.cancel()
+        filterSortJob = viewModelScope.launch {
+            val currentRawSurveys = rawSurveys
+            val list = withContext(dispatcherProvider.default) {
+                var filteredList = if (currentSearchQuery.isNotEmpty()) {
+                    filter(currentSearchQuery, currentRawSurveys)
+                } else {
+                    currentRawSurveys
+                }
 
-        list = when (currentSortOption) {
-            SortOption.DATE_DESC -> list.sortedByDescending { getSortDate(it) }
-            SortOption.DATE_ASC -> list.sortedBy { getSortDate(it) }
-            SortOption.TITLE_ASC -> list.sortedBy { it.name?.lowercase(Locale.getDefault()) }
-            SortOption.TITLE_DESC -> list.sortedByDescending { it.name?.lowercase(Locale.getDefault()) }
+                when (currentSortOption) {
+                    SortOption.DATE_DESC -> filteredList.sortedByDescending { getSortDate(it) }
+                    SortOption.DATE_ASC -> filteredList.sortedBy { getSortDate(it) }
+                    SortOption.TITLE_ASC -> filteredList.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name ?: "" })
+                    SortOption.TITLE_DESC -> filteredList.sortedWith(compareByDescending(String.CASE_INSENSITIVE_ORDER) { it.name ?: "" })
+                }
+            }
+            if (rawSurveys === currentRawSurveys) {
+                _surveys.value = list
+            }
         }
-
-        _surveys.value = list
     }
 
-    private fun getSortDate(survey: RealmStepExam): Long {
+    private fun getSortDate(survey: StepExam): Long {
         return if (survey.sourceSurveyId != null) {
             if (survey.adoptionDate > 0) survey.adoptionDate else survey.createdDate
         } else {
@@ -145,15 +161,17 @@ class SurveysViewModel @Inject constructor(
         }
     }
 
-    private fun filter(s: String, list: List<RealmStepExam>): List<RealmStepExam> {
-        val queryParts = s.split(" ").filterNot { it.isEmpty() }
-        val normalizedQueryParts = queryParts.map { normalizeText(it) }
-        val normalizedQuery = normalizeText(s)
-        val startsWithQuery = mutableListOf<RealmStepExam>()
-        val containsQuery = mutableListOf<RealmStepExam>()
+    private fun filter(s: String, list: List<StepExam>): List<StepExam> {
+        val normalizedQueryParts = s.splitToSequence(" ")
+            .filterNot { it.isEmpty() }
+            .map { Utilities.normalizeText(it) }
+            .toList()
+        val normalizedQuery = Utilities.normalizeText(s)
+        val startsWithQuery = mutableListOf<StepExam>()
+        val containsQuery = mutableListOf<StepExam>()
 
         for (item in list) {
-            val title = item.name?.let { normalizeText(it) } ?: continue
+            val title = item.name?.let { Utilities.normalizeText(it) } ?: continue
             if (title.startsWith(normalizedQuery, ignoreCase = true)) {
                 startsWithQuery.add(item)
             } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
@@ -163,57 +181,11 @@ class SurveysViewModel @Inject constructor(
         return startsWithQuery + containsQuery
     }
 
-    private fun normalizeText(str: String): String {
-        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
-            .replace(DIACRITICS_REGEX, "")
-    }
-
-    fun startExamSync() {
-        val isFastSync = sharedPrefManager.getFastSync()
-        val isExamsSynced = sharedPrefManager.isSynced(SharedPrefManager.SyncKey.EXAMS)
-
-        if (isFastSync && !isExamsSynced) {
-            checkServerAndStartSync()
-        }
-    }
-
-    private fun checkServerAndStartSync() {
-        val serverUrl = sharedPrefManager.getServerUrl()
-        val mapping = serverUrlMapper.processUrl(serverUrl)
-
-        viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
-                serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
-                    MainApplication.isServerReachable(url)
-                }
-            }
-            startSyncManager()
-        }
-    }
-
-    private fun startSyncManager() {
-        syncManager.start(object : OnSyncListener {
-            override fun onSyncStarted() {
-                _isLoading.value = true
-            }
-
-            override fun onSyncComplete() {
-                sharedPrefManager.setSynced(SharedPrefManager.SyncKey.EXAMS, true)
-                _isLoading.value = false
-                loadSurveys(isTeam, teamId, _isTeamShareAllowed.value)
-            }
-
-            override fun onSyncFailed(msg: String?) {
-                _isLoading.value = false
-                _errorMessage.value = "Sync failed: $msg"
-            }
-        }, "full", listOf("exams"))
-    }
 
     fun adoptSurvey(surveyId: String) {
         viewModelScope.launch {
             try {
-                val userModel = userSessionManager.getUserModel()
+                val userModel = userRepository.getUserModel()
                 surveysRepository.adoptSurvey(surveyId, userModel?.id, teamId, isTeam)
                 _userMessage.value = "Survey adopted successfully"
                 _isTeamShareAllowed.value = false
@@ -221,6 +193,19 @@ class SurveysViewModel @Inject constructor(
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to adopt survey"
             }
+        }
+    }
+
+    fun loadUsers() {
+        viewModelScope.launch {
+            _users.value = userRepository.getAllUsers()
+        }
+    }
+
+    fun sendSurveyToUsers(surveyId: String, selectedUserIds: List<String>) {
+        viewModelScope.launch {
+            submissionsRepository.createBulkSurveySubmissions(surveyId, selectedUserIds)
+            _surveySent.value = true
         }
     }
 }

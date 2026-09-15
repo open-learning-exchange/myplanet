@@ -1,5 +1,9 @@
 package org.ole.planet.myplanet.model
 
+import com.google.gson.JsonObject
+import java.util.Calendar
+import org.ole.planet.myplanet.utils.TimeUtils
+
 data class UserSurveyProfile(
     val fname: String,
     val lname: String,
@@ -12,8 +16,8 @@ data class UserSurveyProfile(
     val gender: String,
     val language: String
 ) {
-    fun toJson(): com.google.gson.JsonObject {
-        val user = com.google.gson.JsonObject()
+    fun toJson(): JsonObject {
+        val user = JsonObject()
 
         if (fname.isNotEmpty()) user.addProperty("firstName", fname)
         if (mName.isNotEmpty()) user.addProperty("middleName", mName)
@@ -25,13 +29,13 @@ data class UserSurveyProfile(
         if (phone.isNotEmpty()) user.addProperty("phoneNumber", phone)
 
         if (dob.isNotEmpty()) {
-            val birthDateISO = org.ole.planet.myplanet.utils.TimeUtils.convertToISO8601(dob)
+            val birthDateISO = TimeUtils.convertToISO8601(dob)
             user.addProperty("birthDate", birthDateISO)
         }
 
         if (yob.isNotEmpty()) {
             val yobInt = yob.toInt()
-            val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+            val currentYear = Calendar.getInstance().get(Calendar.YEAR)
             val calculatedAge = currentYear - yobInt
             user.addProperty("age", calculatedAge.toString())
         }

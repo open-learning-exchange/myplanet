@@ -10,19 +10,30 @@ import android.media.AudioManager
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.text.TextUtils
+import android.util.Log
+import android.util.Rational
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.registerReceiver
 import androidx.core.graphics.createBitmap
 import androidx.core.net.toUri
+import androidx.core.view.MenuHost
+import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
@@ -41,11 +52,9 @@ import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.DefaultTimeBar
 import androidx.media3.ui.PlayerView
+import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
-import com.tom_roush.pdfbox.pdmodel.PDDocument
-import com.tom_roush.pdfbox.text.PDFTextStripper
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.util.regex.Pattern
@@ -56,10 +65,9 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnAudioRecordListener
 import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
 import org.ole.planet.myplanet.databinding.FragmentResourceViewerBinding
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.services.AudioRecorder
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.IntentUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils
@@ -77,7 +85,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
     private var _binding: FragmentResourceViewerBinding? = null
     private val binding get() = _binding!!
-
     private var resourceId: String? = null
     private var filePath: String? = null
     private var title: String? = null
@@ -87,20 +94,20 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private var auth: String = ""
 
     private var exoPlayer: ExoPlayer? = null
+    private var streamingHttpDataSourceFactory: DefaultHttpDataSource.Factory? = null
     private var videoLoadingOverlay: View? = null
     private var videoLoadingText: TextView? = null
     private var noisyReceiverRegistered = false
     private lateinit var audioRecorder: AudioRecorder
-    private lateinit var library: RealmMyLibrary
+    private lateinit var library: MyLibrary
     private var pdfText: String = ""
-    private var isExtractingText = false
     private var externalFilesDir: File? = null
-
     private val viewModel: ResourceViewerViewModel by viewModels()
-
     @Inject lateinit var dispatcherProvider: DispatcherProvider
     @Inject lateinit var ttsManager: TTSManager
     private var authSessionUpdater: AuthSessionUpdater? = null
+    private var isResourceFinished: Boolean = false
+    fun isResourceFinished(): Boolean = isResourceFinished
 
     private val audioRecordListener = object : OnAudioRecordListener {
         override fun onRecordStarted() {
@@ -113,7 +120,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             Utilities.toast(requireContext(), getString(R.string.recording_stopped))
             NotificationUtils.cancelAll(requireContext())
             if (::library.isInitialized) {
-                lifecycleScope.launch {
+                viewLifecycleOwner.lifecycleScope.launch {
                     val id = library.id ?: return@launch
                     viewModel.updateLibraryItemTranslationAudioPath(id, outputFile)
                 }
@@ -158,15 +165,19 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         return binding.root
     }
 
+    private var lastSavedPositionMs: Long = -1L
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         audioRecorder = AudioRecorder().setAudioRecordListener(audioRecordListener)
         audioRecorder.setCaller(requireActivity(), requireContext())
 
+        if (type == ResourceType.VIDEO || type == ResourceType.AUDIO) {
+            setupPlaybackSpeedMenu()
+        }
+
         viewLifecycleOwner.lifecycleScope.launch {
-            externalFilesDir = withContext(dispatcherProvider.io) {
-                requireContext().getExternalFilesDir(null)
-            }
+            externalFilesDir = viewModel.getExternalFilesDir()
             resourceId?.let {
                 library = viewModel.getLibraryItemById(it) ?: return@launch
             }
@@ -185,6 +196,64 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         }
     }
 
+    private fun getMediaKey(): String = resourceId ?: filePath.orEmpty()
+
+    private fun saveCurrentPlaybackProgress() {
+        val player = exoPlayer ?: return
+        val mediaKey = getMediaKey()
+        if (mediaKey.isEmpty()) return
+        val currentPos = player.currentPosition
+        val duration = player.duration
+        val effectivePosition = ResourceViewerViewModel.calculateEffectivePlaybackPosition(currentPos, duration)
+        if (lastSavedPositionMs == -1L || Math.abs(effectivePosition - lastSavedPositionMs) >= 2000L || effectivePosition == 0L) {
+            lastSavedPositionMs = effectivePosition
+            viewModel.savePlaybackProgress(mediaKey, effectivePosition)
+        }
+    }
+
+    private fun setupPlaybackSpeedMenu() {
+        val menuHost: MenuHost = requireActivity()
+        menuHost.addMenuProvider(object : MenuProvider {
+            override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+                val speedTitle = getString(R.string.playback_speed_format, viewModel.getPlaybackSpeed().toString())
+                menu.add(Menu.NONE, R.id.action_playback_speed, Menu.NONE, speedTitle).apply {
+                    setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
+                }
+            }
+
+            override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
+                if (menuItem.itemId == R.id.action_playback_speed) {
+                    showPlaybackSpeedDialog()
+                    return true
+                }
+                return false
+            }
+        }, viewLifecycleOwner, Lifecycle.State.RESUMED)
+    }
+
+    private fun showPlaybackSpeedDialog() {
+        val speedValues = floatArrayOf(0.75f, 1.0f, 1.25f, 1.5f, 2.0f)
+        val speedOptions = speedValues
+            .map { getString(R.string.playback_speed_format, it.toString()) }
+            .toTypedArray()
+        val currentSpeed = viewModel.getPlaybackSpeed()
+        var selectedIndex = speedValues.indexOfFirst { kotlin.math.abs(it - currentSpeed) < 0.05f }
+        if (selectedIndex == -1) selectedIndex = 1
+
+        MaterialDialog.Builder(requireContext())
+            .title(R.string.playback_speed)
+            .items(*speedOptions)
+            .itemsCallbackSingleChoice(selectedIndex) { _, _, which, _ ->
+                val chosenSpeed = speedValues[which]
+                viewModel.savePlaybackSpeed(chosenSpeed)
+                exoPlayer?.setPlaybackSpeed(chosenSpeed)
+                requireActivity().invalidateOptionsMenu()
+                true
+            }
+            .positiveText(android.R.string.ok)
+            .show()
+    }
+
     private fun showVideoLoading(statusText: String) {
         videoLoadingOverlay?.visibility = View.VISIBLE
         videoLoadingText?.text = statusText
@@ -198,7 +267,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         view?.post {
             if (!isAdded) return@post
             hideVideoLoading()
-            androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            AlertDialog.Builder(requireContext())
                 .setTitle(getString(R.string.unable_to_play_video))
                 .setMessage(message)
                 .setPositiveButton(getString(R.string.go_back)) { _, _ -> requireActivity().finish() }
@@ -275,33 +344,23 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             return
         }
 
-        val trackSelector = DefaultTrackSelector(requireContext())
-        exoPlayer = ExoPlayer.Builder(requireContext())
-            .setTrackSelector(trackSelector)
-            .setLoadControl(DefaultLoadControl())
-            .setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(), true)
-            .build()
-
-        exoPlayer?.addListener(object : Player.Listener {
-            override fun onPlayerError(error: PlaybackException) {
-                navigateBackWithError(getString(R.string.video_playback_error))
-            }
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                when (playbackState) {
-                    Player.STATE_BUFFERING -> showVideoLoading(getString(R.string.video_loading_buffering))
-                    Player.STATE_READY -> hideVideoLoading()
-                    else -> {}
-                }
-            }
-        })
+        exoPlayer?.release()
+        exoPlayer = null
+        exoPlayer = createExoPlayer()
 
         val playerView = binding.root.findViewById<PlayerView>(R.id.video_player)
         playerView.player = exoPlayer
+        setupDragToPipGesture(playerView)
 
         val audioSource = ProgressiveMediaSource.Factory(factory).createMediaSource(MediaItem.fromUri(fileUri))
         exoPlayer?.apply {
+            setPlaybackSpeed(viewModel.getPlaybackSpeed())
             setMediaSource(audioSource)
             prepare()
+            val savedProgress = viewModel.getPlaybackProgress(getMediaKey())
+            if (savedProgress > 0L) {
+                seekTo(savedProgress)
+            }
             playWhenReady = true
         }
     }
@@ -314,36 +373,62 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             .setUserAgent("ExoPlayer")
             .setAllowCrossProtocolRedirects(true)
             .setDefaultRequestProperties(requestProperties)
+        streamingHttpDataSourceFactory = httpDataSourceFactory
 
         val mediaSource: MediaSource = ProgressiveMediaSource.Factory(httpDataSourceFactory)
             .createMediaSource(MediaItem.fromUri(uri))
 
+        exoPlayer?.release()
+        exoPlayer = null
+        exoPlayer = createExoPlayer()
+
+        val playerView = binding.root.findViewById<PlayerView>(R.id.video_player)
+        playerView.player = exoPlayer
+        setupDragToPipGesture(playerView)
+        exoPlayer?.apply {
+            setPlaybackSpeed(viewModel.getPlaybackSpeed())
+            setMediaSource(mediaSource)
+            prepare()
+            val savedProgress = viewModel.getPlaybackProgress(getMediaKey())
+            if (savedProgress > 0L) {
+                seekTo(savedProgress)
+            }
+            playWhenReady = true
+        }
+    }
+
+    @OptIn(UnstableApi::class)
+    private fun createExoPlayer(): ExoPlayer {
         val trackSelector = DefaultTrackSelector(requireContext())
-        exoPlayer = ExoPlayer.Builder(requireContext())
+        val player = ExoPlayer.Builder(requireContext())
             .setTrackSelector(trackSelector)
+            .setLoadControl(DefaultLoadControl())
             .setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(), true)
             .build()
 
-        exoPlayer?.addListener(object : Player.Listener {
+        player.addListener(object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
                 navigateBackWithError(getString(R.string.video_playback_error))
+            }
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                if (!isPlaying && player.playbackState != Player.STATE_BUFFERING) {
+                    saveCurrentPlaybackProgress()
+                }
             }
             override fun onPlaybackStateChanged(playbackState: Int) {
                 when (playbackState) {
                     Player.STATE_BUFFERING -> showVideoLoading(getString(R.string.video_loading_buffering))
                     Player.STATE_READY -> hideVideoLoading()
+                    Player.STATE_ENDED -> {
+                        isResourceFinished = true
+                        lastSavedPositionMs = 0L
+                        viewModel.savePlaybackProgress(getMediaKey(), 0L)
+                    }
                     else -> {}
                 }
             }
         })
-
-        val playerView = binding.root.findViewById<PlayerView>(R.id.video_player)
-        playerView.player = exoPlayer
-        exoPlayer?.apply {
-            setMediaSource(mediaSource)
-            playWhenReady = true
-            prepare()
-        }
+        return player
     }
 
     private fun setupAudioViewer() {
@@ -366,10 +451,30 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     @OptIn(UnstableApi::class)
     private fun initializeAudioPlayer(playerView: PlayerView) {
         val fullPath = resolveAudioPath(filePath)
-        exoPlayer = ExoPlayer.Builder(requireContext()).build().also { player ->
+        exoPlayer?.release()
+        exoPlayer = null
+        exoPlayer = createExoPlayer().also { player ->
             playerView.player = player
+            player.setPlaybackSpeed(viewModel.getPlaybackSpeed())
             player.setMediaItem(MediaItem.fromUri(fullPath))
+            player.addListener(object : Player.Listener {
+                override fun onIsPlayingChanged(isPlaying: Boolean) {
+                    if (!isPlaying && player.playbackState != Player.STATE_BUFFERING) {
+                        saveCurrentPlaybackProgress()
+                    }
+                }
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    if (playbackState == Player.STATE_ENDED) {
+                        lastSavedPositionMs = 0L
+                        viewModel.savePlaybackProgress(getMediaKey(), 0L)
+                    }
+                }
+            })
             player.prepare()
+            val savedProgress = viewModel.getPlaybackProgress(getMediaKey())
+            if (savedProgress > 0L) {
+                player.seekTo(savedProgress)
+            }
             player.playWhenReady = true
 
             val timeBar = playerView.findViewById<DefaultTimeBar>(androidx.media3.ui.R.id.exo_progress)
@@ -383,8 +488,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private fun resolveAudioPath(originalPath: String?): String {
         if (isFullPath) return originalPath ?: ""
         val processedPath = originalPath?.let {
-            val uuidPattern = Pattern.compile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/")
-            val matcher = uuidPattern.matcher(it)
+            val matcher = UUID_PATTERN.matcher(it)
             if (matcher.find()) it.substring(matcher.end()) else it
         }
         return File(externalFilesDir, "ole/$processedPath").absolutePath
@@ -396,6 +500,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         val pdfFileName = binding.root.findViewById<TextView>(R.id.pdfFileName)
         pdfFileName.text = title
 
+        isResourceFinished = true
+
         renderPdf()
         extractPdfText()
         setupPdfFabActions()
@@ -403,14 +509,27 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
     private fun renderPdf() {
         val file = File(externalFilesDir, "ole/$filePath")
-        if (file.exists()) {
-            try {
-                val fileDescriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
-                val pdfRenderer = PdfRenderer(fileDescriptor)
-                val page = pdfRenderer.openPage(0)
-                val bitmap = createBitmap(page.width, page.height)
-                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+        if (!file.exists()) return
 
+        viewLifecycleOwner.lifecycleScope.launch {
+            val bitmap = withContext(dispatcherProvider.io) {
+                try {
+                    ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { fileDescriptor ->
+                        PdfRenderer(fileDescriptor).use { pdfRenderer ->
+                            pdfRenderer.openPage(0).use { page ->
+                                val bmp = createBitmap(page.width, page.height)
+                                page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                                bmp
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to render PDF page", e)
+                    null
+                }
+            }
+
+            if (bitmap != null && isAdded) {
                 val pdfPlaceholder = binding.root.findViewById<TextView>(R.id.pdfPlaceholder)
                 pdfPlaceholder.visibility = View.GONE
                 val parent = pdfPlaceholder.parent as ViewGroup
@@ -418,13 +537,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
                 imageView.setImageBitmap(bitmap)
                 imageView.scaleType = ImageView.ScaleType.FIT_CENTER
                 parent.addView(imageView, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0))
-                (imageView.layoutParams as android.widget.LinearLayout.LayoutParams).weight = 1f
-
-                page.close()
-                pdfRenderer.close()
-                fileDescriptor.close()
-            } catch (e: Exception) {
-                e.printStackTrace()
+                (imageView.layoutParams as LinearLayout.LayoutParams).weight = 1f
             }
         }
     }
@@ -432,16 +545,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private fun extractPdfText() {
         val file = File(externalFilesDir, "ole/$filePath")
         if (!file.exists()) return
-        isExtractingText = true
-        lifecycleScope.launch(dispatcherProvider.io) {
-            pdfText = try {
-                PDFBoxResourceLoader.init(requireContext().applicationContext)
-                val document = PDDocument.load(file)
-                val text = PDFTextStripper().getText(document).trim()
-                document.close()
-                text
-            } catch (e: Exception) { "" }
-            withContext(dispatcherProvider.main) { isExtractingText = false }
+        viewLifecycleOwner.lifecycleScope.launch {
+            pdfText = viewModel.extractPdfText(file)
         }
     }
 
@@ -463,6 +568,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         val imageViewer = binding.root.findViewById<ImageView>(R.id.imageViewer)
         imageFileName.text = title
 
+        isResourceFinished = true
+
         val imageFile = if (isFullPath) filePath?.let { File(it) }
                         else File(externalFilesDir, "ole/$filePath")
         Glide.with(this)
@@ -472,20 +579,34 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             .into(imageViewer)
     }
 
-    private fun setupTextViewer() {
+    private suspend fun setupTextViewer() {
         binding.stubText.visibility = View.VISIBLE
         val textFileTitle = binding.root.findViewById<TextView>(R.id.textFileTitle)
         val textContent = binding.root.findViewById<TextView>(R.id.textContent)
         textFileTitle.text = title
+        isResourceFinished = true
 
         val file = File(externalFilesDir, "ole/$filePath")
-        if (file.exists()) {
-            val text = file.readText()
-            if (type == ResourceType.MARKDOWN) {
-                MarkdownUtils.setMarkdownText(textContent, text)
+        if (!file.exists()) return
+
+        val (text, truncated) = withContext(dispatcherProvider.io) {
+            val raw = file.readText()
+            if (raw.length > MAX_TEXT_VIEWER_CHARS) {
+                raw.substring(0, MAX_TEXT_VIEWER_CHARS) to true
             } else {
-                textContent.text = text
+                raw to false
             }
+        }
+
+        if (!isAdded) return
+
+        if (type == ResourceType.MARKDOWN) {
+            MarkdownUtils.setMarkdownText(textContent, text)
+        } else {
+            textContent.text = text
+        }
+        if (truncated) {
+            Utilities.toast(requireContext(), getString(R.string.text_content_truncated))
         }
     }
 
@@ -499,13 +620,13 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             val url = filePath ?: run {
                 return@launch
             }
-            streamVideoFromUrl(url, auth)
+            if (exoPlayer == null) {
+                streamVideoFromUrl(url, auth)
+            } else {
+                streamingHttpDataSourceFactory?.setDefaultRequestProperties(hashMapOf("Cookie" to auth))
+            }
             if (isOnline) {
-                withContext(dispatcherProvider.io) {
-                    if (!FileUtils.checkFileExist(requireContext(), url)) {
-                        DownloadUtils.openDownloadService(requireContext(), arrayListOf(url), false)
-                    }
-                }
+                viewModel.downloadResource(url)
             }
         }
     }
@@ -514,16 +635,70 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         navigateBackWithError(getString(R.string.video_unavailable))
     }
 
+    private fun setupDragToPipGesture(playerView: PlayerView) {
+        val density = resources.displayMetrics.density
+        val slopPx = DRAG_SLOP_DP * density
+        val thresholdPx = DRAG_THRESHOLD_DP * density
+        var startX = 0f
+        var startY = 0f
+        var isDragging = false
+
+        playerView.setOnTouchListener { _, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    startX = event.rawX
+                    startY = event.rawY
+                    isDragging = false
+                    false
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val deltaY = event.rawY - startY
+                    val deltaX = event.rawX - startX
+                    if (!isDragging && deltaY > slopPx && deltaY > kotlin.math.abs(deltaX)) {
+                        isDragging = true
+                    }
+                    isDragging
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    val wasDragging = isDragging
+                    val deltaY = event.rawY - startY
+                    isDragging = false
+                    if (wasDragging && deltaY > thresholdPx) {
+                        (activity as? ResourceViewerActivity)?.tryEnterPictureInPicture()
+                    }
+                    wasDragging
+                }
+                else -> false
+            }
+        }
+    }
+
+    fun isPlayingVideo(): Boolean = type == ResourceType.VIDEO && exoPlayer?.isPlaying == true
+
+    fun getVideoAspectRatio(): Rational? {
+        val videoSize = exoPlayer?.videoSize ?: return null
+        val width = videoSize.width
+        val height = videoSize.height
+        if (width <= 0 || height <= 0) return null
+        val ratio = (width.toDouble() / height.toDouble()).coerceIn(MIN_PIP_ASPECT_RATIO, MAX_PIP_ASPECT_RATIO)
+        return Rational((ratio * PIP_ASPECT_RATIO_DENOMINATOR).toInt(), PIP_ASPECT_RATIO_DENOMINATOR)
+    }
+
     override fun onPause() {
         super.onPause()
-        exoPlayer?.pause()
+        saveCurrentPlaybackProgress()
+        if (activity?.isInPictureInPictureMode != true) {
+            exoPlayer?.pause()
+        }
         ttsManager.stop()
     }
 
     override fun onDestroyView() {
+        saveCurrentPlaybackProgress()
         authSessionUpdater?.stop()
         exoPlayer?.release()
         exoPlayer = null
+        streamingHttpDataSourceFactory = null
         if (noisyReceiverRegistered) {
             requireContext().unregisterReceiver(audioBecomingNoisyReceiver)
             noisyReceiverRegistered = false
@@ -533,6 +708,14 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     }
 
     companion object {
+        private const val TAG = "ResourceViewerFragment"
+        private val UUID_PATTERN = Pattern.compile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/")
+        private const val MIN_PIP_ASPECT_RATIO = 1.0 / 2.39
+        private const val MAX_PIP_ASPECT_RATIO = 2.39 / 1.0
+        private const val PIP_ASPECT_RATIO_DENOMINATOR = 1000
+        private const val DRAG_SLOP_DP = 24f
+        private const val DRAG_THRESHOLD_DP = 150f
+        private const val MAX_TEXT_VIEWER_CHARS = 500_000
         private const val ARG_RESOURCE_ID = "resourceId"
         private const val ARG_FILE_PATH = "filePath"
         private const val ARG_TITLE = "title"

@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -21,26 +20,24 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.RealmList
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
-import org.ole.planet.myplanet.ui.voices.VoicesActions
-import org.ole.planet.myplanet.ui.voices.VoicesViewModel
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
-import org.ole.planet.myplanet.utils.FileUtils.getImagePath
-import org.ole.planet.myplanet.utils.FileUtils.getRealPathFromURI
+import org.ole.planet.myplanet.utils.FileUtils.resolveUriToPath
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 
@@ -49,7 +46,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private lateinit var activityReplyBinding: ActivityReplyBinding
     var id: String? = null
     private lateinit var newsAdapter: VoicesAdapter
-    var user: RealmUser? = null
+    var user: UserEntity? = null
 
     private val viewModel: ReplyViewModel by viewModels()
     private val voicesViewModel: VoicesViewModel by viewModels()
@@ -58,12 +55,10 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     lateinit var userSessionManager: UserSessionManager
 
     @Inject
-    lateinit var activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
+    lateinit var activitiesRepository: ActivitiesRepository
 
     @Inject
-    lateinit var dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
-    @Inject
-    lateinit var userRepository: org.ole.planet.myplanet.repository.UserRepository
+    lateinit var dispatcherProvider: DispatcherProvider
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     @Inject
@@ -150,11 +145,10 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                     onEditAction = { action ->
                         lifecycleScope.launch { action() }
                     },
-                    onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(lifecycleScope),
+                    onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(lifecycleScope, dispatcherProvider),
                     labelManager = labelManager,
-                    voicesRepository = voicesRepository,
-                    userRepository = userRepository,
-                    getCommunityLeadersFn = { sharedPrefManager.getCommunityLeaders() },
+                    voicesEditActions = voicesRepository,
+                    leadersList = UserEntity.parseLeadersJson(sharedPrefManager.getCommunityLeaders()),
                     setRepliedNewsIdFn = { sharedPrefManager.setRepliedNewsId(it) }
                 )
                 newsAdapter.setListener(this@ReplyActivity)
@@ -182,7 +176,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         refreshData()
     }
 
-    override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
+    override fun showReply(news: News?, fromLogin: Boolean, nonTeamMember: Boolean) {
         startActivity(Intent(this, ReplyActivity::class.java).putExtra("id", news?.id))
     }
 
@@ -197,9 +191,9 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         // Video selection not supported in replies for now
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: News?) {}
 
-    override fun onMemberSelected(userModel: RealmUser?) {
+    override fun onMemberSelected(userModel: UserEntity?) {
         lifecycleScope.launch {
             val fragment = VoicesActions.showMemberDetails(userModel, activitiesRepository) ?: return@launch
             FragmentNavigator.replaceFragment(
@@ -220,7 +214,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         return imageList
     }
 
-    override fun getCurrentVideoList(): RealmList<String>? {
+    override fun getCurrentVideoList(): List<String>? {
         return null // Video selection not supported in replies for now
     }
 
@@ -229,10 +223,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
             return
         }
 
-        var path: String? = getRealPathFromURI(this, url)
-        if (TextUtils.isEmpty(path)) {
-            path = getImagePath(this, url)
-        }
+        val path: String? = resolveUriToPath(this, url)
 
         if (path == null) {
             return

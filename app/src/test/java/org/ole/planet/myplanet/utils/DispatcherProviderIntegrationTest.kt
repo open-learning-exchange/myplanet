@@ -22,7 +22,7 @@ class MyService @Inject constructor(private val dispatcherProvider: DispatcherPr
 
 @HiltAndroidTest
 @RunWith(RobolectricTestRunner::class)
-@Config(application = HiltTestApplication::class, sdk = [33])
+@Config(application = HiltTestApplication::class)
 class DispatcherProviderIntegrationTest {
 
     @get:Rule

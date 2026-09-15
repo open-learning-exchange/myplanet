@@ -1,10 +1,13 @@
 package org.ole.planet.myplanet.di
 
 import com.google.gson.Gson
+import io.mockk.mockk
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.ole.planet.myplanet.data.api.RetryInterceptor
 
 class NetworkModuleTest {
 
@@ -35,5 +38,27 @@ class NetworkModuleTest {
         assertFalse("JSON should NOT contain transientField", json.contains("transientField"))
         assertFalse("JSON should NOT contain staticField", json.contains("staticField"))
         assertFalse("JSON should NOT contain finalField", json.contains("finalField"))
+    }
+
+    @Test
+    fun `provideStandardOkHttpClient returns OkHttpClient configured with ConnectionPool and Dispatcher`() {
+        val mockRetryInterceptor = mockk<RetryInterceptor>(relaxed = true)
+        val okHttpClient = NetworkModule.provideStandardOkHttpClient(mockRetryInterceptor)
+
+        assertNotNull(okHttpClient)
+        assertEquals(20, okHttpClient.dispatcher.maxRequestsPerHost)
+        assertNotNull(okHttpClient.connectionPool)
+    }
+
+    @Test
+    fun `provideReachabilityOkHttpClient probes with short timeouts and no retries`() {
+        val okHttpClient = NetworkModule.provideReachabilityOkHttpClient()
+
+        assertEquals(5_000, okHttpClient.connectTimeoutMillis)
+        assertEquals(5_000, okHttpClient.readTimeoutMillis)
+        assertTrue(
+            "A reachability probe must not retry, or an unreachable server takes tens of seconds to report",
+            okHttpClient.interceptors.none { it is RetryInterceptor }
+        )
     }
 }

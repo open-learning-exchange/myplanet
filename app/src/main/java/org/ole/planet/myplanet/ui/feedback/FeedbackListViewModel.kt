@@ -10,33 +10,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.model.RealmFeedback
+import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.repository.FeedbackRepository
-import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.services.sync.SyncManager
-import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.repository.UserRepository
 
 @HiltViewModel
 class FeedbackListViewModel @Inject constructor(
     private val feedbackRepository: FeedbackRepository,
-    private val userSessionManager: UserSessionManager,
-    private val dispatcherProvider: DispatcherProvider,
-    private val syncManager: SyncManager
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
-    sealed class SyncStatus {
-        object Idle : SyncStatus()
-        object Syncing : SyncStatus()
-        object Success : SyncStatus()
-        data class Error(val message: String) : SyncStatus()
-    }
-
-    private val _feedbackList = MutableStateFlow<List<RealmFeedback>>(emptyList())
-    val feedbackList: StateFlow<List<RealmFeedback>> = _feedbackList.asStateFlow()
-
-    private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
-    val syncStatus: StateFlow<SyncStatus> = _syncStatus.asStateFlow()
+    private val _feedbackList = MutableStateFlow<List<Feedback>>(emptyList())
+    val feedbackList: StateFlow<List<Feedback>> = _feedbackList.asStateFlow()
 
     private var fetchJob: Job? = null
 
@@ -46,8 +31,8 @@ class FeedbackListViewModel @Inject constructor(
 
     private fun loadFeedback() {
         fetchJob?.cancel()
-        fetchJob = viewModelScope.launch(dispatcherProvider.io) {
-            val user = userSessionManager.getUserModel()
+        fetchJob = viewModelScope.launch {
+            val user = userRepository.getUserModel()
             feedbackRepository.getFeedback(user).collectLatest { feedback ->
                 _feedbackList.value = feedback
             }
@@ -55,21 +40,5 @@ class FeedbackListViewModel @Inject constructor(
     }
     fun refreshFeedback() {
         loadFeedback()
-    }
-
-    fun startFeedbackSync() {
-        syncManager.start(object : OnSyncListener {
-            override fun onSyncStarted() {
-                _syncStatus.value = SyncStatus.Syncing
-            }
-
-            override fun onSyncComplete() {
-                _syncStatus.value = SyncStatus.Success
-            }
-
-            override fun onSyncFailed(msg: String?) {
-                _syncStatus.value = SyncStatus.Error(msg ?: "Unknown error")
-            }
-        }, "full", listOf("feedback"))
     }
 }

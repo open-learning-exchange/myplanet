@@ -1,18 +1,18 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.HashMap
 import kotlinx.coroutines.flow.Flow
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
 
 data class NewsUploadData(
     val id: String?,
     val _id: String?,
     val message: String?,
     val imageUrls: List<String>,
-    val videoUrls: List<String>,
+    val videoUrls: List<String> = emptyList(),
     val newsJson: JsonObject
 )
 
@@ -20,36 +20,30 @@ data class NewsUpdateData(
     val id: String?,
     val _id: String?,
     val _rev: String?,
-    val imagesArray: com.google.gson.JsonArray,
-    val videosArray: com.google.gson.JsonArray = com.google.gson.JsonArray()
+    val imagesArray: JsonArray,
+    val videosArray: JsonArray = JsonArray()
 )
 
-interface VoicesRepository {
+interface VoicesRepository : VoicesEditActions {
     suspend fun getNewsForUpload(): List<NewsUploadData>
     suspend fun markNewsUploaded(updates: List<NewsUpdateData>)
-    suspend fun getLibraryResource(resourceId: String): RealmMyLibrary?
-    suspend fun getCommunityNews(userIdentifier: String): Flow<List<RealmNews>>
-    suspend fun getNewsWithReplies(newsId: String): Pair<RealmNews?, List<RealmNews>>
-    suspend fun getCommunityVisibleNews(userIdentifier: String): List<RealmNews>
-    suspend fun getNewsByTeamId(teamId: String): List<RealmNews>
+    suspend fun getCommunityNews(userIdentifier: String): Flow<List<News>>
+    suspend fun getNewsWithReplies(newsId: String): Pair<News?, List<News>>
     suspend fun isAlreadyShared(chatId: String, viewInId: String): Boolean
-    suspend fun createNews(map: HashMap<String?, String>, user: RealmUser?, imageList: List<String>?, videoList: List<String>? = null): RealmNews
-    suspend fun createTeamNews(newsData: HashMap<String?, String>, user: RealmUser, imageList: List<String>?, videoList: List<String>? = null): Boolean
-    suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<RealmNews>>
+    suspend fun createNews(map: HashMap<String?, String>, user: UserEntity?, imageList: List<String>?, videoList: List<String>? = null): News
+    suspend fun createTeamNews(newsData: HashMap<String?, String>, user: UserEntity, imageList: List<String>?, videoList: List<String>? = null): Boolean
+    suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<News>>
     suspend fun shareNewsToCommunity(newsId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit>
-    suspend fun updateTeamNotification(teamId: String, count: Int)
-    suspend fun getFilteredNews(teamId: String): List<RealmNews>
+    suspend fun getFilteredNews(teamId: String): List<News>
     suspend fun getReplyCount(newsId: String?): Int
-    suspend fun deleteNews(newsId: String)
     suspend fun deletePost(newsId: String, teamName: String)
     suspend fun addLabel(newsId: String, label: String)
     suspend fun removeLabel(newsId: String, label: String)
-    suspend fun getCommunityVoiceDates(startTime: Long, endTime: Long, userId: String?): List<String>
-    suspend fun getNewsById(id: String): RealmNews?
-    suspend fun postReply(message: String, news: RealmNews, currentUser: RealmUser, imageList: List<String>?)
-    suspend fun editPost(newsId: String, message: String, imagesToRemove: Set<String>, newImages: List<String>?)
-    suspend fun getPlanetNewsMessages(planetCode: String?): List<RealmNews>
-    suspend fun insertNewsFromJson(doc: com.google.gson.JsonObject)
-    suspend fun insertNewsList(docs: List<com.google.gson.JsonObject>)
-    suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String>
+    suspend fun getCommunityVoiceDateCount(startTime: Long, endTime: Long, userId: String?): Int
+    suspend fun getPlanetNewsMessages(planetCode: String?): List<News>
+    suspend fun insertNewsList(docs: List<JsonObject>)
+    suspend fun countTeamChats(teamId: String): Long
+    suspend fun countTopLevelByTeam(teamId: String): Long
+    suspend fun getPendingNewsLogUploads(): List<org.ole.planet.myplanet.model.NewsLog>
+    suspend fun markNewsLogUploaded(localId: String, remoteId: String, rev: String): Boolean
 }

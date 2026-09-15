@@ -3,37 +3,54 @@ package org.ole.planet.myplanet.ui.resources
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
-import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.model.ResourceItem
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.ResourceListModel
-import org.ole.planet.myplanet.model.SyncState
-import org.ole.planet.myplanet.model.TagItem
+import org.ole.planet.myplanet.model.TagEntity
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.services.sync.SyncManager
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class ResourcesViewModel @Inject constructor(
-    private val syncManager: SyncManager,
-    private val sharedPrefManager: SharedPrefManager,
-    private val serverUrlMapper: ServerUrlMapper,
     private val resourcesRepository: ResourcesRepository,
+    private val userRepository: UserRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
-    private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
-    val syncState: StateFlow<SyncState> = _syncState.asStateFlow()
+    private val _currentUser = MutableStateFlow<UserEntity?>(null)
+    val currentUser: StateFlow<UserEntity?> = _currentUser.asStateFlow()
+
+    private val userDeferred: Deferred<UserEntity?> = viewModelScope.async {
+        userRepository.getUserModel().also {
+            _currentUser.value = it
+        }
+    }
+
+    suspend fun getCurrentUser(): UserEntity? {
+        return userDeferred.await()
+    }
+
+    enum class SortMode { NONE, DATE, TITLE }
+    private var sortMode = SortMode.NONE
+    private var isAscending = true
+    private var isTitleAscending = false
+
+    val currentSortMode: SortMode get() = sortMode
+    val isDateSortAscending: Boolean get() = isAscending
+    val isTitleSortAscending: Boolean get() = isTitleAscending
+
     private val _downloadComplete = MutableStateFlow(false)
     val downloadComplete: StateFlow<Boolean> = _downloadComplete.asStateFlow()
 
@@ -41,6 +58,7 @@ class ResourcesViewModel @Inject constructor(
     val openedResourceIds: StateFlow<Set<String>> = _openedResourceIds.asStateFlow()
 
     private var observeOpenedResourcesJob: Job? = null
+    private var currentObservedUserId: String? = null
 
     fun notifyDownloadComplete() {
         _downloadComplete.value = true
@@ -48,6 +66,10 @@ class ResourcesViewModel @Inject constructor(
     }
 
     fun observeOpenedResourceIds(userId: String) {
+        if (userId.isNotEmpty() && userId == currentObservedUserId && observeOpenedResourcesJob?.isActive == true) {
+            return
+        }
+        currentObservedUserId = userId
         observeOpenedResourcesJob?.cancel()
         observeOpenedResourcesJob = viewModelScope.launch {
             resourcesRepository.observeOpenedResourceIds(userId).collectLatest { ids ->
@@ -56,72 +78,123 @@ class ResourcesViewModel @Inject constructor(
         }
     }
 
-    fun startResourcesSync() {
-        val isFastSync = sharedPrefManager.getFastSync()
-        if (isFastSync && !sharedPrefManager.isSynced(SharedPrefManager.SyncKey.RESOURCES)) {
-            checkServerAndStartSync()
+    suspend fun saveSearchActivity(userName: String, searchText: String, planetCode: String, parentCode: String, searchTags: List<TagEntity>, subjects: Set<String>, languages: Set<String>, levels: Set<String>, mediums: Set<String>) = withContext(dispatcherProvider.io) {
+        resourcesRepository.saveSearchActivity(userName, searchText, planetCode, parentCode, searchTags, subjects, languages, levels, mediums)
+    }
+
+    private val _resourcesState = MutableStateFlow<List<ResourceListModel>>(emptyList())
+    val resourcesState: StateFlow<List<ResourceListModel>> = _resourcesState.asStateFlow()
+    private var loadJob: Job? = null
+
+    fun getCachedResources(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel>? {
+        return resourcesRepository.getCachedResourceListModels(isMyCourseLib, modelId)?.let {
+            applyCurrentSortSynchronous(it)
         }
     }
 
-    private fun checkServerAndStartSync() {
-        val mapping = serverUrlMapper.processUrl(sharedPrefManager.getServerUrl())
-
-        viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
-                serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
-                    isServerReachable(url)
+    fun loadResources(isMyCourseLib: Boolean, modelId: String?) {
+        val cached = getCachedResources(isMyCourseLib, modelId)
+        if (cached != null && _resourcesState.value.isEmpty()) {
+            _resourcesState.value = cached
+        }
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            val list = withContext(dispatcherProvider.io) {
+                try {
+                    applyCurrentSort(resourcesRepository.getResourceListModels(isMyCourseLib, modelId))
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    null
                 }
             }
-            startSyncManager()
+            if (list != null) {
+                _resourcesState.value = list
+            }
         }
     }
 
-    private fun startSyncManager() {
-        syncManager.start(object : OnSyncListener {
-            override fun onSyncStarted() {
-                _syncState.value = SyncState.Syncing
-            }
-
-            override fun onSyncComplete() {
-                _syncState.value = SyncState.Success
-                sharedPrefManager.setSynced(SharedPrefManager.SyncKey.RESOURCES, true)
-            }
-
-            override fun onSyncFailed(msg: String?) {
-                _syncState.value = SyncState.Failed(msg)
-            }
-        }, "full", listOf("resources"))
+    suspend fun removeResourcesFromShelf(resourceIds: List<String>, userId: String): Result<Unit> = withContext(dispatcherProvider.io) {
+        resourcesRepository.removeResourcesFromShelf(resourceIds, userId)
     }
 
-    fun resetSyncState() {
-        _syncState.value = SyncState.Idle
+    suspend fun getFilterFacets(libraries: List<MyLibrary>): Map<String, Set<String>> = withContext(dispatcherProvider.default) {
+        val languages = mutableSetOf<String>()
+        val subjects = mutableSetOf<String>()
+        val mediums = mutableSetOf<String>()
+        val levels = mutableSetOf<String>()
+
+        libraries.forEach { library ->
+            library.language?.takeIf { it.isNotBlank() }?.let { languages.add(it) }
+            library.subject?.let { subjects.addAll(it) }
+            library.mediaType?.takeIf { it.isNotBlank() }?.let { mediums.add(it) }
+            library.level?.let { levels.addAll(it) }
+        }
+
+        mapOf(
+            "languages" to languages,
+            "subjects" to subjects,
+            "mediums" to mediums,
+            "levels" to levels
+        )
+    }
+
+    private val listFilter = ResourcesListFilter()
+
+    fun applyFilter(models: List<ResourceListModel>, criteria: ResourcesFilterCriteria, locallyOfflineIds: Set<String>): List<ResourceListModel> =
+        listFilter.apply(models, criteria, locallyOfflineIds)
+
+    fun filterIfChanged(models: List<ResourceListModel>, criteria: ResourcesFilterCriteria, locallyOfflineIds: Set<String>): List<ResourceListModel>? =
+        listFilter.filterIfChanged(models, criteria, locallyOfflineIds)
+
+    fun countMatching(models: List<ResourceListModel>, criteria: ResourcesFilterCriteria, locallyOfflineIds: Set<String>): Int =
+        listFilter.countMatching(models, criteria, locallyOfflineIds)
+
+    fun resetFilter() {
+        listFilter.reset()
     }
 
     suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String): Result<Unit> {
         return resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
     }
 
-    suspend fun getLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> {
-        val enrichedLibraries = resourcesRepository.getEnrichedLibraries(isMyCourseLib, modelId)
-        return enrichedLibraries
-            .sortedByDescending { (library, _, _) -> library.isResourceOffline() }
-            .map { (library, rating, libraryTags) ->
-            val item = ResourceItem(
-                id = library.id,
-                title = library.title,
-                description = library.description,
-                createdDate = library.createdDate,
-                averageRating = library.averageRating,
-                timesRated = library.timesRated,
-                resourceId = library.resourceId,
-                isOffline = library.isResourceOffline(),
-                _rev = library._rev,
-                uploadDate = library.uploadDate,
-                filename = library.filename,
-                resourceLocalAddress = library.resourceLocalAddress
-            )
-            val tags = libraryTags.map { tag -> TagItem(tag.id, tag.name) }
-            ResourceListModel(library, item, rating, tags)
+    suspend fun getLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> = withContext(dispatcherProvider.io) {
+        applyCurrentSort(resourcesRepository.getResourceListModels(isMyCourseLib, modelId)).also {
+            _resourcesState.value = it
+        }
+    }
+
+    suspend fun toggleSortOrder(list: List<ResourceListModel>): List<ResourceListModel> = withContext(dispatcherProvider.io) {
+        sortMode = SortMode.DATE
+        isAscending = !isAscending
+        applyCurrentSort(list).also {
+            if (_resourcesState.value.isNotEmpty()) _resourcesState.value = it
+        }
+    }
+
+    suspend fun toggleTitleSortOrder(list: List<ResourceListModel>): List<ResourceListModel> = withContext(dispatcherProvider.io) {
+        sortMode = SortMode.TITLE
+        isTitleAscending = !isTitleAscending
+        applyCurrentSort(list).also {
+            if (_resourcesState.value.isNotEmpty()) _resourcesState.value = it
+        }
+    }
+
+    suspend fun applyCurrentSort(list: List<ResourceListModel>): List<ResourceListModel> = withContext(dispatcherProvider.io) {
+        applyCurrentSortSynchronous(list)
+    }
+
+    private fun applyCurrentSortSynchronous(list: List<ResourceListModel>): List<ResourceListModel> {
+        return when (sortMode) {
+            SortMode.DATE -> {
+                if (isAscending) list.sortedBy { it.item.createdDate }
+                else list.sortedByDescending { it.item.createdDate }
+            }
+            SortMode.TITLE -> {
+                val withKeys = list.map { it to (it.item.title?.lowercase(Locale.ROOT) ?: "") }
+                if (isTitleAscending) withKeys.sortedBy { it.second }.map { it.first }
+                else withKeys.sortedByDescending { it.second }.map { it.first }
+            }
+            SortMode.NONE -> list
         }
     }
 }

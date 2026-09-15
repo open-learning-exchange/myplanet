@@ -12,13 +12,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnMemberActionListener
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
-import org.ole.planet.myplanet.repository.JoinedMemberData
+import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.ImageUtils
@@ -29,21 +26,30 @@ class MembersAdapter(
     private var currentUserId: String?,
     private val actionListener: OnMemberActionListener
 ) : ListAdapter<JoinedMemberData, MembersAdapter.MembersViewHolder>(DIFF_CALLBACK) {
+    private val avatarSize: Int by lazy { context.resources.getDimensionPixelSize(R.dimen._40dp) }
     private var isLoggedInUserTeamLeader: Boolean = false
-    private val dateFormatter = DateTimeFormatter.ofPattern(TimeUtils.DATE_FORMAT).withZone(ZoneId.systemDefault())
 
     fun setUserId(userId: String?) {
         this.currentUserId = userId
     }
 
     companion object {
+        const val PAYLOAD_KEY_LEADER = "PAYLOAD_KEY_LEADER"
+        const val PAYLOAD_KEY_LOGGED_IN_USER_LEADER_CHANGED = "PAYLOAD_KEY_LOGGED_IN_USER_LEADER_CHANGED"
         private val DIFF_CALLBACK = DiffUtils.itemCallback<JoinedMemberData>(
             areItemsTheSame = { oldItem, newItem -> oldItem.user.id == newItem.user.id },
-            areContentsTheSame = { oldItem, newItem -> oldItem == newItem },
+            areContentsTheSame = { oldItem, newItem ->
+                oldItem.isLeader == newItem.isLeader &&
+                    oldItem.visitCount == newItem.visitCount &&
+                    oldItem.lastVisitDate == newItem.lastVisitDate &&
+                    oldItem.user.name == newItem.user.name &&
+                    oldItem.user.userImage == newItem.user.userImage &&
+                    oldItem.user.getRoleAsString() == newItem.user.getRoleAsString()
+            },
             getChangePayload = { oldItem, newItem ->
                 val payload = Bundle()
                 if (oldItem.isLeader != newItem.isLeader) {
-                    payload.putBoolean("KEY_LEADER", newItem.isLeader)
+                    payload.putBoolean(PAYLOAD_KEY_LEADER, newItem.isLeader)
                 }
                 if (payload.isEmpty) null else payload
             }
@@ -60,13 +66,28 @@ class MembersAdapter(
         payloads: MutableList<Any>
     ) {
         if (payloads.isNotEmpty()) {
-            val payload = payloads[0] as Bundle
-            if (payload.containsKey("KEY_LEADER")) {
-                val isLeader = payload.getBoolean("KEY_LEADER")
-                holder.binding.tvIsLeader.visibility = if (isLeader) View.VISIBLE else View.GONE
-                if (isLeader) {
-                    holder.binding.tvIsLeader.text = context.getString(R.string.team_leader)
+            var unhandled = false
+            payloads.forEach { payload ->
+                when (payload) {
+                    is Bundle -> {
+                        if (payload.containsKey(PAYLOAD_KEY_LEADER)) {
+                            val isLeader = payload.getBoolean(PAYLOAD_KEY_LEADER)
+                            holder.binding.tvIsLeader.visibility = if (isLeader) View.VISIBLE else View.GONE
+                            if (isLeader) {
+                                holder.binding.tvIsLeader.text = context.getString(R.string.team_leader)
+                            }
+                        } else {
+                            unhandled = true
+                        }
+                    }
+                    PAYLOAD_KEY_LOGGED_IN_USER_LEADER_CHANGED -> {
+                        checkUserAndShowOverflowMenu(holder.binding, position)
+                    }
+                    else -> unhandled = true
                 }
+            }
+            if (unhandled) {
+                super.onBindViewHolder(holder, position, payloads)
             }
         } else {
             super.onBindViewHolder(holder, position, payloads)
@@ -78,14 +99,14 @@ class MembersAdapter(
         val member = memberData.user
         val binding = holder.binding
 
-        binding.tvTitle.text = if (member.toString() == " ") member.name else member.toString()
+        binding.tvTitle.text = member.name
         binding.tvDescription.text = context.getString(
             R.string.member_description,
             member.getRoleAsString(),
             memberData.visitCount
         )
         val lastVisitDate = if (memberData.lastVisitDate != null) {
-            dateFormatter.format(Instant.ofEpochMilli(memberData.lastVisitDate))
+            TimeUtils.getFormattedShortDate(memberData.lastVisitDate)
         } else {
             context.getString(R.string.no_visit)
         }
@@ -93,7 +114,6 @@ class MembersAdapter(
             R.string.last_visit,
             lastVisitDate
         )
-        val avatarSize = binding.root.context.resources.getDimensionPixelSize(R.dimen._40dp)
         ImageUtils.loadProfileImage(member.userImage, binding.memberImage, avatarSize)
 
         if (memberData.isLeader) {
@@ -168,8 +188,13 @@ class MembersAdapter(
     }
 
     fun updateData(newList: List<JoinedMemberData>, isLoggedInUserTeamLeader: Boolean) {
+        val leaderStatusChanged = this.isLoggedInUserTeamLeader != isLoggedInUserTeamLeader
         this.isLoggedInUserTeamLeader = isLoggedInUserTeamLeader
-        submitList(newList)
+        if (leaderStatusChanged) {
+            submitList(newList) { notifyItemRangeChanged(0, itemCount, PAYLOAD_KEY_LOGGED_IN_USER_LEADER_CHANGED) }
+        } else {
+            submitList(newList)
+        }
     }
 
     class MembersViewHolder(val binding: RowJoinedUserBinding) :

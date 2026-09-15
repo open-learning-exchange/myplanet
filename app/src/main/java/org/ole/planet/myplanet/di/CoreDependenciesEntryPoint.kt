@@ -4,19 +4,21 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
-import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.repository.DiagnosticsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.ServerReachabilityProvider
+import org.ole.planet.myplanet.utils.TimeProvider
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface CoreDependenciesEntryPoint {
     @ApplicationScope fun applicationScope(): CoroutineScope
     fun sharedPrefManager(): SharedPrefManager
-    fun databaseService(): DatabaseService
-    fun userSessionManager(): UserSessionManager
     fun serverUrlMapper(): ServerUrlMapper
     fun dispatcherProvider(): DispatcherProvider
+    fun diagnosticsRepository(): DiagnosticsRepository
+    fun serverReachabilityProvider(): ServerReachabilityProvider
+    fun timeProvider(): TimeProvider
 }

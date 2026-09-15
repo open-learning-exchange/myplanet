@@ -8,7 +8,6 @@ import android.net.Uri
 import android.os.Build
 import androidx.core.net.toUri
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -23,30 +22,30 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.google.gson.JsonObject
 import java.io.File
+import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.databinding.ImageThumbBinding
 import org.ole.planet.myplanet.databinding.VideoThumbBinding
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.voices.ReplyActivity
 import org.ole.planet.myplanet.ui.voices.VoicesActions
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
-import org.ole.planet.myplanet.utils.FileUtils.getRealPathFromURI
 import org.ole.planet.myplanet.utils.JsonUtils
 
 abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickListener {
     lateinit var imageList: MutableList<String>
     lateinit var videoList: MutableList<String>
 
-    @javax.inject.Inject
-    lateinit var activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
-    @JvmField
+    @Inject
+    lateinit var activitiesRepository: ActivitiesRepository
     protected var llImage: ViewGroup? = null
     @JvmField
     protected var llVideo: ViewGroup? = null
@@ -129,7 +128,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         if (context is OnHomeItemClickListener) homeItemClickListener = context
     }
 
-    override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
+    override fun showReply(news: News?, fromLogin: Boolean, nonTeamMember: Boolean) {
         if (news != null) {
             val intent = Intent(activity, ReplyActivity::class.java).putExtra("id", news.id)
                 .putExtra("fromLogin", fromLogin)
@@ -138,11 +137,12 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         }
     }
 
-    override fun onMemberSelected(userModel: RealmUser?) {
+    override fun onMemberSelected(userModel: UserEntity?) {
         if (!isAdded) return
 
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             val fragment = VoicesActions.showMemberDetails(userModel, activitiesRepository) ?: return@launch
+            if (!isAdded) return@launch
             FragmentNavigator.replaceFragment(
                 requireActivity().supportFragmentManager,
                 R.id.fragment_container,
@@ -152,7 +152,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         }
     }
 
-    abstract fun setData(list: List<RealmNews?>?)
+    abstract fun setData(list: List<News?>?)
     fun showNoData(v: View?, count: Int?, source: String) {
         count?.let { BaseRecyclerFragment.showNoData(v, it, source) }
     }
@@ -191,10 +191,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
     private fun processImageUri(uri: Uri?, resultCode: Int) {
         if (uri == null) return
 
-        var path: String? = getRealPathFromURI(requireActivity(), uri)
-        if (TextUtils.isEmpty(path)) {
-            path = FileUtils.getPathFromURI(requireActivity(), uri)
-        }
+        val path: String? = FileUtils.resolveUriToPath(requireActivity(), uri)
 
         if (path.isNullOrEmpty()) return
 
@@ -235,10 +232,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
     private fun processVideoUri(uri: Uri?, resultCode: Int) {
         if (uri == null) return
 
-        var path: String? = getRealPathFromURI(requireActivity(), uri)
-        if (TextUtils.isEmpty(path)) {
-            path = FileUtils.getPathFromURI(requireActivity(), uri)
-        }
+        val path: String? = FileUtils.resolveUriToPath(requireActivity(), uri)
 
         if (path.isNullOrEmpty()) return
 
@@ -289,10 +283,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
     private fun processMediaUri(uri: Uri?, resultCode: Int) {
         if (uri == null) return
 
-        var path: String? = getRealPathFromURI(requireActivity(), uri)
-        if (TextUtils.isEmpty(path)) {
-            path = FileUtils.getPathFromURI(requireActivity(), uri)
-        }
+        val path: String? = FileUtils.resolveUriToPath(requireActivity(), uri)
 
         if (path.isNullOrEmpty()) return
 

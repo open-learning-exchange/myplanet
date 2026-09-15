@@ -14,15 +14,17 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
 import javax.inject.Singleton
 import javax.net.SocketFactory
+import okhttp3.ConnectionPool
+import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.api.RetryInterceptor
-import org.ole.planet.myplanet.services.BroadcastService
+import org.ole.planet.myplanet.utils.Constants.NETWORK_TRAFFIC_TAG
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 private class TaggedSocketFactory(private val delegate: SocketFactory) : SocketFactory() {
-    private fun tag() = TrafficStats.setThreadStatsTag(Thread.currentThread().id.toInt())
+    private fun tag() = TrafficStats.setThreadStatsTag(NETWORK_TRAFFIC_TAG)
     override fun createSocket(): Socket { tag(); return delegate.createSocket() }
     override fun createSocket(host: String, port: Int): Socket { tag(); return delegate.createSocket(host, port) }
     override fun createSocket(host: String, port: Int, localHost: InetAddress, localPort: Int): Socket { tag(); return delegate.createSocket(host, port, localHost, localPort) }
@@ -36,7 +38,15 @@ annotation class StandardHttpClient
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
+annotation class ReachabilityHttpClient
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
 annotation class StandardRetrofit
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class PlainGson
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -44,6 +54,7 @@ object NetworkModule {
     private const val CONNECT_TIMEOUT_SECONDS = 10L
     private const val READ_TIMEOUT_SECONDS = 60L
     private const val WRITE_TIMEOUT_SECONDS = 120L
+    private const val REACHABILITY_TIMEOUT_SECONDS = 5L
 
     @Provides
     @Singleton
@@ -54,8 +65,23 @@ object NetworkModule {
             .create()
     }
 
+    @Provides
+    @Singleton
+    @PlainGson
+    fun providePlainGson(): Gson {
+        return Gson()
+    }
+
+    private const val MAX_REQUESTS_PER_HOST = 20
+
     private fun buildOkHttpClient(connect: Long, read: Long, write: Long, retryInterceptor: RetryInterceptor? = null): OkHttpClient {
+        val dispatcher = Dispatcher().apply {
+            maxRequestsPerHost = MAX_REQUESTS_PER_HOST
+        }
+        val connectionPool = ConnectionPool(MAX_REQUESTS_PER_HOST, 5, TimeUnit.MINUTES)
         val builder = OkHttpClient.Builder()
+            .dispatcher(dispatcher)
+            .connectionPool(connectionPool)
             .connectTimeout(connect, TimeUnit.SECONDS)
             .readTimeout(read, TimeUnit.SECONDS)
             .writeTimeout(write, TimeUnit.SECONDS)
@@ -71,12 +97,23 @@ object NetworkModule {
     @Provides
     @Singleton
     @StandardHttpClient
-    fun provideStandardOkHttpClient(broadcastService: BroadcastService): OkHttpClient {
+    fun provideStandardOkHttpClient(retryInterceptor: RetryInterceptor): OkHttpClient {
         return buildOkHttpClient(
             CONNECT_TIMEOUT_SECONDS,
             READ_TIMEOUT_SECONDS,
             WRITE_TIMEOUT_SECONDS,
-            RetryInterceptor(broadcastService)
+            retryInterceptor
+        )
+    }
+
+    @Provides
+    @Singleton
+    @ReachabilityHttpClient
+    fun provideReachabilityOkHttpClient(): OkHttpClient {
+        return buildOkHttpClient(
+            REACHABILITY_TIMEOUT_SECONDS,
+            REACHABILITY_TIMEOUT_SECONDS,
+            REACHABILITY_TIMEOUT_SECONDS
         )
     }
 

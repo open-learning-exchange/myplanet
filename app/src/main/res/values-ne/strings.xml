@@ -10,6 +10,7 @@
     <string name="remember_sync">मोबाइल एप्लिकेसनलाई समक्रमण गर्न सम्झनुहोस्।</string>
     <string name="per_survey">%1$s प्रति सर्वेक्षण</string>
     <string name="course_completed">%1$s समाप्त!</string>
+    <string name="course_cover_image">पाठ्यक्रमको आवरण चित्र</string>
     <string name="course_in_progress">कोर्स %1$s मा प्रवेश गर्नुहोस् यसलाई पूरा गर्नुहोस् (%2$d को %3$d गरियो)</string>
     <string name="course_not_started">%1$s सुरु भएको छैन</string>
     <string name="app_name">My Planet</string>
@@ -167,6 +168,7 @@
     <string name="cannot_remove_user">प्रयोगकर्ता हटाउन सकिएन</string>
     <string name="no_members_task">कार्य सौंपन टोली सदस्यहरू उपस्थित छैनन्</string>
     <string name="no_member_selected">कुनै सदस्य चयन गरिएको छैन। कृपया फेरि प्रयास गर्नुहोस्</string>
+    <string name="last_login_message">सदस्य बन्नु अघि यो तपाईंको अन्तिम लगइन हो।</string>
 
     <string-array name="level">
         <item>प्रारम्भिक</item>
@@ -356,7 +358,8 @@
     <string-array name="sort_by_date">
         <item>मितिमा आदान - अवरोही</item>
         <item>मितिमा आदान - आरोही</item>
-        <item>शीर्षकमा आदान</item>
+        <item>शीर्षकमा आदान - आरोही</item>
+        <item>शीर्षकमा आदान - अवरोही</item>
     </string-array>
 
     <string-array name="sort_member">
@@ -548,6 +551,8 @@
     <string name="subject_level">विषय स्तर</string>
     <string name="order_by_date">मिति अनुसार आदेश गर्नुहोस्</string>
     <string name="order_by_title">शीर्षक अनुसार आदेश गर्नुहोस्</string>
+    <string name="sort">क्रमबद्ध गर्नुहोस्</string>
+    <string name="show_n_results">%1$d नतिजा देखाउनुहोस्</string>
     <string name="exams">परीक्षाहरू</string>
     <string name="survey">सर्वेक्षण</string>
     <string name="submitted_by">पेश गर्ने:</string>
@@ -576,6 +581,8 @@
     <string name="no_data_available_please_check_and_try_again">कुनै डाटा उपलब्ध छैन, कृपया जाँच गर्नुहोस् र पुन: प्रयास गर्नुहोस्।</string>
     <string name="no_course_matched_filter">कुनै पाठ्यक्रम मिलेन</string>
     <string name="added_to_my_library">myLibrary मा थपियो</string>
+    <string name="format_added_to_mylibrary">%1$s myLibrary मा थपियो</string>
+    <string name="format_removed_from_mylibrary">%1$s myLibrary बाट हटाइयो</string>
     <string name="added_to_my_courses">myCourses मा थपियो</string>
     <string name="do_you_want_to_stay_online">के तपाइँ अनलाइन बस्न चाहनुहुन्छ?</string>
     <string name="device_not_connected_to_planet">उपकरण ग्रहसँग जडान गरिएको छैन।</string>
@@ -600,6 +607,7 @@
     <string name="please_select_starting_date">"कृपया सुरु मिति छनौट गर्नुहोस्: "</string>
     <string name="read_offline_news_from">"अफलाइन समाचार पढ्नुहोस्: "</string>
     <string name="downloading_started_please_check_notification">डाउनलोड सुरु भयो, कृपया सूचना जाँच गर्नुहोस्…</string>
+    <string name="dictionary_parsing_failed">शब्दकोश पार्सिङ असफल भयो</string>
     <string name="file_already_exists">फाइल पहिले नै अवस्थित छ…</string>
     <string name="feature_not_available">विशेषता उपलब्ध छैन</string>
     <string name="sync">सिंक</string>
@@ -612,6 +620,10 @@
     <string name="meetup_added">मिलन सम्मेलन थपियो</string>
     <string name="meetup_not_added">मिलन सम्मेलन होइन थपियो</string>
     <string name="add_transaction">लेखा थप्नुहोस्</string>
+    <string name="from_date">मिति देखि</string>
+    <string name="to_date">मिति सम्म</string>
+    <string name="select_from_date">मिति देखि चयन गर्नुहोस्</string>
+    <string name="select_to_date">मिति सम्म चयन गर्नुहोस्</string>
     <string name="note_is_required">टिप्पणी आवश्यक छ</string>
     <string name="amount_is_required">रकम आवश्यक छ</string>
     <string name="date_is_required">मिति आवश्यक छ</string>
@@ -731,6 +743,7 @@
     <string name="sync_step_of">चरण %1$d मध्ये %2$d</string>
     <string name="sync_items_of">%1$d / %2$d</string>
     <string name="sync_table_progress">%1$s  ·  %2$d / %3$d तालिकाहरू</string>
+    <string name="sync_in_progress_wait">सिंक जारी छ। यो सकिने प्रतीक्षा गर्नुहोस्।</string>
     <string name="sync_shelves_progress">%1$d / %2$d शेल्फहरू</string>
     <string name="team_leader">टिम नेता</string>
     <string name="select_resource">"स्रोत छान्नुहोस्: "</string>
@@ -777,6 +790,7 @@
     <string name="unable_to_clear_files">फाइलहरू हटाउन सकिएन</string>
     <string name="last_synced_never">कहिले पनि समक्रमित भएन</string>
     <string name="last_synced_colon">"पिछ्लो सिंक: "</string>
+    <string name="dashboard_sync_status">सिंक · %1$s</string>
 
     <string name="disclaimer">
     <![CDATA[
@@ -922,6 +936,7 @@
     <string name="ob_desc4_3">🎯 व्यक्तिगत: तपाईंको शिक्षा मार्गलाई समायोजित गर्नुहोस्।</string>
     <string name="ob_desc4_4">📚 इन्टर्याक्टिभ: भिडियो, पुस्तकहरू, खेलहरूसँग संलग्न हुनुहोस्।</string>
     <string name="ob_desc4_5">मेरो प्ल्यानेटसँग असीमित शिक्षा यात्रा सुरु गर्नुहोस्!</string>
+    <string name="onboarding_server_prep_hint">साइन इन गर्नु अघि, तपाईंलाई आफ्नो Planet सर्भर ठेगाना र PIN आवश्यक पर्नेछ। यदि तपाईंसँग अझै छैन भने आफ्नो सामुदायिक प्रशासकलाई सोध्नुहोस्।</string>
     <string name="recycler_chat_label">चर्चाहरू</string>
     <string name="completed_course">समाप्त पाठ्यक्रम</string>
     <string name="menu">साइड मेนู</string>
@@ -941,6 +956,9 @@
     <string name="virtual_assistant_currently_not_available">भर्चुअल सहायक हाललाई उपलब्ध छैन</string>
     <string name="no_courses">कुनै पाठ्यक्रम उपलब्ध छैन</string>
     <string name="no_resources">कुनै स्रोतहरू उपलब्ध छैनन्</string>
+    <string name="no_resources_added_yet">तपाईं स्रोतहरू थप्न सक्नुहुन्छ</string>
+    <string name="no_courses_joined_yet">तपाईं पाठ्यक्रमहरूमा सामेल हुन सक्नुहुन्छ</string>
+    <string name="no_teams_joined_yet">तपाईं टोलीमा सामेल हुन सक्नुहुन्छ</string>
     <string name="no_finance_record">वित्तीय रेकर्ड उपलब्ध छैन</string>
     <string name="no_team_courses">कुनै टिम पाठ्यक्रमहरू उपलब्ध छैनन्</string>
     <string name="no_team_resources">कुनै टिम स्रोतहरू उपलब्ध छैनन्</string>
@@ -978,6 +996,8 @@
     <string name="no_teams">टोलीहरू उपलब्ध छैनन्</string>
     <string name="no_chats">अघिल्ला कुराकानीहरू छैनन्</string>
     <string name="no_feedback">कुनै प्रतिक्रिया उपलब्ध छैन</string>
+    <string name="medium_text_html">पाठ / HTML</string>
+    <string name="medium_html">HTML</string>
     <string name="empty_text" />
     <string name="message_placeholder">%s</string>
     <string name="reports">रिपोर्टहरू</string>
@@ -1008,6 +1028,11 @@
     <string name="dark_mode_follow_system">प्रणालीको पालना गर्नुहोस्</string>
     <string name="theme_mode_light">उज्यालो</string>
     <string name="theme_mode_dark">अँध्यारो</string>
+    <string name="text_size">पाठको आकार</string>
+    <string name="select_text_size">पाठको आकार छान्नुहोस्</string>
+    <string name="text_size_small">सानो</string>
+    <string name="text_size_medium">मध्यम</string>
+    <string name="text_size_large">ठूलो</string>
     <string name="are_you_sure_you_want_to_archive_these_courses">के तपाइँ यी पाठ्यक्रमहरू संग्रह गर्न निश्चित हुनुहुन्छ?</string>
     <string name="are_you_sure_you_want_to_archive_this_course">के तपाइँ निश्चित हुनुहुन्छ कि तपाइँ यो पाठ्यक्रम संग्रह गर्न चाहनुहुन्छ?</string>
     <string name="manual">हस्तपुस्तिका</string>
@@ -1097,12 +1122,12 @@
     <string name="fetching_ai_providers">एआई प्रदायकहरू प्राप्त गर्दै…</string>
     <string name="adopt_survey">सर्वेक्षण अपनाउनुहोस्</string>
     <string name="survey_adopted_successfully">सर्वेक्षण सफलतापूर्वक अपनाइयो!</string>
-    <string name="beta_fast_sync">बेटा फास्ट सिंक</string>
-    <string name="beta_improved_sync">beta improved sync</string>
-    <string name="beta_improved_sync_summary">Run the experimental sync manager during manual and auto syncs.</string>
     <string name="user_verification_in_progress">प्रयोगकर्ता प्रमाणीकरण प्रक्रिया भइरहेको छ। कृपया डेटा प्रशोधन भइरहेसम्म प्रतीक्षा गर्नुहोस्।</string>
     <string name="go_to_mylibrary">मेरो पुस्तकालयमा जानुहोस्</string>
     <string name="choose_an_option">एउटा विकल्प छान्नुहोस्</string>
+    <string name="profile_guest_banner_message">अतिथि — प्रोफाइल सुरक्षित गर्न साइन इन गर्नुहोस्</string>
+    <string name="profile_label_level">स्तर</string>
+    <string name="profile_activity_section">गतिविधि</string>
     <string name="welcome">स्वागतम् %1$s</string>
     <string name="edit_plan">योजना सम्पादन गर्नुहोस्</string>
     <string name="show_additional_fields">थप क्षेत्रहरू देखाउनुहोस्</string>
@@ -1252,6 +1277,7 @@
     <string name="current_cv">हालको CV/रिज्युमे: %s</string>
     <string name="select_pdf_only">कृपया PDF फाइल छान्नुहोस्</string>
     <string name="file_not_found">फाइल फेला परेन: %s</string>
+    <string name="text_content_truncated">फाइल पूरै देखाउनका लागि धेरै ठूलो छ — पहिलो भाग मात्र देखाइँदैछ</string>
     <string name="chat_already_shared_to_destination">यो च्याट पहिले नै यस गन्तव्यमा साझेदारी गरिएको छ</string>
     <string name="load_earlier_messages">पहिलेका सन्देशहरू लोड गर्नुहोस्</string>
     <string name="already_shared">पहिले नै साझा गरिएको</string>
@@ -1284,6 +1310,8 @@
     <string name="storage_unknown_resource">अज्ञात स्रोत</string>
     <string name="file_count_one">१ फाइल</string>
     <string name="file_count_many">%1$d फाइलहरू</string>
+    <string name="storage_deleting_progress">फाइलहरू मेटाउँदै... %1$d मेटाइयो (%2$s)</string>
+    <string name="storage_freed_summary">%1$s खाली भयो (%2$d फाइलहरू)</string>
     <string name="skip">छोड्नुहोस्</string>
     <string name="add_meetup">भेटघाट थप्नुहोस्</string>
     <string name="download_report">रिपोर्ट डाउनलोड गर्नुहोस्</string>
@@ -1339,5 +1367,41 @@
         <item>प्रगतिमा</item>
         <item>पूरा भएको</item>
     </string-array>
+    <string name="edit_resource">स्रोत सम्पादन गर्नुहोस्</string>
+    <string name="save_changes">परिवर्तनहरू सुरक्षित गर्नुहोस्</string>
+    <string name="resource_updated">स्रोत अद्यावधिक गरियो</string>
+    <string name="failed_to_update_resource">स्रोत अद्यावधिक गर्न असफल भयो</string>
+    <string name="join_team_first">यो च्याट साझा गर्न कृपया एउटा टोलीमा सामेल हुनुहोस्।</string>
+    <string name="join_enterprise_first">यो च्याट साझा गर्न कृपया एउटा संस्थामा सामेल हुनुहोस्।</string>
+    <string name="open_link_with">यससँग लिङ्क खोल्नुहोस्</string>
+    <string name="just_once">एक पटक मात्र</string>
+    <string name="always">सधैं</string>
+    <string name="survey_load_failed">सर्वेक्षण लोड गर्न सकिएन। फेरि प्रयास गर्नुहोस्।</string>
+    <string name="survey_submitted">सर्वेक्षण पेश गरियो। धन्यवाद!</string>
+    <string name="survey_submit_failed">सर्वेक्षण पेश गर्न सकिएन। फेरि प्रयास गर्नुहोस्।</string>
+    <string name="item_count_pill">%d वस्तुहरू</string>
+    <string name="view_grid">ग्रिड दृश्य</string>
+    <string name="view_list">सूची दृश्य</string>
+    <string name="steps_done_of_total">%2$d मध्ये %1$d सम्पन्न</string>
+    <string name="course_steps_count">%d चरणहरू</string>
+    <string name="subject_label_mathematics">गणित</string>
+    <string name="subject_label_literacy">साक्षरता</string>
+    <string name="subject_label_health">स्वास्थ्य</string>
+    <string name="subject_label_social_studies">सामाजिक अध्ययन</string>
+    <string name="subject_label_technology">प्रविधि</string>
+    <string name="filter_all">सबै</string>
+    <string name="filter_books">पुस्तकहरू</string>
+    <string name="filter_videos">भिडियोहरू</string>
+    <string name="filter_audio">अडियो</string>
+    <string name="filter_pdfs">PDFहरू</string>
+    <string name="downloaded">डाउनलोड गरिएको</string>
+    <string name="not_downloaded">डाउनलोड नगरिएको</string>
+    <string-array name="download_filter">
+        <item>सबै</item>
+        <item>डाउनलोड गरियो</item>
+        <item>डाउनलोड गरिएको छैन</item>
+    </string-array>
 
+    <string name="playback_speed">प्लेब्याक गति</string>
+    <string name="playback_speed_format">%1$sx</string>
 </resources>

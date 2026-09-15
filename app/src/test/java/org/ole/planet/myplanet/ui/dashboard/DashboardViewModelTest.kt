@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import android.app.Application
+import com.google.gson.JsonArray
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
@@ -9,7 +11,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -18,10 +22,12 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.model.DashboardProfile
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
@@ -29,12 +35,14 @@ import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
+import org.ole.planet.myplanet.repository.SyncRepository
+import org.ole.planet.myplanet.repository.SyncUiState
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class DashboardViewModelTest {
 
     private lateinit var viewModel: DashboardViewModel
@@ -46,9 +54,10 @@ class DashboardViewModelTest {
     private val submissionsRepository = mockk<SubmissionsRepository>()
     private val notificationsRepository = mockk<NotificationsRepository>()
     private val surveysRepository = mockk<SurveysRepository>()
-    private val activitiesRepository = mockk<ActivitiesRepository>()
     private val progressRepository = mockk<ProgressRepository>()
     private val voicesRepository = mockk<VoicesRepository>()
+    private val activitiesRepository = mockk<ActivitiesRepository>()
+    private val syncRepository = mockk<SyncRepository>()
     private val dispatcherProvider = mockk<DispatcherProvider>(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
@@ -70,10 +79,11 @@ class DashboardViewModelTest {
             submissionsRepository,
             notificationsRepository,
             surveysRepository,
-            activitiesRepository,
             progressRepository,
             voicesRepository,
-            dispatcherProvider
+            activitiesRepository,
+            dispatcherProvider,
+            syncRepository
         )
     }
 
@@ -82,17 +92,37 @@ class DashboardViewModelTest {
         Dispatchers.resetMain()
     }
 
+
+    @Test
+    fun testSyncKeyId_preventOverlappingCalls() = runTest {
+        coEvery { syncRepository.syncDashboardKeyId(any()) } coAnswers {
+            kotlinx.coroutines.delay(100)
+            SyncUiState.Success(null)
+        }
+
+        val events = mutableListOf<SyncUiState>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.syncKeyIdEvent.collect { events.add(it) }
+        }
+
+        viewModel.syncKeyId("role")
+        viewModel.syncKeyId("role") // Should be ignored
+
+        advanceUntilIdle()
+
+        assertEquals(2, events.size)
+        assertEquals(SyncUiState.Loading, events[0])
+        assertEquals(SyncUiState.Success(null), events[1])
+    }
     @Test
     fun `loadUserContent replaces existing collectors when called multiple times`() = runTest(testDispatcher) {
         val userId = "user1"
-        val user = RealmUser().apply { name = "John Doe"; firstName = "John"; lastName = "Doe" }
 
-        val firstCoursesFlow = MutableSharedFlow<List<RealmMyCourse>>()
-        val secondCoursesFlow = MutableSharedFlow<List<RealmMyCourse>>()
+        val firstCoursesFlow = MutableSharedFlow<List<MyCourse>>()
+        val secondCoursesFlow = MutableSharedFlow<List<MyCourse>>()
 
-        coEvery { userRepository.getUserById(userId) } returns user
-        coEvery { activitiesRepository.getOfflineLoginCount(any()) } returns 0
-        coEvery { resourcesRepository.getMyLibrary(userId) } returns emptyList()
+        coEvery { userRepository.getDashboardProfile(userId) } returns DashboardProfile("John Doe", 0)
+        coEvery { resourcesRepository.getMyLibraryFlow(userId) } returns kotlinx.coroutines.flow.flowOf(emptyList())
         coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(emptyList())
 
         // First call
@@ -106,58 +136,54 @@ class DashboardViewModelTest {
         advanceUntilIdle()
 
         // Emit to the first flow - should be ignored because the job was cancelled
-        firstCoursesFlow.emit(listOf(RealmMyCourse().apply { courseTitle = "Old Course" }))
+        firstCoursesFlow.emit(listOf(MyCourse().apply { courseTitle = "Old Course" }))
         advanceUntilIdle()
 
         val stateAfterFirstEmit = viewModel.uiState.value
         assertEquals(0, stateAfterFirstEmit.courses.size)
 
         // Emit to the second flow - should update state
-        secondCoursesFlow.emit(listOf(RealmMyCourse().apply { courseTitle = "New Course" }))
+        secondCoursesFlow.emit(listOf(MyCourse().apply { courseTitle = "New Course" }))
         advanceUntilIdle()
 
         val stateAfterSecondEmit = viewModel.uiState.value
         assertEquals(1, stateAfterSecondEmit.courses.size)
-        assertEquals("New Course", (stateAfterSecondEmit.courses[0] as RealmMyCourse).courseTitle)
+        assertEquals("New Course", (stateAfterSecondEmit.courses[0] as MyCourse).courseTitle)
     }
 
     @Test
     fun `constituent jobs are independent and cancellation of one does not cancel others`() = runTest(testDispatcher) {
         val userId = "user1"
-        val user = RealmUser().apply { name = "John Doe"; firstName = "John"; lastName = "Doe" }
 
-        val coursesFlow = MutableSharedFlow<List<RealmMyCourse>>()
+        val coursesFlow = MutableSharedFlow<List<MyCourse>>()
 
-        coEvery { userRepository.getUserById(userId) } returns user
-        coEvery { activitiesRepository.getOfflineLoginCount(any()) } returns 0
+        coEvery { userRepository.getDashboardProfile(userId) } returns DashboardProfile("John Doe", 0)
         coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(emptyList())
 
         // Library throws CancellationException, simulating its job being cancelled
-        coEvery { resourcesRepository.getMyLibrary(userId) } throws CancellationException("Test cancel")
+        coEvery { resourcesRepository.getMyLibraryFlow(userId) } throws CancellationException("Test cancel")
         coEvery { coursesRepository.getMyCoursesFlow(userId) } returns coursesFlow
 
         viewModel.loadUserContent(userId)
         advanceUntilIdle()
 
         // Even though library job was cancelled, courses flow should still be active and receive updates
-        coursesFlow.emit(listOf(RealmMyCourse().apply { courseTitle = "Active Course" }))
+        coursesFlow.emit(listOf(MyCourse().apply { courseTitle = "Active Course" }))
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
         assertEquals(1, state.courses.size)
-        assertEquals("Active Course", (state.courses[0] as RealmMyCourse).courseTitle)
+        assertEquals("Active Course", (state.courses[0] as MyCourse).courseTitle)
     }
 
     @Test
     fun `loadUserContent updates uiState for users, teams, courses, and offline logins`() = runTest(testDispatcher) {
         val userId = "user1"
-        val user = RealmUser().apply { name = "John Doe"; firstName = "John"; lastName = "Doe" }
 
-        coEvery { resourcesRepository.getMyLibrary(userId) } returns listOf(RealmMyLibrary().apply { title = "Lib1" })
-        coEvery { coursesRepository.getMyCoursesFlow(userId) } returns flowOf(listOf(RealmMyCourse().apply { courseTitle = "Course1" }))
-        coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(listOf(RealmMyTeam().apply { name = "Team1" }))
-        coEvery { userRepository.getUserById(userId) } returns user
-        coEvery { activitiesRepository.getOfflineLoginCount("John Doe") } returns 2
+        coEvery { resourcesRepository.getMyLibraryFlow(userId) } returns kotlinx.coroutines.flow.flowOf(listOf(MyLibrary().apply { title = "Lib1" }))
+        coEvery { coursesRepository.getMyCoursesFlow(userId) } returns flowOf(listOf(MyCourse().apply { courseTitle = "Course1" }))
+        coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(listOf(MyTeam().apply { name = "Team1" }))
+        coEvery { userRepository.getDashboardProfile(userId) } returns DashboardProfile("John Doe", 2)
 
         viewModel.loadUserContent(userId)
 
@@ -167,18 +193,18 @@ class DashboardViewModelTest {
         assertEquals("John Doe", state.fullName)
         assertEquals(2, state.offlineLogins)
         assertEquals(1, state.courses.size)
-        assertEquals("Course1", (state.courses[0] as RealmMyCourse).courseTitle)
+        assertEquals("Course1", (state.courses[0] as MyCourse).courseTitle)
         assertEquals(1, state.teams.size)
-        assertEquals("Team1", (state.teams[0] as RealmMyTeam).name)
+        assertEquals("Team1", (state.teams[0] as MyTeam).name)
         assertEquals(1, state.library.size)
-        assertEquals("Lib1", (state.library[0] as RealmMyLibrary).title)
+        assertEquals("Lib1", (state.library[0] as MyLibrary).title)
     }
 
     @Test
     fun `loadUsers updates uiState with sorted users`() = runTest(testDispatcher) {
         val users = listOf(
-            RealmUser().apply { name = "User 1" },
-            RealmUser().apply { name = "User 2" }
+            UserEntity().apply { name = "User 1" },
+            UserEntity().apply { name = "User 2" }
         )
 
         coEvery { userRepository.getUsersSortedBy("joinDate", true) } returns users
@@ -188,8 +214,8 @@ class DashboardViewModelTest {
 
         val state = viewModel.uiState.value
         assertEquals(2, state.users.size)
-        assertEquals("User 1", (state.users[0] as RealmUser).name)
-        assertEquals("User 2", (state.users[1] as RealmUser).name)
+        assertEquals("User 1", (state.users[0] as UserEntity).name)
+        assertEquals("User 2", (state.users[1] as UserEntity).name)
     }
 
     @Test
@@ -235,5 +261,70 @@ class DashboardViewModelTest {
         assertEquals(0, state.courses.size)
         assertEquals(0, state.teams.size)
         assertEquals(0, state.library.size)
+    }
+
+    @Test
+    fun `evaluateChallengeDialog uses voice date count for both user and community counts`() = runTest(testDispatcher) {
+        val userId = "user1"
+        val validUrl = "https://example.org"
+
+        coEvery { progressRepository.fetchCourseData(userId) } returns JsonArray()
+        coEvery { voicesRepository.getCommunityVoiceDateCount(any(), any(), eq(userId)) } returns 5
+        coEvery { voicesRepository.getCommunityVoiceDateCount(any(), any(), isNull()) } returns 7
+        coEvery { coursesRepository.getCourseTitleById(any()) } returns "Course"
+        coEvery { submissionsRepository.hasPendingSurvey(any(), eq(userId)) } returns false
+        every { application.getString(any(), any<String>()) } returns "completed"
+        every { application.getString(any(), any<String>(), any<Int>(), any<Int>()) } returns "in progress"
+        every { progressRepository.findProgressForCourse(any(), any()) } returns null
+        coEvery { progressRepository.hasUserCompletedSync(userId) } returns false
+
+        viewModel.evaluateChallengeDialog(userId, isGuest = false, validUrls = listOf(validUrl), serverUrl = validUrl)
+
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { voicesRepository.getCommunityVoiceDateCount(any(), any(), eq(userId)) }
+        coVerify(exactly = 1) { voicesRepository.getCommunityVoiceDateCount(any(), any(), isNull()) }
+    }
+
+    @Test
+    fun `getGuestVisitState fetches the offline visit count once and memoizes it`() = runTest(testDispatcher) {
+        val userId = "guest-123"
+        coEvery { activitiesRepository.getOfflineVisitCount(userId) } returns 3
+
+        val first = viewModel.getGuestVisitState(userId).await()
+        val second = viewModel.getGuestVisitState(userId).await()
+
+        assertEquals(3, first.offlineVisits)
+        assertEquals(true, first.isGuest)
+        assertEquals(first, second)
+        coVerify(exactly = 1) { activitiesRepository.getOfflineVisitCount(userId) }
+    }
+
+    @Test
+    fun `getGuestVisitState never queries the repository for a non-guest user`() = runTest(testDispatcher) {
+        val userId = "member-456"
+
+        val state = viewModel.getGuestVisitState(userId).await()
+
+        assertEquals(0, state.offlineVisits)
+        assertEquals(false, state.isGuest)
+        assertEquals(null, state.bannerMessageRes)
+        assertEquals(false, state.shouldShowTrialEndedDialog)
+        assertEquals(true, state.shouldAutoOpenDrawer)
+        coVerify(exactly = 0) { activitiesRepository.getOfflineVisitCount(any()) }
+    }
+
+    @Test
+    fun `GuestVisitState derives banner, dialog and auto-open decisions from visit thresholds`() {
+        assertEquals(R.string.guest_visit_limit_warning, GuestVisitState(offlineVisits = 2, isGuest = true).bannerMessageRes)
+        assertEquals(R.string.last_login_message, GuestVisitState(offlineVisits = 3, isGuest = true).bannerMessageRes)
+        assertEquals(null, GuestVisitState(offlineVisits = 1, isGuest = true).bannerMessageRes)
+
+        assertEquals(false, GuestVisitState(offlineVisits = 3, isGuest = true).shouldShowTrialEndedDialog)
+        assertEquals(true, GuestVisitState(offlineVisits = 4, isGuest = true).shouldShowTrialEndedDialog)
+
+        assertEquals(true, GuestVisitState(offlineVisits = 2, isGuest = true).shouldAutoOpenDrawer)
+        assertEquals(false, GuestVisitState(offlineVisits = 3, isGuest = true).shouldAutoOpenDrawer)
+        assertEquals(true, GuestVisitState(offlineVisits = 10, isGuest = false).shouldAutoOpenDrawer)
     }
 }

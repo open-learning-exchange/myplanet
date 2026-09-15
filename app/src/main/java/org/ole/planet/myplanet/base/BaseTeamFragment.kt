@@ -4,20 +4,19 @@ import android.os.Bundle
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @AndroidEntryPoint
 abstract class BaseTeamFragment : BaseVoicesFragment() {
-    var user: RealmUser? = null
+    var user: UserEntity? = null
     var teamId: String = ""
         set(value) {
             if (field != value) {
@@ -25,35 +24,37 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
                 _isMemberFlow.value = false
             }
         }
-    var team: RealmMyTeam? = null
+    var team: MyTeam? = null
     @Inject
     lateinit var teamsRepository: TeamsRepository
-    @Inject
-    lateinit var teamsSyncRepository: org.ole.planet.myplanet.repository.TeamsSyncRepository
-    @Inject
-    open lateinit var dispatcherProvider: DispatcherProvider
-    private val _teamFlow = MutableStateFlow<RealmMyTeam?>(null)
-    val teamFlow: StateFlow<RealmMyTeam?> = _teamFlow.asStateFlow()
+    private var loadTeamJob: Job? = null
+    private val _teamFlow = MutableStateFlow<MyTeam?>(null)
+    val teamFlow: StateFlow<MyTeam?> = _teamFlow.asStateFlow()
     private val _isMemberFlow = MutableStateFlow(false)
     val isMemberFlow: StateFlow<Boolean> = _isMemberFlow.asStateFlow()
 
+
+    protected suspend fun ensureUserResolved(): UserEntity? {
+        return user ?: userRepository.getUserModel()?.also { user = it }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         teamId = requireArguments().getString("id", "")
 
         lifecycleScope.launch {
-            user = profileDbHandler.getUserModel()
+            ensureUserResolved()
             loadTeamDetails()
         }
     }
 
-    override fun setData(list: List<RealmNews?>?) {}
+    override fun setData(list: List<News?>?) {}
 
     private fun loadTeamDetails() {
-        val shouldQueryTeam = shouldQueryTeamFromRealm()
+        val shouldQueryTeam = shouldQueryTeamLocally()
         val existingTeam = team
-        lifecycleScope.launch(dispatcherProvider.io) {
+        loadTeamJob?.cancel()
+        loadTeamJob = lifecycleScope.launch {
             val teamResult = if (shouldQueryTeam) {
                 try {
                     teamsRepository.getTeamById(teamId)
@@ -71,29 +72,27 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
 
             val membership = teamsRepository.isMember(user?.id, teamId)
 
-            withContext(dispatcherProvider.main) {
-                teamResult?.let {
-                    team = it
-                }
-                _teamFlow.value = teamResult ?: team
-                _isMemberFlow.value = membership
+            teamResult?.let {
+                team = it
             }
+            _teamFlow.value = teamResult ?: team
+            _isMemberFlow.value = membership
         }
     }
 
-    private fun shouldQueryTeamFromRealm(): Boolean {
+    protected open fun shouldQueryTeamLocally(): Boolean {
         val hasDirectData = requireArguments().containsKey("teamName") &&
                 requireArguments().containsKey("teamType") &&
                 requireArguments().containsKey("teamId")
         return !hasDirectData
     }
 
-    protected fun getEffectiveTeamName(): String {
-        return requireArguments().getString("teamName") ?: team?.name ?: ""
+    protected open fun getEffectiveTeamName(): String {
+        return requireArguments().getString("teamName")?.takeIf { it.isNotBlank() } ?: team?.name ?: ""
     }
 
-    protected fun getEffectiveTeamType(): String {
-        return requireArguments().getString("teamType") ?: team?.type ?: ""
+    protected open fun getEffectiveTeamType(): String {
+        return requireArguments().getString("teamType")?.takeIf { it.isNotBlank() } ?: team?.type ?: ""
     }
 
     protected fun getEffectiveTeamId(): String {

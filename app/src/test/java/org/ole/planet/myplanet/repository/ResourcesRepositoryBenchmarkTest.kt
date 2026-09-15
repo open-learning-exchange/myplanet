@@ -1,0 +1,76 @@
+package org.ole.planet.myplanet.repository
+
+import android.content.Context
+import com.google.gson.JsonObject
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
+import org.junit.Before
+import org.junit.Test
+import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
+import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
+import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
+import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
+import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class ResourcesRepositoryBenchmarkTest {
+    private lateinit var resourcesRepository: ResourcesRepositoryImpl
+    private val context: Context = mockk(relaxed = true)
+    private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
+    private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
+    private val tagsRepository: TagsRepository = mockk(relaxed = true)
+    private val searchActivityDao: SearchActivityDao = mockk(relaxed = true)
+    private val resourceActivityDao: ResourceActivityDao = mockk(relaxed = true)
+    private val removedLogDao: RemovedLogDao = mockk(relaxed = true)
+    private val teamsSyncRepositoryLazy: dagger.Lazy<TeamsSyncRepository> = mockk(relaxed = true)
+    private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
+    private val userRepository: UserRepository = mockk(relaxed = true)
+    private val teamsRepositoryLazy: dagger.Lazy<TeamsRepository> = mockk(relaxed = true)
+    private val userSessionManager: UserSessionManager = mockk(relaxed = true)
+    private val configurationsRepository: ConfigurationsRepository = mockk(relaxed = true)
+    private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
+
+    @Before
+    fun setup() {
+        resourcesRepository = ResourcesRepositoryImpl(
+            context,
+            activitiesRepository,
+            sharedPrefManager,
+            tagsRepository,
+            searchActivityDao,
+            resourceActivityDao,
+            removedLogDao,
+            teamsSyncRepositoryLazy,
+            myLibraryDao,
+            userRepository,
+            teamsRepositoryLazy,
+            userSessionManager,
+            configurationsRepository,
+            dispatcherProvider
+        )
+    }
+
+    @Test
+    fun benchmarkBatchInsertMyLibrary() = runTest {
+        val count = 100
+        val docs = (1..count).map { i ->
+            JsonObject().apply {
+                addProperty("_id", "id_$i")
+                addProperty("_rev", "rev_$i")
+            }
+        }
+
+        coEvery { myLibraryDao.getByIds(any()) } returns emptyList()
+        coEvery { myLibraryDao.upsert(any()) } returns Unit
+
+        resourcesRepository.batchInsertMyLibrary(shelfId = "shelf1", documents = docs)
+
+        coVerify(exactly = 0) { myLibraryDao.getById(any()) }
+        coVerify(exactly = 1) { myLibraryDao.getByIds(match { it.size == 100 }) }
+    }
+}

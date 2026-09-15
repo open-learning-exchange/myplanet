@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MenuItem
@@ -14,46 +13,42 @@ import android.widget.ArrayAdapter
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.core.content.edit
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.preference.Preference
 import androidx.preference.Preference.OnPreferenceChangeListener
 import androidx.preference.Preference.OnPreferenceClickListener
 import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.PreferenceManager
 import androidx.preference.SwitchPreference
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkInfo
-import androidx.work.WorkManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication.Companion.createLog
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.di.DefaultPreferences
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmRetryOperation
-import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.services.FreeSpaceWorker
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.RetryOperation
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.restartApp
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class SettingsActivity : AppCompatActivity() {
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleUtils.onAttach(base))
@@ -61,7 +56,10 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        EdgeToEdgeUtils.setupEdgeToEdge(this, window.decorView)
+        lifecycleScope.launch(dispatcherProvider.io) {
+            PreferenceManager.getDefaultSharedPreferences(this@SettingsActivity)
+        }
+        EdgeToEdgeUtils.setupEdgeToEdge(this, findViewById(android.R.id.content))
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         FragmentNavigator.replaceFragment(supportFragmentManager, android.R.id.content, SettingFragment())
         title = getString(R.string.action_settings)
@@ -91,107 +89,95 @@ class SettingsActivity : AppCompatActivity() {
         @Inject
         lateinit var profileDbHandler: UserSessionManager
         @Inject
-        @DefaultPreferences
-        lateinit var defaultPref: SharedPreferences
-        @Inject
         lateinit var sharedPrefManager: SharedPrefManager
-        var user: RealmUser? = null
-        private var libraryList: List<RealmMyLibrary>? = null
-        private lateinit var dialog: DialogUtils.CustomProgressDialog
+        @Inject
+        lateinit var timeProvider: TimeProvider
+        @Inject
+        lateinit var dispatcherProvider: DispatcherProvider
+        var user: UserEntity? = null
+        private var libraryList: List<MyLibrary>? = null
 
 
         override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
             super.onViewCreated(view, savedInstanceState)
-            viewLifecycleOwner.lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    launch {
-                        viewModel.clearDataEvent.collectLatest {
-                            restartApp()
-                        }
+            collectLatestWhenStarted(viewModel.clearDataEvent) {
+                restartApp()
+            }
+            collectLatestWhenStarted(viewModel.downloadCompleteEvent) { files ->
+                libraryList = files
+                val autoDownload = findPreference<SwitchPreference>("beta_auto_download")
+                autoDownload?.isEnabled = true
+            }
+            collectLatestWhenStarted(viewModel.clearRetryQueueEvent) { cleared ->
+                if (cleared) {
+                    Utilities.toast(requireActivity(), getString(R.string.retry_queue_cleared))
+                } else {
+                    Utilities.toast(requireActivity(), "Cannot clear while processing")
+                }
+            }
+            collectLatestWhenStarted(viewModel.retryQueueDetailsEvent) { detailsData ->
+                val pendingCount = detailsData.pendingCount
+                val pendingOps = detailsData.pendingOps
+                val isProcessing = detailsData.isProcessing
+
+                val details = buildString {
+                    if (isProcessing) {
+                        appendLine("⏳ Currently processing retries...")
+                        appendLine()
                     }
-                    launch {
-                        viewModel.downloadCompleteEvent.collectLatest { files ->
-                            libraryList = files
-                            val autoDownload = findPreference<SwitchPreference>("beta_auto_download")
-                            autoDownload?.isEnabled = true
-                        }
-                    }
-                    launch {
-                        viewModel.clearRetryQueueEvent.collectLatest { cleared ->
-                            if (cleared) {
-                                Utilities.toast(requireActivity(), getString(R.string.retry_queue_cleared))
-                            } else {
-                                Utilities.toast(requireActivity(), "Cannot clear while processing")
+                    appendLine(getString(R.string.pending_retries, pendingCount.toInt()))
+                    appendLine()
+                    if (pendingOps.isNotEmpty()) {
+                        appendLine("Details:")
+                        pendingOps.take(10).forEach { op ->
+                            val statusIcon = when (op.status) {
+                                RetryOperation.STATUS_IN_PROGRESS -> "🔄"
+                                RetryOperation.STATUS_PENDING -> "⏸"
+                                else -> "❓"
                             }
+                            appendLine("$statusIcon ${op.uploadType}: ${op.status} (${op.attemptCount}/${op.maxAttempts})")
                         }
-                    }
-                    launch {
-                        viewModel.retryQueueDetailsEvent.collectLatest { detailsData ->
-                            val pendingCount = detailsData.pendingCount
-                            val pendingOps = detailsData.pendingOps
-                            val isProcessing = detailsData.isProcessing
-
-                            val details = buildString {
-                                if (isProcessing) {
-                                    appendLine("⏳ Currently processing retries...")
-                                    appendLine()
-                                }
-                                appendLine(getString(R.string.pending_retries, pendingCount.toInt()))
-                                appendLine()
-                                if (pendingOps.isNotEmpty()) {
-                                    appendLine("Details:")
-                                    pendingOps.take(10).forEach { op ->
-                                        val statusIcon = when (op.status) {
-                                            RealmRetryOperation.STATUS_IN_PROGRESS -> "🔄"
-                                            RealmRetryOperation.STATUS_PENDING -> "⏸"
-                                            else -> "❓"
-                                        }
-                                        appendLine("$statusIcon ${op.uploadType}: ${op.status} (${op.attemptCount}/${op.maxAttempts})")
-                                    }
-                                    if (pendingOps.size > 10) {
-                                        appendLine("... and ${pendingOps.size - 10} more")
-                                    }
-                                } else {
-                                    appendLine("No pending operations")
-                                }
-                            }
-
-                            val retryDialog = AlertDialog.Builder(requireActivity())
-                                .setTitle(R.string.retry_queue_status)
-                                .setMessage(details)
-                                .setPositiveButton(R.string.trigger_retry_now, null)
-                                .setNegativeButton(R.string.clear_retry_queue, null)
-                                .setNeutralButton(R.string.cancel, null)
-                                .create()
-
-                            retryDialog.setOnShowListener {
-                                val retryButton = retryDialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                                val clearButton = retryDialog.getButton(AlertDialog.BUTTON_NEGATIVE)
-
-                                // Disable buttons if processing
-                                retryButton.isEnabled = !isProcessing && pendingCount > 0
-                                clearButton.isEnabled = !isProcessing && pendingCount > 0
-
-                                retryButton.setOnClickListener {
-                                    if (!viewModel.isCurrentlyProcessing()) {
-                                        RetryQueueWorker.triggerImmediateRetry(requireContext())
-                                        Utilities.toast(requireActivity(), getString(R.string.retry_triggered))
-                                        retryDialog.dismiss()
-                                    } else {
-                                        Utilities.toast(requireActivity(), "Retry already in progress")
-                                    }
-                                }
-
-                                clearButton.setOnClickListener {
-                                    viewModel.clearRetryQueue()
-                                    retryDialog.dismiss()
-                                }
-                            }
-
-                            retryDialog.show()
+                        if (pendingOps.size > 10) {
+                            appendLine("... and ${pendingOps.size - 10} more")
                         }
+                    } else {
+                        appendLine("No pending operations")
                     }
                 }
+
+                val retryDialog = AlertDialog.Builder(requireActivity())
+                    .setTitle(R.string.retry_queue_status)
+                    .setMessage(details)
+                    .setPositiveButton(R.string.trigger_retry_now, null)
+                    .setNegativeButton(R.string.clear_retry_queue, null)
+                    .setNeutralButton(R.string.cancel, null)
+                    .create()
+
+                retryDialog.setOnShowListener {
+                    val retryButton = retryDialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                    val clearButton = retryDialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+
+                    // Disable buttons if processing
+                    retryButton.isEnabled = !isProcessing && pendingCount > 0
+                    clearButton.isEnabled = !isProcessing && pendingCount > 0
+
+                    retryButton.setOnClickListener {
+                        if (!viewModel.isCurrentlyProcessing()) {
+                            RetryQueueWorker.triggerImmediateRetry(requireContext())
+                            Utilities.toast(requireActivity(), getString(R.string.retry_triggered))
+                            retryDialog.dismiss()
+                        } else {
+                            Utilities.toast(requireActivity(), "Retry already in progress")
+                        }
+                    }
+
+                    clearButton.setOnClickListener {
+                        viewModel.clearRetryQueue()
+                        retryDialog.dismiss()
+                    }
+                }
+
+                retryDialog.show()
             }
         }
 
@@ -206,28 +192,21 @@ class SettingsActivity : AppCompatActivity() {
             setPreferencesFromResource(R.xml.pref, rootKey)
             lifecycleScope.launch {
                 user = profileDbHandler.getUserModel()
+                blockGuestSwitches()
             }
-            dialog = DialogUtils.getCustomProgressDialog(requireActivity())
 
             setBetaToggleOn()
             setAutoSyncToggleOn()
-            setImprovedSyncToggleOn()
             val lp = findPreference<Preference>("app_language")
             lp?.setOnPreferenceClickListener {
                 context?.let { it1 -> languageChanger(it1) }
                 true
             }
 
-            val darkMode = findPreference<Preference>("dark_mode")
-            darkMode?.setOnPreferenceClickListener {
-                ThemeManager.showThemeDialog(requireActivity())
+            val textSize = findPreference<Preference>("text_size")
+            textSize?.setOnPreferenceClickListener {
+                textSizeChanger(requireActivity())
                 true
-            }
-
-            // Show Available space under the "Freeup Space" preference.
-            val spacePreference = findPreference<Preference>("freeup_space")
-            if (spacePreference != null) {
-                spacePreference.summary = "${getString(R.string.available_space_colon)} ${FileUtils.availableOverTotalMemoryFormattedString(requireContext())}"
             }
 
             val autoDownload = findPreference<SwitchPreference>("beta_auto_download")
@@ -235,20 +214,11 @@ class SettingsActivity : AppCompatActivity() {
                 val isChecked = newValue as Boolean
                 if (isChecked) {
                     preference.isEnabled = false
-                    defaultPref.edit { putBoolean("beta_auto_download", true) }
+                    sharedPrefManager.setBetaAutoDownload(true)
                     viewModel.downloadFiles(libraryList)
                 } else {
-                    defaultPref.edit { putBoolean("beta_auto_download", false) }
+                    sharedPrefManager.setBetaAutoDownload(false)
                 }
-                true
-            }
-
-            val fastSync = findPreference<SwitchPreference>("beta_fast_sync")
-            val isFastSync = sharedPrefManager.getFastSync()
-            fastSync?.isChecked = isFastSync
-            fastSync?.onPreferenceChangeListener = OnPreferenceChangeListener { _, newValue ->
-                val isChecked = newValue as Boolean
-                sharedPrefManager.setFastSync(isChecked)
                 true
             }
 
@@ -257,10 +227,57 @@ class SettingsActivity : AppCompatActivity() {
             initStorageBreakdown()
         }
 
+        private fun blockGuestSwitches() {
+            if (user?.id?.startsWith("guest") != true) return
+
+            fun processPreference(pref: Preference) {
+                when (pref) {
+                    is SwitchPreference -> {
+                        pref.onPreferenceChangeListener = OnPreferenceChangeListener { _, _ ->
+                            DialogUtils.guestDialog(requireContext())
+                            false
+                        }
+                    }
+                    is androidx.preference.PreferenceGroup -> {
+                        for (i in 0 until pref.preferenceCount) {
+                            processPreference(pref.getPreference(i))
+                        }
+                    }
+                }
+            }
+
+            for (i in 0 until preferenceScreen.preferenceCount) {
+                processPreference(preferenceScreen.getPreference(i))
+            }
+        }
+
         private fun initStorageBreakdown() {
+            refreshStorageBreakdownSummary()
             findPreference<Preference>("storage_breakdown")?.setOnPreferenceClickListener {
-                StorageBreakdownFragment().show(parentFragmentManager, "storage_breakdown")
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val userModel = profileDbHandler.getUserModel()
+                    if (userModel?.id?.startsWith("guest") == true) {
+                        DialogUtils.guestDialog(requireActivity())
+                    } else {
+                        StorageBreakdownFragment().show(parentFragmentManager, "storage_breakdown")
+                    }
+                }
                 true
+            }
+            parentFragmentManager.setFragmentResultListener(
+                StorageBreakdownFragment.RESULT_KEY,
+                this
+            ) { _, _ -> refreshStorageBreakdownSummary() }
+        }
+
+        private fun refreshStorageBreakdownSummary() {
+            val context = requireContext().applicationContext
+            lifecycleScope.launch {
+                val availableSpaceText = withContext(dispatcherProvider.io) {
+                    FileUtils.availableOverTotalMemoryFormattedString(context)
+                }
+                findPreference<Preference>("storage_breakdown")?.summary = getString(R.string.storage_breakdown_summary) +
+                    " · ${getString(R.string.available_space_colon)} $availableSpaceText"
             }
         }
 
@@ -280,63 +297,20 @@ class SettingsActivity : AppCompatActivity() {
             val preference = findPreference<Preference>("reset_app")
             if (preference != null) {
                 preference.onPreferenceClickListener = OnPreferenceClickListener {
-                    AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure)
-                        .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                            viewModel.clearAllData()
-                        }.setNegativeButton(R.string.no, null).show()
-                    false
-                }
-            }
-            val prefFreeUp = findPreference<Preference>("freeup_space")
-            if (prefFreeUp != null) {
-                prefFreeUp.onPreferenceClickListener = OnPreferenceClickListener {
-                    AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure_want_to_delete_all_the_files)
-                        .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                            dialog.show()
-                            val workManager = WorkManager.getInstance(requireContext())
-                            val freeSpaceWork = OneTimeWorkRequestBuilder<FreeSpaceWorker>()
-                                .addTag("freeSpaceWork")
-                                .build()
-
-                            workManager.enqueue(freeSpaceWork)
-
-                            workManager.getWorkInfoByIdLiveData(freeSpaceWork.id)
-                                .observe(viewLifecycleOwner) { workInfo ->
-                                    if (workInfo != null) {
-                                        when (workInfo.state) {
-                                            WorkInfo.State.RUNNING -> {
-                                                val progress = workInfo.progress
-                                                val deletedFiles = progress.getInt("deletedFiles", 0)
-                                                val freedBytes = progress.getLong("freedBytes", 0)
-                                                dialog.setText("Deleting files... $deletedFiles deleted (${FileUtils.formatSize(requireContext(), freedBytes)})")
-                                            }
-                                            WorkInfo.State.SUCCEEDED -> {
-                                                dialog.dismiss()
-                                                Utilities.toast(requireActivity(), getString(R.string.data_cleared))
-                                                val output = workInfo.outputData
-                                                val deletedFiles = output.getInt("deletedFiles", 0)
-                                                val freedBytes = output.getLong("freedBytes", 0)
-                                                Utilities.toast(requireActivity(), "Freed ${FileUtils.formatSize(requireContext(), freedBytes)} ($deletedFiles files)")
-                                            }
-                                            WorkInfo.State.FAILED -> {
-                                                dialog.dismiss()
-                                                Utilities.toast(requireActivity(), getString(R.string.unable_to_clear_files))
-                                            }
-                                            WorkInfo.State.CANCELLED -> {
-                                                dialog.dismiss()
-                                            }
-                                            else -> {
-                                                // ENQUEUED or BLOCKED
-                                            }
-                                        }
-                                    }
-                                }
-
-                            dialog.setNegativeButton("Cancel") {
-                                workManager.cancelWorkById(freeSpaceWork.id)
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        val userModel = profileDbHandler.getUserModel()
+                        if (userModel?.id?.startsWith("guest") == true) {
+                            DialogUtils.guestDialog(requireActivity())
+                            return@launch
+                        }
+                        AlertDialog.Builder(requireActivity())
+                            .setTitle(R.string.are_you_sure)
+                            .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
+                                viewModel.clearAllData()
                             }
-
-                        }.setNegativeButton("No", null).show()
+                            .setNegativeButton(R.string.no, null)
+                            .show()
+                    }
                     false
                 }
             }
@@ -369,24 +343,8 @@ class SettingsActivity : AppCompatActivity() {
             if (lastSynced == 0L) {
                 lastSyncDate?.setTitle(R.string.last_synced_never)
             } else if (lastSyncDate != null) {
-                lastSyncDate.title = getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSynced)
+                lastSyncDate.title = getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSynced, timeProvider)
             }
-        }
-
-        private fun setImprovedSyncToggleOn() {
-            val improvedSyncPreference = findPreference<SwitchPreference>("beta_improved_sync")
-            improvedSyncPreference?.isChecked = sharedPrefManager.getUseImprovedSync()
-            improvedSyncPreference?.onPreferenceChangeListener = OnPreferenceChangeListener { _, newValue ->
-                val isChecked = newValue as? Boolean ?: return@OnPreferenceChangeListener false
-                sharedPrefManager.setUseImprovedSync(isChecked)
-                val state = if (isChecked) "enabled" else "disabled"
-                createLog("improved_sync_toggle", state)
-                true
-            }
-        }
-
-        override fun onDestroy() {
-            super.onDestroy()
         }
 
         companion object {
@@ -424,6 +382,44 @@ class SettingsActivity : AppCompatActivity() {
                             else -> "en"
                         }
                         LocaleUtils.setLocale(context, selectedLanguage)
+                        (context as Activity).recreate()
+                        dialog.dismiss()
+                    }
+                    .setNegativeButton(R.string.cancel, null)
+
+                val dialog = builder.create()
+                dialog.show()
+
+                if (context.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
+                    val maxHeight = (context.resources.displayMetrics.heightPixels * 0.35).toInt()
+                    dialog.listView?.let { listView ->
+                        val params = listView.layoutParams
+                        params.height = maxHeight
+                        listView.layoutParams = params
+                    }
+                }
+            }
+
+            fun textSizeChanger(context: Context) {
+                val scales = floatArrayOf(0.85f, 1.0f, 1.15f)
+                val options = arrayOf(
+                    context.getString(R.string.text_size_small),
+                    context.getString(R.string.text_size_medium),
+                    context.getString(R.string.text_size_large)
+                )
+                val currentScale = LocaleUtils.getTextScale(context)
+                var checkedItem = 1
+                for (i in scales.indices) {
+                    if (scales[i] == currentScale) {
+                        checkedItem = i
+                        break
+                    }
+                }
+
+                val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
+                    .setTitle(context.getString(R.string.select_text_size))
+                    .setSingleChoiceItems(ArrayAdapter(context, R.layout.checked_list_item, options), checkedItem) { dialog, which ->
+                        LocaleUtils.setTextScale(context, scales[which])
                         (context as Activity).recreate()
                         dialog.dismiss()
                     }

@@ -1,28 +1,36 @@
 package org.ole.planet.myplanet.ui.settings
 
 import android.app.Dialog
-import android.content.DialogInterface
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.FrameLayout
 import androidx.annotation.StringRes
 import androidx.lifecycle.lifecycleScope
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import javax.inject.Inject
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentStorageBreakdownBinding
 import org.ole.planet.myplanet.databinding.ItemStorageCategoryBinding
-import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.services.FreeSpaceWorker
+import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class StorageBreakdownFragment : BottomSheetDialogFragment() {
@@ -31,10 +39,10 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
     private val binding get() = _binding!!
 
     @Inject
-    lateinit var resourcesRepository: ResourcesRepository
-
-    @Inject
     lateinit var dispatcherProvider: DispatcherProvider
+
+    private var progressDialog: DialogUtils.CustomProgressDialog? = null
+    private var loadJob: Job? = null
 
     internal data class CategoryData(
         @StringRes val nameRes: Int,
@@ -43,25 +51,15 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
         var fileCount: Int = 0
     )
 
-    internal val categories = listOf(
-        CategoryData(R.string.storage_videos, setOf("mp4", "mkv", "avi", "webm", "mov", "3gp", "flv")),
-        CategoryData(R.string.storage_audio, setOf("mp3", "wav", "ogg", "m4a", "flac", "aac", "opus")),
-        CategoryData(R.string.storage_pdfs, setOf("pdf")),
-        CategoryData(R.string.storage_images, setOf("jpg", "jpeg", "png", "gif", "webp", "bmp")),
-        CategoryData(R.string.storage_other, emptySet())
-    )
+    internal val categories: List<CategoryData> = StorageCategories.all.map {
+        CategoryData(it.nameRes, it.extensions)
+    }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val dialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
-        dialog.setOnShowListener { d: DialogInterface ->
-            val sheet = (d as BottomSheetDialog)
-                .findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
-            sheet?.let {
-                BottomSheetBehavior.from(it).apply {
-                    state = BottomSheetBehavior.STATE_EXPANDED
-                    skipCollapsed = true
-                }
-            }
+        dialog.behavior.apply {
+            state = BottomSheetBehavior.STATE_EXPANDED
+            skipCollapsed = true
         }
         return dialog
     }
@@ -78,57 +76,169 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
         parentFragmentManager.setFragmentResultListener(
             StorageCategoryDetailFragment.RESULT_KEY,
             viewLifecycleOwner
-        ) { _, _ -> loadStorage() }
+        ) { _, _ ->
+            loadStorage()
+            parentFragmentManager.setFragmentResult(RESULT_KEY, Bundle())
+        }
+
+        binding.freeUpSpaceButton.setOnClickListener {
+            requireContext().confirmDialog(
+                title = getString(R.string.are_you_sure),
+                message = getString(R.string.are_you_sure_want_to_delete_all_the_files),
+                onPositive = ::freeUpSpace
+            )
+        }
 
         loadStorage()
     }
 
+    private fun freeUpSpace() {
+        binding.freeUpSpaceButton.isEnabled = false
+
+        val progressDialog = DialogUtils.getCustomProgressDialog(requireActivity())
+        this.progressDialog = progressDialog
+        progressDialog.show()
+
+        val workManager = WorkManager.getInstance(requireContext())
+        val freeSpaceWork = OneTimeWorkRequestBuilder<FreeSpaceWorker>()
+            .addTag("freeSpaceWork")
+            .build()
+        workManager.enqueue(freeSpaceWork)
+
+        collectWhenStarted(workManager.getWorkInfoByIdFlow(freeSpaceWork.id)) { workInfo ->
+                    if (workInfo != null) {
+                        when (workInfo.state) {
+                            WorkInfo.State.RUNNING -> {
+                                val progress = workInfo.progress
+                                val deletedFiles = progress.getInt("deletedFiles", 0)
+                                val freedBytes = progress.getLong("freedBytes", 0)
+                                progressDialog.setText(
+                                    getString(
+                                        R.string.storage_deleting_progress,
+                                        deletedFiles,
+                                        FileUtils.formatSize(requireContext(), freedBytes)
+                                    )
+                                )
+                            }
+                            WorkInfo.State.SUCCEEDED -> {
+                                progressDialog.dismiss()
+                                this@StorageBreakdownFragment.progressDialog = null
+                                binding.freeUpSpaceButton.isEnabled = true
+                                val output = workInfo.outputData
+                                val deletedFiles = output.getInt("deletedFiles", 0)
+                                val freedBytes = output.getLong("freedBytes", 0)
+                                Utilities.toast(
+                                    requireActivity(),
+                                    getString(
+                                        R.string.storage_freed_summary,
+                                        FileUtils.formatSize(requireContext(), freedBytes),
+                                        deletedFiles
+                                    )
+                                )
+                                loadStorage()
+                                parentFragmentManager.setFragmentResult(RESULT_KEY, Bundle())
+                            }
+                            WorkInfo.State.FAILED -> {
+                                progressDialog.dismiss()
+                                this@StorageBreakdownFragment.progressDialog = null
+                                binding.freeUpSpaceButton.isEnabled = true
+                                Utilities.toast(requireActivity(), getString(R.string.unable_to_clear_files))
+                                loadStorage()
+                                parentFragmentManager.setFragmentResult(RESULT_KEY, Bundle())
+                            }
+                            WorkInfo.State.CANCELLED -> {
+                                progressDialog.dismiss()
+                                this@StorageBreakdownFragment.progressDialog = null
+                                binding.freeUpSpaceButton.isEnabled = true
+                                loadStorage()
+                                parentFragmentManager.setFragmentResult(RESULT_KEY, Bundle())
+                            }
+                            else -> {
+                                // ENQUEUED or BLOCKED
+                            }
+                        }
+                        if (workInfo.state.isFinished) {
+                            kotlinx.coroutines.currentCoroutineContext().cancel()
+                        }
+                    }
+        }
+
+        progressDialog.setNegativeButton(getString(R.string.cancel)) {
+            workManager.cancelWorkById(freeSpaceWork.id)
+        }
+    }
+
     private fun loadStorage() {
+        loadJob?.cancel()
+
         binding.progressBar.visibility = View.VISIBLE
         binding.contentLayout.visibility = View.GONE
         binding.emptyText.visibility = View.GONE
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            val totalBytes = withContext(dispatcherProvider.io) { scanStorage() }
+        val context = requireContext().applicationContext
+
+        loadJob = viewLifecycleOwner.lifecycleScope.launch {
+            val availableSpaceText = withContext(dispatcherProvider.io) {
+                FileUtils.availableOverTotalMemoryFormattedString(context)
+            }
+            binding.availableSpaceText.text = getString(R.string.available_space_colon) +
+                " " + availableSpaceText
+
+            val result = withContext(dispatcherProvider.io) {
+                scanStorage(context)
+            }
+
+            categories.forEachIndexed { index, category ->
+                category.sizeBytes = result.sizes[index]
+                category.fileCount = result.counts[index]
+            }
 
             binding.progressBar.visibility = View.GONE
 
-            if (totalBytes == 0L) {
+            if (result.totalBytes == 0L) {
                 binding.emptyText.visibility = View.VISIBLE
                 return@launch
             }
 
             binding.totalSizeText.text = getString(R.string.storage_total_downloaded) + ": " +
-                FileUtils.formatSize(requireContext(), totalBytes)
+                FileUtils.formatSize(requireContext(), result.totalBytes)
             binding.contentLayout.visibility = View.VISIBLE
             populateCategoryRows()
         }
     }
 
-    private fun scanStorage(): Long {
-        categories.forEach { it.sizeBytes = 0; it.fileCount = 0 }
+    internal data class ScanResult(val totalBytes: Long, val sizes: LongArray, val counts: IntArray)
 
-        val oleDir = File(FileUtils.getOlePath(requireContext()))
-        if (!oleDir.exists() || !oleDir.isDirectory) return 0L
+    private fun scanStorage(context: Context): ScanResult {
+        return scanStorage(File(FileUtils.getOlePath(context)))
+    }
 
-        val allKnownExtensions = categories.dropLast(1).flatMap { it.extensions }.toSet()
+    internal fun scanStorage(oleDir: File): ScanResult {
+        val sizes = LongArray(categories.size)
+        val counts = IntArray(categories.size)
+
+        if (!oleDir.exists() || !oleDir.isDirectory) return ScanResult(0L, sizes, counts)
+
         var total = 0L
 
         oleDir.walkTopDown().filter { it.isFile }.forEach { file ->
-            val ext = file.extension.lowercase()
+            val ext = file.extension
+            val index = if (ext.isEmpty()) {
+                StorageCategories.OTHER_INDEX
+            } else {
+                val idx = StorageCategories.indexOf(ext)
+                if (idx != StorageCategories.OTHER_INDEX) idx else StorageCategories.indexOf(ext.lowercase())
+            }
             val size = file.length()
             total += size
-            val cat = categories.find { it.extensions.isNotEmpty() && ext in it.extensions }
-                ?: categories.last()
-            cat.sizeBytes += size
-            cat.fileCount++
+            sizes[index] += size
+            counts[index]++
         }
-        return total
+        return ScanResult(total, sizes, counts)
     }
 
     private fun populateCategoryRows() {
         binding.categoryContainer.removeAllViews()
-        val allKnownExtensions = categories.dropLast(1).flatMap { it.extensions }.toSet()
 
         categories.filter { it.fileCount > 0 }.forEach { category ->
             val itemBinding = ItemStorageCategoryBinding.inflate(
@@ -144,10 +254,10 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
                 "${FileUtils.formatSize(requireContext(), category.sizeBytes)} · $fileLabel"
 
             itemBinding.root.setOnClickListener {
+                val resolvedIndex = StorageCategories.all.indexOfFirst { it.nameRes == category.nameRes }
                 StorageCategoryDetailFragment.newInstance(
                     label = name,
-                    extensions = category.extensions.toList(),
-                    allKnownExtensions = allKnownExtensions.toList()
+                    categoryIndex = resolvedIndex
                 ).show(parentFragmentManager, "category_detail")
             }
 
@@ -157,6 +267,12 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        progressDialog?.dismiss()
+        progressDialog = null
         _binding = null
+    }
+
+    companion object {
+        const val RESULT_KEY = "storage_breakdown_changed"
     }
 }

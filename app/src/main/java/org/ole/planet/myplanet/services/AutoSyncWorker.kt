@@ -9,7 +9,6 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import java.util.Date
 import java.util.concurrent.CancellationException
 import kotlin.coroutines.resume
 import kotlinx.coroutines.CancellableContinuation
@@ -28,6 +27,7 @@ import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.DialogUtils.startDownloadUpdate
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -40,7 +40,8 @@ class AutoSyncWorker @AssistedInject constructor(
     private val uploadManager: UploadManager,
     private val uploadToShelfService: UploadToShelfService,
     private val configurationsRepository: ConfigurationsRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val timeProvider: TimeProvider
 ) : CoroutineWorker(context, workerParams), OnSyncListener, CheckVersionCallback, OnSuccessListener {
 
     private lateinit var workerScope: CoroutineScope
@@ -50,7 +51,7 @@ class AutoSyncWorker @AssistedInject constructor(
         if (isStopped) return@coroutineScope Result.success()
         workerScope = this
 
-        val currentTime = System.currentTimeMillis()
+        val currentTime = timeProvider.now()
         val lastSync = sharedPrefManager.getLastSync()
         val syncInterval = sharedPrefManager.getAutoSyncInterval()
         if (currentTime - lastSync > syncInterval * 1000) {
@@ -134,7 +135,7 @@ class AutoSyncWorker @AssistedInject constructor(
                     uploadManager.uploadCrashLog()
                     uploadManager.uploadSubmissions()
                     uploadManager.uploadActivities(null)
-                    sharedPrefManager.setLastSync(Date().time)
+                    sharedPrefManager.setLastSync(timeProvider.now())
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -152,7 +153,7 @@ class AutoSyncWorker @AssistedInject constructor(
     }
 
     override fun onSuccess(success: String?) {
-        sharedPrefManager.setLastUsageUploaded(Date().time)
+        sharedPrefManager.setLastUsageUploaded(timeProvider.now())
     }
 
     private fun isAppInForeground(context: Context): Boolean {

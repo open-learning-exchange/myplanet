@@ -34,10 +34,7 @@ class CoursesProgressFragment : Fragment() {
 
     private fun observeCourseData() {
         collectWhenStarted(progressViewModel.courseData) { courseData ->
-            courseData?.let { jsonArray ->
-                val list = jsonArray.map { it.asJsonObject }
-                progressAdapter.submitList(list)
-            }
+            progressAdapter.submitList(courseData)
         }
     }
 

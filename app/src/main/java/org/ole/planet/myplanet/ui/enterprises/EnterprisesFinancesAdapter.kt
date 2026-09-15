@@ -4,32 +4,42 @@ import android.content.Context
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.LinearLayout
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFinanceBinding
-import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.ImageViewerUtils
+import org.ole.planet.myplanet.utils.SystemTimeProvider
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
 class EnterprisesFinancesAdapter(
     private val context: Context,
+    private val timeProvider: TimeProvider = SystemTimeProvider(),
 ) : ListAdapter<Transaction, EnterprisesFinancesAdapter.FinanceViewHolder>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
         areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
     )
 ) {
+    private val attachmentExistsCache = HashMap<String, Pair<Boolean, Long>>()
+    private val cacheTtlMs = 5000L
+
+    override fun onCurrentListChanged(
+        previousList: MutableList<Transaction>,
+        currentList: MutableList<Transaction>
+    ) {
+        super.onCurrentListChanged(previousList, currentList)
+        attachmentExistsCache.clear()
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FinanceViewHolder {
         val binding = RowFinanceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -41,7 +51,7 @@ class EnterprisesFinancesAdapter(
         val binding = holder.binding
         binding.date.text = item.date?.let { formatDate(it, "MMM dd, yyyy") } ?: ""
         binding.note.text = item.description
-        if (TextUtils.equals(item.type?.lowercase(Locale.getDefault()), "debit")) {
+        if (item.type.equals("debit", ignoreCase = true)) {
             binding.debit.text = context.getString(R.string.number_placeholder, item.amount)
             binding.credit.text = context.getString(R.string.message_placeholder, " -")
         } else {
@@ -50,12 +60,32 @@ class EnterprisesFinancesAdapter(
         }
         binding.balance.text = item.balance.toString()
         bindFinanceImage(binding, item)
-        updateBackgroundColor(binding.llayout, position)
+        updateBackgroundColor(holder, position)
+    }
+
+    override fun onViewRecycled(holder: FinanceViewHolder) {
+        super.onViewRecycled(holder)
+        Glide.with(context).clear(holder.binding.financeImage)
+        holder.binding.financeImage.setOnClickListener(null)
     }
 
     private fun bindFinanceImage(binding: RowFinanceBinding, item: Transaction) {
-        val imageFile = RealmMyTeam.getAttachmentFile(context, item.id, item.imageName)
-        if (imageFile != null && imageFile.exists()) {
+        val imageFile = MyTeam.getAttachmentFile(context, item.id, item.imageName)
+        val now = timeProvider.now()
+        val exists = if (imageFile != null) {
+            val cached = attachmentExistsCache[imageFile.absolutePath]
+            if (cached != null && now - cached.second < cacheTtlMs) {
+                cached.first
+            } else {
+                val freshExists = imageFile.exists()
+                attachmentExistsCache[imageFile.absolutePath] = Pair(freshExists, now)
+                freshExists
+            }
+        } else {
+            false
+        }
+
+        if (imageFile != null && exists) {
             binding.financeImage.visibility = View.VISIBLE
             Glide.with(context)
                 .load(imageFile)
@@ -71,20 +101,25 @@ class EnterprisesFinancesAdapter(
         }
     }
 
-    private fun updateBackgroundColor(layout: LinearLayout, position: Int) {
+    private fun updateBackgroundColor(holder: FinanceViewHolder, position: Int) {
         if (position % 2 < 1) {
-            val border = GradientDrawable()
-            border.setColor(-0x1) //white background
-            border.setStroke(1, ContextCompat.getColor(context, R.color.black_overlay))
-            border.gradientType = GradientDrawable.LINEAR_GRADIENT
-            val layers = arrayOf<Drawable>(border)
-            val layerDrawable = LayerDrawable(layers)
-            layerDrawable.setLayerInset(0, -10, 0, -10, 0)
-            layout.background = layerDrawable
+            holder.binding.llayout.background = holder.alternateColor
+        } else {
+            holder.binding.llayout.background = null
         }
     }
 
     class FinanceViewHolder(val binding: RowFinanceBinding) : RecyclerView.ViewHolder(
         binding.root
-    )
+    ) {
+        val alternateColor: Drawable by lazy {
+            val border = GradientDrawable()
+            border.setColor(-0x1) //white background
+            border.setStroke(1, ContextCompat.getColor(binding.root.context, R.color.black_overlay))
+            border.gradientType = GradientDrawable.LINEAR_GRADIENT
+            val layerDrawable = LayerDrawable(arrayOf<Drawable>(border))
+            layerDrawable.setLayerInset(0, -10, 0, -10, 0)
+            layerDrawable.mutate()
+        }
+    }
 }

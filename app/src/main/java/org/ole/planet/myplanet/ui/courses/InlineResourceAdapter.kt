@@ -1,43 +1,41 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.content.Context
-import android.graphics.pdf.PdfRenderer
-import android.media.MediaMetadataRetriever
-import android.os.ParcelFileDescriptor
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
-import androidx.core.graphics.createBitmap
+import androidx.annotation.VisibleForTesting
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.opencsv.CSVParserBuilder
-import com.opencsv.CSVReaderBuilder
 import java.io.File
-import java.io.FileReader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemInlineResourceBinding
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.PdfThumbnailLoader
 import org.ole.planet.myplanet.utils.ResourceOpener
+import org.ole.planet.myplanet.utils.ResourcesPreviewLoader
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 class InlineResourceAdapter(
-    private val parentScope: CoroutineScope,
+    private val previewLoader: ResourcesPreviewLoader,
     private val dispatcherProvider: DispatcherProvider,
-    private val onResourceClick: (RealmMyLibrary) -> Unit
-) : ListAdapter<RealmMyLibrary, InlineResourceAdapter.ViewHolder>(
-    DiffUtils.itemCallback<RealmMyLibrary>(
+    private val onResourceClick: (MyLibrary) -> Unit
+) : ListAdapter<MyLibrary, InlineResourceAdapter.ViewHolder>(
+    DiffUtils.itemCallback<MyLibrary>(
         areItemsTheSame = { old, new -> old.id == new.id },
         areContentsTheSame = { old, new ->
             old.resourceLocalAddress == new.resourceLocalAddress &&
@@ -46,29 +44,56 @@ class InlineResourceAdapter(
         },
         getChangePayload = { old, new ->
             val payloads = mutableListOf<String>()
-            if (old.title != new.title) payloads.add("TITLE")
-            if (old.resourceLocalAddress != new.resourceLocalAddress) payloads.add("ADDRESS")
-            if (old.isResourceOffline() != new.isResourceOffline()) payloads.add("STATUS")
+            if (old.title != new.title) payloads.add(PAYLOAD_TITLE)
+            if (old.resourceLocalAddress != new.resourceLocalAddress) payloads.add(PAYLOAD_ADDRESS)
+            if (old.isResourceOffline() != new.isResourceOffline()) payloads.add(PAYLOAD_STATUS)
             if (payloads.isEmpty()) null else payloads
         }
     )
 ) {
 
-    private var externalFilesDir: java.io.File? = null
+    private var externalFilesDir: File? = null
+    private val textCache = mutableMapOf<String, String>()
+    private val htmlCoverCache = mutableMapOf<String, File?>()
 
-    class ViewHolder(val binding: ItemInlineResourceBinding, private val parentScope: CoroutineScope, private val dispatcherProvider: DispatcherProvider) : RecyclerView.ViewHolder(binding.root) {
-        private var previewJob: Job? = null
+    private var adapterScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
+
+    override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
+        super.onAttachedToRecyclerView(recyclerView)
+        if (!adapterScope.isActive) {
+            adapterScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
+        }
+    }
+
+    class ViewHolder(val binding: ItemInlineResourceBinding) : RecyclerView.ViewHolder(binding.root) {
+        @get:VisibleForTesting
+        internal var previewJob: Job? = null
 
         fun cancelPreviousPreviews() {
             previewJob?.cancel()
             previewJob = null
         }
 
-        fun launchPreview(block: suspend CoroutineScope.() -> Unit): Job {
+        fun setPreviewJob(job: Job) {
             cancelPreviousPreviews()
-            val job = parentScope.launch(dispatcherProvider.main, block = block)
             previewJob = job
-            return job
+        }
+    }
+
+    override fun onCurrentListChanged(previousList: MutableList<MyLibrary>, currentList: MutableList<MyLibrary>) {
+        super.onCurrentListChanged(previousList, currentList)
+        val dir = externalFilesDir ?: return
+        val currentMap = currentList.associateBy { it.id }
+
+        previousList.forEach { prev ->
+            val current = currentMap[prev.id]
+            if (current == null || current.resourceLocalAddress != prev.resourceLocalAddress) {
+                val address = prev.resourceLocalAddress ?: return@forEach
+                val file = FileUtils.getLibraryFile(dir, prev.id, address)
+                val prefix = file.absolutePath
+                textCache.keys.removeAll { it.startsWith(prefix) }
+                htmlCoverCache.remove(prev.id)
+            }
         }
     }
 
@@ -77,16 +102,14 @@ class InlineResourceAdapter(
         val binding = ItemInlineResourceBinding.inflate(
             LayoutInflater.from(parent.context), parent, false
         )
-        return ViewHolder(binding, parentScope, dispatcherProvider)
+        return ViewHolder(binding)
     }
 
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
         super.onDetachedFromRecyclerView(recyclerView)
-        for (i in 0 until recyclerView.childCount) {
-            val child = recyclerView.getChildAt(i)
-            val holder = recyclerView.getChildViewHolder(child) as? ViewHolder
-            holder?.cancelPreviousPreviews()
-        }
+        adapterScope.cancel()
+        textCache.clear()
+        htmlCoverCache.clear()
     }
 
     override fun onViewRecycled(holder: ViewHolder) {
@@ -107,12 +130,12 @@ class InlineResourceAdapter(
             if (payloadList is List<*>) {
                 payloadList.forEach { payload ->
                     when (payload) {
-                        "TITLE" -> holder.binding.tvResourceTitle.text = resource.title ?: resource.resourceLocalAddress ?: ""
-                        "ADDRESS" -> {
+                        PAYLOAD_TITLE -> holder.binding.tvResourceTitle.text = resource.title ?: resource.resourceLocalAddress ?: ""
+                        PAYLOAD_ADDRESS -> {
                             holder.binding.tvResourceTitle.text = resource.title ?: resource.resourceLocalAddress ?: ""
                             updateStatusAndPreview(holder, context, resource)
                         }
-                        "STATUS" -> updateStatusAndPreview(holder, context, resource)
+                        PAYLOAD_STATUS -> updateStatusAndPreview(holder, context, resource)
                     }
                 }
             }
@@ -136,52 +159,58 @@ class InlineResourceAdapter(
         }
     }
 
-    private fun updateStatusAndPreview(holder: ViewHolder, context: Context, resource: RealmMyLibrary) {
+    private fun updateStatusAndPreview(holder: ViewHolder, context: Context, resource: MyLibrary) {
         val binding = holder.binding
-        val isDownloaded = resource.isResourceOffline() ||
-            FileUtils.checkFileExist(context, UrlUtils.getUrl(resource))
-
-        val mimeType = Utilities.getMimeType(resource.resourceLocalAddress)
 
         binding.ivResourcePreview.visibility = View.GONE
         binding.videoThumbnailContainer.visibility = View.GONE
         binding.tvTextPreview.visibility = View.GONE
         binding.audioPreviewContainer.visibility = View.GONE
-        binding.pbDownload.visibility = View.GONE
         binding.ivStatus.visibility = View.GONE
-
-        if (isDownloaded) {
-            binding.ivStatus.visibility = View.VISIBLE
-            binding.ivStatus.setImageResource(R.drawable.ic_eye)
-
-            val resourceFile = File(
-                externalFilesDir,
-                "ole/${resource.id}/${resource.resourceLocalAddress}"
-            )
-
-            when {
-                mimeType?.startsWith("image") == true -> showImagePreview(binding, context, resourceFile)
-                mimeType?.startsWith("video") == true -> showVideoPreview(binding, context, resourceFile)
-                mimeType?.contains("pdf") == true -> showPdfPreview(holder, resourceFile)
-                mimeType?.startsWith("audio") == true -> showAudioPreview(holder, resourceFile)
-                mimeType?.contains("csv") == true || resource.resourceLocalAddress?.endsWith(".csv") == true -> showCsvPreview(holder, resourceFile)
-                mimeType?.startsWith("text") == true || resource.resourceLocalAddress?.endsWith(".txt") == true || resource.resourceLocalAddress?.endsWith(".md") == true -> showTextPreview(holder, resourceFile)
-            }
-        } else {
-            binding.pbDownload.visibility = View.VISIBLE
-        }
+        binding.pbDownload.visibility = View.VISIBLE
 
         binding.ivResourceIcon.setImageResource(
             ResourceOpener.getResourceTypeIcon(resource.resourceLocalAddress)
         )
+
+        holder.setPreviewJob(adapterScope.launch {
+            val isDownloaded = resource.isResourceOffline() || withContext(dispatcherProvider.io) {
+                FileUtils.checkFileExist(context, UrlUtils.getUrl(resource))
+            }
+
+            if (isDownloaded) {
+                binding.pbDownload.visibility = View.GONE
+                binding.ivStatus.visibility = View.VISIBLE
+                binding.ivStatus.setImageResource(R.drawable.ic_eye)
+
+                val mimeType = Utilities.getMimeType(resource.resourceLocalAddress)
+                val resourceFile = File(
+                    externalFilesDir,
+                    "ole/${resource.id}/${resource.resourceLocalAddress}"
+                )
+
+                when {
+                    mimeType?.startsWith("image") == true -> showImagePreview(binding, context, resourceFile)
+                    mimeType?.startsWith("video") == true -> showVideoPreview(binding, context, resourceFile)
+                    mimeType?.contains("pdf") == true -> showPdfPreview(holder, resourceFile)
+                    mimeType?.startsWith("audio") == true -> showAudioPreview(holder, resourceFile)
+                    mimeType?.contains("html") == true -> showHtmlPreview(binding, context, resource.id, File(externalFilesDir, "ole/${resource.id}"))
+                    mimeType?.contains("csv") == true || resource.resourceLocalAddress?.endsWith(".csv") == true -> showCsvPreview(holder, resourceFile)
+                    mimeType?.startsWith("text") == true || resource.resourceLocalAddress?.endsWith(".txt") == true || resource.resourceLocalAddress?.endsWith(".md") == true -> showTextPreview(holder, resourceFile)
+                }
+            }
+        })
     }
 
-    private fun showImagePreview(binding: ItemInlineResourceBinding, context: Context, file: File) {
-        if (file.exists()) {
+    private suspend fun showImagePreview(binding: ItemInlineResourceBinding, context: Context, file: File) {
+        val exists = withContext(dispatcherProvider.io) { file.exists() }
+        if (exists) {
+            val (widthPx, heightPx) = getPreviewDimensions(context)
             binding.ivResourcePreview.visibility = View.VISIBLE
             Glide.with(context)
                 .load(file)
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .override(widthPx, heightPx)
                 .centerCrop()
                 .placeholder(R.drawable.ole_logo)
                 .error(R.drawable.ole_logo)
@@ -189,108 +218,117 @@ class InlineResourceAdapter(
         }
     }
 
-    private fun showVideoPreview(binding: ItemInlineResourceBinding, context: Context, file: File) {
+    private suspend fun showVideoPreview(binding: ItemInlineResourceBinding, context: Context, file: File) {
         binding.videoThumbnailContainer.visibility = View.VISIBLE
-        if (file.exists()) {
+        val exists = withContext(dispatcherProvider.io) { file.exists() }
+        if (exists) {
+            val (widthPx, heightPx) = getPreviewDimensions(context)
             Glide.with(context)
                 .load(file)
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .override(widthPx, heightPx)
                 .centerCrop()
                 .into(binding.ivVideoThumbnail)
         }
     }
 
-    private fun showPdfPreview(holder: ViewHolder, file: File) {
-        if (!file.exists()) return
-        holder.launchPreview {
-            val bitmap = withContext(dispatcherProvider.io) {
-                try {
-                    ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { fd ->
-                        PdfRenderer(fd).use { renderer ->
-                            renderer.openPage(0).use { page ->
-                                val scale = 2
-                                createBitmap(page.width * scale, page.height * scale).also {
-                                    page.render(it, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                                }
-                            }
-                        }
-                    }
-                } catch (e: Exception) {
-                    null
-                }
-            }
-            if (bitmap != null) {
-                holder.binding.ivResourcePreview.visibility = View.VISIBLE
-                holder.binding.ivResourcePreview.scaleType = ImageView.ScaleType.FIT_CENTER
-                holder.binding.ivResourcePreview.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                holder.binding.ivResourcePreview.setImageBitmap(bitmap)
-            }
+    private suspend fun showPdfPreview(holder: ViewHolder, file: File) {
+        val exists = withContext(dispatcherProvider.io) { file.exists() }
+        if (!exists) return
+        val context = holder.itemView.context
+        val targetWidthPx = (PDF_PREVIEW_WIDTH_DP * context.resources.displayMetrics.density).toInt()
+        Glide.with(context).clear(holder.binding.ivResourcePreview)
+        val bitmap = PdfThumbnailLoader.firstPageBitmap(file, dispatcherProvider, targetWidthPx)
+        if (bitmap != null) {
+            holder.binding.ivResourcePreview.visibility = View.VISIBLE
+            holder.binding.ivResourcePreview.scaleType = ImageView.ScaleType.FIT_CENTER
+            holder.binding.ivResourcePreview.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+            holder.binding.ivResourcePreview.setImageBitmap(bitmap)
         }
     }
 
-    private fun showAudioPreview(holder: ViewHolder, file: File) {
+    private suspend fun showHtmlPreview(binding: ItemInlineResourceBinding, context: Context, resourceId: String, resourceDir: File) {
+        val coverImage = if (htmlCoverCache.containsKey(resourceId)) {
+            htmlCoverCache.getValue(resourceId)
+        } else {
+            withContext(dispatcherProvider.io) { FileUtils.findHtmlCoverImage(resourceDir) }.also {
+                htmlCoverCache[resourceId] = it
+            }
+        }
+        if (coverImage != null) {
+            val (widthPx, heightPx) = getPreviewDimensions(context)
+            binding.ivResourcePreview.visibility = View.VISIBLE
+            Glide.with(context)
+                .load(coverImage)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .override(widthPx, heightPx)
+                .centerCrop()
+                .placeholder(R.drawable.ole_logo)
+                .error(R.drawable.ole_logo)
+                .into(binding.ivResourcePreview)
+        }
+    }
+
+    private suspend fun showAudioPreview(holder: ViewHolder, file: File) {
         holder.binding.audioPreviewContainer.visibility = View.VISIBLE
-        if (!file.exists()) return
-        holder.launchPreview {
-            val durationText = withContext(dispatcherProvider.io) {
-                val retriever = MediaMetadataRetriever()
-                try {
-                    retriever.setDataSource(file.absolutePath)
-                    val durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
-                    val totalSeconds = durationMs / 1000
-                    String.format("%d:%02d", totalSeconds / 60, totalSeconds % 60)
-                } catch (e: Exception) {
-                    ""
-                } finally {
-                    retriever.release()
-                }
-            }
-            holder.binding.tvAudioDuration.text = durationText
+        val cacheKey = getFileCacheKeyIfExist(file) ?: return
+        val cachedDuration = textCache[cacheKey]
+        val durationText = if (cachedDuration != null) {
+            cachedDuration
+        } else {
+            previewLoader.getAudioPreview(file).also { textCache[cacheKey] = it }
+        }
+        holder.binding.tvAudioDuration.text = durationText
+    }
+
+    private suspend fun showCsvPreview(holder: ViewHolder, file: File) {
+        val cacheKey = getFileCacheKeyIfExist(file) ?: return
+        val cachedPreview = textCache[cacheKey]
+        val preview = if (cachedPreview != null) {
+            cachedPreview
+        } else {
+            previewLoader.getCsvPreview(file)?.also { textCache[cacheKey] = it }
+        }
+        if (!preview.isNullOrEmpty()) {
+            holder.binding.tvTextPreview.visibility = View.VISIBLE
+            holder.binding.tvTextPreview.text = preview
         }
     }
 
-    private fun showCsvPreview(holder: ViewHolder, file: File) {
-        if (!file.exists()) return
-        holder.launchPreview {
-            val preview = withContext(dispatcherProvider.io) {
-                try {
-                    val sb = StringBuilder()
-                    CSVReaderBuilder(FileReader(file))
-                        .withCSVParser(CSVParserBuilder().withSeparator(',').withQuoteChar('"').build())
-                        .build().use { reader ->
-                            var count = 0
-                            for (row in reader) {
-                                if (count >= 5) break
-                                sb.appendLine(row.joinToString("  |  "))
-                                count++
-                            }
-                        }
-                    sb.toString().trimEnd().takeIf { it.isNotEmpty() }
-                } catch (e: Exception) {
-                    null
-                }
-            }
-            if (!preview.isNullOrEmpty()) {
-                holder.binding.tvTextPreview.visibility = View.VISIBLE
-                holder.binding.tvTextPreview.text = preview
-            }
+    private suspend fun showTextPreview(holder: ViewHolder, file: File) {
+        val cacheKey = getFileCacheKeyIfExist(file) ?: return
+        val cachedText = textCache[cacheKey]
+        val text = if (cachedText != null) {
+            cachedText
+        } else {
+            previewLoader.getTextPreview(file)?.also { textCache[cacheKey] = it }
+        }
+        if (!text.isNullOrEmpty()) {
+            holder.binding.tvTextPreview.visibility = View.VISIBLE
+            holder.binding.tvTextPreview.text = text
         }
     }
 
-    private fun showTextPreview(holder: ViewHolder, file: File) {
-        if (!file.exists()) return
-        holder.launchPreview {
-            val text = withContext(dispatcherProvider.io) {
-                try {
-                    file.bufferedReader().useLines { it.take(8).joinToString("\n") }.takeIf { it.isNotEmpty() }
-                } catch (e: Exception) {
-                    null
-                }
-            }
-            if (!text.isNullOrEmpty()) {
-                holder.binding.tvTextPreview.visibility = View.VISIBLE
-                holder.binding.tvTextPreview.text = text
-            }
+    private suspend fun getFileCacheKeyIfExist(file: File): String? = withContext(dispatcherProvider.io) {
+        if (file.exists()) {
+            getCacheKey(file)
+        } else {
+            null
         }
+    }
+
+    private fun getCacheKey(file: File): String = "${file.absolutePath}_${file.lastModified()}_${file.length()}"
+
+    private fun getPreviewDimensions(context: Context): Pair<Int, Int> {
+        val widthPx = context.resources.displayMetrics.widthPixels
+        val heightPx = context.resources.getDimensionPixelSize(R.dimen.inline_resource_preview_height)
+        return Pair(widthPx, heightPx)
+    }
+
+    companion object {
+        const val PAYLOAD_TITLE = "PAYLOAD_TITLE"
+        const val PAYLOAD_ADDRESS = "PAYLOAD_ADDRESS"
+        const val PAYLOAD_STATUS = "PAYLOAD_STATUS"
+        private const val PDF_PREVIEW_WIDTH_DP = 240
     }
 }

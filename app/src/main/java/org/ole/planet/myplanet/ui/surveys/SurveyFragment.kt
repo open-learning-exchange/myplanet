@@ -1,23 +1,23 @@
 package org.ole.planet.myplanet.ui.surveys
 
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import javax.inject.Inject
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -25,26 +25,26 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnSurveyAdoptListener
 import org.ole.planet.myplanet.databinding.FragmentSurveyBinding
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.SurveyFormState
-import org.ole.planet.myplanet.model.SurveyInfo
+import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.TableDataUpdate
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
+import org.ole.planet.myplanet.utils.collectWhenStarted
+import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
-class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptListener, RealtimeSyncMixin {
+class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener, RealtimeSyncMixin {
     private var _binding: FragmentSurveyBinding? = null
     private val binding get() = _binding!!
     private var adapter: SurveysAdapter? = null
     private val mutex = Mutex()
     private var isTeam: Boolean = false
     private var teamId: String? = null
-    private val surveyInfoMap = mutableMapOf<String, SurveyInfo>()
-    private val bindingDataMap = mutableMapOf<String, SurveyFormState>()
-    private var textWatcher: TextWatcher? = null
-    private var searchJob: Job? = null
     private val viewModel: SurveysViewModel by viewModels()
+
+    @Inject
+    lateinit var realtimeSyncManager: RealtimeSyncManager
 
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
     private val adapterMutex = Mutex()
@@ -65,26 +65,22 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         super.onCreate(savedInstanceState)
         isTeam = arguments?.getBoolean("isTeam", false) == true
         teamId = arguments?.getString("teamId", null)
-        
-        viewModel.startExamSync()
     }
 
     override fun onAdoptSurvey(surveyId: String) {
         viewModel.adoptSurvey(surveyId)
     }
 
-    override suspend fun getAdapter(): androidx.recyclerview.widget.ListAdapter<*, *> {
+    override suspend fun getAdapter(): ListAdapter<*, *> {
         adapterMutex.withLock {
             if (adapter == null) {
-                val userProfileModel = profileDbHandler.getUserModel()
+                val userProfileModel = userRepository.getUserModel()
                 adapter = SurveysAdapter(
                     requireActivity(),
                     userProfileModel?.id,
                     isTeam,
                     teamId,
-                    this@SurveyFragment,
-                    surveyInfoMap,
-                    bindingDataMap
+                    this@SurveyFragment
                 )
             }
         }
@@ -93,22 +89,15 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        realtimeSyncHelper = RealtimeSyncHelper(this, this)
+        realtimeSyncHelper = RealtimeSyncHelper(this, this, realtimeSyncManager)
         realtimeSyncHelper.setupRealtimeSync()
         initializeViews()
-        textWatcher = object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                searchJob?.cancel()
-                searchJob = viewLifecycleOwner.lifecycleScope.launch {
-                    delay(300)
-                    viewModel.search(s.toString())
-                }
-            }
-
-            override fun afterTextChanged(s: Editable) {}
-        }
-        binding.layoutSearch.etSearch.addTextChangedListener(textWatcher)
+        binding.layoutSearch.etSearch.textChanges()
+            .drop(1)
+            .debounce(300)
+            .distinctUntilChanged()
+            .onEach { text -> viewModel.search(text?.toString() ?: "") }
+            .launchIn(viewLifecycleOwner.lifecycleScope)
         viewLifecycleOwner.lifecycleScope.launch {
             recyclerView.adapter = getAdapter()
         }
@@ -117,11 +106,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         viewModel.loadSurveys(isTeam, teamId, false)
         showHideRadioButton()
         setupObservers()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        viewModel.loadSurveys(isTeam, teamId, viewModel.isTeamShareAllowed.value)
     }
 
     private fun showHideRadioButton() {
@@ -156,26 +140,14 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
                 when (i) {
                     0 -> viewModel.sort(SurveysViewModel.SortOption.DATE_DESC)
                     1 -> viewModel.sort(SurveysViewModel.SortOption.DATE_ASC)
-                    2 -> {
-                        viewModel.toggleTitleSort()
-                    }
+                    2 -> viewModel.sort(SurveysViewModel.SortOption.TITLE_ASC)
+                    3 -> viewModel.sort(SurveysViewModel.SortOption.TITLE_DESC)
                 }
                 recyclerView.scrollToPosition(0)
             }
 
             override fun onNothingSelected(adapterView: AdapterView<*>?) {}
         }
-
-        binding.spnSort.onSameItemSelected(object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
-                if (i == 2) {
-                    viewModel.toggleTitleSort()
-                }
-                recyclerView.scrollToPosition(0)
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        })
 
         binding.rbAdoptSurvey.setOnClickListener {
             viewModel.loadSurveys(isTeam, teamId, true)
@@ -189,49 +161,25 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
     }
 
     private fun setupObservers() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    viewModel.surveys.collect { surveys ->
-                        (getAdapter() as SurveysAdapter).submitList(surveys) {
-                            recyclerView.scrollToPosition(0)
-                            updateUIState()
-                        }
-                    }
-                }
-                launch {
-                    viewModel.surveyInfos.collect { infos ->
-                        surveyInfoMap.clear()
-                        surveyInfoMap.putAll(infos)
-                    }
-                }
-                launch {
-                    viewModel.bindingData.collect { data ->
-                        bindingDataMap.clear()
-                        bindingDataMap.putAll(data)
-                    }
-                }
-                launch {
-                    viewModel.isLoading.collect { isLoading ->
-                        binding.loadingSpinner.visibility = if (isLoading) View.VISIBLE else View.GONE
-                    }
-                }
-                launch {
-                    viewModel.errorMessage.collect { message ->
-                        message?.let {
-                            Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
-                        }
-                    }
-                }
-                launch {
-                    viewModel.userMessage.collect { message ->
-                        message?.let {
-                            Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
-                            if (it == "Survey adopted successfully") {
-                                 binding.rbTeamSurvey.isChecked = true
-                            }
-                        }
-                    }
+        collectWhenStarted(viewModel.surveys) { surveys ->
+            (getAdapter() as SurveysAdapter).submitList(surveys) {
+                recyclerView.scrollToPosition(0)
+                updateUIState()
+            }
+        }
+        collectWhenStarted(viewModel.isLoading) { isLoading ->
+            binding.loadingSpinner.visibility = if (isLoading) View.VISIBLE else View.GONE
+        }
+        collectWhenStarted(viewModel.errorMessage) { message ->
+            message?.let {
+                Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
+            }
+        }
+        collectWhenStarted(viewModel.userMessage) { message ->
+            message?.let {
+                Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
+                if (it == "Survey adopted successfully") {
+                     binding.rbTeamSurvey.isChecked = true
                 }
             }
         }
@@ -262,8 +210,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
     }
 
     override fun onDestroyView() {
-        _binding?.layoutSearch?.etSearch?.removeTextChangedListener(textWatcher)
-        textWatcher = null
         super.onDestroyView()
         _binding = null
     }

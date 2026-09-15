@@ -12,9 +12,27 @@ object DiffUtils {
             override fun areItemsTheSame(oldItem: T, newItem: T) = areItemsTheSame(oldItem, newItem)
             override fun areContentsTheSame(oldItem: T, newItem: T) = areContentsTheSame(oldItem, newItem)
             override fun getChangePayload(oldItem: T, newItem: T): Any? {
-                return getChangePayload?.invoke(oldItem, newItem)
+                return getChangePayload?.invoke(oldItem, newItem) ?: super.getChangePayload(oldItem, newItem)
             }
         }
+    }
+
+    fun <T : Any> standardItemCallback(
+        idSelector: (T) -> Any,
+        contentSelector: ((T) -> Any)? = null,
+        payloadSelector: ((T, T) -> Any?)? = null
+    ): RecyclerDiffUtil.ItemCallback<T> {
+        return itemCallback(
+            areItemsTheSame = { oldItem, newItem -> idSelector(oldItem) == idSelector(newItem) },
+            areContentsTheSame = { oldItem, newItem ->
+                if (contentSelector != null) {
+                    contentSelector(oldItem) == contentSelector(newItem)
+                } else {
+                    oldItem == newItem
+                }
+            },
+            getChangePayload = payloadSelector
+        )
     }
 
     fun <T> calculateDiff(
@@ -34,7 +52,7 @@ object DiffUtils {
                 areContentsTheSame(oldList[oldItemPosition], newList[newItemPosition])
 
             override fun getChangePayload(oldItemPosition: Int, newItemPosition: Int): Any? {
-                return getChangePayload?.invoke(oldList[oldItemPosition], newList[newItemPosition])
+                return getChangePayload?.invoke(oldList[oldItemPosition], newList[newItemPosition]) ?: super.getChangePayload(oldItemPosition, newItemPosition)
             }
         }
         return RecyclerDiffUtil.calculateDiff(callback)

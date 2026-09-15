@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.exam
 import android.app.DatePickerDialog
 import android.content.DialogInterface
 import android.os.Bundle
+import android.os.SystemClock
 import android.text.TextUtils
 import android.util.Log
 import android.view.LayoutInflater
@@ -11,52 +12,41 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.RadioButton
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.net.toUri
 import androidx.core.view.isVisible
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
-import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDialogFragment
 import org.ole.planet.myplanet.databinding.FragmentUserInformationBinding
-import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.UserSurveyProfile
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.SubmissionUploadExecutor
-import org.ole.planet.myplanet.services.UploadManager
+import org.ole.planet.myplanet.services.SubmissionsUploader
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     private lateinit var fragmentUserInformationBinding: FragmentUserInformationBinding
     var dob: String? = ""
-    @Inject
-    lateinit var submissionsRepository: SubmissionsRepository
-    @Inject
-    lateinit var userRepository: UserRepository
+    private val viewModel: UserInformationViewModel by viewModels()
     @Inject
     lateinit var userSessionManager: UserSessionManager
-    var userModel: RealmUser? = null
+    var userModel: UserEntity? = null
     var shouldHideElements: Boolean? = null
     @Inject
-    lateinit var uploadManager: UploadManager
-    @Inject
-    lateinit var submissionUploadExecutor: SubmissionUploadExecutor
-    @Inject
-    lateinit var serverUrlMapper: ServerUrlMapper
-    @Inject
     lateinit var sharedPrefManager: SharedPrefManager
+    @Inject
+    lateinit var submissionsUploader: SubmissionsUploader
     private var syncStartTime: Long = 0L
 
     companion object {
@@ -86,6 +76,40 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
             userModel = userSessionManager.getUserModel()
+        }
+        collectWhenStarted(viewModel.resultEvent) { result ->
+            when (result) {
+                is UserInformationResult.UpdateProfileSuccess -> {
+                    Utilities.toast(MainApplication.context, getString(R.string.user_profile_updated))
+                    if (isAdded) dialog?.dismiss()
+                }
+                is UserInformationResult.UpdateProfileError -> {
+                    Utilities.toast(MainApplication.context, getString(R.string.unable_to_update_user))
+                    if (isAdded) dialog?.dismiss()
+                }
+                is UserInformationResult.MarkSubmissionSuccess -> {
+                    Log.d("UserInformationFragment", "Submission marked complete, about to dismiss dialog")
+                    Utilities.toast(
+                        MainApplication.context,
+                        getString(R.string.thank_you_for_taking_this_survey)
+                    )
+                    if (isAdded) {
+                        Log.d("UserInformationFragment", "Dismissing dialog, this will trigger onDismiss()")
+                        dialog?.dismiss()
+                    }
+                }
+                is UserInformationResult.MarkSubmissionError -> {
+                    if (result.message == "no ID provided") {
+                        Utilities.toast(
+                            MainApplication.context,
+                            "Error: Unable to save submission - no ID provided"
+                        )
+                    } else {
+                        Utilities.toast(MainApplication.context, "Error saving submission: ${result.message}")
+                    }
+                    if (isAdded) dialog?.dismiss()
+                }
+            }
         }
     }
 
@@ -117,14 +141,14 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     override fun onClick(view: View) {
         when (view.id) {
             R.id.btn_cancel -> {
-                syncStartTime = System.currentTimeMillis()
+                syncStartTime = SystemClock.elapsedRealtime()
                 Log.d("UserInformationFragment", "Cancel button clicked - Mini survey sync timer started at: $syncStartTime")
                 if (isAdded) {
                     dialog?.dismiss()
                 }
             }
             R.id.btn_submit -> {
-                syncStartTime = System.currentTimeMillis()
+                syncStartTime = SystemClock.elapsedRealtime()
                 Log.d("UserInformationFragment", "Submit button clicked - Mini survey sync timer started at: $syncStartTime")
                 submitForm()
             }
@@ -165,22 +189,13 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             saveSubmission(user)
         } else if (TextUtils.isEmpty(id)) {
             val userId = userModel?.id
-            viewLifecycleOwner.lifecycleScope.launch {
-                try {
-                    userRepository.updateProfileFields(userId, user)
-                    Utilities.toast(MainApplication.context, getString(R.string.user_profile_updated))
-                    if (isAdded) dialog?.dismiss()
-                } catch (_: Exception) {
-                    Utilities.toast(MainApplication.context, getString(R.string.unable_to_update_user))
-                    if (isAdded) dialog?.dismiss()
-                }
-            }
+            viewModel.updateProfile(userId, user)
         } else {
             saveSubmission(user)
         }
     }
 
-    private fun createUserProfile(): org.ole.planet.myplanet.model.UserSurveyProfile? {
+    private fun createUserProfile(): UserSurveyProfile? {
         var fname = ""
         var lname = ""
         var mName = ""
@@ -246,7 +261,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             }
         }
 
-        return org.ole.planet.myplanet.model.UserSurveyProfile(
+        return UserSurveyProfile(
             fname = fname,
             lname = lname,
             mName = mName,
@@ -262,39 +277,9 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     private fun saveSubmission(user: JsonObject) {
         Log.d("UserInformationFragment", "saveSubmission called, syncStartTime: $syncStartTime")
-        viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val submissionId = id
-                if (submissionId.isNullOrEmpty()) {
-                    Utilities.toast(
-                        MainApplication.context,
-                        "Error: Unable to save submission - no ID provided"
-                    )
-                    if (isAdded) dialog?.dismiss()
-                    return@launch
-                }
-
-                Log.d("UserInformationFragment", "Marking submission complete for ID: $submissionId")
-                submissionsRepository.markSubmissionComplete(submissionId, user)
-                Log.d("UserInformationFragment", "Submission marked complete, about to dismiss dialog")
-
-                Utilities.toast(
-                    MainApplication.context,
-                    getString(R.string.thank_you_for_taking_this_survey)
-                )
-                if (isAdded) {
-                    Log.d("UserInformationFragment", "Dismissing dialog, this will trigger onDismiss()")
-                    dialog?.dismiss()
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                Log.e("UserInformationFragment", "Error in saveSubmission", e)
-                Utilities.toast(MainApplication.context, "Error saving submission: ${e.message}")
-                if (isAdded) {
-                    dialog?.dismiss()
-                }
-            }
-        }
+        val submissionId = id
+        Log.d("UserInformationFragment", "Marking submission complete for ID: $submissionId")
+        viewModel.markSubmissionComplete(submissionId, user)
     }
 
     override fun onDismiss(dialog: DialogInterface) {
@@ -307,87 +292,13 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             return
         } else {
             Log.d("UserInformationFragment", "Team survey detected, starting server check and upload process")
+            submissionsUploader.checkAvailableServer(syncStartTime)
+
             Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
-            checkAvailableServer()
             val activity = requireActivity()
-            if (activity is AppCompatActivity) {
+            if (activity is androidx.appcompat.app.AppCompatActivity) {
                 FragmentNavigator.popBackStack(activity.supportFragmentManager)
             }
-        }
-    }
-
-    private fun checkAvailableServer() {
-        Log.d("UserInformationFragment", "checkAvailableServer started, syncStartTime: $syncStartTime")
-        val updateUrl = sharedPrefManager.getServerUrl()
-        Log.d("UserInformationFragment", "Server URL: $updateUrl")
-        val mapping = serverUrlMapper.processUrl(updateUrl)
-
-        // Capture syncStartTime before launching coroutine to preserve it across lifecycle changes
-        val capturedSyncStartTime = syncStartTime
-
-        // Use ApplicationScope to survive fragment lifecycle - this upload must complete even after UI is destroyed
-        submissionUploadExecutor.execute {
-            Log.d("UserInformationFragment", "ApplicationScope coroutine started, will not be cancelled by fragment lifecycle")
-            Log.d("UserInformationFragment", "Starting server reachability checks (15s timeout each)")
-            val checkStartTime = System.currentTimeMillis()
-
-            val primaryCheck = async {
-                try {
-                    Log.d("UserInformationFragment", "Checking primary URL: ${mapping.primaryUrl}")
-                    val result = withTimeoutOrNull(15000) {
-                        MainApplication.isServerReachable(mapping.primaryUrl)
-                    } ?: false
-                    Log.d("UserInformationFragment", "Primary check result: $result")
-                    result
-                } catch (e: Exception) {
-                    Log.e("UserInformationFragment", "Primary check failed", e)
-                    false
-                }
-            }
-
-            val alternativeCheck = async {
-                try {
-                    Log.d("UserInformationFragment", "Checking alternative URL: ${mapping.alternativeUrl}")
-                    val result = withTimeoutOrNull(15000) {
-                        mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
-                    } ?: false
-                    Log.d("UserInformationFragment", "Alternative check result: $result")
-                    result
-                } catch (e: Exception) {
-                    Log.e("UserInformationFragment", "Alternative check failed", e)
-                    false
-                }
-            }
-
-            val primaryAvailable = primaryCheck.await()
-            val alternativeAvailable = alternativeCheck.await()
-            val checkDuration = System.currentTimeMillis() - checkStartTime
-            Log.d("UserInformationFragment", "Server checks completed in ${checkDuration}ms. Primary: $primaryAvailable, Alternative: $alternativeAvailable")
-
-            if (primaryAvailable || alternativeAvailable) {
-                Log.d("UserInformationFragment", "Server is reachable, proceeding with upload")
-                if (!primaryAvailable) {
-                    mapping.alternativeUrl?.let { alternativeUrl ->
-                        val uri = updateUrl.toUri()
-                        val editor = sharedPrefManager.rawPreferences.edit()
-                        serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, sharedPrefManager.rawPreferences)
-                    }
-                }
-                uploadSubmissionsWithTiming(capturedSyncStartTime)
-            } else {
-                Log.w("UserInformationFragment", "No server reachable, upload skipped. Total time since button click: ${System.currentTimeMillis() - capturedSyncStartTime}ms")
-            }
-        }
-    }
-
-    private suspend fun uploadSubmissionsWithTiming(capturedSyncStartTime: Long) {
-        try {
-            Log.d("UserInformationFragment", "About to call uploadSubmissions with capturedSyncStartTime: $capturedSyncStartTime")
-            uploadManager.uploadAdoptedSurveys()
-            uploadManager.uploadSubmissions(capturedSyncStartTime)
-        } catch (e: Exception) {
-            Log.e("UserInformationFragment", "Error during upload", e)
-            e.printStackTrace()
         }
     }
 

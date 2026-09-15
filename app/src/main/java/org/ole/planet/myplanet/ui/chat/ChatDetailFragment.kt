@@ -22,9 +22,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.isNotEmpty
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.AndroidEntryPoint
@@ -33,15 +31,16 @@ import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.MainApplication.Companion.isPrimaryServerReachable
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatMessage
-import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.ChatRepository
+import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ChatResult
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -49,6 +48,7 @@ import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class ChatDetailFragment : Fragment() {
@@ -62,7 +62,17 @@ class ChatDetailFragment : Fragment() {
     private var currentID: String = ""
     private var aiName: String = ""
     private var aiModel: String = ""
-    var user: RealmUser? = null
+    var user: UserEntity? = null
+
+    private var lastChatHistory: List<Conversation>? = null
+    private var lastAiProvider: String? = null
+    private var lastAiProvidersLoading: Boolean? = null
+    private var lastAiProvidersError: Boolean? = null
+    private var lastAiProviders: Map<String, Boolean>? = null
+
+    private var cachedRawModelsString: String? = null
+    private var cachedModelsMap: Map<String, String>? = null
+
     private var isUserLoaded = false
     private var isAiUnavailable = false
     private var newsId: String? = null
@@ -88,10 +98,6 @@ class ChatDetailFragment : Fragment() {
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     lateinit var customProgressDialog: DialogUtils.CustomProgressDialog
-    @Inject
-    lateinit var chatRepository: ChatRepository
-    @Inject
-    lateinit var userRepository: UserRepository
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
     @Inject
@@ -123,16 +129,14 @@ class ChatDetailFragment : Fragment() {
         initChatComponents()
         val newsRev = arguments?.getString("newsRev")
         val newsConversations = arguments?.getString("conversations")
-        observeAiProviders()
         checkAiProviders()
         setupSendButton()
         setupMicButton()
         setupMessageInputListeners()
         if (newsId != null) {
             loadNewsConversations(newsId, newsRev, newsConversations)
-        } else {
-            observeViewModelData()
         }
+        observeUiState()
         view.post { clearChatDetail() }
         if (hasCourseContext) {
             binding.courseContextBanner.visibility = View.VISIBLE
@@ -166,9 +170,11 @@ class ChatDetailFragment : Fragment() {
             speechRecognizer?.setRecognitionListener(object : RecognitionListener {
                 override fun onReadyForSpeech(params: Bundle?) {
                     isListening = true
-                    binding.buttonGchatMic.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_red_500))
-                    binding.textGchatIndicator.text = getString(R.string.voice_to_text)
-                    binding.textGchatIndicator.visibility = View.VISIBLE
+                    _binding?.let { binding ->
+                        binding.buttonGchatMic.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_red_500))
+                        binding.textGchatIndicator.text = getString(R.string.voice_to_text)
+                        binding.textGchatIndicator.visibility = View.VISIBLE
+                    }
                 }
 
                 override fun onBeginningOfSpeech() {}
@@ -179,7 +185,7 @@ class ChatDetailFragment : Fragment() {
                 }
 
                 override fun onError(error: Int) {
-                    stopSpeechToText()
+                    resetListeningUi()
                     val message = when (error) {
                         SpeechRecognizer.ERROR_AUDIO -> "Audio recording error"
                         SpeechRecognizer.ERROR_CLIENT -> "Client side error"
@@ -200,8 +206,10 @@ class ChatDetailFragment : Fragment() {
                     if (!matches.isNullOrEmpty()) {
                         val finalMatch = matches[0]
                         val newText = if (textBeforeVoice.isEmpty()) finalMatch else "$textBeforeVoice $finalMatch"
-                        binding.editGchatMessage.setText(newText)
-                        binding.editGchatMessage.setSelection(newText.length)
+                        _binding?.let { binding ->
+                            binding.editGchatMessage.setText(newText)
+                            binding.editGchatMessage.setSelection(newText.length)
+                        }
                     }
                 }
 
@@ -210,8 +218,10 @@ class ChatDetailFragment : Fragment() {
                     if (!matches.isNullOrEmpty()) {
                         val partialMatch = matches[0]
                         val newText = if (textBeforeVoice.isEmpty()) partialMatch else "$textBeforeVoice $partialMatch"
-                        binding.editGchatMessage.setText(newText)
-                        binding.editGchatMessage.setSelection(newText.length)
+                        _binding?.let { binding ->
+                            binding.editGchatMessage.setText(newText)
+                            binding.editGchatMessage.setSelection(newText.length)
+                        }
                     }
                 }
 
@@ -233,9 +243,15 @@ class ChatDetailFragment : Fragment() {
 
     private fun stopSpeechToText() {
         speechRecognizer?.stopListening()
+        resetListeningUi()
+    }
+
+    private fun resetListeningUi() {
         isListening = false
-        binding.buttonGchatMic.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_500))
-        binding.textGchatIndicator.visibility = View.GONE
+        _binding?.let { binding ->
+            binding.buttonGchatMic.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_500))
+            binding.textGchatIndicator.visibility = View.GONE
+        }
     }
 
     private fun initChatComponents() {
@@ -244,7 +260,7 @@ class ChatDetailFragment : Fragment() {
         refreshInputState()
         viewLifecycleOwner.lifecycleScope.launch {
             val userId = sharedPrefManager.getUserId()
-            user = userRepository.getUserById(userId)
+            user = sharedViewModel.getUserById(userId)
             isUserLoaded = true
             refreshInputState()
         }
@@ -319,10 +335,12 @@ class ChatDetailFragment : Fragment() {
             false
         }
         messageTextWatcher = object : TextWatcher {
+            @Suppress("EmptyMethod")
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 binding.textGchatIndicator.visibility = View.GONE
             }
+            @Suppress("EmptyMethod")
             override fun afterTextChanged(s: Editable?) {}
         }
         binding.editGchatMessage.addTextChangedListener(messageTextWatcher)
@@ -351,119 +369,82 @@ class ChatDetailFragment : Fragment() {
         }
     }
 
-    private fun observeAiProviders() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    sharedViewModel.aiProviders.collect { providers ->
-                        if (providers != null) {
-                            if (providers.values.all { !it }) {
-                                onFailError()
-                            } else {
-                                updateAIButtons(providers)
-                            }
-                        }
-                    }
-                }
-                launch {
-                    sharedViewModel.aiProvidersLoading.collect { isLoading ->
-                        if (isLoading) {
-                            customProgressDialog.setText("${context?.getString(R.string.fetching_ai_providers)}")
-                            customProgressDialog.show()
-                        } else {
-                            customProgressDialog.dismiss()
-                        }
-                    }
-                }
-                launch {
-                    sharedViewModel.aiProvidersError.collect { hasError ->
-                        if (hasError && sharedViewModel.aiProviders.value == null) {
-                            val cachedProviders = getCachedProviderAvailability()
-                            if (cachedProviders != null) {
-                                updateAIButtons(cachedProviders)
-                            } else {
-                                onFailError()
-                            }
-                        }
+    private fun observeUiState() {
+        collectWhenStarted(sharedViewModel.chatUiState) { state ->
+            // aiProviders
+            if (state.aiProviders != lastAiProviders) {
+                lastAiProviders = state.aiProviders
+                if (state.aiProviders != null) {
+                    if (state.aiProviders.values.all { !it }) {
+                        onFailError()
+                    } else {
+                        updateAIButtons(state.aiProviders)
                     }
                 }
             }
-        }
-    }
 
-    private fun observeViewModelData() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    sharedViewModel.selectedChatHistory.collect { conversations ->
-                        mAdapter.clearData()
-                        sharedViewModel.clearPaginationState()
-                        binding.editGchatMessage.text.clear()
-                        binding.textGchatIndicator.visibility = View.GONE
-                        if (!conversations.isNullOrEmpty()) {
-                            val messages = sharedViewModel.processChatHistory(conversations)
-                            mAdapter.submitList(messages) {
-                                binding.recyclerGchat.post {
-                                    binding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
-                                }
+            // aiProvidersLoading
+            if (state.aiProvidersLoading != lastAiProvidersLoading) {
+                lastAiProvidersLoading = state.aiProvidersLoading
+                if (state.aiProvidersLoading) {
+                    customProgressDialog.setText("${context?.getString(R.string.fetching_ai_providers)}")
+                    customProgressDialog.show()
+                } else {
+                    customProgressDialog.dismiss()
+                }
+            }
+
+            // aiProvidersError
+            if (state.aiProvidersError != lastAiProvidersError) {
+                lastAiProvidersError = state.aiProvidersError
+                if (state.aiProvidersError && state.aiProviders == null) {
+                    val cachedProviders = getCachedProviderAvailability()
+                    if (cachedProviders != null) {
+                        updateAIButtons(cachedProviders)
+                    } else {
+                        onFailError()
+                    }
+                }
+            }
+
+            if (newsId == null) {
+                // selectedChatHistory
+                if (state.selectedChatHistory != lastChatHistory) {
+                    lastChatHistory = state.selectedChatHistory
+                    mAdapter.clearData()
+                    sharedViewModel.clearPaginationState()
+                    binding.editGchatMessage.text.clear()
+                    binding.textGchatIndicator.visibility = View.GONE
+                    if (!state.selectedChatHistory.isNullOrEmpty()) {
+                        val messages = sharedViewModel.processChatHistory(state.selectedChatHistory)
+                        mAdapter.submitList(messages) {
+                            binding.recyclerGchat.post {
+                                binding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
                             }
                         }
                     }
                 }
-                launch {
-                    sharedViewModel.selectedAiProvider.collect { selectedAiProvider ->
-                        aiName = selectedAiProvider ?: aiName
-                        if (binding.aiTableRow.isNotEmpty()) {
-                            for (i in 0 until binding.aiTableRow.childCount) {
-                                val view = binding.aiTableRow.getChildAt(i)
-                                if (view is Button && view.text.toString().equals(selectedAiProvider, ignoreCase = true)) {
-                                    val modelName = getModelsMap()[selectedAiProvider?.lowercase()] ?: "default-model"
-                                    selectAI(view, "$selectedAiProvider", modelName)
-                                    break
-                                }
-                            }
-                        }
-                    }
-                }
-                launch {
-                    sharedViewModel.selectedId.collect { selectedId ->
-                        _id = selectedId
-                    }
-                }
-                launch {
-                    sharedViewModel.selectedRev.collect { selectedRev ->
-                        _rev = selectedRev
-                    }
+
+                // selectedAiProvider
+                if (state.selectedAiProvider != lastAiProvider) {
+                    lastAiProvider = state.selectedAiProvider
+                    aiName = state.selectedAiProvider ?: aiName
+                    updateSelectedAiProvider(state.selectedAiProvider)
                 }
 
+                // selectedId and selectedRev
+                if (state.selectedId != _id) {
+                    _id = state.selectedId
+                }
+                if (state.selectedRev != _rev) {
+                    _rev = state.selectedRev
+                }
             }
         }
     }
 
     fun checkAiProviders() {
-        if (!sharedViewModel.shouldFetchAiProviders()) {
-            return
-        }
-
-        sharedViewModel.setAiProvidersLoading(true)
-        sharedViewModel.setAiProvidersError(false)
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            val providers = chatRepository.fetchAiProviders(serverUrl)
-            sharedViewModel.setAiProvidersLoading(false)
-            if (providers == null || providers.values.all { !it }) {
-                val cachedProviders = getCachedProviderAvailability()
-                if (cachedProviders != null) {
-                    sharedViewModel.setAiProvidersError(false)
-                    sharedViewModel.setAiProviders(cachedProviders)
-                } else {
-                    sharedViewModel.setAiProvidersError(true)
-                    sharedViewModel.setAiProviders(null)
-                }
-            } else {
-                sharedViewModel.setAiProviders(providers)
-            }
-        }
+        sharedViewModel.fetchAiProviders(serverUrl, getCachedProviderAvailability())
     }
 
     private fun updateAIButtons(aiProvidersResponse: Map<String, Boolean>) {
@@ -504,6 +485,19 @@ class ChatDetailFragment : Fragment() {
             setBackgroundColor(ContextCompat.getColor(context, R.color.disable_color))
             setOnClickListener { selectAI(this, providerName, modelName) }
         }
+
+    private fun updateSelectedAiProvider(selectedAiProvider: String?) {
+        if (binding.aiTableRow.isNotEmpty()) {
+            for (i in 0 until binding.aiTableRow.childCount) {
+                val view = binding.aiTableRow.getChildAt(i)
+                if (view is Button && view.text.toString().equals(selectedAiProvider, ignoreCase = true)) {
+                    val modelName = getModelsMap()[selectedAiProvider?.lowercase()] ?: "default-model"
+                    selectAI(view, "$selectedAiProvider", modelName)
+                    break
+                }
+            }
+        }
+    }
 
     private fun selectAI(selectedButton: Button, providerName: String, modelName: String) {
         val aiTableRow = binding.aiTableRow
@@ -614,12 +608,18 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun getModelsMap(): Map<String, String> {
-        val modelsString = sharedPrefManager.getRawString("ai_models").takeIf { it.isNotEmpty() }
-        return if (modelsString != null) {
-            JsonUtils.gson.fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type)
+        val modelsString = sharedPrefManager.getRawString("ai_models")
+        if (modelsString == cachedRawModelsString && cachedModelsMap != null) {
+            return cachedModelsMap!!
+        }
+        val parsedMap: Map<String, String> = if (modelsString.isNotEmpty()) {
+            JsonUtils.gson.fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type) ?: emptyMap()
         } else {
             emptyMap()
         }
+        cachedRawModelsString = modelsString
+        cachedModelsMap = parsedMap
+        return parsedMap
     }
 
     private fun getCachedProviderAvailability(): Map<String, Boolean>? {
@@ -634,7 +634,7 @@ class ChatDetailFragment : Fragment() {
 
     private suspend fun getLatestRev(id: String): String? {
         return try {
-            chatRepository.getLatestRev(id)
+            sharedViewModel.getLatestRev(id)
         } catch (e: Exception) {
             e.printStackTrace()
             null
@@ -643,14 +643,14 @@ class ChatDetailFragment : Fragment() {
 
     private fun sendNewChatRequest(query: String, userName: String?, aiProvider: AiProvider) {
         viewLifecycleOwner.lifecycleScope.launch {
-            val result = chatRepository.sendNewChatRequest(query, userName, aiProvider)
+            val result = sharedViewModel.sendNewChatRequest(query, userName, aiProvider)
             handleChatResult(result)
         }
     }
 
     private fun sendContinueChatRequest(query: String, userName: String?, aiProvider: AiProvider, id: String, rev: String) {
         viewLifecycleOwner.lifecycleScope.launch {
-            val result = chatRepository.sendContinueChatRequest(query, userName, aiProvider, id, rev)
+            val result = sharedViewModel.sendContinueChatRequest(query, userName, aiProvider, id, rev)
             handleChatResult(result)
         }
     }
@@ -698,15 +698,34 @@ class ChatDetailFragment : Fragment() {
         if (this::messageTextWatcher.isInitialized) {
             binding.editGchatMessage.removeTextChangedListener(messageTextWatcher)
         }
-        if (sharedPrefManager.isAlternativeUrl()) {
-            sharedPrefManager.setAlternativeUrl("")
-            sharedPrefManager.setProcessedAlternativeUrl("")
-            sharedPrefManager.setIsAlternativeUrl(false)
-        }
+        clearAlternativeUrlIfPrimaryRestored()
         loadingJob?.cancel()
         speechRecognizer?.destroy()
+
+        lastChatHistory = null
+        lastAiProvider = null
+        lastAiProvidersLoading = null
+        lastAiProvidersError = null
+        lastAiProviders = null
+
+        cachedRawModelsString = null
+        cachedModelsMap = null
+
         _binding = null
         super.onDestroyView()
+    }
+
+    private fun clearAlternativeUrlIfPrimaryRestored() {
+        if (!sharedPrefManager.isAlternativeUrl()) return
+        val primaryUrl = serverUrl
+        val prefManager = sharedPrefManager
+        MainApplication.applicationScope.launch(dispatcherProvider.io) {
+            if (isPrimaryServerReachable(primaryUrl)) {
+                prefManager.setAlternativeUrl("")
+                prefManager.setProcessedAlternativeUrl("")
+                prefManager.setIsAlternativeUrl(false)
+            }
+        }
     }
 
     private fun buildContextPrefix(): String {

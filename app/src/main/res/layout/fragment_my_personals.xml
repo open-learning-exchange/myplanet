@@ -24,5 +24,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/padding_large"
-        app:srcCompat="@drawable/ic_add_white" />
+        android:contentDescription="@string/add_resource"
+        android:src="@drawable/ic_add_white"
+        app:tint="@color/md_white_1000" />
 </FrameLayout>

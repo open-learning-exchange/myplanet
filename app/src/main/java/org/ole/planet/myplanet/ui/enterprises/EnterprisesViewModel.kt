@@ -2,17 +2,16 @@ package org.ole.planet.myplanet.ui.enterprises
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.gson.JsonObject
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.model.FinanceReportParams
+import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.repository.EnterprisesRepository
 
 sealed class ReportEvent {
     object ReportAdded : ReportEvent()
@@ -23,7 +22,7 @@ sealed class ReportEvent {
 
 @HiltViewModel
 class EnterprisesViewModel @Inject constructor(
-    private val teamsRepository: TeamsRepository
+    private val enterprisesRepository: EnterprisesRepository
 ) : ViewModel() {
 
     private val _reportEvent = MutableSharedFlow<ReportEvent>()
@@ -46,29 +45,12 @@ class EnterprisesViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             try {
-                val reportId = UUID.randomUUID().toString()
-                val doc = JsonObject().apply {
-                    addProperty("_id", reportId)
-                    addProperty("createdDate", System.currentTimeMillis())
-                    addProperty("description", description)
-                    addProperty("beginningBalance", beginningBalance)
-                    addProperty("sales", sales)
-                    addProperty("otherIncome", otherIncome)
-                    addProperty("wages", wages)
-                    addProperty("otherExpenses", otherExpenses)
-                    addProperty("startDate", startDate)
-                    addProperty("endDate", endDate)
-                    addProperty("updatedDate", System.currentTimeMillis())
-                    addProperty("teamId", teamId)
-                    addProperty("teamType", teamType)
-                    addProperty("teamPlanetCode", teamPlanetCode)
-                    addProperty("docType", "report")
-                    addProperty("updated", true)
-                }
-                teamsRepository.addReport(doc)
-                if (imageName != null && imageData != null) {
-                    teamsRepository.attachTeamImage(reportId, imageName, imageData)
-                }
+                val params = FinanceReportParams(
+                    description, beginningBalance, sales, otherIncome, wages,
+                    otherExpenses, startDate, endDate, teamId, teamType, teamPlanetCode,
+                    imageName, imageData
+                )
+                enterprisesRepository.addReport(params)
                 _reportEvent.emit(ReportEvent.ReportAdded)
             } catch (e: Exception) {
                 _reportEvent.emit(ReportEvent.Error("Failed to add report. Please try again."))
@@ -91,22 +73,12 @@ class EnterprisesViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             try {
-                val doc = JsonObject().apply {
-                    addProperty("description", description)
-                    addProperty("beginningBalance", beginningBalance)
-                    addProperty("sales", sales)
-                    addProperty("otherIncome", otherIncome)
-                    addProperty("wages", wages)
-                    addProperty("otherExpenses", otherExpenses)
-                    addProperty("startDate", startDate)
-                    addProperty("endDate", endDate)
-                    addProperty("updatedDate", System.currentTimeMillis())
-                    addProperty("updated", true)
-                }
-                teamsRepository.updateReport(reportId, doc)
-                if (imageName != null && imageData != null) {
-                    teamsRepository.attachTeamImage(reportId, imageName, imageData)
-                }
+                val params = FinanceReportParams(
+                    description, beginningBalance, sales, otherIncome, wages,
+                    otherExpenses, startDate, endDate, "", null, null,
+                    imageName, imageData
+                )
+                enterprisesRepository.updateReport(reportId, params)
                 _reportEvent.emit(ReportEvent.ReportUpdated)
             } catch (e: Exception) {
                 _reportEvent.emit(ReportEvent.Error("Failed to update report. Please try again."))
@@ -117,7 +89,7 @@ class EnterprisesViewModel @Inject constructor(
     fun archiveReport(reportId: String) {
         viewModelScope.launch {
             try {
-                teamsRepository.archiveReport(reportId)
+                enterprisesRepository.archiveReport(reportId)
                 _reportEvent.emit(ReportEvent.ReportArchived)
             } catch (e: Exception) {
                 _reportEvent.emit(ReportEvent.Error("Failed to delete report."))
@@ -125,11 +97,11 @@ class EnterprisesViewModel @Inject constructor(
         }
     }
 
-    suspend fun getReportsFlow(teamId: String): Flow<List<RealmMyTeam>> {
-        return teamsRepository.getReportsFlow(teamId)
+    fun getReportsFlow(teamId: String): Flow<List<MyTeam>> {
+        return enterprisesRepository.getReportsFlow(teamId)
     }
 
-    suspend fun exportReportsAsCsv(reports: List<RealmMyTeam>, teamName: String): String {
-        return teamsRepository.exportReportsAsCsv(reports, teamName)
+    suspend fun exportReportsAsCsv(teamId: String, teamName: String): String {
+        return enterprisesRepository.exportReportsAsCsv(teamId, teamName)
     }
 }

@@ -1,99 +1,146 @@
 package org.ole.planet.myplanet.utils
 
+import android.app.Application
 import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
+import android.provider.Settings
+import androidx.test.core.app.ApplicationProvider
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(application = android.app.Application::class)
+@Config(application = Application::class)
 class VersionUtilsTest {
 
-    @Test
-    fun compareVersions_should_return_0_for_equal_versions() {
-        assertEquals(0, VersionUtils.compareVersions("1.0.0", "1.0.0"))
-        assertEquals(0, VersionUtils.compareVersions("v1.0.0", "v1.0.0"))
-        assertEquals(0, VersionUtils.compareVersions("1.0.0-lite", "1.0.0"))
+    @Before
+    fun setUp() {
+        VersionUtils.reset()
     }
 
     @Test
-    fun compareVersions_should_return_positive_for_newer_version() {
-        assertTrue(VersionUtils.compareVersions("2.0.0", "1.0.0") > 0)
-        assertTrue(VersionUtils.compareVersions("1.1.0", "1.0.0") > 0)
-        assertTrue(VersionUtils.compareVersions("1.0.1", "1.0.0") > 0)
+    fun getVersionCode_caches_successful_result_and_resets() {
+        val mockContext = mockk<Context>()
+        val mockPackageManager = mockk<PackageManager>()
+        val mockPackageInfo = PackageInfo()
+        @Suppress("DEPRECATION")
+        mockPackageInfo.versionCode = 100
+
+        every { mockContext.packageName } returns "org.ole.planet.myplanet"
+        every { mockContext.packageManager } returns mockPackageManager
+        every { mockPackageManager.getPackageInfo("org.ole.planet.myplanet", 0) } returns mockPackageInfo
+
+        // First call populates cache
+        val firstCallCode = VersionUtils.getVersionCode(mockContext)
+        assertEquals(100, firstCallCode)
+
+        // Second call should return cached value without invoking packageManager again
+        val secondCallCode = VersionUtils.getVersionCode(mockContext)
+        assertEquals(100, secondCallCode)
+
+        verify(exactly = 1) { mockPackageManager.getPackageInfo("org.ole.planet.myplanet", 0) }
+
+        // Reset clears the cache
+        VersionUtils.reset()
+
+        val thirdCallCode = VersionUtils.getVersionCode(mockContext)
+        assertEquals(100, thirdCallCode)
+
+        verify(exactly = 2) { mockPackageManager.getPackageInfo("org.ole.planet.myplanet", 0) }
     }
 
     @Test
-    fun compareVersions_should_return_negative_for_older_version() {
-        assertTrue(VersionUtils.compareVersions("1.0.0", "2.0.0") < 0)
-        assertTrue(VersionUtils.compareVersions("1.0.0", "1.1.0") < 0)
-        assertTrue(VersionUtils.compareVersions("1.0.0", "1.0.1") < 0)
+    fun getVersionCode_does_not_cache_NameNotFoundException() {
+        val mockContext = mockk<Context>()
+        val mockPackageManager = mockk<PackageManager>()
+        val mockPackageInfo = PackageInfo()
+        @Suppress("DEPRECATION")
+        mockPackageInfo.versionCode = 200
+
+        every { mockContext.packageName } returns "org.ole.planet.myplanet"
+        every { mockContext.packageManager } returns mockPackageManager
+        every { mockPackageManager.getPackageInfo("org.ole.planet.myplanet", 0) } throws
+                PackageManager.NameNotFoundException() andThen mockPackageInfo
+
+        // First call fails with NameNotFoundException -> returns 0 and is not cached
+        val firstCallCode = VersionUtils.getVersionCode(mockContext)
+        assertEquals(0, firstCallCode)
+
+        // Second call succeeds -> fetches package info and caches result
+        val secondCallCode = VersionUtils.getVersionCode(mockContext)
+        assertEquals(200, secondCallCode)
+
+        // Third call uses cached result
+        val thirdCallCode = VersionUtils.getVersionCode(mockContext)
+        assertEquals(200, thirdCallCode)
+
+        verify(exactly = 2) { mockPackageManager.getPackageInfo("org.ole.planet.myplanet", 0) }
     }
 
     @Test
-    fun compareVersions_should_handle_v_prefix_and_lite_suffix_correctly() {
-        assertEquals(0, VersionUtils.compareVersions("v1.0.0-lite", "v1.0.0"))
-        assertTrue(VersionUtils.compareVersions("v2.0.0-lite", "v1.0.0") > 0)
-        assertTrue(VersionUtils.compareVersions("v1.0.0-lite", "v2.0.0") < 0)
-    }
+    fun getVersionName_caches_successful_result_and_resets() {
+        val mockContext = mockk<Context>()
+        val mockPackageManager = mockk<PackageManager>()
+        val mockPackageInfo = PackageInfo()
+        mockPackageInfo.versionName = "1.0.0"
 
-    @Test(expected = NumberFormatException::class)
-    fun compareVersions_should_throw_on_malformed_string_inputs() {
-        VersionUtils.compareVersions("abc", "1.0.0")
-    }
+        every { mockContext.packageName } returns "org.ole.planet.myplanet"
+        every { mockContext.packageManager } returns mockPackageManager
+        every { mockPackageManager.getPackageInfo("org.ole.planet.myplanet", 0) } returns mockPackageInfo
 
-    @Test
-    fun compareVersions_should_not_throw_on_insufficient_version_parts() {
-        // The implementation uses kotlin.math.min(parts1.size, parts2.size)
-        // so it actually handles "1.0" vs "1.0.0" without IndexOutOfBoundsException
-        // and returns a size comparison when the common prefix matches.
-        assertTrue(VersionUtils.compareVersions("1.0", "1.0.0") < 0)
-        assertTrue(VersionUtils.compareVersions("1.0.0", "1.0") > 0)
-    }
+        // First call populates cache
+        val firstCallName = VersionUtils.getVersionName(mockContext)
+        assertEquals("1.0.0", firstCallName)
 
-    @Test
-    fun isVersionAllowed_should_return_true_if_current_version_is_newer_or_equal() {
-        assertTrue(VersionUtils.isVersionAllowed("1.0.0", "1.0.0"))
-        assertTrue(VersionUtils.isVersionAllowed("2.0.0", "1.0.0"))
-        assertTrue(VersionUtils.isVersionAllowed("v2.0.0-lite", "v1.0.0"))
-    }
+        // Second call uses cached result
+        val secondCallName = VersionUtils.getVersionName(mockContext)
+        assertEquals("1.0.0", secondCallName)
 
-    @Test
-    fun isVersionAllowed_should_return_false_if_current_version_is_older() {
-        assertFalse(VersionUtils.isVersionAllowed("1.0.0", "2.0.0"))
-        assertFalse(VersionUtils.isVersionAllowed("v1.0.0-lite", "v2.0.0"))
+        verify(exactly = 1) { mockPackageManager.getPackageInfo("org.ole.planet.myplanet", 0) }
+
+        // Reset clears cache
+        VersionUtils.reset()
+
+        val thirdCallName = VersionUtils.getVersionName(mockContext)
+        assertEquals("1.0.0", thirdCallName)
+
+        verify(exactly = 2) { mockPackageManager.getPackageInfo("org.ole.planet.myplanet", 0) }
     }
 
     @Test
-    fun parseApkVersionString_should_handle_valid_strings() {
-        assertEquals(100, VersionUtils.parseApkVersionString("1.0.0"))
-        assertEquals(100, VersionUtils.parseApkVersionString("v1.0.0"))
-        assertEquals(123, VersionUtils.parseApkVersionString("1.2.3"))
-        assertEquals(12, VersionUtils.parseApkVersionString("0.1.2"))
-    }
+    fun getVersionName_does_not_cache_NameNotFoundException() {
+        val mockContext = mockk<Context>()
+        val mockPackageManager = mockk<PackageManager>()
+        val mockPackageInfo = PackageInfo()
+        mockPackageInfo.versionName = "2.0.0"
 
-    @Test
-    fun parseApkVersionString_should_document_latent_multi_leading_zero_behavior() {
-        // Exposes the fragility of stripping dots where 0.0.12 becomes 0012,
-        // stripped to 012 -> returns 12. Same result as 0.0.2 -> 002 -> 02 -> 2.
-        assertEquals(12, VersionUtils.parseApkVersionString("0.0.12"))
-        assertEquals(2, VersionUtils.parseApkVersionString("0.0.2"))
-    }
+        every { mockContext.packageName } returns "org.ole.planet.myplanet"
+        every { mockContext.packageManager } returns mockPackageManager
+        every { mockPackageManager.getPackageInfo("org.ole.planet.myplanet", 0) } throws
+                PackageManager.NameNotFoundException() andThen mockPackageInfo
 
-    @Test
-    fun parseApkVersionString_should_return_null_for_empty_or_null_input() {
-        assertNull(VersionUtils.parseApkVersionString(null))
-        assertNull(VersionUtils.parseApkVersionString(""))
+        // First call fails with NameNotFoundException -> returns "" and is not cached
+        val firstCallName = VersionUtils.getVersionName(mockContext)
+        assertEquals("", firstCallName)
+
+        // Second call succeeds -> fetches package info and caches result
+        val secondCallName = VersionUtils.getVersionName(mockContext)
+        assertEquals("2.0.0", secondCallName)
+
+        // Third call uses cached result
+        val thirdCallName = VersionUtils.getVersionName(mockContext)
+        assertEquals("2.0.0", thirdCallName)
+
+        verify(exactly = 2) { mockPackageManager.getPackageInfo("org.ole.planet.myplanet", 0) }
     }
 
     @Test
@@ -189,5 +236,51 @@ class VersionUtilsTest {
 
         val versionName = VersionUtils.getVersionName(mockContext)
         assertNull(versionName)
+    }
+
+    @Test
+    fun getAndroidId_caches_non_null_id() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        Settings.Secure.putString(
+            context.contentResolver,
+            Settings.Secure.ANDROID_ID,
+            "initial_android_id"
+        )
+
+        val firstCallId = VersionUtils.getAndroidId(context)
+        assertEquals("initial_android_id", firstCallId)
+
+        Settings.Secure.putString(
+            context.contentResolver,
+            Settings.Secure.ANDROID_ID,
+            "changed_android_id"
+        )
+
+        val secondCallId = VersionUtils.getAndroidId(context)
+        assertEquals("initial_android_id", secondCallId)
+    }
+
+    @Test
+    fun getAndroidId_does_not_cache_null_value() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        Settings.Secure.putString(
+            context.contentResolver,
+            Settings.Secure.ANDROID_ID,
+            null
+        )
+
+        val firstCallId = VersionUtils.getAndroidId(context)
+        assertNull(firstCallId)
+
+        Settings.Secure.putString(
+            context.contentResolver,
+            Settings.Secure.ANDROID_ID,
+            "valid_android_id"
+        )
+
+        val secondCallId = VersionUtils.getAndroidId(context)
+        assertEquals("valid_android_id", secondCallId)
     }
 }

@@ -5,16 +5,23 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.core.view.doOnPreDraw
+import android.widget.Toast
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.load.model.GlideUrl
+import com.bumptech.glide.load.model.LazyHeaders
+import com.bumptech.glide.signature.ObjectKey
 import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentCourseDetailBinding
+import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.StepItem
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
+import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
@@ -55,7 +62,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 }
                 is CourseDetailUiState.Error -> {
                     context?.let { ctx ->
-                        android.widget.Toast.makeText(ctx, state.message, android.widget.Toast.LENGTH_LONG).show()
+                        Toast.makeText(ctx, state.message, Toast.LENGTH_LONG).show()
                     }
                 }
             }
@@ -72,6 +79,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         setTextViewVisibility(binding.method, course.method, binding.ltMethod)
         setTextViewVisibility(binding.gradeLevel, course.gradeLevel, binding.ltGradeLevel)
         setTextViewVisibility(binding.language, course.languageOfInstruction, binding.ltLanguage)
+        setCourseCover(course.courseId, course.coverFileName, course.courseRev)
 
         setMarkdownText(binding.description, state.markdownDescription)
 
@@ -88,12 +96,28 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             isRatingViewInitialized = true
         }
         setRatings(state.ratingSummary)
+    }
 
-        binding.root.doOnPreDraw {
-            _binding?.root?.post {
-                (parentFragment as? TakeCourseFragment)?.onCourseDetailContentReady()
+    private fun setCourseCover(courseId: String?, coverFileName: String?, courseRev: String?) {
+        val coverFile = MyCourse.getCoverImageFile(binding.courseCover.context, courseId, coverFileName)
+        val model: Any? = if (coverFile?.exists() == true) {
+            coverFile
+        } else {
+            UrlUtils.getCourseImageUrl(courseId, coverFileName)?.let { url ->
+                GlideUrl(url, LazyHeaders.Builder().addHeader("Authorization", UrlUtils.header).build())
             }
         }
+        if (model == null) {
+            binding.courseCover.visibility = View.GONE
+            return
+        }
+        binding.courseCover.visibility = View.VISIBLE
+        Glide.with(binding.courseCover.context)
+            .load(model)
+            .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .signature(ObjectKey(courseRev ?: ""))
+            .error(R.drawable.ole_logo)
+            .into(binding.courseCover)
     }
 
     private fun setTextViewVisibility(textView: TextView, content: String?, layout: View) {
@@ -109,7 +133,12 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         if (stepsAdapter == null) {
             binding.stepsList.layoutManager = LinearLayoutManager(activity)
             stepsAdapter = CoursesStepsAdapter(requireActivity()) { stepId ->
-                viewModel.toggleStepDescription(stepId)
+                val parent = parentFragment as? TakeCourseFragment
+                if (parent != null) {
+                    parent.navigateToStep(stepId)
+                } else {
+                    viewModel.toggleStepDescription(stepId)
+                }
             }
             binding.stepsList.adapter = stepsAdapter
         }

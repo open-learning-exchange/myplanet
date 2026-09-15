@@ -11,16 +11,20 @@ import android.widget.TextView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.TagEntity
 
 data class FilterState(
     val searchText: String,
     val grade: String,
     val subject: String,
     val tagNames: List<String>,
-    val progressFilter: String = ""
+    val progressFilter: String = "",
+    val tags: List<TagEntity> = emptyList()
 ) {
     val isActive: Boolean
         get() = searchText.isNotEmpty() || grade.isNotEmpty() || subject.isNotEmpty() || tagNames.isNotEmpty() || progressFilter.isNotEmpty()
@@ -28,25 +32,33 @@ data class FilterState(
 
 class CourseFilterController(
     private val rootView: View,
-    private val scope: CoroutineScope,
-    private val onFilterChanged: (FilterState) -> Unit,
+    private val coroutineScope: CoroutineScope,
     private val onScrollToTop: () -> Unit
 ) {
+    private val _filterState = MutableStateFlow(FilterState("", "", "", emptyList()))
+    val filterState: StateFlow<FilterState> = _filterState.asStateFlow()
+
     private lateinit var etSearch: EditText
     private lateinit var spnGrade: Spinner
     private lateinit var spnSubject: Spinner
-    private lateinit var spnProgress: Spinner
     private lateinit var tvSelected: TextView
-    val searchTags: MutableList<RealmTag> = ArrayList()
-    private var searchJob: Job? = null
+    private var layoutSearch: View? = null
+    private var scrollChipFilter: View? = null
+    private var layoutViewToggle: View? = null
+    private var progressFilter: String = ""
+    val searchTags: MutableList<TagEntity> = ArrayList()
     private var searchTextWatcher: TextWatcher? = null
+    private var spinnerListener: AdapterView.OnItemSelectedListener? = null
+    private var searchJob: Job? = null
 
     fun setup() {
         etSearch = rootView.findViewById(R.id.et_search)
         spnGrade = rootView.findViewById(R.id.spn_grade)
         spnSubject = rootView.findViewById(R.id.spn_subject)
-        spnProgress = rootView.findViewById(R.id.spn_progress)
         tvSelected = rootView.findViewById(R.id.tv_selected)
+        layoutSearch = rootView.findViewById(R.id.layout_search) ?: (etSearch.parent as? View)
+        scrollChipFilter = rootView.findViewById(R.id.scroll_chip_filter) ?: (rootView.findViewById<View>(R.id.chip_filter_row)?.parent as? View)
+        layoutViewToggle = rootView.findViewById(R.id.layout_view_toggle) ?: (rootView.findViewById<View>(R.id.toggle_grid)?.parent as? View)
         setupSpinners()
         setupSearchWatcher()
         setupClearTagsButton()
@@ -60,64 +72,128 @@ class CourseFilterController(
 
         val subjectAdapter = ArrayAdapter.createFromResource(ctx, R.array.subject_level, R.layout.spinner_item)
         subjectAdapter.setDropDownViewResource(R.layout.custom_simple_list_item_1)
-
-        val progressAdapter = ArrayAdapter.createFromResource(ctx, R.array.progress_filter, R.layout.spinner_item)
-        progressAdapter.setDropDownViewResource(R.layout.custom_simple_list_item_1)
-        spnProgress.adapter = progressAdapter
         spnSubject.adapter = subjectAdapter
 
-        val spinnerListener = object : AdapterView.OnItemSelectedListener {
+        spinnerListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, i: Int, l: Long) {
                 if (view == null) return
-                onFilterChanged(currentState())
+                _filterState.value = currentState()
                 onScrollToTop()
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
         spnGrade.onItemSelectedListener = spinnerListener
         spnSubject.onItemSelectedListener = spinnerListener
-        spnProgress.onItemSelectedListener = spinnerListener
+    }
+
+    fun setProgressFilter(value: String) {
+        progressFilter = value
+        _filterState.value = currentState()
+        onScrollToTop()
+    }
+
+    fun restoreFilterState(state: FilterState) {
+        val listener = spinnerListener
+        if (::spnGrade.isInitialized) spnGrade.onItemSelectedListener = null
+        if (::spnSubject.isInitialized) spnSubject.onItemSelectedListener = null
+
+        restoreSearchText(state.searchText)
+        if (::spnGrade.isInitialized) {
+            restoreSpinnerSelection(spnGrade, state.grade)
+        }
+        if (::spnSubject.isInitialized) {
+            restoreSpinnerSelection(spnSubject, state.subject)
+        }
+        restoreTags(state.tags, state.tagNames)
+        progressFilter = state.progressFilter
+        if (::tvSelected.isInitialized) {
+            refreshTagText()
+        }
+
+        if (::spnGrade.isInitialized) spnGrade.onItemSelectedListener = listener
+        if (::spnSubject.isInitialized) spnSubject.onItemSelectedListener = listener
+
+        _filterState.value = currentState()
+    }
+
+    private fun restoreSearchText(searchText: String) {
+        if (::etSearch.isInitialized && etSearch.text.toString() != searchText) {
+            etSearch.setText(searchText)
+        }
+    }
+
+    private fun restoreSpinnerSelection(spinner: Spinner, targetValue: String) {
+        val adapter = spinner.adapter ?: return
+        for (i in 0 until adapter.count) {
+            val itemStr = adapter.getItem(i).toString()
+            if (itemStr == targetValue || (targetValue.isEmpty() && i == 0)) {
+                spinner.setSelection(i)
+                break
+            }
+        }
+    }
+
+    private fun restoreTags(tags: List<TagEntity>, tagNames: List<String>) {
+        searchTags.clear()
+        if (tags.isNotEmpty()) {
+            tags.forEach { addTagInternal(it) }
+        } else {
+            tagNames.forEach { name ->
+                addTagInternal(TagEntity().apply { this.name = name })
+            }
+        }
+    }
+
+    private fun addTagInternal(tag: TagEntity) {
+        if (!searchTags.any { it.matches(tag) }) {
+            searchTags.add(tag)
+        }
     }
 
     private fun setupSearchWatcher() {
         searchTextWatcher = object : TextWatcher {
+            @Suppress("EmptyMethod")
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 if (!etSearch.isFocused) return
                 searchJob?.cancel()
-                searchJob = scope.launch {
+                searchJob = coroutineScope.launch {
                     delay(300)
-                    onFilterChanged(currentState())
+                    _filterState.value = currentState()
                 }
             }
+            @Suppress("EmptyMethod")
             override fun afterTextChanged(s: Editable) {}
         }
         etSearch.addTextChangedListener(searchTextWatcher)
     }
 
     private fun setupClearTagsButton() {
-        rootView.findViewById<View>(R.id.btn_clear_tags).setOnClickListener { clearAll() }
+        rootView.findViewById<View>(R.id.btn_clear_tags)?.setOnClickListener {
+            rootView.findViewById<View>(R.id.card_filter)?.visibility = View.GONE
+            clearAll()
+        }
     }
 
-    fun addTag(tag: RealmTag) {
-        if (!searchTags.any { it.name == tag.name }) searchTags.add(tag)
-        onFilterChanged(currentState())
+    fun addTag(tag: TagEntity) {
+        addTagInternal(tag)
+        _filterState.value = currentState()
         refreshTagText()
         onScrollToTop()
     }
 
-    fun setTags(list: List<RealmTag>) {
+    fun setTags(list: List<TagEntity>) {
         searchTags.clear()
-        list.forEach { tag -> if (!searchTags.any { it.name == tag.name }) searchTags.add(tag) }
-        onFilterChanged(currentState())
+        list.forEach { addTagInternal(it) }
+        _filterState.value = currentState()
         onScrollToTop()
     }
 
-    fun setSingleTag(tag: RealmTag) {
+    fun setSingleTag(tag: TagEntity) {
         searchTags.clear()
         searchTags.add(tag)
         tvSelected.text = tvSelected.context.getString(R.string.tag_selected, tag.name)
-        onFilterChanged(currentState())
+        _filterState.value = currentState()
         onScrollToTop()
     }
 
@@ -127,8 +203,8 @@ class CourseFilterController(
         tvSelected.text = ""
         spnGrade.setSelection(0)
         spnSubject.setSelection(0)
-        spnProgress.setSelection(0)
-        onFilterChanged(currentState())
+        progressFilter = ""
+        _filterState.value = currentState()
         onScrollToTop()
     }
 
@@ -137,20 +213,32 @@ class CourseFilterController(
     fun currentState(): FilterState {
         val grade = spnGrade.selectedItem?.toString()?.takeIf { it != "All" } ?: ""
         val subject = spnSubject.selectedItem?.toString()?.takeIf { it != "All" } ?: ""
-        val progress = spnProgress.selectedItem?.toString()?.takeIf { it != "All" } ?: ""
         return FilterState(
             searchText = etSearch.text.toString().trim(),
             grade = grade,
             subject = subject,
             tagNames = searchTags.mapNotNull { it.name },
-            progressFilter = progress
+            progressFilter = progressFilter,
+            tags = searchTags.toList()
         )
     }
 
     fun setListVisible(visible: Boolean) {
         val visibility = if (visible) View.VISIBLE else View.GONE
-        etSearch.visibility = visibility
-        rootView.findViewById<View>(R.id.filter).visibility = visibility
+        layoutSearch?.visibility = visibility
+        if (layoutSearch == null) {
+            etSearch.visibility = visibility
+        }
+        scrollChipFilter?.visibility = visibility
+        if (scrollChipFilter == null) {
+            rootView.findViewById<View>(R.id.chip_filter_row)?.visibility = visibility
+        }
+        layoutViewToggle?.visibility = visibility
+        if (layoutViewToggle == null) {
+            rootView.findViewById<View>(R.id.toggle_grid)?.visibility = visibility
+            rootView.findViewById<View>(R.id.toggle_list)?.visibility = visibility
+        }
+        rootView.findViewById<View>(R.id.filter)?.visibility = visibility
         if (!visible) tvSelected.visibility = View.GONE
     }
 
@@ -162,8 +250,11 @@ class CourseFilterController(
     }
 
     fun detach() {
+        searchJob?.cancel()
         searchTextWatcher?.let { etSearch.removeTextChangedListener(it) }
         searchTextWatcher = null
-        searchJob?.cancel()
+        spnGrade.onItemSelectedListener = null
+        spnSubject.onItemSelectedListener = null
+        spinnerListener = null
     }
 }

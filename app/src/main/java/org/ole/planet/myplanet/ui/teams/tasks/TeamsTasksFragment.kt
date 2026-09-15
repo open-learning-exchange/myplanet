@@ -15,15 +15,12 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.nex3z.togglebuttongroup.SingleSelectToggleGroup
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
-import java.util.Date
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -32,47 +29,52 @@ import org.ole.planet.myplanet.callback.OnTaskCompletedListener
 import org.ole.planet.myplanet.databinding.AlertTaskBinding
 import org.ole.planet.myplanet.databinding.AlertUsersSpinnerBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamsTasksBinding
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmTeamTask
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.TeamTask
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.teams.TeamViewModel
 import org.ole.planet.myplanet.ui.user.UserArrayAdapter
-import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
-import org.ole.planet.myplanet.utils.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
     private var _binding: FragmentTeamsTasksBinding? = null
     private val binding get() = _binding!!
-    private var deadline: Calendar? = null
     private var datePicker: TextView? = null
     private var currentTab = R.id.btn_all
+    private var refreshJob: Job? = null
+
+    private data class TaskSnapshot(
+        val id: String?,
+        val title: String?,
+        val description: String?,
+        val deadline: Long,
+        val completed: Boolean,
+        val assignee: String?
+    )
+    private var lastSubmittedSnapshot: List<TaskSnapshot>? = null
 
     private val teamViewModel: TeamViewModel by viewModels({ requireParentFragment() })
+    private val teamsTasksViewModel: TeamsTasksViewModel by viewModels()
 
     private lateinit var adapterTask: TeamsTasksAdapter
     var listener = DatePickerDialog.OnDateSetListener { _: DatePicker?, year: Int, monthOfYear: Int, dayOfMonth: Int ->
-            deadline = Calendar.getInstance()
-            deadline?.set(Calendar.YEAR, year)
-            deadline?.set(Calendar.MONTH, monthOfYear)
-            deadline?.set(Calendar.DAY_OF_MONTH, dayOfMonth)
+            teamsTasksViewModel.setDeadlineDate(year, monthOfYear, dayOfMonth)
             if (datePicker != null) {
-                datePicker?.text = deadline?.timeInMillis?.let { formatDateTZ(it) }
+                datePicker?.text = teamsTasksViewModel.getFormattedDeadlineDate()
             }
             timePicker()
         }
 
     private fun timePicker() {
-        val dl = deadline ?: Calendar.getInstance()
+        val dl = teamsTasksViewModel.getDeadlineCalendar()
         val timePickerDialog = TimePickerDialog(activity, { _: TimePicker?, hourOfDay: Int, minute: Int ->
-            deadline?.set(Calendar.HOUR_OF_DAY, hourOfDay)
-            deadline?.set(Calendar.MINUTE, minute)
+            teamsTasksViewModel.setDeadlineTime(hourOfDay, minute)
             if (datePicker != null) {
-                datePicker?.text = deadline?.timeInMillis?.let {
-                    TimeUtils.getFormattedDateWithTime(it)
-                }
+                datePicker?.text = teamsTasksViewModel.getFormattedDeadlineWithTime()
             }
         }, dl[Calendar.HOUR_OF_DAY], dl[Calendar.MINUTE], true)
         timePickerDialog.show()
@@ -89,22 +91,22 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         return binding.root
     }
 
-    private fun showTaskAlert(t: RealmTeamTask?) {
+    private fun showTaskAlert(t: TeamTask?) {
         val alertTaskBinding = AlertTaskBinding.inflate(layoutInflater)
         datePicker = alertTaskBinding.tvPick
-        var selectedAssignee: RealmUser? = null
+        var selectedAssignee: UserEntity? = null
+        teamsTasksViewModel.clearDeadline()
 
         if (t != null) {
             alertTaskBinding.etTask.setText(t.title)
             alertTaskBinding.etDescription.setText(t.description)
+            teamsTasksViewModel.setDeadline(t.deadline)
             datePicker?.text = formatDate(t.deadline)
-            deadline = Calendar.getInstance()
-            deadline?.time = Date(t.deadline)
 
             if (!t.assignee.isNullOrBlank()) {
                 val assignee = t.assignee.orEmpty()
                 viewLifecycleOwner.lifecycleScope.launch {
-                    val assigneeUser = teamsRepository.getAssignee(assignee)
+                    val assigneeUser = teamsTasksViewModel.getAssignee(assignee)
                     if (assigneeUser != null) {
                         selectedAssignee = assigneeUser
                         updateAssigneeUI(alertTaskBinding, assigneeUser)
@@ -123,13 +125,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         // Handle member assignment
         alertTaskBinding.tvAssignMember.setOnClickListener {
             viewLifecycleOwner.lifecycleScope.launch {
-                val userList = teamsRepository.getJoinedMembers(teamId)
-                val filteredUserList = userList.filter { user -> user.getFullName().isNotBlank() || !user.name.isNullOrBlank() }
-
-                if (filteredUserList.isEmpty()) {
-                    Toast.makeText(context, R.string.no_members_task, Toast.LENGTH_SHORT).show()
-                    return@launch
-                }
+                val filteredUserList = loadAssignableMembers() ?: return@launch
 
                 showMemberSelectionDialog(filteredUserList) { user ->
                     selectedAssignee = user
@@ -160,7 +156,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                 Utilities.toast(activity, getString(R.string.task_title_is_required))
                 isValid = false
             }
-            if (deadline == null) {
+            if (teamsTasksViewModel.deadline.value == null) {
                 Utilities.toast(activity, getString(R.string.deadline_is_required))
                 isValid = false  }
             if (desc.isEmpty()) {
@@ -174,11 +170,22 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         }
         alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
     }
-    private fun showMemberSelectionDialog(filteredUserList: List<RealmUser>, onAssigneeSelected: (RealmUser) -> Unit) {
-        var dialogSelectedItem: RealmUser? = filteredUserList.firstOrNull()
+
+    private suspend fun loadAssignableMembers(): List<UserEntity>? {
+        val userList = teamsTasksViewModel.getJoinedMembers(teamId)
+        val filteredUserList = userList.filter { user -> user.getFullName().isNotBlank() || !user.name.isNullOrBlank() }
+        if (filteredUserList.isEmpty()) {
+            Toast.makeText(context, R.string.no_members_task, Toast.LENGTH_SHORT).show()
+            return null
+        }
+        return filteredUserList
+    }
+
+    private fun showMemberSelectionDialog(filteredUserList: List<UserEntity>, onAssigneeSelected: (UserEntity) -> Unit) {
+        var dialogSelectedItem: UserEntity? = filteredUserList.firstOrNull()
 
         val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
-        val adapter = UserArrayAdapter { selectedUser ->
+        val adapter = UserArrayAdapter(requireContext()) { selectedUser ->
             dialogSelectedItem = selectedUser
         }
         alertUsersSpinnerBinding.rvUser.layoutManager = LinearLayoutManager(requireContext())
@@ -201,7 +208,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
             .show()
     }
 
-    private fun updateAssigneeUI(alertTaskBinding: AlertTaskBinding, user: RealmUser) {
+    private fun updateAssigneeUI(alertTaskBinding: AlertTaskBinding, user: UserEntity) {
         val displayName = user.getFullName().ifBlank {
             user.name ?: getString(R.string.no_assignee)
         }
@@ -209,46 +216,19 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         alertTaskBinding.tvAssignMember.setTextColor(requireContext().getColor(R.color.daynight_textColor))
     }
 
-    private fun createOrUpdateTask(task: String, desc: String, teamTask: RealmTeamTask?, assigneeId: String? = null) {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val deadlineMillis = deadline?.timeInMillis
-            if (deadlineMillis == null) {
-                Utilities.toast(activity, getString(R.string.deadline_is_required))
-                return@launch
-            }
-
-            if (teamTask == null) {
-                teamsRepository.createTask(task, desc, deadlineMillis, teamId, assigneeId)
-            } else {
-                teamsRepository.updateTask(teamTask.id ?: return@launch, task, desc, deadlineMillis, assigneeId)
-            }
-
-            val shouldStayOnMyTasks = currentTab == R.id.btn_my && assigneeId == user?.id
-            if (!shouldStayOnMyTasks) {
-                currentTab = R.id.btn_all
-                binding.taskToggle.check(R.id.btn_all)
-            }
-
-            Utilities.toast(
-                activity,
-                String.format(
-                    getString(R.string.task_s_successfully),
-                    if (teamTask == null) getString(R.string.added) else getString(R.string.updated)
-                )
-            )
+    private fun createOrUpdateTask(task: String, desc: String, teamTask: TeamTask?, assigneeId: String? = null) {
+        if (teamsTasksViewModel.deadline.value == null) {
+            Utilities.toast(activity, getString(R.string.deadline_is_required))
+            return
         }
+        teamsTasksViewModel.createOrUpdateTask(task, desc, teamTask, teamId, assigneeId)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        lastSubmittedSnapshot = null
         binding.rvTask.layoutManager = LinearLayoutManager(activity)
-        adapterTask = TeamsTasksAdapter(requireContext(), !isMemberFlow.value) { assigneeId, onNameFetched ->
-            val job = viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
-                val user = userRepository.getUserById(assigneeId)
-                withContext(dispatcherProvider.main) { onNameFetched(user?.name) }
-            }
-            return@TeamsTasksAdapter { job.cancel() }
-        }
+        adapterTask = TeamsTasksAdapter(requireContext(), !isMemberFlow.value)
         adapterTask.setListener(this)
         binding.rvTask.adapter = adapterTask
         binding.taskToggle.setOnCheckedChangeListener { _: SingleSelectToggleGroup?, checkedId: Int ->
@@ -258,97 +238,135 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
 
         teamViewModel.loadTasks(teamId)
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    isMemberFlow.collectLatest { isMember ->
-                        binding.fab.isVisible = isMember
-                        val nonTeamMember = !isMember
-                        if (adapterTask.nonTeamMember != nonTeamMember) {
-                            adapterTask.nonTeamMember = nonTeamMember
-                        }
-                        updateTasks()
+        collectLatestWhenStarted(isMemberFlow) { isMember ->
+            binding.fab.isVisible = isMember
+            val nonTeamMember = !isMember
+            if (adapterTask.nonTeamMember != nonTeamMember) {
+                adapterTask.nonTeamMember = nonTeamMember
+            }
+            updateTasks()
+        }
+        collectLatestWhenStarted(teamViewModel.taskList) { tasks ->
+            updateTasks()
+        }
+        collectWhenStarted(teamsTasksViewModel.taskActionEvents) { event ->
+            when (event) {
+                is TaskActionEvent.TaskCreatedOrUpdated -> {
+                    val shouldStayOnMyTasks = currentTab == R.id.btn_my && event.assigneeId == user?.id
+                    if (!shouldStayOnMyTasks) {
+                        currentTab = R.id.btn_all
+                        binding.taskToggle.check(R.id.btn_all)
                     }
+                    Utilities.toast(
+                        activity,
+                        String.format(
+                            getString(R.string.task_s_successfully),
+                            if (event.isCreated) getString(R.string.added) else getString(R.string.updated)
+                        )
+                    )
+                    updateTasks()
                 }
-                launch {
-                    teamViewModel.taskList.collectLatest { tasks ->
-                        updateTasks()
-                    }
+                is TaskActionEvent.TaskDeleted -> {
+                    Utilities.toast(activity, getString(R.string.task_deleted_successfully))
+                    updateTasks()
+                }
+                is TaskActionEvent.TaskAssigned -> {
+                    Utilities.toast(activity, getString(R.string.assign_task_to) + " " + event.userName)
+                    updateTasks()
                 }
             }
         }
     }
 
-    private fun allTasks(): List<RealmTeamTask> {
-        return teamViewModel.taskList.value.sortedWith(compareBy<RealmTeamTask> { it.completed }.thenByDescending { it.deadline })
+    private fun allTasks(tasks: List<TeamTask>): List<TeamTask> {
+        return tasks.sortedWith(compareBy<TeamTask> { it.completed }.thenByDescending { it.deadline })
     }
 
-    private fun completedTasks(): List<RealmTeamTask> {
-        return teamViewModel.taskList.value.filter { it.completed }.sortedByDescending { it.deadline }
+    private fun completedTasks(tasks: List<TeamTask>): List<TeamTask> {
+        return tasks.filter { it.completed }.sortedByDescending { it.deadline }
     }
 
-    private fun myTasks(): List<RealmTeamTask> {
-        return teamViewModel.taskList.value.filter { !it.completed && it.assignee == user?.id }.sortedByDescending { it.deadline }
+    private fun myTasks(tasks: List<TeamTask>): List<TeamTask> {
+        return tasks.filter { !it.completed && it.assignee == user?.id }.sortedByDescending { it.deadline }
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: News?) {}
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
     }
 
     private fun updateTasks() {
-        if (isAdded) {
-            val taskList = when (currentTab) {
-                R.id.btn_my -> myTasks()
-                R.id.btn_completed -> completedTasks()
-                else -> allTasks()
-            }
-            adapterTask.submitList(taskList)
-            binding.rvTask.scrollToPosition(0)
+        if (!isAdded) return
 
+        refreshJob?.cancel()
+        refreshJob = viewLifecycleOwner.lifecycleScope.launch {
+            val knownAssigneeIds = adapterTask.getKnownAssigneeIds()
+            val tasksSnapshot = teamViewModel.taskList.value
+
+            val (taskList, fetchedNames, currentSnapshot) = withContext(dispatcherProvider.io) {
+                val list = when (currentTab) {
+                    R.id.btn_my -> myTasks(tasksSnapshot)
+                    R.id.btn_completed -> completedTasks(tasksSnapshot)
+                    else -> allTasks(tasksSnapshot)
+                }
+
+                val currentSnapshot = list.map {
+                    TaskSnapshot(it.id, it.title, it.description, it.deadline, it.completed, it.assignee)
+                }
+                if (currentSnapshot == lastSubmittedSnapshot) {
+                    return@withContext Triple(null, null, currentSnapshot)
+                }
+
+                val assigneesToFetch = list.mapNotNullTo(LinkedHashSet()) { task ->
+                    task.assignee?.takeIf { it.isNotBlank() && it !in knownAssigneeIds }
+                }
+
+                val fetchedAssigneeNames = if (assigneesToFetch.isNotEmpty()) teamsTasksViewModel.fetchAssigneeNames(assigneesToFetch) else emptyMap()
+                Triple(list, fetchedAssigneeNames, currentSnapshot)
+            }
+
+            if (taskList == null || fetchedNames == null) return@launch
+            lastSubmittedSnapshot = currentSnapshot
+
+            if (fetchedNames.isNotEmpty()) {
+                adapterTask.updateAssignees(fetchedNames)
+            }
+
+            adapterTask.submitList(taskList) {
+                binding.rvTask.scrollToPosition(0)
+            }
             showNoData(binding.tvNodata, taskList.size, "tasks")
         }
     }
 
-    override fun onCheckChange(realmTeamTask: RealmTeamTask?, completed: Boolean) {
+    override fun onCheckChange(realmTeamTask: TeamTask?, completed: Boolean) {
         val taskId = realmTeamTask?.id ?: return
-        viewLifecycleOwner.lifecycleScope.launch {
-            teamsRepository.setTaskCompletion(taskId, completed)
-        }
+        teamsTasksViewModel.setTaskCompletion(taskId, completed)
     }
 
-    override fun onEdit(task: RealmTeamTask?) {
+    override fun onEdit(task: TeamTask?) {
         showTaskAlert(task)
     }
 
-    override fun onDelete(task: RealmTeamTask?) {
+    override fun onDelete(task: TeamTask?) {
         val taskId = task?.id ?: return
-        viewLifecycleOwner.lifecycleScope.launch {
-            teamsRepository.deleteTask(taskId)
-            Utilities.toast(activity, getString(R.string.task_deleted_successfully))
-        }
+        teamsTasksViewModel.deleteTask(taskId)
     }
 
-    override fun onClickMore(realmTeamTask: RealmTeamTask?) {
+    override fun onClickMore(realmTeamTask: TeamTask?) {
         if (realmTeamTask?.completed == true) {
             Toast.makeText(context, R.string.cannot_assign_completed_task, Toast.LENGTH_SHORT).show()
             return
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val userList = teamsRepository.getJoinedMembers(teamId)
-            val filteredUserList = userList.filter { user -> user.getFullName().isNotBlank() || !user.name.isNullOrBlank() }
+            val filteredUserList = loadAssignableMembers() ?: return@launch
 
-            if (filteredUserList.isEmpty()) {
-                Toast.makeText(context, R.string.no_members_task, Toast.LENGTH_SHORT).show()
-                return@launch
-            }
-
-            var dialogSelectedItem: RealmUser? = filteredUserList.firstOrNull()
+            var dialogSelectedItem: UserEntity? = filteredUserList.firstOrNull()
 
             val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
-            val adapter = UserArrayAdapter { selectedUser ->
+            val adapter = UserArrayAdapter(requireContext()) { selectedUser ->
                 dialogSelectedItem = selectedUser
             }
             alertUsersSpinnerBinding.rvUser.layoutManager = LinearLayoutManager(requireContext())
@@ -369,11 +387,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                         Toast.makeText(context, R.string.no_tasks, Toast.LENGTH_SHORT).show()
                         return@setPositiveButton
                     }
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        teamsRepository.assignTask(taskId, user.id)
-                        Utilities.toast(activity, getString(R.string.assign_task_to) + " " + user.name)
-                        updateTasks()
-                    }
+                    teamsTasksViewModel.assignTask(taskId, user)
                 }
                 .setNegativeButton(R.string.cancel) { dialog: DialogInterface, _: Int ->
                     dialog.dismiss()

@@ -104,8 +104,9 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/padding_large"
+        android:contentDescription="@string/add"
         android:src="@drawable/ic_add_white"
-        android:contentDescription="@string/add" />
+        app:tint="@color/md_white_1000" />
     <TextView
         android:visibility="gone"
         android:id="@+id/tvMessage"

@@ -1,15 +1,18 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
-import android.content.SharedPreferences
+import android.util.Log
 import androidx.core.content.edit
 import androidx.core.net.toUri
+import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
@@ -17,24 +20,25 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.Json
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.MyPlanet
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.Sha256Utils
+import org.ole.planet.myplanet.utils.StoragePathResolver
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
 
@@ -42,14 +46,19 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val apiInterface: ApiInterface,
     @param:ApplicationScope private val serviceScope: CoroutineScope,
-    @param:AppPreferences private val preferences: SharedPreferences,
     private val sharedPrefManager: SharedPrefManager,
-    databaseService: DatabaseService,
+    private val appDatabase: AppDatabase,
     private val serverUrlMapper: ServerUrlMapper,
     private val dispatcherProvider: DispatcherProvider,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher
-) : RealmRepository(databaseService, realmDispatcher), ConfigurationsRepository {
+    private val timeProvider: TimeProvider,
+    private val storagePathResolver: StoragePathResolver,
+    @PlainGson private val gson: Gson
+) : ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
+
+    companion object {
+        private const val TAG = "ConfigurationsRepository"
+    }
 
     override suspend fun checkHealth(): String {
         return try {
@@ -59,7 +68,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
 
             try {
-                val response = withContext(dispatcherProvider.io) { apiInterface.healthAccess(healthUrl) }
+                val response = apiInterface.healthAccess(healthUrl)
                 when (response.code()) {
                     200 -> context.getString(R.string.server_sync_successfully)
                     401 -> "Unauthorized - Invalid credentials"
@@ -71,17 +80,17 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                     else -> "Server error: ${response.code()}"
                 }
             } catch (t: Exception) {
-                t.printStackTrace()
+                Log.e(TAG, "Health access request failed", t)
                 when (t) {
-                    is java.net.UnknownHostException -> "Server not reachable"
-                    is java.net.SocketTimeoutException -> "Connection timeout"
-                    is java.net.ConnectException -> "Unable to connect to server"
+                    is UnknownHostException -> "Server not reachable"
+                    is SocketTimeoutException -> "Connection timeout"
+                    is ConnectException -> "Unable to connect to server"
                     is IOException -> "Network connection error"
                     else -> "Network error: ${t.localizedMessage ?: "Unknown error"}"
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Health access initialization failed", e)
             "Health access initialization failed"
         }
     }
@@ -97,7 +106,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             callback.onCheckingVersion()
 
             val lastCheckTime = sharedPrefManager.rawPreferences.getLong("last_version_check_timestamp", 0)
-            val currentTime = System.currentTimeMillis()
+            val currentTime = timeProvider.now()
             val twentyFourHoursInMillis = 24 * 60 * 60 * 1000
 
             if (currentTime - lastCheckTime < twentyFourHoursInMillis) {
@@ -106,11 +115,11 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
                 if (cachedVersionDetail != null && cachedApkVersion != -1) {
                     try {
-                        val cachedInfo = JsonUtils.gson.fromJson(cachedVersionDetail, MyPlanet::class.java)
+                        val cachedInfo = gson.fromJson(cachedVersionDetail, MyPlanet::class.java)
                         handleVersionEvaluation(cachedInfo, cachedApkVersion, callback)
                         return@launch
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Log.e(TAG, "Failed to parse cached version detail", e)
                     }
                 }
             }
@@ -123,13 +132,13 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 }
 
                 sharedPrefManager.rawPreferences.edit {
-                    putLong("last_version_check_timestamp", System.currentTimeMillis())
+                    putLong("last_version_check_timestamp", timeProvider.now())
                 }
                 sharedPrefManager.setLastWifiId(NetworkUtils.getCurrentNetworkId(context))
-                sharedPrefManager.setVersionDetail(JsonUtils.gson.toJson(planetInfo))
+                sharedPrefManager.setVersionDetail(gson.toJson(planetInfo))
 
                 val rawApkVersion = fetchApkVersionString(spm)
-                val versionStr = JsonUtils.gson.fromJson(rawApkVersion, String::class.java)
+                val versionStr = gson.fromJson(rawApkVersion, String::class.java)
                 if (versionStr.isNullOrEmpty()) {
                     callback.onError(context.getString(R.string.planet_is_up_to_date), false)
                     return@launch
@@ -150,7 +159,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
                 handleVersionEvaluation(planetInfo, apkVersion, callback)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Version check failed", e)
                 withContext(dispatcherProvider.main) {
                     callback.onError(context.getString(R.string.connection_failed), true)
                 }
@@ -161,7 +170,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     override suspend fun checkServerAvailability(): Boolean {
         val updateUrl = sharedPrefManager.getServerUrl()
         serverAvailabilityCache[updateUrl]?.let { (available, timestamp) ->
-            if (System.currentTimeMillis() - timestamp < 30000) {
+            if (timeProvider.now() - timestamp < 30000) {
                 return available
             }
         }
@@ -193,49 +202,66 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
         }
 
-        serverAvailabilityCache[updateUrl] = Pair(result, System.currentTimeMillis())
+        serverAvailabilityCache[updateUrl] = Pair(result, timeProvider.now())
         return result
     }
 
     override suspend fun clearAllData() {
-        executeTransaction { it.deleteAll() }
-    }
-
-    override suspend fun checkServerAvailability(url: String): Boolean {
-        return withContext(dispatcherProvider.io) {
-            try {
-                val response = apiInterface.isPlanetAvailable(url)
-                val code = response.code()
-                if (response.isSuccessful) {
-                    val ss = response.body()?.string()
-                    val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
-                    val dbCount = myList?.size ?: 0
-                    dbCount >= 8
-                } else {
-                    code == 401
-                }
-            } catch (e: Exception) {
-                false
-            }
+        withContext(dispatcherProvider.io) {
+            appDatabase.clearAllTables()
         }
     }
 
-    override suspend fun checkCheckSum(path: String): Boolean = withContext(dispatcherProvider.io) {
-        try {
+    override suspend fun checkServerAvailability(url: String): Boolean {
+        return try {
+            val response = apiInterface.isPlanetAvailable(url)
+            val code = response.code()
+            if (response.isSuccessful) {
+                val ss = withContext(dispatcherProvider.io) { response.body()?.string() }
+                val dbCount = countCommaEntries(ss)
+                dbCount >= 8
+            } else {
+                code == 401
+            }
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun countCommaEntries(body: String?): Int {
+        if (body == null) return 0
+        var end = body.length
+        while (end > 0 && body[end - 1] == ',') end--
+        if (end == 0) return 0
+        var commaCount = 0
+        for (i in 0 until end) {
+            if (body[i] == ',') commaCount++
+        }
+        return commaCount + 1
+    }
+
+    override suspend fun checkCheckSum(path: String): Boolean {
+        return try {
             val response = apiInterface.getChecksum(UrlUtils.getChecksumUrl(sharedPrefManager))
             if (response.isSuccessful) {
-                val checksum = response.body()?.string()
+                val checksum = withContext(dispatcherProvider.io) { response.body()?.string() }
                 if (!checksum.isNullOrEmpty()) {
-                    val f = FileUtils.getSDPathFromUrl(context, path)
+                    val f = storagePathResolver.resolveFileFromUrl(path)
                     if (f.exists()) {
-                        val sha256 = Sha256Utils().getCheckSumFromFile(f)
-                        return@withContext checksum.contains(sha256)
+                        val sha256 = withContext(dispatcherProvider.io) {
+                            Sha256Utils().getCheckSumFromFile(f)
+                        }
+                        if (sha256 == null) {
+                            Log.w(TAG, "Could not compute checksum for $path")
+                            return false
+                        }
+                        return checksum.contains(sha256)
                     }
                 }
             }
             false
         } catch (e: IOException) {
-            e.printStackTrace()
+            Log.e(TAG, "Checksum check failed", e)
             false
         }
     }
@@ -255,7 +281,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                     ?: allResults.firstOrNull()
                     ?: UrlCheckResult.Failure(url)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Configuration URL check failed", e)
                 UrlCheckResult.Failure(url)
             }
 
@@ -274,7 +300,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "getMinApk failed", e)
             ConfigurationsRepository.ConfigurationResult.Failure(context.getString(R.string.device_couldn_t_reach_local_server), url)
         }
     }
@@ -302,10 +328,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
             UrlCheckResult.Failure(currentUrl)
         } catch (e: TimeoutCancellationException) {
-            e.printStackTrace()
+            Log.e(TAG, "Configuration URL check timed out", e)
             UrlCheckResult.Failure(currentUrl)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Configuration URL check failed", e)
             UrlCheckResult.Failure(currentUrl)
         }
     }
@@ -320,7 +346,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             if (configResponse.isSuccessful) {
                 val rows = configResponse.body()?.getAsJsonArray("rows")
 
-                if (rows != null && rows.size() > 0) {
+                if (rows != null && !rows.isEmpty()) {
                     val firstRow = rows[0].asJsonObject
                     val id = firstRow.getAsJsonPrimitive("id").asString
                     val doc = firstRow.getAsJsonObject("doc")
@@ -331,10 +357,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
             null
         } catch (e: TimeoutCancellationException) {
-            e.printStackTrace()
+            Log.e(TAG, "Fetch configuration timed out", e)
             null
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Fetch configuration failed", e)
             null
         }
     }
@@ -355,12 +381,65 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         if (doc.has("models")) {
             val modelsMap = doc.getAsJsonObject("models").entrySet()
                 .associate { it.key to it.value.asString }
-            sharedPrefManager.rawPreferences.edit { putString("ai_models", JsonUtils.gson.toJson(modelsMap)) }
+            sharedPrefManager.rawPreferences.edit { putString("ai_models", gson.toJson(modelsMap)) }
         }
 
         if (doc.has("planetType")) {
             val planetType = doc.getAsJsonPrimitive("planetType").asString
             sharedPrefManager.rawPreferences.edit { putString("planetType", planetType) }
+        }
+    }
+
+    override fun getPlanetType(): String? {
+        return sharedPrefManager.getRawString("planetType")
+    }
+
+    override fun getParentCode(): String {
+        return sharedPrefManager.getParentCode()
+    }
+
+    override fun getCommunityName(): String {
+        return sharedPrefManager.getCommunityName()
+    }
+
+    override fun getCommunityConfiguration(): CommunityConfiguration {
+        return CommunityConfiguration(
+            parentCode = getParentCode(),
+            communityName = getCommunityName(),
+            planetType = getPlanetType()
+        )
+    }
+
+    override fun getCommunityLeaders(): List<UserEntity> {
+        return UserEntity.parseLeadersJson(sharedPrefManager.getCommunityLeaders())
+    }
+
+    override fun clearPreferences() {
+        sharedPrefManager.clearPreferences()
+    }
+
+    override suspend fun clearFirstRunStorageAndSetFlag(hasWritePermission: Boolean) {
+        withContext(dispatcherProvider.io) {
+            if (hasWritePermission && sharedPrefManager.getFirstRun()) {
+                val myDir = storagePathResolver.resolveOleDirectory()
+                if (myDir.isDirectory) {
+                    myDir.listFiles()?.forEach { it.deleteRecursively() }
+                }
+                sharedPrefManager.setFirstRun(false)
+            }
+        }
+    }
+
+    override suspend fun getQueuedDownloads(): List<String> {
+        return withContext(dispatcherProvider.io) {
+            val storedJsonConcatenatedLinks = sharedPrefManager.getConcatenatedLinks()
+            if (storedJsonConcatenatedLinks.isNullOrEmpty()) {
+                emptyList()
+            } else {
+                runCatching {
+                    Json.decodeFromString<List<String>>(storedJsonConcatenatedLinks)
+                }.getOrDefault(emptyList())
+            }
         }
     }
 
@@ -426,17 +505,24 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
     private fun handleVersionEvaluation(info: MyPlanet, apkVersion: Int, callback: ConfigurationsRepository.CheckVersionCallback) {
         val currentVersion = VersionUtils.getVersionCode(context)
-        serviceScope.launch(dispatcherProvider.main) {
-            if (Constants.showBetaFeature(Constants.KEY_UPGRADE_MAX, context) && info.latestapkcode > currentVersion) {
-                callback.onUpdateAvailable(info, false)
-            } else if (apkVersion > currentVersion) {
-                callback.onUpdateAvailable(info, currentVersion >= info.minapkcode)
-            } else if (currentVersion < info.minapkcode && apkVersion < info.minapkcode) {
-                callback.onUpdateAvailable(info, true)
-            } else {
-                callback.onError(context.getString(R.string.planet_is_up_to_date), false)
-            }
+        if (Constants.showBetaFeature(Constants.KEY_UPGRADE_MAX, context) && info.latestapkcode > currentVersion) {
+            callback.onUpdateAvailable(info, false)
+        } else if (apkVersion > currentVersion) {
+            callback.onUpdateAvailable(info, currentVersion >= info.minapkcode)
+        } else if (currentVersion < info.minapkcode && apkVersion < info.minapkcode) {
+            callback.onUpdateAvailable(info, true)
+        } else {
+            callback.onError(context.getString(R.string.planet_is_up_to_date), false)
         }
     }
 
+    override suspend fun ensureServerUrlUpdated() {
+        val serverUrl = sharedPrefManager.getServerUrl()
+        val mapping = serverUrlMapper.processUrl(serverUrl)
+        if (mapping.alternativeUrl != null) {
+            serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
+                serverUrlMapper.isUrlDirectlyReachable(url)
+            }
+        }
+    }
 }

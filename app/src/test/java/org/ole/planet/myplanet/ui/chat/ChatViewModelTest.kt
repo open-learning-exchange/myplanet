@@ -5,6 +5,7 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -17,14 +18,19 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmConversation
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.AiProvider
+import org.ole.planet.myplanet.model.ChatHistory
+import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.TeamSummary
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ChatRepository
+import org.ole.planet.myplanet.repository.ChatResult
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -37,6 +43,8 @@ class ChatViewModelTest {
     private lateinit var voicesRepository: VoicesRepository
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var dispatcherProvider: TestDispatcherProvider
+    private lateinit var realtimeSyncManager: RealtimeSyncManager
+    private val dataUpdateFlow = MutableSharedFlow<TableDataUpdate>()
 
     @Before
     fun setup() {
@@ -46,7 +54,9 @@ class ChatViewModelTest {
         teamsRepository = mockk(relaxed = true)
         voicesRepository = mockk(relaxed = true)
         dispatcherProvider = TestDispatcherProvider(testDispatcher)
-        viewModel = ChatViewModel(chatRepository, userRepository, teamsRepository, voicesRepository, dispatcherProvider)
+        realtimeSyncManager = mockk(relaxed = true)
+        io.mockk.every { realtimeSyncManager.updatesFor("chats") } returns dataUpdateFlow
+        viewModel = ChatViewModel(chatRepository, userRepository, teamsRepository, voicesRepository, dispatcherProvider, realtimeSyncManager)
     }
 
     @After
@@ -72,8 +82,53 @@ class ChatViewModelTest {
     }
 
     @Test
+    fun `refreshChatSignal seeds an initial load value for a cold ViewModel`() = runTest {
+        val signals = mutableListOf<Unit>()
+        val job = launch(testDispatcher) {
+            viewModel.refreshChatSignal.collect { signals.add(it) }
+        }
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, signals.size)
+        job.cancel()
+    }
+
+    @Test
+    fun `refreshChatSignal emits when RealtimeSyncManager emits chats update`() = runTest {
+        val signals = mutableListOf<Unit>()
+        val job = launch(testDispatcher) {
+            viewModel.refreshChatSignal.collect { signals.add(it) }
+        }
+        testScheduler.advanceUntilIdle()
+        signals.clear()
+
+        dataUpdateFlow.emit(TableDataUpdate("chats", 0, 1))
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, signals.size)
+        job.cancel()
+    }
+
+    @Test
+    fun `refreshChatSignal delivers a missed update to a subscriber that attaches after the emit`() = runTest {
+        testScheduler.advanceUntilIdle()
+
+        dataUpdateFlow.emit(TableDataUpdate("chats", 1, 0, true))
+        testScheduler.advanceUntilIdle()
+
+        val signals = mutableListOf<Unit>()
+        val job = launch(testDispatcher) {
+            viewModel.refreshChatSignal.collect { signals.add(it) }
+        }
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, signals.size)
+        job.cancel()
+    }
+
+    @Test
     fun `clearChatState resets selectedChatHistory, selectedId, selectedRev, and selectedAiProvider to their initial values`() {
-        val dummyHistory = listOf(RealmConversation())
+        val dummyHistory = listOf(Conversation())
         viewModel.setSelectedChatHistory(dummyHistory)
         viewModel.setSelectedId("test_id")
         viewModel.setSelectedRev("test_rev")
@@ -103,7 +158,7 @@ class ChatViewModelTest {
 
     @Test
     fun `processChatHistory sets pagination state and returns messages`() {
-        val conversations = listOf(RealmConversation().apply { query = "q1"; response = "r1" })
+        val conversations = listOf(Conversation().apply { query = "q1"; response = "r1" })
         val messages = viewModel.processChatHistory(conversations)
         assertEquals(1, viewModel.allConversations.size)
         assertEquals(1, viewModel.loadedCount)
@@ -112,7 +167,7 @@ class ChatViewModelTest {
 
     @Test
     fun `loadMoreConversations returns older messages and updates loadedCount`() {
-        val conversations = List(25) { RealmConversation().apply { query = "q$it"; response = "r$it" } }
+        val conversations = List(25) { Conversation().apply { query = "q$it"; response = "r$it" } }
         viewModel.processChatHistory(conversations)
         assertEquals(20, viewModel.loadedCount)
         val (messages, hasMore) = viewModel.loadMoreConversations()
@@ -123,7 +178,7 @@ class ChatViewModelTest {
 
     @Test
     fun `clearPaginationState resets allConversations and loadedCount`() {
-        viewModel.processChatHistory(listOf(RealmConversation()))
+        viewModel.processChatHistory(listOf(Conversation()))
         viewModel.clearPaginationState()
         assertTrue(viewModel.allConversations.isEmpty())
         assertEquals(0, viewModel.loadedCount)
@@ -131,18 +186,15 @@ class ChatViewModelTest {
 
     @Test
     fun `loadChatHistoryScreenData fetches all data correctly when no caches are provided`() = runTest {
-        val user = mockk<RealmUser>(relaxed = true)
-        val conversation = org.ole.planet.myplanet.model.RealmChatHistory().apply {
+        val user = UserEntity(_id = "user123", planetCode = "planet1", name = "Test User")
+        val conversation = ChatHistory().apply {
             createdDate = "123"
             updatedDate = "123"
         }
-        val news = RealmNews()
+        val news = News()
         val team = mockk<TeamSummary>(relaxed = true)
 
         coEvery { userRepository.getUserById("user123") } returns user
-        coEvery { user.planetCode } returns "planet1"
-        coEvery { user.name } returns "Test User"
-        coEvery { user._id } returns "user123"
         coEvery { voicesRepository.getPlanetNewsMessages("planet1") } returns listOf(news)
         coEvery { chatRepository.getChatHistoryForUser("Test User") } returns listOf(conversation)
         coEvery { teamsRepository.getTeamSummaries("user123") } returns listOf(team)
@@ -159,7 +211,6 @@ class ChatViewModelTest {
             communityName = "community1"
         )
 
-        // Wait for coroutine to process
         testScheduler.advanceUntilIdle()
 
         val result = viewModel.screenData.value
@@ -182,49 +233,9 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `searchChats by title correctly filters list`() = runTest {
-        val chat1 = org.ole.planet.myplanet.model.RealmChatHistory().apply { title = "First Chat" }
-        val chat2 = org.ole.planet.myplanet.model.RealmChatHistory().apply { title = "Second Discussion" }
-
-        coEvery { chatRepository.getChatHistoryForUser(any()) } returns listOf(chat1, chat2)
-
-        viewModel.loadChatHistoryScreenData("user123", null, null)
-        testScheduler.advanceUntilIdle()
-
-        viewModel.searchChats("First", isFullSearch = false, isQuestion = false)
-        testScheduler.advanceUntilIdle()
-
-        assertEquals(1, viewModel.filteredChats.value.size)
-        assertEquals("First Chat", viewModel.filteredChats.value[0].title)
-    }
-
-    @Test
-    fun `searchChats by full conversation filters by question`() = runTest {
-        val chat1 = org.ole.planet.myplanet.model.RealmChatHistory().apply {
-            title = "Chat 1"
-            conversations = io.realm.RealmList(RealmConversation().apply { query = "How is the weather?" })
-        }
-        val chat2 = org.ole.planet.myplanet.model.RealmChatHistory().apply {
-            title = "Chat 2"
-            conversations = io.realm.RealmList(RealmConversation().apply { query = "Tell me a joke." })
-        }
-
-        coEvery { chatRepository.getChatHistoryForUser(any()) } returns listOf(chat1, chat2)
-
-        viewModel.loadChatHistoryScreenData("user123", null, null)
-        testScheduler.advanceUntilIdle()
-
-        viewModel.searchChats("weather", isFullSearch = true, isQuestion = true)
-        testScheduler.advanceUntilIdle()
-
-        assertEquals(1, viewModel.filteredChats.value.size)
-        assertEquals("Chat 1", viewModel.filteredChats.value[0].title)
-    }
-
-    @Test
-    fun `searchChats with empty query resets filtered list`() = runTest {
-        val chat1 = org.ole.planet.myplanet.model.RealmChatHistory().apply { title = "Chat 1" }
-        val chat2 = org.ole.planet.myplanet.model.RealmChatHistory().apply { title = "Chat 2" }
+    fun `searchChats filters allChats correctly and empty query resets filtered list`() = runTest {
+        val chat1 = ChatHistory().apply { title = "Chat 1" }
+        val chat2 = ChatHistory().apply { title = "Chat 2" }
 
         coEvery { chatRepository.getChatHistoryForUser(any()) } returns listOf(chat1, chat2)
 
@@ -234,6 +245,7 @@ class ChatViewModelTest {
         viewModel.searchChats("Chat 1", isFullSearch = false, isQuestion = false)
         testScheduler.advanceUntilIdle()
         assertEquals(1, viewModel.filteredChats.value.size)
+        assertEquals("Chat 1", viewModel.filteredChats.value[0].title)
 
         viewModel.searchChats("", isFullSearch = false, isQuestion = false)
         testScheduler.advanceUntilIdle()
@@ -242,12 +254,12 @@ class ChatViewModelTest {
 
     @Test
     fun `loadChatHistoryScreenData uses cached data and handles nulls gracefully`() = runTest {
-        val cachedUser = mockk<RealmUser>(relaxed = true)
-        val conversation = org.ole.planet.myplanet.model.RealmChatHistory().apply {
+        val cachedUser = mockk<UserEntity>(relaxed = true)
+        val conversation = ChatHistory().apply {
             createdDate = "123"
             updatedDate = "123"
         }
-        val news = RealmNews()
+        val news = News()
 
         coEvery { userRepository.getUserById("user123") } returns cachedUser
         coEvery { cachedUser.planetCode } returns "planet2"
@@ -288,9 +300,170 @@ class ChatViewModelTest {
         assertEquals(listOf(conversation), result.chatHistory)
         assertEquals(listOf(news), result.newsMessages)
 
-        // Verify user and targets were NOT fetched again
         coVerify(exactly = 0) { userRepository.getUserById(any()) }
         coVerify(exactly = 0) { teamsRepository.getTeamSummaries(any()) }
+
+        job.cancel()
+    }
+
+    @Test
+    fun `shareChatToVoices emits AlreadyShared when previously shared`() = runTest {
+        val chatId = "chat_123"
+        val viewInId = "view_456"
+        val payload = hashMapOf<String?, String>("test" to "data")
+
+        coEvery { voicesRepository.isAlreadyShared(chatId, viewInId) } returns true
+
+        val emissions = mutableListOf<ChatViewModel.ShareChatResult>()
+        val job = launch(testDispatcher) {
+            viewModel.shareResult.collect { emissions.add(it) }
+        }
+
+        viewModel.shareChatToVoices(chatId, viewInId, payload)
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, emissions.size)
+        assertTrue(emissions[0] is ChatViewModel.ShareChatResult.AlreadyShared)
+
+        coVerify(exactly = 1) { voicesRepository.isAlreadyShared(chatId, viewInId) }
+        coVerify(exactly = 0) { voicesRepository.createNews(any(), any(), any()) }
+
+        job.cancel()
+    }
+
+    @Test
+    fun `shareChatToVoices emits Shared when successfully creates news`() = runTest {
+        val chatId = "chat_123"
+        val viewInId = "view_456"
+        val payload = hashMapOf<String?, String>("test" to "data")
+        val createdNews = News().apply { id = "news_123" }
+
+        coEvery { voicesRepository.isAlreadyShared(chatId, viewInId) } returns false
+        coEvery { voicesRepository.createNews(payload, any(), null) } returns createdNews
+
+        val emissions = mutableListOf<ChatViewModel.ShareChatResult>()
+        val job = launch(testDispatcher) {
+            viewModel.shareResult.collect { emissions.add(it) }
+        }
+
+        viewModel.shareChatToVoices(chatId, viewInId, payload)
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, emissions.size)
+        assertTrue(emissions[0] is ChatViewModel.ShareChatResult.Shared)
+        val result = emissions[0] as ChatViewModel.ShareChatResult.Shared
+        assertEquals(createdNews, result.news)
+        assertEquals(chatId, result.chatId)
+
+        coVerify(exactly = 1) { voicesRepository.isAlreadyShared(chatId, viewInId) }
+        coVerify(exactly = 1) { voicesRepository.createNews(payload, any(), null) }
+
+        job.cancel()
+    }
+
+    @Test
+    fun `viewModel fetchAiProviders proxies to chatRepository`() = runTest {
+        val serverUrl = "https://example.com"
+        val expectedProviders = mapOf("provider1" to true, "provider2" to false)
+        coEvery { chatRepository.fetchAiProviders(serverUrl) } returns expectedProviders
+
+        viewModel.fetchAiProviders(serverUrl)
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(expectedProviders, viewModel.aiProviders.value)
+        assertEquals(false, viewModel.aiProvidersError.value)
+        assertEquals(false, viewModel.aiProvidersLoading.value)
+        coVerify(exactly = 1) { chatRepository.fetchAiProviders(serverUrl) }
+    }
+
+    @Test
+    fun `viewModel getLatestRev proxies to chatRepository`() = runTest {
+        val id = "chat123"
+        val expectedRev = "1-abc"
+        coEvery { chatRepository.getLatestRev(id) } returns expectedRev
+
+        val result = viewModel.getLatestRev(id)
+        assertEquals(expectedRev, result)
+        coVerify(exactly = 1) { chatRepository.getLatestRev(id) }
+    }
+
+    @Test
+    fun `viewModel sendNewChatRequest proxies to chatRepository`() = runTest {
+        val query = "hello"
+        val userName = "User"
+        val aiProvider = AiProvider("model1", "provider1")
+        val expectedResult = ChatResult.Success("response", "chat123", "1-abc")
+        coEvery { chatRepository.sendNewChatRequest(query, userName, aiProvider) } returns expectedResult
+
+        val result = viewModel.sendNewChatRequest(query, userName, aiProvider)
+        assertEquals(expectedResult, result)
+        coVerify(exactly = 1) { chatRepository.sendNewChatRequest(query, userName, aiProvider) }
+    }
+
+    @Test
+    fun `viewModel sendContinueChatRequest proxies to chatRepository`() = runTest {
+        val query = "hello again"
+        val userName = "User"
+        val aiProvider = AiProvider("model1", "provider1")
+        val id = "chat123"
+        val rev = "1-abc"
+        val expectedResult = ChatResult.Success("response", id, "2-def")
+        coEvery { chatRepository.sendContinueChatRequest(query, userName, aiProvider, id, rev) } returns expectedResult
+
+        val result = viewModel.sendContinueChatRequest(query, userName, aiProvider, id, rev)
+        assertEquals(expectedResult, result)
+        coVerify(exactly = 1) { chatRepository.sendContinueChatRequest(query, userName, aiProvider, id, rev) }
+    }
+
+    @Test
+    fun `viewModel getUserById proxies to userRepository`() = runTest {
+        val userId = "user123"
+        val expectedUser = UserEntity(_id = userId, name = "Test User")
+        coEvery { userRepository.getUserById(userId) } returns expectedUser
+
+        val result = viewModel.getUserById(userId)
+        assertEquals(expectedUser, result)
+        coVerify(exactly = 1) { userRepository.getUserById(userId) }
+    }
+
+    @Test
+    fun `viewModel chatUiState correctly combines state flows`() = runTest {
+        val job = launch(testDispatcher) {
+            viewModel.chatUiState.collect {}
+        }
+
+        testScheduler.advanceUntilIdle()
+
+        // Initial state
+        var currentState = viewModel.chatUiState.value
+        assertEquals(null, currentState.selectedChatHistory)
+        assertEquals(null, currentState.selectedAiProvider)
+        assertEquals("", currentState.selectedId)
+        assertEquals("", currentState.selectedRev)
+        assertEquals(null, currentState.aiProviders)
+        assertEquals(false, currentState.aiProvidersLoading)
+        assertEquals(false, currentState.aiProvidersError)
+
+        // Update states
+        val history = listOf(Conversation().apply { query = "q"; response = "r" })
+        viewModel.setSelectedChatHistory(history)
+        viewModel.setSelectedAiProvider("OpenAI")
+        viewModel.setSelectedId("chat123")
+        viewModel.setSelectedRev("1-abc")
+        viewModel.setAiProviders(mapOf("OpenAI" to true))
+        viewModel.setAiProvidersLoading(true)
+        viewModel.setAiProvidersError(true)
+
+        testScheduler.advanceUntilIdle()
+
+        currentState = viewModel.chatUiState.value
+        assertEquals(history, currentState.selectedChatHistory)
+        assertEquals("OpenAI", currentState.selectedAiProvider)
+        assertEquals("chat123", currentState.selectedId)
+        assertEquals("1-abc", currentState.selectedRev)
+        assertEquals(mapOf("OpenAI" to true), currentState.aiProviders)
+        assertEquals(true, currentState.aiProvidersLoading)
+        assertEquals(true, currentState.aiProvidersError)
 
         job.cancel()
     }

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="@dimen/dashboard_chip_width"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_dashboard_chip">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="@dimen/dashboard_chip_padding">
+
+        <ImageView
+            android:layout_width="@dimen/dashboard_chip_icon_size"
+            android:layout_height="@dimen/dashboard_chip_icon_size"
+            app:srcCompat="@drawable/mycourses"
+            app:tint="@color/dashboard_tile_courses"
+            android:contentDescription="@null" />
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="4dp"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textColor="@color/dashboard_ink_2"
+            android:textSize="11.5sp" />
+    </LinearLayout>
+</FrameLayout>

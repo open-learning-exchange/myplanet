@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.ui.user
 
-import android.text.TextUtils
+import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
@@ -8,47 +8,69 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemUserBinding
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 
 class UserArrayAdapter(
-    private val onItemClick: (RealmUser) -> Unit
-) : ListAdapter<RealmUser, UserArrayAdapter.ViewHolder>(
-    DiffUtils.itemCallback<RealmUser>(
+    private val context: Context,
+    private val onItemClick: (UserEntity) -> Unit
+) : ListAdapter<UserEntity, UserArrayAdapter.ViewHolder>(
+    DiffUtils.itemCallback<UserEntity>(
         { oldItem, newItem -> oldItem.id == newItem.id },
         { oldItem, newItem -> oldItem.id == newItem.id && oldItem.name == newItem.name }
     )
 ) {
 
-    var selectedUser: RealmUser? = null
+    var selectedUser: UserEntity? = null
+    private var avatarSize = 0
+    private val selectedColor by lazy(LazyThreadSafetyMode.NONE) {
+        ContextCompat.getColor(context, R.color.md_grey_300)
+    }
+    private val transparentColor by lazy(LazyThreadSafetyMode.NONE) {
+        ContextCompat.getColor(context, android.R.color.transparent)
+    }
 
     class ViewHolder(val binding: ItemUserBinding) : RecyclerView.ViewHolder(binding.root)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        if (avatarSize == 0) {
+            avatarSize = parent.context.resources.getDimensionPixelSize(R.dimen._80dp)
+        }
         val binding = ItemUserBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolder(binding)
     }
 
+    override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {
+        if (payloads.contains(PAYLOAD_SELECTION)) {
+            val user = getItem(position)
+            if (user.id == selectedUser?.id) {
+                holder.itemView.setBackgroundColor(selectedColor)
+            } else {
+                holder.itemView.setBackgroundColor(transparentColor)
+            }
+        } else {
+            super.onBindViewHolder(holder, position, payloads)
+        }
+    }
+
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val user = getItem(position)
-        val context = holder.itemView.context
 
         holder.binding.txtName.text = context.getString(R.string.two_strings, user.getFullName(), "(${user.name})")
         holder.binding.txtJoined.text = context.getString(R.string.joined_colon, TimeUtils.formatDate(user.joinDate))
 
-        if (!TextUtils.isEmpty(user.userImage)) {
-            val avatarSize = context.resources.getDimensionPixelSize(R.dimen._80dp)
+        if (!user.userImage.isNullOrEmpty()) {
             ImageUtils.loadProfileImage(user.userImage, holder.binding.ivUser, avatarSize)
         } else {
             holder.binding.ivUser.setImageResource(R.drawable.profile)
         }
 
         if (user.id == selectedUser?.id) {
-            holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_grey_300))
+            holder.itemView.setBackgroundColor(selectedColor)
         } else {
-            holder.itemView.setBackgroundColor(ContextCompat.getColor(context, android.R.color.transparent))
+            holder.itemView.setBackgroundColor(transparentColor)
         }
 
         holder.itemView.setOnClickListener {
@@ -57,9 +79,13 @@ class UserArrayAdapter(
             val previousUser = selectedUser
             selectedUser = user
             val prevPos = currentList.indexOfFirst { it.id == previousUser?.id }
-            if (prevPos != -1) notifyItemChanged(prevPos)
-            notifyItemChanged(currentPos)
+            if (prevPos != -1) notifyItemChanged(prevPos, PAYLOAD_SELECTION)
+            notifyItemChanged(currentPos, PAYLOAD_SELECTION)
             onItemClick(user)
         }
+    }
+
+    companion object {
+        const val PAYLOAD_SELECTION = "selection_payload"
     }
 }

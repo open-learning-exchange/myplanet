@@ -12,12 +12,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -30,81 +28,40 @@ class SubmissionViewModel @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
 ) : ViewModel() {
 
-    private data class SubmissionViewData(
-        val submission: RealmSubmission,
-        val submitterName: String,
-    )
-
     private val _type = MutableStateFlow("")
     private val _query = MutableStateFlow("")
 
     private val userIdFlow = flow { emit(userRepository.getActiveUserIdSuspending()) }
-        .shareIn(viewModelScope, SharingStarted.Lazily, 1)
+        .shareIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1)
 
     private val allSubmissionsFlow = userIdFlow.flatMapLatest { uid ->
         submissionsRepository.getSubmissionsFlow(uid)
-    }.shareIn(viewModelScope, SharingStarted.Lazily, 1)
+    }.shareIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1)
 
-    val exams: StateFlow<HashMap<String?, RealmStepExam>> = allSubmissionsFlow.mapLatest { subs ->
+    private val exams: StateFlow<HashMap<String?, StepExam>> = allSubmissionsFlow.mapLatest { subs ->
         HashMap(submissionsRepository.getExamMap(subs))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), hashMapOf())
 
-    private val filteredSubmissionsRaw = combine(allSubmissionsFlow, _type, _query, exams, userIdFlow) { subs, type, query, examMap, uid ->
-        var filtered = when (type) {
-            "survey" -> subs.filter { it.userId == uid && it.type == "survey" }
-            "survey_submission" -> subs.filter {
-                it.userId == uid && it.type == "survey" && it.status != "pending"
-            }
-            else -> subs.filter { it.userId == uid && it.type != "survey" }
-        }.sortedByDescending { it.lastUpdateTime }
+    private val filteredProjections = combine(allSubmissionsFlow, _type, _query, exams, userIdFlow) { subs, type, query, examMap, uid ->
+        submissionsRepository.getSubmissionProjections(subs, uid, type, query, examMap)
+    }.flowOn(dispatcherProvider.io).shareIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1)
 
-        if (query.isNotEmpty()) {
-            val examIds = examMap.filter { (_, exam) ->
-                exam.name?.contains(query, ignoreCase = true) == true
-            }.keys
-            filtered = filtered.filter { examIds.contains(it.parentId) }
-        }
-
-        val groupedSubmissions = filtered.groupBy { it.parentId }
-
-        val uniqueRawSubmissions = groupedSubmissions
-            .mapValues { entry -> entry.value.maxByOrNull { it.lastUpdateTime } }
-            .values
-            .filterNotNull()
-
-        val userIds = uniqueRawSubmissions.mapNotNull { it.userId }.distinct()
-        val fallbackUsersMap = userRepository.getUsersByIds(userIds).associateBy { it.id }
-
-        val uniqueSubmissions = uniqueRawSubmissions.map { sub ->
-            val name = submissionsRepository.getNormalizedSubmitterName(sub)
-            val fallback = sub.userId?.let { fallbackUsersMap[it]?.name }
-            SubmissionViewData(sub, name ?: fallback ?: "")
-        }.sortedByDescending { it.submission.lastUpdateTime }
-
-        val submissionCountMap = groupedSubmissions.mapValues { it.value.size }
-            .mapKeys { entry ->
-                groupedSubmissions[entry.key]?.maxByOrNull { it.lastUpdateTime }?.id
-            }
-
-        Triple(uniqueSubmissions, submissionCountMap, filtered)
-    }.flowOn(dispatcherProvider.io).shareIn(viewModelScope, SharingStarted.Lazily, 1)
-
-    val submissions: StateFlow<List<SubmissionUiModel>> = filteredSubmissionsRaw.map { (uniqueSubmissions) ->
-        uniqueSubmissions.map { viewData ->
+    val submissions: StateFlow<List<SubmissionUiModel>> = combine(filteredProjections, exams) { projections, examsMap ->
+        projections.map { projection ->
+            val examTitle = examsMap[projection.submission.parentId]?.name ?: "Submissions"
             SubmissionUiModel(
-                id = viewData.submission.id,
-                status = viewData.submission.status,
-                startTime = viewData.submission.startTime,
-                lastUpdateTime = viewData.submission.lastUpdateTime,
-                parentId = viewData.submission.parentId,
-                userId = viewData.submission.userId,
-                submitterName = viewData.submitterName
+                id = projection.submission.id,
+                status = projection.submission.status,
+                startTime = projection.submission.startTime,
+                lastUpdateTime = projection.submission.lastUpdateTime,
+                parentId = projection.submission.parentId,
+                userId = projection.submission.userId,
+                submitterName = projection.submitterName,
+                examTitle = examTitle,
+                submissionCount = projection.submissionCount
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    val submissionCounts: StateFlow<Map<String?, Int>> = filteredSubmissionsRaw.map { it.second }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     fun setFilter(type: String, query: String) {
         _type.value = type

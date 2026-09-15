@@ -1,124 +1,102 @@
 package org.ole.planet.myplanet.repository
 
-import io.mockk.Runs
+import android.content.Context
+import com.google.gson.JsonObject
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
-import io.mockk.mockkStatic
+import io.mockk.mockkObject
 import io.mockk.slot
 import io.mockk.unmockkAll
+import io.mockk.unmockkObject
 import io.mockk.verify
-import io.realm.Realm
-import io.realm.RealmQuery
-import io.realm.RealmResults
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.model.RealmMyPersonal
+import org.ole.planet.myplanet.data.room.dao.PersonalDao
+import org.ole.planet.myplanet.model.Personal
+import org.ole.planet.myplanet.utils.DeviceNameProvider
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.UrlUtils
+import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PersonalsRepositoryImplTest {
 
-    private lateinit var databaseService: DatabaseService
-    private lateinit var mockRealm: Realm
+    private lateinit var personalDao: PersonalDao
+    private lateinit var uploadRepository: UploadRepository
+    private lateinit var deviceNameProvider: DeviceNameProvider
     private lateinit var repository: PersonalsRepositoryImpl
-    private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setup() {
         Logger.getLogger("io.mockk").level = Level.OFF
-        mockkStatic(io.realm.log.RealmLog::class)
-        every { io.realm.log.RealmLog.error(any<Throwable>(), any<String>(), *anyVararg()) } just Runs
-        every { io.realm.log.RealmLog.error(any<String>(), *anyVararg()) } just Runs
+        personalDao = mockk(relaxed = true)
+        uploadRepository = mockk(relaxed = true)
+        deviceNameProvider = mockk(relaxed = true)
+        every { deviceNameProvider.getCustomDeviceName() } returns "mock-custom-device-name"
 
-        databaseService = mockk(relaxed = true)
-        mockRealm = mockk(relaxed = true)
+        mockkObject(UrlUtils)
+        every { UrlUtils.header } returns "mock-header"
+        every { UrlUtils.getUrl() } returns "mock-url"
 
-        coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val transaction = firstArg<(Realm) -> Unit>()
-            transaction(mockRealm)
-        }
+        // NetworkUtils is no longer used by the repository, but keep its statics mocked in case
+        // shared helpers (e.g. Personal.serialize) reach into it indirectly.
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "mock-unique-id"
+        every { NetworkUtils.getDeviceName() } returns "mock-device-name"
+        every { NetworkUtils.getCustomDeviceName(any<Context>()) } returns "mock-custom-device-name"
 
-        coEvery { databaseService.withRealmAsync<Any>(any()) } answers {
-            val operation = firstArg<(Realm) -> Any>()
-            operation(mockRealm)
-        }
+        mockkObject(FileUtils)
+        every { FileUtils.getFileNameFromUrl(any()) } returns "test.txt"
 
-        every { databaseService.createManagedRealmInstance() } returns mockRealm
-        every { databaseService.ioDispatcher } returns testDispatcher
-
-        val apiInterface = mockk<org.ole.planet.myplanet.data.api.ApiInterface>(relaxed = true)
-        val context = mockk<android.content.Context>(relaxed = true)
-        repository = PersonalsRepositoryImpl(databaseService, testDispatcher, apiInterface, context)
+        repository = PersonalsRepositoryImpl(personalDao, uploadRepository, deviceNameProvider)
     }
 
     @After
     fun tearDown() {
+        unmockkObject(UrlUtils)
+        unmockkObject(NetworkUtils)
+        unmockkObject(FileUtils)
         unmockkAll()
-    }
-
-    private fun mockQueryResults(vararg results: List<RealmMyPersonal>): RealmQuery<RealmMyPersonal> {
-        val mockQuery = mockk<RealmQuery<RealmMyPersonal>>(relaxed = true)
-        val mockResults = mockk<RealmResults<RealmMyPersonal>>(relaxed = true)
-
-        every { mockRealm.where(RealmMyPersonal::class.java) } returns mockQuery
-
-        // Setup fluent return
-        every { mockQuery.equalTo(any<String>(), any<String>()) } returns mockQuery
-        every { mockQuery.equalTo(any<String>(), any<String>(), any()) } returns mockQuery
-        every { mockQuery.equalTo(any<String>(), any<Boolean>()) } returns mockQuery
-        every { mockQuery.findAll() } returns mockResults
-        every { mockQuery.count() } returns (results.firstOrNull()?.size?.toLong() ?: 0L)
-
-        // Map sequential calls to copyFromRealm to different results
-        if (results.size == 1) {
-             every { mockRealm.copyFromRealm(mockResults) } returns results[0]
-        } else if (results.isNotEmpty()) {
-             every { mockRealm.copyFromRealm(mockResults) } returnsMany results.toList()
-        }
-
-        return mockQuery
     }
 
     @Test
     fun `personalTitleExists returns true when title and user match`() = runTest {
-        val mockQuery = mockQueryResults(listOf(RealmMyPersonal()))
+        coEvery { personalDao.countByTitle("My Title", "user1") } returns 1
+
         val result = repository.personalTitleExists("My Title", "user1")
+
         assertTrue(result)
-        verify {
-            mockQuery.equalTo("title", "My Title", io.realm.Case.INSENSITIVE)
-            mockQuery.equalTo("userId", "user1")
-        }
+        coVerify { personalDao.countByTitle("My Title", "user1") }
     }
 
     @Test
     fun `personalTitleExists returns false when title does not exist`() = runTest {
-        val mockQuery = mockQueryResults(emptyList())
+        coEvery { personalDao.countByTitle("Missing", null) } returns 0
+
         val result = repository.personalTitleExists("Missing", null)
+
         assertFalse(result)
-        verify {
-            mockQuery.equalTo("title", "Missing", io.realm.Case.INSENSITIVE)
-        }
-        verify(exactly = 0) {
-             mockQuery.equalTo("userId", any<String>())
-        }
+        coVerify { personalDao.countByTitle("Missing", null) }
     }
 
     @Test
     fun `savePersonalResource sets id and properties before saving`() = runTest {
-        val savedObjectSlot = slot<RealmMyPersonal>()
-        every { mockRealm.copyToRealmOrUpdate(capture(savedObjectSlot)) } returns mockk()
+        val savedObjectSlot = slot<Personal>()
+        coEvery { personalDao.insert(capture(savedObjectSlot)) } returns Unit
 
         repository.savePersonalResource(
             title = "Test Title",
@@ -128,15 +106,13 @@ class PersonalsRepositoryImplTest {
             description = "Test Desc"
         )
 
-        verify { mockRealm.copyToRealmOrUpdate(any<RealmMyPersonal>()) }
-
         val captured = savedObjectSlot.captured
         assertEquals("Test Title", captured.title)
         assertEquals("user1", captured.userId)
         assertEquals("Test User", captured.userName)
         assertEquals("/path/to/file", captured.path)
         assertEquals("Test Desc", captured.description)
-        assertTrue(captured.id != null)
+        assertTrue(captured.id.isNotEmpty())
         assertEquals(captured.id, captured._id)
     }
 
@@ -151,84 +127,190 @@ class PersonalsRepositoryImplTest {
 
     @Test
     fun `getPersonalResources returns flow of personals for valid userId`() = runTest {
-        val mockQuery = mockk<RealmQuery<RealmMyPersonal>>(relaxed = true)
-        val initialResults = mockk<RealmResults<RealmMyPersonal>>(relaxed = true)
-        val frozenInitial = mockk<RealmResults<RealmMyPersonal>>(relaxed = true)
-        val frozenRealmInitial = mockk<Realm>(relaxed = true)
-        val expectedList = listOf(RealmMyPersonal())
-
-        every { mockRealm.where(RealmMyPersonal::class.java) } returns mockQuery
-        every { mockQuery.equalTo("userId", "user1") } returns mockQuery
-        every { mockQuery.findAll() } returns initialResults
-
-        every { initialResults.isValid } returns true
-        every { initialResults.isLoaded } returns true
-        every { initialResults.freeze() } returns frozenInitial
-        every { frozenInitial.realm } returns frozenRealmInitial
-        every { frozenRealmInitial.copyFromRealm(frozenInitial) } returns expectedList
+        val expectedList = listOf(Personal())
+        coEvery { personalDao.getByUserIdFlow("user1") } returns flowOf(expectedList)
 
         val result = repository.getPersonalResources("user1").first()
-        assertEquals(expectedList, result)
 
-        verify { mockQuery.equalTo("userId", "user1") }
+        assertEquals(expectedList, result)
+        coVerify { personalDao.getByUserIdFlow("user1") }
     }
 
     @Test
-    fun `deletePersonalResource deletes both _id and id`() = runTest {
-        val mockQuery = mockQueryResults(listOf(RealmMyPersonal()))
-        val mockPersonal = mockk<RealmMyPersonal>(relaxed = true)
-        every { mockQuery.findFirst() } returns mockPersonal
-
+    fun `deletePersonalResource deletes by _id or id in a single statement`() = runTest {
         repository.deletePersonalResource("test-id")
 
-        verify {
-            mockQuery.equalTo("_id", "test-id")
-            mockQuery.equalTo("id", "test-id")
-            mockPersonal.deleteFromRealm()
-        }
+        coVerify(exactly = 1) { personalDao.deleteByIdOrDocId("test-id") }
     }
 
     @Test
-    fun `updatePersonalResource calls updater on matched _id and id`() = runTest {
-        val mockQuery = mockQueryResults()
-        val mockPersonal_Id = RealmMyPersonal().apply { title = "Old" }
-        val mockPersonalId = RealmMyPersonal().apply { title = "Old" }
+    fun `updatePersonalResource delegates to personalDao updateFields`() = runTest {
+        val update = PersonalUpdate(title = "New Title", description = "New Desc")
 
-        every { mockQuery.findFirst() } returnsMany listOf(mockPersonal_Id, mockPersonalId)
+        repository.updatePersonalResource("test-id", update)
 
-        var updateCount = 0
-        repository.updatePersonalResource("test-id") { personal ->
-            personal.title = "New Title"
-            updateCount++
-        }
-
-        assertEquals(2, updateCount)
-        assertEquals("New Title", mockPersonalId.title)
-        assertEquals("New Title", mockPersonal_Id.title)
+        coVerify(exactly = 1) { personalDao.updateFields("test-id", "New Title", "New Desc") }
     }
 
     @Test
     fun `getPendingPersonalUploads queries correctly`() = runTest {
-        val mockQuery = mockQueryResults(listOf(RealmMyPersonal(), RealmMyPersonal()))
+        coEvery { personalDao.getPendingUploads("user1") } returns listOf(Personal(), Personal())
+
         val results = repository.getPendingPersonalUploads("user1")
 
         assertEquals(2, results.size)
-        verify {
-            mockQuery.equalTo("userId", "user1")
-            mockQuery.equalTo("isUploaded", false)
-        }
+        coVerify { personalDao.getPendingUploads("user1") }
     }
 
     @Test
     fun `updatePersonalAfterSync updates fields properly`() = runTest {
-        val mockQuery = mockQueryResults()
-        val mockPersonal = RealmMyPersonal()
-        every { mockQuery.equalTo("id", "test-id").findFirst() } returns mockPersonal
-
         repository.updatePersonalAfterSync("test-id", "new-id", "rev-1")
 
-        assertTrue(mockPersonal.isUploaded)
-        assertEquals("new-id", mockPersonal._id)
-        assertEquals("rev-1", mockPersonal._rev)
+        coVerify { personalDao.updateUploadedStatus("test-id", "new-id", "rev-1") }
+    }
+
+    @Test
+    fun `uploadPersonalDocument returns Pair of id and rev on success`() = runTest {
+        val personal = Personal().apply { id = "test-id" }
+
+        val responseJson = JsonObject().apply {
+            addProperty("id", "new-id")
+            addProperty("rev", "rev-1")
+        }
+        coEvery { uploadRepository.postUpload(any(), any()) } returns Response.success(responseJson)
+
+        val result = repository.uploadPersonalDocument(personal)
+
+        assertEquals("new-id", result?.first)
+        assertEquals("rev-1", result?.second)
+        coVerify { personalDao.updateUploadedStatus("test-id", "new-id", "rev-1") }
+    }
+
+    @Test
+    fun `uploadPersonalDocument sources customDeviceName from DeviceNameProvider without Context`() = runTest {
+        val personal = Personal().apply { id = "test-id" }
+        every { deviceNameProvider.getCustomDeviceName() } returns "provider-device-name"
+
+        val responseJson = JsonObject().apply {
+            addProperty("id", "new-id")
+            addProperty("rev", "rev-1")
+        }
+        val bodySlot = slot<JsonObject>()
+        coEvery { uploadRepository.postUpload(any(), capture(bodySlot)) } returns Response.success(responseJson)
+
+        repository.uploadPersonalDocument(personal)
+
+        assertEquals("provider-device-name", bodySlot.captured.get("customDeviceName").asString)
+        verify(exactly = 1) { deviceNameProvider.getCustomDeviceName() }
+    }
+
+    @Test
+    fun `uploadPersonalDocument returns null when response body is null`() = runTest {
+        val personal = Personal().apply { id = "test-id" }
+        coEvery { uploadRepository.postUpload(any(), any()) } returns Response.success<JsonObject>(null)
+
+        val result = repository.uploadPersonalDocument(personal)
+
+        assertNull(result)
+    }
+
+    @Test
+    fun `uploadPersonal returns already uploaded when personal is uploaded`() = runTest {
+        val personal = Personal().apply { isUploaded = true }
+
+        val result = repository.uploadPersonal(personal)
+
+        assertEquals("Resource already uploaded", result)
+    }
+
+    @Test
+    fun `uploadPersonal uploads doc and returns success when response is valid without path`() = runTest {
+        val personal = Personal().apply {
+            id = "test-id"
+            isUploaded = false
+            path = null
+        }
+        val mockResponseObject = JsonObject().apply {
+            addProperty("rev", "new-rev")
+            addProperty("id", "new-id")
+        }
+        val mockResponse = Response.success(mockResponseObject)
+        coEvery { uploadRepository.postUpload(any(), any()) } returns mockResponse
+
+        val result = repository.uploadPersonal(personal)
+
+        assertEquals("Personal resource uploaded successfully", result)
+        coVerify { uploadRepository.postUpload(any(), any()) }
+        coVerify(exactly = 0) { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `uploadPersonal uploads doc and attachment when path is provided`() = runTest {
+        val personal = Personal().apply {
+            id = "test-id"
+            isUploaded = false
+            path = "/local/path/to/test.txt"
+        }
+        val mockResponseObject = JsonObject().apply {
+            addProperty("rev", "new-rev")
+            addProperty("id", "new-id")
+        }
+        val mockResponse = Response.success(mockResponseObject)
+        coEvery { uploadRepository.postUpload(any(), any()) } returns mockResponse
+        coEvery { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) } returns mockk()
+
+        val result = repository.uploadPersonal(personal)
+
+        assertEquals("Personal resource uploaded successfully", result)
+        coVerify { uploadRepository.postUpload(any(), any()) }
+        coVerify(exactly = 1) {
+            uploadRepository.uploadAttachment(
+                file = any(),
+                destinationFormat = "%s/resources/%s/%s",
+                id = "new-id",
+                rev = "new-rev",
+                name = "test.txt"
+            )
+        }
+    }
+
+    @Test
+    fun `uploadPersonal returns failure message when doc response is null`() = runTest {
+        val personal = Personal().apply {
+            id = "test-id"
+            isUploaded = false
+        }
+        val mockResponse = Response.success<JsonObject>(null)
+        coEvery { uploadRepository.postUpload(any(), any()) } returns mockResponse
+
+        val result = repository.uploadPersonal(personal)
+
+        assertEquals("Failed to upload personal resource: No response", result)
+    }
+
+    @Test
+    fun `getPersonalResources deduplicates byte-identical flow emissions`() = runTest {
+        val p1 = Personal().apply { id = "p1"; _rev = "rev1"; isUploaded = true; title = "Title" }
+        val p2 = Personal().apply { id = "p1"; _rev = "rev1"; isUploaded = true; title = "Title" }
+        coEvery { personalDao.getByUserIdFlow("user1") } returns flowOf(listOf(p1), listOf(p2))
+
+        val emissions = mutableListOf<List<Personal>>()
+        repository.getPersonalResources("user1").collect { emissions.add(it) }
+
+        assertEquals(1, emissions.size)
+    }
+
+    @Test
+    fun `getPersonalResources emits when local properties like title change`() = runTest {
+        val p1 = Personal().apply { id = "p1"; _rev = "rev1"; isUploaded = false; title = "Old Title" }
+        val p2 = Personal().apply { id = "p1"; _rev = "rev1"; isUploaded = false; title = "New Title" }
+        coEvery { personalDao.getByUserIdFlow("user1") } returns flowOf(listOf(p1), listOf(p2))
+
+        val emissions = mutableListOf<List<Personal>>()
+        repository.getPersonalResources("user1").collect { emissions.add(it) }
+
+        assertEquals(2, emissions.size)
+        assertEquals("Old Title", emissions[0][0].title)
+        assertEquals("New Title", emissions[1][0].title)
     }
 }

@@ -6,6 +6,7 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
@@ -20,11 +21,11 @@ import org.ole.planet.myplanet.utils.Utilities
 class ChatAdapter(
     val context: Context,
     private val recyclerView: RecyclerView,
-    private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit)?
+    private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit)
 ) : ListAdapter<ChatMessage, RecyclerView.ViewHolder>(
     DiffUtils.itemCallback(
-        { old, new -> old.message == new.message && old.viewType == new.viewType },
-        { old, new -> old == new }
+        { old, new -> old.id == new.id },
+        { old, new -> old.message == new.message && old.viewType == new.viewType && old.source == new.source }
     )
 ) {
     val animatedMessages = HashMap<Int, Boolean>()
@@ -32,6 +33,9 @@ class ChatAdapter(
     var onLoadMoreClick: (() -> Unit)? = null
 
     private var chatItemClickListener: OnChatItemClickListener? = null
+    private val clipboardManager by lazy {
+        context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    }
 
     fun setOnChatItemClickListener(listener: OnChatItemClickListener) {
         this.chatItemClickListener = listener
@@ -59,7 +63,7 @@ class ChatAdapter(
         private val copyToClipboard: (String) -> Unit,
         val context: Context,
         private val recyclerView: RecyclerView,
-        private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit)?
+        private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit)
     ) : RecyclerView.ViewHolder(textAiMessageBinding.root) {
         internal var cancelAnimation: (() -> Unit)? = null
 
@@ -93,13 +97,12 @@ class ChatAdapter(
     }
 
     private fun copyToClipboard(text: String) {
-        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         val clip = ClipData.newPlainText("copied Text", text)
-        clipboard.setPrimaryClip(clip)
+        clipboardManager.setPrimaryClip(clip)
         Utilities.toast(
             context,
             context.getString(R.string.copied_to_clipboard),
-            android.widget.Toast.LENGTH_SHORT
+            Toast.LENGTH_SHORT
         )
     }
 

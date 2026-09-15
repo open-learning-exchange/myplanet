@@ -10,12 +10,13 @@
     <string name="remember_sync">Remember to sync the mobile app.</string>
     <string name="per_survey">%1$s per survey</string>
     <string name="course_completed">%1$s completed!</string>
+    <string name="course_cover_image">Course cover image</string>
     <string name="course_in_progress">Enter the course %1$s and complete it (%2$d of %3$d done)</string>
     <string name="course_not_started">%1$s not started</string>
     <string name="app_name">My Planet</string>
     <string name="planet">Planet</string>
     <string name="app_project_name">myPlanet</string>
-    <string name="action_settings">settings</string>
+    <string name="action_settings">Settings</string>
     <string name="hint_name">username</string>
     <string name="btn_back">Back</string>
     <string name="btn_sign_in">Sign In</string>
@@ -75,7 +76,7 @@
     <string name="gender">Gender</string>
     <string name="birth_date">Birth Date</string>
     <string name="phone_number">Phone Number</string>
-    <string name="language">language</string>
+    <string name="language">Language</string>
     <string name="last_name">Last Name</string>
     <string name="version">Version %s</string>
     <string name="middle_name">Middle Name</string>
@@ -92,8 +93,8 @@
     <string name="your_rating">Your Rating</string>
     <string name="loading_user_profile">Preparing your profile…</string>
     <string name="your_comment">Leave your comment</string>
-    <string name="sync_now">sync now</string>
-    <string name="logout">logout</string>
+    <string name="sync_now">Sync Now</string>
+    <string name="logout">Logout</string>
     <string name="settings">Settings</string>
     <string name="edit_profile">Edit Profile</string>
     <string name="profile">Profile</string>
@@ -161,6 +162,7 @@
     <string name="https_protocol">https://</string>
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">Showing reply of:</string>
+    <string name="reply_count_format" translatable="false">(%1$d)</string>
     <string name="open_date">Open Date</string>
     <string name="my_survey">mySurveys</string>
     <string name="failed_to_load_course">Failed to load course</string>
@@ -331,11 +333,11 @@
     <string name="tasks">Tasks</string>
     <string name="join_requests">Join Requests</string>
     <string name="add_image">Add Image</string>
-    <string name="clear_data">clear data</string>
-    <string name="reset_app">reset app</string>
-    <string name="freeup_space">free-up disk space</string>
-    <string name="action_disclaimer">disclaimer</string>
-    <string name="action_about">about</string>
+    <string name="clear_data">Clear data</string>
+    <string name="reset_app">Reset app</string>
+    <string name="freeup_space">Free up disk space</string>
+    <string name="action_disclaimer">Disclaimer</string>
+    <string name="action_about">About</string>
     <string name="english_dictionary">English Dictionary</string>
 
     <string-array name="team_type">
@@ -356,7 +358,8 @@
     <string-array name="sort_by_date">
         <item>Order By Date - Desc</item>
         <item>Order By Date - Asc</item>
-        <item>Order By Title</item>
+        <item>Order By Title - Asc</item>
+        <item>Order By Title - Desc</item>
     </string-array>
 
     <string-array name="sort_member">
@@ -471,7 +474,7 @@
     <string name="add_res">Add Resource</string>
     <string name="password">password</string>
     <string name="retype_password">Confirm Password</string>
-    <string name="become_a_member">become a member</string>
+    <string name="become_a_member">Become a member</string>
     <string name="change_member">Change Member</string>
     <string name="use_phone_number_as_password">Use phone number as password</string>
     <string name="feedback">Feedback</string>
@@ -548,6 +551,8 @@
     <string name="subject_level">Subject Level</string>
     <string name="order_by_date">Order by Date</string>
     <string name="order_by_title">Order by Title</string>
+    <string name="sort">Sort</string>
+    <string name="show_n_results">Show %1$d results</string>
     <string name="exams">Exams</string>
     <string name="survey">Survey</string>
     <string name="submitted_by">Submitted by</string>
@@ -576,6 +581,8 @@
     <string name="no_data_available_please_check_and_try_again">No data available, please check and try again.</string>
     <string name="no_course_matched_filter">No courses matched filter</string>
     <string name="added_to_my_library">added to myLibrary</string>
+    <string name="format_added_to_mylibrary">%1$s added to myLibrary</string>
+    <string name="format_removed_from_mylibrary">%1$s removed from myLibrary</string>
     <string name="added_to_my_courses">added to myCourses</string>
     <string name="do_you_want_to_stay_online">Do you want to stay online?</string>
     <string name="device_not_connected_to_planet">Device not connected to planet.</string>
@@ -605,6 +612,9 @@
     <string name="sync">sync</string>
     <string name="session_expired">Session expired.</string>
     <string name="downloading_started_please_check_notificati">Downloading started, please check notification…</string>
+    <string name="dictionary_parsing_failed">Dictionary parsing failed.</string>
+    <string name="medium_text_html">Text / HTML</string>
+    <string name="medium_html">HTML</string>
     <string name="dictionary">Dictionary</string>
     <string name="list_size">List size %d</string>
     <string name="word_not_available_in_our_database">Word not available in our database.</string>
@@ -612,6 +622,10 @@
     <string name="meetup_added">Meetup added</string>
     <string name="meetup_not_added">Meetup not added</string>
     <string name="add_transaction">Add Transaction</string>
+    <string name="from_date">From Date</string>
+    <string name="to_date">To Date</string>
+    <string name="select_from_date">Select From Date</string>
+    <string name="select_to_date">Select To Date</string>
     <string name="note_is_required">Note is required</string>
     <string name="amount_is_required">Amount is required</string>
     <string name="date_is_required">Date is required</string>
@@ -704,7 +718,7 @@
     <string name="days_since_you_last_synced_this_device">" days since you last synced this device."</string>
     <string name="connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet">\n Connect it to the server over wifi and sync it to reactivate this tablet</string>
     <string name="okay">Okay</string>
-    <string name="connect_to_the_server_over_wifi_and_sync_your_device_to_continue">Connect to the server over WiFi and sync your device to continue</string>
+    <string name="connect_to_the_server_over_wifi_and_sync_your_device_to_continue">Connect to the server over Wi-Fi and sync your device to continue</string>
     <string name="please_enter_server_url_first">Please enter server url first.</string>
     <string name="username_cannot_be_empty">Username cannot be empty</string>
     <string name="unable_to_login">Unable to login</string>
@@ -731,6 +745,7 @@
     <string name="sync_step_of">Step %1$d of %2$d</string>
     <string name="sync_items_of">%1$d / %2$d</string>
     <string name="sync_table_progress">%1$s  ·  %2$d / %3$d tables</string>
+    <string name="sync_in_progress_wait">Sync in progress. Please wait for it to finish.</string>
     <string name="sync_shelves_progress">%1$d / %2$d shelves</string>
     <string name="team_leader">Team Leader</string>
     <string name="select_resource">"Select Resource: "</string>
@@ -775,8 +790,10 @@
     <string name="data_cleared">Data cleared</string>
     <string name="are_you_sure_want_to_delete_all_the_files">Are you sure want to delete all the files?</string>
     <string name="unable_to_clear_files">Unable to clear files</string>
-    <string name="last_synced_never">never synced</string>
-    <string name="last_synced_colon">last synced: </string>
+    <string name="last_synced_never">Never synced</string>
+    <string name="last_synced_colon">"Last synced: "</string>
+    <string name="dashboard_sync_status">Sync · %1$s</string>
+    <string name="last_login_message">This is your last login before you need to become a member.</string>
 
     <string name="disclaimer">
     <![CDATA[
@@ -863,18 +880,18 @@
     <string name="upgrade_local">Upgrade(Local)</string>
     <string name="upgrade">Upgrade</string>
     <string name="apk_already_exists">Apk already exists</string>
-    <string name="auto_sync">auto sync</string>
-    <string name="force_weekly_sync">force weekly sync</string>
-    <string name="force_monthly_sync">force monthly sync</string>
-    <string name="beta_function_for_wifi_switch">beta function for wifi switch</string>
-    <string name="upgrade_application">upgrade application</string>
+    <string name="auto_sync">Auto sync</string>
+    <string name="force_weekly_sync">Force weekly sync</string>
+    <string name="force_monthly_sync">Force monthly sync</string>
+    <string name="beta_function_for_wifi_switch">Beta function for wifi switch</string>
+    <string name="upgrade_application">Upgrade application</string>
     <string name="always_move_to_maximum_version">Always move to maximum version</string>
-    <string name="all_beta_functions">all beta functions</string>
-    <string name="auto_sync_device">auto sync device</string>
-    <string name="beta_functionality">beta functionality</string>
-    <string name="main_controls">main controls</string>
+    <string name="all_beta_functions">All beta functions</string>
+    <string name="auto_sync_device">Auto sync device</string>
+    <string name="beta_functionality">Beta functionality</string>
+    <string name="main_controls">Main controls</string>
     <string name="dismiss">Dismiss</string>
-    <string name="available_space_colon">available space: </string>
+    <string name="available_space_colon">Available space: </string>
     <string name="community_leaders">Community Leaders</string>
     <string name="services">Services</string>
 
@@ -922,6 +939,7 @@
     <string name="ob_desc4_3">🎯 Personalized: Tailor your learning path.</string>
     <string name="ob_desc4_4">📚 Interactive: Engage with videos, books, games.</string>
     <string name="ob_desc4_5">Begin your limitless learning journey with myPlanet!</string>
+    <string name="onboarding_server_prep_hint">Before you sign in, you\'ll need your Planet server address and PIN. Ask your community administrator if you don\'t have them yet.</string>
     <string name="recycler_chat_label">conversations</string>
     <string name="completed_course">completed course</string>
     <string name="menu">side menu</string>
@@ -944,6 +962,9 @@
     <string name="virtual_assistant_currently_not_available">virtual assistant currently not available</string>
     <string name="no_courses">no courses available</string>
     <string name="no_resources">no resources available</string>
+    <string name="no_resources_added_yet">You can add resources</string>
+    <string name="no_courses_joined_yet">You can join courses</string>
+    <string name="no_teams_joined_yet">You can join a team</string>
     <string name="no_finance_record">finance record not available</string>
     <string name="no_team_courses">team courses not available</string>
     <string name="no_team_resources">team resources not available</string>
@@ -1005,12 +1026,17 @@
     <string name="member_description">%1$s (%2$d visits)</string>
     <string name="last_visit">Last visit: %1$s</string>
     <string name="no_visit">No visit</string>
-    <string name="dark_mode">dark mode</string>
-    <string name="dark_mode_off">off</string>
-    <string name="dark_mode_on">on</string>
+    <string name="dark_mode">Dark mode</string>
+    <string name="dark_mode_off">Off</string>
+    <string name="dark_mode_on">On</string>
     <string name="dark_mode_follow_system">Follow System</string>
     <string name="theme_mode_light">Light</string>
     <string name="theme_mode_dark">Dark</string>
+    <string name="text_size">Text Size</string>
+    <string name="select_text_size">Select Text Size</string>
+    <string name="text_size_small">Small</string>
+    <string name="text_size_medium">Medium</string>
+    <string name="text_size_large">Large</string>
     <string name="are_you_sure_you_want_to_archive_these_courses">Are you sure you want to archive these courses?</string>
     <string name="are_you_sure_you_want_to_archive_this_course">Are you sure you want to archive this course?</string>
     <string name="manual">manual</string>
@@ -1030,10 +1056,10 @@
     <string name="show_less">show less</string>
     <string name="show_more">show more</string>
     <string name="server_address_content_description">server address: %1$s</string>
-    <string name="select_theme_mode">select theme mode</string>
+    <string name="select_theme_mode">Select theme mode</string>
     <string name="beta_resources_auto_download">Beta resources auto download</string>
     <string name="course_steps">Course Steps</string>
-    <string name="to_access_this_feature_become_a_member">you are currently a guest user. to access this feature, become a member.</string>
+    <string name="to_access_this_feature_become_a_member">You are currently a guest user. To access this feature, become a member.</string>
     <string name="sales">Sales</string>
     <string name="beginning_balance">Beginning Balance</string>
     <string name="other">Other</string>
@@ -1100,12 +1126,13 @@
     <string name="fetching_ai_providers">Fetching AI providers…</string>
     <string name="adopt_survey">Adopt survey</string>
     <string name="survey_adopted_successfully">Survey adopted successfully!</string>
-    <string name="beta_fast_sync">beta fast sync</string>
-    <string name="beta_improved_sync">beta improved sync</string>
-    <string name="beta_improved_sync_summary">Run the experimental sync manager during manual and auto syncs.</string>
     <string name="user_verification_in_progress">User verification in progress. Please wait while we process the data.</string>
     <string name="go_to_mylibrary">Go To MyLibrary</string>
     <string name="choose_an_option">Choose an option</string>
+    <string name="profile_guest_banner_message">Guest — sign in to save your profile</string>
+    <string name="profile_secondary_line">%1$s · %2$s</string>
+    <string name="profile_label_level">Level</string>
+    <string name="profile_activity_section">Activity</string>
     <string name="welcome">Welcome %1$s</string>
     <string name="edit_plan">Edit Plan</string>
     <string name="show_additional_fields">show additional fields</string>
@@ -1213,7 +1240,7 @@
     <string name="enterprise_name_already_exists">An enterprise with this name already exists</string>
     <string name="downloading_images_please_check_notification">Downloading images, please check notification…</string>
     <string name="no_images_to_download">No images to download</string>
-    <string name="app_theme">app theme</string>
+    <string name="app_theme">App Theme</string>
     <string name="team_surveys">Team surveys</string>
     <string name="enterprise_created">Enterprise created</string>
     <string name="image_already_added">This image has already been added</string>
@@ -1239,6 +1266,12 @@
     <string name="courses_loading">Loading courses…</string>
     <string name="error">Error: %1$s</string>
     <string name="select_open_with">Open</string>
+    <string name="open_link_with">Open link with</string>
+    <string name="just_once">Just once</string>
+    <string name="always">Always</string>
+    <string name="survey_load_failed">Couldn\'t load the survey. Please try again.</string>
+    <string name="survey_submitted">Survey submitted. Thank you!</string>
+    <string name="survey_submit_failed">Couldn\'t submit the survey. Please try again.</string>
     <string name="select_media">Media</string>
     <string name="select_resource_type">Resource type</string>
     <string name="no_results_for_filter">No results match your current filter</string>
@@ -1255,6 +1288,7 @@
     <string name="current_cv">Current CV/Resume: %s</string>
     <string name="select_pdf_only">Please select a PDF file</string>
     <string name="file_not_found">File not found: %s</string>
+    <string name="text_content_truncated">File is too large to display in full — showing the first part only</string>
     <string name="chat_already_shared_to_destination">This chat has already been shared to this destination</string>
     <string name="load_earlier_messages">Load earlier messages</string>
     <string name="already_shared">Already shared</string>
@@ -1266,8 +1300,8 @@
     <string name="tts_not_available">Text-to-speech is not available on this device</string>
     <string name="pdf_no_text_layer">This PDF doesn\'t contain readable text</string>
     <string name="pdf_extracting_text">Preparing text, please wait…</string>
-    <string name="storage_breakdown">storage breakdown</string>
-    <string name="storage_breakdown_summary">view and manage space used by downloads</string>
+    <string name="storage_breakdown">Storage breakdown</string>
+    <string name="storage_breakdown_summary">View and manage space used by downloads</string>
     <string name="storage_breakdown_title">Downloaded Content</string>
     <string name="storage_total_downloaded">Total downloaded</string>
     <string name="storage_videos">Videos</string>
@@ -1284,6 +1318,8 @@
     <string name="storage_unknown_resource">Unknown Resource</string>
     <string name="file_count_one">1 file</string>
     <string name="file_count_many">%1$d files</string>
+    <string name="storage_deleting_progress">Deleting files… %1$d deleted (%2$s)</string>
+    <string name="storage_freed_summary">Freed %1$s (%2$d files)</string>
     <string name="skip">Skip</string>
     <string name="add_meetup">Add Meetup</string>
     <string name="download_report">Download Report</string>
@@ -1339,5 +1375,35 @@
         <item>In Progress</item>
         <item>Completed</item>
     </string-array>
+    <string name="edit_resource">Edit Resource</string>
+    <string name="save_changes">Save Changes</string>
+    <string name="resource_updated">Resource updated</string>
+    <string name="failed_to_update_resource">Failed to update resource</string>
+    <string name="join_team_first">Please join a Team to share this chat</string>
+    <string name="join_enterprise_first">Please join an Enterprise to share this chat</string>
+    <string name="item_count_pill">%d items</string>
+    <string name="view_grid">Grid view</string>
+    <string name="view_list">List view</string>
+    <string name="steps_done_of_total">%1$d of %2$d done</string>
+    <string name="course_steps_count">%d steps</string>
+    <string name="subject_label_mathematics">Mathematics</string>
+    <string name="subject_label_literacy">Literacy</string>
+    <string name="subject_label_health">Health</string>
+    <string name="subject_label_social_studies">Social Studies</string>
+    <string name="subject_label_technology">Technology</string>
+    <string name="filter_all">All</string>
+    <string name="filter_books">Books</string>
+    <string name="filter_videos">Videos</string>
+    <string name="filter_audio">Audio</string>
+    <string name="filter_pdfs">PDFs</string>
+    <string name="downloaded">Downloaded</string>
+    <string name="not_downloaded">Not Downloaded</string>
+    <string-array name="download_filter">
+        <item>All</item>
+        <item>Downloaded</item>
+        <item>Not Downloaded</item>
+    </string-array>
 
+    <string name="playback_speed">Playback Speed</string>
+    <string name="playback_speed_format">%1$sx</string>
 </resources>

@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.ui.submissions
 
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,28 +11,23 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentMySubmissionBinding
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
+import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
+@OptIn(kotlinx.coroutines.FlowPreview::class)
 class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     private var _binding: FragmentMySubmissionBinding? = null
     private val binding get() = _binding!!
     private val viewModel: SubmissionViewModel by viewModels()
 
-    @Inject
-    lateinit var userSessionManager: UserSessionManager
-
-    private lateinit var textWatcher: TextWatcher
-    private var searchJob: Job? = null
     private lateinit var adapter: SubmissionsAdapter
     var type: String? = ""
 
@@ -66,28 +59,14 @@ class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
             updateEmptyState(submissions.size)
         }
 
-        collectLatestWhenStarted(viewModel.exams) { exams ->
-            adapter.setExams(exams)
-            adapter.notifyItemRangeChanged(0, adapter.itemCount, SubmissionsAdapter.PAYLOAD_EXAM_UPDATE)
-        }
 
-        collectLatestWhenStarted(viewModel.submissionCounts) { counts ->
-            adapter.setSubmissionCounts(counts)
-            adapter.notifyItemRangeChanged(0, adapter.itemCount, SubmissionsAdapter.PAYLOAD_SUBMISSION_COUNT_UPDATE)
-        }
 
-        textWatcher = object : TextWatcher {
-            override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
-            override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
-                searchJob?.cancel()
-                searchJob = viewLifecycleOwner.lifecycleScope.launch {
-                    delay(300)
-                    viewModel.setFilter(type ?: "", charSequence.toString())
-                }
-            }
-            override fun afterTextChanged(editable: Editable) {}
-        }
-        binding.etSearch.addTextChangedListener(textWatcher)
+        binding.etSearch.textChanges()
+            .drop(1)
+            .debounce(300)
+            .distinctUntilChanged()
+            .onEach { text -> viewModel.setFilter(type ?: "", text?.toString() ?: "") }
+            .launchIn(viewLifecycleOwner.lifecycleScope)
         showHideRadioButton()
     }
 
@@ -144,9 +123,6 @@ class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     }
 
     override fun onDestroyView() {
-        if (this::textWatcher.isInitialized) {
-            binding.etSearch.removeTextChangedListener(textWatcher)
-        }
         binding.rbExam.setOnCheckedChangeListener(null)
         binding.rbSurvey.setOnCheckedChangeListener(null)
         _binding = null
@@ -154,7 +130,6 @@ class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     }
 
     companion object {
-        @JvmStatic
         fun newInstance(type: String?): Fragment {
             val fragment = SubmissionsFragment()
             val b = Bundle()

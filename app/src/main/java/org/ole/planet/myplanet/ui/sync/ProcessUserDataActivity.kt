@@ -16,42 +16,39 @@ import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.net.toUri
-import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
-import androidx.work.ExistingWorkPolicy
-import androidx.work.OneTimeWorkRequest
-import androidx.work.WorkInfo
-import androidx.work.WorkManager
-import androidx.work.workDataOf
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BasePermissionActivity
-import org.ole.planet.myplanet.callback.OnSecurityDataListener
+import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.model.Download
+import org.ole.planet.myplanet.repository.SyncRepository
+import org.ole.planet.myplanet.repository.SyncUiState
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UploadToShelfService
-import org.ole.planet.myplanet.services.UserDataWorker
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.showAlert
 import org.ole.planet.myplanet.utils.DialogUtils.showError
 import org.ole.planet.myplanet.utils.FileUtils.installApk
+import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessListener {
+    @Inject
+    lateinit var syncRepository: SyncRepository
+
 
     @Inject
     lateinit var prefData: SharedPrefManager
-
-    @Inject
-    lateinit var uploadManager: UploadManager
 
     @Inject
     lateinit var uploadToShelfService: UploadToShelfService
@@ -63,7 +60,6 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         DialogUtils.CustomProgressDialog(this)
     }
 
-    @JvmField
     var broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
@@ -82,7 +78,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     fun checkDownloadResult(download: Download?) {
-        lifecycleScope.launch(dispatcherProvider.main) {
+        lifecycleScope.launch {
             if (!isFinishing && !isDestroyed) {
                 customProgressDialog.show()
                 customProgressDialog.setText("${getString(R.string.downloading)} ${download?.progress}% ${getString(R.string.complete)}")
@@ -128,9 +124,9 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         val urlUser: String
         val urlPwd: String
         if (url.contains("@")) {
-            val userinfo = getUserInfo(uri)
-            urlUser = userinfo[0]
-            urlPwd = userinfo[1]
+            val (u, p) = UrlUtils.getUserInfo(uri.userInfo)
+            urlUser = u
+            urlPwd = p
             couchdbURL = url
         } else if (TextUtils.isEmpty(password)) {
             showAlert(this, "", getString(R.string.pin_is_required))
@@ -145,17 +141,12 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         prefData.setServerPin(password)
         prefData.setUrlScheme(uri.scheme ?: "")
         prefData.setUrlHost(uri.host ?: "")
-        prefData.setUrlPort(if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port)
         prefData.setServerUrl(url)
         prefData.setCouchdbUrl(couchdbURL)
         prefData.setUrlUser(urlUser)
         prefData.setUrlPwd(urlPwd)
 
-        if (!couchdbURL.endsWith("db")) {
-            couchdbURL += "/db"
-        }
-
-        return couchdbURL
+        return UrlUtils.dbUrl(couchdbURL)
     }
 
     fun isUrlValid(url: String): Boolean {
@@ -170,7 +161,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         return true
     }
 
-    fun startUpload(source: String, userName: String? = null, securityCallback: OnSecurityDataListener? = null) {
+    fun startUpload(source: String, userName: String? = null, securityCallback: OnChangedListener? = null) {
         when (source) {
             "becomeMember" -> uploadMemberData(userName, securityCallback)
             "login" -> uploadLoginData()
@@ -178,7 +169,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         }
     }
 
-    private fun uploadMemberData(userName: String?, securityCallback: OnSecurityDataListener?) {
+    private fun uploadMemberData(userName: String?, securityCallback: OnChangedListener?) {
         uploadToShelfService.uploadSingleUserData(userName, object : OnSuccessListener {
             override fun onSuccess(success: String?) {
                 uploadToShelfService.uploadSingleUserHealth("org.couchdb.user:${userName}", object : OnSuccessListener {
@@ -186,7 +177,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
                         userName?.let { name ->
                             fetchAndLogUserSecurityData(name, securityCallback)
                         } ?: run {
-                            securityCallback?.onSecurityDataUpdated()
+                            securityCallback?.onChanged()
                         }
                     }
                 })
@@ -195,61 +186,38 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     private fun uploadLoginData() {
-        val workRequest = OneTimeWorkRequest.Builder(UserDataWorker::class.java)
-            .setInputData(workDataOf(UserDataWorker.KEY_UPLOAD_TYPE to UserDataWorker.UPLOAD_TYPE_LOGIN))
-            .build()
-        val workManager = WorkManager.getInstance(this)
-        workManager.enqueueUniqueWork(
-            "UploadUserData_Login",
-            ExistingWorkPolicy.REPLACE,
-            workRequest
-        )
+        val flow = syncRepository.uploadLoginData()
 
-        val liveData = workManager.getWorkInfoByIdLiveData(workRequest.id)
-        liveData.observe(this, object : Observer<WorkInfo?> {
-            override fun onChanged(workInfo: WorkInfo?) {
-                if (workInfo != null && workInfo.state.isFinished) {
-                    liveData.removeObserver(this)
-                    if (workInfo.state == WorkInfo.State.SUCCEEDED) {
-                        val successMessage = workInfo.outputData.getString(UserDataWorker.KEY_SUCCESS_MESSAGE)
-                        onSuccess(successMessage)
-                    }
-                }
+        collectWhenStarted(flow.takeWhile { value ->
+            if (value is SyncUiState.Success) {
+                onSuccess(value.message)
+                false
+            } else if (value is SyncUiState.Error) {
+                false
+            } else {
+                true
             }
-        })
+        }) {}
     }
 
     private fun uploadBulkData() {
         customProgressDialog.setText(this.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
 
-        val workRequest = OneTimeWorkRequest.Builder(UserDataWorker::class.java)
-            .setInputData(workDataOf(UserDataWorker.KEY_UPLOAD_TYPE to UserDataWorker.UPLOAD_TYPE_BULK))
-            .build()
+        val flow = syncRepository.uploadBulkData()
 
-        val workManager = WorkManager.getInstance(this)
-        workManager.enqueueUniqueWork(
-            "UploadUserData_Bulk",
-            ExistingWorkPolicy.REPLACE,
-            workRequest
-        )
-
-        val liveData = workManager.getWorkInfoByIdLiveData(workRequest.id)
-        liveData.observe(this, object : Observer<WorkInfo?> {
-            override fun onChanged(workInfo: WorkInfo?) {
-                if (workInfo != null && workInfo.state.isFinished) {
-                    liveData.removeObserver(this)
-                    lifecycleScope.launch(dispatcherProvider.main) {
-                        if (!isFinishing && !isDestroyed) {
-                            customProgressDialog.dismiss()
-                            if (workInfo.state == WorkInfo.State.SUCCEEDED) {
-                                Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    }
-                }
+        collectWhenStarted(flow.takeWhile { value ->
+            if (value is SyncUiState.Success) {
+                safelyDismissDialog()
+                Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
+                false
+            } else if (value is SyncUiState.Error) {
+                safelyDismissDialog()
+                false
+            } else {
+                true
             }
-        })
+        }) {}
     }
 
     protected fun hideKeyboard(view: View?) {
@@ -269,18 +237,12 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
 
     companion object {
         fun getUserInfo(uri: Uri): Array<String> {
-            val ar = arrayOf("", "")
-            val info =
-                uri.userInfo?.split(":".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
-            if ((info?.size ?: 0) > 1) {
-                ar[0] = "${info?.get(0)}"
-                ar[1] = "${info?.get(1)}"
-            }
-            return ar
+            val (u, p) = UrlUtils.getUserInfo(uri.userInfo)
+            return arrayOf(u, p)
         }
     }
 
-    fun fetchAndLogUserSecurityData(name: String, securityCallback: OnSecurityDataListener? = null) {
+    fun fetchAndLogUserSecurityData(name: String, securityCallback: OnChangedListener? = null) {
         lifecycleScope.launch {
             try {
                 userRepository.fetchUserSecurityData(name)
@@ -288,7 +250,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
                 e.printStackTrace()
             } finally {
                 withContext(dispatcherProvider.main) {
-                    securityCallback?.onSecurityDataUpdated()
+                    securityCallback?.onChanged()
                 }
             }
         }

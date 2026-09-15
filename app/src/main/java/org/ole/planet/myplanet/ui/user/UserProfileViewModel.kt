@@ -8,10 +8,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 sealed class ProfileUpdateState {
     object Idle : ProfileUpdateState()
@@ -22,30 +21,28 @@ sealed class ProfileUpdateState {
 @HiltViewModel
 class UserProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
-    private val userSessionManager: UserSessionManager,
-    private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val activitiesRepository: ActivitiesRepository
 ) : ViewModel() {
 
-    private val _userModel = MutableStateFlow<RealmUser?>(null)
-    val userModel: StateFlow<RealmUser?> = _userModel.asStateFlow()
+    private val _userModel = MutableStateFlow<UserEntity?>(null)
+    val userModel: StateFlow<UserEntity?> = _userModel.asStateFlow()
 
     private val _updateState = MutableStateFlow<ProfileUpdateState>(ProfileUpdateState.Idle)
     val updateState: StateFlow<ProfileUpdateState> = _updateState.asStateFlow()
 
-    fun loadUserProfile(userId: String?) {
-        if (userId.isNullOrBlank()) return
-        viewModelScope.launch(dispatcherProvider.io) {
+    fun loadCurrentUserProfile() {
+        viewModelScope.launch {
+            val userId = userRepository.getActiveUserIdSuspending()
+            if (userId.isBlank()) return@launch
             _userModel.value = userRepository.getUserByAnyId(userId)
         }
     }
 
-    fun refreshUserProfile(userId: String?) {
-        loadUserProfile(userId)
+    fun refreshCurrentUserProfile() {
+        loadCurrentUserProfile()
     }
 
-    fun updateUserProfile(
-        userId: String?,
+    fun updateCurrentUserProfile(
         firstName: String?,
         lastName: String?,
         middleName: String?,
@@ -56,12 +53,13 @@ class UserProfileViewModel @Inject constructor(
         gender: String?,
         dob: String?,
     ) {
-        if (userId.isNullOrBlank()) {
-            _updateState.value = ProfileUpdateState.Error("Invalid user id")
-            return
-        }
+        viewModelScope.launch {
+            val userId = userRepository.getActiveUserIdSuspending()
+            if (userId.isBlank()) {
+                _updateState.value = ProfileUpdateState.Error("Invalid user id")
+                return@launch
+            }
 
-        viewModelScope.launch(dispatcherProvider.io) {
             runCatching {
                 userRepository.updateUserDetails(
                     userId = userId,
@@ -86,13 +84,14 @@ class UserProfileViewModel @Inject constructor(
         }
     }
 
-    fun updateProfileImage(userId: String?, imagePath: String?) {
-        if (userId.isNullOrBlank()) {
-            _updateState.value = ProfileUpdateState.Error("Invalid user id")
-            return
-        }
+    fun updateCurrentUserProfileImage(imagePath: String?) {
+        viewModelScope.launch {
+            val userId = userRepository.getActiveUserIdSuspending()
+            if (userId.isBlank()) {
+                _updateState.value = ProfileUpdateState.Error("Invalid user id")
+                return@launch
+            }
 
-        viewModelScope.launch(dispatcherProvider.io) {
             runCatching { userRepository.updateUserImage(userId, imagePath) }
                 .onSuccess { updatedUser ->
                     updatedUser?.let { _userModel.value = it }
@@ -123,20 +122,20 @@ class UserProfileViewModel @Inject constructor(
     val maxOpenedResource: StateFlow<String> = _maxOpenedResource.asStateFlow()
 
     init {
-        viewModelScope.launch(dispatcherProvider.io) {
-            val fullName = userSessionManager.getUserModel()?.name ?: ""
-            val result = activitiesRepository.getMostOpenedResource(fullName, org.ole.planet.myplanet.services.UserSessionManager.KEY_RESOURCE_OPEN)
+        viewModelScope.launch {
+            val fullName = userRepository.getUserModel()?.name ?: ""
+            val stats = activitiesRepository.getProfileActivityStats(fullName)
+            val result = stats.mostOpenedResource
             _maxOpenedResource.value = if (result == null) "" else "${result.first} opened ${result.second} times"
-            _lastVisit.value = activitiesRepository.getGlobalLastVisit()
-
-            val count = activitiesRepository.getResourceOpenCount(fullName, org.ole.planet.myplanet.services.UserSessionManager.KEY_RESOURCE_OPEN)
+            _lastVisit.value = stats.lastVisit
+            val count = stats.resourceOpenCount
             _numberOfResourceOpen.value = if (count == 0L) "" else "Resource opened $count times."
         }
     }
 
     fun getOfflineVisits() {
-        viewModelScope.launch(dispatcherProvider.io) {
-            val user = userSessionManager.getUserModel()
+        viewModelScope.launch {
+            val user = userRepository.getUserModel()
             _offlineVisits.value = user?.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0
         }
     }

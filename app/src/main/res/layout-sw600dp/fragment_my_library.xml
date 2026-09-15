@@ -1,0 +1,292 @@
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/my_library_parent_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.resources.ResourcesFragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:id="@+id/ll_actions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:background="@color/colorPrimary"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="@dimen/padding_small">
+
+            <TextView
+                android:id="@+id/tv_selected"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/padding_small"
+                android:textColor="@color/textColorPrimary"
+                android:textSize="@dimen/text_size_mid"
+                android:gravity="center"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/colorPrimary"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="@dimen/padding_normal">
+
+                <TextView
+                    android:id="@+id/tv_fragment_info"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:layout_margin="@dimen/_10dp"
+                    android:layout_weight="1"
+                    android:gravity="center_vertical"
+                    android:padding="@dimen/padding_normal"
+                    android:text="@string/library"
+                    android:textColor="@color/textColorPrimary"
+                    android:textSize="@dimen/text_size_large"
+                    android:textStyle="bold"
+                    android:minWidth="150dp" />
+                <include
+                    layout="@layout/view_grid_list_toggle" />
+                <TextView
+                    android:id="@+id/tv_add"
+                    style="@style/Widget.AppCompat.Button.Borderless.Colored"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_margin="@dimen/padding_small"
+                    android:drawablePadding="4dp"
+                    android:gravity="center"
+                    android:text="@string/add_to_mylib"
+                    android:textColor="@color/daynight_textColor"
+                    android:textSize="@dimen/text_size_mid"
+                    app:drawableLeftCompat="@drawable/ic_add_library"
+                    app:drawableTint="@color/daynight_textColor"
+                    android:width="170dp" />
+                <TextView
+                    android:id="@+id/tv_delete"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_margin="@dimen/_10dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="start|center_vertical"
+                    android:text="@string/remove_selected"
+                    android:textColor="@color/daynight_textColor"
+                    android:textSize="@dimen/text_size_mid"
+                    android:visibility="gone"
+                    app:drawableLeftCompat="@drawable/ic_delete"
+                    app:drawableTint="@color/daynight_textColor"
+                    app:tint="@color/textColorPrimary"
+                    android:minWidth="120dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@color/secondary_bg">
+
+            <CheckBox
+                android:id="@+id/selectAll"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="10.5dp"
+                android:layout_weight="1"
+                android:padding="8dp"
+                android:text="@string/select_all"
+                android:textColor="@color/daynight_textColor"
+                android:textSize="@dimen/text_size_mid"
+                android:buttonTint="@color/daynight_textColor"
+                android:maxWidth="0dp" />
+            <include
+                android:id="@+id/layout_search"
+                layout="@layout/layout_search_pill"
+                android:layout_width="0dp"
+                android:layout_margin="10.5dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+        </LinearLayout>
+
+        <HorizontalScrollView
+            android:id="@+id/scroll_chip_filter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/secondary_bg"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/chip_filter_row"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingStart="@dimen/padding_normal"
+                android:paddingTop="4dp"
+                android:paddingEnd="@dimen/padding_normal"
+                android:paddingBottom="8dp" />
+        </HorizontalScrollView>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@color/secondary_bg">
+
+            <org.ole.planet.myplanet.ui.components.MaxWidthFrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center_horizontal">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recycler"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:clipToPadding="false"
+                    android:paddingBottom="96dp" />
+            </org.ole.planet.myplanet.ui.components.MaxWidthFrameLayout>
+
+            <LinearLayout
+                android:id="@+id/tv_message"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="24dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/iv_empty_icon"
+                    android:layout_width="72dp"
+                    android:layout_height="72dp"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="16dp"
+                    android:alpha="0.4"
+                    android:src="@drawable/ic_folder"
+                    android:tint="@color/daynight_textColor"
+                    android:contentDescription="@null"
+                    android:importantForAccessibility="no" />
+                <TextView
+                    android:id="@+id/tv_empty_message"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:textColor="@color/daynight_textColor"
+                    android:textSize="16sp" />
+            </LinearLayout>
+        </FrameLayout>
+    </LinearLayout>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/addResource"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="@dimen/padding_large"
+        android:layout_marginBottom="88dp"
+        android:contentDescription="@string/add_res"
+        android:src="@drawable/ic_add_white"
+        app:tint="@color/md_white_1000" />
+    <androidx.cardview.widget.CardView
+        android:id="@+id/sort_filter_capsule"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginStart="@dimen/padding_very_large"
+        android:layout_marginEnd="@dimen/padding_very_large"
+        android:layout_marginBottom="20dp"
+        android:minHeight="52dp"
+        app:cardBackgroundColor="@color/ink_1"
+        app:cardCornerRadius="26dp"
+        app:cardElevation="4dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:minHeight="52dp"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:id="@+id/btn_capsule_sort"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:minWidth="44dp"
+                android:minHeight="52dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:paddingStart="@dimen/padding_large"
+                android:paddingEnd="@dimen/padding_large">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:drawablePadding="6dp"
+                    android:gravity="center"
+                    android:text="@string/sort"
+                    android:textAllCaps="false"
+                    android:textColor="@color/md_white_1000"
+                    android:textSize="@dimen/text_size_mid"
+                    app:drawableStartCompat="@drawable/down_arrow"
+                    app:drawableTint="@color/md_white_1000" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center_vertical"
+                android:alpha="0.3"
+                android:background="@color/md_white_1000" />
+            <LinearLayout
+                android:id="@+id/btn_capsule_filters"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:minWidth="44dp"
+                android:minHeight="52dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:paddingStart="@dimen/padding_large"
+                android:paddingEnd="@dimen/padding_large">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:drawablePadding="6dp"
+                    android:gravity="center"
+                    android:text="@string/filter"
+                    android:textAllCaps="false"
+                    android:textColor="@color/md_white_1000"
+                    android:textSize="@dimen/text_size_mid"
+                    app:drawableStartCompat="@drawable/ic_filter"
+                    app:drawableTint="@color/md_white_1000" />
+                <TextView
+                    android:id="@+id/tv_capsule_filter_badge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:minWidth="20dp"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="6dp"
+                    android:gravity="center"
+                    android:background="@drawable/bg_chip_selected"
+                    android:textColor="@color/chip_selected_text"
+                    android:textSize="12sp"
+                    android:visibility="gone"
+                    tools:text="2" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

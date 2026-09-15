@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.media.MediaRecorder
+import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultCaller
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract
@@ -127,7 +128,7 @@ class AudioRecorderTest {
         val mockLauncher = mockk<ActivityResultLauncher<String>>(relaxed = true)
 
         val contractSlot = slot<ActivityResultContract<String, Boolean>>()
-        val callbackSlot = slot<androidx.activity.result.ActivityResultCallback<Boolean>>()
+        val callbackSlot = slot<ActivityResultCallback<Boolean>>()
 
         every {
             mockCaller.registerForActivityResult(

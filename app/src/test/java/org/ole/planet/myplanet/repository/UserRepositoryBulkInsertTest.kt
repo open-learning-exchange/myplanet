@@ -2,19 +2,17 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import io.mockk.every
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
-import io.mockk.verify
-import io.realm.Realm
-import io.realm.RealmQuery
-import io.realm.RealmResults
+import kotlinx.coroutines.test.runTest
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.data.room.dao.UserDao
 
 class UserRepositoryBulkInsertTest {
-
     @Test
-    fun `benchmark bulkInsertUsersFromSync`() {
+    fun `benchmark insertUsersFromSync`() = runTest {
+        val userDao = mockk<UserDao>(relaxed = true)
         val userRepository = UserRepositoryImpl(
             mockk(relaxed = true),
             mockk(relaxed = true),
@@ -28,20 +26,15 @@ class UserRepositoryBulkInsertTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            userDao,
             mockk(relaxed = true)
         )
-        val realm = mockk<Realm>(relaxed = true)
-        val realmQuery = mockk<RealmQuery<RealmUser>>(relaxed = true)
-        val realmResults = mockk<RealmResults<RealmUser>>(relaxed = true)
-
-        every { realm.isInTransaction } returns true
-        every { realm.where(RealmUser::class.java) } returns realmQuery
-        every { realmQuery.`in`(any<String>(), any<Array<String>>()) } returns realmQuery
-        every { realmQuery.findAll() } returns realmResults
-        every { realmResults.iterator() } returns mutableListOf<RealmUser>().iterator()
-
-        val mockUser = mockk<RealmUser>(relaxed = true)
-        every { realm.createObject(RealmUser::class.java, any<String>()) } returns mockUser
+        coEvery { userDao.getUsersByAnyIds(any()) } returns emptyList()
+        coEvery { userDao.getGuestUsersByNames(any()) } returns emptyList()
 
         val jsonArray = JsonArray()
         for (i in 1..10) {
@@ -54,9 +47,99 @@ class UserRepositoryBulkInsertTest {
         }
 
 
-        userRepository.bulkInsertUsersFromSync(realm, jsonArray)
+        val list = mutableListOf<JsonObject>()
+        for (j in jsonArray) {
+            list.add(j.asJsonObject)
+        }
+        userRepository.insertUsersFromSync(list)
 
-        // The query is done only ONCE using `in`!
-        verify(exactly = 1) { realm.where(RealmUser::class.java) }
+        coVerify(exactly = 1) { userDao.upsertAll(match { it.size == 10 }) }
+    }
+
+    @Test
+    fun `insertUsersFromSync handles existing user and guest promotion correctly`() = runTest {
+        val userDao = mockk<UserDao>(relaxed = true)
+        val userRepository = UserRepositoryImpl(
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            userDao,
+            mockk(relaxed = true)
+        )
+
+        val existingGuest = org.ole.planet.myplanet.model.UserEntity().apply {
+            id = "guest_123"
+            _id = "guest_123"
+            name = "Guest User"
+        }
+        coEvery { userDao.getUsersByAnyIds(any()) } returns emptyList()
+        coEvery { userDao.getGuestUsersByNames(any()) } returns listOf(existingGuest)
+
+        val list = mutableListOf<JsonObject>()
+        val jObj = JsonObject()
+        val doc = JsonObject()
+        doc.addProperty("_id", "org.couchdb.user:Guest User")
+        doc.addProperty("name", "Guest User")
+        jObj.add("doc", doc)
+        list.add(jObj)
+
+        userRepository.insertUsersFromSync(list)
+
+        coVerify(exactly = 1) { userDao.deleteByIds(listOf("guest_123")) }
+        coVerify(exactly = 1) { userDao.upsertAll(match { it.size == 1 && it[0]._id == "org.couchdb.user:Guest User" }) }
+    }
+
+    @Test
+    fun `insertUsersFromSync deduplicates ids correctly`() = runTest {
+        val userDao = mockk<UserDao>(relaxed = true)
+        val userRepository = UserRepositoryImpl(
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            userDao,
+            mockk(relaxed = true)
+        )
+        coEvery { userDao.getUsersByAnyIds(any()) } returns emptyList()
+        coEvery { userDao.getGuestUsersByNames(any()) } returns emptyList()
+
+        val list = mutableListOf<JsonObject>()
+        for (i in 1..2) {
+            val jObj = JsonObject()
+            val doc = JsonObject()
+            doc.addProperty("_id", "user_1")
+            doc.addProperty("name", "User 1 (version $i)")
+            jObj.add("doc", doc)
+            list.add(jObj)
+        }
+
+        userRepository.insertUsersFromSync(list)
+
+        coVerify(exactly = 1) { userDao.upsertAll(match { it.size == 1 && it[0].name == "User 1 (version 2)" }) }
     }
 }

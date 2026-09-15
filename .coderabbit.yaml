@@ -1,0 +1,86 @@
+# https://docs.coderabbit.ai/reference/configuration
+language: "en-US"
+
+tone_instructions: >-
+  Correctness first: bugs, security, data loss. Then the conventions in
+  CLAUDE.md. Skip findings already reported by CodeRabbit's bundled detekt or
+  the Gradle build. No compliments, no restating the diff.
+
+reviews:
+  profile: assertive
+  sequence_diagrams: false
+  changed_files_summary: false
+  estimate_code_review_effort: false
+  related_issues: false
+  related_prs: false
+  suggested_labels: false
+  suggested_reviewers: false
+  in_progress_fortune: false
+  review_status: false  # else a "Review skipped" notice on every unlabelled PR
+  poem: false
+  enable_prompt_for_ai_agents: true
+
+  pre_merge_checks:
+    docstrings: { mode: "off" }
+    title: { mode: "off" }
+    description: { mode: "off" }
+    issue_assessment: { mode: "off" }
+
+  finishing_touches:
+    docstrings: { enabled: false }
+    unit_tests: { enabled: false }
+    simplify: { enabled: true }
+
+  path_filters:
+    - "!gradle/wrapper/**"
+    - "!**/*.png"
+    - "!**/*.webp"
+    - "!**/*.jpg"
+
+  path_instructions:
+    - path: "app/src/main/java/**"
+      instructions: >-
+        All persistence must go through Room DAOs or DatabaseService -- flag
+        raw SQLite or Realm usage. Flag hard-coded Dispatchers.* (inject
+        DispatcherProvider instead) and hard-coded user-facing strings (must
+        be string resources). Schema changes must bump the version in
+        AppDatabase (drop-and-resync strategy, no hand-written migrations).
+    - path: "app/src/test/**"
+      instructions: >-
+        Tests use MockK, runTest, MainDispatcherRule and TestDispatcherProvider.
+        Flag Mockito usage, Thread.sleep, or hard-coded dispatchers in tests.
+    - path: "app/build.gradle"
+      instructions: >-
+        Every merge bumps versionCode and versionName here, so that hunk is
+        expected -- review the rest of the file and say nothing about the bump.
+
+  auto_review:
+    enabled: false
+    labels: ["review"]
+    auto_incremental_review: true
+    auto_pause_after_reviewed_commits: 0
+    drafts: true
+
+  tools:
+    gitleaks:
+      enabled: true
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "CLAUDE.md"
+
+code_generation:
+  unit_tests:
+    path_instructions:
+      - path: "app/src/test/**"
+        instructions: >-
+          Use MockK (mockk, coEvery, coVerify) -- never Mockito. Coroutine
+          tests use runTest with MainDispatcherRule and inject
+          TestDispatcherProvider. Use Robolectric only when Android framework
+          classes are required. Place tests mirroring the main package path so
+          CI (testDefaultDebugUnitTest) picks them up.

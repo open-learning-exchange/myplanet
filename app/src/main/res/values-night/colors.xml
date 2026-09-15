@@ -12,7 +12,7 @@
     <color name="daynight_white_grey">@color/card_bg</color>
     <color name="card_bg">@color/colorPrimaryLight</color>
     <color name="secondary_bg">@color/colorPrimaryDark</color>
-    <color name="hint_color">#808080</color>
+    <color name="hint_color">#BDBDBD</color>
     <color name="text_highlight_color">@color/hint_color</color>
     <color name="light_dark">@color/colorPrimary</color>
     <color name="mainColor">@color/md_blue_700</color>
@@ -53,4 +53,39 @@
 
     <color name="field_fill">#1A2330</color>
     <color name="md_blue_100">#1E3A5F</color>
+
+    <color name="dashboard_page_bg">@color/colorPrimary</color>
+    <color name="dashboard_ink_1">@color/textColorPrimary</color>
+    <color name="dashboard_ink_2">#B0B3B8</color>
+    <color name="dashboard_ink_3">#8A8D91</color>
+    <color name="dashboard_hairline">#4E4F50</color>
+    <color name="dashboard_sync_banner_bg">@color/field_fill</color>
+
+    <color name="card_border">#4D4D4D</color>
+    <color name="chip_selected_bg">#1E3A5F</color>
+    <color name="chip_selected_border">#64B5F6</color>
+    <color name="chip_selected_text">#90CAF9</color>
+
+    <color name="type_pdf">#EF5350</color>
+    <color name="type_video">#BA68C8</color>
+    <color name="type_audio">#66BB6A</color>
+    <color name="type_book">#FFB74D</color>
+
+    <color name="subject_math">#FFB74D</color>
+    <color name="subject_literacy">#EF5350</color>
+    <color name="subject_health">#66BB6A</color>
+    <color name="subject_social_studies">#BA68C8</color>
+    <color name="subject_technology">#64B5F6</color>
+
+    <color name="progress_track_bg">#6E6F71</color>
+    <color name="progress_fill">#9CCC65</color>
+
+    <color name="list_status_completed_bg">#1E3A20</color>
+    <color name="list_status_completed_text">@color/status_completed</color>
+    <color name="list_status_in_progress_bg">#3D3319</color>
+    <color name="list_status_in_progress_text">@color/status_in_progress</color>
+    <color name="list_status_not_started_bg">#3A3B3C</color>
+    <color name="list_status_not_started_text">@color/status_not_started</color>
+
+    <color name="ink_1">@color/card_bg</color>
 </resources>

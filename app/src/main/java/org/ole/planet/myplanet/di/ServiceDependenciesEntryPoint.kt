@@ -6,11 +6,13 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import org.ole.planet.myplanet.services.BroadcastService
+import org.ole.planet.myplanet.services.retry.RetryQueue
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface ServiceDependenciesEntryPoint {
     fun broadcastService(): BroadcastService
+    fun retryQueue(): RetryQueue
 }
 
 fun getBroadcastService(context: Context): BroadcastService {

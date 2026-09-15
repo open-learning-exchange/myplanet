@@ -13,11 +13,11 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
-import org.ole.planet.myplanet.model.RealmCommunity
+import org.ole.planet.myplanet.model.Community
 import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.ServerConfigUtils
 
 private val httpsPrefixRegex = Regex("^https?://")
@@ -70,12 +70,16 @@ fun SyncActivity.performSync(dialog: MaterialDialog) {
 
 fun SyncActivity.onChangeServerUrl() {
     val selected = spnCloud.selectedItem
-    if (selected is RealmCommunity && selected.isValid) {
-        serverUrl.setText(selected.localDomain)
+    if (selected is Community) {
+        val config = ServerConfigUtils.getCommunityConfig(selected, getString(R.string.https_protocol))
+        serverUrl.setText(config.localDomain)
         protocolCheckIn.check(R.id.radio_https)
-        prefData.getServerProtocol().ifEmpty { getString(R.string.https_protocol) }
-        serverPassword.setText(if (selected.weight == 0) BuildConfig.PLANET_LEARNING_PIN else "")
-        serverPassword.isEnabled = selected.weight != 0
+        val currentProtocol = prefData.getServerProtocol()
+        if (currentProtocol.isEmpty()) {
+            prefData.setServerProtocol(config.protocol)
+        }
+        serverPassword.setText(config.pin)
+        serverPassword.isEnabled = config.isPinEnabled
     }
 }
 
@@ -119,19 +123,13 @@ fun SyncActivity.refreshServerList() {
     val pinnedUrl = prefData.getServerUrl()
     val urlWithoutProtocol = pinnedUrl.replace(httpsPrefixRegex, "")
 
+    val candidates = filteredList.map { it to it.url.replace(httpsPrefixRegex, "") }
+    val pinnedEntry = candidates.find { it.second == urlWithoutProtocol }
+
     // build the final list — if showing more, still pin selected server at top
-    val finalList = if (showAdditionalServers && urlWithoutProtocol.isNotEmpty()) {
-        val pinnedServer = filteredList.find {
-            it.url.replace(httpsPrefixRegex, "") == urlWithoutProtocol
-        }
-        if (pinnedServer != null) {
-            // pinned server at top, then everyone else without the duplicate
-            listOf(pinnedServer) + filteredList.filter {
-                it.url.replace(httpsPrefixRegex, "") != urlWithoutProtocol
-            }
-        } else {
-            filteredList
-        }
+    val finalList = if (showAdditionalServers && urlWithoutProtocol.isNotEmpty() && pinnedEntry != null) {
+        // pinned server at top, then everyone else without the duplicate
+        listOf(pinnedEntry.first) + candidates.filter { it.second != urlWithoutProtocol }.map { it.first }
     } else {
         filteredList
     }
@@ -139,8 +137,10 @@ fun SyncActivity.refreshServerList() {
     // submitList is async, so pass a callback for when it's done
     serverAddressAdapter?.submitList(finalList) {
         // this runs AFTER the list diff is done and views are updated
-        val pinnedIndex = finalList.indexOfFirst {
-            it.url.replace(httpsPrefixRegex, "") == urlWithoutProtocol
+        val pinnedIndex = if (showAdditionalServers && urlWithoutProtocol.isNotEmpty() && pinnedEntry != null) {
+            0
+        } else {
+            candidates.indexOfFirst { it.second == urlWithoutProtocol }
         }
         if (pinnedIndex != -1) {
             serverAddressAdapter?.setSelectedPosition(pinnedIndex)
@@ -176,6 +176,7 @@ fun SyncActivity.setupServerListUi(binding: DialogServerUrlBinding, dialog: Mate
         prefData.getPinnedServerUrl(),
     )
     serverAddressAdapter = ServerAddressAdapter(
+        context = this,
         onItemClick = { serverListAddress ->
             val actualUrl = serverListAddress.url.replace(httpsPrefixRegex, "")
             binding.inputServerUrl.setText(actualUrl)
@@ -237,7 +238,7 @@ fun SyncActivity.initServerDialog(binding: DialogServerUrlBinding) {
     serverPassword = binding.inputServerPassword
     serverAddresses = binding.serverUrls
     syncToServerText = binding.syncToServerText
-    binding.deviceName.setText(org.ole.planet.myplanet.utils.NetworkUtils.getDeviceName())
+    binding.deviceName.setText(NetworkUtils.getDeviceName())
 }
 
 fun SyncActivity.setRadioProtocolListener(binding: DialogServerUrlBinding) {
@@ -246,13 +247,6 @@ fun SyncActivity.setRadioProtocolListener(binding: DialogServerUrlBinding) {
             R.id.radio_http -> prefData.setServerProtocol(getString(R.string.http_protocol))
             R.id.radio_https -> prefData.setServerProtocol(getString(R.string.https_protocol))
         }
-    }
-}
-
-fun SyncActivity.setupFastSyncOption(binding: DialogServerUrlBinding) {
-    binding.fastSync.isChecked = prefData.getFastSync()
-    binding.fastSync.setOnCheckedChangeListener { _: CompoundButton?, checked: Boolean ->
-        prefData.setFastSync(checked)
     }
 }
 

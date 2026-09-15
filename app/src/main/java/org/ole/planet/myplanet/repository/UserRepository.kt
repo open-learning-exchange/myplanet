@@ -2,36 +2,36 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import kotlinx.coroutines.flow.Flow
+import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.AchievementData
-import org.ole.planet.myplanet.model.HealthRecord
-import org.ole.planet.myplanet.model.RealmAchievement
-import org.ole.planet.myplanet.model.RealmMyHealth
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.DashboardProfile
+import org.ole.planet.myplanet.model.MemberInfo
+import org.ole.planet.myplanet.model.User
+import org.ole.planet.myplanet.model.UserEntity
 
 interface UserRepository {
-    suspend fun getHealthProfile(userId: String): RealmMyHealth?
-    suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>)
+    val achievementUpdates: Flow<Unit>
+    suspend fun getSavedUsers(): List<User>
+    suspend fun upsertSavedUser(name: String?, encryptedPassword: String?, source: String, userProfile: String?, userName: String?)
+    suspend fun resetGuestAsMember(username: String?)
 
-    suspend fun getUserById(userId: String): RealmUser?
-    suspend fun getUsersByIds(userIds: List<String>): List<RealmUser>
-    suspend fun getUserByAnyId(id: String): RealmUser?
-    suspend fun getUserByName(name: String): RealmUser?
-    suspend fun findUserByName(name: String): RealmUser?
-    suspend fun getSyncedUsers(): List<RealmUser>
-    suspend fun getUsersForHealthSync(): List<RealmUser>
-    suspend fun getSyncedUserByName(name: String): RealmUser?
-    suspend fun createGuestUser(username: String): RealmUser?
-    suspend fun getAllUsers(): List<RealmUser>
-    suspend fun getUsersSortedBy(fieldName: String, descending: Boolean): List<RealmUser>
-    suspend fun getPendingSyncUsers(limit: Int): List<RealmUser>
-    suspend fun getMonthlyLoginCounts(
-        userId: String,
-        startMillis: Long,
-        endMillis: Long,
-    ): Map<Int, Int>
-    suspend fun isUserExists(name: String?): Boolean
-    fun parseLeadersJson(jsonString: String): List<RealmUser>
-    suspend fun ensureUserSecurityKeys(userId: String): RealmUser?
+    suspend fun getUserById(userId: String): UserEntity?
+    suspend fun getDashboardProfile(userId: String): DashboardProfile
+    suspend fun getUsersByIds(userIds: List<String>): List<UserEntity>
+    suspend fun getUserByAnyId(id: String): UserEntity?
+    suspend fun getUserByName(name: String): UserEntity?
+    suspend fun findUserByName(name: String): UserEntity?
+    suspend fun getSyncedUsers(): List<UserEntity>
+    suspend fun getUsersForHealthSync(): List<UserEntity>
+    suspend fun getSyncedUserByName(name: String): UserEntity?
+    suspend fun createGuestUser(username: String): UserEntity?
+    suspend fun getAllUsers(): List<UserEntity>
+    suspend fun getUsersSortedBy(fieldName: String, descending: Boolean): List<UserEntity>
+    suspend fun getPendingSyncUsers(limit: Int): List<UserEntity>
+    suspend fun searchUsers(query: String, sortField: String, descending: Boolean): List<UserEntity>
+    suspend fun saveUser(user: UserEntity)
+    suspend fun ensureUserSecurityKeys(userId: String): UserEntity?
     suspend fun fetchUserSecurityData(name: String)
     suspend fun updateSecurityData(
         name: String,
@@ -54,37 +54,34 @@ interface UserRepository {
         language: String?,
         gender: String?,
         dob: String?,
-    ): RealmUser?
+    ): UserEntity?
 
     suspend fun updateUserImage(
         userId: String?,
         imagePath: String?,
-    ): RealmUser?
+    ): UserEntity?
 
     suspend fun updateProfileFields(
         userId: String?,
         payload: JsonObject
     )
 
-    suspend fun createMember(user: JsonObject): Pair<Boolean, String>
+    suspend fun createMember(user: MemberInfo): Pair<Boolean, String>
 
     suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String>
 
-    suspend fun searchUsers(query: String, sortField: String, descending: Boolean): List<RealmUser>
-    suspend fun getHealthRecordsAndAssociatedUsers(
-        userId: String,
-        currentUser: RealmUser
-    ): HealthRecord?
-    suspend fun getUserModelSuspending(): RealmUser?
-    suspend fun getUserProfile(): RealmUser?
+    suspend fun getCurrentUserId(): String?
+    suspend fun getUserModel(): UserEntity?
+    suspend fun getUserProfile(): UserEntity?
     suspend fun getUserImageUrl(): String?
     suspend fun getActiveUserIdSuspending(): String
     suspend fun validateUsername(username: String): String?
     suspend fun cleanupDuplicateUsers()
-    suspend fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): RealmUser?
+    suspend fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): UserEntity?
     suspend fun hasAtLeastOneUser(): Boolean
     suspend fun hasUserSyncAction(userId: String?): Boolean
-    suspend fun initializeAchievement(achievementId: String): RealmAchievement?
+    suspend fun hasActiveUserSyncAction(): Boolean
+    suspend fun initializeAchievement(achievementId: String): Achievement?
     suspend fun updateAchievement(
         achievementId: String,
         header: String,

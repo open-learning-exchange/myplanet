@@ -6,38 +6,26 @@ import android.os.Bundle
 import android.text.TextUtils
 import android.view.MenuItem
 import android.view.View
-import android.view.ViewGroup
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Date
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityFeedbackDetailBinding
-import org.ole.planet.myplanet.databinding.RowFeedbackReplyBinding
-import org.ole.planet.myplanet.model.FeedbackReply
-import org.ole.planet.myplanet.model.RealmFeedback
+import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.feedback.FeedbackDetailActivity.FeedbackReplyAdapter.ReplyViewHolder
-import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class FeedbackDetailActivity : AppCompatActivity() {
     private lateinit var activityFeedbackDetailBinding: ActivityFeedbackDetailBinding
     private var replyAdapter: FeedbackReplyAdapter? = null
     private var layoutManager: RecyclerView.LayoutManager? = null
-    private var feedback: RealmFeedback? = null
+    private var feedback: Feedback? = null
     private lateinit var feedbackId: String
     private val viewModel: FeedbackDetailViewModel by viewModels()
 
@@ -61,31 +49,24 @@ class FeedbackDetailActivity : AppCompatActivity() {
         feedbackId = id
         setUpReplies()
 
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.feedback.collectLatest { fb ->
-                    fb?.let {
-                        feedback = it
-                        activityFeedbackDetailBinding.tvDate.text = getFormattedDateWithTime(it.openTime)
-                        activityFeedbackDetailBinding.tvMessage.text =
-                            if (TextUtils.isEmpty(it.message)) "N/A" else it.message
-                        replyAdapter = FeedbackReplyAdapter(applicationContext)
-                        activityFeedbackDetailBinding.rvFeedbackReply.adapter = replyAdapter
-                        replyAdapter?.submitList(it.messageList)
-                        updateForClosed()
-                    }
-                }
+        collectLatestWhenStarted(viewModel.feedback) { fb ->
+            fb?.let {
+                feedback = it
+                activityFeedbackDetailBinding.tvDate.text = getFormattedDateWithTime(it.openTime)
+                val message = it.message
+                activityFeedbackDetailBinding.tvMessage.text =
+                    if (TextUtils.isEmpty(message)) "N/A" else message
+                replyAdapter = FeedbackReplyAdapter(this@FeedbackDetailActivity)
+                activityFeedbackDetailBinding.rvFeedbackReply.adapter = replyAdapter
+                replyAdapter?.submitList(it.messageList)
+                updateForClosed()
             }
         }
 
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.events.collectLatest { event ->
-                    when (event) {
-                        is FeedbackDetailViewModel.FeedbackDetailEvent.CloseFeedbackSuccess ->
-                            navigateToFeedbackListFragment()
-                    }
-                }
+        collectLatestWhenStarted(viewModel.events) { event ->
+            when (event) {
+                is FeedbackDetailViewModel.FeedbackDetailEvent.CloseFeedbackSuccess ->
+                    navigateToFeedbackListFragment()
             }
         }
 
@@ -98,12 +79,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
                     getString(R.string.kindly_enter_reply_message)
             } else {
                 val message = activityFeedbackDetailBinding.feedbackReplyEditText.text.toString().trim { it <= ' ' }
-                val obj = JsonObject().apply {
-                    addProperty("message", message)
-                    addProperty("time", Date().time.toString())
-                    addProperty("user", feedback?.owner ?: "")
-                }
-                viewModel.addReply(feedbackId, obj)
+                viewModel.addReply(feedbackId, message, feedback?.owner)
                 activityFeedbackDetailBinding.feedbackReplyEditText.setText(R.string.empty_text)
                 activityFeedbackDetailBinding.feedbackReplyEditText.clearFocus()
             }
@@ -113,7 +89,6 @@ class FeedbackDetailActivity : AppCompatActivity() {
     }
 
     private fun setUpReplies() {
-        activityFeedbackDetailBinding.rvFeedbackReply.setHasFixedSize(true)
         layoutManager = LinearLayoutManager(this)
         activityFeedbackDetailBinding.rvFeedbackReply.layoutManager = layoutManager
     }
@@ -136,30 +111,5 @@ class FeedbackDetailActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) finish()
         return super.onOptionsItemSelected(item)
-    }
-
-    inner class FeedbackReplyAdapter(var context: Context) : ListAdapter<FeedbackReply, ReplyViewHolder>(DIFF_CALLBACK) {
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReplyViewHolder {
-            val rowFeedbackReplyBinding = RowFeedbackReplyBinding.inflate(layoutInflater, parent, false)
-            return ReplyViewHolder(rowFeedbackReplyBinding)
-        }
-
-        override fun onBindViewHolder(holder: ReplyViewHolder, position: Int) {
-            val feedbackReply = getItem(position)
-            holder.binding.tvDate.text = feedbackReply.date.let {
-                getFormattedDateWithTime(it.toLong())
-            }
-            holder.binding.tvUser.text = feedbackReply.user
-            holder.binding.tvMessage.text = feedbackReply.message
-        }
-
-        inner class ReplyViewHolder(val binding: RowFeedbackReplyBinding) : RecyclerView.ViewHolder(binding.root)
-    }
-
-    companion object {
-        val DIFF_CALLBACK = DiffUtils.itemCallback<FeedbackReply>(
-            areItemsTheSame = { oldItem, newItem -> oldItem.date == newItem.date && oldItem.user == newItem.user },
-            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
-        )
     }
 }

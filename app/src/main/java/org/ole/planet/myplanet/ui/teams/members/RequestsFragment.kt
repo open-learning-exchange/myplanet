@@ -6,17 +6,18 @@ import android.os.Bundle
 import android.view.View
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseMemberFragment
-import org.ole.planet.myplanet.callback.OnMemberChangeListener
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.callback.OnChangedListener
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class RequestsFragment : BaseMemberFragment() {
@@ -25,53 +26,47 @@ class RequestsFragment : BaseMemberFragment() {
     lateinit var userSessionManager: UserSessionManager
 
     private val viewModel: RequestsViewModel by viewModels()
-    private lateinit var currentUser: RealmUser
-    private var onMemberChangeListener: OnMemberChangeListener? = null
-    fun setOnMemberChangeListener(listener: OnMemberChangeListener) {
+    private lateinit var currentUser: UserEntity
+    private var onMemberChangeListener: OnChangedListener? = null
+    fun setOnMemberChangeListener(listener: OnChangedListener) {
         this.onMemberChangeListener = listener
     }
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        currentUser = RealmUser()
+        currentUser = UserEntity()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewModel.fetchMembers(teamId)
         viewLifecycleOwner.lifecycleScope.launch {
-            currentUser = userSessionManager.getUserModel() ?: RealmUser()
+            currentUser = userSessionManager.getUserModel() ?: UserEntity()
             (adapter as? RequestsAdapter)?.setUser(currentUser)
-            viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
-                launch {
-                    viewModel.uiState.collect { uiState ->
-                        (adapter as? RequestsAdapter)?.setData(
-                            uiState.members,
-                            uiState.isLeader,
-                            uiState.memberCount
-                        )
-                        showNoData(binding.tvNodata, uiState.members.size, "members")
-                    }
-                }
-                launch {
-                    viewModel.successAction.collect {
-                        onMemberChangeListener?.onMemberChanged()
-                    }
-                }
-            }
+        }
+        collectWhenStarted(viewModel.uiState) { uiState ->
+            (adapter as? RequestsAdapter)?.setData(
+                uiState.members,
+                uiState.isLeader,
+                uiState.memberCount
+            )
+            showNoData(binding.tvNodata, uiState.members.size, "members")
+        }
+        collectWhenStarted(viewModel.successAction) {
+            onMemberChangeListener?.onChanged()
         }
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: News?) {}
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
     }
 
-    override val list: List<RealmUser>
+    override val list: List<UserEntity>
         get() = emptyList()
 
-    override val adapter: RecyclerView.Adapter<*> by lazy {
+    override val adapter: ListAdapter<*, *> by lazy {
         RequestsAdapter(
             requireActivity(),
             currentUser,

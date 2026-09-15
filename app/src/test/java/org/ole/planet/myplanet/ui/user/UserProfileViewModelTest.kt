@@ -13,10 +13,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.ProfileActivityStats
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
@@ -29,12 +29,12 @@ class UserProfileViewModelTest {
     val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
     private lateinit var userRepository: UserRepository
-    private lateinit var userSessionManager: UserSessionManager
     private lateinit var activitiesRepository: ActivitiesRepository
     private lateinit var viewModel: UserProfileViewModel
 
     private val dispatcherProvider = object : DispatcherProvider {
         override val main: CoroutineDispatcher = testDispatcher
+        override val mainImmediate: CoroutineDispatcher = testDispatcher
         override val io: CoroutineDispatcher = testDispatcher
         override val default: CoroutineDispatcher = testDispatcher
         override val unconfined: CoroutineDispatcher = testDispatcher
@@ -43,24 +43,35 @@ class UserProfileViewModelTest {
     @Before
     fun setup() {
         userRepository = mockk(relaxed = true)
-        userSessionManager = mockk(relaxed = true)
         activitiesRepository = mockk(relaxed = true)
 
-        val mockUser = mockk<RealmUser>(relaxed = true)
+        val mockUser = mockk<UserEntity>(relaxed = true)
         every { mockUser.name } returns "Test User"
-        coEvery { userSessionManager.getUserModel() } returns mockUser
+        coEvery { userRepository.getUserModel() } returns mockUser
 
-        coEvery { activitiesRepository.getMostOpenedResource("Test User", UserSessionManager.KEY_RESOURCE_OPEN) } returns Pair("Test Resource", 5)
-        coEvery { activitiesRepository.getGlobalLastVisit() } returns 123456789L
-        coEvery { activitiesRepository.getResourceOpenCount("Test User", UserSessionManager.KEY_RESOURCE_OPEN) } returns 10L
+        coEvery { activitiesRepository.getProfileActivityStats("Test User") } returns ProfileActivityStats(
+            mostOpenedResource = Pair("Test Resource", 5),
+            lastVisit = 123456789L,
+            resourceOpenCount = 10L
+        )
 
-        viewModel = UserProfileViewModel(userRepository, userSessionManager, activitiesRepository, dispatcherProvider)
+        viewModel = UserProfileViewModel(userRepository, activitiesRepository)
     }
 
     @Test
-    fun `updateUserProfile with null userId sets updateState to Error without invoking userRepository`() = runTest {
-        viewModel.updateUserProfile(
-            userId = null,
+    fun `init loads profile activity stats into state flows`() = runTest {
+        advanceUntilIdle()
+
+        assertEquals("Test Resource opened 5 times", viewModel.maxOpenedResource.value)
+        assertEquals(123456789L, viewModel.lastVisit.value)
+        assertEquals("Resource opened 10 times.", viewModel.numberOfResourceOpen.value)
+    }
+
+    @Test
+    fun `updateCurrentUserProfile with blank active userId sets updateState to Error without invoking userRepository`() = runTest {
+        coEvery { userRepository.getActiveUserIdSuspending() } returns ""
+
+        viewModel.updateCurrentUserProfile(
             firstName = "John",
             lastName = "Doe",
             middleName = null,
@@ -79,9 +90,11 @@ class UserProfileViewModelTest {
     }
 
     @Test
-    fun `updateUserProfile success sets updateState to Success and updates userModel`() = runTest {
+    fun `updateCurrentUserProfile success sets updateState to Success and updates userModel`() = runTest {
         val userId = "user123"
-        val mockUser = mockk<RealmUser>()
+        coEvery { userRepository.getActiveUserIdSuspending() } returns userId
+
+        val mockUser = mockk<UserEntity>()
         coEvery { userRepository.updateUserDetails(
             userId = userId,
             firstName = "John",
@@ -95,8 +108,7 @@ class UserProfileViewModelTest {
             dob = null
         ) } returns mockUser
 
-        viewModel.updateUserProfile(
-            userId = userId,
+        viewModel.updateCurrentUserProfile(
             firstName = "John",
             lastName = "Doe",
             middleName = null,
@@ -115,8 +127,9 @@ class UserProfileViewModelTest {
     }
 
     @Test
-    fun `updateUserProfile exception sets updateState to Error with exception message`() = runTest {
+    fun `updateCurrentUserProfile exception sets updateState to Error with exception message`() = runTest {
         val userId = "user123"
+        coEvery { userRepository.getActiveUserIdSuspending() } returns userId
         val errorMessage = "Database error"
         coEvery { userRepository.updateUserDetails(
             userId = userId,
@@ -131,8 +144,7 @@ class UserProfileViewModelTest {
             dob = null
         ) } throws Exception(errorMessage)
 
-        viewModel.updateUserProfile(
-            userId = userId,
+        viewModel.updateCurrentUserProfile(
             firstName = "John",
             lastName = "Doe",
             middleName = null,
@@ -150,12 +162,13 @@ class UserProfileViewModelTest {
     }
 
     @Test
-    fun `loadUserProfile sets userModel to value returned by userRepository`() = runTest {
+    fun `loadCurrentUserProfile sets userModel to value returned by userRepository`() = runTest {
         val userId = "user123"
-        val mockUser = mockk<RealmUser>()
+        coEvery { userRepository.getActiveUserIdSuspending() } returns userId
+        val mockUser = mockk<UserEntity>()
         coEvery { userRepository.getUserByAnyId(userId) } returns mockUser
 
-        viewModel.loadUserProfile(userId)
+        viewModel.loadCurrentUserProfile()
 
         advanceUntilIdle()
 

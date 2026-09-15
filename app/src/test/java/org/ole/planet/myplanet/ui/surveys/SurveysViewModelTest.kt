@@ -1,12 +1,10 @@
 package org.ole.planet.myplanet.ui.surveys
 
 import io.mockk.coEvery
-import io.mockk.every
 import io.mockk.mockk
-import io.mockk.slot
-import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -15,23 +13,18 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.services.sync.SyncManager
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SurveysViewModelTest {
 
     private lateinit var surveysRepository: SurveysRepository
-    private lateinit var syncManager: SyncManager
-    private lateinit var userSessionManager: UserSessionManager
-    private lateinit var sharedPrefManager: SharedPrefManager
-    private lateinit var serverUrlMapper: ServerUrlMapper
+    private lateinit var submissionsRepository: SubmissionsRepository
+    private lateinit var userRepository: UserRepository
     private lateinit var viewModel: SurveysViewModel
     private val testDispatcher = StandardTestDispatcher()
     private val testDispatcherProvider = TestDispatcherProvider(testDispatcher)
@@ -40,17 +33,13 @@ class SurveysViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         surveysRepository = mockk()
-        syncManager = mockk(relaxed = true)
-        userSessionManager = mockk()
-        sharedPrefManager = mockk(relaxed = true)
-        serverUrlMapper = mockk(relaxed = true)
+        submissionsRepository = mockk()
+        userRepository = mockk()
 
         viewModel = SurveysViewModel(
             surveysRepository,
-            syncManager,
-            userSessionManager,
-            sharedPrefManager,
-            serverUrlMapper,
+            submissionsRepository,
+            userRepository,
             testDispatcherProvider
         )
     }
@@ -66,8 +55,8 @@ class SurveysViewModelTest {
         createdDate: Long,
         adoptionDate: Long,
         sourceSurveyId: String? = null
-    ): RealmStepExam {
-        val survey = RealmStepExam()
+    ): StepExam {
+        val survey = StepExam()
         survey.id = id
         survey.name = name
         survey.createdDate = createdDate
@@ -76,15 +65,16 @@ class SurveysViewModelTest {
         return survey
     }
 
-    private fun stubLoadSurveys(surveys: List<RealmStepExam>) {
+    private fun stubLoadSurveys(surveys: List<StepExam>) {
         coEvery { surveysRepository.getIndividualSurveys() } returns surveys
-        coEvery { userSessionManager.getUserModel() } returns mockk(relaxed = true)
+        coEvery { userRepository.getUserModel() } returns mockk(relaxed = true)
         coEvery { surveysRepository.getSurveyInfos(any(), any(), any(), any()) } returns emptyMap()
         coEvery { surveysRepository.getSurveyFormState(any(), any()) } returns emptyMap()
     }
 
     @Test
     fun `test sorting defaults to DATE_DESC and switches sort options`() = runTest {
+        backgroundScope.launch(testDispatcher) { viewModel.surveys.collect {} }
         val survey1 = createSurvey("1", "Zebra", 1000L, 0L)
         val survey2 = createSurvey("2", "Apple", 2000L, 0L)
         val survey3 = createSurvey("3", "Banana", 1500L, 0L)
@@ -96,34 +86,38 @@ class SurveysViewModelTest {
 
         // Default should be DATE_DESC
         var currentSurveys = viewModel.surveys.value
-        assertEquals("2", currentSurveys[0].id)
-        assertEquals("3", currentSurveys[1].id)
-        assertEquals("1", currentSurveys[2].id)
+        assertEquals("2", currentSurveys[0].exam.id)
+        assertEquals("3", currentSurveys[1].exam.id)
+        assertEquals("1", currentSurveys[2].exam.id)
 
         // Switch to DATE_ASC
         viewModel.sort(SurveysViewModel.SortOption.DATE_ASC)
+        testDispatcher.scheduler.advanceUntilIdle()
         currentSurveys = viewModel.surveys.value
-        assertEquals("1", currentSurveys[0].id)
-        assertEquals("3", currentSurveys[1].id)
-        assertEquals("2", currentSurveys[2].id)
+        assertEquals("1", currentSurveys[0].exam.id)
+        assertEquals("3", currentSurveys[1].exam.id)
+        assertEquals("2", currentSurveys[2].exam.id)
 
         // Switch to TITLE_ASC
         viewModel.sort(SurveysViewModel.SortOption.TITLE_ASC)
+        testDispatcher.scheduler.advanceUntilIdle()
         currentSurveys = viewModel.surveys.value
-        assertEquals("2", currentSurveys[0].id) // Apple
-        assertEquals("3", currentSurveys[1].id) // Banana
-        assertEquals("1", currentSurveys[2].id) // Zebra
+        assertEquals("2", currentSurveys[0].exam.id) // Apple
+        assertEquals("3", currentSurveys[1].exam.id) // Banana
+        assertEquals("1", currentSurveys[2].exam.id) // Zebra
 
         // Switch to TITLE_DESC
         viewModel.sort(SurveysViewModel.SortOption.TITLE_DESC)
+        testDispatcher.scheduler.advanceUntilIdle()
         currentSurveys = viewModel.surveys.value
-        assertEquals("1", currentSurveys[0].id) // Zebra
-        assertEquals("3", currentSurveys[1].id) // Banana
-        assertEquals("2", currentSurveys[2].id) // Apple
+        assertEquals("1", currentSurveys[0].exam.id) // Zebra
+        assertEquals("3", currentSurveys[1].exam.id) // Banana
+        assertEquals("2", currentSurveys[2].exam.id) // Apple
     }
 
     @Test
     fun `test toggleTitleSort correctly toggles between TITLE_ASC and TITLE_DESC`() = runTest {
+        backgroundScope.launch(testDispatcher) { viewModel.surveys.collect {} }
         val survey1 = createSurvey("1", "Zebra", 1000L, 0L)
         val survey2 = createSurvey("2", "Apple", 2000L, 0L)
 
@@ -134,17 +128,20 @@ class SurveysViewModelTest {
 
         // Toggle from default (DATE_DESC) -> TITLE_ASC
         viewModel.toggleTitleSort()
+        testDispatcher.scheduler.advanceUntilIdle()
         var currentSurveys = viewModel.surveys.value
-        assertEquals("2", currentSurveys[0].id) // Apple
+        assertEquals("2", currentSurveys[0].exam.id) // Apple
 
         // Toggle again -> TITLE_DESC
         viewModel.toggleTitleSort()
+        testDispatcher.scheduler.advanceUntilIdle()
         currentSurveys = viewModel.surveys.value
-        assertEquals("1", currentSurveys[0].id) // Zebra
+        assertEquals("1", currentSurveys[0].exam.id) // Zebra
     }
 
     @Test
     fun `test date ordering logic prioritizes adoptionDate if sourceSurveyId is not null`() = runTest {
+        backgroundScope.launch(testDispatcher) { viewModel.surveys.collect {} }
         val survey1 = createSurvey("1", "A", 1000L, 0L, null)
         val survey2 = createSurvey("2", "B", 500L, 3000L, "src2")
         val survey3 = createSurvey("3", "C", 2000L, 0L, "src3")
@@ -155,13 +152,14 @@ class SurveysViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         val currentSurveys = viewModel.surveys.value
-        assertEquals("2", currentSurveys[0].id)
-        assertEquals("3", currentSurveys[1].id)
-        assertEquals("1", currentSurveys[2].id)
+        assertEquals("2", currentSurveys[0].exam.id)
+        assertEquals("3", currentSurveys[1].exam.id)
+        assertEquals("1", currentSurveys[2].exam.id)
     }
 
     @Test
     fun `test normalized search behavior with diacritics and multi-tokens`() = runTest {
+        backgroundScope.launch(testDispatcher) { viewModel.surveys.collect {} }
         val survey1 = createSurvey("1", "El niño is here", 1000L, 0L)
         val survey2 = createSurvey("2", "The dog barks", 2000L, 0L)
         val survey3 = createSurvey("3", "Café au lait", 1500L, 0L)
@@ -172,81 +170,115 @@ class SurveysViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.search("niño")
+        testDispatcher.scheduler.advanceUntilIdle()
         assertEquals(1, viewModel.surveys.value.size)
-        assertEquals("1", viewModel.surveys.value[0].id)
+        assertEquals("1", viewModel.surveys.value[0].exam.id)
 
         viewModel.search("nino")
+        testDispatcher.scheduler.advanceUntilIdle()
         assertEquals(1, viewModel.surveys.value.size)
-        assertEquals("1", viewModel.surveys.value[0].id)
+        assertEquals("1", viewModel.surveys.value[0].exam.id)
 
         viewModel.search("CAFE")
+        testDispatcher.scheduler.advanceUntilIdle()
         assertEquals(1, viewModel.surveys.value.size)
-        assertEquals("3", viewModel.surveys.value[0].id)
+        assertEquals("3", viewModel.surveys.value[0].exam.id)
 
         viewModel.search("lait cafe")
+        testDispatcher.scheduler.advanceUntilIdle()
         assertEquals(1, viewModel.surveys.value.size)
-        assertEquals("3", viewModel.surveys.value[0].id)
+        assertEquals("3", viewModel.surveys.value[0].exam.id)
 
         viewModel.search("The dog")
+        testDispatcher.scheduler.advanceUntilIdle()
         assertEquals(1, viewModel.surveys.value.size)
-        assertEquals("2", viewModel.surveys.value[0].id)
+        assertEquals("2", viewModel.surveys.value[0].exam.id)
     }
 
     @Test
-    fun `test startExamSync when fastSync is false`() {
-        every { sharedPrefManager.getFastSync() } returns false
-        every { sharedPrefManager.isSynced(SharedPrefManager.SyncKey.EXAMS) } returns false
+    fun `test multi-word query matches survey containing tokens in any order in contains bucket`() = runTest {
+        backgroundScope.launch(testDispatcher) { viewModel.surveys.collect {} }
+        val survey1 = createSurvey("1", "Science Quiz for Math Students", 1000L, 0L)
+        val survey2 = createSurvey("2", "Math Test Only", 2000L, 0L)
 
-        viewModel.startExamSync()
+        stubLoadSurveys(listOf(survey1, survey2))
 
-        verify(exactly = 0) { syncManager.start(any(), any(), any()) }
-    }
-
-    @Test
-    fun `test startExamSync when isExamsSynced is true`() {
-        every { sharedPrefManager.getFastSync() } returns true
-        every { sharedPrefManager.isSynced(SharedPrefManager.SyncKey.EXAMS) } returns true
-
-        viewModel.startExamSync()
-
-        verify(exactly = 0) { syncManager.start(any(), any(), any()) }
-    }
-
-    @Test
-    fun `test startExamSync triggers sync and handles error state mapping`() = runTest {
-        every { sharedPrefManager.getFastSync() } returns true
-        every { sharedPrefManager.isSynced(SharedPrefManager.SyncKey.EXAMS) } returns false
-        every { sharedPrefManager.getServerUrl() } returns "http://test.com"
-        every { serverUrlMapper.processUrl(any()) } returns mockk()
-
-        stubLoadSurveys(emptyList())
-
-        // Mock serverUrlMapper.updateServerIfNecessary
-        coEvery { serverUrlMapper.updateServerIfNecessary(any(), any(), any()) } answers {
-            // execute callback directly if we want
-        }
-
-        viewModel.startExamSync()
+        viewModel.loadSurveys(false, null, false)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        val listenerSlot = slot<OnSyncListener>()
-        verify { syncManager.start(capture(listenerSlot), any(), any()) }
-
-        val listener = listenerSlot.captured
-
-        // Test onSyncStarted
-        listener.onSyncStarted()
-        assertEquals(true, viewModel.isLoading.value)
-
-        // Test onSyncFailed
-        listener.onSyncFailed("Network Error")
-        assertEquals(false, viewModel.isLoading.value)
-        assertEquals("Sync failed: Network Error", viewModel.errorMessage.value)
-
-        // Test onSyncComplete
-        listener.onSyncComplete()
-        verify { sharedPrefManager.setSynced(SharedPrefManager.SyncKey.EXAMS, true) }
+        viewModel.search("quiz math")
         testDispatcher.scheduler.advanceUntilIdle()
-        assertEquals(false, viewModel.isLoading.value)
+
+        val results = viewModel.surveys.value
+        assertEquals(1, results.size)
+        assertEquals("1", results[0].exam.id)
+    }
+
+    @Test
+    fun `test prefix query places matching survey in starts-with bucket ahead of contains matches`() = runTest {
+        backgroundScope.launch(testDispatcher) { viewModel.surveys.collect {} }
+        val surveyContains = createSurvey("1", "Advanced Math Quiz", 1000L, 0L)
+        val surveyStartsWith = createSurvey("2", "Math Basics Test", 1000L, 0L)
+
+        stubLoadSurveys(listOf(surveyContains, surveyStartsWith))
+
+        viewModel.loadSurveys(false, null, false)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.search("Math")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val results = viewModel.surveys.value
+        assertEquals(2, results.size)
+        assertEquals("2", results[0].exam.id) // starts-with bucket first
+        assertEquals("1", results[1].exam.id) // contains bucket second
+    }
+
+    @Test
+    fun `test query with repeated leading trailing spaces matches same set as trimmed spaces`() = runTest {
+        backgroundScope.launch(testDispatcher) { viewModel.surveys.collect {} }
+        val survey1 = createSurvey("1", "Weekly Math Quiz", 1000L, 0L)
+        val survey2 = createSurvey("2", "History Quiz", 2000L, 0L)
+
+        stubLoadSurveys(listOf(survey1, survey2))
+
+        viewModel.loadSurveys(false, null, false)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.search("  math  quiz ")
+        testDispatcher.scheduler.advanceUntilIdle()
+        val spacedResults = viewModel.surveys.value
+
+        viewModel.search("math quiz")
+        testDispatcher.scheduler.advanceUntilIdle()
+        val standardResults = viewModel.surveys.value
+
+        assertEquals(standardResults.map { it.exam.id }, spacedResults.map { it.exam.id })
+        assertEquals(1, spacedResults.size)
+        assertEquals("1", spacedResults[0].exam.id)
+    }
+
+    @Test
+    fun `test empty query returns every named survey and skips null named survey`() = runTest {
+        backgroundScope.launch(testDispatcher) { viewModel.surveys.collect {} }
+        val survey1 = createSurvey("1", "Valid Survey 1", 1000L, 0L)
+        val survey2 = createSurvey("2", "", 2000L, 0L)
+        survey2.name = null
+        val survey3 = createSurvey("3", "Valid Survey 2", 1500L, 0L)
+
+        stubLoadSurveys(listOf(survey1, survey2, survey3))
+
+        viewModel.loadSurveys(false, null, false)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.search("   ")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val results = viewModel.surveys.value
+        assertEquals(2, results.size)
+        val ids = results.map { it.exam.id }
+        org.junit.Assert.assertTrue(ids.contains("1"))
+        org.junit.Assert.assertTrue(ids.contains("3"))
+        org.junit.Assert.assertFalse(ids.contains("2"))
     }
 }

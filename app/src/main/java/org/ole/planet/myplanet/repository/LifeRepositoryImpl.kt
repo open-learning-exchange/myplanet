@@ -1,58 +1,165 @@
 package org.ole.planet.myplanet.repository
 
+import androidx.core.content.edit
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
-import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.RealmDispatcher
-import org.ole.planet.myplanet.model.RealmMyLife
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import org.ole.planet.myplanet.data.room.dao.MyLifeDao
+import org.ole.planet.myplanet.model.MyLife
+import org.ole.planet.myplanet.services.SharedPrefManager
 
-class LifeRepositoryImpl @Inject constructor(databaseService: DatabaseService, @RealmDispatcher realmDispatcher: CoroutineDispatcher) : RealmRepository(databaseService, realmDispatcher), LifeRepository {
-    override suspend fun updateVisibility(isVisible: Boolean, myLifeId: String) {
-        executeTransaction { realm ->
-            val myLife = realm.where(RealmMyLife::class.java).equalTo("_id", myLifeId).findFirst()
-            myLife?.let {
-                it.isVisible = isVisible
+data class CachedMyLifeItem(
+    var imageId: String?,
+    var title: String?,
+    var isVisible: Boolean,
+    var weight: Int
+)
+class LifeRepositoryImpl @Inject constructor(
+    private val myLifeDao: MyLifeDao,
+    private val sharedPrefManager: SharedPrefManager,
+    private val gson: Gson
+) : LifeRepository {
+
+    private val MY_LIFE_CACHE_PREFIX = "myLifeCache_"
+    private val seedMutex = Mutex()
+
+    private fun normalizeUserId(userId: String?): String? {
+        return userId?.takeIf { it.isNotBlank() && it != "--" }
+    }
+
+    override suspend fun updateVisibility(isVisible: Boolean, myLifeId: String): List<MyLife> {
+        myLifeDao.updateVisibility(myLifeId, isVisible)
+        val managedLives = myLifeDao.getByIds(listOf(myLifeId))
+        val rawUserId = managedLives.firstOrNull()?.userId ?: sharedPrefManager.getUserId()
+        val effectiveUserId = normalizeUserId(rawUserId)
+        val updatedLives = getMyLifeByUserId(effectiveUserId)
+        cacheMyLifeItems(effectiveUserId ?: "--", updatedLives)
+        return updatedLives
+    }
+
+    override suspend fun updateMyLifeListOrder(list: List<MyLife>) {
+        if (list.isEmpty()) return
+        val rawUserId = list.firstOrNull()?.userId ?: sharedPrefManager.getUserId()
+        val effectiveUserId = normalizeUserId(rawUserId)
+        val idToIndex = buildMap(list.size) {
+            list.forEachIndexed { index, item ->
+                put(item._id, index)
             }
         }
-    }
+        val ids = idToIndex.keys.filter { it.isNotEmpty() }
+        if (ids.isEmpty()) return
 
-    override suspend fun updateMyLifeListOrder(list: List<RealmMyLife>) {
-        executeTransaction { realm ->
-            val ids = list.mapNotNull { it._id }.toTypedArray()
-            if (ids.isEmpty()) return@executeTransaction
-            val managedLives = realm.where(RealmMyLife::class.java).`in`("_id", ids).findAll()
-            managedLives.forEach { managedLife ->
-                val index = list.indexOfFirst { it._id == managedLife._id }
-                if (index != -1) {
-                    managedLife.weight = index
-                }
+        val managedLives = myLifeDao.getByIds(ids)
+        val changed = managedLives.mapNotNull { managedLife ->
+            val index = idToIndex[managedLife._id]
+            if (index != null && managedLife.weight != index) {
+                managedLife.weight = index
+                managedLife
+            } else {
+                null
             }
         }
+
+        if (changed.isNotEmpty()) {
+            myLifeDao.update(changed)
+        }
+        val updatedLives = getMyLifeByUserId(effectiveUserId)
+        cacheMyLifeItems(effectiveUserId ?: "--", updatedLives)
     }
 
-    override suspend fun getMyLifeByUserId(userId: String?, ensureLatest: Boolean): List<RealmMyLife> {
-        return queryList(RealmMyLife::class.java, ensureLatest) {
-            equalTo("userId", userId)
-        }.sortedBy { it.weight }
+    private fun MyLife.dedupKey(): Any {
+        return imageId?.takeIf { it.isNotBlank() }
+            ?: title?.takeIf { it.isNotBlank() }
+            ?: _id.takeIf { it.isNotBlank() }
+            ?: listOf(userId, isVisible, weight)
     }
 
-    override suspend fun seedMyLifeIfEmpty(userId: String?, items: List<RealmMyLife>) {
-        executeTransaction { realm ->
-            val existing = realm.where(RealmMyLife::class.java).equalTo("userId", userId).findAll()
-            if (existing.isEmpty()) {
+    override suspend fun getMyLifeByUserId(userId: String?, defaultItems: List<MyLife>): List<MyLife> {
+        val effectiveUserId = normalizeUserId(userId)
+        val items = myLifeDao.getByUserId(effectiveUserId).distinctBy { it.dedupKey() }.sortedBy { it.weight }
+        if (items.isNotEmpty() || defaultItems.isEmpty()) {
+            return items
+        }
+        val seeded = seedMyLifeIfEmpty(effectiveUserId, defaultItems)
+        if (seeded.isNotEmpty()) {
+            return seeded
+        }
+        return myLifeDao.getByUserId(effectiveUserId).distinctBy { it.dedupKey() }.sortedBy { it.weight }
+    }
+
+    private suspend fun getVisibleMyLifeByUserId(userId: String?): List<MyLife> {
+        val effectiveUserId = normalizeUserId(userId)
+        return myLifeDao.getVisibleByUserId(effectiveUserId).distinctBy { it.dedupKey() }.sortedBy { it.weight }
+    }
+
+    override suspend fun getMyLifeForDashboard(userId: String, seedBase: List<MyLife>): List<MyLife> {
+        val effectiveUserId = normalizeUserId(userId)
+        val visibleForUser = getVisibleMyLifeByUserId(effectiveUserId)
+        if (visibleForUser.isNotEmpty()) {
+            return visibleForUser
+        }
+        if (myLifeDao.countByUserId(effectiveUserId) > 0) {
+            return emptyList()
+        }
+
+        val cacheKey = effectiveUserId ?: "--"
+        val json = sharedPrefManager.rawPreferences.getString("$MY_LIFE_CACHE_PREFIX$cacheKey", null)
+        if (json != null) {
+            val cached: List<CachedMyLifeItem>? = try {
+                val type = object : TypeToken<List<CachedMyLifeItem>>() {}.type
+                gson.fromJson(json, type)
+            } catch (e: Exception) {
+                null
+            }
+            if (cached != null) {
+                return cached.mapNotNull { item ->
+                    if (item.isVisible) {
+                        MyLife(item.imageId, effectiveUserId, item.title).apply {
+                            isVisible = item.isVisible
+                            weight = item.weight
+                        }
+                    } else {
+                        null
+                    }
+                }.sortedBy { it.weight }
+            }
+        }
+
+        val seeded = seedMyLifeIfEmpty(effectiveUserId, seedBase).ifEmpty {
+            getMyLifeByUserId(effectiveUserId)
+        }
+        cacheMyLifeItems(cacheKey, seeded)
+        return seeded.filter { it.isVisible }.sortedBy { it.weight }
+    }
+
+    private fun cacheMyLifeItems(userId: String, items: List<MyLife>) {
+        val cached = items.map { CachedMyLifeItem(it.imageId, it.title, it.isVisible, it.weight) }
+        sharedPrefManager.rawPreferences.edit { putString("$MY_LIFE_CACHE_PREFIX$userId", gson.toJson(cached)) }
+    }
+
+    override suspend fun seedMyLifeIfEmpty(userId: String?, items: List<MyLife>): List<MyLife> {
+        val effectiveUserId = normalizeUserId(userId)
+        return seedMutex.withLock {
+            val existing = myLifeDao.countByUserId(effectiveUserId)
+            if (existing == 0) {
                 var weight = 1
                 val newItems = items.map { item ->
-                    RealmMyLife().apply {
+                    MyLife().apply {
                         _id = UUID.randomUUID().toString()
                         title = item.title
                         imageId = item.imageId
                         this.weight = weight++
-                        this.userId = item.userId
+                        this.userId = effectiveUserId
                         isVisible = true
                     }
                 }
-                realm.insertOrUpdate(newItems)
+                myLifeDao.insertAll(newItems)
+                newItems.distinctBy { it.dedupKey() }.sortedBy { it.weight }
+            } else {
+                emptyList()
             }
         }
     }

@@ -4,12 +4,12 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.widget.AppCompatTextView
 import androidx.fragment.app.Fragment
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMemberDetailBinding
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
+import org.ole.planet.myplanet.utils.ImageUtils
 
 class MembersDetailFragment : Fragment() {
     private var _binding: FragmentMemberDetailBinding? = null
@@ -28,13 +28,11 @@ class MembersDetailFragment : Fragment() {
             val username = args.getString("username")?.trim()
             val imageUrl = args.getString("profile_photo_url")
             binding.tvProfileName.text = if (fullName.isNullOrEmpty()) username else fullName
-            Glide.with(requireContext())
-                .load(imageUrl)
-                .diskCacheStrategy(DiskCacheStrategy.ALL)
-                .circleCrop()
-                .placeholder(R.drawable.profile)
-                .error(R.drawable.profile)
-                .into(binding.memberImage)
+            ImageUtils.loadProfileImage(
+                imageUrl,
+                binding.memberImage,
+                resources.getDimensionPixelSize(R.dimen.user_image_size)
+            )
 
             setFieldOrHide(binding.tvFullName, fullName)
             setFieldOrHide(binding.tvProfileEmail, args.getString("profile_email"))
@@ -62,7 +60,7 @@ class MembersDetailFragment : Fragment() {
                 && !value.isBlank()
         if (shouldShow) {
             when (view) {
-                is androidx.appcompat.widget.AppCompatTextView -> view.text = value
+                is AppCompatTextView -> view.text = value
             }
             view.visibility = View.VISIBLE
             (view.parent as? View)?.visibility = View.VISIBLE
@@ -74,7 +72,6 @@ class MembersDetailFragment : Fragment() {
 
 
     companion object {
-        @JvmStatic
         fun newInstance(
             name: String,
             email: String,

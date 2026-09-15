@@ -1,20 +1,22 @@
 package org.ole.planet.myplanet.ui.feedback
 
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.core.content.res.ResourcesCompat
+import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFeedbackBinding
-import org.ole.planet.myplanet.model.RealmFeedback
+import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.ui.feedback.FeedbackAdapter.FeedbackViewHolder
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
 
 class FeedbackAdapter :
-    ListAdapter<RealmFeedback, FeedbackViewHolder>(
+    ListAdapter<Feedback, FeedbackViewHolder>(
         DiffUtils.itemCallback(
             { oldItem, newItem ->
                 oldItem.id == newItem.id
@@ -29,7 +31,21 @@ class FeedbackAdapter :
         )
     ) {
 
+    private var primaryColorStateList: ColorStateList? = null
+    private var greyColorStateList: ColorStateList? = null
+    private var statusText: String? = null
+    private var priorityText: String? = null
+    private var openDateText: String? = null
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FeedbackViewHolder {
+        if (primaryColorStateList == null || greyColorStateList == null) {
+            val context = parent.context
+            primaryColorStateList = ColorStateList.valueOf(ContextCompat.getColor(context, R.color.mainColor))
+            greyColorStateList = ColorStateList.valueOf(ContextCompat.getColor(context, R.color.md_amber_500))
+            statusText = context.getString(R.string.status)
+            priorityText = context.getString(R.string.priority)
+            openDateText = context.getString(R.string.open_date)
+        }
         val binding = RowFeedbackBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return FeedbackViewHolder(binding)
     }
@@ -43,37 +59,40 @@ class FeedbackAdapter :
         binding.tvType.text = feedback.type
         binding.tvPriority.text = feedback.priority
         binding.tvStatus.text = feedback.status
+        val formattedDate = getFormattedDate(feedback.openTime)
         val contentDescription = "${feedback.title}, ${feedback.type}, " +
-                "${context.getString(R.string.status)}: ${feedback.status}, ${context.getString(R.string.priority)}: ${feedback.priority}, " +
-                "${context.getString(R.string.open_date)}: ${getFormattedDate(feedback.openTime)}"
+                "${statusText}: ${feedback.status}, ${priorityText}: ${feedback.priority}, " +
+                "${openDateText}: ${formattedDate}"
         binding.feedbackCardView.contentDescription = contentDescription
 
-        if ("yes".equals(feedback.priority, ignoreCase = true)) {
-            binding.tvPriority.background =
-                ResourcesCompat.getDrawable(context.resources, R.drawable.bg_primary, null)
-        } else {
-            binding.tvPriority.background =
-                ResourcesCompat.getDrawable(context.resources, R.drawable.bg_grey, null)
-        }
-        binding.tvStatus.background = ResourcesCompat.getDrawable(
-            context.resources,
-            if ("open".equals(feedback.status, ignoreCase = true)) {
-                R.drawable.bg_primary
-            } else {
-                R.drawable.bg_grey
-            },
-            null
+        ViewCompat.setBackgroundTintList(
+            binding.tvPriority,
+            if ("yes".equals(feedback.priority, ignoreCase = true)) primaryColorStateList else greyColorStateList
         )
-        binding.tvOpenDate.text = getFormattedDate(feedback.openTime)
-        binding.root.setOnClickListener {
-            binding.root.contentDescription = feedback.title
-            context.startActivity(
-                Intent(context, FeedbackDetailActivity::class.java)
-                    .putExtra("id", feedback.id)
-            )
-        }
+        ViewCompat.setBackgroundTintList(
+            binding.tvStatus,
+            if ("open".equals(feedback.status, ignoreCase = true)) primaryColorStateList else greyColorStateList
+        )
+        binding.tvOpenDate.text = formattedDate
     }
 
-    class FeedbackViewHolder(val rowFeedbackBinding: RowFeedbackBinding) :
-        RecyclerView.ViewHolder(rowFeedbackBinding.root)
+    inner class FeedbackViewHolder(val rowFeedbackBinding: RowFeedbackBinding) :
+        RecyclerView.ViewHolder(rowFeedbackBinding.root) {
+        init {
+            val context = rowFeedbackBinding.root.context
+            rowFeedbackBinding.tvPriority.background = ContextCompat.getDrawable(context, R.drawable.bg_primary)
+            rowFeedbackBinding.tvStatus.background = ContextCompat.getDrawable(context, R.drawable.bg_primary)
+
+            rowFeedbackBinding.root.setOnClickListener {
+                if (bindingAdapterPosition != RecyclerView.NO_POSITION) {
+                    val feedback = getItem(bindingAdapterPosition)
+                    rowFeedbackBinding.root.contentDescription = feedback.title
+                    context.startActivity(
+                        Intent(context, FeedbackDetailActivity::class.java)
+                            .putExtra("id", feedback.id)
+                    )
+                }
+            }
+        }
+    }
 }

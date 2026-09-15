@@ -8,18 +8,16 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.RatingEntry
 import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class RatingsViewModel @Inject constructor(
     private val ratingsRepository: RatingsRepository,
-    private val userRepository: UserRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val _ratingState = MutableStateFlow<RatingUiState>(RatingUiState.Loading)
@@ -28,8 +26,8 @@ class RatingsViewModel @Inject constructor(
     private val _submitState = MutableStateFlow<SubmitState>(SubmitState.Idle)
     val submitState: StateFlow<SubmitState> = _submitState.asStateFlow()
 
-    private val _userState = MutableStateFlow<RealmUser?>(null)
-    val userState: StateFlow<RealmUser?> = _userState.asStateFlow()
+    private val _userState = MutableStateFlow<UserEntity?>(null)
+    val userState: StateFlow<UserEntity?> = _userState.asStateFlow()
 
     sealed class RatingUiState {
         object Loading : RatingUiState()
@@ -49,12 +47,20 @@ class RatingsViewModel @Inject constructor(
         data class Error(val message: String) : SubmitState()
     }
 
-    fun loadRatingData(type: String, itemId: String, userId: String) {
-        viewModelScope.launch(dispatcherProvider.io) {
+    fun loadRatingData(type: String, itemId: String) {
+        viewModelScope.launch {
             try {
                 _ratingState.value = RatingUiState.Loading
 
-                _userState.value = userRepository.getUserById(userId)
+                val user = userRepository.getUserProfile()
+                _userState.value = user
+
+                if (user == null) {
+                    _ratingState.value = RatingUiState.Error("User not found")
+                    return@launch
+                }
+
+                val userId = user.id?.takeIf { it.isNotBlank() } ?: user._id ?: ""
 
                 val summary = ratingsRepository.getRatingSummary(type, itemId, userId)
                 _ratingState.value = summary.toUiState()
@@ -69,15 +75,14 @@ class RatingsViewModel @Inject constructor(
         type: String,
         itemId: String,
         title: String,
-        userId: String,
         rating: Float,
         comment: String
     ) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             try {
                 _submitState.value = SubmitState.Submitting
 
-                val user = _userState.value ?: userRepository.getUserById(userId)
+                val user = _userState.value ?: userRepository.getUserProfile()
 
                 if (user == null) {
                     _submitState.value = SubmitState.Error("User not found")
@@ -90,7 +95,7 @@ class RatingsViewModel @Inject constructor(
                     type = type,
                     itemId = itemId,
                     title = title,
-                    userId = user.id?.takeIf { it.isNotBlank() } ?: user._id ?: userId,
+                    user = user,
                     rating = rating,
                     comment = comment
                 )

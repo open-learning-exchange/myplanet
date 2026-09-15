@@ -1,54 +1,70 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import io.mockk.coEvery
-import io.mockk.every
+import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.spyk
 import io.mockk.unmockkAll
-import io.mockk.verify
-import io.realm.RealmQuery
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.model.RealmAnswer
-import org.ole.planet.myplanet.model.RealmCourseProgress
-import org.ole.planet.myplanet.model.RealmCourseStep
-import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.data.room.dao.AnswerDao
+import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
+import org.ole.planet.myplanet.data.room.dao.CourseStepDao
+import org.ole.planet.myplanet.data.room.dao.ExamDao
+import org.ole.planet.myplanet.data.room.dao.QuestionDao
+import org.ole.planet.myplanet.data.room.dao.SubmissionDao
+import org.ole.planet.myplanet.model.Answer
+import org.ole.planet.myplanet.model.CourseProgress
+import org.ole.planet.myplanet.model.CourseStep
+import org.ole.planet.myplanet.model.ExamQuestion
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @ExperimentalCoroutinesApi
 class ProgressRepositoryImplTest {
 
     private lateinit var repository: ProgressRepositoryImpl
-    private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
+    private val dispatcherProvider: DispatcherProvider = org.ole.planet.myplanet.utils.TestDispatcherProvider(testDispatcher)
     private val testScope = TestScope(testDispatcher)
-    private val databaseService: DatabaseService = mockk(relaxed = true)
     private lateinit var mockCoursesRepository: CoursesRepository
+    private val courseProgressDao: CourseProgressDao = mockk(relaxed = true)
+    private val courseStepDao: CourseStepDao = mockk(relaxed = true)
+    private val examDao: ExamDao = mockk(relaxed = true)
+    private val submissionDao: SubmissionDao = mockk(relaxed = true)
+    private val answerDao: AnswerDao = mockk(relaxed = true)
+    private val questionDao: QuestionDao = mockk(relaxed = true)
 
     @Before
     fun setUp() {
-        every { dispatcherProvider.io } returns testDispatcher
         mockCoursesRepository = mockk<CoursesRepository>()
         coEvery { mockCoursesRepository.getMyCourses(any()) } returns emptyList()
-        repository = spyk(ProgressRepositoryImpl(
-            databaseService,
-            UnconfinedTestDispatcher(),
-            dispatcherProvider,
-            { mockCoursesRepository },
-            { mockk(relaxed = true) }
-        ), recordPrivateCalls = true)
+        repository = spyk(
+            ProgressRepositoryImpl(
+                dispatcherProvider,
+                dagger.Lazy { mockCoursesRepository },
+                dagger.Lazy { mockk(relaxed = true) },
+                courseProgressDao,
+                courseStepDao,
+                examDao,
+                submissionDao,
+                answerDao,
+                questionDao
+            ),
+            recordPrivateCalls = true
+        )
     }
 
     @After
@@ -58,6 +74,7 @@ class ProgressRepositoryImplTest {
 
     @Test
     fun fetchCourseData_executes_successfully() = runTest(testDispatcher) {
+        coEvery { submissionDao.getExamSubmissionsByUser("user123") } returns emptyList()
         val result = repository.fetchCourseData("user123")
         assertEquals(JsonArray(), result)
     }
@@ -65,13 +82,11 @@ class ProgressRepositoryImplTest {
     @Test
     fun testGetCurrentProgress_EmptyProgress() = testScope.runTest {
         val steps = listOf(
-            RealmCourseStep().apply { id = "step1" },
-            RealmCourseStep().apply { id = "step2" }
+            CourseStep().apply { id = "step1" },
+            CourseStep().apply { id = "step2" }
         )
 
-        coEvery {
-            repository invoke "queryList" withArguments listOf(RealmCourseProgress::class.java, any<Function1<RealmQuery<RealmCourseProgress>, Unit>>())
-        } returns emptyList<RealmCourseProgress>()
+        coEvery { courseProgressDao.getByUserAndCourse("user1", "course1") } returns emptyList()
 
         val progress = repository.getCurrentProgress(steps, "user1", "course1")
         advanceUntilIdle()
@@ -81,36 +96,30 @@ class ProgressRepositoryImplTest {
     @Test
     fun testGetCurrentProgress_GapsInSteps() = testScope.runTest {
         val steps = listOf(
-            RealmCourseStep().apply { id = "step1" },
-            RealmCourseStep().apply { id = "step2" },
-            RealmCourseStep().apply { id = "step3" },
-            RealmCourseStep().apply { id = "step4" }
+            CourseStep().apply { id = "step1" },
+            CourseStep().apply { id = "step2" },
+            CourseStep().apply { id = "step3" },
+            CourseStep().apply { id = "step4" }
         )
 
-        // Steps 1 and 3 are present, 2 is missing. The gap is at step 2, so progress should be 1.
         val progresses = listOf(
-            RealmCourseProgress().apply { stepNum = 1 },
-            RealmCourseProgress().apply { stepNum = 3 }
+            CourseProgress().apply { stepNum = 1 },
+            CourseProgress().apply { stepNum = 3 }
         )
 
-        coEvery {
-            repository invoke "queryList" withArguments listOf(RealmCourseProgress::class.java, any<Function1<RealmQuery<RealmCourseProgress>, Unit>>())
-        } returns progresses
+        coEvery { courseProgressDao.getByUserAndCourse("user1", "course1") } returns progresses
 
         var progress = repository.getCurrentProgress(steps, "user1", "course1")
         advanceUntilIdle()
         assertEquals(1, progress)
 
-        // Now test where 1, 2, 3 are present, 4 is missing, to ensure it doesn't just always return 1
         val progresses2 = listOf(
-            RealmCourseProgress().apply { stepNum = 1 },
-            RealmCourseProgress().apply { stepNum = 2 },
-            RealmCourseProgress().apply { stepNum = 3 }
+            CourseProgress().apply { stepNum = 1 },
+            CourseProgress().apply { stepNum = 2 },
+            CourseProgress().apply { stepNum = 3 }
         )
 
-        coEvery {
-            repository invoke "queryList" withArguments listOf(RealmCourseProgress::class.java, any<Function1<RealmQuery<RealmCourseProgress>, Unit>>())
-        } returns progresses2
+        coEvery { courseProgressDao.getByUserAndCourse("user1", "course1") } returns progresses2
 
         progress = repository.getCurrentProgress(steps, "user1", "course1")
         advanceUntilIdle()
@@ -120,18 +129,16 @@ class ProgressRepositoryImplTest {
     @Test
     fun testGetCurrentProgress_FullyCompleted() = testScope.runTest {
         val steps = listOf(
-            RealmCourseStep().apply { id = "step1" },
-            RealmCourseStep().apply { id = "step2" }
+            CourseStep().apply { id = "step1" },
+            CourseStep().apply { id = "step2" }
         )
 
         val progresses = listOf(
-            RealmCourseProgress().apply { stepNum = 1 },
-            RealmCourseProgress().apply { stepNum = 2 }
+            CourseProgress().apply { stepNum = 1 },
+            CourseProgress().apply { stepNum = 2 }
         )
 
-        coEvery {
-            repository invoke "queryList" withArguments listOf(RealmCourseProgress::class.java, any<Function1<RealmQuery<RealmCourseProgress>, Unit>>())
-        } returns progresses
+        coEvery { courseProgressDao.getByUserAndCourse("user1", "course1") } returns progresses
 
         val progress = repository.getCurrentProgress(steps, "user1", "course1")
         advanceUntilIdle()
@@ -141,26 +148,26 @@ class ProgressRepositoryImplTest {
     @Test
     fun testFetchCourseData_PopulatesFieldsCorrectly() = testScope.runTest {
         val myCourses = listOf(
-            org.ole.planet.myplanet.model.RealmMyCourse().apply {
+            MyCourse().apply {
                 courseId = "course1"
                 courseTitle = "Test Course"
             }
         )
 
         val steps = listOf(
-            RealmCourseStep().apply { courseId = "course1" }
+            CourseStep().apply { courseId = "course1" }
         )
-        myCourses[0].courseSteps = io.realm.RealmList(*steps.toTypedArray())
+        myCourses[0].courseSteps = steps.toMutableList()
 
         val exams = listOf(
-            RealmStepExam().apply {
+            StepExam().apply {
                 id = "exam1"
                 courseId = "course1"
             }
         )
 
         val submissions = listOf(
-            RealmSubmission().apply {
+            Submission().apply {
                 id = "sub1"
                 userId = "user1"
                 parentId = "course1"
@@ -169,46 +176,49 @@ class ProgressRepositoryImplTest {
         )
 
         val answers = listOf(
-            RealmAnswer().apply {
+            Answer().apply {
                 submissionId = "sub1"
                 questionId = "q1"
                 mistakes = 2
             }
         )
 
-        val question = RealmExamQuestion().apply {
+        val question = ExamQuestion().apply {
             id = "q1"
             examId = "exam1"
         }
 
         coEvery { mockCoursesRepository.getMyCourses(any()) } returns myCourses
 
-        coEvery {
-            repository invoke "queryList" withArguments listOf(RealmCourseStep::class.java, any<Function1<RealmQuery<RealmCourseStep>, Unit>>())
-        } returns steps
+        coEvery { courseStepDao.getByCourseIds(listOf("course1")) } returns steps.mapIndexed { index, step ->
+            CourseStep(id = step.id ?: "step$index", courseId = step.courseId)
+        }
 
-        coEvery {
-            repository invoke "queryList" withArguments listOf(RealmCourseProgress::class.java, any<Function1<RealmQuery<RealmCourseProgress>, Unit>>())
-        } returns listOf(RealmCourseProgress().apply {
+        coEvery { courseProgressDao.getByUserAndCourseIds("user1", listOf("course1")) } returns listOf(CourseProgress().apply {
             stepNum = 1
             courseId = "course1"
         })
 
-        coEvery {
-            repository invoke "queryList" withArguments listOf(RealmSubmission::class.java, any<Function1<RealmQuery<RealmSubmission>, Unit>>())
-        } returns submissions
+        coEvery { submissionDao.getExamSubmissionsByUser("user1") } returns submissions.map { submission ->
+            Submission(id = submission.id ?: "submission", parentId = submission.parentId, userId = submission.userId, type = submission.type)
+        }
 
-        coEvery {
-            repository invoke "queryList" withArguments listOf(RealmStepExam::class.java, any<Function1<RealmQuery<RealmStepExam>, Unit>>())
-        } returns exams
+        coEvery { examDao.getByCourseIds(listOf("course1")) } returns exams.map { exam ->
+            StepExam(id = exam.id ?: "exam", courseId = exam.courseId, stepId = exam.stepId, type = exam.type)
+        }
 
-        coEvery {
-            repository invoke "queryList" withArguments listOf(RealmAnswer::class.java, any<Function1<RealmQuery<RealmAnswer>, Unit>>())
-        } returns answers
+        coEvery { answerDao.getBySubmissionIds(listOf("sub1")) } returns answers.map { answer ->
+            org.ole.planet.myplanet.model.Answer(
+                id = answer.id ?: "answer",
+                questionId = answer.questionId,
+                submissionId = answer.submissionId,
+                mistakes = answer.mistakes,
+            )
+        }
 
-        coEvery {
-            repository invoke "queryList" withArguments listOf(RealmExamQuestion::class.java, any<Function1<RealmQuery<RealmExamQuestion>, Unit>>())
-        } returns listOf(question)
+        coEvery { questionDao.getByIds(listOf("q1")) } returns listOf(
+            org.ole.planet.myplanet.model.ExamQuestion(id = question.id ?: "q1", examId = question.examId)
+        )
 
         val data = repository.fetchCourseData("user1")
         advanceUntilIdle()
@@ -226,45 +236,42 @@ class ProgressRepositoryImplTest {
         assertEquals(2, obj.get("mistakes").asInt)
 
         val stepMistake = obj.get("stepMistake").asJsonObject
-        assertEquals(2, stepMistake.get("0").asInt) // Exam 1 is at index 0
+        assertEquals(2, stepMistake.get("0").asInt)
     }
+
     @Test
     fun testGetCourseProgress() = testScope.runTest {
         val courseIds = listOf("course1", "course2")
-        val steps1 = listOf(RealmCourseStep().apply { courseId = "course1" })
-        val steps2 = listOf(RealmCourseStep().apply { courseId = "course2" }, RealmCourseStep().apply { courseId = "course2" })
+        val steps1 = listOf(CourseStep().apply { courseId = "course1" })
+        val steps2 = listOf(CourseStep().apply { courseId = "course2" }, CourseStep().apply { courseId = "course2" })
 
-        val progresses1 = listOf(RealmCourseProgress().apply { courseId = "course1"; stepNum = 1 })
+        val progresses1 = listOf(CourseProgress().apply { courseId = "course1"; stepNum = 1 })
 
-        coEvery {
-            repository invoke "queryList" withArguments listOf(RealmCourseStep::class.java, any<Function1<RealmQuery<RealmCourseStep>, Unit>>())
-        } returns steps1 + steps2
+        coEvery { courseStepDao.getByCourseIds(courseIds) } returns (steps1 + steps2).mapIndexed { index, step ->
+            CourseStep(id = step.id ?: "step$index", courseId = step.courseId)
+        }
 
-        coEvery {
-            repository invoke "queryList" withArguments listOf(RealmCourseProgress::class.java, any<Function1<RealmQuery<RealmCourseProgress>, Unit>>())
-        } returns progresses1
+        coEvery { courseProgressDao.getByUserAndCourseIds("user1", courseIds) } returns progresses1
 
         val result = repository.getCourseProgress(courseIds, "user1")
         advanceUntilIdle()
 
         assertEquals(2, result.size)
-        assertEquals(1, result["course1"]?.get("max")?.asInt)
-        assertEquals(1, result["course1"]?.get("current")?.asInt)
+        assertEquals(1, result["course1"]?.max)
+        assertEquals(1, result["course1"]?.current)
 
-        assertEquals(2, result["course2"]?.get("max")?.asInt)
-        assertEquals(0, result["course2"]?.get("current")?.asInt)
+        assertEquals(2, result["course2"]?.max)
+        assertEquals(0, result["course2"]?.current)
     }
 
     @Test
     fun testGetProgressRecords() = testScope.runTest {
         val progresses = listOf(
-            RealmCourseProgress().apply { userId = "user1"; courseId = "course1" },
-            RealmCourseProgress().apply { userId = "user1"; courseId = "course2" }
+            CourseProgress().apply { userId = "user1"; courseId = "course1" },
+            CourseProgress().apply { userId = "user1"; courseId = "course2" }
         )
 
-        coEvery {
-            repository invoke "queryList" withArguments listOf(RealmCourseProgress::class.java, any<Function1<RealmQuery<RealmCourseProgress>, Unit>>())
-        } returns progresses
+        coEvery { courseProgressDao.getByUser("user1") } returns progresses
 
         val result = repository.getProgressRecords("user1")
         advanceUntilIdle()
@@ -276,27 +283,28 @@ class ProgressRepositoryImplTest {
     @Test
     fun testGetCompletedCourses() = testScope.runTest {
         val myCourses = listOf(
-            org.ole.planet.myplanet.model.RealmMyCourse().apply {
+            MyCourse().apply {
                 courseId = "course1"
                 courseTitle = "Course 1"
-                courseSteps = io.realm.RealmList(RealmCourseStep().apply { courseId = "course1" })
+                courseSteps = mutableListOf(CourseStep().apply { courseId = "course1" })
             },
-            org.ole.planet.myplanet.model.RealmMyCourse().apply {
+            MyCourse().apply {
                 courseId = "course2"
                 courseTitle = "Course 2"
-                courseSteps = io.realm.RealmList(RealmCourseStep().apply { courseId = "course2" }, RealmCourseStep().apply { courseId = "course2" })
+                courseSteps = mutableListOf(
+                    CourseStep().apply { courseId = "course2" },
+                    CourseStep().apply { courseId = "course2" }
+                )
             }
         )
 
         val progresses = listOf(
-            RealmCourseProgress().apply { courseId = "course1"; stepNum = 1; passed = true },
-            RealmCourseProgress().apply { courseId = "course2"; stepNum = 1; passed = true }
+            CourseProgress().apply { courseId = "course1"; stepNum = 1; passed = true },
+            CourseProgress().apply { courseId = "course2"; stepNum = 1; passed = true }
         )
 
         coEvery { mockCoursesRepository.getMyCourses("user1") } returns myCourses
-        coEvery {
-            repository invoke "queryList" withArguments listOf(RealmCourseProgress::class.java, any<Function1<RealmQuery<RealmCourseProgress>, Unit>>())
-        } returns progresses
+        coEvery { courseProgressDao.getByUser("user1") } returns progresses
 
         val result = repository.getCompletedCourses("user1")
         advanceUntilIdle()
@@ -310,11 +318,15 @@ class ProgressRepositoryImplTest {
     fun testHasUserCompletedSync() = testScope.runTest {
         val activitiesRepo = mockk<ActivitiesRepository>()
         val localRepository = ProgressRepositoryImpl(
-            databaseService,
-            UnconfinedTestDispatcher(),
             dispatcherProvider,
-            { mockCoursesRepository },
-            { activitiesRepo }
+            dagger.Lazy { mockCoursesRepository },
+            dagger.Lazy { activitiesRepo },
+            courseProgressDao,
+            courseStepDao,
+            examDao,
+            submissionDao,
+            answerDao,
+            questionDao
         )
 
         coEvery { activitiesRepo.hasUserCompletedSync("user1") } returns true
@@ -334,152 +346,86 @@ class ProgressRepositoryImplTest {
 
     @Test
     fun testSaveCourseProgress() = testScope.runTest {
-        val mockProgress = RealmCourseProgress()
-
-        coEvery {
-            repository invoke "executeTransaction" withArguments listOf(any<Function1<io.realm.Realm, Unit>>())
-        } answers {
-            val transaction = firstArg<Function1<io.realm.Realm, Unit>>()
-            val mockRealm = mockk<io.realm.Realm>(relaxed = true)
-            val mockQuery = mockk<RealmQuery<RealmCourseProgress>>(relaxed = true)
-            every { mockRealm.where(RealmCourseProgress::class.java) } returns mockQuery
-            every { mockQuery.equalTo(any<String>(), any<String>()) } returns mockQuery
-            every { mockQuery.equalTo(any<String>(), any<Int>()) } returns mockQuery
-            every { mockQuery.findFirst() } returns null
-
-            every { mockRealm.createObject(RealmCourseProgress::class.java, any<String>()) } returns mockProgress
-
-            transaction.invoke(mockRealm)
-        }
+        coEvery { courseProgressDao.findByCourseUserAndStep("course1", "user1", 1) } returns null
 
         repository.saveCourseProgress("user1", "planet1", "parent1", "course1", 1, true)
         advanceUntilIdle()
 
-        io.mockk.coVerify { repository invoke "executeTransaction" withArguments listOf(any<Function1<io.realm.Realm, Unit>>()) }
-
-        assertEquals("course1", mockProgress.courseId)
-        assertEquals("user1", mockProgress.userId)
-        assertEquals(1, mockProgress.stepNum)
-        assertEquals(true, mockProgress.passed)
-        assertEquals("planet1", mockProgress.createdOn)
-        assertEquals("parent1", mockProgress.parentCode)
+        coVerify {
+            courseProgressDao.upsert(match { progress ->
+                progress.courseId == "course1" &&
+                    progress.userId == "user1" &&
+                    progress.stepNum == 1 &&
+                    progress.passed &&
+                    progress.createdOn == "planet1" &&
+                    progress.parentCode == "parent1"
+            })
+        }
     }
 
     @Test
-    fun testBulkInsertFromSync() {
-        val mockRealm = mockk<io.realm.Realm>(relaxed = true)
-        val jsonArray = JsonArray()
-
-        val doc1 = com.google.gson.JsonObject().apply {
+    fun testInsertCourseProgressFromSync() = testScope.runTest {
+        val doc1 = JsonObject().apply {
             addProperty("_id", "doc1")
             addProperty("courseId", "course1")
             addProperty("userId", "user1")
             addProperty("stepNum", 1)
             addProperty("passed", true)
         }
-        val item1 = com.google.gson.JsonObject().apply { add("doc", doc1) }
-        jsonArray.add(item1)
+        coEvery { courseProgressDao.getByIds(listOf("doc1")) } returns emptyList()
+        coEvery { courseProgressDao.getByCourseUsersAndSteps(listOf(Triple("course1", "user1", 1))) } returns emptyList()
 
-        val mockQuery = mockk<io.realm.RealmQuery<RealmCourseProgress>>(relaxed = true)
-        val mockResults = mockk<io.realm.RealmResults<RealmCourseProgress>>(relaxed = true)
+        repository.insertCourseProgressFromSync(listOf(doc1))
 
-        every { mockRealm.where(RealmCourseProgress::class.java) } returns mockQuery
-        every { mockRealm.copyFromRealm(any<io.realm.RealmResults<RealmCourseProgress>>()) } answers { firstArg<io.realm.RealmResults<RealmCourseProgress>>().toList() }
-        every { mockQuery.`in`(any<String>(), any<Array<String>>()) } returns mockQuery
-        every { mockQuery.`in`(any<String>(), any<Array<Int>>()) } returns mockQuery
-        every { mockQuery.findAll() } returns mockResults
-        every { mockResults.iterator() } returns mutableListOf<RealmCourseProgress>().iterator()
-
-        val mockProgress = RealmCourseProgress()
-        every { mockRealm.createObject(RealmCourseProgress::class.java, any<String>()) } returns mockProgress
-
-        repository.bulkInsertFromSync(mockRealm, jsonArray)
-
-        verify { mockRealm.where(RealmCourseProgress::class.java) }
-        verify { mockRealm.createObject(RealmCourseProgress::class.java, "doc1") }
-
-        assertEquals("doc1", mockProgress._id)
-        assertEquals("course1", mockProgress.courseId)
-        assertEquals("user1", mockProgress.userId)
-        assertEquals(1, mockProgress.stepNum)
-        assertEquals(true, mockProgress.passed)
+        coVerify {
+            courseProgressDao.upsertAll(match { progress ->
+                progress.size == 1 &&
+                    progress.first().id == "doc1" &&
+                    progress.first()._id == "doc1" &&
+                    progress.first().courseId == "course1" &&
+                    progress.first().userId == "user1" &&
+                    progress.first().stepNum == 1 &&
+                    progress.first().passed
+            })
+        }
     }
 
     @Test
-    fun testBulkInsertFromSync_dedup() {
-        val mockRealm = mockk<io.realm.Realm>(relaxed = true)
-        val jsonArray = JsonArray()
-
-        val doc1 = com.google.gson.JsonObject().apply {
+    fun testInsertCourseProgressFromSync_dedup() = testScope.runTest {
+        val doc1 = JsonObject().apply {
             addProperty("_id", "doc1")
             addProperty("courseId", "course1")
             addProperty("userId", "user1")
             addProperty("stepNum", 1)
             addProperty("passed", false)
         }
-        val item1 = com.google.gson.JsonObject().apply { add("doc", doc1) }
-        jsonArray.add(item1)
-
-        val mockQuery = mockk<io.realm.RealmQuery<RealmCourseProgress>>(relaxed = true)
-        val mockResults = mockk<io.realm.RealmResults<RealmCourseProgress>>(relaxed = true)
-
-        every { mockRealm.where(RealmCourseProgress::class.java) } returns mockQuery
-        every { mockQuery.`in`(any<String>(), any<Array<String>>()) } returns mockQuery
-        every { mockQuery.`in`(any<String>(), any<Array<Int>>()) } returns mockQuery
-        every { mockQuery.findAll() } returns mockResults
-
-        val existingProgress = mockk<RealmCourseProgress>(relaxed = true)
-        every { existingProgress._id } returns null
-        every { existingProgress.passed } returns true
-        every { existingProgress.courseId } returns "course1"
-        every { existingProgress.userId } returns "user1"
-        every { existingProgress.stepNum } returns 1
-        every { existingProgress.isValid } returns true
-
-        // For the first query (ID lookup), return empty list. For the second (local records lookup), return the existing record.
-        val emptyResults = mockk<io.realm.RealmResults<RealmCourseProgress>>(relaxed = true)
-        every { emptyResults.iterator() } returns mutableListOf<RealmCourseProgress>().iterator()
-
-        val localResults = mockk<io.realm.RealmResults<RealmCourseProgress>>(relaxed = true)
-        every { localResults.iterator() } returns mutableListOf(existingProgress).iterator()
-
-        every { mockQuery.findAll() } returnsMany listOf(emptyResults, localResults)
-        every { mockRealm.copyFromRealm(emptyResults) } returns emptyList()
-        every { mockRealm.copyFromRealm(localResults) } returns listOf(existingProgress)
-
-        val mockProgress = RealmCourseProgress()
-        every { mockRealm.createObject(RealmCourseProgress::class.java, any<String>()) } returns mockProgress
-
-        repository.bulkInsertFromSync(mockRealm, jsonArray)
-
-        verify { existingProgress.deleteFromRealm() }
-        verify { mockRealm.createObject(RealmCourseProgress::class.java, "doc1") }
-
-        assertEquals("doc1", mockProgress._id)
-        assertEquals(true, mockProgress.passed) // Should preserve local true despite remote false
-    }
-
-    @Test
-    fun testBulkInsertFromSync_designDoc() {
-        val mockRealm = mockk<io.realm.Realm>(relaxed = true)
-        val jsonArray = JsonArray()
-
-        val doc1 = com.google.gson.JsonObject().apply {
-            addProperty("_id", "_design/doc")
+        val existingProgress = CourseProgress().apply {
+            id = "local1"
+            _id = null
+            passed = true
+            courseId = "course1"
+            userId = "user1"
+            stepNum = 1
         }
-        val item1 = com.google.gson.JsonObject().apply { add("doc", doc1) }
-        jsonArray.add(item1)
+        coEvery { courseProgressDao.getByIds(listOf("doc1")) } returns emptyList()
+        coEvery { courseProgressDao.getByCourseUsersAndSteps(listOf(Triple("course1", "user1", 1))) } returns listOf(existingProgress)
 
-        repository.bulkInsertFromSync(mockRealm, jsonArray)
+        repository.insertCourseProgressFromSync(listOf(doc1))
 
-        verify(exactly = 0) { mockRealm.where(RealmCourseProgress::class.java) }
-        verify(exactly = 0) { mockRealm.createObject(RealmCourseProgress::class.java, any<String>()) }
+        coVerify {
+            courseProgressDao.upsertAll(match { progress ->
+                progress.size == 1 &&
+                    progress.first().id == "doc1" &&
+                    progress.first()._id == "doc1" &&
+                    progress.first().passed
+            })
+        }
     }
 
     @Test
     fun testGetCompletedCourses_nullSteps() = testScope.runTest {
         val myCourses = listOf(
-            org.ole.planet.myplanet.model.RealmMyCourse().apply {
+            MyCourse().apply {
                 courseId = "course1"
                 courseTitle = "Course 1"
                 courseSteps = null
@@ -487,13 +433,90 @@ class ProgressRepositoryImplTest {
         )
 
         val progresses = listOf(
-            RealmCourseProgress().apply { courseId = "course1"; stepNum = 1; passed = true }
+            CourseProgress().apply { courseId = "course1"; stepNum = 1; passed = true }
         )
 
         coEvery { mockCoursesRepository.getMyCourses("user1") } returns myCourses
-        coEvery {
-            repository invoke "queryList" withArguments listOf(RealmCourseProgress::class.java, any<Function1<RealmQuery<RealmCourseProgress>, Unit>>())
-        } returns progresses
+        coEvery { courseProgressDao.getByUser("user1") } returns progresses
+
+        val result = repository.getCompletedCourses("user1")
+        advanceUntilIdle()
+
+        assertEquals(0, result.size)
+    }
+
+    @Test
+    fun testGetCompletedCourses_duplicatePassedRecordsCountOnce() = testScope.runTest {
+        val myCourses = listOf(
+            MyCourse().apply {
+                courseId = "course1"
+                courseTitle = "Course 1"
+                courseSteps = mutableListOf(
+                    CourseStep().apply { courseId = "course1" },
+                    CourseStep().apply { courseId = "course1" }
+                )
+            }
+        )
+
+        val progresses = listOf(
+            CourseProgress().apply { courseId = "course1"; stepNum = 1; passed = true },
+            CourseProgress().apply { courseId = "course1"; stepNum = 1; passed = true },
+            CourseProgress().apply { courseId = "course1"; stepNum = 2; passed = true }
+        )
+
+        coEvery { mockCoursesRepository.getMyCourses("user1") } returns myCourses
+        coEvery { courseProgressDao.getByUser("user1") } returns progresses
+
+        val result = repository.getCompletedCourses("user1")
+        advanceUntilIdle()
+
+        assertEquals(1, result.size)
+        assertEquals("course1", result[0].courseId)
+    }
+
+    @Test
+    fun testGetCompletedCourses_failedRecordsIgnored() = testScope.runTest {
+        val myCourses = listOf(
+            MyCourse().apply {
+                courseId = "course1"
+                courseTitle = "Course 1"
+                courseSteps = mutableListOf(
+                    CourseStep().apply { courseId = "course1" },
+                    CourseStep().apply { courseId = "course1" }
+                )
+            }
+        )
+
+        val progresses = listOf(
+            CourseProgress().apply { courseId = "course1"; stepNum = 1; passed = true },
+            CourseProgress().apply { courseId = "course1"; stepNum = 2; passed = false }
+        )
+
+        coEvery { mockCoursesRepository.getMyCourses("user1") } returns myCourses
+        coEvery { courseProgressDao.getByUser("user1") } returns progresses
+
+        val result = repository.getCompletedCourses("user1")
+        advanceUntilIdle()
+
+        assertEquals(0, result.size)
+    }
+
+    @Test
+    fun testGetCompletedCourses_zeroTotalStepsExcluded() = testScope.runTest {
+        val myCourses = listOf(
+            MyCourse().apply {
+                courseId = "course1"
+                courseTitle = "Course 1"
+                courseSteps = mutableListOf()
+            }
+        )
+
+        val progresses = listOf(
+            CourseProgress().apply { courseId = "course1"; stepNum = 1; passed = true }
+        )
+
+        coEvery { mockCoursesRepository.getMyCourses("user1") } returns myCourses
+        coEvery { courseProgressDao.getByUser("user1") } returns progresses
 
         val result = repository.getCompletedCourses("user1")
         advanceUntilIdle()
@@ -503,14 +526,14 @@ class ProgressRepositoryImplTest {
 
     @Test
     fun testFindProgressForCourse() {
-        val jsonArray = com.google.gson.JsonArray()
-        val course1 = com.google.gson.JsonObject().apply {
+        val jsonArray = JsonArray()
+        val course1 = JsonObject().apply {
             addProperty("courseId", "course1")
-            add("progress", com.google.gson.JsonObject().apply { addProperty("max", 10) })
+            add("progress", JsonObject().apply { addProperty("max", 10) })
         }
-        val course2 = com.google.gson.JsonObject().apply {
+        val course2 = JsonObject().apply {
             addProperty("courseId", "course2")
-            add("progress", com.google.gson.JsonObject().apply { addProperty("max", 20) })
+            add("progress", JsonObject().apply { addProperty("max", 20) })
         }
         jsonArray.add(course1)
         jsonArray.add(course2)
@@ -519,6 +542,252 @@ class ProgressRepositoryImplTest {
         assertEquals(10, result1?.get("max")?.asInt)
 
         val result2 = repository.findProgressForCourse(jsonArray, "course3")
-        assertEquals(null, result2)
+        assertNull(result2)
+    }
+
+    @Test
+    fun testFindProgressForCourse_emptyArray() {
+        val jsonArray = JsonArray()
+        val result = repository.findProgressForCourse(jsonArray, "course1")
+        assertNull(result)
+    }
+
+    @Test
+    fun testFindProgressForCourse_missingProgress() {
+        val jsonArray = JsonArray()
+        val course1 = JsonObject().apply {
+            addProperty("courseId", "course1")
+        }
+        jsonArray.add(course1)
+
+        val result = repository.findProgressForCourse(jsonArray, "course1")
+        assertNull(result)
+    }
+
+
+    @Test
+    fun testFetchCourseData_SubmissionsGrouping() = testScope.runTest {
+        val myCourses = listOf(
+            MyCourse().apply {
+                courseId = "course1"
+                courseTitle = "Course 1"
+            },
+            MyCourse().apply {
+                courseId = "course10"
+                courseTitle = "Course 10"
+            }
+        )
+
+        val exams = listOf(
+            StepExam().apply { id = "exam1"; courseId = "course1" },
+            StepExam().apply { id = "exam10"; courseId = "course10" }
+        )
+
+        val questions = listOf(
+            ExamQuestion().apply { id = "q1"; examId = "exam1" },
+            ExamQuestion().apply { id = "q10"; examId = "exam10" }
+        )
+
+        val submissions = listOf(
+            // Normal parent (course1) -> sub1 (5 mistakes)
+            Submission().apply {
+                id = "sub1"
+                userId = "user1"
+                parentId = "exam1@course1"
+                type = "exam"
+            },
+            // Missing parent -> sub3
+            Submission().apply {
+                id = "sub3"
+                userId = "user1"
+                parentId = null
+                type = "exam"
+            },
+            // Substring collision (course10, which contains "course1") -> sub4 (20 mistakes)
+            Submission().apply {
+                id = "sub4"
+                userId = "user1"
+                parentId = "exam10@course10"
+                type = "exam"
+            }
+        )
+
+        val answers = listOf(
+            Answer().apply { id = "a1"; submissionId = "sub1"; questionId = "q1"; mistakes = 5 },
+            Answer().apply { id = "a4"; submissionId = "sub4"; questionId = "q10"; mistakes = 20 }
+        )
+
+        coEvery { mockCoursesRepository.getMyCourses(any()) } returns myCourses
+        coEvery { courseProgressDao.getByUserAndCourseIds(any(), any()) } returns emptyList()
+        coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
+        coEvery { examDao.getByCourseIds(listOf("course1", "course10")) } returns exams
+        coEvery { submissionDao.getExamSubmissionsByUser("user1") } returns submissions
+        coEvery { answerDao.getBySubmissionIds(any()) } returns answers
+        coEvery { questionDao.getByIds(any()) } returns questions
+
+        val data = repository.fetchCourseData("user1")
+        advanceUntilIdle()
+
+        assertEquals(2, data.size())
+
+        // Under correct grouping, course1 gets sub1 (5) = 5 mistakes.
+        val obj1 = data[0].asJsonObject
+        assertEquals("course1", obj1.get("courseId").asString)
+        assertEquals(5, obj1.get("mistakes")?.asInt ?: 0)
+
+        // Under correct grouping, course10 gets sub4 = 20 mistakes.
+        // If substring collision fails, course10 might lose sub4 -> 0 mistakes.
+        val obj10 = data[1].asJsonObject
+        assertEquals("course10", obj10.get("courseId").asString)
+        assertEquals(20, obj10.get("mistakes")?.asInt ?: 0)
+    }
+
+    @Test
+    fun testFetchCourseData_EmptyCourses() = testScope.runTest {
+        coEvery { mockCoursesRepository.getMyCourses("user1") } returns emptyList()
+
+        val data = repository.fetchCourseData("user1")
+        advanceUntilIdle()
+
+        assertEquals(0, data.size())
+    }
+
+    @Test
+    fun testGetCurrentProgress_OutOfBoundsStepNum() = testScope.runTest {
+        val steps = listOf(
+            CourseStep().apply { id = "step1" },
+            CourseStep().apply { id = "step2" }
+        )
+
+        // Step numbers are 1-indexed for calculateCurrentProgress,
+        // 0 and 3 are out of bounds for size 2
+        val progresses = listOf(
+            CourseProgress().apply { stepNum = 0 },
+            CourseProgress().apply { stepNum = 3 }
+        )
+
+        coEvery { courseProgressDao.getByUserAndCourse("user1", "course1") } returns progresses
+
+        val progress = repository.getCurrentProgress(steps, "user1", "course1")
+        advanceUntilIdle()
+
+        // Progress should be 0 because valid steps (1 and 2) are not completed
+        assertEquals(0, progress)
+    }
+
+    @Test
+    fun testGetCompletedCourses_InvalidIdOrTitle() = testScope.runTest {
+        val myCourses = listOf(
+            MyCourse().apply {
+                courseId = "" // Invalid ID
+                courseTitle = "Course 1"
+                courseSteps = mutableListOf(CourseStep().apply { courseId = "" })
+            },
+            MyCourse().apply {
+                courseId = "course2"
+                courseTitle = "" // Invalid title
+                courseSteps = mutableListOf(CourseStep().apply { courseId = "course2" })
+            },
+            MyCourse().apply {
+                courseId = "course3"
+                courseTitle = "Course 3"
+                courseSteps = mutableListOf(CourseStep().apply { courseId = "course3" })
+            }
+        )
+
+        val progresses = listOf(
+            CourseProgress().apply { courseId = ""; stepNum = 1; passed = true },
+            CourseProgress().apply { courseId = "course2"; stepNum = 1; passed = true },
+            CourseProgress().apply { courseId = "course3"; stepNum = 1; passed = true }
+        )
+
+        coEvery { mockCoursesRepository.getMyCourses("user1") } returns myCourses
+        coEvery { courseProgressDao.getByUser("user1") } returns progresses
+
+        val result = repository.getCompletedCourses("user1")
+        advanceUntilIdle()
+
+        assertEquals(1, result.size)
+        assertEquals("course3", result[0].courseId)
+        assertEquals("Course 3", result[0].courseTitle)
+    }
+
+    @Test
+    fun testSaveCourseProgress_UpdatesExistingRecord() = testScope.runTest {
+        val existingProgress = CourseProgress().apply {
+            id = "existingId"
+            courseId = "course1"
+            userId = "user1"
+            stepNum = 1
+            passed = true
+        }
+
+        coEvery { courseProgressDao.findByCourseUserAndStep("course1", "user1", 1) } returns existingProgress
+
+        // Save progress with passed = null, existing passed should remain true
+        repository.saveCourseProgress("user1", "planet1", "parent1", "course1", 1, null)
+        advanceUntilIdle()
+
+        coVerify {
+            courseProgressDao.upsert(match { progress ->
+                progress.id == "existingId" &&
+                    progress.courseId == "course1" &&
+                    progress.userId == "user1" &&
+                    progress.stepNum == 1 &&
+                    progress.passed == true && // passed should remain true
+                    progress.createdOn == "planet1" &&
+                    progress.parentCode == "parent1"
+            })
+        }
+    }
+
+    @Test
+    fun testInsertCourseProgressFromSync_EmptyDocs() = testScope.runTest {
+        repository.insertCourseProgressFromSync(emptyList())
+        advanceUntilIdle()
+
+        // DAO methods should not be called with an empty list
+        coVerify(exactly = 0) { courseProgressDao.upsertAll(any()) }
+    }
+
+    @Test
+    fun testInsertCourseProgressFromSync_BlankIdsAndDuplicates() = testScope.runTest {
+        val doc1 = JsonObject().apply {
+            addProperty("_id", "doc1")
+            addProperty("courseId", "course1")
+            addProperty("userId", "user1")
+            addProperty("stepNum", 1)
+            addProperty("passed", true)
+        }
+        val doc2 = JsonObject().apply {
+            addProperty("_id", "")
+            addProperty("courseId", "course1")
+            addProperty("userId", "")
+            addProperty("stepNum", 1)
+            addProperty("passed", false)
+        }
+        val doc3 = JsonObject().apply {
+            addProperty("_id", "doc2")
+            addProperty("courseId", "course2")
+            addProperty("userId", "user1")
+            addProperty("stepNum", 2)
+            addProperty("passed", true)
+        }
+
+        coEvery { courseProgressDao.getByIds(listOf("doc1", "doc2")) } returns emptyList()
+        coEvery { courseProgressDao.getByCourseUsersAndSteps(listOf(Triple("course1", "user1", 1), Triple("course2", "user1", 2))) } returns emptyList()
+
+        repository.insertCourseProgressFromSync(listOf(doc1, doc2, doc3))
+
+        coVerify {
+            courseProgressDao.getByIds(listOf("doc1", "doc2"))
+            courseProgressDao.getByCourseUsersAndSteps(listOf(Triple("course1", "user1", 1), Triple("course2", "user1", 2)))
+            courseProgressDao.upsertAll(match { progresses ->
+                progresses.size == 3 &&
+                    progresses[0].id == "doc1" &&
+                    progresses[1].id == "" &&
+                    progresses[2].id == "doc2"
+            })
+        }
     }
 }

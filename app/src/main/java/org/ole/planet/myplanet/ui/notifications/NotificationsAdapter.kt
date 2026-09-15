@@ -1,13 +1,15 @@
 package org.ole.planet.myplanet.ui.notifications
 
 import android.text.Html
+import android.util.LruCache
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import java.text.SimpleDateFormat
-import java.util.Date
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNotificationHeaderBinding
@@ -20,7 +22,8 @@ class NotificationsAdapter(
     private val onMarkAsReadClick: (String) -> Unit,
     private val onNotificationClick: (Notification) -> Unit,
     private val onToggleSelection: (String) -> Unit,
-    private val onToggleGroupExpansion: (String) -> Unit
+    private val onToggleGroupExpansion: (String) -> Unit,
+    private val now: () -> Long = { System.currentTimeMillis() }
 ) : ListAdapter<NotificationListItem, RecyclerView.ViewHolder>(
     DiffUtils.itemCallback(
         areItemsTheSame = { old, new ->
@@ -34,17 +37,18 @@ class NotificationsAdapter(
     )
 ) {
 
-    private var dateFormat: SimpleDateFormat? = null
+    private var dateFormatter: DateTimeFormatter? = null
     private var lastLocale: Locale? = null
+    private val parsedHtmlCache = LruCache<String, CharSequence>(100)
 
-    private fun getDateFormat(): SimpleDateFormat {
+    private fun getDateFormatter(): DateTimeFormatter {
         val currentLocale = Locale.getDefault()
-        val cached = dateFormat
+        val cached = dateFormatter
         if (cached != null && lastLocale == currentLocale) {
             return cached
         }
-        return SimpleDateFormat("MMM d, yyyy", currentLocale).also {
-            dateFormat = it
+        return DateTimeFormatter.ofPattern("MMM d, yyyy", currentLocale).withZone(ZoneId.systemDefault()).also {
+            dateFormatter = it
             lastLocale = currentLocale
         }
     }
@@ -88,7 +92,7 @@ class NotificationsAdapter(
     ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(header: NotificationListItem.Header) {
-            binding.tvHeaderLabel.text = header.label
+            binding.tvHeaderLabel.setText(labelResFor(header.type))
             binding.ivHeaderIcon.setImageResource(iconResFor(header.type))
             if (header.unreadCount > 0) {
                 binding.tvUnreadBadge.visibility = View.VISIBLE
@@ -110,9 +114,17 @@ class NotificationsAdapter(
 
         fun bind(item: NotificationListItem.Item) {
             val notification = item.notification
-            binding.title.text = Html.fromHtml(notification.formattedText.toString(), Html.FROM_HTML_MODE_LEGACY)
+            val rawText = notification.formattedText.toString()
+            var titleText = parsedHtmlCache.get(rawText)
+            if (titleText == null) {
+                titleText = Html.fromHtml(
+                    rawText,
+                    Html.FROM_HTML_MODE_LEGACY
+                )
+                parsedHtmlCache.put(rawText, titleText)
+            }
+            binding.title.text = titleText
             binding.timestamp.text = formatRelativeTime(notification.createdAt)
-            binding.ivTypeIcon.setImageResource(iconResFor(notification.type))
             binding.root.alpha = if (notification.isRead) 0.6f else 1.0f
 
             if (item.isSelectionMode) {
@@ -139,7 +151,7 @@ class NotificationsAdapter(
         }
 
         private fun formatRelativeTime(createdAt: Long): String {
-            val diff = System.currentTimeMillis() - createdAt
+            val diff = now() - createdAt
             val context = binding.root.context
             return when {
                 diff < 60_000L -> context.getString(R.string.just_now)
@@ -147,20 +159,34 @@ class NotificationsAdapter(
                 diff < 86_400_000L -> context.getString(R.string.hours_ago, diff / 3_600_000L)
                 diff < 172_800_000L -> context.getString(R.string.yesterday)
                 diff < 604_800_000L -> context.getString(R.string.days_ago, diff / 86_400_000L)
-                else -> getDateFormat().format(Date(createdAt))
+                else -> getDateFormatter().format(Instant.ofEpochMilli(createdAt))
             }
         }
     }
 }
 
-internal fun iconResFor(type: String): Int = when (type.lowercase()) {
-    "join_request" -> R.drawable.ic_join_request
-    "team_join" -> R.drawable.ic_activity
-    "task" -> R.drawable.ic_date
-    "survey" -> R.drawable.ic_my_survey
-    "chat" -> R.drawable.ic_mic
-    "voice_reply" -> R.drawable.ic_send
-    "resource" -> R.drawable.ic_folder
-    "storage" -> R.drawable.ic_warn
-    else -> R.drawable.ic_notifications
-}
+private val LABEL_RES_BY_TYPE = mapOf(
+    "join_request" to R.string.notif_group_join_requests,
+    "team_join" to R.string.notif_group_team_updates,
+    "task" to R.string.tasks,
+    "chat" to R.string.notif_group_new_voices,
+    "voice_reply" to R.string.notif_group_voice_replies,
+    "resource" to R.string.resources,
+    "storage" to R.string.notification_group_system
+)
+
+internal fun labelResFor(type: String): Int =
+    LABEL_RES_BY_TYPE[type.lowercase(Locale.ROOT)] ?: R.string.notification_group_other
+
+private val ICON_BY_TYPE = mapOf(
+    "join_request" to R.drawable.ic_join_request,
+    "team_join" to R.drawable.ic_activity,
+    "task" to R.drawable.ic_date,
+    "chat" to R.drawable.ic_mic,
+    "voice_reply" to R.drawable.ic_send,
+    "resource" to R.drawable.ic_folder,
+    "storage" to R.drawable.ic_warn
+)
+
+internal fun iconResFor(type: String): Int =
+    ICON_BY_TYPE[type.lowercase(Locale.ROOT)] ?: R.drawable.ic_notifications

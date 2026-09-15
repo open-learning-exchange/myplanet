@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.model
 sealed class NotificationListItem {
     data class Header(
         val type: String,
-        val label: String,
         val unreadCount: Int,
         val isExpanded: Boolean = true
     ) : NotificationListItem()

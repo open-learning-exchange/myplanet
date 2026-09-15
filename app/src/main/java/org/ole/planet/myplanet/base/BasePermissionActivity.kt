@@ -22,14 +22,18 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.Utilities
 
 abstract class BasePermissionActivity : AppCompatActivity() {
     @Inject
-    open lateinit var sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
+    open lateinit var sharedPrefManager: SharedPrefManager
     @Inject
     open lateinit var dispatcherProvider: DispatcherProvider
+    @Inject
+    open lateinit var timeProvider: TimeProvider
 
     fun checkPermission(strPermission: String?): Boolean {
         val result = strPermission?.let { ContextCompat.checkSelfPermission(this, it) }
@@ -45,16 +49,11 @@ abstract class BasePermissionActivity : AppCompatActivity() {
 
     fun getUsagesPermission(context: Context): Boolean {
         val appOps = context.getSystemService(APP_OPS_SERVICE) as AppOpsManager
-        var mode = -1
-        try {
-            val method = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                AppOpsManager::class.java.getMethod("unsafeCheckOpNoThrow", String::class.java, Int::class.javaPrimitiveType, String::class.java)
-            } else {
-                AppOpsManager::class.java.getMethod("checkOpNoThrow", String::class.java, Int::class.javaPrimitiveType, String::class.java)
-            }
-            mode = method.invoke(appOps, AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName) as Int
-        } catch (e: Exception) {
-            Log.e("BasePermissionActivity", "Error checking usages permission", e)
+        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            appOps.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName)
+        } else {
+            @Suppress("DEPRECATION")
+            appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName)
         }
 
         return if (mode == AppOpsManager.MODE_DEFAULT) {
@@ -438,7 +437,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
 
     fun checkNotificationPermissionStatus() {
         lifecycleScope.launch {
-            val currentTime = System.currentTimeMillis()
+            val currentTime = timeProvider.now()
             val lastCheck = withContext(dispatcherProvider.io) {
                 sharedPrefManager.getRawLong("last_notification_check", 0)
             }
@@ -504,7 +503,6 @@ abstract class BasePermissionActivity : AppCompatActivity() {
         const val PERMISSION_REQUEST_CODE_NOTIFICATION = 112
         const val PERMISSION_REQUEST_CODE_MEDIA = 113
 
-        @JvmStatic
         fun hasInstallPermission(context: Context): Boolean {
             return !BuildConfig.LITE && context.packageManager.canRequestPackageInstalls()
         }

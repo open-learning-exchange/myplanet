@@ -7,24 +7,35 @@ import android.graphics.pdf.PdfDocument
 import android.os.Environment
 import java.io.File
 import java.io.FileOutputStream
-import java.text.SimpleDateFormat
-import java.util.Date
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
-import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.RealmDispatcher
-import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
+import org.json.JSONObject
+import org.ole.planet.myplanet.data.room.dao.AnswerDao
+import org.ole.planet.myplanet.data.room.dao.ExamDao
+import org.ole.planet.myplanet.data.room.dao.QuestionDao
+import org.ole.planet.myplanet.data.room.dao.SubmissionDao
+import org.ole.planet.myplanet.model.Answer
+import org.ole.planet.myplanet.model.MembershipDoc
+import org.ole.planet.myplanet.model.Submission
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 
 internal class SubmissionsRepositoryExporter @Inject constructor(
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher
-) : RealmRepository(databaseService, realmDispatcher) {
+    private val submissionDao: SubmissionDao,
+    private val answerDao: AnswerDao,
+    private val examDao: ExamDao,
+    private val questionDao: QuestionDao,
+    private val timeProvider: TimeProvider
+) {
 
     companion object {
+        private val dateFormatter: DateTimeFormatter =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.getDefault())
+                .withZone(ZoneId.systemDefault())
+
         private const val PAGE_WIDTH = 595
         private const val PAGE_HEIGHT = 842
         private const val MARGIN = 50f
@@ -34,12 +45,14 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
     suspend fun generateSubmissionPdf(
         context: Context,
         submissionId: String
-    ): File? = withRealmAsync { realm ->
-        try {
-            val submission = realm.where(RealmSubmission::class.java).equalTo("id", submissionId).findFirst()
-                ?: return@withRealmAsync null
+    ): File? {
+        return try {
+            val submissionEntity = submissionDao.getByIdOrRemoteId(submissionId) ?: return null
+            val answers = answerDao.getBySubmissionId(submissionEntity.id)
+            val submission = submissionEntity.apply { this.answers = answers.toMutableList(); teamId?.let { membershipDoc = MembershipDoc().apply { this.teamId = it } } }
 
             val document = PdfDocument()
+            try {
                 var pageNumber = 1
                 var pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
                 var page = document.startPage(pageInfo)
@@ -59,9 +72,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
                 }
 
                 val examId = getExamId(submission.parentId)
-                val exam = realm.where(RealmStepExam::class.java)
-                    .equalTo("id", examId)
-                    .findFirst()
+                val exam = examId?.let { examDao.getById(it) }
 
                 canvas.drawText(exam?.name ?: "Submission Report", MARGIN, yPosition, titlePaint)
                 yPosition += LINE_HEIGHT * 2
@@ -71,9 +82,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
                 canvas.drawText("Date: ${TimeUtils.getFormattedDateWithTime(submission.lastUpdateTime)}", MARGIN, yPosition, normalPaint)
                 yPosition += LINE_HEIGHT * 2
 
-                val questions = realm.where(RealmExamQuestion::class.java)
-                    .equalTo("examId", examId)
-                    .findAll()
+                val questions = examId?.let { questionDao.getByExamId(it) }.orEmpty()
 
                 val answersMap = submission.answers?.associateBy { it.questionId } ?: emptyMap()
 
@@ -99,21 +108,22 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
 
                 document.finishPage(page)
 
-                val fileName = "submission_${submission.id}_${System.currentTimeMillis()}.pdf"
+                val fileName = "submission_${submission.id}_${timeProvider.now()}.pdf"
                 val directory = File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "Submissions")
                 if (!directory.exists()) {
                     directory.mkdirs()
                 }
 
                 val file = File(directory, fileName)
-                val outputStream = FileOutputStream(file)
-                document.writeTo(outputStream)
-                document.close()
-                outputStream.close()
+                FileOutputStream(file).use { outputStream ->
+                    document.writeTo(outputStream)
+                }
 
                 file
-            } catch (e: Exception) {
-                e.printStackTrace()
+            } finally {
+                document.close()
+            }
+        } catch (e: Exception) {
                 null
             }
     }
@@ -122,15 +132,22 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
         context: Context,
         submissionIds: List<String>,
         examTitle: String
-    ): File? = withRealmAsync { realm ->
-        try {
-            val submissions = submissionIds.mapNotNull { id ->
-                realm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()
+    ): File? {
+        return try {
+            val submissionEntities = if (submissionIds.isEmpty()) emptyList() else submissionDao.getByIds(submissionIds)
+            val answersBySubmissionId = if (submissionEntities.isEmpty()) {
+                emptyMap()
+            } else {
+                answerDao.getBySubmissionIds(submissionEntities.map { it.id }).groupBy { it.submissionId }
+            }
+            val submissions = submissionEntities.map { submission ->
+                submission.apply { answers = answersBySubmissionId[id].orEmpty().toMutableList(); teamId?.let { membershipDoc = MembershipDoc().apply { this.teamId = it } } }
             }
 
-            if (submissions.isEmpty()) return@withRealmAsync null
+            if (submissions.isEmpty()) return null
 
             val document = PdfDocument()
+            try {
                 var pageNumber = 1
                 var pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
                 var page = document.startPage(pageInfo)
@@ -158,13 +175,11 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
 
                 canvas.drawText("Total Submissions: ${submissions.size}", MARGIN, yPosition, normalPaint)
                 yPosition += LINE_HEIGHT
-                canvas.drawText("Generated: ${SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date())}", MARGIN, yPosition, normalPaint)
+                canvas.drawText("Generated: ${dateFormatter.format(Instant.now())}", MARGIN, yPosition, normalPaint)
                 yPosition += LINE_HEIGHT * 3
 
                 val examId = getExamId(submissions.firstOrNull()?.parentId)
-                val questions = realm.where(RealmExamQuestion::class.java)
-                    .equalTo("examId", examId)
-                    .findAll()
+                val questions = examId?.let { questionDao.getByExamId(it) }.orEmpty()
 
                 submissions.forEachIndexed { submissionIndex, submission ->
                     if (yPosition > PAGE_HEIGHT - MARGIN - 100) {
@@ -210,21 +225,22 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
 
                 document.finishPage(page)
 
-                val fileName = "submissions_report_${System.currentTimeMillis()}.pdf"
+                val fileName = "submissions_report_${timeProvider.now()}.pdf"
                 val directory = File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "Submissions")
                 if (!directory.exists()) {
                     directory.mkdirs()
                 }
 
                 val file = File(directory, fileName)
-                val outputStream = FileOutputStream(file)
-                document.writeTo(outputStream)
-                document.close()
-                outputStream.close()
+                FileOutputStream(file).use { outputStream ->
+                    document.writeTo(outputStream)
+                }
 
                 file
-            } catch (e: Exception) {
-                e.printStackTrace()
+            } finally {
+                document.close()
+            }
+        } catch (e: Exception) {
                 null
             }
     }
@@ -232,30 +248,38 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
     private fun drawMultilineText(canvas: Canvas, text: String, x: Float, y: Float, paint: Paint, maxWidth: Float): Float {
         var currentY = y
         val words = text.split(" ")
-        var line = ""
+        val line = java.lang.StringBuilder()
+        var lineWidth = 0f
 
         words.forEach { word ->
-            val testLine = if (line.isEmpty()) word else "$line $word"
-            val width = paint.measureText(testLine)
-
-            if (width > maxWidth && line.isNotEmpty()) {
-                canvas.drawText(line, x, currentY, paint)
-                currentY += LINE_HEIGHT
-                line = word
+            if (line.isEmpty()) {
+                line.append(word)
+                lineWidth = paint.measureText(word)
             } else {
-                line = testLine
+                val addition = " $word"
+                val additionWidth = paint.measureText(addition)
+                if (lineWidth + additionWidth > maxWidth) {
+                    canvas.drawText(line.toString(), x, currentY, paint)
+                    currentY += LINE_HEIGHT
+                    line.clear()
+                    line.append(word)
+                    lineWidth = paint.measureText(word)
+                } else {
+                    line.append(addition)
+                    lineWidth += additionWidth
+                }
             }
         }
 
         if (line.isNotEmpty()) {
-            canvas.drawText(line, x, currentY, paint)
+            canvas.drawText(line.toString(), x, currentY, paint)
             currentY += LINE_HEIGHT
         }
 
         return currentY
     }
 
-    private fun formatAnswer(answer: org.ole.planet.myplanet.model.RealmAnswer?): String {
+    private fun formatAnswer(answer: Answer?): String {
         if (answer == null) return "No answer provided"
         val value = answer.value
         val choices = answer.valueChoices
@@ -264,7 +288,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
             !choices.isNullOrEmpty() -> {
                 choices.joinToString(", ") { choice ->
                     try {
-                        val choiceObj = org.json.JSONObject(choice)
+                        val choiceObj = JSONObject(choice)
                         choiceObj.optString("text", choice)
                     } catch (e: Exception) {
                         choice

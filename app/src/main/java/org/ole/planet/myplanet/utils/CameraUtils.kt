@@ -16,7 +16,7 @@ import android.hardware.camera2.params.SessionConfiguration
 import android.media.ImageReader
 import android.os.Build
 import android.os.Handler
-import android.os.HandlerThread
+import android.os.Looper
 import android.util.Log
 import android.view.Surface
 import androidx.core.content.ContextCompat
@@ -30,50 +30,24 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.context
 
 object CameraUtils {
+    private const val TAG = "CameraUtils"
     private const val IMAGE_WIDTH = 640
     private const val IMAGE_HEIGHT = 480
 
     private var cameraDevice: CameraDevice? = null
     private var captureSession: CameraCaptureSession? = null
     private var imageReader: ImageReader? = null
-    private var backgroundHandler: Handler? = null
-    private var backgroundThread: HandlerThread? = null
     private val sessionExecutor: Executor by lazy { ContextCompat.getMainExecutor(context) }
+    private val mainHandler = Handler(Looper.getMainLooper())
 
-    private fun startBackgroundThread() {
-        if (backgroundThread == null || backgroundThread?.isAlive == false) {
-            backgroundThread = HandlerThread("CameraBackground").apply {
-                start()
-                backgroundHandler = Handler(looper)
-            }
-        }
-    }
-
-    @JvmStatic
-    fun stopBackgroundThread() {
-        try {
-            backgroundThread?.quitSafely()
-            backgroundThread?.join()
-            backgroundThread = null
-            backgroundHandler = null
-        } catch (e: InterruptedException) {
-            Thread.currentThread().interrupt()
-            e.printStackTrace()
-        }
-    }
-
-    @JvmStatic
     fun release() {
         closeCamera()
-        stopBackgroundThread()
     }
 
-    @JvmStatic
-    fun capturePhoto(scope: CoroutineScope, callback: ImageCaptureCallback, dispatcherProvider: DispatcherProvider = DefaultDispatcherProvider()) {
+    fun capturePhoto(scope: CoroutineScope, callback: ImageCaptureCallback, dispatcherProvider: DispatcherProvider) {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             return
         }
-        startBackgroundThread()
         openCamera(context)
         imageReader = ImageReader.newInstance(IMAGE_WIDTH, IMAGE_HEIGHT, ImageFormat.JPEG, 1)
         imageReader?.setOnImageAvailableListener({ reader ->
@@ -87,7 +61,7 @@ object CameraUtils {
                     savePicture(bytes, callback, dispatcherProvider)
                 }
             }
-        }, backgroundHandler)
+        }, mainHandler)
 
         try {
             val captureBuilder = cameraDevice?.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE)
@@ -123,7 +97,7 @@ object CameraUtils {
         imageReader = null
     }
 
-    private suspend fun savePicture(data: ByteArray, callback: ImageCaptureCallback, dispatcherProvider: DispatcherProvider = DefaultDispatcherProvider()) {
+    private suspend fun savePicture(data: ByteArray, callback: ImageCaptureCallback, dispatcherProvider: DispatcherProvider) {
         withContext(dispatcherProvider.io) {
             val pictureFileDir = File("${FileUtils.getOlePath(context)}/userimages")
             if (!pictureFileDir.exists() && !pictureFileDir.mkdirs()) {
@@ -140,13 +114,12 @@ object CameraUtils {
                     callback.onImageCapture(mainPicture.absolutePath)
                 }
             } catch (error: Exception) {
-                error.printStackTrace()
+                Log.e(TAG, "Failed to save captured picture", error)
             }
         }
     }
 
     @SuppressLint("MissingPermission")
-    @JvmStatic
     private fun openCamera(context: Context) {
         val manager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
         try {
@@ -167,7 +140,7 @@ object CameraUtils {
                 }
             }, null)
         } catch (e: CameraAccessException) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to open camera", e)
         }
     }
 
@@ -186,14 +159,14 @@ object CameraUtils {
                         captureSession = session
                         try {
                             captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
-                            captureSession?.setRepeatingRequest(captureRequestBuilder.build(), null, backgroundHandler)
+                            captureSession?.setRepeatingRequest(captureRequestBuilder.build(), null, mainHandler)
                         } catch (e: CameraAccessException) {
-                            e.printStackTrace()
+                            Log.e(TAG, "Failed to start repeating capture request", e)
                         }
                     }
 
                     override fun onConfigureFailed(session: CameraCaptureSession) {
-                        Log.e("CameraUtils", "Camera configuration failed")
+                        Log.e(TAG, "Camera configuration failed")
                         closeCamera()
                     }
                 }
@@ -209,22 +182,22 @@ object CameraUtils {
                         captureSession = session
                         try {
                             captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
-                            captureSession?.setRepeatingRequest(captureRequestBuilder.build(), null, backgroundHandler)
+                            captureSession?.setRepeatingRequest(captureRequestBuilder.build(), null, mainHandler)
                         } catch (e: CameraAccessException) {
-                            e.printStackTrace()
+                            Log.e(TAG, "Failed to start repeating capture request", e)
                         }
                     }
 
                     override fun onConfigureFailed(session: CameraCaptureSession) {
-                        Log.e("CameraUtils", "Camera configuration failed")
+                        Log.e(TAG, "Camera configuration failed")
                         closeCamera()
                     }
                 },
-                    backgroundHandler
+                    mainHandler
                 )
             }
         } catch (e: CameraAccessException) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to create camera preview", e)
         }
     }
 

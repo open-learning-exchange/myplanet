@@ -4,31 +4,27 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.lifecycle.lifecycleScope
+import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnStartDragListener
 import org.ole.planet.myplanet.databinding.FragmentLifeBinding
-import org.ole.planet.myplanet.model.RealmMyLife
-import org.ole.planet.myplanet.repository.LifeRepository
+import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.utils.ItemReorderHelper
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
-class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
+class LifeFragment : BaseRecyclerFragment<MyLife?>(), OnStartDragListener {
     private lateinit var lifeAdapter: LifeAdapter
     private var itemTouchHelper: ItemTouchHelper? = null
-    @Inject
-    lateinit var lifeRepository: LifeRepository
+    private val viewModel: LifeViewModel by viewModels()
     private var _binding: FragmentLifeBinding? = null
     private val binding get() = checkNotNull(_binding)
     override fun getLayout(): Int = R.layout.fragment_life
@@ -45,57 +41,53 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
         return view
     }
 
-    override suspend fun getAdapter(): androidx.recyclerview.widget.ListAdapter<*, *> {
-        lifeAdapter = LifeAdapter(requireContext(), this,
-            visibilityCallback = { myLife, isVisible ->
-                myLife._id?.let { id ->
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        withContext(dispatcherProvider.io) {
-                            lifeRepository.updateVisibility(isVisible, id)
-                        }
+    override suspend fun getAdapter(): ListAdapter<*, *> = initAdapter()
+
+    private fun initAdapter(): LifeAdapter {
+        if (!::lifeAdapter.isInitialized) {
+            lifeAdapter = LifeAdapter(
+                requireContext(),
+                this,
+                visibilityCallback = { myLife, isVisible ->
+                    val id = myLife._id.takeIf { it.isNotBlank() }
+                        ?: myLife.imageId?.takeIf { it.isNotBlank() }
+                        ?: myLife.title
+                    if (!id.isNullOrEmpty()) {
+                        viewModel.updateVisibility(isVisible, id)
                         if (!isVisible) {
                             Utilities.toast(requireContext(), myLife.title + context?.getString(R.string.is_now_hidden))
                         } else {
                             Utilities.toast(requireContext(), myLife.title + " " + context?.getString(R.string.is_now_shown))
                         }
-                        refreshList()
                     }
+                },
+                reorderCallback = { list ->
+                    viewModel.updateMyLifeListOrder(list)
                 }
-            },
-            reorderCallback = { list ->
-                viewLifecycleOwner.lifecycleScope.launch {
-                    withContext(dispatcherProvider.io) {
-                        lifeRepository.updateMyLifeListOrder(list)
-                    }
-                }
-            }
-        )
-        val callback: ItemTouchHelper.Callback = ItemReorderHelper(lifeAdapter)
-        itemTouchHelper = ItemTouchHelper(callback)
+            )
+            val callback: ItemTouchHelper.Callback = ItemReorderHelper(lifeAdapter)
+            itemTouchHelper = ItemTouchHelper(callback)
+        }
         itemTouchHelper?.attachToRecyclerView(recyclerView)
         return lifeAdapter
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        refreshList()
         recyclerView.setHasFixedSize(true)
         setupUI(binding.myLifeParentLayout, requireActivity())
         val dividerItemDecoration = DividerItemDecoration(recyclerView.context, RecyclerView.VERTICAL)
         recyclerView.addItemDecoration(dividerItemDecoration)
-    }
 
-    private fun refreshList() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val userId = profileDbHandler.getUserModel()?.id
-            val myLifeList = lifeRepository.getMyLifeByUserId(userId)
-            if (::lifeAdapter.isInitialized) {
-                lifeAdapter.submitList(myLifeList)
-            }
+        initAdapter()
+        collectWhenStarted(viewModel.myLifeList) { list ->
+            lifeAdapter.submitList(list)
         }
+        viewModel.loadMyLifeList(requireContext()::getString)
     }
 
     override fun onDestroyView() {
+        itemTouchHelper?.attachToRecyclerView(null)
         _binding = null
         super.onDestroyView()
     }

@@ -2,44 +2,40 @@ package org.ole.planet.myplanet
 
 import android.content.Context
 import dagger.hilt.android.EntryPointAccessors
+import io.mockk.clearMocks
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.ServerReachabilityProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainApplicationTest {
-
-    private lateinit var mockContext: Context
-    private lateinit var mockEntryPoint: CoreDependenciesEntryPoint
-    private lateinit var mockServerUrlMapper: ServerUrlMapper
+    private companion object {
+        // MainApplication caches its entry point in a lazy, so every test has to share one instance.
+        val mockContext: Context = mockk(relaxed = true)
+        val mockEntryPoint: CoreDependenciesEntryPoint = mockk(relaxed = true)
+        val mockReachabilityProvider: ServerReachabilityProvider = mockk(relaxed = true)
+    }
 
     @Before
     fun setup() {
-        mockContext = mockk(relaxed = true)
         MainApplication.testContext = mockContext
-
-        mockEntryPoint = mockk(relaxed = true)
-        mockServerUrlMapper = mockk(relaxed = true)
+        clearMocks(mockEntryPoint, mockReachabilityProvider)
 
         mockkStatic(EntryPointAccessors::class)
         every { EntryPointAccessors.fromApplication(mockContext, CoreDependenciesEntryPoint::class.java) } returns mockEntryPoint
-        every { mockEntryPoint.serverUrlMapper() } returns mockServerUrlMapper
-
-        val mockMapping = mockk<ServerUrlMapper.UrlMapping>(relaxed = true)
-        every { mockMapping.alternativeUrl } returns null
-        every { mockServerUrlMapper.processUrl(any()) } returns mockMapping
+        every { mockEntryPoint.serverReachabilityProvider() } returns mockReachabilityProvider
     }
 
     @After
@@ -49,22 +45,29 @@ class MainApplicationTest {
     }
 
     @Test
-    fun `isServerReachable tests dispatcher and returns false for invalid URL`() = runTest {
-        val testDispatcher = StandardTestDispatcher(testScheduler)
+    fun `isServerReachable delegates to the shared reachability provider`() = runTest {
+        val url = "http://example.com"
+        coEvery { mockReachabilityProvider.isServerReachable(url) } returns true
 
-        var result: Boolean? = null
+        assertTrue(MainApplication.isServerReachable(url))
+        coVerify(exactly = 1) { mockReachabilityProvider.isServerReachable(url) }
+    }
 
-        launch(testDispatcher) {
-            result = MainApplication.isServerReachable("invalid_url", testDispatcher)
-        }
+    @Test
+    fun `isServerReachable propagates an unreachable server`() = runTest {
+        val url = "http://example.com"
+        coEvery { mockReachabilityProvider.isServerReachable(url) } returns false
 
-        // Before advancing, the coroutine has not completed
-        assert(result == null)
+        assertFalse(MainApplication.isServerReachable(url))
+    }
 
-        // Run the dispatcher
-        advanceUntilIdle()
+    @Test
+    fun `isPrimaryServerReachable delegates to the shared reachability provider`() = runTest {
+        val url = "http://example.com"
+        coEvery { mockReachabilityProvider.isPrimaryServerReachable(url) } returns true
 
-        // Since invalid_url will throw an exception or return false
-        assertFalse(result == true)
+        assertTrue(MainApplication.isPrimaryServerReachable(url))
+        coVerify(exactly = 1) { mockReachabilityProvider.isPrimaryServerReachable(url) }
+        coVerify(exactly = 0) { mockReachabilityProvider.isServerReachable(any()) }
     }
 }

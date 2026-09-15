@@ -1,7 +1,10 @@
 package org.ole.planet.myplanet.utils
 
 import android.text.Layout
+import android.text.method.MovementMethod
 import android.text.style.AlignmentSpan
+import android.widget.TextView
+import androidx.test.core.app.ApplicationProvider
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
@@ -11,6 +14,8 @@ import io.noties.markwon.MarkwonConfiguration
 import io.noties.markwon.RenderProps
 import io.noties.markwon.html.HtmlTag
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -22,7 +27,7 @@ import org.robolectric.annotation.LooperMode
 
 @HiltAndroidTest
 @RunWith(RobolectricTestRunner::class)
-@Config(application = HiltTestApplication::class, sdk = [33])
+@Config(application = HiltTestApplication::class)
 @LooperMode(LooperMode.Mode.PAUSED)
 class MarkdownUtilsTest {
 
@@ -43,22 +48,36 @@ class MarkdownUtilsTest {
     @Test
     fun prependBaseUrlToImages_replaces_markdown_images_correctly() {
         val markdown = "This is an image: ![alt text](resources/image.png)"
-        val expected = "This is an image: <img src=http://base.url/image.png width=150 height=100/>"
+        val expected = "This is an image: <img src=\"http://base.url/image.png\" width=150 height=100/>"
         assertEquals(expected, MarkdownUtils.prependBaseUrlToImages(markdown, "http://base.url/"))
     }
 
     @Test
     fun prependBaseUrlToImages_replaces_multiple_markdown_images_correctly() {
         val markdown = "![alt](resources/img1.png) and ![alt2](img2.jpg)"
-        val expected = "<img src=http://base.url/img1.png width=150 height=100/> and <img src=http://base.url/img2.jpg width=150 height=100/>"
+        val expected = "<img src=\"http://base.url/img1.png\" width=150 height=100/> and <img src=\"http://base.url/img2.jpg\" width=150 height=100/>"
         assertEquals(expected, MarkdownUtils.prependBaseUrlToImages(markdown, "http://base.url/"))
     }
 
     @Test
     fun prependBaseUrlToImages_uses_custom_width_and_height() {
         val markdown = "![alt text](resources/image.png)"
-        val expected = "<img src=http://base.url/image.png width=300 height=200/>"
+        val expected = "<img src=\"http://base.url/image.png\" width=300 height=200/>"
         assertEquals(expected, MarkdownUtils.prependBaseUrlToImages(markdown, "http://base.url/", 300, 200))
+    }
+
+    @Test
+    fun prependBaseUrlToImages_treats_dollar_in_path_literally() {
+        val markdown = "![alt](resources/pa\$th/image.png)"
+        val expected = "<img src=\"http://base.url/pa\$th/image.png\" width=150 height=100/>"
+        assertEquals(expected, MarkdownUtils.prependBaseUrlToImages(markdown, "http://base.url/"))
+    }
+
+    @Test
+    fun prependBaseUrlToImages_handles_url_with_spaces() {
+        val markdown = "![alt text](resources/my image filename.png)"
+        val expected = "<img src=\"http://base.url/my image filename.png\" width=150 height=100/>"
+        assertEquals(expected, MarkdownUtils.prependBaseUrlToImages(markdown, "http://base.url/"))
     }
 
     @Test
@@ -93,5 +112,23 @@ class MarkdownUtilsTest {
     fun AlignTagHandler_supportedTags_returns_align() {
         val handler = MarkdownUtils.AlignTagHandler()
         assertTrue(handler.supportedTags().contains("align"))
+    }
+
+    @Test
+    fun setMarkdownText_reuses_same_movement_method_instance() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        MarkdownUtils.warmUp(context)
+
+        val first = TextView(context)
+        MarkdownUtils.setMarkdownText(first, "# Hello")
+        val firstMovementMethod: MovementMethod? = first.movementMethod
+        assertNotNull(firstMovementMethod)
+
+        val second = TextView(context)
+        MarkdownUtils.setMarkdownText(second, "# World")
+        val secondMovementMethod: MovementMethod? = second.movementMethod
+        assertNotNull(secondMovementMethod)
+
+        assertSame(firstMovementMethod, secondMovementMethod)
     }
 }

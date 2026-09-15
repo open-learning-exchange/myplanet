@@ -4,41 +4,50 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.RealmMeetup
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.Meetup
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.EventsRepository
-import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.repository.UserRepository
 
 @HiltViewModel
 class EventsDetailViewModel @Inject constructor(
     private val eventsRepository: EventsRepository,
-    private val userSessionManager: UserSessionManager
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
-    private val _user = MutableStateFlow<RealmUser?>(null)
-    val user: StateFlow<RealmUser?> = _user.asStateFlow()
+    private val _user = MutableStateFlow<UserEntity?>(null)
+    val user: StateFlow<UserEntity?> = _user.asStateFlow()
 
-    private val _meetup = MutableStateFlow<RealmMeetup?>(null)
-    val meetup: StateFlow<RealmMeetup?> = _meetup.asStateFlow()
+    private val _meetup = MutableStateFlow<Meetup?>(null)
+    val meetup: StateFlow<Meetup?> = _meetup.asStateFlow()
 
-    private val _members = MutableStateFlow<List<RealmUser>>(emptyList())
-    val members: StateFlow<List<RealmUser>> = _members.asStateFlow()
+    private val _members = MutableStateFlow<List<UserEntity>>(emptyList())
+    val members: StateFlow<List<UserEntity>> = _members.asStateFlow()
 
     private val _updateSuccess = MutableStateFlow<Boolean?>(null)
     val updateSuccess: StateFlow<Boolean?> = _updateSuccess.asStateFlow()
 
     fun loadData(meetUpId: String?) {
         viewModelScope.launch {
-            _user.value = userSessionManager.getUserModel()
+            coroutineScope {
+                val userDeferred = async { userRepository.getUserModel() }
 
-            if (!meetUpId.isNullOrBlank()) {
-                val loadedMeetup = eventsRepository.getMeetupByLocalId(meetUpId)
-                _meetup.value = loadedMeetup
-                _members.value = eventsRepository.getJoinedMembers(meetUpId)
+                if (!meetUpId.isNullOrBlank()) {
+                    val meetupDeferred = async { eventsRepository.getMeetupByLocalId(meetUpId) }
+                    val membersDeferred = async { eventsRepository.getJoinedMembers(meetUpId) }
+
+                    _user.value = userDeferred.await()
+                    _meetup.value = meetupDeferred.await()
+                    _members.value = membersDeferred.await()
+                } else {
+                    _user.value = userDeferred.await()
+                }
             }
         }
     }
@@ -82,8 +91,8 @@ class EventsDetailViewModel @Inject constructor(
 
     fun toggleAttendance(meetupId: String) {
         viewModelScope.launch {
-            val currentUser = _user.value
-            _meetup.value = eventsRepository.toggleAttendance(meetupId, currentUser?.id)
+            val currentUserId = _user.value?.id ?: return@launch
+            _meetup.value = eventsRepository.toggleAttendance(meetupId, currentUserId)
             _members.value = eventsRepository.getJoinedMembers(meetupId)
         }
     }

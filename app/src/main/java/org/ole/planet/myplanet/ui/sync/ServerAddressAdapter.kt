@@ -1,17 +1,18 @@
 package org.ole.planet.myplanet.ui.sync
 
+import android.content.Context
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.button.MaterialButton
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.databinding.ItemServerAddressBinding
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.utils.DiffUtils
 
 class ServerAddressAdapter(
+    private val context: Context,
     private val onItemClick: (ServerAddress) -> Unit,
     private val onClearDataDialog: (ServerAddress, Int) -> Unit,
     private val isServerAlreadyConfigured: Boolean, // ← simple flag instead of URL
@@ -23,6 +24,13 @@ class ServerAddressAdapter(
 ) {
     private var selectedPosition: Int = -1
     private var lastSelectedPosition: Int = -1
+
+    private val selectedColor by lazy(LazyThreadSafetyMode.NONE) {
+        ContextCompat.getColor(context, R.color.selected_color)
+    }
+    private val transparentColor by lazy(LazyThreadSafetyMode.NONE) {
+        ContextCompat.getColor(context, android.R.color.transparent)
+    }
 
     fun setSelectedPosition(position: Int) {
         val previous = selectedPosition
@@ -56,9 +64,8 @@ class ServerAddressAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_server_address, parent, false)
-        return ViewHolder(view)
+        val binding = ItemServerAddressBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return ViewHolder(binding)
     }
 
     override fun onBindViewHolder(
@@ -88,8 +95,8 @@ class ServerAddressAdapter(
         }
     }
 
-    inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val button: MaterialButton = itemView.findViewById(R.id.btn_server_address)
+    inner class ViewHolder(val binding: ItemServerAddressBinding) : RecyclerView.ViewHolder(binding.root) {
+        private val button get() = binding.btnServerAddress
         fun bind(serverAddress: ServerAddress, isSelected: Boolean) {
             button.text = serverAddress.name
             button.contentDescription =
@@ -103,13 +110,9 @@ class ServerAddressAdapter(
         fun updateSelectionState(isSelected: Boolean) {
             button.isSelected = isSelected
             if (isSelected) {
-                button.setBackgroundColor(
-                    ContextCompat.getColor(button.context, R.color.selected_color),
-                )
+                button.setBackgroundColor(selectedColor)
             } else {
-                button.setBackgroundColor(
-                    ContextCompat.getColor(button.context, android.R.color.transparent),
-                )
+                button.setBackgroundColor(transparentColor)
             }
         }
     }

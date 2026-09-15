@@ -18,12 +18,13 @@ import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.HashMap
+import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddMeetupBinding
 import org.ole.planet.myplanet.databinding.FragmentEventsDetailBinding
-import org.ole.planet.myplanet.model.RealmMeetup
-import org.ole.planet.myplanet.model.RealmMeetup.Companion.getHashMap
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.Meetup
+import org.ole.planet.myplanet.model.Meetup.Companion.getHashMap
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.Constants.showBetaFeature
 import org.ole.planet.myplanet.utils.TimeUtils
@@ -187,11 +188,11 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
     private fun pickTime(onPicked: (String) -> Unit) {
         val cal = Calendar.getInstance()
         TimePickerDialog(requireContext(), { _, hour, minute ->
-            onPicked(String.format("%02d:%02d", hour, minute))
+            onPicked(String.format(Locale.US, "%02d:%02d", hour, minute))
         }, cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE), true).show()
     }
 
-    private fun setUserList(users: List<RealmUser>) {
+    private fun setUserList(users: List<UserEntity>) {
         listUsers?.adapter = ArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, users)
         val joinedText = if (users.isEmpty()) {
             """(0) ${getString(R.string.no_members_has_joined_this_meet_up)}"""
@@ -201,7 +202,7 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
         tvJoined?.text = String.format(getString(R.string.joined_members_colon) + " %s", joinedText)
     }
 
-    private fun setUpData(meetup: RealmMeetup) {
+    private fun setUpData(meetup: Meetup) {
         binding.meetupTitle.text = meetup.title
         val map: HashMap<String, String> = getHashMap(meetup)
         val items = map.map { EventsDescriptionAdapter.DescriptionItem(it.key, it.value) }
@@ -223,9 +224,16 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
     private fun updateAttendanceButton() {
         val meetup = viewModel.meetup.value
         val user = viewModel.user.value
+
+        val currentTime = Calendar.getInstance().timeInMillis
+        val endDate = meetup?.endDate ?: 0L
+        // endDate is set to midnight of that day. Add 86399999L (23:59:59.999) to cover the whole day.
+        val endOfDay = if (endDate > 0) endDate + 86399999L else 0L
+        val isEventActive = endOfDay == 0L || currentTime <= endOfDay
+
         val isJoined = !meetup?.userId.isNullOrEmpty()
         binding.btnLeave.setText(if (isJoined) R.string.leave else R.string.join)
-        binding.btnLeave.isEnabled = user?.id?.isNotBlank() == true
+        binding.btnLeave.isEnabled = user?.id?.isNotBlank() == true && isEventActive
     }
 
     override fun onDestroyView() {

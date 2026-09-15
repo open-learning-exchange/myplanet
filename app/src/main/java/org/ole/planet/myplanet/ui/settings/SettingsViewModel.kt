@@ -8,29 +8,18 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmRetryOperation
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
-import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.retry.RetryQueue
+import org.ole.planet.myplanet.repository.RetryQueueDetails
+import org.ole.planet.myplanet.repository.RetryRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
-
-data class RetryQueueDetails(
-    val pendingCount: Long = 0,
-    val pendingOps: List<RealmRetryOperation> = emptyList(),
-    val isProcessing: Boolean = false
-)
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val configurationsRepository: ConfigurationsRepository,
-    private val sharedPrefManager: SharedPrefManager,
-    private val retryQueue: RetryQueue,
+    private val retryRepository: RetryRepository,
     private val resourcesRepository: ResourcesRepository,
-    private val resourceDownloadCoordinator: ResourceDownloadCoordinator,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
@@ -43,43 +32,40 @@ class SettingsViewModel @Inject constructor(
     private val _retryQueueDetailsEvent = Channel<RetryQueueDetails>(Channel.BUFFERED)
     val retryQueueDetailsEvent: Flow<RetryQueueDetails> = _retryQueueDetailsEvent.receiveAsFlow()
 
-    private val _downloadCompleteEvent = Channel<List<RealmMyLibrary>>(Channel.BUFFERED)
-    val downloadCompleteEvent: Flow<List<RealmMyLibrary>> = _downloadCompleteEvent.receiveAsFlow()
+    private val _downloadCompleteEvent = Channel<List<MyLibrary>>(Channel.BUFFERED)
+    val downloadCompleteEvent: Flow<List<MyLibrary>> = _downloadCompleteEvent.receiveAsFlow()
 
 
     fun isCurrentlyProcessing(): Boolean {
-        return retryQueue.isCurrentlyProcessing()
+        return retryRepository.isCurrentlyProcessing()
     }
     fun clearAllData() {
         viewModelScope.launch(dispatcherProvider.io) {
             configurationsRepository.clearAllData()
-            sharedPrefManager.clearPreferences()
+            configurationsRepository.clearPreferences()
             _clearDataEvent.send(Unit)
         }
     }
 
     fun clearRetryQueue() {
-        viewModelScope.launch(dispatcherProvider.io) {
-            val cleared = retryQueue.safeClearQueue()
+        viewModelScope.launch {
+            val cleared = retryRepository.safeClearQueue()
             _clearRetryQueueEvent.send(cleared)
         }
     }
 
+
     fun fetchRetryQueueDetails() {
-        viewModelScope.launch(dispatcherProvider.io) {
-            val pendingCount = retryQueue.getPendingCount()
-            val pendingOps = retryQueue.getPendingOperations()
-            val isProcessing = retryQueue.isCurrentlyProcessing()
-            _retryQueueDetailsEvent.send(RetryQueueDetails(pendingCount, pendingOps, isProcessing))
+        viewModelScope.launch {
+            _retryQueueDetailsEvent.send(retryRepository.getRetryQueueSnapshot())
         }
     }
 
-    fun downloadFiles(libraryList: List<RealmMyLibrary>?) {
-        viewModelScope.launch(dispatcherProvider.io) {
+    fun downloadFiles(libraryList: List<MyLibrary>?) {
+        viewModelScope.launch {
             var files = libraryList
             try {
-                files = libraryList ?: resourcesRepository.getAllLibrariesToSync()
-                resourceDownloadCoordinator.startBackgroundDownload(downloadAllFiles(files))
+                files = resourcesRepository.downloadFiles(libraryList)
             } finally {
                 _downloadCompleteEvent.send(files ?: emptyList())
             }

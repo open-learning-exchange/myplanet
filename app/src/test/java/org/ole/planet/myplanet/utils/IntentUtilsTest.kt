@@ -16,13 +16,15 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
+import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
 
 @HiltAndroidTest
 @RunWith(RobolectricTestRunner::class)
-@Config(application = HiltTestApplication::class, sdk = [33])
+@Config(application = HiltTestApplication::class)
 @LooperMode(LooperMode.Mode.PAUSED)
 class IntentUtilsTest {
 
@@ -44,8 +46,8 @@ class IntentUtilsTest {
 
         verify(exactly = 1) { context.startActivity(any()) }
         val capturedIntent = intentSlot.captured
-        assertEquals(org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity::class.java.name, capturedIntent.component?.className)
-        assertEquals(org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment.ResourceType.AUDIO.name, capturedIntent.getStringExtra("resourceType"))
+        assertEquals(ResourceViewerActivity::class.java.name, capturedIntent.component?.className)
+        assertEquals(ResourceViewerFragment.ResourceType.AUDIO.name, capturedIntent.getStringExtra("resourceType"))
         assertTrue(capturedIntent.getBooleanExtra("isFullPath", false))
         assertEquals("path/to/audio.mp3", capturedIntent.getStringExtra("TOUCHED_FILE"))
         assertEquals("My Audio", capturedIntent.getStringExtra("RESOURCE_TITLE"))

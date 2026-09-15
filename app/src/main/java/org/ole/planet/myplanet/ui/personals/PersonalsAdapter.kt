@@ -10,7 +10,7 @@ import androidx.recyclerview.widget.RecyclerView
 import java.io.File
 import org.ole.planet.myplanet.callback.OnPersonalSelectedListener
 import org.ole.planet.myplanet.databinding.RowMyPersonalBinding
-import org.ole.planet.myplanet.model.RealmMyPersonal
+import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.ui.personals.PersonalsAdapter.PersonalsViewHolder
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
 
-class PersonalsAdapter(private val context: Context) : ListAdapter<RealmMyPersonal, PersonalsViewHolder>(DiffCallback) {
+class PersonalsAdapter(private val context: Context) : ListAdapter<Personal, PersonalsViewHolder>(DIFF_CALLBACK) {
     private var listener: OnPersonalSelectedListener? = null
 
     fun setListener(listener: OnPersonalSelectedListener?) {
@@ -63,8 +63,8 @@ class PersonalsAdapter(private val context: Context) : ListAdapter<RealmMyPerson
     }
 
     private fun openResource(path: String?) {
-        val arr = path?.split("\\.".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
-        when (arr?.get(arr.size - 1)) {
+        val extension = path?.substringAfterLast('.', "")?.lowercase()
+        when (extension) {
             "pdf" -> context.startActivity(
                 Intent(context, ResourceViewerActivity::class.java)
                     .putExtra("TOUCHED_FILE", path)
@@ -88,8 +88,8 @@ class PersonalsAdapter(private val context: Context) : ListAdapter<RealmMyPerson
     class PersonalsViewHolder(val binding: RowMyPersonalBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
-        private val DiffCallback =
-            DiffUtils.itemCallback<RealmMyPersonal>(
+        private val DIFF_CALLBACK =
+            DiffUtils.itemCallback<Personal>(
                 areItemsTheSame = { old, new -> old._id == new._id },
                 areContentsTheSame = { old, new ->
                     old.title == new.title &&

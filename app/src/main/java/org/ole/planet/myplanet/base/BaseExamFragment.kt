@@ -27,11 +27,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.model.ExamQuestion
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.Submission
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
@@ -42,11 +41,9 @@ import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
-    var exam: RealmStepExam? = null
+    var exam: StepExam? = null
     @Inject
     lateinit var submissionsRepository: SubmissionsRepository
-    @Inject
-    lateinit var coursesRepository: CoursesRepository
     @Inject
     @ApplicationScope
     lateinit var applicationScope: CoroutineScope
@@ -55,10 +52,10 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var type: String? = "exam"
     var currentIndex = 0
     private var stepNumber = 0
-    var questions: List<RealmExamQuestion>? = null
+    var questions: List<ExamQuestion>? = null
     var ans = ""
-    var user: RealmUser? = null
-    var sub: RealmSubmission? = null
+    var user: UserEntity? = null
+    var sub: Submission? = null
     var listAns: HashMap<String, String>? = null
     var isMySurvey = false
     var date = Date().toString()
@@ -68,6 +65,8 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var teamId: String? = null
     internal var answerTextWatcher: TextWatcher? = null
     private var currentAnswerEditText: EditText? = null
+    private val markwon by lazy(LazyThreadSafetyMode.NONE) { Markwon.create(requireActivity()) }
+    private val markwonEditor by lazy(LazyThreadSafetyMode.NONE) { MarkwonEditor.create(markwon) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -88,11 +87,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
                 id?.let {
                     sub = submissionsRepository.getSubmissionById(it)
                 }
-                id = if (sub?.parentId?.contains("@") == true) {
-                    sub?.parentId?.split("@".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()?.get(0)
-                } else {
-                    sub?.parentId
-                }
+                id = sub?.parentId?.substringBefore("@")
             }
         }
     }
@@ -135,7 +130,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         } else if (isTeam && type?.startsWith("survey") == true) {
             showUserInfoDialog()
         } else {
-            saveCourseProgress()
+            saveCourseProgress(exam?.courseId, stepNumber, sub?.status == "graded", user?.id)
             val titleView = TextView(requireContext()).apply {
                 text = "${getString(R.string.thank_you_for_taking_this)}$type! ${getString(R.string.we_wish_you_all_the_best)}"
                 textSize = 18f
@@ -153,11 +148,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         }
     }
 
-    private fun saveCourseProgress() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            coursesRepository.updateCourseProgress(exam?.courseId, stepNumber, sub?.status == "graded")
-        }
-    }
+    abstract fun saveCourseProgress(courseId: String?, stepNum: Int, isGraded: Boolean, userId: String?)
 
     private fun showUserInfoDialog() {
         if (!isMySurvey && exam?.isFromNation != true) {
@@ -182,7 +173,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             )
         }
     }
-    abstract fun startExam(question: RealmExamQuestion?)
+    abstract fun startExam(question: ExamQuestion?)
     private fun insertIntoSubmitPhotos(submitId: String?) {
         applicationScope.launch {
             submissionsRepository.addSubmissionPhoto(
@@ -204,15 +195,16 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         currentAnswerEditText?.removeTextChangedListener(answerTextWatcher)
         currentAnswerEditText = etAnswer
         etAnswer.visibility = View.VISIBLE
-        val markwon = Markwon.create(requireActivity())
-        val editor = MarkwonEditor.create(markwon)
         if (type.equals("textarea", ignoreCase = true)) {
-            answerTextWatcher = MarkwonEditorTextWatcher.withProcess(editor)
+            answerTextWatcher = MarkwonEditorTextWatcher.withProcess(markwonEditor)
             etAnswer.addTextChangedListener(answerTextWatcher)
         } else {
             answerTextWatcher = object : TextWatcher {
+                @Suppress("EmptyMethod")
                 override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
+                @Suppress("EmptyMethod")
                 override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
+                @Suppress("EmptyMethod")
                 override fun afterTextChanged(editable: Editable) {}
             }
             etAnswer.addTextChangedListener(answerTextWatcher)

@@ -1,12 +1,9 @@
 package org.ole.planet.myplanet.repository
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
-import io.mockk.mockkObject
-import io.mockk.runs
-import io.mockk.unmockkObject
 import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
@@ -15,29 +12,26 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import okhttp3.ResponseBody.Companion.toResponseBody
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.TestTimeProvider
 import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DownloadRepositoryImplTest {
 
+    private lateinit var timeProvider: TestTimeProvider
+    private lateinit var diagnosticsRepository: DiagnosticsRepository
+
     @Before
     fun setup() {
-        mockkObject(MainApplication)
-        every { MainApplication.createLog(any(), any()) } just runs
-    }
-
-    @After
-    fun teardown() {
-        unmockkObject(MainApplication)
+        timeProvider = TestTimeProvider(currentTime = 123456789L)
+        diagnosticsRepository = mockk(relaxed = true)
     }
 
     @Test
@@ -55,13 +49,13 @@ class DownloadRepositoryImplTest {
 
         coEvery { mockApiInterface.downloadFile(authHeader, url) } returns mockResponse
 
-        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider)
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
 
         val result = repository.downloadFileResponse(url, authHeader)
 
         assertTrue(result is DownloadResult.Success)
         val successResult = result as DownloadResult.Success
-        assertTrue((result as DownloadResult.Success).body == mockResponseBody)
+        assertTrue(successResult.body == mockResponseBody)
     }
 
     @Test
@@ -78,7 +72,7 @@ class DownloadRepositoryImplTest {
 
         coEvery { mockApiInterface.downloadFile(authHeader, url) } returns mockResponse
 
-        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider)
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
         val result = repository.downloadFileResponse(url, authHeader)
 
         assertTrue(result is DownloadResult.Error)
@@ -92,7 +86,7 @@ class DownloadRepositoryImplTest {
             every { io } returns testDispatcher
         }
         val mockApiInterface = mockk<ApiInterface>()
-        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider)
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
 
         val url = "http://example.com/file"
         val authHeader = "auth"
@@ -120,7 +114,7 @@ class DownloadRepositoryImplTest {
 
             assertTrue("Expected Error for code $code", result is DownloadResult.Error)
             assertEquals("Wrong message for code $code", expectedMessage, (result as DownloadResult.Error).message)
-            assertEquals("Wrong code for $code", code, (result as DownloadResult.Error).code)
+            assertEquals("Wrong code for $code", code, result.code)
         }
     }
 
@@ -131,7 +125,7 @@ class DownloadRepositoryImplTest {
             every { io } returns testDispatcher
         }
         val mockApiInterface = mockk<ApiInterface>()
-        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider)
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
 
         val url = "http://example.com/file"
         val authHeader = "auth"
@@ -159,7 +153,7 @@ class DownloadRepositoryImplTest {
             every { io } returns testDispatcher
         }
         val mockApiInterface = mockk<ApiInterface>()
-        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider)
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
 
         val url = "http://example.com/file"
         val authHeader = "auth"
@@ -179,7 +173,7 @@ class DownloadRepositoryImplTest {
             every { io } returns testDispatcher
         }
         val mockApiInterface = mockk<ApiInterface>()
-        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider)
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
 
         val url = "http://example.com/file"
         val authHeader = "auth"
@@ -190,5 +184,95 @@ class DownloadRepositoryImplTest {
 
         assertTrue(result is DownloadResult.Error)
         assertEquals("Network error: Unknown IO error", (result as DownloadResult.Error).message)
+    }
+
+    @Test
+    fun `downloadFileResponse handles generic Exception without message`() = runTest {
+        val testDispatcher = UnconfinedTestDispatcher(testScheduler)
+        val mockDispatcherProvider = mockk<DispatcherProvider> {
+            every { io } returns testDispatcher
+        }
+        val mockApiInterface = mockk<ApiInterface>()
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
+
+        val url = "http://example.com/file"
+        val authHeader = "auth"
+
+        coEvery { mockApiInterface.downloadFile(authHeader, url) } throws RuntimeException()
+
+        val result = repository.downloadFileResponse(url, authHeader)
+
+        assertTrue(result is DownloadResult.Error)
+        assertEquals("Network error: Unknown error", (result as DownloadResult.Error).message)
+    }
+
+    @Test
+    fun `downloadFileResponse handles generic Exception with message`() = runTest {
+        val testDispatcher = UnconfinedTestDispatcher(testScheduler)
+        val mockDispatcherProvider = mockk<DispatcherProvider> {
+            every { io } returns testDispatcher
+        }
+        val mockApiInterface = mockk<ApiInterface>()
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
+
+        val url = "http://example.com/file"
+        val authHeader = "auth"
+
+        coEvery { mockApiInterface.downloadFile(authHeader, url) } throws RuntimeException("Test Generic Exception")
+
+        val result = repository.downloadFileResponse(url, authHeader)
+
+        assertTrue(result is DownloadResult.Error)
+        assertEquals("Network error: Test Generic Exception", (result as DownloadResult.Error).message)
+    }
+
+    @Test
+    fun `downloadFileResponse logs original URL on 404 exception`() = runTest {
+        val testDispatcher = UnconfinedTestDispatcher(testScheduler)
+        val mockDispatcherProvider = mockk<DispatcherProvider> {
+            every { io } returns testDispatcher
+        }
+        val mockApiInterface = mockk<ApiInterface>()
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
+
+        val url = "http://example.com/file"
+        val authHeader = "auth"
+
+        val mockResponse = mockk<Response<okhttp3.ResponseBody>>()
+        every { mockResponse.isSuccessful } returns false
+        every { mockResponse.code() } returns 404
+        every { mockResponse.toString() } throws RuntimeException("Simulated exception")
+
+        coEvery { mockApiInterface.downloadFile(authHeader, url) } returns mockResponse
+
+        val result = repository.downloadFileResponse(url, authHeader)
+
+        assertTrue(result is DownloadResult.Error)
+        coVerify { diagnosticsRepository.saveLogToRoom("File Not Found", url, "123456789") }
+    }
+
+    @Test
+    fun `downloadFileResponse logs extracted URL on 404`() = runTest {
+        val testDispatcher = UnconfinedTestDispatcher(testScheduler)
+        val mockDispatcherProvider = mockk<DispatcherProvider> {
+            every { io } returns testDispatcher
+        }
+        val mockApiInterface = mockk<ApiInterface>()
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
+
+        val url = "http://example.com/file"
+        val authHeader = "auth"
+
+        val mockResponse = mockk<Response<okhttp3.ResponseBody>>()
+        every { mockResponse.isSuccessful } returns false
+        every { mockResponse.code() } returns 404
+        every { mockResponse.toString() } returns "Response{protocol=http/1.1, code=404, message=Not Found, url=http://example.com/extractedUrl}"
+
+        coEvery { mockApiInterface.downloadFile(authHeader, url) } returns mockResponse
+
+        val result = repository.downloadFileResponse(url, authHeader)
+
+        assertTrue(result is DownloadResult.Error)
+        coVerify { diagnosticsRepository.saveLogToRoom("File Not Found", "http://example.com/extractedUrl", "123456789") }
     }
 }

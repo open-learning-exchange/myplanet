@@ -1,26 +1,20 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import android.os.Bundle
-import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.TextView
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
-import io.realm.RealmObject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
+import org.ole.planet.myplanet.databinding.ItemCourseHomeBinding
 import org.ole.planet.myplanet.databinding.ItemMyLifeBinding
-import org.ole.planet.myplanet.model.RealmMeetup
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyLife
+import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
-import org.ole.planet.myplanet.ui.events.EventsDetailFragment
 import org.ole.planet.myplanet.ui.health.MyHealthFragment
 import org.ole.planet.myplanet.ui.personals.PersonalsFragment
 import org.ole.planet.myplanet.ui.references.ReferencesFragment
@@ -29,6 +23,30 @@ import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.user.AchievementFragment
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.Utilities
+
+enum class MyLifeRoute {
+    SUBMISSIONS,
+    REFERENCES,
+    CALENDAR,
+    SURVEYS,
+    ACHIEVEMENTS,
+    PERSONALS,
+    HEALTH,
+    UNKNOWN
+}
+
+internal fun myLifeRouteFor(imageId: String?): MyLifeRoute {
+    return when (imageId) {
+        "ic_submissions" -> MyLifeRoute.SUBMISSIONS
+        "ic_references" -> MyLifeRoute.REFERENCES
+        "ic_calendar" -> MyLifeRoute.CALENDAR
+        "ic_my_survey" -> MyLifeRoute.SURVEYS
+        "my_achievement" -> MyLifeRoute.ACHIEVEMENTS
+        "ic_mypersonals" -> MyLifeRoute.PERSONALS
+        "ic_myhealth" -> MyLifeRoute.HEALTH
+        else -> MyLifeRoute.UNKNOWN
+    }
+}
 
 open class DashboardPluginFragment : BaseContainerFragment() {
 
@@ -73,18 +91,18 @@ open class DashboardPluginFragment : BaseContainerFragment() {
         }
     }
 
-    private fun handleClickMyLife(title: String, v: View) {
+    private fun handleClickMyLife(imageId: String?, v: View) {
         v.setOnClickListener {
             homeItemClickListener?.let { listener ->
-                when (title) {
-                    "mySubmissions" -> openIfLoggedIn { listener.openCallFragment(SubmissionsFragment()) }
-                    "References" -> listener.openCallFragment(ReferencesFragment())
-                    "Calendar" -> listener.openCallFragment(CalendarFragment())
-                    "mySurveys" -> openIfLoggedIn { listener.openCallFragment(SubmissionsFragment.newInstance("survey")) }
-                    "myAchievements" -> openIfLoggedIn { listener.openCallFragment(AchievementFragment()) }
-                    "myPersonals" -> openIfLoggedIn { listener.openCallFragment(PersonalsFragment()) }
-                    "myHealth" -> openIfLoggedIn { listener.openCallFragment(MyHealthFragment()) }
-                    else -> Utilities.toast(activity, getString(R.string.feature_not_available))
+                when (myLifeRouteFor(imageId)) {
+                    MyLifeRoute.SUBMISSIONS -> openIfLoggedIn { listener.openCallFragment(SubmissionsFragment()) }
+                    MyLifeRoute.REFERENCES -> listener.openCallFragment(ReferencesFragment())
+                    MyLifeRoute.CALENDAR -> listener.openCallFragment(CalendarFragment())
+                    MyLifeRoute.SURVEYS -> openIfLoggedIn { listener.openCallFragment(SubmissionsFragment.newInstance("survey")) }
+                    MyLifeRoute.ACHIEVEMENTS -> openIfLoggedIn { listener.openCallFragment(AchievementFragment()) }
+                    MyLifeRoute.PERSONALS -> openIfLoggedIn { listener.openCallFragment(PersonalsFragment()) }
+                    MyLifeRoute.HEALTH -> openIfLoggedIn { listener.openCallFragment(MyHealthFragment()) }
+                    MyLifeRoute.UNKNOWN -> Utilities.toast(activity, getString(R.string.feature_not_available))
                 }
             }
         }
@@ -94,43 +112,21 @@ open class DashboardPluginFragment : BaseContainerFragment() {
         if (model?.id?.startsWith("guest") == false) {
             action()
         } else {
-            guestDialog(requireContext(), profileDbHandler)
+            guestDialog(requireContext())
         }
     }
 
-    fun setTextViewProperties(textViewArray: Array<TextView?>, itemCnt: Int, obj: RealmObject?) {
-        textViewArray[itemCnt] = TextView(context)
-        textViewArray[itemCnt]?.setPadding(20, 10, 20, 10)
-        textViewArray[itemCnt]?.textAlignment = View.TEXT_ALIGNMENT_CENTER
-        textViewArray[itemCnt]?.gravity = Gravity.CENTER_VERTICAL or Gravity.CENTER_HORIZONTAL
-        when (obj) {
-            is RealmMyLibrary -> {
-                textViewArray[itemCnt]?.text = obj.title
-            }
-            is RealmMyCourse -> {
-                textViewArray[itemCnt]?.let {
-                    handleClick(obj.courseId, obj.courseTitle, TakeCourseFragment(), it)
-                }
-            }
-            is RealmMeetup -> {
-                textViewArray[itemCnt]?.let {
-                    handleClick(obj.meetupId, obj.title, EventsDetailFragment(), it)
-                }
-            }
-        }
+    fun createCourseChip(obj: DashboardItem?): View {
+        val itemCourseHomeBinding = ItemCourseHomeBinding.inflate(LayoutInflater.from(activity))
+        handleClick(obj?.id, obj?.title, TakeCourseFragment(), itemCourseHomeBinding.title)
+        return itemCourseHomeBinding.root
     }
 
-    fun setTextColor(textView: TextView, itemCnt: Int) {
-        textView.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
-        setBackgroundColor(textView, itemCnt)
-    }
-
-    fun getLayout(itemCnt: Int, obj: RealmObject, surveyCount: Int? = null): View {
+    fun getLayout(obj: DashboardItem, surveyCount: Int? = null): View {
         val itemMyLifeBinding = ItemMyLifeBinding.inflate(LayoutInflater.from(activity))
         val v = itemMyLifeBinding.root
-        setBackgroundColor(v, itemCnt)
 
-        val title = (obj as RealmMyLife).title
+        val title = obj.title
         val imageResId = imageResourceMap[obj.imageId] ?: R.drawable.ic_myhealth
         itemMyLifeBinding.img.setImageResource(imageResId)
         itemMyLifeBinding.tvName.text = title
@@ -142,29 +138,9 @@ open class DashboardPluginFragment : BaseContainerFragment() {
             itemMyLifeBinding.tvCount.visibility = View.GONE
         }
 
-        if (title != null) {
-            handleClickMyLife(title, v)
-        }
+        handleClickMyLife(obj.imageId, v)
         return v
     }
 
-    fun getMyLifeListBase(userId: String?): List<RealmMyLife> {
-        val myLifeList: MutableList<RealmMyLife> = ArrayList()
-        myLifeList.add(RealmMyLife("ic_myhealth", userId, getString(R.string.myhealth)))
-        myLifeList.add(RealmMyLife("my_achievement", userId, getString(R.string.achievements)))
-        myLifeList.add(RealmMyLife("ic_submissions", userId, getString(R.string.submission)))
-        myLifeList.add(RealmMyLife("ic_my_survey", userId, getString(R.string.my_survey)))
-        myLifeList.add(RealmMyLife("ic_references", userId, getString(R.string.references)))
-        myLifeList.add(RealmMyLife("ic_calendar", userId, getString(R.string.calendar)))
-        myLifeList.add(RealmMyLife("ic_mypersonals", userId, getString(R.string.mypersonals)))
-        return myLifeList
-    }
-
-    fun setBackgroundColor(v: View, count: Int) {
-        if (count % 2 == 0) {
-            v.setBackgroundResource(R.drawable.light_rect)
-        } else {
-            v.setBackgroundResource(R.color.dashboard_item_alternative)
-        }
-    }
+    fun getMyLifeListBase(userId: String?): List<MyLife> = MyLife.defaultItems(userId, requireContext()::getString)
 }

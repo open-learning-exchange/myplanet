@@ -3,67 +3,63 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
+import org.ole.planet.myplanet.model.CourseDetailModel
 import org.ole.planet.myplanet.model.CourseProgressData
+import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.CourseStepData
-import org.ole.planet.myplanet.model.RealmCourseStep
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.TagEntity
 
 interface CoursesRepository {
-    suspend fun getAllCourses(): List<RealmMyCourse>
-    fun getMyCourses(userId: String?, courses: List<RealmMyCourse>): List<RealmMyCourse>
-    suspend fun getMyCourses(userId: String): List<RealmMyCourse>
-    suspend fun getMyCoursesFlow(userId: String): Flow<List<RealmMyCourse>>
-    suspend fun getCourseById(courseId: String): RealmMyCourse?
-    suspend fun getCourseByCourseId(courseId: String): RealmMyCourse?
-    fun getCourseByCourseIdFlow(courseId: String): Flow<RealmMyCourse?>
-    suspend fun getCoursesByIds(courseIds: List<String>): List<RealmMyCourse>
-    suspend fun getCourseOnlineResources(courseId: String?): List<RealmMyLibrary>
-    suspend fun getCourseOfflineResources(courseId: String?): List<RealmMyLibrary>
-    suspend fun getCourseOfflineResources(courseIds: List<String>): List<RealmMyLibrary>
-    suspend fun getCourseExamCount(courseId: String?): Int
-    suspend fun getCourseSteps(courseId: String): List<RealmCourseStep>
-    suspend fun getCourseStepIds(courseId: String): List<String?>
+    suspend fun getAllCourses(): List<MyCourse>
+    fun getMyCourses(userId: String?, courses: List<MyCourse>): List<MyCourse>
+    suspend fun getMyCourses(userId: String): List<MyCourse>
+    suspend fun getMyCoursesFlow(userId: String): Flow<List<MyCourse>>
+    suspend fun getCourseById(courseId: String): MyCourse?
+    fun getCourseByCourseIdFlow(courseId: String): Flow<MyCourse?>
+    fun getCourseDetailModel(courseId: String): Flow<CourseDetailModel?>
+    suspend fun getCoursesByIds(courseIds: List<String>): List<MyCourse>
+    suspend fun getCourseOfflineResources(courseId: String?): List<MyLibrary>
+    suspend fun getCourseOfflineResources(courseIds: List<String>): List<MyLibrary>
+    suspend fun getCourseSteps(courseId: String): List<CourseStep>
     suspend fun batchInsertMyCourses(shelfId: String?, documents: List<JsonObject>): Int
     suspend fun markCoursesAdded(courseIds: List<String>, userId: String?): Result<Boolean>
     suspend fun joinCourse(courseId: String, userId: String): Result<Unit>
     suspend fun leaveCourse(courseId: String, userId: String): Result<Unit>
+    suspend fun leaveCourses(courseIds: List<String>, userId: String): Result<Unit>
     suspend fun isMyCourse(userId: String?, courseId: String?): Boolean
-    suspend fun search(query: String): List<RealmMyCourse>
+    suspend fun search(query: String): List<MyCourse>
     suspend fun filterCourses(
         searchText: String,
         gradeLevel: String,
         subjectLevel: String,
         tagNames: List<String>
-    ): List<RealmMyCourse>
+    ): List<MyCourse>
     suspend fun saveSearchActivity(
         searchText: String,
         userName: String,
         planetCode: String,
         parentCode: String,
-        tags: List<org.ole.planet.myplanet.model.RealmTag>,
+        tags: List<TagEntity>,
         grade: String,
         subject: String
     )
     suspend fun getCourseProgress(courseId: String, userId: String?): CourseProgressData?
     suspend fun getCourseTitleById(courseId: String): String?
     suspend fun isCourseCertified(courseId: String): Boolean
-    suspend fun updateCourseProgress(courseId: String?, stepNum: Int, passed: Boolean)
+    suspend fun updateCourseProgress(courseId: String?, stepNum: Int, passed: Boolean, userId: String?)
     suspend fun getCourseStepData(stepId: String, userId: String?): CourseStepData
     suspend fun getMyCourseIds(userId: String): JsonArray
     suspend fun removeCourseFromShelf(courseId: String, userId: String)
+    suspend fun removeCoursesFromShelf(courseIds: List<String>, userId: String)
     suspend fun logCourseVisit(courseId: String, title: String, userId: String)
-    suspend fun getCurrentProgress(steps: List<RealmCourseStep?>?, userId: String?, courseId: String?): Int
-    suspend fun getCourseProgress(userId: String?, courseIds: List<String>): java.util.HashMap<String?, com.google.gson.JsonObject>
+    suspend fun getCurrentProgress(steps: List<CourseStep?>?, userId: String?, courseId: String?): Int
     suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean
     suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean
-    suspend fun getCourseTags(courseId: String): List<RealmTag>
-    suspend fun getCourseTagsBulk(courseIds: List<String>): Map<String, List<RealmTag>>
-    suspend fun getCourseRatings(userId: String?): HashMap<String?, com.google.gson.JsonObject>
-    suspend fun deleteCourseProgress(courseId: String?)
-    suspend fun filterCoursesByTag(query: String, tags: List<RealmTag>, isMyCourseLib: Boolean, userId: String?): List<RealmMyCourse>
-    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
-    fun bulkInsertCertificationsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
-    fun insertCertification(realm: io.realm.Realm, doc: com.google.gson.JsonObject)
+    suspend fun getCourseTagsBulk(courseIds: List<String>): Map<String, List<TagEntity>>
+    suspend fun deleteCoursesProgress(courseIds: List<String>)
+    suspend fun bulkInsertFromSync(jsonArray: JsonArray)
+    suspend fun flushPendingCourseResources()
+    suspend fun insertCertificationsFromSync(jsonArray: JsonArray)
 }

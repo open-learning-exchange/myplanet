@@ -1,32 +1,27 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
-import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
-import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.di.RealmDispatcher
-import org.ole.planet.myplanet.model.RealmMyPersonal
+import org.ole.planet.myplanet.data.room.dao.PersonalDao
+import org.ole.planet.myplanet.model.Personal
+import org.ole.planet.myplanet.utils.DeviceNameProvider
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.distinctByContent
 
 class PersonalsRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
-    private val apiInterface: ApiInterface,
-    @ApplicationContext private val context: Context
-) : RealmRepository(databaseService, realmDispatcher), PersonalsRepository {
+    private val personalDao: PersonalDao,
+    private val uploadRepository: UploadRepository,
+    private val deviceNameProvider: DeviceNameProvider
+) : PersonalsRepository {
 
     override suspend fun personalTitleExists(title: String, userId: String?): Boolean {
-        return count(RealmMyPersonal::class.java) {
-            equalTo("title", title, io.realm.Case.INSENSITIVE)
-            if (!userId.isNullOrBlank()) equalTo("userId", userId)
-        } > 0
+        return personalDao.countByTitle(title, userId) > 0
     }
 
     override suspend fun savePersonalResource(
@@ -36,7 +31,7 @@ class PersonalsRepositoryImpl @Inject constructor(
         path: String?,
         description: String?
     ) {
-        val personal = RealmMyPersonal().apply {
+        val personal = Personal().apply {
             id = UUID.randomUUID().toString()
             _id = id
             this.title = title
@@ -46,48 +41,40 @@ class PersonalsRepositoryImpl @Inject constructor(
             this.date = Date().time
             this.description = description
         }
-        save(personal)
+        personalDao.insert(personal)
     }
 
-    override suspend fun getPersonalResources(userId: String?): Flow<List<RealmMyPersonal>> {
+    override fun getPersonalResources(userId: String?): Flow<List<Personal>> {
         if (userId.isNullOrBlank()) {
             return flowOf(emptyList())
         }
-
-        return queryListFlow(RealmMyPersonal::class.java) {
-            equalTo("userId", userId)
+        return personalDao.getByUserIdFlow(userId).distinctByContent { a, b ->
+            // Compare CouchDB sync markers alongside fields editable locally via updatePersonalResource
+            a.id == b.id && a._rev == b._rev && a.isUploaded == b.isUploaded &&
+                a.title == b.title && a.description == b.description && a.path == b.path
         }
     }
 
     override suspend fun deletePersonalResource(id: String) {
-        delete(RealmMyPersonal::class.java, "_id", id)
-        delete(RealmMyPersonal::class.java, "id", id)
+        personalDao.deleteByIdOrDocId(id)
     }
 
-    override suspend fun updatePersonalResource(id: String, updater: (RealmMyPersonal) -> Unit) {
-        update(RealmMyPersonal::class.java, "_id", id, updater)
-        update(RealmMyPersonal::class.java, "id", id, updater)
+    override suspend fun updatePersonalResource(id: String, update: PersonalUpdate) {
+        personalDao.updateFields(id, update.title, update.description)
     }
 
-    override suspend fun getPendingPersonalUploads(userId: String): List<RealmMyPersonal> {
-        return queryList(RealmMyPersonal::class.java) {
-            equalTo("userId", userId)
-            equalTo("isUploaded", false)
-        }
+    override suspend fun getPendingPersonalUploads(userId: String): List<Personal> {
+        return personalDao.getPendingUploads(userId)
     }
 
     override suspend fun updatePersonalAfterSync(id: String, newId: String, rev: String) {
-        update(RealmMyPersonal::class.java, "id", id) { personal ->
-            personal.isUploaded = true
-            personal._id = newId
-            personal._rev = rev
-        }
+        personalDao.updateUploadedStatus(id, newId, rev)
     }
 
-    override suspend fun uploadPersonalDocument(personal: RealmMyPersonal): Pair<String, String>? {
-        val response = apiInterface.postDoc(
-            UrlUtils.header, "application/json",
-            "${UrlUtils.getUrl()}/resources", RealmMyPersonal.serialize(personal, context)
+    internal suspend fun uploadPersonalDocument(personal: Personal): Pair<String, String>? {
+        val response = uploadRepository.postUpload(
+            "${UrlUtils.getUrl()}/resources",
+            Personal.serialize(personal, deviceNameProvider.getCustomDeviceName())
         )
 
         val `object` = response.body()
@@ -95,12 +82,53 @@ class PersonalsRepositoryImpl @Inject constructor(
             val rev = getString("rev", `object`)
             val id = getString("id", `object`)
 
-            personal.id?.let { personalId ->
+            personal.id.let { personalId ->
                 updatePersonalAfterSync(personalId, id, rev)
             }
 
             return Pair(id, rev)
         }
         return null
+    }
+
+    override suspend fun uploadPersonal(personal: Personal): String {
+        if (personal.isUploaded) {
+            return "Resource already uploaded"
+        }
+
+        try {
+            val result = uploadPersonalDocument(personal)
+            if (result != null) {
+                val (id, rev) = result
+
+                val path = personal.path
+                if (path != null) {
+                    val file = File(path)
+                    val name = FileUtils.getFileNameFromUrl(path)
+
+                    try {
+                        val response = uploadRepository.uploadAttachment(
+                            file = file,
+                            destinationFormat = "%s/resources/%s/%s",
+                            id = id,
+                            rev = rev,
+                            name = name
+                        )
+                        // Note: ignoring specific response success check to match old behavior
+                        // which relied on callback but didn't block returning success
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        // Attachment upload failed but document succeeded
+                    }
+                }
+
+                return "Personal resource uploaded successfully"
+            } else {
+                return "Failed to upload personal resource: No response"
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return "Unable to upload resource: ${e.message}"
+        }
     }
 }

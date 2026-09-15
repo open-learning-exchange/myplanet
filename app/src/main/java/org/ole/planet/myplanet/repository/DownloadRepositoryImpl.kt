@@ -1,17 +1,27 @@
 package org.ole.planet.myplanet.repository
 
 import java.io.IOException
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.TimeProvider
 
 class DownloadRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val diagnosticsRepository: DiagnosticsRepository,
+    private val timeProvider: TimeProvider
 ) : DownloadRepository {
+
+    companion object {
+        private val URL_REGEX = Regex("url=([^}]*)")
+    }
 
     override suspend fun downloadFileResponse(url: String, authHeader: String): DownloadResult = withContext(dispatcherProvider.io) {
         try {
@@ -39,22 +49,23 @@ class DownloadRepositoryImpl @Inject constructor(
                 if (response.code() == 404) {
                     try {
                         val responseString = response.toString()
-                        val regex = Regex("url=([^}]*)")
-                        val matchResult = regex.find(responseString)
+                        val matchResult = URL_REGEX.find(responseString)
                         val extractedUrl = matchResult?.groupValues?.get(1)
-                        createLog("File Not Found", "$extractedUrl")
+                        diagnosticsRepository.saveLogToRoom("File Not Found", "$extractedUrl", "${timeProvider.now()}")
                     } catch (e: Exception) {
-                        createLog("File Not Found", url)
+                        diagnosticsRepository.saveLogToRoom("File Not Found", url, "${timeProvider.now()}")
                     }
                 }
 
                 return@withContext DownloadResult.Error(errorMessage, response.code())
             }
-        } catch (e: java.net.UnknownHostException) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: UnknownHostException) {
             return@withContext DownloadResult.Error("Server not reachable. Check internet connection.")
-        } catch (e: java.net.SocketTimeoutException) {
+        } catch (e: SocketTimeoutException) {
             return@withContext DownloadResult.Error("Connection timeout. Please try again.")
-        } catch (e: java.net.ConnectException) {
+        } catch (e: ConnectException) {
             return@withContext DownloadResult.Error("Unable to connect to server")
         } catch (e: IOException) {
             return@withContext DownloadResult.Error("Network error: ${e.localizedMessage ?: "Unknown IO error"}")

@@ -5,28 +5,26 @@ import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
 import android.widget.ArrayAdapter
-import android.widget.ImageView
-import android.widget.Spinner
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Locale
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddHealthBinding
-import org.ole.planet.myplanet.model.RealmMyHealth
+import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class AddHealthActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAddHealthBinding
     private val viewModel: HealthViewModel by viewModels()
     var userId: String? = null
-    private var myHealth: RealmMyHealth? = null
+    private var myHealth: MyHealth? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,13 +34,13 @@ class AddHealthActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
         userId = intent.getStringExtra("userId")
-        findViewById<View>(R.id.btn_submit).setOnClickListener {
+        binding.btnSubmit.setOnClickListener {
             createMyHealth()
         }
 
         val contactTypes = resources.getStringArray(R.array.contact_type)
         val contactAdapter = ArrayAdapter(this, R.layout.become_a_member_spinner_layout, contactTypes)
-        findViewById<Spinner>(R.id.spn_contact_type).adapter = contactAdapter
+        binding.spnContactType.adapter = contactAdapter
 
         initViews()
         val datePickerClickListener = View.OnClickListener {
@@ -55,7 +53,7 @@ class AddHealthActivity : AppCompatActivity() {
             dpd.show()
         }
         binding.etBirthdateLayout.editText?.setOnClickListener(datePickerClickListener)
-        findViewById<ImageView>(R.id.iv_date_picker).setOnClickListener(datePickerClickListener)
+        binding.ivDatePicker.setOnClickListener(datePickerClickListener)
     }
 
     private fun createMyHealth() {
@@ -97,50 +95,42 @@ class AddHealthActivity : AppCompatActivity() {
     private fun populate() {
         userId?.let { viewModel.loadHealthData(it) }
 
-        val progressBar = findViewById<View>(R.id.progressBar)
-
-        lifecycleScope.launch {
-            viewModel.isLoading.collect { isLoading ->
-                progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
-            }
+        collectWhenStarted(viewModel.isLoading) { isLoading ->
+            binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
         }
 
-        lifecycleScope.launch {
-            viewModel.healthData.collect { healthData ->
-                healthData?.let {
-                    myHealth = it.myHealth
-                    val health = myHealth?.profile
+        collectWhenStarted(viewModel.healthData) { healthData ->
+            healthData?.let {
+                myHealth = it.myHealth
+                val health = myHealth?.profile
 
-                    binding.etEmergency.editText?.setText(health?.emergencyContactName)
-                    binding.etContact.editText?.setText(health?.emergencyContact)
-                    val contactTypes = resources.getStringArray(R.array.contact_type)
-                    val contactType = health?.emergencyContactType
-                    if (!contactType.isNullOrEmpty()) {
-                        val index = contactTypes.indexOf(contactType)
-                        if (index >= 0) {
-                            binding.spnContactType.setSelection(index)
-                        }
+                binding.etEmergency.editText?.setText(health?.emergencyContactName)
+                binding.etContact.editText?.setText(health?.emergencyContact)
+                val contactTypes = resources.getStringArray(R.array.contact_type)
+                val contactType = health?.emergencyContactType
+                if (!contactType.isNullOrEmpty()) {
+                    val index = contactTypes.indexOf(contactType)
+                    if (index >= 0) {
+                        binding.spnContactType.setSelection(index)
                     }
-                    binding.etSpecialNeed.editText?.setText(health?.specialNeeds)
-                    binding.etOtherNeed.editText?.setText(health?.notes)
-
-                    binding.etFname.editText?.setText(it.firstName)
-                    binding.etMname.editText?.setText(it.middleName)
-                    binding.etLname.editText?.setText(it.lastName)
-                    binding.etEmail.editText?.setText(it.email)
-                    binding.etPhone.editText?.setText(it.phoneNumber)
-                    binding.etBirthdateLayout.editText?.setText(TimeUtils.formatDateToDDMMYYYY(it.dob))
-                    binding.etBirthplace.editText?.setText(it.birthPlace)
                 }
+                binding.etSpecialNeed.editText?.setText(health?.specialNeeds)
+                binding.etOtherNeed.editText?.setText(health?.notes)
+
+                binding.etFname.editText?.setText(it.firstName)
+                binding.etMname.editText?.setText(it.middleName)
+                binding.etLname.editText?.setText(it.lastName)
+                binding.etEmail.editText?.setText(it.email)
+                binding.etPhone.editText?.setText(it.phoneNumber)
+                binding.etBirthdateLayout.editText?.setText(TimeUtils.formatDateToDDMMYYYY(it.dob))
+                binding.etBirthplace.editText?.setText(it.birthPlace)
             }
         }
 
-        lifecycleScope.launch {
-            viewModel.isSaved.collect { isSaved ->
-                if (isSaved) {
-                    Utilities.toast(this@AddHealthActivity, getString(R.string.my_health_saved_successfully))
-                    finish()
-                }
+        collectLatestWhenStarted(viewModel.isSaved) { isSaved ->
+            if (isSaved) {
+                Utilities.toast(this@AddHealthActivity, getString(R.string.my_health_saved_successfully))
+                finish()
             }
         }
     }

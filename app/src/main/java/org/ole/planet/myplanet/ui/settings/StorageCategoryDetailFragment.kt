@@ -1,74 +1,49 @@
 package org.ole.planet.myplanet.ui.settings
 
 import android.app.Dialog
-import android.content.DialogInterface
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.FrameLayout
-import androidx.appcompat.app.AlertDialog
-import androidx.lifecycle.lifecycleScope
+import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
-import java.io.File
-import javax.inject.Inject
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentStorageCategoryDetailBinding
 import org.ole.planet.myplanet.databinding.ItemDownloadedResourceBinding
-import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.utils.DiffUtils
-import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
-
     private var _binding: FragmentStorageCategoryDetailBinding? = null
     private val binding get() = _binding!!
 
-    @Inject
-    lateinit var resourcesRepository: ResourcesRepository
-
-    @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
+    private val viewModel: StorageCategoryViewModel by viewModels()
 
     private var categoryLabel: String = ""
-    private var extensions: Set<String> = emptySet()
-    private var allKnownExtensions: Set<String> = emptySet()
+    private var categoryIndex: Int = -1
 
-    data class ResourceItem(
-        val resourceId: String,
-        val title: String,
-        val files: List<File>,
-        val totalSizeBytes: Long,
-        val isChecked: Boolean = false
-    )
-
-    private var items: List<ResourceItem> = emptyList()
     private lateinit var adapter: ResourceAdapter
 
     companion object {
         private const val ARG_LABEL = "label"
-        private const val ARG_EXTENSIONS = "extensions"
-        private const val ARG_ALL_KNOWN = "all_known"
+        private const val ARG_CATEGORY_INDEX = "category_index"
         const val RESULT_KEY = "category_deleted"
+        const val PAYLOAD_CHECKED_CHANGED = "payload_checked_changed"
 
-        fun newInstance(
-            label: String,
-            extensions: List<String>,
-            allKnownExtensions: List<String>
-        ) = StorageCategoryDetailFragment().apply {
+        fun newInstance(label: String, categoryIndex: Int) = StorageCategoryDetailFragment().apply {
             arguments = Bundle().apply {
                 putString(ARG_LABEL, label)
-                putStringArrayList(ARG_EXTENSIONS, ArrayList(extensions))
-                putStringArrayList(ARG_ALL_KNOWN, ArrayList(allKnownExtensions))
+                putInt(ARG_CATEGORY_INDEX, categoryIndex)
             }
         }
     }
@@ -76,21 +51,14 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         categoryLabel = arguments?.getString(ARG_LABEL) ?: ""
-        extensions = arguments?.getStringArrayList(ARG_EXTENSIONS)?.toSet() ?: emptySet()
-        allKnownExtensions = arguments?.getStringArrayList(ARG_ALL_KNOWN)?.toSet() ?: emptySet()
+        categoryIndex = arguments?.getInt(ARG_CATEGORY_INDEX, -1) ?: -1
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val dialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
-        dialog.setOnShowListener { d: DialogInterface ->
-            val sheet = (d as BottomSheetDialog)
-                .findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
-            sheet?.let {
-                BottomSheetBehavior.from(it).apply {
-                    state = BottomSheetBehavior.STATE_EXPANDED
-                    skipCollapsed = true
-                }
-            }
+        dialog.behavior.apply {
+            state = BottomSheetBehavior.STATE_EXPANDED
+            skipCollapsed = true
         }
         return dialog
     }
@@ -107,98 +75,80 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         binding.closeButton.setOnClickListener { dismiss() }
 
         adapter = ResourceAdapter { clickedItem ->
-            items = items.map {
-                if (it.resourceId == clickedItem.resourceId) it.copy(isChecked = !it.isChecked) else it
-            }
-            adapter.submitList(items)
-            updateSelectionState()
+            viewModel.toggleItemChecked(clickedItem.resourceId)
         }
         binding.resourceList.layoutManager = LinearLayoutManager(requireContext())
         binding.resourceList.adapter = adapter
 
         binding.selectAllRow.setOnClickListener {
-            val allChecked = items.all { it.isChecked }
-            items = items.map { it.copy(isChecked = !allChecked) }
-            adapter.submitList(items)
-            updateSelectionState()
+            viewModel.toggleAllChecked()
         }
 
+        val olePath = FileUtils.getOlePath(requireContext())
+
         binding.deleteSelectedButton.setOnClickListener {
-            val selected = items.filter { it.isChecked }
-            confirmDelete(selected.size, getString(R.string.storage_delete_selected_confirm, selected.size)) {
-                deleteItems(selected)
+            val checkedCount = viewModel.uiState.value.checkedCount
+            confirmDelete(checkedCount, getString(R.string.storage_delete_selected_confirm, checkedCount)) {
+                viewModel.deleteSelected(olePath)
             }
         }
 
         binding.deleteAllButton.setOnClickListener {
-            confirmDelete(items.size, getString(R.string.storage_delete_confirm, categoryLabel)) {
-                deleteItems(items)
+            val count = viewModel.uiState.value.items.size
+            confirmDelete(count, getString(R.string.storage_delete_confirm, categoryLabel)) {
+                viewModel.deleteAll(olePath)
             }
         }
 
-        loadResources()
+        observeViewModel()
+        val category = StorageCategories.all.getOrNull(categoryIndex)
+        viewModel.loadResources(
+            olePath = olePath,
+            extensions = category?.extensions ?: emptySet(),
+            allKnownExtensions = StorageCategories.allKnownExtensions
+        )
     }
 
-    private fun loadResources() {
-        binding.progressBar.visibility = View.VISIBLE
-        binding.resourceList.visibility = View.GONE
-        binding.emptyText.visibility = View.GONE
-        binding.actionButtons.visibility = View.GONE
-        binding.selectAllRow.visibility = View.GONE
-        binding.selectAllDivider.visibility = View.GONE
+    private fun observeViewModel() {
+        collectWhenStarted(viewModel.uiState) { state ->
+            if (_binding == null) return@collectWhenStarted
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            val loaded = withContext(dispatcherProvider.io) { buildResourceItems() }
-            binding.progressBar.visibility = View.GONE
+            binding.progressBar.visibility = if (state.isLoading) View.VISIBLE else View.GONE
 
-            if (loaded.isEmpty()) {
+            if (state.isEmpty) {
                 binding.emptyText.visibility = View.VISIBLE
-                return@launch
+                binding.resourceList.visibility = View.GONE
+                binding.actionButtons.visibility = View.GONE
+                binding.selectAllRow.visibility = View.GONE
+                binding.selectAllDivider.visibility = View.GONE
+                adapter.submitList(emptyList())
+            } else if (!state.isLoading) {
+                binding.emptyText.visibility = View.GONE
+                binding.resourceList.visibility = View.VISIBLE
+                binding.actionButtons.visibility = View.VISIBLE
+                binding.selectAllRow.visibility = View.VISIBLE
+                binding.selectAllDivider.visibility = View.VISIBLE
+
+                adapter.submitList(state.items)
+                updateSelectionState(state)
             }
 
-            items = loaded
-            adapter.submitList(items)
-
-            binding.resourceList.visibility = View.VISIBLE
-            binding.actionButtons.visibility = View.VISIBLE
-            binding.selectAllRow.visibility = View.VISIBLE
-            binding.selectAllDivider.visibility = View.VISIBLE
-        }
-    }
-
-    private suspend fun buildResourceItems(): List<ResourceItem> {
-        val oleDir = File(FileUtils.getOlePath(requireContext()))
-        if (!oleDir.exists() || !oleDir.isDirectory) return emptyList()
-
-        // Build a map of resourceId → title from Realm (one query)
-        val titleMap = resourcesRepository.getResourceTitlesMap()
-
-        // Group files by resourceId directory
-        val grouped = mutableMapOf<String, MutableList<File>>()
-        oleDir.walkTopDown().filter { it.isFile }.forEach { file ->
-            val ext = file.extension.lowercase()
-            val matchesCategory = if (extensions.isEmpty()) {
-                ext !in allKnownExtensions
-            } else {
-                ext in extensions
-            }
-            if (matchesCategory) {
-                val resourceId = file.parentFile?.name ?: return@forEach
-                grouped.getOrPut(resourceId) { mutableListOf() }.add(file)
+            if (state.isDeleting) {
+                binding.deleteSelectedButton.isEnabled = false
+                binding.deleteAllButton.isEnabled = false
             }
         }
 
-        return grouped.map { (resourceId, files) ->
-            val totalSize = files.sumOf { it.length() }
-            val title = titleMap[resourceId]?.takeIf { it.isNotBlank() } ?: getString(R.string.storage_unknown_resource)
-            ResourceItem(resourceId, title, files, totalSize)
-        }.sortedBy { it.title }
+        collectWhenStarted(viewModel.deleteCompleteEvent) {
+            parentFragmentManager.setFragmentResult(RESULT_KEY, Bundle())
+            dismiss()
+        }
     }
 
-    private fun updateSelectionState() {
+    private fun updateSelectionState(state: StorageCategoryUiState) {
         if (_binding == null) return
-        val checkedCount = items.count { it.isChecked }
-        val allChecked = checkedCount == items.size && items.isNotEmpty()
+        val checkedCount = state.checkedCount
+        val allChecked = state.allChecked
 
         binding.selectAllCheckbox.isChecked = allChecked
         binding.deleteSelectedButton.isEnabled = checkedCount > 0
@@ -212,46 +162,22 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
     }
 
     private fun confirmDelete(count: Int, message: String, onConfirm: () -> Unit) {
-        AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-            .setTitle(R.string.are_you_sure)
-            .setMessage(message)
-            .setPositiveButton(R.string.yes) { _, _ -> onConfirm() }
-            .setNegativeButton(R.string.no, null)
-            .show()
+        requireContext().confirmDialog(
+            title = getString(R.string.are_you_sure),
+            message = message,
+            onPositive = onConfirm
+        )
     }
 
-    private fun deleteItems(toDelete: List<ResourceItem>) {
-        if (_binding == null) return
-        binding.deleteSelectedButton.isEnabled = false
-        binding.deleteAllButton.isEnabled = false
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            withContext(dispatcherProvider.io) {
-                val oleDir = File(FileUtils.getOlePath(requireContext()))
-
-                toDelete.forEach { item ->
-                    item.files.forEach { it.delete() }
-                    // Remove empty parent directory
-                    val parentDir = oleDir.resolve(item.resourceId)
-                    if (parentDir.exists() && parentDir.list().isNullOrEmpty()) {
-                        parentDir.delete()
-                    }
-                }
-
-                // Sync Realm: mark deleted resources as not offline
-                val deletedIds = toDelete.map { it.resourceId }.toSet()
-                resourcesRepository.markResourcesAsNotOffline(deletedIds)
-            }
-
-            // Notify parent to refresh, then dismiss
-            parentFragmentManager.setFragmentResult(RESULT_KEY, Bundle())
-            dismiss()
-        }
-    }
+    private val DIFF_CALLBACK = DiffUtils.itemCallback<OfflineResourceItem>(
+        areItemsTheSame = { o, n -> o.resourceId == n.resourceId },
+        areContentsTheSame = { o, n -> o == n },
+        getChangePayload = { o, n -> if (o.copy(isChecked = n.isChecked) == n) PAYLOAD_CHECKED_CHANGED else null }
+    )
 
     inner class ResourceAdapter(
-        private val onItemClicked: (ResourceItem) -> Unit
-    ) : androidx.recyclerview.widget.ListAdapter<ResourceItem, ResourceAdapter.ViewHolder>(DiffUtils.itemCallback(areItemsTheSame = { o, n -> o.resourceId == n.resourceId }, areContentsTheSame = { o, n -> o == n }, getChangePayload = { o, n -> if (o.copy(isChecked = n.isChecked) == n) true else null })) {
+        private val onItemClicked: (OfflineResourceItem) -> Unit
+    ) : ListAdapter<OfflineResourceItem, ResourceAdapter.ViewHolder>(DIFF_CALLBACK) {
 
         inner class ViewHolder(val binding: ItemDownloadedResourceBinding) :
             RecyclerView.ViewHolder(binding.root)
@@ -287,7 +213,6 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
             }
         }
     }
-
 
     override fun onDestroyView() {
         super.onDestroyView()

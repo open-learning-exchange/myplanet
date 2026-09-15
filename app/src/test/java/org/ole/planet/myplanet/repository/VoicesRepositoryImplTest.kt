@@ -1,23 +1,34 @@
 package org.ole.planet.myplanet.repository
 
+import android.text.TextUtils
 import com.google.gson.Gson
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.spyk
+import io.mockk.unmockkObject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.data.room.dao.NewsDao
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.NetworkUtils
 
 @ExperimentalCoroutinesApi
 class VoicesRepositoryImplTest {
@@ -26,25 +37,42 @@ class VoicesRepositoryImplTest {
     private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
-    private val databaseService: DatabaseService = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
+    private val userRepository: UserRepository = mockk(relaxed = true)
+    private val newsDao: NewsDao = mockk(relaxed = true)
+    private val newsLogDao: org.ole.planet.myplanet.data.room.dao.NewsLogDao = mockk(relaxed = true)
+
+    private fun newRepository(gsonInstance: Gson): VoicesRepositoryImpl {
+        return spyk(
+            VoicesRepositoryImpl(
+                dispatcherProvider,
+                gsonInstance,
+                Gson(),
+                sharedPrefManager,
+                newsDao,
+                newsLogDao
+            ),
+            recordPrivateCalls = true
+        )
+    }
 
     @Before
     fun setUp() {
         every { dispatcherProvider.default } returns testDispatcher
-        repository = spyk(VoicesRepositoryImpl(
-            databaseService,
-            UnconfinedTestDispatcher(),
-            dispatcherProvider,
-            gson,
-            sharedPrefManager
-        ), recordPrivateCalls = true)
+        repository = newRepository(gson)
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "uniqueIdentifier"
+    }
+
+    @After
+    fun tearDown() {
+        unmockkObject(NetworkUtils)
     }
 
     @Test
     fun getCommunityNews_uses_dispatcherProvider_default() = testScope.runTest {
-        coEvery { repository["queryListFlow"](RealmNews::class.java, any<Function1<*, *>>()) } returns kotlinx.coroutines.flow.flowOf(emptyList<RealmNews>())
+        every { newsDao.getTopLevelMessagesFlow() } returns flowOf(emptyList())
 
         val flow = repository.getCommunityNews("testUser")
         val result = flow.toList()
@@ -54,8 +82,62 @@ class VoicesRepositoryImplTest {
     }
 
     @Test
+    fun `getCommunityVoiceDateCount delegates to count query when userId is null`() = testScope.runTest {
+        coEvery { newsDao.countDistinctCommunityVoiceDates(1000L, 2000L) } returns 3
+
+        val count = repository.getCommunityVoiceDateCount(1000L, 2000L, null)
+
+        assertEquals(3, count)
+        coVerify(exactly = 1) { newsDao.countDistinctCommunityVoiceDates(1000L, 2000L) }
+        coVerify(exactly = 0) { newsDao.countDistinctCommunityVoiceDatesForUser(any(), any(), any()) }
+    }
+
+    @Test
+    fun `getCommunityVoiceDateCount delegates to user-scoped count query when userId is non-null`() = testScope.runTest {
+        coEvery { newsDao.countDistinctCommunityVoiceDatesForUser(1000L, 2000L, "user1") } returns 5
+
+        val count = repository.getCommunityVoiceDateCount(1000L, 2000L, "user1")
+
+        assertEquals(5, count)
+        coVerify(exactly = 1) { newsDao.countDistinctCommunityVoiceDatesForUser(1000L, 2000L, "user1") }
+        coVerify(exactly = 0) { newsDao.countDistinctCommunityVoiceDates(any(), any()) }
+    }
+
+    @Test
+    fun `getNewsForUpload filters guest users and correctly serializes payloads`() = testScope.runTest {
+        mockkStatic(TextUtils::class)
+        every { TextUtils.isEmpty(any()) } answers { firstArg<CharSequence?>().isNullOrEmpty() }
+
+        val repoWithRealGson = newRepository(Gson())
+
+        val guestNews = News().apply {
+            id = "guest_news_id"
+            userId = "guest_123"
+        }
+        val validNews = News().apply {
+            id = "valid_news_id"
+            _id = "valid_news_id"
+            userId = "user_123"
+            message = "Hello World"
+            user = "{}"
+            conversations = "[]"
+        }
+        coEvery { newsDao.getAll() } returns listOf(guestNews, validNews)
+
+        val result = repoWithRealGson.getNewsForUpload()
+
+        assertEquals(1, result.size)
+        assertEquals("valid_news_id", result[0].id)
+        assertEquals("Hello World", result[0].message)
+        assertEquals("Hello World", result[0].newsJson.get("message").asString)
+        assertNotNull(result[0].newsJson.get("user"))
+        assertEquals("uniqueIdentifier", result[0].newsJson.get("androidId").asString)
+        assertEquals("myplanet", result[0].newsJson.get("app").asString)
+    }
+
+    @Test
     fun getDiscussionsByTeamIdFlow_uses_dispatcherProvider_default() = testScope.runTest {
-        coEvery { repository["queryListFlow"](RealmNews::class.java, any<Function1<*, *>>()) } returns kotlinx.coroutines.flow.flowOf(emptyList<RealmNews>())
+        every { newsDao.getTopLevelByTeamFlow(any(), any()) } returns flowOf(emptyList())
 
         val flow = repository.getDiscussionsByTeamIdFlow("testTeam")
         val result = flow.toList()
@@ -64,235 +146,125 @@ class VoicesRepositoryImplTest {
         io.mockk.verify { dispatcherProvider.default }
     }
 
-
     @Test
-    fun `getCommunityVisibleNews filters correctly based on viewableBy and viewIn`() = testScope.runTest {
-        val mockRealm = mockk<io.realm.Realm>(relaxed = true)
-        val mockRealmQuery = mockk<io.realm.RealmQuery<RealmNews>>(relaxed = true)
-
-        val realGson = Gson()
-        val repoWithRealGson = spyk(VoicesRepositoryImpl(
-            databaseService,
-            UnconfinedTestDispatcher(),
-            dispatcherProvider,
-            realGson,
-            sharedPrefManager
-        ), recordPrivateCalls = true)
-
-        coEvery { databaseService.withRealmAsync<Any>(any()) } answers {
-            val block = firstArg<(io.realm.Realm) -> Any>()
-            block(mockRealm)
-        }
-
-        val news1 = RealmNews().apply {
-            viewableBy = "community"
-            viewIn = null
-        }
-        val news2 = RealmNews().apply {
-            viewableBy = "other"
-            viewIn = "[{\"_id\":\"user1\"}]"
-        }
-        val news3 = RealmNews().apply {
-            viewableBy = "other"
-            viewIn = "[{\"_id\":\"user2\"}]"
-        }
-
-        every { mockRealm.where(RealmNews::class.java) } returns mockRealmQuery
-        every { mockRealmQuery.isEmpty("replyTo") } returns mockRealmQuery
-        every { mockRealmQuery.equalTo("docType", "message", io.realm.Case.INSENSITIVE) } returns mockRealmQuery
-        every { mockRealmQuery.sort("time", io.realm.Sort.DESCENDING) } returns mockRealmQuery
-
-        val realmResults = mockk<io.realm.RealmResults<RealmNews>>()
-        every { mockRealmQuery.findAll() } returns realmResults
-
-        // Return a mock list from copyFromRealm
-        every { mockRealm.copyFromRealm(realmResults as Iterable<RealmNews>) } returns listOf(news1, news2, news3)
-
-        val result = repoWithRealGson.getCommunityVisibleNews("user1")
-
-        org.junit.Assert.assertEquals(2, result.size)
-        org.junit.Assert.assertEquals("community", result[0].viewableBy)
-        org.junit.Assert.assertEquals("[{\"_id\":\"user1\"}]", result[1].viewIn)
-    }
-
-    @Test
-    fun `getNewsByTeamId filters correctly based on viewableBy and viewIn`() = testScope.runTest {
-        val mockRealm = mockk<io.realm.Realm>(relaxed = true)
-        val mockRealmQuery = mockk<io.realm.RealmQuery<RealmNews>>(relaxed = true)
-
-        val realGson = Gson()
-        val repoWithRealGson = spyk(VoicesRepositoryImpl(
-            databaseService,
-            UnconfinedTestDispatcher(),
-            dispatcherProvider,
-            realGson,
-            sharedPrefManager
-        ), recordPrivateCalls = true)
-
-        coEvery { databaseService.withRealmAsync<Any>(any()) } answers {
-            val block = firstArg<(io.realm.Realm) -> Any>()
-            block(mockRealm)
-        }
-
-        val news1 = RealmNews().apply {
+    fun `getFilteredNews filters top-level posts by team`() = testScope.runTest {
+        val news1 = News().apply {
             viewableBy = "teams"
             viewableId = "team1"
         }
-        val news2 = RealmNews().apply {
-            viewableBy = "other"
-            viewIn = "[{\"_id\":\"team1\"}]"
-        }
-        val news3 = RealmNews().apply {
+        val news2 = News().apply {
             viewableBy = "other"
             viewIn = "[{\"_id\":\"team2\"}]"
         }
-
-        every { mockRealm.where(RealmNews::class.java) } returns mockRealmQuery
-        every { mockRealmQuery.isEmpty("replyTo") } returns mockRealmQuery
-        every { mockRealmQuery.beginGroup() } returns mockRealmQuery
-        every { mockRealmQuery.equalTo("viewableBy", "teams", io.realm.Case.INSENSITIVE) } returns mockRealmQuery
-        every { mockRealmQuery.equalTo("viewableId", "team1", io.realm.Case.INSENSITIVE) } returns mockRealmQuery
-        every { mockRealmQuery.or() } returns mockRealmQuery
-        every { mockRealmQuery.contains("viewIn", "\"_id\":\"team1\"", io.realm.Case.INSENSITIVE) } returns mockRealmQuery
-        every { mockRealmQuery.endGroup() } returns mockRealmQuery
-        every { mockRealmQuery.sort("time", io.realm.Sort.DESCENDING) } returns mockRealmQuery
-
-        val realmResults = mockk<io.realm.RealmResults<RealmNews>>()
-        every { mockRealmQuery.findAll() } returns realmResults
-        every { mockRealm.copyFromRealm(realmResults as Iterable<RealmNews>) } returns listOf(news1, news2)
-
-        val result = repoWithRealGson.getNewsByTeamId("team1")
-
-        org.junit.Assert.assertEquals(2, result.size)
-        org.junit.Assert.assertEquals("teams", result[0].viewableBy)
-        org.junit.Assert.assertEquals("[{\"_id\":\"team1\"}]", result[1].viewIn)
-    }
-
-    @Test
-    fun `getFilteredNews executes correct Realm query`() = testScope.runTest {
-        val mockRealm = mockk<io.realm.Realm>(relaxed = true)
-        val mockRealmQuery = mockk<io.realm.RealmQuery<RealmNews>>(relaxed = true)
-
-        coEvery { databaseService.withRealmAsync<Any>(any()) } answers {
-            val block = firstArg<(io.realm.Realm) -> Any>()
-            block(mockRealm)
-        }
-
-        every { mockRealm.where(RealmNews::class.java) } returns mockRealmQuery
-        every { mockRealmQuery.isEmpty("replyTo") } returns mockRealmQuery
-        every { mockRealmQuery.beginGroup() } returns mockRealmQuery
-        every { mockRealmQuery.equalTo("viewableBy", "teams", io.realm.Case.INSENSITIVE) } returns mockRealmQuery
-        every { mockRealmQuery.equalTo("viewableId", "team1", io.realm.Case.INSENSITIVE) } returns mockRealmQuery
-        every { mockRealmQuery.endGroup() } returns mockRealmQuery
-        every { mockRealmQuery.or() } returns mockRealmQuery
-        every { mockRealmQuery.contains("viewIn", "\"_id\":\"team1\"", io.realm.Case.INSENSITIVE) } returns mockRealmQuery
-        every { mockRealmQuery.sort("time", io.realm.Sort.DESCENDING) } returns mockRealmQuery
-
-        val realmResults = mockk<io.realm.RealmResults<RealmNews>>()
-        every { mockRealmQuery.findAll() } returns realmResults
-
-        val news1 = RealmNews()
-        every { mockRealm.copyFromRealm(realmResults as Iterable<RealmNews>) } returns listOf(news1)
+        coEvery { newsDao.getTopLevelByTeam(any(), any()) } returns listOf(news1)
 
         val result = repository.getFilteredNews("team1")
 
-        org.junit.Assert.assertEquals(1, result.size)
-        io.mockk.verify(exactly = 1) { mockRealmQuery.beginGroup() }
-        io.mockk.verify(exactly = 1) { mockRealmQuery.equalTo("viewableBy", "teams", io.realm.Case.INSENSITIVE) }
-        io.mockk.verify(exactly = 1) { mockRealmQuery.equalTo("viewableId", "team1", io.realm.Case.INSENSITIVE) }
-        io.mockk.verify(exactly = 1) { mockRealmQuery.endGroup() }
-        io.mockk.verify(exactly = 1) { mockRealmQuery.or() }
-        io.mockk.verify(exactly = 1) { mockRealmQuery.contains("viewIn", "\"_id\":\"team1\"", io.realm.Case.INSENSITIVE) }
+        assertEquals(1, result.size)
+        assertEquals("teams", result[0].viewableBy)
     }
 
     @Test
-    fun `deleteNews recursively deletes replies`() = testScope.runTest {
-        val mockRealm = mockk<io.realm.Realm>(relaxed = true)
-
-        coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val block = firstArg<(io.realm.Realm) -> Unit>()
-            block(mockRealm)
+    fun `addLabel appends label and upserts`() = testScope.runTest {
+        val news = News().apply {
+            id = "newsId"
+            labels = listOf("existing")
         }
-
-        val mockQueryLevel1 = mockk<io.realm.RealmQuery<RealmNews>>(relaxed = true)
-        val mockQueryLevel2 = mockk<io.realm.RealmQuery<RealmNews>>(relaxed = true)
-        val mockQueryTarget = mockk<io.realm.RealmQuery<RealmNews>>(relaxed = true)
-
-        val realmResultsTarget = mockk<io.realm.RealmResults<RealmNews>>(relaxed = true)
-        val realmResultsLevel1 = mockk<io.realm.RealmResults<RealmNews>>(relaxed = true)
-        val realmResultsLevel2 = mockk<io.realm.RealmResults<RealmNews>>(relaxed = true)
-
-        val reply1 = mockk<RealmNews>(relaxed = true)
-        every { reply1.id } returns "reply1_id"
-        val reply2 = mockk<RealmNews>(relaxed = true)
-        every { reply2.id } returns "reply2_id"
-
-        every { mockRealm.where(RealmNews::class.java) } returns mockQueryTarget
-        every { mockQueryTarget.equalTo("replyTo", "newsId") } returns mockQueryLevel1
-        every { mockQueryLevel1.findAll() } returns realmResultsLevel1
-        every { realmResultsLevel1.iterator() } returns mutableListOf(reply1).iterator()
-
-        every { mockQueryTarget.equalTo("replyTo", "reply1_id") } returns mockQueryLevel2
-        every { mockQueryLevel2.findAll() } returns realmResultsLevel2
-        every { realmResultsLevel2.iterator() } returns mutableListOf(reply2).iterator()
-
-        every { mockQueryTarget.equalTo("replyTo", "reply2_id") } returns mockk(relaxed = true) {
-            every { findAll() } returns mockk(relaxed = true) {
-                every { iterator() } returns mutableListOf<RealmNews>().iterator()
-            }
-        }
-
-        every { mockQueryTarget.equalTo("id", "newsId") } returns mockQueryTarget
-        every { mockQueryTarget.findAll() } returns realmResultsTarget
-
-        repository.deleteNews("newsId")
-
-        io.mockk.verify(exactly = 1) { reply2.deleteFromRealm() }
-        io.mockk.verify(exactly = 1) { reply1.deleteFromRealm() }
-        io.mockk.verify(exactly = 1) { realmResultsTarget.deleteAllFromRealm() }
-    }
-
-    @Test
-    fun `addLabel modifies realm object correctly`() = testScope.runTest {
-        val mockRealm = mockk<io.realm.Realm>(relaxed = true)
-        coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val block = firstArg<(io.realm.Realm) -> Unit>()
-            block(mockRealm)
-        }
-
-        val mockQuery = mockk<io.realm.RealmQuery<RealmNews>>(relaxed = true)
-        val mockNews = mockk<RealmNews>(relaxed = true)
-        val mockLabels = mockk<io.realm.RealmList<String>>(relaxed = true)
-
-        every { mockRealm.where(RealmNews::class.java) } returns mockQuery
-        every { mockQuery.equalTo("id", "newsId") } returns mockQuery
-        every { mockQuery.findFirst() } returns mockNews
-        every { mockNews.labels } returns mockLabels
+        coEvery { newsDao.getById("newsId") } returns news
 
         repository.addLabel("newsId", "testLabel")
 
-        io.mockk.verify(exactly = 1) { mockLabels.add("testLabel") }
+        val slot = slot<News>()
+        coVerify(exactly = 1) { newsDao.upsert(capture(slot)) }
+        assertTrue(slot.captured.labels!!.contains("testLabel"))
+        assertTrue(slot.captured.labels!!.contains("existing"))
     }
 
     @Test
-    fun `removeLabel modifies realm object correctly`() = testScope.runTest {
-        val mockRealm = mockk<io.realm.Realm>(relaxed = true)
-        coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val block = firstArg<(io.realm.Realm) -> Unit>()
-            block(mockRealm)
+    fun `removeLabel drops label and upserts`() = testScope.runTest {
+        val news = News().apply {
+            id = "newsId"
+            labels = listOf("testLabel", "keep")
         }
-
-        val mockQuery = mockk<io.realm.RealmQuery<RealmNews>>(relaxed = true)
-        val mockNews = mockk<RealmNews>(relaxed = true)
-        val mockLabels = mockk<io.realm.RealmList<String>>(relaxed = true)
-
-        every { mockRealm.where(RealmNews::class.java) } returns mockQuery
-        every { mockQuery.equalTo("id", "newsId") } returns mockQuery
-        every { mockQuery.findFirst() } returns mockNews
-        every { mockNews.labels } returns mockLabels
+        coEvery { newsDao.getById("newsId") } returns news
 
         repository.removeLabel("newsId", "testLabel")
 
-        io.mockk.verify(exactly = 1) { mockLabels.remove("testLabel") }
+        val slot = slot<News>()
+        coVerify(exactly = 1) { newsDao.upsert(capture(slot)) }
+        assertEquals(listOf("keep"), slot.captured.labels)
+    }
+
+    @Test
+    fun `postReply sets replyTo to the parent's local id, not its server _id`() = testScope.runTest {
+        val repoWithRealGson = newRepository(Gson())
+        val parentNews = News().apply {
+            id = "local-uuid-1234"
+            _id = "server-doc-id-5678"
+        }
+        val currentUser = UserEntity()
+
+        repoWithRealGson.postReply("Hello reply", parentNews, currentUser, null)
+
+        val slot = slot<News>()
+        coVerify(exactly = 1) { newsDao.upsert(capture(slot)) }
+        assertEquals("local-uuid-1234", slot.captured.replyTo)
+    }
+
+    @Test
+    fun `deletePost from community unshares shared enterprise post without deleting row`() = testScope.runTest {
+        val repoWithRealGson = newRepository(Gson())
+        val sharedNews = News().apply {
+            id = "shared_news_123"
+            sharedBy = "user_1"
+            viewIn = "[{\"_id\":\"team_123\",\"section\":\"teams\",\"name\":\"Enterprise A\"},{\"section\":\"community\",\"_id\":\"planet@parent\",\"sharedDate\":123456789}]"
+        }
+        coEvery { newsDao.getById("shared_news_123") } returns sharedNews
+
+        repoWithRealGson.deletePost("shared_news_123", "")
+
+        val slot = slot<News>()
+        coVerify(exactly = 1) { newsDao.upsert(capture(slot)) }
+        coVerify(exactly = 0) { newsDao.deleteByIds(any()) }
+
+        val updatedNews = slot.captured
+        assertEquals("", updatedNews.sharedBy)
+        assertEquals("[{\"_id\":\"team_123\",\"section\":\"teams\",\"name\":\"Enterprise A\"}]", updatedNews.viewIn)
+    }
+
+    @Test
+    fun `deletePost from team deletes post and replies completely`() = testScope.runTest {
+        val repoWithRealGson = newRepository(Gson())
+        val teamNews = News().apply {
+            id = "team_news_123"
+            viewIn = "[{\"_id\":\"team_123\",\"section\":\"teams\",\"name\":\"Enterprise A\"},{\"section\":\"community\",\"_id\":\"planet@parent\",\"sharedDate\":123456789}]"
+        }
+        coEvery { newsDao.getById("team_news_123") } returns teamNews
+        coEvery { newsDao.getNewsAndRepliesIds("team_news_123") } returns listOf("team_news_123")
+
+        repoWithRealGson.deletePost("team_news_123", "Enterprise A")
+
+        val idsSlot = slot<List<String>>()
+        coVerify(exactly = 1) { newsDao.deleteByIds(capture(idsSlot)) }
+        assertEquals(listOf("team_news_123"), idsSlot.captured)
+        coVerify(exactly = 0) { newsDao.upsert(any()) }
+    }
+
+    @Test
+    fun `deletePost from community deletes direct community post`() = testScope.runTest {
+        val repoWithRealGson = newRepository(Gson())
+        val communityNews = News().apply {
+            id = "comm_news_123"
+            viewIn = "[{\"_id\":\"planet@parent\",\"section\":\"community\",\"name\":\"\"}]"
+        }
+        coEvery { newsDao.getById("comm_news_123") } returns communityNews
+        coEvery { newsDao.getNewsAndRepliesIds("comm_news_123") } returns listOf("comm_news_123")
+
+        repoWithRealGson.deletePost("comm_news_123", "")
+
+        val idsSlot = slot<List<String>>()
+        coVerify(exactly = 1) { newsDao.deleteByIds(capture(idsSlot)) }
+        assertEquals(listOf("comm_news_123"), idsSlot.captured)
+        coVerify(exactly = 0) { newsDao.upsert(any()) }
     }
 }

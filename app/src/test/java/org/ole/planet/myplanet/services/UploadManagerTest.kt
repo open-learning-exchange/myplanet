@@ -1,9 +1,10 @@
 package org.ole.planet.myplanet.services
 
 import android.content.Context
+import android.os.SystemClock
 import android.util.Log
 import com.google.gson.Gson
-import dagger.Lazy
+import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -21,122 +22,149 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.model.RealmApkLog
-import org.ole.planet.myplanet.model.RealmCourseActivity
-import org.ole.planet.myplanet.model.RealmFeedback
-import org.ole.planet.myplanet.model.RealmMeetup
-import org.ole.planet.myplanet.model.RealmRating
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.ApkLog
+import org.ole.planet.myplanet.model.CourseActivity
+import org.ole.planet.myplanet.model.Feedback
+import org.ole.planet.myplanet.model.Meetup
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.Rating
+import org.ole.planet.myplanet.model.SearchActivity
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.ChatRepository
-import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.services.retry.RetryQueue
+import org.ole.planet.myplanet.services.upload.AchievementUploader
 import org.ole.planet.myplanet.services.upload.PhotoUploader
+import org.ole.planet.myplanet.services.upload.TeamsUploader
 import org.ole.planet.myplanet.services.upload.UploadConfigs
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
+import org.ole.planet.myplanet.services.upload.UploadError
 import org.ole.planet.myplanet.services.upload.UploadResult
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
+import org.ole.planet.myplanet.utils.TestTimeProvider
+import org.ole.planet.myplanet.utils.UrlUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UploadManagerTest {
+
+    @Test
+    fun `uploadTeams delegates to teamsUploader`() = testScope.runTest {
+        coEvery { teamsUploader.uploadTeams() } returns Unit
+        uploadManager.uploadTeams()
+        advanceUntilIdle()
+        coVerify(exactly = 1) { teamsUploader.uploadTeams() }
+    }
+
     private lateinit var uploadManager: UploadManager
+    private val teamsUploader: TeamsUploader = mockk(relaxed = true)
     private val context: Context = mockk(relaxed = true)
     private val submissionsRepository: SubmissionsRepository = mockk(relaxed = true)
-    private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
     private val uploadCoordinator: UploadCoordinator = mockk(relaxed = true)
-    private val personalsRepository: PersonalsRepository = mockk(relaxed = true)
+    private val uploadRepository: UploadRepository = mockk(relaxed = true)
+    private val retryQueue: RetryQueue = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
-    private val chatRepository: ChatRepository = mockk(relaxed = true)
     private val voicesRepository: VoicesRepository = mockk(relaxed = true)
     private val uploadConfigs: UploadConfigs = mockk(relaxed = true)
     private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
-    private val teamsRepository: Lazy<TeamsRepository> = mockk(relaxed = true)
-    private val teamsSyncRepository: Lazy<org.ole.planet.myplanet.repository.TeamsSyncRepository> = mockk(relaxed = true)
     private val apiInterface: ApiInterface = mockk(relaxed = true)
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private lateinit var photoUploader: PhotoUploader
-    private val achievementUploader: org.ole.planet.myplanet.services.upload.AchievementUploader = mockk(relaxed = true)
+    private val achievementUploader: AchievementUploader = mockk(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
 
     @Before
     fun setup() {
+        org.ole.planet.myplanet.MainApplication.testContext = context
         mockkStatic(Log::class)
-        io.mockk.mockkObject(org.ole.planet.myplanet.utils.UrlUtils)
-        every { org.ole.planet.myplanet.utils.UrlUtils.header } returns "mockHeader"
-        every { org.ole.planet.myplanet.utils.UrlUtils.getUrl() } returns "http://mock.url"
+        mockkStatic(SystemClock::class)
+        mockkStatic(android.text.TextUtils::class)
+        every { android.text.TextUtils.isEmpty(any()) } answers { firstArg<CharSequence?>().isNullOrEmpty() }
+        io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
+        every { org.ole.planet.myplanet.utils.NetworkUtils.getUniqueIdentifier() } returns "uniqueIdentifier"
+        every { org.ole.planet.myplanet.utils.NetworkUtils.getDeviceName() } returns "deviceName"
+        every { org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName(any()) } returns "customDeviceName"
+        every { SystemClock.elapsedRealtime() } returns 0L
+        io.mockk.mockkObject(UrlUtils)
+        every { UrlUtils.header } returns "mockHeader"
+        every { UrlUtils.getUrl() } returns "http://mock.url"
         every { Log.d(any(), any()) } returns 0
         every { Log.e(any(), any()) } returns 0
         every { Log.e(any(), any(), any()) } returns 0
 
-        photoUploader = PhotoUploader(submissionsRepository, apiInterface, TestDispatcherProvider(testDispatcher), testScope)
+        photoUploader = PhotoUploader(submissionsRepository, TestDispatcherProvider(testDispatcher), testScope, uploadRepository)
 
         uploadManager = spyk(
             UploadManager(
                 context,
-                submissionsRepository,
-                sharedPrefManager,
                 gson,
                 uploadCoordinator,
-                personalsRepository,
+                uploadRepository,
+                retryQueue,
                 userRepository,
-                chatRepository,
                 voicesRepository,
                 uploadConfigs,
                 resourcesRepository,
-                teamsRepository,
-                teamsSyncRepository,
-                apiInterface,
+                teamsUploader,
                 activitiesRepository,
                 TestDispatcherProvider(testDispatcher),
                 testScope,
                 photoUploader,
-                achievementUploader
+                achievementUploader,
+                TestTimeProvider()
             )
         )
     }
 
     @After
     fun tearDown() {
+        org.ole.planet.myplanet.MainApplication.testContext = null
         unmockkAll()
-        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+        io.mockk.unmockkObject(UrlUtils)
     }
 
     @Test
     fun `uploadCrashLog delegates to uploadCoordinator`() = testScope.runTest {
-        coEvery { uploadCoordinator.upload<RealmApkLog>(any()) } returns UploadResult.Success(1, emptyList())
+        coEvery { uploadCoordinator.uploadRoom<ApkLog>(any()) } returns UploadResult.Success(1, emptyList())
         uploadManager.uploadCrashLog()
         advanceUntilIdle()
-        coVerify { uploadCoordinator.upload(uploadConfigs.CrashLog) }
+        coVerify { uploadCoordinator.uploadRoom(uploadConfigs.CrashLog) }
+    }
+
+    @Test
+    fun `uploadSearchActivity delegates to Room uploadCoordinator`() = testScope.runTest {
+        coEvery { uploadCoordinator.uploadRoom<SearchActivity>(any()) } returns UploadResult.Success(1, emptyList())
+        uploadManager.uploadSearchActivity()
+        advanceUntilIdle()
+        coVerify { uploadCoordinator.uploadRoom(uploadConfigs.SearchActivity) }
     }
 
     @Test
     fun `uploadCourseActivities delegates to uploadCoordinator`() = testScope.runTest {
-        coEvery { uploadCoordinator.upload<RealmCourseActivity>(any()) } returns UploadResult.Success(1, emptyList())
+        coEvery { uploadCoordinator.uploadRoom<CourseActivity>(any()) } returns UploadResult.Success(1, emptyList())
         uploadManager.uploadCourseActivities()
         advanceUntilIdle()
-        coVerify { uploadCoordinator.upload(uploadConfigs.CourseActivities) }
+        coVerify { uploadCoordinator.uploadRoom(uploadConfigs.CourseActivities) }
     }
 
     @Test
     fun `uploadMeetups delegates to uploadCoordinator`() = testScope.runTest {
-        coEvery { uploadCoordinator.upload<RealmMeetup>(any()) } returns UploadResult.Success(1, emptyList())
+        coEvery { uploadCoordinator.uploadRoom<Meetup>(any()) } returns UploadResult.Success(1, emptyList())
         uploadManager.uploadMeetups()
         advanceUntilIdle()
-        coVerify { uploadCoordinator.upload(uploadConfigs.Meetups) }
+        coVerify { uploadCoordinator.uploadRoom(uploadConfigs.Meetups) }
     }
 
     @Test
     fun `uploadAdoptedSurveys delegates to uploadCoordinator`() = testScope.runTest {
-        coEvery { uploadCoordinator.upload<RealmStepExam>(any()) } returns UploadResult.Success(1, emptyList())
+        coEvery { uploadCoordinator.upload<StepExam>(any()) } returns UploadResult.Success(1, emptyList())
         uploadManager.uploadAdoptedSurveys()
         advanceUntilIdle()
         coVerify { uploadCoordinator.upload(uploadConfigs.AdoptedSurveys) }
@@ -144,61 +172,61 @@ class UploadManagerTest {
 
     @Test
     fun `uploadFeedback delegates to uploadCoordinator and returns true on Success`() = testScope.runTest {
-        coEvery { uploadCoordinator.upload<RealmFeedback>(any()) } returns UploadResult.Success(1, emptyList())
+        coEvery { uploadCoordinator.uploadRoom<Feedback>(any()) } returns UploadResult.Success(1, emptyList())
         val result = uploadManager.uploadFeedback()
         advanceUntilIdle()
-        coVerify { uploadCoordinator.upload(uploadConfigs.Feedback) }
+        coVerify { uploadCoordinator.uploadRoom(uploadConfigs.Feedback) }
         assert(result)
     }
 
     @Test
     fun `uploadFeedback returns true on Empty`() = testScope.runTest {
-        coEvery { uploadCoordinator.upload<RealmFeedback>(any()) } returns org.ole.planet.myplanet.services.upload.UploadResult.Empty
+        coEvery { uploadCoordinator.uploadRoom<Feedback>(any()) } returns UploadResult.Empty
         val result = uploadManager.uploadFeedback()
         advanceUntilIdle()
-        coVerify { uploadCoordinator.upload(uploadConfigs.Feedback) }
+        coVerify { uploadCoordinator.uploadRoom(uploadConfigs.Feedback) }
         assert(result)
     }
 
     @Test
     fun `uploadFeedback returns false on Failure`() = testScope.runTest {
-        coEvery { uploadCoordinator.upload<RealmFeedback>(any()) } returns org.ole.planet.myplanet.services.upload.UploadResult.Failure(emptyList())
+        coEvery { uploadCoordinator.uploadRoom<Feedback>(any()) } returns UploadResult.Failure(emptyList())
         val result = uploadManager.uploadFeedback()
         advanceUntilIdle()
-        coVerify { uploadCoordinator.upload(uploadConfigs.Feedback) }
+        coVerify { uploadCoordinator.uploadRoom(uploadConfigs.Feedback) }
         assert(!result)
     }
 
     @Test
     fun `uploadFeedback returns true on PartialSuccess with no failures`() = testScope.runTest {
-        coEvery { uploadCoordinator.upload<RealmFeedback>(any()) } returns org.ole.planet.myplanet.services.upload.UploadResult.PartialSuccess(emptyList(), emptyList())
+        coEvery { uploadCoordinator.uploadRoom<Feedback>(any()) } returns UploadResult.PartialSuccess(emptyList(), emptyList())
         val result = uploadManager.uploadFeedback()
         advanceUntilIdle()
-        coVerify { uploadCoordinator.upload(uploadConfigs.Feedback) }
+        coVerify { uploadCoordinator.uploadRoom(uploadConfigs.Feedback) }
         assert(result)
     }
 
     @Test
     fun `uploadFeedback returns false on PartialSuccess with failures`() = testScope.runTest {
-        val mockError = org.ole.planet.myplanet.services.upload.UploadError("id", Exception(), false)
-        coEvery { uploadCoordinator.upload<RealmFeedback>(any()) } returns org.ole.planet.myplanet.services.upload.UploadResult.PartialSuccess(emptyList(), listOf(mockError))
+        val mockError = UploadError("id", Exception(), false)
+        coEvery { uploadCoordinator.uploadRoom<Feedback>(any()) } returns UploadResult.PartialSuccess(emptyList(), listOf(mockError))
         val result = uploadManager.uploadFeedback()
         advanceUntilIdle()
-        coVerify { uploadCoordinator.upload(uploadConfigs.Feedback) }
+        coVerify { uploadCoordinator.uploadRoom(uploadConfigs.Feedback) }
         assert(!result)
     }
 
     @Test
     fun `uploadTeamTask delegates to uploadCoordinator`() = testScope.runTest {
-        coEvery { uploadCoordinator.upload<RealmTeamTask>(any()) } returns UploadResult.Success(1, emptyList())
+        coEvery { uploadCoordinator.uploadRoom(uploadConfigs.TeamTask) } returns UploadResult.Success(1, emptyList())
         uploadManager.uploadTeamTask()
         advanceUntilIdle()
-        coVerify { uploadCoordinator.upload(uploadConfigs.TeamTask) }
+        coVerify { uploadCoordinator.uploadRoom(uploadConfigs.TeamTask) }
     }
 
     @Test
     fun `uploadSubmissions delegates to uploadCoordinator`() = testScope.runTest {
-        coEvery { uploadCoordinator.upload<RealmSubmission>(any()) } returns UploadResult.Success(1, emptyList())
+        coEvery { uploadCoordinator.upload<Submission>(any()) } returns UploadResult.Success(1, emptyList())
         uploadManager.uploadSubmissions()
         advanceUntilIdle()
         coVerify { uploadCoordinator.upload(uploadConfigs.Submissions) }
@@ -206,10 +234,10 @@ class UploadManagerTest {
 
     @Test
     fun `uploadRating delegates to uploadCoordinator`() = testScope.runTest {
-        coEvery { uploadCoordinator.upload<RealmRating>(any()) } returns UploadResult.Success(1, emptyList())
+        coEvery { uploadCoordinator.uploadRoom<Rating>(any()) } returns UploadResult.Success(1, emptyList())
         uploadManager.uploadRating()
         advanceUntilIdle()
-        coVerify { uploadCoordinator.upload(uploadConfigs.Rating) }
+        coVerify { uploadCoordinator.uploadRoom(uploadConfigs.Rating) }
     }
 
     @Test
@@ -226,18 +254,18 @@ class UploadManagerTest {
     @Test
     fun `uploadSubmitPhotos uploads photos successfully`() = testScope.runTest {
         val photoId = "photo123"
-        val mockSerialized = com.google.gson.JsonObject().apply {
+        val mockSerialized = JsonObject().apply {
             addProperty("test", "data")
         }
         val mockPhotosList = listOf(Pair(photoId, mockSerialized))
 
-        val mockResponseObject = com.google.gson.JsonObject().apply {
+        val mockResponseObject = JsonObject().apply {
             addProperty("id", "uploaded123")
             addProperty("rev", "rev123")
         }
 
         coEvery { submissionsRepository.getUnuploadedPhotos() } returns mockPhotosList
-        coEvery { apiInterface.postDoc(any(), any(), any(), mockSerialized) } returns retrofit2.Response.success(mockResponseObject)
+        coEvery { uploadRepository.postUpload(any(), mockSerialized) } returns retrofit2.Response.success(mockResponseObject)
         coEvery { submissionsRepository.getPhotosByIds(arrayOf(photoId)) } returns emptyList()
 
         val listener: OnSuccessListener = mockk(relaxed = true)
@@ -245,12 +273,46 @@ class UploadManagerTest {
         uploadManager.uploadSubmitPhotos(listener)
         advanceUntilIdle()
 
-        coVerify { submissionsRepository.markPhotoUploaded(photoId, "rev123", "uploaded123") }
+        coVerify {
+            submissionsRepository.markPhotosUploadedBatch(
+                match { uploads ->
+                    uploads.size == 1 &&
+                        uploads[0].photoId == photoId &&
+                        uploads[0].rev == "rev123" &&
+                        uploads[0].remoteId == "uploaded123"
+                }
+            )
+        }
+        coVerify(exactly = 0) { submissionsRepository.markPhotoUploaded(any(), any(), any()) }
+    }
+
+    @Test
+    fun `uploadSubmitPhotos batches photo mark calls once per batch instead of per photo`() = testScope.runTest {
+        val photoIds = listOf("photo1", "photo2", "photo3")
+        val mockSerialized = JsonObject().apply { addProperty("test", "data") }
+        val mockPhotosList = photoIds.map { Pair(it as String?, mockSerialized) }
+
+        val mockResponseObject = JsonObject().apply {
+            addProperty("id", "uploaded123")
+            addProperty("rev", "rev123")
+        }
+
+        coEvery { submissionsRepository.getUnuploadedPhotos() } returns mockPhotosList
+        coEvery { uploadRepository.postUpload(any(), mockSerialized) } returns retrofit2.Response.success(mockResponseObject)
+        coEvery { submissionsRepository.getPhotosByIds(any()) } returns emptyList()
+
+        val listener: OnSuccessListener = mockk(relaxed = true)
+
+        uploadManager.uploadSubmitPhotos(listener)
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { submissionsRepository.markPhotosUploadedBatch(any()) }
+        coVerify(exactly = 0) { submissionsRepository.markPhotoUploaded(any(), any(), any()) }
     }
 
     @Test
     fun `uploadResource returns early when no resources to upload`() = testScope.runTest {
-        coEvery { uploadCoordinator.upload(any<org.ole.planet.myplanet.services.upload.UploadConfig<*>>()) } returns org.ole.planet.myplanet.services.upload.UploadResult.Empty
+        coEvery { uploadCoordinator.uploadRoom<MyLibrary>(any()) } returns UploadResult.Empty
         val listener = mockk<OnSuccessListener>(relaxed = true)
 
         uploadManager.uploadResource(listener)
@@ -260,9 +322,64 @@ class UploadManagerTest {
     }
 
     @Test
+    fun `uploadNews derives mimeType from filename and passes to header map`() = testScope.runTest {
+        io.mockk.mockkObject(org.ole.planet.myplanet.utils.FileUtils)
+        every { org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl("http://example.com/test_image.png") } returns "test_image.png"
+        every { org.ole.planet.myplanet.utils.FileUtils.getMimeType("test_image.png") } returns "image/png"
+
+        val imgObj = JsonObject().apply {
+            addProperty("fileName", "test_image.png")
+            addProperty("imageUrl", "http://example.com/test_image.png")
+        }
+        val imgJsonString = imgObj.toString()
+        every { gson.fromJson(imgJsonString, JsonObject::class.java) } returns imgObj
+
+        val newsJson = JsonObject().apply {
+            addProperty("message", "Hello World")
+        }
+        val newsItem = org.ole.planet.myplanet.repository.NewsUploadData(
+            id = "news1",
+            _id = "news1_id",
+            message = "Hello World",
+            imageUrls = listOf(imgJsonString),
+            newsJson = newsJson
+        )
+
+        coEvery { voicesRepository.getNewsForUpload() } returns listOf(newsItem)
+        coEvery { userRepository.getUserModel() } returns null
+
+        val imageResponseJson = JsonObject().apply {
+            addProperty("id", "res123")
+            addProperty("rev", "rev123")
+        }
+        coEvery { uploadRepository.postUpload("http://mock.url/resources", any()) } returns retrofit2.Response.success(imageResponseJson)
+
+        coEvery { uploadRepository.uploadResource(any(), any(), any()) } returns retrofit2.Response.success(JsonObject())
+
+        val bulkResponse = com.google.gson.JsonArray().apply {
+            add(JsonObject().apply {
+                addProperty("id", "news1_id")
+                addProperty("rev", "rev2")
+            })
+        }
+        coEvery { uploadRepository.postUploadArray("http://mock.url/news/_bulk_docs", any()) } returns retrofit2.Response.success(bulkResponse)
+
+        uploadManager.uploadNews()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            uploadRepository.uploadResource(
+                match { headers -> headers["Content-Type"] == "image/png" && headers["If-Match"] == "rev123" },
+                "http://mock.url/resources/res123/test_image.png",
+                any()
+            )
+        }
+    }
+
+    @Test
     fun `uploadResource notifies listener on failure`() = testScope.runTest {
         val errorMessage = "Test error"
-        coEvery { uploadCoordinator.upload(any<org.ole.planet.myplanet.services.upload.UploadConfig<*>>()) } throws Exception(errorMessage)
+        coEvery { uploadCoordinator.uploadRoom<MyLibrary>(any()) } throws Exception(errorMessage)
         val listener = mockk<OnSuccessListener>(relaxed = true)
 
         uploadManager.uploadResource(listener)
@@ -272,41 +389,73 @@ class UploadManagerTest {
     }
 
     @Test
-    fun `uploadMyPersonal delegates to personalsRepository and calls uploadAttachment`() = testScope.runTest {
-        val mockPersonal = mockk<org.ole.planet.myplanet.model.RealmMyPersonal>(relaxed = true)
-        every { mockPersonal.isUploaded } returns false
+    fun `uploadResource uploads attachments on UploadResult Success`() = testScope.runTest {
+        val uploadedItem = org.ole.planet.myplanet.services.upload.UploadedItem(
+            localId = "lib1",
+            remoteId = "remote1",
+            remoteRev = "rev1",
+            response = JsonObject()
+        )
+        val library = MyLibrary().apply { id = "lib1" }
+        coEvery { uploadCoordinator.uploadRoom<MyLibrary>(any()) } returns UploadResult.Success(1, listOf(uploadedItem))
+        coEvery { resourcesRepository.getLibraryItemsByIds(listOf("lib1")) } returns listOf(library)
 
-        coEvery { personalsRepository.uploadPersonalDocument(mockPersonal) } returns Pair("remote-id", "remote-rev")
-
-        val result = uploadManager.uploadMyPersonal(mockPersonal)
+        val listener = mockk<OnSuccessListener>(relaxed = true)
+        uploadManager.uploadResource(listener)
         advanceUntilIdle()
 
-        coVerify { personalsRepository.uploadPersonalDocument(mockPersonal) }
-        assert(result == "Personal resource uploaded successfully")
+        coVerify { resourcesRepository.getLibraryItemsByIds(listOf("lib1")) }
+        coVerify { listener.onSuccess("Uploaded 1 resources successfully") }
     }
 
     @Test
-    fun `uploadMyPersonal returns failure message when response is null`() = testScope.runTest {
-        val mockPersonal = mockk<org.ole.planet.myplanet.model.RealmMyPersonal>(relaxed = true)
-        every { mockPersonal.isUploaded } returns false
+    fun `uploadResource uploads attachments on UploadResult PartialSuccess`() = testScope.runTest {
+        val uploadedItem = org.ole.planet.myplanet.services.upload.UploadedItem(
+            localId = "lib1",
+            remoteId = "remote1",
+            remoteRev = "rev1",
+            response = JsonObject()
+        )
+        val mockError = UploadError("lib2", Exception("Failed"), false)
+        val library = MyLibrary().apply { id = "lib1" }
+        coEvery { uploadCoordinator.uploadRoom<MyLibrary>(any()) } returns UploadResult.PartialSuccess(
+            succeeded = listOf(uploadedItem),
+            failed = listOf(mockError)
+        )
+        coEvery { resourcesRepository.getLibraryItemsByIds(listOf("lib1")) } returns listOf(library)
 
-        coEvery { personalsRepository.uploadPersonalDocument(mockPersonal) } returns null
-
-        val result = uploadManager.uploadMyPersonal(mockPersonal)
+        val listener = mockk<OnSuccessListener>(relaxed = true)
+        uploadManager.uploadResource(listener)
         advanceUntilIdle()
 
-        coVerify { personalsRepository.uploadPersonalDocument(mockPersonal) }
-        assert(result == "Failed to upload personal resource: No response")
+        coVerify { resourcesRepository.getLibraryItemsByIds(listOf("lib1")) }
+        coVerify { listener.onSuccess("Partial success: 1 succeeded, 1 failed") }
     }
 
     @Test
-    fun `uploadMyPersonal returns already uploaded message`() = testScope.runTest {
-        val mockPersonal = mockk<org.ole.planet.myplanet.model.RealmMyPersonal>(relaxed = true)
-        every { mockPersonal.isUploaded } returns true
+    fun `uploadResource skips fetching libraries when listener is null or items empty`() = testScope.runTest {
+        val uploadedItem = org.ole.planet.myplanet.services.upload.UploadedItem(
+            localId = "lib1",
+            remoteId = "remote1",
+            remoteRev = "rev1",
+            response = JsonObject()
+        )
+        coEvery { uploadCoordinator.uploadRoom<MyLibrary>(any()) } returns UploadResult.Success(1, listOf(uploadedItem))
 
-        val result = uploadManager.uploadMyPersonal(mockPersonal)
+        // When listener is null
+        uploadManager.uploadResource(null)
         advanceUntilIdle()
 
-        assert(result == "Resource already uploaded")
+        coVerify(exactly = 0) { resourcesRepository.getLibraryItemsByIds(any()) }
+
+        // When items list is empty with listener
+        coEvery { uploadCoordinator.uploadRoom<MyLibrary>(any()) } returns UploadResult.Success(0, emptyList())
+        val listener = mockk<OnSuccessListener>(relaxed = true)
+        uploadManager.uploadResource(listener)
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { resourcesRepository.getLibraryItemsByIds(any()) }
+        coVerify { listener.onSuccess("Uploaded 0 resources successfully") }
     }
+
 }

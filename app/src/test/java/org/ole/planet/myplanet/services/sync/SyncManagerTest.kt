@@ -1,15 +1,19 @@
 package org.ole.planet.myplanet.services.sync
 
+import android.app.Application
 import android.content.Context
-import dagger.Lazy
+import androidx.test.core.app.ApplicationProvider
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import io.mockk.verify
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -17,29 +21,33 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.SyncRepository
+import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
+import org.ole.planet.myplanet.utils.TestTimeProvider
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(manifest = Config.NONE, application = Application::class)
 class SyncManagerTest {
 
     private lateinit var syncManager: SyncManager
-    private val context: Context = mockk(relaxed = true)
-    private val databaseService: DatabaseService = mockk(relaxed = true)
+    private val context: Context = ApplicationProvider.getApplicationContext()
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val apiInterface: ApiInterface = mockk(relaxed = true)
-    private val improvedSyncManager: ImprovedSyncManager = mockk(relaxed = true)
-    private val lazyImprovedSyncManager: Lazy<ImprovedSyncManager> = mockk(relaxed = true)
     private val transactionSyncManager: TransactionSyncManager = mockk(relaxed = true)
     private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
     private val loginSyncManager: LoginSyncManager = mockk(relaxed = true)
@@ -47,34 +55,34 @@ class SyncManagerTest {
     private val testScope = TestScope(testDispatcher)
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val dispatcherProvider: DispatcherProvider = TestDispatcherProvider(testDispatcher)
-    private val teamsRepository: TeamsRepository = mockk(relaxed = true)
-    private val teamsSyncRepository: org.ole.planet.myplanet.repository.TeamsSyncRepository = mockk(relaxed = true)
-    private val coursesRepository: CoursesRepository = mockk(relaxed = true)
-    private val eventsRepository: EventsRepository = mockk(relaxed = true)
     private val listener: OnSyncListener = mockk(relaxed = true)
+    private val userSyncRepository: UserSyncRepository = mockk(relaxed = true)
+    private val userRepository: UserRepository = mockk(relaxed = true)
+    private val syncRepository: SyncRepository = mockk(relaxed = true)
+    private val syncTimeLogger: SyncTimeLogger = mockk(relaxed = true)
+    private val userModel: UserEntity = mockk(relaxed = true)
 
     @Before
     fun setup() {
         mockkObject(MainApplication.Companion)
         every { MainApplication.createLog(any(), any()) } returns Unit
-
-        every { lazyImprovedSyncManager.get() } returns improvedSyncManager
+        coEvery { userRepository.getUserModel() } returns userModel
 
         syncManager = SyncManager(
-            context,
-            sharedPrefManager,
-            apiInterface,
-            lazyImprovedSyncManager,
-            transactionSyncManager,
-            resourcesRepository,
-            loginSyncManager,
-            testScope,
-            activitiesRepository,
-            dispatcherProvider,
-            teamsRepository,
-            teamsSyncRepository,
-            coursesRepository,
-            eventsRepository
+            context = context,
+            sharedPrefManager = sharedPrefManager,
+            apiInterface = apiInterface,
+            transactionSyncManager = transactionSyncManager,
+            resourcesRepository = resourcesRepository,
+            loginSyncManager = loginSyncManager,
+            syncScope = testScope,
+            activitiesRepository = activitiesRepository,
+            dispatcherProvider = dispatcherProvider,
+            timeProvider = TestTimeProvider(),
+            userSyncRepository = userSyncRepository,
+            userRepository = userRepository,
+            syncRepository = syncRepository,
+            syncTimeLogger = syncTimeLogger
         )
     }
 
@@ -92,39 +100,74 @@ class SyncManagerTest {
     }
 
     @Test
-    fun `start with useImprovedSync=true and type=sync uses improved sync manager`() = runTest {
-        every { sharedPrefManager.getUseImprovedSync() } returns true
-        every { sharedPrefManager.getFastSync() } returns true
-
-        syncManager.start(listener, "sync", listOf("exams"))
-
-        verify { listener.onSyncStarted() }
-        verify { improvedSyncManager.start(any(), SyncMode.Fast, listOf("exams")) }
-    }
-
-    @Test
-    fun `start with useImprovedSync=false uses legacy sync manager`() = runTest {
-        every { context.getString(org.ole.planet.myplanet.R.string.invalid_configuration) } returns "Invalid configuration"
-        every { sharedPrefManager.getUseImprovedSync() } returns false
+    fun `start authenticates and reports failure when authentication fails`() = runTest {
         coEvery { transactionSyncManager.authenticate() } returns false
+        val expectedMessage = context.getString(org.ole.planet.myplanet.R.string.invalid_configuration)
 
         syncManager.start(listener, "sync", listOf("exams"))
 
         verify { listener.onSyncStarted() }
         coVerify { transactionSyncManager.authenticate() }
-        verify { listener.onSyncFailed("Invalid configuration") }
+        verify { listener.onSyncFailed(expectedMessage) }
     }
 
     @Test
     fun `cancelBackgroundSync clears background sync and listener`() = runTest {
-        // Prevent immediate execution of background sync logic so we can cancel it
-        every { sharedPrefManager.getUseImprovedSync() } returns true
-        every { sharedPrefManager.getFastSync() } returns true
+        // Suspend in authenticate so the background sync stays in-flight until we cancel it
+        coEvery { transactionSyncManager.authenticate() } coAnswers { awaitCancellation() }
 
         syncManager.start(listener, "sync", listOf())
         syncManager.cancelBackgroundSync()
 
         verify(exactly = 0) { listener.onSyncComplete() }
         verify(exactly = 0) { listener.onSyncFailed(any()) }
+    }
+
+    @Test
+    fun `shelf data is pushed before any table is pulled`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns true
+
+        syncManager.start(listener, "sync", listOf())
+
+        coVerifyOrder {
+            userSyncRepository.uploadShelfData(userModel)
+            transactionSyncManager.syncDb(any())
+        }
+    }
+
+    @Test
+    fun `cancellation while pushing shelf data aborts sync before any table is pulled`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns true
+        coEvery { userSyncRepository.uploadShelfData(any()) } throws CancellationException("cancelled")
+
+        syncManager.start(listener, "sync", listOf())
+
+        coVerify(exactly = 0) { transactionSyncManager.syncDb(any()) }
+    }
+
+    @Test
+    fun `syncPerf logging is evaluated when isVerbose returns true`() = runTest {
+        io.mockk.mockkStatic(android.util.Log::class)
+        every { syncTimeLogger.isVerbose } returns true
+        every { android.util.Log.d(any(), any()) } returns 0
+
+        coEvery { transactionSyncManager.authenticate() } returns true
+
+        syncManager.start(listener, "sync", listOf())
+
+        verify { android.util.Log.d("SyncPerf", match { it.contains("FULL SYNC STARTED") }) }
+    }
+
+    @Test
+    fun `syncPerf logging is skipped when isVerbose returns false`() = runTest {
+        io.mockk.mockkStatic(android.util.Log::class)
+        every { syncTimeLogger.isVerbose } returns false
+        every { android.util.Log.d(any(), any()) } returns 0
+
+        coEvery { transactionSyncManager.authenticate() } returns true
+
+        syncManager.start(listener, "sync", listOf())
+
+        verify(exactly = 0) { android.util.Log.d("SyncPerf", any()) }
     }
 }

@@ -2,12 +2,12 @@ package org.ole.planet.myplanet.ui.voices
 
 import android.content.Context
 import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
-import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
@@ -15,17 +15,25 @@ import com.bumptech.glide.Glide
 import com.google.android.material.textfield.TextInputLayout
 import com.google.gson.JsonObject
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.databinding.AlertInputBinding
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.VoicesEditActions
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 object VoicesActions {
+    private val dateFormatter = ThreadLocal.withInitial { SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()) }
+
     data class EditDialogComponents(
+        val binding: AlertInputBinding,
         val view: View,
         val editText: EditText,
         val inputLayout: TextInputLayout,
@@ -36,15 +44,16 @@ object VoicesActions {
         context: Context,
         listener: OnNewsItemClickListener?
     ): EditDialogComponents {
-        val v = android.view.LayoutInflater.from(context).inflate(R.layout.alert_input, null)
-        val tlInput = v.findViewById<TextInputLayout>(R.id.tl_input)
-        val et = v.findViewById<EditText>(R.id.et_input)
-        val llImage = v.findViewById<ViewGroup>(R.id.ll_alert_image)
-        v.findViewById<View>(R.id.add_news_image).setOnClickListener { listener?.addImage(llImage) }
-        return EditDialogComponents(v, et, tlInput, llImage)
+        val binding = AlertInputBinding.inflate(LayoutInflater.from(context))
+        val v = binding.root
+        val tlInput = binding.tlInput
+        val et = binding.etInput
+        val llImage = binding.llAlertImage
+        binding.addNewsImage.setOnClickListener { listener?.addImage(llImage) }
+        return EditDialogComponents(binding, v, et, tlInput, llImage)
     }
 
-    private fun loadExistingImages(context: Context, news: RealmNews?, imageLayout: ViewGroup, imagesToRemove: MutableSet<String>) {
+    private fun loadExistingImages(context: Context, news: News?, imageLayout: ViewGroup, imagesToRemove: MutableSet<String>) {
         imageLayout.removeAllViews()
 
         val imageUrls = news?.imageUrls
@@ -81,7 +90,7 @@ object VoicesActions {
         }
 
         val request = Glide.with(context)
-        val target = if (imagePath.lowercase(Locale.getDefault()).endsWith(".gif")) {
+        val target = if (imagePath.endsWith(".gif", ignoreCase = true)) {
             request.asGif().load(if (File(imagePath).exists()) File(imagePath) else imagePath)
         } else {
             request.load(if (File(imagePath).exists()) File(imagePath) else imagePath)
@@ -122,13 +131,13 @@ object VoicesActions {
         dialog: AlertDialog,
         isEdit: Boolean,
         components: EditDialogComponents,
-        news: RealmNews?,
-        repository: VoicesRepository,
-        currentUser: RealmUser?,
+        news: News?,
+        repository: VoicesEditActions,
+        currentUser: UserEntity?,
         imageList: List<String>?,
         listener: OnNewsItemClickListener?,
         imagesToRemove: MutableSet<String>,
-        onSuccess: () -> Unit
+        onSuccess: (News?) -> Unit
     ) {
         val s = components.editText.text.toString().trim()
         if (s.isEmpty()) {
@@ -139,7 +148,7 @@ object VoicesActions {
         imagesToRemove.clear()
         dialog.dismiss()
         try {
-            if (isEdit) {
+            val updatedNews = if (isEdit) {
                 news?.id?.let {
                     repository.editPost(it, s, imagesToRemoveCopy, imageList)
                 }
@@ -147,12 +156,13 @@ object VoicesActions {
                 if (news != null && currentUser != null) {
                     repository.postReply(s, news, currentUser, imageList)
                 }
+                null
             }
             listener?.clearImages()
             if (isEdit) listener?.onDataChanged() else listener?.onReplyPosted(news?.id)
-            onSuccess()
+            onSuccess(updatedNews)
         } catch (e: Exception) {
-            org.ole.planet.myplanet.utils.Utilities.toast(dialog.context, "An error occurred: ${e.message}")
+            Utilities.toast(dialog.context, "An error occurred: ${e.message}")
         }
     }
 
@@ -160,23 +170,24 @@ object VoicesActions {
         context: Context,
         id: String?,
         isEdit: Boolean,
-        currentUser: RealmUser?,
+        currentUser: UserEntity?,
         listener: OnNewsItemClickListener?,
         viewHolder: RecyclerView.ViewHolder,
-        repository: VoicesRepository,
-        updateReplyButton: (RecyclerView.ViewHolder, RealmNews?, Int) -> Unit = { _, _, _ -> },
+        repository: VoicesEditActions,
+        updateReplyButton: (RecyclerView.ViewHolder, News?, Int) -> Unit = { _, _, _ -> },
         launchAction: (suspend () -> Unit) -> Unit
     ) {
         val components = createEditDialogComponents(context, listener)
-        val message = components.view.findViewById<TextView>(R.id.cust_msg)
+        val message = components.binding.custMsg
         message.text = context.getString(if (isEdit) R.string.edit_post else R.string.reply)
-        val icon = components.view.findViewById<ImageView>(R.id.alert_icon)
+        val icon = components.binding.alertIcon
         icon.setImageResource(R.drawable.ic_edit)
         val imagesToRemove = mutableSetOf<String>()
 
         val news = id?.let { repository.getNewsById(it) }
 
         if (isEdit) {
+            listener?.clearImages()
             components.editText.setText(context.getString(R.string.message_placeholder, news?.message))
             loadExistingImages(context, news, components.imageLayout, imagesToRemove)
         }
@@ -190,27 +201,28 @@ object VoicesActions {
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
             val currentImageList = listener?.getCurrentImageList()
             launchAction {
-                handlePositiveButton(dialog, isEdit, components, news, repository, currentUser, currentImageList, listener, imagesToRemove) {
-                    updateReplyButton(viewHolder, news, viewHolder.bindingAdapterPosition)
+                handlePositiveButton(dialog, isEdit, components, news, repository, currentUser, currentImageList, listener, imagesToRemove) { updatedNews ->
+                    updateReplyButton(viewHolder, updatedNews ?: news, viewHolder.bindingAdapterPosition)
                 }
             }
         }
     }
 
     suspend fun showMemberDetails(
-        userModel: RealmUser?,
-        activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
+        userModel: UserEntity?,
+        activitiesRepository: ActivitiesRepository
     ): MembersDetailFragment? {
         if (userModel == null) return null
         val userName = "${userModel.firstName} ${userModel.lastName}".trim().ifBlank { userModel.name }
+        val visitStats = activitiesRepository.getMemberVisitStats(userModel.id, userModel.name)
         val fragment = MembersDetailFragment.newInstance(
             userName.toString(),
             userModel.email.toString(),
             userModel.dob.toString().substringBefore("T"),
             userModel.language.toString(),
             userModel.phoneNumber.toString(),
-            (userModel.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0).toString(),
-            (activitiesRepository.getLastVisit(userModel.name ?: "")?.let { java.text.SimpleDateFormat("MMMM dd, yyyy hh:mm a", java.util.Locale.getDefault()).format(java.util.Date(it)) } ?: "No logout record found"),
+            visitStats.offlineVisitCount.toString(),
+            (visitStats.lastVisit?.let { dateFormatter.get()?.format(Date(it)) } ?: "No logout record found"),
             "${userModel.firstName} ${userModel.lastName}",
             userModel.level.toString(),
             userModel.userImage

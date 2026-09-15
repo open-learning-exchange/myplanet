@@ -1,7 +1,12 @@
 package org.ole.planet.myplanet.repository
 
 import kotlinx.coroutines.flow.Flow
-import org.ole.planet.myplanet.model.RealmMyPersonal
+import org.ole.planet.myplanet.model.Personal
+
+data class PersonalUpdate(
+    val title: String? = null,
+    val description: String? = null
+)
 
 interface PersonalsRepository {
     suspend fun personalTitleExists(title: String, userId: String?): Boolean
@@ -14,15 +19,10 @@ interface PersonalsRepository {
         description: String?
     )
 
-    suspend fun getPersonalResources(userId: String?): Flow<List<RealmMyPersonal>>
-
+    fun getPersonalResources(userId: String?): Flow<List<Personal>>
     suspend fun deletePersonalResource(id: String)
-
-    suspend fun updatePersonalResource(id: String, updater: (RealmMyPersonal) -> Unit)
-
-    suspend fun getPendingPersonalUploads(userId: String): List<RealmMyPersonal>
-
+    suspend fun updatePersonalResource(id: String, update: PersonalUpdate)
+    suspend fun getPendingPersonalUploads(userId: String): List<Personal>
     suspend fun updatePersonalAfterSync(id: String, newId: String, rev: String)
-
-    suspend fun uploadPersonalDocument(personal: RealmMyPersonal): Pair<String, String>?
+    suspend fun uploadPersonal(personal: Personal): String
 }

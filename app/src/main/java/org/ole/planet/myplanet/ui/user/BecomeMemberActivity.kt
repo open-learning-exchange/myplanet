@@ -7,28 +7,26 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.widget.ArrayAdapter
 import androidx.lifecycle.lifecycleScope
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
-import org.ole.planet.myplanet.callback.OnSecurityDataListener
+import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
+import org.ole.planet.myplanet.model.MemberInfo
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.DialogUtils.CustomProgressDialog
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utils.NetworkUtils
-import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.Utilities
-import org.ole.planet.myplanet.utils.VersionUtils
 
 @AndroidEntryPoint
 class BecomeMemberActivity : BaseActivity() {
@@ -42,25 +40,12 @@ class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     var dob: String = ""
     var guest: Boolean = false
+    private var usernameValidationJob: Job? = null
     private var usernameWatcher: TextWatcher? = null
     private var passwordWatcher: TextWatcher? = null
     private var rePasswordWatcher: TextWatcher? = null
     private var emailWatcher: TextWatcher? = null
 
-    private data class MemberInfo(
-        val username: String,
-        var password: String,
-        val rePassword: String,
-        val fName: String,
-        val lName: String,
-        val mName: String,
-        val email: String,
-        val language: String,
-        val level: String,
-        val phoneNumber: String,
-        val birthDate: String,
-        val gender: String?
-    )
 
     private fun selectedGender(): String? = when {
         activityBecomeMemberBinding.male.isChecked -> "male"
@@ -121,54 +106,26 @@ class BecomeMemberActivity : BaseActivity() {
         }
     }
 
-    private fun buildMemberJson(info: MemberInfo) = JsonObject().apply {
-        addProperty("name", info.username)
-        addProperty("firstName", info.fName)
-        addProperty("lastName", info.lName)
-        addProperty("middleName", info.mName)
-        addProperty("password", info.password)
-        addProperty("isUserAdmin", false)
-        addProperty("joinDate", Calendar.getInstance().timeInMillis)
-        addProperty("email", info.email)
-        addProperty("planetCode", prefData.getPlanetCode())
-        addProperty("parentCode", prefData.getParentCode())
-        addProperty("language", info.language)
-        addProperty("level", info.level)
-        addProperty("phoneNumber", info.phoneNumber)
-        addProperty("birthDate", info.birthDate)
-        addProperty("gender", info.gender)
-        addProperty("type", "user")
-        addProperty("betaEnabled", false)
-        addProperty("androidId", NetworkUtils.getUniqueIdentifier())
-        addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
-        addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
-        val roles = JsonArray().apply { add("learner") }
-        add("roles", roles)
-    }
-
     private fun addMember(info: MemberInfo) {
-        val obj = buildMemberJson(info)
         val customProgressDialog = CustomProgressDialog(this).apply {
             setText(getString(R.string.creating_member_account))
             show()
         }
 
         lifecycleScope.launch {
-            val result = userRepository.createMember(obj)
+            val result = userRepository.createMember(info)
             withContext(dispatcherProvider.main) {
                 if (result.first) {
-                    val userName = obj["name"].asString
-                    val securityCallback = object : OnSecurityDataListener {
-                        override fun onSecurityDataUpdated() {
-                            customProgressDialog.dismiss()
-                            autoLoginNewMember(info.username, info.password)
-                        }
+                    val userName = info.username
+                    val securityCallback = OnChangedListener {
+                        customProgressDialog.dismiss()
+                        autoLoginNewMember(info.username, info.password)
                     }
                     startUpload("becomeMember", userName, securityCallback)
 
                     if (result.second == getString(R.string.not_connect_to_planet_created_user_offline)) {
                         Utilities.toast(MainApplication.context, result.second)
-                        securityCallback.onSecurityDataUpdated()
+                        securityCallback.onChanged()
                     }
                     Utilities.toast(this@BecomeMemberActivity, result.second)
                 } else {
@@ -196,8 +153,11 @@ class BecomeMemberActivity : BaseActivity() {
         val lvAdapter  = ArrayAdapter(this, R.layout.become_a_member_spinner_layout, levels)
         activityBecomeMemberBinding.spnLevel.adapter = lvAdapter
 
-        val username = intent.getStringExtra("username") ?: ""
+        var username = intent.getStringExtra("username") ?: ""
         guest = intent.getBooleanExtra("guest", false)
+        if (guest && username.isEmpty()) {
+            username = sharedPrefManager.getUserName()
+        }
 
         setupTextWatchers()
 
@@ -226,6 +186,8 @@ class BecomeMemberActivity : BaseActivity() {
     }
 
     override fun onDestroy() {
+        usernameValidationJob?.cancel()
+        usernameValidationJob = null
         activityBecomeMemberBinding.etUsername.removeTextChangedListener(usernameWatcher)
         activityBecomeMemberBinding.etPassword.removeTextChangedListener(passwordWatcher)
         activityBecomeMemberBinding.etRePassword.removeTextChangedListener(rePasswordWatcher)
@@ -241,8 +203,8 @@ class BecomeMemberActivity : BaseActivity() {
         lifecycleScope.launch {
             userRepository.cleanupDuplicateUsers()
 
-            sharedPrefManager.setNewLoginUsername(SecurePrefs.encryptString(this@BecomeMemberActivity, username))
-            sharedPrefManager.setNewLoginPassword(SecurePrefs.encryptString(this@BecomeMemberActivity, password))
+            sharedPrefManager.setNewLoginUsername(username)
+            sharedPrefManager.setNewLoginPassword(password)
 
             val intent = Intent(this@BecomeMemberActivity, LoginActivity::class.java)
 
@@ -263,19 +225,30 @@ class BecomeMemberActivity : BaseActivity() {
 
             override fun afterTextChanged(s: Editable?) {
                 val input = s?.toString() ?: ""
-                lifecycleScope.launch {
+
+                if (input.isEmpty()) {
+                    activityBecomeMemberBinding.etUsername.error = null
+                    return
+                }
+
+                usernameValidationJob?.cancel()
+                usernameValidationJob = lifecycleScope.launch {
+                    delay(300)
                     val error = userRepository.validateUsername(input)
-                    withContext(dispatcherProvider.main) {
-                        if (error != null) {
-                            activityBecomeMemberBinding.etUsername.error = error
-                        } else {
-                            val lowercase = input.lowercase()
-                            if (input != lowercase) {
-                                activityBecomeMemberBinding.etUsername.setText(lowercase)
-                                activityBecomeMemberBinding.etUsername.setSelection(lowercase.length)
-                            }
-                            activityBecomeMemberBinding.etUsername.error = null
+
+                    if (activityBecomeMemberBinding.etUsername.text.toString() != input) {
+                        return@launch
+                    }
+
+                    if (error != null) {
+                        activityBecomeMemberBinding.etUsername.error = error
+                    } else {
+                        val lowercase = input.lowercase()
+                        if (input != lowercase) {
+                            activityBecomeMemberBinding.etUsername.setText(lowercase)
+                            activityBecomeMemberBinding.etUsername.setSelection(lowercase.length)
                         }
+                        activityBecomeMemberBinding.etUsername.error = null
                     }
                 }
             }

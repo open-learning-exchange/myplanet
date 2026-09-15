@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/card_bg" />
+    <stroke
+        android:width="@dimen/profile_fab_ring_width"
+        android:color="@color/colorPrimary" />
+</shape>

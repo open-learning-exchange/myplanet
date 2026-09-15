@@ -4,10 +4,28 @@ import android.content.Context
 import androidx.core.net.toUri
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.model.Community
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 object ServerConfigUtils {
+
+    private val pinMap = mapOf(
+        BuildConfig.PLANET_LEARNING_URL to BuildConfig.PLANET_LEARNING_PIN,
+        BuildConfig.PLANET_GUATEMALA_URL to BuildConfig.PLANET_GUATEMALA_PIN,
+        BuildConfig.PLANET_SANPABLO_URL to BuildConfig.PLANET_SANPABLO_PIN,
+        BuildConfig.PLANET_EARTH_URL to BuildConfig.PLANET_EARTH_PIN,
+        BuildConfig.PLANET_SOMALIA_URL to BuildConfig.PLANET_SOMALIA_PIN,
+        BuildConfig.PLANET_VI_URL to BuildConfig.PLANET_VI_PIN,
+        BuildConfig.PLANET_XELA_URL to BuildConfig.PLANET_XELA_PIN,
+        BuildConfig.PLANET_URIUR_URL to BuildConfig.PLANET_URIUR_PIN,
+        BuildConfig.PLANET_RUIRU_URL to BuildConfig.PLANET_RUIRU_PIN,
+        BuildConfig.PLANET_EMBAKASI_URL to BuildConfig.PLANET_EMBAKASI_PIN,
+        BuildConfig.PLANET_CAMBRIDGE_URL to BuildConfig.PLANET_CAMBRIDGE_PIN,
+    )
+
+    private val localNetworkRegex = Regex("^172\\.(1[6-9]|2[0-9]|3[0-1])\\..*")
+
     fun getServerAddresses(context: Context): List<ServerAddress> {
         return listOf(
             ServerAddress(context.getString(R.string.sync_planet_learning), BuildConfig.PLANET_LEARNING_URL),
@@ -47,27 +65,14 @@ object ServerConfigUtils {
     }
 
     fun getPinForUrl(url: String): String {
-        val pinMap = mapOf(
-            BuildConfig.PLANET_LEARNING_URL to BuildConfig.PLANET_LEARNING_PIN,
-            BuildConfig.PLANET_GUATEMALA_URL to BuildConfig.PLANET_GUATEMALA_PIN,
-            BuildConfig.PLANET_SANPABLO_URL to BuildConfig.PLANET_SANPABLO_PIN,
-            BuildConfig.PLANET_EARTH_URL to BuildConfig.PLANET_EARTH_PIN,
-            BuildConfig.PLANET_SOMALIA_URL to BuildConfig.PLANET_SOMALIA_PIN,
-            BuildConfig.PLANET_VI_URL to BuildConfig.PLANET_VI_PIN,
-            BuildConfig.PLANET_XELA_URL to BuildConfig.PLANET_XELA_PIN,
-            BuildConfig.PLANET_URIUR_URL to BuildConfig.PLANET_URIUR_PIN,
-            BuildConfig.PLANET_RUIRU_URL to BuildConfig.PLANET_RUIRU_PIN,
-            BuildConfig.PLANET_EMBAKASI_URL to BuildConfig.PLANET_EMBAKASI_PIN,
-            BuildConfig.PLANET_CAMBRIDGE_URL to BuildConfig.PLANET_CAMBRIDGE_PIN,
-        )
         return pinMap[url] ?: ""
     }
 
     private fun isLocalNetwork(url: String): Boolean {
-        val host = url.split(":").firstOrNull()?.split("/")?.firstOrNull() ?: url
+        val host = url.substringBefore(':').substringBefore('/')
         return host.startsWith("192.168.") ||
                 host.startsWith("10.") ||
-                host.matches(Regex("^172\\.(1[6-9]|2[0-9]|3[0-1])\\..*")) ||
+                host.matches(localNetworkRegex) ||
                 host == "localhost" ||
                 host == "127.0.0.1" ||
                 host.endsWith(".local")
@@ -78,8 +83,9 @@ object ServerConfigUtils {
             url == BuildConfig.PLANET_XELA_URL ||
             url == BuildConfig.PLANET_SANPABLO_URL ||
             url == BuildConfig.PLANET_URIUR_URL ||
+            url == BuildConfig.PLANET_EMBAKASI_URL ||
             isLocalNetwork(url)
-        ) org.ole.planet.myplanet.utils.Constants.HTTP_PROTOCOL else org.ole.planet.myplanet.utils.Constants.HTTPS_PROTOCOL
+        ) Constants.HTTP_PROTOCOL else Constants.HTTPS_PROTOCOL
     }
 
     fun saveAlternativeUrl(
@@ -89,8 +95,8 @@ object ServerConfigUtils {
     ): String {
         val uri = url.toUri()
         val (urlUser, urlPwd, couchdbURL) = if (url.contains("@")) {
-            val userinfo = org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity.getUserInfo(uri)
-            Triple(userinfo[0], userinfo[1], url)
+            val (u, p) = UrlUtils.getUserInfo(uri.userInfo)
+            Triple(u, p, url)
         } else {
             val user = "satellite"
             val scheme = uri.scheme
@@ -115,4 +121,53 @@ object ServerConfigUtils {
 
         return couchdbURL
     }
+
+    data class CommunityConfig(
+        val localDomain: String,
+        val protocol: String,
+        val pin: String,
+        val isPinEnabled: Boolean
+    )
+
+    fun getCommunityConfig(selected: Community, httpsProtocol: String): CommunityConfig {
+        val domain = selected.localDomain
+        val protocol = httpsProtocol
+        val pin = if (selected.weight == 0) BuildConfig.PLANET_LEARNING_PIN else ""
+        val isPinEnabled = selected.weight != 0
+        return CommunityConfig(domain, protocol, pin, isPinEnabled)
+    }
+
+    private val _trustedServerHosts: List<String> by lazy {
+        listOfNotNull(
+            BuildConfig.PLANET_LEARNING_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_GUATEMALA_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_SANPABLO_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_SANPABLO_CLONE_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_EARTH_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_SOMALIA_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_VI_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_XELA_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_URIUR_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_URIUR_CLONE_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_RUIRU_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_EMBAKASI_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_EMBAKASI_CLONE_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_CAMBRIDGE_URL.takeIf { it.isNotEmpty() }
+        )
+    }
+
+    fun getTrustedServerHosts(): List<String> = _trustedServerHosts
+
+    private val _challengeServerUrls: List<String> by lazy {
+        listOfNotNull(
+            BuildConfig.PLANET_GUATEMALA_URL.takeIf { it.isNotEmpty() }?.let { "https://$it" },
+            BuildConfig.PLANET_XELA_URL.takeIf { it.isNotEmpty() }?.let { "http://$it" },
+            BuildConfig.PLANET_URIUR_URL.takeIf { it.isNotEmpty() }?.let { "http://$it" },
+            BuildConfig.PLANET_SANPABLO_URL.takeIf { it.isNotEmpty() }?.let { "http://$it" },
+            BuildConfig.PLANET_EMBAKASI_URL.takeIf { it.isNotEmpty() }?.let { "http://$it" },
+            BuildConfig.PLANET_VI_URL.takeIf { it.isNotEmpty() }?.let { "https://$it" }
+        )
+    }
+
+    fun getChallengeServerUrls(): List<String> = _challengeServerUrls
 }

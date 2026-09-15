@@ -29,13 +29,28 @@ class FreeSpaceWorker @AssistedInject constructor(
         return try {
             setProgress(workDataOf("progress" to 0, "status" to "Starting cleanup..."))
 
-            // Mark all resources as offline = false in database
-            resourcesRepository.markAllResourcesOffline(false)
-
             val rootFile = File(FileUtils.getOlePath(applicationContext))
 
             withContext(dispatcherProvider.io) {
-                deleteRecursive(rootFile)
+                val children = rootFile.listFiles() ?: return@withContext
+                val clearedResourceIds = mutableSetOf<String>()
+                for (child in children) {
+                    if (isStopped) break
+                    val wasDirectory = child.isDirectory
+                    if (wasDirectory && child.name == CV_DIR_NAME) continue
+                    val deletedBefore = deletedFiles
+                    deleteRecursive(child)
+                    if (wasDirectory && (deletedFiles > deletedBefore || !child.exists())) {
+                        clearedResourceIds.add(child.name)
+                    }
+                    if (clearedResourceIds.size >= MARK_BATCH_SIZE) {
+                        resourcesRepository.markResourcesAsNotOffline(clearedResourceIds.toSet())
+                        clearedResourceIds.clear()
+                    }
+                }
+                if (clearedResourceIds.isNotEmpty()) {
+                    resourcesRepository.markResourcesAsNotOffline(clearedResourceIds)
+                }
             }
 
             Result.success(workDataOf("deletedFiles" to deletedFiles, "freedBytes" to freedBytes))
@@ -46,20 +61,11 @@ class FreeSpaceWorker @AssistedInject constructor(
     }
 
     private suspend fun deleteRecursive(fileOrDirectory: File) {
-        if (isStopped) return
+        fileOrDirectory.walkBottomUp().forEach { file ->
+            if (isStopped) return
 
-        if (fileOrDirectory.isDirectory) {
-            val children = fileOrDirectory.listFiles()
-            if (children != null) {
-                for (child in children) {
-                    deleteRecursive(child)
-                }
-            }
-        }
-
-        if (fileOrDirectory.exists()) {
-            val length = fileOrDirectory.length()
-            if (fileOrDirectory.delete()) {
+            val length = file.length()
+            if (file.delete()) {
                 deletedFiles++
                 freedBytes += length
 
@@ -76,5 +82,7 @@ class FreeSpaceWorker @AssistedInject constructor(
 
     companion object {
         private const val TAG = "FreeSpaceWorker"
+        private const val CV_DIR_NAME = "cv"
+        private const val MARK_BATCH_SIZE = 25
     }
 }

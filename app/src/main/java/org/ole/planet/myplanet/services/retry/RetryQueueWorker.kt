@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.services.retry
 
 import android.content.Context
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import androidx.hilt.work.HiltWorker
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
@@ -21,10 +22,15 @@ import dagger.assisted.AssistedInject
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withTimeout
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.model.RealmRetryOperation
+import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @HiltWorker
@@ -39,6 +45,7 @@ class RetryQueueWorker @AssistedInject constructor(
         private const val TAG = "RetryQueueWorker"
         private const val WORK_NAME = "retryQueueWork"
         private const val BATCH_SIZE = 50
+        private const val MAX_CONCURRENT_RETRIES = 6
 
         fun schedule(context: Context) {
             val workRequest = createScheduleWorkRequest()
@@ -52,7 +59,7 @@ class RetryQueueWorker @AssistedInject constructor(
             Log.d(TAG, "Scheduled RetryQueueWorker")
         }
 
-        @androidx.annotation.VisibleForTesting
+        @VisibleForTesting
         internal fun createScheduleWorkRequest(): PeriodicWorkRequest {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -77,7 +84,7 @@ class RetryQueueWorker @AssistedInject constructor(
             Log.d(TAG, "Triggered immediate retry")
         }
 
-        @androidx.annotation.VisibleForTesting
+        @VisibleForTesting
         internal fun createImmediateRetryWorkRequest(): OneTimeWorkRequest {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -113,8 +120,13 @@ class RetryQueueWorker @AssistedInject constructor(
 
             Log.i(TAG, "RETRY_QUEUE: Processing ${pendingOperations.size} pending operations")
 
+            val baseUrl = UrlUtils.getUrl()
+            val authHeader = UrlUtils.header
+
             var successCount = 0
             var failureCount = 0
+
+            val semaphore = Semaphore(MAX_CONCURRENT_RETRIES)
 
             // Add timeout for entire batch processing (5 minutes max)
             withTimeout(5 * 60 * 1000L) {
@@ -125,10 +137,19 @@ class RetryQueueWorker @AssistedInject constructor(
                         return@withTimeout
                     }
 
-                    batch.forEach { operation ->
-                        val success = processOperation(operation)
-                        if (success) successCount++ else failureCount++
+                    val results = coroutineScope {
+                        batch.map { operation ->
+                            async {
+                                semaphore.withPermit {
+                                    processOperation(operation, baseUrl, authHeader)
+                                }
+                            }
+                        }.awaitAll()
                     }
+
+                    val (batchSuccesses, batchFailures) = results.partition { it }
+                    successCount += batchSuccesses.size
+                    failureCount += batchFailures.size
                 }
             }
 
@@ -148,11 +169,15 @@ class RetryQueueWorker @AssistedInject constructor(
         }
     }
 
-    private suspend fun processOperation(operation: RealmRetryOperation): Boolean {
+    private suspend fun processOperation(
+        operation: RetryOperation,
+        baseUrl: String,
+        authHeader: String
+    ): Boolean {
         return try {
             // Timeout for individual operation (30 seconds)
             withTimeout(30_000L) {
-                processOperationInternal(operation)
+                processOperationInternal(operation, baseUrl, authHeader)
             }
         } catch (e: TimeoutCancellationException) {
             Log.w(TAG, "Operation ${operation.id} timed out")
@@ -165,7 +190,11 @@ class RetryQueueWorker @AssistedInject constructor(
         }
     }
 
-    private suspend fun processOperationInternal(operation: RealmRetryOperation): Boolean {
+    private suspend fun processOperationInternal(
+        operation: RetryOperation,
+        baseUrl: String,
+        authHeader: String
+    ): Boolean {
         return try {
             retryQueue.markInProgress(operation.id)
 
@@ -177,21 +206,21 @@ class RetryQueueWorker @AssistedInject constructor(
                 return false
             }
             val requestUrl = if (operation.dbId.isNullOrEmpty()) {
-                "${UrlUtils.getUrl()}/${operation.endpoint}"
+                "$baseUrl/${operation.endpoint}"
             } else {
-                "${UrlUtils.getUrl()}/${operation.endpoint}/${operation.dbId}"
+                "$baseUrl/${operation.endpoint}/${operation.dbId}"
             }
 
             val response = if (operation.httpMethod == "PUT" && !operation.dbId.isNullOrEmpty()) {
                 apiInterface.putDoc(
-                    UrlUtils.header,
+                    authHeader,
                     "application/json",
                     requestUrl,
                     payload
                 )
             } else {
                 apiInterface.postDoc(
-                    UrlUtils.header,
+                    authHeader,
                     "application/json",
                     requestUrl,
                     payload

@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.courses
 
 import android.os.Bundle
 import android.text.Spannable
-import android.text.method.LinkMovementMethod
 import android.text.style.URLSpan
 import android.view.ActionMode
 import android.view.LayoutInflater
@@ -11,25 +10,20 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.withResumed
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.FragmentCourseStepBinding
-import org.ole.planet.myplanet.model.CourseStepData
-import org.ole.planet.myplanet.model.RealmCourseStep
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.ConfigurationsRepository
-import org.ole.planet.myplanet.repository.ProgressRepository
-import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
+import org.ole.planet.myplanet.model.CourseStep
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.components.CustomClickableSpan
 import org.ole.planet.myplanet.ui.exam.ExamTakingFragment
@@ -37,34 +31,26 @@ import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.utils.CameraUtils
 import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utils.CameraUtils.capturePhoto
-import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
-import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.ResourcesPreviewLoader
 
 @AndroidEntryPoint
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
-    @Inject
-    lateinit var configurationsRepository: ConfigurationsRepository
-    @Inject
-    lateinit var progressRepository: ProgressRepository
-    @Inject
-    lateinit var resourceDownloadCoordinator: ResourceDownloadCoordinator
-    @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
+
+    private val viewModel: CoursesStepsViewModel by viewModels()
+
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null
     private var nextStepId: String? = null
-    private lateinit var step: RealmCourseStep
-    private lateinit var resources: List<RealmMyLibrary>
-    private lateinit var stepExams: List<RealmStepExam>
-    private lateinit var stepSurvey: List<RealmStepExam>
-    var user: RealmUser? = null
+    private lateinit var step: CourseStep
+    private var resources: List<MyLibrary> = emptyList()
+    private var stepExams: List<StepExam> = emptyList()
+    private var stepSurvey: List<StepExam> = emptyList()
+    var user: UserEntity? = null
     private var stepNumber = 0
     private var courseTitle: String? = null
-    private var saveInProgress: Job? = null
-    private var loadDataJob: Job? = null
     private var inlineResourceAdapter: InlineResourceAdapter? = null
+    private var userHasCourse = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -82,96 +68,74 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         return fragmentCourseStepBinding.root
     }
 
-    private fun launchSaveCourseProgress() {
-        if (saveInProgress?.isActive == true) return
-        val userId = user?.id
-        val planetCode = user?.planetCode
-        val parentCode = user?.parentCode
-        saveInProgress = lifecycleScope.launch {
-            progressRepository.saveCourseProgress(
-                userId,
-                planetCode,
-                parentCode,
-                step.courseId,
-                stepNumber,
-                if (stepExams.isEmpty()) true else null
-            )
-        }
-        saveInProgress?.invokeOnCompletion { saveInProgress = null }
-    }
-
-    private suspend fun loadStepData(): CourseStepData {
-        return coursesRepository.getCourseStepData(stepId ?: "", user?.id)
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        loadDataJob = viewLifecycleOwner.lifecycleScope.launch {
-            user = profileDbHandler.getUserModel()
-            val data = loadStepData()
-            if (viewLifecycleOwner.lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
-                step = data.step
-                resources = data.resources
-                stepExams = data.stepExams
-                stepSurvey = data.stepSurvey
-                courseTitle = step.courseId?.let { coursesRepository.getCourseTitleById(it) }
+        setListeners()
 
-                fragmentCourseStepBinding.btnResources.text =
-                    getString(R.string.resources_size, resources.size)
-                hideTestIfNoQuestion()
-                fragmentCourseStepBinding.tvTitle.text = step.stepTitle
-                val markdownContentWithLocalPaths = prependBaseUrlToImages(
-                    step.description,
-                    "file://${MainApplication.context.getExternalFilesDir(null)}/ole/",
-                    600,
-                    350
-                )
-                setMarkdownText(
-                    fragmentCourseStepBinding.description,
-                    markdownContentWithLocalPaths
-                )
-                fragmentCourseStepBinding.description.movementMethod =
-                    LinkMovementMethod.getInstance()
-                fragmentCourseStepBinding.description.setTextIsSelectable(true)
-                fragmentCourseStepBinding.description.customSelectionActionModeCallback =
-                    createAiSelectionCallback()
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collect { state ->
+                    val loadedStep = state.step ?: return@collect
+                    step = loadedStep
+                    resources = state.resources
+                    stepExams = state.stepExams
+                    stepSurvey = state.stepSurvey
+                    courseTitle = state.courseTitle
+                    userHasCourse = state.userHasCourse
+                    user = state.user
 
-                if (!data.userHasCourse) {
-                    fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
-                    fragmentCourseStepBinding.btnTakeSurvey.visibility = View.GONE
-                }
+                    fragmentCourseStepBinding.btnResources.text =
+                        getString(R.string.resources_size, state.resources.size)
+                    hideTestIfNoQuestion(state.hasExam, state.hasSurvey, state.stepExams)
+                    fragmentCourseStepBinding.tvTitle.text = step.stepTitle
 
-                fragmentCourseStepBinding.btnAskAi.visibility = View.VISIBLE
-                setListeners()
-                setupInlineResources()
-                autoDownloadResources()
-                prefetchNextStepResources()
+                    fragmentCourseStepBinding.description.setTextIsSelectable(true)
+                    fragmentCourseStepBinding.description.customSelectionActionModeCallback = createAiSelectionCallback()
+                    setMarkdownText(
+                        fragmentCourseStepBinding.description,
+                        state.markdownDescription
+                    )
 
-                val textWithSpans = fragmentCourseStepBinding.description.text
-                if (textWithSpans is Spannable) {
-                    val urlSpans =
-                        textWithSpans.getSpans(0, textWithSpans.length, URLSpan::class.java)
-                    for (urlSpan in urlSpans) {
-                        val start = textWithSpans.getSpanStart(urlSpan)
-                        val end = textWithSpans.getSpanEnd(urlSpan)
-                        val dynamicTitle = textWithSpans.subSequence(start, end).toString()
-                        textWithSpans.setSpan(
-                            CustomClickableSpan(
-                                urlSpan.url,
-                                dynamicTitle,
-                                requireActivity()
-                            ), start, end, textWithSpans.getSpanFlags(urlSpan)
-                        )
-                        textWithSpans.removeSpan(urlSpan)
+                    if (!userHasCourse) {
+                        fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
+                        fragmentCourseStepBinding.btnTakeSurvey.visibility = View.GONE
                     }
-                }
-                if (data.userHasCourse) {
-                    viewLifecycleOwner.lifecycle.withResumed {
-                        launchSaveCourseProgress()
+
+                    fragmentCourseStepBinding.btnAskAi.visibility = View.VISIBLE
+                    setupInlineResources()
+
+                    if (state.isDownloadingResources) {
+                        fragmentCourseStepBinding.resourceDownloadProgress.visibility = View.VISIBLE
+                    } else {
+                        fragmentCourseStepBinding.resourceDownloadProgress.visibility = View.GONE
+                    }
+
+                    val textWithSpans = fragmentCourseStepBinding.description.text
+                    if (textWithSpans is Spannable) {
+                        val urlSpans = textWithSpans.getSpans(0, textWithSpans.length, URLSpan::class.java)
+                        for (urlSpan in urlSpans) {
+                            val start = textWithSpans.getSpanStart(urlSpan)
+                            val end = textWithSpans.getSpanEnd(urlSpan)
+                            val dynamicTitle = textWithSpans.subSequence(start, end).toString()
+                            textWithSpans.setSpan(
+                                CustomClickableSpan(
+                                    urlSpan.url,
+                                    dynamicTitle,
+                                    requireActivity()
+                                ), start, end, textWithSpans.getSpanFlags(urlSpan)
+                            )
+                            textWithSpans.removeSpan(urlSpan)
+                        }
+                    }
+
+                    if (userHasCourse) {
+                        viewModel.saveCourseProgress(stepNumber)
                     }
                 }
             }
         }
+
+        viewModel.loadStep(stepId, nextStepId)
     }
 
     private fun setupInlineResources() {
@@ -184,102 +148,51 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         fragmentCourseStepBinding.tvResourcesHeader.visibility = View.VISIBLE
         fragmentCourseStepBinding.rvInlineResources.visibility = View.VISIBLE
 
-        inlineResourceAdapter = InlineResourceAdapter(viewLifecycleOwner.lifecycleScope, dispatcherProvider) { library ->
-            openResource(library)
-        }
-        fragmentCourseStepBinding.rvInlineResources.apply {
-            layoutManager = LinearLayoutManager(requireContext())
-            adapter = inlineResourceAdapter
+        if (inlineResourceAdapter == null) {
+            inlineResourceAdapter = InlineResourceAdapter(
+                ResourcesPreviewLoader(dispatcherProvider),
+                dispatcherProvider
+            ) { library ->
+                openResource(library)
+            }
+            fragmentCourseStepBinding.rvInlineResources.apply {
+                layoutManager = LinearLayoutManager(requireContext())
+                adapter = inlineResourceAdapter
+            }
         }
         inlineResourceAdapter?.submitList(resources)
     }
 
-    private fun autoDownloadResources() {
-        val notDownloaded = resources.filter { !it.isResourceOffline() }
-        if (notDownloaded.isEmpty()) {
-            return
-        }
-
-        fragmentCourseStepBinding.resourceDownloadProgress.visibility = View.VISIBLE
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            val serverAvailable = configurationsRepository.checkServerAvailability()
-
-            if (serverAvailable) {
-                resourcesRepository.downloadResourcesPriority(notDownloaded)
-            } else {
-                fragmentCourseStepBinding.resourceDownloadProgress.visibility = View.GONE
-            }
-        }
-    }
-
-    private fun prefetchNextStepResources() {
-        if (nextStepId == null) {
-            return
-        }
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            val nextResources = resourcesRepository.getAllStepResources(nextStepId)
-            val notDownloaded = nextResources.filter { !it.isResourceOffline() }
-            if (notDownloaded.isNotEmpty()) {
-                val urls = ArrayList(notDownloaded.map { UrlUtils.getUrl(it) })
-                if (urls.isNotEmpty()) {
-		    resourceDownloadCoordinator.startBackgroundDownload(urls)
-                }
-            }
-        }
-    }
-
-    private fun refreshInlineResources() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val updatedResources = resourcesRepository.getAllStepResources(stepId)
-            resources = updatedResources
-            inlineResourceAdapter?.submitList(updatedResources)
-            fragmentCourseStepBinding.resourceDownloadProgress.visibility = View.GONE
-        }
-    }
-
-    private fun hideTestIfNoQuestion() {
+    private fun hideTestIfNoQuestion(isTestPresent: Boolean, isSurveyPresent: Boolean, exams: List<StepExam>) {
         fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
         fragmentCourseStepBinding.btnTakeSurvey.visibility = View.GONE
-        viewLifecycleOwner.lifecycleScope.launch {
-            if (stepExams.isNotEmpty()) {
-                val firstStepId = stepExams[0].id
-                val isTestPresent = submissionsRepository.hasSubmission(firstStepId, step.courseId, user?.id, "exam")
-                fragmentCourseStepBinding.btnTakeTest.text = if (isTestPresent) {
-                    getString(R.string.retake_test, stepExams.size)
-                } else {
-                    getString(R.string.take_test, stepExams.size)
-                }
-                fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
+        if (exams.isNotEmpty()) {
+            fragmentCourseStepBinding.btnTakeTest.text = if (isTestPresent) {
+                getString(R.string.retake_test, exams.size)
+            } else {
+                getString(R.string.take_test, exams.size)
             }
-            if (stepSurvey.isNotEmpty()) {
-                val firstStepId = stepSurvey[0].id
-                val isSurveyPresent = submissionsRepository.hasSubmission(firstStepId, step.courseId, user?.id, "survey")
-                fragmentCourseStepBinding.btnTakeSurvey.text = if (isSurveyPresent) {
-                    getString(R.string.redo_survey)
-                } else {
-                    getString(R.string.record_survey)
-                }
-                fragmentCourseStepBinding.btnTakeSurvey.visibility = View.VISIBLE
+            fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
+        }
+        if (stepSurvey.isNotEmpty()) {
+            fragmentCourseStepBinding.btnTakeSurvey.text = if (isSurveyPresent) {
+                getString(R.string.redo_survey)
+            } else {
+                getString(R.string.record_survey)
             }
+            fragmentCourseStepBinding.btnTakeSurvey.visibility = View.VISIBLE
         }
     }
 
     override fun setMenuVisibility(visible: Boolean) {
         super.setMenuVisibility(visible)
         if (!isAdded || !::step.isInitialized) return
-        lifecycleScope.launch {
-            try {
-                if (visible) {
-                    val userHasCourse = coursesRepository.isMyCourse(user?.id, step.courseId)
-                    if (userHasCourse) {
-                        launchSaveCourseProgress()
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
+        try {
+            if (visible && userHasCourse) {
+                viewModel.saveCourseProgress(stepNumber)
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -302,7 +215,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
             }
         }
         fragmentCourseStepBinding.btnResources.visibility = View.GONE
-
         fragmentCourseStepBinding.btnAskAi.setOnClickListener {
             openChatFragment()
         }
@@ -332,7 +244,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 val tv = fragmentCourseStepBinding.description
                 val start = tv.selectionStart
                 val end = tv.selectionEnd
-                if (start >= 0 && end > start) {
+                if (start in 0..<end) {
                     openChatFragment(tv.text.subSequence(start, end).toString())
                     mode.finish()
                     return true
@@ -349,14 +261,15 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     override fun onDownloadComplete() {
         super.onDownloadComplete()
-        refreshInlineResources()
+        viewModel.refreshInlineResources(stepId)
     }
 
     override fun onImageCapture(fileUri: String?) {}
 
     override fun onDestroyView() {
         super.onDestroyView()
-        loadDataJob?.cancel()
         CameraUtils.release()
+        fragmentCourseStepBinding.rvInlineResources.adapter = null
+        inlineResourceAdapter = null
     }
 }

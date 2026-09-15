@@ -8,19 +8,15 @@ import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.annotation.VisibleForTesting
 import androidx.core.app.NotificationCompat
 import androidx.core.content.edit
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
-import dagger.hilt.android.EntryPointAccessors
 import java.util.regex.Pattern
-import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.di.RepositoryDependenciesEntryPoint
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.services.DownloadWorker
 
@@ -30,8 +26,11 @@ object DownloadUtils {
     private const val WORKER_CHANNEL = "DownloadWorkerChannel"
     private val LINK_PATTERN = Pattern.compile("!\\[.*?]\\((.*?)\\)")
 
-    @JvmStatic
+    @Volatile
+    private var channelsCreated = false
+
     fun createChannels(context: Context) {
+        if (channelsCreated) return
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (manager.getNotificationChannel(DOWNLOAD_CHANNEL) == null) {
             val channel = NotificationChannel(DOWNLOAD_CHANNEL, "Download Service",
@@ -60,9 +59,14 @@ object DownloadUtils {
             }
             manager.createNotificationChannel(channel)
         }
+        channelsCreated = true
     }
 
-    @JvmStatic
+    @VisibleForTesting
+    internal fun resetChannelsCreatedForTesting() {
+        channelsCreated = false
+    }
+
     fun buildInitialNotification(context: Context): Notification {
         createChannels(context)
         return NotificationCompat.Builder(context, DOWNLOAD_CHANNEL)
@@ -78,7 +82,6 @@ object DownloadUtils {
             .build()
     }
 
-    @JvmStatic
     fun buildProgressNotification(
         context: Context,
         current: Int,
@@ -108,7 +111,6 @@ object DownloadUtils {
         return builder.build()
     }
 
-    @JvmStatic
     fun buildCompletionNotification(
         context: Context,
         completed: Int,
@@ -132,9 +134,11 @@ object DownloadUtils {
             .setAutoCancel(true)
             .build()
     }
-    @JvmStatic
-    fun downloadAllFiles(dbMyLibrary: List<RealmMyLibrary?>): ArrayList<String> {
-        return ArrayList(dbMyLibrary.map { UrlUtils.getUrl(it) })
+    fun downloadAllFiles(dbMyLibrary: List<MyLibrary?>): ArrayList<String> {
+        val base = UrlUtils.getUrl()
+        return dbMyLibrary.mapTo(ArrayList()) { library ->
+            UrlUtils.getUrl(library?.resourceId, library?.resourceLocalAddress, base)
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
@@ -254,24 +258,9 @@ object DownloadUtils {
         return links
     }
 
-    @JvmStatic
-    fun updateResourceOfflineStatus(url: String) {
-        MainApplication.applicationScope.launch {
-            try {
-                resourcesRepository.markResourceOfflineByUrl(url)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
 
-    private val resourcesRepository: ResourcesRepository by lazy {
-        val entryPoint = EntryPointAccessors.fromApplication(
-            MainApplication.context,
-            RepositoryDependenciesEntryPoint::class.java
-        )
-        entryPoint.resourcesRepository()
-    }
+
+
 
 
 }

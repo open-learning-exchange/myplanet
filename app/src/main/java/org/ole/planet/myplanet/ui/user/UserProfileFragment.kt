@@ -4,15 +4,12 @@ import android.Manifest
 import android.app.Activity.RESULT_OK
 import android.app.DatePickerDialog
 import android.app.Dialog
-import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.os.Environment
-import android.provider.MediaStore
 import android.provider.Settings
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -20,20 +17,15 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import android.widget.TextView
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
-import androidx.core.view.children
+import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.ListAdapter
-import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -41,8 +33,10 @@ import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.Target
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
+import java.io.File
 import java.lang.String.format
 import java.util.ArrayList
 import java.util.Calendar
@@ -53,16 +47,19 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.language
 import org.ole.planet.myplanet.R.array.subject_level
+import org.ole.planet.myplanet.databinding.DialogPhotoPickerBinding
 import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
 import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding
-import org.ole.planet.myplanet.databinding.RowStatBinding
-import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.ImageUtils
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -73,10 +70,12 @@ class UserProfileFragment : Fragment() {
     private val binding get() = _binding!!
     private val viewModel: UserProfileViewModel by viewModels()
     @Inject
-    lateinit var sharedPrefManager: SharedPrefManager
-    @Inject
     lateinit var userSessionManager: UserSessionManager
-    private var model: RealmUser? = null
+    @Inject
+    lateinit var timeProvider: TimeProvider
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
+    private var model: UserEntity? = null
     private var editProfileDialog: Dialog? = null
     private lateinit var pickImageLauncher: ActivityResultLauncher<Intent>
     private var selectedGender: String? = null
@@ -92,24 +91,36 @@ class UserProfileFragment : Fragment() {
         pickImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK && result.data != null) {
                 val uri = result.data?.data ?: return@registerForActivityResult
-                photoURI  = uri
-                startIntent(photoURI)
-                val imageSize = resources.getDimensionPixelSize(R.dimen.user_image_size)
-                Glide.with(this)
-                    .load(uri)
-                    .diskCacheStrategy(DiskCacheStrategy.ALL)
-                    .override(imageSize, imageSize)
-                    .circleCrop()
-                    .placeholder(R.drawable.profile)
-                    .error(R.drawable.profile)
-                    .into(binding.image)
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val appContext = requireContext().applicationContext
+                    val filesDir = requireContext().filesDir
+                    val path = withContext(dispatcherProvider.io) {
+                        FileUtils.resolveUriToPath(appContext, uri, filesDir)
+                    }
+                    if (path != null) {
+                        startIntent(path)
+                        val imageSize = resources.getDimensionPixelSize(R.dimen.profile_image_size)
+                        ImageUtils.loadProfileImage(path, binding.image, imageSize)
+                    }
+                }
             }
         }
 
         captureImageLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { isSuccess ->
-            if (isSuccess) {
-                startIntent(photoURI)
-                binding.image.setImageURI(photoURI)
+            val uri = photoURI
+            if (isSuccess && uri != null) {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val appContext = requireContext().applicationContext
+                    val filesDir = requireContext().filesDir
+                    val path = withContext(dispatcherProvider.io) {
+                        FileUtils.resolveUriToPath(appContext, uri, filesDir)
+                    }
+                    if (path != null) {
+                        startIntent(path)
+                        val imageSize = resources.getDimensionPixelSize(R.dimen.profile_image_size)
+                        ImageUtils.loadProfileImage(path, binding.image, imageSize)
+                    }
+                }
             }
         }
 
@@ -147,22 +158,19 @@ class UserProfileFragment : Fragment() {
         binding.btEditProfile.setOnClickListener { openEditProfileDialog() }
         setupStatsRecycler()
         observeUserProfile()
-        viewModel.loadUserProfile(sharedPrefManager.getUserId())
+        viewModel.loadCurrentUserProfile()
         viewModel.getOfflineVisits()
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                combine(
-                    viewModel.offlineVisits,
-                    viewModel.maxOpenedResource,
-                    viewModel.lastVisit,
-                    viewModel.numberOfResourceOpen
-                ) { _, _, _, _ -> Unit }
-                    .collect {
-                        if (isAdded) {
-                            setupStatsRecycler()
-                        }
-                    }
+        val combinedFlow = combine(
+            viewModel.offlineVisits,
+            viewModel.maxOpenedResource,
+            viewModel.lastVisit,
+            viewModel.numberOfResourceOpen
+        ) { _, _, _, _ -> Unit }
+
+        collectWhenStarted(combinedFlow) {
+            if (isAdded) {
+                setupStatsRecycler()
             }
         }
     }
@@ -176,7 +184,14 @@ class UserProfileFragment : Fragment() {
     private fun initializeDependencies() {
         binding.rvStat.layoutManager = LinearLayoutManager(activity)
         binding.rvStat.isNestedScrollingEnabled = false
-        binding.rvStat.adapter = StatsAdapter()
+        binding.rvStat.adapter = StatsAdapter(requireContext())
+
+        binding.rowEmail.tvLabel.text = getString(R.string.email)
+        binding.rowDob.tvLabel.text = getString(R.string.birth_date)
+        binding.rowGender.tvLabel.text = getString(R.string.gender)
+        binding.rowLanguage.tvLabel.text = getString(R.string.language)
+        binding.rowLevel.tvLabel.text = getString(R.string.profile_label_level)
+        binding.rowLevel.divider.visibility = View.GONE
     }
 
     private fun observeUserProfile() {
@@ -214,12 +229,20 @@ class UserProfileFragment : Fragment() {
         } else {
             model?.name ?: ""
         }
-        binding.txtEmail.text = getString(R.string.two_strings, getString(R.string.email_colon), Utilities.checkNA(model?.email))
+        binding.txtSecondary.text = getString(
+            R.string.profile_secondary_line,
+            Utilities.checkNA(model?.email),
+            Utilities.checkNA(model?.planetCode)
+        )
+
+        binding.rowEmail.tvValue.text = Utilities.checkNA(model?.email)
+
         val dob = if (TextUtils.isEmpty(model?.dob)) getString(R.string.n_a) else TimeUtils.getFormattedDate(model?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-        binding.txtDob.text = getString(R.string.two_strings, getString(R.string.date_of_birth), dob)
-        binding.txtGender.text = getString(R.string.gender_colon, Utilities.checkNA(model?.gender))
-        binding.txtLanguage.text = getString(R.string.two_strings, getString(R.string.language_colon), Utilities.checkNA(model?.language))
-        binding.txtLevel.text = getString(R.string.level_colon, Utilities.checkNA(model?.level))
+        binding.rowDob.tvValue.text = dob
+
+        binding.rowGender.tvValue.text = Utilities.checkNA(model?.gender)
+        binding.rowLanguage.tvValue.text = Utilities.checkNA(model?.language)
+        binding.rowLevel.tvValue.text = Utilities.checkNA(model?.level)
     }
 
     private fun loadProfileImage() {
@@ -233,7 +256,7 @@ class UserProfileFragment : Fragment() {
 
         if (!isAdded) return
 
-        val imageSize = resources.getDimensionPixelSize(R.dimen.user_image_size)
+        val imageSize = resources.getDimensionPixelSize(R.dimen.profile_image_size)
         Glide.with(this)
             .load(profileImageUrl)
             .diskCacheStrategy(DiskCacheStrategy.ALL)
@@ -276,6 +299,7 @@ class UserProfileFragment : Fragment() {
         editProfileDialog = dialog
         val binding = EditProfileDialogBinding.inflate(LayoutInflater.from(requireContext()))
         dialog.setContentView(binding.root)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
 
         populateUserFields(binding)
@@ -286,6 +310,10 @@ class UserProfileFragment : Fragment() {
         setupSaveButton(dialog, binding)
 
         binding.btnCancel.setOnClickListener {
+            dialog.dismiss()
+            editProfileDialog = null
+        }
+        binding.btnClose.setOnClickListener {
             dialog.dismiss()
             editProfileDialog = null
         }
@@ -310,8 +338,8 @@ class UserProfileFragment : Fragment() {
         val languages = resources.getStringArray(language)
         val languageList: MutableList<String?> = ArrayList(listOf(*languages))
         languageList.add(0, getString(R.string.language))
-        val adapter = ArrayAdapter(requireContext(), R.layout.spinner_item, languageList)
-        adapter.setDropDownViewResource(R.layout.spinner_item)
+        val adapter = ArrayAdapter(requireContext(), R.layout.spinner_item_profile, languageList)
+        adapter.setDropDownViewResource(R.layout.spinner_item_profile)
         binding.language.adapter = adapter
         model?.language?.let { lang ->
             val position = languageList.indexOf(lang)
@@ -330,8 +358,8 @@ class UserProfileFragment : Fragment() {
         val levels = resources.getStringArray(subject_level).toMutableList().apply { remove("All") }
         levels.add(0, getString(R.string.select_level))
         selectedLevel = Utilities.checkNA(model?.level)
-        val levelAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item, levels)
-        levelAdapter.setDropDownViewResource(R.layout.spinner_item)
+        val levelAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item_profile, levels)
+        levelAdapter.setDropDownViewResource(R.layout.spinner_item_profile)
         binding.level.adapter = levelAdapter
 
         val levelPosition = levels.indexOf(selectedLevel)
@@ -405,10 +433,8 @@ class UserProfileFragment : Fragment() {
             val email = binding.email.text.toString()
             val phoneNumber = binding.phoneNumber.text.toString()
             val dob = date ?: model?.dob
-            val userId = sharedPrefManager.getUserId()
 
-            viewModel.updateUserProfile(
-                userId = userId,
+            viewModel.updateCurrentUserProfile(
                 firstName = firstName,
                 lastName = lastName,
                 middleName = middleName,
@@ -452,16 +478,16 @@ class UserProfileFragment : Fragment() {
         }
     }
     private fun configureGuestView() {
-        if (model?.id?.startsWith("guest") == true) {
-            binding.btEditProfile.visibility = View.GONE
-            binding.btProfilePic.visibility = View.GONE
-        }
+        val isGuest = model?.id?.startsWith("guest") == true
+        binding.btEditProfile.visibility = if (isGuest) View.GONE else View.VISIBLE
+        binding.btProfilePic.visibility = if (isGuest) View.GONE else View.VISIBLE
+        binding.guestPill.visibility = if (isGuest) View.VISIBLE else View.GONE
     }
 
     private fun createStatsMap(): LinkedHashMap<String, String?> {
         return linkedMapOf(
             getString(R.string.community_name) to Utilities.checkNA(model?.planetCode),
-            getString(R.string.last_login) to viewModel.lastVisit.value?.let { TimeUtils.getRelativeTime(it) },
+            getString(R.string.last_login) to viewModel.lastVisit.value?.let { TimeUtils.getRelativeTime(it, timeProvider) },
             getString(R.string.total_visits_overall) to viewModel.offlineVisits.value.toString(),
             getString(R.string.most_opened_resource) to Utilities.checkNA(viewModel.maxOpenedResource.value),
             getString(R.string.number_of_resources_opened) to Utilities.checkNA(viewModel.numberOfResourceOpen.value)
@@ -473,64 +499,30 @@ class UserProfileFragment : Fragment() {
         (binding.rvStat.adapter as StatsAdapter).submitList(map.entries.map { it.toPair() })
     }
 
-    inner class StatsAdapter : ListAdapter<Pair<String, String?>, ViewHolderRowStat>(
-        DiffUtils.itemCallback<Pair<String, String?>>(
-            { oldItem, newItem -> oldItem.first == newItem.first },
-            { oldItem, newItem -> oldItem == newItem }
-        )
-    ) {
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderRowStat {
-            val rowStatBinding = RowStatBinding.inflate(LayoutInflater.from(activity), parent, false)
-            return ViewHolderRowStat(rowStatBinding)
-        }
-
-        override fun onBindViewHolder(holder: ViewHolderRowStat, position: Int) {
-            val item = getItem(position)
-            holder.rowStatBinding.tvTitle.text = item.first
-            holder.rowStatBinding.tvTitle.visibility = View.VISIBLE
-            holder.rowStatBinding.tvDescription.text = item.second
-            if (holder.bindingAdapterPosition % 2 == 0) {
-                holder.rowStatBinding.root.setBackgroundColor(
-                    ContextCompat.getColor(
-                        requireContext(),
-                        R.color.user_profile_background
-                    )
-                )
-            } else {
-                holder.rowStatBinding.root.setBackgroundColor(
-                    ContextCompat.getColor(
-                        requireContext(),
-                        android.R.color.transparent
-                    )
-                )
-            }
-        }
-    }
-
     private fun searchForPhoto() {
-        val options = arrayOf(getString(R.string.capture_image), getString(R.string.select_gallery))
-        val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-        builder.setTitle(getString(R.string.choose_an_option))
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, options)
-        builder.setAdapter(adapter) { _, which ->
-            when (which) {
-                0 -> takePhoto()
-                1 -> pickFromGallery()
-            }
-        }
+        val sheet = BottomSheetDialog(requireContext())
+        val sheetBinding = DialogPhotoPickerBinding.inflate(LayoutInflater.from(requireContext()))
+        sheet.setContentView(sheetBinding.root)
+        sheet.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
+            ?.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.transparent))
 
-        val dialog = builder.create()
-        dialog.setOnShowListener {
-            dialog.listView.children.forEach { item ->
-                (item as TextView).setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
-            }
+        sheetBinding.optionCaptureImage.setOnClickListener {
+            sheet.dismiss()
+            takePhoto()
         }
+        sheetBinding.optionSelectGallery.setOnClickListener {
+            sheet.dismiss()
+            pickFromGallery()
+        }
+        sheetBinding.optionCancel.setOnClickListener { sheet.dismiss() }
 
-        dialog.show()
+        sheet.show()
     }
 
     private fun pickFromGallery() {
-        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
+        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+            type = "image/*"
+        }
         pickImageLauncher.launch(intent)
     }
 
@@ -540,23 +532,23 @@ class UserProfileFragment : Fragment() {
             requestCameraLauncher.launch(Manifest.permission.CAMERA)
             return
         }
-        val values = ContentValues().apply {
-            put(MediaStore.Images.Media.TITLE, "Photo_${UUID.randomUUID()}")
-            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/ole/photo")
+        val context = requireContext()
+        viewLifecycleOwner.lifecycleScope.launch {
+            photoURI = withContext(dispatcherProvider.io) {
+                val directory = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "ole/photo")
+                if (!directory.exists()) {
+                    directory.mkdirs()
+                }
+                val photoFile = File(directory, "Photo_${UUID.randomUUID()}.jpg")
+                FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", photoFile)
             }
+            photoURI?.let { captureImageLauncher.launch(it) }
         }
-        photoURI = requireActivity().contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-        photoURI?.let { captureImageLauncher.launch(it) }
     }
 
-    private fun startIntent(uri: Uri?) {
-        val path = uri?.toString()
-        viewModel.updateProfileImage(sharedPrefManager.getUserId(), path)
+    private fun startIntent(path: String?) {
+        viewModel.updateCurrentUserProfileImage(path)
     }
-
-    inner class ViewHolderRowStat(val rowStatBinding: RowStatBinding) : RecyclerView.ViewHolder(rowStatBinding.root)
 
     override fun onDestroyView() {
         editProfileDialog?.dismiss()

@@ -1,0 +1,176 @@
+package org.ole.planet.myplanet.ui.courses
+
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import org.ole.planet.myplanet.model.CourseStep
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.ProgressRepository
+import org.ole.planet.myplanet.repository.RatingEntry
+import org.ole.planet.myplanet.repository.RatingSummary
+import org.ole.planet.myplanet.repository.RatingsRepository
+import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.utils.MainDispatcherRule
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class TakeCourseViewModelTest {
+
+    private val testDispatcher = StandardTestDispatcher()
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
+
+    private val coursesRepository: CoursesRepository = mockk()
+    private val progressRepository: ProgressRepository = mockk()
+    private val userRepository: UserRepository = mockk()
+    private val ratingsRepository: RatingsRepository = mockk()
+
+    private lateinit var viewModel: TakeCourseViewModel
+
+    private val courseId = "course_1"
+
+    private fun stubCourseLoad(
+        course: MyCourse? = MyCourse().apply { courseId = this@TakeCourseViewModelTest.courseId },
+        steps: List<CourseStep> = emptyList(),
+        currentProgress: Int = 0,
+        user: UserEntity? = UserEntity().apply { id = "user_1" }
+    ) {
+        coEvery { userRepository.getUserModel() } returns user
+        coEvery { coursesRepository.getCourseById(courseId) } returns course
+        coEvery { coursesRepository.getCourseSteps(courseId) } returns steps
+        coEvery { progressRepository.getCourseProgress(listOf(courseId), user?.id) } returns
+            hashMapOf(courseId to org.ole.planet.myplanet.model.CourseProgressState(current = currentProgress, max = steps.size))
+    }
+
+    @Before
+    fun setUp() {
+        viewModel = TakeCourseViewModel(coursesRepository, progressRepository, userRepository, ratingsRepository)
+    }
+
+    @Test
+    fun loadCourse_whenCourseExists_emitsSuccessWithAggregatedData() = runTest {
+        stubCourseLoad(currentProgress = 3)
+
+        viewModel.loadCourse(courseId)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state is TakeCourseUiState.Success)
+        state as TakeCourseUiState.Success
+        assertEquals(courseId, state.course.courseId)
+        assertEquals(3, state.courseProgress)
+    }
+
+    @Test
+    fun loadCourse_whenCourseMissing_emitsNotFound() = runTest {
+        stubCourseLoad(course = null)
+
+        viewModel.loadCourse(courseId)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is TakeCourseUiState.NotFound)
+    }
+
+    @Test
+    fun loadCourse_calledAgainWithSameCourseId_doesNotReQueryRepository() = runTest {
+        stubCourseLoad()
+
+        viewModel.loadCourse(courseId)
+        advanceUntilIdle()
+
+        // Simulates a configuration change (rotation) re-invoking loadCourse for the
+        // same course: this must be served from cache, not hit the repository again.
+        viewModel.loadCourse(courseId)
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { coursesRepository.getCourseById(courseId) }
+        coVerify(exactly = 1) { coursesRepository.getCourseSteps(courseId) }
+        coVerify(exactly = 1) { progressRepository.getCourseProgress(any<List<String>>(), any()) }
+    }
+
+    @Test
+    fun loadCourse_withForceRefresh_reQueriesRepositoryEvenForSameCourseId() = runTest {
+        stubCourseLoad()
+
+        viewModel.loadCourse(courseId)
+        advanceUntilIdle()
+
+        viewModel.loadCourse(courseId, forceRefresh = true)
+        advanceUntilIdle()
+
+        coVerify(exactly = 2) { coursesRepository.getCourseById(courseId) }
+    }
+
+    @Test
+    fun loadCourse_withDifferentCourseId_reQueriesRepository() = runTest {
+        val otherCourseId = "course_2"
+        stubCourseLoad()
+        coEvery { coursesRepository.getCourseById(otherCourseId) } returns
+            MyCourse().apply { courseId = otherCourseId }
+        coEvery { coursesRepository.getCourseSteps(otherCourseId) } returns emptyList()
+        coEvery { progressRepository.getCourseProgress(listOf(otherCourseId), any()) } returns
+            hashMapOf()
+
+        viewModel.loadCourse(courseId)
+        advanceUntilIdle()
+        viewModel.loadCourse(otherCourseId)
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { coursesRepository.getCourseById(courseId) }
+        coVerify(exactly = 1) { coursesRepository.getCourseById(otherCourseId) }
+    }
+
+    @Test
+    fun joinDialog_isOnlyOfferedOnce() {
+        assertFalse(viewModel.hasOfferedJoinDialog)
+        viewModel.markJoinDialogOffered()
+        assertTrue(viewModel.hasOfferedJoinDialog)
+    }
+
+    @Test
+    fun getRatingPromptDecision_whenParamsNullOrEmpty_returnsSkip() = runTest {
+        assertEquals(RatingPromptDecision.Skip, viewModel.getRatingPromptDecision(null, "user_1"))
+        assertEquals(RatingPromptDecision.Skip, viewModel.getRatingPromptDecision("", "user_1"))
+        assertEquals(RatingPromptDecision.Skip, viewModel.getRatingPromptDecision("course_1", null))
+        assertEquals(RatingPromptDecision.Skip, viewModel.getRatingPromptDecision("course_1", ""))
+    }
+
+    @Test
+    fun getRatingPromptDecision_whenRepositoryThrows_returnsShow() = runTest {
+        coEvery { ratingsRepository.getRatingSummary("course", "course_1", "user_1") } throws Exception("Network error")
+        assertEquals(RatingPromptDecision.Show, viewModel.getRatingPromptDecision("course_1", "user_1"))
+    }
+
+    @Test
+    fun getRatingPromptDecision_whenNoExistingRating_returnsShow() = runTest {
+        val summary = RatingSummary(existingRating = null, averageRating = 0f, totalRatings = 0, userRating = null)
+        coEvery { ratingsRepository.getRatingSummary("course", "course_1", "user_1") } returns summary
+        assertEquals(RatingPromptDecision.Show, viewModel.getRatingPromptDecision("course_1", "user_1"))
+    }
+
+    @Test
+    fun getRatingPromptDecision_whenExistingRating_returnsSkip() = runTest {
+        val summary = RatingSummary(existingRating = RatingEntry("id", "comment", 5), averageRating = 5f, totalRatings = 1, userRating = 5)
+        coEvery { ratingsRepository.getRatingSummary("course", "course_1", "user_1") } returns summary
+        assertEquals(RatingPromptDecision.Skip, viewModel.getRatingPromptDecision("course_1", "user_1"))
+    }
+
+    @Test
+    fun getRatingPromptDecision_whenUserRatingNotNull_returnsSkip() = runTest {
+        val summary = RatingSummary(existingRating = null, averageRating = 4f, totalRatings = 1, userRating = 4)
+        coEvery { ratingsRepository.getRatingSummary("course", "course_1", "user_1") } returns summary
+        assertEquals(RatingPromptDecision.Skip, viewModel.getRatingPromptDecision("course_1", "user_1"))
+    }
+}
