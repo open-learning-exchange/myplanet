@@ -395,7 +395,13 @@ void main() {
       // Kotlin answers `Result.failure()` for a missing `KEY_TABLE`; neither
       // retries, and retrying would loop for ever on a task name persisted by
       // a later build.
-      expect(await build().run('team_activities', config: config), isTrue);
+      // Deliberately a name no build has ever walked. This used to say
+      // `team_activities`, which passed only because the file-local
+      // `build()` helper hard-codes its own table set — and that table now
+      // *has* a writer, which this same file asserts further down. Two
+      // statements a reader would take as contradictory, and a trap for
+      // anyone who later points `build()` at the real provider writers.
+      expect(await build().run('no_such_table', config: config), isTrue);
       verifyNever(
         () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
       );

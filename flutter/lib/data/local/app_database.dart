@@ -208,11 +208,30 @@ class AppDatabase extends _$AppDatabase {
     // would discard a photo (and orphan its file) the user was never warned
     // had not reached the server.
     'submit_photos',
-    // One row per `teamVisit` the user makes. The Kotlin writes the row at
-    // open time (`logTeamVisit`) and `UploadManager.uploadTeamActivities`
-    // carries it to `team_activities` on the next sync. Until the upload
-    // succeeds the row exists only here, so a schema bump would silently lose
-    // an action the user took.
+    // **Mixed authority, and it did not used to be.** The local half is one
+    // row per `teamVisit` the user makes: the Kotlin writes it at open time
+    // (`logTeamVisit`) and `UploadManager.uploadTeamActivities` carries it to
+    // `team_activities` on the next sync, so until the upload succeeds the row
+    // exists only here and a schema bump would silently lose an action the
+    // user took. That is still why the table is in this set.
+    //
+    // The cache half arrived with the `team_activities` sync-in
+    // (`TeamsRepository.insertTeamActivitiesFromSync`), and on planet.learning
+    // it is the overwhelming majority — ~13,659 pulled rows against a handful
+    // of local ones. **Unlike `teams`, this half has no eviction path.** That
+    // entry earns its preservation by naming one ("letting the next sync's
+    // `deleteNotIn` evict the stale cache rows"); `team_log` has no
+    // `deleteNotIn` and must not gain one, because a prune against a synced id
+    // set would delete exactly the visits the server has not seen yet
+    // (`HeavyTableSync.walk` forbids it for the same reason). So a row for a
+    // document deleted server-side is never removed, and the table grows
+    // monotonically where Kotlin's is rebuilt at every schema bump.
+    //
+    // That is a real cost of landing the pull in this table rather than a new
+    // one, and it is written down rather than left for a future lane to
+    // discover: it is bounded by the size of `team_activities`, it loses no
+    // user data, and the alternative — a second table — would have cost a
+    // schema bump, which discards unsynced local writes outright.
     'team_log',
     // One row per filtered search the user runs. The Kotlin writes the row
     // from `CoursesFragment.onPause` / `ResourcesFragment.onPause` and
@@ -5001,15 +5020,28 @@ class TeamLogDao extends DatabaseAccessor<AppDatabase> with _$TeamLogDaoMixin {
   /// `SELECT MAX(time) ...`; drift's `selectOnly` + `Expression.max()` is the
   /// same query shape.
   Future<int?> lastTeamVisit(String? userName, String? teamId) async {
+    // **A null argument narrows to the NULL rows; it does not drop the
+    // predicate.** Kotlin's query is `user IS :userName AND teamId IS
+    // :teamId` — SQLite's `IS`, which matches `NULL` against `NULL` — so a
+    // null name asks for visits by a user with no name, not for visits by
+    // anyone. Omitting the predicate was harmless while this table held only
+    // this handset's own rows; with the `team_activities` pull it would
+    // answer `memberDetailProvider` (which passes a nullable `user.name`)
+    // with the most recent visit by *anybody*, rendered as that member's
+    // last visit.
     final query = selectOnly(teamLogTable, distinct: false)
       ..addColumns([teamLogTable.time.max()])
-      ..where(teamLogTable.type.equals('teamVisit'));
-    if (userName != null) {
-      query.where(teamLogTable.user.equals(userName));
-    }
-    if (teamId != null) {
-      query.where(teamLogTable.teamId.equals(teamId));
-    }
+      ..where(teamLogTable.type.equals('teamVisit'))
+      ..where(
+        userName == null
+            ? teamLogTable.user.isNull()
+            : teamLogTable.user.equals(userName),
+      )
+      ..where(
+        teamId == null
+            ? teamLogTable.teamId.isNull()
+            : teamLogTable.teamId.equals(teamId),
+      );
     final row = await query
         .map((r) => r.read(teamLogTable.time.max()))
         .getSingleOrNull();
@@ -5057,7 +5089,7 @@ class TeamLogDao extends DatabaseAccessor<AppDatabase> with _$TeamLogDaoMixin {
   /// Rows matching any of these visit times *and* any of these user names.
   ///
   /// The cross-product is deliberate and matches Kotlin's
-  /// `getByLoginTimesAndUserNames` (`OfflineActivityDao.kt:38`), the query the
+  /// `getByLoginTimesAndUserNames` (`OfflineActivityDao.kt:40-41`), the query the
   /// sibling table's merge uses for the same job: it over-selects, and the
   /// caller narrows to an exact `(time, user, teamId)` key in Dart. Two `IN`
   /// lists keep this to one query per page rather than one per document.
@@ -5078,7 +5110,7 @@ class TeamLogDao extends DatabaseAccessor<AppDatabase> with _$TeamLogDaoMixin {
   /// One `batch` — which is itself transactional — rather than a per-row
   /// insert, so a 200-document page commits once. That is the reason Kotlin
   /// wraps its own bulk team insert in `withTransaction`
-  /// (`TeamsRepositoryImpl.kt:1258-1265`), where it notes a per-row commit
+  /// (`TeamsRepositoryImpl.kt:1261-1265`), where it notes a per-row commit
   /// turns one page into minutes of fsync, and it is the form
   /// `OfflineActivityDao.upsertAll` already uses for the sibling walk.
   ///

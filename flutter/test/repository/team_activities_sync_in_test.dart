@@ -176,6 +176,11 @@ void main() {
           (await repository.teamVisitsForUsers('team-2', ['ada'])).single.id,
           'srv-2',
         );
+        // The round-trip assertion belongs here rather than on the test whose
+        // input `getByTimesAndUsers` filters out in SQL: this document reaches
+        // the Dart narrowing and is rejected by it, so this is what pins that
+        // a near-miss leaves the local row's `uploaded` flag alone.
+        expect(await repository.pendingTeamLogUploads(), hasLength(1));
       },
     );
 
@@ -216,6 +221,21 @@ void main() {
         await repository.logTeamVisit(teamId: 'team-1', userName: 'ada'),
         isNotNull,
       );
+    });
+  });
+
+  group('lastTeamVisit', () {
+    test('a null user name asks for nameless rows, not for everyone', () async {
+      // Kotlin's query is `user IS :userName`, which matches NULL against
+      // NULL. Dropping the predicate instead was harmless while this table
+      // held only this handset's rows; with the pull it answers with the most
+      // recent visit by anybody, drawn as that member's last visit.
+      await repository.insertTeamActivitiesFromSync([
+        doc(id: 'srv-1', user: 'grace', time: 9000),
+      ]);
+
+      expect(await repository.lastTeamVisit(null, 'team-1'), isNull);
+      expect(await repository.lastTeamVisit('grace', 'team-1'), 9000);
     });
   });
 
@@ -282,6 +302,36 @@ void main() {
       final rows = await repository.teamVisitsForUsers('team-1', ['ada']);
       expect(rows, hasLength(2));
       expect(rows.map((row) => row.couchId).toSet(), {'srv-1', 'srv-2'});
+    });
+
+    test('an id-less document cannot starve a real one of its row', () async {
+      // The defect the second audit found. The claim on a local row was taken
+      // before the document was known to yield a row at all, and an id-less
+      // document survived the repository filter (`''` does not start with
+      // `_design`). So doc 1 consumed the claim and produced nothing, doc 2
+      // was denied the local row and was keyed by its own `_id`: **two rows
+      // for one visit, and the starved local row left pending so it uploads a
+      // second server document** — both failures this merge exists to
+      // prevent, from one malformed row.
+      await repository.logTeamVisit(
+        teamId: 'team-1',
+        userName: 'ada',
+        teamType: 'sync',
+      );
+      final localTime = (await repository.teamVisitsForUsers('team-1', [
+        'ada',
+      ])).single.time!;
+
+      await repository.insertTeamActivitiesFromSync([
+        doc(id: '', time: localTime),
+        doc(id: 'srv-1', time: localTime),
+      ]);
+
+      expect(
+        await repository.teamVisitsForUsers('team-1', ['ada']),
+        hasLength(1),
+      );
+      expect(await repository.pendingTeamLogUploads(), isEmpty);
     });
 
     test('an empty page writes nothing and reports nothing', () async {
@@ -358,6 +408,14 @@ void main() {
       expect(
         TeamLogMapper.naturalKey(time: 1, user: 'a', teamId: 't'),
         isNot(TeamLogMapper.naturalKey(time: 1, user: 'a', teamId: 'u')),
+      );
+      expect(
+        TeamLogMapper.naturalKey(time: 1, user: 'a', teamId: 't'),
+        isNot(TeamLogMapper.naturalKey(time: 2, user: 'a', teamId: 't')),
+      );
+      expect(
+        TeamLogMapper.naturalKey(time: 1, user: 'a', teamId: 't'),
+        isNot(TeamLogMapper.naturalKey(time: 1, user: 'b', teamId: 't')),
       );
       // Nulls collapse to a stable key rather than throwing.
       expect(TeamLogMapper.naturalKey(), '0__');

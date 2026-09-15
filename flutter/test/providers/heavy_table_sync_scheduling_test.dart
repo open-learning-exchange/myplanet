@@ -116,9 +116,14 @@ void main() {
     // `HeavyTableSync.tables` without wiring its repository and this fails.
     final container = await containerFor();
 
+    // **Set equality, not `containsAll`.** That only asserted
+    // scheduled ⊆ writable, which catches a scheduled table with no writer;
+    // the other direction — a writer nobody schedules — is the "green, tested
+    // and dead" shape, and nothing asserted it. Adding
+    // `'ratings': (docs) async {}` to the writers map used to fail no test.
     expect(
       container.read(heavyTableSyncProvider).writableTables,
-      containsAll(HeavyTableSync.tables),
+      unorderedEquals(HeavyTableSync.tables),
     );
   });
 

@@ -1323,12 +1323,25 @@ class SearchActivities extends Table {
 }
 
 /// Port of `model/TeamLog.kt` (`@Entity(tableName = "team_log")`) — one row
-/// per `teamVisit` a user makes to a team's detail screen. Locally authored
-/// (the Kotlin logs the visit from `TeamDetailFragment.onViewCreated` via
-/// `TeamsRepositoryImpl.logTeamVisit`) and preserved across a schema bump:
-/// the `uploaded` flag is the only durable record that the visit has not yet
-/// reached `team_activities`, and dropping the row would silently lose an
-/// action the user took.
+/// per `teamVisit` a user makes to a team's detail screen.
+///
+/// **Mixed authority.** Rows this device authored come from
+/// `TeamsRepository.logTeamVisit` (the Kotlin logs the visit from
+/// `TeamDetailFragment.onViewCreated`) and carry local authority in the
+/// `uploaded` flag, which is the only durable record that the visit has not
+/// yet reached `team_activities`. Rows pulled by
+/// `TeamsRepository.insertTeamActivitiesFromSync` are a cache of that
+/// database, and on a real server they are the overwhelming majority.
+///
+/// The table is preserved across a schema bump for the local half — dropping
+/// it would silently lose an action the user took — and the cache half is
+/// preserved along with it, with no eviction path. See the `'team_log'` entry
+/// in `AppDatabase.localAuthorityTables`, which states what that costs.
+///
+/// A reader after the `uploaded` flag's meaning should note that it is **not**
+/// the column Kotlin uses: `TeamLogDao.getPendingUploads` selects
+/// `WHERE _rev IS NULL` and `TeamLog.uploaded` is read by nothing in
+/// `app/src/main`. See `TeamLogMapper`.
 @DataClassName('TeamLogRow')
 class TeamLogTable extends Table {
   @override

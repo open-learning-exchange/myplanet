@@ -216,16 +216,24 @@ class TeamsRepository {
   Future<int> insertTeamActivitiesFromSync(
     List<Map<String, dynamic>> docs,
   ) async {
-    // Mirrors `insertLoginActivitiesFromSync`, and is **redundant** — every
-    // document passes through `TeamLogMapper.fromDoc`, which refuses a
-    // `_design` id on its own. Mutation-testing confirmed removing this line
-    // changes no observable behaviour, so the guard is pinned at the mapper
-    // rather than here. Kept because keeping design rows out of the two
-    // lookup lists below is cheaper than letting them in, and because a
-    // reader comparing this with its sibling should find the same shape.
-    final documents = docs
-        .where((doc) => !JsonUtils.getString('_id', doc).startsWith('_design'))
-        .toList();
+    // **Both halves of this predicate are load-bearing, and the empty-id half
+    // was missing.** `TeamLogMapper.fromDoc` also refuses these, so dropping
+    // `_design` rows here looks redundant — but a document that reaches the
+    // loop and yields no row still contributes its `time`/`user` to the two
+    // lookup lists below *and still consumes a `claimedRowIds` claim*. An
+    // id-less document ahead of a real one in the same page would therefore
+    // starve the real one of its local row: two rows for one visit, and the
+    // starved local row left `uploaded = false` so it uploads a second server
+    // document. Both of the failures this merge exists to prevent, from one
+    // malformed row.
+    //
+    // `extractDocs` already drops empty ids before the heavy writer calls
+    // this, so that page cannot arrive today — but this method is public and
+    // its guard should defend itself rather than rely on its only caller.
+    final documents = docs.where((doc) {
+      final id = JsonUtils.getString('_id', doc);
+      return id.isNotEmpty && !id.startsWith('_design');
+    }).toList();
     if (documents.isEmpty) return 0;
 
     final ids = documents
@@ -257,7 +265,7 @@ class TeamsRepository {
       // `putIfAbsent` — and **not** "as the Kotlin does", which an earlier
       // revision of this comment claimed. Kotlin builds its initial fallback
       // map with `.associateBy` (`ActivitiesRepositoryImpl.kt:363-365`), where
-      // a duplicate key keeps the **last** row; its `putIfAbsent` (`:266`)
+      // a duplicate key keeps the **last** row; its `putIfAbsent` (`:267`)
       // applies only to entries added during the document loop. First-wins is
       // this port's choice, reachable only with two local rows sharing an
       // exact `(time, user, teamId)`, and it is stated as a choice because
@@ -520,8 +528,20 @@ class TeamsRepository {
   /// Related and out of scope here: this method's document is serialized by
   /// [serializeTeamDocument], which has no `resourceLink` branch, where
   /// `MyTeam.serialize` returns early for that docType with nine keys
-  /// (`MyTeam.kt:167-179`) — so the port sends fourteen keys Kotlin does not,
-  /// a divergence on the same document in the opposite direction.
+  /// (`MyTeam.kt:167-179`). The port sends **three** keys Kotlin does not —
+  /// `createdDate`, `isLeader` and `public` — a divergence on the same
+  /// document in the opposite direction from the planet codes above.
+  ///
+  /// (An earlier revision of this sentence said fourteen. That is the number
+  /// of key names in [serializeTeamDocument] absent from Kotlin's branch, but
+  /// every one of them is `if (x != null)`-guarded and a row this method
+  /// creates leaves them all null, so they are never sent. A count of
+  /// *potential* keys stated as what the port sends, in a comment whose whole
+  /// job is to size a future phase.)
+  ///
+  /// Kotlin's `addResourceLinks` also stamps `status = user.parentCode`, which
+  /// the port never sets — but `MyTeam.serialize`'s resourceLink branch emits
+  /// no `status` either, so it stays device-local in both apps.
   Future<TeamRow?> addResourceLink({
     required String teamId,
     required String resourceId,
