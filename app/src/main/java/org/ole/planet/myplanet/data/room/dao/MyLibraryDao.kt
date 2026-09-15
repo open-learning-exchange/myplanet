@@ -73,9 +73,6 @@ interface MyLibraryDao {
     )
     suspend fun getCourseResources(courseId: String, isOffline: Boolean): List<MyLibrary>
 
-    @Query("SELECT * FROM my_library WHERE resourceId IS NOT NULL")
-    suspend fun getWithResourceId(): List<MyLibrary>
-
     @Query("SELECT COUNT(*) FROM my_library WHERE title = :title COLLATE NOCASE")
     suspend fun countByTitle(title: String): Int
 
@@ -146,9 +143,6 @@ interface MyLibraryDao {
             "AND (userId IS NULL OR userId NOT LIKE :userPattern ESCAPE '\\')"
     )
     suspend fun getByResourceIdsNotUserPattern(resourceIds: List<String>, userPattern: String): List<MyLibrary>
-
-    @Query("SELECT * FROM my_library WHERE resourceId IN (:resourceIds) AND resourceOffline = 1")
-    suspend fun getOfflineByResourceIds(resourceIds: List<String>): List<MyLibrary>
 
     @Query("UPDATE my_library SET resourceOffline = 0 WHERE resourceId IN (:ids) AND resourceOffline = 1")
     suspend fun markAsNotOfflineByResourceIds(ids: List<String>)
