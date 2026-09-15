@@ -607,6 +607,7 @@
     <string name="please_select_starting_date">"कृपया सुरु मिति छनौट गर्नुहोस्: "</string>
     <string name="read_offline_news_from">"अफलाइन समाचार पढ्नुहोस्: "</string>
     <string name="downloading_started_please_check_notification">डाउनलोड सुरु भयो, कृपया सूचना जाँच गर्नुहोस्…</string>
+    <string name="dictionary_parsing_failed">शब्दकोश पार्सिङ असफल भयो</string>
     <string name="file_already_exists">फाइल पहिले नै अवस्थित छ…</string>
     <string name="feature_not_available">विशेषता उपलब्ध छैन</string>
     <string name="sync">सिंक</string>
@@ -912,11 +913,14 @@
     <string name="video_player">भिडियो प्लेयर</string>
     <string name="video_unavailable">भिडियो उपलब्ध छैन — फाइल फेला परेन र सर्भरमा जडान हुन सकेन</string>
     <string name="video_playback_error">भिडियो प्लेब्याक त्रुटि। पुनः प्रयास गर्नुहोस् वा आफ्नो जडान जाँच गर्नुहोस्</string>
+    <string name="audio_unavailable">अडियो उपलब्ध छैन — फाइल फेला परेन र सर्भरमा जडान हुन सकेन</string>
+    <string name="audio_playback_error">अडियो प्लेब्याक त्रुटि। पुनः प्रयास गर्नुहोस् वा आफ्नो जडान जाँच गर्नुहोस्</string>
     <string name="video_loading_checking_server">सर्भरको उपलब्धता जाँच गर्दै…</string>
     <string name="video_loading_connecting">सर्भरमा जडान गर्दै…</string>
     <string name="video_loading_buffering">बफर गर्दै…</string>
     <string name="video_loading_local">भिडियो लोड गर्दै…</string>
     <string name="unable_to_play_video">भिडियो चलाउन असमर्थ</string>
+    <string name="unable_to_play_audio">अडियो चलाउन असमर्थ</string>
     <string name="go_back">फिर्ता जानुहोस्</string>
     <string name="progress_bar">प्रगति पट्टि</string>
     <string name="web_view">वेब दृश्य</string>

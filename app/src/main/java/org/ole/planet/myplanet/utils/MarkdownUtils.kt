@@ -86,6 +86,7 @@ object MarkdownUtils {
         height: Int = 100
     ): String {
         val content = markdownContent ?: return markdownContent.orEmpty()
+        if (!content.contains("![")) return content
         val matcher = imagePattern.matcher(content)
         val result = StringBuilder()
         var last = 0
