@@ -24,6 +24,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.NewsDao
+import org.ole.planet.myplanet.data.room.dao.TeamNewsMembership
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -266,5 +267,32 @@ class VoicesRepositoryImplTest {
         coVerify(exactly = 1) { newsDao.deleteByIds(capture(idsSlot)) }
         assertEquals(listOf("comm_news_123"), idsSlot.captured)
         coVerify(exactly = 0) { newsDao.upsert(any()) }
+    }
+
+    @Test
+    fun `countTopLevelByTeams fetches membership once and tallies per team`() = testScope.runTest {
+        val teamIds = listOf("teamA", "teamB", "teamC")
+        val rows = listOf(
+            TeamNewsMembership(viewableBy = "teams", viewableId = "teamA", viewIn = null),
+            TeamNewsMembership(viewableBy = null, viewableId = null, viewIn = "[{\"_id\":\"teamA\",\"section\":\"teams\"}]"),
+            TeamNewsMembership(viewableBy = null, viewableId = null, viewIn = "[{\"_id\":\"teamB\",\"section\":\"teams\"}]"),
+            TeamNewsMembership(viewableBy = null, viewableId = null, viewIn = "[{\"_id\":\"teamOther\",\"section\":\"teams\"}]")
+        )
+        coEvery { newsDao.getTopLevelTeamMembership(teamIds) } returns rows
+
+        val counts = repository.countTopLevelByTeams(teamIds)
+
+        assertEquals(2L, counts["teamA"])
+        assertEquals(1L, counts["teamB"])
+        assertEquals(0L, counts["teamC"])
+        coVerify(exactly = 1) { newsDao.getTopLevelTeamMembership(teamIds) }
+    }
+
+    @Test
+    fun `countTopLevelByTeams returns empty map without querying for empty input`() = testScope.runTest {
+        val counts = repository.countTopLevelByTeams(emptyList())
+
+        assertTrue(counts.isEmpty())
+        coVerify(exactly = 0) { newsDao.getTopLevelTeamMembership(any()) }
     }
 }
