@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.model
 
 import com.google.gson.JsonObject
 import java.util.Calendar
+import org.ole.planet.myplanet.repository.ProfileFieldsUpdate
 import org.ole.planet.myplanet.utils.TimeUtils
 
 data class UserSurveyProfile(
@@ -46,5 +47,34 @@ data class UserSurveyProfile(
         user.addProperty("betaEnabled", false)
 
         return user
+    }
+
+    fun toProfileFieldsUpdate(): ProfileFieldsUpdate {
+        val birthDateCalculated = if (dob.isNotEmpty()) {
+            TimeUtils.convertToISO8601(dob)
+        } else {
+            null
+        }
+
+        val ageCalculated = if (yob.isNotEmpty()) {
+            val yobInt = yob.toInt()
+            val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+            (currentYear - yobInt).toString()
+        } else {
+            null
+        }
+
+        return ProfileFieldsUpdate(
+            firstName = fname.takeIf { it.isNotEmpty() },
+            lastName = lname.takeIf { it.isNotEmpty() },
+            middleName = mName.takeIf { it.isNotEmpty() },
+            email = email.takeIf { it.isNotEmpty() },
+            language = language.takeIf { it.isNotEmpty() },
+            phoneNumber = phone.takeIf { it.isNotEmpty() },
+            birthDate = birthDateCalculated,
+            level = level.takeIf { it.isNotEmpty() },
+            gender = gender.takeIf { it.isNotEmpty() },
+            age = ageCalculated
+        )
     }
 }
