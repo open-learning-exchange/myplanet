@@ -498,6 +498,42 @@ void main() {
     });
   });
 
+  group('a preserved non-array value and the merge, driven together', () {
+    test('a pull cannot duplicate the thread it was wrapped into', () async {
+      // `_messagesForAppend` keeps an unreadable `messages` value as the
+      // array's first element. The merge identifies replies by
+      // `message`/`user`/`time`, which a wrapped string does not have — so an
+      // element-identity that reads it as "different" stops the shared prefix
+      // at zero and appends the whole local array to the server's copy again,
+      // on every pull while the row is still pending. The sync re-queues after
+      // a completed pull, so that doubled array is what uploads.
+      await repository.insertFromJson([
+        {'_id': 'fb1', '_rev': '1-a', 'messages': 'just a string'},
+      ]);
+      await repository.addReply('fb1', 'my reply', 'ada');
+
+      final afterReply = await repository.getFeedbackById('fb1');
+      final uploaded = FeedbackMapper.toDoc(afterReply!)['messages'];
+      expect(uploaded, [
+        'just a string',
+        isA<Map<String, dynamic>>(),
+      ], reason: 'the value the server sent must survive the reply');
+
+      // The server echoes back exactly what the upload sent, twice over.
+      for (var pull = 0; pull < 2; pull++) {
+        await repository.insertFromJson([
+          {'_id': 'fb1', '_rev': '1-a', 'messages': uploaded},
+        ]);
+        final merged = await repository.getFeedbackById('fb1');
+        expect(
+          jsonDecode(merged!.messages!),
+          hasLength(2),
+          reason: 'pull ${pull + 1} grew a thread that had not changed',
+        );
+      }
+    });
+  });
+
   group('the admin reply, writer and reader driven together', () {
     test(
       'survives a pull, the detail screen read, a local reply and the upload',

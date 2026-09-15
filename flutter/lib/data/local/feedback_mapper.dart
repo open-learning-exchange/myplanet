@@ -128,24 +128,40 @@ class FeedbackMapper {
     // flag was a raw `doc.containsKey('_rev') && doc['_rev'] != null`, so an
     // object-valued `_rev` stored the row as `isUploaded = true, rev = null` —
     // on the server, and with no revision to update it under. It was the last
-    // raw read left in this mapper. Unreachable from CouchDB; a row whose two
-    // halves describe different states is worth not leaving behind.
+    // raw *field* read in this mapper; `messages` above is read raw too, but
+    // it is handled by shape rather than cast, so it cannot throw.
+    // Unreachable from CouchDB; a row whose two halves describe different
+    // states is worth not leaving behind.
+    //
+    // Gating on `_rev` at all is the port's own choice, worth knowing before
+    // anyone "restores parity" here: Kotlin sets `isUploaded = true`
+    // unconditionally on this branch (`FeedbackRepositoryImpl.kt:158`). A
+    // document that reached the mapper without a `_rev` is one the server
+    // cannot be updating under a revision, so the port treats it as not yet
+    // uploaded and lets the outbox settle it.
     final rev = _string('_rev', doc);
     final isUploaded = !hasPendingLocalReply && rev != null;
 
     return FeedbackEntriesCompanion(
       id: Value(id),
-      // `Value.absent()`, not `Value(null)`: `FeedbackDao.upsertAll` is an
-      // insert-or-replace, so a null here writes over the revision the stored
-      // row is holding — and that row may be pending, in which case its reply
-      // then uploads against no revision and CouchDB answers 409. The Phase 56
-      // shape: a fetch that omits a field must not wipe the stored one.
+      // `Value.absent()`, not `Value(null)`. `FeedbackDao.upsertAll` is
+      // `insertAllOnConflictUpdate`, i.e. `ON CONFLICT DO UPDATE SET` over the
+      // columns the companion carries — so an absent column keeps the stored
+      // value and `Value(null)` writes NULL over it. (Kotlin's DAO is
+      // `@Insert(onConflict = REPLACE)`, `FeedbackDao.kt:39-40`, which really
+      // does delete and re-insert; the two are not the same mechanism and a
+      // fix reasoned from Kotlin's would be pointless here.) The revision it
+      // wrote over is the one a pending row needs to update its document
+      // under, which is the Phase 56 shape: a fetch that omits a field must
+      // not wipe the stored one.
       //
       // Not reachable today — every caller of `insertFromJson` comes from
       // `_all_docs?include_docs=true`, which always carries `_rev` — so this
-      // guards the next caller rather than fixing a live defect. Kotlin writes
-      // `""` here (`FeedbackRepositoryImpl.kt:150`), which has the same
-      // wiping effect; the port keeps the revision instead.
+      // guards the next caller rather than fixing a live defect, and the
+      // upload would in any case have recovered through `ConflictRecovery`'s
+      // 409 arm at the cost of a round trip. Kotlin writes `""` here
+      // (`FeedbackRepositoryImpl.kt:152`), which wipes just as effectively;
+      // the port keeps the revision instead.
       rev: rev == null ? const Value.absent() : Value(rev),
       title: Value(_string('title', doc)),
       source: Value(_userString('source', doc)),
@@ -211,8 +227,27 @@ class FeedbackMapper {
   }
 
   /// Whether two message elements are the same reply.
+  ///
+  /// A reply is a map and is compared on `message`/`user`/`time` rather than on
+  /// its bytes, because a server that echoes it back with its keys reordered
+  /// would otherwise read as a divergence.
+  ///
+  /// An element that is **not** a map has no such fields, and returning false
+  /// for it is what an earlier cut of [_messagesForAppend] got wrong: the value
+  /// it wraps at index 0 stopped the shared-prefix scan at zero, so every pull
+  /// that landed while the row was pending appended the whole local array to
+  /// the server's copy again — and the re-queue after a completed sync sent
+  /// that doubled array back. Two bytes-equal non-maps are the same element,
+  /// which restores the prefix and with it the idempotence the merge depends
+  /// on. Encoding is the right comparison here precisely because a non-map has
+  /// no keys to reorder.
   static bool _sameMessage(Object? a, Object? b) {
-    if (a is! Map<String, dynamic> || b is! Map<String, dynamic>) return false;
+    if (a is! Map<String, dynamic> || b is! Map<String, dynamic>) {
+      // One map and one not is a divergence, and encoding them would compare
+      // an object against a scalar for no gain.
+      if (a is Map || b is Map) return false;
+      return jsonEncode(a) == jsonEncode(b);
+    }
     return _string('message', a) == _string('message', b) &&
         _userString('user', a) == _userString('user', b) &&
         _string('time', a) == _string('time', b);
@@ -341,6 +376,16 @@ class FeedbackMapper {
   /// cannot decode them either, so they never reach the server under any
   /// behaviour, and wrapping them would change a broken column into a
   /// different broken column.
+  ///
+  /// Two limits worth knowing, because "kept" is not "kept for ever". The
+  /// wrapped value reaches the server on the reply's upload; after that it is
+  /// an ordinary element of the document's array. If it is a **map carrying
+  /// none** of `message`/`user`/`time`, a later merge on a still-pending row
+  /// can drop it, because [_sameMessage] identifies maps by those fields alone
+  /// and two field-less maps therefore compare equal — a hole this helper
+  /// widens rather than opens, since the server's own array could always hold
+  /// such an element. Non-map values are safe: [_sameMessage] compares those by
+  /// encoding.
   static List<dynamic> _messagesForAppend(String? messagesJson) {
     if (messagesJson == null || messagesJson.isEmpty) return [];
     final Object? decoded;

@@ -353,13 +353,105 @@ void main() {
     );
   });
 
+  test('a design document is never inserted, not merely swept', () async {
+    // The cleanup would hide the difference: an inserted design row the keep
+    // set omits is deleted in the same sync, so the table looks identical
+    // either way. This walk ends short — the second page comes back empty, so
+    // `walkedEveryPage` is false and nothing is pruned — which leaves only one
+    // reason the row can be absent.
+    var page = 0;
+    when(
+      () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer((invocation) async {
+      final url = invocation.positionalArguments[0] as String;
+      if (url.contains('limit=0')) {
+        return const NetworkSuccess<Map<String, dynamic>>({'total_rows': 9});
+      }
+      if (page++ > 0) {
+        return const NetworkSuccess<Map<String, dynamic>>({'rows': []});
+      }
+      return const NetworkSuccess<Map<String, dynamic>>({
+        'rows': [
+          {
+            'doc': {'_id': '_design/feedback', '_rev': '1-a'},
+          },
+          {
+            'doc': {'_id': 'fb-normal', '_rev': '1-b'},
+          },
+          // No readable id: such a row lands under the empty primary key, and
+          // with no `_rev` it is pending — so the cleanup could never remove
+          // it and the manager's list would carry it for ever.
+          {
+            'doc': {'title': 'no id at all'},
+          },
+        ],
+      });
+    });
+
+    await repository.sync(config: config);
+
+    final stored = await database.feedbackDao.watchAllSorted().first;
+    expect(stored.map((row) => row.id), ['fb-normal']);
+  });
+
+  test(
+    'the cleanup spares a thread filed while the walk was running',
+    () async {
+      // The stronger half of the same window: this row did not exist when the
+      // walk began, so no snapshot of *pending* ids could have covered it. The
+      // walk may only delete what the server already had when it started.
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer((invocation) async {
+        final url = invocation.positionalArguments[0] as String;
+        if (url.contains('limit=0')) {
+          return const NetworkSuccess<Map<String, dynamic>>({'total_rows': 1});
+        }
+        // Filed and drained mid-walk, after the pages were read from a server
+        // that had no document for it.
+        await database.feedbackDao.upsert(
+          FeedbackEntriesCompanion.insert(
+            id: 'fb-filed-mid-walk',
+            isUploaded: const Value(false),
+          ),
+        );
+        await database.feedbackDao.markUploaded('fb-filed-mid-walk', '1-fresh');
+        return const NetworkSuccess<Map<String, dynamic>>({
+          'rows': [
+            {
+              'doc': {'_id': 'fb-other', '_rev': '1-a'},
+            },
+          ],
+        });
+      });
+
+      await repository.sync(config: config);
+
+      final stored = await database.feedbackDao.watchAllSorted().first;
+      expect(
+        stored.map((row) => row.id),
+        containsAll(['fb-filed-mid-walk', 'fb-other']),
+      );
+    },
+  );
+
+  test('closing a row that is not there writes nothing', () async {
+    // What replaces the existence check the close used to make.
+    await repository.closeFeedback('fb-never-existed');
+
+    expect(await repository.getFeedbackById('fb-never-existed'), isNull);
+  });
+
   test(
     'a pull that omits `_rev` keeps the revision the row is holding',
     () async {
-      // `upsertAll` is an insert-or-replace, so a `Value(null)` here would wipe
-      // the revision a pending reply needs to update the document under — the
-      // Phase 56 shape. Unreachable from `_all_docs?include_docs=true`; this
-      // pins the guard for the next caller of `insertFromJson`.
+      // `upsertAll` writes `ON CONFLICT DO UPDATE SET` over the columns the
+      // companion carries, so `Value(null)` would write NULL over the revision
+      // a pending reply needs to update the document under — the Phase 56
+      // shape. Unreachable from `_all_docs?include_docs=true`; this pins the
+      // guard for the next caller of `insertFromJson`. Driven through the real
+      // DAO rather than the companion, because the claim is about what the
+      // upsert does with an absent column.
       await repository.insertFromJson([
         {'_id': 'fb1', '_rev': '3-c', 'title': 'from the server'},
       ]);
@@ -371,7 +463,16 @@ void main() {
 
       final stored = await repository.getFeedbackById('fb1');
       expect(stored!.rev, '3-c');
-      expect(stored.isUploaded, isFalse);
+      expect(stored.title, 'no revision on this one');
+
+      // And the other direction: an absent `_rev` on a row that does not
+      // exist yet stores NULL, since the column has no default.
+      await repository.insertFromJson([
+        {'_id': 'fb-new', 'title': 'never seen before'},
+      ]);
+      final fresh = await repository.getFeedbackById('fb-new');
+      expect(fresh!.rev, isNull);
+      expect(fresh.isUploaded, isFalse);
     },
   );
 
