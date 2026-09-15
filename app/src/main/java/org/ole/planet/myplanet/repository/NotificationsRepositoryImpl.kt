@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotification
 import org.ole.planet.myplanet.model.TeamNotificationInfo
-import org.ole.planet.myplanet.utils.TaskDateParser
+import org.ole.planet.myplanet.utils.TaskNotificationUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
@@ -181,7 +181,7 @@ class NotificationsRepositoryImpl @Inject constructor(
             .distinct()
 
         val parsedTaskDates: Map<String, Pair<String, String>?> =
-            taskNotifications.associateBy({ it.id }, { TaskDateParser.parseTaskDate(it.message) })
+            taskNotifications.associateBy({ it.id }, { TaskNotificationUtils.splitTitleAndDate(it.message) })
 
         val taskTitles = taskNotifications
             .mapNotNull { parsedTaskDates[it.id]?.first }

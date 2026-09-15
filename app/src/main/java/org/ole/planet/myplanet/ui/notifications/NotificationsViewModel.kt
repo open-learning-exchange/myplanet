@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.model.NotificationListItem
 import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.repository.NotificationsRepository
-import org.ole.planet.myplanet.utils.TaskDateParser
+import org.ole.planet.myplanet.utils.TaskNotificationUtils
 
 @HiltViewModel
 class NotificationsViewModel @Inject constructor(
@@ -272,7 +272,7 @@ class NotificationsViewModel @Inject constructor(
                 val parsedDate = if (parsedTaskDates.containsKey(notification.id)) {
                     parsedTaskDates[notification.id]
                 } else {
-                    TaskDateParser.parseTaskDate(notification.message)
+                    TaskNotificationUtils.splitTitleAndDate(notification.message)
                 }
                 if (parsedDate != null) {
                     formatTaskNotification(parsedDate.first, parsedDate.second, notification.relatedId, taskTeamNames)

@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.repository.EnrichedNotifications
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
-import org.ole.planet.myplanet.utils.TaskDateParser
+import org.ole.planet.myplanet.utils.TaskNotificationUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class NotificationsViewModelTest {
@@ -49,7 +49,7 @@ class NotificationsViewModelTest {
     @Test
     fun testParseTaskDate_withValidDate() {
         val message = "Complete math assignment Mon 12, Jan 2024"
-        val result = TaskDateParser.parseTaskDate(message)
+        val result = TaskNotificationUtils.splitTitleAndDate(message)
         assertEquals("Complete math assignment", result?.first)
         assertEquals("Mon 12, Jan 2024", result?.second)
     }
@@ -57,7 +57,7 @@ class NotificationsViewModelTest {
     @Test
     fun testParseTaskDate_withNoDate() {
         val message = "Complete math assignment as soon as possible"
-        val result = TaskDateParser.parseTaskDate(message)
+        val result = TaskNotificationUtils.splitTitleAndDate(message)
         assertNull(result)
     }
 
@@ -200,19 +200,19 @@ class NotificationsViewModelTest {
         val task2 = notification(id = "t2", type = "task", isRead = false, message = "Review code Fri 7, Feb 2025")
         val task3 = notification(id = "t3", type = "task", isRead = false, message = "Complete as soon as possible")
 
-        mockkObject(TaskDateParser)
+        mockkObject(TaskNotificationUtils)
         try {
             every {
-                TaskDateParser.parseTaskDate(any())
+                TaskNotificationUtils.splitTitleAndDate(any())
             } answers { callOriginal() }
 
             loadNotifications(task1, task2, task3)
 
-            verify(exactly = 1) { TaskDateParser.parseTaskDate(task1.message) }
-            verify(exactly = 1) { TaskDateParser.parseTaskDate(task2.message) }
-            verify(exactly = 1) { TaskDateParser.parseTaskDate(task3.message) }
+            verify(exactly = 1) { TaskNotificationUtils.splitTitleAndDate(task1.message) }
+            verify(exactly = 1) { TaskNotificationUtils.splitTitleAndDate(task2.message) }
+            verify(exactly = 1) { TaskNotificationUtils.splitTitleAndDate(task3.message) }
         } finally {
-            unmockkObject(TaskDateParser)
+            unmockkObject(TaskNotificationUtils)
         }
     }
 
@@ -272,7 +272,7 @@ class NotificationsViewModelTest {
 
     private fun TestScope.loadNotifications(vararg payloads: NotificationPayload) {
         val taskNotifications = payloads.filter { it.type.equals("task", ignoreCase = true) }
-        val parsedTaskDates = taskNotifications.associateBy({ it.id }, { TaskDateParser.parseTaskDate(it.message) })
+        val parsedTaskDates = taskNotifications.associateBy({ it.id }, { TaskNotificationUtils.splitTitleAndDate(it.message) })
         val enrichment = EnrichedNotifications(
             payloads = payloads.toList(),
             taskTeamNames = emptyMap(),
