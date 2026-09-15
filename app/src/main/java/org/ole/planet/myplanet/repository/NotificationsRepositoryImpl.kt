@@ -285,18 +285,13 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     override suspend fun updateTeamNotification(teamId: String, news: List<News>) {
         val count = news.size
-        val existing = teamNotificationDao.findByParentAndType(teamId, "chat")
-        if (existing != null) {
-            existing.lastCount = count
-            teamNotificationDao.update(existing)
-        } else {
-            val notification = TeamNotification().apply {
+        if (teamNotificationDao.updateCount(teamId, "chat", count) == 0) {
+            teamNotificationDao.insert(TeamNotification().apply {
                 id = UUID.randomUUID().toString()
                 parentId = teamId
                 type = "chat"
                 lastCount = count
-            }
-            teamNotificationDao.insert(notification)
+            })
         }
     }
 
