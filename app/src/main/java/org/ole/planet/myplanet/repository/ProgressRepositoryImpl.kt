@@ -191,11 +191,9 @@ class ProgressRepositoryImpl @Inject constructor(
             val courseProgressRecords = progressByCourse[course.courseId].orEmpty()
 
             // Count UNIQUE steps that are passed (matches web: step.passed === true)
-            val passedStepNumbers = courseProgressRecords
-                .filter { it.passed }
-                .map { it.stepNum }
-                .toSet()
-            val passedSteps = passedStepNumbers.size
+            val passedSteps = courseProgressRecords
+                .mapNotNullTo(HashSet()) { if (it.passed) it.stepNum else null }
+                .size
             val totalSteps = course.courseSteps?.size ?: 0
 
             // Web logic: ALL steps must be passed AND course must have at least one step
@@ -286,9 +284,13 @@ class ProgressRepositoryImpl @Inject constructor(
         }
 
         val docIds = syncKeys.mapNotNullTo(LinkedHashSet()) { keys -> keys.docId.takeIf { it.isNotEmpty() } }.toList()
-        val courseIds = syncKeys.mapNotNullTo(LinkedHashSet()) { keys -> keys.courseId.takeIf { it.isNotEmpty() } }.toList()
-        val userIds = syncKeys.mapNotNullTo(LinkedHashSet()) { keys -> keys.userId.takeIf { it.isNotEmpty() } }.toList()
-        val stepNums = syncKeys.mapTo(LinkedHashSet()) { keys -> keys.stepNum }.toList()
+        val requestedTuples = syncKeys.mapNotNull { keys ->
+            if (keys.courseId.isNotEmpty() && keys.userId.isNotEmpty()) {
+                Triple(keys.courseId, keys.userId, keys.stepNum)
+            } else {
+                null
+            }
+        }.distinct()
 
         val existingProgresses = if (docIds.isNotEmpty()) {
             courseProgressDao.getByIds(docIds).associateBy { it.id }
@@ -296,8 +298,8 @@ class ProgressRepositoryImpl @Inject constructor(
             emptyMap()
         }
 
-        val localRecords = if (courseIds.isNotEmpty() && userIds.isNotEmpty() && stepNums.isNotEmpty()) {
-            courseProgressDao.getByCourseUsersAndSteps(courseIds, userIds, stepNums)
+        val localRecords = if (requestedTuples.isNotEmpty()) {
+            courseProgressDao.getByCourseUsersAndSteps(requestedTuples)
         } else {
             emptyList()
         }

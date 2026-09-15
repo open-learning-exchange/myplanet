@@ -42,6 +42,7 @@ import org.ole.planet.myplanet.databinding.AlertSoundRecorderBinding
 import org.ole.planet.myplanet.databinding.FragmentAddResourceBinding
 import org.ole.planet.myplanet.services.AudioRecorder
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -104,18 +105,18 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                 takePhoto()
             } else {
                 if (!shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
-                    AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-                        .setTitle(R.string.permission_required)
-                        .setMessage(R.string.camera_permission_required)
-                        .setPositiveButton(R.string.settings) { dialog, _ ->
-                            dialog.dismiss()
+                    requireContext().confirmDialog(
+                        title = getString(R.string.permission_required),
+                        message = getString(R.string.camera_permission_required),
+                        positiveText = getString(R.string.settings),
+                        onPositive = {
                             val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
                             val uri: Uri = Uri.fromParts("package", requireContext().packageName, null)
                             intent.data = uri
                             startActivity(intent)
-                        }
-                        .setNegativeButton(R.string.cancel) { dialog, _ -> dialog.dismiss() }
-                        .show()
+                        },
+                        negativeText = getString(R.string.cancel)
+                    )
                 } else {
                     Utilities.toast(requireContext(), "camera permission is required.")
                 }
