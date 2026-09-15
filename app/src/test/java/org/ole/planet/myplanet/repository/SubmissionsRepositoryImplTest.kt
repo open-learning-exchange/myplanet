@@ -954,10 +954,10 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
-    fun `markPhotosUploadedBatch maps PhotoUploadResult to SubmitPhotosDao UploadedPhoto and delegates to dao`() = runTest {
+    fun `markPhotosUploadedBatch maps PhotoUpload to SubmitPhotosDao UploadedPhoto and delegates to dao`() = runTest {
         val uploads = listOf(
-            PhotoUploadResult(photoId = "photo1", rev = "rev1", remoteId = "remote1"),
-            PhotoUploadResult(photoId = "photo2", rev = "rev2", remoteId = "remote2")
+            PhotoUpload(photoId = "photo1", rev = "rev1", remoteId = "remote1"),
+            PhotoUpload(photoId = "photo2", rev = "rev2", remoteId = "remote2")
         )
         val expectedDaoUploads = listOf(
             UploadedPhoto(photoId = "photo1", rev = "rev1", remoteId = "remote1"),

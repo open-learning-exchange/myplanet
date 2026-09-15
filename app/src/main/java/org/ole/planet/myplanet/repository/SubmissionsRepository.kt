@@ -14,6 +14,8 @@ import org.ole.planet.myplanet.model.SubmissionRowProjection
 import org.ole.planet.myplanet.model.SubmitPhotos
 import org.ole.planet.myplanet.model.UserEntity
 
+data class PhotoUpload(val photoId: String, val rev: String, val remoteId: String)
+
 interface SubmissionsRepository {
     fun getPendingSurveysFlow(userId: String?): Flow<List<Submission>>
     fun getSubmissionsFlow(userId: String): Flow<List<Submission>>
@@ -59,7 +61,7 @@ interface SubmissionsRepository {
     suspend fun getExamById(id: String): StepExam?
     suspend fun getUnuploadedPhotos(): List<Pair<String?, JsonObject>>
     suspend fun markPhotoUploaded(photoId: String?, rev: String, id: String)
-    suspend fun markPhotosUploadedBatch(uploads: List<PhotoUploadResult>)
+    suspend fun markPhotosUploadedBatch(uploads: List<PhotoUpload>)
     suspend fun getOrCreateSubmission(userId: String?, parentId: String): Submission
     suspend fun getPhotosByIds(ids: Array<String>): List<SubmitPhotos>
     suspend fun bulkInsertFromSync(jsonArray: JsonArray)

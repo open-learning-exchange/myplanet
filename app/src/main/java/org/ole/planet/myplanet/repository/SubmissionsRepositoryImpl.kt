@@ -639,7 +639,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         photoId?.let { submitPhotosDao.markUploaded(it, rev, id) }
     }
 
-    override suspend fun markPhotosUploadedBatch(uploads: List<PhotoUploadResult>) {
+    override suspend fun markPhotosUploadedBatch(uploads: List<PhotoUpload>) {
         if (uploads.isNotEmpty()) {
             val daoUploads = uploads.map { UploadedPhoto(it.photoId, it.rev, it.remoteId) }
             submitPhotosDao.markUploadedBatch(daoUploads)

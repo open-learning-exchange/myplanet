@@ -24,7 +24,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.model.SubmitPhotos
-import org.ole.planet.myplanet.repository.PhotoUploadResult
+import org.ole.planet.myplanet.repository.PhotoUpload
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.utils.FileUtils
@@ -124,12 +124,12 @@ class PhotoUploaderTest {
         assertNull(result)
         assertEquals("expected the semaphore to be saturated", 6, maxConcurrentRequests)
 
-        val expectedMarks = (1..10).map { i -> PhotoUploadResult("photo-$i", "1-rev", "doc-$i") }
+        val expectedMarks = (1..10).map { i -> PhotoUpload("photo-$i", "1-rev", "doc-$i") }
         coVerify(exactly = 1) { submissionsRepository.markPhotosUploadedBatch(expectedMarks) }
     }
 
     @Test
-    fun `uploadSubmitPhotos passes PhotoUploadResult with response id mapped to remoteId`() = runTest {
+    fun `uploadSubmitPhotos passes PhotoUpload with response id mapped to remoteId`() = runTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)
         photoUploader = PhotoUploader(
             submissionsRepository = submissionsRepository,
@@ -149,7 +149,7 @@ class PhotoUploaderTest {
         }
         coEvery { uploadRepository.postUpload(any(), any()) } returns Response.success(responseObj)
 
-        val slot = slot<List<PhotoUploadResult>>()
+        val slot = slot<List<PhotoUpload>>()
         coEvery { submissionsRepository.markPhotosUploadedBatch(capture(slot)) } returns Unit
 
         val result = photoUploader.uploadSubmitPhotos(null)
@@ -198,8 +198,8 @@ class PhotoUploaderTest {
         assertNull(result)
 
         val expectedMarks = listOf(
-            PhotoUploadResult("photo-1", "1-rev", "doc-1"),
-            PhotoUploadResult("photo-3", "1-rev", "doc-3")
+            PhotoUpload("photo-1", "1-rev", "doc-1"),
+            PhotoUpload("photo-3", "1-rev", "doc-3")
         )
         coVerify(exactly = 1) { submissionsRepository.markPhotosUploadedBatch(expectedMarks) }
     }
@@ -239,7 +239,7 @@ class PhotoUploaderTest {
         val result = photoUploader.uploadSubmitPhotos(listener)
 
         assertNull(result)
-        val expectedMarks = listOf(PhotoUploadResult("photo-1", "1-rev", "doc-1"))
+        val expectedMarks = listOf(PhotoUpload("photo-1", "1-rev", "doc-1"))
         coVerify(exactly = 1) { submissionsRepository.markPhotosUploadedBatch(expectedMarks) }
 
         testScheduler.advanceUntilIdle()

@@ -12,7 +12,7 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.repository.PhotoUploadResult
+import org.ole.planet.myplanet.repository.PhotoUpload
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.services.FileUploader
@@ -58,7 +58,7 @@ class PhotoUploader @Inject constructor(
                                 if (response.isSuccessful && `object` != null) {
                                     val rev = getString("rev", `object`)
                                     val id = getString("id", `object`)
-                                    PhotoUploadResult(photoId, rev, id)
+                                    PhotoUpload(photoId, rev, id)
                                 } else null
                             } catch (e: CancellationException) {
                                 throw e
