@@ -438,9 +438,9 @@ class TeamCalendarFragment : BaseTeamFragment() {
         recyclerView.layoutParams.height = cardHeight + extraHeight
         recyclerView.requestLayout()
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        meetupAdapter = EventsAdapter { meetup ->
+        meetupAdapter = EventsAdapter(onMeetupClick = { meetup ->
             showEditMeetupDialog(meetup)
-        }
+        })
         recyclerView.adapter = meetupAdapter
         meetupAdapter?.submitList(meetupList)
 

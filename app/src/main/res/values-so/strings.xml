@@ -983,6 +983,7 @@
     <string name="location_colon">goobta:&#160;</string>
     <string name="recurring_colon">ku dhaqan:&#160;</string>
     <string name="created_by_colon">lagu sameeyay:&#160;</string>
+    <string name="team_colon">kooxda:&#160;</string>
     <string name="you_want_to_connect_to_a_different_server">Waxaad rabtaa inaad ku xirto server kale. Tirtir xogta barnaamijka si aad u sii wadato</string>
     <string name="are_you_sure_you_want_to_clear_data">Ma hubtaa inaad diiwaangelisid dhammaan xogta?</string>
     <string name="feedback_list">liiska raadinta</string>
