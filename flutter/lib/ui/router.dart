@@ -83,6 +83,26 @@ class Routes {
 
   static const String home = '/home';
   static const String server = '/server';
+
+  /// [server] with the marker that says the user asked to be here.
+  ///
+  /// The "change server" action on the login screen used to call
+  /// `serverConfigProvider.clear()` — not because anything wanted the stored
+  /// configuration gone, but because clearing it made `redirect` fire and
+  /// carry the user to [server]. It was navigation paid for with the one fact
+  /// needed to reason about the data already on the device: which Planet the
+  /// full database belongs to. Three correct, tested code paths were dead
+  /// behind it (the list's prepend and hoist, the screen's prefill, and the
+  /// row tap's early clear-data warning), because each of them needs exactly
+  /// that fact and every reachable path had destroyed it.
+  ///
+  /// So the marker travels in the location instead of in a cleared
+  /// preference. It is a *location*, not a route pattern — the router
+  /// registers [server] and this resolves to it — and being in the URI is what
+  /// makes it survive a redirect without any state for a later navigation to
+  /// leak. The exemption is spent by navigating to bare [server] again, which
+  /// is what `ServerConfigScreen` does once it has adopted a configuration.
+  static const String changeServer = '/server?change=1';
   static const String onboarding = '/onboarding';
   static const String login = '/login';
   static const String becomeMember = '/become-member';
@@ -171,6 +191,19 @@ String publicSurveyBaseUrl(Uri uri, String? configuredServerUrl) {
   return configuredServerUrl ?? '';
 }
 
+/// The query flag [Routes.changeServer] carries.
+const String _serverChangeFlag = 'change';
+
+/// Whether this location is a `/server` the user asked for over a device that
+/// already has a configuration.
+///
+/// Read twice from the one place that holds it — by `redirect`, to let the
+/// navigation through, and by the route builder, to tell the screen it is a
+/// change rather than a first configuration. Two readers, one fact, and no
+/// second source of truth to fall out of step with the first.
+bool serverChangeRequested(Uri uri) =>
+    uri.queryParameters[_serverChangeFlag] == '1';
+
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -191,6 +224,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       final onboardingComplete = ref.read(onboardingProvider);
       final session = ref.read(sessionProvider);
       final location = state.matchedLocation;
+      final changingServer =
+          location == Routes.server && serverChangeRequested(state.uri);
 
       // Onboarding does not depend on the asynchronous session restoration.
       // Gate it first to avoid flashing the resources screen on a fresh install.
@@ -209,6 +244,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (!hasServer) {
         return location == Routes.server ? null : Routes.server;
       }
+
+      // The one exemption, and the narrowest shape it can take: *this*
+      // location, asked for explicitly. Everything below sends a configured
+      // device away from `/server`, which is what made clearing the
+      // configuration the only way to reach the screen.
+      //
+      // It cannot strand anybody, because it grants nothing that outlives the
+      // location it is written on. The screen is `push`ed, so the back button
+      // returns to `/login`; a wipe clears `hasServer` and the branch above
+      // holds the same position for the same reason; and adopting a
+      // configuration navigates to bare [Routes.server], which falls through
+      // to the redirects below and is placed by them.
+      if (changingServer) return null;
+
       if (!isSignedIn) {
         return location == Routes.login ? null : Routes.login;
       }
@@ -224,7 +273,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: Routes.server,
-        builder: (context, state) => const ServerConfigScreen(),
+        builder: (context, state) => ServerConfigScreen(
+          changingServer: serverChangeRequested(state.uri),
+        ),
       ),
       GoRoute(
         path: Routes.login,

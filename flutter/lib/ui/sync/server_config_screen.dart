@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/config/planet_servers.dart';
 import '../../core/config/server_config.dart';
@@ -9,6 +10,7 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/settings_provider.dart';
 import '../../repository/configurations_repository.dart';
+import '../router.dart';
 
 /// Port of the server-address half of `ui/sync/SyncActivity.kt` +
 /// `ServerDialogExtensions.kt`.
@@ -17,7 +19,19 @@ import '../../repository/configurations_repository.dart';
 /// `LayoutInflater`-inflated view; here it is a route, which is what makes the
 /// "configured yet?" redirect in the router possible.
 class ServerConfigScreen extends ConsumerStatefulWidget {
-  const ServerConfigScreen({super.key});
+  const ServerConfigScreen({super.key, this.changingServer = false});
+
+  /// Whether the user asked for this screen over an existing configuration —
+  /// [Routes.changeServer] — rather than being sent here by the redirect
+  /// because there is none.
+  ///
+  /// It changes exactly one thing: who navigates away once a configuration is
+  /// adopted. On the first-configuration path the redirect does it, because
+  /// `hasServer` flips from false to true under the screen's feet. On this
+  /// path the redirect is deliberately holding position (that is what the
+  /// marker buys), so the screen has to spend the marker itself. See
+  /// [_connect].
+  final bool changingServer;
 
   @override
   ConsumerState<ServerConfigScreen> createState() => _ServerConfigScreenState();
@@ -136,7 +150,17 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
             // `planetVersion`.
             await ref.read(planetPrefsProvider).setVersionDetail(versionDetail);
           }
-          // The router redirect takes it from here.
+          // The router redirect takes it from here — unless this screen is the
+          // marked `/server` location, where the redirect is holding position
+          // on purpose and would hold it for ever. Navigating to the *bare*
+          // route spends the marker and hands the decision straight back to
+          // the redirect, which then places a configured, signed-out device on
+          // `/login` exactly as it does after a first configuration. Naming
+          // `/login` here instead would be a second copy of that rule, free to
+          // disagree with the first.
+          if (widget.changingServer && mounted) {
+            context.go(Routes.server);
+          }
         } catch (error) {
           if (!mounted) return;
           setState(() {

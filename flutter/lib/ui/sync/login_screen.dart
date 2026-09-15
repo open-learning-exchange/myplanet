@@ -92,8 +92,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       appBar: AppBar(
         title: Text(l10n.login),
         actions: [
+          // Kotlin opens its server dialog *over* the configured device
+          // (`SyncActivity.settingDialog`), with the stored URL and PIN
+          // prefilled and the configured row selected. This used to call
+          // `serverConfigProvider.clear()` instead, purely so the router's
+          // redirect would fire — which reached the same screen by throwing
+          // away the identity of the server the on-device database belongs
+          // to, while leaving the database itself full. See
+          // [Routes.changeServer].
           TextButton(
-            onPressed: () => ref.read(serverConfigProvider.notifier).clear(),
+            onPressed: () => context.push(Routes.changeServer),
             child: Text(l10n.changeServer),
           ),
         ],
