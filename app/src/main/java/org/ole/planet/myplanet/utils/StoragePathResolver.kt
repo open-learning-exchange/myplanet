@@ -10,4 +10,9 @@ class StoragePathResolver @Inject constructor(
 ) {
     fun resolveFileFromUrl(url: String?): File = FileUtils.getSDPathFromUrl(context, url)
     fun resolveOleDirectory(): File = File(FileUtils.getOlePath(context))
+
+    fun resolveTeamAttachment(teamId: String?, imageName: String?): File? {
+        if (teamId.isNullOrBlank() || imageName.isNullOrBlank()) return null
+        return File("${FileUtils.getOlePath(context)}team_attachments/$teamId/$imageName")
+    }
 }
