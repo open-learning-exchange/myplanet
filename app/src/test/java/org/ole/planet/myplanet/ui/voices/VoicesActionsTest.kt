@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -14,7 +15,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.MemberVisitStats
 import org.ole.planet.myplanet.repository.VoicesEditActions
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -74,5 +77,37 @@ class VoicesActionsTest {
         val activitiesRepository: ActivitiesRepository = mockk()
         val result = VoicesActions.showMemberDetails(null, activitiesRepository)
         assertEquals(null, result)
+    }
+
+    @Test
+    fun `showMemberDetails calls getMemberVisitStats once and constructs fragment`() = runTest {
+        val activitiesRepository: ActivitiesRepository = mockk()
+        val user = UserEntity().apply {
+            id = "user123"
+            name = "john_doe"
+            firstName = "John"
+            lastName = "Doe"
+            email = "john@example.com"
+            dob = "2000-01-01T00:00:00"
+            language = "en"
+            phoneNumber = "1234567890"
+            level = "Level 1"
+            userImage = "image_url"
+        }
+
+        coEvery { activitiesRepository.getMemberVisitStats("user123", "john_doe") } returns MemberVisitStats(
+            offlineVisitCount = 4,
+            lastVisit = null
+        )
+
+        val fragment = VoicesActions.showMemberDetails(user, activitiesRepository)
+
+        assertNotNull(fragment)
+        assertEquals("4", fragment?.arguments?.getString("number_of_visits"))
+        assertEquals("No logout record found", fragment?.arguments?.getString("last_login"))
+
+        coVerify(exactly = 1) { activitiesRepository.getMemberVisitStats("user123", "john_doe") }
+        coVerify(exactly = 0) { activitiesRepository.getOfflineVisitCount(any()) }
+        coVerify(exactly = 0) { activitiesRepository.getLastVisit(any()) }
     }
 }

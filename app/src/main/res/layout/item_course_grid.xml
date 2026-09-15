@@ -19,7 +19,7 @@
         <FrameLayout
             android:id="@+id/cover_container"
             android:layout_width="match_parent"
-            android:layout_height="84dp"
+            android:layout_height="@dimen/course_grid_cover_height"
             android:background="@drawable/bg_cover_top_rounded"
             android:clipToOutline="true">
 
