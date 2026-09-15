@@ -954,14 +954,19 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
-    fun `markPhotosUploadedBatch delegates batch to dao in one call`() = runTest {
+    fun `markPhotosUploadedBatch maps PhotoUploadResult to SubmitPhotosDao UploadedPhoto and delegates to dao`() = runTest {
         val uploads = listOf(
-            UploadedPhoto("photo1", "rev1", "remote1"),
-            UploadedPhoto("photo2", "rev2", "remote2"),
-            UploadedPhoto("photo3", "rev3", "remote3")
+            PhotoUploadResult(photoId = "photo1", rev = "rev1", remoteId = "remote1"),
+            PhotoUploadResult(photoId = "photo2", rev = "rev2", remoteId = "remote2")
         )
+        val expectedDaoUploads = listOf(
+            UploadedPhoto(photoId = "photo1", rev = "rev1", remoteId = "remote1"),
+            UploadedPhoto(photoId = "photo2", rev = "rev2", remoteId = "remote2")
+        )
+
         repository.markPhotosUploadedBatch(uploads)
-        coVerify(exactly = 1) { submitPhotosDao.markUploadedBatch(uploads) }
+
+        coVerify(exactly = 1) { submitPhotosDao.markUploadedBatch(expectedDaoUploads) }
     }
 
     @Test
