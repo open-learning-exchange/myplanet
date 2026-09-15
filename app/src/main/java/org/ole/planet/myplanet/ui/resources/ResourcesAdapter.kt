@@ -164,8 +164,8 @@ class ResourcesAdapter(
     }
 
     fun setLibraryList(libraryList: List<ResourceListModel?>, onComplete: (() -> Unit)? = null) {
-        val updatedList = libraryList.filterNotNull().map {
-            it.copy(
+        val updatedList = libraryList.mapNotNull {
+            it?.copy(
                 isOpened = openedResourceIds.contains(it.item.id),
                 isLocallyOffline = locallyOfflineIds.contains(it.item.id)
             )

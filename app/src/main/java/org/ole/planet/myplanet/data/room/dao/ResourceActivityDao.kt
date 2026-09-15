@@ -20,9 +20,6 @@ interface ResourceActivityDao {
     @Query("SELECT * FROM resource_activity WHERE _rev IS NULL AND type = 'sync'")
     suspend fun getPendingSyncUploads(): List<ResourceActivity>
 
-    @Query("SELECT * FROM resource_activity WHERE user = :userName AND type = :type")
-    suspend fun getByUserAndType(userName: String, type: String): List<ResourceActivity>
-
     @Query("SELECT COUNT(*) FROM resource_activity WHERE user = :userName AND type = :type")
     suspend fun countByUserAndType(userName: String, type: String): Long
 

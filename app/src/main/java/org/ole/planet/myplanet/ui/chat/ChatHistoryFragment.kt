@@ -216,6 +216,7 @@ class ChatHistoryFragment : BaseBindingFragment<FragmentChatHistoryBinding>(Frag
                     if (isAdded && _binding != null) {
                         if (user?.planetCode != null) {
                             sharedNewsMessages = sharedNewsMessages + result.news
+                            sharedViewInIds = sharedViewModel.extractSharedViewInIds(sharedNewsMessages)
                         }
                         (binding.recyclerView.adapter as? ChatHistoryAdapter)?.let { adapter ->
                             adapter.updateCachedData(user, sharedNewsMessages, sharedViewInIds)

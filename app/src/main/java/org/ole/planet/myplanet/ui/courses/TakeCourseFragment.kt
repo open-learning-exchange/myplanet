@@ -15,6 +15,7 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -46,10 +47,9 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
     private var currentCourseProgress = 0
     private var joinDialog: AlertDialog? = null
     private var lastPositionBeforeExam = -1
-    private var pendingJoinDialog = false
-    private var courseDetailContentReady = false
     private var coursesPagerAdapter: CoursesPagerAdapter? = null
     private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
+    private var progressJob: Job? = null
     private val stepFormatPattern by lazy { "${getString(R.string.step)} %d/%d" }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -190,7 +190,8 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
         binding.nextStep.text = if (position == 0) getString(R.string.start) else getString(R.string.next)
         binding.courseStepProgressBar.max = steps.size
         binding.courseStepProgressBar.progress = position
-        viewLifecycleOwner.lifecycleScope.launch {
+        progressJob?.cancel()
+        progressJob = viewLifecycleOwner.lifecycleScope.launch {
             val currentProgress = viewModel.getCurrentProgress(steps, userModel?.id, courseId)
             currentCourseProgress = currentProgress
             if (currentProgress < steps.size) {
@@ -271,11 +272,6 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
         }
     }
 
-    fun onCourseDetailContentReady() {
-        courseDetailContentReady = true
-        maybeShowJoinDialog()
-    }
-
     fun navigateToStep(stepId: String) {
         if (_binding == null || !this::steps.isInitialized) return
         val containsUserId = currentCourse?.userId?.contains(userModel?.id) == true
@@ -283,12 +279,6 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
         val index = steps.indexOfFirst { it?.id == stepId }
         if (index < 0) return
         binding.viewPager2.setCurrentItem(index + 1, true)
-    }
-
-    private fun maybeShowJoinDialog() {
-        if (!pendingJoinDialog || !courseDetailContentReady || _binding == null || !isAdded) return
-        pendingJoinDialog = false
-        joinDialog?.show()
     }
 
     override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
@@ -469,6 +459,7 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
         pageChangeCallback?.let { binding.viewPager2.unregisterOnPageChangeCallback(it) }
         pageChangeCallback = null
         lifecycleScope.coroutineContext.cancelChildren()
+        progressJob = null
         joinDialog?.dismiss()
         joinDialog = null
         coursesPagerAdapter = null

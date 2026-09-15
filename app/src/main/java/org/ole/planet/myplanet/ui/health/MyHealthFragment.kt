@@ -10,6 +10,7 @@ import android.widget.AdapterView
 import android.widget.AdapterView.OnItemSelectedListener
 import android.widget.Button
 import android.widget.EditText
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatSpinner
 import androidx.core.content.ContextCompat
@@ -55,6 +56,9 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
         const val SEARCH_DEBOUNCE_MS = 300L
     }
 
+    private val editHealthLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        viewModel.refreshSelectedPatient()
+    }
 
     @Inject
     lateinit var realtimeSyncManager: RealtimeSyncManager
@@ -78,7 +82,7 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
 
     private fun refreshHealthData() {
         if (!isAdded || requireActivity().isFinishing) return
-        viewModel.loadInitialPatient()
+        viewModel.refreshSelectedPatient()
     }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -184,7 +188,9 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
                     binding.tvDataPlaceholder.visibility = View.VISIBLE
 
                     if (!::healthAdapter.isInitialized) {
-                        healthAdapter = HealthExaminationAdapter(requireActivity(), mh, currentUser, userMap, dispatcherProvider)
+                        healthAdapter = HealthExaminationAdapter(requireActivity(), mh, currentUser, userMap, dispatcherProvider) { intent ->
+                            editHealthLauncher.launch(intent)
+                        }
                     }
                     healthAdapter.updateData(mh, currentUser, userMap, list)
                     binding.rvRecords.apply {
@@ -244,11 +250,11 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
         binding.updateHealth.visibility = View.VISIBLE
 
         binding.addNewRecord.setOnClickListener {
-            startActivity(Intent(activity, HealthExaminationActivity::class.java).putExtra("userId", userId))
+            editHealthLauncher.launch(Intent(activity, HealthExaminationActivity::class.java).putExtra("userId", userId))
         }
 
         binding.updateHealth.setOnClickListener {
-            startActivity(Intent(activity, AddHealthActivity::class.java).putExtra("userId", userId))
+            editHealthLauncher.launch(Intent(activity, AddHealthActivity::class.java).putExtra("userId", userId))
         }
 
         binding.txtDob.text = if (userModel?.dob.isNullOrEmpty()) getString(R.string.birth_date) else TimeUtils.formatDateToDDMMYYYY(userModel?.dob)
