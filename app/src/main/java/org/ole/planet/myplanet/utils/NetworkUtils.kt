@@ -203,12 +203,6 @@ object NetworkUtils {
         return wifiManager.isWifiEnabled
     }
 
-    fun isWifiConnected(): Boolean {
-        val network = connectivityManager.activeNetwork
-        val capabilities = connectivityManager.getNetworkCapabilities(network)
-        return capabilities != null && capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
-    }
-
     fun isWifiBluetoothEnabled(): Boolean {
         return isBluetoothEnabled() || isWifiEnabled()
     }
