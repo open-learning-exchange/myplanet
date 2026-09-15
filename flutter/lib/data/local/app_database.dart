@@ -5041,6 +5041,52 @@ class TeamLogDao extends DatabaseAccessor<AppDatabase> with _$TeamLogDaoMixin {
     }
     return counts;
   }
+
+  /// Rows already carrying one of these CouchDB ids.
+  ///
+  /// Port of `TeamLogDao.getByRemoteIds` (`TeamLogDao.kt:25`), which exists in
+  /// the Kotlin and has **no caller** — see `TeamLogMapper` for why the merge
+  /// it was laid in for is written here rather than skipped.
+  Future<List<TeamLogRow>> getByCouchIds(List<String> couchIds) {
+    if (couchIds.isEmpty) return Future.value(const <TeamLogRow>[]);
+    return (select(
+      teamLogTable,
+    )..where((row) => row.couchId.isIn(couchIds))).get();
+  }
+
+  /// Rows matching any of these visit times *and* any of these user names.
+  ///
+  /// The cross-product is deliberate and matches Kotlin's
+  /// `getByLoginTimesAndUserNames` (`OfflineActivityDao.kt:38`), the query the
+  /// sibling table's merge uses for the same job: it over-selects, and the
+  /// caller narrows to an exact `(time, user, teamId)` key in Dart. Two `IN`
+  /// lists keep this to one query per page rather than one per document.
+  Future<List<TeamLogRow>> getByTimesAndUsers(
+    List<int> times,
+    List<String> userNames,
+  ) {
+    if (times.isEmpty || userNames.isEmpty) {
+      return Future.value(const <TeamLogRow>[]);
+    }
+    return (select(
+      teamLogTable,
+    )..where((row) => row.time.isIn(times) & row.user.isIn(userNames))).get();
+  }
+
+  /// Merges a page of `team_activities` documents.
+  ///
+  /// Wrapped in one transaction so a 200-document page commits once — the
+  /// reason Kotlin wraps its own bulk team insert in `withTransaction`
+  /// (`TeamsRepositoryImpl.kt:1258-1265`), where it notes that a per-row
+  /// commit turns one page into minutes of fsync.
+  Future<void> upsertAllFromSync(List<TeamLogTableCompanion> rows) async {
+    if (rows.isEmpty) return;
+    await transaction(() async {
+      for (final row in rows) {
+        await into(teamLogTable).insertOnConflictUpdate(row);
+      }
+    });
+  }
 }
 
 /// Port of `data/room/dao/SearchActivityDao.kt`.

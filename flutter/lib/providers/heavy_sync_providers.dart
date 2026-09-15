@@ -31,6 +31,12 @@ final heavyTableSyncSchedulerProvider = Provider<HeavyTableSyncScheduler>(
 /// `submissions` is deliberately absent even though Kotlin walks it here —
 /// see [HeavyTableSync.tables] for why its inline pull is worth more than the
 /// parity.
+///
+/// **Every key here must also be in [HeavyTableSync.tables] and vice versa.**
+/// A table scheduled with no writer is a job that reports success for ever,
+/// and a writer with no scheduled table is code that is green, tested and
+/// dead. `heavy_table_writers_cover_tables_test.dart` asserts the two agree,
+/// against this provider rather than a hand-copied list.
 final heavyTableSyncProvider = Provider<HeavyTableSync>(
   (ref) => HeavyTableSync(
     api: ref.watch(planetApiProvider),
@@ -45,6 +51,15 @@ final heavyTableSyncProvider = Provider<HeavyTableSync>(
         await ref
             .read(activitiesRepositoryProvider)
             .insertLoginActivitiesFromSync(docs);
+      },
+      // The `team_activities` pull the port never had. Without this entry the
+      // walk is unreachable and the leaderboard keeps ranking members by what
+      // one handset observed — see
+      // `TeamsRepository.insertTeamActivitiesFromSync`.
+      'team_activities': (docs) async {
+        await ref
+            .read(teamsRepositoryProvider)
+            .insertTeamActivitiesFromSync(docs);
       },
     },
   ),

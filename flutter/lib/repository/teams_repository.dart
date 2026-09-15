@@ -177,6 +177,102 @@ class TeamsRepository {
   Future<List<TeamLogRow>> pendingTeamLogUploads() =>
       _teamLogDao.pendingUploads();
 
+  /// Port of `TeamsRepositoryImpl.bulkInsertTeamActivitiesFromSync`
+  /// (`:1277`) → `insertTeamLogs` (`:1142`) — the `team_activities` pull the
+  /// port has never had.
+  ///
+  /// **What was missing and what it cost.** Kotlin walks `team_activities` on
+  /// the way in (`TransactionSyncManager.kt:251-253`); the port only ever
+  /// *uploaded* visit rows, so `TeamLogDao.teamVisitsForUsers` and
+  /// `lastTeamVisit` returned whatever this one handset happened to observe.
+  /// Those two feed the member-detail screen's visit count and last-visit row
+  /// **and the team leaderboard's ranking** — and a leaderboard is a
+  /// comparison between members by construction, so a member who does all
+  /// their work on another device ranked last. Same shape as the `ratings`
+  /// average this port already fixed.
+  ///
+  /// The rows land in the existing `team_log` table rather than a new one:
+  /// it is a field-for-field port of `model/TeamLog.kt`, which is the single
+  /// table Kotlin uses for both directions, and the readers are already
+  /// `TeamLogDao` methods over it. No schema change, therefore no bump —
+  /// which matters, because a bump discards unsynced local writes and
+  /// `team_log` is a preserved table precisely because its `uploaded` flag is
+  /// the only record that a visit has not left the device.
+  ///
+  /// The merge — resolve the local row, keep its primary key, and treat a
+  /// pulled document as already uploaded — is explained at [TeamLogMapper].
+  /// Two page-wide lookups instead of two per document, matching how
+  /// `ActivitiesRepositoryImpl.bulkInsertOfflineActivitiesFromSync` batches
+  /// the identical merge.
+  ///
+  /// Deliberately **no prune**. Kotlin issues no `deleteNotIn` for
+  /// `team_log`, and one here would delete exactly the visits the server has
+  /// not seen yet — the rows this table is preserved for. Returns the number
+  /// of documents written, so the caller can report a page count.
+  Future<int> insertTeamActivitiesFromSync(
+    List<Map<String, dynamic>> docs,
+  ) async {
+    final documents = docs
+        .where((doc) => !JsonUtils.getString('_id', doc).startsWith('_design'))
+        .toList();
+    if (documents.isEmpty) return 0;
+
+    final ids = documents
+        .map((doc) => JsonUtils.getString('_id', doc))
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    final existingById = {
+      for (final row in await _teamLogDao.getByCouchIds(ids))
+        row.couchId ?? '': row,
+    };
+
+    final times = documents
+        .map((doc) => JsonUtils.getLong('time', doc))
+        .where((time) => time > 0)
+        .toSet()
+        .toList(growable: false);
+    final userNames = documents
+        .map((doc) => JsonUtils.getString('user', doc))
+        .where((name) => name.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    final fallbackByKey = <String, TeamLogRow>{};
+    for (final row in await _teamLogDao.getByTimesAndUsers(times, userNames)) {
+      // A row that already carries a `_id` is reachable through
+      // [existingById]; letting it also occupy a natural-key slot would let it
+      // shadow the *unstamped* local row that this fallback exists to find.
+      if (row.couchId?.isNotEmpty == true) continue;
+      // `putIfAbsent`, as the Kotlin does: with two local rows sharing a key
+      // the first one wins rather than the last.
+      fallbackByKey.putIfAbsent(TeamLogMapper.naturalKeyForRow(row), () => row);
+    }
+
+    final companions = <TeamLogTableCompanion>[];
+    // Tracks keys consumed within this page, so two documents that resolve to
+    // the same local row do not both adopt its primary key and collapse into
+    // one row — the second must be keyed by its own `_id`.
+    final claimedRowIds = <String>{};
+    for (final doc in documents) {
+      final docId = JsonUtils.getString('_id', doc);
+      final existing = existingById[docId];
+      var fallback = fallbackByKey[TeamLogMapper.naturalKeyForDoc(doc)];
+      if (existing == null &&
+          fallback != null &&
+          !claimedRowIds.add(fallback.id)) {
+        fallback = null;
+      }
+      final companion = TeamLogMapper.fromDoc(
+        doc,
+        existing: existing,
+        fallback: fallback,
+      );
+      if (companion != null) companions.add(companion);
+    }
+    await _teamLogDao.upsertAllFromSync(companions);
+    return companions.length;
+  }
+
   /// Watch all transactions for a team.
   Stream<List<TeamRow>> watchTransactions(
     String teamId, {
