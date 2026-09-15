@@ -116,34 +116,47 @@ class ResourceFiles {
   /// caller uses to keep reading them from the old directory for the
   /// attachment PUT. A missing source is **true**: there is nothing under
   /// either key, which is what the caller needs to know.
+  /// **This never throws**, and that is load-bearing rather than defensive.
+  /// Its caller runs inside an `outbox` handler *after* the document POST has
+  /// been accepted, and a throw there is recorded as a failed send: the row
+  /// goes back to `pending` and the next drain POSTs the same document again,
+  /// filing a **second** one in the shared catalog with no way to tell them
+  /// apart. A filesystem error must not be able to cost a duplicate document,
+  /// so every failure — `FileSystemException` and the
+  /// `MissingPluginException` [baseDirectory] raises on an engine with no
+  /// platform channel alike — becomes a false answer.
   static Future<bool> moveResourceDirectory({
     required String fromDocId,
     required String toDocId,
   }) async {
     if (fromDocId == toDocId) return true;
-    final source = await directoryFor(docId: fromDocId);
-    final destination = await directoryFor(docId: toDocId);
-    // [_segment] can collapse two different ids onto the same segment (both
-    // reduce to `_`), and renaming a directory onto itself deletes it.
-    if (source.path == destination.path) return true;
-    if (!await source.exists()) return true;
-
-    if (!await destination.exists()) {
-      try {
-        await destination.parent.create(recursive: true);
-        await source.rename(destination.path);
-        return true;
-      } on FileSystemException catch (_) {
-        // `rename` refuses across filesystems, and some platforms refuse it
-        // for a non-empty directory. Fall through to the copy.
-      }
-    }
-
     try {
+      final source = await directoryFor(docId: fromDocId);
+      final destination = await directoryFor(docId: toDocId);
+      // [_segment] can collapse two different ids onto the same segment (both
+      // reduce to `_`), and renaming a directory onto itself deletes it.
+      if (source.path == destination.path) return true;
+      if (!await source.exists()) return true;
+
+      if (!await destination.exists()) {
+        try {
+          await destination.parent.create(recursive: true);
+          await source.rename(destination.path);
+          return true;
+        } on FileSystemException catch (_) {
+          // `rename` refuses across filesystems, and some platforms refuse it
+          // for a non-empty directory. Fall through to the copy.
+        }
+      }
+
+      // The destination may already hold files — a previous partial move, or
+      // a download of the same document. Copying over it and then removing the
+      // source is deliberate: the source is this device's own authored bytes,
+      // which are the copy worth keeping when the two disagree.
       await _copyDirectory(source, destination);
       await source.delete(recursive: true);
       return true;
-    } on FileSystemException catch (_) {
+    } catch (_) {
       return false;
     }
   }

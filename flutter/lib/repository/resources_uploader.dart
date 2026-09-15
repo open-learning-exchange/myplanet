@@ -380,14 +380,31 @@ class ResourcesUploader {
       // The row answers to [couchId] from here on, not to `row.itemId`, which
       // is the local uuid the outbox row was keyed on and which no longer
       // names a `my_library` row.
-      await _linkPrivateResourceToTeam(row, couchId, payload);
-      await _uploadAttachment(
-        row,
-        couchId,
-        rev,
-        authHeader,
-        fileDocId: bytesMoved ? couchId : row.itemId,
-      );
+      //
+      // **Nothing after the POST may throw out of this handler.** The drainer
+      // records a throw as a failed send and puts the row back to `pending`,
+      // so the next drain POSTs the same body again — and this endpoint mints
+      // a fresh `_id` each time, leaving two indistinguishable documents in
+      // the shared catalog. The document is already filed by the time we get
+      // here, so every remaining step is a best-effort follow-up: a team link
+      // that cannot be written, or bytes that cannot be read, are worth less
+      // than the duplicate they would cost.
+      try {
+        await _linkPrivateResourceToTeam(row, couchId, payload);
+        await _uploadAttachment(
+          row,
+          couchId,
+          rev,
+          authHeader,
+          fileDocId: bytesMoved ? couchId : row.itemId,
+        );
+      } catch (e, stack) {
+        log(
+          'Resource $couchId was filed but its follow-up steps did not finish',
+          error: e,
+          stackTrace: stack,
+        );
+      }
     }
     return result;
   };
@@ -707,7 +724,7 @@ class ResourcesUploader {
       UrlUtils.authHeader(config);
 }
 
-/// The safety net, and **it is not wired up** — see the note below.
+/// The safety net, wired into both sync paths.
 ///
 /// Kotlin's `uploadResource` has exactly the unconditional-sweep property
 /// Phase 134 was about: three callers with no precondition on how the row got
@@ -731,9 +748,8 @@ class ResourcesUploader {
 /// who never returns to that screen, never uploads it — invisible in Planet
 /// for ever, with the reset-app action able to destroy it meanwhile.
 ///
-/// **`lib/background_entrypoint.dart` belongs to another lane this round**, so
-/// the two calls that close it are reported rather than made. They belong
-/// beside the existing voices and submissions sweeps: this one in
+/// Both calls landed after this note was first written; they sit beside the
+/// existing voices and submissions sweeps, this one in
 /// `drainOutbox`, for the reason `sweepPendingVoices` documents at length —
 /// `syncSteps` runs only for a due `autoSync` task with auto-sync enabled,
 /// which is precisely not the user most likely to have an undelivered write.
@@ -742,24 +758,26 @@ class ResourcesUploader {
 /// CouchDB `_id`, and a *pending* resource has none), and `deleteNotIn` spares
 /// a row with no `_rev`.
 ///
-/// **That second clause protects the row only while it is pending, and this
-/// direction is what ends that.** `MyLibraryDao.markUploaded` writes `_rev`,
-/// which makes the row eligible for `deleteNotIn` — whose keep set is document
-/// `_id`s while the locally authored row's primary key is still its local
-/// uuid. So the first resources sync after a successful upload inserts a
-/// *second* row keyed on the CouchDB id, with an empty shelf and
-/// `resourceOffline` at its default, and prunes the original — detaching the
-/// user from their own resource and orphaning the bytes under
-/// `ole/<uuid>/`. **Kotlin reaches the identical outcome** (its
-/// `deleteStalePublicNotIn` matches `resourceId`, which `saveLocalResource`
-/// also sets to the same uuid and `markResourceUploaded` does not update), so
-/// this is inherited rather than introduced — but it is not benign, and
-/// nothing before this note recorded it. See the PR's *Reported, not fixed*.
+/// **That second clause protected the row only while it was pending, and this
+/// direction is what ended that** — the defect this uploader shipped with and
+/// no longer has. `markUploaded` writes `_rev`, which makes the row eligible
+/// for `deleteNotIn`, whose keep set is document `_id`s; while the row's
+/// primary key was still the local uuid it was in no keep set, so the first
+/// resources sync after a successful upload inserted a *second* row keyed on
+/// the CouchDB id — empty shelf, `resourceOffline` at its default — and pruned
+/// the original, detaching the user from their own resource and orphaning the
+/// bytes under `ole/<uuid>/`. Kotlin reaches the identical outcome one column
+/// over (`deleteStalePublicNotIn` matches `resourceId`, which
+/// `markResourceUploaded` does not update either). [MyLibraryDao.markUploaded]
+/// now moves the row's whole identity onto the document's, so the row appears
+/// in every later keep set like any other synced row; the ordering claim above
+/// stands unchanged, because a *pending* resource still has no `_id` for a
+/// walk to key on.
 ///
-/// A second sweep site is missing too. Kotlin calls `uploadResource` from
-/// three places, of which two are the port's headless and foreground sync
-/// paths: this function belongs in `background_entrypoint.dart`'s
-/// `drainOutbox` **and** in `DashboardSyncNotifier` beside
+/// Kotlin calls `uploadResource` from three places, of which two are the
+/// port's headless and foreground sync paths: this function is called from
+/// `background_entrypoint.dart`'s `drainOutbox` **and** from
+/// `DashboardSyncNotifier` beside
 /// `queuePendingVoices`/`queuePendingSubmissions`. The third
 /// (`TeamsRepositoryImpl:928`, via `saveLocalResource`'s `teamId != null`
 /// tail) needs no port counterpart, because the screen enqueues on every save
