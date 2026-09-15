@@ -11,10 +11,10 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ItemCourseListBinding
 import org.ole.planet.myplanet.model.MyCourse
-import org.ole.planet.myplanet.ui.courses.CourseRowBinder
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.courses.toCourse
 import org.ole.planet.myplanet.utils.CourseSubjectClassifier
+import org.ole.planet.myplanet.utils.CoursesItemUtils
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.ListViewMode
 
@@ -42,9 +42,9 @@ class TeamCoursesAdapter(
         val subject = CourseSubjectClassifier.classify(course.subjectLevel)
         val binding = holder.binding
 
-        CourseRowBinder.bindCover(context, ListViewMode.LIST, course, subject, binding.coverContainer, binding.ivCover, binding.ivSubjectIcon)
+        CoursesItemUtils.bindCover(context, ListViewMode.LIST, course, subject, binding.coverContainer, binding.ivCover, binding.ivSubjectIcon)
         binding.title.text = course.courseTitle
-        binding.tvMeta.text = CourseRowBinder.buildMetaLine(context, course)
+        binding.tvMeta.text = CoursesItemUtils.buildMetaLine(context, course)
         binding.isMyCourse.visibility = if (course.isMyCourse) View.VISIBLE else View.GONE
         binding.checkbox.visibility = View.GONE
         binding.statusBadge.visibility = View.GONE

@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.CourseProgressState
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.utils.CourseSubjectClassifier
+import org.ole.planet.myplanet.utils.CoursesItemUtils
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.ListViewMode
 import org.ole.planet.myplanet.utils.SelectionUtils
@@ -327,10 +328,10 @@ class CoursesAdapter(
 
         fun bind(course: Course) {
             val subject = CourseSubjectClassifier.classify(course.subjectLevel)
-            CourseRowBinder.bindCover(context, viewMode, course, subject, binding.coverContainer, binding.ivCover, binding.ivSubjectIcon)
-            binding.tvSubjectLabel.text = context.getString(CourseRowBinder.subjectLabelRes(subject))
+            CoursesItemUtils.bindCover(context, viewMode, course, subject, binding.coverContainer, binding.ivCover, binding.ivSubjectIcon)
+            binding.tvSubjectLabel.text = context.getString(CoursesItemUtils.subjectLabelRes(subject))
             binding.title.text = course.courseTitle
-            binding.tvMeta.text = CourseRowBinder.buildMetaLine(context, course)
+            binding.tvMeta.text = CoursesItemUtils.buildMetaLine(context, course)
             updateVisibilityForMyCourse(course, binding.isMyCourse, binding.checkbox)
             setupCheckbox(course, binding.checkbox) { bindingAdapterPosition }
             bindProgress(course)
@@ -375,9 +376,9 @@ class CoursesAdapter(
 
         fun bind(course: Course) {
             val subject = CourseSubjectClassifier.classify(course.subjectLevel)
-            CourseRowBinder.bindCover(context, viewMode, course, subject, binding.coverContainer, binding.ivCover, binding.ivSubjectIcon)
+            CoursesItemUtils.bindCover(context, viewMode, course, subject, binding.coverContainer, binding.ivCover, binding.ivSubjectIcon)
             binding.title.text = course.courseTitle
-            binding.tvMeta.text = CourseRowBinder.buildMetaLine(context, course)
+            binding.tvMeta.text = CoursesItemUtils.buildMetaLine(context, course)
             updateVisibilityForMyCourse(course, binding.isMyCourse, binding.checkbox)
             setupCheckbox(course, binding.checkbox) { bindingAdapterPosition }
             bindStatus(course)

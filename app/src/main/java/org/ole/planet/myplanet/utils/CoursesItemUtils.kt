@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.courses
+package org.ole.planet.myplanet.utils
 
 import android.content.Context
 import android.graphics.drawable.GradientDrawable
@@ -13,12 +13,8 @@ import com.bumptech.glide.signature.ObjectKey
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.MyCourse
-import org.ole.planet.myplanet.utils.CourseSubject
-import org.ole.planet.myplanet.utils.GridSpanCalculator
-import org.ole.planet.myplanet.utils.ListViewMode
-import org.ole.planet.myplanet.utils.UrlUtils
 
-internal object CourseRowBinder {
+internal object CoursesItemUtils {
     fun subjectColorRes(subject: CourseSubject): Int = when (subject) {
         CourseSubject.MATHEMATICS -> R.color.subject_math
         CourseSubject.LITERACY -> R.color.subject_literacy
