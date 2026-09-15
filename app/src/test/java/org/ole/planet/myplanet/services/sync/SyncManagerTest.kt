@@ -146,9 +146,9 @@ class SyncManagerTest {
     }
 
     @Test
-    fun `syncPerf logging is evaluated when isLoggable returns true`() = runTest {
+    fun `syncPerf logging is evaluated when isVerbose returns true`() = runTest {
         io.mockk.mockkStatic(android.util.Log::class)
-        every { android.util.Log.isLoggable("SyncPerf", android.util.Log.DEBUG) } returns true
+        every { syncTimeLogger.isVerbose } returns true
         every { android.util.Log.d(any(), any()) } returns 0
 
         coEvery { transactionSyncManager.authenticate() } returns true
@@ -159,9 +159,9 @@ class SyncManagerTest {
     }
 
     @Test
-    fun `syncPerf logging is skipped when isLoggable returns false`() = runTest {
+    fun `syncPerf logging is skipped when isVerbose returns false`() = runTest {
         io.mockk.mockkStatic(android.util.Log::class)
-        every { android.util.Log.isLoggable("SyncPerf", android.util.Log.DEBUG) } returns false
+        every { syncTimeLogger.isVerbose } returns false
         every { android.util.Log.d(any(), any()) } returns 0
 
         coEvery { transactionSyncManager.authenticate() } returns true

@@ -212,4 +212,84 @@ class CoursesViewModelTest {
         assertEquals(tagNames, state.tagNames)
         coVerify { coursesRepository.filterCourses("", "", "", tagNames) }
     }
+
+    @Test
+    fun testTitleSort_mixedCase_caseInsensitive() = runTest {
+        val c1 = MyCourse().apply { courseId = "1"; courseTitle = "apple" }
+        val c2 = MyCourse().apply { courseId = "2"; courseTitle = "Banana" }
+        val c3 = MyCourse().apply { courseId = "3"; courseTitle = "cherry" }
+        val c4 = MyCourse().apply { courseId = "4"; courseTitle = "Date" }
+
+        io.mockk.coEvery { coursesRepository.getAllCourses() } returns listOf(c1, c2, c3, c4)
+        io.mockk.coEvery { coursesRepository.getMyCourses(any(), any()) } returns emptyList()
+
+        viewModel.loadCourses(false, "u1")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Toggle title sort -> Ascending
+        viewModel.toggleTitleSort()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        var titles = viewModel.coursesState.value.courses.map { it.courseTitle }
+        assertEquals(listOf("apple", "Banana", "cherry", "Date"), titles)
+
+        // Toggle title sort -> Descending
+        viewModel.toggleTitleSort()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        titles = viewModel.coursesState.value.courses.map { it.courseTitle }
+        assertEquals(listOf("Date", "cherry", "Banana", "apple"), titles)
+    }
+
+    @Test
+    fun testTitleSort_caseDifferenceOnly_preservesRelativeOrderInBothDirections() = runTest {
+        val c1 = MyCourse().apply { courseId = "1"; courseTitle = "Alpha" }
+        val c2 = MyCourse().apply { courseId = "2"; courseTitle = "alpha" }
+
+        io.mockk.coEvery { coursesRepository.getAllCourses() } returns listOf(c1, c2)
+        io.mockk.coEvery { coursesRepository.getMyCourses(any(), any()) } returns emptyList()
+
+        viewModel.loadCourses(false, "u1")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Toggle title sort -> Ascending
+        viewModel.toggleTitleSort()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        var ids = viewModel.coursesState.value.courses.map { it.courseId }
+        assertEquals(listOf("1", "2"), ids)
+
+        // Toggle title sort -> Descending
+        viewModel.toggleTitleSort()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        ids = viewModel.coursesState.value.courses.map { it.courseId }
+        assertEquals(listOf("1", "2"), ids)
+    }
+
+    @Test
+    fun testDateSort_unaffected() = runTest {
+        val c1 = MyCourse().apply { courseId = "1"; courseTitle = "Course A"; createdDate = 2000L }
+        val c2 = MyCourse().apply { courseId = "2"; courseTitle = "Course B"; createdDate = 1000L }
+
+        io.mockk.coEvery { coursesRepository.getAllCourses() } returns listOf(c1, c2)
+        io.mockk.coEvery { coursesRepository.getMyCourses(any(), any()) } returns emptyList()
+
+        viewModel.loadCourses(false, "u1")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Toggle date sort -> isDateAscending starts as true, toggle makes it false (Descending)
+        viewModel.toggleDateSort()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        var dates = viewModel.coursesState.value.courses.map { it.createdDate }
+        assertEquals(listOf(2000L, 1000L), dates)
+
+        // Toggle date sort -> Ascending
+        viewModel.toggleDateSort()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        dates = viewModel.coursesState.value.courses.map { it.createdDate }
+        assertEquals(listOf(1000L, 2000L), dates)
+    }
 }

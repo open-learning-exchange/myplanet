@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.enterprises
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -150,6 +151,74 @@ class EnterprisesFinancesViewModelTest {
 
         val actualTransactions = viewModel.transactions.first()
         assertEquals(mockTransactions, actualTransactions)
+    }
+
+    @Test
+    fun `getTeamTransactions duplicate call while active does not re-query repository`() = runTest {
+        val mockTransactions = listOf(Transaction("1", 0L, "desc", "type", 100, 100))
+        val teamId = "test_team_id"
+        val sortAscending = true
+        val startDate = 1000L
+        val endDate = 2000L
+
+        coEvery {
+            teamsRepository.getTeamTransactionsWithBalance(
+                teamId = teamId,
+                startDate = startDate,
+                endDate = endDate,
+                sortAscending = sortAscending
+            )
+        } returns flowOf(mockTransactions)
+
+        viewModel.getTeamTransactions(teamId, sortAscending, startDate, endDate)
+        viewModel.getTeamTransactions(teamId, sortAscending, startDate, endDate)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            teamsRepository.getTeamTransactionsWithBalance(
+                teamId = teamId,
+                startDate = startDate,
+                endDate = endDate,
+                sortAscending = sortAscending
+            )
+        }
+    }
+
+    @Test
+    fun `getTeamTransactions call with different arguments re-queries repository`() = runTest {
+        val mockTransactions = listOf(Transaction("1", 0L, "desc", "type", 100, 100))
+        val teamId = "test_team_id"
+
+        coEvery {
+            teamsRepository.getTeamTransactionsWithBalance(
+                teamId = teamId,
+                startDate = null,
+                endDate = null,
+                sortAscending = any()
+            )
+        } returns flowOf(mockTransactions)
+
+        viewModel.getTeamTransactions(teamId, sortAscending = false, startDate = null, endDate = null)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.getTeamTransactions(teamId, sortAscending = true, startDate = null, endDate = null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            teamsRepository.getTeamTransactionsWithBalance(
+                teamId = teamId,
+                startDate = null,
+                endDate = null,
+                sortAscending = false
+            )
+        }
+        coVerify(exactly = 1) {
+            teamsRepository.getTeamTransactionsWithBalance(
+                teamId = teamId,
+                startDate = null,
+                endDate = null,
+                sortAscending = true
+            )
+        }
     }
 
     @Test
