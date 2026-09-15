@@ -22,7 +22,6 @@ import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.toSyncDocuments
@@ -89,8 +88,8 @@ class HealthRepositoryImpl @Inject constructor(
             if (examination != null && !examination.conditions.isNullOrEmpty()) {
                 try {
                     val conditions = gson.fromJson(examination.conditions, JsonObject::class.java)
-                    for (key in conditions.keySet()) {
-                        result[key] = JsonUtils.getBoolean(key, conditions)
+                    for ((key, value) in conditions.entrySet()) {
+                        result[key] = value != null && !value.isJsonNull && value.isJsonPrimitive && value.asBoolean
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()

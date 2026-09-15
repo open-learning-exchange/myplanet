@@ -63,7 +63,6 @@ class ResourcesRepositoryLibrarySyncTest {
             RuntimeEnvironment.getApplication(),
             mockk<ActivitiesRepository>(relaxed = true),
             mockk<SharedPrefManager>(relaxed = true),
-            mockk<RatingsRepository>(relaxed = true),
             mockk<TagsRepository>(relaxed = true),
             mockk<SearchActivityDao>(relaxed = true),
             mockk<ResourceActivityDao>(relaxed = true),
@@ -74,7 +73,9 @@ class ResourcesRepositoryLibrarySyncTest {
             mockk<dagger.Lazy<TeamsRepository>>(relaxed = true),
             mockk<org.ole.planet.myplanet.services.UserSessionManager>(relaxed = true),
             mockk<org.ole.planet.myplanet.repository.ConfigurationsRepository>(relaxed = true),
-            mockk<org.ole.planet.myplanet.utils.DispatcherProvider>(relaxed = true)
+            mockk<org.ole.planet.myplanet.utils.DispatcherProvider>(relaxed = true),
+            mockk<org.ole.planet.myplanet.utils.DeviceNameProvider>(relaxed = true),
+            mockk<org.ole.planet.myplanet.utils.TimeProvider>(relaxed = true)
         )
     }
 

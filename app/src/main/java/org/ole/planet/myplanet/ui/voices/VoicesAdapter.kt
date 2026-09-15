@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.voices
 import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Context
-import android.content.DialogInterface
 import android.os.Build
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -11,7 +10,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.annotation.RequiresApi
-import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
@@ -37,6 +35,7 @@ import org.ole.planet.myplanet.repository.VoicesEditActions
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -82,7 +81,8 @@ class VoicesAdapter(
                         oldItem.userName == newItem.userName && oldItem.userId == newItem.userId &&
                         oldItem.sharedBy == newItem.sharedBy && oldItem.labels == newItem.labels &&
                         oldItem.avatar == newItem.avatar && oldItem.imageUrls == newItem.imageUrls &&
-                        oldItem.images == newItem.images && oldItem.replyTo == newItem.replyTo
+                        oldItem.images == newItem.images && oldItem.replyTo == newItem.replyTo &&
+                        oldItem.viewIn == newItem.viewIn
             } catch (e: Exception) {
                 false
             }
@@ -103,6 +103,10 @@ class VoicesAdapter(
                 payloads.add(PAYLOAD_EDIT_ACTION)
             }
 
+            if (oldItem.viewIn != newItem.viewIn) {
+                payloads.add(PAYLOAD_VIEW_IN_CHANGED)
+            }
+
             // Every field checked in areContentsTheSame is covered by the buckets above.
             // If payloads is empty here, it means a future field was added to areContentsTheSame
             // without a corresponding bucket. We MUST return null to trigger a full rebind to prevent stale UI.
@@ -119,6 +123,7 @@ class VoicesAdapter(
         const val PAYLOAD_EDIT_ACTION = "PAYLOAD_EDIT_ACTION"
         const val PAYLOAD_LABELS_CHANGED = "PAYLOAD_LABELS_CHANGED"
         const val PAYLOAD_IMAGES_CHANGED = "PAYLOAD_IMAGES_CHANGED"
+        const val PAYLOAD_VIEW_IN_CHANGED = "PAYLOAD_VIEW_IN_CHANGED"
     }
 
     private data class RowState(
@@ -313,6 +318,11 @@ class VoicesAdapter(
                         showReplyButton(holder, news, position)
                         handleChat(holder, news)
                     }
+                    PAYLOAD_VIEW_IN_CHANGED -> {
+                        showShareButton(holder, news)
+                        val sharedTeamName = news.parsedSharedTeamName ?: JsonUtils.extractSharedTeamName(news)
+                        setMessageAndDate(holder, news, sharedTeamName)
+                    }
                 }
             }
         }
@@ -412,23 +422,24 @@ class VoicesAdapter(
         val userId = news.userId
         if (userId.isNullOrEmpty()) return null
 
+        val avatarSize = holder.binding.imgUser.context.resources.getDimensionPixelSize(R.dimen._40dp)
         if (userCache.containsKey(userId)) {
             val userModel = userCache[userId]
             val userFullName = userModel?.getFullNameWithMiddleName()?.trim()
             if (userModel != null && currentUser != null) {
                 holder.binding.tvName.text =
                     if (userFullName.isNullOrEmpty()) news.userName else userFullName
-                ImageUtils.loadImage(userModel.userImage, holder.binding.imgUser)
+                ImageUtils.loadImage(userModel.userImage, holder.binding.imgUser, avatarSize)
                 showHideButtons(news, holder)
             } else {
                 holder.binding.tvName.text = news.userName
-                ImageUtils.loadImage(null, holder.binding.imgUser)
+                ImageUtils.loadImage(null, holder.binding.imgUser, avatarSize)
                 showHideButtons(news, holder)
             }
             return userModel
         } else {
             holder.binding.tvName.text = news.userName
-            ImageUtils.loadImage(null, holder.binding.imgUser)
+            ImageUtils.loadImage(null, holder.binding.imgUser, avatarSize)
             showHideButtons(news, holder)
             if (!fetchingUserIds.contains(userId)) {
                 fetchingUserIds.add(userId)
@@ -472,15 +483,16 @@ class VoicesAdapter(
                 val pos = holder.bindingAdapterPosition
                 val snapshotList = currentList.toMutableList()
                 val newsToDelete = snapshotList.getOrNull(pos)
-                AlertDialog.Builder(context, R.style.AlertDialogTheme)
-                    .setMessage(R.string.delete_record)
-                    .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
+                context.confirmDialog(
+                    message = context.getString(R.string.delete_record),
+                    positiveText = context.getString(R.string.ok),
+                    onPositive = {
                         newsToDelete?.id?.let { id ->
                             deletePostFn(id)
                         }
-                    }
-                    .setNegativeButton(R.string.cancel, null)
-                    .show()
+                    },
+                    negativeText = context.getString(R.string.cancel)
+                )
             }
         }
 
@@ -635,11 +647,6 @@ class VoicesAdapter(
                         it.rawImageUrls = null
                     }
                 }
-                if (it.parsedImagesArray == null || it.rawImages != it.images) {
-                    it.parsedImagesArray = it.imagesArray
-                    it.rawImages = it.images
-                }
-
                 it.parsedSharedTeamName = JsonUtils.extractSharedTeamName(it)
             } catch (e: Exception) {
                 // Catch any parsing exceptions so one bad row doesn't break submitList
@@ -790,21 +797,21 @@ class VoicesAdapter(
         viewHolder.binding.btnShare.setVisibility(canShare(news))
 
         viewHolder.binding.btnShare.setOnClickListener {
-            AlertDialog.Builder(context, R.style.AlertDialogTheme)
-                .setTitle(R.string.share_with_community)
-                .setMessage(R.string.confirm_share_community)
-                .setPositiveButton(R.string.yes) { _, _ ->
-                     val newsId = news?.id
-                     val userId = currentUser?.id
-                     val planetCode = currentUser?.planetCode ?: ""
-                     val parentCode = currentUser?.parentCode ?: ""
+            context.confirmDialog(
+                title = context.getString(R.string.share_with_community),
+                message = context.getString(R.string.confirm_share_community),
+                onPositive = {
+                    val newsId = news?.id
+                    val userId = currentUser?.id
+                    val planetCode = currentUser?.planetCode ?: ""
+                    val parentCode = currentUser?.parentCode ?: ""
 
-                     if (newsId != null && userId != null) {
-                         shareNewsFn(newsId, userId, planetCode, parentCode, teamName)
-                     }
-                }
-                .setNegativeButton(R.string.cancel, null)
-                .show()
+                    if (newsId != null && userId != null) {
+                        shareNewsFn(newsId, userId, planetCode, parentCode, teamName)
+                    }
+                },
+                negativeText = context.getString(R.string.cancel)
+            )
         }
     }
 
@@ -870,7 +877,7 @@ class VoicesAdapter(
             }
         }
 
-        val imagesToLoad = news?.parsedImagesArray ?: news?.imagesArray
+        val imagesToLoad = news?.imagesArray
         imagesToLoad?.let { imagesArray ->
             val size = imagesArray.size()
             if (!imagesArray.isEmpty()) {

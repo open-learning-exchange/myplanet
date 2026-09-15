@@ -7,10 +7,10 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TagEntity
+import org.ole.planet.myplanet.model.UserEntity
 
 data class LibraryWithMetadata(
     val library: MyLibrary,
-    val rating: JsonObject?,
     val tags: List<TagEntity>
 )
 
@@ -50,8 +50,9 @@ interface ResourcesRepository {
     fun getPendingDownloads(userId: String): Flow<List<String>>
     suspend fun countLibrariesNeedingUpdate(userId: String?): Int
     suspend fun resourceTitleExists(title: String): Boolean
+    suspend fun resolveLibraryItem(id: String): MyLibrary?
+    suspend fun resolveLibraryItemByResourceId(resourceId: String): MyLibrary?
     suspend fun saveLocalResource(request: LocalResourceRequest): Result<Unit>
-    suspend fun markResourceAdded(userId: String?, resourceId: String)
     suspend fun updateUserLibrary(resourceId: String, userId: String, isAdd: Boolean): MyLibrary?
     suspend fun setUserLibrary(resourceId: String, add: Boolean): MyLibrary?
     suspend fun updateLibraryItem(id: String, updater: (MyLibrary) -> Unit)
@@ -93,10 +94,11 @@ interface ResourcesRepository {
     suspend fun removeResourceFromShelf(resourceId: String, userId: String)
     suspend fun removeResourcesFromShelf(resourceIds: List<String>, userId: String): Result<Unit>
     suspend fun getHtmlResourceDownloadUrls(resourceId: String): ResourceUrlsResponse
-    suspend fun getFilterFacets(libraries: List<MyLibrary>): Map<String, Set<String>>
     suspend fun batchInsertResources(documents: List<JsonObject>): List<String>
     suspend fun batchInsertMyLibrary(shelfId: String?, documents: List<JsonObject>): Int
     suspend fun getResourceListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel>
+    fun getCachedResourceListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel>?
+    fun clearResourceListCache()
     suspend fun getLibraryItemsByResourceIds(ids: Collection<String>): List<MyLibrary>
     suspend fun getTeamPrivateResources(teamId: String): List<MyLibrary>
     suspend fun getPublicLibraryItems(): List<MyLibrary>
@@ -108,6 +110,7 @@ interface ResourcesRepository {
     suspend fun getOfflineResourceItems(oleDirPath: String, extensions: Set<String>, allKnownExtensions: Set<String>): List<OfflineResourceItem>
     suspend fun deleteOfflineResources(oleDirPath: String, items: List<OfflineResourceItem>)
     suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String>
+    fun serializeForUpload(library: MyLibrary, user: UserEntity?): JsonObject
 }
 
 sealed class ResourceUrlsResponse {
