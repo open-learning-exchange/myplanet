@@ -10,8 +10,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7116
-        versionName = "0.71.16"
+        versionCode = 7146
+        versionName = "0.71.46"
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
@@ -23,6 +23,9 @@ android {
                 test.maxParallelForks = requested ? requested.toInteger()
                     : Math.min(Runtime.runtime.availableProcessors(), 4)
                 test.maxHeapSize = "1536m"
+                // Robolectric 4.17's FileDescriptorInterceptor reflects into jdk.internal.access.SharedSecrets
+                // for the ApplicationSharedMemory shadow; JDK 17+ blocks that without this opt-in.
+                test.jvmArgs += ["--add-opens=java.base/jdk.internal.access=ALL-UNNAMED"]
                 test.testLogging {
                     events "failed"
                     exceptionFormat = "short"
@@ -260,7 +263,7 @@ dependencies {
     implementation(libs.pdfbox.android) { exclude group: 'org.bouncycastle' }
 }
 // From DefaultSdkProvider; dependabot cannot bump these. See docs/TESTING.md.
-def robolectricSdkJarsFrom = '4.16.1'
+def robolectricSdkJarsFrom = '4.17'
 def robolectricPinned = libs.versions.robolectric.get()
 def robolectricSdkJars = [
     26: '8.0.0_r4-robolectric-r1-i7',
