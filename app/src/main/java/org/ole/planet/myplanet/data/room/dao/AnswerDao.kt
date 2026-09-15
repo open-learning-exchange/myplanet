@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.data.room.dao
 
 import androidx.room.Dao
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Upsert
 import org.ole.planet.myplanet.model.Answer
 
@@ -22,6 +23,7 @@ interface AnswerDao {
     @Query("DELETE FROM answers WHERE submissionId IN (:submissionIds)")
     suspend fun deleteBySubmissionIdsInternal(submissionIds: List<String>): Int
 
+    @Transaction
     suspend fun deleteBySubmissionIds(submissionIds: List<String>): Int {
         if (submissionIds.isEmpty()) return 0
         return submissionIds.chunked(900).sumOf { deleteBySubmissionIdsInternal(it) }
