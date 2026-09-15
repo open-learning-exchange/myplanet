@@ -6,7 +6,6 @@ import com.google.gson.JsonObject
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
-import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.async
@@ -103,7 +102,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
                 type = "visit"
                 this.title = title
                 this.courseId = courseId
-                time = Date().time
+                time = timeProvider.now()
                 this.user = userId
 
                 if (user != null) {
@@ -131,14 +130,14 @@ class ActivitiesRepositoryImpl @Inject constructor(
                 _rev = null
                 _id = null
                 description = "Member login on offline application"
-                loginTime = Date().time
+                loginTime = timeProvider.now()
             }
         )
     }
 
     override suspend fun logLogout(userName: String?) {
         offlineActivityDao.getLatestByType(UserSessionManager.KEY_LOGIN)?.let { activity ->
-            offlineActivityDao.updateLogoutTime(activity.id, Date().time)
+            offlineActivityDao.updateLogoutTime(activity.id, timeProvider.now())
         }
     }
 
@@ -167,7 +166,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
                 this.type = type
                 this.title = title
                 this.resourceId = resourceId
-                time = Date().time
+                time = timeProvider.now()
             }
         )
     }
@@ -259,7 +258,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
                 this.parentCode = parentCode
                 this.createdOn = createdOn
                 type = "sync"
-                time = Date().time
+                time = timeProvider.now()
             }
         )
     }

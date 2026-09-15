@@ -74,20 +74,28 @@ class HealthUsersAdapter(private val clickListener: ((UserEntity) -> Unit)? = nu
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {
-        val diffs = payloads.filterIsInstance<List<*>>().flatten()
-        if (diffs.isEmpty()) {
+        var name = false
+        var userImage = false
+        var joinDate = false
+        for (payload in payloads) {
+            if (payload is List<*>) {
+                for (key in payload) {
+                    when (key) {
+                        "name" -> name = true
+                        "userImage" -> userImage = true
+                        "joinDate" -> joinDate = true
+                    }
+                }
+            }
+        }
+
+        if (!name && !userImage && !joinDate) {
             super.onBindViewHolder(holder, position, payloads)
         } else {
             val user = getItem(position)
-            if ("name" in diffs) {
-                holder.bindName(user)
-            }
-            if ("userImage" in diffs) {
-                holder.bindImage(user)
-            }
-            if ("joinDate" in diffs) {
-                holder.bindDate(user)
-            }
+            if (name) holder.bindName(user)
+            if (userImage) holder.bindImage(user)
+            if (joinDate) holder.bindDate(user)
         }
     }
 }

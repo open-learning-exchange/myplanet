@@ -29,6 +29,7 @@ interface ExamDao {
     @Query("SELECT * FROM exams WHERE type = :type AND (teamId = :teamId OR id IN (:submissionIds))") suspend fun getTeamOwnedSurveys(teamId: String, submissionIds: Collection<String>, type: String = "surveys"): List<StepExam>
     @Query("SELECT * FROM exams WHERE type = :type AND isTeamShareAllowed = 1 AND id NOT IN (:excludedIds)") suspend fun getAdoptableTeamSurveys(excludedIds: Collection<String>, type: String = "surveys"): List<StepExam>
     @Query("SELECT * FROM exams WHERE type = :type AND isTeamShareAllowed = 1") suspend fun getAdoptableTeamSurveys(type: String = "surveys"): List<StepExam>
+    @Query("SELECT * FROM exams WHERE type = :type AND isTeamShareAllowed = 0 AND (teamId IS NULL OR teamId = '')") suspend fun getIndividualSurveys(type: String = "surveys"): List<StepExam>
     @Query("DELETE FROM exams WHERE id = :id") suspend fun deleteById(id: String): Int
     @Upsert suspend fun upsert(item: StepExam)
     @Upsert suspend fun upsertAll(items: List<StepExam>)
