@@ -100,8 +100,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           // away the identity of the server the on-device database belongs
           // to, while leaving the database itself full. See
           // [Routes.changeServer].
+          //
+          // `go`, not `push`, and that is load-bearing rather than taste: see
+          // the note on [Routes.changeServer]. The server-config screen's own
+          // close action is what returns here.
           TextButton(
-            onPressed: () => context.push(Routes.changeServer),
+            onPressed: () => context.go(Routes.changeServer),
             child: Text(l10n.changeServer),
           ),
         ],

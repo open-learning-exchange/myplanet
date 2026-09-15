@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -81,7 +82,10 @@ class _StubClearData extends ClearDataNotifier {
   Future<void> build() async {}
 
   @override
-  Future<void> clearForServerSwitch() async => calls++;
+  Future<void> clearForServerSwitch() async {
+    calls++;
+    await ref.read(serverConfigProvider.notifier).clear();
+  }
 }
 
 const _delegates = <LocalizationsDelegate<Object?>>[
@@ -276,23 +280,80 @@ void main() {
     );
   });
 
-  testWidgets('back returns to login without touching anything', (
+  testWidgets('closing returns to login without touching anything', (
     tester,
   ) async {
-    // The exemption grants nothing that outlives the location: the screen is
-    // pushed, so there is a way out that is not "adopt a server".
+    // The exemption grants nothing that outlives the location, and the way out
+    // is not "adopt a server": the close action drops the marker and the
+    // redirect puts a configured, signed-out device back on `/login`.
     final c = container();
     final router = await pumpAt(tester, c);
     await tester.tap(find.text('Change server'));
     await tester.pumpAndSettle();
 
-    await tester.pageBack();
+    await tester.tap(find.byIcon(Icons.close));
     await tester.pumpAndSettle();
 
     expect(find.byType(LoginScreen), findsOneWidget);
     expect(router.state.uri.toString(), Routes.login);
     expect(c.read(serverConfigProvider), configured);
   });
+
+  testWidgets('the system back gesture closes rather than leaving the app', (
+    tester,
+  ) async {
+    // `go` leaves no route underneath, so an un-intercepted pop drops the user
+    // out of the app instead of back to the login screen.
+    final c = container();
+    final router = await pumpAt(tester, c);
+    await tester.tap(find.text('Change server'));
+    await tester.pumpAndSettle();
+
+    await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+      'flutter/navigation',
+      const JSONMethodCodec().encodeMethodCall(const MethodCall('popRoute')),
+      (_) {},
+    );
+    await tester.pumpAndSettle();
+
+    expect(router.state.uri.toString(), Routes.login);
+    expect(find.byType(LoginScreen), findsOneWidget);
+  });
+
+  testWidgets('a first configuration offers no way out of the screen', (
+    tester,
+  ) async {
+    // There is nothing behind it: the redirect put the device here because it
+    // has no server, and it would put it straight back.
+    final c = container(existing: null, holdsServerData: false);
+    await pumpAt(tester, c);
+
+    expect(find.byIcon(Icons.close), findsNothing);
+  });
+
+  /// Types a URL and PIN rather than tapping a row.
+  ///
+  /// A row tap on a configured device raises the **early** warning (the port of
+  /// `ServerAddressAdapter`'s warn arm), which is right and is covered below —
+  /// but it is a different gate from the one at Connect, and a test that wants
+  /// the Connect gate has to reach it the way Kotlin's manual mode does.
+  Future<void> typeServer(
+    WidgetTester tester, {
+    required String url,
+    required String pin,
+  }) async {
+    await tester.enterText(find.byType(TextFormField).first, url);
+    await tester.enterText(find.byType(TextFormField).at(1), pin);
+    await tester.pump();
+  }
+
+  Future<void> pumpHandshake(WidgetTester tester, {int frames = 12}) async {
+    // Never `pumpAndSettle` here: while `_isChecking` is true the Connect
+    // button holds an indefinite `CircularProgressIndicator`.
+    for (var i = 0; i < frames; i++) {
+      await tester.pump(const Duration(milliseconds: 120));
+    }
+  }
 
   testWidgets('adopting a configuration spends the marker and returns', (
     tester,
@@ -305,6 +366,8 @@ void main() {
       serverUrl: 'https://learning.example.org',
       pin: '1234',
       couchDbUrl: 'https://satellite:1234@learning.example.org:443',
+      // The same community — a clone URL — so no wipe is offered and this test
+      // is about the navigation alone.
       code: 'cambridge',
     );
     final c = container(configuration: const ConfigurationSuccess(adopted));
@@ -312,24 +375,27 @@ void main() {
     await tester.tap(find.text('Change server'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('🌎 planet learning'));
-    await tester.pump();
+    await typeServer(tester, url: 'https://learning.example.org', pin: '1234');
     await tester.tap(find.widgetWithText(FilledButton, 'Connect'));
-    for (var i = 0; i < 8; i++) {
-      await tester.pump(const Duration(milliseconds: 120));
-    }
+    await pumpHandshake(tester);
 
     expect(saved, <ServerConfig>[adopted]);
     expect(router.state.uri.toString(), Routes.login);
     expect(find.byType(LoginScreen), findsOneWidget);
   });
 
-  testWidgets('a wipe leaves the user on the screen, not stranded', (
+  testWidgets('a wipe at Connect finishes the switch it interrupted', (
     tester,
   ) async {
-    // After `clearForServerSwitch` there is no configuration, so the ordinary
-    // `!hasServer` branch holds the same position the marker was holding. The
-    // user finishes the switch they started rather than being bounced.
+    // The Connect gate's own wipe, end to end: stop, clear, then adopt.
+    //
+    // Measured, and worth knowing: reverting the navigation to `push` does
+    // *not* fail this test — it fails the row-tap one below. The two differ by
+    // one line. Here `save(config)` runs immediately after the wipe and puts
+    // `hasServer` back before the router processes the refresh, so the
+    // `!hasServer` branch never sees a pushed base to redirect; on the row tap
+    // there is no save to restore it. This path survived on ordering rather
+    // than on anything guaranteed, which is not a property to build on.
     const adopted = ServerConfig(
       serverUrl: 'https://guatemala.example.org',
       pin: '5678',
@@ -337,19 +403,89 @@ void main() {
       code: 'guatemala',
     );
     final c = container(configuration: const ConfigurationSuccess(adopted));
+    final router = await pumpAt(tester, c);
+    await tester.tap(find.text('Change server'));
+    await tester.pumpAndSettle();
+
+    await typeServer(tester, url: 'https://guatemala.example.org', pin: '5678');
+    await tester.tap(find.widgetWithText(FilledButton, 'Connect'));
+    await pumpHandshake(tester);
+
+    // Another community, so the switch stops for the wipe.
+    expect(find.text('Clear data'), findsOneWidget);
+    expect(find.byType(ServerConfigScreen), findsOneWidget);
+
+    await tester.tap(find.text('Clear data'));
+    await pumpHandshake(tester, frames: 20);
+
+    expect(clearData.calls, 1);
+    expect(saved, <ServerConfig>[adopted]);
+    expect(router.state.uri.toString(), Routes.login);
+  });
+
+  testWidgets('a wipe at the row tap keeps the screen and the tap', (
+    tester,
+  ) async {
+    // **The defect this change's own second audit pass found**, and the reason
+    // the screen is reached with `go` rather than `push`.
+    //
+    // The wipe clears the configuration, which refreshes the router — and a
+    // pushed route's own location is not what `redirect` sees on a refresh.
+    // go_router re-parses the push's **base**, `/login`, which carries no
+    // marker, so the `!hasServer` branch sent it to `/server`: the pushed
+    // route collapsed, the screen was rebuilt with a fresh `State`, and the
+    // fields the tap was about to fill were cleared instead. Confirm a wipe,
+    // get a blank form, with nothing said. Every test was green, because a
+    // pushed route only refreshes when some provider it does not own moves.
+    final c = container();
     await pumpAt(tester, c);
     await tester.tap(find.text('Change server'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('🇬🇹 planet guatemala'));
-    await tester.pump();
-    await tester.tap(find.widgetWithText(FilledButton, 'Connect'));
-    for (var i = 0; i < 8; i++) {
-      await tester.pump(const Duration(milliseconds: 120));
-    }
-
+    await tester.tap(find.text('🌎 planet learning'));
+    await tester.pumpAndSettle();
     expect(find.text('Clear data'), findsOneWidget);
+
+    await tester.tap(find.text('Clear data'));
+    await pumpHandshake(tester, frames: 20);
+
+    expect(clearData.calls, 1);
     expect(find.byType(ServerConfigScreen), findsOneWidget);
+    expect(
+      tester
+          .widgetList<TextField>(find.byType(TextField))
+          .map((f) => f.controller?.text)
+          .toList(),
+      <String>['https://learning.example.org', '1234'],
+    );
+  });
+
+  testWidgets('closing after a wipe stays here rather than bouncing', (
+    tester,
+  ) async {
+    // Closing is not "go to the login screen": after a wipe there is no
+    // configuration and no data, so a login screen would have nothing to sign
+    // into. [_spendMarker] drops the marker and the redirect decides, which
+    // here means staying put.
+    //
+    // What this does *not* pin is `_spendMarker`'s argument: the redirect
+    // normalises `/login` and `/home` to the same outcomes, so swapping them
+    // in keeps the suite green. It pins that closing navigates at all and that
+    // the redirect places the result.
+    final c = container();
+    await pumpAt(tester, c);
+    await tester.tap(find.text('Change server'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('🌎 planet learning'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Clear data'));
+    await pumpHandshake(tester, frames: 20);
+
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ServerConfigScreen), findsOneWidget);
+    expect(find.byType(LoginScreen), findsNothing);
   });
 
   testWidgets('a bare /server is still refused to a configured device', (

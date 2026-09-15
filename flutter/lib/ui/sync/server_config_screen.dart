@@ -25,12 +25,21 @@ class ServerConfigScreen extends ConsumerStatefulWidget {
   /// [Routes.changeServer] — rather than being sent here by the redirect
   /// because there is none.
   ///
-  /// It changes exactly one thing: who navigates away once a configuration is
-  /// adopted. On the first-configuration path the redirect does it, because
-  /// `hasServer` flips from false to true under the screen's feet. On this
-  /// path the redirect is deliberately holding position (that is what the
-  /// marker buys), so the screen has to spend the marker itself. See
-  /// [_connect].
+  /// It changes two things, and both are about who navigates.
+  ///
+  /// Once a configuration is adopted: on the first-configuration path the
+  /// redirect does it, because `hasServer` flips from false to true under the
+  /// screen's feet; on this path the redirect is deliberately holding position
+  /// (that is what the marker buys), so the screen spends the marker itself.
+  /// See [_connect].
+  ///
+  /// And leaving without adopting one: this screen is reached with `go` rather
+  /// than `push` — see [Routes.changeServer] for the destruction that `push`
+  /// caused — so there is no route underneath to pop back to and Material
+  /// draws no back button. The close action and the system back gesture both
+  /// spend the marker instead, which returns a configured device to `/login`
+  /// exactly as Kotlin's Cancel closes its dialog. On the first-configuration
+  /// path there is nothing to go back to and neither is offered.
   final bool changingServer;
 
   @override
@@ -193,9 +202,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
           // `/login` exactly as it does after a first configuration. Naming
           // `/login` here instead would be a second copy of that rule, free to
           // disagree with the first.
-          if (widget.changingServer && mounted) {
-            context.go(Routes.server);
-          }
+          if (widget.changingServer && mounted) _spendMarker();
         } catch (error) {
           if (!mounted) return;
           setState(() {
@@ -212,6 +219,21 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
         });
     }
   }
+
+  /// Leaves the marked `/server` location by dropping the marker, which hands
+  /// the placement decision straight back to the router's `redirect`: `/login`
+  /// for a configured, signed-out device, and this screen again for one whose
+  /// data has just been wiped, because there is then nothing to go back to.
+  ///
+  /// `Routes.server` rather than `Routes.login`, and an honest note about
+  /// that: it is **not** a behavioural choice. The redirect normalises every
+  /// gated location, so `go(Routes.login)` and `go(Routes.home)` land in the
+  /// same place as this in every reachable state, and a mutation swapping them
+  /// leaves the suite green — which was checked rather than assumed. It is
+  /// written this way because "drop the marker" is what this does, and naming
+  /// a destination would read as a rule about where a signed-out device
+  /// belongs, which is the redirect's to state.
+  void _spendMarker() => context.go(Routes.server);
 
   /// Whether the switch must stop: this device holds another community's data
   /// and the user declined to clear it. Returns `false` — carry on — both when
@@ -427,88 +449,108 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.serverConfigurationTitle)),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _serverPicker(l10n),
-                    TextFormField(
-                      controller: _urlController,
-                      autocorrect: false,
-                      keyboardType: TextInputType.url,
-                      textInputAction: TextInputAction.next,
-                      decoration: InputDecoration(
-                        labelText: l10n.serverUrlLabel,
-                        hintText: l10n.serverUrlHint,
-                        border: const OutlineInputBorder(),
-                      ),
-                      validator: (value) {
-                        final text = value?.trim() ?? '';
-                        if (text.isEmpty) return l10n.serverUrlNotConfigured;
-                        final uri = Uri.tryParse(text);
-                        if (uri == null ||
-                            !uri.hasScheme ||
-                            uri.host.isEmpty ||
-                            !(uri.scheme == 'http' || uri.scheme == 'https')) {
-                          return l10n.serverUrlNotConfigured;
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _pinController,
-                      obscureText: true,
-                      keyboardType: TextInputType.number,
-                      textInputAction: TextInputAction.done,
-                      decoration: InputDecoration(
-                        labelText: l10n.serverPinLabel,
-                        border: const OutlineInputBorder(),
-                      ),
-                      onFieldSubmitted: (_) => _connect(),
-                    ),
-                    const SizedBox(height: 24),
-                    if (_error != null) ...[
-                      Text(
-                        _error!,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
+    return PopScope(
+      // The system back gesture is the close action: with no route underneath,
+      // letting the pop through would drop the user out of the app.
+      canPop: !widget.changingServer,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && widget.changingServer) _spendMarker();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(l10n.serverConfigurationTitle),
+          leading: widget.changingServer
+              ? IconButton(
+                  icon: const Icon(Icons.close),
+                  tooltip: l10n.cancel,
+                  onPressed: _isChecking ? null : _spendMarker,
+                )
+              : null,
+        ),
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _serverPicker(l10n),
+                      TextFormField(
+                        controller: _urlController,
+                        autocorrect: false,
+                        keyboardType: TextInputType.url,
+                        textInputAction: TextInputAction.next,
+                        decoration: InputDecoration(
+                          labelText: l10n.serverUrlLabel,
+                          hintText: l10n.serverUrlHint,
+                          border: const OutlineInputBorder(),
                         ),
+                        validator: (value) {
+                          final text = value?.trim() ?? '';
+                          if (text.isEmpty) return l10n.serverUrlNotConfigured;
+                          final uri = Uri.tryParse(text);
+                          if (uri == null ||
+                              !uri.hasScheme ||
+                              uri.host.isEmpty ||
+                              !(uri.scheme == 'http' ||
+                                  uri.scheme == 'https')) {
+                            return l10n.serverUrlNotConfigured;
+                          }
+                          return null;
+                        },
                       ),
-                      // Not localised and not shown in release: this is the
-                      // status code or exception the one sentence above used
-                      // to swallow, and without it a failure that cannot be
-                      // reproduced off-device can only be guessed at.
-                      if (kDebugMode && _diagnostic != null) ...[
-                        const SizedBox(height: 8),
-                        SelectableText(
-                          _diagnostic!,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(fontFamily: 'monospace'),
-                        ),
-                      ],
                       const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _pinController,
+                        obscureText: true,
+                        keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.done,
+                        decoration: InputDecoration(
+                          labelText: l10n.serverPinLabel,
+                          border: const OutlineInputBorder(),
+                        ),
+                        onFieldSubmitted: (_) => _connect(),
+                      ),
+                      const SizedBox(height: 24),
+                      if (_error != null) ...[
+                        Text(
+                          _error!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                        // Not localised and not shown in release: this is the
+                        // status code or exception the one sentence above used
+                        // to swallow, and without it a failure that cannot be
+                        // reproduced off-device can only be guessed at.
+                        if (kDebugMode && _diagnostic != null) ...[
+                          const SizedBox(height: 8),
+                          SelectableText(
+                            _diagnostic!,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(fontFamily: 'monospace'),
+                          ),
+                        ],
+                        const SizedBox(height: 16),
+                      ],
+                      FilledButton(
+                        onPressed: _isChecking ? null : _connect,
+                        child: _isChecking
+                            ? const SizedBox.square(
+                                dimension: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(l10n.connect),
+                      ),
                     ],
-                    FilledButton(
-                      onPressed: _isChecking ? null : _connect,
-                      child: _isChecking
-                          ? const SizedBox.square(
-                              dimension: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Text(l10n.connect),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),

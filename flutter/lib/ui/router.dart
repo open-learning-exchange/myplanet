@@ -101,7 +101,22 @@ class Routes {
   /// registers [server] and this resolves to it — and being in the URI is what
   /// makes it survive a redirect without any state for a later navigation to
   /// leak. The exemption is spent by navigating to bare [server] again, which
-  /// is what `ServerConfigScreen` does once it has adopted a configuration.
+  /// is what `ServerConfigScreen` does both when it has adopted a
+  /// configuration and when its close action is used.
+  ///
+  /// **Navigate here with `go`, never `push`, and the difference is not
+  /// taste.** A pushed route's own location is not what `redirect` sees when
+  /// the router *refreshes*: go_router re-parses the push's **base** location,
+  /// so the marker is not there to be read and the gating below runs against
+  /// `/login` instead. That was measured, and it is destructive rather than
+  /// merely wrong. Confirming the clear-data dialog empties the database, which
+  /// clears the configuration, which refreshes the router, which redirects the
+  /// *base* `/login` to `/server` — collapsing the pushed screen, rebuilding it
+  /// with a fresh `State`, and throwing away the URL and PIN the user had just
+  /// entered along with the `_connect` call that was waiting on the dialog. No
+  /// save, no error, no explanation: the user confirms a wipe and gets a blank
+  /// form. Every test passed, because a pushed route only refreshes when a
+  /// provider it does not own happens to change.
   static const String changeServer = '/server?change=1';
   static const String onboarding = '/onboarding';
   static const String login = '/login';
@@ -251,11 +266,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       // configuration the only way to reach the screen.
       //
       // It cannot strand anybody, because it grants nothing that outlives the
-      // location it is written on. The screen is `push`ed, so the back button
-      // returns to `/login`; a wipe clears `hasServer` and the branch above
-      // holds the same position for the same reason; and adopting a
-      // configuration navigates to bare [Routes.server], which falls through
-      // to the redirects below and is placed by them.
+      // location it is written on, and there are two ways to spend it — the
+      // screen's close action and adopting a configuration — both of which
+      // navigate to bare [Routes.server] and fall through to the redirects
+      // below to be placed. A wipe in between clears `hasServer`, and the
+      // branch above then holds the same position for the same reason, so the
+      // switch can be finished rather than interrupted.
       if (changingServer) return null;
 
       if (!isSignedIn) {
