@@ -8,9 +8,9 @@
 - **Primary Language**: Kotlin (100% — no Java sources remain)
 - **Min SDK**: 26 (Android 8.0)
 - **Target SDK**: 36 (Android 16); **Compile SDK**: 37
-- **Current Version**: 0.69.18 (versionCode: 6918)
-- **Build System**: Gradle 9.6.1 with Android Gradle Plugin 9.3.1
-- **Local Database**: Room (AndroidX) 2.8.4 — the only local persistence store
+- **Current Version**: 0.71.51 (versionCode: 7151)
+- **Build System**: Gradle 9.7.1 with Android Gradle Plugin 9.3.1
+- **Local Database**: Room (AndroidX) 2.8.5 — the only local persistence store
 - **License**: AGPL v3
 
 ### Build Flavors
@@ -1280,12 +1280,12 @@ myplanet/
 |---------|---------|-------|-----------|
 | `base/` | Base classes for common functionality | 13 | BaseActivity, BaseRecyclerFragment, BasePermissionActivity, BaseContainerFragment, BaseDashboardFragment, BaseResourceFragment, BaseTeamFragment, BaseExamFragment, BaseMemberFragment, BaseDialogFragment, BaseVoicesFragment, BaseRecyclerParentFragment |
 | `callback/` | Event listeners and interfaces | 28 | OnLibraryItemSelectedListener, OnSyncListener, OnTeamUpdateListener, OnChatItemClickListener, OnNewsItemClickListener, and more |
-| `data/` | Data access, Room persistence, and API | 40 | NetworkResult.kt; `room/` (AppDatabase, Converters, 37 DAO interfaces in 30 files — several share `LegacyEntityDaos.kt`), `api/` (ApiInterface, ApiClient, ChatApiService, RetryInterceptor), `auth/` (AuthSessionUpdater) |
+| `data/` | Data access, Room persistence, and API | 46 | NetworkResult.kt; `room/` (AppDatabase, Converters, 36 DAO interfaces in 37 files — several share `LegacyEntityDaos.kt`), `api/` (ApiInterface, ApiClient, ChatApiService, RetryInterceptor), `auth/` (AuthSessionUpdater) |
 | `di/` | Hilt dependency injection | 10 | Modules (NetworkModule, RoomModule, RepositoryModule, ServiceModule, SharedPreferencesModule, DispatcherModule, TimeModule) + entry points (CoreDependenciesEntryPoint, ServiceDependenciesEntryPoint) |
-| `model/` | Room `@Entity` models and DTOs | 92 | 37 `@Entity` classes (MyCourse, MyLibrary, News, Submission, TeamTask, UserEntity, …) + DTOs (ChatMessage, ChatRequest, ChatResponse, CourseProgressData, Download, ServerAddress, User) |
-| `repository/` | Repository pattern implementations | 50 | 23 domain Interface + Impl pairs + sync-facing interfaces (SyncRepository, TeamsSyncRepository, UserSyncRepository) + SubmissionsRepositoryExporter |
-| `services/` | Background services and workers | 39 | 22 root-level + `sync/` (7), `upload/` (8), `retry/` (2) |
-| `ui/` | User interface components | 183 | 28 feature packages with 16+ ViewModels (courses, resources, teams, chat, etc.) |
+| `model/` | Room `@Entity` models and DTOs | 100 | 38 `@Entity` classes (MyCourse, MyLibrary, News, Submission, TeamTask, UserEntity, …) + DTOs (ChatMessage, ChatRequest, ChatResponse, CourseProgressData, Download, ServerAddress, User) |
+| `repository/` | Repository pattern implementations | 68 | 27 domain Interface + Impl pairs + sync-facing interfaces (SyncRepository, TeamsSyncRepository, UserSyncRepository) + SubmissionsRepositoryExporter |
+| `services/` | Background services and workers | 43 | 23 root-level + `sync/` (7), `upload/` (11), `retry/` (2) |
+| `ui/` | User interface components | 204 | 28 feature packages with 16+ ViewModels (courses, resources, teams, chat, etc.) |
 | `utils/` | Helper functions | 46 | NetworkUtils, ImageUtils, DialogUtils, FileUploader, AuthUtils, SecurePrefs, ANRWatchdog, and more |
 
 ### UI Sub-packages (28 feature packages, 183 files)
@@ -1323,30 +1323,30 @@ myplanet/
 
 ### Critical Files to Understand
 
-1. **`MainApplication.kt`** (~537 lines)
+1. **`MainApplication.kt`** (~489 lines)
    - Application initialization with Hilt DI
    - WorkManager scheduling (AutoSyncWorker, TaskNotificationWorker, NetworkMonitorWorker, RetryQueueWorker)
    - Server reachability checking with alternative URL mapping
    - Theme/locale management, ANR watchdog, uncaught exception handling
    - Location: `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt`
 
-2. **`AppDatabase.kt`** (~170 lines) — the Room database
-   - `@Database` with 37 entities, `version = 6`, `@TypeConverters(Converters::class)`
+2. **`AppDatabase.kt`** (~172 lines) — the Room database
+   - `@Database` with 38 entities, `version = 12`, `@TypeConverters(Converters::class)`
    - Declares all 30+ DAO accessors; provisioned by `RoomModule` with a **drop-and-resync** (`fallbackToDestructiveMigration`) strategy — no hand-written migrations; data is re-pulled from CouchDB on first launch after a schema bump
    - Location: `app/src/main/java/org/ole/planet/myplanet/data/room/AppDatabase.kt`
 
-3. **`SyncManager.kt`** (~691 lines)
+3. **`SyncManager.kt`** (~551 lines)
    - Orchestrates data synchronization with server via StateFlow-based state management (`SyncStatus` Idle/Syncing/Success/Error)
    - Delegates per-table pulls to TransactionSyncManager; notifies UI via RealtimeSyncManager's SharedFlow; batch sizing via AdaptiveBatchProcessor
    - Location: `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt`
 
-4. **`UploadManager.kt`** (~615 lines)
+4. **`UploadManager.kt`** (~431 lines)
    - File and data uploads with batch processing (BATCH_SIZE = 50)
    - Integrates with UploadCoordinator for orchestrated uploads
    - Handles activities, submissions, photos, news uploads
    - Location: `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt`
 
-5. **`TeamsRepositoryImpl.kt`** (~1437 lines — largest file; candidate for splitting by responsibility)
+5. **`TeamsRepositoryImpl.kt`** (~1347 lines — largest file; candidate for splitting by responsibility)
    - Team management with reactive Flow-based queries
    - Team creation, task management, membership roles
    - Location: `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt`
@@ -1363,19 +1363,19 @@ myplanet/
 
 | Category | Technology | Version | Purpose |
 |----------|-----------|---------|---------|
-| **Language** | Kotlin | 2.4.10 | Primary development language |
-| **Build System** | Gradle | 9.6.1 | Build automation |
+| **Language** | Kotlin | 2.4.20 | Primary development language |
+| **Build System** | Gradle | 9.7.1 | Build automation |
 | **Build Plugin** | Android Gradle Plugin | 9.3.1 | Android build tooling |
 | **DI Framework** | Dagger Hilt | 2.60.1 | Dependency injection |
-| **Database** | Room (AndroidX) | 2.8.4 | Local SQLite object database |
+| **Database** | Room (AndroidX) | 2.8.5 | Local SQLite object database |
 | **Networking** | Retrofit | 3.0.0 | REST API client |
-| **HTTP Client** | OkHttp | 5.4.0 | HTTP communication |
+| **HTTP Client** | OkHttp | 5.5.0 | HTTP communication |
 | **JSON** | Gson | 2.14.0 | JSON serialization |
 | **Async** | Kotlin Coroutines | 1.11.0 | Asynchronous programming |
 | **Background Tasks** | AndroidX Work | 2.11.2 | Background job scheduling |
 | **UI Framework** | Material Design 3 | 1.14.0 | UI components |
 | **Image Loading** | Glide | 5.0.9 | Image loading and caching |
-| **Media Playback** | Media3 (ExoPlayer) | 1.10.1 | Audio/video playback |
+| **Media Playback** | Media3 (ExoPlayer) | 1.11.1 | Audio/video playback |
 | **Markdown** | Markwon | 4.6.2 | Markdown rendering |
 | **Maps** | OSMDroid | 6.1.20 | OpenStreetMap integration |
 | **Encryption** | Tink | 1.23.0 | Cryptographic operations |
@@ -1496,7 +1496,7 @@ There is no generic base repository; each implementation talks to its Room DAO(s
 - `HeavyTableSyncWorker` - Large-table background sync (`services/sync/`)
 - `RetryQueueWorker` - Retries failed operations (`services/retry/`)
 
-**Services and Managers (22 root-level files):**
+**Services and Managers (23 root-level files):**
 - `SyncManager` - Manual synchronization (`services/sync/`)
 - `UploadManager` - File upload coordination (extends FileUploader)
 - `UploadToShelfService` - Shelf upload operations
@@ -1515,16 +1515,16 @@ There is no generic base repository; each implementation talks to its Room DAO(s
 - `NotificationActionReceiver` - Broadcast receiver for notification actions
 
 **Sync Sub-package (`services/sync/` - 7 files):**
-- `SyncManager` (~691) - Orchestrates sync via StateFlow; the entry point for full syncs
-- `TransactionSyncManager` (~519) - Per-table paginated pulls from CouchDB with checkpoint/resume
-- `LoginSyncManager` (~195) - Sync triggered around the login flow
-- `ServerUrlMapper` (~116) - Maps primary server URLs to alternative/clone URLs
+- `SyncManager` (~551) - Orchestrates sync via StateFlow; the entry point for full syncs
+- `TransactionSyncManager` (~466) - Per-table paginated pulls from CouchDB with checkpoint/resume
+- `LoginSyncManager` (~187) - Sync triggered around the login flow
+- `ServerUrlMapper` (~131) - Maps primary server URLs to alternative/clone URLs
 - `HeavyTableSyncWorker` (~66) - WorkManager worker for large-table background sync
 - `AdaptiveBatchProcessor` (~37) - Batch-size tuning used by SyncManager
-- `RealtimeSyncManager` (~27) - SharedFlow of `TableDataUpdate` events; UI collects `dataUpdateFlow` (via `RealtimeSyncHelper`/`collectWhenStarted`)
+- `RealtimeSyncManager` (~30) - SharedFlow of `TableDataUpdate` events; UI collects `dataUpdateFlow` (via `RealtimeSyncHelper`/`collectWhenStarted`)
 
-**Upload Sub-package (`services/upload/` - 8 files):**
-- `UploadCoordinator` - Central orchestration for all upload operations with batch processing and retry
+**Upload Sub-package (`services/upload/` - 11 files):**
+- `UploadCoordinator` (~325) - Central orchestration for all upload operations with batch processing and retry
 - `UploadConfigs` - Configuration objects for different upload types (NewsActivities, Submissions, Photos, etc.)
 - `UploadConfig` - Generic configuration template with batch size and model binding
 - `RoomUploadConfig` - Room-DAO-backed upload configuration
@@ -1824,7 +1824,7 @@ Supported languages: English (default) + Arabic (ar), Spanish (es), French (fr),
 > Full testing patterns (what to copy per layer, shared infra, naming) live in **`docs/TESTING.md`**.
 
 ### Current State
-- **A real unit-test suite exists**: 166 unit-test files in `app/src/test/`. There is currently **no** `app/src/androidTest/` (instrumented) source set.
+- **A real unit-test suite exists**: 281 unit-test files in `app/src/test/`. There is currently **no** `app/src/androidTest/` (instrumented) source set.
 - **Stack**: JUnit4, **MockK** (`mockk` / `mockk-android`), **Robolectric**, `kotlinx-coroutines-test`, AndroidX Test (`core`/`ext`/`runner`/`arch-core-testing`), **Room testing** (`room-testing`), and **Hilt testing** (`hilt-android-testing` with `kspTest`). Dependencies are declared in `app/build.gradle` (test block) and `gradle/libs.versions.toml`.
 - **Coverage**: nearly all 23 repositories, the sync managers (`services/sync/`), upload/retry services, most ViewModels, many `utils/`, several Room entities/DAOs, DI modules, and the API/auth layer.
 - **Shared test infra**: `MainDispatcherRule`, `TestDispatcherProvider` (inject deterministic dispatchers — production code uses an injectable `DispatcherProvider`, so avoid hard-coding `Dispatchers.*` in new code).
@@ -1912,40 +1912,40 @@ When making changes, verify:
 
 | Purpose | File Path | Line Count |
 |---------|-----------|------------|
-| Main entry point | `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt` | ~537 |
+| Main entry point | `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt` | ~489 |
 | REST API endpoints | `app/src/main/java/org/ole/planet/myplanet/data/api/ApiInterface.kt` | ~65 |
-| Room database | `app/src/main/java/org/ole/planet/myplanet/data/room/AppDatabase.kt` | ~170 |
-| Sync orchestration | `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt` | ~691 |
-| Upload handling | `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt` | ~615 |
-| Upload orchestration | `app/src/main/java/org/ole/planet/myplanet/services/upload/UploadCoordinator.kt` | ~478 |
-| Team management | `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt` | ~1437 |
-| Build configuration | `app/build.gradle` | ~231 |
-| Dependency versions | `gradle/libs.versions.toml` | ~132 |
+| Room database | `app/src/main/java/org/ole/planet/myplanet/data/room/AppDatabase.kt` | ~172 |
+| Sync orchestration | `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt` | ~551 |
+| Upload handling | `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt` | ~431 |
+| Upload orchestration | `app/src/main/java/org/ole/planet/myplanet/services/upload/UploadCoordinator.kt` | ~325 |
+| Team management | `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt` | ~1347 |
+| Build configuration | `app/build.gradle` | ~308 |
+| Dependency versions | `gradle/libs.versions.toml` | ~134 |
 
 ---
 
 ## Codebase Inventory Summary
 
-### Source Files (502 total Kotlin files in `app/src/main/java`) + 166 unit-test files in `app/src/test` (no `app/src/androidTest` source set)
+### Source Files (572 total Kotlin files in `app/src/main/java`) + 281 unit-test files in `app/src/test` (no `app/src/androidTest` source set)
 
 | Component | Files | Purpose |
 |-----------|-------|---------|
-| `model/` | 92 | Room `@Entity` models + DTOs |
-| `repository/` | 50 | Data access abstraction (23 domain Interface+Impl pairs + sync interfaces + utilities) |
-| `ui/` | 183 | User interface across 28 feature packages |
-| `services/` | 39 | Background tasks & managers (22 root-level + sync/upload/retry sub-packages) |
-| `di/` | 10 | Dependency injection (8 modules + 2 entry points) |
-| `base/` | 13 | Reusable base classes |
-| `callback/` | 28 | Event listeners and interfaces |
-| `data/` | 40 | Data services, Room (AppDatabase, Converters, 37 DAO interfaces in 30 files), API, auth |
-| `utils/` | 46 | Helper utilities |
+| `model/` | 100 | Room `@Entity` models + DTOs |
+| `repository/` | 68 | Data access abstraction (27 domain Interface+Impl pairs + sync interfaces + utilities) |
+| `ui/` | 204 | User interface across 28 feature packages |
+| `services/` | 43 | Background tasks & managers (23 root-level + sync/upload/retry sub-packages) |
+| `di/` | 9 | Dependency injection (8 modules + 2 entry points) |
+| `base/` | 17 | Reusable base classes |
+| `callback/` | 25 | Event listeners and interfaces |
+| `data/` | 46 | Data services, Room (AppDatabase, Converters, 36 DAO interfaces in 37 files), API, auth |
+| `utils/` | 59 | Helper utilities |
 | Root | 1 | MainApplication.kt |
 
 ### Resource Files
 
 | Category | Count |
 |----------|-------|
-| Layout files (main) | 181 |
+| Layout files (main) | 192 |
 | Translation languages | 5 (ar, es, fr, ne, so) |
 | Menu files | 2 |
 | XML config files | 3 |
@@ -1963,6 +1963,6 @@ Note: SYSTEM_ALERT_WINDOW is **not** declared (removed at some point; older docs
 
 ---
 
-**Last Updated**: 2026-09-09
-**Version**: 0.69.18
+**Last Updated**: 2026-09-15
+**Version**: 0.71.51
 **Maintainer**: Open Learning Exchange
