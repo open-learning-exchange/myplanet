@@ -32,11 +32,14 @@ final heavyTableSyncSchedulerProvider = Provider<HeavyTableSyncScheduler>(
 /// see [HeavyTableSync.tables] for why its inline pull is worth more than the
 /// parity.
 ///
-/// **Every key here must also be in [HeavyTableSync.tables] and vice versa.**
-/// A table scheduled with no writer is a job that reports success for ever,
-/// and a writer with no scheduled table is code that is green, tested and
-/// dead. `heavy_table_writers_cover_tables_test.dart` asserts the two agree,
-/// against this provider rather than a hand-copied list.
+/// **Every key here must also be in [HeavyTableSync.tables].** A table
+/// scheduled with no writer is a job that runs, walks nothing and reports
+/// success for ever — `team_activities` was kept out of that list for several
+/// phases for exactly this reason, until the writer above existed.
+/// `heavy_table_sync_scheduling_test.dart` pins both halves: that every
+/// scheduled table appears in `writableTables`, and — because an audit once
+/// replaced every writer body with a no-op and the suite stayed green — that
+/// driving each real writer over a stub page actually lands a row.
 final heavyTableSyncProvider = Provider<HeavyTableSync>(
   (ref) => HeavyTableSync(
     api: ref.watch(planetApiProvider),

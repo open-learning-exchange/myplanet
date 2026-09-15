@@ -151,7 +151,11 @@ class TeamsRepository {
     String? userParentCode,
     String? teamType,
   }) async {
-    if (teamId.isEmpty || userName == null || userName.trim().isEmpty) {
+    // `trim()` on both: Kotlin's guard is `teamId.isBlank() ||
+    // userName.isNullOrBlank()` (`TeamsRepositoryImpl.kt:842`), and the port
+    // tested `teamId.isEmpty`, so a whitespace-only team id was rejected there
+    // and accepted here — filing a visit against a team no screen can reach.
+    if (teamId.trim().isEmpty || userName == null || userName.trim().isEmpty) {
       return null;
     }
     final id = _createId();
@@ -212,6 +216,13 @@ class TeamsRepository {
   Future<int> insertTeamActivitiesFromSync(
     List<Map<String, dynamic>> docs,
   ) async {
+    // Mirrors `insertLoginActivitiesFromSync`, and is **redundant** — every
+    // document passes through `TeamLogMapper.fromDoc`, which refuses a
+    // `_design` id on its own. Mutation-testing confirmed removing this line
+    // changes no observable behaviour, so the guard is pinned at the mapper
+    // rather than here. Kept because keeping design rows out of the two
+    // lookup lists below is cheaper than letting them in, and because a
+    // reader comparing this with its sibling should find the same shape.
     final documents = docs
         .where((doc) => !JsonUtils.getString('_id', doc).startsWith('_design'))
         .toList();
@@ -243,15 +254,27 @@ class TeamsRepository {
       // [existingById]; letting it also occupy a natural-key slot would let it
       // shadow the *unstamped* local row that this fallback exists to find.
       if (row.couchId?.isNotEmpty == true) continue;
-      // `putIfAbsent`, as the Kotlin does: with two local rows sharing a key
-      // the first one wins rather than the last.
+      // `putIfAbsent` — and **not** "as the Kotlin does", which an earlier
+      // revision of this comment claimed. Kotlin builds its initial fallback
+      // map with `.associateBy` (`ActivitiesRepositoryImpl.kt:363-365`), where
+      // a duplicate key keeps the **last** row; its `putIfAbsent` (`:266`)
+      // applies only to entries added during the document loop. First-wins is
+      // this port's choice, reachable only with two local rows sharing an
+      // exact `(time, user, teamId)`, and it is stated as a choice because
+      // this is the file the next lane will cite.
       fallbackByKey.putIfAbsent(TeamLogMapper.naturalKeyForRow(row), () => row);
     }
 
     final companions = <TeamLogTableCompanion>[];
-    // Tracks keys consumed within this page, so two documents that resolve to
-    // the same local row do not both adopt its primary key and collapse into
-    // one row — the second must be keyed by its own `_id`.
+    // Tracks local rows consumed within this page, so two documents that
+    // resolve to the same one do not both adopt its primary key and collapse
+    // into a single row — the second must be keyed by its own `_id`.
+    //
+    // **This is a deliberate improvement on the Kotlin it is modelled on, not
+    // a copy of it.** `activityFromJson` mutates both lookup maps inside the
+    // loop (`ActivitiesRepositoryImpl.kt:265-267`), so two documents sharing a
+    // natural key resolve to the same entity object and Kotlin *does* collapse
+    // them, losing one row. Here two server documents are two visits.
     final claimedRowIds = <String>{};
     for (final doc in documents) {
       final docId = JsonUtils.getString('_id', doc);
@@ -461,6 +484,44 @@ class TeamsRepository {
     return b.toString();
   }
 
+  /// Port of `TeamsRepositoryImpl.createLocalResourceLink` (`:719-740`) and,
+  /// on its other caller, of `addResourceLinks` (`:681-704`).
+  ///
+  /// **[planetCode] is accepted and ignored, and closing that is a phase
+  /// rather than a line.** Kotlin stamps `sourcePlanet` and `teamPlanetCode`
+  /// from `planetCode?.takeIf { it.isNotBlank() } ?:
+  /// sharedPrefManager.getPlanetCode()`; this writes neither, because the
+  /// `Teams` drift table has neither column. What closing it actually needs,
+  /// measured rather than assumed:
+  ///
+  /// * **Four columns, not two.** `MyTeam` also carries `userPlanetCode` and
+  ///   `parentCode`, both read back by `populateTeamFields` (`MyTeam.kt:94`,
+  ///   `:96`) and both written by `serialize` (`:207-208`).
+  ///   [createJoinRequest] has this same defect and needs two of them, so
+  ///   doing only `resourceLink` pays the migration twice.
+  /// * **`teams` is in `localAuthorityTables`**, so `createAll` will not alter
+  ///   it: a schema bump plus one hand-written `_addColumnIfMissing` per
+  ///   column, whose absence does not fail loudly.
+  /// * **The two Kotlin producers stamp different fields.** This one method
+  ///   serves both: `ResourcesUploader._linkPrivateResourceToTeam` is the
+  ///   `createLocalResourceLink` path (both planet fields), while
+  ///   `TeamResourceActions.add` is the `addResourceLinks` path, which sets
+  ///   `teamPlanetCode` and `userPlanetCode` from the user and **never sets
+  ///   `sourcePlanet` at all**. Stamping both unconditionally would put a key
+  ///   on the wire that Kotlin's UI path omits.
+  /// * **`TeamMapper.fromDoc` must map them too**, or the first sync after the
+  ///   upload blanks them — the Phase 56/74/98 shape.
+  /// * **The fallback has no port counterpart.** Kotlin's `?:
+  ///   sharedPrefManager.getPlanetCode()` needs `PlanetPrefs`, which this
+  ///   repository does not hold; and `TeamResourceActions.add` reads
+  ///   `sessionProvider` without watching it, so it can hand this `null` on
+  ///   exactly the path the fallback exists for.
+  ///
+  /// Related and out of scope here: this method's document is serialized by
+  /// [serializeTeamDocument], which has no `resourceLink` branch, where
+  /// `MyTeam.serialize` returns early for that docType with nine keys
+  /// (`MyTeam.kt:167-179`) — so the port sends fourteen keys Kotlin does not,
+  /// a divergence on the same document in the opposite direction.
   Future<TeamRow?> addResourceLink({
     required String teamId,
     required String resourceId,

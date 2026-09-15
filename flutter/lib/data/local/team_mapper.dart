@@ -166,11 +166,27 @@ class TeamLogMapper {
       // is the *faithful* translation of Kotlin writing `_rev` — not a
       // divergence from it.
       //
-      // Left at the column default instead, every one of the 13,659
-      // `team_activities` documents on planet.learning would have arrived
-      // flagged as needing upload and been POSTed straight back, duplicating
-      // the whole database on the server on every sync. A document that came
-      // *from* `team_activities` has by definition reached `team_activities`.
+      // A document that came *from* `team_activities` has by definition
+      // reached `team_activities`.
+      //
+      // **What leaving it at the column default actually costs**, stated
+      // precisely because the first draft of this comment said "duplicates the
+      // whole database on the server" and that was the wrong mechanism.
+      // `TeamLogUploader.serialize` emits `_id` when `couchId` is set and
+      // `_rev` when `rev` is, so a pulled row POSTs *with both* — which
+      // CouchDB treats as an update of the existing document, not a second
+      // one. What happens instead, on all 13,659 documents planet.learning
+      // holds: `queuePending` enqueues one `outbox` row per document, in a
+      // **preserved** table that survives schema bumps; every sweep POSTs
+      // 13,659 times; every document's `_rev` is bumped, so every *other*
+      // handset re-pulls all of them and POSTs them back in turn; and once two
+      // devices race, most of those POSTs 409, which the Phase 148 policy
+      // classifies `rejected` and leaves as a terminal outbox row apiece.
+      //
+      // Genuine duplication is still one slip away, which is why this is
+      // spelled out rather than trimmed: a writer that set `uploaded = false`
+      // *without* also writing `couchId`/`rev` would make `serialize` omit
+      // `_id`, and the POST would create a brand-new document every sync.
       uploaded: const Value(true),
     );
   }
