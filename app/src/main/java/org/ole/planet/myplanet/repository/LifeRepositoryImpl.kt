@@ -5,14 +5,13 @@ import javax.inject.Inject
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
-import org.ole.planet.myplanet.datasource.MyLifeCacheDataSource
 import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 class LifeRepositoryImpl @Inject constructor(
     private val myLifeDao: MyLifeDao,
     private val sharedPrefManager: SharedPrefManager,
-    private val myLifeCacheDataSource: MyLifeCacheDataSource
+    private val lifeCache: LifeCache
 ) : LifeRepository {
 
     private val seedMutex = Mutex()
@@ -27,7 +26,7 @@ class LifeRepositoryImpl @Inject constructor(
         val rawUserId = managedLives.firstOrNull()?.userId ?: sharedPrefManager.getUserId()
         val effectiveUserId = normalizeUserId(rawUserId)
         val updatedLives = getMyLifeByUserId(effectiveUserId)
-        myLifeCacheDataSource.write(effectiveUserId ?: "--", updatedLives)
+        lifeCache.write(effectiveUserId ?: "--", updatedLives)
         return updatedLives
     }
 
@@ -58,7 +57,7 @@ class LifeRepositoryImpl @Inject constructor(
             myLifeDao.update(changed)
         }
         val updatedLives = getMyLifeByUserId(effectiveUserId)
-        myLifeCacheDataSource.write(effectiveUserId ?: "--", updatedLives)
+        lifeCache.write(effectiveUserId ?: "--", updatedLives)
     }
 
     private fun MyLife.dedupKey(): Any {
@@ -97,7 +96,7 @@ class LifeRepositoryImpl @Inject constructor(
         }
 
         val cacheKey = effectiveUserId ?: "--"
-        val cached = myLifeCacheDataSource.read(cacheKey)
+        val cached = lifeCache.read(cacheKey)
         if (cached != null) {
             return cached.mapNotNull { item ->
                 if (item.isVisible) {
@@ -114,7 +113,7 @@ class LifeRepositoryImpl @Inject constructor(
         val seeded = seedMyLifeIfEmpty(effectiveUserId, seedBase).ifEmpty {
             getMyLifeByUserId(effectiveUserId)
         }
-        myLifeCacheDataSource.write(cacheKey, seeded)
+        lifeCache.write(cacheKey, seeded)
         return seeded.filter { it.isVisible }.sortedBy { it.weight }
     }
 

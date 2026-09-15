@@ -11,7 +11,7 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Qualifier
 import javax.inject.Singleton
 import com.google.gson.Gson
-import org.ole.planet.myplanet.datasource.MyLifeCacheDataSource
+import org.ole.planet.myplanet.repository.LifeCache
 import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 
@@ -54,10 +54,10 @@ object SharedPreferencesModule {
 
     @Provides
     @Singleton
-    fun provideMyLifeCacheDataSource(
+    fun provideLifeCache(
         @AppPreferences preferences: SharedPreferences,
         gson: Gson
-    ): MyLifeCacheDataSource {
-        return MyLifeCacheDataSource(preferences, gson)
+    ): LifeCache {
+        return LifeCache(preferences, gson)
     }
 }

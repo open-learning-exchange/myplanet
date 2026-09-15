@@ -12,7 +12,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
-import org.ole.planet.myplanet.datasource.MyLifeCacheDataSource
 import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.services.SharedPrefManager
 
@@ -28,11 +27,11 @@ class LifeRepositoryTest {
         Logger.getLogger("io.mockk").level = Level.OFF
         myLifeDao = mockk(relaxed = true)
         val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
-        val myLifeCacheDataSource: MyLifeCacheDataSource = mockk(relaxed = true)
+        val lifeCache: LifeCache = mockk(relaxed = true)
         repository = LifeRepositoryImpl(
             myLifeDao,
             sharedPrefManager,
-            myLifeCacheDataSource
+            lifeCache
         )
     }
 

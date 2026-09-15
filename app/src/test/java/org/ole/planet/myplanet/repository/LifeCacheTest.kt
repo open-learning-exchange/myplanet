@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.datasource
+package org.ole.planet.myplanet.repository
 
 import android.content.SharedPreferences
 import com.google.gson.Gson
@@ -14,12 +14,12 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.MyLife
 
-class MyLifeCacheDataSourceTest {
+class LifeCacheTest {
 
     private lateinit var mockSharedPreferences: SharedPreferences
     private lateinit var mockEditor: SharedPreferences.Editor
     private lateinit var gson: Gson
-    private lateinit var dataSource: MyLifeCacheDataSource
+    private lateinit var lifeCache: LifeCache
 
     @Before
     fun setUp() {
@@ -30,14 +30,14 @@ class MyLifeCacheDataSourceTest {
         every { mockSharedPreferences.edit() } returns mockEditor
         every { mockEditor.putString(any(), any()) } returns mockEditor
 
-        dataSource = MyLifeCacheDataSource(mockSharedPreferences, gson)
+        lifeCache = LifeCache(mockSharedPreferences, gson)
     }
 
     @Test
     fun read_returnsNull_whenNoJsonFound() {
         every { mockSharedPreferences.getString("myLifeCache_user1", null) } returns null
 
-        val result = dataSource.read("user1")
+        val result = lifeCache.read("user1")
 
         assertNull(result)
     }
@@ -51,7 +51,7 @@ class MyLifeCacheDataSourceTest {
         val json = gson.toJson(items)
         every { mockSharedPreferences.getString("myLifeCache_user1", null) } returns json
 
-        val result = dataSource.read("user1")
+        val result = lifeCache.read("user1")
 
         assertNotNull(result)
         assertEquals(2, result!!.size)
@@ -65,7 +65,7 @@ class MyLifeCacheDataSourceTest {
     fun read_returnsNull_whenMalformedJson() {
         every { mockSharedPreferences.getString("myLifeCache_user1", null) } returns "corrupt_json_string"
 
-        val result = dataSource.read("user1")
+        val result = lifeCache.read("user1")
 
         assertNull(result)
     }
@@ -83,7 +83,7 @@ class MyLifeCacheDataSourceTest {
 
         every { mockEditor.putString(capture(keySlot), capture(jsonSlot)) } returns mockEditor
 
-        dataSource.write("user1", listOf(item1))
+        lifeCache.write("user1", listOf(item1))
 
         verify(exactly = 1) { mockEditor.putString(any(), any()) }
         assertEquals("myLifeCache_user1", keySlot.captured)
@@ -101,7 +101,7 @@ class MyLifeCacheDataSourceTest {
         val keySlot = slot<String>()
         every { mockEditor.putString(capture(keySlot), any()) } returns mockEditor
 
-        dataSource.write("--", emptyList())
+        lifeCache.write("--", emptyList())
 
         assertEquals("myLifeCache_--", keySlot.captured)
     }

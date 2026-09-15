@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.datasource
+package org.ole.planet.myplanet.repository
 
 import android.content.SharedPreferences
 import androidx.core.content.edit
@@ -17,7 +17,7 @@ data class CachedMyLifeItem(
 )
 
 @Singleton
-class MyLifeCacheDataSource @Inject constructor(
+class LifeCache @Inject constructor(
     @AppPreferences private val preferences: SharedPreferences,
     private val gson: Gson
 ) {
