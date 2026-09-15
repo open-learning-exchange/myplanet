@@ -110,14 +110,16 @@ object ServerConfigUtils {
             Triple(user, password, dbUrl)
         }
 
-        sharedPrefManager.setServerPin(password)
-        sharedPrefManager.setUrlUser(urlUser)
-        sharedPrefManager.setUrlPwd(urlPwd)
-        sharedPrefManager.setUrlScheme(uri.scheme ?: "")
-        sharedPrefManager.setUrlHost(uri.host ?: "")
-        sharedPrefManager.setAlternativeUrl(url)
-        sharedPrefManager.setProcessedAlternativeUrl(couchdbURL)
-        sharedPrefManager.setIsAlternativeUrl(true)
+        sharedPrefManager.saveAlternativeServerConfig(
+            serverPin = password,
+            urlUser = urlUser,
+            urlPwd = urlPwd,
+            urlScheme = uri.scheme ?: "",
+            urlHost = uri.host ?: "",
+            alternativeUrl = url,
+            processedAlternativeUrl = couchdbURL,
+            isAlternativeUrl = true
+        )
 
         return couchdbURL
     }
@@ -137,8 +139,8 @@ object ServerConfigUtils {
         return CommunityConfig(domain, protocol, pin, isPinEnabled)
     }
 
-    fun getTrustedServerHosts(): List<String> {
-        return listOfNotNull(
+    private val _trustedServerHosts: List<String> by lazy {
+        listOfNotNull(
             BuildConfig.PLANET_LEARNING_URL.takeIf { it.isNotEmpty() },
             BuildConfig.PLANET_GUATEMALA_URL.takeIf { it.isNotEmpty() },
             BuildConfig.PLANET_SANPABLO_URL.takeIf { it.isNotEmpty() },
@@ -156,8 +158,10 @@ object ServerConfigUtils {
         )
     }
 
-    fun getChallengeServerUrls(): List<String> {
-        return listOfNotNull(
+    fun getTrustedServerHosts(): List<String> = _trustedServerHosts
+
+    private val _challengeServerUrls: List<String> by lazy {
+        listOfNotNull(
             BuildConfig.PLANET_GUATEMALA_URL.takeIf { it.isNotEmpty() }?.let { "https://$it" },
             BuildConfig.PLANET_XELA_URL.takeIf { it.isNotEmpty() }?.let { "http://$it" },
             BuildConfig.PLANET_URIUR_URL.takeIf { it.isNotEmpty() }?.let { "http://$it" },
@@ -166,4 +170,6 @@ object ServerConfigUtils {
             BuildConfig.PLANET_VI_URL.takeIf { it.isNotEmpty() }?.let { "https://$it" }
         )
     }
+
+    fun getChallengeServerUrls(): List<String> = _challengeServerUrls
 }

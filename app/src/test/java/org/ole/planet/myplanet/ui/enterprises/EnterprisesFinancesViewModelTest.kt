@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.enterprises
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -153,7 +154,75 @@ class EnterprisesFinancesViewModelTest {
     }
 
     @Test
-    fun `getTeamTransactions calculates total and updates headerState correctly`() = runTest {
+    fun `getTeamTransactions duplicate call while active does not re-query repository`() = runTest {
+        val mockTransactions = listOf(Transaction("1", 0L, "desc", "type", 100, 100))
+        val teamId = "test_team_id"
+        val sortAscending = true
+        val startDate = 1000L
+        val endDate = 2000L
+
+        coEvery {
+            teamsRepository.getTeamTransactionsWithBalance(
+                teamId = teamId,
+                startDate = startDate,
+                endDate = endDate,
+                sortAscending = sortAscending
+            )
+        } returns flowOf(mockTransactions)
+
+        viewModel.getTeamTransactions(teamId, sortAscending, startDate, endDate)
+        viewModel.getTeamTransactions(teamId, sortAscending, startDate, endDate)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            teamsRepository.getTeamTransactionsWithBalance(
+                teamId = teamId,
+                startDate = startDate,
+                endDate = endDate,
+                sortAscending = sortAscending
+            )
+        }
+    }
+
+    @Test
+    fun `getTeamTransactions call with different arguments re-queries repository`() = runTest {
+        val mockTransactions = listOf(Transaction("1", 0L, "desc", "type", 100, 100))
+        val teamId = "test_team_id"
+
+        coEvery {
+            teamsRepository.getTeamTransactionsWithBalance(
+                teamId = teamId,
+                startDate = null,
+                endDate = null,
+                sortAscending = any()
+            )
+        } returns flowOf(mockTransactions)
+
+        viewModel.getTeamTransactions(teamId, sortAscending = false, startDate = null, endDate = null)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.getTeamTransactions(teamId, sortAscending = true, startDate = null, endDate = null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            teamsRepository.getTeamTransactionsWithBalance(
+                teamId = teamId,
+                startDate = null,
+                endDate = null,
+                sortAscending = false
+            )
+        }
+        coVerify(exactly = 1) {
+            teamsRepository.getTeamTransactionsWithBalance(
+                teamId = teamId,
+                startDate = null,
+                endDate = null,
+                sortAscending = true
+            )
+        }
+    }
+
+    @Test
+    fun `getTeamTransactions calculates total and updates financeSummary correctly`() = runTest {
         val mockTransactions = listOf(
             Transaction("1", 0L, "credit entry", "credit", 500, 500),
             Transaction("2", 0L, "debit entry 1", "debit", 200, 300),
@@ -170,18 +239,24 @@ class EnterprisesFinancesViewModelTest {
             )
         } returns flowOf(mockTransactions)
 
+        val states = mutableListOf<FinanceSummaryUiState>()
+        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.financeSummary.collect { states.add(it) }
+        }
+
         viewModel.getTeamTransactions(teamId, true, null, null)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        val headerState = viewModel.headerState.first()
-        assertEquals(300, headerState.debit)
-        assertEquals(500, headerState.credit)
-        assertEquals(200, headerState.total)
-        assertEquals(false, headerState.isCautionVisible)
+        val summary = states.last()
+        assertEquals(300, summary.debit)
+        assertEquals(500, summary.credit)
+        assertEquals(200, summary.total)
+        assertEquals(false, summary.isCautionVisible)
+        job.cancel()
     }
 
     @Test
-    fun `headerState exhibits caution when total is negative`() = runTest {
+    fun `financeSummary exhibits caution when total is negative`() = runTest {
         val mockTransactions = listOf(
             Transaction("1", 0L, "credit entry", "credit", 100, 100),
             Transaction("2", 0L, "debit entry", "debit", 300, -200)
@@ -197,13 +272,19 @@ class EnterprisesFinancesViewModelTest {
             )
         } returns flowOf(mockTransactions)
 
+        val states = mutableListOf<FinanceSummaryUiState>()
+        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.financeSummary.collect { states.add(it) }
+        }
+
         viewModel.getTeamTransactions(teamId, true, null, null)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        val headerState = viewModel.headerState.first()
-        assertEquals(300, headerState.debit)
-        assertEquals(100, headerState.credit)
-        assertEquals(-200, headerState.total)
-        assertEquals(true, headerState.isCautionVisible)
+        val summary = states.last()
+        assertEquals(300, summary.debit)
+        assertEquals(100, summary.credit)
+        assertEquals(-200, summary.total)
+        assertEquals(true, summary.isCautionVisible)
+        job.cancel()
     }
 }

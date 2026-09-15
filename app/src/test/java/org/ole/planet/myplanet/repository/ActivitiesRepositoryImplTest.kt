@@ -28,6 +28,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
@@ -41,7 +42,6 @@ import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.ResourceActivity
 import org.ole.planet.myplanet.model.UserChallengeActions
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -131,6 +131,28 @@ class ActivitiesRepositoryImplTest {
     }
 
     @Test
+    fun `getMemberVisitStats returns correct count and last visit`() = runTest {
+        coEvery { offlineActivityDao.countByUserIdAndType("user1", UserSessionManager.KEY_LOGIN) } returns 5
+        coEvery { offlineActivityDao.getLastVisit("john") } returns 2000L
+
+        val result = repository.getMemberVisitStats("user1", "john")
+
+        assertEquals(5, result.offlineVisitCount)
+        assertEquals(2000L, result.lastVisit)
+    }
+
+    @Test
+    fun `getMemberVisitStats handles null or empty inputs`() = runTest {
+        val resultNull = repository.getMemberVisitStats(null, null)
+        assertEquals(0, resultNull.offlineVisitCount)
+        assertNull(resultNull.lastVisit)
+
+        val resultEmpty = repository.getMemberVisitStats("", "")
+        assertEquals(0, resultEmpty.offlineVisitCount)
+        assertNull(resultEmpty.lastVisit)
+    }
+
+    @Test
     fun `getOfflineLoginCount returns correct count`() = runTest {
         coEvery { offlineActivityDao.countByUserNameAndType("john", UserSessionManager.KEY_LOGIN) } returns 3
         val result = repository.getOfflineLoginCount("john")
@@ -181,6 +203,7 @@ class ActivitiesRepositoryImplTest {
 
     @Test
     fun `logCourseVisit inserts course activity`() = runTest {
+        every { timeProvider.now() } returns 123456789L
         val mockUser = UserEntity().apply {
             parentCode = "parent"
             planetCode = "planet"
@@ -197,10 +220,12 @@ class ActivitiesRepositoryImplTest {
         assertEquals("visit", slot.captured.type)
         assertEquals("parent", slot.captured.parentCode)
         assertEquals("planet", slot.captured.createdOn)
+        assertEquals(123456789L, slot.captured.time)
     }
 
     @Test
     fun `logLogin inserts offline activity`() = runTest {
+        every { timeProvider.now() } returns 123456789L
         val slot = slot<OfflineActivity>()
         repository.logLogin("user1", "john", "parent", "planet")
 
@@ -211,16 +236,18 @@ class ActivitiesRepositoryImplTest {
         assertEquals("planet", slot.captured.createdOn)
         assertEquals(UserSessionManager.KEY_LOGIN, slot.captured.type)
         assertEquals("Member login on offline application", slot.captured.description)
+        assertEquals(123456789L, slot.captured.loginTime)
     }
 
     @Test
     fun `logLogout updates logout time`() = runTest {
+        every { timeProvider.now() } returns 987654321L
         val mockActivity = OfflineActivity().apply { id = "act1" }
         coEvery { offlineActivityDao.getLatestByType(UserSessionManager.KEY_LOGIN) } returns mockActivity
 
         repository.logLogout("john")
 
-        coVerify { offlineActivityDao.updateLogoutTime(eq("act1"), any()) }
+        coVerify { offlineActivityDao.updateLogoutTime("act1", 987654321L) }
     }
 
     @Test
@@ -239,6 +266,7 @@ class ActivitiesRepositoryImplTest {
 
     @Test
     fun `logResourceOpen inserts resource activity`() = runTest {
+        every { timeProvider.now() } returns 123456789L
         val slot = slot<ResourceActivity>()
         repository.logResourceOpen("john", "parent", "planet", "Res Title", "res1", "pdf")
 
@@ -249,6 +277,7 @@ class ActivitiesRepositoryImplTest {
         assertEquals("Res Title", slot.captured.title)
         assertEquals("res1", slot.captured.resourceId)
         assertEquals("pdf", slot.captured.type)
+        assertEquals(123456789L, slot.captured.time)
     }
 
     @Test
@@ -256,6 +285,13 @@ class ActivitiesRepositoryImplTest {
         coEvery { resourceActivityDao.countByUserAndType("john", "pdf") } returns 10L
         val result = repository.getResourceOpenCount("john", "pdf")
         assertEquals(10L, result)
+    }
+
+    @Test
+    fun `getResourceOpenCount without type defaults to visit`() = runTest {
+        coEvery { resourceActivityDao.countByUserAndType("john", UserSessionManager.KEY_RESOURCE_OPEN) } returns 7L
+        val result = repository.getResourceOpenCount("john")
+        assertEquals(7L, result)
     }
 
     @Test
@@ -277,6 +313,34 @@ class ActivitiesRepositoryImplTest {
     }
 
     @Test
+    fun `getMostOpenedResource without type defaults to visit`() = testScope.runTest {
+        coEvery {
+            resourceActivityDao.getMostOpenedResource("john", UserSessionManager.KEY_RESOURCE_OPEN)
+        } returns ResourceOpenCount("Res 1", 1)
+
+        val result = repository.getMostOpenedResource("john")
+
+        assertEquals("Res 1", result?.first)
+        assertEquals(1, result?.second)
+    }
+
+    @Test
+    fun `getProfileActivityStats aggregates mostOpened lastVisit and openCount`() = testScope.runTest {
+        coEvery {
+            resourceActivityDao.getMostOpenedResource("john", UserSessionManager.KEY_RESOURCE_OPEN)
+        } returns ResourceOpenCount("Res 1", 1)
+        coEvery { offlineActivityDao.getGlobalLastVisit() } returns 123456L
+        coEvery { resourceActivityDao.countByUserAndType("john", UserSessionManager.KEY_RESOURCE_OPEN) } returns 3L
+
+        val stats = repository.getProfileActivityStats("john")
+
+        assertEquals("Res 1", stats.mostOpenedResource?.first)
+        assertEquals(1, stats.mostOpenedResource?.second)
+        assertEquals(123456L, stats.lastVisit)
+        assertEquals(3L, stats.resourceOpenCount)
+    }
+
+    @Test
     fun `recordSyncUserChallengeAction inserts action`() = runTest {
         coEvery { timeProvider.now() } returns 5000L
         val slot = slot<UserChallengeActions>()
@@ -292,6 +356,7 @@ class ActivitiesRepositoryImplTest {
 
     @Test
     fun `recordSyncActivity inserts resource activity`() = runTest {
+        every { timeProvider.now() } returns 123456789L
         val mockUser = UserEntity().apply {
             id = "user1"
             name = "john"
@@ -308,6 +373,7 @@ class ActivitiesRepositoryImplTest {
         assertEquals("parent", slot.captured.parentCode)
         assertEquals("planet", slot.captured.createdOn)
         assertEquals("sync", slot.captured.type)
+        assertEquals(123456789L, slot.captured.time)
     }
 
     @Test

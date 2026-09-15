@@ -47,6 +47,10 @@ class ResourcesViewModel @Inject constructor(
     private var isAscending = true
     private var isTitleAscending = false
 
+    val currentSortMode: SortMode get() = sortMode
+    val isDateSortAscending: Boolean get() = isAscending
+    val isTitleSortAscending: Boolean get() = isTitleAscending
+
     private val _downloadComplete = MutableStateFlow(false)
     val downloadComplete: StateFlow<Boolean> = _downloadComplete.asStateFlow()
 
@@ -114,7 +118,39 @@ class ResourcesViewModel @Inject constructor(
     }
 
     suspend fun getFilterFacets(libraries: List<MyLibrary>): Map<String, Set<String>> = withContext(dispatcherProvider.default) {
-        resourcesRepository.getFilterFacets(libraries)
+        val languages = mutableSetOf<String>()
+        val subjects = mutableSetOf<String>()
+        val mediums = mutableSetOf<String>()
+        val levels = mutableSetOf<String>()
+
+        libraries.forEach { library ->
+            library.language?.takeIf { it.isNotBlank() }?.let { languages.add(it) }
+            library.subject?.let { subjects.addAll(it) }
+            library.mediaType?.takeIf { it.isNotBlank() }?.let { mediums.add(it) }
+            library.level?.let { levels.addAll(it) }
+        }
+
+        mapOf(
+            "languages" to languages,
+            "subjects" to subjects,
+            "mediums" to mediums,
+            "levels" to levels
+        )
+    }
+
+    private val listFilter = ResourcesListFilter()
+
+    fun applyFilter(models: List<ResourceListModel>, criteria: ResourcesFilterCriteria, locallyOfflineIds: Set<String>): List<ResourceListModel> =
+        listFilter.apply(models, criteria, locallyOfflineIds)
+
+    fun filterIfChanged(models: List<ResourceListModel>, criteria: ResourcesFilterCriteria, locallyOfflineIds: Set<String>): List<ResourceListModel>? =
+        listFilter.filterIfChanged(models, criteria, locallyOfflineIds)
+
+    fun countMatching(models: List<ResourceListModel>, criteria: ResourcesFilterCriteria, locallyOfflineIds: Set<String>): Int =
+        listFilter.countMatching(models, criteria, locallyOfflineIds)
+
+    fun resetFilter() {
+        listFilter.reset()
     }
 
     suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String): Result<Unit> {

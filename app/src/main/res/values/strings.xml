@@ -551,6 +551,8 @@
     <string name="subject_level">Subject Level</string>
     <string name="order_by_date">Order by Date</string>
     <string name="order_by_title">Order by Title</string>
+    <string name="sort">Sort</string>
+    <string name="show_n_results">Show %1$d results</string>
     <string name="exams">Exams</string>
     <string name="survey">Survey</string>
     <string name="submitted_by">Submitted by</string>

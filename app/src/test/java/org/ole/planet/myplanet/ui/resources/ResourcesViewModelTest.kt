@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.resources
 
-import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -12,6 +11,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -197,6 +197,52 @@ class ResourcesViewModelTest {
 
         val secondToggleResult = viewModel.toggleSortOrder(firstToggleResult)
         assertEquals(listOf(100L, 200L, 300L), secondToggleResult.map { it.item.createdDate })
+    }
+
+    @Test
+    fun `getFilterFacets extracts languages, subjects, mediums, and levels correctly`() = runTest {
+        val lib1 = MyLibrary().apply {
+            language = "English"
+            subject = listOf("Math", "Science")
+            mediaType = "PDF"
+            level = listOf("Primary")
+        }
+        val lib2 = MyLibrary().apply {
+            language = "Spanish"
+            subject = listOf("Science", "History")
+            mediaType = "Video"
+            level = listOf("Secondary")
+        }
+
+        val facets = viewModel.getFilterFacets(listOf(lib1, lib2))
+
+        assertEquals(setOf("English", "Spanish"), facets["languages"])
+        assertEquals(setOf("Math", "Science", "History"), facets["subjects"])
+        assertEquals(setOf("PDF", "Video"), facets["mediums"])
+        assertEquals(setOf("Primary", "Secondary"), facets["levels"])
+    }
+
+    @Test
+    fun `filterIfChanged memoizes the criteria in the view model until resetFilter`() = runTest {
+        val models = listOf(createResourceModel("a", 1), createResourceModel("b", 2))
+        val notDownloaded = ResourcesFilterCriteria(
+            searchQuery = "",
+            searchTags = emptyList(),
+            subjects = emptySet(),
+            levels = emptySet(),
+            languages = emptySet(),
+            mediums = emptySet(),
+            downloadFilterIndex = 2
+        )
+
+        val first = viewModel.filterIfChanged(models, notDownloaded, setOf("a"))
+        val second = viewModel.filterIfChanged(models, notDownloaded, setOf("a"))
+        viewModel.resetFilter()
+        val afterReset = viewModel.filterIfChanged(models, notDownloaded, setOf("a"))
+
+        assertEquals(listOf("b"), first?.map { it.item.id })
+        assertNull(second)
+        assertEquals(listOf("b"), afterReset?.map { it.item.id })
     }
 
     private fun createResourceModel(title: String, createdDate: Long): ResourceListModel {

@@ -176,4 +176,120 @@ class CoursesViewModelTest {
         assertEquals("Banana", courses[1].courseTitle) // 1500L
         assertEquals("Apple", courses[2].courseTitle) // 2000L
     }
+
+    @Test
+    fun testFilterCourses_updatesCurrentFilterState() = runTest {
+        val tags = listOf("Science", "Math")
+        viewModel.filterCourses(false, "u1", "query", "Grade 1", "Math", tags, "In Progress")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.currentFilterState
+        assertEquals("query", state.searchText)
+        assertEquals("Grade 1", state.grade)
+        assertEquals("Math", state.subject)
+        assertEquals(tags, state.tagNames)
+        assertEquals("In Progress", state.progressFilter)
+    }
+
+    @Test
+    fun testLoadCourses_withActiveCurrentFilterState_usesFilterCoursesInternal() = runTest {
+        viewModel.filterCourses(false, "u1", "algebra", "", "", listOf("Science"), "")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.loadCourses(false, "u1")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(atLeast = 2) { coursesRepository.filterCourses("algebra", "", "", listOf("Science")) }
+    }
+
+    @Test
+    fun testFilterCourses_tagPreservation() = runTest {
+        val tagNames = listOf("Biology", "Chemistry")
+        viewModel.filterCourses(true, "u1", "", "", "", tagNames, "")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.currentFilterState
+        assertEquals(tagNames, state.tagNames)
+        coVerify { coursesRepository.filterCourses("", "", "", tagNames) }
+    }
+
+    @Test
+    fun testTitleSort_mixedCase_caseInsensitive() = runTest {
+        val c1 = MyCourse().apply { courseId = "1"; courseTitle = "apple" }
+        val c2 = MyCourse().apply { courseId = "2"; courseTitle = "Banana" }
+        val c3 = MyCourse().apply { courseId = "3"; courseTitle = "cherry" }
+        val c4 = MyCourse().apply { courseId = "4"; courseTitle = "Date" }
+
+        io.mockk.coEvery { coursesRepository.getAllCourses() } returns listOf(c1, c2, c3, c4)
+        io.mockk.coEvery { coursesRepository.getMyCourses(any(), any()) } returns emptyList()
+
+        viewModel.loadCourses(false, "u1")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Toggle title sort -> Ascending
+        viewModel.toggleTitleSort()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        var titles = viewModel.coursesState.value.courses.map { it.courseTitle }
+        assertEquals(listOf("apple", "Banana", "cherry", "Date"), titles)
+
+        // Toggle title sort -> Descending
+        viewModel.toggleTitleSort()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        titles = viewModel.coursesState.value.courses.map { it.courseTitle }
+        assertEquals(listOf("Date", "cherry", "Banana", "apple"), titles)
+    }
+
+    @Test
+    fun testTitleSort_caseDifferenceOnly_preservesRelativeOrderInBothDirections() = runTest {
+        val c1 = MyCourse().apply { courseId = "1"; courseTitle = "Alpha" }
+        val c2 = MyCourse().apply { courseId = "2"; courseTitle = "alpha" }
+
+        io.mockk.coEvery { coursesRepository.getAllCourses() } returns listOf(c1, c2)
+        io.mockk.coEvery { coursesRepository.getMyCourses(any(), any()) } returns emptyList()
+
+        viewModel.loadCourses(false, "u1")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Toggle title sort -> Ascending
+        viewModel.toggleTitleSort()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        var ids = viewModel.coursesState.value.courses.map { it.courseId }
+        assertEquals(listOf("1", "2"), ids)
+
+        // Toggle title sort -> Descending
+        viewModel.toggleTitleSort()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        ids = viewModel.coursesState.value.courses.map { it.courseId }
+        assertEquals(listOf("1", "2"), ids)
+    }
+
+    @Test
+    fun testDateSort_unaffected() = runTest {
+        val c1 = MyCourse().apply { courseId = "1"; courseTitle = "Course A"; createdDate = 2000L }
+        val c2 = MyCourse().apply { courseId = "2"; courseTitle = "Course B"; createdDate = 1000L }
+
+        io.mockk.coEvery { coursesRepository.getAllCourses() } returns listOf(c1, c2)
+        io.mockk.coEvery { coursesRepository.getMyCourses(any(), any()) } returns emptyList()
+
+        viewModel.loadCourses(false, "u1")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Toggle date sort -> isDateAscending starts as true, toggle makes it false (Descending)
+        viewModel.toggleDateSort()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        var dates = viewModel.coursesState.value.courses.map { it.createdDate }
+        assertEquals(listOf(2000L, 1000L), dates)
+
+        // Toggle date sort -> Ascending
+        viewModel.toggleDateSort()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        dates = viewModel.coursesState.value.courses.map { it.createdDate }
+        assertEquals(listOf(1000L, 2000L), dates)
+    }
 }

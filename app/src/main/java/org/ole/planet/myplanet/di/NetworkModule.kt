@@ -38,6 +38,10 @@ annotation class StandardHttpClient
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
+annotation class ReachabilityHttpClient
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
 annotation class StandardRetrofit
 
 @Qualifier
@@ -50,6 +54,7 @@ object NetworkModule {
     private const val CONNECT_TIMEOUT_SECONDS = 10L
     private const val READ_TIMEOUT_SECONDS = 60L
     private const val WRITE_TIMEOUT_SECONDS = 120L
+    private const val REACHABILITY_TIMEOUT_SECONDS = 5L
 
     @Provides
     @Singleton
@@ -98,6 +103,17 @@ object NetworkModule {
             READ_TIMEOUT_SECONDS,
             WRITE_TIMEOUT_SECONDS,
             retryInterceptor
+        )
+    }
+
+    @Provides
+    @Singleton
+    @ReachabilityHttpClient
+    fun provideReachabilityOkHttpClient(): OkHttpClient {
+        return buildOkHttpClient(
+            REACHABILITY_TIMEOUT_SECONDS,
+            REACHABILITY_TIMEOUT_SECONDS,
+            REACHABILITY_TIMEOUT_SECONDS
         )
     }
 

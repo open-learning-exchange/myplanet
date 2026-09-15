@@ -19,10 +19,12 @@ import androidx.preference.Preference
 import androidx.preference.Preference.OnPreferenceChangeListener
 import androidx.preference.Preference.OnPreferenceClickListener
 import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.PreferenceManager
 import androidx.preference.SwitchPreference
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.RetryOperation
@@ -34,6 +36,7 @@ import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.restartApp
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
@@ -44,6 +47,8 @@ import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class SettingsActivity : AppCompatActivity() {
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleUtils.onAttach(base))
@@ -51,6 +56,9 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        lifecycleScope.launch(dispatcherProvider.io) {
+            PreferenceManager.getDefaultSharedPreferences(this@SettingsActivity)
+        }
         EdgeToEdgeUtils.setupEdgeToEdge(this, findViewById(android.R.id.content))
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         FragmentNavigator.replaceFragment(supportFragmentManager, android.R.id.content, SettingFragment())
@@ -84,6 +92,8 @@ class SettingsActivity : AppCompatActivity() {
         lateinit var sharedPrefManager: SharedPrefManager
         @Inject
         lateinit var timeProvider: TimeProvider
+        @Inject
+        lateinit var dispatcherProvider: DispatcherProvider
         var user: UserEntity? = null
         private var libraryList: List<MyLibrary>? = null
 
@@ -261,8 +271,14 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         private fun refreshStorageBreakdownSummary() {
-            findPreference<Preference>("storage_breakdown")?.summary = getString(R.string.storage_breakdown_summary) +
-                " · ${getString(R.string.available_space_colon)} ${FileUtils.availableOverTotalMemoryFormattedString(requireContext())}"
+            val context = requireContext().applicationContext
+            lifecycleScope.launch {
+                val availableSpaceText = withContext(dispatcherProvider.io) {
+                    FileUtils.availableOverTotalMemoryFormattedString(context)
+                }
+                findPreference<Preference>("storage_breakdown")?.summary = getString(R.string.storage_breakdown_summary) +
+                    " · ${getString(R.string.available_space_colon)} $availableSpaceText"
+            }
         }
 
         private fun initRetryQueueDebug() {

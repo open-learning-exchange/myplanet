@@ -12,15 +12,28 @@ import org.ole.planet.myplanet.databinding.ReportListItemBinding
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.ImageViewerUtils
+import org.ole.planet.myplanet.utils.SystemTimeProvider
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 
 class EnterprisesReportsAdapter(
     private val context: Context,
     private val teamName: String?,
     private val onEdit: (MyTeam) -> Unit,
-    private val onDelete: (MyTeam) -> Unit
+    private val onDelete: (MyTeam) -> Unit,
+    private val timeProvider: TimeProvider = SystemTimeProvider(),
 ) : ListAdapter<MyTeam, EnterprisesReportsAdapter.ReportsViewHolder>(diffCallback) {
     private var nonTeamMember = false
+    private val attachmentExistsCache = HashMap<String, Pair<Boolean, Long>>()
+    private val cacheTtlMs = 5000L
+
+    override fun onCurrentListChanged(
+        previousList: MutableList<MyTeam>,
+        currentList: MutableList<MyTeam>
+    ) {
+        super.onCurrentListChanged(previousList, currentList)
+        attachmentExistsCache.clear()
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReportsViewHolder {
         val binding = ReportListItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -94,7 +107,21 @@ class EnterprisesReportsAdapter(
 
     private fun bindReportImage(binding: ReportListItemBinding, report: MyTeam) {
         val imageFile = MyTeam.getAttachmentFile(context, report._id, report.imageName)
-        if (imageFile != null && imageFile.exists()) {
+        val now = timeProvider.now()
+        val exists = if (imageFile != null) {
+            val cached = attachmentExistsCache[imageFile.absolutePath]
+            if (cached != null && now - cached.second < cacheTtlMs) {
+                cached.first
+            } else {
+                val freshExists = imageFile.exists()
+                attachmentExistsCache[imageFile.absolutePath] = Pair(freshExists, now)
+                freshExists
+            }
+        } else {
+            false
+        }
+
+        if (imageFile != null && exists) {
             binding.reportImage.visibility = View.VISIBLE
             Glide.with(context)
                 .load(imageFile)
