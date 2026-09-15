@@ -5,7 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.viewbinding.ViewBinding
 
-internal class FragmentViewBindingDelegate<VB : ViewBinding>(
+internal class FragmentBindingHolder<VB : ViewBinding>(
     private val inflateBinding: (LayoutInflater, ViewGroup?, Boolean) -> VB
 ) {
     private var binding: VB? = null
