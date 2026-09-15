@@ -151,10 +151,6 @@ open class MyLibrary {
         this.userId = this.userId?.filterNot { it == id }
     }
 
-    fun needToUpdate(): Boolean {
-        return !resourceOffline || resourceLocalAddress != null && _rev != downloadedRev
-    }
-
     companion object {
         data class InsertParams(
             val doc: JsonObject,

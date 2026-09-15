@@ -51,8 +51,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private var currentCourseProgress = 0
     private var joinDialog: AlertDialog? = null
     private var lastPositionBeforeExam = -1
-    private var pendingJoinDialog = false
-    private var courseDetailContentReady = false
     private var coursesPagerAdapter: CoursesPagerAdapter? = null
     private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
     private var progressJob: Job? = null
@@ -283,11 +281,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         }
     }
 
-    fun onCourseDetailContentReady() {
-        courseDetailContentReady = true
-        maybeShowJoinDialog()
-    }
-
     fun navigateToStep(stepId: String) {
         if (_binding == null || !this::steps.isInitialized) return
         val containsUserId = currentCourse?.userId?.contains(userModel?.id) == true
@@ -295,12 +288,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         val index = steps.indexOfFirst { it?.id == stepId }
         if (index < 0) return
         binding.viewPager2.setCurrentItem(index + 1, true)
-    }
-
-    private fun maybeShowJoinDialog() {
-        if (!pendingJoinDialog || !courseDetailContentReady || _binding == null || !isAdded) return
-        pendingJoinDialog = false
-        joinDialog?.show()
     }
 
     override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
