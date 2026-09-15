@@ -58,6 +58,7 @@ class SubmissionsRepositoryImplTest {
     private val answerDao: AnswerDao = mockk(relaxed = true)
     private val examDao: ExamDao = mockk(relaxed = true)
     private val questionDao: QuestionDao = mockk(relaxed = true)
+    private val userRepository: UserRepository = mockk(relaxed = true)
     private lateinit var repository: SubmissionsRepositoryImpl
 
     @Before
@@ -72,6 +73,7 @@ class SubmissionsRepositoryImplTest {
 
         repository = spyk(SubmissionsRepositoryImpl(
             teamsRepositoryProvider,
+            userRepository,
             context,
             sharedPrefManager,
             exporter,
@@ -252,7 +254,7 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
-    fun `createBulkSurveySubmissions with mixed users only inserts new users`() = runTest {
+    fun `createBulkSurveySubmissions with mixed users only inserts new users preserving input order`() = runTest {
         val examId = "examId"
         val userIds = listOf("user1", "user2", "user3")
         val parentId = "examId@courseId"
@@ -266,7 +268,8 @@ class SubmissionsRepositoryImplTest {
         coVerify(exactly = 1) {
             submissionDao.upsertAll(match {
                 it.size == 2 &&
-                it.map { sub -> sub.userId }.containsAll(listOf("user1", "user3"))
+                it[0].userId == "user1" &&
+                it[1].userId == "user3"
             })
         }
     }
@@ -889,6 +892,44 @@ class SubmissionsRepositoryImplTest {
         }
         val result = repository.getNormalizedSubmitterName(submission)
         assertNull(result)
+    }
+
+    @Test
+    fun `getSubmissionProjections filters by type, selects newest per group, resolves submitter name and count`() = runTest {
+        val s1 = Submission().apply { id = "1"; parentId = "p1"; type = "survey"; status = "pending"; lastUpdateTime = 100L; userId = "user1" }
+        val s2 = Submission().apply { id = "2"; parentId = "p1"; type = "survey"; status = "complete"; lastUpdateTime = 200L; userId = "user1" }
+        val s3 = Submission().apply { id = "3"; parentId = "p2"; type = "exam"; status = "complete"; lastUpdateTime = 300L; userId = "user1" }
+        val subs = listOf(s1, s2, s3)
+
+        val fallbackUser = UserEntity().apply { id = "user1"; name = "Fallback Name" }
+        coEvery { userRepository.getUsersByIds(listOf("user1")) } returns listOf(fallbackUser)
+
+        // Type "survey" returns s1 and s2, grouped by parentId "p1", newest is s2 with count 2
+        val projections = repository.getSubmissionProjections(subs, "user1", "survey", "", emptyMap())
+
+        assertEquals(1, projections.size)
+        assertEquals("2", projections[0].submission.id)
+        assertEquals(2, projections[0].submissionCount)
+        assertEquals("Fallback Name", projections[0].submitterName)
+    }
+
+    @Test
+    fun `getSubmissionProjections filters by query matching exam name`() = runTest {
+        val s1 = Submission().apply { id = "1"; parentId = "p1"; type = "exam"; status = "complete"; lastUpdateTime = 100L; userId = "user1" }
+        val s2 = Submission().apply { id = "2"; parentId = "p2"; type = "exam"; status = "complete"; lastUpdateTime = 200L; userId = "user1" }
+        val subs = listOf(s1, s2)
+
+        val examMap = mapOf<String?, StepExam>(
+            "p1" to StepExam().apply { name = "Math Quiz" },
+            "p2" to StepExam().apply { name = "Science Test" }
+        )
+
+        coEvery { userRepository.getUsersByIds(any()) } returns emptyList()
+
+        val projections = repository.getSubmissionProjections(subs, "user1", "exam", "Math", examMap)
+
+        assertEquals(1, projections.size)
+        assertEquals("1", projections[0].submission.id)
     }
 
     @Test

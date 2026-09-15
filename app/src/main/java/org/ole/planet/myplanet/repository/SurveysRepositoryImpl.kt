@@ -266,8 +266,7 @@ class SurveysRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getIndividualSurveys(): List<StepExam> {
-        return examDao.getByType("surveys")
-            .filter { !it.isTeamShareAllowed && it.teamId.isNullOrEmpty() }
+        return examDao.getIndividualSurveys()
     }
 
     private suspend fun getTeamSubmissionExamIds(teamId: String): Set<String> {
