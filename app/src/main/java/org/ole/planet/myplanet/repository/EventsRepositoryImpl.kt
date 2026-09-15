@@ -6,7 +6,6 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.UserEntity
@@ -17,7 +16,6 @@ import org.ole.planet.myplanet.utils.TimeProvider
 class EventsRepositoryImpl @Inject constructor(
     private val timeProvider: TimeProvider,
     private val meetupDao: MeetupDao,
-    private val userDao: UserDao,
     private val gson: Gson
 ) : EventsRepository, EventsSyncWriter {
 
@@ -67,16 +65,7 @@ class EventsRepositoryImpl @Inject constructor(
         if (meetupId.isBlank()) {
             return emptyList()
         }
-        val memberIds = meetupDao.getMemberUserIdsByMeetupId(meetupId)
-            .mapNotNull { it.takeUnless { id -> id.isBlank() } }
-            .distinct()
-        if (memberIds.isEmpty()) {
-            return emptyList()
-        }
-
-        return memberIds.chunked(400)
-            .flatMap { chunk -> userDao.getUsersByAnyIds(chunk) }
-            .distinctBy { it.id }
+        return meetupDao.getJoinedMembersByMeetupId(meetupId)
     }
 
     override suspend fun toggleAttendance(meetupId: String, userId: String): Meetup? {

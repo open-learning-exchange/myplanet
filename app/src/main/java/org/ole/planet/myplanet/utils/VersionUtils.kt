@@ -14,15 +14,24 @@ object VersionUtils {
     @Volatile
     private var cachedAndroidId: String? = null
 
+    @Volatile
+    private var cachedVersionCode: Int? = null
+
+    @Volatile
+    private var cachedVersionName: String? = null
+
     fun getVersionCode(context: Context): Int {
+        cachedVersionCode?.let { return it }
         try {
             val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                return getLongVersionCode(pInfo).toInt()
+            val code = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                getLongVersionCode(pInfo).toInt()
             } else {
                 @Suppress("DEPRECATION")
-                return pInfo.versionCode
+                pInfo.versionCode
             }
+            cachedVersionCode = code
+            return code
         } catch (e: PackageManager.NameNotFoundException) {
             Log.w(TAG, "Failed to get version code", e)
         }
@@ -30,9 +39,12 @@ object VersionUtils {
     }
 
     fun getVersionName(context: Context): String? {
+        cachedVersionName?.let { return it }
         try {
             val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-            return pInfo.versionName
+            val name = pInfo.versionName
+            cachedVersionName = name
+            return name
         } catch (e: PackageManager.NameNotFoundException) {
             Log.w(TAG, "Failed to get version name", e)
         }
@@ -49,8 +61,15 @@ object VersionUtils {
     }
 
     @VisibleForTesting
-    internal fun resetAndroidIdCacheForTesting() {
+    internal fun reset() {
         cachedAndroidId = null
+        cachedVersionCode = null
+        cachedVersionName = null
+    }
+
+    @VisibleForTesting
+    internal fun resetAndroidIdCacheForTesting() {
+        reset()
     }
 
     fun isVersionAllowed(currentVersion: String, minApkVersion: String): Boolean {
