@@ -45,28 +45,26 @@ class ResourcesListFilter {
     }
 
     fun countMatching(models: List<ResourceListModel>, criteria: ResourcesFilterCriteria, locallyOfflineIds: Set<String>): Int =
-        filter(models, criteria, locallyOfflineIds).size
+        matching(models, criteria, locallyOfflineIds).count()
 
-    private fun filter(models: List<ResourceListModel>, criteria: ResourcesFilterCriteria, locallyOfflineIds: Set<String>): List<ResourceListModel> {
-        val bySearchAndTags = filterBySearchAndTags(models, criteria.searchQuery, criteria.searchTags)
-        return filterByFacetsAndDownloadStatus(bySearchAndTags, criteria, locallyOfflineIds)
-    }
+    private fun filter(models: List<ResourceListModel>, criteria: ResourcesFilterCriteria, locallyOfflineIds: Set<String>): List<ResourceListModel> =
+        matching(models, criteria, locallyOfflineIds).toList()
 
-    private fun filterBySearchAndTags(models: List<ResourceListModel>, searchQuery: String, tags: List<TagEntity>): List<ResourceListModel> {
-        var filteredList = ResourcesSearchUtils.searchLocalModels(models, searchQuery)
-        if (tags.isNotEmpty()) {
-            val searchTagIds = tags.mapTo(HashSet()) { it.id }
-            filteredList = filteredList.filter { model ->
-                model.tags.any { it.id in searchTagIds }
-            }
+    private fun matching(
+        models: List<ResourceListModel>,
+        criteria: ResourcesFilterCriteria,
+        locallyOfflineIds: Set<String>
+    ): Sequence<ResourceListModel> {
+        val searched = ResourcesSearchUtils.searchLocalModels(models, criteria.searchQuery)
+        val searchTagIds = if (criteria.searchTags.isNotEmpty()) {
+            criteria.searchTags.mapTo(HashSet()) { it.id }
+        } else {
+            null
         }
-        return filteredList
-    }
-
-    private fun filterByFacetsAndDownloadStatus(models: List<ResourceListModel>, criteria: ResourcesFilterCriteria, locallyOfflineIds: Set<String>): List<ResourceListModel> {
-        return models.filter { model ->
-            matchesFacets(model, criteria) && matchesDownloadFilter(model, criteria.downloadFilterIndex, locallyOfflineIds)
-        }
+        return searched.asSequence()
+            .filter { model -> searchTagIds == null || model.tags.any { it.id in searchTagIds } }
+            .filter { model -> matchesFacets(model, criteria) }
+            .filter { model -> matchesDownloadFilter(model, criteria.downloadFilterIndex, locallyOfflineIds) }
     }
 
     private fun matchesFacets(model: ResourceListModel, criteria: ResourcesFilterCriteria): Boolean {
