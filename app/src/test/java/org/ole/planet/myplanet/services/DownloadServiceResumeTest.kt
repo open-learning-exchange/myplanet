@@ -39,11 +39,6 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/**
- * Regression coverage for resumable downloads: a `.tmp` file left behind by an interrupted
- * download must be appended to (not discarded) on the next attempt when the server honors the
- * Range request, and must only be discarded when the server ignores it (fresh 200 response).
- */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class DownloadServiceResumeTest {
