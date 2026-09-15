@@ -12,7 +12,7 @@ import org.ole.planet.myplanet.utils.JsonUtils
 class DictionaryRepositoryImpl @Inject constructor(
     private val dictionaryDao: DictionaryDao,
     private val dispatcherProvider: DispatcherProvider,
-    private val dictionaryAssetDataSource: DictionaryAssetDataSource
+    private val dictionaryFileReader: DictionaryFileReader
 ) : DictionaryRepository {
 
     private val seedMutex = Mutex()
@@ -34,7 +34,7 @@ class DictionaryRepositoryImpl @Inject constructor(
 
     override suspend fun insertDictionaryData(): DictionaryLoad {
         return withContext(dispatcherProvider.io) {
-            if (!dictionaryAssetDataSource.isDictionaryAssetPresent()) {
+            if (!dictionaryFileReader.exists()) {
                 return@withContext DictionaryLoad.FileMissing
             }
 
@@ -44,7 +44,7 @@ class DictionaryRepositoryImpl @Inject constructor(
                 }
 
                 try {
-                    val data = dictionaryAssetDataSource.readDictionaryAssetText()
+                    val data = dictionaryFileReader.readText()
                     val json = data?.let { JsonUtils.gson.fromJson(it, JsonArray::class.java) }
                     if (json != null) {
                         val entities = DictionaryMapper.mapJsonArrayToEntities(json)

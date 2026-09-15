@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.utils.TestDispatcherProvider
 class DictionaryRepositoryImplTest {
 
     private lateinit var dictionaryDao: DictionaryDao
-    private lateinit var dictionaryAssetDataSource: DictionaryAssetDataSource
+    private lateinit var dictionaryFileReader: DictionaryFileReader
     private lateinit var dispatcherProvider: TestDispatcherProvider
     private lateinit var dictionaryRepository: DictionaryRepositoryImpl
     private val testScheduler = TestCoroutineScheduler()
@@ -34,14 +34,14 @@ class DictionaryRepositoryImplTest {
     @Before
     fun setup() {
         dictionaryDao = mockk(relaxed = true)
-        dictionaryAssetDataSource = mockk(relaxed = true)
+        dictionaryFileReader = mockk(relaxed = true)
         dispatcherProvider = TestDispatcherProvider(testDispatcher)
-        dictionaryRepository = DictionaryRepositoryImpl(dictionaryDao, dispatcherProvider, dictionaryAssetDataSource)
+        dictionaryRepository = DictionaryRepositoryImpl(dictionaryDao, dispatcherProvider, dictionaryFileReader)
     }
 
     @Test
     fun `insertDictionaryData returns FileMissing if file does not exist`() = runTest(testDispatcher) {
-        every { dictionaryAssetDataSource.isDictionaryAssetPresent() } returns false
+        every { dictionaryFileReader.exists() } returns false
 
         val result = dictionaryRepository.insertDictionaryData()
 
@@ -51,7 +51,7 @@ class DictionaryRepositoryImplTest {
 
     @Test
     fun `insertDictionaryData returns AlreadyPopulated if data is already populated`() = runTest(testDispatcher) {
-        every { dictionaryAssetDataSource.isDictionaryAssetPresent() } returns true
+        every { dictionaryFileReader.exists() } returns true
         coEvery { dictionaryDao.count() } returns 100L
 
         val result = dictionaryRepository.insertDictionaryData()
@@ -62,9 +62,9 @@ class DictionaryRepositoryImplTest {
 
     @Test
     fun `insertDictionaryData returns Failed if json parsing fails`() = runTest(testDispatcher) {
-        every { dictionaryAssetDataSource.isDictionaryAssetPresent() } returns true
+        every { dictionaryFileReader.exists() } returns true
         coEvery { dictionaryDao.count() } returns 0L
-        every { dictionaryAssetDataSource.readDictionaryAssetText() } throws Exception("Forced exception for testing")
+        every { dictionaryFileReader.readText() } throws Exception("Forced exception for testing")
 
         val result = dictionaryRepository.insertDictionaryData()
 
@@ -74,11 +74,11 @@ class DictionaryRepositoryImplTest {
 
     @Test
     fun `insertDictionaryData returns Inserted and inserts entities on success`() = runTest(testDispatcher) {
-        every { dictionaryAssetDataSource.isDictionaryAssetPresent() } returns true
+        every { dictionaryFileReader.exists() } returns true
         coEvery { dictionaryDao.count() } returns 0L
 
         val validJson = """[{"code": "1", "language": "en", "advance_code": "2", "word": "hello", "meaning": "greeting", "definition": "A greeting", "synonym": "hi", "antonoym": "bye"}]"""
-        every { dictionaryAssetDataSource.readDictionaryAssetText() } returns validJson
+        every { dictionaryFileReader.readText() } returns validJson
 
         val result = dictionaryRepository.insertDictionaryData()
 
@@ -88,15 +88,15 @@ class DictionaryRepositoryImplTest {
 
     @Test
     fun `concurrent insertDictionaryData calls only insert once`() = runTest(testScheduler) {
-        every { dictionaryAssetDataSource.isDictionaryAssetPresent() } returns true
+        every { dictionaryFileReader.exists() } returns true
         val validJson = """[{"code": "1", "language": "en", "advance_code": "2", "word": "hello", "meaning": "greeting", "definition": "A greeting", "synonym": "hi", "antonoym": "bye"}]"""
-        every { dictionaryAssetDataSource.readDictionaryAssetText() } returns validJson
+        every { dictionaryFileReader.readText() } returns validJson
 
         val concurrentDispatcher = StandardTestDispatcher(testScheduler)
         val concurrentRepository = DictionaryRepositoryImpl(
             dictionaryDao,
             TestDispatcherProvider(concurrentDispatcher),
-            dictionaryAssetDataSource
+            dictionaryFileReader
         )
 
         val inserted = AtomicBoolean(false)

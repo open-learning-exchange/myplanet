@@ -6,20 +6,20 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.FileUtils
 
-interface DictionaryAssetDataSource {
-    fun isDictionaryAssetPresent(): Boolean
-    fun readDictionaryAssetText(): String?
+interface DictionaryFileReader {
+    fun exists(): Boolean
+    fun readText(): String?
 }
 
-class DictionaryAssetDataSourceImpl @Inject constructor(
+class DictionaryFileReaderImpl @Inject constructor(
     @ApplicationContext private val context: Context
-) : DictionaryAssetDataSource {
+) : DictionaryFileReader {
 
-    override fun isDictionaryAssetPresent(): Boolean {
+    override fun exists(): Boolean {
         return FileUtils.checkFileExist(context, Constants.DICTIONARY_URL)
     }
 
-    override fun readDictionaryAssetText(): String? {
+    override fun readText(): String? {
         val path = FileUtils.getSDPathFromUrl(context, Constants.DICTIONARY_URL)
         return FileUtils.getStringFromFile(path)
     }
