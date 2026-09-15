@@ -542,7 +542,7 @@ class NotificationsRepositoryImplTest {
         coEvery { teamsRepository.get().getJoinRequestsInfo(listOf("rel2")) } returns listOf(joinRequestInfo)
         coEvery { teamsRepository.get().getJoinRequestInfo(null) } returns fallbackRequestInfo
         coEvery { teamsRepository.get().getTeamNamesByIds(listOf("teamB")) } returns mapOf("teamB" to "Beta Team")
-        coEvery { teamsRepository.get().getTeamNamesByIds(listOf("teamC")) } returns mapOf("teamC" to "Gamma Team")
+        coEvery { teamsRepository.get().getTeamLabelInfo("teamC") } returns TeamLabelInfo("teamC", "Gamma Team", "team")
 
         coEvery { userRepository.get().getUsersByIds(listOf("user2")) } returns listOf(
             org.ole.planet.myplanet.model.UserEntity(id = "user2", name = "Alice")
