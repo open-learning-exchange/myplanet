@@ -989,6 +989,7 @@
     <string name="location_colon">location:&#160;</string>
     <string name="recurring_colon">recurring:&#160;</string>
     <string name="created_by_colon">created by:&#160;</string>
+    <string name="team_colon">team:&#160;</string>
     <string name="you_want_to_connect_to_a_different_server">Are you sure you want to change the configuration? This action will clear the app data.</string>
     <string name="are_you_sure_you_want_to_clear_data">are you sure you want to clear all data?</string>
     <string name="feedback_list">list of feedback</string>
