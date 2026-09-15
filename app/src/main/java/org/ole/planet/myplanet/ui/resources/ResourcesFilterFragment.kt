@@ -159,7 +159,7 @@ class ResourcesFilterFragment : BottomSheetDialogFragment(), AdapterView.OnItemC
             }
         }
         for (i in arr.indices) {
-                listView.setItemChecked(i, set.contains(arr[i]))
+            listView.setItemChecked(i, set.contains(arr[i]))
         }
     }
 
@@ -242,6 +242,7 @@ class ResourcesFilterFragment : BottomSheetDialogFragment(), AdapterView.OnItemC
             "image" -> getString(R.string.storage_images)
             "text/html" -> getString(R.string.medium_text_html)
             "html" -> getString(R.string.medium_html)
+            "book", "books" -> getString(R.string.filter_books)
             "other" -> getString(R.string.other)
             else -> medium
         }
