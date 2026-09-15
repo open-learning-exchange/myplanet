@@ -74,10 +74,9 @@ class CoursesViewModel @Inject constructor(
 
     private fun sortCourses(courses: List<Course>): List<Course> {
         return when (activeSort) {
-            SortType.TITLE -> if (isTitleAscending) {
-                courses.sortedBy { it.courseTitle.lowercase() }
-            } else {
-                courses.sortedByDescending { it.courseTitle.lowercase() }
+            SortType.TITLE -> {
+                val byTitle = compareBy(String.CASE_INSENSITIVE_ORDER) { course: Course -> course.courseTitle }
+                if (isTitleAscending) courses.sortedWith(byTitle) else courses.sortedWith(byTitle.reversed())
             }
             SortType.DATE -> if (isDateAscending) {
                 courses.sortedBy { it.createdDate }

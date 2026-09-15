@@ -31,7 +31,8 @@ class HealthExaminationAdapter(
     private var mh: HealthExamination,
     private var userModel: UserEntity?,
     private var userMap: Map<String, UserEntity>,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val onEditClick: ((Intent) -> Unit)? = null
 ) : ListAdapter<HealthExaminationAdapter.HealthExaminationItem, HealthExaminationViewHolder>(DIFF_CALLBACK) {
 
     data class HealthExaminationItem(
@@ -39,7 +40,7 @@ class HealthExaminationAdapter(
         val formattedDate: String,
         val isSelfExamination: Boolean,
         val resolvedName: String,
-        val hasEncryptedData: Boolean
+        val encrypted: JsonObject?
     )
 
     private val colorGrey50 by lazy { ContextCompat.getColor(context, R.color.md_grey_50) }
@@ -77,7 +78,7 @@ class HealthExaminationAdapter(
                     formattedDate = formattedDate,
                     isSelfExamination = isSelfExamination,
                     resolvedName = resolvedName,
-                    hasEncryptedData = encrypted != null
+                    encrypted = encrypted
                 )
             }
         }
@@ -116,8 +117,7 @@ class HealthExaminationAdapter(
         binding.txtVision.text = realmExamination.vision
 
         holder.itemView.setOnClickListener {
-            if (item.hasEncryptedData) {
-                val encrypted = userModel?.let { user -> item.examination.getEncryptedDataAsJson(user) } ?: JsonObject()
+            item.encrypted?.let { encrypted ->
                 showAlert(binding, item, encrypted)
             }
         }
@@ -149,9 +149,14 @@ class HealthExaminationAdapter(
         dialog.window?.setBackgroundDrawable(colorMultiSelectGrey.toDrawable())
 
         dialog.setButton(DialogInterface.BUTTON_NEUTRAL, context.getString(R.string.edit)) { _: DialogInterface?, _: Int ->
-            context.startActivity(Intent(context, HealthExaminationActivity::class.java)
+            val intent = Intent(context, HealthExaminationActivity::class.java)
                 .putExtra("id", realmExamination._id)
-                .putExtra("userId", mh._id))
+                .putExtra("userId", mh._id)
+            if (onEditClick != null) {
+                onEditClick.invoke(intent)
+            } else {
+                context.startActivity(intent)
+            }
         }
 
         dialog.show()
