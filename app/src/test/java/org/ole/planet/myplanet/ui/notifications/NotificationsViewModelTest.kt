@@ -24,7 +24,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.NotificationListItem
 import org.ole.planet.myplanet.model.NotificationPayload
-import org.ole.planet.myplanet.model.NotificationsEnrichment
+import org.ole.planet.myplanet.repository.EnrichedNotifications
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.TaskDateParser
@@ -160,7 +160,7 @@ class NotificationsViewModelTest {
     @Test
     fun testViewModelDelegatesResolveTypeToRepository() = runTest(testDispatcher) {
         val payload = notification(id = "1", type = "team", isRead = false, message = "whatever", subType = "join_request")
-        coEvery { repository.getEnrichedNotifications(USER_ID, FILTER_ALL, false) } returns NotificationsEnrichment(
+        coEvery { repository.getEnrichedNotifications(USER_ID, FILTER_ALL, false) } returns EnrichedNotifications(
             payloads = listOf(payload),
             taskTeamNames = emptyMap(),
             joinRequestDetails = emptyMap(),
@@ -222,7 +222,7 @@ class NotificationsViewModelTest {
         val taskWithTitleOnly = notification(id = "t2", type = "task", isRead = false, message = "Task By Title Mon 12, Jan 2024").copy(relatedId = null)
         val joinReq = notification(id = "j1", type = "join_request", isRead = false, message = "Join Req").copy(relatedId = "rel_join_1")
 
-        val enrichment = NotificationsEnrichment(
+        val enrichment = EnrichedNotifications(
             payloads = listOf(taskWithId, taskWithTitleOnly, joinReq),
             taskTeamNames = mapOf("rel_task_1" to "Alpha Team", "Task By Title" to "Beta Team"),
             joinRequestDetails = mapOf("rel_join_1" to Pair("Alice", "Gamma Team")),
@@ -273,7 +273,7 @@ class NotificationsViewModelTest {
     private fun TestScope.loadNotifications(vararg payloads: NotificationPayload) {
         val taskNotifications = payloads.filter { it.type.equals("task", ignoreCase = true) }
         val parsedTaskDates = taskNotifications.associateBy({ it.id }, { TaskDateParser.parseTaskDate(it.message) })
-        val enrichment = NotificationsEnrichment(
+        val enrichment = EnrichedNotifications(
             payloads = payloads.toList(),
             taskTeamNames = emptyMap(),
             joinRequestDetails = emptyMap(),

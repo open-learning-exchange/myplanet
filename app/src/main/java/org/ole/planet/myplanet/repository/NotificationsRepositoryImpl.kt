@@ -18,7 +18,6 @@ import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.NotificationPayload
-import org.ole.planet.myplanet.model.NotificationsEnrichment
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotification
 import org.ole.planet.myplanet.model.TeamNotificationInfo
@@ -164,7 +163,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getEnrichedNotifications(userId: String, filter: String, isAdmin: Boolean): NotificationsEnrichment {
+    override suspend fun getEnrichedNotifications(userId: String, filter: String, isAdmin: Boolean): EnrichedNotifications {
         val payloadNotifications = getNotifications(userId, filter, isAdmin)
 
         val taskNotifications = mutableListOf<NotificationPayload>()
@@ -232,7 +231,7 @@ class NotificationsRepositoryImpl @Inject constructor(
             )
         }
 
-        return NotificationsEnrichment(
+        return EnrichedNotifications(
             payloads = payloadNotifications,
             taskTeamNames = taskTeamNames,
             joinRequestDetails = joinRequestDetails,

@@ -5,15 +5,22 @@ import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.NotificationPayload
-import org.ole.planet.myplanet.model.NotificationsEnrichment
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotificationInfo
+
+data class EnrichedNotifications(
+    val payloads: List<NotificationPayload>,
+    val taskTeamNames: Map<String, String>,
+    val joinRequestDetails: Map<String, Pair<String, String>>,
+    val parsedTaskDates: Map<String, Pair<String, String>?>,
+    val unreadCount: Int
+)
 
 interface NotificationsRepository {
     suspend fun refresh()
     suspend fun markNotificationAsRead(notificationId: String, userId: String?)
     suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean = false): List<NotificationPayload>
-    suspend fun getEnrichedNotifications(userId: String, filter: String, isAdmin: Boolean = false): NotificationsEnrichment
+    suspend fun getEnrichedNotifications(userId: String, filter: String, isAdmin: Boolean = false): EnrichedNotifications
     suspend fun getUnreadCount(userId: String?, isAdmin: Boolean = false): Int
     suspend fun updateResourceNotification(userId: String?, resourceCount: Int)
     suspend fun updateStorageNotification(userId: String?, availablePercent: Int)
