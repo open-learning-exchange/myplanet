@@ -70,17 +70,30 @@ class SharedPrefManager @Inject constructor(
         private const val COURSE_VIEW_MODE = "courseViewMode"
     }
 
+    private data class SavedUsersCache(val raw: String?, val parsed: List<User>)
+
+    @Volatile
+    private var savedUsersCache: SavedUsersCache? = null
+
     fun getSavedUsers(): List<User> {
         val usersJson = pref.getString(SAVED_USERS, null)
-        return if (usersJson != null) {
-            gson.fromJson(usersJson, userListType)
+        val cache = savedUsersCache
+        if (cache != null && cache.raw == usersJson) {
+            return cache.parsed
+        }
+        val parsed = if (usersJson != null) {
+            gson.fromJson<List<User>>(usersJson, userListType) ?: emptyList()
         } else {
             emptyList()
         }
+        savedUsersCache = SavedUsersCache(usersJson, parsed)
+        return parsed
     }
 
     fun setSavedUsers(users: List<User>) {
-        pref.edit { putString(SAVED_USERS, gson.toJson(users)) }
+        val json = gson.toJson(users)
+        pref.edit { putString(SAVED_USERS, json) }
+        savedUsersCache = SavedUsersCache(json, users.toList())
     }
 
     fun getRepliedNewsId(): String? {
