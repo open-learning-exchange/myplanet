@@ -502,167 +502,127 @@ class NotificationsRepositoryImplTest {
     }
 
     @Test
-    fun `getTaskTeamNamesByTaskIds maps task ids to team names and skips empty team ids`() = runTest {
-        val tasks = listOf(
-            org.ole.planet.myplanet.model.TeamTask().apply {
-                id = "task1"
-                title = "Task One"
-                teamId = "teamA"
-            },
-            org.ole.planet.myplanet.model.TeamTask().apply {
-                id = "task2"
-                title = "Task Two"
-                teamId = "teamB"
-            },
-            org.ole.planet.myplanet.model.TeamTask().apply {
-                id = "task3"
-                title = "Task Three"
-                teamId = ""
-            },
-        )
-        coEvery { teamTaskDao.getByIds(listOf("task1", "task2", "task3")) } returns tasks
-        coEvery { teamsRepository.get().getTeamNamesByIds(any()) } returns mapOf(
-            "teamA" to "Alpha Team",
-            "teamB" to "Beta Team",
-        )
+    fun `getEnrichedNotifications classifies task and join_request buckets and performs fan-out`() = runTest {
+        val task1 = AppNotification().apply {
+            id = "t1"
+            userId = "user1"
+            type = "task"
+            message = "Task 1 Mon 12, Jan 2024"
+            relatedId = "rel1"
+        }
+        val join1 = AppNotification().apply {
+            id = "j1"
+            userId = "user1"
+            type = "join_request"
+            message = "Join 1"
+            relatedId = "rel2"
+        }
+        val joinNoId = AppNotification().apply {
+            id = "j2"
+            userId = "user1"
+            type = "join_request"
+            message = "Join No ID"
+            relatedId = null
+        }
 
-        val result = repository.getTaskTeamNamesByTaskIds(listOf("task1", "task2", "task3"))
+        coEvery { notificationDao.getNotifications("user1", "", false) } returns listOf(task1, join1, joinNoId)
+        coEvery { notificationDao.getUnreadCount("user1", false) } returns 3
 
-        assertEquals("Alpha Team", result["task1"])
-        assertEquals("Beta Team", result["task2"])
-        assertFalse(result.containsKey("task3"))
+        val taskEntity = org.ole.planet.myplanet.model.TeamTask().apply {
+            id = "rel1"
+            title = "Task 1"
+            teamId = "teamA"
+        }
+        coEvery { teamTaskDao.getByIds(listOf("rel1")) } returns listOf(taskEntity)
+        coEvery { teamTaskDao.getByTitles(listOf("Task 1")) } returns listOf(taskEntity)
+        coEvery { teamsRepository.get().getTeamNamesByIds(listOf("teamA")) } returns mapOf("teamA" to "Alpha Team")
+
+        val joinRequestInfo = JoinRequestInfo("rel2", "teamB", "user2")
+        val fallbackRequestInfo = JoinRequestInfo("fallback_id", "teamC", "user3")
+        coEvery { teamsRepository.get().getJoinRequestsInfo(listOf("rel2")) } returns listOf(joinRequestInfo)
+        coEvery { teamsRepository.get().getJoinRequestInfo(null) } returns fallbackRequestInfo
+        coEvery { teamsRepository.get().getTeamNamesByIds(listOf("teamB")) } returns mapOf("teamB" to "Beta Team")
+        coEvery { teamsRepository.get().getTeamNamesByIds(listOf("teamC")) } returns mapOf("teamC" to "Gamma Team")
+
+        coEvery { userRepository.get().getUsersByIds(listOf("user2")) } returns listOf(
+            org.ole.planet.myplanet.model.UserEntity(id = "user2", name = "Alice")
+        )
+        coEvery { userRepository.get().getUserById("user3") } returns org.ole.planet.myplanet.model.UserEntity(id = "user3", name = "Bob")
+
+        val enrichment = repository.getEnrichedNotifications("user1", "all", false)
+
+        assertEquals(3, enrichment.payloads.size)
+        assertEquals(3, enrichment.unreadCount)
+
+        assertEquals("Alpha Team", enrichment.taskTeamNames["rel1"])
+        assertEquals(Pair("Alice", "Beta Team"), enrichment.joinRequestDetails["rel2"])
+        assertEquals(Pair("Bob", "Gamma Team"), enrichment.joinRequestDetails[""])
+
+        coVerify { teamTaskDao.getByIds(listOf("rel1")) }
+        coVerify { teamTaskDao.getByTitles(listOf("Task 1")) }
+        coVerify { teamsRepository.get().getJoinRequestsInfo(listOf("rel2")) }
+        coVerify { teamsRepository.get().getJoinRequestInfo(null) }
+        coVerify { notificationDao.getUnreadCount("user1", false) }
     }
 
     @Test
-    fun `getTaskTeamNamesByTaskIds deduplicates team ids passed to repository`() = runTest {
-        val tasks = listOf(
-            org.ole.planet.myplanet.model.TeamTask().apply {
-                id = "task1"
-                title = "Task One"
-                teamId = "teamA"
-            },
-            org.ole.planet.myplanet.model.TeamTask().apply {
-                id = "task2"
-                title = "Task Two"
-                teamId = "teamA"
-            },
-        )
-        coEvery { teamTaskDao.getByIds(listOf("task1", "task2")) } returns tasks
-        coEvery { teamsRepository.get().getTeamNamesByIds(any()) } returns mapOf("teamA" to "Alpha Team")
+    fun `getEnrichedNotifications task id precedence over task title precedence`() = runTest {
+        val task1 = AppNotification().apply {
+            id = "t1"
+            userId = "user1"
+            type = "task"
+            message = "Task 1 Mon 12, Jan 2024"
+            relatedId = "rel1"
+        }
+        coEvery { notificationDao.getNotifications("user1", "", false) } returns listOf(task1)
+        coEvery { notificationDao.getUnreadCount("user1", false) } returns 1
 
-        repository.getTaskTeamNamesByTaskIds(listOf("task1", "task2"))
+        val taskById = org.ole.planet.myplanet.model.TeamTask().apply {
+            id = "rel1"
+            title = "Task 1"
+            teamId = "teamIdWinner"
+        }
+        val taskByTitle = org.ole.planet.myplanet.model.TeamTask().apply {
+            id = "other_id"
+            title = "Task 1"
+            teamId = "teamTitleLoser"
+        }
 
-        coVerify { teamsRepository.get().getTeamNamesByIds(listOf("teamA")) }
+        coEvery { teamTaskDao.getByIds(listOf("rel1")) } returns listOf(taskById)
+        coEvery { teamTaskDao.getByTitles(listOf("Task 1")) } returns listOf(taskByTitle)
+        coEvery { teamsRepository.get().getTeamNamesByIds(listOf("teamIdWinner")) } returns mapOf("teamIdWinner" to "Winner Team")
+        coEvery { teamsRepository.get().getTeamNamesByIds(listOf("teamTitleLoser")) } returns mapOf("teamTitleLoser" to "Loser Team")
+
+        val enrichment = repository.getEnrichedNotifications("user1", "all", false)
+
+        // Title produces ("Task 1" -> "Loser Team"), but ID produces ("rel1" -> "Winner Team").
+        // Since putAll(ids) is called second, ids win.
+        assertEquals("Winner Team", enrichment.taskTeamNames["rel1"])
+        assertEquals("Loser Team", enrichment.taskTeamNames["Task 1"])
     }
 
     @Test
-    fun `getTaskTeamNamesByTaskTitles maps task titles to team names and deduplicates team ids`() = runTest {
-        val tasks = listOf(
-            org.ole.planet.myplanet.model.TeamTask().apply {
-                id = "task1"
-                title = "Task One"
-                teamId = "teamA"
-            },
-            org.ole.planet.myplanet.model.TeamTask().apply {
-                id = "task2"
-                title = "Task Two"
-                teamId = "teamA"
-            },
-            org.ole.planet.myplanet.model.TeamTask().apply {
-                id = "task3"
-                title = "Task Three"
-                teamId = null
-            },
-        )
-        coEvery { teamTaskDao.getByTitles(listOf("Task One", "Task Two", "Task Three")) } returns tasks
-        coEvery { teamsRepository.get().getTeamNamesByIds(any()) } returns mapOf("teamA" to "Alpha Team")
+    fun `getEnrichedNotifications does not query titles when taskTitles is empty`() = runTest {
+        val taskDateless = AppNotification().apply {
+            id = "t1"
+            userId = "user1"
+            type = "task"
+            message = "Task without date"
+            relatedId = "rel1"
+        }
+        coEvery { notificationDao.getNotifications("user1", "", false) } returns listOf(taskDateless)
+        coEvery { notificationDao.getUnreadCount("user1", false) } returns 1
 
-        val result = repository.getTaskTeamNamesByTaskTitles(listOf("Task One", "Task Two", "Task Three"))
+        val taskById = org.ole.planet.myplanet.model.TeamTask().apply {
+            id = "rel1"
+            title = "Task without date"
+            teamId = "teamA"
+        }
+        coEvery { teamTaskDao.getByIds(listOf("rel1")) } returns listOf(taskById)
+        coEvery { teamsRepository.get().getTeamNamesByIds(listOf("teamA")) } returns mapOf("teamA" to "Alpha Team")
 
-        assertEquals("Alpha Team", result["Task One"])
-        assertEquals("Alpha Team", result["Task Two"])
-        assertFalse(result.containsKey("Task Three"))
-        coVerify { teamsRepository.get().getTeamNamesByIds(listOf("teamA")) }
-    }
+        repository.getEnrichedNotifications("user1", "all", false)
 
-    @Test
-    fun `getJoinRequestDetailsBatch maps related ids to requester and team names`() = runTest {
-        val joinRequests = listOf(
-            JoinRequestInfo("jr1", "teamA", "user1"),
-            JoinRequestInfo("jr2", "teamB", "user2"),
-        )
-        coEvery { teamsRepository.get().getJoinRequestsInfo(listOf("jr1", "jr2")) } returns joinRequests
-        coEvery { teamsRepository.get().getTeamNamesByIds(any()) } returns mapOf(
-            "teamA" to "Alpha Team",
-            "teamB" to "Beta Team",
-        )
-        val users = listOf(
-            org.ole.planet.myplanet.model.UserEntity(id = "user1", name = "Alice"),
-            org.ole.planet.myplanet.model.UserEntity(id = "user2", name = "Bob"),
-        )
-        coEvery { userRepository.get().getUsersByIds(any()) } returns users
-
-        val result = repository.getJoinRequestDetailsBatch(listOf("jr1", "jr2"))
-
-        assertEquals(Pair("Alice", "Alpha Team"), result["jr1"])
-        assertEquals(Pair("Bob", "Beta Team"), result["jr2"])
-    }
-
-    @Test
-    fun `getJoinRequestDetailsBatch falls back to Unknown for missing user and team`() = runTest {
-        val joinRequests = listOf(
-            JoinRequestInfo("jr1", "", ""),
-            JoinRequestInfo("jr2", "teamB", "user2"),
-        )
-        coEvery { teamsRepository.get().getJoinRequestsInfo(listOf("jr1", "jr2")) } returns joinRequests
-        coEvery { teamsRepository.get().getTeamNamesByIds(any()) } returns mapOf("teamB" to "Beta Team")
-        coEvery { userRepository.get().getUsersByIds(any()) } returns emptyList()
-
-        val result = repository.getJoinRequestDetailsBatch(listOf("jr1", "jr2"))
-
-        assertEquals(Pair("Unknown User", "Unknown Team"), result["jr1"])
-        assertEquals(Pair("Unknown User", "Beta Team"), result["jr2"])
-    }
-
-    @Test
-    fun `getJoinRequestDetailsBatch deduplicates user ids and team ids`() = runTest {
-        val joinRequests = listOf(
-            JoinRequestInfo("jr1", "teamA", "user1"),
-            JoinRequestInfo("jr2", "teamA", "user1"),
-        )
-        coEvery { teamsRepository.get().getJoinRequestsInfo(listOf("jr1", "jr2")) } returns joinRequests
-        coEvery { teamsRepository.get().getTeamNamesByIds(any()) } returns mapOf("teamA" to "Alpha Team")
-        coEvery { userRepository.get().getUsersByIds(any()) } returns listOf(
-            org.ole.planet.myplanet.model.UserEntity(id = "user1", name = "Alice"),
-        )
-
-        repository.getJoinRequestDetailsBatch(listOf("jr1", "jr2"))
-
-        coVerify { teamsRepository.get().getTeamNamesByIds(listOf("teamA")) }
-        coVerify { userRepository.get().getUsersByIds(listOf("user1")) }
-    }
-
-    @Test
-    fun `getJoinRequestDetailsBatch with empty list returns empty map`() = runTest {
-        val result = repository.getJoinRequestDetailsBatch(emptyList())
-
-        assertTrue(result.isEmpty())
-        coVerify(exactly = 0) { teamsRepository.get().getJoinRequestsInfo(any()) }
-    }
-
-    @Test
-    fun `getTaskTeamNamesByTaskIds with empty list returns empty map`() = runTest {
-        val result = repository.getTaskTeamNamesByTaskIds(emptyList())
-
-        assertTrue(result.isEmpty())
-        coVerify(exactly = 0) { teamTaskDao.getByIds(any()) }
-    }
-
-    @Test
-    fun `getTaskTeamNamesByTaskTitles with empty list returns empty map`() = runTest {
-        val result = repository.getTaskTeamNamesByTaskTitles(emptyList())
-
-        assertTrue(result.isEmpty())
         coVerify(exactly = 0) { teamTaskDao.getByTitles(any()) }
     }
 

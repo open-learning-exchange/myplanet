@@ -18,9 +18,11 @@ import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.NotificationPayload
+import org.ole.planet.myplanet.model.NotificationsEnrichment
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotification
 import org.ole.planet.myplanet.model.TeamNotificationInfo
+import org.ole.planet.myplanet.utils.TaskDateParser
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
@@ -162,6 +164,83 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getEnrichedNotifications(userId: String, filter: String, isAdmin: Boolean): NotificationsEnrichment {
+        val payloadNotifications = getNotifications(userId, filter, isAdmin)
+
+        val taskNotifications = mutableListOf<NotificationPayload>()
+        val joinRequestNotifications = mutableListOf<NotificationPayload>()
+        for (notification in payloadNotifications) {
+            if (notification.type.equals("task", ignoreCase = true)) {
+                taskNotifications.add(notification)
+            } else if (notification.type.equals("join_request", ignoreCase = true)) {
+                joinRequestNotifications.add(notification)
+            }
+        }
+
+        val taskIds = taskNotifications
+            .mapNotNull { it.relatedId }
+            .distinct()
+
+        val parsedTaskDates: Map<String, Pair<String, String>?> =
+            taskNotifications.associateBy({ it.id }, { TaskDateParser.parseTaskDate(it.message) })
+
+        val taskTitles = taskNotifications
+            .mapNotNull { parsedTaskDates[it.id]?.first }
+            .distinct()
+
+        val joinRequestIds = joinRequestNotifications
+            .mapNotNull { it.relatedId }
+            .distinct()
+
+        val joinRequestsWithoutRelatedId = joinRequestNotifications
+            .filter { it.relatedId.isNullOrEmpty() }
+
+        val (taskTeamNames, joinRequestDetails, unreadCount) = coroutineScope {
+            val taskTeamNamesByIdsDeferred = async {
+                getTaskTeamNamesByTaskIds(taskIds)
+            }
+
+            val taskTeamNamesByTitlesDeferred = async {
+                if (taskTitles.isNotEmpty()) {
+                    getTaskTeamNamesByTaskTitles(taskTitles)
+                } else {
+                    emptyMap()
+                }
+            }
+
+            val joinRequestDetailsDeferred = async {
+                val details = getJoinRequestDetailsBatch(joinRequestIds).toMutableMap()
+                if (joinRequestsWithoutRelatedId.isNotEmpty()) {
+                    val fallbackDetail = getJoinRequestDetails(null)
+                    details[""] = fallbackDetail
+                }
+                details
+            }
+
+            val unreadCountDeferred = async {
+                getUnreadCount(userId, isAdmin)
+            }
+
+            val combinedTaskTeamNames = taskTeamNamesByTitlesDeferred.await().toMutableMap().apply {
+                putAll(taskTeamNamesByIdsDeferred.await())
+            }
+
+            Triple(
+                combinedTaskTeamNames,
+                joinRequestDetailsDeferred.await(),
+                unreadCountDeferred.await()
+            )
+        }
+
+        return NotificationsEnrichment(
+            payloads = payloadNotifications,
+            taskTeamNames = taskTeamNames,
+            joinRequestDetails = joinRequestDetails,
+            parsedTaskDates = parsedTaskDates,
+            unreadCount = unreadCount
+        )
+    }
+
     override suspend fun getTaskDetails(relatedId: String?): TaskNotificationResult? {
         return relatedId?.let {
             val task = teamTaskDao.getById(it)
@@ -187,7 +266,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getJoinRequestDetails(relatedId: String?): Pair<String, String> {
+    private suspend fun getJoinRequestDetails(relatedId: String?): Pair<String, String> {
         val joinRequest = teamsRepository.get().getJoinRequestInfo(relatedId)
         val teamName = joinRequest?.teamId?.let { tid ->
             teamsRepository.get().getTeamLabelInfo(tid)?.name
@@ -198,7 +277,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         return Pair(requester?.name ?: "Unknown User", teamName)
     }
 
-    override suspend fun getTaskTeamNamesByTaskIds(taskIds: List<String>): Map<String, String> {
+    private suspend fun getTaskTeamNamesByTaskIds(taskIds: List<String>): Map<String, String> {
         if (taskIds.isEmpty()) return emptyMap()
         val map = mutableMapOf<String, String>()
 
@@ -222,7 +301,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         return map
     }
 
-    override suspend fun getJoinRequestDetailsBatch(relatedIds: List<String>): Map<String, Pair<String, String>> {
+    private suspend fun getJoinRequestDetailsBatch(relatedIds: List<String>): Map<String, Pair<String, String>> {
         if (relatedIds.isEmpty()) return emptyMap()
 
         val joinRequests = teamsRepository.get().getJoinRequestsInfo(relatedIds)
@@ -262,7 +341,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         return map
     }
 
-    override suspend fun getTaskTeamNamesByTaskTitles(taskTitles: List<String>): Map<String, String> {
+    private suspend fun getTaskTeamNamesByTaskTitles(taskTitles: List<String>): Map<String, String> {
         if (taskTitles.isEmpty()) return emptyMap()
         val map = mutableMapOf<String, String>()
 
