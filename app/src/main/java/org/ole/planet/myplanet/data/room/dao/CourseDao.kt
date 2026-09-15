@@ -15,7 +15,6 @@ interface CourseDao {
 
     suspend fun getByCourseIds(courseIds: List<String>): List<MyCourse> {
         if (courseIds.isEmpty()) return emptyList()
-        // Chunk size 300: query uses 3 IN clauses over courseIds, so 300 * 3 = 900 parameters < SQLITE_MAX_VARIABLE_NUMBER (999).
         return courseIds.chunked(300)
             .flatMap { getByCourseIdsInternal(it) }
             .distinctBy { it.id }
