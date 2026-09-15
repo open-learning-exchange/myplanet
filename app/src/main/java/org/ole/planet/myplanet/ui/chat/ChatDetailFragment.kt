@@ -20,7 +20,6 @@ import android.widget.LinearLayout
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.view.isNotEmpty
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -35,6 +34,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isPrimaryServerReachable
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatMessage
@@ -51,9 +51,7 @@ import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
-class ChatDetailFragment : Fragment() {
-    private var _binding: FragmentChatDetailBinding? = null
-    private val binding get() = _binding!!
+class ChatDetailFragment : BaseBindingFragment<FragmentChatDetailBinding>(FragmentChatDetailBinding::inflate) {
     private lateinit var mAdapter: ChatAdapter
     private val sharedViewModel: ChatViewModel by activityViewModels()
     private lateinit var messageTextWatcher: TextWatcher
@@ -116,9 +114,9 @@ class ChatDetailFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentChatDetailBinding.inflate(inflater, container, false)
+        val view = super.onCreateView(inflater, container, savedInstanceState)
         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-        return binding.root
+        return view
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -170,9 +168,11 @@ class ChatDetailFragment : Fragment() {
             speechRecognizer?.setRecognitionListener(object : RecognitionListener {
                 override fun onReadyForSpeech(params: Bundle?) {
                     isListening = true
-                    binding.buttonGchatMic.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_red_500))
-                    binding.textGchatIndicator.text = getString(R.string.voice_to_text)
-                    binding.textGchatIndicator.visibility = View.VISIBLE
+                    _binding?.let { binding ->
+                        binding.buttonGchatMic.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_red_500))
+                        binding.textGchatIndicator.text = getString(R.string.voice_to_text)
+                        binding.textGchatIndicator.visibility = View.VISIBLE
+                    }
                 }
 
                 override fun onBeginningOfSpeech() {}
@@ -183,7 +183,7 @@ class ChatDetailFragment : Fragment() {
                 }
 
                 override fun onError(error: Int) {
-                    stopSpeechToText()
+                    resetListeningUi()
                     val message = when (error) {
                         SpeechRecognizer.ERROR_AUDIO -> "Audio recording error"
                         SpeechRecognizer.ERROR_CLIENT -> "Client side error"
@@ -204,8 +204,10 @@ class ChatDetailFragment : Fragment() {
                     if (!matches.isNullOrEmpty()) {
                         val finalMatch = matches[0]
                         val newText = if (textBeforeVoice.isEmpty()) finalMatch else "$textBeforeVoice $finalMatch"
-                        binding.editGchatMessage.setText(newText)
-                        binding.editGchatMessage.setSelection(newText.length)
+                        _binding?.let { binding ->
+                            binding.editGchatMessage.setText(newText)
+                            binding.editGchatMessage.setSelection(newText.length)
+                        }
                     }
                 }
 
@@ -214,8 +216,10 @@ class ChatDetailFragment : Fragment() {
                     if (!matches.isNullOrEmpty()) {
                         val partialMatch = matches[0]
                         val newText = if (textBeforeVoice.isEmpty()) partialMatch else "$textBeforeVoice $partialMatch"
-                        binding.editGchatMessage.setText(newText)
-                        binding.editGchatMessage.setSelection(newText.length)
+                        _binding?.let { binding ->
+                            binding.editGchatMessage.setText(newText)
+                            binding.editGchatMessage.setSelection(newText.length)
+                        }
                     }
                 }
 
@@ -237,9 +241,15 @@ class ChatDetailFragment : Fragment() {
 
     private fun stopSpeechToText() {
         speechRecognizer?.stopListening()
+        resetListeningUi()
+    }
+
+    private fun resetListeningUi() {
         isListening = false
-        binding.buttonGchatMic.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_500))
-        binding.textGchatIndicator.visibility = View.GONE
+        _binding?.let { binding ->
+            binding.buttonGchatMic.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_500))
+            binding.textGchatIndicator.visibility = View.GONE
+        }
     }
 
     private fun initChatComponents() {
@@ -699,7 +709,6 @@ class ChatDetailFragment : Fragment() {
         cachedRawModelsString = null
         cachedModelsMap = null
 
-        _binding = null
         super.onDestroyView()
     }
 

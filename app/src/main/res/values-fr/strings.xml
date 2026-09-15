@@ -607,6 +607,7 @@
     <string name="please_select_starting_date">Veuillez sélectionner la date de début: </string>
     <string name="read_offline_news_from">Lire les actualités hors ligne depuis: </string>
     <string name="downloading_started_please_check_notification">Téléchargement commencé, veuillez vérifier les notifications…</string>
+    <string name="dictionary_parsing_failed">L\'analyse du dictionnaire a échoué.</string>
     <string name="file_already_exists">Le fichier existe déjà…</string>
     <string name="feature_not_available">Fonctionnalité non disponible</string>
     <string name="sync">Synchroniser</string>
@@ -913,11 +914,14 @@
     <string name="video_player">lecteur vidéo</string>
     <string name="video_unavailable">Vidéo indisponible — fichier introuvable et connexion au serveur impossible</string>
     <string name="video_playback_error">Erreur de lecture vidéo. Réessayez ou vérifiez votre connexion</string>
+    <string name="audio_unavailable">Audio indisponible — fichier introuvable et connexion au serveur impossible</string>
+    <string name="audio_playback_error">Erreur de lecture audio. Réessayez ou vérifiez votre connexion</string>
     <string name="video_loading_checking_server">Vérification de la disponibilité du serveur…</string>
     <string name="video_loading_connecting">Connexion au serveur…</string>
     <string name="video_loading_buffering">Mise en mémoire tampon…</string>
     <string name="video_loading_local">Chargement de la vidéo…</string>
     <string name="unable_to_play_video">Impossible de lire la vidéo</string>
+    <string name="unable_to_play_audio">Impossible de lire l\'audio</string>
     <string name="go_back">Retour</string>
     <string name="progress_bar">barre de progression</string>
     <string name="web_view">vue web</string>

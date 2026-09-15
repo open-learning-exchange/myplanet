@@ -103,19 +103,6 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         }
     }
 
-    fun forceDownloadNewsImages() {
-        Utilities.toast(activity, getString(R.string.please_select_starting_date))
-        val now = Calendar.getInstance()
-        val dpd = DatePickerDialog(requireActivity(), { _: DatePicker?, i: Int, i1: Int, i2: Int ->
-            now[Calendar.YEAR] = i
-            now[Calendar.MONTH] = i1
-            now[Calendar.DAY_OF_MONTH] = i2
-            newsViewModel.getPrivateImageUrlsCreatedAfter(now.timeInMillis)
-        }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH])
-        dpd.setTitle(getString(R.string.read_offline_news_from))
-        dpd.show()
-    }
-
     private fun observeUiState() {
         collectWhenStarted(viewModel.uiState.map { it.library }.distinctUntilChanged()) { library ->
             renderMyLibrary(library)
@@ -359,14 +346,6 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
                 is SyncUiState.Error -> onSyncFailed(state.message)
                 else -> {}
             }
-        }
-    }
-
-    fun showResourceDownloadDialog() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val userId = prefData.getUserId().ifEmpty { "--" }
-            val libraryList = viewModel.getLibraryListForUser(userId)
-            showDownloadDialog(libraryList)
         }
     }
 

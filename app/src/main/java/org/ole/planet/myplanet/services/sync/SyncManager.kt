@@ -74,9 +74,13 @@ class SyncManager @Inject constructor(
     private val syncTimeLogger: SyncTimeLogger
 ) {
     private inline fun syncPerf(message: () -> String) {
-        if (Log.isLoggable("SyncPerf", Log.DEBUG)) {
-            Log.d("SyncPerf", message())
+        if (syncTimeLogger.isVerbose) {
+            Log.d(TAG, message())
         }
+    }
+
+    companion object {
+        private const val TAG = "SyncPerf"
     }
 
     private val timestampFormat = DateTimeFormatter.ofPattern("HH:mm:ss.SSS").withZone(ZoneId.systemDefault())
@@ -142,11 +146,9 @@ class SyncManager @Inject constructor(
         val syncStartTime = SystemClock.elapsedRealtime()
 
         syncTimeLogger.startLogging()
-        if (Log.isLoggable("SyncPerf", Log.DEBUG)) {
-            Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-            Log.d("SyncPerf", "FULL SYNC STARTED at ${timestampFormat.format(Instant.now())}")
-            Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-        }
+        syncPerf { "═══════════════════════════════════════════════════════════════" }
+        syncPerf { "FULL SYNC STARTED at ${timestampFormat.format(Instant.now())}" }
+        syncPerf { "═══════════════════════════════════════════════════════════════" }
         try {
 
             initializeSync()
@@ -212,21 +214,17 @@ class SyncManager @Inject constructor(
             val totalSyncTime = syncEndTime - syncStartTime
             val minutes = totalSyncTime / 60000
             val seconds = (totalSyncTime % 60000) / 1000
-            if (Log.isLoggable("SyncPerf", Log.DEBUG)) {
-                Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-                Log.d("SyncPerf", "FULL SYNC COMPLETED at ${timestampFormat.format(Instant.now())}")
-                Log.d("SyncPerf", "TOTAL SYNC TIME: ${minutes}m ${seconds}s (${totalSyncTime}ms)")
-                Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-            }
+            syncPerf { "═══════════════════════════════════════════════════════════════" }
+            syncPerf { "FULL SYNC COMPLETED at ${timestampFormat.format(Instant.now())}" }
+            syncPerf { "TOTAL SYNC TIME: ${minutes}m ${seconds}s (${totalSyncTime}ms)" }
+            syncPerf { "═══════════════════════════════════════════════════════════════" }
         } catch (err: Exception) {
             val syncEndTime = SystemClock.elapsedRealtime()
             val totalSyncTime = syncEndTime - syncStartTime
-            if (Log.isLoggable("SyncPerf", Log.DEBUG)) {
-                Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-                Log.d("SyncPerf", "SYNC FAILED after ${totalSyncTime}ms")
-                Log.d("SyncPerf", "Error: ${err.message}")
-                Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-            }
+            syncPerf { "═══════════════════════════════════════════════════════════════" }
+            syncPerf { "SYNC FAILED after ${totalSyncTime}ms" }
+            syncPerf { "Error: ${err.message}" }
+            syncPerf { "═══════════════════════════════════════════════════════════════" }
             Log.e("SyncManager", "Full sync failed", err)
             handleException(err.message)
         } finally {

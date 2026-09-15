@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
+import org.ole.planet.myplanet.model.EnterpriseReportCsvProjection
 import org.ole.planet.myplanet.model.MyTeam
 
 @Dao
@@ -22,6 +23,7 @@ interface TeamDao {
     @Query("SELECT * FROM teams WHERE teamId = :teamId AND docType = :docType") fun observeByTeamIdAndDocType(teamId: String, docType: String): Flow<List<MyTeam>>
     @Query("SELECT * FROM teams WHERE teamId = :teamId AND docType = 'report' AND IFNULL(status, '') != 'archived' ORDER BY createdDate DESC") fun observeNonArchivedReportsByTeamId(teamId: String): Flow<List<MyTeam>>
     @Query("SELECT * FROM teams WHERE teamId = :teamId AND docType = 'report' AND IFNULL(status, '') != 'archived' ORDER BY createdDate DESC") suspend fun getNonArchivedReportsByTeamId(teamId: String): List<MyTeam>
+    @Query("SELECT startDate, endDate, createdDate, updatedDate, beginningBalance, sales, otherIncome, wages, otherExpenses FROM teams WHERE teamId = :teamId AND docType = 'report' AND IFNULL(status, '') != 'archived' ORDER BY createdDate DESC") suspend fun getNonArchivedReportCsvProjectionsByTeamId(teamId: String): List<EnterpriseReportCsvProjection>
     @Query("SELECT * FROM teams WHERE teamId = :teamId AND userId = :userId AND docType = :docType LIMIT 1") suspend fun getByTeamIdUserIdAndDocType(teamId: String, userId: String, docType: String): MyTeam?
     @Query("SELECT COUNT(*) FROM teams WHERE teamId = :teamId AND userId = :userId AND docType = :docType") suspend fun countByTeamIdUserIdAndDocType(teamId: String, userId: String, docType: String): Int
     @Query("SELECT COUNT(DISTINCT userId) FROM teams WHERE teamId = :teamId AND docType = :docType AND isDeletePending = 0 AND userId IS NOT NULL AND EXISTS (SELECT 1 FROM users u WHERE u.id = teams.userId OR u._id = teams.userId)") suspend fun countByTeamIdAndDocType(teamId: String, docType: String): Int

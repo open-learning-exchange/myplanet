@@ -17,27 +17,9 @@ class RatingsRepositoryImpl @Inject constructor(
     private val ratingDao: RatingDao,
 ) : RatingsRepository {
 
-    override suspend fun getRatings(type: String?, userId: String?): HashMap<String?, JsonObject> {
-        val ratings = ratingDao.getByType(type)
-        val aggregated = aggregateRatings(ratings, userId)
-        val map = HashMap<String?, JsonObject>(Math.ceil(aggregated.size / 0.75).toInt())
-        for ((item, aggregation) in aggregated) {
-            map[item] = aggregation.toJson()
-        }
-        return map
-    }
-
     override suspend fun getRatingsById(type: String, resourceId: String?, userId: String?): RatingSummary? {
         if (resourceId == null) return null
         return getRatingSummary(type, resourceId, userId)
-    }
-
-    override suspend fun getCourseRatings(userId: String?): HashMap<String?, JsonObject> {
-        return getRatings("course", userId)
-    }
-
-    override suspend fun getResourceRatings(userId: String?): HashMap<String?, JsonObject> {
-        return getRatings("resource", userId)
     }
 
     override suspend fun isRatingPrompted(userId: String, resourceId: String): Boolean {
@@ -170,41 +152,6 @@ class RatingsRepositoryImpl @Inject constructor(
             this.type = type
             item = itemId
             this.title = title
-        }
-    }
-
-    private fun aggregateRatings(
-        ratings: Iterable<Rating>,
-        userId: String?
-    ): Map<String?, RatingAggregation> {
-        val aggregationMap = LinkedHashMap<String?, RatingAggregation>()
-        for (rating in ratings) {
-            val item = rating.item
-            val aggregation = aggregationMap.getOrPut(item) { RatingAggregation() }
-            aggregation.totalRating += rating.rate
-            aggregation.totalCount += 1
-            if (userId != null && userId == rating.userId) {
-                aggregation.ratingByUser = rating.rate
-            }
-        }
-        return aggregationMap
-    }
-
-    private data class RatingAggregation(
-        var totalRating: Int = 0,
-        var totalCount: Int = 0,
-        var ratingByUser: Int? = null
-    ) {
-        fun toJson(): JsonObject {
-            val `object` = JsonObject()
-            if (ratingByUser != null) {
-                `object`.addProperty("ratingByUser", ratingByUser)
-            }
-            if (totalCount > 0) {
-                `object`.addProperty("averageRating", totalRating.toFloat() / totalCount)
-                `object`.addProperty("total", totalCount)
-            }
-            return `object`
         }
     }
 
