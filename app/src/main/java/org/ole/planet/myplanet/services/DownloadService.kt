@@ -391,9 +391,6 @@ class DownloadService : Service() {
         return if (tempFile.exists()) tempFile.length() else 0L
     }
 
-    // Identifies which version of the resource the existing .tmp bytes came from, so the resume
-    // request can carry If-Range: a server whose resource changed since then answers 200 instead
-    // of 206, which the isPartial branch below already handles by discarding and restarting.
     private fun resumeValidatorFor(url: String): String? {
         val validatorFile = validatorFileForUrl(url)
         return if (validatorFile.exists()) validatorFile.readText().takeIf { it.isNotBlank() } else null
@@ -424,9 +421,6 @@ class DownloadService : Service() {
         outputFile = finalFile
         val fileName = url.substringAfterLast('/')
 
-        // A prior interrupted attempt may have left partial bytes on disk. Only resume when the
-        // server actually honored our Range request (206) — otherwise (200, or a fresh download)
-        // it's sending the whole file from byte 0, so any leftover .tmp bytes must be discarded.
         val resumeOffset = if (isPartial) tempFile.length() else 0L
         if (!isPartial) {
             tempFile.delete()
