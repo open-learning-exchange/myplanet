@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -64,15 +65,37 @@ class _RecordingServerConfig extends ServerConfigNotifier {
 }
 
 class _StubConfigurations implements ConfigurationsRepository {
-  _StubConfigurations(this.result);
+  _StubConfigurations(this.result, {this.hang});
 
   final ConfigurationResult result;
 
+  /// When supplied, the handshake never answers until this completes — which
+  /// is the only way to hold `_isChecking` true long enough to press anything
+  /// else.
+  final Completer<void>? hang;
+  int calls = 0;
+
   @override
-  Future<ConfigurationResult> getMinApk(String url, String pin) async => result;
+  Future<ConfigurationResult> getMinApk(String url, String pin) async {
+    calls++;
+    await hang?.future;
+    return result;
+  }
 
   @override
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// A preferences object whose `/versions` cache write fails.
+///
+/// It is a different storage backend from the one `saveServerConfig` has just
+/// succeeded against, so it can fail on its own — which is the point.
+class _FailingVersionPrefs extends PlanetPrefs {
+  _FailingVersionPrefs(super.prefs, {required super.secureStorage});
+
+  @override
+  Future<void> setVersionDetail(String json) async =>
+      throw StateError('preferences full');
 }
 
 class _StubClearData extends ClearDataNotifier {
@@ -133,13 +156,15 @@ void main() {
   late PlanetPrefs prefs;
   late List<ServerConfig> saved;
   late _StubClearData clearData;
+  late _MockSecureStorage secureStorage;
+  late _StubConfigurations configurations;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({'onboardingComplete': true});
     db = AppDatabase.memory();
     saved = <ServerConfig>[];
     clearData = _StubClearData();
-    final secureStorage = _MockSecureStorage();
+    secureStorage = _MockSecureStorage();
     when(
       () => secureStorage.read(key: any(named: 'key')),
     ).thenAnswer((_) async => null);
@@ -165,11 +190,13 @@ void main() {
     bool holdsServerData = true,
     Set<String> localPlanetCodes = const {'cambridge'},
     ConfigurationResult? configuration,
+    PlanetPrefs? planetPrefs,
+    Completer<void>? hang,
   }) {
     final c = ProviderContainer(
       retry: noProviderRetry,
       overrides: [
-        planetPrefsProvider.overrideWithValue(prefs),
+        planetPrefsProvider.overrideWithValue(planetPrefs ?? prefs),
         appDatabaseProvider.overrideWithValue(db),
         planetServersProvider.overrideWithValue(servers),
         serverConfigProvider.overrideWith(
@@ -179,7 +206,7 @@ void main() {
         localPlanetCodesProvider.overrideWith((ref) async => localPlanetCodes),
         if (configuration != null)
           configurationsRepositoryProvider.overrideWithValue(
-            _StubConfigurations(configuration),
+            configurations = _StubConfigurations(configuration, hang: hang),
           ),
         clearDataProvider.overrideWith(() => clearData),
       ],
@@ -487,6 +514,82 @@ void main() {
     expect(find.byType(ServerConfigScreen), findsOneWidget);
     expect(find.byType(LoginScreen), findsNothing);
   });
+
+  testWidgets('a failed version cache does not report the switch as failed', (
+    tester,
+  ) async {
+    // Both writes used to share one `try`. `saveServerConfig` goes to secure
+    // storage and the `/versions` cache to SharedPreferences, so the second can
+    // fail on its own — and when it did, the user was told the operation had
+    // failed over a configuration that had in fact been adopted, and was left
+    // on a screen whose error contradicted its own state.
+    const adopted = ServerConfig(
+      serverUrl: 'https://learning.example.org',
+      pin: '1234',
+      couchDbUrl: 'https://satellite:1234@learning.example.org:443',
+      code: 'cambridge',
+    );
+    final c = container(
+      configuration: const ConfigurationSuccess(adopted, versionDetail: '{}'),
+      planetPrefs: _FailingVersionPrefs(
+        await SharedPreferences.getInstance(),
+        secureStorage: secureStorage,
+      ),
+    );
+    final router = await pumpAt(tester, c);
+    await tester.tap(find.text('Change server'));
+    await tester.pumpAndSettle();
+
+    await typeServer(tester, url: 'https://learning.example.org', pin: '1234');
+    await tester.tap(find.widgetWithText(FilledButton, 'Connect'));
+    await pumpHandshake(tester);
+
+    expect(saved, <ServerConfig>[adopted]);
+    expect(router.state.uri.toString(), Routes.login);
+    expect(find.text('Operation failed'), findsNothing);
+  });
+
+  testWidgets(
+    'the keyboard cannot start a second handshake over a running one',
+    (tester) async {
+      // The PIN field's `onFieldSubmitted` had no `_isChecking` guard where the
+      // Connect button's `onPressed` does, so the keyboard's "done" launched a
+      // second handshake over the first.
+      const adopted = ServerConfig(
+        serverUrl: 'https://learning.example.org',
+        pin: '1234',
+        couchDbUrl: 'https://satellite:1234@learning.example.org:443',
+        code: 'cambridge',
+      );
+      final hang = Completer<void>();
+      final c = container(
+        configuration: const ConfigurationSuccess(adopted),
+        hang: hang,
+      );
+      await pumpAt(tester, c);
+      await tester.tap(find.text('Change server'));
+      await tester.pumpAndSettle();
+
+      await typeServer(
+        tester,
+        url: 'https://learning.example.org',
+        pin: '1234',
+      );
+      await tester.tap(find.widgetWithText(FilledButton, 'Connect'));
+      // Never `pumpAndSettle`: the button is holding an indefinite spinner.
+      await tester.pump();
+      expect(configurations.calls, 1);
+
+      await tester.showKeyboard(find.byType(TextFormField).at(1));
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+
+      expect(configurations.calls, 1);
+
+      hang.complete();
+      await pumpHandshake(tester);
+    },
+  );
 
   testWidgets('a bare /server is still refused to a configured device', (
     tester,

@@ -67,10 +67,20 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
   /// row tap's clear-data dialog, and the branch that raises that dialog
   /// returns *before* `setSelectedPosition`, so the selection it is asked to
   /// undo was never made. What it actually does is assign the selection from
-  /// one step further back: in the normal flow `lastSelectedPosition ==
-  /// selectedPosition` and the call is a no-op, and where they differ it moves
-  /// the highlight to a stale row. `ServerAddressAdapterTest.kt:71-86` calls it
-  /// and asserts nothing about it, so nothing pins those semantics either.
+  /// one step further back — and in the normal flow that is the same row, so
+  /// the call is a no-op.
+  ///
+  /// The last step is the one a reading can get wrong, and a second audit pass
+  /// did: `setSelectedPosition` assigns `lastSelectedPosition = previous`, and
+  /// `setupServerListUi` builds a **fresh** adapter, so after its own
+  /// `submitList` callback `lastSelectedPosition` is `-1` and a revert *would*
+  /// clear the highlight. It is not the last call. `settingDialog` follows it
+  /// with `refreshServerList()` (`SyncActivity.kt:702-704`, run whenever the
+  /// list is non-empty and a URL is stored), whose callback selects the same
+  /// row again on the same adapter — leaving `lastSelectedPosition ==
+  /// selectedPosition`. Where they do differ it would move the highlight to a
+  /// stale row, and `ServerAddressAdapterTest.kt:71-86` calls the method
+  /// without asserting anything about it, so nothing pins those semantics.
   ///
   /// Following the caller chain to its end (the Phase 149 rule) makes the
   /// honest port of that pair *nothing*, not a faithful reimplementation of a
@@ -130,15 +140,30 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
   /// makes this device belong to the server in the fields, whether those
   /// fields were filled by a row tap or typed by hand.
   ///
-  /// Kotlin gates its own commit twice over. In list mode the row tap *is* the
-  /// submit and every tap of a row other than the selected one raises
-  /// `clearDataDialog` (`ServerAddressAdapter.kt:88-92`); to type a URL at all
-  /// you must switch manual configuration **on**, and doing that over an
-  /// existing configuration raises the same dialog before you can type
-  /// (`ServerDialogExtensions.kt:268-274`). So there is no way to reach a new
-  /// server's `configurations` document in Kotlin without having been offered
-  /// the wipe. This port's form is always editable, so the equivalent single
-  /// rule is: never adopt a configuration over another community's data.
+  /// Kotlin gates its own commit twice over — **on a device that has one of
+  /// these**. In list mode the row tap *is* the submit and every tap of a row
+  /// other than the selected one raises `clearDataDialog`
+  /// (`ServerAddressAdapter.kt:86-95`); to type a URL at all you must switch
+  /// manual configuration on, and doing that raises the same dialog before you
+  /// can type (`ServerDialogExtensions.kt:268-274`).
+  ///
+  /// An earlier version of this comment concluded from those two that "there
+  /// is no way to reach a new server's `configurations` document in Kotlin
+  /// without having been offered the wipe". That is false, and both gates say
+  /// so in their own condition: the manual toggle's is `configurationId !=
+  /// null` (`:268`), the dialog's Clear-data button is `GONE` on the same test
+  /// (`:45`), and the `"save"` branch warns only when `savedId != null && id !=
+  /// savedId` (`SyncConfigurationCoordinator.kt:98-106`). `setConfigurationId`
+  /// has one call site in `app/src/main` — `SyncConfigurationCoordinator.kt:86`
+  /// — reached only on the `"sync"` action, while `LoginActivity.kt:351` passes
+  /// `"LoginActivity"` and takes the arm that never writes it. So a device
+  /// configured and synced entirely from the login screen carries a full
+  /// database with `configurationId == null`, and Save there adopts another
+  /// Planet with no wipe offered at all.
+  ///
+  /// This port's form is always editable and it has no `configurationId`
+  /// precondition, so the equivalent single rule is stricter than either of
+  /// Kotlin's: never adopt a configuration over another community's data.
   ///
   /// The comparison is the **community code**, not the host, and it is asked
   /// of the database rather than of a preference. Kotlin's analogous
@@ -188,21 +213,6 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
         try {
           if (await _wipeRefusedFor(config)) return;
           await ref.read(serverConfigProvider.notifier).save(config);
-          if (versionDetail != null) {
-            // Port of `SharedPrefManager.setVersionDetail` — the raw
-            // `/versions` body, cached so the telemetry upload can echo
-            // `planetVersion`.
-            await ref.read(planetPrefsProvider).setVersionDetail(versionDetail);
-          }
-          // The router redirect takes it from here — unless this screen is the
-          // marked `/server` location, where the redirect is holding position
-          // on purpose and would hold it for ever. Navigating to the *bare*
-          // route spends the marker and hands the decision straight back to
-          // the redirect, which then places a configured, signed-out device on
-          // `/login` exactly as it does after a first configuration. Naming
-          // `/login` here instead would be a second copy of that rule, free to
-          // disagree with the first.
-          if (widget.changingServer && mounted) _spendMarker();
         } catch (error) {
           if (!mounted) return;
           setState(() {
@@ -210,7 +220,31 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
             _error = AppLocalizations.of(context).operationFailed;
             _diagnostic = UrlUtils.redactCredentials('$error');
           });
+          return;
         }
+
+        // **The configuration is adopted from here, so nothing below may
+        // report a failure.** Both lines used to sit inside the `try` above,
+        // which meant a throw from the version-detail write — a cache, on a
+        // different storage backend from the one that had just succeeded —
+        // told the user the operation had failed over a switch that had in
+        // fact happened, and skipped the navigation, leaving them on a screen
+        // whose own error contradicted its state.
+        if (versionDetail != null) {
+          try {
+            // Port of `SharedPrefManager.setVersionDetail` — the raw
+            // `/versions` body, cached so the telemetry upload can echo
+            // `planetVersion`. Losing it costs a field in a later report.
+            await ref.read(planetPrefsProvider).setVersionDetail(versionDetail);
+          } catch (_) {
+            // Deliberately swallowed; see above.
+          }
+        }
+
+        // The router redirect takes it from here — unless this screen is the
+        // marked `/server` location, where the redirect is holding position on
+        // purpose and would hold it for ever. See [_spendMarker].
+        if (widget.changingServer && mounted) _spendMarker();
       case ConfigurationFailure(:final reason, :final diagnostic):
         setState(() {
           _isChecking = false;
@@ -514,7 +548,12 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
                           labelText: l10n.serverPinLabel,
                           border: const OutlineInputBorder(),
                         ),
-                        onFieldSubmitted: (_) => _connect(),
+                        // Guarded like `FilledButton.onPressed` below: the
+                        // keyboard's "done" used to launch a second handshake
+                        // over a running one.
+                        onFieldSubmitted: _isChecking
+                            ? null
+                            : (_) => _connect(),
                       ),
                       const SizedBox(height: 24),
                       if (_error != null) ...[
