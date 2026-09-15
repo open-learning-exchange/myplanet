@@ -1964,13 +1964,23 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
     }
 
     return transaction(() async {
-      // A row already standing at the destination key cannot happen for a
-      // resource this device has just created — the document did not exist
-      // before the POST that produced [couchId]. It *can* exist on a handset
-      // that ran an earlier build, where the walk inserted the second row this
-      // method now prevents. Merging rather than overwriting is what gives
-      // that handset its shelf back: the stray row may carry a membership a
-      // later sync added, and the local row carries the bytes.
+      // **No production path reaches this branch today, and saying so is the
+      // point** — an earlier revision of this comment claimed it repaired the
+      // handset that ran the buggy build, and it does not. For a stray row to
+      // stand at `couchId`, that build must have completed a POST, which means
+      // it wrote `_id`/`_rev` onto the uuid row; that row is then outside
+      // [pendingUploads] for ever, so `markUploaded` is never called for it
+      // again. And no other route reaches it either: this endpoint POSTs with
+      // no `_id`, so CouchDB always mints a **fresh** id, and a fresh id
+      // cannot be one a document already holds.
+      //
+      // The branch stays because the insert needs to be correct under any
+      // caller, and because merging beats overwriting if one ever arrives: the
+      // stray row may carry a shelf membership a later sync added, and the
+      // local row carries the bytes. What it is *not* is the upgrade repair —
+      // that case is a row with `_id != id` and no pending status at all, which
+      // the next resources sync still prunes. See the PR's *Reported, not
+      // fixed*; the fix belongs in the migration block, not here.
       final collision = await getById(couchId);
       final mergedShelf = <String>{
         ...row.userId.where((u) => u.isNotEmpty),

@@ -322,6 +322,34 @@ class ResourcesUploader {
   /// be undetectable afterwards and the transport already said the write
   /// landed.
   OutboxHandler get handler => (row, payload, authHeader) async {
+    // **The replay guard, and it closes a duplicate-document window that has
+    // been open since this uploader landed.**
+    //
+    // A drain killed after the POST but before `markCompleted` leaves the
+    // outbox row `in_progress`; `OutboxRepository.recoverStuck` — which
+    // `OutboxDrainScope` and `background_entrypoint` both run at startup —
+    // returns it to `pending`, and the handler runs again. This endpoint
+    // carries no `_id` (see [serialize]), so CouchDB mints a fresh one and the
+    // shared catalog gains a **second, indistinguishable document**. The
+    // `isInFlight` guard in [queuePending] does not cover this: it stops a
+    // concurrent sweep re-enqueueing, not a replay of the row itself.
+    //
+    // A missing local row is the evidence, and it is exact rather than
+    // heuristic. [MyLibraryDao.markUploaded] rekeys the row onto the CouchDB
+    // id, so `row.itemId` — the local uuid this operation was filed under —
+    // stops resolving the moment the mark lands. The only other way it goes
+    // missing is the user deleting the resource before the drain, and skipping
+    // the POST is right there too: today that case files a document with no
+    // local row to point at it, which `markUploaded`'s `false` return then
+    // reports while the orphan stays on the server.
+    //
+    // It cannot be a *pending* row that a sync pruned: `deleteNotIn` spares
+    // rows with no `_rev`, which is exactly what pending means here.
+    if (await _resources.getLibraryItemById(row.itemId) == null) {
+      log('Resource ${row.itemId} is already filed or gone; not re-POSTing');
+      return const NetworkSuccess<Map<String, dynamic>>(<String, dynamic>{});
+    }
+
     final result = await _api.postJsonObject(
       row.endpoint,
       payload,
@@ -338,19 +366,58 @@ class ResourcesUploader {
         );
       }
 
-      // **The bytes move with the key.** [MyLibraryDao.markUploaded] rekeys
-      // the row onto the CouchDB id, and every file reader in the port
+      // Port of `ResourcesRepositoryImpl.markResourceUploaded:803-806`. Its
+      // false return means the local row vanished between the POST and now,
+      // which Kotlin surfaces as a failed item via `markUploaded`'s
+      // `results.filter { !markResourceUploaded(…) }`. Here the document is
+      // already filed and there is no row left to attach bytes to or to
+      // re-POST, so the operation is finished: reporting failure would only
+      // keep an un-actionable row in the outbox.
+      //
+      // **The mark comes before the byte move, and the order is load-bearing.**
+      // It is what arms the replay guard at the top of this handler: until the
+      // row has adopted the document's id, a killed drain re-POSTs and files a
+      // duplicate. Moving the files first would widen that window by exactly
+      // the duration of a directory rename — and worse, a replay would then
+      // find the source gone, take
+      // [ResourceFiles.moveResourceDirectory]'s "nothing to move" answer, and
+      // look for the attachment under the *second* document's id, so the bytes
+      // would be orphaned under the first one with nothing left that knows
+      // where they are.
+      //
+      // A throw here is caught rather than propagated for the same reason, and
+      // the choice is a genuine tie rather than an obvious one: a failed mark
+      // leaves a filed document with a still-pending row, so it is re-POSTed
+      // either by the replay (if this reports failure) or by the next
+      // `queuePending` sweep (if it reports success). Success is chosen to
+      // match the `!marked` branch and because it does not re-POST
+      // *immediately*. A drift transaction failing on a local database is
+      // "the database is broken", and no ordering rescues that.
+      bool marked;
+      try {
+        marked = await _resources.markResourceUploaded(
+          row.itemId,
+          couchId,
+          rev,
+        );
+      } catch (e, stack) {
+        log('Could not record $couchId locally', error: e, stackTrace: stack);
+        return result;
+      }
+      if (!marked) {
+        log('Resource ${row.itemId} disappeared before its id could be stored');
+        return result;
+      }
+
+      // **The bytes move with the key.** Every file reader in the port
       // resolves `couchId ?? id`, so leaving the files under the old uuid
       // would hand the viewer a directory that does not exist — the Phase 100
-      // shape, with each half correct and the pair wrong. Done first, so that
-      // the window in which the row and the files disagree is the failure of
-      // this call rather than the gap between two of them.
+      // shape, with each half correct and the pair wrong.
       //
-      // A false answer is not fatal and deliberately does not stop the mark:
-      // the document is already on the server, and a row left un-marked would
-      // be POSTed again by the next sweep, which is strictly worse than local
-      // bytes the user can re-download. [_uploadAttachment] is told where the
-      // files actually are so the server still gets them.
+      // A false answer is not fatal: the document is filed and the row is
+      // marked, so nothing will re-POST it. [_uploadAttachment] is told where
+      // the files actually are, and that answer is carried into the retry row
+      // rather than re-derived there.
       final bytesMoved = await ResourceFiles.moveResourceDirectory(
         fromDocId: row.itemId,
         toDocId: couchId,
@@ -360,22 +427,6 @@ class ResourcesUploader {
           'Resource ${row.itemId} kept its files under the old id: '
           'the move to $couchId failed',
         );
-      }
-      // Port of `ResourcesRepositoryImpl.markResourceUploaded:803-806`. Its
-      // false return means the local row vanished between the POST and now,
-      // which Kotlin surfaces as a failed item via `markUploaded`'s
-      // `results.filter { !markResourceUploaded(…) }`. Here the document is
-      // already filed and there is no row left to attach bytes to or to
-      // re-POST, so the operation is finished: reporting failure would only
-      // keep an un-actionable row in the outbox.
-      final marked = await _resources.markResourceUploaded(
-        row.itemId,
-        couchId,
-        rev,
-      );
-      if (!marked) {
-        log('Resource ${row.itemId} disappeared before its id could be stored');
-        return result;
       }
       // The row answers to [couchId] from here on, not to `row.itemId`, which
       // is the local uuid the outbox row was keyed on and which no longer
@@ -534,7 +585,16 @@ class ResourcesUploader {
   /// handset that authored them, and the user is told the resource uploaded.
   /// A refused PUT now files its own outbox row ([attachmentType]) so the next
   /// drain tries again. See [attachmentHandler] for what that row is allowed
-  /// to do.
+  /// to do — and note that this **narrows** the hole rather than closing it.
+  /// That row gets one backoff ladder and there is no sweep to re-arm it,
+  /// because there is nothing to re-arm it *from*: after [MyLibraryDao
+  /// .markUploaded] a resource whose attachment landed and one whose attachment
+  /// never will are the same row, byte for byte. So a device offline for longer
+  /// than the ladder still loses the attachment silently. Closing it properly
+  /// needs a column recording delivery, and `my_library` is preserved — a
+  /// schema bump with a hand-written `_addColumnIfMissing` step, which is a
+  /// decision for whoever is allocated the next version rather than something
+  /// to improvise here.
   Future<void> _uploadAttachment(
     OutboxRow row,
     String couchId,
@@ -575,6 +635,7 @@ class ResourcesUploader {
       row: row,
       couchId: couchId,
       filename: filename,
+      fileDocId: fileDocId,
     );
   }
 
@@ -641,6 +702,7 @@ class ResourcesUploader {
     required OutboxRow row,
     required String couchId,
     required String filename,
+    required String fileDocId,
   }) async {
     try {
       await _outbox.enqueue(
@@ -649,12 +711,25 @@ class ResourcesUploader {
         // and what [attachmentHandler] reads its current revision from.
         itemId: couchId,
         endpoint: row.endpoint,
-        // Deliberately just the name. The revision is *not* stored: it moves
-        // whenever anything touches the document, and a stored one would make
-        // every later attempt a guaranteed 409 while also changing the request
-        // on each refresh, which is precisely what [OutboxRepository.enqueue]'s
-        // memo is unable to match. [attachmentHandler] reads the live one.
-        payload: {'filename': filename},
+        // The name, and where the bytes actually are.
+        //
+        // [fileDocId] is normally [couchId], and storing it anyway is not
+        // redundancy — it is the one fact the retry cannot re-derive. When
+        // [ResourceFiles.moveResourceDirectory] failed, the files are still
+        // under the local uuid, which is *not* this row's `itemId`; a handler
+        // that assumed `itemId` would look in an empty directory, read that as
+        // "no bytes to send", report success and delete its own memo. The
+        // attachment would then never be sent, and by this class's own
+        // argument nothing downstream could tell.
+        //
+        // The revision is deliberately *not* stored: it moves whenever
+        // anything touches the document, and a stored one would make every
+        // later attempt a guaranteed 409 while also changing the request on
+        // each refresh, which is precisely what [OutboxRepository.enqueue]'s
+        // memo is unable to match. Both of these values are stable across
+        // refreshes, which is what makes them admissible in a stored payload
+        // and the revision not. [attachmentHandler] reads the live one.
+        payload: {'filename': filename, 'fileDocId': fileDocId},
         userId: row.userId,
       );
     } on Exception catch (e, stack) {
@@ -675,10 +750,14 @@ class ResourcesUploader {
   /// It is enqueued only by [_uploadAttachment] after a refused send, so an
   /// attachment that lands first time never files a row at all.
   ///
-  /// Three states end the row without a send, all reported as success so no
-  /// dead row accretes for a question that can never be re-asked: the resource
-  /// is gone locally, it has no revision to match against, or its bytes are no
-  /// longer on disk. The Phase 148 policy is what shapes the rest — a
+  /// Four states end the row without a send, all reported as success so no
+  /// dead row accretes for a question that can never be re-asked: the payload
+  /// carries no usable filename, the resource is gone locally, it has no
+  /// revision to match against, or its bytes are no longer on disk. (The first
+  /// is unreachable from [_enqueueAttachmentRetry], which only files a row
+  /// once it has read a non-empty name off the row — it is there for a payload
+  /// an older or corrupted write left behind. An earlier revision of this
+  /// comment said "three" and did not count it.) The Phase 148 policy is what shapes the rest — a
   /// transport failure or a 5xx is `transient` and tries again, another 4xx is
   /// `rejected` and stops. **This is a PUT to a known URL, not an append**, so
   /// unlike the document POST above a retry cannot create a second anything:
@@ -699,10 +778,18 @@ class ResourcesUploader {
     final rev = resource?.rev;
     if (rev == null || rev.isEmpty) return nothingToSend;
 
+    // Where the bytes are, as the enqueue observed it — not re-derived. It
+    // falls back to the document id only for a row an older build wrote
+    // without the key; that is the value that row would have carried.
+    final stored = payload['fileDocId'];
+    final fileDocId = (stored is String && stored.isNotEmpty)
+        ? stored
+        : row.itemId;
+
     final result = await _sendAttachment(
       endpoint: row.endpoint,
       couchId: row.itemId,
-      fileDocId: row.itemId,
+      fileDocId: fileDocId,
       filename: filename,
       rev: rev,
       authHeader: authHeader,
@@ -775,13 +862,15 @@ class ResourcesUploader {
 /// walk to key on.
 ///
 /// Kotlin calls `uploadResource` from three places, of which two are the
-/// port's headless and foreground sync paths: this function is called from
-/// `background_entrypoint.dart`'s `drainOutbox` **and** from
-/// `DashboardSyncNotifier` beside
-/// `queuePendingVoices`/`queuePendingSubmissions`. The third
-/// (`TeamsRepositoryImpl:928`, via `saveLocalResource`'s `teamId != null`
-/// tail) needs no port counterpart, because the screen enqueues on every save
-/// rather than only for a team.
+/// port's headless and foreground sync paths. **Both are covered, but not both
+/// by this function**, and an earlier revision of this sentence said they were:
+/// `background_entrypoint.dart:145` calls *this*, while the foreground pass
+/// has its own copy in `DashboardSyncNotifier.queuePendingResources`
+/// (`dashboard_sync_provider.dart:583`, reached from `_runPass`) — one sweep
+/// written twice, which is worth collapsing but is not this lane's file. The
+/// third Kotlin caller (`TeamsRepositoryImpl:928`, via `saveLocalResource`'s
+/// `teamId != null` tail) needs no port counterpart, because the screen
+/// enqueues on every save rather than only for a team.
 ///
 /// [userId] is nullable and a null one is not an early return: Kotlin passes
 /// `user?.id` and `user?.planetCode` straight through, so a handset whose

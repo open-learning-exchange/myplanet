@@ -240,11 +240,13 @@ void main() {
         rows.map((r) => r.id),
         containsAll(<String>[couchId, 'srv-unrelated']),
       );
-      expect(
-        rows.where((r) => r.id == couchId),
-        hasLength(1),
-        reason: 'two rows for one document is the defect, not a symptom',
-      );
+      // Note what this one does *not* prove. Against the pre-fix code the walk
+      // also leaves exactly one row at `couchId` — it inserted that row and
+      // the prune took the uuid one — so `hasLength(1)` passes either way. The
+      // assertions that catch the defect are the shelf, the offline flag and
+      // the viewer below; this pins that the rekey did not leave a stray
+      // behind, which is a different claim.
+      expect(rows.where((r) => r.id == couchId), hasLength(1));
       expect(
         await database.myLibraryDao.getById(localId),
         isNull,
@@ -291,16 +293,24 @@ void main() {
     expect(await viewerFile(row), isNotNull);
   });
 
-  test('the shelf document names a resource Planet can resolve', () async {
-    // `ShelfRepository._localResourceIds` sends `resourceId ?? id`, so this is
-    // what the server-side shelf document would carry. A local uuid there is
-    // a dangling reference, and `mergeJsonArray` keeps one for ever.
-    await createLocally();
-    await upload();
+  test(
+    'the id the shelf would contribute resolves to a real document',
+    () async {
+      // Deliberately narrower than "the shelf document is right", which is what
+      // this test was first called. It asserts the **column**
+      // `ShelfRepository._localResourceIds` reads (`resourceId ?? id`), not a
+      // built document — so it says nothing about a shelf pushed *before* the
+      // upload, where `mergeIds` filters removals only on the server side and so
+      // keeps the dangling uuid for ever. That is in the PR's *Reported, not
+      // fixed*; a test whose name outruns its assertion is how a gap gets read
+      // as covered.
+      await createLocally();
+      await upload();
 
-    final row = (await database.myLibraryDao.getAll()).single;
-    expect(row.resourceId, couchId);
-  });
+      final row = (await database.myLibraryDao.getAll()).single;
+      expect(row.resourceId, couchId);
+    },
+  );
 
   test('a resource the server really did drop is still pruned', () async {
     // The guard must not become "spare everything the device has touched".
@@ -349,28 +359,25 @@ void main() {
           'registering only ResourcesUploader.type leaves attachment rows to '
           'the drainer generic fallback, which files a junk document',
     );
-    expect(
-      ResourcesUploader(
-        MockPlanetApi(),
-        resources,
-        TeamsRepository(api, database.teamDao, database.teamLogDao),
-        outbox,
-        testDeviceIdentity,
-      ).handlers.keys,
-      containsAll(<String>[
-        ResourcesUploader.type,
-        ResourcesUploader.attachmentType,
-      ]),
-    );
+    // The `handlers.keys` assertion that used to sit here was dropped: it
+    // restated the getter it was testing and could not fail independently of
+    // it. The source-text check above is the guard, because the failure mode
+    // is the *registration* going missing, not the map.
   });
 
   test(
     'a document the walk pulled first does not become a second row',
     () async {
-      // The upgrade case: a handset that ran the buggy build already has the
-      // walk's stray row sitting at the CouchDB id when the fix lands. The
-      // rekey merges onto it rather than colliding, and the shelf is the
-      // union — the stray row may have gained a membership from a later sync.
+      // **This drives a branch no production path reaches**, and the second
+      // audit pass is what established that — the comment it replaces called
+      // this "the upgrade case", which it is not: a handset that ran the buggy
+      // build has a row whose POST already completed, so it is outside
+      // `pendingUploads` and `markUploaded` is never called for it again. The
+      // stub below returns an id a document already occupies, which the real
+      // endpoint cannot do (it POSTs with no `_id`, so CouchDB mints a fresh
+      // one). Kept because the insert must be correct under any caller and
+      // merging beats overwriting, and labelled honestly so nobody reads it as
+      // evidence that upgrades are handled. They are not — see the PR.
       final localId = await createLocally();
       await fullResourcesWalk(includeUploaded: true);
       await database.myLibraryDao.upsertAll([
