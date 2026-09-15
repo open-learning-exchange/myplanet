@@ -194,4 +194,91 @@ class SurveysViewModelTest {
         assertEquals(1, viewModel.surveys.value.size)
         assertEquals("2", viewModel.surveys.value[0].exam.id)
     }
+
+    @Test
+    fun `test multi-word query matches survey containing tokens in any order in contains bucket`() = runTest {
+        backgroundScope.launch(testDispatcher) { viewModel.surveys.collect {} }
+        val survey1 = createSurvey("1", "Science Quiz for Math Students", 1000L, 0L)
+        val survey2 = createSurvey("2", "Math Test Only", 2000L, 0L)
+
+        stubLoadSurveys(listOf(survey1, survey2))
+
+        viewModel.loadSurveys(false, null, false)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.search("quiz math")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val results = viewModel.surveys.value
+        assertEquals(1, results.size)
+        assertEquals("1", results[0].exam.id)
+    }
+
+    @Test
+    fun `test prefix query places matching survey in starts-with bucket ahead of contains matches`() = runTest {
+        backgroundScope.launch(testDispatcher) { viewModel.surveys.collect {} }
+        val surveyContains = createSurvey("1", "Advanced Math Quiz", 1000L, 0L)
+        val surveyStartsWith = createSurvey("2", "Math Basics Test", 1000L, 0L)
+
+        stubLoadSurveys(listOf(surveyContains, surveyStartsWith))
+
+        viewModel.loadSurveys(false, null, false)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.search("Math")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val results = viewModel.surveys.value
+        assertEquals(2, results.size)
+        assertEquals("2", results[0].exam.id) // starts-with bucket first
+        assertEquals("1", results[1].exam.id) // contains bucket second
+    }
+
+    @Test
+    fun `test query with repeated leading trailing spaces matches same set as trimmed spaces`() = runTest {
+        backgroundScope.launch(testDispatcher) { viewModel.surveys.collect {} }
+        val survey1 = createSurvey("1", "Weekly Math Quiz", 1000L, 0L)
+        val survey2 = createSurvey("2", "History Quiz", 2000L, 0L)
+
+        stubLoadSurveys(listOf(survey1, survey2))
+
+        viewModel.loadSurveys(false, null, false)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.search("  math  quiz ")
+        testDispatcher.scheduler.advanceUntilIdle()
+        val spacedResults = viewModel.surveys.value
+
+        viewModel.search("math quiz")
+        testDispatcher.scheduler.advanceUntilIdle()
+        val standardResults = viewModel.surveys.value
+
+        assertEquals(standardResults.map { it.exam.id }, spacedResults.map { it.exam.id })
+        assertEquals(1, spacedResults.size)
+        assertEquals("1", spacedResults[0].exam.id)
+    }
+
+    @Test
+    fun `test empty query returns every named survey and skips null named survey`() = runTest {
+        backgroundScope.launch(testDispatcher) { viewModel.surveys.collect {} }
+        val survey1 = createSurvey("1", "Valid Survey 1", 1000L, 0L)
+        val survey2 = createSurvey("2", "", 2000L, 0L)
+        survey2.name = null
+        val survey3 = createSurvey("3", "Valid Survey 2", 1500L, 0L)
+
+        stubLoadSurveys(listOf(survey1, survey2, survey3))
+
+        viewModel.loadSurveys(false, null, false)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.search("   ")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val results = viewModel.surveys.value
+        assertEquals(2, results.size)
+        val ids = results.map { it.exam.id }
+        org.junit.Assert.assertTrue(ids.contains("1"))
+        org.junit.Assert.assertTrue(ids.contains("3"))
+        org.junit.Assert.assertFalse(ids.contains("2"))
+    }
 }
