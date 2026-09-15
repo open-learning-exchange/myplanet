@@ -26,7 +26,11 @@ class CalendarViewModel @Inject constructor(
     private val _teamNames = MutableStateFlow<Map<String, String>>(emptyMap())
     val teamNames: StateFlow<Map<String, String>> = _teamNames.asStateFlow()
 
-    fun loadMeetups() {
+    init {
+        loadMeetups()
+    }
+
+    private fun loadMeetups() {
         viewModelScope.launch {
             val userId = userRepository.getUserModel()?.id ?: return@launch
             teamsRepository.getMyTeamsFlow(userId).collect { teams ->

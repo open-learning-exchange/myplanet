@@ -29,18 +29,18 @@ class CalendarViewModelTest {
     private lateinit var eventsRepository: EventsRepository
     private lateinit var teamsRepository: TeamsRepository
     private lateinit var userRepository: UserRepository
-    private lateinit var viewModel: CalendarViewModel
 
     @Before
     fun setup() {
         eventsRepository = mockk()
         teamsRepository = mockk()
         userRepository = mockk()
-        viewModel = CalendarViewModel(eventsRepository, teamsRepository, userRepository)
     }
+    
+    private fun createViewModel() = CalendarViewModel(eventsRepository, teamsRepository, userRepository)
 
     @Test
-    fun `loadMeetups aggregates meetups and team names across the user's teams`() = runTest {
+    fun `init loads meetups and aggregates team names across the user's teams`() = runTest {
         val userId = "user1"
         coEvery { userRepository.getUserModel() } returns UserEntity().apply { id = userId }
         val teams = listOf(
@@ -54,7 +54,7 @@ class CalendarViewModelTest {
         )
         coEvery { eventsRepository.getMeetupsForTeams(listOf("team1", "team2")) } returns meetups
 
-        viewModel.loadMeetups()
+        val viewModel = createViewModel()
         advanceUntilIdle()
 
         assertEquals(meetups, viewModel.meetups.value)
@@ -62,10 +62,10 @@ class CalendarViewModelTest {
     }
 
     @Test
-    fun `loadMeetups leaves meetups empty for a guest or logged-out user`() = runTest {
+    fun `init leaves meetups empty for a guest or logged-out user`() = runTest {
         coEvery { userRepository.getUserModel() } returns null
 
-        viewModel.loadMeetups()
+        val viewModel = createViewModel()
         advanceUntilIdle()
 
         assertTrue(viewModel.meetups.value.isEmpty())

@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -67,20 +68,17 @@ class CalendarFragment : Fragment() {
                 }
             }
         })
-
-        viewModel.loadMeetups()
     }
 
     private fun showAgendaDialog(dayMeetups: List<Meetup>) {
-        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.meetup_dialog, null)
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.calendar_agenda_dialog, null)
         val recyclerView = dialogView.findViewById<RecyclerView>(R.id.rvMeetups)
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = EventsAdapter(onMeetupClick = null) { meetup ->
             viewModel.teamNames.value[meetup.teamId]
         }.apply { submitList(dayMeetups) }
-        dialogView.findViewById<View>(R.id.btnadd).visibility = View.GONE
 
-        val dialog = androidx.appcompat.app.AlertDialog.Builder(requireContext())
+        val dialog = AlertDialog.Builder(requireContext())
             .setView(dialogView)
             .create()
         dialogView.findViewById<View>(R.id.btnClose).setOnClickListener { dialog.dismiss() }

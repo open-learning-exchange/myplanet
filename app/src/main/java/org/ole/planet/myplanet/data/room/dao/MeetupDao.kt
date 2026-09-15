@@ -13,7 +13,11 @@ interface MeetupDao {
     suspend fun getByTeamId(teamId: String): List<Meetup>
 
     @Query("SELECT * FROM meetup WHERE teamId IN (:teamIds)")
-    suspend fun getByTeamIds(teamIds: List<String>): List<Meetup>
+    suspend fun getByTeamIdsInternal(teamIds: List<String>): List<Meetup>
+
+    suspend fun getByTeamIds(teamIds: List<String>): List<Meetup> {
+        return teamIds.chunked(900).flatMap { chunk -> getByTeamIdsInternal(chunk) }
+    }
 
     @Query("SELECT * FROM meetup WHERE meetupId = :meetupId LIMIT 1")
     suspend fun getByMeetupId(meetupId: String): Meetup?
