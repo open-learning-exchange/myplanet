@@ -607,6 +607,7 @@
     <string name="please_select_starting_date">"Fadlan dooro taariikhda hore : "</string>
     <string name="read_offline_news_from">"Akhri wararka gudaha ka hor : "</string>
     <string name="downloading_started_please_check_notification">Degsaday soo degista, fadlan check notifikishanka…</string>
+    <string name="dictionary_parsing_failed">Falanqaynta qaamuuska way fashilantay</string>
     <string name="file_already_exists">Faylku horey ayaa jira…</string>
     <string name="feature_not_available">Fayraska Ma heli karaan</string>
     <string name="sync">Dib u hagrees</string>
@@ -912,11 +913,14 @@
     <string name="video_player">qalabka fiidyowga</string>
     <string name="video_unavailable">Fiidyowga lama heli karo — faylku lama helin oo xiriirka serverka lama samayn karin</string>
     <string name="video_playback_error">Khalad ku yimid ciyaarta fiidyowga. Isku day mar kale ama hubi xiriirkaaga</string>
+    <string name="audio_unavailable">Codka lama heli karo — faylku lama helin oo xiriirka serverka lama samayn karin</string>
+    <string name="audio_playback_error">Khalad ku yimid ciyaarta codka. Isku day mar kale ama hubi xiriirkaaga</string>
     <string name="video_loading_checking_server">Hubi helitaanka serverka…</string>
     <string name="video_loading_connecting">La xiriiraya serverka…</string>
     <string name="video_loading_buffering">Kaydinta…</string>
     <string name="video_loading_local">Soo dejinaya fiidyowga…</string>
     <string name="unable_to_play_video">Ma ciyaari karo fiidyowga</string>
+    <string name="unable_to_play_audio">Ma ciyaari karo codka</string>
     <string name="go_back">Ku laabo</string>
     <string name="progress_bar">balka soo socda</string>
     <string name="web_view">barashada webka</string>
