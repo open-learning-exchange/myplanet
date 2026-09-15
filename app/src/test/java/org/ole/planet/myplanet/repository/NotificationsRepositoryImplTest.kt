@@ -994,7 +994,7 @@ class NotificationsRepositoryImplTest {
             org.ole.planet.myplanet.model.News(),
             org.ole.planet.myplanet.model.News()
         )
-        coEvery { teamNotificationDao.findByParentAndType(teamId, "chat") } returns null
+        coEvery { teamNotificationDao.updateCount(teamId, "chat", 2) } returns 0
         val slot = slot<TeamNotification>()
         coEvery { teamNotificationDao.insert(capture(slot)) } returns Unit
 
@@ -1014,20 +1014,10 @@ class NotificationsRepositoryImplTest {
             org.ole.planet.myplanet.model.News(),
             org.ole.planet.myplanet.model.News()
         )
-        val existing = TeamNotification().apply {
-            id = "tn1"
-            parentId = teamId
-            type = "chat"
-            lastCount = 1
-        }
-        coEvery { teamNotificationDao.findByParentAndType(teamId, "chat") } returns existing
-        val slot = slot<TeamNotification>()
-        coEvery { teamNotificationDao.update(capture(slot)) } returns Unit
+        coEvery { teamNotificationDao.updateCount(teamId, "chat", 3) } returns 1
 
         repository.updateTeamNotification(teamId, news)
 
-        val updated = slot.captured
-        assertEquals("tn1", updated.id)
-        assertEquals(3, updated.lastCount)
+        coVerify(exactly = 0) { teamNotificationDao.insert(any()) }
     }
 }
