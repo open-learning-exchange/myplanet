@@ -236,14 +236,23 @@ Future<bool> executeBackgroundTask(String taskName) async {
                         .sync(config: config),
                   ),
                 ),
-                BackgroundSyncStep(
-                  'feedback',
-                  () async => completed(
-                    await container
-                        .read(feedbackRepositoryProvider)
-                        .sync(config: config),
-                  ),
-                ),
+                // The one step that does more than report its pull's verdict.
+                // The re-queue has to follow the pull and cannot ride in
+                // `drainOutbox` with the other three sweeps — see
+                // [sweepPendingFeedback], which is also why the result is held
+                // rather than folded straight into `completed`.
+                BackgroundSyncStep('feedback', () async {
+                  final result = await container
+                      .read(feedbackRepositoryProvider)
+                      .sync(config: config);
+                  await sweepPendingFeedback(
+                    container,
+                    config: config,
+                    userId: prefs.loggedInUserId,
+                    result: result,
+                  );
+                  return completed(result);
+                }),
                 BackgroundSyncStep(
                   'chat',
                   () async => completed(
@@ -530,6 +539,72 @@ Future<void> sweepPendingSubmissions(
     }
     await container
         .read(submissionsUploaderProvider)
+        .queuePending(config: config, userId: userId);
+  } catch (_) {
+    // Deliberately ignored — see above.
+  }
+}
+
+/// The headless half of the feedback re-queue — see
+/// `FeedbackSyncNotifier.runSync`, which does the same thing on the foreground
+/// path and is where the reasoning was first written down.
+///
+/// **Called from the `'feedback'` sync step, after the pull, and that placement
+/// is the whole point.** The three sweeps above sit in `drainOutbox` because
+/// they rescue a row nothing ever queued; this one refreshes a row that *is*
+/// queued, whose payload the pull has just made stale. `drainOutbox` runs
+/// before `syncSteps` (`background_task_runner.dart:100` and `:142`), so a call
+/// from there would refresh the snapshot from a row the pull had not touched
+/// yet — a no-op, and one that reads like a fix.
+///
+/// What makes the snapshot stale is [FeedbackMapper.fromDoc]'s merge, and
+/// nothing else. `outbox.payload` is written by
+/// [FeedbackUploader.queuePending] from the row as it stood at queue time, and
+/// every *local* writer re-queues immediately after its write —
+/// `FeedbackCreateNotifier.submit`, `feedback_detail_screen._submitReply` and
+/// `_closeFeedback` all call `FeedbackQueue.queuePending`. So the one writer
+/// that moves a pending row out from under its own queued payload is the pull,
+/// which merges an admin's replies into a thread whose reply this device has
+/// not sent (`FeedbackMapper._mergePendingReplies`). Without this call the
+/// stale array drains over the server's document under a refreshed `_rev`
+/// (`ConflictRecovery.send`'s update arm) and the admin's reply is destroyed
+/// **on the server**, for every device — then the next pull brings the
+/// truncated thread back over the merged local copy and it is gone here too.
+///
+/// This is also why the payload stays a snapshot rather than becoming a
+/// pointer into the row: rebuilding the body from the current row at send time
+/// would not fix this at all. The row at send time is exactly as unaware of
+/// the admin's reply as the snapshot is — staleness here is relative to the
+/// *server*, and only the pull closes that gap. A pointer payload would buy
+/// nothing and would cost Phase 148's terminal-row memo its meaning, since the
+/// bytes a terminal row records as answered could then change underneath it.
+///
+/// Gated on [SyncComplete] for the reason `FeedbackSyncNotifier` is: half a
+/// walk has merged only some threads, and re-queuing from a partial pull would
+/// push a payload assembled from a state the server never had.
+///
+/// Swallowed, like the sweeps above and unlike an ordinary step failure. A
+/// throw here would add `'feedback'` to the runner's `failedSteps` and ask the
+/// OS to retry the whole task — and a retry begins with `drainOutbox`, which
+/// would send the very snapshot this call failed to refresh. Requesting a
+/// retry would bring the data loss *forward*. Not hypothetical:
+/// `queuePending` reads device identity, which rethrows on an engine with no
+/// channel and no primed cache.
+///
+/// Exposed because `executeBackgroundTask` needs a Flutter binding, real
+/// preferences and a WorkManager engine, so a body written inline in that
+/// closure is unreachable from a unit test.
+@visibleForTesting
+Future<void> sweepPendingFeedback(
+  ProviderContainer container, {
+  required ServerConfig config,
+  required String? userId,
+  required SyncResult result,
+}) async {
+  if (result is! SyncComplete) return;
+  try {
+    await container
+        .read(feedbackUploaderProvider)
         .queuePending(config: config, userId: userId);
   } catch (_) {
     // Deliberately ignored — see above.
