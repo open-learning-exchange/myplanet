@@ -346,9 +346,12 @@ class ResourcesRepository {
   /// because the link has to carry the CouchDB id.
   ///
   /// An earlier revision of this comment said `createLocalResourceLink` "does
-  /// not exist anywhere in the port". It does — as
-  /// [TeamsRepository.addResourceLink] — and the search that missed it was for
-  /// the Kotlin *name* rather than the behaviour.
+  /// not exist anywhere in the port", and the search that missed it was for
+  /// the Kotlin *name* rather than the behaviour. Its correction then named
+  /// [TeamsRepository.addResourceLink], which was right until schema v50 split
+  /// that method in two: Kotlin's two resource-link producers stamp different
+  /// planet-code fields, and the one this path ports is now
+  /// [TeamsRepository.createLocalResourceLink] — the Kotlin name after all.
   Future<bool> markResourceUploaded(
     String localId,
     String couchId,
@@ -359,6 +362,21 @@ class ResourcesRepository {
   /// [MyLibraryDao.adoptAttachmentRev]. Kotlin throws that response away.
   Future<void> adoptAttachmentRev(String localId, String rev) =>
       _dao.adoptAttachmentRev(localId, rev);
+
+  /// Rows whose attachment PUT has not been delivered — see
+  /// [MyLibraryTable.attachmentPending] for why the column exists and
+  /// [MyLibraryDao.pendingAttachments] for the predicate.
+  ///
+  /// This has no Kotlin counterpart, and that is the finding rather than an
+  /// omission: Kotlin's attachment PUT is best-effort with no failure channel
+  /// at all (`FileUploader.uploadDoc` reports "Unable to upload resource"
+  /// through `onSuccess`), so there is nothing there to port. The port had the
+  /// same hole until this column made the two outcomes distinguishable.
+  Future<List<MyLibraryRow>> pendingAttachments() => _dao.pendingAttachments();
+
+  /// [MyLibraryDao.clearAttachmentPending].
+  Future<int> clearAttachmentPending(String id) =>
+      _dao.clearAttachmentPending(id);
 
   /// Port of `ResourcesRepositoryImpl.getLibraryItemById` (`:162-164`).
   Future<MyLibraryRow?> getLibraryItemById(String id) => _dao.getById(id);

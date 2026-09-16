@@ -230,9 +230,39 @@ class ResourcesUploader {
     required ServerConfig config,
     UserRow? user,
   }) async {
+    final endpoint = endpointFor(config);
+
+    // **Unconditional, and ahead of the early return below.** The two sweeps
+    // are independent in reachability: a handset can have every document filed
+    // and still owe an attachment, which is precisely the state this round
+    // exists to close, and gating the attachment sweep on `pending.isNotEmpty`
+    // would make it reachable only for a user who happens to have a second
+    // undelivered resource. Placed here rather than in `sweepPendingResources`
+    // so it also reaches `DashboardSyncNotifier.queuePendingResources` and
+    // `add_resource_screen._save`, the other two callers — one sweep, three
+    // call sites, no other lane's file touched.
+    //
+    // **The `try` makes them independent in *failure* too, and its absence was
+    // a defect the audit caught.** The attachment sweep reaches `dart:io`
+    // through [ResourceFiles.existingFileFor], so a `FileSystemException` or a
+    // `MissingPluginException` from the documents-directory lookup escaped
+    // here and took the **document** sweep with it — the one that is the only
+    // thing getting a user-authored resource to the server at all. Every
+    // caller swallows the throw, so the failure was silent, and it was
+    // *persistent* rather than transient: `attachment_pending` survives a
+    // schema bump, so on a handset where that lookup fails the document sweep
+    // was blocked on every pass, for ever.
+    //
+    // A smaller, newer safety net must never gate an older, larger one. Same
+    // reasoning as `sweepPendingResources`' own catch, quoted there.
+    try {
+      await queuePendingAttachments(config: config, userId: user?.id);
+    } catch (e, stack) {
+      log('The attachment sweep failed', error: e, stackTrace: stack);
+    }
+
     final pending = await _resources.pendingUploads();
     if (pending.isEmpty) return 0;
-    final endpoint = endpointFor(config);
     final identity = await _identity.read();
     var queued = 0;
     for (final row in pending) {
@@ -262,6 +292,92 @@ class ResourcesUploader {
       if (await _outbox.isInFlight(type, row.id)) continue;
       queued++;
       await _enqueue(row, endpoint, identity, user);
+    }
+    return queued;
+  }
+
+  /// Re-arms every resource whose attachment PUT has not been delivered.
+  ///
+  /// **The safety net the attachment half never had, and the reason it is a
+  /// sweep rather than a longer retry ladder.** Two routes lose a file and
+  /// neither is reachable from the retry row: the process dies between
+  /// [MyLibraryDao.markUploaded] and [_uploadAttachment], so no retry row is
+  /// ever filed; or the row spends its five-attempt ladder (~15 minutes) on a
+  /// handset that is offline for longer. Both leave the same state, and until
+  /// [MyLibraryTable.attachmentPending] existed that state was
+  /// indistinguishable from success — so there was nothing to sweep *from*.
+  /// Now there is, and this reads it.
+  ///
+  /// Shaped to the Phase 148 policy rather than around it:
+  ///
+  ///  * **One row per `(uploadType, itemId)`, for ever.**
+  ///    [OutboxRepository.enqueue] keys on the pair, so calling this on every
+  ///    sync pass refreshes one row rather than accreting one per pass. The
+  ///    accretion the policy stopped was unbounded *rows*; this adds none.
+  ///  * **A terminal row is a memo, and the memo is respected.** A PUT the
+  ///    server refused on the bytes (400, 413, 415, 422) stays terminal and
+  ///    this sweep cannot re-ask, which is right: resending identical bytes to
+  ///    a server that has already rejected them cannot help. The one 4xx that
+  ///    is *not* a verdict on the bytes — a 409 against a stale `If-Match` —
+  ///    is answered inline instead, in [_sendAttachment].
+  ///  * **[OutboxRepository.rearm] is deliberately not used**, though it would
+  ///    be the shorter route past that memo. Its own dartdoc reserves it for a
+  ///    person tapping *Retry*, and the distinction holds here: this is the
+  ///    app deciding, unattended, that something might have changed.
+  ///  * **An in-flight row is left alone**, the guard [queuePending] documents
+  ///    at length for the document POST. It matters less here — a duplicate
+  ///    PUT to a known URL writes the same bytes under the same name rather
+  ///    than filing a second document — but a refreshed payload can still lose
+  ///    a `fileDocId` a live drain is about to read.
+  ///
+  /// **The disk check is what keeps this from churning.** A row flagged with
+  /// no bytes under its id is not enqueued at all, so the sweep does not file
+  /// a row per pass for a resource whose file the user deleted, or whose
+  /// [ResourceFiles.moveResourceDirectory] failed — those cost one `stat` per
+  /// pass and no outbox row, no request and no state change. The flag stays
+  /// set rather than being cleared, because "the bytes are not where the row
+  /// says they are" is not evidence the attachment was delivered, and this
+  /// class's whole defect was reporting delivery it had not established.
+  ///
+  /// [fileDocId] is the row's own id, which is the CouchDB id after
+  /// [MyLibraryDao.markUploaded] rekeys it, and is what every file reader in
+  /// the port resolves. The retry row written by [_enqueueAttachmentRetry] can
+  /// carry a *different* one when the directory move failed; the in-flight
+  /// guard plus the disk check keep this sweep from overwriting that with a
+  /// worse answer, since a row whose bytes are not under its id is skipped
+  /// here entirely.
+  ///
+  /// Returns how many rows were queued, for the tests and for symmetry with
+  /// [queuePending].
+  Future<int> queuePendingAttachments({
+    required ServerConfig config,
+    String? userId,
+  }) async {
+    final pending = await _resources.pendingAttachments();
+    if (pending.isEmpty) return 0;
+    final endpoint = endpointFor(config);
+    var queued = 0;
+    for (final row in pending) {
+      final localAddress = row.resourceLocalAddress;
+      if (localAddress == null || localAddress.isEmpty) continue;
+      final filename = p.basename(localAddress.replaceAll(r'\', '/'));
+      // Where the writer put them and where every reader looks. Checked before
+      // enqueueing so a row with nothing to send never becomes an outbox row
+      // the drain would file and delete again on every pass.
+      final file = await ResourceFiles.existingFileFor(
+        docId: row.id,
+        filename: filename,
+      );
+      if (file == null) continue;
+      if (await _outbox.isInFlight(attachmentType, row.id)) continue;
+      await _outbox.enqueue(
+        uploadType: attachmentType,
+        itemId: row.id,
+        endpoint: endpoint,
+        payload: {'filename': filename, 'fileDocId': row.id},
+        userId: userId,
+      );
+      queued++;
     }
     return queued;
   }
@@ -467,12 +583,19 @@ class ResourcesUploader {
   /// **This was omitted in this phase's first cut, on a false premise, and the
   /// premise is worth recording.** Two doc comments claimed
   /// `TeamsRepository.createLocalResourceLink` "does not exist anywhere in the
-  /// port". It exists — as [TeamsRepository.addResourceLink], a field-for-field
-  /// match for the Kotlin (blank guard, generated id, `docType`
-  /// `'resourceLink'`, `teamType` `'local'`, `isUpdated` true) plus a duplicate
-  /// check Kotlin lacks. The search was for the Kotlin *name* rather than the
-  /// behaviour, which is the same mistake as matching `<basename>_test.dart`
-  /// instead of grepping for the symbol. Without this, a team leader's private
+  /// port". It existed — as `addResourceLink`, a match for the Kotlin on every
+  /// field it wrote (blank guard, generated id, `docType` `'resourceLink'`,
+  /// `teamType` `'local'`, `isUpdated` true) plus a duplicate check Kotlin
+  /// lacks. The search was for the Kotlin *name* rather than the behaviour,
+  /// which is the same mistake as matching `<basename>_test.dart` instead of
+  /// grepping for the symbol.
+  ///
+  /// **And "a field-for-field match" was itself too strong**, which schema v50
+  /// exposed: the one method stood for *both* Kotlin producers, which stamp
+  /// different planet-code fields, and matched neither on those. It is now
+  /// split, and this call goes to [TeamsRepository.createLocalResourceLink] —
+  /// the Kotlin name after all. A correction that lands on the right symbol
+  /// can still overstate how closely it matches. Without this, a team leader's private
   /// resource uploads its own document and **no team ever links to it**: the
   /// team's Resources tab is empty on Planet and on every other member's
   /// handset, for bytes that are already on the server.
@@ -491,12 +614,17 @@ class ResourcesUploader {
   /// `planetCode` comes out of the payload rather than a session read: the
   /// drain may run days later in a headless isolate, and `sourcePlanet` is the
   /// planet code this very document was serialized with, so it cannot drift
-  /// from it. **Note that [TeamsRepository.addResourceLink] currently accepts
-  /// `planetCode` and ignores it**, where Kotlin stamps `sourcePlanet` *and*
-  /// `teamPlanetCode` from it (`TeamsRepositoryImpl.kt:726-735`). Fixing that
-  /// means editing `teams_repository.dart`, which is outside this lane's file
-  /// set — it is passed here so the call is already correct once that lands,
-  /// and reported rather than reached for.
+  /// from it.
+  ///
+  /// **It now reaches the row**, which it did not when this paragraph was
+  /// written — it said `addResourceLink` *"currently accepts `planetCode` and
+  /// ignores it"*, and closing that needed the schema bump this call was
+  /// waiting on. It also needed a **different method**: Kotlin's two
+  /// resource-link producers stamp different fields, and the one this path
+  /// ports is `createLocalResourceLink` (`sourcePlanet` and `teamPlanetCode`),
+  /// not `addResourceLinks` (`teamPlanetCode` and `userPlanetCode`), which is
+  /// what [TeamsRepository.addResourceLink] is. Calling the wrong one would
+  /// have put `userPlanetCode` on the wire and left `sourcePlanet` off it.
   ///
   /// Best-effort, like the attachment: the resource document is already filed,
   /// and reporting failure would re-POST it and duplicate it to fix a missing
@@ -518,7 +646,7 @@ class ResourcesUploader {
     if (teamId == null || teamId.isEmpty) return;
 
     try {
-      final link = await _teams.addResourceLink(
+      final link = await _teams.createLocalResourceLink(
         teamId: teamId,
         resourceId: couchId,
         title: resource.title ?? '',
@@ -583,18 +711,34 @@ class ResourcesUploader {
   /// between an attachment that landed and one that never will. The document
   /// sits on Planet with no `_attachments` for ever, the bytes sit on the one
   /// handset that authored them, and the user is told the resource uploaded.
-  /// A refused PUT now files its own outbox row ([attachmentType]) so the next
+  /// A refused PUT files its own outbox row ([attachmentType]) so the next
   /// drain tries again. See [attachmentHandler] for what that row is allowed
-  /// to do — and note that this **narrows** the hole rather than closing it.
-  /// That row gets one backoff ladder and there is no sweep to re-arm it,
-  /// because there is nothing to re-arm it *from*: after [MyLibraryDao
-  /// .markUploaded] a resource whose attachment landed and one whose attachment
-  /// never will are the same row, byte for byte. So a device offline for longer
-  /// than the ladder still loses the attachment silently. Closing it properly
-  /// needs a column recording delivery, and `my_library` is preserved — a
-  /// schema bump with a hand-written `_addColumnIfMissing` step, which is a
-  /// decision for whoever is allocated the next version rather than something
-  /// to improvise here.
+  /// to do.
+  ///
+  /// **That row alone only narrowed the hole, and schema v50 is what closed
+  /// it.** The paragraph this replaces ended: *"there is no sweep to re-arm
+  /// it, because there is nothing to re-arm it from — after
+  /// [MyLibraryDao.markUploaded] a resource whose attachment landed and one
+  /// whose attachment never will are the same row, byte for byte. So a device
+  /// offline for longer than the ladder still loses the attachment silently.
+  /// Closing it properly needs a column recording delivery."* It does, and
+  /// that column is [MyLibraryTable.attachmentPending]. Both losing routes are
+  /// re-armable by [queuePendingAttachments]: the ladder spent while offline
+  /// (a transport failure classifies `transient`, which
+  /// [OutboxRepository.enqueue] re-arms with a fresh ladder), and the process
+  /// killed before any retry row was filed at all — which no outbox row could
+  /// ever have covered, because it died before there was one.
+  ///
+  /// **One residual case is not**, and saying so is the point: a row whose
+  /// [ResourceFiles.moveResourceDirectory] failed has its bytes under the old
+  /// uuid, so the sweep's disk check — which looks under the row's own id —
+  /// misses and skips it. If that row's ladder is then spent, nothing re-arms
+  /// it. The flag stays set, so nothing reports a delivery that did not
+  /// happen; the attachment simply stays on the handset. Closing it means
+  /// falling back to the retry row's stored `fileDocId` when the row's own id
+  /// has no bytes. Note the row is already broken for *reading* too — every
+  /// file reader resolves the same id — so this is the narrow end of a wider
+  /// pre-existing failure.
   Future<void> _uploadAttachment(
     OutboxRow row,
     String couchId,
@@ -603,10 +747,19 @@ class ResourcesUploader {
     required String fileDocId,
   }) async {
     // Read under the CouchDB id: the row was rekeyed a few lines up.
-    final localAddress = (await _resources.getLibraryItemById(
-      couchId,
-    ))?.resourceLocalAddress;
-    if (localAddress == null || localAddress.isEmpty) return;
+    final resource = await _resources.getLibraryItemById(couchId);
+    final localAddress = resource?.resourceLocalAddress;
+    if (localAddress == null || localAddress.isEmpty) {
+      // A row with no address owes no attachment, and [MyLibraryDao
+      // .markUploaded] would not have flagged it — `hasBytes` reads the same
+      // two columns. Clearing anyway costs one statement and makes the
+      // invariant hold under any caller, including a row edited between the
+      // mark and this call.
+      if (resource != null) {
+        await _resources.clearAttachmentPending(couchId);
+      }
+      return;
+    }
 
     // No second `filename.isEmpty` guard, because there was one and mutation
     // testing showed it could not fail: [ResourceFiles.existingFileFor]
@@ -675,7 +828,7 @@ class ResourcesUploader {
         '/${Uri.encodeComponent(filename)}';
     final contentType = lookupMimeType(filename) ?? 'application/octet-stream';
 
-    final attachResult = await _api.uploadAttachment(
+    var attachResult = await _api.uploadAttachment(
       attachmentUrl,
       bytes: bytes,
       authHeader: authHeader,
@@ -685,7 +838,65 @@ class ResourcesUploader {
       ifMatch: rev,
       contentType: contentType,
     );
+
+    // **The 409 arm, and the reason this PUT gets one where the document POST
+    // beside it does not.**
+    //
+    // A 409 on a *conditional* PUT says one thing only: the `If-Match`
+    // revision is not the document's current one, so these bytes were not
+    // stored. It is not a verdict on the bytes — which is what the Phase 148
+    // policy classifies a 4xx as, and why `OutboxRepository.classifyStatus`
+    // reads 409 as `rejected` and terminal. That reading is right for an
+    // append and right for a document PUT, whose `_rev` lives *in* the
+    // payload, so a pull supplying a newer one changes the request and
+    // `enqueue`'s memo re-arms it. This row's payload deliberately carries no
+    // revision (see [_enqueueAttachmentRetry]) — the handler reads the live
+    // one — so the request never changes and there is nothing the policy's
+    // own recovery route can re-arm it with. Without an arm here a stale
+    // revision strands the attachment permanently, which is why the fix is
+    // here rather than in `classifyStatus`: 409 is terminal for the other
+    // nineteen uploaders for good reasons, and this is the one caller whose
+    // repair is not expressible as a changed request.
+    //
+    // Same shape as `ConflictRecovery.send`'s *update* branch, taken inline
+    // because that helper sends a JSON body and this sends bytes: read the
+    // document, take the revision it reports, and re-send **once** under it.
+    // Bounded at one extra GET and one extra PUT per drain attempt, and only
+    // on a conflict.
+    //
+    // `liveRev == rev` short-circuits for the reason that branch gives: the
+    // server has just refused this exact request, and re-sending it is
+    // precisely what the memo exists to stop.
+    if (attachResult case NetworkError<Map<String, dynamic>>(code: 409)) {
+      final liveRev = await _liveRevision(
+        endpoint: endpoint,
+        couchId: couchId,
+        authHeader: authHeader,
+      );
+      if (liveRev != null && liveRev != rev) {
+        attachResult = await _api.uploadAttachment(
+          attachmentUrl,
+          bytes: bytes,
+          authHeader: authHeader,
+          ifMatch: liveRev,
+          contentType: contentType,
+        );
+      }
+    }
+
     if (attachResult case NetworkSuccess<Map<String, dynamic>>(:final data)) {
+      // **Delivery recorded, and this is the only place that records it.**
+      // [MyLibraryTable.attachmentPending] exists because every other column
+      // reads identically for an attachment that landed and one that never
+      // will; a 2xx from this PUT is the single event that separates them, so
+      // it is cleared here and nowhere the send did not actually succeed.
+      //
+      // Before the rev adoption rather than after, and unconditionally rather
+      // than inside the `newRev` guard: a response that omits `rev` is still a
+      // response that accepted the bytes, and a row left flagged would be
+      // re-swept and re-PUT for the life of the install.
+      await _resources.clearAttachmentPending(couchId);
+
       // CouchDB bumped the revision to accept these bytes. Kotlin discards
       // that response, which leaves the local row a revision behind and makes
       // the next sync ask the user to re-download their own file; see
@@ -696,6 +907,40 @@ class ResourcesUploader {
       }
     }
     return attachResult;
+  }
+
+  /// The document's current `_rev` as the **server** reports it, for the 409
+  /// arm above.
+  ///
+  /// Read from the server rather than from the local row on purpose: the local
+  /// row is what the failing attempt already used, so re-reading it would
+  /// return the same stale value and make the arm inert — the shape Phase 149
+  /// calls tracing the caller chain to its end.
+  ///
+  /// Every failure answers null, which leaves the original 409 standing as the
+  /// result. The `try` is the one `ConflictRecovery` documents at length: a
+  /// throw out of a recovery would be caught by the drainer and relabelled
+  /// *transient*, turning a terminal rejection into a row re-offered on every
+  /// sweep — Phase 148's accretion re-entering through the recovery arm.
+  /// `PlanetApi` returns a `NetworkException` rather than throwing, so this is
+  /// unreachable through it and reachable through a fake.
+  Future<String?> _liveRevision({
+    required String endpoint,
+    required String couchId,
+    required String? authHeader,
+  }) async {
+    final NetworkResult<Map<String, dynamic>> existing;
+    try {
+      existing = await _api.getJsonObject(
+        '$endpoint/${Uri.encodeComponent(couchId)}',
+        authHeader: authHeader,
+      );
+    } catch (_) {
+      return null;
+    }
+    if (existing is! NetworkSuccess<Map<String, dynamic>>) return null;
+    final rev = existing.data['_rev'];
+    return rev is String && rev.isNotEmpty ? rev : null;
   }
 
   Future<void> _enqueueAttachmentRetry({
@@ -772,9 +1017,17 @@ class ResourcesUploader {
     );
 
     final filename = payload['filename'];
+    // The flag is deliberately **not** cleared here. An unusable payload is a
+    // fact about this outbox row, not about the resource: the bytes may still
+    // be on disk and still owed, and [queuePendingAttachments] files a fresh
+    // row with a good payload on the next pass. Clearing would report delivery
+    // on the strength of a corrupted memo.
     if (filename is! String || filename.isEmpty) return nothingToSend;
 
     final resource = await _resources.getLibraryItemById(row.itemId);
+    // The resource is gone locally, so nothing can ever be sent for it — and
+    // nothing can read the flag either. A missing revision is likewise about
+    // the moment, not the row. Neither clears anything.
     final rev = resource?.rev;
     if (rev == null || rev.isEmpty) return nothingToSend;
 

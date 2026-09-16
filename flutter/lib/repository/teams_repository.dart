@@ -492,61 +492,151 @@ class TeamsRepository {
     return b.toString();
   }
 
-  /// Port of `TeamsRepositoryImpl.createLocalResourceLink` (`:719-740`) and,
-  /// on its other caller, of `addResourceLinks` (`:681-704`).
+  /// Port of `TeamsRepositoryImpl.addResourceLinks` (`:664-690`) — the team's
+  /// *Add resource* action, reached from `TeamResourcesFragment.kt:129`.
   ///
-  /// **[planetCode] is accepted and ignored, and closing that is a phase
-  /// rather than a line.** Kotlin stamps `sourcePlanet` and `teamPlanetCode`
-  /// from `planetCode?.takeIf { it.isNotBlank() } ?:
-  /// sharedPrefManager.getPlanetCode()`; this writes neither, because the
-  /// `Teams` drift table has neither column. What closing it actually needs,
-  /// measured rather than assumed:
+  /// **Kotlin has two resource-link producers that stamp different fields, and
+  /// one port method could not honestly serve both.** This is the split; the
+  /// other half is [createLocalResourceLink]. Measured rather than assumed:
   ///
-  /// * **Four columns, not two.** `MyTeam` also carries `userPlanetCode` and
-  ///   `parentCode`, both read back by `populateTeamFields` (`MyTeam.kt:94`,
-  ///   `:96`) and both written by `serialize` (`:207-208`).
-  ///   [createJoinRequest] has this same defect and needs two of them, so
-  ///   doing only `resourceLink` pays the migration twice.
-  /// * **`teams` is in `localAuthorityTables`**, so `createAll` will not alter
-  ///   it: a schema bump plus one hand-written `_addColumnIfMissing` per
-  ///   column, whose absence does not fail loudly.
-  /// * **The two Kotlin producers stamp different fields.** This one method
-  ///   serves both: `ResourcesUploader._linkPrivateResourceToTeam` is the
-  ///   `createLocalResourceLink` path (both planet fields), while
-  ///   `TeamResourceActions.add` is the `addResourceLinks` path, which sets
-  ///   `teamPlanetCode` and `userPlanetCode` from the user and **never sets
-  ///   `sourcePlanet` at all**. Stamping both unconditionally would put a key
-  ///   on the wire that Kotlin's UI path omits.
-  /// * **`TeamMapper.fromDoc` must map them too**, or the first sync after the
-  ///   upload blanks them — the Phase 56/74/98 shape.
-  /// * **The fallback has no port counterpart.** Kotlin's `?:
-  ///   sharedPrefManager.getPlanetCode()` needs `PlanetPrefs`, which this
-  ///   repository does not hold; and `TeamResourceActions.add` reads
-  ///   `sessionProvider` without watching it, so it can hand this `null` on
-  ///   exactly the path the fallback exists for.
+  /// | field | `addResourceLinks` | `createLocalResourceLink` |
+  /// |---|---|---|
+  /// | `sourcePlanet` | *(unset)* | resolved planet code (`:716`) |
+  /// | `teamPlanetCode` | `user.planetCode` (`:682`) | resolved (`:718`) |
+  /// | `userPlanetCode` | `user.planetCode` (`:683`) | *(unset)* |
+  /// | `status` | `user.parentCode` (`:677`) | *(unset)* |
   ///
-  /// Related and out of scope here: this method's document is serialized by
-  /// [serializeTeamDocument], which has no `resourceLink` branch, where
-  /// `MyTeam.serialize` returns early for that docType with nine keys
-  /// (`MyTeam.kt:167-179`). The port sends **three** keys Kotlin does not —
-  /// `createdDate`, `isLeader` and `public` — a divergence on the same
-  /// document in the opposite direction from the planet codes above.
+  /// Two resource links on the same team, created through the two paths,
+  /// produce **differently shaped server documents** in Kotlin. That is the
+  /// ground truth, not a Kotlin bug to improve on here, and stamping all of it
+  /// from one method would have put keys on the wire that neither path sends.
   ///
-  /// (An earlier revision of this sentence said fourteen. That is the number
-  /// of key names in [serializeTeamDocument] absent from Kotlin's branch, but
-  /// every one of them is `if (x != null)`-guarded and a row this method
-  /// creates leaves them all null, so they are never sent. A count of
-  /// *potential* keys stated as what the port sends, in a comment whose whole
-  /// job is to size a future phase.)
+  /// [planetCode] keeps its name and position, so the one caller
+  /// (`TeamResourceActions.add`) is unchanged — it passes the signed-in
+  /// user's `planetCode`, which is exactly what Kotlin reads at `:682-683`.
   ///
-  /// Kotlin's `addResourceLinks` also stamps `status = user.parentCode`, which
-  /// the port never sets — but `MyTeam.serialize`'s resourceLink branch emits
-  /// no `status` either, so it stays device-local in both apps.
+  /// **With one caveat that an earlier revision of this comment recorded and
+  /// this one deleted, wrongly.** That caller reads
+  /// `ref.read(sessionProvider).value?.planetCode`
+  /// (`teams_provider.dart:402`) — the port's standing *a provider a screen
+  /// reads but never watches is null* trap, and in Riverpod 3 `.value` is
+  /// "previous value, else null". Neither `team_resources_screen` nor
+  /// `team_detail_screen` watches it, so it is latent only because the router
+  /// holds a `ref.listen`; on any path where it is not resolved this method is
+  /// handed null and stamps nothing. That is exactly the path Kotlin's prefs
+  /// fallback exists for. `teams_provider.dart` is not this lane's file — note
+  /// that `requestToJoin`, ten methods up in the same file, gets it right with
+  /// `await _session()`.
+  ///
+  /// **`status` is deliberately not stamped**, although Kotlin writes
+  /// `user.parentCode` there. `MyTeam.serialize`'s `resourceLink` branch emits
+  /// no `status` key (`MyTeam.kt:167-179`), so in Kotlin the value never
+  /// leaves the device — but [serializeTeamDocument] has no `resourceLink`
+  /// branch and *would* send it. Copying the assignment would therefore add a
+  /// key to the wire in the name of parity. Nothing reads `teams.status` for a
+  /// resource link in either app.
+  ///
+  /// **No fallback**, matching `:682-683`: `addResourceLinks` uses
+  /// `user.planetCode` raw and a null one yields null columns. Only
+  /// [createLocalResourceLink] has one, and see there for why the port's is
+  /// still missing.
+  ///
+  /// The duplicate check is the port's own; Kotlin has none.
+  ///
+  /// Related and still out of scope: [serializeTeamDocument] has no
+  /// `resourceLink` branch where `MyTeam.serialize` returns early for that
+  /// docType with nine keys, so the port sends `createdDate`, `isLeader` and
+  /// `public` where Kotlin sends none of the three. (An earlier revision of
+  /// this sentence said fourteen keys. That is the number of key names in
+  /// [serializeTeamDocument] absent from Kotlin's branch, but every one is
+  /// `if (x != null)`-guarded and a row this method creates leaves them null,
+  /// so they are never sent — a count of *potential* keys stated as what the
+  /// port sends, in a comment whose whole job was to size a future phase.)
+  /// **That gap is closed too, and it was this method's `userPlanetCode` that
+  /// forced the issue.** An earlier revision of this paragraph said the four
+  /// columns "do not widen the gap" — and then argued only the
+  /// [createLocalResourceLink] case, which leaves `userPlanetCode` null. This
+  /// method sets it, Kotlin's `resourceLink` serialize branch omits it, and
+  /// the port had no such branch, so the gap widened by exactly one key on the
+  /// path this comment is attached to — by the same argument used four
+  /// paragraphs up to decline `status`. [serializeTeamDocument] now has the
+  /// branch, so the row matches Kotlin's row and the document matches Kotlin's
+  /// document; `createdDate`, `isLeader` and `public` stop being sent as
+  /// well.
   Future<TeamRow?> addResourceLink({
     required String teamId,
     required String resourceId,
     required String title,
     String? planetCode,
+  }) => _insertResourceLink(
+    teamId: teamId,
+    resourceId: resourceId,
+    title: title,
+    teamPlanetCode: planetCode,
+    userPlanetCode: planetCode,
+  );
+
+  /// Port of `TeamsRepositoryImpl.createLocalResourceLink` (`:702-723`) — the
+  /// link a **private team resource** gains when its document reaches CouchDB,
+  /// called from `ResourcesRepositoryImpl.markResourceUploaded:829-836` and,
+  /// in the port, from `ResourcesUploader._linkPrivateResourceToTeam`.
+  ///
+  /// Stamps `sourcePlanet` **and** `teamPlanetCode` from [planetCode]
+  /// (`:716`, `:718`) and neither `userPlanetCode` nor `parentCode`. See
+  /// [addResourceLink] for the table comparing the two producers, and for why
+  /// they are two methods.
+  ///
+  /// **Kotlin's fallback has no port counterpart, and this is the honest
+  /// version of that gap rather than a guess at it.** Kotlin resolves
+  /// `planetCode?.takeIf { it.isNotBlank() } ?: sharedPrefManager
+  /// .getPlanetCode()` (`:709-710`), reading the `planetCode` preference that
+  /// `UserRepositoryImpl.applyJsonToUser:283-285` writes from the user
+  /// document — so the fallback returns `""` on a device that has never
+  /// completed a user sync, and the user's own row otherwise. The port has no
+  /// such preference. Adding `PlanetPrefs.planetCode` would be an accessor
+  /// with no writer, since the writer belongs to the user-sync path, which is
+  /// not this lane's file — and a second source of truth for a value the
+  /// `users` row already holds. The port's caller passes
+  /// `payload['sourcePlanet']`, which is the signed-in user's `planetCode`
+  /// captured at enqueue time: the same origin as Kotlin's preference, read
+  /// one hop earlier. What is genuinely lost is the null-user case, reported
+  /// rather than papered over.
+  ///
+  /// The blank guard *is* ported: a blank [planetCode] is normalised to null
+  /// so the column is absent rather than empty, which is what
+  /// `takeIf { it.isNotBlank() }` means before the `?:` arrives.
+  Future<TeamRow?> createLocalResourceLink({
+    required String teamId,
+    required String resourceId,
+    required String title,
+    String? planetCode,
+  }) {
+    final resolved = (planetCode?.trim().isNotEmpty ?? false)
+        ? planetCode
+        : null;
+    return _insertResourceLink(
+      teamId: teamId,
+      resourceId: resourceId,
+      title: title,
+      sourcePlanet: resolved,
+      teamPlanetCode: resolved,
+    );
+  }
+
+  /// The row both producers write, differing only in which planet-code columns
+  /// the caller supplies.
+  ///
+  /// Everything else is identical in the Kotlin: the blank guard on the two
+  /// ids (`:669`/`:708`), the generated `_id`, `docType` `'resourceLink'`,
+  /// `teamType` `'local'` and `updated = true`. The duplicate check is the
+  /// port's addition and applies to both, as it did before the split.
+  Future<TeamRow?> _insertResourceLink({
+    required String teamId,
+    required String resourceId,
+    required String title,
+    String? sourcePlanet,
+    String? teamPlanetCode,
+    String? userPlanetCode,
   }) async {
     if (teamId.isEmpty || resourceId.isEmpty) return null;
     final existing = await _dao.watchResourceLinks(teamId).first;
@@ -564,6 +654,9 @@ class TeamsRepository {
         docType: const Value('resourceLink'),
         teamType: const Value('local'),
         isUpdated: const Value(true),
+        sourcePlanet: Value(sourcePlanet),
+        teamPlanetCode: Value(teamPlanetCode),
+        userPlanetCode: Value(userPlanetCode),
       ),
     );
     return _dao.getById(id);
@@ -656,6 +749,27 @@ class TeamsRepository {
   Stream<List<TeamRow>> watchTeamLinks() =>
       _dao.watchTeamDocumentsByType('service');
 
+  /// Port of `TeamsRepositoryImpl.requestToJoin` (`:603-627`) — Kotlin has no
+  /// `createJoinRequest`; the name here is the port's.
+  ///
+  /// **[planetCode] used to be accepted and dropped**, the same defect
+  /// [addResourceLink] carried, and it is closed by the same schema bump.
+  /// Kotlin writes the argument to `teamPlanetCode` *and* `userPlanetCode`
+  /// (`:623-624`) — the two fields `MyTeam.serialize`'s general branch then
+  /// uploads (`MyTeam.kt:204`, `:207`), so a join request reaching Planet
+  /// without them is a request the server cannot attribute to a planet.
+  ///
+  /// **No fallback here, deliberately, and that is Kotlin's shape rather than
+  /// an omission.** Only `createLocalResourceLink` carries
+  /// `?: sharedPrefManager.getPlanetCode()`; both of Kotlin's callers of
+  /// `requestToJoin` pass `user?.planetCode` raw (`TeamFragment.kt:289`,
+  /// `TeamDetailFragment.kt:274-276`), so a user whose `planetCode` is null
+  /// produces a request row with both columns null in Kotlin too.
+  ///
+  /// `sourcePlanet` and `parentCode` are **not** written: Kotlin sets neither
+  /// on this path, and the general serialize branch strips a null rather than
+  /// sending it, so stamping either would put a key on the wire Kotlin does
+  /// not send.
   Future<TeamRow?> createJoinRequest({
     required String teamId,
     required String userId,
@@ -675,6 +789,8 @@ class TeamsRepository {
         teamType: Value(teamType),
         createdDate: Value(DateTime.now().millisecondsSinceEpoch),
         isUpdated: const Value(true),
+        teamPlanetCode: Value(planetCode),
+        userPlanetCode: Value(planetCode),
       ),
     );
     return _dao.getById(id);
@@ -739,7 +855,46 @@ class TeamsRepository {
     return changed;
   }
 
-  static Map<String, dynamic> serializeTeamDocument(TeamRow row) => {
+  /// Port of `MyTeam.serialize` (`MyTeam.kt:156-225`).
+  ///
+  /// **The `resourceLink` early return, added when the v50 audit found this
+  /// method putting a key on the wire that Kotlin's does not.** `MyTeam
+  /// .serialize` returns at `:167-179` for that docType with seven fields plus
+  /// `_id`/`_rev`, and the port had no such branch — so a resource link
+  /// uploaded `createdDate`, `isLeader` and `public`, which Kotlin never
+  /// sends, and (once [addResourceLink] began stamping it) `userPlanetCode`,
+  /// which Kotlin sets on the row (`:683`) and deliberately omits from the
+  /// document.
+  ///
+  /// That last one is the point. The same round declined to stamp `status`
+  /// from `addResourceLinks` (`:677`) on exactly this argument — Kotlin keeps
+  /// it device-local and this serializer would have sent it — and then added
+  /// `userPlanetCode`, which is the identical shape, while a comment two
+  /// methods up claimed the gap had not widened. Branching here honours both:
+  /// the **row** matches Kotlin's row and the **document** matches Kotlin's
+  /// document, instead of trading one against the other.
+  ///
+  /// `teamId` is guarded on non-empty rather than non-null because Kotlin
+  /// writes it with `JsonUtils.addString` (`:170`), which skips null *and*
+  /// empty — the only field in this branch that does.
+  static Map<String, dynamic> serializeTeamDocument(TeamRow row) {
+    if (row.docType == 'resourceLink') {
+      return {
+        '_id': row.id,
+        if (row.rev?.isNotEmpty == true) '_rev': row.rev,
+        if (row.resourceId != null) 'resourceId': row.resourceId,
+        if (row.title != null) 'title': row.title,
+        if (row.teamId?.isNotEmpty == true) 'teamId': row.teamId,
+        if (row.teamPlanetCode != null) 'teamPlanetCode': row.teamPlanetCode,
+        if (row.teamType != null) 'teamType': row.teamType,
+        if (row.sourcePlanet != null) 'sourcePlanet': row.sourcePlanet,
+        'docType': row.docType,
+      };
+    }
+    return _serializeGeneralTeamDocument(row);
+  }
+
+  static Map<String, dynamic> _serializeGeneralTeamDocument(TeamRow row) => {
     '_id': row.id,
     if (row.rev?.isNotEmpty == true) '_rev': row.rev,
     if (row.teamId != null) 'teamId': row.teamId,
@@ -775,6 +930,37 @@ class TeamsRepository {
     // base64 blob. Omitting it for a row without an attachment keeps the
     // document null-free, the way the Kotlin `serialize` guards each field.
     if (row.imageName?.isNotEmpty == true) 'imageName': row.imageName,
+    // The four planet-code fields, ported from `MyTeam.serialize`'s general
+    // branch (`MyTeam.kt:204`, `:207`, `:208`, `:211`), where all four are
+    // written unconditionally and the `JsonNull` sweep at `:222-223` then
+    // removes whichever are null.
+    //
+    // **Guarded here rather than swept, and the difference is real.** Kotlin's
+    // sweep drops `JsonNull` and keeps `""` — a `JsonPrimitive` — so a column
+    // the mapper filled from an absent key (`JsonUtils.getString` defaults to
+    // `""`) is re-uploaded as an explicit empty string. [TeamMapper.fromDoc]
+    // writes null for an absent key instead, so the port sends no key where
+    // Kotlin sends `""`. That restores the document to the shape it had before
+    // either app touched it; manufacturing `""` would assert a planet code the
+    // server never sent.
+    //
+    // **What this fixes is not the stamping, it is the round trip.** Before
+    // these columns existed the port could not emit them at all, so any team
+    // document the user edited offline — `updateTeam`, `respondToRequest`, a
+    // finance report — uploaded *without* the planet codes the server had
+    // sent, silently overwriting them. Same class as Phases 56, 74 and 98,
+    // reached through the upload direction rather than the pull.
+    //
+    // This is the **general** branch only. `MyTeam.serialize`'s `resourceLink`
+    // early return (`:167-179`) carries just `teamPlanetCode` and
+    // `sourcePlanet` of the four, and [serializeTeamDocument] now mirrors that
+    // above rather than relying on a null to keep the key off the wire — which
+    // is what the sentence this replaces claimed, and which stopped being true
+    // the moment [addResourceLink] began stamping `userPlanetCode`.
+    if (row.sourcePlanet != null) 'sourcePlanet': row.sourcePlanet,
+    if (row.teamPlanetCode != null) 'teamPlanetCode': row.teamPlanetCode,
+    if (row.userPlanetCode != null) 'userPlanetCode': row.userPlanetCode,
+    if (row.parentCode != null) 'parentCode': row.parentCode,
   };
 
   Future<SyncResult> sync({

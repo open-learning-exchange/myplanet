@@ -201,6 +201,48 @@ class MyLibraryTable extends Table {
   TextColumn get stepId => text().nullable()();
   TextColumn get courseId => text().nullable()();
 
+  /// Whether this row's file still owes a CouchDB attachment PUT.
+  ///
+  /// **The one fact the port could not previously record, and the reason it
+  /// could lose a file with nothing able to notice.** After
+  /// [MyLibraryDao.markUploaded] a resource whose attachment landed and one
+  /// whose attachment never will are the same row, byte for byte: both carry
+  /// `_rev == downloaded_rev`, `resource_offline = 1` and bytes under
+  /// `ole/<_id>/`. Two routes reach the second state — the process dies
+  /// between `markUploaded` and the attachment PUT, so no retry row is ever
+  /// filed at all; or the retry row spends its five-attempt ladder (~15
+  /// minutes) on a handset that is offline for longer. Neither was re-armable,
+  /// because nothing could tell it apart from success.
+  ///
+  /// This column is that discriminator, and it is written by
+  /// [MyLibraryDao.markUploaded] itself rather than by a later step — which is
+  /// what closes the first route. A process killed after `markUploaded`
+  /// restarts with the flag already set, because the statement that created
+  /// the ambiguity is the statement that records it. It is cleared only where
+  /// delivery is established or provably impossible: a successful PUT, or a
+  /// row whose bytes and offline claim are both gone. See
+  /// `ResourcesUploader.queuePendingAttachments` for the sweep that reads it.
+  ///
+  /// **`false` is the truthful default for every pre-existing row**, which is
+  /// why no general backfill accompanies it. A synced catalog row owes no
+  /// attachment; a row still pending its document POST has not reached
+  /// `markUploaded` yet and will be flagged when it does; an uploaded row
+  /// whose attachment landed owes nothing. The one class the default is wrong
+  /// for is the uploaded row whose attachment was lost — and the migration
+  /// recovers exactly the provable half of it (a surviving `resource_attachment`
+  /// outbox row is filed only after a refused PUT and deleted on success, so
+  /// its presence is proof of non-delivery). The other half left no record
+  /// anywhere and cannot be recovered by any query; see the v50 step in
+  /// `AppDatabase.migration`.
+  ///
+  /// Nullable would have been the wrong shape: a three-state column invites a
+  /// reader to treat "unknown" as "delivered" somewhere and "pending"
+  /// somewhere else. Boolean-with-default also keeps the column inside the two
+  /// shapes `ALTER TABLE ADD COLUMN` accepts — see the reconciliation loop's
+  /// own comment for the two that abort an upgrade.
+  BoolColumn get attachmentPending =>
+      boolean().withDefault(const Constant(false))();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -850,6 +892,51 @@ class Teams extends Table {
   /// indistinguishable from cached rows, which is how the stale-row cleanup
   /// came to delete all of them.
   BoolColumn get isUpdated => boolean().withDefault(const Constant(false))();
+
+  /// The four planet-code fields of `model/MyTeam.kt` (`:24`, `:30`, `:31`,
+  /// `:32` — plain `String?` constructor vars, no `@ColumnInfo`).
+  ///
+  /// **Two distinct jobs, and the second is why all four are here rather than
+  /// the two the locally-authored documents stamp.**
+  ///
+  /// *Stamped locally* by the three producers, each a different subset:
+  ///
+  /// | producer | `sourcePlanet` | `teamPlanetCode` | `userPlanetCode` | `parentCode` |
+  /// |---|---|---|---|---|
+  /// | `createLocalResourceLink` (`TeamsRepositoryImpl.kt:716`, `:718`) | resolved | resolved | — | — |
+  /// | `addResourceLinks` (`:682-683`) | — | `user.planetCode` | `user.planetCode` | — |
+  /// | `requestToJoin` (`:623-624`) | — | param | param | — |
+  ///
+  /// So `parentCode` is stamped by nothing, which is not a reason to omit it.
+  ///
+  /// *Carried through a round trip.* `MyTeam.populateTeamFields` reads all
+  /// four unconditionally (`MyTeam.kt:81`, `:86`, `:94`, `:96`) and
+  /// `MyTeam.serialize`'s general branch re-emits all four (`:204`, `:207`,
+  /// `:208`, `:211`). Without columns, a team document the user edits offline
+  /// uploads **without** the planet codes the server had — the port's
+  /// `serializeTeamDocument` cannot emit what the row cannot hold. That is a
+  /// loss on the server, reached through `updateTeam`, `respondToRequest` and
+  /// every other local edit, and it is the larger of the two jobs.
+  ///
+  /// Nullable with no default, deliberately, and it is a **divergence worth
+  /// knowing**: `JsonUtils.getString` returns `""` for an absent key
+  /// (`JsonUtils.kt:65-68`), so a Kotlin row's four columns are `""` after any
+  /// sync, never null — and `MyTeam.serialize` strips only `JsonNull`, so
+  /// Kotlin re-uploads those empty strings as explicit `""` keys.
+  /// [TeamMapper.fromDoc] writes null for an absent key instead, and
+  /// [TeamsRepository.serializeTeamDocument] omits a null, so the port sends
+  /// no key where Kotlin sends `""`. That matches what the *document* looked
+  /// like before either app touched it, and CouchDB treats an absent key and
+  /// an empty one alike on read; the alternative is manufacturing a value the
+  /// server never sent.
+  ///
+  /// The `resourceLink` serialize branch writes only two of the four
+  /// (`MyTeam.kt:171`, `:173`) — see [TeamsRepository.serializeTeamDocument],
+  /// which mirrors that.
+  TextColumn get sourcePlanet => text().nullable()();
+  TextColumn get teamPlanetCode => text().nullable()();
+  TextColumn get userPlanetCode => text().nullable()();
+  TextColumn get parentCode => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
