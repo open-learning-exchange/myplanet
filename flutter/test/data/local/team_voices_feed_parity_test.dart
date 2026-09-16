@@ -88,6 +88,63 @@ void main() {
     },
   );
 
+  test(
+    'viewableId alone is not the audience — viewableBy must say teams',
+    () async {
+      // **Load-bearing decoy.** Every other `viewableBy` fixture in this file
+      // says `teams`, so deleting the `viewableBy` conjunct from
+      // `_viewableByTeam` leaves all eight of them green — the Phase 156
+      // "fixture that cannot distinguish" shape, in the file written to avoid
+      // it. A row whose `viewableId` matches under a *different* audience is the
+      // only thing that separates "checks the column" from "ignores it".
+      await post('n-1', viewableBy: 'community', viewableId: 'team-1');
+      expect(await db.newsDao.countTopLevelByTeam('team-1'), 0);
+      expect(await kotlinCount('team-1'), 0);
+    },
+  );
+
+  test(
+    'COLLATE NOCASE folds ASCII only, on the column and the parameter alike',
+    () async {
+      // The case the first cut got wrong in both directions. It folded the
+      // column with SQL `lower()` and the parameter with Dart's Unicode-aware
+      // `toLowerCase()`, so `TEAM-Ä` missed its own exact match while `team-ä`
+      // matched a query for `TEAM-Ä`. `COLLATE NOCASE` does neither.
+      await post('exact', viewableBy: 'teams', viewableId: 'TEAM-Ä');
+      await post('folded', viewableBy: 'teams', viewableId: 'team-ä');
+
+      // **Which row comes back is the assertion, not how many.** Both
+      // spellings fold to the same ASCII stem, so every query here matches
+      // exactly one row under either reading and a count cannot tell them
+      // apart — only the identity of the row differs. The first draft of this
+      // test asserted a 0 that neither reading produces, which is the
+      // "fixture that cannot distinguish" trap arriving from the other side:
+      // an expectation no implementation satisfies, rather than one every
+      // implementation satisfies.
+      //
+      // Under `COLLATE NOCASE` the `Ä`/`ä` distinction survives, so `TEAM-Ä`
+      // finds its own row. Under the `lower()` / Dart-`toLowerCase()` pair it
+      // did not: the parameter folded to `team-ä` while the column folded
+      // only to `team-Ä`, so this query returned the *other* row.
+      expect(
+        (await db.newsDao.watchTopLevelByTeam('TEAM-Ä').first).map((r) => r.id),
+        ['exact'],
+      );
+      expect(await kotlinCount('TEAM-Ä'), 1);
+      // The ASCII half still folds, which is what the collation is for.
+      expect(
+        (await db.newsDao.watchTopLevelByTeam('team-Ä').first).map((r) => r.id),
+        ['exact'],
+      );
+      expect(await kotlinCount('team-Ä'), 1);
+      expect(
+        (await db.newsDao.watchTopLevelByTeam('team-ä').first).map((r) => r.id),
+        ['folded'],
+      );
+      expect(await kotlinCount('team-ä'), 1);
+    },
+  );
+
   test('a reply is not a top-level post', () async {
     await post('n-1', viewIn: viewInFor('team-1'));
     await post('n-2', viewIn: viewInFor('team-1'), replyTo: 'n-1');
@@ -175,17 +232,26 @@ void main() {
     /// group. The first test below then fails and says so.
     final source = File('lib/providers/voices_provider.dart');
 
+    /// Matched as **calls**, never as text. Both files name these methods in
+    /// their own prose — `voices_provider.dart` mentions
+    /// `watchTopLevelMessages` in a doc comment as well as calling it — so a
+    /// bare `contains` would be satisfied by a comment and could not fail.
+    /// That is the same class of unfalsifiable assertion this file exists to
+    /// catch one level down.
+    bool calls(String text, String method) =>
+        RegExp(r'\.' + method + r'\(').hasMatch(text);
+
     test('the exemption is still earned', () {
       final text = source.readAsStringSync();
       expect(
-        text.contains('watchTopLevelByTeam'),
+        calls(text, 'watchTopLevelByTeam'),
         isFalse,
         reason:
-            'teamVoicesProvider now uses watchTopLevelByTeam, so this '
+            'teamVoicesProvider now calls watchTopLevelByTeam, so this '
             'exemption has expired: delete this group.',
       );
       expect(
-        text.contains('watchTopLevelMessages'),
+        calls(text, 'watchTopLevelMessages'),
         isTrue,
         reason:
             'teamVoicesProvider no longer builds the team feed from '
@@ -201,17 +267,29 @@ void main() {
       final repo = File(
         'lib/repository/notifications_repository.dart',
       ).readAsStringSync();
+      // Anchored on the receiver as well as the name: the comment four lines
+      // above the call writes `voicesRepository.countTopLevelByTeam(teamId)`
+      // when citing the Kotlin, so `contains('countTopLevelByTeam(')` was
+      // satisfied by prose and would have survived deleting the call.
       expect(
-        repo.contains('countTopLevelByTeam('),
+        RegExp(r'_newsDao\.countTopLevelByTeam\(').hasMatch(repo),
         isTrue,
         reason:
             'getTeamNotifications no longer counts with '
             'NewsDao.countTopLevelByTeam. Whatever it counts with now has to '
-            'be the same predicate the feed uses, or the watermark it is '
-            'compared against means nothing.',
+            'be the same predicate the watermark is written from, or the '
+            'comparison means nothing.',
       );
-      // Matched as a call, not as text: this file's own doc comments name
-      // `teamChatCounts` while explaining why it is gone.
+      // The watermark side of the same pair. Both must derive from one query.
+      expect(
+        RegExp(r'_newsDao\.countTopLevelByTeam\(').allMatches(repo).length,
+        2,
+        reason:
+            'getTeamNotifications and updateTeamNotification must each derive '
+            'from NewsDao.countTopLevelByTeam — the badge is '
+            '`watermark < count` and it is only meaningful while the two '
+            'count the same population.',
+      );
       expect(
         RegExp(r'\.teamChatCounts\(').hasMatch(repo),
         isFalse,

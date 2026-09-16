@@ -1376,11 +1376,20 @@ class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
   /// Returns all users (for sending surveys to selected users).
   Future<List<UserRow>> getAllUsers() => select(users).get();
 
-  /// Port of `UserRepositoryImpl.getUsersForHealthSync` — every user with a
-  /// server id, the set whose per-user `userdb-*` key document is worth
-  /// probing. The Kotlin filters in memory after `userDao.getAll()`
-  /// (`!it._id.isNullOrBlank()`), and blank couch ids are excluded the same
-  /// way here.
+  /// Port of `UserRepositoryImpl.getUsersForHealthSync` (`:139-141`) — every
+  /// user with a server id, the set whose per-user `userdb-*` key document is
+  /// worth probing.
+  ///
+  /// **The Kotlin filters in SQL**, not in memory: `UserDao.getUsersForHealthSync`
+  /// (`UserDao.kt:28-29`) is `WHERE _id IS NOT NULL AND TRIM(_id) != ''`, and
+  /// the repository only maps the rows afterwards. An earlier revision of this
+  /// comment said it filtered in Dart-equivalent code over `userDao.getAll()`,
+  /// which is a different method. The behaviour matches either way —
+  /// `String.trim().isNotEmpty` is what `TRIM(x) != ''` asks, modulo SQLite's
+  /// `TRIM` stripping only U+0020 where Dart strips all Unicode whitespace, so
+  /// a couch id of nothing but a tab is excluded here and included there — but
+  /// the citation was wrong and a later reader would have gone looking for a
+  /// filter that is not there.
   Future<List<UserRow>> getUsersForHealthSync() async {
     final all = await getAllUsers();
     return [
@@ -1625,23 +1634,6 @@ String likeEscapedUserPattern(String userId) =>
 String likeEscapeMetacharacters(String text) =>
     text.replaceAll('\\', '\\\\').replaceAll('%', '\\%').replaceAll('_', '\\_');
 
-/// Shelf membership: `user_id LIKE '%"<id>"%' ESCAPE '\'`, the predicate
-/// behind `MyLibraryDao.getForUserPattern` (`MyLibraryDao.kt:103`) and
-/// `CourseDao.getForUserPattern` (`CourseDao.kt:17`).
-///
-/// The `ESCAPE` clause is the whole point, and it is why this is a function
-/// rather than an inline `like()`. Five call sites interpolated the raw id
-/// into the pattern, which leaves LIKE's own metacharacters live: `_` matches
-/// any single character, so a shelf query for `u_1` also returned `ux1`'s
-/// rows — and the catalog arm, which is the same predicate negated, dropped
-/// them from the catalog at the same time, so the resource went missing from
-/// both views. `%` is worse: it matches any run, so one id could claim
-/// almost every shelf. Kotlin escapes at every one of these sites; the port
-/// escaped at exactly one, the count added in Phase 131.
-///
-/// [likeEscapedUserPattern] escapes the id and drift's `escapeChar` writes
-/// the matching `ESCAPE` clause, binding the pattern as a variable rather
-/// than splicing it into the SQL.
 /// A `LIKE '%<text>%'` that matches [text] **literally**, escaping LIKE's own
 /// metacharacters.
 ///
@@ -1665,6 +1657,23 @@ Expression<bool> _literalContains(
 /// complete "contains" pattern rather than a fragment to build one from.
 String likeEscapedLiteral(String text) => '%${likeEscapeMetacharacters(text)}%';
 
+/// Shelf membership: `user_id LIKE '%"<id>"%' ESCAPE '\'`, the predicate
+/// behind `MyLibraryDao.getForUserPattern` (`MyLibraryDao.kt:103`) and
+/// `CourseDao.getForUserPattern` (`CourseDao.kt:17`).
+///
+/// The `ESCAPE` clause is the whole point, and it is why this is a function
+/// rather than an inline `like()`. Five call sites interpolated the raw id
+/// into the pattern, which leaves LIKE's own metacharacters live: `_` matches
+/// any single character, so a shelf query for `u_1` also returned `ux1`'s
+/// rows — and the catalog arm, which is the same predicate negated, dropped
+/// them from the catalog at the same time, so the resource went missing from
+/// both views. `%` is worse: it matches any run, so one id could claim
+/// almost every shelf. Kotlin escapes at every one of these sites; the port
+/// escaped at exactly one, the count added in Phase 131.
+///
+/// [likeEscapedUserPattern] escapes the id and drift's `escapeChar` writes
+/// the matching `ESCAPE` clause, binding the pattern as a variable rather
+/// than splicing it into the SQL.
 Expression<bool> _shelfMembership(
   GeneratedColumn<String> userIdColumn,
   String userId,
@@ -4310,25 +4319,46 @@ class NewsDao extends DatabaseAccessor<AppDatabase> with _$NewsDaoMixin {
   /// `(viewableBy = 'teams' COLLATE NOCASE AND viewableId = :teamId COLLATE
   /// NOCASE) OR viewIn LIKE :teamPattern ESCAPE '\'` — the audience half of
   /// `NewsDao.getTopLevelByTeam` / `countTopLevelByTeam`
-  /// (`NewsDao.kt:27-31`, `:73-74`).
+  /// (`NewsDao.kt:27-31`, `:71-72`).
   ///
   /// **Both arms are load-bearing and the port had only the second**, in
-  /// Dart, in `teamVoicesProvider`. They catch different writers: nothing in
-  /// either app sets `viewableBy`/`viewableId` on a post it authors — the
+  /// Dart, in `teamVoicesProvider`. They catch different writers: neither app
+  /// sets `viewableBy`/`viewableId` on a **top-level** post it authors — the
   /// composer writes `viewIn` (`createTeamPost` → [VoicesRepository.createPost],
-  /// and Kotlin's `TeamsVoicesFragment.kt:76-85` builds the same map) — so
-  /// those two columns are filled **only by the sync-in**, from documents
-  /// Planet wrote. A feed on one arm shows one of the two populations.
+  /// and Kotlin's `TeamsVoicesFragment.kt:76-85` builds the same map) — so on
+  /// a top-level row those two columns are filled **only by the sync-in**,
+  /// from documents Planet wrote. A feed on one arm shows one of the two
+  /// populations.
   ///
-  /// `lower()` rather than a collation: SQLite's `COLLATE NOCASE` folds ASCII
-  /// only, and so does `lower()`, so the two agree on every input. Drift has
-  /// no `COLLATE` on a comparison, and the literal is already lower case.
+  /// The word *top-level* is doing work there, and an earlier revision of this
+  /// sentence omitted it and was therefore false. In Kotlin the columns have
+  /// exactly one writer, the sync-in parse (`VoicesRepositoryImpl.kt:375`,
+  /// `:379`). The port has two more — `VoicesRepository.createReply` copies
+  /// the parent's audience verbatim and `addComment` writes
+  /// `viewableBy: 'teams'` — but both also set `replyTo`, so [_isTopLevel]
+  /// excludes them from this predicate and from Kotlin's. The claim is
+  /// narrower than it read, not weaker.
+  ///
+  /// `COLLATE NOCASE` on both comparisons, which is Kotlin's statement
+  /// verbatim. The first cut wrote `lower().equals(teamId.toLowerCase())`
+  /// under a comment claiming drift has no `COLLATE` on a comparison and that
+  /// the two spellings agree on every input. **Both claims were false.** Drift
+  /// has `Expression<String>.collate` (`text.dart:90`, `Collate.noCase` at
+  /// `:252`), and the spelling it replaced folded the **column** with SQLite's
+  /// `lower()` — ASCII-only, like `NOCASE` — while folding the **parameter**
+  /// with Dart's `String.toLowerCase()`, which is Unicode-aware. That
+  /// disagreed with Kotlin in *both* directions: a stored `TEAM-Ä` queried for
+  /// `TEAM-Ä` missed where Kotlin matched, and a stored `team-ä` queried for
+  /// `TEAM-Ä` matched where Kotlin did not. Unreachable for a CouchDB `_id`,
+  /// which is lower-case hex already — but the comment is what the next reader
+  /// trusts, and the same `.lower().equals(x.toLowerCase())` idiom sits three
+  /// methods below in [watchTopLevelMessages] and [watchReplies].
   Expression<bool> _viewableByTeam($NewsEntriesTable r, String teamId) =>
-      (r.viewableBy.lower().equals('teams') &
-          r.viewableId.lower().equals(teamId.toLowerCase())) |
+      (r.viewableBy.collate(Collate.noCase).equals('teams') &
+          r.viewableId.collate(Collate.noCase).equals(teamId)) |
       r.viewIn.like(teamIdPattern(teamId), escapeChar: r'\');
 
-  /// Port of `NewsDao.countTopLevelByTeam` (`NewsDao.kt:73-74`) — the count
+  /// Port of `NewsDao.countTopLevelByTeam` (`NewsDao.kt:71-72`) — the count
   /// behind the dashboard's per-team chat badge.
   ///
   /// `NotificationsRepositoryImpl.getTeamNotifications` (`:322`) reaches this
@@ -4338,8 +4368,8 @@ class NewsDao extends DatabaseAccessor<AppDatabase> with _$NewsDaoMixin {
   /// the two consistent by construction: the feed is `getTopLevelByTeamFlow`
   /// and the badge is this, the same predicate.
   ///
-  /// The port had used [teamChatCounts] here — `NewsDao.countTeamChats`
-  /// (`NewsDao.kt:69-70`), a *different* Kotlin query with no top-level
+  /// The port had used `teamChatCounts` here — `NewsDao.countTeamChats`
+  /// (`NewsDao.kt:68-69`), a *different* Kotlin query with no top-level
   /// predicate, no `viewIn` arm and no `COLLATE NOCASE`, which Kotlin does not
   /// use for this badge at all. Against a watermark taken from the feed that
   /// compares two disjoint populations, and it fails in both directions: a
@@ -4377,7 +4407,7 @@ class NewsDao extends DatabaseAccessor<AppDatabase> with _$NewsDaoMixin {
             ..orderBy([(r) => OrderingTerm.desc(r.time)]))
           .watch();
 
-  // `NewsDao.countTeamChats` (`NewsDao.kt:69-70`) is deliberately **not**
+  // `NewsDao.countTeamChats` (`NewsDao.kt:68-69`) is deliberately **not**
   // ported. It was here as `teamChatCounts`, wired to the dashboard's team
   // chat badge — which is not what Kotlin uses it for, or uses it for at all:
   // its only route out of the DAO is `VoicesRepository.countTeamChats`, and

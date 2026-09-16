@@ -513,19 +513,25 @@ class NotificationsRepository {
         if (row.parentId != null) row.parentId!: row,
     };
 
-    // `voicesRepository.countTopLevelByTeam(teamId)`, one call per team, as
-    // `NotificationsRepositoryImpl.kt:320-324` does. **Not**
-    // `NewsDao.teamChatCounts` — that is `countTeamChats`, a different Kotlin
-    // statement this badge never uses, and reading the badge off it compared a
-    // watermark taken from the team voices feed against a population the feed
-    // does not show. See `NewsDao.countTopLevelByTeam` for the two directions
-    // it failed in.
+    // `voicesRepository.countTopLevelByTeam(teamId)`, one call per
+    // **watermarked** team — `NotificationsRepositoryImpl.kt:320-324` maps
+    // over `notificationsById.keys`, not over the teams it was asked about,
+    // and that is not an optimisation to skip: `hasChat` is gated on
+    // `notification != null`, so a team with no watermark row cannot light
+    // whatever it counts. Looping `teamIds` gave the same answer and ran a
+    // query per team the user has never opened, on a provider that re-runs on
+    // every write to `teams`.
+    //
+    // **Not** `NewsDao.teamChatCounts` — that was `countTeamChats`, a
+    // different Kotlin statement this badge never uses, and reading the badge
+    // off it compared a watermark against a population it does not describe.
+    // See `NewsDao.countTopLevelByTeam` for the two directions it failed in.
     //
     // Sequential rather than `Future.wait`: the Kotlin fans these out with
     // `async`/`awaitAll`, but these share one SQLite connection, so
-    // concurrency buys nothing and the teams a handset belongs to are few.
+    // concurrency buys nothing.
     final chatCounts = <String, int>{};
-    for (final teamId in teamIds) {
+    for (final teamId in watermarkByTeam.keys) {
       chatCounts[teamId] = await _newsDao.countTopLevelByTeam(teamId);
     }
 
@@ -552,15 +558,41 @@ class NotificationsRepository {
     };
   }
 
-  /// Port of `VoicesRepositoryImpl.updateTeamNotification` — moves a team's
-  /// "seen" watermark to [count].
+  /// Port of `NotificationsRepositoryImpl.updateTeamNotification`
+  /// (`:289-300`) — moves a team's "seen" watermark, called when the user
+  /// opens that team's voices.
   ///
-  /// Called when the user opens a team's voices, exactly where
-  /// `TeamsVoicesViewModel` calls it with the loaded post count. The row id is
-  /// derived from the team rather than a fresh UUID: the Kotlin mints a UUID
-  /// but always looks the row up by `(parentId, type)` first, so a derived key
-  /// is the same row with one fewer way to end up with duplicates.
-  Future<void> updateTeamNotification(String teamId, int count) async {
+  /// **The watermark is derived here rather than taken from [seenCount], and
+  /// that is what makes it a port rather than a near-miss.** Kotlin's
+  /// signature is `updateTeamNotification(teamId, news: List<News>)` and it
+  /// writes `news.size`, where that list is whatever
+  /// `TeamsVoicesViewModel.getFilteredNews` (`:56-58`) just loaded — which is
+  /// `getTopLevelByTeam`, *the same statement* [getTeamNotifications] counts
+  /// with. The two agree in Kotlin by construction, and `lastCount < count` is
+  /// only meaningful because they do.
+  ///
+  /// In the port they do not yet. `teamVoicesProvider` builds the feed from
+  /// `watchTopLevelMessages` plus a Dart `viewIn` filter, so its length is a
+  /// count of a *narrower* population — and taking it here is what made
+  /// switching the badge to the faithful counter a regression in its own
+  /// right: on a team with in-app posts **and** one synced top-level
+  /// `viewableBy: 'teams'` post, the badge went from dark to lit and opening
+  /// the feed rewrote the same short watermark, so it never cleared. Deriving
+  /// the count closes that without depending on the feed at all.
+  ///
+  /// [seenCount] is therefore accepted and deliberately unused. It is kept so
+  /// the one call site (`team_voices_screen.dart`, which is not this lane's
+  /// file) still compiles; once `teamVoicesProvider` moves onto
+  /// [NewsDao.watchTopLevelByTeam] the argument becomes exactly this value and
+  /// the parameter can go. `team_voices_feed_parity_test.dart` fails when that
+  /// happens and says so.
+  ///
+  /// The row id is derived from the team rather than a fresh UUID: the Kotlin
+  /// mints a UUID but always looks the row up by `(parentId, type)` first, so
+  /// a derived key is the same row with one fewer way to end up with
+  /// duplicates.
+  Future<void> updateTeamNotification(String teamId, int seenCount) async {
+    final count = await _newsDao.countTopLevelByTeam(teamId);
     final existing = await _teamNotificationDao.findByParentAndType(
       teamId,
       chatNotificationType,

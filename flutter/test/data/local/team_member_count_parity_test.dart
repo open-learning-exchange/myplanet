@@ -14,11 +14,18 @@ import 'package:myplanet/data/local/app_database.dart';
 ///                 WHERE u.id = teams.userId OR u._id = teams.userId)
 /// ```
 ///
-/// Each case is run against the **raw statement** as well as the DAO, on the
-/// same rows, so the assertion is pinned to SQLite's answer rather than to a
-/// reading of it. The raw form drops `isDeletePending` because the port has no
-/// such column and no such state — `leave`/`removeMember` hard-delete the row
-/// — which the DAO's doc comment argues at length.
+/// Each case is run against the raw statement as well as the DAO. **Be honest
+/// about what that buys here:** unlike `team_voices_feed_parity_test.dart`,
+/// whose oracle uses SQLite's own `COLLATE NOCASE` and so reads the Kotlin
+/// independently, [kotlinCount] below is the production statement transcribed,
+/// so the two `expect`s in each case are one claim, not two. The hardcoded
+/// expectations do the pinning. It is kept because a transcription that
+/// *stops* matching is itself a signal, and because the raw form is what a
+/// reader compares against `TeamDao.kt:29` by eye.
+///
+/// The raw form drops `isDeletePending` because the port has no such column
+/// and no such state — `leave`/`removeMember` hard-delete the row — which the
+/// DAO's doc comment argues at length.
 void main() {
   late AppDatabase db;
   setUp(() => db = AppDatabase.memory());
@@ -97,6 +104,12 @@ void main() {
   });
 
   test('a membership document with no userId is not a member', () async {
+    // Pins `COUNT(DISTINCT user_id)`, **not** the `user_id IS NOT NULL`
+    // clause: `COUNT` over a column already skips NULLs, so removing that
+    // clause leaves every case in this file green. The clause is kept because
+    // it is in the statement being ported and reads as its counterpart does,
+    // not because anything here could catch its loss. Do not "strengthen"
+    // this test in the belief that it covers the clause — it cannot.
     await seedUser('ada');
     await seedMembership('m-1', 'team-1', 'ada');
     await seedMembership('m-2', 'team-1', null);

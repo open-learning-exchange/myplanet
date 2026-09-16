@@ -231,7 +231,6 @@ void main() {
   });
 
   group('team notifications', () {
-    /// A team-visible post, which is what the chat count counts.
     /// A post in the shape the **sync-in** writes: `viewableBy`/`viewableId`
     /// filled from a document Planet authored.
     ///
@@ -329,8 +328,10 @@ void main() {
     });
 
     test('a reply does not light the badge', () async {
-      // `countTopLevelByTeam` carries the `replyTo` predicate its Kotlin
-      // counterpart does; `countTeamChats`, which this used to call, does not.
+      // Pins the `replyTo` predicate against a mutation of the *new* counter.
+      // It does not distinguish the old one — a reply written this way has no
+      // `viewableBy`, so `countTeamChats` scored it 0 as well and `hasChat`
+      // was false either way.
       await addComposedTeamPost('post-1', 'team-1');
       await repository.updateTeamNotification('team-1', 1);
       await database.newsDao.upsert(
@@ -347,15 +348,49 @@ void main() {
     });
 
     test('the watermark is one row per team, not one per update', () async {
-      await repository.updateTeamNotification('team-1', 1);
-      await repository.updateTeamNotification('team-1', 2);
-      await repository.updateTeamNotification('team-1', 3);
+      await addComposedTeamPost('post-1', 'team-1');
+      await repository.updateTeamNotification('team-1', 0);
+      await addComposedTeamPost('post-2', 'team-1');
+      await repository.updateTeamNotification('team-1', 0);
+      await addComposedTeamPost('post-3', 'team-1');
+      await repository.updateTeamNotification('team-1', 0);
 
       final rows = await database.teamNotificationDao.byTypeAndParentIds(
         'chat',
         ['team-1'],
       );
+      expect(rows, hasLength(1));
       expect(rows.single.lastCount, 3);
+    });
+
+    test('the watermark is derived, not taken from the caller', () async {
+      // The `seenCount` argument is deliberately unused: Kotlin writes
+      // `news.size` where that list came from the *same* statement the badge
+      // counts with, so deriving it here is the port of that, not a shortcut.
+      // The port's feed is a narrower population until `teamVoicesProvider`
+      // moves onto `watchTopLevelByTeam`, and a watermark taken from it made
+      // switching the badge to the faithful counter a regression of its own —
+      // a team with in-app posts plus one synced `viewableBy: 'teams'` post
+      // went from dark to permanently lit.
+      await addComposedTeamPost('post-1', 'team-1');
+      await addTeamPost('post-2', 'team-1');
+
+      // A caller passing a count that disagrees — which is exactly what
+      // `team_voices_screen` passes today — must not move the watermark off
+      // the real one.
+      await repository.updateTeamNotification('team-1', 1);
+
+      final rows = await database.teamNotificationDao.byTypeAndParentIds(
+        'chat',
+        ['team-1'],
+      );
+      expect(rows.single.lastCount, 2);
+      final info = await repository.getTeamNotifications(['team-1'], 'user-1');
+      expect(
+        info['team-1']!.hasChat,
+        isFalse,
+        reason: 'caught up, because both sides count the same population',
+      );
     });
 
     test('posts are counted per team, and only team-visible ones', () async {
@@ -369,8 +404,12 @@ void main() {
           viewableId: const Value('team-1'),
         ),
       );
+      // `team-2` is marked seen while it holds its one post; `team-1` is
+      // marked seen *before* its post exists, so its watermark is 0.
+      await repository.updateTeamNotification('team-2', 0);
+      await database.newsDao.deleteByIds(['post-1']);
       await repository.updateTeamNotification('team-1', 0);
-      await repository.updateTeamNotification('team-2', 1);
+      await addTeamPost('post-1', 'team-1');
 
       final info = await repository.getTeamNotifications([
         'team-1',
