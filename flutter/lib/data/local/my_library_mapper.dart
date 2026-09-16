@@ -167,12 +167,16 @@ class MyLibraryMapper {
   /// in the column. Reading the key as a string stored the Dart literal
   /// `{teams: team-1}` — the Phase 104 `SurveyMapper.choices` shape.
   ///
-  /// Nothing in the port reads the column yet: Kotlin's reader is
-  /// `ResourcesRepositoryImpl.markResourceUploaded`, which creates the
-  /// team-resource link on upload, and the port has no resources uploader. So
-  /// this is prophylactic — but a stringified map is not a value a later
-  /// reader could recover a team id from, and it would be indistinguishable
-  /// from a real one.
+  /// The column is read on upload, as it is in Kotlin. This comment said
+  /// "nothing in the port reads the column yet … the port has no resources
+  /// uploader", which was true when it was written and stopped being true when
+  /// `ResourcesUploader` landed: `serialize` re-wraps the value as
+  /// `{"teams": <id>}` for the document, and
+  /// `ResourcesUploader._linkPrivateResourceToTeam` reads it to create the
+  /// team-resource link, which is what
+  /// `ResourcesRepositoryImpl.markResourceUploaded` does in Kotlin. So a
+  /// stringified map here is not prophylactic any more: it would be a team id
+  /// no reader could recover, and indistinguishable from a real one.
   ///
   /// Three of the Kotlin's four outcomes leave the stored value alone rather
   /// than clearing it, which is [Value.absent] here: a public document, a

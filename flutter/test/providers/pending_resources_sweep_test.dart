@@ -147,7 +147,11 @@ void main() {
     await sweepPendingResources(container, config: config, userId: null);
     await container.read(outboxDrainerProvider).drain();
 
-    final row = await db.myLibraryDao.getById(id);
+    // The row answers to the CouchDB id once it has one — see
+    // [MyLibraryDao.markUploaded]. Asserting through the old local id would
+    // pass just as well against a row that never adopted an identity at all.
+    expect(await db.myLibraryDao.getById(id), isNull);
+    final row = await db.myLibraryDao.getById('server-id-1');
     expect(
       row?.couchId,
       'server-id-1',
@@ -156,6 +160,7 @@ void main() {
           'and reset-app can destroy it in the meantime',
     );
     expect(row?.rev, '1-rev');
+    expect(row?.resourceId, 'server-id-1');
   });
 
   test(

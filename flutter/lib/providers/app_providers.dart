@@ -710,7 +710,12 @@ final outboxDrainerProvider = Provider<OutboxDrainer>((ref) {
       AchievementsUploader.type: ref
           .watch(achievementsUploaderProvider)
           .handler,
-      ResourcesUploader.type: ref.watch(resourcesUploaderProvider).handler,
+      // Both of this uploader's types, spread the way `ActivitiesUploader`'s
+      // are. Registering only `ResourcesUploader.type` would leave an
+      // `attachmentType` row to the drainer's generic fallback, which POSTs
+      // the stored payload to `row.endpoint` — filing `{"filename": …}` as a
+      // new document in the shared `resources` database.
+      ...ref.watch(resourcesUploaderProvider).handlers,
     },
   );
 });

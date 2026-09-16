@@ -97,6 +97,85 @@ class ResourceFiles {
     return Directory(p.join(base.path, 'ole'));
   }
 
+  /// Moves a resource's downloaded bytes from one `ole/<docId>/` directory to
+  /// another, and reports whether the bytes — if there were any — are now
+  /// under [toDocId].
+  ///
+  /// **The one key, applied to a key that changes.** Every reader in the port
+  /// resolves a resource's files under `couchId ?? id`
+  /// (`resource_viewer_screen._getLocalFilePath`,
+  /// `ResourceDownloader`), while [ResourcesRepository.saveLocalResource]
+  /// writes them under the row's `id`, because a locally authored row has no
+  /// `couchId` yet. Those agree right up to the moment the resource uploads
+  /// and adopts one — and from then on the viewer looks in a directory that
+  /// does not exist, reads the absent file as "not downloaded", and clears the
+  /// flag on a file that is sitting on the device. `ResourcesUploader` calls
+  /// this so the bytes arrive at the new key in the same step the row does.
+  ///
+  /// Returns false only when bytes exist and could not be moved, which the
+  /// caller uses to keep reading them from the old directory for the
+  /// attachment PUT. A missing source is **true**: there is nothing under
+  /// either key, which is what the caller needs to know.
+  /// **This never throws**, and that is load-bearing rather than defensive.
+  /// Its caller runs inside an `outbox` handler *after* the document POST has
+  /// been accepted, and a throw there is recorded as a failed send: the row
+  /// goes back to `pending` and the next drain POSTs the same document again,
+  /// filing a **second** one in the shared catalog with no way to tell them
+  /// apart. A filesystem error must not be able to cost a duplicate document,
+  /// so every failure — `FileSystemException` and the
+  /// `MissingPluginException` [baseDirectory] raises on an engine with no
+  /// platform channel alike — becomes a false answer.
+  static Future<bool> moveResourceDirectory({
+    required String fromDocId,
+    required String toDocId,
+  }) async {
+    if (fromDocId == toDocId) return true;
+    try {
+      final source = await directoryFor(docId: fromDocId);
+      final destination = await directoryFor(docId: toDocId);
+      // [_segment] can collapse two different ids onto the same segment (both
+      // reduce to `_`), and renaming a directory onto itself deletes it.
+      if (source.path == destination.path) return true;
+      if (!await source.exists()) return true;
+
+      if (!await destination.exists()) {
+        try {
+          await destination.parent.create(recursive: true);
+          await source.rename(destination.path);
+          return true;
+        } on FileSystemException catch (_) {
+          // `rename` refuses across filesystems, and some platforms refuse it
+          // for a non-empty directory. Fall through to the copy.
+        }
+      }
+
+      // The destination may already hold files — a previous partial move, or
+      // a download of the same document. Copying over it and then removing the
+      // source is deliberate: the source is this device's own authored bytes,
+      // which are the copy worth keeping when the two disagree.
+      await _copyDirectory(source, destination);
+      await source.delete(recursive: true);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Recursive on purpose: an HTML resource is a whole bundle
+  /// (`ole/<id>/sudoku/index.html` and its siblings), and a flat copy would
+  /// move the entry file away from the assets it links to.
+  static Future<void> _copyDirectory(Directory source, Directory target) async {
+    await target.create(recursive: true);
+    await for (final entity in source.list()) {
+      final name = p.basename(entity.path);
+      if (entity is Directory) {
+        await _copyDirectory(entity, Directory(p.join(target.path, name)));
+      } else if (entity is File) {
+        await entity.copy(p.join(target.path, name));
+      }
+    }
+  }
+
   /// Keeps a `..` or a path separator in a server-supplied id or filename from
   /// escaping the resource directory.
   static String _segment(String raw) {

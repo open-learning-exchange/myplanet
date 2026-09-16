@@ -1639,10 +1639,19 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
   ///   join a one-sync artefact.
   ///
   /// Matching on `id` rather than Kotlin's `resourceId` is kept, but not for
-  /// the reason first given here — no port writer makes the two differ at all
-  /// ([saveLocalResource] sets `resourceId` to its own generated `id`). The
-  /// column choice is therefore immaterial for every row the port can produce,
-  /// and `id` is the primary key. Where they *could* differ the port is
+  /// the reason first given here — no port writer makes the two differ at all.
+  /// [saveLocalResource] sets `resourceId` to its own generated `id`,
+  /// [MyLibraryMapper.fromDoc] sets both to the document's `_id`, and
+  /// [markUploaded] moves both to the CouchDB id together when a locally
+  /// authored resource is accepted. That last one is why the claim is still
+  /// true rather than merely still written down: a row that has uploaded is
+  /// keyed on the document id from then on, so it appears in this walk's keep
+  /// set exactly like any other synced row, under either column. Before
+  /// [markUploaded] moved the key, it appeared under neither — it was prunable
+  /// (`_rev` written) and outside every keep set (`id` still a local uuid),
+  /// which deleted the user's own resource on the first sync after its upload.
+  /// The column choice is therefore immaterial for every row the port can
+  /// produce, and `id` is the primary key. Where they *could* differ the port is
   /// strictly the more aggressive of the two: Kotlin's `resourceId NOT IN (…)`
   /// spares a row whose `resourceId` is NULL, and a primary key never is.
   /// **The empty-list branch is not a port of anything Kotlin runs**, and
@@ -1838,8 +1847,55 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
           ))
           .get();
 
-  /// Adopts the `_id` and `_rev` CouchDB assigned to a freshly POSTed
-  /// resource.
+  /// Adopts the identity CouchDB assigned to a freshly POSTed resource —
+  /// **including the row's primary key**.
+  ///
+  /// ## Why the key moves, which is a deliberate divergence from Kotlin
+  ///
+  /// A locally authored row starts life with a generated uuid in `id`,
+  /// `resourceId` and nowhere else; `couchId`/`_rev` are null, and
+  /// [ResourcesRepository.saveLocalResource] writes its bytes to
+  /// `ole/<id>/<filename>`. Once the document is POSTed it also has a CouchDB
+  /// `_id`, and **two identities for one resource is the whole defect**:
+  ///
+  /// * [deleteNotIn]'s keep set is built from the ids the resources walk
+  ///   wrote, which are document `_id`s. Writing only `_rev` makes the row
+  ///   *prunable* (`_rev IS NOT NULL`) while leaving its key outside every
+  ///   keep set, so the next full resources sync inserts a **second** row
+  ///   under the CouchDB id — empty shelf, `resourceOffline` at its default —
+  ///   and deletes the original. The user's own resource leaves My Library,
+  ///   reads as not downloaded, and its bytes are orphaned under `ole/<uuid>/`
+  ///   with nothing that will ever collect them.
+  /// * Every file reader in the port resolves `couchId ?? id`
+  ///   (`resource_viewer_screen._getLocalFilePath`, `ResourceDownloader`), so
+  ///   the moment `couchId` is written the viewer starts looking in
+  ///   `ole/<couchId>/` — a directory that does not exist. It reads that as
+  ///   "not downloaded" and its stale-flag repair clears `resourceOffline` on
+  ///   a file that is sitting on the device. That one does not even need a
+  ///   sync.
+  /// * `ShelfRepository._localResourceIds` sends `resourceId ?? id`, so the
+  ///   shelf document uploaded to Planet names a uuid no document has.
+  ///
+  /// Moving the key closes all three at once and restores a single invariant
+  /// worth having: **`id == resourceId == couchId` for every row that has
+  /// reached the server, and `couchId == null` for every row that has not.**
+  /// `couchId ?? id` is then correct everywhere by construction, which is what
+  /// keeps this from being one more place that has to remember which key it
+  /// wants.
+  ///
+  /// **Kotlin does not do this, and Kotlin loses the row.**
+  /// `markResourceUploaded` writes `_id` and `_rev` onto the entity and
+  /// nothing else (`ResourcesRepositoryImpl.kt:803-806`), while
+  /// `deleteStalePublicNotIn` matches `resourceId`
+  /// (`MyLibraryDao.kt:171-175`) — still the uuid. Same outcome, reached one
+  /// column over. Inherited rather than invented is not a reason to ship it.
+  ///
+  /// The caller moves the bytes in the same step
+  /// ([ResourceFiles.moveResourceDirectory]), because a row that points at a
+  /// directory its files are not in is the Phase 100 shape exactly: each half
+  /// correct, the pair wrong.
+  ///
+  /// ## What the old doc said, and still holds
   ///
   /// Port of the first half of `ResourcesRepositoryImpl.markResourceUploaded`
   /// (`:803-806`), which looks the row up by its local id, assigns `_id` and
@@ -1866,38 +1922,86 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
   Future<bool> markUploaded(String id, String couchId, String rev) async {
     final row = await getById(id);
     if (row == null) return false;
-    await (update(myLibraryTable)..where((r) => r.id.equals(id))).write(
-      MyLibraryTableCompanion(
-        couchId: Value(couchId),
-        rev: Value(rev),
-        // `downloadedRev` moves with `rev` **when there are bytes on disk**,
-        // and leaving it behind would have introduced a defect rather than
-        // preserved one.
-        //
-        // [watchResourcesNeedingUpdateCount] counts a shelf row where
-        // `_rev IS NOT downloaded_rev`. Before a resource is uploaded both are
-        // null, and SQLite's `IS NOT` between two nulls is false, so the row is
-        // not counted. Writing `_rev` alone flips that to true and the bell
-        // starts asking the user to **download the resource they just
-        // created**, over the copy already sitting under `ole/<id>/`.
-        //
-        // The honest reading is that the two are equal: the file on disk *is*
-        // the attachment of the revision being recorded, because this device
-        // authored both. Kotlin leaves `downloadedRev` null here
-        // (`ResourcesRepositoryImpl.kt:804-806` writes only the two columns),
-        // which also makes `MyLibrary.isResourceOffline` read false for a
-        // resource whose file is present. A deliberate divergence: copying it
-        // would ship a prompt that cannot be satisfied.
-        //
-        // Only when there really are bytes. A metadata-only row — which the
-        // port's form allows and Kotlin's does not — has nothing downloaded,
-        // and saying otherwise is the `resourceOffline` lie Phase 150 removed.
-        downloadedRev: (row.resourceOffline && row.resourceLocalAddress != null)
-            ? Value(rev)
-            : const Value.absent(),
-      ),
-    );
-    return true;
+
+    // `downloadedRev` moves with `rev` **when there are bytes on disk**, and
+    // leaving it behind would have introduced a defect rather than preserved
+    // one.
+    //
+    // [watchResourcesNeedingUpdateCount] counts a shelf row where
+    // `_rev IS NOT downloaded_rev`. Before a resource is uploaded both are
+    // null, and SQLite's `IS NOT` between two nulls is false, so the row is
+    // not counted. Writing `_rev` alone flips that to true and the bell starts
+    // asking the user to **download the resource they just created**, over the
+    // copy already sitting under `ole/<id>/`.
+    //
+    // The honest reading is that the two are equal: the file on disk *is* the
+    // attachment of the revision being recorded, because this device authored
+    // both. Kotlin leaves `downloadedRev` null here
+    // (`ResourcesRepositoryImpl.kt:804-806` writes only the two columns),
+    // which also makes `MyLibrary.isResourceOffline` read false for a resource
+    // whose file is present. A deliberate divergence: copying it would ship a
+    // prompt that cannot be satisfied.
+    //
+    // Only when there really are bytes. A metadata-only row — which the port's
+    // form allows and Kotlin's does not — has nothing downloaded, and saying
+    // otherwise is the `resourceOffline` lie Phase 150 removed.
+    final hasBytes = row.resourceOffline && row.resourceLocalAddress != null;
+
+    // Nothing to move: the resources walk keys a row on the document's own
+    // `_id`, so a row that already carries it is either a re-mark or a
+    // server-sourced row, and rewriting a key onto itself would delete and
+    // re-insert for no reason. An empty `couchId` is not an identity at all
+    // and must never become a primary key.
+    if (id == couchId || couchId.isEmpty) {
+      await (update(myLibraryTable)..where((r) => r.id.equals(id))).write(
+        MyLibraryTableCompanion(
+          couchId: Value(couchId),
+          rev: Value(rev),
+          downloadedRev: hasBytes ? Value(rev) : const Value.absent(),
+        ),
+      );
+      return true;
+    }
+
+    return transaction(() async {
+      // **No production path reaches this branch today, and saying so is the
+      // point** — an earlier revision of this comment claimed it repaired the
+      // handset that ran the buggy build, and it does not. For a stray row to
+      // stand at `couchId`, that build must have completed a POST, which means
+      // it wrote `_id`/`_rev` onto the uuid row; that row is then outside
+      // [pendingUploads] for ever, so `markUploaded` is never called for it
+      // again. And no other route reaches it either: this endpoint POSTs with
+      // no `_id`, so CouchDB always mints a **fresh** id, and a fresh id
+      // cannot be one a document already holds.
+      //
+      // The branch stays because the insert needs to be correct under any
+      // caller, and because merging beats overwriting if one ever arrives: the
+      // stray row may carry a shelf membership a later sync added, and the
+      // local row carries the bytes. What it is *not* is the upgrade repair —
+      // that case is a row with `_id != id` and no pending status at all, which
+      // the next resources sync still prunes. See the PR's *Reported, not
+      // fixed*; the fix belongs in the migration block, not here.
+      final collision = await getById(couchId);
+      final mergedShelf = <String>{
+        ...row.userId.where((u) => u.isNotEmpty),
+        ...?collision?.userId.where((u) => u.isNotEmpty),
+      }.toList(growable: false);
+
+      await (delete(myLibraryTable)..where((r) => r.id.equals(id))).go();
+      await into(myLibraryTable).insertOnConflictUpdate(
+        row.copyWith(
+          id: couchId,
+          couchId: Value(couchId),
+          resourceId: Value(couchId),
+          rev: Value(rev),
+          userId: mergedShelf,
+          downloadedRev: hasBytes
+              ? Value(rev)
+              : Value(collision?.downloadedRev ?? row.downloadedRev),
+        ),
+      );
+      return true;
+    });
   }
 
   /// Adopts the revision the **attachment** PUT returned.

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart' show Value;
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
@@ -125,11 +126,8 @@ void main() {
     ).thenAnswer((_) async => result);
   }
 
-  OutboxDrainer drainer() => OutboxDrainer(
-    api,
-    outbox,
-    handlers: {ResourcesUploader.type: uploader.handler},
-  );
+  OutboxDrainer drainer() =>
+      OutboxDrainer(api, outbox, handlers: uploader.handlers);
 
   /// Writes a file the picker would have handed the screen.
   Future<File> pickedFile({
@@ -1059,6 +1057,316 @@ void main() {
       expect(await drainer().drain(), [OutboxOutcome.completed]);
       expect((await soleRow()).couchId, 'srv-5');
       expect(await resources.pendingUploads(), isEmpty);
+    });
+
+    test('a drain killed mid-handler does not file a second document', () async {
+      // **A duplicate-document window that has been open since this uploader
+      // landed**, found by the second audit pass. A drain killed after the
+      // POST but before `markCompleted` leaves the outbox row `in_progress`;
+      // `OutboxRepository.recoverStuck` — which `OutboxDrainScope` and
+      // `background_entrypoint` both run at startup — returns it to `pending`
+      // and the handler runs again. This endpoint carries no `_id`, so CouchDB
+      // mints a fresh one and the shared catalog gains a second,
+      // indistinguishable document.
+      //
+      // `queuePending`'s `isInFlight` guard does not cover this: it stops a
+      // concurrent *sweep* re-enqueueing over an in-flight row, not a replay
+      // of that row. What closes it is the handler noticing that `row.itemId`
+      // no longer resolves — which is exactly what the rekey makes true the
+      // moment the mark lands, and why the mark is ordered before the byte
+      // move.
+      //
+      // The replay is driven through the real `enqueue`, with the local id the
+      // first operation carried, because that is what `recoverStuck` hands
+      // back to the drainer.
+      await saveLocal(path: (await pickedFile()).path);
+      final localId = (await soleRow()).id;
+      await uploader.queuePending(config: config, user: user);
+      var posts = 0;
+      when(
+        () => api.postJsonObject(
+          any(),
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer((_) async {
+        posts++;
+        return NetworkSuccess<Map<String, dynamic>>({
+          'id': 'srv-once',
+          'rev': '$posts-a',
+        });
+      });
+      stubAttachment();
+
+      await drainer().drain();
+      expect(posts, 1);
+      expect((await soleRow()).id, 'srv-once');
+
+      await outbox.enqueue(
+        uploadType: ResourcesUploader.type,
+        itemId: localId,
+        endpoint: ResourcesUploader.endpointFor(config),
+        payload: const {'title': 'Well survey notes'},
+      );
+      clock = clock.add(const Duration(hours: 1));
+      expect(await drainer().drain(), [OutboxOutcome.completed]);
+
+      expect(
+        posts,
+        1,
+        reason:
+            'a replayed row whose resource no longer answers to its itemId '
+            'must not mint a second document in the shared catalog',
+      );
+      expect((await database.myLibraryDao.getAll()).single.id, 'srv-once');
+    });
+
+    test(
+      'a filesystem failure after the POST cannot file a second document',
+      () async {
+        // **Nothing after the POST may throw out of the handler.** The drainer
+        // records a throw as a failed send and puts the row back to `pending`,
+        // so the next drain POSTs the same body again — and this endpoint mints
+        // a fresh `_id` each time, leaving two indistinguishable documents in
+        // the shared catalog with no way to reconcile them.
+        //
+        // Driven through the one seam that really does fail this way in
+        // production: `ResourceFiles.baseDirectory` is
+        // `getApplicationDocumentsDirectory`, which raises
+        // `MissingPluginException` on a headless WorkManager engine with no
+        // primed cache — and the outbox drain is exactly what runs there.
+        await saveLocal(path: (await pickedFile()).path);
+        await uploader.queuePending(config: config, user: user);
+        stubPost(
+          const NetworkSuccess<Map<String, dynamic>>({
+            'id': 'srv-fs',
+            'rev': '1-f',
+          }),
+        );
+        ResourceFiles.baseDirectory = () async =>
+            throw MissingPluginException('no channel on this engine');
+
+        expect(await drainer().drain(), [OutboxOutcome.completed]);
+        expect((await soleRow()).couchId, 'srv-fs');
+
+        // And the row is really gone, so no later drain can re-send it.
+        ResourceFiles.baseDirectory = () async => sandbox;
+        clock = clock.add(const Duration(hours: 2));
+        await drainer().drain();
+        verify(
+          () => api.postJsonObject(
+            any(),
+            any(),
+            authHeader: any(named: 'authHeader'),
+          ),
+        ).called(1);
+      },
+    );
+  });
+
+  // ------------------------------------------------- the durable attachment
+
+  /// **A refused attachment used to be the end of it, and nothing could tell.**
+  ///
+  /// `adoptAttachmentRev` keeps `rev == downloadedRev` on success and
+  /// `markUploaded` keeps them equal when there is nothing to send, so no
+  /// query, no count and no screen distinguishes an attachment that landed
+  /// from one that never will. The document sits on Planet with no
+  /// `_attachments` for ever, the bytes sit on the one handset that authored
+  /// them, and the user is told the resource uploaded. Kotlin has the same
+  /// hole and reaches it by two independent routes
+  /// (`UploadManager.kt:175-182`, `FileUploader.kt:36-42`).
+  ///
+  /// A PUT to a known URL is not an append, so unlike the document POST a
+  /// retry cannot create a second anything — the worst case is the same bytes
+  /// written twice under the same name. That is what makes a durable row
+  /// admissible here under the Phase 148 policy.
+  group('the attachment retry', () {
+    Future<MyLibraryRow> uploadWithAttachment(
+      NetworkResult<Map<String, dynamic>> attachment,
+    ) async {
+      await saveLocal(path: (await pickedFile()).path);
+      await uploader.queuePending(config: config, user: user);
+      stubPost(
+        const NetworkSuccess<Map<String, dynamic>>({
+          'id': 'srv-att',
+          'rev': '1-a',
+        }),
+      );
+      stubAttachment(attachment);
+      await drainer().drain();
+      return soleRow();
+    }
+
+    test('a landed attachment queues nothing', () async {
+      await uploadWithAttachment(
+        const NetworkSuccess<Map<String, dynamic>>({'ok': true, 'rev': '2-b'}),
+      );
+      expect(
+        await database.outboxDao.forItem(
+          ResourcesUploader.attachmentType,
+          'srv-att',
+        ),
+        isEmpty,
+        reason: 'the happy path must not accrete a row per upload',
+      );
+    });
+
+    test(
+      'a refused attachment files one row, and the retry sends it',
+      () async {
+        await uploadWithAttachment(
+          const NetworkError<Map<String, dynamic>>(503, 'unavailable'),
+        );
+        expect(
+          await database.outboxDao.forItem(
+            ResourcesUploader.attachmentType,
+            'srv-att',
+          ),
+          hasLength(1),
+        );
+
+        // The retry succeeds, the revision is adopted, and the row is gone.
+        stubAttachment(
+          const NetworkSuccess<Map<String, dynamic>>({
+            'ok': true,
+            'rev': '2-b',
+          }),
+        );
+        clock = clock.add(const Duration(hours: 1));
+        await drainer().drain();
+
+        expect((await soleRow()).rev, '2-b');
+        expect(
+          await database.outboxDao.forItem(
+            ResourcesUploader.attachmentType,
+            'srv-att',
+          ),
+          isEmpty,
+        );
+      },
+    );
+
+    test('the retry reads the revision the row carries now', () async {
+      // The payload stores only the filename. A stored revision would make
+      // every later attempt a guaranteed 409 *and* change the request on each
+      // refresh, which is exactly what `enqueue`'s memo cannot match.
+      await uploadWithAttachment(
+        const NetworkError<Map<String, dynamic>>(503, 'unavailable'),
+      );
+      final queued = (await database.outboxDao.forItem(
+        ResourcesUploader.attachmentType,
+        'srv-att',
+      )).single;
+      // Exact equality, not `containsPair`: the claim is about what is
+      // **absent**. `fileDocId` is here because it is stable across refreshes;
+      // a revision is not, and would refuse every later attempt.
+      expect(jsonDecode(queued.payload), {
+        'filename': 'well-survey.pdf',
+        'fileDocId': 'srv-att',
+      });
+
+      // A sync moved the document on while the retry was waiting.
+      await database.myLibraryDao.markUploaded('srv-att', 'srv-att', '7-later');
+      stubAttachment();
+      clock = clock.add(const Duration(hours: 1));
+      await drainer().drain();
+
+      final sent = verify(
+        () => api.uploadAttachment(
+          any(),
+          bytes: any(named: 'bytes'),
+          authHeader: any(named: 'authHeader'),
+          contentType: any(named: 'contentType'),
+          ifMatch: captureAny(named: 'ifMatch'),
+        ),
+      ).captured;
+      expect(sent.last, '7-later');
+    });
+
+    test(
+      'a move that failed is remembered, so the retry finds the bytes',
+      () async {
+        // **The defect the second audit pass found, and nothing covered it.**
+        // When `moveResourceDirectory` fails the files are still under the
+        // local uuid, which is *not* the outbox row's `itemId` — that is the
+        // CouchDB id. A handler that assumed `itemId` would look in an empty
+        // directory, read it as "no bytes to send", report success and delete
+        // its own memo: the attachment never sent, no row left, and by this
+        // uploader's own argument nothing downstream able to tell.
+        //
+        // The move is failed by making the destination un-creatable: a plain
+        // *file* where `ole/<couchId>/` wants to be a directory. `rename` and
+        // the copy fallback both refuse that, which is a real disk state
+        // rather than a stubbed one.
+        await saveLocal(path: (await pickedFile()).path);
+        await uploader.queuePending(config: config, user: user);
+        stubPost(
+          const NetworkSuccess<Map<String, dynamic>>({
+            'id': 'srv-att',
+            'rev': '1-a',
+          }),
+        );
+        await Directory('${sandbox.path}/ole').create(recursive: true);
+        await File('${sandbox.path}/ole/srv-att').writeAsString('not a dir');
+        final localId = (await soleRow()).id;
+        stubAttachment(
+          const NetworkError<Map<String, dynamic>>(503, 'unavailable'),
+        );
+
+        await drainer().drain();
+
+        // The row moved; the bytes did not.
+        expect((await soleRow()).id, 'srv-att');
+        expect(
+          await File(
+            '${sandbox.path}/ole/$localId/well-survey.pdf',
+          ).readAsString(),
+          'water table falling',
+        );
+
+        final queued = (await database.outboxDao.forItem(
+          ResourcesUploader.attachmentType,
+          'srv-att',
+        )).single;
+        expect(jsonDecode(queued.payload), {
+          'filename': 'well-survey.pdf',
+          'fileDocId': localId,
+        });
+
+        // And the retry really sends them, rather than reporting a hollow
+        // success — the `rev` is what proves bytes reached `uploadAttachment`.
+        stubAttachment(
+          const NetworkSuccess<Map<String, dynamic>>({
+            'ok': true,
+            'rev': '2-b',
+          }),
+        );
+        clock = clock.add(const Duration(hours: 1));
+        await drainer().drain();
+        expect((await soleRow()).rev, '2-b');
+      },
+    );
+
+    test('a resource deleted before the retry runs ends the row', () async {
+      await uploadWithAttachment(
+        const NetworkError<Map<String, dynamic>>(503, 'unavailable'),
+      );
+      await database.myLibraryDao.deleteNotIn(const []);
+      expect(await database.myLibraryDao.getAll(), isEmpty);
+
+      clock = clock.add(const Duration(hours: 1));
+      expect(await drainer().drain(), [OutboxOutcome.completed]);
+      expect(
+        await database.outboxDao.forItem(
+          ResourcesUploader.attachmentType,
+          'srv-att',
+        ),
+        isEmpty,
+        reason:
+            'a question that can never be re-asked must not leave a memo '
+            'behind — `outbox` is a preserved table',
+      );
     });
   });
 }
