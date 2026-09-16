@@ -109,7 +109,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 49;
+  int get schemaVersion => 50;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -494,6 +494,61 @@ class AppDatabase extends _$AppDatabase {
             "WHERE _id IS NULL AND resource_local_address LIKE '%/%'",
           );
         }
+
+        // v50's `attachment_pending` arrives through the loop above like any
+        // other column, at its `DEFAULT 0`. **That default is correct for
+        // every existing row but one class, and this is the backfill for the
+        // provable half of that class** — the Phase 143 question asked of each
+        // row in turn rather than of the table.
+        //
+        //  * A synced catalog row owes no attachment: `false` is true of it.
+        //  * A row still pending its document POST has not reached
+        //    [MyLibraryDao.markUploaded], which is what sets the flag, and it
+        //    will pass through there on its next drain. `false` is true of it
+        //    *now*, which is what matters — the flag is not a claim about the
+        //    future.
+        //  * An uploaded row whose attachment landed owes nothing: `false` is
+        //    true of it.
+        //  * An uploaded row whose attachment was **lost** is the one class
+        //    `false` is wrong for, and the whole reason this column exists is
+        //    that no query over `my_library` can find it: it is byte-for-byte
+        //    identical to the row above.
+        //
+        // The last class splits in two, and exactly one half leaves evidence.
+        // `ResourcesUploader._enqueueAttachmentRetry` files a
+        // `resource_attachment` outbox row **only** after a refused PUT, and a
+        // succeeding drain deletes that row (`markCompleted` is
+        // `deleteIfInProgress`), so a surviving one is proof the attachment
+        // has not been delivered. `outbox` is preserved, so those rows are
+        // still here after the bump. That is a fact, not a heuristic, which is
+        // what makes it admissible as a backfill at all.
+        //
+        // The other half — a process killed between `markUploaded` and the
+        // attachment attempt, before any retry row existed — recorded nothing
+        // anywhere and is **not recoverable**. Saying so is the point: this
+        // step removes a data loss going forward and recovers part of the
+        // backlog; it does not claim to recover all of it, and a step that
+        // guessed at the rest (say, flagging every row with bytes and an
+        // `_id`) would re-PUT every already-delivered attachment on the
+        // planet's whole catalog.
+        //
+        // Matched on `id`, not `_id`: `markUploaded` moves the row's primary
+        // key onto the CouchDB id, and that is what the retry row's `item_id`
+        // holds.
+        //
+        // `outbox` is checked for existence rather than assumed. This block
+        // runs before `createAll`, and a raw `UPDATE` naming a table SQLite
+        // does not have aborts the whole upgrade — the failure mode the
+        // surveys block one page down is guarded against for the same reason.
+        // A database predating `outbox` has no retry rows to read anyway.
+        if (from < 50 && await _tableExists('outbox')) {
+          await customStatement(
+            'UPDATE my_library SET attachment_pending = 1 '
+            'WHERE id IN ('
+            "SELECT item_id FROM outbox WHERE upload_type = 'resource_attachment'"
+            ')',
+          );
+        }
       }
 
       // Drop-and-resync for the CouchDB caches only; the next sync refills
@@ -770,6 +825,40 @@ class AppDatabase extends _$AppDatabase {
       if (from < 46) {
         await _addColumnIfMissing(m, teamTasks, teamTasks.sync);
         await _addColumnIfMissing(m, teamTasks, teamTasks.link);
+      }
+
+      // `teams` is preserved, so `createAll` does not alter it. v50 adds the
+      // four planet-code columns of `model/MyTeam.kt` — see the dartdoc at
+      // [Teams.sourcePlanet] for what each is for and which producer stamps
+      // it.
+      //
+      // Safe *after* `createAll`: neither `teams_team_id` (`team_id`) nor
+      // `teams_type` (`type`, `doc_type`) names any of the four, so the bare
+      // `CREATE INDEX` the recreate emits cannot reference a column an older
+      // install lacks. That is the check the reconciliation block above exists
+      // for, and it is why `my_library` is up there and these are here.
+      //
+      // **No backfill, and the reason is not "nothing to write" — it is that
+      // the truthful value is exactly what the default already says.** These
+      // four are the planet's own attribution of a team document, and an
+      // existing row's value lives in one of two places: on the server, where
+      // the next `teams` walk supplies it through [TeamMapper.fromDoc]; or
+      // nowhere, for a row this device authored before v50, whose planet codes
+      // were never captured and cannot be reconstructed — the session that
+      // created a resource link months ago is not recoverable from the row.
+      // Writing this device's *current* planet code onto such a row would
+      // claim a team created on another planet was created here, which is
+      // the `team_tasks.sync` mistake v46 documents one block up and declined
+      // for the same reason.
+      //
+      // NULL is also what a row pulled after the upgrade gets for an absent
+      // key, so the two agree. That is a deliberate divergence from Kotlin's
+      // `""` — see [Teams.sourcePlanet].
+      if (from < 50) {
+        await _addColumnIfMissing(m, teams, teams.sourcePlanet);
+        await _addColumnIfMissing(m, teams, teams.teamPlanetCode);
+        await _addColumnIfMissing(m, teams, teams.userPlanetCode);
+        await _addColumnIfMissing(m, teams, teams.parentCode);
       }
 
       // `my_library`'s columns — v48's `step_id`/`course_id` among them — are
@@ -1983,6 +2072,23 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
     // otherwise is the `resourceOffline` lie Phase 150 removed.
     final hasBytes = row.resourceOffline && row.resourceLocalAddress != null;
 
+    // **The same predicate arms the attachment flag, and writing it here is
+    // what closes the first of the two routes that lost a file.** The document
+    // is now filed and the bytes are not; that gap is created by this
+    // statement, so this statement is where it has to be recorded. A process
+    // killed immediately afterwards restarts with `attachment_pending = 1`
+    // already committed, and `ResourcesUploader.queuePendingAttachments` picks
+    // it up. Recording it one step later — in the handler, beside the PUT —
+    // would leave exactly the window it exists to close.
+    //
+    // `hasBytes` rather than an unconditional `true`: a metadata-only row (the
+    // port's form allows one where Kotlin's does not) has no attachment to
+    // owe, and flagging it would make the sweep look for bytes that were never
+    // written, for ever. It is the same reading of the same two columns
+    // `downloadedRev` uses just above, deliberately — a resource whose file is
+    // on disk and whose revision this device just learned is precisely a
+    // resource that owes a PUT.
+
     // Nothing to move: the resources walk keys a row on the document's own
     // `_id`, so a row that already carries it is either a re-mark or a
     // server-sourced row, and rewriting a key onto itself would delete and
@@ -1994,6 +2100,7 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
           couchId: Value(couchId),
           rev: Value(rev),
           downloadedRev: hasBytes ? Value(rev) : const Value.absent(),
+          attachmentPending: Value(hasBytes),
         ),
       );
       return true;
@@ -2034,6 +2141,7 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
           downloadedRev: hasBytes
               ? Value(rev)
               : Value(collision?.downloadedRev ?? row.downloadedRev),
+          attachmentPending: hasBytes,
         ),
       );
       return true;
@@ -2055,6 +2163,36 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
   Future<void> adoptAttachmentRev(String id, String rev) =>
       (update(myLibraryTable)..where((r) => r.id.equals(id))).write(
         MyLibraryTableCompanion(rev: Value(rev), downloadedRev: Value(rev)),
+      );
+
+  /// Rows whose attachment PUT is still outstanding — the sweep's input.
+  ///
+  /// `_rev IS NOT NULL` is not redundant beside the flag. [markUploaded] is
+  /// the only writer that sets it, so in practice every flagged row has a
+  /// revision; the clause is here because the PUT's `If-Match` *needs* one,
+  /// and a row that somehow lacked it would be enqueued to fail. Cheaper to
+  /// exclude than to discover at drain time.
+  ///
+  /// Unscoped by user, like [pendingUploads]: a handset whose session has gone
+  /// is exactly the one carrying an undelivered write, which is the reasoning
+  /// `sweepPendingResources` sets out for the document half.
+  Future<List<MyLibraryRow>> pendingAttachments() =>
+      (select(myLibraryTable)
+            ..where((r) => r.attachmentPending.equals(true) & r.rev.isNotNull()))
+          .get();
+
+  /// Records that this row no longer owes an attachment.
+  ///
+  /// Called where delivery is **established** (a 2xx from the PUT) or
+  /// **provably impossible** (the row no longer claims to have bytes). It is
+  /// deliberately not called for a refusal, a missing file on a row that still
+  /// claims one, or an unusable payload: those leave the flag set so the sweep
+  /// keeps the row in view, which costs a disk lookup per pass and is the
+  /// cheap side of the trade. Clearing on any of them is how the port would
+  /// re-acquire the silence this column was added to end.
+  Future<int> clearAttachmentPending(String id) =>
+      (update(myLibraryTable)..where((r) => r.id.equals(id))).write(
+        const MyLibraryTableCompanion(attachmentPending: Value(false)),
       );
 }
 

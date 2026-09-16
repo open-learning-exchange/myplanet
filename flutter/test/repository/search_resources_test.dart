@@ -20,6 +20,7 @@ MyLibraryRow _row(String id, String title) => MyLibraryRow(
   tag: const [],
   languages: const [],
   isPrivate: false,
+  attachmentPending: false,
 );
 
 void main() {
@@ -88,6 +89,7 @@ void main() {
         tag: const [],
         languages: const [],
         isPrivate: false,
+        attachmentPending: false,
       );
       expect(searchResources([row], 'cafe').map((r) => r.id), ['a']);
     });

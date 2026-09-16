@@ -139,6 +139,7 @@ MyLibraryRow buildLibraryRow({
     tag: const [],
     languages: const [],
     isPrivate: false,
+    attachmentPending: false,
     author: author,
   );
 }
