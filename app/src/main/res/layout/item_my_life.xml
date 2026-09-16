@@ -15,7 +15,7 @@
             android:id="@+id/img"
             android:layout_width="@dimen/dashboard_chip_icon_size"
             android:layout_height="@dimen/dashboard_chip_icon_size"
-            app:tint="@color/dashboard_tile_life"
+            app:tint="@color/dashboard_chip_icon_life"
             android:contentDescription="@null" />
         <TextView
             android:id="@+id/tv_name"
