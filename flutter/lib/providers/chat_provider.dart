@@ -153,7 +153,7 @@ class ChatConversationNotifier extends Notifier<ChatConversationState> {
 
   /// Sends a message.
   Future<void> sendMessage(String message) async {
-    final session = ref.read(sessionProvider).value;
+    final session = await resolveSession(ref);
     if (session == null || message.trim().isEmpty) return;
 
     final repo = ref.read(chatRepositoryProvider);
@@ -246,7 +246,7 @@ class ChatQueue {
 
   Future<int> queuePending() async {
     final config = _ref.read(serverConfigProvider);
-    final user = _ref.read(sessionProvider).value;
+    final user = await resolveSession(_ref);
     if (config == null || user == null) return 0;
     return _ref
         .read(chatUploaderProvider)

@@ -29,7 +29,7 @@ class RatingActions {
     required int rate,
     String? comment,
   }) async {
-    final user = ref.read(sessionProvider).value;
+    final user = await resolveSession(ref);
     if (user == null) return;
     await ref
         .read(ratingsRepositoryProvider)

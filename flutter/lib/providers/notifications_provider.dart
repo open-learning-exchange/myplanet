@@ -53,7 +53,7 @@ class NotificationActions {
   }
 
   Future<void> markAllAsRead() async {
-    final user = ref.read(sessionProvider).value;
+    final user = await resolveSession(ref);
     if (user == null) return;
     await ref.read(notificationsRepositoryProvider).markAllAsRead(user.id);
     // Port of `markAllAsRead`: clearing both override sets collapses every

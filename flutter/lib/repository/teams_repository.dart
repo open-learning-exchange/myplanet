@@ -515,18 +515,18 @@ class TeamsRepository {
   /// (`TeamResourceActions.add`) is unchanged — it passes the signed-in
   /// user's `planetCode`, which is exactly what Kotlin reads at `:682-683`.
   ///
-  /// **With one caveat that an earlier revision of this comment recorded and
-  /// this one deleted, wrongly.** That caller reads
-  /// `ref.read(sessionProvider).value?.planetCode`
-  /// (`teams_provider.dart:402`) — the port's standing *a provider a screen
-  /// reads but never watches is null* trap, and in Riverpod 3 `.value` is
-  /// "previous value, else null". Neither `team_resources_screen` nor
-  /// `team_detail_screen` watches it, so it is latent only because the router
-  /// holds a `ref.listen`; on any path where it is not resolved this method is
-  /// handed null and stamps nothing. That is exactly the path Kotlin's prefs
-  /// fallback exists for. `teams_provider.dart` is not this lane's file — note
-  /// that `requestToJoin`, ten methods up in the same file, gets it right with
-  /// `await _session()`.
+  /// **That caller's half of this is closed, and the hand-off this paragraph
+  /// used to carry is retired.** It read
+  /// `ref.read(sessionProvider).value?.planetCode` — the port's standing *a
+  /// provider a screen reads but never watches is null* trap — so on any pass
+  /// where the session had not resolved, this method was handed null and
+  /// stamped nothing. Phase 158 resolved it, and added the guard the reading
+  /// above implies: Kotlin's `addResourceLinks` opens
+  /// `val user = userRepository.getUserById(userId) ?: return` (`:671`), so
+  /// with no user it creates **no row at all** rather than one with null
+  /// planet codes, and `TeamResourceActions.add` now returns `false` the same
+  /// way. Note this is why the prefs fallback is *not* the answer here: that
+  /// belongs to [createLocalResourceLink] (`:709-710`), a different producer.
   ///
   /// **`status` is deliberately not stamped**, although Kotlin writes
   /// `user.parentCode` there. `MyTeam.serialize`'s `resourceLink` branch emits

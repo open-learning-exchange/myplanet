@@ -74,7 +74,7 @@ class DeepLinkHandler {
   /// Handles one link. Returns the location navigated to, or null if the link
   /// was ignored or only stored for later.
   Future<String?> handle(Uri uri) async {
-    final isSignedIn = ref.read(sessionProvider).value != null;
+    final isSignedIn = await resolveSession(ref) != null;
     final link = parseDeepLink(uri, isSignedIn: isSignedIn);
     return switch (link) {
       PublicSurveyDeepLink() => publicSurveyLocation(link),

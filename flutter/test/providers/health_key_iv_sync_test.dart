@@ -115,6 +115,12 @@ void main() {
     expect(container.read(healthKeyIvSyncProvider), isA<SyncRunning>());
     // The 9f3fac1d9 guard: a second trigger while one runs is dropped.
     await notifier.sync('learner');
+    // `sync` resolves the session before it reaches the repository, so the
+    // first call is two awaits behind by now. Without draining the queue this
+    // `verify` would measure scheduling rather than the guard — it read
+    // `called(0)` when the session read became asynchronous, which looks
+    // exactly like the guard having let both calls through.
+    await pumpEventQueue();
     verify(
       () => repository.syncDashboardKeyIv(
         userName: any(named: 'userName'),

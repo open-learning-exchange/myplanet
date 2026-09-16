@@ -246,14 +246,38 @@ class HealthKeyIvSyncNotifier extends Notifier<SyncUiState> {
   @override
   SyncUiState build() => const SyncIdle();
 
+  /// **The guard is armed before the session is resolved, and the order is
+  /// the whole point.** `DashboardViewModel.syncKeyId`
+  /// (`ui/dashboard/DashboardViewModel.kt:131-138`) is
+  /// `if (syncJob?.isActive == true) return; syncJob = viewModelScope.launch{…}`
+  /// — `launch` returns its `Job` synchronously, so the guard is closed before
+  /// `syncKeyId` returns and a second call can never overlap.
+  ///
+  /// Resolving the session is an `await`, which splits the guard's test
+  /// (`:269`) from its arming (`:274`) across an event-loop turn.
+  /// `home_screen.dart`
+  /// drives this from a `ref.listenManual(sessionProvider, fireImmediately:
+  /// true, …)` that fires on **every** emission where `user.key` is empty, so
+  /// two emissions in one turn — a `userDao` write during login, then an
+  /// invalidate — would both pass the guard and both run the whole per-account
+  /// key/IV fetch, which for a health-role user sweeps every synced account.
+  /// Arming first restores the Kotlin's ordering.
+  ///
+  /// The consequence is a transient `SyncRunning` on the signed-out path,
+  /// reset below. Kotlin has the same transient for the same reason: its job
+  /// is active while it resolves its own user, and bails from inside.
   Future<void> sync(String? role) async {
     if (state is SyncRunning) return;
 
     final config = ref.read(serverConfigProvider);
-    final session = ref.read(sessionProvider).value;
-    if (config == null || session == null) return;
+    if (config == null) return;
 
     state = const SyncRunning(SyncProgress(completed: 0, total: 0));
+    final session = await resolveSession(ref);
+    if (session == null) {
+      state = const SyncIdle();
+      return;
+    }
     try {
       // A missing password becomes "", as `SecurePrefs.getPassword(...) ?: ""`
       // does; the per-user request then fails and is swallowed per account.
