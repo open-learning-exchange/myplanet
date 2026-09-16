@@ -1,13 +1,11 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.content.Context
-import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
-import android.widget.ImageView
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import androidx.core.content.ContextCompat
@@ -15,10 +13,6 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.bumptech.glide.load.model.GlideUrl
-import com.bumptech.glide.load.model.LazyHeaders
-import com.bumptech.glide.signature.ObjectKey
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnCourseItemSelectedListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -27,14 +21,12 @@ import org.ole.planet.myplanet.databinding.ItemCourseListBinding
 import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.CourseProgressState
 import org.ole.planet.myplanet.model.MyCourse
-import org.ole.planet.myplanet.utils.CourseSubject
 import org.ole.planet.myplanet.utils.CourseSubjectClassifier
+import org.ole.planet.myplanet.utils.CoursesItemUtils
 import org.ole.planet.myplanet.utils.DiffUtils
-import org.ole.planet.myplanet.utils.GridSpanCalculator
 import org.ole.planet.myplanet.utils.ListViewMode
 import org.ole.planet.myplanet.utils.SelectionUtils
 import org.ole.planet.myplanet.utils.StableIdGenerator
-import org.ole.planet.myplanet.utils.UrlUtils
 
 class CoursesAdapter(
     private val context: Context,
@@ -95,30 +87,6 @@ class CoursesAdapter(
         const val PAYLOAD_IDENTITY = "payload_identity"
         private const val VIEW_TYPE_GRID = 0
         private const val VIEW_TYPE_LIST = 1
-
-        private fun subjectColorRes(subject: CourseSubject): Int = when (subject) {
-            CourseSubject.MATHEMATICS -> R.color.subject_math
-            CourseSubject.LITERACY -> R.color.subject_literacy
-            CourseSubject.HEALTH -> R.color.subject_health
-            CourseSubject.SOCIAL_STUDIES -> R.color.subject_social_studies
-            CourseSubject.TECHNOLOGY -> R.color.subject_technology
-        }
-
-        private fun subjectIconRes(subject: CourseSubject): Int = when (subject) {
-            CourseSubject.MATHEMATICS -> R.drawable.ic_subject_math
-            CourseSubject.LITERACY -> R.drawable.ic_type_book
-            CourseSubject.HEALTH -> R.drawable.ic_subject_health
-            CourseSubject.SOCIAL_STUDIES -> R.drawable.ic_subject_social
-            CourseSubject.TECHNOLOGY -> R.drawable.ic_subject_technology
-        }
-
-        private fun subjectLabelRes(subject: CourseSubject): Int = when (subject) {
-            CourseSubject.MATHEMATICS -> R.string.subject_label_mathematics
-            CourseSubject.LITERACY -> R.string.subject_label_literacy
-            CourseSubject.HEALTH -> R.string.subject_label_health
-            CourseSubject.SOCIAL_STUDIES -> R.string.subject_label_social_studies
-            CourseSubject.TECHNOLOGY -> R.string.subject_label_technology
-        }
     }
 
     init {
@@ -276,80 +244,6 @@ class CoursesAdapter(
         }
     }
 
-    private fun setCoverColor(view: View, subject: CourseSubject) {
-        val background = view.background?.mutate()
-        if (background is GradientDrawable) {
-            background.setColor(ContextCompat.getColor(context, subjectColorRes(subject)))
-        }
-    }
-
-    private fun bindCover(
-        course: Course,
-        subject: CourseSubject,
-        coverContainer: View,
-        ivCover: ImageView,
-        ivSubjectIcon: ImageView
-    ) {
-        setCoverColor(coverContainer, subject)
-        val coverFile = MyCourse.getCoverImageFile(context, course.courseId, course.coverFileName)
-        val model: Any? = if (coverFile?.exists() == true) {
-            coverFile
-        } else {
-            UrlUtils.getCourseImageUrl(course.courseId, course.coverFileName)?.let { url ->
-                GlideUrl(url, LazyHeaders.Builder().addHeader("Authorization", UrlUtils.header).build())
-            }
-        }
-        if (model == null) {
-            ivCover.visibility = View.GONE
-            ivSubjectIcon.visibility = View.VISIBLE
-            ivSubjectIcon.setImageResource(subjectIconRes(subject))
-            return
-        }
-        ivSubjectIcon.visibility = View.GONE
-        ivCover.visibility = View.VISIBLE
-
-        val fallbackHeight = if (viewMode == ListViewMode.GRID) {
-            context.resources.getDimensionPixelSize(R.dimen.course_grid_cover_height)
-        } else {
-            context.resources.getDimensionPixelSize(R.dimen.course_list_cover_size)
-        }
-
-        val targetWidth = when {
-            coverContainer.width > 0 -> coverContainer.width
-            coverContainer.layoutParams?.width != null && coverContainer.layoutParams.width > 0 -> coverContainer.layoutParams.width
-            else -> if (viewMode == ListViewMode.GRID) {
-                val displayMetrics = context.resources.displayMetrics
-                val widthDp = (displayMetrics.widthPixels / displayMetrics.density).toInt()
-                val cols = GridSpanCalculator.columnCount(widthDp)
-                (displayMetrics.widthPixels / cols).coerceAtLeast(fallbackHeight)
-            } else {
-                fallbackHeight
-            }
-        }.coerceAtLeast(1)
-
-        val targetHeight = when {
-            coverContainer.height > 0 -> coverContainer.height
-            coverContainer.layoutParams?.height != null && coverContainer.layoutParams.height > 0 -> coverContainer.layoutParams.height
-            else -> fallbackHeight
-        }.coerceAtLeast(1)
-
-        Glide.with(context)
-            .load(model)
-            .diskCacheStrategy(DiskCacheStrategy.ALL)
-            .signature(ObjectKey(course.courseRev.orEmpty()))
-            .override(targetWidth, targetHeight)
-            .centerCrop()
-            .error(R.drawable.ole_logo)
-            .into(ivCover)
-    }
-
-    private fun buildMetaLine(course: Course): String {
-        val parts = mutableListOf<String>()
-        parts.add(context.getString(R.string.course_steps_count, course.numberOfSteps))
-        course.gradeLevel.takeIf { it.isNotBlank() }?.let { parts.add(it) }
-        return parts.joinToString(" · ")
-    }
-
     private fun updateVisibilityForMyCourse(course: Course, isMyCourseView: View, checkbox: CheckBox) {
         if (isMyCourseLib) {
             isMyCourseView.visibility = View.GONE
@@ -434,10 +328,10 @@ class CoursesAdapter(
 
         fun bind(course: Course) {
             val subject = CourseSubjectClassifier.classify(course.subjectLevel)
-            bindCover(course, subject, binding.coverContainer, binding.ivCover, binding.ivSubjectIcon)
-            binding.tvSubjectLabel.text = context.getString(subjectLabelRes(subject))
+            CoursesItemUtils.bindCover(context, viewMode, course, subject, binding.coverContainer, binding.ivCover, binding.ivSubjectIcon)
+            binding.tvSubjectLabel.text = context.getString(CoursesItemUtils.subjectLabelRes(subject))
             binding.title.text = course.courseTitle
-            binding.tvMeta.text = buildMetaLine(course)
+            binding.tvMeta.text = CoursesItemUtils.buildMetaLine(context, course)
             updateVisibilityForMyCourse(course, binding.isMyCourse, binding.checkbox)
             setupCheckbox(course, binding.checkbox) { bindingAdapterPosition }
             bindProgress(course)
@@ -482,9 +376,9 @@ class CoursesAdapter(
 
         fun bind(course: Course) {
             val subject = CourseSubjectClassifier.classify(course.subjectLevel)
-            bindCover(course, subject, binding.coverContainer, binding.ivCover, binding.ivSubjectIcon)
+            CoursesItemUtils.bindCover(context, viewMode, course, subject, binding.coverContainer, binding.ivCover, binding.ivSubjectIcon)
             binding.title.text = course.courseTitle
-            binding.tvMeta.text = buildMetaLine(course)
+            binding.tvMeta.text = CoursesItemUtils.buildMetaLine(context, course)
             updateVisibilityForMyCourse(course, binding.isMyCourse, binding.checkbox)
             setupCheckbox(course, binding.checkbox) { bindingAdapterPosition }
             bindStatus(course)
