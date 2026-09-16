@@ -170,8 +170,23 @@ class _SubmissionsScreenState extends ConsumerState<SubmissionsScreen> {
       ),
     );
     if (submitted != true || title.text.trim().isEmpty || !mounted) return;
-    final user = ref.read(sessionProvider).value;
-    if (user == null) return;
+    // `ref.read(sessionProvider).value` here dropped the draft the user had
+    // just confirmed — no row, no snackbar, nothing — for as long as the
+    // session was still loading. Nothing in this screen's tree watches
+    // `sessionProvider`, so the only thing resolving it is the router's
+    // process-lifetime `ref.listen`, which leaves the window open from app
+    // start until the persisted session has been read back. A deep link
+    // delivered at cold start lands squarely in it.
+    //
+    // The `await` is inside the `try` deliberately: a future can reject where
+    // `.value` could only be null.
+    final UserRow? user;
+    try {
+      user = await ref.read(sessionProvider.future);
+    } catch (_) {
+      return;
+    }
+    if (user == null || !mounted) return;
     await ref
         .read(submissionsRepositoryProvider)
         .createDraft(

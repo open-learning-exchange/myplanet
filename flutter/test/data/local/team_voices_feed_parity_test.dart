@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/data/local/app_database.dart';
@@ -213,91 +211,16 @@ void main() {
     expect(await db.newsDao.countTopLevelByTeam('team-1'), feed.length);
   });
 
-  group('teamVoicesProvider has not yet moved onto watchTopLevelByTeam', () {
-    /// An exemption with an expiry date, in the Phase 157 shape: it passes
-    /// while the gap it records is open and fails **in both directions** once
-    /// anything moves.
-    ///
-    /// `lib/providers/voices_provider.dart` is another lane's file this round,
-    /// so `teamVoicesProvider` still builds the team feed from
-    /// `watchTopLevelMessages` plus a Dart `viewIn` filter — which adds a
-    /// `docType = 'message'` predicate Kotlin's statement does not have and
-    /// drops the `viewableBy` arm entirely. [NewsDao.watchTopLevelByTeam] is
-    /// the faithful replacement and takes the same argument, so the change is
-    /// one line.
-    ///
-    /// **To retire this group:** point `teamVoicesProvider` at
-    /// `dao.watchTopLevelByTeam(teamId)`, delete its `jsonDecode` filter and
-    /// its sort (the DAO orders by `time DESC` already), and delete this
-    /// group. The first test below then fails and says so.
-    final source = File('lib/providers/voices_provider.dart');
-
-    /// Matched as **calls**, never as text. Both files name these methods in
-    /// their own prose — `voices_provider.dart` mentions
-    /// `watchTopLevelMessages` in a doc comment as well as calling it — so a
-    /// bare `contains` would be satisfied by a comment and could not fail.
-    /// That is the same class of unfalsifiable assertion this file exists to
-    /// catch one level down.
-    bool calls(String text, String method) =>
-        RegExp(r'\.' + method + r'\(').hasMatch(text);
-
-    test('the exemption is still earned', () {
-      final text = source.readAsStringSync();
-      expect(
-        calls(text, 'watchTopLevelByTeam'),
-        isFalse,
-        reason:
-            'teamVoicesProvider now calls watchTopLevelByTeam, so this '
-            'exemption has expired: delete this group.',
-      );
-      expect(
-        calls(text, 'watchTopLevelMessages'),
-        isTrue,
-        reason:
-            'teamVoicesProvider no longer builds the team feed from '
-            'watchTopLevelMessages. Whatever it does now, this exemption no '
-            'longer describes it: re-read it and delete or rewrite this group.',
-      );
-    });
-
-    test('the badge does not read from the provider it disagrees with', () {
-      // The other direction. The badge is now on `countTopLevelByTeam`; if it
-      // ever goes back to `teamChatCounts` while the feed is on `viewIn`, the
-      // two populations diverge again and nothing else in the suite notices.
-      final repo = File(
-        'lib/repository/notifications_repository.dart',
-      ).readAsStringSync();
-      // Anchored on the receiver as well as the name: the comment four lines
-      // above the call writes `voicesRepository.countTopLevelByTeam(teamId)`
-      // when citing the Kotlin, so `contains('countTopLevelByTeam(')` was
-      // satisfied by prose and would have survived deleting the call.
-      expect(
-        RegExp(r'_newsDao\.countTopLevelByTeam\(').hasMatch(repo),
-        isTrue,
-        reason:
-            'getTeamNotifications no longer counts with '
-            'NewsDao.countTopLevelByTeam. Whatever it counts with now has to '
-            'be the same predicate the watermark is written from, or the '
-            'comparison means nothing.',
-      );
-      // The watermark side of the same pair. Both must derive from one query.
-      expect(
-        RegExp(r'_newsDao\.countTopLevelByTeam\(').allMatches(repo).length,
-        2,
-        reason:
-            'getTeamNotifications and updateTeamNotification must each derive '
-            'from NewsDao.countTopLevelByTeam — the badge is '
-            '`watermark < count` and it is only meaningful while the two '
-            'count the same population.',
-      );
-      expect(
-        RegExp(r'\.teamChatCounts\(').hasMatch(repo),
-        isFalse,
-        reason:
-            'getTeamNotifications is back on a teamChatCounts-shaped counter, '
-            'which is NewsDao.countTeamChats — a different Kotlin statement '
-            'with no caller in app/src/main at all.',
-      );
-    });
-  });
+  // The `teamVoicesProvider has not yet moved onto watchTopLevelByTeam`
+  // group that stood here has been **retired** — by expiring, as intended.
+  //
+  // `lib/providers/voices_provider.dart` was not Lane 1's file, so the DAO
+  // statement landed without its caller and the group held the gap open with
+  // a failure message naming the replacement. `teamVoicesProvider` is now
+  // `dao.watchTopLevelByTeam(teamId)` and the group failed in both
+  // directions, exactly as written.
+  //
+  // The predicate tests above are the durable half: they are what stop the
+  // feed and the badge drifting apart again, which is the defect that made
+  // this file necessary.
 }

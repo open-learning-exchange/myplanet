@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
@@ -91,33 +89,32 @@ final voiceReplyCountProvider = FutureProvider.family<int, String>((
 /// The voice posts for a specific team.
 ///
 /// Filters `watchTopLevelMessages` to those whose `viewIn` contains the team id.
-final teamVoicesProvider = StreamProvider.family<List<NewsRow>, String>((
-  ref,
-  teamId,
-) {
-  final dao = ref.watch(newsDaoProvider);
-  return dao.watchTopLevelMessages().map((rows) {
-    final filtered = rows.where((row) {
-      final viewIn = row.viewIn;
-      if (viewIn == null || viewIn.isEmpty) return false;
-      try {
-        final decoded = jsonDecode(viewIn);
-        if (decoded is! List) return false;
-        return decoded.any((element) {
-          if (element is! Map<String, dynamic>) return false;
-          final id = element['_id'];
-          return id == teamId;
-        });
-      } catch (_) {
-        return false;
-      }
-    }).toList();
-
-    // Sort newest first using the team post's time (not shared date).
-    filtered.sort((a, b) => b.time.compareTo(a.time));
-    return filtered;
-  });
-});
+/// The team voices feed: port of `NewsDao.getTopLevelByTeamFlow`
+/// (`NewsDao.kt:30-31`).
+///
+/// **The same statement as the dashboard's per-team chat badge**
+/// ([NewsDao.watchTopLevelByTeam] / `countTopLevelByTeam`), and that is the
+/// point rather than a convenience. The badge is `watermark.lastCount <
+/// count` and the watermark is written from *this* feed's row count when the
+/// user opens it, so the two are only comparable while they select the same
+/// population. Kotlin keeps them consistent by construction; the port used to
+/// hand-roll this one in Dart and so could drift from its own watermark.
+///
+/// What the hand-rolled version got wrong, in both directions:
+///
+/// * it filtered `viewIn` only, dropping Kotlin's `viewableBy = 'teams' AND
+///   viewableId = :teamId` arm entirely, so a server-authored team post never
+///   appeared here — while the badge counted it;
+/// * it went through `watchTopLevelMessages`, which adds a
+///   `docType = 'message'` predicate Kotlin's statement does not have;
+/// * it compared the decoded `_id` with `==`, where Kotlin's `LIKE` on
+///   `viewIn` is `COLLATE NOCASE`.
+///
+/// The sort is `time DESC` in the DAO, which is what the hand-rolled sort was
+/// doing and what Kotlin's `ORDER BY` says.
+final teamVoicesProvider = StreamProvider.family<List<NewsRow>, String>(
+  (ref, teamId) => ref.watch(newsDaoProvider).watchTopLevelByTeam(teamId),
+);
 
 class VoicesSyncNotifier extends SyncNotifier {
   @override

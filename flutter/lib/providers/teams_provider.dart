@@ -93,6 +93,24 @@ final memberDetailProvider =
         isLeader: membership?.isLeader ?? false,
       );
     });
+
+/// The team Resources tab: port of `TeamsRepositoryImpl.getTeamResources`
+/// (`:318-323`), which is a **union of two arms** de-duplicated by id —
+/// the library items behind the team's `resourceLink` documents, *plus* the
+/// team's private resources (`MyLibraryDao.getTeamPrivate`).
+///
+/// The port had only the first arm, and nothing in `lib/` read `privateFor`
+/// at all. `add_resource_screen` defaults `isPrivate` to true when it is
+/// opened from a team, so a resource added there was in **no view of the
+/// app** — not the catalog, not My Library, not the team tab — until an
+/// upload created a link document for it, and permanently invisible if
+/// pulled from a server holding no `resourceLink` document.
+///
+/// Links first, then private, so the ordering the links arm already carried
+/// is preserved and the private arm appends; `getTeamPrivate` has no
+/// `ORDER BY` in either app. De-duplication is by `id`, matching the Kotlin's
+/// `distinctBy { it.id }`, and it is load-bearing rather than defensive: a
+/// resource can be both privately held by the team and linked from it.
 final teamResourcesProvider = StreamProvider.family<List<MyLibraryRow>, String>(
   (ref, teamId) async* {
     await for (final links
@@ -101,9 +119,16 @@ final teamResourcesProvider = StreamProvider.family<List<MyLibraryRow>, String>(
           .map((row) => row.resourceId)
           .whereType<String>()
           .toList();
-      yield ids.isEmpty
-          ? const []
-          : await ref.watch(myLibraryDaoProvider).getByIds(ids);
+      final dao = ref.watch(myLibraryDaoProvider);
+      final linked = ids.isEmpty
+          ? const <MyLibraryRow>[]
+          : await dao.getByIds(ids);
+      final private = await dao.getTeamPrivate(teamId);
+      final seen = <String>{};
+      yield [
+        for (final row in [...linked, ...private])
+          if (seen.add(row.id)) row,
+      ];
     }
   },
 );

@@ -323,6 +323,19 @@ void main() {
 /// `lib/providers/**` (less `feedback_provider.dart`) and resolved all 29
 /// sites there. Everything below is `lib/ui/` or another lane's file.
 ///
+/// **Two entries have already expired and are gone, which is the point of
+/// writing them this way.** Lane 2 shipped this map carrying
+/// `feedback_create_screen.dart::session` and `feedback_provider.dart::session`
+/// because both were Lane 3's files in the same round. Lane 3 deleted the
+/// first read outright and resolved the second, and at merge the map failed
+/// with `EXEMPTION EXPIRED` naming each entry and quoting the retirement
+/// condition it had been written with — so retiring them was mechanical
+/// rather than a rediscovery. Compare Phase 154, where the same hand-off was
+/// a paragraph in a PR body and the wiring was found again at merge time.
+///
+/// Neither lane could have seen it alone: each was green on its own branch,
+/// and only the pair is a statement about the port.
+///
 /// ## How wide the window actually is, because the first cut of this map
 /// overstated it
 ///
@@ -363,16 +376,6 @@ const _exempt = <String, Exemption>{
     retire:
         'Delete if the `:351` gate goes, or if another caller of '
         '`_toggleLibraryMembership` appears outside it.',
-  ),
-  'lib/ui/feedback/feedback_create_screen.dart::session': Exemption(
-    count: 1,
-    why:
-        'Lane 3\'s file. `_submit:202` — and **not** the live defect an '
-        'earlier revision of this entry called it. `build:40` watches the '
-        'session and `:170` is `onPressed: session == null ? null : _submit`, '
-        'which is `_submit`\'s only trigger, so the button is disabled rather '
-        'than the form discarded.',
-    retire: 'Delete if the `:170` gate goes, or when the read is resolved.',
   ),
   'lib/ui/notifications/notifications_screen.dart::notifications': Exemption(
     count: 1,
@@ -492,16 +495,6 @@ const _exempt = <String, Exemption>{
       ),
 
   // ---- unwatched: nothing drives these; the live class ----
-  'lib/ui/submissions/submissions_screen.dart::session': Exemption(
-    count: 1,
-    why:
-        '`:173`, and the one unambiguous defect in this map. It is the only '
-        'occurrence of `sessionProvider` in the file and nothing in its tree '
-        'watches it, so inside the first-resolution window a draft the user '
-        'has titled, answered and confirmed is dropped with no snackbar and '
-        'no row — the Phase 100 shape.',
-    retire: 'Delete with the fix: `final user = await resolveSession(ref);`.',
-  ),
   'lib/ui/teams/team_courses_screen.dart::coursesStream': Exemption(
     count: 1,
     why:
@@ -514,15 +507,6 @@ const _exempt = <String, Exemption>{
     count: 1,
     why: '`_chooseResource:71` — the resource analogue of `coursesStream`.',
     retire: 'Delete with the fix.',
-  ),
-  'lib/providers/feedback_provider.dart::session': Exemption(
-    count: 2,
-    why:
-        'Lane 3\'s file, carved out of Lane 2\'s set. `:133` tags an outbox '
-        'row (inert — the `outbox.userId` column has no reader in either app; '
-        'see the lane report); `:224` is on `FeedbackNotifier`\'s submit path '
-        'and nothing watches the session for it.',
-    retire: 'Delete when Lane 3 lands the fix, which was in flight.',
   ),
 };
 
