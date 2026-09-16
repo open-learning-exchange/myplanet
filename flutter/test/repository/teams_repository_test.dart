@@ -773,10 +773,21 @@ void main() {
       );
       final uploaded = TeamsRepository.serializeTeamDocument(link!);
 
-      // The server echoes the document back on the next `teams` walk, with a
-      // revision. `isUpdated` is false because the upload cleared it — with it
-      // still true the mapper takes its early-return branch and this would
-      // assert nothing about the reads at all.
+      // **The local row is deleted first, and mutation testing is why.** The
+      // first cut upserted the pulled companion straight over the row
+      // `createLocalResourceLink` had just written, and deleting the four
+      // reads from `TeamMapper.fromDoc` left it **green**: the companion's
+      // values then become `Value.absent()`, which drift excludes from the
+      // `ON CONFLICT DO UPDATE SET` clause, so the row kept the values the
+      // *writer* had put there and the mapper was never asked anything. The
+      // fixture could not distinguish the two behaviours — the Phase 156
+      // shape, found here a second time in one round. With no local row the
+      // insert carries only what the mapper read.
+      //
+      // `isUpdated` is not passed as `existing` either: with a dirty row the
+      // mapper takes its early-return branch and asserts nothing about the
+      // reads at all.
+      await database.teamDao.deleteById('link-rt');
       final pulled = TeamMapper.fromDoc({...uploaded, '_rev': '2-abc'})!;
       await database.teamDao.upsert(pulled);
       final row = await database.teamDao.getById('link-rt');
