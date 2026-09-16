@@ -1251,13 +1251,13 @@ myplanet/
 │   │   │   │   ├── callback/                # Event listeners and interfaces
 │   │   │   │   ├── data/                    # Data services, API, and Room (room/, api/, auth/)
 │   │   │   │   ├── di/                      # Dependency injection modules
-│   │   │   │   ├── model/                   # Room @Entity models + DTOs (92 files)
+│   │   │   │   ├── model/                   # Room @Entity models + DTOs (100 files)
 │   │   │   │   ├── repository/              # Repository pattern implementations
 │   │   │   │   ├── services/                # Background services and workers
 │   │   │   │   ├── ui/                      # UI components (28 packages)
 │   │   │   │   └── utils/                   # Helper utilities
 │   │   │   ├── res/                         # Android resources
-│   │   │   │   ├── layout/                  # 181 layout files
+│   │   │   │   ├── layout/                  # 192 layout files
 │   │   │   │   ├── values/                  # Strings, colors, styles
 │   │   │   │   ├── values-{lang}/           # Translations (ar, es, fr, ne, so)
 │   │   │   │   └── drawable*/               # Images and icons
@@ -1278,17 +1278,17 @@ myplanet/
 
 | Package | Purpose | Files | Key Items |
 |---------|---------|-------|-----------|
-| `base/` | Base classes for common functionality | 13 | BaseActivity, BaseRecyclerFragment, BasePermissionActivity, BaseContainerFragment, BaseDashboardFragment, BaseResourceFragment, BaseTeamFragment, BaseExamFragment, BaseMemberFragment, BaseDialogFragment, BaseVoicesFragment, BaseRecyclerParentFragment |
-| `callback/` | Event listeners and interfaces | 28 | OnLibraryItemSelectedListener, OnSyncListener, OnTeamUpdateListener, OnChatItemClickListener, OnNewsItemClickListener, and more |
+| `base/` | Base classes for common functionality | 17 | BaseActivity, BaseRecyclerFragment, BasePermissionActivity, BaseContainerFragment, BaseDashboardFragment, BaseResourceFragment, BaseTeamFragment, BaseExamFragment, BaseMemberFragment, BaseDialogFragment, BaseVoicesFragment, BaseRecyclerParentFragment, BaseBindingFragment, BaseBindingDialogFragment, BaseBindingBottomSheetFragment, DefaultBaseAdapterFactory |
+| `callback/` | Event listeners and interfaces | 25 | OnLibraryItemSelectedListener, OnSyncListener, OnTeamUpdateListener, OnChatItemClickListener, OnNewsItemClickListener, and more |
 | `data/` | Data access, Room persistence, and API | 46 | NetworkResult.kt; `room/` (AppDatabase, Converters, 36 DAO interfaces in 37 files — several share `LegacyEntityDaos.kt`), `api/` (ApiInterface, ApiClient, ChatApiService, RetryInterceptor), `auth/` (AuthSessionUpdater) |
-| `di/` | Hilt dependency injection | 10 | Modules (NetworkModule, RoomModule, RepositoryModule, ServiceModule, SharedPreferencesModule, DispatcherModule, TimeModule) + entry points (CoreDependenciesEntryPoint, ServiceDependenciesEntryPoint) |
+| `di/` | Hilt dependency injection | 9 | Modules (NetworkModule, RoomModule, RepositoryModule, ServiceModule, SharedPreferencesModule, DispatcherModule, TimeModule) + entry points (CoreDependenciesEntryPoint, ServiceDependenciesEntryPoint) |
 | `model/` | Room `@Entity` models and DTOs | 100 | 38 `@Entity` classes (MyCourse, MyLibrary, News, Submission, TeamTask, UserEntity, …) + DTOs (ChatMessage, ChatRequest, ChatResponse, CourseProgressData, Download, ServerAddress, User) |
 | `repository/` | Repository pattern implementations | 68 | 27 domain Interface + Impl pairs + sync-facing interfaces (SyncRepository, TeamsSyncRepository, UserSyncRepository) + SubmissionsRepositoryExporter |
 | `services/` | Background services and workers | 43 | 23 root-level + `sync/` (7), `upload/` (11), `retry/` (2) |
 | `ui/` | User interface components | 204 | 28 feature packages with 16+ ViewModels (courses, resources, teams, chat, etc.) |
-| `utils/` | Helper functions | 46 | NetworkUtils, ImageUtils, DialogUtils, FileUploader, AuthUtils, SecurePrefs, ANRWatchdog, and more |
+| `utils/` | Helper functions | 59 | NetworkUtils, ImageUtils, DialogUtils, FileUploader, AuthUtils, SecurePrefs, ANRWatchdog, and more |
 
-### UI Sub-packages (28 feature packages, 183 files)
+### UI Sub-packages (28 feature packages, 204 files)
 
 | Package | Files | Key Components |
 |---------|-------|----------------|
@@ -1332,7 +1332,7 @@ myplanet/
 
 2. **`AppDatabase.kt`** (~172 lines) — the Room database
    - `@Database` with 38 entities, `version = 12`, `@TypeConverters(Converters::class)`
-   - Declares all 30+ DAO accessors; provisioned by `RoomModule` with a **drop-and-resync** (`fallbackToDestructiveMigration`) strategy — no hand-written migrations; data is re-pulled from CouchDB on first launch after a schema bump
+   - Declares all 36 DAO accessors; provisioned by `RoomModule` with a **drop-and-resync** (`fallbackToDestructiveMigration`) strategy — no hand-written migrations; data is re-pulled from CouchDB on first launch after a schema bump
    - Location: `app/src/main/java/org/ole/planet/myplanet/data/room/AppDatabase.kt`
 
 3. **`SyncManager.kt`** (~551 lines)
@@ -1407,7 +1407,7 @@ Kotlin itself is applied via AGP's built-in Kotlin support (no `kotlin-android` 
 ```
 UI Layer (Activities/Fragments + 16+ ViewModels)
     ↓
-Repository Layer (23 domains, Interface + Impl pairs, Flow-based queries)
+Repository Layer (27 domains, Interface + Impl pairs, Flow-based queries)
     ↓
 Service Layer (ApiInterface, SyncManager, UploadCoordinator)
     ↓
@@ -1438,8 +1438,8 @@ class DownloadRepositoryImpl @Inject constructor(
 }
 ```
 
-**All 23 Domain Repositories:**
-Activities, Chat, Community, Configurations, Courses, Download, Events, Feedback, Health, Life, Notifications, Personals, Progress, Ratings, Resources, Retry, Submissions, Surveys, Tags, Teams, Upload, User, Voices
+**All 27 Domain Repositories:**
+Activities, Chat, Community, Configurations, Courses, Diagnostics, Dictionary, Download, Enterprises, Events, Feedback, Health, Life, Notifications, Personals, Progress, Ratings, Resources, Retry, Submissions, Surveys, Sync, Tags, Teams, Upload, User, Voices
 
 **Sync-facing interfaces & utilities:**
 - `SyncRepository`, `TeamsSyncRepository`, `UserSyncRepository` - narrow interfaces the sync managers depend on
@@ -1464,7 +1464,7 @@ There is no generic base repository; each implementation talks to its Room DAO(s
 
 **Location**: `app/src/main/java/org/ole/planet/myplanet/di/`
 
-### 4. Base Classes for Code Reuse (13 classes)
+### 4. Base Classes for Code Reuse (16 classes in 17 files)
 
 | Base Class | Purpose |
 |------------|---------|
@@ -1480,6 +1480,10 @@ There is no generic base repository; each implementation talks to its Room DAO(s
 | `BaseMemberFragment` | Member management base functionality |
 | `BaseDialogFragment` | Dialog base class |
 | `BaseVoicesFragment` | Voices/news-specific base functionality |
+| `BaseBindingFragment` | View-binding lifecycle for fragments (added upstream in `640f580`) |
+| `BaseBindingDialogFragment` | View-binding lifecycle for dialog fragments |
+| `BaseBindingBottomSheetFragment` | View-binding lifecycle for bottom sheets |
+| `DefaultBaseAdapterFactory` | Shared RecyclerView adapter construction |
 
 **Location**: `app/src/main/java/org/ole/planet/myplanet/base/`
 
@@ -1723,7 +1727,7 @@ open class MyCourse(
 
 **Database Operations — use DAOs (preferred pattern):**
 
-Repositories inject the **DAO(s)** they need directly (provided by `RoomModule`) and call `suspend` DAO functions. Reactive queries return `Flow<…>` (non-suspend, per Room's requirement) — 8 of the 30 DAO files expose them, named either `observe*` (e.g. `CourseDao.observeAll()`) or `*Flow` (e.g. `NewsDao.getTopLevelFlow()`).
+Repositories inject the **DAO(s)** they need directly (provided by `RoomModule`) and call `suspend` DAO functions. Reactive queries return `Flow<…>` (non-suspend, per Room's requirement) — 11 of the 37 DAO files expose them, named either `observe*` (e.g. `CourseDao.observeAll()`) or `*Flow` (e.g. `NewsDao.getTopLevelFlow()`).
 
 ```kotlin
 // Real DAO examples
