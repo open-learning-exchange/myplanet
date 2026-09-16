@@ -1,19 +1,13 @@
-package org.ole.planet.myplanet.base
+package org.ole.planet.myplanet.utils
 
 import android.app.Activity
-import android.content.ActivityNotFoundException
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
-import android.provider.Settings
-import android.util.Log
 import androidx.annotation.StringRes
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
-import org.ole.planet.myplanet.utils.Utilities
 
 fun Context.hasPermission(permission: String): Boolean =
     ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
@@ -26,21 +20,8 @@ fun Activity.showPermissionDeniedFeedback(permission: String, @StringRes message
             title = getString(R.string.permission_required),
             message = getString(messageRes),
             positiveText = getString(R.string.settings),
-            onPositive = { openAppSettings() },
+            onPositive = { IntentUtils.openAppSettings(this) },
             negativeText = getString(R.string.cancel)
         )
-    }
-}
-
-fun Activity.openAppSettings() {
-    try {
-        startActivity(
-            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                data = Uri.fromParts("package", packageName, null)
-            }
-        )
-    } catch (e: ActivityNotFoundException) {
-        startActivity(Intent(Settings.ACTION_SETTINGS))
-        Log.e("PermissionExtensions", "ActivityNotFoundException for app settings", e)
     }
 }

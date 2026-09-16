@@ -22,8 +22,10 @@ import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.IntentUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.hasPermission
 
 abstract class BasePermissionActivity : AppCompatActivity() {
     @Inject
@@ -330,7 +332,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
                 onMediaPermissionsDenied(deniedPermissions)
             }
             .setNeutralButton("Settings") { _, _ ->
-                openAppSettings()
+                IntentUtils.openAppSettings(this)
             }
             .show()
     }

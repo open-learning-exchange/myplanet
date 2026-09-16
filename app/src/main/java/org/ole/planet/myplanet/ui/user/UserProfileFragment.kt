@@ -48,8 +48,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.language
 import org.ole.planet.myplanet.R.array.subject_level
 import org.ole.planet.myplanet.base.BaseBindingFragment
-import org.ole.planet.myplanet.base.hasPermission
-import org.ole.planet.myplanet.base.showPermissionDeniedFeedback
 import org.ole.planet.myplanet.databinding.DialogPhotoPickerBinding
 import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
 import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding
@@ -62,6 +60,8 @@ import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
+import org.ole.planet.myplanet.utils.hasPermission
+import org.ole.planet.myplanet.utils.showPermissionDeniedFeedback
 
 @AndroidEntryPoint
 class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(FragmentUserProfileBinding::inflate) {
