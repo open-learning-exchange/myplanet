@@ -690,17 +690,23 @@ final routerProvider = Provider<GoRouter>((ref) {
                     path: 'feedback',
                     builder: (context, state) => const FeedbackListScreen(),
                     routes: [
-                      GoRoute(
-                        path: ':feedbackId',
-                        builder: (context, state) => FeedbackDetailScreen(
-                          feedbackId: state.pathParameters['feedbackId']!,
-                        ),
-                      ),
+                      // Ahead of `:feedbackId`, as `chat/new` is ahead of
+                      // `:chatId`: go_router takes the first match, and a new
+                      // report has no id to carry. Declared the other way
+                      // round, `/life/feedback/create` built the *detail*
+                      // screen for a report whose id is the literal 'create',
+                      // so both pushers ended on "Feedback not found".
                       GoRoute(
                         path: 'create',
                         builder: (context, state) => FeedbackCreateScreen(
                           item: state.uri.queryParameters['item'],
                           state: state.uri.queryParameters['state'],
+                        ),
+                      ),
+                      GoRoute(
+                        path: ':feedbackId',
+                        builder: (context, state) => FeedbackDetailScreen(
+                          feedbackId: state.pathParameters['feedbackId']!,
                         ),
                       ),
                     ],
