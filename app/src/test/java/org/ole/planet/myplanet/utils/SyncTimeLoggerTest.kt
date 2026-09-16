@@ -1,14 +1,18 @@
 package org.ole.planet.myplanet.utils
 
 import android.util.Log
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.ole.planet.myplanet.services.UploadManager
 
 class SyncTimeLoggerTest {
 
@@ -214,5 +218,33 @@ class SyncTimeLoggerTest {
         assertTrue(summary.contains("Network time: 50.0%"))
         assertTrue(summary.contains("Database time: 40.0%"))
         assertTrue(summary.contains("Other processing: 10.0%"))
+    }
+
+    @Test
+    fun testStopLoggingWhenUploadCrashLogThrows() {
+        mockkStatic(Log::class)
+        every { Log.isLoggable(any(), any()) } returns false
+        every { Log.e(any(), any(), any()) } returns 0
+
+        val testException = RuntimeException("Upload failed")
+        val uploadManager = mockk<UploadManager> {
+            coEvery { uploadCrashLog() } throws testException
+        }
+
+        val testDispatcher = UnconfinedTestDispatcher()
+        val logger = SyncTimeLogger(
+            timeProvider = mockk(relaxed = true),
+            appScope = CoroutineScope(testDispatcher),
+            dispatcherProvider = TestDispatcherProvider(testDispatcher),
+            sharedPrefManager = mockk(relaxed = true),
+            serverUrlMapper = mockk(relaxed = true),
+            diagnosticsRepository = mockk(relaxed = true),
+            serverReachabilityProvider = mockk(relaxed = true)
+        )
+
+        logger.startLogging()
+        logger.stopLogging(uploadManager)
+
+        verify { Log.e("SyncPerf", "crash log upload failed", testException) }
     }
 }
