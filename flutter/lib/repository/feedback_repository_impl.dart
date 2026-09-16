@@ -244,7 +244,7 @@ class FeedbackRepositoryImpl implements FeedbackRepository {
         // deleted in the same sync — or skipped and kept.
         final id = FeedbackMapper.idOf(doc);
         // CouchDB's own view documents are not feedback. Kotlin drops them
-        // before the insert (`TransactionSyncManager.extractDocs:355-364`,
+        // before the insert (`TransactionSyncManager.extractDocs:317-326`,
         // `!getString("_id", doc).startsWith("_design")`); the port spells it
         // the same way in `notifications_repository.dart:241`,
         // `tags_repository.dart:45` and `chat_repository_impl.dart:286`, with

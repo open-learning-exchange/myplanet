@@ -124,6 +124,25 @@ class TeamsScreen extends ConsumerWidget {
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
+                                  // `TeamsAdapter.kt:80-82` binds `btnFeedback`
+                                  // on every row, and `item_team_list.xml:58-68`
+                                  // declares it with no `visibility` attribute
+                                  // that `showActionButton` (:90-140) ever
+                                  // touches — so it is offered to a non-member
+                                  // and to a guest too. No gate here either.
+                                  IconButton(
+                                    tooltip: l10n.feedback,
+                                    icon: const Icon(Icons.feedback_outlined),
+                                    onPressed: () => context.push(
+                                      Uri(
+                                        path: Routes.feedbackCreate,
+                                        queryParameters: {
+                                          'item': team.id,
+                                          'state': teamFeedbackState(team.type),
+                                        },
+                                      ).toString(),
+                                    ),
+                                  ),
                                   if (membership != null)
                                     Chip(
                                       avatar: Icon(
@@ -494,3 +513,26 @@ class _DetailSection extends StatelessWidget {
     ),
   );
 }
+
+/// The `state` a team's feedback is filed under — the field Planet's web UI
+/// **groups feedback by**, through the `url` that `FeedbackMapper.createFeedback`
+/// derives from it (`"Question regarding /$state"`, `url = "/$state"`).
+///
+/// Port of `TeamFragment.getBundle` (`TeamFragment.kt:299-305`):
+/// `putString("state", if (team.type?.isEmpty() == true) "teams" else "${team.type}s")`.
+/// The bundle's third entry, `parentCode = "dev"`, is read nowhere — Kotlin's
+/// `createFeedback` hardcodes it (`FeedbackRepositoryImpl.kt:62`) exactly as
+/// the port's mapper does — so it is deliberately not carried.
+///
+/// **One deliberate divergence, in the branch Kotlin cannot reach.** `?.isEmpty()
+/// == true` is false for a *null* type, so Kotlin's else arm interpolates it and
+/// files the thread under `"nulls"` with `url = "/nulls"`. That is unreachable
+/// from this list in either app — Kotlin's rows come from
+/// `getRootTeamsByType(type)` with `type` one of `"team"`/`"enterprise"`
+/// (`TeamsRepositoryImpl.kt:305,310`) and the port's from `watchCatalog(type:)`
+/// behind the same two-value segmented button — so nothing observable changes.
+/// A null type is folded in with an empty one rather than ported faithfully
+/// because the faithful reading writes a nonsense grouping key into a database
+/// the web UI reads, and the `isEmpty` arm shows what the author meant by it.
+String teamFeedbackState(String? type) =>
+    type == null || type.isEmpty ? 'teams' : '${type}s';

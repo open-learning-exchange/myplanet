@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/local/feedback_mapper.dart';
-import '../../data/local/user_mapper.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/feedback_provider.dart';
@@ -49,8 +48,6 @@ class _FeedbackDetailScreenState extends ConsumerState<FeedbackDetailScreen> {
 
           final messages = FeedbackMapper.parseMessages(feedback.messages);
           final isClosed = feedback.status?.toLowerCase() == 'closed';
-          final isManager =
-              session != null && UserMapper.isManager(session) == true;
 
           return Column(
             children: [
@@ -123,14 +120,30 @@ class _FeedbackDetailScreenState extends ConsumerState<FeedbackDetailScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        if (isManager)
-                          IconButton.filled(
-                            onPressed: _isSubmitting
-                                ? null
-                                : () => _closeFeedback(feedback.id),
-                            icon: const Icon(Icons.check),
-                            tooltip: l10n.close,
-                          ),
+                        // **No role gate, because Kotlin has none.**
+                        // `FeedbackDetailActivity.kt:73-75` attaches the
+                        // handler unconditionally, `activity_feedback_detail
+                        // .xml:51-56` declares `close_feedback` with no
+                        // `visibility`, and `FeedbackDetailViewModel` has no
+                        // user or role in scope at all. The only gating
+                        // anywhere is status-based (`:96-102`, disabled once
+                        // the thread is closed), which the enclosing
+                        // `if (!isClosed)` already is.
+                        //
+                        // The `isManager` test that stood here was a
+                        // restriction the port invented, and it fell on the
+                        // person it should not: a non-manager's list is
+                        // `watchByOwner`, so every thread they can open is one
+                        // they filed — ada could ask her question, read the
+                        // answer, and have no way to close her own thread.
+                        // The Phase 99 shape, in the other direction.
+                        IconButton.filled(
+                          onPressed: _isSubmitting
+                              ? null
+                              : () => _closeFeedback(feedback.id),
+                          icon: const Icon(Icons.check),
+                          tooltip: l10n.close,
+                        ),
                         const SizedBox(width: 4),
                         IconButton.filled(
                           onPressed: _isSubmitting || session == null
