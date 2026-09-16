@@ -346,9 +346,12 @@ class ResourcesRepository {
   /// because the link has to carry the CouchDB id.
   ///
   /// An earlier revision of this comment said `createLocalResourceLink` "does
-  /// not exist anywhere in the port". It does — as
-  /// [TeamsRepository.addResourceLink] — and the search that missed it was for
-  /// the Kotlin *name* rather than the behaviour.
+  /// not exist anywhere in the port", and the search that missed it was for
+  /// the Kotlin *name* rather than the behaviour. Its correction then named
+  /// [TeamsRepository.addResourceLink], which was right until schema v50 split
+  /// that method in two: Kotlin's two resource-link producers stamp different
+  /// planet-code fields, and the one this path ports is now
+  /// [TeamsRepository.createLocalResourceLink] — the Kotlin name after all.
   Future<bool> markResourceUploaded(
     String localId,
     String couchId,

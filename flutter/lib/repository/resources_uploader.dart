@@ -565,12 +565,19 @@ class ResourcesUploader {
   /// **This was omitted in this phase's first cut, on a false premise, and the
   /// premise is worth recording.** Two doc comments claimed
   /// `TeamsRepository.createLocalResourceLink` "does not exist anywhere in the
-  /// port". It exists — as [TeamsRepository.addResourceLink], a field-for-field
-  /// match for the Kotlin (blank guard, generated id, `docType`
-  /// `'resourceLink'`, `teamType` `'local'`, `isUpdated` true) plus a duplicate
-  /// check Kotlin lacks. The search was for the Kotlin *name* rather than the
-  /// behaviour, which is the same mistake as matching `<basename>_test.dart`
-  /// instead of grepping for the symbol. Without this, a team leader's private
+  /// port". It existed — as `addResourceLink`, a match for the Kotlin on every
+  /// field it wrote (blank guard, generated id, `docType` `'resourceLink'`,
+  /// `teamType` `'local'`, `isUpdated` true) plus a duplicate check Kotlin
+  /// lacks. The search was for the Kotlin *name* rather than the behaviour,
+  /// which is the same mistake as matching `<basename>_test.dart` instead of
+  /// grepping for the symbol.
+  ///
+  /// **And "a field-for-field match" was itself too strong**, which schema v50
+  /// exposed: the one method stood for *both* Kotlin producers, which stamp
+  /// different planet-code fields, and matched neither on those. It is now
+  /// split, and this call goes to [TeamsRepository.createLocalResourceLink] —
+  /// the Kotlin name after all. A correction that lands on the right symbol
+  /// can still overstate how closely it matches. Without this, a team leader's private
   /// resource uploads its own document and **no team ever links to it**: the
   /// team's Resources tab is empty on Planet and on every other member's
   /// handset, for bytes that are already on the server.
