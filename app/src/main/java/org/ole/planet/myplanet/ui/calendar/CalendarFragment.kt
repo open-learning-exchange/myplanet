@@ -4,9 +4,7 @@ import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -17,6 +15,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.util.Calendar
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentCalendarBinding
 import org.ole.planet.myplanet.model.Meetup
@@ -24,9 +23,7 @@ import org.ole.planet.myplanet.ui.events.EventsAdapter
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
-class CalendarFragment : Fragment() {
-    private var _binding: FragmentCalendarBinding? = null
-    private val binding get() = _binding!!
+class CalendarFragment : BaseBindingFragment<FragmentCalendarBinding>(FragmentCalendarBinding::inflate) {
     private val viewModel: CalendarViewModel by viewModels()
     private var meetups: List<Meetup> = emptyList()
     var listener: OnHomeItemClickListener? = null
@@ -34,11 +31,6 @@ class CalendarFragment : Fragment() {
     override fun onAttach(context: Context) {
         super.onAttach(context)
         if (context is OnHomeItemClickListener) listener = context
-    }
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentCalendarBinding.inflate(inflater, container, false)
-        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -83,10 +75,5 @@ class CalendarFragment : Fragment() {
             .create()
         dialogView.findViewById<View>(R.id.btnClose).setOnClickListener { dialog.dismiss() }
         dialog.show()
-    }
-
-    override fun onDestroyView() {
-        _binding = null
-        super.onDestroyView()
     }
 }

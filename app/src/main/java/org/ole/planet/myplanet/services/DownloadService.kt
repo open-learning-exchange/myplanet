@@ -241,8 +241,10 @@ class DownloadService : Service() {
                 return false
             }
 
-            Log.d(TAG, "initDownload: fetching $fileName from primary URL")
-            val primaryResult = downloadRepository.downloadFileResponse(url, authHeader)
+            val resumeOffset = resumeOffsetFor(url)
+            val ifRange = if (resumeOffset > 0) resumeValidatorFor(url) else null
+            Log.d(TAG, "initDownload: fetching $fileName from primary URL${if (resumeOffset > 0) " (resuming from ${resumeOffset}B)" else ""}")
+            val primaryResult = downloadRepository.downloadFileResponse(url, authHeader, resumeOffset, ifRange)
 
             if (primaryResult is DownloadResult.Error && primaryResult.code == null) {
                 Log.w(TAG, "initDownload: primary failed with network error (${primaryResult.message}), checking for alternative URL")
@@ -250,12 +252,12 @@ class DownloadService : Service() {
                 if (altUrl != null) {
                     Log.d(TAG, "initDownload: retrying with ${UrlUtils.redactForLog(altUrl)}")
                     currentDownloadUrl = altUrl
-                    val altResult = downloadRepository.downloadFileResponse(altUrl, authHeader)
-                    return tryDownloadFromResult(altResult, altUrl, fromSync, fileName, isAlternative = true)
+                    val altResult = downloadRepository.downloadFileResponse(altUrl, authHeader, resumeOffset, ifRange)
+                    return tryDownloadFromResult(altResult, altUrl, fromSync, fileName, isAlternative = true, resumeOffset)
                 }
             }
 
-            return tryDownloadFromResult(primaryResult, url, fromSync, fileName, isAlternative = false)
+            return tryDownloadFromResult(primaryResult, url, fromSync, fileName, isAlternative = false, resumeOffset)
         } catch (e: CancellationException) {
             Log.d(TAG, "initDownload: cancelled for $fileName")
             throw e
@@ -306,19 +308,26 @@ class DownloadService : Service() {
         url: String,
         fromSync: Boolean,
         fileName: String,
-        isAlternative: Boolean
+        isAlternative: Boolean,
+        resumeOffset: Long
     ): Boolean {
         val source = if (isAlternative) "alternative" else "primary"
 
         if (result is DownloadResult.Error) {
+            if (result.code == 416 && resumeOffset > 0) {
+                Log.w(TAG, "tryDownload [$source]: $fileName — resume offset ${resumeOffset}B rejected by server (416), discarding partial file")
+                deleteTempFile(url)
+                deleteValidatorFile(url)
+            }
             Log.e(TAG, "tryDownload [$source]: $fileName — ${result.message} (code=${result.code})")
             downloadFailed(result.message, fromSync)
             return false
         }
 
         result as DownloadResult.Success
+        val isPartial = result.code == 206
         val contentLength = result.body.contentLength()
-        Log.d(TAG, "tryDownload [$source]: $fileName responded contentLength=${if (contentLength == -1L) "unknown" else "${contentLength}B"}")
+        Log.d(TAG, "tryDownload [$source]: $fileName responded contentLength=${if (contentLength == -1L) "unknown" else "${contentLength}B"} partial=$isPartial")
 
         val storageError = getStorageError(contentLength)
         if (storageError != null) {
@@ -327,14 +336,14 @@ class DownloadService : Service() {
             return false
         }
 
-        if (contentLength == 0L) {
+        if (contentLength == 0L && !isPartial) {
             Log.e(TAG, "tryDownload [$source]: server returned empty body for $fileName")
             downloadFailed("Empty file from server", fromSync)
             return false
         }
 
         return try {
-            downloadFile(result.body, url)
+            downloadFile(result.body, url, isPartial, result.validator)
             true
         } catch (e: Exception) {
             Log.e(TAG, "tryDownload [$source]: write failed for $fileName", e)
@@ -367,21 +376,69 @@ class DownloadService : Service() {
         }
     }
 
+    private fun tempFileForUrl(url: String): File {
+        val finalFile = FileUtils.getSDPathFromUrl(this@DownloadService, url)
+        return File(finalFile.parentFile, "${finalFile.name}.tmp")
+    }
+
+    private fun validatorFileForUrl(url: String): File {
+        val finalFile = FileUtils.getSDPathFromUrl(this@DownloadService, url)
+        return File(finalFile.parentFile, "${finalFile.name}.tmp.etag")
+    }
+
+    private fun resumeOffsetFor(url: String): Long {
+        val tempFile = tempFileForUrl(url)
+        return if (tempFile.exists()) tempFile.length() else 0L
+    }
+
+    private fun resumeValidatorFor(url: String): String? {
+        val validatorFile = validatorFileForUrl(url)
+        return if (validatorFile.exists()) validatorFile.readText().takeIf { it.isNotBlank() } else null
+    }
+
+    private fun writeValidator(url: String, validator: String?) {
+        val validatorFile = validatorFileForUrl(url)
+        if (validator.isNullOrBlank()) {
+            validatorFile.delete()
+        } else {
+            validatorFile.writeText(validator)
+        }
+    }
+
+    private fun deleteTempFile(url: String) {
+        tempFileForUrl(url).delete()
+    }
+
+    private fun deleteValidatorFile(url: String) {
+        validatorFileForUrl(url).delete()
+    }
+
     @Throws(IOException::class)
-    private suspend fun downloadFile(body: ResponseBody, url: String) {
-        val fileSize = body.contentLength()
+    private suspend fun downloadFile(body: ResponseBody, url: String, isPartial: Boolean, validator: String? = null) {
         val finalFile = FileUtils.getSDPathFromUrl(this@DownloadService, url)
         finalFile.parentFile?.mkdirs()
         val tempFile = File(finalFile.parentFile, "${finalFile.name}.tmp")
-        tempFile.delete()
         outputFile = finalFile
-        var total: Long = 0
         val fileName = url.substringAfterLast('/')
-        Log.d(TAG, "downloadFile: writing $fileName to ${tempFile.absolutePath} size=${if (fileSize == -1L) "unknown" else "${fileSize}B"}")
+
+        val resumeOffset = if (isPartial) tempFile.length() else 0L
+        if (!isPartial) {
+            tempFile.delete()
+        }
+        writeValidator(url, validator)
+
+        val remoteRemaining = body.contentLength()
+        val fileSize = if (remoteRemaining > 0) resumeOffset + remoteRemaining else -1L
+        var total = resumeOffset
+        Log.d(
+            TAG,
+            "downloadFile: writing $fileName to ${tempFile.absolutePath} size=${if (fileSize <= 0) "unknown" else "${fileSize}B"}" +
+                if (resumeOffset > 0) " resuming from ${resumeOffset}B" else ""
+        )
 
         try {
             BufferedInputStream(body.byteStream(), BUFFER_SIZE).use { bis ->
-                FileOutputStream(tempFile).use { output ->
+                FileOutputStream(tempFile, isPartial).use { output ->
                     val download = Download().apply {
                         this.fileName = getFileNameFromUrl(url)
                     }
@@ -403,10 +460,10 @@ class DownloadService : Service() {
                 tempFile.copyTo(finalFile, overwrite = true)
                 tempFile.delete()
             }
+            deleteValidatorFile(url)
             Log.d(TAG, "downloadFile: complete — $fileName written ${total}B to ${finalFile.absolutePath}")
         } catch (e: Exception) {
-            Log.e(TAG, "downloadFile: failed for $fileName after ${total}B, temp file deleted", e)
-            tempFile.delete()
+            Log.e(TAG, "downloadFile: failed for $fileName after ${total}B, keeping partial file for resume", e)
             throw e
         }
         onDownloadComplete(url)

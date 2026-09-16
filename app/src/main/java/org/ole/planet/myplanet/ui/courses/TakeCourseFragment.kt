@@ -2,14 +2,11 @@ package org.ole.planet.myplanet.ui.courses
 
 import android.content.DialogInterface
 import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager.widget.ViewPager
@@ -22,6 +19,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.databinding.FragmentTakeCourseBinding
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.MyCourse
@@ -34,11 +32,9 @@ import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
-class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnClickListener {
+class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(FragmentTakeCourseBinding::inflate), ViewPager.OnPageChangeListener, View.OnClickListener {
     private var isNextStepLocked = false
     private var lockedStepMessage = ""
-    private var _binding: FragmentTakeCourseBinding? = null
-    private val binding get() = _binding!!
     @Inject
     lateinit var userSessionManager: UserSessionManager
     private val viewModel: TakeCourseViewModel by viewModels()
@@ -64,11 +60,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 position = requireArguments().getInt("position")
             }
         }
-    }
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentTakeCourseBinding.inflate(inflater, container, false)
-        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -471,7 +462,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         progressJob = null
         joinDialog?.dismiss()
         joinDialog = null
-        _binding = null
         coursesPagerAdapter = null
         super.onDestroyView()
     }

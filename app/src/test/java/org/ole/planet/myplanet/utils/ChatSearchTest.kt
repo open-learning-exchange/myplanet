@@ -72,4 +72,58 @@ class ChatSearchTest {
 
         assertEquals(2, result.size)
     }
+
+    @Test
+    fun `title mode does not match conversation response`() = runTest(testDispatcher) {
+        val chat = ChatHistory().apply {
+            title = "Unrelated Title"
+            conversations = listOf(
+                Conversation().apply {
+                    query = "Unrelated Question"
+                    response = "Target Answer"
+                }
+            )
+        }
+        val result = ChatSearch.search("Target", ChatSearchMode.TITLE, listOf(chat), testDispatcher)
+        assertEquals(0, result.size)
+    }
+
+    @Test
+    fun `first conversation match ranks ahead of later conversation match in fullConvoSearch`() = runTest(testDispatcher) {
+        val chatMatchLater = ChatHistory().apply {
+            title = "Chat Later Match"
+            conversations = listOf(
+                Conversation().apply { query = "Alpha" },
+                Conversation().apply { query = "Beta" },
+                Conversation().apply { query = "Target Match" }
+            )
+        }
+        val chatMatchFirst = ChatHistory().apply {
+            title = "Chat First Match"
+            conversations = listOf(
+                Conversation().apply { query = "Target Match" }
+            )
+        }
+        val chats = listOf(chatMatchLater, chatMatchFirst)
+        val result = ChatSearch.search("Target", ChatSearchMode.QUESTION, chats, testDispatcher)
+
+        assertEquals(2, result.size)
+        assertEquals("Chat First Match", result[0].title)
+        assertEquals("Chat Later Match", result[1].title)
+    }
+
+    @Test
+    fun `null query on conversation is skipped and subsequent matching conversation is found`() = runTest(testDispatcher) {
+        val chat = ChatHistory().apply {
+            title = "Chat With Null Query"
+            conversations = listOf(
+                Conversation().apply { query = null },
+                Conversation().apply { query = "Target Question" }
+            )
+        }
+        val result = ChatSearch.search("Target", ChatSearchMode.QUESTION, listOf(chat), testDispatcher)
+
+        assertEquals(1, result.size)
+        assertEquals("Chat With Null Query", result[0].title)
+    }
 }

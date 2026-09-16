@@ -8,7 +8,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -19,6 +18,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.status_options
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnNotificationsListener
 import org.ole.planet.myplanet.databinding.FragmentNotificationsBinding
@@ -34,12 +34,10 @@ import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
-class NotificationsFragment : Fragment() {
+class NotificationsFragment : BaseBindingFragment<FragmentNotificationsBinding>(FragmentNotificationsBinding::inflate) {
     @Inject
     lateinit var timeProvider: TimeProvider
 
-    private var _binding: FragmentNotificationsBinding? = null
-    private val binding get() = _binding!!
     private val viewModel: NotificationsViewModel by viewModels()
     private lateinit var adapter: NotificationsAdapter
     private lateinit var userId: String
@@ -52,7 +50,7 @@ class NotificationsFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentNotificationsBinding.inflate(inflater, container, false)
+        val view = super.onCreateView(inflater, container, savedInstanceState)
         userId = arguments?.getString("userId") ?: ""
         isAdmin = arguments?.getBoolean("isAdmin", false) ?: false
 
@@ -115,7 +113,7 @@ class NotificationsFragment : Fragment() {
             binding.tvSelectedCount.text = getString(R.string.selected_count, count)
         }
 
-        return binding.root
+        return view
     }
 
     private fun handleNotificationClick(notification: Notification) {
@@ -172,10 +170,5 @@ class NotificationsFragment : Fragment() {
             currentFilter = binding.status.selectedItem.toString().lowercase(Locale.ROOT)
             viewModel.loadNotifications(userId, currentFilter, isAdmin)
         }
-    }
-
-    override fun onDestroyView() {
-        _binding = null
-        super.onDestroyView()
     }
 }
