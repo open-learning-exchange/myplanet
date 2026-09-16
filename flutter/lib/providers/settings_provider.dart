@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 
 import '../core/background/background_work_coordinator.dart';
 import '../core/files/resource_files.dart';
+import '../data/local/app_database.dart';
 import 'app_providers.dart';
 import 'session_provider.dart';
 
@@ -202,6 +203,15 @@ class ClearDataNotifier extends AsyncNotifier<void> {
     final db = ref.read(appDatabaseProvider);
     final prefs = ref.read(planetPrefsProvider);
     await db.clearAllData();
+    // Before the preferences, not after. `PlanetPrefs.clearAllData` can throw —
+    // `_secureStorage.deleteAll()` raises on a keystore fault, and a test drives
+    // exactly that — and this step used to sit behind it, so a wipe that failed
+    // there left empty tables, a zeroed `lastSync` and one institution's
+    // downloaded files still on the device, which
+    // [deviceHoldsServerDataProvider] then reads as "nothing here". Running it
+    // first costs nothing: it is best-effort either way, and the rows that
+    // pointed at those files are already gone.
+    await _deleteDownloadedFiles();
     // `PlanetPrefs.clearAllData` keeps `onboardingComplete` and deletes secure
     // storage, exactly as the reset-app path wants — and exactly as this path
     // wants too, for a different reason. The stored password and PIN belong to
@@ -211,7 +221,6 @@ class ClearDataNotifier extends AsyncNotifier<void> {
     // `clearPreferences` does not touch `SecurePrefs`, which is a gap on both
     // of its call paths rather than a decision to copy.
     await prefs.clearAllData();
-    await _deleteDownloadedFiles();
     // Reset the provider states that the router's `redirect` reads, so the
     // navigation lands without waiting for the next read of cleared prefs.
     await ref.read(serverConfigProvider.notifier).clear();
@@ -252,33 +261,75 @@ class ClearDataNotifier extends AsyncNotifier<void> {
   }
 }
 
-/// Whether this device holds synced data at all — the data-presence half of
-/// `ServerAddressAdapter`'s `isServerAlreadyConfigured`.
+/// Whether this device holds anything a server switch would have to destroy —
+/// the data-presence half of `ServerAddressAdapter`'s
+/// `isServerAlreadyConfigured`, asked of the data rather than of a preference.
 ///
-/// Kotlin uses the configured URL itself
-/// (`!urlWithoutProtocol.isNullOrEmpty()`, `ServerDialogExtensions.kt:193`)
-/// because its server dialog opens *over* a configured device, and so does
-/// this now — `ref.watch(serverConfigProvider) != null` is that same signal.
-/// It did not always: the only way to reach `ServerConfigScreen` on a
-/// configured device was the login screen's "change server", which cleared the
-/// persisted config to make the router's redirect fire, so by the time the
-/// screen built, the signal Kotlin reads had been destroyed while the database
-/// was still full of the old server's documents. [Routes.changeServer]
-/// navigates instead.
+/// **This asks the database, and Kotlin does not.** Kotlin's predicate is
+/// `!prefData.getServerUrl().isNullOrEmpty()` (`ServerDialogExtensions.kt`),
+/// and the port read the same signal — `ref.watch(serverConfigProvider) !=
+/// null` — until that arm stopped being unreachable. It was unreachable for a
+/// reason that hid what it does: the only way to reach `ServerConfigScreen`
+/// over a configuration was the login screen's "change server", which deleted
+/// the configuration to make the router's redirect fire, so the arm never
+/// fired and the fallback below was the whole predicate. [Routes.changeServer]
+/// navigates instead, the configuration survives, and the arm woke up asking
+/// every configured device — including one that handshook a server and never
+/// synced — to clear a database with nothing in it.
 ///
-/// The `lastSync` arm stays, and is no longer the load-bearing one. It answers
-/// "this device has synced with *some* server" where the configuration is
-/// absent — after a partial wipe, or a preference store that lost the URL but
-/// not the rows — and it is 0 on a fresh install and after a reset. It says
-/// nothing about *which* server, which is what [localPlanetCodesProvider] is
-/// for.
+/// The fix is *not* to fall back to `lastSync != 0`. `LastSyncNotifier.
+/// recordSuccess` is that key's only writer and it runs on success only, so a
+/// sync that wrote rows and then failed leaves `lastSync == 0` over another
+/// community's users — exactly the mixing this gate exists to stop. Asking the
+/// database catches that case on the rows themselves.
+///
+/// So the question is the one the dialog actually poses: **would the wipe have
+/// anything to delete?** The tables it walks are `AppDatabase.allTables`, the
+/// same list `clearAllData` empties, so the predicate and the action cannot
+/// drift apart. No table is seeded on a fresh install (`MyLifeDao.seedIfEmpty`
+/// is per-user and runs after a login), so an untouched device answers false.
+///
+/// The `lastSync` arm stays, and it is no longer redundant in the way the
+/// database arm makes most preference reads redundant: a **schema bump**
+/// deletes every table outside `_localAuthorityTables` and leaves
+/// `SharedPreferences` untouched, so a device whose data was all cache comes
+/// out of an upgrade with empty tables and a non-zero `lastSync`. It still
+/// belongs to that server — its credentials, its downloaded files and its
+/// preferences are all still here — and a switch should still offer the wipe.
+///
+/// Deliberately **not** consulted: `<appDocuments>/ole/**`, which the wipe also
+/// deletes. Nothing writes bytes there without a row to point at them, so on a
+/// device that has only ever gained data the tree is empty whenever the tables
+/// are, and reading it would drag `path_provider` into every caller.
+///
+/// The one way they came apart was a wipe that emptied the tables and then
+/// threw before deleting the tree, which is why [ClearDataNotifier] deletes the
+/// files first now. That closes the case rather than papering over it; a tree
+/// left behind by anything else would still read as "nothing here".
 ///
 /// Reading this touches [planetPrefsProvider], which throws unless overridden:
 /// a widget test of the server-config screen must override this provider.
-final deviceHoldsServerDataProvider = Provider<bool>((ref) {
-  if (ref.watch(serverConfigProvider) != null) return true;
-  return ref.watch(planetPrefsProvider).lastSync != 0;
+final deviceHoldsServerDataProvider = FutureProvider<bool>((ref) async {
+  if (ref.watch(planetPrefsProvider).lastSync != 0) return true;
+  return databaseHoldsAnyRow(ref.watch(appDatabaseProvider));
 });
+
+/// Whether any table [AppDatabase.clearAllData] empties currently holds a row.
+///
+/// Short-circuits, so the common answers are cheap: a device with data stops at
+/// the first non-empty table, and an empty one runs one trivial `EXISTS` per
+/// table against indexes that are already open.
+Future<bool> databaseHoldsAnyRow(AppDatabase db) async {
+  for (final table in db.allTables) {
+    final row = await db
+        .customSelect(
+          'SELECT EXISTS(SELECT 1 FROM "${table.actualTableName}") AS present',
+        )
+        .getSingle();
+    if (row.read<int>('present') != 0) return true;
+  }
+  return false;
+}
 
 /// The community codes the local data belongs to — *which* Planet is on this
 /// device, read out of the data itself rather than out of a preference.

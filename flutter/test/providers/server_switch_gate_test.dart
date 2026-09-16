@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -81,33 +82,102 @@ void main() {
     planetCode: planetCode,
   ).toCompanion(false);
 
+  Future<bool> holdsData(ProviderContainer c) =>
+      c.read(deviceHoldsServerDataProvider.future);
+
+  const someConfig = ServerConfig(
+    serverUrl: 'https://planet.example.org',
+    pin: '1234',
+    couchDbUrl: 'https://satellite:1234@planet.example.org:443',
+  );
+
   group('deviceHoldsServerDataProvider', () {
-    test('a fresh install holds nothing', () {
-      expect(container().read(deviceHoldsServerDataProvider), isFalse);
+    test('a fresh install holds nothing', () async {
+      expect(await holdsData(container()), isFalse);
     });
 
-    test(
-      'a completed sync counts, even with the configuration cleared',
-      () async {
-        // This is the case the gate exists for: "change server" removes the
-        // persisted config and leaves the database, so `lastSync` is the only
-        // surviving evidence that this device belongs to someone.
-        await prefs.setLastSync(1234);
-        final c = container();
-        expect(c.read(serverConfigProvider), isNull);
-        expect(c.read(deviceHoldsServerDataProvider), isTrue);
-      },
-    );
+    test('a row in any table counts', () async {
+      // The fixture is the whole test, and the first cut got it wrong: it
+      // inserted a `users` row, and `users` is the FIRST entry in `allTables`,
+      // so `databaseHoldsAnyRow` narrowed to `SELECT EXISTS(… FROM users)` —
+      // or replaced outright by `localPlanetCodesProvider.isNotEmpty` — stayed
+      // green with the walk's entire reason for existing gone.
+      //
+      // `removed_log` is a table `localPlanetCodesProvider` never reads and
+      // nothing else in this file touches, so it can only be found by walking.
+      // Do not swap it for a `users` row.
+      await db
+          .into(db.removedLogs)
+          .insert(
+            const RemovedLogsCompanion(
+              id: Value('r1'),
+              type: Value('resources'),
+              docId: Value('doc-1'),
+              userId: Value('u1'),
+            ),
+          );
+      expect(await holdsData(container()), isTrue);
+    });
 
-    test('a configured server counts on its own', () async {
-      await prefs.saveServerConfig(
-        const ServerConfig(
-          serverUrl: 'https://planet.example.org',
-          pin: '1234',
-          couchDbUrl: 'https://satellite:1234@planet.example.org:443',
-        ),
+    test('a configured server does NOT count on its own', () async {
+      // The case that made this provider wrong. Handshake a server, never
+      // sync, then change servers: the old predicate said the device held
+      // data because a `ServerConfig` existed, and the switch stopped to ask
+      // permission to empty a database with nothing in it.
+      await prefs.saveServerConfig(someConfig);
+      final c = container();
+      expect(c.read(serverConfigProvider), isNotNull);
+      expect(await holdsData(c), isFalse);
+    });
+
+    test('a completed sync counts even once the tables are empty', () async {
+      // A schema bump is the reachable shape: it drops every table outside
+      // `_localAuthorityTables` and never touches `SharedPreferences`, so a
+      // device whose data was all cache comes out of the upgrade with empty
+      // tables, its old server's credentials and files still on it, and a
+      // non-zero `lastSync`.
+      await prefs.setLastSync(1234);
+      expect(await holdsData(container()), isTrue);
+    });
+
+    test('a sync that wrote rows and then failed counts', () async {
+      // `LastSyncNotifier.recordSuccess` writes `lastSync` on success only, so
+      // this device reads as never-synced. Reducing the predicate to
+      // `lastSync != 0` — the obvious fix for the configured-and-empty case
+      // above — would let another community's users through the gate.
+      //
+      // A `users` row is the right fixture *here*, where the claim is about
+      // another community's users surviving a failed sync — unlike the walk
+      // test above, where it was a decoy.
+      await db.userDao.upsert(user('u1', planetCode: 'guatemala'));
+      final c = container();
+      expect(c.read(planetPrefsProvider).lastSync, 0);
+      expect(await holdsData(c), isTrue);
+    });
+
+    test('one container answers once, so a caller must invalidate', () async {
+      // Not a wish: a record of the hazard `_deviceHoldsData` exists to work
+      // around, and the reason it invalidates before every read. Neither of
+      // this provider's dependencies changes identity — `planetPrefsProvider`
+      // is one object for the process and `appDatabaseProvider` a singleton —
+      // so nothing ever marks it dirty and the first answer is permanent.
+      // Its predecessor hid this by watching `serverConfigProvider`, whose
+      // `save` invalidated it.
+      final c = container();
+      expect(await holdsData(c), isFalse);
+
+      await db.userDao.upsert(user('u1', planetCode: 'learning'));
+      await prefs.setLastSync(1234);
+      expect(
+        await holdsData(c),
+        isFalse,
+        reason:
+            'if this now reads true, the provider learned to notice a '
+            'change on its own and the invalidate in _deviceHoldsData can go',
       );
-      expect(container().read(deviceHoldsServerDataProvider), isTrue);
+
+      c.invalidate(deviceHoldsServerDataProvider);
+      expect(await holdsData(c), isTrue);
     });
   });
 
