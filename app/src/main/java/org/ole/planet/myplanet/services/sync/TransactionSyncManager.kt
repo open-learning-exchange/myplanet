@@ -20,7 +20,9 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.MyCourse
@@ -84,6 +86,10 @@ class TransactionSyncManager @Inject constructor(
     // same inserts that take ~1ms/doc uncontended balloon to >100ms/doc under contention. This
     // mutex serializes only the DB-write portion of each batch; network fetches still overlap.
     private val dbWriteMutex = Mutex()
+
+    companion object {
+        private const val MAX_CONCURRENT_ATTACHMENT_DOWNLOADS = 6
+    }
     
     private val tableSyncHandlers: Map<String, suspend (JsonArray) -> Unit> = mapOf(
         "news" to { arr -> voicesRepository.insertNewsList(extractDocs(arr)) },
@@ -327,6 +333,7 @@ class TransactionSyncManager @Inject constructor(
 
     private suspend fun downloadCvAttachmentsFromBatch(arr: JsonArray) = coroutineScope {
         val inProgress = mutableSetOf<String>()
+        val semaphore = Semaphore(MAX_CONCURRENT_ATTACHMENT_DOWNLOADS)
         for (j in arr) {
             val jsonDoc = getJsonObject("doc", j.asJsonObject)
             val docId = getString("_id", jsonDoc)
@@ -338,13 +345,14 @@ class TransactionSyncManager @Inject constructor(
                     FileUtils.getOlePath(context) + "cv/$resumeFileName"
                 )
                 if (!destFile.exists() && inProgress.add(resumeFileName)) {
-                    launch { downloadCvAttachment(docId, destFile) }
+                    launch { semaphore.withPermit { downloadCvAttachment(docId, destFile) } }
                 }
             }
         }
     }
 
     private suspend fun downloadTeamAttachmentsFromBatch(arr: JsonArray) = coroutineScope {
+        val semaphore = Semaphore(MAX_CONCURRENT_ATTACHMENT_DOWNLOADS)
         for (j in arr) {
             val jsonDoc = getJsonObject("doc", j.asJsonObject)
             val docId = getString("_id", jsonDoc)
@@ -354,12 +362,13 @@ class TransactionSyncManager @Inject constructor(
             val destFile = MyTeam
                 .getAttachmentFile(context, docId, attachmentName) ?: continue
             if (!destFile.exists()) {
-                launch { downloadTeamAttachment(docId, attachmentName, destFile) }
+                launch { semaphore.withPermit { downloadTeamAttachment(docId, attachmentName, destFile) } }
             }
         }
     }
 
     private suspend fun downloadCourseCoversFromBatch(arr: JsonArray) = coroutineScope {
+        val semaphore = Semaphore(MAX_CONCURRENT_ATTACHMENT_DOWNLOADS)
         for (j in arr) {
             val jsonDoc = getJsonObject("doc", j.asJsonObject)
             val docId = getString("_id", jsonDoc)
@@ -370,7 +379,7 @@ class TransactionSyncManager @Inject constructor(
                 val destFile = MyCourse
                     .getCoverImageFile(context, docId, coverFileName) ?: continue
                 if (!destFile.exists()) {
-                    launch { downloadCourseCover(docId, coverFileName, destFile) }
+                    launch { semaphore.withPermit { downloadCourseCover(docId, coverFileName, destFile) } }
                 }
             }
         }
