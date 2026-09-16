@@ -161,6 +161,43 @@ class NewsDaoTest {
     }
 
     @Test
+    fun getTopLevelTeamMembership_returnsCandidatesForAllRequestedTeams() = runBlocking {
+        val teamAViaViewIn = News().apply {
+            id = UUID.randomUUID().toString()
+            time = 100L
+            viewIn = "[{\"_id\":\"teamA\",\"section\":\"teams\"}]"
+        }
+        val teamBViaViewable = News().apply {
+            id = UUID.randomUUID().toString()
+            time = 200L
+            viewableBy = "teams"
+            viewableId = "teamB"
+        }
+        val reply = News().apply {
+            id = UUID.randomUUID().toString()
+            time = 150L
+            replyTo = teamAViaViewIn.id
+            viewIn = "[{\"_id\":\"teamA\",\"section\":\"teams\"}]"
+        }
+        val otherTeam = News().apply {
+            id = UUID.randomUUID().toString()
+            time = 300L
+            viewIn = "[{\"_id\":\"teamC\",\"section\":\"teams\"}]"
+        }
+
+        newsDao.upsertAll(listOf(teamAViaViewIn, teamBViaViewable, reply, otherTeam))
+
+        val rows = newsDao.getTopLevelTeamMembership(listOf("teamA", "teamB"))
+
+        // Top-level only (reply excluded); teamC's post is fetched too since it also carries a
+        // "_id" viewIn marker, matching for consumers to filter down to the teams they asked about.
+        assertEquals(3, rows.size)
+        assertTrue(rows.any { it.viewIn?.contains("teamA") == true })
+        assertTrue(rows.any { it.viewableBy == "teams" && it.viewableId == "teamB" })
+        assertTrue(rows.any { it.viewIn?.contains("teamC") == true })
+    }
+
+    @Test
     fun countDistinctCommunityVoiceDates_returns_unique_day_count() = runBlocking {
         // 2024-12-27 00:00 UTC
         val day1 = News().apply {

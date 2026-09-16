@@ -8,11 +8,14 @@ import org.ole.planet.myplanet.repository.ChatSearchMode
 
 object ChatSearch {
 
-    private data class PrecomputedChat(
+    private data class TitleChat(
         val chat: ChatHistory,
-        val normalizedTitle: String?,
-        val normalizedQueries: List<String?>,
-        val normalizedResponses: List<String?>
+        val normalizedTitle: String?
+    )
+
+    private data class ConvoChat(
+        val chat: ChatHistory,
+        val normalized: List<String?>
     )
 
     suspend fun search(
@@ -20,37 +23,27 @@ object ChatSearch {
         mode: ChatSearchMode,
         chats: List<ChatHistory>,
         dispatcher: CoroutineDispatcher = Dispatchers.Default
-    ): List<ChatHistory> {
-        val precomputedChats = buildPrecomputedChats(chats, dispatcher)
-        return if (mode == ChatSearchMode.TITLE) {
-            searchByTitle(query, precomputedChats, dispatcher)
+    ): List<ChatHistory> =
+        if (mode == ChatSearchMode.TITLE) {
+            searchByTitle(query, chats, dispatcher)
         } else {
-            fullConvoSearch(query, isQuestion = (mode == ChatSearchMode.QUESTION), precomputedChats, dispatcher)
+            fullConvoSearch(query, isQuestion = (mode == ChatSearchMode.QUESTION), chats, dispatcher)
         }
-    }
-
-    private suspend fun buildPrecomputedChats(
-        chats: List<ChatHistory>,
-        dispatcher: CoroutineDispatcher
-    ): List<PrecomputedChat> = withContext(dispatcher) {
-        chats.map { chat ->
-            val title = if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
-                chat.conversations?.get(0)?.query?.let { Utilities.normalizeText(it) }
-            } else {
-                chat.title?.let { Utilities.normalizeText(it) }
-            }
-            val queries = chat.conversations?.map { it.query?.let { q -> Utilities.normalizeText(q) } } ?: emptyList()
-            val responses = chat.conversations?.map { it.response?.let { r -> Utilities.normalizeText(r) } } ?: emptyList()
-            PrecomputedChat(chat, title, queries, responses)
-        }
-    }
 
     private suspend fun fullConvoSearch(
         s: String,
         isQuestion: Boolean,
-        precomputedChats: List<PrecomputedChat>,
+        chats: List<ChatHistory>,
         dispatcher: CoroutineDispatcher
     ): List<ChatHistory> = withContext(dispatcher) {
+        val precomputedChats = chats.map { chat ->
+            val normalized = chat.conversations?.map { convo ->
+                val text = if (isQuestion) convo.query else convo.response
+                text?.let { Utilities.normalizeText(it) }
+            } ?: emptyList()
+            ConvoChat(chat, normalized)
+        }
+
         var conversation: String?
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
@@ -59,22 +52,17 @@ object ChatSearch {
         val inTitleContainsQuery = mutableListOf<ChatHistory>()
         val startsWithQuery = mutableListOf<ChatHistory>()
         val containsQuery = mutableListOf<ChatHistory>()
+
         for (pChat in precomputedChats) {
-            val conversations = pChat.chat.conversations
-            if (!conversations.isNullOrEmpty()) {
-                for (i in 0 until conversations.size) {
-                    conversation = if (isQuestion) {
-                        pChat.normalizedQueries[i]
-                    } else {
-                        pChat.normalizedResponses[i]
-                    }
-                    if (conversation == null) continue
+            run {
+                pChat.normalized.forEachIndexed { i, norm ->
+                    conversation = norm ?: return@forEachIndexed
                     if (conversation.startsWith(normalizedQuery, ignoreCase = true)) {
                         if (i == 0) inTitleStartQuery.add(pChat.chat) else startsWithQuery.add(pChat.chat)
-                        break
+                        return@run
                     } else if (normalizedQueryParts.all { conversation.contains(it, ignoreCase = true) }) {
                         if (i == 0) inTitleContainsQuery.add(pChat.chat) else containsQuery.add(pChat.chat)
-                        break
+                        return@run
                     }
                 }
             }
@@ -84,18 +72,28 @@ object ChatSearch {
 
     private suspend fun searchByTitle(
         s: String,
-        precomputedChats: List<PrecomputedChat>,
+        chats: List<ChatHistory>,
         dispatcher: CoroutineDispatcher
     ): List<ChatHistory> = withContext(dispatcher) {
+        val precomputedChats = chats.map { chat ->
+            val conversations = chat.conversations
+            val title = if (conversations != null && conversations.isNotEmpty()) {
+                conversations[0].query?.let { Utilities.normalizeText(it) }
+            } else {
+                chat.title?.let { Utilities.normalizeText(it) }
+            }
+            TitleChat(chat, title)
+        }
+
         var title: String?
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
         val normalizedQuery = Utilities.normalizeText(s)
         val startsWithQuery = mutableListOf<ChatHistory>()
         val containsQuery = mutableListOf<ChatHistory>()
+
         for (pChat in precomputedChats) {
-            title = pChat.normalizedTitle
-            if (title == null) continue
+            title = pChat.normalizedTitle ?: continue
             if (title.startsWith(normalizedQuery, ignoreCase = true)) {
                 startsWithQuery.add(pChat.chat)
             } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {

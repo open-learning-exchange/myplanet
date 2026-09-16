@@ -638,9 +638,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         photoId?.let { submitPhotosDao.markUploaded(it, rev, id) }
     }
 
-    override suspend fun markPhotosUploadedBatch(uploads: List<UploadedPhoto>) {
+    override suspend fun markPhotosUploadedBatch(uploads: List<PhotoUpload>) {
         if (uploads.isNotEmpty()) {
-            submitPhotosDao.markUploadedBatch(uploads)
+            val daoUploads = uploads.map { UploadedPhoto(it.photoId, it.rev, it.remoteId) }
+            submitPhotosDao.markUploadedBatch(daoUploads)
         }
     }
 
@@ -907,16 +908,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun getPendingExamResults(): List<Submission> {
-        return submissionDao.getPendingExamResults().map { entity ->
-            val answers = answerDao.getBySubmissionId(entity.id)
-            entity.apply { this.answers = answers.toMutableList(); teamId?.let { membershipDoc = MembershipDoc().apply { this.teamId = it } } }
-        }
+        return hydrateSubmissions(submissionDao.getPendingExamResults())
     }
 
     override suspend fun getPendingSubmissionsForUpload(): List<Submission> {
-        return submissionDao.getPendingSubmissions().map { entity ->
-            val answers = answerDao.getBySubmissionId(entity.id)
-            entity.apply { this.answers = answers.toMutableList(); teamId?.let { membershipDoc = MembershipDoc().apply { this.teamId = it } } }
-        }
+        return hydrateSubmissions(submissionDao.getPendingSubmissions())
     }
 }
