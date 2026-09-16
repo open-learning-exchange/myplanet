@@ -126,7 +126,9 @@ class ResourcesViewModel @Inject constructor(
         libraries.forEach { library ->
             library.language?.takeIf { it.isNotBlank() }?.let { languages.add(it) }
             library.subject?.let { subjects.addAll(it) }
-            library.mediaType?.takeIf { it.isNotBlank() }?.let { mediums.add(it) }
+            val mediaType = library.mediaType?.takeIf { it.isNotBlank() }
+                ?: org.ole.planet.myplanet.utils.LibraryTypeClassifier.classify(library).name.lowercase()
+            mediums.add(mediaType)
             library.level?.let { levels.addAll(it) }
         }
 
