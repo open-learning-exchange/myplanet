@@ -202,7 +202,9 @@ void main() {
         serverConfigProvider.overrideWith(
           () => _RecordingServerConfig(existing, saved),
         ),
-        deviceHoldsServerDataProvider.overrideWithValue(holdsServerData),
+        deviceHoldsServerDataProvider.overrideWith(
+          (ref) async => holdsServerData,
+        ),
         localPlanetCodesProvider.overrideWith((ref) async => localPlanetCodes),
         if (configuration != null)
           configurationsRepositoryProvider.overrideWithValue(

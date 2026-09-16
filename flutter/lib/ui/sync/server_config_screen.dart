@@ -93,11 +93,33 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
   /// the initial selection and the list ordering.
   String? _configuredHost;
 
-  /// Whether the local database holds synced data at all. Read once, because
-  /// after a wipe it is stale by construction:
-  /// [deviceHoldsServerDataProvider] reads a preference off an object whose
-  /// identity does not change when the preference does.
-  bool _holdsServerData = false;
+  /// `_id` of the `configurations` document this device was configured from —
+  /// Kotlin's `savedId` (`SyncConfigurationCoordinator.kt:74`). Captured beside
+  /// [_configuredHost] and cleared with it, because a wipe ends this device's
+  /// relationship with both.
+  ///
+  /// Empty on a configuration written before the field existed, and on a server
+  /// whose `configurations` row carried no id. [_isKnownDifferentConfiguration]
+  /// treats either as "unknown", never as "different".
+  String? _configuredId;
+
+  /// Whether this device holds anything the switch would destroy.
+  ///
+  /// Null until something asks. Resolved once and cached rather than read per
+  /// use, because a wipe carried out from this screen makes it stale by
+  /// construction and nothing invalidates [deviceHoldsServerDataProvider] —
+  /// re-reading it would replay the future it completed before the wipe.
+  bool? _holdsServerData;
+
+  /// [deviceHoldsServerDataProvider], memoised on the nullable field so that
+  /// `false` is an answer rather than an absence — a device with nothing on it
+  /// must not be sent back to the database on every tap.
+  Future<bool> _deviceHoldsData() async {
+    final known = _holdsServerData;
+    if (known != null) return known;
+    final answer = await ref.read(deviceHoldsServerDataProvider.future);
+    return _holdsServerData = answer;
+  }
 
   /// Which request failed and what it said. Debug builds only — a release
   /// build keeps the one clean sentence.
@@ -106,7 +128,6 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
   @override
   void initState() {
     super.initState();
-    _holdsServerData = ref.read(deviceHoldsServerDataProvider);
     final existing = ref.read(serverConfigProvider);
     if (existing != null) {
       _urlController.text = existing.serverUrl;
@@ -132,6 +153,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
       // on every reachable path and this whole branch was dead.
       _configuredHost = hostWithoutScheme(existing.serverUrl);
       _selectedHost = _configuredHost;
+      _configuredId = existing.id;
     }
   }
 
@@ -151,22 +173,42 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
   /// is no way to reach a new server's `configurations` document in Kotlin
   /// without having been offered the wipe". That is false, and both gates say
   /// so in their own condition: the manual toggle's is `configurationId !=
-  /// null` (`:268`), the dialog's Clear-data button is `GONE` on the same test
-  /// (`:45`), and the `"save"` branch warns only when `savedId != null && id !=
-  /// savedId` (`SyncConfigurationCoordinator.kt:98-106`). `setConfigurationId`
-  /// has one call site in `app/src/main` — `SyncConfigurationCoordinator.kt:86`
-  /// — reached only on the `"sync"` action, while `LoginActivity.kt:351` passes
-  /// `"LoginActivity"` and takes the arm that never writes it. So a device
-  /// configured and synced entirely from the login screen carries a full
-  /// database with `configurationId == null`, and Save there adopts another
-  /// Planet with no wipe offered at all.
+  /// null` (`:268`), the dialog's Clear-data button is `GONE` on
+  /// `isNullOrBlank` (`:45`), and the `"save"` branch warns only when
+  /// `savedId != null && id != savedId` (`SyncConfigurationCoordinator.kt:98-106`).
+  /// `setConfigurationId` has one call site in `app/src/main` —
+  /// `SyncConfigurationCoordinator.kt:86` — reached only on the `"sync"`
+  /// action.
+  ///
+  /// **An earlier version of this comment drew the wrong device from that.**
+  /// It said "a device configured and synced entirely from the login screen
+  /// carries a full database with `configurationId == null`", citing
+  /// `LoginActivity.kt:351`'s `"LoginActivity"` caller string. The citation is
+  /// right and the conclusion does not follow: `LoginActivity` **extends**
+  /// `SyncActivity` (`LoginActivity.kt:68`) and its gear button opens the same
+  /// dialog (`:313-316`), whose Sync goes through `performSync` →
+  /// `checkMinApk(…, "SyncActivity")` and **does** write `configurationId`.
+  /// `:351` is the sync *icon*, a different button. The device that really
+  /// carries a full database with no `configurationId` is one configured by
+  /// **manual Save** — the `"save"` branch never writes it — and synced only
+  /// from that icon or the dashboard's (`DashboardElementActivity.kt:113`).
+  /// Given that state the rest holds: `:99`'s `savedId == null` adopts another
+  /// Planet with no wipe and no dialog, indefinitely. A second reachable hole
+  /// sits next to it: `setupManualConfigEnabled` writes `serverUrl = ""`
+  /// (`ServerDialogExtensions.kt:291`), so toggling manual configuration on and
+  /// off again makes `isServerAlreadyConfigured` false and disarms the row-tap
+  /// warning on a full database.
   ///
   /// This port's form is always editable and it has no `configurationId`
   /// precondition, so the equivalent single rule is stricter than either of
   /// Kotlin's: never adopt a configuration over another community's data.
   ///
-  /// The comparison is the **community code**, not the host, and it is asked
-  /// of the database rather than of a preference. Kotlin's analogous
+  /// The comparison is the **community code**, not the host, asked of the
+  /// database rather than of a preference — and, since the configuration now
+  /// survives the navigation here, vetoed by Kotlin's own
+  /// `configurations`-document comparison where both ids are known. See
+  /// [_isKnownDifferentConfiguration] for why the id is a veto rather than the
+  /// decision. Kotlin's analogous
   /// trigger is close to this but not the same, and an earlier version of this
   /// comment got it wrong in a way worth recording: it said Kotlin "has this
   /// exact comparison" at `SyncActivity.kt:245`. That line is only the
@@ -273,14 +315,17 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
   /// and the user declined to clear it. Returns `false` — carry on — both when
   /// no wipe is needed and when one was carried out.
   Future<bool> _wipeRefusedFor(ServerConfig config) async {
-    if (!_holdsServerData) return false;
+    if (!await _deviceHoldsData()) return false;
+    if (!mounted) return true;
     final localCodes = await ref.read(localPlanetCodesProvider.future);
     if (!mounted) return true;
     // An empty set means the data cannot be attributed to a community at all,
     // which on a device that has synced is unexpected rather than reassuring —
     // so it is treated as "not this one". Declining costs the user nothing but
     // the switch; assuming a match would risk the mixing this exists to stop.
-    if (localCodes.contains(config.code) && config.code.isNotEmpty) {
+    if (!_isKnownDifferentConfiguration(config) &&
+        config.code.isNotEmpty &&
+        localCodes.contains(config.code)) {
       return false;
     }
 
@@ -293,8 +338,39 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
     setState(() {
       _holdsServerData = false;
       _configuredHost = null;
+      _configuredId = null;
     });
     return false;
+  }
+
+  /// Kotlin's `id != savedId` (`SyncConfigurationCoordinator.kt:91`, `:99`),
+  /// asked here as a veto rather than as the whole decision.
+  ///
+  /// The community comparison below it cannot see two *unrelated* Planets that
+  /// happen to share a community `code` — it would find the incoming code among
+  /// the local ones and wave the switch through onto the other Planet's rows,
+  /// which is the mixing this gate exists to stop. The `configurations`
+  /// document id is what distinguishes them, and it is available now only
+  /// because the configuration survives the navigation to this screen.
+  ///
+  /// It is a veto and not a replacement because the two questions are not the
+  /// same one. `_configuredId` is a preference: it says which server this
+  /// device was *told* it belongs to. `users.planetCode` is the data: it says
+  /// which community's documents are actually here. Kotlin has only the first,
+  /// and its own `savedId` is null on the manual-Save and sync-icon paths, so
+  /// there it decides nothing. Requiring both to agree is stricter than either.
+  ///
+  /// "Known" is load-bearing. An empty id on either side — a configuration
+  /// persisted before the field existed, or a server whose `configurations` row
+  /// carried none — is unknown, and an unknown must not be read as a
+  /// difference, or every such device would be asked to wipe itself on a
+  /// switch back to the server it is already on.
+  bool _isKnownDifferentConfiguration(ServerConfig config) {
+    final previous = _configuredId;
+    return previous != null &&
+        previous.isNotEmpty &&
+        config.id.isNotEmpty &&
+        previous != config.id;
   }
 
   static String _messageFor(
@@ -347,7 +423,21 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
   /// port has no restart to lose the tap across, so the tap it was given is
   /// honoured.
   Future<void> _onServerTapped(PlanetServer server) async {
-    if (_warnsBeforeLeaving(server.host)) {
+    // A failure to decide is not a decision. [_deviceHoldsData] reaches the
+    // database now, so this can throw where it never could while it read a
+    // preference — and an unhandled throw out of a tap handler is the one
+    // outcome with nothing on screen to show for it. A tap commits nothing in
+    // this port, and [_connect] asks the same question again a moment later
+    // where a failure can be reported, so falling through is safe: nothing is
+    // cached, so the retry there really does re-ask.
+    bool warns;
+    try {
+      warns = await _warnsBeforeLeaving(server.host);
+    } catch (_) {
+      warns = false;
+    }
+    if (warns) {
+      if (!mounted) return;
       final cleared = await _showClearDataDialog();
       if (!mounted) return;
       // Declined. Kotlin's `revertSelection()` runs here and undoes nothing;
@@ -359,19 +449,35 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
         _configuredHost = null;
       });
     }
+    if (!mounted) return;
     _useServer(server);
     setState(() => _selectedHost = server.host);
   }
 
   /// Kotlin's `isServerAlreadyConfigured && position != selectedPosition`.
   ///
-  /// `_holdsServerData` is redundant while `_configuredHost` is non-null — a
-  /// persisted configuration makes [deviceHoldsServerDataProvider] true on its
-  /// own — and it is named anyway, because a wipe clears both and the pair
-  /// reads as the question being asked: is there data, and is it another
-  /// server's?
-  bool _warnsBeforeLeaving(String host) =>
-      _holdsServerData && _configuredHost != null && host != _selectedHost;
+  /// `_configuredHost != null` **is** `isServerAlreadyConfigured`: both are
+  /// "the stored server URL is non-empty". [_deviceHoldsData] is the port's
+  /// own third conjunct, and it used to be redundant — a persisted
+  /// configuration was on its own enough to make
+  /// [deviceHoldsServerDataProvider] true, so every site that cleared one
+  /// cleared the other and a test could not tell the pair from the half. It is
+  /// load-bearing now that the provider asks the database: a device that
+  /// handshook a server and never synced is configured and empty, and the only
+  /// thing this dialog offers to do is delete what is not there.
+  ///
+  /// That is a knowing divergence from Kotlin, which warns on the preference
+  /// alone. Kotlin's own dialog has the same instinct from the other side —
+  /// its Clear-data button is hidden when there is no configuration id to
+  /// compare — and a prompt whose accept path is a no-op teaches the user to
+  /// dismiss the one that is not.
+  ///
+  /// Ordered cheapest-first on purpose: the two synchronous tests decide almost
+  /// every tap, so the database is asked only for a tap that could warn.
+  Future<bool> _warnsBeforeLeaving(String host) async =>
+      _configuredHost != null &&
+      host != _selectedHost &&
+      await _deviceHoldsData();
 
   /// Port of `SyncActivity.clearDataDialog(message, config, onCancel)`
   /// (`SyncActivity.kt:270-300`). Returns whether the data was actually

@@ -14,15 +14,6 @@ import '../support/widget_harness.dart';
 /// Kotlin offers a tappable server list that fills the PIN, so the only way to
 /// connect the port was to already know a four-character PIN out of
 /// `gradle.properties`. Nothing failed — there was simply no way in.
-class _StubServerConfigNotifier extends ServerConfigNotifier {
-  _StubServerConfigNotifier(this._initial);
-
-  final ServerConfig? _initial;
-
-  @override
-  ServerConfig? build() => _initial;
-}
-
 /// Returns a fixed handshake result. The real one needs a server; what the
 /// screen has to get right is what it does with a *successful* one on a device
 /// that already holds another community's data.
@@ -39,14 +30,26 @@ class _StubConfigurationsRepository implements ConfigurationsRepository {
 }
 
 /// Records what was adopted, so a test can assert the switch did *not* happen.
+///
+/// [initial] is the configuration the device is already on. It is the same
+/// class for both cases on purpose: the inherited `save` writes through
+/// `planetPrefsProvider`, which throws in the screen harness, so a stub that
+/// only overrode `build` turned any Connect on a configured device into
+/// "Operation failed" — and a configured device reaching this screen is now
+/// the ordinary case rather than the impossible one.
 class _RecordingServerConfigNotifier extends ServerConfigNotifier {
-  _RecordingServerConfigNotifier(this._saved, {this.fails = false});
+  _RecordingServerConfigNotifier(
+    this._saved, {
+    this.initial,
+    this.fails = false,
+  });
 
   final List<ServerConfig> _saved;
+  final ServerConfig? initial;
   final bool fails;
 
   @override
-  ServerConfig? build() => null;
+  ServerConfig? build() => initial;
 
   @override
   Future<void> save(ServerConfig config) async {
@@ -136,16 +139,16 @@ void main() {
       const ServerConfigScreen(),
       overrides: [
         planetServersProvider.overrideWithValue(servers),
-        if (existing == null)
-          serverConfigProvider.overrideWith(
-            () =>
-                _RecordingServerConfigNotifier(savedConfigs, fails: saveFails),
-          )
-        else
-          serverConfigProvider.overrideWith(
-            () => _StubServerConfigNotifier(existing),
+        serverConfigProvider.overrideWith(
+          () => _RecordingServerConfigNotifier(
+            savedConfigs,
+            initial: existing,
+            fails: saveFails,
           ),
-        deviceHoldsServerDataProvider.overrideWithValue(holdsServerData),
+        ),
+        deviceHoldsServerDataProvider.overrideWith(
+          (ref) async => holdsServerData,
+        ),
         localPlanetCodesProvider.overrideWith((ref) async => localPlanetCodes),
         if (configuration != null)
           configurationsRepositoryProvider.overrideWithValue(
@@ -285,15 +288,16 @@ void main() {
   });
 
   group('the server-switch data wipe', () {
-    // Every test here drives the state the port can actually be in: no
-    // persisted `ServerConfig`, because the only way a configured device
-    // reaches this screen is the login screen's "change server", which clears
-    // it to make the router's redirect fire. An earlier cut of these tests
-    // passed `existing: <a config>` together with `holdsServerData: true` — a
-    // combination `router.dart` forbids, since a device with a config is
-    // redirected away from `/server` — and one of them then certified
-    // behaviour production does not have. Phase 113's shape exactly: the
-    // fixture fabricated the join.
+    // An earlier cut of this comment said `existing: <a config>` together
+    // with `holdsServerData: true` was "a combination `router.dart` forbids,
+    // since a device with a config is redirected away from `/server`", and
+    // that the only way a configured device reached this screen was the login
+    // screen's "change server", which cleared the config to make the redirect
+    // fire. Both halves stopped being true when `Routes.changeServer` replaced
+    // that trick: the marker holds the screen *with* the configuration intact,
+    // which is the whole reason the row-tap gate below could be ported at all.
+    // A configured device here is now the ordinary case, and the tests that
+    // need one say so.
 
     testWidgets('a different community is not adopted without a wipe', (
       tester,
@@ -590,6 +594,203 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsNothing);
     });
 
+    testWidgets('a configured device with empty tables is not asked either', (
+      tester,
+    ) async {
+      // The case that made `deviceHoldsServerDataProvider` wrong: handshake a
+      // server, never sync, then change to another. The old predicate was true
+      // the moment a `ServerConfig` existed, so the switch stopped to ask
+      // permission to empty a database with nothing in it. Note the community
+      // codes deliberately do NOT match — the point is that the gate never
+      // gets as far as comparing them.
+      final clearData = _StubClearDataNotifier();
+      await tester.pumpWidget(
+        build(
+          existing: const ServerConfig(
+            serverUrl: 'https://planet.example.org',
+            pin: '1234',
+            couchDbUrl: 'https://satellite:1234@planet.example.org:443',
+            code: 'learning',
+            id: 'cfg-learning',
+          ),
+          holdsServerData: false,
+          localPlanetCodes: const {},
+          configuration: const ConfigurationSuccess(guatemalaConfig),
+          clearData: clearData,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byType(TextFormField).first,
+        'https://planet.gt',
+      );
+      await tester.tap(find.text('Connect'));
+      await pumpFrames(tester);
+
+      expect(find.text('Clear data'), findsNothing);
+      expect(clearData.calls, 0);
+      expect(savedConfigs, hasLength(1));
+    });
+
+    testWidgets('the same community on a different Planet still warns', (
+      tester,
+    ) async {
+      // Two unrelated Planets can use the same community `code`; only the
+      // `configurations` document id tells them apart, which is what Kotlin
+      // compares. Without the veto the code match alone waves this through
+      // onto the other Planet's rows.
+      //
+      // The fixture's load-bearing decoy: `code` is 'learning' on BOTH sides
+      // and 'learning' is in `localPlanetCodes`, so the community half of the
+      // gate passes. Only the ids differ. Make them equal and this test stops
+      // testing anything.
+      final clearData = _StubClearDataNotifier();
+      await tester.pumpWidget(
+        build(
+          existing: const ServerConfig(
+            serverUrl: 'https://planet.example.org',
+            pin: '1234',
+            couchDbUrl: 'https://satellite:1234@planet.example.org:443',
+            code: 'learning',
+            id: 'cfg-one',
+          ),
+          holdsServerData: true,
+          localPlanetCodes: const {'learning'},
+          configuration: const ConfigurationSuccess(
+            ServerConfig(
+              serverUrl: 'https://other.example.org',
+              pin: '5562',
+              couchDbUrl: 'https://satellite:5562@other.example.org:443',
+              code: 'learning',
+              id: 'cfg-two',
+            ),
+          ),
+          clearData: clearData,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byType(TextFormField).first,
+        'https://other.example.org',
+      );
+      await tester.tap(find.text('Connect'));
+      await pumpFrames(tester);
+
+      expect(find.text('Clear data'), findsOneWidget);
+      expect(savedConfigs, isEmpty);
+    });
+
+    testWidgets('the same configuration document is adopted with no dialog', (
+      tester,
+    ) async {
+      // A clone URL is a different host serving the same community, and its
+      // `configurations` document replicates with the same `_id` — so the veto
+      // must agree with the community answer here rather than override it.
+      await tester.pumpWidget(
+        build(
+          existing: const ServerConfig(
+            serverUrl: 'https://planet.example.org',
+            pin: '1234',
+            couchDbUrl: 'https://satellite:1234@planet.example.org:443',
+            code: 'learning',
+            id: 'cfg-one',
+          ),
+          holdsServerData: true,
+          localPlanetCodes: const {'learning'},
+          configuration: const ConfigurationSuccess(
+            ServerConfig(
+              serverUrl: 'https://clone.example.org',
+              pin: '1234',
+              couchDbUrl: 'https://satellite:1234@clone.example.org:443',
+              code: 'learning',
+              id: 'cfg-one',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byType(TextFormField).first,
+        'https://clone.example.org',
+      );
+      await tester.tap(find.text('Connect'));
+      await pumpFrames(tester);
+
+      expect(find.text('Clear data'), findsNothing);
+      expect(savedConfigs, hasLength(1));
+    });
+
+    testWidgets('an id nobody recorded is unknown, not different', (
+      tester,
+    ) async {
+      // A configuration persisted before `ServerConfig.id` existed carries an
+      // empty id. Reading that as "different" would ask every such device to
+      // wipe itself on a switch back to the server it is already on. The
+      // community answer decides alone.
+      await tester.pumpWidget(
+        build(
+          existing: const ServerConfig(
+            serverUrl: 'https://planet.example.org',
+            pin: '1234',
+            couchDbUrl: 'https://satellite:1234@planet.example.org:443',
+            code: 'learning',
+          ),
+          holdsServerData: true,
+          localPlanetCodes: const {'learning'},
+          configuration: const ConfigurationSuccess(
+            ServerConfig(
+              serverUrl: 'https://planet.example.org',
+              pin: '1234',
+              couchDbUrl: 'https://satellite:1234@planet.example.org:443',
+              code: 'learning',
+              id: 'cfg-one',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Connect'));
+      await pumpFrames(tester);
+
+      expect(find.text('Clear data'), findsNothing);
+      expect(savedConfigs, hasLength(1));
+    });
+
+    testWidgets('a server that reports no id is unknown, not different', (
+      tester,
+    ) async {
+      // The mirror of the case above, and it needs its own test: an unknown is
+      // an unknown whichever side is missing it. `_all_docs` can hand back a
+      // row without a usable `id`, and treating that as a difference would
+      // make the gate fire on the server the device is already on.
+      await tester.pumpWidget(
+        build(
+          existing: const ServerConfig(
+            serverUrl: 'https://planet.gt',
+            pin: '5562',
+            couchDbUrl: 'https://satellite:5562@planet.gt:443',
+            code: 'guatemala',
+            id: 'cfg-gt',
+          ),
+          holdsServerData: true,
+          localPlanetCodes: const {'guatemala'},
+          // `guatemalaConfig` carries no id — that is the decoy here.
+          configuration: const ConfigurationSuccess(guatemalaConfig),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Connect'));
+      await pumpFrames(tester);
+
+      expect(find.text('Clear data'), findsNothing);
+      expect(savedConfigs, hasLength(1));
+    });
+
     testWidgets('a tap on a row commits nothing on its own', (tester) async {
       // The binding gate is on the commit, so the tap stays free of it: on a
       // device with no configuration it fills the fields and highlights the
@@ -808,6 +1009,38 @@ void main() {
       expect(find.text('Clear data'), findsNothing);
       expect(clearData.calls, 1);
       expect(fieldTexts(tester), <String>['http://192.168.48.253', '5678']);
+    });
+
+    testWidgets('a configured device with empty tables is not warned', (
+      tester,
+    ) async {
+      // This is what pins the `_deviceHoldsData()` conjunct in
+      // `_warnsBeforeLeaving`. The test below it cannot: with no `existing`
+      // configuration, `_configuredHost` is null and the gate is already
+      // closed, so dropping the conjunct leaves that one green.
+      //
+      // Here the configuration is present and the tapped host differs, so both
+      // of Kotlin's own conditions hold and only "is there anything to clear?"
+      // stands between the tap and the dialog.
+      await tester.pumpWidget(
+        build(
+          servers: const [learning, local, belowFold],
+          existing: configured,
+          holdsServerData: false,
+          localPlanetCodes: const {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('🌎 planet learning'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Clear data'), findsNothing);
+      // The tap was honoured rather than merely un-warned.
+      expect(fieldTexts(tester), <String>[
+        'https://planet.learning.example.org',
+        '1234',
+      ]);
     });
 
     testWidgets('a device that holds nothing is never warned', (tester) async {
