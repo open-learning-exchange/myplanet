@@ -36,7 +36,7 @@ class AchievementActions {
     String? birthPlace,
     String? birthDate,
   }) async {
-    final user = ref.read(sessionProvider).value;
+    final user = await resolveSession(ref);
     if (user == null) return;
     final repository = ref.read(achievementsRepositoryProvider);
     final id = AchievementsRepository.idFor(user.id, user.planetCode ?? '');

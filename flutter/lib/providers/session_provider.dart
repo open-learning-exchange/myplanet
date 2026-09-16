@@ -151,3 +151,63 @@ String? _nullableText(String value) {
 final sessionProvider = AsyncNotifierProvider<SessionNotifier, UserRow?>(
   SessionNotifier.new,
 );
+
+/// The signed-in user, **resolved** rather than read.
+///
+/// This is the port's standing answer to its most-repeated defect: *a provider
+/// a screen reads but never watches is null.* An action class is a plain
+/// `Provider`, so its `ref` never *watches* `sessionProvider`; in Riverpod 3
+/// `AsyncValue.value` is "previous value, else null"
+/// (`async_value.dart:557`), so `ref.read(sessionProvider).value` is null on
+/// any pass that reaches it before something else has resolved the provider.
+/// Every caller then took its silent `return` branch — and because the branch
+/// is the same one a genuinely signed-out user takes, nothing logged, nothing
+/// told the user, and the action simply did not happen.
+///
+/// Found by hand five times before it was swept: `take_exam_screen` (Phase
+/// 100, a graded exam attempt discarded with no dialog, no snackbar and no
+/// row), `add_resource_screen` (102), `public_survey_screen`'s `_submit` and
+/// `_leave` (103), and `take_survey_screen` (104/105, found separately by two
+/// lanes in one round). It is latent in the *app* only because the router
+/// holds a `ref.listen(sessionProvider, …)` — a property of one caller, not a
+/// guarantee the callee can rely on, and one `background_entrypoint.dart`
+/// does not provide at all.
+///
+/// **The `await` is inside the `try`, and the rejection is swallowed.** Both
+/// are deliberate. `.future` can reject where `.value` could only be null, so
+/// an await outside the `try` reproduces the same silence from a new trigger
+/// (the amendment Phase 100's own fix needed on harvest). Swallowing to null
+/// then keeps each caller's existing contract — it reports failure the way it
+/// always did — rather than escaping as an uncaught async error out of a
+/// fire-and-forget `onPressed`, which is strictly worse than the `false` it
+/// would replace. A caller that wants to *distinguish* "not signed in" from
+/// "session failed to load" must read `sessionProvider.future` itself.
+///
+/// `test/core/unwatched_provider_reads_test.dart` is the guard that keeps new
+/// occurrences of the read shape from landing.
+Future<UserRow?> resolveSession(Ref ref) =>
+    _resolveSession(() => ref.read(sessionProvider.future));
+
+/// [resolveSession] for a caller holding a [ProviderContainer] rather than a
+/// `Ref` — `search_activity_providers.dart`, whose three entry points are
+/// called from a screen's `dispose()`, where the widget's own `ref` is
+/// already torn down.
+Future<UserRow?> resolveSessionIn(ProviderContainer container) =>
+    _resolveSession(() => container.read(sessionProvider.future));
+
+/// The signed-in user's id — see [resolveSession] for why the rejection is
+/// swallowed.
+Future<String?> resolveSessionUserId(Ref ref) async =>
+    (await resolveSession(ref))?.id;
+
+/// The `read` happens *inside* the `try`, not just the `await`: `ref.read`
+/// can throw synchronously — a `ProviderException`, since Riverpod 3 wraps at
+/// the `ref.watch`/`ref.read` boundary — where the `.value` it replaces could
+/// only ever have been null.
+Future<UserRow?> _resolveSession(Future<UserRow?> Function() read) async {
+  try {
+    return await read();
+  } catch (_) {
+    return null;
+  }
+}

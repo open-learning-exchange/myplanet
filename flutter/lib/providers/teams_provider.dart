@@ -189,7 +189,7 @@ class TeamFinancesActions {
           itemId: row.id,
           endpoint: '${UrlUtils.credentialFreeDbUrl(config)}/teams',
           payload: TeamsRepository.serializeTeamDocument(row),
-          userId: ref.read(sessionProvider).value?.id,
+          userId: await resolveSessionUserId(ref),
         );
     return true;
   }
@@ -211,42 +211,9 @@ final teamFinancesActionsProvider = Provider<TeamFinancesActions>(
 /// the server never had.
 bool _serverKnowsRow(String? rev) => rev != null && rev.trim().isNotEmpty;
 
-/// The signed-in user's id, resolved rather than read — see
-/// [TeamMembershipActions._session] for why the rejection is swallowed.
-Future<String?> _sessionUserId(Ref ref) async {
-  try {
-    return (await ref.read(sessionProvider.future))?.id;
-  } catch (_) {
-    return null;
-  }
-}
-
 class TeamMembershipActions {
   TeamMembershipActions(this.ref);
   final Ref ref;
-
-  /// `TeamMembershipActions` is a plain `Provider`, so its `ref` never
-  /// *watches* `sessionProvider` — `ref.read(sessionProvider).value` is
-  /// null until something else resolves it, and every action below then took
-  /// its `return false` branch silently. Latent in the app only because the
-  /// router holds a `ref.listen`; not a guarantee this class can rely on.
-  ///
-  /// **The rejection is swallowed here, deliberately.** Awaiting `.future`
-  /// resolves the session properly, but a future rejects where `value`
-  /// could only be null — and not one of the five call sites wraps the await:
-  /// `team_members_screen`'s `_handleMemberAction` shows its "operation
-  /// failed" snackbar off the returned `false`, and the join button and the
-  /// leave dialog are both fire-and-forget `onPressed`s. Throwing would lose
-  /// that message and escape as an uncaught async error, which is strictly
-  /// worse than the `false` it replaced. Returning null keeps every action's
-  /// existing contract: it reports failure, and the caller says so.
-  Future<UserRow?> _session() async {
-    try {
-      return await ref.read(sessionProvider.future);
-    } catch (_) {
-      return null;
-    }
-  }
 
   String? get _endpoint {
     final config = ref.read(serverConfigProvider);
@@ -256,7 +223,7 @@ class TeamMembershipActions {
   }
 
   Future<bool> requestToJoin(TeamRow team) async {
-    final user = await _session();
+    final user = await resolveSession(ref);
     final endpoint = _endpoint;
     if (user == null || endpoint == null) return false;
     final row = await ref
@@ -281,7 +248,7 @@ class TeamMembershipActions {
   }
 
   Future<bool> leave(String teamId) async {
-    final user = await _session();
+    final user = await resolveSession(ref);
     final endpoint = _endpoint;
     if (user == null || endpoint == null) return false;
     final row = await ref.read(teamsRepositoryProvider).leave(teamId, user.id);
@@ -305,7 +272,7 @@ class TeamMembershipActions {
   /// a tombstone is enqueued, exactly as [leave] does for the current user.
   Future<bool> removeMember(String teamId, String userId) async {
     final endpoint = _endpoint;
-    final currentUser = await _session();
+    final currentUser = await resolveSession(ref);
     if (endpoint == null || currentUser == null) return false;
     final row = await ref
         .read(teamsRepositoryProvider)
@@ -330,7 +297,7 @@ class TeamMembershipActions {
   /// rest) and enqueues each changed row for upload.
   Future<bool> makeLeader(String teamId, String newLeaderId) async {
     final endpoint = _endpoint;
-    final currentUser = await _session();
+    final currentUser = await resolveSession(ref);
     if (endpoint == null || currentUser == null) return false;
     final changed = await ref
         .read(teamsRepositoryProvider)
@@ -360,7 +327,7 @@ class TeamMembershipActions {
     // upload route — `TeamDao` has no pending sweep and `TeamsUploader` has
     // no rescan — so failing between the two left the accepted member on
     // this device and nowhere else, permanently.
-    final user = await _session();
+    final user = await resolveSession(ref);
     if (user == null) return false;
     final original = await ref.read(teamsRepositoryProvider).getById(requestId);
     if (original == null) return false;
@@ -390,16 +357,40 @@ class TeamResourceActions {
   TeamResourceActions(this.ref);
   final Ref ref;
 
+  /// **The user is resolved, and its absence refuses the whole operation.**
+  /// Both halves are parity, not caution. `addResourceLinks`
+  /// (`TeamsRepositoryImpl.kt:664-690`) opens with
+  /// `val user = userRepository.getUserById(userId) ?: return` — with no user
+  /// it creates **no row at all**, rather than one with null planet codes.
+  ///
+  /// The port did the opposite twice over. `ref.read(sessionProvider)
+  /// .value?.planetCode` is the standing *a provider a screen reads but never
+  /// watches is null* trap — `TeamResourceActions` is a plain `Provider`, so
+  /// its `ref` watches nothing, and neither `team_resources_screen` nor
+  /// `team_detail_screen` watches `sessionProvider` either, so it was latent
+  /// only because the router holds a `ref.listen`. On any pass where it was
+  /// not yet resolved the link was created anyway with `teamPlanetCode` and
+  /// `userPlanetCode` null, serialized, and uploaded: a server document
+  /// Kotlin would never have written.
+  ///
+  /// [TeamsRepository.addResourceLink]'s own comment records the prefs
+  /// fallback question and answers it for the *other* producer:
+  /// `createLocalResourceLink` (`:709-710`) falls back to
+  /// `sharedPrefManager.getPlanetCode()`, and `addResourceLinks` — which is
+  /// what this method calls — does not. So resolving the session is the whole
+  /// fix here; there is no fallback to port.
   Future<bool> add(String teamId, MyLibraryRow resource) async {
     final config = ref.read(serverConfigProvider);
     if (config == null || resource.resourceId?.isNotEmpty != true) return false;
+    final user = await resolveSession(ref);
+    if (user == null) return false;
     final row = await ref
         .read(teamsRepositoryProvider)
         .addResourceLink(
           teamId: teamId,
           resourceId: resource.resourceId!,
           title: resource.title ?? '',
-          planetCode: ref.read(sessionProvider).value?.planetCode,
+          planetCode: user.planetCode,
         );
     if (row == null) return false;
     await ref
@@ -409,7 +400,7 @@ class TeamResourceActions {
           itemId: row.id,
           endpoint: '${UrlUtils.credentialFreeDbUrl(config)}/teams',
           payload: TeamsRepository.serializeTeamDocument(row),
-          userId: ref.read(sessionProvider).value?.id,
+          userId: user.id,
         );
     return true;
   }
@@ -434,7 +425,7 @@ class TeamResourceActions {
             itemId: row.id,
             endpoint: '${UrlUtils.credentialFreeDbUrl(config)}/teams',
             payload: {'_id': row.id, '_rev': row.rev, '_deleted': true},
-            userId: (await _sessionUserId(ref)),
+            userId: (await resolveSessionUserId(ref)),
           );
     }
     return true;
@@ -459,7 +450,7 @@ class TeamCourseActions {
           itemId: team.id,
           endpoint: '${UrlUtils.credentialFreeDbUrl(config)}/teams',
           payload: TeamsRepository.serializeTeamDocument(team),
-          userId: ref.read(sessionProvider).value?.id,
+          userId: await resolveSessionUserId(ref),
         );
     ref.invalidate(teamProvider(team.id));
     ref.invalidate(teamCoursesProvider(team.id));
@@ -493,7 +484,7 @@ class TeamReportActions {
           itemId: report.id,
           endpoint: '${UrlUtils.credentialFreeDbUrl(config)}/teams',
           payload: TeamsRepository.serializeTeamDocument(report),
-          userId: ref.read(sessionProvider).value?.id,
+          userId: await resolveSessionUserId(ref),
         );
     return true;
   }

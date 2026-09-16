@@ -71,7 +71,7 @@ class EventsActions {
     final repository = ref.read(eventsRepositoryProvider);
     String? savedId = id;
     if (id == null) {
-      final user = ref.read(sessionProvider).value;
+      final user = await resolveSession(ref);
       savedId = await repository.create(
         title: title,
         description: description,
@@ -106,7 +106,7 @@ class EventsActions {
   }
 
   Future<void> toggleAttendance(MeetupRow row) async {
-    final user = ref.read(sessionProvider).value;
+    final user = await resolveSession(ref);
     await ref
         .read(eventsRepositoryProvider)
         .toggleAttendance(row.meetupId ?? row.id, user?.id);
@@ -124,10 +124,7 @@ class EventsActions {
     if (config == null) return 0;
     return ref
         .read(eventsUploaderProvider)
-        .queuePending(
-          config: config,
-          userId: ref.read(sessionProvider).value?.id,
-        );
+        .queuePending(config: config, userId: await resolveSessionUserId(ref));
   }
 }
 

@@ -24,7 +24,7 @@ class PersonalActions {
     String? description,
     String? path,
   }) async {
-    final user = ref.read(sessionProvider).value;
+    final user = await resolveSession(ref);
     if (user == null) return;
     await ref
         .read(personalsRepositoryProvider)
@@ -55,7 +55,7 @@ class PersonalActions {
   }
 
   Future<void> _queuePending() async {
-    final user = ref.read(sessionProvider).value;
+    final user = await resolveSession(ref);
     final config = ref.read(serverConfigProvider);
     if (user == null || config == null) return;
     await ref

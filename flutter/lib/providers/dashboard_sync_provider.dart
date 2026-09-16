@@ -632,7 +632,7 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
   Future<void> _uploadMyPlanetActivities() async {
     if (state.successCount == 0) return;
     final config = ref.read(serverConfigProvider);
-    final user = ref.read(sessionProvider).value;
+    final user = await resolveSession(ref);
     if (config == null || user == null) return;
     try {
       await ref
@@ -652,7 +652,7 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
   Future<void> _queueSearchActivities() async {
     if (state.successCount == 0) return;
     final config = ref.read(serverConfigProvider);
-    final user = ref.read(sessionProvider).value;
+    final user = await resolveSession(ref);
     if (config == null) return;
     try {
       await ref
