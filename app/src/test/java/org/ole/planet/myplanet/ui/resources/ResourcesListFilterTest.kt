@@ -224,4 +224,61 @@ class ResourcesListFilterTest {
 
         assertEquals(listOf("1"), filtered?.map { it.item.id })
     }
+
+    @Test
+    fun `countMatching equals apply size under combined criteria`() {
+        val tag1 = TagEntity().apply { id = "t1" }
+        val tag2 = TagEntity().apply { id = "t2" }
+
+        val matchingModel = model(
+            id = "1", title = "Algebra 101",
+            subject = listOf("Math"), level = listOf("Grade 1"),
+            language = "English", mediaType = "Video",
+            isOffline = true,
+            tags = listOf(TagItem(id = "t1", name = "MathTag"))
+        )
+
+        val nonMatchingTag = model(
+            id = "2", title = "Algebra 102",
+            subject = listOf("Math"), level = listOf("Grade 1"),
+            language = "English", mediaType = "Video",
+            isOffline = true,
+            tags = listOf(TagItem(id = "t3", name = "OtherTag"))
+        )
+
+        val nonMatchingSubject = model(
+            id = "3", title = "Algebra 103",
+            subject = listOf("Science"), level = listOf("Grade 1"),
+            language = "English", mediaType = "Video",
+            isOffline = true,
+            tags = listOf(TagItem(id = "t1", name = "MathTag"))
+        )
+
+        val nonMatchingDownload = model(
+            id = "4", title = "Algebra 104",
+            subject = listOf("Math"), level = listOf("Grade 1"),
+            language = "English", mediaType = "Video",
+            isOffline = false,
+            tags = listOf(TagItem(id = "t1", name = "MathTag"))
+        )
+
+        val models = listOf(matchingModel, nonMatchingTag, nonMatchingSubject, nonMatchingDownload)
+        val filter = ResourcesListFilter()
+
+        val criteria = noFilters.copy(
+            searchQuery = "algebra",
+            searchTags = listOf(tag1, tag2),
+            subjects = setOf("Math"),
+            levels = setOf("Grade 1"),
+            languages = setOf("English"),
+            mediums = setOf("Video"),
+            downloadFilterIndex = 1
+        )
+        val locallyOfflineIds = setOf("99")
+
+        assertEquals(
+            filter.apply(models, criteria, locallyOfflineIds).size,
+            filter.countMatching(models, criteria, locallyOfflineIds)
+        )
+    }
 }

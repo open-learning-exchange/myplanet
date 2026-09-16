@@ -14,7 +14,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatSpinner
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -32,6 +31,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
@@ -48,7 +48,7 @@ import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
 @OptIn(FlowPreview::class)
-class MyHealthFragment : Fragment() {
+class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentVitalSignBinding::inflate) {
 
     private val viewModel: HealthViewModel by viewModels()
 
@@ -64,8 +64,6 @@ class MyHealthFragment : Fragment() {
     lateinit var realtimeSyncManager: RealtimeSyncManager
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
-    private var _binding: FragmentVitalSignBinding? = null
-    private val binding get() = _binding!!
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
     private var alertHealthListBinding: AlertHealthListBinding? = null
     var userId: String? = null
@@ -80,11 +78,6 @@ class MyHealthFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-    }
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentVitalSignBinding.inflate(inflater, container, false)
-        return binding.root
     }
 
     private fun refreshHealthData() {
@@ -360,7 +353,6 @@ class MyHealthFragment : Fragment() {
         searchJob?.cancel()
         searchJob = null
 
-        _binding = null
         super.onDestroyView()
     }
 
