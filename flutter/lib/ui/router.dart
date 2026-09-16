@@ -121,6 +121,25 @@ class Routes {
   static const String onboarding = '/onboarding';
   static const String login = '/login';
   static const String becomeMember = '/become-member';
+
+  /// Feedback filed from the login screen, where there is no session.
+  ///
+  /// Kotlin puts a feedback button on the front door
+  /// (`activity_login.xml:274`, bound at `LoginActivity.kt:145` and opening
+  /// `FeedbackFragment().show(...)` at `:200-202`), and it is the only route to
+  /// an administrator a user has when they cannot get past that door at all —
+  /// wrong PIN, unreachable server, un-activated account. The port had none:
+  /// every other way in is [feedbackCreate] — one route with three push sites
+  /// (`teams_screen.dart`, `feedback_list_screen.dart`,
+  /// `inactive_dashboard_screen.dart`), all of them inside the dashboard
+  /// shell, which is the signed-in stack.
+  ///
+  /// It is a second registration of the same screen rather than a move,
+  /// deliberately. [feedbackCreate]'s declaration order — the literal `create`
+  /// ahead of its `:feedbackId` sibling — is the Phase 157 fix, and lifting the
+  /// route out of the shell would take the fix and the comment explaining it
+  /// with it. This route has no `:param` sibling and needs none.
+  static const String loginFeedback = '/feedback';
   static const String offlineMaps = '/life/references/maps';
   static const String resources = '/resources';
   static const String resourceDetail = '/resources/detail/:resourceId';
@@ -296,7 +315,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         // `redirect_reachability_test.dart` is the guard that now drives it.
         //
         // `BecomeMemberScreen` reads no session, so it is correct without one.
-        const signedOutLocations = <String>{Routes.login, Routes.becomeMember};
+        // [Routes.loginFeedback] belongs here for the same reason
+        // `/become-member` does, and with more riding on it: it is the one way
+        // to reach an administrator for a user who cannot sign in. Leave it out
+        // and the button on the login screen flashes and stays put.
+        const signedOutLocations = <String>{
+          Routes.login,
+          Routes.becomeMember,
+          Routes.loginFeedback,
+        };
         return signedOutLocations.contains(location) ? null : Routes.login;
       }
       if (location == Routes.server || location == Routes.login) {
@@ -322,6 +349,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.becomeMember,
         builder: (context, state) => const BecomeMemberScreen(),
+      ),
+      // Top level, outside the `StatefulShellRoute`: the shell is the signed-in
+      // dashboard, bottom navigation and all, and every one of its branches
+      // sends a signed-out user straight back to `/login`.
+      GoRoute(
+        path: Routes.loginFeedback,
+        builder: (context, state) => const FeedbackCreateScreen(),
       ),
       GoRoute(
         path: Routes.publicSurvey,
