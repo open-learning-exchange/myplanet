@@ -914,11 +914,14 @@
     <string name="video_player">lecteur vidéo</string>
     <string name="video_unavailable">Vidéo indisponible — fichier introuvable et connexion au serveur impossible</string>
     <string name="video_playback_error">Erreur de lecture vidéo. Réessayez ou vérifiez votre connexion</string>
+    <string name="audio_unavailable">Audio indisponible — fichier introuvable et connexion au serveur impossible</string>
+    <string name="audio_playback_error">Erreur de lecture audio. Réessayez ou vérifiez votre connexion</string>
     <string name="video_loading_checking_server">Vérification de la disponibilité du serveur…</string>
     <string name="video_loading_connecting">Connexion au serveur…</string>
     <string name="video_loading_buffering">Mise en mémoire tampon…</string>
     <string name="video_loading_local">Chargement de la vidéo…</string>
     <string name="unable_to_play_video">Impossible de lire la vidéo</string>
+    <string name="unable_to_play_audio">Impossible de lire l\'audio</string>
     <string name="go_back">Retour</string>
     <string name="progress_bar">barre de progression</string>
     <string name="web_view">vue web</string>
