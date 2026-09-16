@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -188,6 +189,12 @@ void main() {
     ServerConfig? existing = configured,
     List<PlanetServer> servers = const [learning, second, third, eleventh],
     bool holdsServerData = true,
+
+    /// Leaves `deviceHoldsServerDataProvider` un-overridden, so it runs its
+    /// real body against this file's real in-memory database and real
+    /// `PlanetPrefs`. One test needs that: the provider's staleness is the
+    /// defect, and an override cannot go stale.
+    bool realHoldsServerData = false,
     Set<String> localPlanetCodes = const {'cambridge'},
     ConfigurationResult? configuration,
     PlanetPrefs? planetPrefs,
@@ -202,9 +209,10 @@ void main() {
         serverConfigProvider.overrideWith(
           () => _RecordingServerConfig(existing, saved),
         ),
-        deviceHoldsServerDataProvider.overrideWith(
-          (ref) async => holdsServerData,
-        ),
+        if (!realHoldsServerData)
+          deviceHoldsServerDataProvider.overrideWith(
+            (ref) async => holdsServerData,
+          ),
         localPlanetCodesProvider.overrideWith((ref) async => localPlanetCodes),
         if (configuration != null)
           configurationsRepositoryProvider.overrideWithValue(
@@ -450,6 +458,57 @@ void main() {
     expect(clearData.calls, 1);
     expect(saved, <ServerConfig>[adopted]);
     expect(router.state.uri.toString(), Routes.login);
+  });
+
+  testWidgets('data that arrived after the last check still stops a switch', (
+    tester,
+  ) async {
+    // The regression a second audit pass caught, end to end and against the
+    // real predicate. `deviceHoldsServerDataProvider` is not `autoDispose` and
+    // neither dependency ever changes identity, so it answers once per process
+    // unless a caller invalidates it.
+    //
+    // Timeline: fresh install, something asks (empty database, `false`, cached
+    // for ever), the user logs in and syncs, then changes server. Without the
+    // invalidate in `_deviceHoldsData` the gate reads that stale `false` and
+    // adopts the new Planet over the old one's rows with no dialog at all.
+    //
+    // The pre-warming read is what makes this a test rather than a
+    // coincidence: drop it and the provider's first evaluation happens after
+    // the row exists, so it answers `true` either way.
+    const adopted = ServerConfig(
+      serverUrl: 'https://guatemala.example.org',
+      pin: '5678',
+      couchDbUrl: 'https://satellite:5678@guatemala.example.org:443',
+      code: 'guatemala',
+    );
+    final c = container(
+      realHoldsServerData: true,
+      configuration: const ConfigurationSuccess(adopted),
+    );
+    expect(await c.read(deviceHoldsServerDataProvider.future), isFalse);
+
+    await db
+        .into(db.removedLogs)
+        .insert(
+          const RemovedLogsCompanion(
+            id: Value('r1'),
+            type: Value('resources'),
+            docId: Value('doc-1'),
+            userId: Value('u1'),
+          ),
+        );
+
+    await pumpAt(tester, c);
+    await tester.tap(find.text('Change server'));
+    await tester.pumpAndSettle();
+
+    await typeServer(tester, url: 'https://guatemala.example.org', pin: '5678');
+    await tester.tap(find.widgetWithText(FilledButton, 'Connect'));
+    await pumpHandshake(tester);
+
+    expect(find.text('Clear data'), findsOneWidget);
+    expect(saved, isEmpty);
   });
 
   testWidgets('a wipe at the row tap keeps the screen and the tap', (

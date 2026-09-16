@@ -120,12 +120,39 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
   /// re-reading it would replay the future it completed before the wipe.
   bool? _holdsServerData;
 
-  /// [deviceHoldsServerDataProvider], memoised on the nullable field so that
-  /// `false` is an answer rather than an absence — a device with nothing on it
-  /// must not be sent back to the database on every tap.
+  /// [deviceHoldsServerDataProvider], asked afresh and then memoised on the
+  /// nullable field so that `false` is an answer rather than an absence — a
+  /// device with nothing on it must not be sent back to the database on every
+  /// tap.
+  ///
+  /// **The `invalidate` is the load-bearing line, and leaving it out was a
+  /// data-mixing bug.** That provider is not `autoDispose` and neither of its
+  /// dependencies ever changes identity — `planetPrefsProvider` is one object
+  /// for the process and `setLastSync` mutates a field of it, notifying
+  /// nobody, and `appDatabaseProvider` hands out a singleton — so a
+  /// `FutureProvider` reading them answers once and keeps that answer until
+  /// the process dies. Its predecessor happened not to show it because it
+  /// watched `serverConfigProvider`, whose `save` invalidated it.
+  ///
+  /// Without this line: fresh install, Connect (asked on an empty database,
+  /// `false`, cached for ever), log in, sync thirteen thousand documents,
+  /// realise it was the wrong Planet, change server, Connect — and the gate
+  /// says the device holds nothing, adopting the new server over the old
+  /// Planet's full database with no dialog. Measured, not reasoned about.
+  ///
+  /// It also stops a rejection being replayed. A `FutureProvider` caches a
+  /// thrown error exactly as it caches a value, so one transient database
+  /// failure — a locked file, a full disk — used to leave every later Connect
+  /// answering from that same cached throw, and the app could not be
+  /// configured at all until it was restarted.
+  ///
+  /// Asking again per screen visit is the right grain: within one visit the
+  /// only thing that can change the answer is this screen's own wipe, which
+  /// assigns `false` directly.
   Future<bool> _deviceHoldsData() async {
     final known = _holdsServerData;
     if (known != null) return known;
+    ref.invalidate(deviceHoldsServerDataProvider);
     final answer = await ref.read(deviceHoldsServerDataProvider.future);
     return _holdsServerData = answer;
   }
@@ -133,6 +160,10 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
   /// Which request failed and what it said. Debug builds only — a release
   /// build keeps the one clean sentence.
   String? _diagnostic;
+
+  /// Whether a row tap is still deciding. See [_onServerTapped]: the decision
+  /// became asynchronous, and `_isChecking` guards Connect, not this.
+  bool _tapInFlight = false;
 
   @override
   void initState() {
@@ -432,13 +463,30 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
   /// port has no restart to lose the tap across, so the tap it was given is
   /// honoured.
   Future<void> _onServerTapped(PlanetServer server) async {
+    // Kotlin's dialog goes up in the same frame as the tap, so its modal
+    // barrier swallows everything behind it. This one now waits on a database
+    // walk first, which leaves the list live — and a double-tap across two
+    // rows stacked two identical dialogs, each of which runs the wipe and
+    // fills the fields with its own server, so accepting both left the user on
+    // the server they tapped *first*. Holding the flag across the dialog as
+    // well as the walk is what restores the barrier's effect.
+    if (_tapInFlight) return;
+    _tapInFlight = true;
+    try {
+      await _resolveTap(server);
+    } finally {
+      _tapInFlight = false;
+    }
+  }
+
+  Future<void> _resolveTap(PlanetServer server) async {
     // A failure to decide is not a decision. [_deviceHoldsData] reaches the
     // database now, so this can throw where it never could while it read a
     // preference — and an unhandled throw out of a tap handler is the one
     // outcome with nothing on screen to show for it. A tap commits nothing in
-    // this port, and [_connect] asks the same question again a moment later
-    // where a failure can be reported, so falling through is safe: nothing is
-    // cached, so the retry there really does re-ask.
+    // this port, and [_connect] asks the same question again a moment later,
+    // where a failure can be reported and where the invalidate in
+    // [_deviceHoldsData] means the retry really does re-ask.
     bool warns;
     try {
       warns = await _warnsBeforeLeaving(server.host);
@@ -466,8 +514,13 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
 
   /// Kotlin's `isServerAlreadyConfigured && position != selectedPosition`.
   ///
-  /// `_configuredHost != null` **is** `isServerAlreadyConfigured`: both are
-  /// "the stored server URL is non-empty". [_deviceHoldsData] is the port's
+  /// `_configuredHost != null` is this port's counterpart of
+  /// `isServerAlreadyConfigured` — both read "the stored server URL is
+  /// non-empty" — though not the same value: Kotlin's is written
+  /// speculatively before the handshake (`ServerDialogExtensions.kt:60`) and
+  /// blanked outright by the manual-configuration toggle (`:291`), so it can
+  /// be set on a device that never reached a server and cleared on one full of
+  /// documents. This one is the persisted configuration. [_deviceHoldsData] is the port's
   /// own third conjunct, and it used to be redundant — a persisted
   /// configuration was on its own enough to make
   /// [deviceHoldsServerDataProvider] true, so every site that cleared one

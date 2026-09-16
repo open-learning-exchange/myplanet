@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/core/config/planet_servers.dart';
@@ -130,6 +132,12 @@ void main() {
     // throws unless overridden, so every test declares this. `false` is the
     // fresh-install case.
     bool holdsServerData = false,
+
+    /// Replaces the `holdsServerData` override wholesale, for the two tests
+    /// that need the predicate to be slow or to throw. A plain
+    /// `(ref) async => value` completes in one microtask, which is why no
+    /// existing test can see the window the real database walk opens.
+    Future<bool> Function()? holdsServerDataBody,
     Set<String> localPlanetCodes = const {},
     ConfigurationResult? configuration,
     _StubClearDataNotifier? clearData,
@@ -147,7 +155,9 @@ void main() {
           ),
         ),
         deviceHoldsServerDataProvider.overrideWith(
-          (ref) async => holdsServerData,
+          (ref) async => holdsServerDataBody == null
+              ? holdsServerData
+              : await holdsServerDataBody(),
         ),
         localPlanetCodesProvider.overrideWith((ref) async => localPlanetCodes),
         if (configuration != null)
@@ -791,6 +801,51 @@ void main() {
       expect(savedConfigs, hasLength(1));
     });
 
+    testWidgets('a transient database failure does not lock Connect out', (
+      tester,
+    ) async {
+      // `FutureProvider` caches a thrown error exactly as it caches a value.
+      // Without the invalidate in `_deviceHoldsData` the first failed read was
+      // replayed for the rest of the process, so one locked file or full disk
+      // meant the app could never be configured again until it was restarted —
+      // on a fresh install, where the gate had nothing to protect. Kotlin
+      // never asks the database at all, so it configures fine.
+      var asked = 0;
+      await tester.pumpWidget(
+        build(
+          holdsServerDataBody: () async {
+            asked++;
+            throw StateError('database locked');
+          },
+          configuration: const ConfigurationSuccess(guatemalaConfig),
+          existing: const ServerConfig(
+            serverUrl: 'https://planet.example.org',
+            pin: '1234',
+            couchDbUrl: 'https://satellite:1234@planet.example.org:443',
+            code: 'learning',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byType(TextFormField).first,
+        'https://planet.gt',
+      );
+      await tester.tap(find.text('Connect'));
+      await pumpFrames(tester);
+      expect(find.text('Operation failed'), findsOneWidget);
+      expect(asked, 1);
+
+      await tester.tap(find.text('Connect'));
+      await pumpFrames(tester);
+      expect(
+        asked,
+        2,
+        reason: 'the second Connect must re-ask, not replay a cached throw',
+      );
+    });
+
     testWidgets('a tap on a row commits nothing on its own', (tester) async {
       // The binding gate is on the commit, so the tap stays free of it: on a
       // device with no configuration it fills the fields and highlights the
@@ -1041,6 +1096,76 @@ void main() {
         'https://planet.learning.example.org',
         '1234',
       ]);
+    });
+
+    testWidgets('a double tap raises one dialog, not two', (tester) async {
+      // The decision became asynchronous, which left the list live while it
+      // resolved — Kotlin's dialog goes up in the same frame as the tap and its
+      // modal barrier swallows the rest. Two stacked dialogs each run the wipe
+      // and each fill the fields with their own server, so accepting both left
+      // the user on the server they tapped *first*.
+      //
+      // The fixture is the whole test: every other test overrides the
+      // predicate with an already-completed future, so the window is one
+      // microtask wide and nothing can see it. This one holds it open.
+      final gate = Completer<bool>();
+      await tester.pumpWidget(
+        build(
+          servers: const [learning, local, belowFold],
+          existing: configured,
+          holdsServerDataBody: () => gate.future,
+          localPlanetCodes: const {'learning'},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('🌎 planet learning'));
+      await tester.pump();
+      await tester.tap(find.text('🇬🇹 planet san pablo'));
+      await tester.pump();
+
+      gate.complete(true);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Clear data'), findsOneWidget);
+    });
+
+    testWidgets('Connect after a tap wipe does not ask a second time', (
+      tester,
+    ) async {
+      // What pins `_holdsServerData = false` in the tap's accept path. The
+      // "second tap does not warn again" test below cannot: the same `setState`
+      // nulls `_configuredHost`, which `_warnsBeforeLeaving` evaluates first,
+      // so deleting the assignment leaves it green. `_wipeRefusedFor` never
+      // reads `_configuredHost`, so Connect is where the assignment shows.
+      //
+      // The community codes deliberately do not match — without the
+      // assignment the gate would get as far as comparing them and warn.
+      final clearData = _StubClearDataNotifier();
+      await tester.pumpWidget(
+        build(
+          servers: const [learning, local, belowFold],
+          existing: configured,
+          holdsServerData: true,
+          localPlanetCodes: const {'learning'},
+          configuration: const ConfigurationSuccess(guatemalaConfig),
+          clearData: clearData,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('🇬🇹 planet san pablo'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Clear data'));
+      await tester.pumpAndSettle();
+      expect(clearData.calls, 1);
+
+      await tester.tap(find.text('Connect'));
+      await pumpFrames(tester);
+
+      expect(find.text('Clear data'), findsNothing);
+      expect(clearData.calls, 1);
+      expect(savedConfigs, hasLength(1));
     });
 
     testWidgets('a device that holds nothing is never warned', (tester) async {

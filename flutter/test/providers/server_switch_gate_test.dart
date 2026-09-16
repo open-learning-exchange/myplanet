@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -96,10 +97,25 @@ void main() {
     });
 
     test('a row in any table counts', () async {
-      // Not `users`: the point of walking `allTables` is that a device can
-      // hold another community's data in a table `localPlanetCodesProvider`
-      // never looks at. A submission is one of those.
-      await db.userDao.upsert(user('u1', planetCode: 'learning'));
+      // The fixture is the whole test, and the first cut got it wrong: it
+      // inserted a `users` row, and `users` is the FIRST entry in `allTables`,
+      // so `databaseHoldsAnyRow` narrowed to `SELECT EXISTS(… FROM users)` —
+      // or replaced outright by `localPlanetCodesProvider.isNotEmpty` — stayed
+      // green with the walk's entire reason for existing gone.
+      //
+      // `removed_log` is a table `localPlanetCodesProvider` never reads and
+      // nothing else in this file touches, so it can only be found by walking.
+      // Do not swap it for a `users` row.
+      await db
+          .into(db.removedLogs)
+          .insert(
+            const RemovedLogsCompanion(
+              id: Value('r1'),
+              type: Value('resources'),
+              docId: Value('doc-1'),
+              userId: Value('u1'),
+            ),
+          );
       expect(await holdsData(container()), isTrue);
     });
 
@@ -129,9 +145,38 @@ void main() {
       // this device reads as never-synced. Reducing the predicate to
       // `lastSync != 0` — the obvious fix for the configured-and-empty case
       // above — would let another community's users through the gate.
+      //
+      // A `users` row is the right fixture *here*, where the claim is about
+      // another community's users surviving a failed sync — unlike the walk
+      // test above, where it was a decoy.
       await db.userDao.upsert(user('u1', planetCode: 'guatemala'));
       final c = container();
       expect(c.read(planetPrefsProvider).lastSync, 0);
+      expect(await holdsData(c), isTrue);
+    });
+
+    test('one container answers once, so a caller must invalidate', () async {
+      // Not a wish: a record of the hazard `_deviceHoldsData` exists to work
+      // around, and the reason it invalidates before every read. Neither of
+      // this provider's dependencies changes identity — `planetPrefsProvider`
+      // is one object for the process and `appDatabaseProvider` a singleton —
+      // so nothing ever marks it dirty and the first answer is permanent.
+      // Its predecessor hid this by watching `serverConfigProvider`, whose
+      // `save` invalidated it.
+      final c = container();
+      expect(await holdsData(c), isFalse);
+
+      await db.userDao.upsert(user('u1', planetCode: 'learning'));
+      await prefs.setLastSync(1234);
+      expect(
+        await holdsData(c),
+        isFalse,
+        reason:
+            'if this now reads true, the provider learned to notice a '
+            'change on its own and the invalidate in _deviceHoldsData can go',
+      );
+
+      c.invalidate(deviceHoldsServerDataProvider);
       expect(await holdsData(c), isTrue);
     });
   });

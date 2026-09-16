@@ -203,6 +203,15 @@ class ClearDataNotifier extends AsyncNotifier<void> {
     final db = ref.read(appDatabaseProvider);
     final prefs = ref.read(planetPrefsProvider);
     await db.clearAllData();
+    // Before the preferences, not after. `PlanetPrefs.clearAllData` can throw —
+    // `_secureStorage.deleteAll()` raises on a keystore fault, and a test drives
+    // exactly that — and this step used to sit behind it, so a wipe that failed
+    // there left empty tables, a zeroed `lastSync` and one institution's
+    // downloaded files still on the device, which
+    // [deviceHoldsServerDataProvider] then reads as "nothing here". Running it
+    // first costs nothing: it is best-effort either way, and the rows that
+    // pointed at those files are already gone.
+    await _deleteDownloadedFiles();
     // `PlanetPrefs.clearAllData` keeps `onboardingComplete` and deletes secure
     // storage, exactly as the reset-app path wants — and exactly as this path
     // wants too, for a different reason. The stored password and PIN belong to
@@ -212,7 +221,6 @@ class ClearDataNotifier extends AsyncNotifier<void> {
     // `clearPreferences` does not touch `SecurePrefs`, which is a gap on both
     // of its call paths rather than a decision to copy.
     await prefs.clearAllData();
-    await _deleteDownloadedFiles();
     // Reset the provider states that the router's `redirect` reads, so the
     // navigation lands without waiting for the next read of cleared prefs.
     await ref.read(serverConfigProvider.notifier).clear();
@@ -290,9 +298,14 @@ class ClearDataNotifier extends AsyncNotifier<void> {
 /// preferences are all still here — and a switch should still offer the wipe.
 ///
 /// Deliberately **not** consulted: `<appDocuments>/ole/**`, which the wipe also
-/// deletes. Nothing writes bytes there without a row to point at them, so the
-/// tree is empty whenever the tables are; reading it would drag `path_provider`
-/// into every caller for a case no code path produces.
+/// deletes. Nothing writes bytes there without a row to point at them, so on a
+/// device that has only ever gained data the tree is empty whenever the tables
+/// are, and reading it would drag `path_provider` into every caller.
+///
+/// The one way they came apart was a wipe that emptied the tables and then
+/// threw before deleting the tree, which is why [ClearDataNotifier] deletes the
+/// files first now. That closes the case rather than papering over it; a tree
+/// left behind by anything else would still read as "nothing here".
 ///
 /// Reading this touches [planetPrefsProvider], which throws unless overridden:
 /// a widget test of the server-config screen must override this provider.
