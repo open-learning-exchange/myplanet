@@ -1,0 +1,700 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../core/config/planet_servers.dart';
+import '../../core/config/server_config.dart';
+import '../../core/utils/url_utils.dart';
+import '../../l10n/app_localizations.dart';
+import '../../providers/app_providers.dart';
+import '../../providers/settings_provider.dart';
+import '../../repository/configurations_repository.dart';
+import '../router.dart';
+
+/// Port of the server-address half of `ui/sync/SyncActivity.kt` +
+/// `ServerDialogExtensions.kt`.
+///
+/// The Kotlin presents this as an AlertDialog built imperatively over a
+/// `LayoutInflater`-inflated view; here it is a route, which is what makes the
+/// "configured yet?" redirect in the router possible.
+class ServerConfigScreen extends ConsumerStatefulWidget {
+  const ServerConfigScreen({super.key, this.changingServer = false});
+
+  /// Whether the user asked for this screen over an existing configuration —
+  /// [Routes.changeServer] — rather than being sent here by the redirect
+  /// because there is none.
+  ///
+  /// It changes two things, and both are about who navigates.
+  ///
+  /// Once a configuration is adopted: on the first-configuration path the
+  /// redirect does it, because `hasServer` flips from false to true under the
+  /// screen's feet; on this path the redirect is deliberately holding position
+  /// (that is what the marker buys), so the screen spends the marker itself.
+  /// See [_connect].
+  ///
+  /// And leaving without adopting one: this screen is reached with `go` rather
+  /// than `push` — see [Routes.changeServer] for the destruction that `push`
+  /// caused — so there is no route underneath to pop back to and Material
+  /// draws no back button. The close action and the system back gesture both
+  /// spend the marker instead, which returns a configured device to `/login`
+  /// exactly as Kotlin's Cancel closes its dialog. On the first-configuration
+  /// path there is nothing to go back to and neither is offered.
+  final bool changingServer;
+
+  @override
+  ConsumerState<ServerConfigScreen> createState() => _ServerConfigScreenState();
+}
+
+class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _urlController = TextEditingController();
+  final _pinController = TextEditingController();
+
+  bool _isChecking = false;
+  bool _showAllServers = false;
+  String? _error;
+
+  /// Port of `ServerAddressAdapter.selectedPosition`, keyed by host rather
+  /// than by index because the list is reordered on every `setState` and an
+  /// index does not survive that. `-1` becomes `null`.
+  ///
+  /// Kotlin's companion `lastSelectedPosition` and its `revertSelection`
+  /// (`ServerAddressAdapter.kt:25-26, 35-56`) stay unported, and the reason is
+  /// no longer "the row tap warns about nothing here" — since
+  /// [Routes.changeServer] it does warn, exactly where Kotlin warns. It is
+  /// that **`revertSelection` reverts nothing.** It is the `onCancel` of the
+  /// row tap's clear-data dialog, and the branch that raises that dialog
+  /// returns *before* `setSelectedPosition`, so the selection it is asked to
+  /// undo was never made. What it actually does is assign the selection from
+  /// one step further back — and in the normal flow that is the same row, so
+  /// the call is a no-op.
+  ///
+  /// The last step is the one a reading can get wrong, and a second audit pass
+  /// did: `setSelectedPosition` assigns `lastSelectedPosition = previous`, and
+  /// `setupServerListUi` builds a **fresh** adapter, so after its own
+  /// `submitList` callback `lastSelectedPosition` is `-1` and a revert *would*
+  /// clear the highlight. It is not the last call. `settingDialog` follows it
+  /// with `refreshServerList()` (`SyncActivity.kt:702-704`, run whenever the
+  /// list is non-empty and a URL is stored), whose callback selects the same
+  /// row again on the same adapter — leaving `lastSelectedPosition ==
+  /// selectedPosition`. Where they do differ it would move the highlight to a
+  /// stale row, and `ServerAddressAdapterTest.kt:71-86` calls the method
+  /// without asserting anything about it, so nothing pins those semantics.
+  ///
+  /// Following the caller chain to its end (the Phase 149 rule) makes the
+  /// honest port of that pair *nothing*, not a faithful reimplementation of a
+  /// no-op — so declining the dialog here simply leaves the selection alone,
+  /// which is what Kotlin's own working case does.
+  String? _selectedHost;
+
+  /// The host of the persisted configuration, when there is one. Kotlin's
+  /// `urlWithoutProtocol` (`ServerDialogExtensions.kt:172`), which drives both
+  /// the initial selection and the list ordering.
+  String? _configuredHost;
+
+  /// Whether the local database holds synced data at all. Read once, because
+  /// after a wipe it is stale by construction:
+  /// [deviceHoldsServerDataProvider] reads a preference off an object whose
+  /// identity does not change when the preference does.
+  bool _holdsServerData = false;
+
+  /// Which request failed and what it said. Debug builds only — a release
+  /// build keeps the one clean sentence.
+  String? _diagnostic;
+
+  @override
+  void initState() {
+    super.initState();
+    _holdsServerData = ref.read(deviceHoldsServerDataProvider);
+    final existing = ref.read(serverConfigProvider);
+    if (existing != null) {
+      _urlController.text = existing.serverUrl;
+      _pinController.text = existing.pin;
+      // Port of the `submitList` completion callback
+      // (`ServerDialogExtensions.kt:196-210`): the initial selection is
+      // resolved only once the list exists, and only for a stored URL. The
+      // `!syncFailed` half of that guard has no counterpart — `syncFailed` is
+      // a `SyncActivity` field set when a sync attempt failed, and the port's
+      // route carries no such state.
+      //
+      // Two knowing differences, both consequences of this being a form
+      // rather than Kotlin's two-mode dialog. Kotlin fills the fields *only*
+      // when the stored URL matches a row the list is currently showing
+      // (`:203-205`) and then **disables both** (`:211-212`); a hand-typed
+      // server is prefilled instead by manual mode's `setupManualUi`
+      // (`:153-165`), which is the shape this screen has. So filling them
+      // unconditionally and leaving them editable is `setupManualUi`, not a
+      // relaxation of the list path.
+      //
+      // The prefill is also what the old "change server" made impossible:
+      // it cleared the configuration to navigate here, so `existing` was null
+      // on every reachable path and this whole branch was dead.
+      _configuredHost = hostWithoutScheme(existing.serverUrl);
+      _selectedHost = _configuredHost;
+    }
+  }
+
+  /// Where the clear-data gate lives, because this is where the switch is
+  /// actually committed: `serverConfigProvider.save(config)` is the line that
+  /// makes this device belong to the server in the fields, whether those
+  /// fields were filled by a row tap or typed by hand.
+  ///
+  /// Kotlin gates its own commit twice over — **on a device that has one of
+  /// these**. In list mode the row tap *is* the submit and every tap of a row
+  /// other than the selected one raises `clearDataDialog`
+  /// (`ServerAddressAdapter.kt:86-95`); to type a URL at all you must switch
+  /// manual configuration on, and doing that raises the same dialog before you
+  /// can type (`ServerDialogExtensions.kt:268-274`).
+  ///
+  /// An earlier version of this comment concluded from those two that "there
+  /// is no way to reach a new server's `configurations` document in Kotlin
+  /// without having been offered the wipe". That is false, and both gates say
+  /// so in their own condition: the manual toggle's is `configurationId !=
+  /// null` (`:268`), the dialog's Clear-data button is `GONE` on the same test
+  /// (`:45`), and the `"save"` branch warns only when `savedId != null && id !=
+  /// savedId` (`SyncConfigurationCoordinator.kt:98-106`). `setConfigurationId`
+  /// has one call site in `app/src/main` — `SyncConfigurationCoordinator.kt:86`
+  /// — reached only on the `"sync"` action, while `LoginActivity.kt:351` passes
+  /// `"LoginActivity"` and takes the arm that never writes it. So a device
+  /// configured and synced entirely from the login screen carries a full
+  /// database with `configurationId == null`, and Save there adopts another
+  /// Planet with no wipe offered at all.
+  ///
+  /// This port's form is always editable and it has no `configurationId`
+  /// precondition, so the equivalent single rule is stricter than either of
+  /// Kotlin's: never adopt a configuration over another community's data.
+  ///
+  /// The comparison is the **community code**, not the host, and it is asked
+  /// of the database rather than of a preference. Kotlin's analogous
+  /// trigger is close to this but not the same, and an earlier version of this
+  /// comment got it wrong in a way worth recording: it said Kotlin "has this
+  /// exact comparison" at `SyncActivity.kt:245`. That line is only the
+  /// `onClearDataDialog()` callback override. The decision is in
+  /// `SyncConfigurationCoordinator.handleConfigurationSuccess`
+  /// (`:63-110`), and it compares `id == savedId` — the CouchDB `_id` of the
+  /// first `configurations` row against the stored `configurationId`. The
+  /// `code` alongside it is only ever written as `communityName` and is never
+  /// compared. So Kotlin asks *"is this a different configuration document?"*
+  /// where this asks *"is this a different community than the one whose users
+  /// are on this device?"*.
+  ///
+  /// Keeping the community question is deliberate. A Planet's clone URL is a
+  /// different host serving the same community, so the host is the wrong
+  /// question; and reading `users.planetCode` interrogates the data being
+  /// protected rather than a preference that could be absent, stale or — as
+  /// the old "change server" proved — deleted. See [localPlanetCodesProvider],
+  /// and the PR's "Reported, not fixed" for the narrow case the id comparison
+  /// catches and this one does not.
+  Future<void> _connect() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    setState(() {
+      _isChecking = true;
+      _error = null;
+      _diagnostic = null;
+    });
+
+    final result = await ref
+        .read(configurationsRepositoryProvider)
+        .getMinApk(_urlController.text.trim(), _pinController.text.trim());
+
+    if (!mounted) return;
+
+    switch (result) {
+      case ConfigurationSuccess(:final config, :final versionDetail):
+        // Everything from here can throw — `saveServerConfig` writes to secure
+        // storage, which raises `PlatformException` on a keystore fault — and
+        // `_isChecking` is deliberately left set on success, because the
+        // router's redirect navigates away. Without the guard a throw on any
+        // of these lines leaves the Connect button spinning for ever with
+        // nothing said: the same failure the repository's own try/catch was
+        // added for, one layer up.
+        try {
+          if (await _wipeRefusedFor(config)) return;
+          await ref.read(serverConfigProvider.notifier).save(config);
+        } catch (error) {
+          if (!mounted) return;
+          setState(() {
+            _isChecking = false;
+            _error = AppLocalizations.of(context).operationFailed;
+            _diagnostic = UrlUtils.redactCredentials('$error');
+          });
+          return;
+        }
+
+        // **The configuration is adopted from here, so nothing below may
+        // report a failure.** Both lines used to sit inside the `try` above,
+        // which meant a throw from the version-detail write — a cache, on a
+        // different storage backend from the one that had just succeeded —
+        // told the user the operation had failed over a switch that had in
+        // fact happened, and skipped the navigation, leaving them on a screen
+        // whose own error contradicted its state.
+        if (versionDetail != null) {
+          try {
+            // Port of `SharedPrefManager.setVersionDetail` — the raw
+            // `/versions` body, cached so the telemetry upload can echo
+            // `planetVersion`. Losing it costs a field in a later report.
+            await ref.read(planetPrefsProvider).setVersionDetail(versionDetail);
+          } catch (_) {
+            // Deliberately swallowed; see above.
+          }
+        }
+
+        // The router redirect takes it from here — unless this screen is the
+        // marked `/server` location, where the redirect is holding position on
+        // purpose and would hold it for ever. See [_spendMarker].
+        if (widget.changingServer && mounted) _spendMarker();
+      case ConfigurationFailure(:final reason, :final diagnostic):
+        setState(() {
+          _isChecking = false;
+          _error = _messageFor(AppLocalizations.of(context), reason);
+          _diagnostic = diagnostic;
+        });
+    }
+  }
+
+  /// Leaves the marked `/server` location by dropping the marker, which hands
+  /// the placement decision straight back to the router's `redirect`: `/login`
+  /// for a configured, signed-out device, and this screen again for one whose
+  /// data has just been wiped, because there is then nothing to go back to.
+  ///
+  /// `Routes.server` rather than `Routes.login`, and an honest note about
+  /// that: it is **not** a behavioural choice. The redirect normalises every
+  /// gated location, so `go(Routes.login)` and `go(Routes.home)` land in the
+  /// same place as this in every reachable state, and a mutation swapping them
+  /// leaves the suite green — which was checked rather than assumed. It is
+  /// written this way because "drop the marker" is what this does, and naming
+  /// a destination would read as a rule about where a signed-out device
+  /// belongs, which is the redirect's to state.
+  void _spendMarker() => context.go(Routes.server);
+
+  /// Whether the switch must stop: this device holds another community's data
+  /// and the user declined to clear it. Returns `false` — carry on — both when
+  /// no wipe is needed and when one was carried out.
+  Future<bool> _wipeRefusedFor(ServerConfig config) async {
+    if (!_holdsServerData) return false;
+    final localCodes = await ref.read(localPlanetCodesProvider.future);
+    if (!mounted) return true;
+    // An empty set means the data cannot be attributed to a community at all,
+    // which on a device that has synced is unexpected rather than reassuring —
+    // so it is treated as "not this one". Declining costs the user nothing but
+    // the switch; assuming a match would risk the mixing this exists to stop.
+    if (localCodes.contains(config.code) && config.code.isNotEmpty) {
+      return false;
+    }
+
+    final cleared = await _showClearDataDialog();
+    if (!mounted) return true;
+    if (!cleared) {
+      setState(() => _isChecking = false);
+      return true;
+    }
+    setState(() {
+      _holdsServerData = false;
+      _configuredHost = null;
+    });
+    return false;
+  }
+
+  static String _messageFor(
+    AppLocalizations l10n,
+    ConfigurationFailureReason reason,
+  ) {
+    return switch (reason) {
+      ConfigurationFailureReason.localServerUnreachable =>
+        l10n.deviceCouldNotReachLocalServer,
+      ConfigurationFailureReason.nationServerUnreachable =>
+        l10n.deviceCouldNotReachNationServer,
+      ConfigurationFailureReason.pinRejected => l10n.serverPinRejected,
+    };
+  }
+
+  /// Port of the click listener in `ServerAddressAdapter.onBindViewHolder`
+  /// (`ServerAddressAdapter.kt:83-96`), which is **two** branches:
+  ///
+  /// ```kotlin
+  /// if (isServerAlreadyConfigured && position != selectedPosition) {
+  ///     onClearDataDialog(serverAddress, position)
+  /// } else {
+  ///     onItemClick(serverAddress); setSelectedPosition(position)
+  /// }
+  /// ```
+  ///
+  /// **Both arms, now.** Only the `else` arm used to be reachable, and not
+  /// because the warn arm was judged wrong: it needs to know which server the
+  /// device is currently on, and the old "change server" cleared exactly that
+  /// before this screen was built. With the configuration intact
+  /// ([Routes.changeServer]) the early warning is portable, so it is back
+  /// where Kotlin has it — and the commit gate in [_connect] stays where it
+  /// is, because in *this* port a tap still commits nothing.
+  ///
+  /// The two gates ask different questions on purpose, and the difference is
+  /// the information available at each moment. A tap knows only a **host**,
+  /// which is what Kotlin compares here too (`isServerAlreadyConfigured` is
+  /// "the `serverURL` preference is non-empty", `ServerDialogExtensions.kt:193`).
+  /// The community code only exists after the handshake, which is why the
+  /// binding gate is at Connect. So a tap on a clone of the same Planet warns
+  /// where Connect would not — Kotlin warns there too — and declining costs
+  /// nothing: the fields are still editable, and Connect then asks the more
+  /// accurate question and lets the switch through.
+  ///
+  /// One deliberate divergence on accept. Kotlin **throws the tapped server
+  /// away**: `onClearDataDialog = { _, _ -> ... }` ignores both parameters
+  /// (`ServerDialogExtensions.kt:188`), the wipe ends in
+  /// `Runtime.getRuntime().exit(0)`, and the user picks again after the
+  /// relaunch. That is a consequence of the process kill, not a decision — the
+  /// port has no restart to lose the tap across, so the tap it was given is
+  /// honoured.
+  Future<void> _onServerTapped(PlanetServer server) async {
+    if (_warnsBeforeLeaving(server.host)) {
+      final cleared = await _showClearDataDialog();
+      if (!mounted) return;
+      // Declined. Kotlin's `revertSelection()` runs here and undoes nothing;
+      // see [_selectedHost]. Leaving the selection and the fields untouched is
+      // what that no-op amounts to.
+      if (!cleared) return;
+      setState(() {
+        _holdsServerData = false;
+        _configuredHost = null;
+      });
+    }
+    _useServer(server);
+    setState(() => _selectedHost = server.host);
+  }
+
+  /// Kotlin's `isServerAlreadyConfigured && position != selectedPosition`.
+  ///
+  /// `_holdsServerData` is redundant while `_configuredHost` is non-null — a
+  /// persisted configuration makes [deviceHoldsServerDataProvider] true on its
+  /// own — and it is named anyway, because a wipe clears both and the pair
+  /// reads as the question being asked: is there data, and is it another
+  /// server's?
+  bool _warnsBeforeLeaving(String host) =>
+      _holdsServerData && _configuredHost != null && host != _selectedHost;
+
+  /// Port of `SyncActivity.clearDataDialog(message, config, onCancel)`
+  /// (`SyncActivity.kt:270-300`). Returns whether the data was actually
+  /// cleared, so the caller can tell Cancel from a wipe that failed.
+  ///
+  /// **What this cannot do.** Kotlin ends with `restartApp()`, which is
+  /// `Intent.makeRestartActivityTask` followed by `Runtime.getRuntime().exit(0)`
+  /// (`SyncActivity.kt:831-836`) — a real process kill. Flutter has no
+  /// equivalent, and the nearest thing here is what the wipe already does:
+  /// empty every table, clear the preferences and secure storage, delete the
+  /// downloaded-file tree, and clear the persisted server and session so the
+  /// router's `redirect` has nowhere to send the user but this screen.
+  ///
+  /// What a process death would additionally discard, and this does not:
+  /// whatever a provider captured by value rather than by watching
+  /// `serverConfigProvider`, the open Drift connection (its tables are empty,
+  /// the handle is not new), in-flight futures and timers, and any live
+  /// background isolate. An earlier version of this comment concluded from
+  /// that list that "none of those hold the old server's documents"; a
+  /// second audit pass pointed out that the list omitted the one place that
+  /// did — `<appDocuments>/ole/**`, which no wipe in this port had ever
+  /// deleted. `ClearDataNotifier` deletes it now. What is left is stale
+  /// in-memory state, which the next read replaces.
+  Future<bool> _showClearDataDialog() async {
+    final cleared = await showDialog<bool>(
+      context: context,
+      // `setCancelable(false)`, plus the activity's own
+      // `guardBackPressWhileDialogShowing()` while the wipe runs.
+      barrierDismissible: false,
+      builder: (_) => const _ClearDataDialog(),
+    );
+    return cleared ?? false;
+  }
+
+  /// Port of `ServerAddressAdapter`'s `onItemClick`: a tapped row fills the
+  /// host **and** its PIN, which is the whole reason this list exists.
+  ///
+  /// Kotlin additionally submits immediately when its `serverCheck` flag is
+  /// set. Deliberately not ported: this is a route rather than a dialog, the
+  /// fields stay visible after the tap, and firing a network request from a
+  /// list tap hides which server is about to be contacted. One tap of Connect
+  /// is the cost.
+  void _useServer(PlanetServer server) {
+    setState(() {
+      _urlController.text = server.url;
+      _pinController.text = server.pin;
+      _error = null;
+      _diagnostic = null;
+    });
+  }
+
+  Widget _serverPicker(AppLocalizations l10n) {
+    final all = ref.watch(planetServersProvider);
+    // A build with no `--dart-define`s has no list to offer, which is how this
+    // screen behaved before the list existed. See `planet_servers.dart`.
+    if (all.isEmpty) return const SizedBox.shrink();
+
+    // The **persisted** configuration, not the text field. Kotlin orders this
+    // list from `prefData.getPinnedServerUrl()` / `getServerUrl()`, both
+    // stored values; deriving it from the field made the list reorder under
+    // the user's finger — tapping row 7 hoisted row 7 into the collapsed
+    // four, and typing a host by hand rearranged the rows as the characters
+    // arrived.
+    final shown = planetServersToShow(
+      servers: all,
+      showAdditional: _showAllServers,
+      configuredHost: _configuredHost,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: Text(
+            l10n.syncToServer,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+        ),
+        const SizedBox(height: 8),
+        for (final server in shown)
+          ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            title: Text(server.name),
+            subtitle: Text(server.url),
+            // `ViewHolder.updateSelectionState`, which paints the selected row
+            // `R.color.selected_color`. Without a highlight there is nothing
+            // for `revertSelection` to revert and no way to see which server
+            // the device is on.
+            selected: server.host == _selectedHost,
+            onTap: _isChecking ? null : () => _onServerTapped(server),
+          ),
+        if (all.length > shown.length || _showAllServers)
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton(
+              onPressed: () =>
+                  setState(() => _showAllServers = !_showAllServers),
+              child: Text(_showAllServers ? l10n.showLess : l10n.showMore),
+            ),
+          ),
+        const Divider(height: 24),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return PopScope(
+      // The system back gesture is the close action: with no route underneath,
+      // letting the pop through would drop the user out of the app.
+      canPop: !widget.changingServer,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && widget.changingServer) _spendMarker();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(l10n.serverConfigurationTitle),
+          leading: widget.changingServer
+              ? IconButton(
+                  icon: const Icon(Icons.close),
+                  tooltip: l10n.cancel,
+                  onPressed: _isChecking ? null : _spendMarker,
+                )
+              : null,
+        ),
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _serverPicker(l10n),
+                      TextFormField(
+                        controller: _urlController,
+                        autocorrect: false,
+                        keyboardType: TextInputType.url,
+                        textInputAction: TextInputAction.next,
+                        decoration: InputDecoration(
+                          labelText: l10n.serverUrlLabel,
+                          hintText: l10n.serverUrlHint,
+                          border: const OutlineInputBorder(),
+                        ),
+                        validator: (value) {
+                          final text = value?.trim() ?? '';
+                          if (text.isEmpty) return l10n.serverUrlNotConfigured;
+                          final uri = Uri.tryParse(text);
+                          if (uri == null ||
+                              !uri.hasScheme ||
+                              uri.host.isEmpty ||
+                              !(uri.scheme == 'http' ||
+                                  uri.scheme == 'https')) {
+                            return l10n.serverUrlNotConfigured;
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _pinController,
+                        obscureText: true,
+                        keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.done,
+                        decoration: InputDecoration(
+                          labelText: l10n.serverPinLabel,
+                          border: const OutlineInputBorder(),
+                        ),
+                        // Guarded like `FilledButton.onPressed` below: the
+                        // keyboard's "done" used to launch a second handshake
+                        // over a running one.
+                        onFieldSubmitted: _isChecking
+                            ? null
+                            : (_) => _connect(),
+                      ),
+                      const SizedBox(height: 24),
+                      if (_error != null) ...[
+                        Text(
+                          _error!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                        // Not localised and not shown in release: this is the
+                        // status code or exception the one sentence above used
+                        // to swallow, and without it a failure that cannot be
+                        // reproduced off-device can only be guessed at.
+                        if (kDebugMode && _diagnostic != null) ...[
+                          const SizedBox(height: 8),
+                          SelectableText(
+                            _diagnostic!,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(fontFamily: 'monospace'),
+                          ),
+                        ],
+                        const SizedBox(height: 16),
+                      ],
+                      FilledButton(
+                        onPressed: _isChecking ? null : _connect,
+                        child: _isChecking
+                            ? const SizedBox.square(
+                                dimension: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(l10n.connect),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Port of the `AlertDialog` built in `SyncActivity.clearDataDialog`
+/// (`SyncActivity.kt:270-300`).
+///
+/// The Kotlin's positive button disables **both** buttons, shows a separate
+/// progress dialog reading `clearing_data`, guards the back press, and on an
+/// exception dismisses the progress, releases the guard and re-enables both
+/// buttons — leaving the dialog up so the user can try again. One stateful
+/// dialog reproduces all of that; two would only reproduce the file layout.
+///
+/// Pops `true` once the data is gone, `false` on Cancel, and nothing at all
+/// while the wipe is running.
+class _ClearDataDialog extends ConsumerStatefulWidget {
+  const _ClearDataDialog();
+
+  @override
+  ConsumerState<_ClearDataDialog> createState() => _ClearDataDialogState();
+}
+
+class _ClearDataDialogState extends ConsumerState<_ClearDataDialog> {
+  bool _clearing = false;
+  bool _failed = false;
+
+  Future<void> _clear() async {
+    setState(() {
+      _clearing = true;
+      _failed = false;
+    });
+    try {
+      await ref.read(clearDataProvider.notifier).clearForServerSwitch();
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (_) {
+      if (!mounted) return;
+      // Kotlin's `catch`: progress away, guard released, both buttons live
+      // again, dialog still open.
+      setState(() {
+        _clearing = false;
+        _failed = true;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return PopScope(
+      // `setCancelable(false)` for the whole life of the dialog, and
+      // `guardBackPressWhileDialogShowing()` while the wipe runs.
+      canPop: false,
+      child: AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.youWantToConnectToADifferentServer),
+            if (_clearing) ...[
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const SizedBox.square(
+                    dimension: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(l10n.clearingData),
+                ],
+              ),
+            ],
+            if (_failed) ...[
+              const SizedBox(height: 16),
+              // Kotlin says nothing here — it logs, re-enables the buttons
+              // and leaves the user looking at a dialog that did nothing
+              // when they pressed the button. An existing string beats both
+              // silence and a twelfth way to spell "it failed".
+              Text(
+                l10n.operationFailed,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: _clearing
+                ? null
+                : () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: _clearing ? null : _clear,
+            child: Text(l10n.clearData),
+          ),
+        ],
+      ),
+    );
+  }
+}

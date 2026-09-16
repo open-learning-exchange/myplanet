@@ -1,0 +1,453 @@
+import 'dart:typed_data';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:myplanet/data/local/app_database.dart';
+import 'package:myplanet/data/local/course_mapper.dart';
+import 'package:myplanet/data/local/exam_mapper.dart';
+import 'package:myplanet/providers/app_providers.dart';
+import 'package:myplanet/providers/courses_providers.dart';
+import 'package:myplanet/providers/ratings_provider.dart';
+import 'package:myplanet/providers/session_provider.dart';
+import 'package:myplanet/repository/ratings_repository.dart';
+import 'package:myplanet/ui/courses/course_detail_screen.dart';
+
+import '../../support/widget_harness.dart';
+
+/// Mirrors the test-session notifier in `session_provider_test.dart`: returns a
+/// fixed user without touching the database or prefs, so the detail screen has
+/// a `userId` for the join/leave and rating buttons.
+class _TestSessionNotifier extends SessionNotifier {
+  _TestSessionNotifier(this.user);
+  final UserRow? user;
+  @override
+  Future<UserRow?> build() async => user;
+}
+
+UserRow _guest() => UserRow(
+  id: 'guest_ada',
+  couchId: 'guest_ada',
+  rev: '1-a',
+  name: 'ada',
+  rolesList: const [],
+  userAdmin: false,
+  joinDate: 0,
+  isArchived: false,
+  isUpdated: false,
+);
+
+/// A user Planet marks a guest by **role** rather than by id — the shape
+/// `UserEntity.isGuest()`'s second disjunct is written for, and one the port's
+/// id-prefix rule cannot see.
+UserRow _roleGuest({List<String> roles = const ['guest']}) => UserRow(
+  id: 'org.couchdb.user:jane',
+  couchId: 'org.couchdb.user:jane',
+  rev: '1-a',
+  name: 'jane',
+  rolesList: roles,
+  userAdmin: false,
+  joinDate: 0,
+  isArchived: false,
+  isUpdated: false,
+);
+
+UserRow _user() => UserRow(
+  id: 'user-1',
+  couchId: 'org.couchdb.user:ada',
+  rev: '1-a',
+  name: 'ada',
+  rolesList: const ['learner'],
+  userAdmin: false,
+  joinDate: 0,
+  isArchived: false,
+  isUpdated: false,
+);
+
+// A 1x1 transparent PNG — the smallest valid image Image.memory can decode.
+const _pngBytes = [
+  0x89,
+  0x50,
+  0x4E,
+  0x47,
+  0x0D,
+  0x0A,
+  0x1A,
+  0x0A,
+  0x00,
+  0x00,
+  0x00,
+  0x0D,
+  0x49,
+  0x48,
+  0x44,
+  0x52,
+  0x00,
+  0x00,
+  0x00,
+  0x01,
+  0x00,
+  0x00,
+  0x00,
+  0x01,
+  0x08,
+  0x06,
+  0x00,
+  0x00,
+  0x00,
+  0x1F,
+  0x15,
+  0xC4,
+  0x89,
+  0x00,
+  0x00,
+  0x00,
+  0x0D,
+  0x49,
+  0x44,
+  0x41,
+  0x54,
+  0x78,
+  0x9C,
+  0x62,
+  0x00,
+  0x01,
+  0x00,
+  0x00,
+  0x05,
+  0x00,
+  0x01,
+  0x0D,
+  0x0A,
+  0x2D,
+  0xB4,
+  0x00,
+  0x00,
+  0x00,
+  0x00,
+  0x49,
+  0x45,
+  0x4E,
+  0x44,
+  0xAE,
+  0x42,
+  0x60,
+  0x82,
+];
+
+void main() {
+  /// [defaultSession] and [fallbackDatabase] exist for the same reason
+  /// `wrapScreen`'s own flag does: Riverpod 3 asserts on a provider overridden
+  /// twice in one container, so a caller replacing one of this helper's
+  /// defaults has to switch the default off rather than shadow it.
+  Future<void> pumpScreen(
+    WidgetTester tester, {
+    required CourseRow course,
+    List<CourseStepRow> steps = const [],
+    List<Override> overrides = const [],
+    bool defaultSession = true,
+    bool fallbackDatabase = true,
+  }) async {
+    await tester.pumpWidget(
+      wrapScreen(
+        CourseDetailScreen(courseId: course.id),
+        fallbackDatabase: fallbackDatabase,
+        overrides: [
+          if (defaultSession)
+            sessionProvider.overrideWith(() => _TestSessionNotifier(_user())),
+          courseProvider(course.id).overrideWith((ref) => Stream.value(course)),
+          courseStepsProvider(
+            course.id,
+          ).overrideWith((ref) => Stream.value(steps)),
+          // The rate button watches the ratings DAO; without this it opens a
+          // drift stream against the harness fallback database and leaves a
+          // pending timer.
+          ratingSummaryProvider((
+            type: 'course',
+            itemId: course.id,
+          )).overrideWith(
+            (ref) => Stream.value(
+              const RatingSummary(average: 0, total: 0, userRating: null),
+            ),
+          ),
+          ...overrides,
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('renders the course header and chips', (tester) async {
+    await pumpScreen(
+      tester,
+      course: buildCourseRow(
+        id: 'c1',
+        courseTitle: 'Algebra',
+        gradeLevel: 'G1',
+        subjectLevel: 'Mathematics',
+      ),
+    );
+    expect(find.text('Algebra'), findsWidgets);
+    expect(find.byType(Chip), findsNWidgets(2));
+  });
+
+  testWidgets('renders the description as markdown, not plain text', (
+    tester,
+  ) async {
+    // A heading renders as larger styled text through MarkdownBody, and a
+    // bold span renders as RichText — neither happens with plain Text.
+    await pumpScreen(
+      tester,
+      course: buildCourseRow(
+        id: 'c1',
+        courseTitle: 'Algebra',
+        description: '# Heading\n\n**bold** text',
+      ),
+    );
+    // The heading text is present.
+    expect(find.text('Heading'), findsOneWidget);
+    expect(find.text('bold text'), findsOneWidget);
+  });
+
+  testWidgets('renders the cover image when a coverFileName is set', (
+    tester,
+  ) async {
+    await pumpScreen(
+      tester,
+      course: buildCourseRow(
+        id: 'c1',
+        courseTitle: 'Algebra',
+        coverFileName: 'cover.png',
+      ),
+      overrides: [
+        courseCoverImageProvider(
+          const CourseCoverImageRequest(
+            courseId: 'c1',
+            coverFileName: 'cover.png',
+          ),
+        ).overrideWith((ref) async => Uint8List.fromList(_pngBytes)),
+      ],
+    );
+    // The cover banner widget is present and an Image.memory decoded the
+    // overridden bytes.
+    expect(find.byType(CourseDetailCoverImage), findsOneWidget);
+    expect(find.byType(Image), findsOneWidget);
+  });
+
+  testWidgets('omits the cover banner when coverFileName is blank', (
+    tester,
+  ) async {
+    await pumpScreen(
+      tester,
+      course: buildCourseRow(
+        id: 'c1',
+        courseTitle: 'Algebra',
+        coverFileName: null,
+      ),
+    );
+    expect(find.byType(CourseDetailCoverImage), findsNothing);
+  });
+
+  testWidgets('renders a step description as markdown', (tester) async {
+    await pumpScreen(
+      tester,
+      course: buildCourseRow(id: 'c1', courseTitle: 'Algebra'),
+      steps: [
+        buildStepRow(id: 's1', stepTitle: 'First', description: '## Step A'),
+      ],
+    );
+    // Expand the step tile to reveal its description.
+    await tester.tap(find.text('First'));
+    await tester.pumpAndSettle();
+    expect(find.text('Step A'), findsOneWidget);
+  });
+
+  /// **The step row carries the title and nothing else, because that is all
+  /// Kotlin's carries.**
+  ///
+  /// `CoursesStepsAdapter.bind` (`:51-55`) fills `row_steps.xml`'s two views:
+  /// `tv_title` from `stepTitle`, and `tv_description` from
+  /// `R.string.test_size` — *"This test has %d questions"* — with
+  /// `step.questionCount`. It shows **no** resource count; `CourseStep
+  /// .noOfResources` is written at `CoursesRepositoryImpl.kt:695` and read
+  /// nowhere in `app/src/main`, a dead column in Kotlin as well.
+  ///
+  /// And the second line is never drawn either. `tv_description` is
+  /// `visibility="gone"` in the layout, `updateDescriptionVisibility` keys on
+  /// `StepItem.isDescriptionVisible` (default `false`), and its only writer —
+  /// `CourseDetailViewModel.toggleStepDescription` — is reached only from
+  /// `CourseDetailFragment:140`'s `else`, which is **unreachable**:
+  /// `CourseDetailFragment` is constructed only at `CoursesPagerAdapter.kt:44`
+  /// as page 0 of `CoursesPagerAdapter(this@TakeCourseFragment, courseId)`
+  /// (`TakeCourseFragment.kt:122`), so `parentFragment as? TakeCourseFragment`
+  /// is never null and a tap always navigates.
+  ///
+  /// So `resourcesInStep(step.noOfResources)` in this slot was the port's own
+  /// invention twice over — a datum Kotlin does not put here, in a slot Kotlin
+  /// leaves empty — and Phase 149 removed it rather than replacing it with the
+  /// test-size line, which would be porting a no-op. (`take_course_screen`
+  /// keeps its own resources tile; that one is a deliberate, documented
+  /// stand-in for the inline resource list the port cannot render yet.)
+  testWidgets('a step row shows its title and no resource count', (
+    tester,
+  ) async {
+    await pumpScreen(
+      tester,
+      course: buildCourseRow(id: 'c1', courseTitle: 'Algebra'),
+      steps: [
+        buildStepRow(id: 's1', stepTitle: 'First', noOfResources: 3),
+        buildStepRow(id: 's2', stepTitle: 'Second', stepIndex: 1),
+      ],
+    );
+
+    expect(find.text('First'), findsOneWidget);
+    expect(find.text('3 resources'), findsNothing);
+    // The zero case too: `resourcesInStep` renders "No resources" at 0, so a
+    // subtitle that survived only for resource-less steps would still show.
+    // The second tile is asserted present first: `find.text` searches the
+    // element tree and a `ListView` child below the 600px test fold is not
+    // mounted, so without this the "No resources" assertion could pass by
+    // never having been rendered.
+    expect(find.text('Second'), findsOneWidget);
+    expect(find.text('No resources'), findsNothing);
+  });
+
+  testWidgets(
+    'a step carrying an embedded exam offers Take exam, from a real sync',
+    (tester) async {
+      // Phase 113. The reachability proof, and the reason it is written this
+      // way: the join is `exams.stepId == course_steps.id`, and until this
+      // phase nothing in the port ever wrote one. Overriding `stepExamProvider`
+      // here would prove only that the button renders when handed an exam —
+      // which it always did. So the database is filled by the real courses
+      // walk from a real-shaped course document, and the provider does its own
+      // lookup.
+      final db = AppDatabase.memory();
+      addTearDown(db.close);
+
+      const doc = {
+        '_id': 'c1',
+        'courseTitle': 'Water',
+        'steps': [
+          {
+            'stepTitle': 'Assessment',
+            'exam': {
+              '_id': 'exam-1',
+              'type': 'courses',
+              'name': 'Step test',
+              'questions': [
+                {'id': 'q1', 'title': 'Which is wet?', 'type': 'input'},
+              ],
+            },
+          },
+        ],
+      };
+      final parsed = CourseMapper.fromDoc(doc)!;
+      await db.courseDao.upsertAll([parsed.course], parsed.steps);
+      for (final mapping in ExamMapper.fromCourseDoc(
+        doc,
+        stepIdFor: CourseMapper.stepIdFor,
+      )) {
+        await db.examDao.upsertAll(
+          [mapping.exam],
+          {mapping.exam.id.value: mapping.questions},
+        );
+      }
+
+      final steps = await db.courseDao.getSteps('c1');
+      await pumpScreen(
+        tester,
+        course: buildCourseRow(id: 'c1', courseTitle: 'Water'),
+        steps: steps,
+        overrides: [appDatabaseProvider.overrideWithValue(db)],
+        fallbackDatabase: false,
+      );
+
+      await tester.tap(find.text('Assessment'));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(FilledButton, 'Take exam'), findsOneWidget);
+    },
+  );
+  group('the membership button is gated on guest, as `setCourseData` is', () {
+    // `TakeCourseFragment.setCourseData:216-232` shows `btnRemove` for
+    // `!isGuest && !containsUserId` only. Phase 145 gated the copy on
+    // `take_course_screen` first and left this one, which is **the more
+    // consequential of the two**: that one's `_toggleMembership` writes
+    // locally, while this one writes *and* calls `shelfRepository.upload`, so
+    // an ungated guest tap here reached the server.
+    //
+    // Written because the first cut of the fix was pinned by nothing — a
+    // mutation that deleted the gate left the whole suite green.
+
+    testWidgets('a guest is offered no join button', (tester) async {
+      await pumpScreen(
+        tester,
+        course: buildCourseRow(id: 'course-1', courseTitle: 'Algebra'),
+        overrides: [
+          sessionProvider.overrideWith(() => _TestSessionNotifier(_guest())),
+        ],
+        defaultSession: false,
+      );
+
+      expect(find.text('Add to my courses'), findsNothing);
+      expect(find.text('Remove from my courses'), findsNothing);
+      // The rest of the screen is unaffected — Kotlin's guest still reads the
+      // course, and `CourseDetailFragment` has no membership button at all.
+      expect(find.text('Algebra'), findsWidgets);
+    });
+
+    testWidgets('a signed-in learner still gets one', (tester) async {
+      await pumpScreen(
+        tester,
+        course: buildCourseRow(id: 'course-1', courseTitle: 'Algebra'),
+      );
+
+      expect(find.text('Add to my courses'), findsOneWidget);
+    });
+
+    /// The gate reads `UserEntity.isGuest()`, which is the id prefix **or** a
+    /// `guest` role without a `learner` role (`UserEntity.kt:178-182`). The
+    /// port gated on the id prefix alone, so a user Planet marks a guest by
+    /// role — with an ordinary `org.couchdb.user:` id — was offered the button
+    /// Kotlin withholds, and this copy's tap reaches the server.
+    testWidgets('a guest by role, with an ordinary id, gets no button', (
+      tester,
+    ) async {
+      await pumpScreen(
+        tester,
+        course: buildCourseRow(id: 'course-1', courseTitle: 'Algebra'),
+        overrides: [
+          sessionProvider.overrideWith(
+            () => _TestSessionNotifier(_roleGuest()),
+          ),
+        ],
+        defaultSession: false,
+      );
+
+      expect(find.text('Add to my courses'), findsNothing);
+      expect(find.text('Algebra'), findsWidgets);
+    });
+
+    /// The other half of the same clause, and the one a `roles.contains`
+    /// would get wrong: Planet can grant a member both roles, and the learner
+    /// role wins.
+    testWidgets('a user carrying guest and learner keeps the button', (
+      tester,
+    ) async {
+      await pumpScreen(
+        tester,
+        course: buildCourseRow(id: 'course-1', courseTitle: 'Algebra'),
+        overrides: [
+          sessionProvider.overrideWith(
+            () => _TestSessionNotifier(
+              _roleGuest(roles: const ['guest', 'learner']),
+            ),
+          ),
+        ],
+        defaultSession: false,
+      );
+
+      expect(find.text('Add to my courses'), findsOneWidget);
+    });
+  });
+}
