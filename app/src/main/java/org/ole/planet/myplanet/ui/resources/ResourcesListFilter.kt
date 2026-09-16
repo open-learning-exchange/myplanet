@@ -102,12 +102,16 @@ class ResourcesListFilter {
                 selLower == "pdf" || selLower.contains("pdf") -> {
                     classifiedType == LibraryType.PDF || mediaTypeLower.contains("pdf")
                 }
+                selLower == "book" || selLower == "books" || selLower.contains("book") || selLower == "epub" || selLower == "textbook" -> {
+                    classifiedType == LibraryType.BOOK || mediaTypeLower.contains("book") || mediaTypeLower.contains("epub") || mediaTypeLower.contains("textbook")
+                }
                 else -> {
                     mediaTypeLower.equals(selLower, ignoreCase = true) ||
                             mediaTypeLower.contains(selLower) ||
                             (classifiedType == LibraryType.AUDIO && (selLower.contains("audio") || selLower.contains("mp3"))) ||
                             (classifiedType == LibraryType.VIDEO && (selLower.contains("video") || selLower.contains("mp4"))) ||
-                            (classifiedType == LibraryType.PDF && selLower.contains("pdf"))
+                            (classifiedType == LibraryType.PDF && selLower.contains("pdf")) ||
+                            (classifiedType == LibraryType.BOOK && (selLower.contains("book") || selLower.contains("epub")))
                 }
             }
         }
