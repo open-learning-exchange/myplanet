@@ -513,7 +513,21 @@ class NotificationsRepository {
         if (row.parentId != null) row.parentId!: row,
     };
 
-    final chatCounts = await _newsDao.teamChatCounts(teamIds);
+    // `voicesRepository.countTopLevelByTeam(teamId)`, one call per team, as
+    // `NotificationsRepositoryImpl.kt:320-324` does. **Not**
+    // `NewsDao.teamChatCounts` — that is `countTeamChats`, a different Kotlin
+    // statement this badge never uses, and reading the badge off it compared a
+    // watermark taken from the team voices feed against a population the feed
+    // does not show. See `NewsDao.countTopLevelByTeam` for the two directions
+    // it failed in.
+    //
+    // Sequential rather than `Future.wait`: the Kotlin fans these out with
+    // `async`/`awaitAll`, but these share one SQLite connection, so
+    // concurrency buys nothing and the teams a handset belongs to are few.
+    final chatCounts = <String, int>{};
+    for (final teamId in teamIds) {
+      chatCounts[teamId] = await _newsDao.countTopLevelByTeam(teamId);
+    }
 
     // `Calendar.getInstance().apply { add(DAY_OF_YEAR, 1) }` — the same instant
     // tomorrow, so the window is "overdue or due within a day". Note the start

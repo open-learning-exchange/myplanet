@@ -232,12 +232,33 @@ void main() {
 
   group('team notifications', () {
     /// A team-visible post, which is what the chat count counts.
+    /// A post in the shape the **sync-in** writes: `viewableBy`/`viewableId`
+    /// filled from a document Planet authored.
+    ///
+    /// **This fixture could not distinguish the defect it was meant to cover**
+    /// — the Phase 156 shape. `getTeamNotifications` had been counting with
+    /// `NewsDao.teamChatCounts`, whose only predicate is these two columns, so
+    /// every test here passed under both the wrong counter and the right one.
+    /// Nothing in either app writes these columns locally; the composer writes
+    /// `viewIn`. [addComposedTeamPost] is the case that tells them apart, and
+    /// it is the *common* case.
     Future<void> addTeamPost(String id, String teamId) =>
         database.newsDao.upsert(
           NewsEntriesCompanion.insert(
             id: id,
             viewableBy: const Value('teams'),
             viewableId: Value(teamId),
+          ),
+        );
+
+    /// A post in the shape [VoicesRepository.createPost] writes for
+    /// `createTeamPost`: the team named inside `viewIn`, `viewableBy` unset.
+    Future<void> addComposedTeamPost(String id, String teamId) =>
+        database.newsDao.upsert(
+          NewsEntriesCompanion.insert(
+            id: id,
+            docType: const Value('message'),
+            viewIn: Value('[{"_id":"$teamId","section":"teams","name":"T"}]'),
           ),
         );
 
@@ -288,6 +309,40 @@ void main() {
       // Opening the team's voices moves the watermark and clears the dot.
       await repository.updateTeamNotification('team-1', 3);
       info = await repository.getTeamNotifications(['team-1'], 'user-1');
+      expect(info['team-1']!.hasChat, isFalse);
+    });
+
+    test('a badge appears for posts composed in the app', () async {
+      // The user-visible half of the counter fix. A team whose posts were all
+      // written in-app counted **zero** under `teamChatCounts`, so the badge
+      // could never light however many arrived — and the watermark, which is
+      // written from the team voices feed's own row count, was already past it.
+      await addComposedTeamPost('post-1', 'team-1');
+      await repository.updateTeamNotification('team-1', 1);
+
+      var info = await repository.getTeamNotifications(['team-1'], 'user-1');
+      expect(info['team-1']!.hasChat, isFalse, reason: 'caught up');
+
+      await addComposedTeamPost('post-2', 'team-1');
+      info = await repository.getTeamNotifications(['team-1'], 'user-1');
+      expect(info['team-1']!.hasChat, isTrue);
+    });
+
+    test('a reply does not light the badge', () async {
+      // `countTopLevelByTeam` carries the `replyTo` predicate its Kotlin
+      // counterpart does; `countTeamChats`, which this used to call, does not.
+      await addComposedTeamPost('post-1', 'team-1');
+      await repository.updateTeamNotification('team-1', 1);
+      await database.newsDao.upsert(
+        NewsEntriesCompanion.insert(
+          id: 'reply-1',
+          docType: const Value('message'),
+          replyTo: const Value('post-1'),
+          viewIn: const Value('[{"_id":"team-1","section":"teams"}]'),
+        ),
+      );
+
+      final info = await repository.getTeamNotifications(['team-1'], 'user-1');
       expect(info['team-1']!.hasChat, isFalse);
     });
 

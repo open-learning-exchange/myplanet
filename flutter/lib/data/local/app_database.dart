@@ -1090,7 +1090,7 @@ class TeamTaskDao extends DatabaseAccessor<AppDatabase>
 }
 
 /// Port of the team catalog queries in `data/room/dao/MyTeamDao.kt`.
-@DriftAccessor(tables: [Teams])
+@DriftAccessor(tables: [Teams, Users])
 class TeamDao extends DatabaseAccessor<AppDatabase> with _$TeamDaoMixin {
   TeamDao(super.db);
 
@@ -1153,13 +1153,63 @@ class TeamDao extends DatabaseAccessor<AppDatabase> with _$TeamDaoMixin {
     return rows;
   }
 
-  Stream<int> watchMemberCount(String teamId) {
-    final count = teams.id.count();
-    final query = selectOnly(teams)
-      ..addColumns([count])
-      ..where(teams.docType.equals('membership') & teams.teamId.equals(teamId));
-    return query.watchSingle().map((row) => row.read(count) ?? 0);
-  }
+  /// Port of `TeamDao.countByTeamIdAndDocType(teamId, "membership")`
+  /// (`TeamDao.kt:29`), which `TeamsRepositoryImpl.getJoinedMemberCount`
+  /// (`:1045-1047`) is the only spelling of:
+  ///
+  /// ```sql
+  /// SELECT COUNT(DISTINCT userId) FROM teams
+  ///  WHERE teamId = :teamId AND docType = :docType AND isDeletePending = 0
+  ///    AND userId IS NOT NULL
+  ///    AND EXISTS (SELECT 1 FROM users u
+  ///                 WHERE u.id = teams.userId OR u._id = teams.userId)
+  /// ```
+  ///
+  /// This had been a plain `COUNT(id)` over `docType = 'membership' AND
+  /// teamId = ?`, which is three guards short. Each one inflates the number,
+  /// and the number is not decorative: `teams_screen` draws it as
+  /// "N members" *and* gates the leave-team action on `memberCount > 1`, the
+  /// port's spelling of `TeamDetailFragment.kt:181-182`'s
+  /// `memberCount <= 1 && isMyTeam`. Over-counting therefore offers "leave"
+  /// on a team the user is in fact alone in, which is the case the gate exists
+  /// to refuse.
+  ///
+  /// * **`COUNT(DISTINCT userId)`.** The primary key here is the CouchDB
+  ///   document id, so two membership documents for one person — which a
+  ///   re-join produces, and which the sync-in has no rule against — are two
+  ///   rows and were two members.
+  /// * **`userId IS NOT NULL`.** `Teams.userId` is nullable and a membership
+  ///   document that omits it maps to null, which `COUNT(DISTINCT userId)`
+  ///   already skips; the clause is kept so the statement reads as its
+  ///   counterpart does rather than relying on that.
+  /// * **`EXISTS (users …)`.** A membership row whose person this device has
+  ///   never synced is not a member it can show. Matching on `id` *or* `_id`
+  ///   is the same two-identity rule [UserDao.getById] documents: an account
+  ///   registered on this handset keeps its locally-minted `id` until an
+  ///   upload gives it a `couchId`, and a membership document written after
+  ///   that names the server id.
+  ///
+  /// **`isDeletePending = 0` is deliberately absent**, and it is the one
+  /// clause that is not a gap. The port has no such column because it has no
+  /// such state: [TeamsRepository.leave] and [TeamsRepository.removeMember]
+  /// both hard-delete the membership row and enqueue the tombstone, so a
+  /// departed member is gone from this table at the moment they leave rather
+  /// than lingering under a flag. Adding the column to reproduce the clause
+  /// would be a schema bump on a preserved table buying nothing.
+  ///
+  /// Raw SQL for the correlated `EXISTS`, and `readsFrom` names **both**
+  /// tables: a user arriving on a later sync changes this count without
+  /// touching `teams`, and a stream that did not declare `users` would not
+  /// re-emit.
+  Stream<int> watchMemberCount(String teamId) => customSelect(
+    'SELECT COUNT(DISTINCT user_id) AS c FROM teams '
+    "WHERE team_id = ?1 AND doc_type = 'membership' "
+    'AND user_id IS NOT NULL '
+    'AND EXISTS (SELECT 1 FROM users u '
+    'WHERE u.id = teams.user_id OR u._id = teams.user_id)',
+    variables: [Variable<String>(teamId)],
+    readsFrom: {teams, users},
+  ).watchSingle().map((row) => row.read<int>('c'));
 
   Stream<List<TeamRow>> watchTeamDocuments(String teamId, String docType) =>
       (select(teams)
@@ -1556,13 +1606,24 @@ class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
 /// A user id is `org.couchdb.user:ada` in practice, which contains no `LIKE`
 /// metacharacter — but `_` matches any single character, so an id containing
 /// one would otherwise match a *different* user's shelf entry.
-String likeEscapedUserPattern(String userId) {
-  final escaped = userId
-      .replaceAll('\\', '\\\\')
-      .replaceAll('%', '\\%')
-      .replaceAll('_', '\\_');
-  return '%"$escaped"%';
-}
+String likeEscapedUserPattern(String userId) =>
+    '%"${likeEscapeMetacharacters(userId)}"%';
+
+/// The escaping every `LIKE` pattern in this file is built from: `\`, `%` and
+/// `_` made literal, for a statement carrying `ESCAPE '\'`.
+///
+/// The three replacements are in the Kotlin's order and the order matters —
+/// escaping `\` first means the backslashes this function itself introduces
+/// are not escaped again.
+///
+/// **It escapes the value only; the caller adds the wildcards.** That
+/// separation is the whole point: the wrapping `%` must stay a wildcard, so a
+/// pattern builder that escapes *after* wrapping matches nothing, and one
+/// that reuses an already-wrapped helper to build a longer pattern (as
+/// [NewsDao.teamIdPattern] would with [likeEscapedLiteral]) buries a stray
+/// `%` in the middle of it.
+String likeEscapeMetacharacters(String text) =>
+    text.replaceAll('\\', '\\\\').replaceAll('%', '\\%').replaceAll('_', '\\_');
 
 /// Shelf membership: `user_id LIKE '%"<id>"%' ESCAPE '\'`, the predicate
 /// behind `MyLibraryDao.getForUserPattern` (`MyLibraryDao.kt:103`) and
@@ -1599,14 +1660,10 @@ Expression<bool> _literalContains(
   String text,
 ) => column.like(likeEscapedLiteral(text), escapeChar: r'\');
 
-/// The escape half of [_literalContains], exposed for tests.
-String likeEscapedLiteral(String text) {
-  final escaped = text
-      .replaceAll('\\', '\\\\')
-      .replaceAll('%', '\\%')
-      .replaceAll('_', '\\_');
-  return '%$escaped%';
-}
+/// The escape half of [_literalContains], exposed for tests: the value
+/// escaped by [likeEscapeMetacharacters] **and** wrapped in `%…%`, so it is a
+/// complete "contains" pattern rather than a fragment to build one from.
+String likeEscapedLiteral(String text) => '%${likeEscapeMetacharacters(text)}%';
 
 Expression<bool> _shelfMembership(
   GeneratedColumn<String> userIdColumn,
@@ -4237,35 +4294,97 @@ class NewsDao extends DatabaseAccessor<AppDatabase> with _$NewsDaoMixin {
         .get();
   }
 
-  /// Port of `NewsDao.getTeamChatViewableIds` — the team-visible post count per
-  /// team, for the dashboard's chat badge.
+  /// `%"_id":"<teamId>"%` — the `viewIn` pattern
+  /// `VoicesRepositoryImpl.teamIdPattern` (`:99-105`) builds, escaped for
+  /// `LIKE`.
   ///
-  /// The Kotlin selects the raw `viewableId` column and counts duplicates in
-  /// Dart-equivalent code (`chatCountsById[viewableId] + 1`); this groups in
-  /// SQL instead and returns the same tallies. Teams with no posts are absent
-  /// from the map, as they are absent from the Kotlin's map.
-  Future<Map<String, int>> teamChatCounts(List<String> teamIds) async {
-    if (teamIds.isEmpty) return const {};
-    final counts = <String, int>{};
+  /// The Kotlin escapes `\`, `%` and `_` **before** wrapping the value in its
+  /// own `%…%`, which is the only order that works: escaping afterwards would
+  /// escape the wrapping wildcards too and the pattern would match nothing.
+  /// Same rule, and the same `escapeChar: r'\'` on the `LIKE` itself, as
+  /// [likeEscapedUserPattern]; see Phase 156 for the user-search hole that is
+  /// the reason any of these escape at all.
+  static String teamIdPattern(String teamId) =>
+      '%"_id":"${likeEscapeMetacharacters(teamId)}"%';
+
+  /// `(viewableBy = 'teams' COLLATE NOCASE AND viewableId = :teamId COLLATE
+  /// NOCASE) OR viewIn LIKE :teamPattern ESCAPE '\'` — the audience half of
+  /// `NewsDao.getTopLevelByTeam` / `countTopLevelByTeam`
+  /// (`NewsDao.kt:27-31`, `:73-74`).
+  ///
+  /// **Both arms are load-bearing and the port had only the second**, in
+  /// Dart, in `teamVoicesProvider`. They catch different writers: nothing in
+  /// either app sets `viewableBy`/`viewableId` on a post it authors — the
+  /// composer writes `viewIn` (`createTeamPost` → [VoicesRepository.createPost],
+  /// and Kotlin's `TeamsVoicesFragment.kt:76-85` builds the same map) — so
+  /// those two columns are filled **only by the sync-in**, from documents
+  /// Planet wrote. A feed on one arm shows one of the two populations.
+  ///
+  /// `lower()` rather than a collation: SQLite's `COLLATE NOCASE` folds ASCII
+  /// only, and so does `lower()`, so the two agree on every input. Drift has
+  /// no `COLLATE` on a comparison, and the literal is already lower case.
+  Expression<bool> _viewableByTeam($NewsEntriesTable r, String teamId) =>
+      (r.viewableBy.lower().equals('teams') &
+          r.viewableId.lower().equals(teamId.toLowerCase())) |
+      r.viewIn.like(teamIdPattern(teamId), escapeChar: r'\');
+
+  /// Port of `NewsDao.countTopLevelByTeam` (`NewsDao.kt:73-74`) — the count
+  /// behind the dashboard's per-team chat badge.
+  ///
+  /// `NotificationsRepositoryImpl.getTeamNotifications` (`:322`) reaches this
+  /// through `voicesRepository.countTopLevelByTeam`, and the badge is
+  /// `watermark.lastCount < count`, where the watermark is written from the
+  /// **team voices feed's** own row count when the user opens it. Kotlin keeps
+  /// the two consistent by construction: the feed is `getTopLevelByTeamFlow`
+  /// and the badge is this, the same predicate.
+  ///
+  /// The port had used [teamChatCounts] here — `NewsDao.countTeamChats`
+  /// (`NewsDao.kt:69-70`), a *different* Kotlin query with no top-level
+  /// predicate, no `viewIn` arm and no `COLLATE NOCASE`, which Kotlin does not
+  /// use for this badge at all. Against a watermark taken from the feed that
+  /// compares two disjoint populations, and it fails in both directions: a
+  /// team whose posts were all composed in-app counts 0 here and the badge can
+  /// never light, while a team carrying a server-authored `viewableBy = teams`
+  /// post counts it, the feed cannot show it, the watermark never reaches it
+  /// and the badge stays lit for ever.
+  Future<int> countTopLevelByTeam(String teamId) async {
     final total = newsEntries.id.count();
-    for (final chunk in _chunked(teamIds, _sqliteVariableChunk)) {
-      final rows =
-          await (selectOnly(newsEntries)
-                ..addColumns([newsEntries.viewableId, total])
-                ..where(
-                  newsEntries.viewableBy.equals('teams') &
-                      newsEntries.viewableId.isIn(chunk),
-                )
-                ..groupBy([newsEntries.viewableId]))
-              .get();
-      for (final row in rows) {
-        final teamId = row.read(newsEntries.viewableId);
-        if (teamId == null) continue;
-        counts[teamId] = (counts[teamId] ?? 0) + (row.read(total) ?? 0);
-      }
-    }
-    return counts;
+    final row =
+        await (selectOnly(newsEntries)
+              ..addColumns([total])
+              ..where(
+                _isTopLevel(newsEntries) & _viewableByTeam(newsEntries, teamId),
+              ))
+            .getSingle();
+    return row.read(total) ?? 0;
   }
+
+  /// Port of `NewsDao.getTopLevelByTeamFlow` (`NewsDao.kt:30-31`) — the team
+  /// voices feed, the streaming sibling of [countTopLevelByTeam] and the same
+  /// predicate, which is the point of it existing here.
+  ///
+  /// Not yet the feed's source: `teamVoicesProvider`
+  /// (`lib/providers/voices_provider.dart`) still starts from
+  /// [watchTopLevelMessages] and filters `viewIn` in Dart, which adds a
+  /// `docType = 'message'` predicate Kotlin's statement does not have and
+  /// drops the `viewableBy` arm entirely. That provider is another lane's file
+  /// this round; `team_voices_feed_parity_test.dart` fails the moment it moves
+  /// onto this method **or** the moment the badge stops agreeing with it, so
+  /// the pair cannot drift apart again unnoticed.
+  Stream<List<NewsRow>> watchTopLevelByTeam(String teamId) =>
+      (select(newsEntries)
+            ..where((r) => _isTopLevel(r) & _viewableByTeam(r, teamId))
+            ..orderBy([(r) => OrderingTerm.desc(r.time)]))
+          .watch();
+
+  // `NewsDao.countTeamChats` (`NewsDao.kt:69-70`) is deliberately **not**
+  // ported. It was here as `teamChatCounts`, wired to the dashboard's team
+  // chat badge — which is not what Kotlin uses it for, or uses it for at all:
+  // its only route out of the DAO is `VoicesRepository.countTeamChats`, and
+  // `grep -rn countTeamChats app/src/main` finds no caller of *that* beyond
+  // the interface declaring it. The badge is `countTopLevelByTeam` in both
+  // apps. Reviving this to give the badge a second counter is how the two
+  // populations came apart; see [countTopLevelByTeam].
 
   /// `replyTo IS NULL OR replyTo = ''` — the Kotlin's definition of a top-level
   /// post, kept verbatim because a reply written by this app stores `''` while

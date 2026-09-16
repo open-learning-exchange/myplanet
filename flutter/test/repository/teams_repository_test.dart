@@ -42,6 +42,12 @@ void main() {
         'docType': 'membership',
       })!,
     ]);
+    // `watchMemberCount` carries Kotlin's `EXISTS (SELECT 1 FROM users …)`
+    // (`TeamDao.kt:29`): a membership naming a person this device has never
+    // synced is not a member it can show. The row is seeded because the
+    // `tablet_users` walk seeds it in the shipping app, not to satisfy the
+    // assertion — drop it and the count is 0, which is what the guard is for.
+    await database.userDao.upsert(UsersCompanion.insert(id: 'u'));
     expect((await repository.watchCatalog().first).map((row) => row.id), [
       'team',
     ]);
