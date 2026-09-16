@@ -204,12 +204,40 @@ List<PlanetServer> get configuredPlanetServers =>
 ///   cambridge — the eleventh row — "show more" put the row the user is
 ///   already using last.
 ///
-/// One knowing simplification. Kotlin reads **two** preferences here:
-/// `getPinnedServerUrl()` feeds the collapsed prepend (written only after a
-/// successful sync, `SyncActivity.kt:529`) while `getServerUrl()` feeds the
-/// expanded hoist. The port has no separate pinned-after-sync preference, so
-/// one [configuredHost] serves both roles; the caller supplies the persisted
-/// `ServerConfig`'s host, which is the analogue of `getServerUrl()`.
+/// **One knowing fold, and it is measured rather than assumed.** Kotlin reads
+/// **two** preferences here, and their names do not help:
+/// `ServerConfigUtils.getFilteredList` takes `prefData.getPinnedServerUrl()`
+/// for the collapsed prepend, while `refreshServerList` reads
+/// `prefData.getServerUrl()` for the hoist and the highlight — into a local it
+/// calls `pinnedUrl` (`ServerDialogExtensions.kt:120` vs `:123`). A port that
+/// reads the name rather than the call uses the wrong one.
+///
+/// What each actually holds:
+///
+/// * `serverURL` — the server the user last *entered or selected*. Written by
+///   `performSync` **before** `isUrlValid` and before any request
+///   (`ServerDialogExtensions.kt:60-61`), so it can name a server the app has
+///   never reached.
+/// * `pinnedServerUrl` — written at exactly one site, `SyncActivity.kt:521-530`,
+///   under three conditions: a sync run ended, the synced URL is one of the
+///   eleven, and `serverListAddresses` is non-empty — an in-memory field only
+///   the list dialog fills, so a sync started from the login screen's sync icon
+///   never writes it. And "ended" is not "succeeded": `SyncManager` emits
+///   `SyncStatus.Success` from a `finally` (`:120-127, 221-234`) and the UI
+///   passes a null listener, so `handleException` is a no-op and a failed run
+///   reaches the same write.
+///
+/// The port folds both into one [configuredHost] — the persisted
+/// `ServerConfig`'s host — and the fold loses no distinction it could express,
+/// because the states in which the two Kotlin preferences differ are states
+/// this port cannot enter. A `ServerConfig` exists only after the `minapk`
+/// handshake has succeeded, so there is no unvalidated-URL case; the prepend's
+/// "one of the eleven" restriction survives as the `servers.where(...)` lookup
+/// below, which finds nothing for a hand-typed host; and the remaining gap is
+/// that Kotlin waits for a sync run while this is content with a handshake, so
+/// a configured-but-never-synced device gets its row prepended where Kotlin
+/// would not. That is the hoist's own preference applied one step earlier, not
+/// a different rule.
 List<PlanetServer> planetServersToShow({
   required List<PlanetServer> servers,
   required bool showAdditional,

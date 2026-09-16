@@ -591,9 +591,11 @@ void main() {
     });
 
     testWidgets('a tap on a row commits nothing on its own', (tester) async {
-      // The gate is on the commit, so the tap has to stay free: it fills the
-      // fields and highlights the row, and that is all. If a tap ever adopts a
-      // configuration again, the gate is in the wrong place.
+      // The binding gate is on the commit, so the tap stays free of it: on a
+      // device with no configuration it fills the fields and highlights the
+      // row, and that is all. If a tap ever adopts a configuration, the gate
+      // is in the wrong place. (A tap on a *configured* device now warns
+      // first, which still commits nothing — see the row-tap group below.)
       final clearData = _StubClearDataNotifier();
       await tester.pumpWidget(
         build(
@@ -684,5 +686,142 @@ void main() {
     expect(titles.first, '🌎 planet below the fold');
     expect(titles, hasLength(5));
     expect(titles.where((t) => t == '🌎 planet below the fold'), hasLength(1));
+  });
+
+  group('the row-tap early warning', () {
+    /// Port of the warn arm of `ServerAddressAdapter`'s click listener
+    /// (`:86-95`), which had no counterpart while "change server" cleared the
+    /// configuration: the arm needs to know which server the device is on, and
+    /// that was the fact the navigation destroyed.
+    ///
+    /// It is host-based, as Kotlin's is (`isServerAlreadyConfigured` is "the
+    /// `serverURL` preference is non-empty"), while the binding gate at Connect
+    /// stays community-based. The two ask what each moment can answer.
+    const configured = ServerConfig(
+      serverUrl: 'https://below.example.org',
+      pin: '3456',
+      couchDbUrl: 'https://satellite:3456@below.example.org:443',
+      code: 'learning',
+    );
+
+    Widget configuredDevice({_StubClearDataNotifier? clearData}) => build(
+      servers: const [learning, local, belowFold],
+      existing: configured,
+      holdsServerData: true,
+      localPlanetCodes: const {'learning'},
+      clearData: clearData,
+    );
+
+    testWidgets('tapping another server warns before filling anything', (
+      tester,
+    ) async {
+      await tester.pumpWidget(configuredDevice());
+      await tester.pumpAndSettle();
+      expect(fieldTexts(tester), <String>['https://below.example.org', '3456']);
+
+      await tester.tap(find.text('🌎 planet learning'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Clear data'), findsOneWidget);
+      // Nothing has moved yet: not the fields, not the highlight.
+      expect(fieldTexts(tester), <String>['https://below.example.org', '3456']);
+    });
+
+    testWidgets('tapping the server it is already on does not warn', (
+      tester,
+    ) async {
+      // Kotlin's `position != selectedPosition`. Re-tapping the current row is
+      // the `else` arm there, and has nothing to warn about here either.
+      await tester.pumpWidget(configuredDevice());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('🌎 planet below the fold'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Clear data'), findsNothing);
+    });
+
+    testWidgets('declining leaves the selection and the fields alone', (
+      tester,
+    ) async {
+      // Kotlin runs `revertSelection()` here, which undoes a selection the
+      // warn arm never made — a no-op in its working case. Leaving everything
+      // untouched is what that amounts to.
+      final clearData = _StubClearDataNotifier();
+      await tester.pumpWidget(configuredDevice(clearData: clearData));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('🌎 planet learning'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(clearData.calls, 0);
+      expect(fieldTexts(tester), <String>['https://below.example.org', '3456']);
+      final selected = tester
+          .widgetList<ListTile>(find.byType(ListTile))
+          .where((t) => t.selected)
+          .map((t) => (t.title! as Text).data)
+          .toList();
+      expect(selected, <String>['🌎 planet below the fold']);
+    });
+
+    testWidgets('accepting wipes, then honours the tap', (tester) async {
+      // Kotlin discards the tapped server — `onClearDataDialog = { _, _ -> }`
+      // ignores it and the wipe ends in `exit(0)`, so the user re-picks after
+      // the relaunch. That is the process kill talking, not a decision; there
+      // is no restart here to lose the tap across.
+      final clearData = _StubClearDataNotifier();
+      await tester.pumpWidget(configuredDevice(clearData: clearData));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('🌎 planet learning'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Clear data'));
+      await tester.pumpAndSettle();
+
+      expect(clearData.calls, 1);
+      expect(fieldTexts(tester), <String>[
+        'https://planet.learning.example.org',
+        '1234',
+      ]);
+    });
+
+    testWidgets('a second tap after the wipe does not warn again', (
+      tester,
+    ) async {
+      // The wipe clears what the warning is about. Asking twice for data that
+      // is already gone would be the dialog crying wolf, and the user would
+      // learn to dismiss it.
+      final clearData = _StubClearDataNotifier();
+      await tester.pumpWidget(configuredDevice(clearData: clearData));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('🌎 planet learning'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Clear data'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('🇬🇹 planet san pablo'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Clear data'), findsNothing);
+      expect(clearData.calls, 1);
+      expect(fieldTexts(tester), <String>['http://192.168.48.253', '5678']);
+    });
+
+    testWidgets('a device that holds nothing is never warned', (tester) async {
+      // `isServerAlreadyConfigured` is false on a fresh device, so every tap
+      // takes the `else` arm — the first configuration is not a switch.
+      await tester.pumpWidget(
+        build(servers: const [learning, local], holdsServerData: false),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('🌎 planet learning'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Clear data'), findsNothing);
+    });
   });
 }

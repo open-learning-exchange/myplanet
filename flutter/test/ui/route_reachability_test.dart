@@ -123,8 +123,24 @@ void main() {
     /// Routes with no `context.push`/`go` in `lib/`, and why that is correct.
     const allowed = <String, String>{
       // Reached by the router's own redirect rather than by a navigation.
+      //
+      // `/server` is deliberately **not** here. It used to be — it was a pure
+      // redirect target, reachable only by clearing the persisted
+      // configuration so `redirect` would fire, which is how three ported and
+      // green code paths behind it came to be dead. `Routes.changeServer`
+      // navigates there now, so the entry point is real and the exception is
+      // no longer owed.
+      //
+      // **This rule does not guard that entry point, and an earlier version of
+      // this comment claimed it did.** Mutation-tested: replacing the login
+      // screen's navigation with an empty callback leaves every test in this
+      // file green, because `server_config_screen.dart`'s own
+      // `context.go(Routes.server)` is a bare `Routes` constant in a
+      // navigating layer and rule three counts it as reached. That is rule
+      // three's documented permissiveness, not a hole to plug here. The guard
+      // is `server_change_navigation_test.dart`, where the same mutation fails
+      // four tests.
       '/onboarding': 'redirect target on a first launch',
-      '/server': 'redirect target when no server is configured',
       '/login': 'redirect target when there is no session',
       '/home': 'initialLocation, and the redirect target once signed in',
       // Built by DeepLinkHandler.publicSurveyLocation, covered by the deep-link
