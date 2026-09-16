@@ -38,9 +38,6 @@ interface TeamTaskDao {
     @Query("SELECT * FROM team_tasks WHERE id IN (:taskIds)")
     suspend fun getByIds(taskIds: List<String>): List<TeamTask>
 
-    @Query("SELECT * FROM team_tasks WHERE title = :title LIMIT 1")
-    suspend fun getByTitle(title: String): TeamTask?
-
     @Query("SELECT * FROM team_tasks WHERE title IN (:titles)")
     suspend fun getByTitles(titles: List<String>): List<TeamTask>
 

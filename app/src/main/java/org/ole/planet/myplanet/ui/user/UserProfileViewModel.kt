@@ -38,10 +38,6 @@ class UserProfileViewModel @Inject constructor(
         }
     }
 
-    fun refreshCurrentUserProfile() {
-        loadCurrentUserProfile()
-    }
-
     fun updateCurrentUserProfile(
         firstName: String?,
         lastName: String?,

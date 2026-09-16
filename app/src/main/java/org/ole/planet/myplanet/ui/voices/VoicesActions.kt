@@ -15,8 +15,9 @@ import com.bumptech.glide.Glide
 import com.google.android.material.textfield.TextInputLayout
 import com.google.gson.JsonObject
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
@@ -30,7 +31,9 @@ import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 object VoicesActions {
-    private val dateFormatter = ThreadLocal.withInitial { SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()) }
+    private val dateFormatter: DateTimeFormatter =
+        DateTimeFormatter.ofPattern("MMMM dd, yyyy hh:mm a", Locale.getDefault())
+            .withZone(ZoneId.systemDefault())
 
     data class EditDialogComponents(
         val binding: AlertInputBinding,
@@ -222,7 +225,7 @@ object VoicesActions {
             userModel.language.toString(),
             userModel.phoneNumber.toString(),
             visitStats.offlineVisitCount.toString(),
-            (visitStats.lastVisit?.let { dateFormatter.get()?.format(Date(it)) } ?: "No logout record found"),
+            (visitStats.lastVisit?.let { dateFormatter.format(Instant.ofEpochMilli(it)) } ?: "No logout record found"),
             "${userModel.firstName} ${userModel.lastName}",
             userModel.level.toString(),
             userModel.userImage
