@@ -34,8 +34,6 @@ import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
 
-private data class Quartet<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
-
 @AndroidEntryPoint
 class ChatHistoryFragment : Fragment() {
     private var _binding: FragmentChatHistoryBinding? = null
@@ -226,6 +224,7 @@ class ChatHistoryFragment : Fragment() {
                     if (isAdded && _binding != null) {
                         if (user?.planetCode != null) {
                             sharedNewsMessages = sharedNewsMessages + result.news
+                            sharedViewInIds = sharedViewModel.extractSharedViewInIds(sharedNewsMessages)
                         }
                         (binding.recyclerView.adapter as? ChatHistoryAdapter)?.let { adapter ->
                             adapter.updateCachedData(user, sharedNewsMessages, sharedViewInIds)
