@@ -5,7 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import java.util.Calendar
+import java.util.Date
 import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentCalendarBinding
@@ -20,8 +20,7 @@ class CalendarFragment : BaseBindingFragment<FragmentCalendarBinding>(FragmentCa
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val view = super.onCreateView(inflater, container, savedInstanceState)
-        val calendar = Calendar.getInstance()
-        binding.calendarView.setDate(calendar.time)
+        binding.calendarView.setDate(Date())
         return view
     }
 }

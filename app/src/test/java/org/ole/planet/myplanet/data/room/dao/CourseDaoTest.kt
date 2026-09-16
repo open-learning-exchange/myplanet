@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.data.room.dao
 
 import androidx.room.Room
+import androidx.sqlite.db.SimpleSQLiteQuery
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.util.UUID
@@ -149,5 +150,35 @@ class CourseDaoTest {
         assertEquals(3, result.size)
         val resultIds = result.map { it.id }.toSet()
         assertEquals(setOf("pk1", "pk2", "pk3"), resultIds)
+    }
+
+    @Test
+    fun filterByTitleNormal_matchesAllPartsViaAndLikeChain() = runBlocking {
+        val basicMath = MyCourse(
+            id = UUID.randomUUID().toString(),
+            courseTitle = "Basic Math 101",
+            courseTitleNormal = "basic math 101"
+        )
+        val basicScience = MyCourse(
+            id = UUID.randomUUID().toString(),
+            courseTitle = "Basic Science 101",
+            courseTitleNormal = "basic science 101"
+        )
+        val mathOnly = MyCourse(
+            id = UUID.randomUUID().toString(),
+            courseTitle = "Math",
+            courseTitleNormal = "math"
+        )
+
+        courseDao.upsertAll(listOf(basicMath, basicScience, mathOnly))
+
+        val query = SimpleSQLiteQuery(
+            "SELECT * FROM courses WHERE 1 = 1 AND courseTitleNormal LIKE ? ESCAPE '\\' AND courseTitleNormal LIKE ? ESCAPE '\\'",
+            arrayOf("%basic%", "%math%")
+        )
+        val result = courseDao.filterByTitleNormal(query)
+
+        assertEquals(1, result.size)
+        assertEquals(basicMath.id, result.first().id)
     }
 }
