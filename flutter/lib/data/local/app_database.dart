@@ -2176,10 +2176,9 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
   /// Unscoped by user, like [pendingUploads]: a handset whose session has gone
   /// is exactly the one carrying an undelivered write, which is the reasoning
   /// `sweepPendingResources` sets out for the document half.
-  Future<List<MyLibraryRow>> pendingAttachments() =>
-      (select(myLibraryTable)
-            ..where((r) => r.attachmentPending.equals(true) & r.rev.isNotNull()))
-          .get();
+  Future<List<MyLibraryRow>> pendingAttachments() => (select(
+    myLibraryTable,
+  )..where((r) => r.attachmentPending.equals(true) & r.rev.isNotNull())).get();
 
   /// Records that this row no longer owes an attachment.
   ///
