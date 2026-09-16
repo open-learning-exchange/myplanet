@@ -218,7 +218,7 @@ class FeedbackMapper {
     var shared = 0;
     while (shared < local.length &&
         shared < serverMessages.length &&
-        _sameMessage(local[shared], serverMessages[shared])) {
+        sameMessage(local[shared], serverMessages[shared])) {
       shared++;
     }
 
@@ -227,6 +227,11 @@ class FeedbackMapper {
   }
 
   /// Whether two message elements are the same reply.
+  ///
+  /// Public because [FeedbackUploader] needs the same identity when it
+  /// reconciles a conflicted send against the server's copy of the thread: two
+  /// readings of "the same reply" would let one of them append a message the
+  /// other had already matched.
   ///
   /// A reply is a map and is compared on `message`/`user`/`time` rather than on
   /// its bytes, because a server that echoes it back with its keys reordered
@@ -241,7 +246,7 @@ class FeedbackMapper {
   /// which restores the prefix and with it the idempotence the merge depends
   /// on. Encoding is the right comparison here precisely because a non-map has
   /// no keys to reorder.
-  static bool _sameMessage(Object? a, Object? b) {
+  static bool sameMessage(Object? a, Object? b) {
     if (a is! Map<String, dynamic> || b is! Map<String, dynamic>) {
       // One map and one not is a divergence, and encoding them would compare
       // an object against a scalar for no gain.
@@ -381,10 +386,10 @@ class FeedbackMapper {
   /// wrapped value reaches the server on the reply's upload; after that it is
   /// an ordinary element of the document's array. If it is a **map carrying
   /// none** of `message`/`user`/`time`, a later merge on a still-pending row
-  /// can drop it, because [_sameMessage] identifies maps by those fields alone
+  /// can drop it, because [sameMessage] identifies maps by those fields alone
   /// and two field-less maps therefore compare equal — a hole this helper
   /// widens rather than opens, since the server's own array could always hold
-  /// such an element. Non-map values are safe: [_sameMessage] compares those by
+  /// such an element. Non-map values are safe: [sameMessage] compares those by
   /// encoding.
   static List<dynamic> _messagesForAppend(String? messagesJson) {
     if (messagesJson == null || messagesJson.isEmpty) return [];

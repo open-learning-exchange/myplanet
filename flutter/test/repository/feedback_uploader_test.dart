@@ -144,38 +144,91 @@ void main() {
     },
   );
 
-  test(
-    'a re-send drops a reply only the server has — pre-existing, not new',
-    () async {
-      // The trade the update arm makes, demonstrated rather than argued: the
-      // re-send carries the payload's own content, so anything the server has
-      // and the payload does not is overwritten.
-      //
-      // `feedback` is the one armed uploader where that is a *merge* loss rather
-      // than a revision bump — `messages` is an append array both Planet's web
-      // UI and the handset write. What this test drives is the **recovery
-      // arm**, which re-sends the payload it was handed, so it can only carry
-      // what that payload holds.
-      //
-      // The pull no longer feeds it a payload missing the admin's reply:
-      // `FeedbackMapper._mergePendingReplies` puts the server's copy back
-      // together with the unsent local tail, and `FeedbackSyncNotifier`
-      // re-queues so the outbox snapshot is refreshed rather than draining the
-      // pre-merge array. The test below this one pins that. Here the payload
-      // is constructed by hand, which is why the loss still shows.
-      await seedPending();
-      await (database.update(
-        database.feedbackEntries,
-      )..where((f) => f.id.equals('feedback-1'))).write(
-        FeedbackEntriesCompanion(
-          rev: const Value('1-local'),
-          messages: Value(
-            jsonEncode([
-              {'message': 'mine'},
-            ]),
-          ),
-        ),
+  test('a conflicted re-send keeps the reply only the server has', () async {
+    // **The loss this used to pin, now closed.** This test asserted the
+    // opposite until the send-time reconcile landed, and the reasoning it
+    // carried was the reason to leave it: the recovery arm re-sends the
+    // payload it was handed, so anything the server has and the payload does
+    // not is overwritten, and a pull followed by a re-queue would refresh the
+    // payload.
+    //
+    // It does not, on the path users are actually on. Every drain trigger runs
+    // before any feedback pull — `OutboxDrainScope` on startup and on resume
+    // pulls nothing at all — so the conflicted send happens while this device
+    // has never seen the admin's reply, and no re-queue can help. The handler
+    // reconciles against the document `ConflictRecovery` conflicted with
+    // instead.
+    //
+    // Kotlin has neither behaviour: `UploadCoordinator.kt:169-186` fetches the
+    // document, reports Success **without sending**, and marks the row
+    // uploaded — keeping the admin's reply and destroying the handset's own at
+    // the next pull. Merging is the only arm that keeps both.
+    await seedPending();
+
+    final sent = <Map<String, dynamic>>[];
+    when(
+      () => api.postJsonObject(
+        any(),
+        any(),
+        authHeader: any(named: 'authHeader'),
+      ),
+    ).thenAnswer((invocation) async {
+      final body = Map<String, dynamic>.from(
+        invocation.positionalArguments[1] as Map<String, dynamic>,
       );
+      sent.add(body);
+      return body['_rev'] == '2-admin'
+          ? NetworkSuccess<Map<String, dynamic>>({'rev': '3-x'})
+          : const NetworkError<Map<String, dynamic>>(409, 'conflict');
+    });
+    when(
+      () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer(
+      (_) async => NetworkSuccess<Map<String, dynamic>>({
+        '_id': 'feedback-1',
+        '_rev': '2-admin',
+        // The admin's reply, which this device has never seen.
+        'messages': [
+          {'message': 'mine', 'time': '1', 'user': 'ada'},
+          {'message': 'from the admin', 'time': '2', 'user': 'admin'},
+        ],
+      }),
+    );
+
+    await uploader.handler(rowFor('feedback-1'), {
+      '_id': 'feedback-1',
+      '_rev': '1-local',
+      'messages': [
+        {'message': 'mine', 'time': '1', 'user': 'ada'},
+        {'message': 'my unsent reply', 'time': '3', 'user': 'ada'},
+      ],
+    }, 'auth');
+
+    expect(sent, hasLength(2));
+    // The first send is untouched: only the recovery re-send reconciles, so an
+    // ordinary upload costs no extra read.
+    expect((sent[0]['messages'] as List).map((m) => m['message']), [
+      'mine',
+      'my unsent reply',
+    ]);
+    expect(
+      (sent[1]['messages'] as List).map((m) => m['message']),
+      ['mine', 'from the admin', 'my unsent reply'],
+      reason: "the admin's reply survives and ours is still appended",
+    );
+  });
+
+  test(
+    'a re-send after a lost response does not duplicate the reply',
+    () async {
+      // Why the rule is "append what the server does not already have" rather
+      // than the shared-prefix rule `FeedbackMapper._mergePendingReplies` uses.
+      //
+      // A send that reached CouchDB but whose response was lost leaves the row
+      // pending with the same stored payload. The server then holds our reply
+      // *after* the admin's, so a prefix scan diverges at index 1 and would
+      // append ours a second time. Matching anywhere makes the re-send a no-op.
+      await seedPending();
 
       final sent = <Map<String, dynamic>>[];
       when(
@@ -189,8 +242,8 @@ void main() {
           invocation.positionalArguments[1] as Map<String, dynamic>,
         );
         sent.add(body);
-        return body['_rev'] == '2-admin'
-            ? NetworkSuccess<Map<String, dynamic>>({'rev': '3-x'})
+        return body['_rev'] == '3-landed'
+            ? NetworkSuccess<Map<String, dynamic>>({'rev': '4-x'})
             : const NetworkError<Map<String, dynamic>>(409, 'conflict');
       });
       when(
@@ -198,11 +251,13 @@ void main() {
       ).thenAnswer(
         (_) async => NetworkSuccess<Map<String, dynamic>>({
           '_id': 'feedback-1',
-          '_rev': '2-admin',
-          // The admin's reply, which this device has never seen.
+          '_rev': '3-landed',
+          // Our reply is already there, and not as a prefix: the admin's sits
+          // between it and the opening message.
           'messages': [
-            {'message': 'mine'},
-            {'message': 'from the admin'},
+            {'message': 'mine', 'time': '1', 'user': 'ada'},
+            {'message': 'from the admin', 'time': '2', 'user': 'admin'},
+            {'message': 'my unsent reply', 'time': '3', 'user': 'ada'},
           ],
         }),
       );
@@ -211,17 +266,18 @@ void main() {
         '_id': 'feedback-1',
         '_rev': '1-local',
         'messages': [
-          {'message': 'mine'},
+          {'message': 'mine', 'time': '1', 'user': 'ada'},
+          {'message': 'my unsent reply', 'time': '3', 'user': 'ada'},
         ],
       }, 'auth');
 
-      // The re-send carries only this device's array. This is the documented
-      // trade, asserted so a future reader sees it rather than reading three
-      // paragraphs about it.
-      expect(sent, hasLength(2));
-      expect(sent[1]['messages'], [
-        {'message': 'mine'},
-      ]);
+      expect(
+        (sent[1]['messages'] as List).map((m) => m['message']),
+        ['mine', 'from the admin', 'my unsent reply'],
+        reason:
+            'our reply is already on the server; re-sending must not add it '
+            'a second time',
+      );
     },
   );
 
