@@ -110,8 +110,12 @@ void main() {
     // work, and an honest partial number is worth more than an implied
     // complete one — so this is asserted rather than left in a PR body where
     // it would rot.
+    //
+    // 78 of 313 after the integrator's master merge, and that +1 is the
+    // ledger's first live catch — see `NewsDao.getTopLevelTeamMembership`
+    // below.
     final uncovered = corpus.length - _compared.length;
-    expect(uncovered, 312 - 77);
+    expect(uncovered, 313 - 78);
   });
 }
 
@@ -211,11 +215,11 @@ Map<String, String> _kotlinQueries() {
 }
 
 /// `@Query` annotations in `app/src/main/.../data/room/dao/`, as of Phase 158.
-const _corpusSize = 312;
+const _corpusSize = 313;
 
 /// Entries in [_compared], stated separately so the map and the claim about it
 /// cannot drift apart.
-const _comparedCount = 77;
+const _comparedCount = 78;
 
 /// Queries a lane has read against the port's Drift builder and reached a
 /// verdict on, with the digest the statement had at that moment.
@@ -273,6 +277,28 @@ const _compared = <String, String>{
   'NewsDao.countDistinctCommunityVoiceDatesForUser': '5bfceedebe52',
   'NewsDao.countTeamChats': '95202314b030',
   'NewsDao.countTopLevelByTeam': 'aa6c81fd7cd6',
+  // **The ledger's first catch, and it arrived the day it was written.**
+  // Merging master brought 26 commits; the corpus went 312 → 313 and this is
+  // the one that moved. Triaged: `NotificationsRepositoryImpl:392` now calls
+  // `countTopLevelByTeams`, which fetches the membership columns for every
+  // watermarked team in **one** query and tallies per team in Kotlin, where it
+  // used to loop `countTopLevelByTeam` — which as a result now has **no caller
+  // in `app/src/main` at all**.
+  //
+  // **Not a Follow.** The batched path is the same population: its SQL
+  // `viewIn LIKE '%"_id":"%'` is a deliberate superset narrowed in memory by
+  // `contains("\"_id\":\"\$teamId\"")`, and the viewable arm is the same
+  // comparison with `IN` in place of `=`. The port's per-team loop yields the
+  // same counts, so this is batching, not behaviour.
+  //
+  // Recorded rather than ported for two reasons. A future round seeing
+  // `countTopLevelByTeam` deleted upstream must not follow: the port still
+  // uses it and it is still correct. And the in-memory `contains` is
+  // `ignoreCase = true` — Unicode-aware where SQLite's `LIKE` is ASCII-only,
+  // the exact divergence Lane 1 fixed one method away. Unreachable for a
+  // CouchDB `_id`, which is lower-case hex, but it is Kotlin that carries it
+  // now, not the port.
+  'NewsDao.getTopLevelTeamMembership': 'd81260f5b43e',
   'NewsDao.getByNewsId': '5fc9981fbfb7',
   'NewsDao.getReplies': '9fccefc24993',
   'NewsDao.getReplyCount': 'dc0dad1ce2aa',
