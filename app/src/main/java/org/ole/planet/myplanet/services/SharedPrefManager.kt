@@ -75,11 +75,18 @@ class SharedPrefManager @Inject constructor(
     @Volatile
     private var savedUsersCache: SavedUsersCache? = null
 
+    /**
+     * [User] is a data class with mutable properties, so a shallow copy of the list would still
+     * expose the cached entries. Copy the elements too, both when handing the cache out and when
+     * taking a caller's list in.
+     */
+    private fun List<User>.detach(): List<User> = map { it.copy() }
+
     fun getSavedUsers(): List<User> {
         val usersJson = pref.getString(SAVED_USERS, null)
         val cache = savedUsersCache
         if (cache != null && cache.raw == usersJson) {
-            return cache.parsed
+            return cache.parsed.detach()
         }
         val parsed = if (usersJson != null) {
             gson.fromJson<List<User>>(usersJson, userListType) ?: emptyList()
@@ -87,13 +94,13 @@ class SharedPrefManager @Inject constructor(
             emptyList()
         }
         savedUsersCache = SavedUsersCache(usersJson, parsed)
-        return parsed
+        return parsed.detach()
     }
 
     fun setSavedUsers(users: List<User>) {
         val json = gson.toJson(users)
         pref.edit { putString(SAVED_USERS, json) }
-        savedUsersCache = SavedUsersCache(json, users.toList())
+        savedUsersCache = SavedUsersCache(json, users.detach())
     }
 
     fun getRepliedNewsId(): String? {

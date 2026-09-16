@@ -121,6 +121,46 @@ class SharedPrefManagerTest {
     }
 
     @Test
+    @Suppress("UNCHECKED_CAST")
+    fun testGetSavedUsersReturnsDefensiveCopyOfList() {
+        val json = NetworkModule.provideGson().toJson(listOf(User(name = "User 1")))
+        every { mockSharedPreferences.getString("savedUsers", null) } returns json
+
+        val mutable = sharedPrefManager.getSavedUsers() as MutableList<User>
+        mutable.clear()
+
+        val retrieved = sharedPrefManager.getSavedUsers()
+        assertEquals(1, retrieved.size)
+        assertEquals("User 1", retrieved[0].name)
+    }
+
+    @Test
+    fun testGetSavedUsersReturnsDefensiveCopyOfElements() {
+        val json = NetworkModule.provideGson().toJson(listOf(User(name = "User 1")))
+        every { mockSharedPreferences.getString("savedUsers", null) } returns json
+
+        sharedPrefManager.getSavedUsers()[0].name = "mutated"
+
+        assertEquals("User 1", sharedPrefManager.getSavedUsers()[0].name)
+    }
+
+    @Test
+    fun testSetSavedUsersDoesNotCacheCallerElements() {
+        val user = User(name = "User 1")
+        val users = mutableListOf(user)
+        val json = NetworkModule.provideGson().toJson(users)
+        every { mockSharedPreferences.getString("savedUsers", null) } returns json
+
+        sharedPrefManager.setSavedUsers(users)
+        user.name = "mutated"
+        users.clear()
+
+        val retrieved = sharedPrefManager.getSavedUsers()
+        assertEquals(1, retrieved.size)
+        assertEquals("User 1", retrieved[0].name)
+    }
+
+    @Test
     fun testGetSavedUsersAbsentReturnsEmptyList() {
         every { mockSharedPreferences.getString("savedUsers", null) } returns null
         val result = sharedPrefManager.getSavedUsers()
