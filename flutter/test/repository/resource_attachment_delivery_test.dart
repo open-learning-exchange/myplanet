@@ -429,6 +429,54 @@ void main() {
     });
   });
 
+  test('a failing attachment sweep cannot block the document upload', () async {
+    // **The second audit pass found this, and it is the more dangerous of the
+    // two halves.** `queuePendingAttachments` reaches `dart:io` through
+    // `ResourceFiles.existingFileFor`, so a `FileSystemException` or a
+    // `MissingPluginException` from the documents-directory lookup escaped
+    // `queuePending` and took the **document** sweep with it — the one that is
+    // the only thing getting a user-authored resource to the server at all.
+    // Every caller swallows the throw, so it was silent.
+    //
+    // And it was persistent, not transient: `attachment_pending` survives a
+    // schema bump, so on a handset where that lookup fails the document sweep
+    // was blocked on *every* pass, for ever. A smaller, newer safety net must
+    // never gate an older, larger one.
+    //
+    // The fixture needs both a flagged row (to make the sweep do work) and a
+    // separate pending document (to have something to lose) — with only one of
+    // the two it cannot distinguish the behaviours.
+    await uploadedButUndelivered();
+    await saveLocal(title: 'Second resource');
+    expect(
+      (await resources.pendingUploads()).length,
+      1,
+      reason: 'the fixture must have a document to lose',
+    );
+    expect(await resources.pendingAttachments(), hasLength(1));
+
+    ResourceFiles.baseDirectory = () async =>
+        throw const FileSystemException('no documents directory');
+    addTearDown(() => ResourceFiles.baseDirectory = () async => sandbox);
+
+    final queued = await uploader.queuePending(config: config);
+
+    expect(
+      queued,
+      1,
+      reason:
+          'the document sweep must still run: a resource whose write-time '
+          'enqueue never ran has nothing else to deliver it',
+    );
+    expect(
+      await database.outboxDao.forItem(
+        ResourcesUploader.type,
+        (await resources.pendingUploads()).single.id,
+      ),
+      hasLength(1),
+    );
+  });
+
   // ------------------------------------------------------------- the 409 arm
 
   group('a conflicting attachment PUT', () {

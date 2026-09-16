@@ -532,9 +532,26 @@ class AppDatabase extends _$AppDatabase {
         // `_id`) would re-PUT every already-delivered attachment on the
         // planet's whole catalog.
         //
-        // Matched on `id`, not `_id`: `markUploaded` moves the row's primary
-        // key onto the CouchDB id, and that is what the retry row's `item_id`
-        // holds.
+        // **Matched on `id` OR `_id`, and matching on `id` alone was a defect
+        // the audit caught.** `markUploaded` moves the row's primary key onto
+        // the CouchDB id, which is what the retry row's `item_id` holds — but
+        // that rekey is Phase 156's fix, and a backfill exists precisely for
+        // the backlog *older* builds left. The build that shipped the
+        // resources uploader before it wrote `_id`/`_rev` onto the uuid row
+        // and left the primary key alone, so on that handset `id` is a uuid
+        // and only `_id` matches. Matching on the column only the newest build
+        // writes is matching on the wrong one.
+        //
+        // No false positive is possible: a `resource_attachment` row is filed
+        // only by [ResourcesUploader._enqueueAttachmentRetry], keyed on a
+        // document *this device* POSTed, so no synced catalog row's `_id` can
+        // appear in that set.
+        //
+        // The miss was not self-correcting either. Such a row is often
+        // `is_private = 1` (a team resource), and [MyLibraryDao.deleteNotIn]'s
+        // eligibility clause is `is_private = 0`, so no later sync sweeps it:
+        // it sits on the handset for ever with its document attachment-less on
+        // Planet, and the column added to find it saying it owes nothing.
         //
         // `outbox` is checked for existence rather than assumed. This block
         // runs before `createAll`, and a raw `UPDATE` naming a table SQLite
@@ -544,9 +561,10 @@ class AppDatabase extends _$AppDatabase {
         if (from < 50 && await _tableExists('outbox')) {
           await customStatement(
             'UPDATE my_library SET attachment_pending = 1 '
-            'WHERE id IN ('
-            "SELECT item_id FROM outbox WHERE upload_type = 'resource_attachment'"
-            ')',
+            'WHERE id IN (SELECT item_id FROM outbox '
+            "WHERE upload_type = 'resource_attachment') "
+            'OR _id IN (SELECT item_id FROM outbox '
+            "WHERE upload_type = 'resource_attachment')",
           );
         }
       }
@@ -2041,9 +2059,14 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
   /// link has to carry the CouchDB id and this DAO method is handed one — see
   /// `ResourcesRepository.markResourceUploaded`. (An earlier revision of this
   /// comment claimed the port had no equivalent of
-  /// `createLocalResourceLink`. It has `TeamsRepository.addResourceLink`; the
-  /// search that missed it was for the Kotlin name rather than the
-  /// behaviour.)
+  /// `createLocalResourceLink`; the search that missed it was for the Kotlin
+  /// name rather than the behaviour. Its correction then named
+  /// `TeamsRepository.addResourceLink`, which schema v50 made wrong in turn —
+  /// that method is now the port of the *other* Kotlin producer,
+  /// `addResourceLinks`, and this path's counterpart is
+  /// `TeamsRepository.createLocalResourceLink`. Two sibling copies of this
+  /// sentence were updated at the split and this one was missed, which is the
+  /// shape of sentence a later lane relies on.)
   Future<bool> markUploaded(String id, String couchId, String rev) async {
     final row = await getById(id);
     if (row == null) return false;
@@ -2167,11 +2190,17 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
 
   /// Rows whose attachment PUT is still outstanding — the sweep's input.
   ///
-  /// `_rev IS NOT NULL` is not redundant beside the flag. [markUploaded] is
-  /// the only writer that sets it, so in practice every flagged row has a
-  /// revision; the clause is here because the PUT's `If-Match` *needs* one,
-  /// and a row that somehow lacked it would be enqueued to fail. Cheaper to
-  /// exclude than to discover at drain time.
+  /// `_rev IS NOT NULL` is not redundant beside the flag. Two writers set the
+  /// flag — [markUploaded], and the v50 migration's backfill — and both select
+  /// rows that have a revision, so in practice every flagged row has one; the
+  /// clause is here because the PUT's `If-Match` *needs* one, and a row that
+  /// somehow lacked it would be enqueued to fail. Cheaper to exclude than to
+  /// discover at drain time.
+  ///
+  /// It excludes NULL and not `''`, where `attachmentHandler` rejects both.
+  /// Unreachable today — CouchDB never returns an empty revision — and noted
+  /// because that is the one shape which would file an outbox row per sweep
+  /// for the drain to delete again.
   ///
   /// Unscoped by user, like [pendingUploads]: a handset whose session has gone
   /// is exactly the one carrying an undelivered write, which is the reasoning

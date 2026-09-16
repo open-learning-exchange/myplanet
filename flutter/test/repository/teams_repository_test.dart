@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
@@ -831,6 +832,125 @@ void main() {
       final doc = TeamsRepository.serializeTeamDocument(row);
       expect(doc['sourcePlanet'], 'guatemala');
       expect(doc['teamPlanetCode'], 'guatemala');
+      expect(doc['userPlanetCode'], 'ada-planet');
+      expect(doc['parentCode'], 'earth');
+    });
+
+    test('a dirty row still adopts the server planet codes', () async {
+      // **The data loss the second audit pass found, and the one the v50
+      // no-backfill decision was silently relying on not existing.**
+      //
+      // `MyTeam.populateTeamFields` assigns all four *above* its
+      // `if (!hadLocalChanges)` guard (`MyTeam.kt:81`, `:86`, `:94`, `:96`;
+      // the guard opens at `:100`), so a Kotlin row with an undelivered local
+      // edit still takes the server's planet attribution. The port's mapper
+      // returns early for `isUpdated` and carried only `_rev`, so the codes
+      // stayed NULL — then `serializeTeamDocument` omits a null, and the
+      // upload that clears `isUpdated` PUT a document **without** them. The
+      // codes were gone from Planet and the next walk pulled the stripped
+      // document back, so nothing could detect it afterwards.
+      await database.teamDao.upsert(
+        TeamsCompanion.insert(
+          id: 'team-1',
+          name: const Value('District (renamed offline)'),
+          type: const Value('team'),
+          isUpdated: const Value(true),
+        ),
+      );
+      final existing = await database.teamDao.getById('team-1');
+
+      final pulled = TeamMapper.fromDoc({
+        '_id': 'team-1',
+        '_rev': '7-abc',
+        'name': 'District',
+        'type': 'team',
+        'sourcePlanet': 'guatemala',
+        'teamPlanetCode': 'guatemala',
+        'userPlanetCode': 'ada-planet',
+        'parentCode': 'earth',
+      }, existing: existing)!;
+      await database.teamDao.upsert(pulled);
+
+      final row = await database.teamDao.getById('team-1');
+      expect(
+        row!.name,
+        'District (renamed offline)',
+        reason: 'the local edit must still outrank the server copy',
+      );
+      expect(row.isUpdated, isTrue, reason: 'still owed to the server');
+      expect(row.rev, '7-abc');
+      // The planet codes are not the user's edit — no screen writes them — so
+      // the "outranks the server copy" argument does not reach them.
+      expect(row.sourcePlanet, 'guatemala');
+      expect(row.teamPlanetCode, 'guatemala');
+      expect(row.userPlanetCode, 'ada-planet');
+      expect(row.parentCode, 'earth');
+
+      // And the upload that clears `isUpdated` now carries them.
+      final doc = TeamsRepository.serializeTeamDocument(row);
+      expect(doc['sourcePlanet'], 'guatemala');
+      expect(doc['parentCode'], 'earth');
+    });
+
+    test('a resource link uploads exactly the keys Kotlin sends', () async {
+      // `MyTeam.serialize` returns early for this docType (`:167-179`) with
+      // seven fields plus `_id`/`_rev`. The port had no such branch, so it
+      // sent `createdDate`, `isLeader` and `public` — and, once
+      // `addResourceLink` began stamping it, `userPlanetCode`, which Kotlin
+      // sets on the row (`:683`) and deliberately keeps off the document. That
+      // is the same shape as the `status` field this round declined to stamp
+      // for exactly that reason, so the two had to be resolved the same way.
+      final ui = await withId('link-keys').addResourceLink(
+        teamId: 'team-1',
+        resourceId: 'res-1',
+        title: 'Atlas',
+        planetCode: 'guatemala',
+      );
+
+      expect(
+        ui!.userPlanetCode,
+        'guatemala',
+        reason: 'the row matches Kotlin, which does set it',
+      );
+      expect(
+        TeamsRepository.serializeTeamDocument(ui).keys.toSet(),
+        {
+          '_id',
+          'resourceId',
+          'title',
+          'teamId',
+          'teamPlanetCode',
+          'teamType',
+          'docType',
+        },
+        reason:
+            'and the document matches Kotlin, which does not send it — nor '
+            'createdDate, isLeader or public',
+      );
+    });
+
+    test('a general team document keeps every key it had', () async {
+      // The branch above must not leak into any other docType: `MyTeam
+      // .serialize`'s general block writes all four planet codes (`:204`,
+      // `:207`, `:208`, `:211`) and the `createdDate`/`public`/`isLeader`
+      // fields the resourceLink branch omits.
+      await database.teamDao.upsert(
+        TeamMapper.fromDoc({
+          '_id': 'team-1',
+          'name': 'District',
+          'type': 'team',
+          'createdDate': 42,
+          'public': true,
+          'userPlanetCode': 'ada-planet',
+          'parentCode': 'earth',
+        })!,
+      );
+
+      final doc = TeamsRepository.serializeTeamDocument(
+        (await database.teamDao.getById('team-1'))!,
+      );
+      expect(doc['createdDate'], 42);
+      expect(doc['public'], isTrue);
       expect(doc['userPlanetCode'], 'ada-planet');
       expect(doc['parentCode'], 'earth');
     });

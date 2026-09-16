@@ -233,15 +233,33 @@ class ResourcesUploader {
     final endpoint = endpointFor(config);
 
     // **Unconditional, and ahead of the early return below.** The two sweeps
-    // are independent: a handset can have every document filed and still owe
-    // an attachment, which is precisely the state this round exists to close,
-    // and gating the attachment sweep on `pending.isNotEmpty` would make it
-    // reachable only for a user who happens to have a second undelivered
-    // resource. Placed here rather than in `sweepPendingResources` so it also
-    // reaches `DashboardSyncNotifier.queuePendingResources` and
+    // are independent in reachability: a handset can have every document filed
+    // and still owe an attachment, which is precisely the state this round
+    // exists to close, and gating the attachment sweep on `pending.isNotEmpty`
+    // would make it reachable only for a user who happens to have a second
+    // undelivered resource. Placed here rather than in `sweepPendingResources`
+    // so it also reaches `DashboardSyncNotifier.queuePendingResources` and
     // `add_resource_screen._save`, the other two callers — one sweep, three
     // call sites, no other lane's file touched.
-    await queuePendingAttachments(config: config, userId: user?.id);
+    //
+    // **The `try` makes them independent in *failure* too, and its absence was
+    // a defect the audit caught.** The attachment sweep reaches `dart:io`
+    // through [ResourceFiles.existingFileFor], so a `FileSystemException` or a
+    // `MissingPluginException` from the documents-directory lookup escaped
+    // here and took the **document** sweep with it — the one that is the only
+    // thing getting a user-authored resource to the server at all. Every
+    // caller swallows the throw, so the failure was silent, and it was
+    // *persistent* rather than transient: `attachment_pending` survives a
+    // schema bump, so on a handset where that lookup fails the document sweep
+    // was blocked on every pass, for ever.
+    //
+    // A smaller, newer safety net must never gate an older, larger one. Same
+    // reasoning as `sweepPendingResources`' own catch, quoted there.
+    try {
+      await queuePendingAttachments(config: config, userId: user?.id);
+    } catch (e, stack) {
+      log('The attachment sweep failed', error: e, stackTrace: stack);
+    }
 
     final pending = await _resources.pendingUploads();
     if (pending.isEmpty) return 0;
@@ -284,7 +302,7 @@ class ResourcesUploader {
   /// sweep rather than a longer retry ladder.** Two routes lose a file and
   /// neither is reachable from the retry row: the process dies between
   /// [MyLibraryDao.markUploaded] and [_uploadAttachment], so no retry row is
-  /// ever filed; or the row spends its four-attempt ladder (~15 minutes) on a
+  /// ever filed; or the row spends its five-attempt ladder (~15 minutes) on a
   /// handset that is offline for longer. Both leave the same state, and until
   /// [MyLibraryTable.attachmentPending] existed that state was
   /// indistinguishable from success — so there was nothing to sweep *from*.
@@ -705,11 +723,22 @@ class ResourcesUploader {
   /// offline for longer than the ladder still loses the attachment silently.
   /// Closing it properly needs a column recording delivery."* It does, and
   /// that column is [MyLibraryTable.attachmentPending]. Both losing routes are
-  /// now re-armable by [queuePendingAttachments]: the ladder spent while
-  /// offline (a transport failure classifies `transient`, which
+  /// re-armable by [queuePendingAttachments]: the ladder spent while offline
+  /// (a transport failure classifies `transient`, which
   /// [OutboxRepository.enqueue] re-arms with a fresh ladder), and the process
   /// killed before any retry row was filed at all — which no outbox row could
   /// ever have covered, because it died before there was one.
+  ///
+  /// **One residual case is not**, and saying so is the point: a row whose
+  /// [ResourceFiles.moveResourceDirectory] failed has its bytes under the old
+  /// uuid, so the sweep's disk check — which looks under the row's own id —
+  /// misses and skips it. If that row's ladder is then spent, nothing re-arms
+  /// it. The flag stays set, so nothing reports a delivery that did not
+  /// happen; the attachment simply stays on the handset. Closing it means
+  /// falling back to the retry row's stored `fileDocId` when the row's own id
+  /// has no bytes. Note the row is already broken for *reading* too — every
+  /// file reader resolves the same id — so this is the narrow end of a wider
+  /// pre-existing failure.
   Future<void> _uploadAttachment(
     OutboxRow row,
     String couchId,

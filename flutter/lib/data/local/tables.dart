@@ -210,7 +210,7 @@ class MyLibraryTable extends Table {
   /// `_rev == downloaded_rev`, `resource_offline = 1` and bytes under
   /// `ole/<_id>/`. Two routes reach the second state — the process dies
   /// between `markUploaded` and the attachment PUT, so no retry row is ever
-  /// filed at all; or the retry row spends its four-attempt ladder (~15
+  /// filed at all; or the retry row spends its five-attempt ladder (~15
   /// minutes) on a handset that is offline for longer. Neither was re-armable,
   /// because nothing could tell it apart from success.
   ///

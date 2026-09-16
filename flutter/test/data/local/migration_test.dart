@@ -2012,6 +2012,51 @@ void main() {
     );
   });
 
+  test(
+    'the v50 backfill reaches a row the older build left un-rekeyed',
+    () async {
+      // **The second audit pass found this one, and the shape of the mistake is
+      // worth keeping.** The backfill matched on `id` alone, justified by
+      // "`markUploaded` moves the row's primary key onto the CouchDB id" — true
+      // of the *current* build, and a backfill exists precisely for the backlog
+      // that *older* builds left. The build that shipped the resources uploader
+      // before Phase 156's rekey wrote `_id`/`_rev` onto the uuid row and left
+      // the primary key alone, so on that handset only `_id` matches.
+      //
+      // The row is `is_private = 1` deliberately: `MyLibraryDao.deleteNotIn`
+      // spares those, so nothing sweeps it away later either. Missing it meant
+      // the resource sat on the handset for ever, its document attachment-less
+      // on Planet, with the column added to find it saying it owed nothing.
+      await installMyLibraryShapeBeforeV48();
+      await database.customStatement(
+        'INSERT INTO my_library (id, _id, _rev, title, '
+        'resource_local_address, resource_offline, downloaded_rev, is_private) '
+        "VALUES ('uuid-1', 'server-1', '3-abc', 'Well survey', 'well.pdf', "
+        "1, '3-abc', 1)",
+      );
+      await database.outboxDao.upsert(
+        OutboxEntriesCompanion.insert(
+          id: 'op-1',
+          uploadType: 'resource_attachment',
+          itemId: 'server-1',
+          payload: '{"filename":"well.pdf","fileDocId":"server-1"}',
+          endpoint: 'https://planet.example.org/db/resources',
+          createdAt: 1000,
+        ),
+      );
+
+      await runUpgrade(from: 47);
+
+      expect(
+        (await database.myLibraryDao.getById('uuid-1'))?.attachmentPending,
+        isTrue,
+        reason:
+            'the evidence is the outbox row, and it names the document id — '
+            'which on a pre-rekey row is `_id`, not the primary key',
+      );
+    },
+  );
+
   test('the v50 backfill leaves the synced catalog alone', () async {
     // The row class that outnumbers every other by four orders of magnitude.
     // A backfill that flagged "every row with bytes and an `_id`" — the

@@ -512,9 +512,21 @@ class TeamsRepository {
   /// from one method would have put keys on the wire that neither path sends.
   ///
   /// [planetCode] keeps its name and position, so the one caller
-  /// (`TeamResourceActions.add`) is unchanged — it already passes the
-  /// signed-in user's `planetCode`, which is exactly what Kotlin reads at
-  /// `:682-683`.
+  /// (`TeamResourceActions.add`) is unchanged — it passes the signed-in
+  /// user's `planetCode`, which is exactly what Kotlin reads at `:682-683`.
+  ///
+  /// **With one caveat that an earlier revision of this comment recorded and
+  /// this one deleted, wrongly.** That caller reads
+  /// `ref.read(sessionProvider).value?.planetCode`
+  /// (`teams_provider.dart:402`) — the port's standing *a provider a screen
+  /// reads but never watches is null* trap, and in Riverpod 3 `.value` is
+  /// "previous value, else null". Neither `team_resources_screen` nor
+  /// `team_detail_screen` watches it, so it is latent only because the router
+  /// holds a `ref.listen`; on any path where it is not resolved this method is
+  /// handed null and stamps nothing. That is exactly the path Kotlin's prefs
+  /// fallback exists for. `teams_provider.dart` is not this lane's file — note
+  /// that `requestToJoin`, ten methods up in the same file, gets it right with
+  /// `await _session()`.
   ///
   /// **`status` is deliberately not stamped**, although Kotlin writes
   /// `user.parentCode` there. `MyTeam.serialize`'s `resourceLink` branch emits
@@ -540,11 +552,17 @@ class TeamsRepository {
   /// `if (x != null)`-guarded and a row this method creates leaves them null,
   /// so they are never sent — a count of *potential* keys stated as what the
   /// port sends, in a comment whose whole job was to size a future phase.)
-  /// The four planet-code columns do not widen that gap: `userPlanetCode` is
-  /// the only one this method sets that Kotlin's branch omits, and
-  /// [serializeTeamDocument] emits each only when non-null, so a link made by
-  /// [createLocalResourceLink] — which leaves it null — sends exactly the two
-  /// keys Kotlin's branch sends.
+  /// **That gap is closed too, and it was this method's `userPlanetCode` that
+  /// forced the issue.** An earlier revision of this paragraph said the four
+  /// columns "do not widen the gap" — and then argued only the
+  /// [createLocalResourceLink] case, which leaves `userPlanetCode` null. This
+  /// method sets it, Kotlin's `resourceLink` serialize branch omits it, and
+  /// the port had no such branch, so the gap widened by exactly one key on the
+  /// path this comment is attached to — by the same argument used four
+  /// paragraphs up to decline `status`. [serializeTeamDocument] now has the
+  /// branch, so the row matches Kotlin's row and the document matches Kotlin's
+  /// document; `createdDate`, `isLeader` and `public` stop being sent as
+  /// well.
   Future<TeamRow?> addResourceLink({
     required String teamId,
     required String resourceId,
@@ -837,7 +855,46 @@ class TeamsRepository {
     return changed;
   }
 
-  static Map<String, dynamic> serializeTeamDocument(TeamRow row) => {
+  /// Port of `MyTeam.serialize` (`MyTeam.kt:156-225`).
+  ///
+  /// **The `resourceLink` early return, added when the v50 audit found this
+  /// method putting a key on the wire that Kotlin's does not.** `MyTeam
+  /// .serialize` returns at `:167-179` for that docType with seven fields plus
+  /// `_id`/`_rev`, and the port had no such branch — so a resource link
+  /// uploaded `createdDate`, `isLeader` and `public`, which Kotlin never
+  /// sends, and (once [addResourceLink] began stamping it) `userPlanetCode`,
+  /// which Kotlin sets on the row (`:683`) and deliberately omits from the
+  /// document.
+  ///
+  /// That last one is the point. The same round declined to stamp `status`
+  /// from `addResourceLinks` (`:677`) on exactly this argument — Kotlin keeps
+  /// it device-local and this serializer would have sent it — and then added
+  /// `userPlanetCode`, which is the identical shape, while a comment two
+  /// methods up claimed the gap had not widened. Branching here honours both:
+  /// the **row** matches Kotlin's row and the **document** matches Kotlin's
+  /// document, instead of trading one against the other.
+  ///
+  /// `teamId` is guarded on non-empty rather than non-null because Kotlin
+  /// writes it with `JsonUtils.addString` (`:170`), which skips null *and*
+  /// empty — the only field in this branch that does.
+  static Map<String, dynamic> serializeTeamDocument(TeamRow row) {
+    if (row.docType == 'resourceLink') {
+      return {
+        '_id': row.id,
+        if (row.rev?.isNotEmpty == true) '_rev': row.rev,
+        if (row.resourceId != null) 'resourceId': row.resourceId,
+        if (row.title != null) 'title': row.title,
+        if (row.teamId?.isNotEmpty == true) 'teamId': row.teamId,
+        if (row.teamPlanetCode != null) 'teamPlanetCode': row.teamPlanetCode,
+        if (row.teamType != null) 'teamType': row.teamType,
+        if (row.sourcePlanet != null) 'sourcePlanet': row.sourcePlanet,
+        'docType': row.docType,
+      };
+    }
+    return _serializeGeneralTeamDocument(row);
+  }
+
+  static Map<String, dynamic> _serializeGeneralTeamDocument(TeamRow row) => {
     '_id': row.id,
     if (row.rev?.isNotEmpty == true) '_rev': row.rev,
     if (row.teamId != null) 'teamId': row.teamId,
@@ -894,11 +951,12 @@ class TeamsRepository {
     // sent, silently overwriting them. Same class as Phases 56, 74 and 98,
     // reached through the upload direction rather than the pull.
     //
-    // `MyTeam.serialize`'s `resourceLink` branch returns early with only
-    // `teamPlanetCode` and `sourcePlanet` (`:171`, `:173`). This has no such
-    // branch — see [addResourceLink]'s note — but the difference does not
-    // reach the wire: [createLocalResourceLink] leaves `userPlanetCode` and
-    // `parentCode` null, and a null is omitted here.
+    // This is the **general** branch only. `MyTeam.serialize`'s `resourceLink`
+    // early return (`:167-179`) carries just `teamPlanetCode` and
+    // `sourcePlanet` of the four, and [serializeTeamDocument] now mirrors that
+    // above rather than relying on a null to keep the key off the wire — which
+    // is what the sentence this replaces claimed, and which stopped being true
+    // the moment [addResourceLink] began stamping `userPlanetCode`.
     if (row.sourcePlanet != null) 'sourcePlanet': row.sourcePlanet,
     if (row.teamPlanetCode != null) 'teamPlanetCode': row.teamPlanetCode,
     if (row.userPlanetCode != null) 'userPlanetCode': row.userPlanetCode,
