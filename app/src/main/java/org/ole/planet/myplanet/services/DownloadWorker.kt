@@ -4,6 +4,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.ServiceInfo
 import android.os.SystemClock
 import android.util.Log
 import androidx.hilt.work.HiltWorker
@@ -164,7 +165,11 @@ class DownloadWorker @AssistedInject constructor(
         )
         if (DownloadUtils.canStartForegroundService(context)) {
             try {
-                setForeground(ForegroundInfo(WORKER_NOTIFICATION_ID, notification))
+                setForeground(
+                    ForegroundInfo(WORKER_NOTIFICATION_ID, notification,
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                    )
+                )
                 return
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to promote download worker to foreground, showing plain notification", e)
