@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../providers/feedback_provider.dart';
-import '../../providers/session_provider.dart';
 
 /// Port of `ui/feedback/FeedbackFragment.kt`.
 ///
@@ -37,7 +36,6 @@ class _FeedbackCreateScreenState extends ConsumerState<FeedbackCreateScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final session = ref.watch(sessionProvider).value;
 
     return Scaffold(
       appBar: AppBar(
@@ -166,8 +164,17 @@ class _FeedbackCreateScreenState extends ConsumerState<FeedbackCreateScreen> {
             // Submit button
             SizedBox(
               width: double.infinity,
+              // Enabled with no session, deliberately. This screen is one of
+              // the two things a user who cannot sign in can reach at all
+              // (`login_screen.dart`, and `inactive_dashboard_screen` for an
+              // account nobody has activated), and Kotlin puts no user test
+              // anywhere on the path — `FeedbackComposerViewModel.kt:38`
+              // defaults the name to `""` and files the document. Disabling
+              // the button here was the port's own invention, and it made the
+              // front door's feedback button lead to a form with a dead
+              // Submit.
               child: FilledButton(
-                onPressed: session == null ? null : _submit,
+                onPressed: _submit,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   child: Text(l10n.submit),
@@ -199,9 +206,14 @@ class _FeedbackCreateScreenState extends ConsumerState<FeedbackCreateScreen> {
 
     if (hasError) return;
 
-    final session = ref.read(sessionProvider).value;
-    if (session == null) return;
-
+    // No session read here at all — not a fixed one, an absent one. This used
+    // to be `ref.read(sessionProvider).value` followed by a bare `return`, on
+    // a screen that never watched the provider: the port's standing trap,
+    // where a still-loading session silently discarded the form with no
+    // snackbar, no error and no row (Phase 100's `_submitExam`, same shape).
+    // The session is a *value on the document* rather than a precondition, so
+    // the notifier resolves it with `await ...future` — see
+    // `FeedbackCreateNotifier.submit`, which holds the Kotlin citations.
     final messenger = ScaffoldMessenger.of(context);
 
     // Going through the notifier rather than calling `createFeedback` directly

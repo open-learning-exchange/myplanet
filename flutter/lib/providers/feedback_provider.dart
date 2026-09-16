@@ -128,10 +128,28 @@ class FeedbackQueue {
     if (config == null) return 0;
     return _ref
         .read(feedbackUploaderProvider)
-        .queuePending(
-          config: config,
-          userId: _ref.read(sessionProvider).value?.id,
-        );
+        .queuePending(config: config, userId: await _signedInUserId());
+  }
+
+  /// The filer's id, or null when nobody is signed in.
+  ///
+  /// `outbox.userId` is nullable and nothing in `OutboxDrainer` reads it, so
+  /// null is a legitimate value here rather than a failure — which is exactly
+  /// why this was `read(sessionProvider).value` and looked harmless. It is
+  /// not: on a screen that never watches the provider the two nulls are
+  /// indistinguishable, and "nobody is signed in" would have been reported for
+  /// a session that had simply not finished loading. Awaiting the future
+  /// answers the question that was actually asked.
+  ///
+  /// The `catch` keeps this the *un*important half it is meant to be: a
+  /// rejecting session must not fail a queue pass, because the payload it is
+  /// enqueuing is already on disk and does not depend on the answer.
+  Future<String?> _signedInUserId() async {
+    try {
+      return (await _ref.read(sessionProvider.future))?.id;
+    } catch (_) {
+      return null;
+    }
   }
 }
 
@@ -220,13 +238,35 @@ class FeedbackCreateNotifier extends Notifier<FeedbackCreateState> {
     state = state.copyWith(message: message);
   }
 
+  /// Files the feedback, **with or without a signed-in user**.
+  ///
+  /// The session is a value written onto the document, not a precondition, and
+  /// Kotlin is unambiguous about it: `FeedbackComposerViewModel.kt:38` is
+  /// `val user = userRepository.getUserModel()?.name ?: ""` — an elvis
+  /// default, with no early return, no toast and no error event anywhere on
+  /// the path. `FeedbackRepositoryImpl.createFeedback:57-58,66` writes that
+  /// string straight into `owner`, `source` and `messages[0].user`, the row is
+  /// saved unconditionally (`:115-117`), and the upload authenticates with the
+  /// *server* credential (`UrlUtils.header`), never the user's. So a document
+  /// filed with nobody signed in carries `owner: ""` and reaches the server.
+  ///
+  /// This used to refuse — `'Not logged in'`, with the screen's Submit button
+  /// disabled behind the same test — which made the login screen's feedback
+  /// button unportable: the one affordance for a user who cannot get past the
+  /// front door led to a form that could not be sent.
+  ///
+  /// **One deliberate divergence, and it is the honest direction.** Kotlin
+  /// resolves the name through `UserRepositoryImpl.getUserModel`, which reads
+  /// the `userId` preference — and nothing clears that preference on logout
+  /// (`UserSessionManager.logoutAsync` only writes an activity row; the sole
+  /// `clear()` is `SharedPrefManager.clearPreferences`, reached from
+  /// `SyncActivity.clearDataDialog`). So after a logout the Android app files
+  /// the *previous* user's name against feedback typed by whoever is holding
+  /// the phone now. `SessionNotifier.signOut` clears the session here, so this
+  /// writes `''` in that case. Matching Kotlin would mean attributing one
+  /// person's words to another, which is a bug to leave behind rather than a
+  /// behaviour to reproduce.
   Future<bool> submit({String? item, String? feedbackState}) async {
-    final session = ref.read(sessionProvider).value;
-    if (session == null) {
-      state = state.copyWith(error: 'Not logged in');
-      return false;
-    }
-
     if (state.message.isEmpty) {
       state = state.copyWith(error: 'Please enter feedback');
       return false;
@@ -240,10 +280,15 @@ class FeedbackCreateNotifier extends Notifier<FeedbackCreateState> {
     state = state.copyWith(isSubmitting: true, error: null);
 
     try {
+      // Inside the `try`, and that placement is the port's standing rule
+      // rather than style: a future can reject where `.value` could only be
+      // null, and Kotlin's own `catch` turns exactly this failure into
+      // `SubmitEvent.Error` (`FeedbackComposerViewModel.kt:41-43`).
+      final session = await ref.read(sessionProvider.future);
       await ref
           .read(feedbackRepositoryProvider)
           .createFeedback(
-            user: session.name ?? '',
+            user: session?.name ?? '',
             priority: state.priority,
             type: state.type,
             message: state.message,
