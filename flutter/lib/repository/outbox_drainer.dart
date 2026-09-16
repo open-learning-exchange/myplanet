@@ -116,12 +116,24 @@ typedef OutboxHandler =
 ///   never a loop. A second 409 is returned as the refusal it is, and
 ///   [OutboxRepository.classifyStatus] makes it terminal exactly as before.
 ///
+///   **`feedback` adds one GET to that count**, and the counts below are per
+///   uploader rather than universal because of it. `FeedbackUploader`'s
+///   `attempt` reconciles the re-send against the server's copy of an append
+///   array, and the document it needs is the one this class has already
+///   fetched — but only the revision is handed to the callback, so it fetches
+///   it again: POST → GET → GET → POST, and up to twenty requests on the 5xx
+///   ladder below rather than fifteen. Still bounded, still no loop. Passing
+///   the fetched document into [send]'s callback would remove the second read
+///   and close a window where a failed one has to refuse the send; it is a
+///   change to this class's contract, so it is deliberately not made here.
+///
 ///   Be precise about what that does *not* say: only a second **409** is
 ///   terminal. If the re-send answers a 5xx, a transport failure or a throw,
 ///   that is what the drainer classifies, and it is `transient` — so the item
 ///   is retried, and because the *stored* payload still holds the stale
 ///   `_rev`, each of the five attempts repeats POST → GET → POST. Up to
-///   fifteen requests for one write before it is abandoned. That is
+///   fifteen requests for one write before it is abandoned — twenty for
+///   `feedback`, per the note above. That is
 ///   deliberate rather than an oversight, and it is why the re-send is *not*
 ///   wrapped the way the fetch is: after a failed fetch a definitive 409 is
 ///   still in hand, but after a failed re-send the last thing the server said
@@ -165,19 +177,31 @@ typedef OutboxHandler =
 /// closed (hence the `cacheDocuments` citation, which belongs there and only
 /// there), which is why health needs the arm most.
 ///
-/// **The exception was real, and it has been closed at the other end.** Where
+/// **The exception was real, and closing it took more than the mapper.** Where
 /// the server's document holds content the payload cannot reconstruct, "one
 /// sync later" is still a loss and this arm still makes it sooner. `feedback`
-/// was that case: `messages` is an append array both Planet's web UI and the
+/// is that case: `messages` is an append array both Planet's web UI and the
 /// handset write, and `FeedbackMapper.fromDoc` kept the local array on a
 /// pending reply while taking the server's `rev`, so an admin reply present on
 /// the server and absent locally was destroyed by the next send — with or
-/// without this arm. `FeedbackMapper._mergePendingReplies` now merges the two
-/// instead, and `FeedbackSyncNotifier` re-queues after a pull so the payload
-/// this arm re-sends is the merged one rather than a stale snapshot. **The
-/// rule the exception qualified still stands for any future uploader whose
-/// document holds server-authored content**: closing it took a merge in the
-/// mapper, not a change here.
+/// without this arm.
+///
+/// `FeedbackMapper.mergeThreads` merges the two instead, and the pull's
+/// callers re-queue so the payload this arm re-sends is the merged one rather
+/// than a stale snapshot. **An earlier revision of this paragraph stopped
+/// there and called the exception closed. It was not**, because every drain
+/// trigger in the port runs *before* any feedback pull — `OutboxDrainScope`
+/// fires on startup and on resume and pulls nothing at all — so the ordinary
+/// conflicted send happens while the handset has never seen the admin's
+/// reply, and no re-queue can refresh a payload from a row that is equally
+/// unaware. What closes it is `FeedbackUploader`'s own `attempt`, which
+/// reconciles the re-send against the server's copy and writes the result
+/// back to the row.
+///
+/// **So the rule the exception qualified still stands, and the remedy is not
+/// where it was advertised**: a future uploader whose document holds
+/// server-authored content needs a reconcile in its handler, not only a merge
+/// in its mapper.
 ///
 /// **One case deserves naming rather than falling out of the rule.** A team
 /// tombstone is `{_id, _rev, _deleted: true}` (`teams_provider.dart:295`), so

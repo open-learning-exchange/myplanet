@@ -1,3 +1,7 @@
+import 'dart:convert';
+
+import 'package:drift/drift.dart' show Value;
+
 import '../core/config/server_config.dart';
 import '../core/network/network_result.dart';
 import '../core/system/device_identity.dart';
@@ -73,6 +77,9 @@ class FeedbackUploader {
       payload,
     );
     final sentRev = payload['_rev'];
+    // What the reconcile actually put on the wire, when it ran. Held so the
+    // row can be brought back into step with it below.
+    Map<String, dynamic>? sent;
     final result = await ConflictRecovery.send(
       api: _api,
       documentUrl: documentUrl,
@@ -92,9 +99,24 @@ class FeedbackUploader {
             authHeader: authHeader,
           );
         }
+        final merged = await _reconcile(body, documentUrl, authHeader);
+        if (merged == null) {
+          // **Fail closed.** The alternative — sending `body` — puts the stale
+          // array on the server under a revision [ConflictRecovery] has just
+          // read, which is precisely the loss this arm exists to prevent, on a
+          // path with no error and no log. A null `httpCode` classifies
+          // `transient` (`OutboxRepository.classifyStatus`), so the row keeps
+          // its place in the queue and the reply waits on the handset rather
+          // than the admin's reply being destroyed for everyone.
+          return const NetworkError<Map<String, dynamic>>(
+            null,
+            'Could not read the conflicting feedback document',
+          );
+        }
+        sent = merged;
         return _api.postJsonObject(
           row.endpoint,
-          await _reconcile(body, documentUrl, authHeader),
+          merged,
           authHeader: authHeader,
         );
       },
@@ -109,7 +131,46 @@ class FeedbackUploader {
       }
       // Recording the revision is what lets a later reply update the same
       // document instead of conflicting against a stale `_rev`.
-      await _dao.markUploaded(row.itemId, rev);
+      //
+      // **And the thread, when the reconcile changed it — without which the
+      // reconcile is half a fix.** `markUploaded` writes two columns, which
+      // was right while the handler always sent the row's own array. The
+      // reconcile breaks that invariant: it can leave the server holding a
+      // reply the row does not have, and the screen reads the row. ada, still
+      // seeing no answer, replies again; that reply is built on the local
+      // array, goes out under a revision that now *matches*, and CouchDB takes
+      // it with no 409 and nothing to reconcile against — the admin's answer
+      // destroyed on a clean 201. The second reply is not a contrived step; it
+      // is made *likely* by a fix that leaves the handset unaware of what it
+      // has just preserved.
+      //
+      // Merged rather than written over, through the same
+      // [FeedbackMapper.mergeThreads] the send used: the drain is
+      // asynchronous, so a reply written between the send and here would be
+      // lost by an overwrite. Merging keeps it and adds whatever the send
+      // delivered that the row lacks. One transaction, because a row reading
+      // `isUploaded = true` with a thread the server does not have is the
+      // state this whole block exists to prevent.
+      await _dao.transaction(() async {
+        await _dao.markUploaded(row.itemId, rev);
+        final delivered = sent?['messages'];
+        if (delivered is! List) return;
+        final current = await _dao.getById(row.itemId);
+        if (current == null) return;
+        await _dao.updateRow(
+          FeedbackEntriesCompanion(
+            id: Value(row.itemId),
+            messages: Value(
+              jsonEncode(
+                FeedbackMapper.mergeThreads(
+                  FeedbackMapper.decodeMessages(current.messages),
+                  delivered,
+                ),
+              ),
+            ),
+          ),
+        );
+      });
     }
     return result;
   };
@@ -147,6 +208,14 @@ class FeedbackUploader {
   /// the next pull instead. Adopting is not the better trade, it is the other
   /// one. Merging is the only arm that keeps both.
   ///
+  /// **Of `messages` only.** Every other field still goes as the stale payload
+  /// had it, `status` included — so an admin who closes a thread through the
+  /// web UI has it re-opened by the drain of a reply queued before the close,
+  /// where Kotlin's adopt-without-sending would not. Last-write-wins is the
+  /// right default for a scalar a single writer owns; `messages` is the one
+  /// field here that two writers append to, which is why it is the one field
+  /// reconciled.
+  ///
   /// The rule is **"append what the server does not already have"**, not the
   /// shared-prefix rule the mapper uses, and the difference is load-bearing.
   /// A send that reached CouchDB but whose response was lost leaves the row
@@ -155,12 +224,17 @@ class FeedbackUploader {
   /// would append our reply a second time. Matching anywhere in the server's
   /// array makes a re-send a no-op. Replies are identified by
   /// [FeedbackMapper.sameMessage] — message, user and a millisecond `time` —
-  /// so two genuinely distinct replies cannot collide.
+  /// so two replies collide only if a user sent the same text twice inside one
+  /// millisecond — or if both elements carry none of those three fields, which
+  /// [FeedbackMapper.sameMessage] documents as comparing equal. Treating
+  /// either as already-delivered drops it; treating an echo as new duplicates
+  /// it, permanently and for everyone, so the comparison is deliberately the
+  /// looser one.
   ///
   /// A failed or unusable read returns the body untouched. That is the
   /// pre-existing behaviour, and the alternative — refusing to send — would
   /// strand a reply on a handset over a transient read.
-  Future<Map<String, dynamic>> _reconcile(
+  Future<Map<String, dynamic>?> _reconcile(
     Map<String, dynamic> body,
     String documentUrl,
     String? authHeader,
@@ -172,9 +246,9 @@ class FeedbackUploader {
       // `PlanetApi` returns a `NetworkException` rather than throwing, so this
       // guards a fake or a future transport, as the `try` in
       // `ConflictRecovery.send` does.
-      return body;
+      return null;
     }
-    if (existing is! NetworkSuccess<Map<String, dynamic>>) return body;
+    if (existing is! NetworkSuccess<Map<String, dynamic>>) return null;
 
     final serverMessages = existing.data['messages'];
     if (serverMessages is! List) return body;
@@ -182,14 +256,9 @@ class FeedbackUploader {
     final ours = body['messages'];
     if (ours is! List) return {...body, 'messages': serverMessages};
 
-    final missing = ours.where(
-      (message) => !serverMessages.any(
-        (other) => FeedbackMapper.sameMessage(message, other),
-      ),
-    );
     return {
       ...body,
-      'messages': [...serverMessages, ...missing],
+      'messages': FeedbackMapper.mergeThreads(ours, serverMessages),
     };
   }
 }

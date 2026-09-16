@@ -557,27 +557,55 @@ Future<void> sweepPendingSubmissions(
 /// from there would refresh the snapshot from a row the pull had not touched
 /// yet — a no-op, and one that reads like a fix.
 ///
-/// What makes the snapshot stale is [FeedbackMapper.fromDoc]'s merge, and
-/// nothing else. `outbox.payload` is written by
+/// What makes the snapshot stale in a way that *loses* something is
+/// [FeedbackMapper.fromDoc]'s merge. (A pull also rewrites `rev` and every
+/// scalar column on a pending row, so it can stale the snapshot with no merge
+/// at all; the re-queue refreshes those too, and the merge is the case worth
+/// the placement.) `outbox.payload` is written by
 /// [FeedbackUploader.queuePending] from the row as it stood at queue time, and
 /// every *local* writer re-queues immediately after its write —
 /// `FeedbackCreateNotifier.submit`, `feedback_detail_screen._submitReply` and
 /// `_closeFeedback` all call `FeedbackQueue.queuePending`. So the one writer
 /// that moves a pending row out from under its own queued payload is the pull,
 /// which merges an admin's replies into a thread whose reply this device has
-/// not sent (`FeedbackMapper._mergePendingReplies`). Without this call the
-/// stale array drains over the server's document under a refreshed `_rev`
-/// (`ConflictRecovery.send`'s update arm) and the admin's reply is destroyed
-/// **on the server**, for every device — then the next pull brings the
-/// truncated thread back over the merged local copy and it is gone here too.
+/// not sent (`FeedbackMapper.mergeThreads`).
 ///
-/// This is also why the payload stays a snapshot rather than becoming a
-/// pointer into the row: rebuilding the body from the current row at send time
-/// would not fix this at all. The row at send time is exactly as unaware of
-/// the admin's reply as the snapshot is — staleness here is relative to the
-/// *server*, and only the pull closes that gap. A pointer payload would buy
-/// nothing and would cost Phase 148's terminal-row memo its meaning, since the
-/// bytes a terminal row records as answered could then change underneath it.
+/// **What this call is worth, stated accurately, because it changed under
+/// its own commit.** When it landed, the stale array draining over the
+/// server's document was the whole data loss, and this was the fix. It is not
+/// any more: `FeedbackUploader`'s `attempt` now reconciles a conflicted
+/// re-send against the server's copy, and a stale payload carries a stale
+/// `_rev`, so that send 409s and is repaired rather than destroying anything.
+/// What remains is worth having and is not a data-loss claim — the refreshed
+/// payload carries the revision the pull brought, so the send matches first
+/// time instead of paying a 409, two reads and a second POST for every reply
+/// written while a thread was moving. It is also the belt to the reconcile's
+/// braces: the reconcile is the only thing standing between a stale payload
+/// and the server, and one guard on a path that destroys other people's
+/// writing is thin.
+///
+/// The payload stays a snapshot rather than becoming a pointer into the row,
+/// and the reason has been narrowed once already, so state it exactly. A
+/// pointer would **not** close the loss: the row at the moment of a first send
+/// is as unaware of the admin's reply as the snapshot is, because staleness
+/// here is relative to the *server*, and only a pull or the reconcile closes
+/// that gap. What a pointer would buy is the same latency win this call buys —
+/// a post-pull send that matches first time. It is the more expensive way to
+/// buy it: a pointer costs Phase 148's terminal-row memo its meaning, since
+/// the bytes a terminal row records as answered could then change underneath
+/// it, and it would make `feedback` the only uploader of about twenty whose
+/// queued request is not the request that was queued.
+///
+/// **The gates its three siblings avoid are accepted here, deliberately.**
+/// Their docs explain at length that `syncSteps` runs only for an `autoSync`
+/// task, only with auto-sync enabled, and only when the interval is due — and
+/// that `BackgroundWorkCoordinator` cancels the `autoSync` job outright for a
+/// user who turns auto-sync off, so a step there never runs at all for them.
+/// All of that is true of this call too. It is still the right place, because
+/// there is no headless feedback *pull* for that user either: this refreshes a
+/// snapshot the pull makes stale, so it has nothing to do wherever the pull
+/// does not run. The three sweeps rescue rows nothing ever queued, which is
+/// why their placement has to beat those gates and this one does not.
 ///
 /// Gated on [SyncComplete] for the reason `FeedbackSyncNotifier` is: half a
 /// walk has merged only some threads, and re-queuing from a partial pull would

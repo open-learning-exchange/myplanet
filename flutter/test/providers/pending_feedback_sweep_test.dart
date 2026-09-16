@@ -331,13 +331,22 @@ void main() {
     );
 
     final swept = wiring.indexOf('sweepPendingFeedback(');
-    final drained = wiring.indexOf('drainer.drain(');
     final steps = wiring.indexOf('syncSteps:');
-    final pull = wiring.indexOf("'feedback',");
+    // **The pull itself, not the step's name literal.** An earlier cut
+    // anchored on `"'feedback',"`, which is the `BackgroundSyncStep` label a
+    // line above the pull — so moving the sweep call *above* the `sync(...)`
+    // inside the same closure, the precise mistake this assertion's reason
+    // describes, left it green. `feedbackRepositoryProvider` occurs exactly
+    // once in the window and is the read whose result the sweep depends on.
+    final pull = wiring.indexOf('feedbackRepositoryProvider');
 
-    expect(drained, greaterThan(-1), reason: 'drainer.drain moved');
     expect(steps, greaterThan(-1), reason: 'syncSteps moved');
-    expect(pull, greaterThan(-1), reason: "the 'feedback' step moved");
+    expect(pull, greaterThan(-1), reason: 'the feedback pull moved');
+    expect(
+      'feedbackRepositoryProvider'.allMatches(wiring).length,
+      1,
+      reason: 'the anchor above is only unambiguous while it occurs once',
+    );
 
     expect(
       swept,
@@ -352,17 +361,14 @@ void main() {
       greaterThan(steps),
       reason:
           'the re-queue must NOT move into drainOutbox beside the three '
-          'sweeps: that leg runs before syncSteps '
-          '(background_task_runner.dart:100 and :142), so it would run before '
-          'the pull it has to follow — a no-op shaped like a fix',
+          'sweeps: that leg runs before syncSteps, so it would run before the '
+          'pull it has to follow — a no-op shaped like a fix',
     );
-    expect(
-      drained,
-      lessThan(steps),
-      reason:
-          'the ordering this test depends on: drainOutbox really does run '
-          'ahead of syncSteps, which is why the other three sweeps sit there '
-          'and this one cannot',
-    );
+    // The runtime ordering this placement rests on — drainOutbox before
+    // syncSteps — is pinned by `background_task_runner_test.dart`'s
+    // `expect(calls, ['recover', 'drain', 'sync'])`. An earlier cut asserted
+    // it here as the textual order of two *named arguments*, which Dart does
+    // not tie to execution order at all: reordering the argument list turned
+    // it red with nothing changed, and reordering `run` left it green.
   });
 }

@@ -380,6 +380,82 @@ void main() {
     },
   );
 
+  test(
+    'an unreadable document refuses the send rather than overwriting',
+    () async {
+      // The second GET can fail between two back-to-back requests — a 5xx, a
+      // timeout, an expired credential. Returning the body unchanged there would
+      // POST the stale array under the revision `ConflictRecovery` has just
+      // read: exactly the loss the arm exists to prevent, on a path with no
+      // error and no log.
+      //
+      // `ConflictRecovery`'s own `try` argues a failed fetch is safe *because a
+      // definitive 409 is still in hand*. That reasoning does not carry here,
+      // where a failed fetch would mean "send anyway".
+      await seedPending();
+      final sent = <Map<String, dynamic>>[];
+      when(
+        () => api.postJsonObject(
+          any(),
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer((invocation) async {
+        sent.add(
+          Map<String, dynamic>.from(
+            invocation.positionalArguments[1] as Map<String, dynamic>,
+          ),
+        );
+        return const NetworkError<Map<String, dynamic>>(409, 'conflict');
+      });
+      var reads = 0;
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer((_) async {
+        reads++;
+        // `ConflictRecovery` reads it successfully and hands back the revision;
+        // the handler's own read is the one that fails.
+        return reads == 1
+            ? NetworkSuccess<Map<String, dynamic>>({
+                '_id': 'feedback-1',
+                '_rev': '2-admin',
+                'messages': [
+                  {'message': 'mine', 'time': '1', 'user': 'ada'},
+                  {'message': 'from the admin', 'time': '2', 'user': 'admin'},
+                ],
+              })
+            : const NetworkError<Map<String, dynamic>>(503, 'gateway');
+      });
+
+      final result = await uploader.handler(rowFor('feedback-1'), {
+        '_id': 'feedback-1',
+        '_rev': '1-local',
+        'messages': [
+          {'message': 'mine', 'time': '1', 'user': 'ada'},
+        ],
+      }, 'auth');
+
+      expect(
+        sent,
+        hasLength(1),
+        reason: 'the stale array must not reach the server a second time',
+      );
+      expect(result, isA<NetworkError<Map<String, dynamic>>>());
+      // A null `httpCode` classifies transient, so the row keeps its place in
+      // the queue rather than being abandoned over a momentary read failure.
+      expect((result as NetworkError<Map<String, dynamic>>).code, isNull);
+      expect(
+        OutboxRepository.classifyStatus(result.code),
+        OutboxRefusal.transient,
+      );
+      expect(
+        (await database.feedbackDao.getById('feedback-1'))?.isUploaded,
+        isFalse,
+        reason: 'nothing landed, so the row is still pending',
+      );
+    },
+  );
+
   test('a successful upload records the revision', () async {
     await seedPending();
     when(

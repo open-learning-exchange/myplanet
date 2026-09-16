@@ -127,7 +127,7 @@ class TeamsScreen extends ConsumerWidget {
                                   // `TeamsAdapter.kt:80-82` binds `btnFeedback`
                                   // on every row, and `item_team_list.xml:58-68`
                                   // declares it with no `visibility` attribute
-                                  // that `showActionButton` (:90-140) ever
+                                  // that `showActionButton` (:90-146) ever
                                   // touches — so it is offered to a non-member
                                   // and to a guest too. No gate here either.
                                   IconButton(
