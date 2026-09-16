@@ -33,6 +33,19 @@ void main() {
   testWidgets(
     'opening team voices moves the chat watermark to the post count',
     (tester) async {
+      // The rows have to be in the database, not just in the overridden
+      // stream: `updateTeamNotification` **derives** the watermark from
+      // `NewsDao.countTopLevelByTeam` rather than taking the count the screen
+      // passes. That is the port of Kotlin, whose
+      // `updateTeamNotification(teamId, news)` receives the list
+      // `getFilteredNews` just loaded with that same statement — the badge is
+      // `watermark < count` and only means anything while both sides count one
+      // population. This test used to pass a stream of two and assert two,
+      // which could not tell a derived watermark from a pass-through.
+      for (final row in [_post('post-1'), _post('post-2')]) {
+        await database.newsDao.upsert(row.toCompanion(false));
+      }
+
       await tester.pumpWidget(
         wrapScreen(
           const TeamVoicesScreen(teamId: 'team-1'),
@@ -42,8 +55,17 @@ void main() {
             // live drift query stream leaves a pending timer when the provider
             // scope is torn down, which is the harness backstop firing.
             appDatabaseProvider.overrideWithValue(database),
+            // **Load-bearing: this stream deliberately disagrees with the
+            // database.** The screen calls
+            // `updateTeamNotification(teamId, rows.length)` with *five*, while
+            // the table holds two qualifying rows. A watermark taken from the
+            // caller writes 5; the derivation writes 2. Make these agree and
+            // the test cannot tell the two readings apart — which is what it
+            // did before, with two and two.
             teamVoicesProvider.overrideWith(
-              (ref, teamId) => Stream.value([_post('post-1'), _post('post-2')]),
+              (ref, teamId) => Stream.value([
+                for (var i = 1; i <= 5; i++) _post('streamed-\$i'),
+              ]),
             ),
             teamProvider.overrideWith((ref, teamId) async => null),
             teamMembershipsProvider.overrideWith(
