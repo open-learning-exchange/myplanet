@@ -192,6 +192,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           : () => context.push(Routes.becomeMember),
                       child: Text(l10n.becomeMember),
                     ),
+                    // The front door's route to an administrator, for the
+                    // user who cannot get through it: wrong PIN, unreachable
+                    // server, an account nobody has activated yet. Kotlin has
+                    // it at `activity_login.xml:274` (labelled `@string/feedback`,
+                    // the same string this key carries) and opens
+                    // `FeedbackFragment` as a dialog over the activity at
+                    // `LoginActivity.kt:200-202`.
+                    //
+                    // Kotlin's tap is a two-way branch: with no server
+                    // configured (`getUrl() == "/db"`) it toasts
+                    // `please_enter_server_url_first` and opens the server
+                    // dialog instead. That arm cannot be reached here, and not
+                    // by accident — `redirect` sends a device with no
+                    // configuration to `/server` before this screen is ever
+                    // built, so a login screen on display *is* a configured
+                    // one. Porting the branch would add a limb no user can
+                    // walk down.
+                    //
+                    // `push`, so the form returns here: [Routes.loginFeedback]
+                    // is a location with nothing to re-read, unlike
+                    // [Routes.changeServer] whose marker a push would lose.
+                    TextButton(
+                      onPressed: _isSubmitting
+                          ? null
+                          : () => context.push(Routes.loginFeedback),
+                      child: Text(l10n.feedback),
+                    ),
                   ],
                 ),
               ),
