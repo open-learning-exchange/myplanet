@@ -275,7 +275,29 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (changingServer) return null;
 
       if (!isSignedIn) {
-        return location == Routes.login ? null : Routes.login;
+        // `/become-member` belongs here with `/login`, and leaving it out made
+        // a shipped button do nothing.
+        //
+        // Kotlin offers registration to a signed-out user: `become_member` is
+        // on `activity_login.xml:257` and `LoginActivity.kt:678` starts
+        // `BecomeMemberActivity` from it. The port has that button too —
+        // `login_screen.dart:188-194`, whose own comment records that the
+        // screen "was built and routed with nothing pointing at it" — but on
+        // the login screen the user is by definition not signed in, so this
+        // branch sent `/become-member` straight back to `/login` and the tap
+        // only ever flashed.
+        //
+        // Nothing could see it. `/become-member` *is* reached, from
+        // `guest_dialog.dart`, where the user has a session — so the
+        // reachability guard is satisfied — and no rule there runs this
+        // redirect at all. A route can resolve perfectly to its own screen and
+        // still be unreachable because of this function; that is the same
+        // shape as `/server`, which had three tested paths dead behind it.
+        // `redirect_reachability_test.dart` is the guard that now drives it.
+        //
+        // `BecomeMemberScreen` reads no session, so it is correct without one.
+        const signedOutLocations = <String>{Routes.login, Routes.becomeMember};
+        return signedOutLocations.contains(location) ? null : Routes.login;
       }
       if (location == Routes.server || location == Routes.login) {
         return Routes.home;
@@ -690,17 +712,23 @@ final routerProvider = Provider<GoRouter>((ref) {
                     path: 'feedback',
                     builder: (context, state) => const FeedbackListScreen(),
                     routes: [
-                      GoRoute(
-                        path: ':feedbackId',
-                        builder: (context, state) => FeedbackDetailScreen(
-                          feedbackId: state.pathParameters['feedbackId']!,
-                        ),
-                      ),
+                      // Ahead of `:feedbackId`, as `chat/new` is ahead of
+                      // `:chatId`: go_router takes the first match, and a new
+                      // report has no id to carry. Declared the other way
+                      // round, `/life/feedback/create` built the *detail*
+                      // screen for a report whose id is the literal 'create',
+                      // so both pushers ended on "Feedback not found".
                       GoRoute(
                         path: 'create',
                         builder: (context, state) => FeedbackCreateScreen(
                           item: state.uri.queryParameters['item'],
                           state: state.uri.queryParameters['state'],
+                        ),
+                      ),
+                      GoRoute(
+                        path: ':feedbackId',
+                        builder: (context, state) => FeedbackDetailScreen(
+                          feedbackId: state.pathParameters['feedbackId']!,
                         ),
                       ),
                     ],

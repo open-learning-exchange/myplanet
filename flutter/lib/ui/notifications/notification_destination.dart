@@ -206,10 +206,21 @@ String notificationDestinationLocation(NotificationDestination destination) =>
         '${Routes.teams}/${destination.teamId}/members?tab=requests',
       NotificationDestinationKind.teamJoin =>
         '${Routes.teams}/${destination.teamId}',
-      // The Flutter port has no team-chat tab yet (the upstream opens the
-      // team's ChatPage), so the team detail is the closest destination.
+      // Kotlin's team "Chat" tab *is* the team voices list:
+      // `NotificationsFragment.kt:125` is `openTeam(relatedId, ChatPage)`, and
+      // `TeamPageConfig.kt:19-21` is `object ChatPage … createFragment() =
+      // TeamsVoicesFragment()`. The port has had that screen since the team
+      // slice landed.
+      //
+      // This used to read "the Flutter port has no team-chat tab yet, so the
+      // team detail is the closest destination", which was **false when it was
+      // written** — `/life/teams/:teamId/voices` is registered in
+      // `router.dart` — and it is the reason the arm sat wrong for a round: a
+      // tap on "new message in <team>" dropped the user on the detail link list
+      // to find Voices themselves. A comment asserting a gap is a claim with a
+      // shelf life; this one outlived the gap it described.
       NotificationDestinationKind.teamChat =>
-        '${Routes.teams}/${destination.teamId}',
+        '${Routes.teams}/${destination.teamId}/voices',
       NotificationDestinationKind.voiceReply =>
         '${Routes.voices}/${destination.voiceId}',
     };

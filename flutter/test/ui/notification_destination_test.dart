@@ -241,4 +241,41 @@ void main() {
       );
     }
   });
+
+  test('a chat notification opens the team voices list, not the team', () {
+    // Kotlin's team "Chat" tab *is* the voices list — `ChatPage.createFragment()
+    // = TeamsVoicesFragment()` (`TeamPageConfig.kt:19-21`), opened by
+    // `NotificationsFragment.kt:125`. The port sent this kind to the team detail
+    // link list instead, behind a comment claiming the port had no such screen;
+    // `/life/teams/:teamId/voices` had been registered the whole time.
+    //
+    // `teamJoin` is asserted alongside deliberately, and it is the half that
+    // makes this a test. The two arms used to produce the *identical* string,
+    // so an assertion naming only `teamChat` would have passed before the fix
+    // as readily as after it — the shape CLAUDE.md records as "a fixture that
+    // cannot distinguish". These two must differ, and differ in this direction.
+    const teamId = 'team-7';
+    final chat = notificationDestinationLocation(
+      const NotificationDestination(
+        NotificationDestinationKind.teamChat,
+        teamId: teamId,
+      ),
+    );
+    final join = notificationDestinationLocation(
+      const NotificationDestination(
+        NotificationDestinationKind.teamJoin,
+        teamId: teamId,
+      ),
+    );
+
+    expect(chat, '/life/teams/$teamId/voices');
+    expect(join, '/life/teams/$teamId');
+    expect(
+      chat,
+      isNot(join),
+      reason:
+          'a "new message" tap and a "you were added" tap land on the same '
+          'screen again',
+    );
+  });
 }
