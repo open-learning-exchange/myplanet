@@ -360,6 +360,21 @@ class ResourcesRepository {
   Future<void> adoptAttachmentRev(String localId, String rev) =>
       _dao.adoptAttachmentRev(localId, rev);
 
+  /// Rows whose attachment PUT has not been delivered — see
+  /// [MyLibraryTable.attachmentPending] for why the column exists and
+  /// [MyLibraryDao.pendingAttachments] for the predicate.
+  ///
+  /// This has no Kotlin counterpart, and that is the finding rather than an
+  /// omission: Kotlin's attachment PUT is best-effort with no failure channel
+  /// at all (`FileUploader.uploadDoc` reports "Unable to upload resource"
+  /// through `onSuccess`), so there is nothing there to port. The port had the
+  /// same hole until this column made the two outcomes distinguishable.
+  Future<List<MyLibraryRow>> pendingAttachments() => _dao.pendingAttachments();
+
+  /// [MyLibraryDao.clearAttachmentPending].
+  Future<int> clearAttachmentPending(String id) =>
+      _dao.clearAttachmentPending(id);
+
   /// Port of `ResourcesRepositoryImpl.getLibraryItemById` (`:162-164`).
   Future<MyLibraryRow?> getLibraryItemById(String id) => _dao.getById(id);
 
