@@ -108,18 +108,6 @@ class HeavyTableSync {
   ///   reaches into the sync-centre UI and its labels. If a server ever
   ///   carries a large `ratings` table the fix is one line — add it below and
   ///   drop the area — but that is a change with a reason, not a guess.
-  /// * **`team_activities` has no writer in the port at all.** Kotlin pulls it
-  ///   (`teamsSyncRepository.bulkInsertTeamActivitiesFromSync`,
-  ///   `TransactionSyncManager.kt:251-253`); the port only ever *uploads*
-  ///   team-visit rows. Adding the table here without a writer would schedule
-  ///   a job that does nothing, so the gap is reported rather than papered
-  ///   over: see the phase notes. The consequence is the same shape as the
-  ///   `ratings` gap this port already fixed — `TeamLogDao.teamVisitsForUsers`
-  ///   and `lastTeamVisit` feed the member-detail screen's visit count and
-  ///   last-visit row *and* the team leaderboard's ranking
-  ///   (`team_leaderboard_screen.dart:101`), so all three show only what
-  ///   *this* handset observed. A leaderboard is a comparison between members
-  ///   by construction, which makes it the sharpest case.
   /// * **`submissions` keeps its inline pull**, and this one was moved here
   ///   and moved back. It is 1,975 documents — 20 pages — and it is not one
   ///   of the two tables that aborted at depth, so the checkpoint solves a
@@ -139,7 +127,24 @@ class HeavyTableSync {
   ///   Kotlin never had rather than inventing one. **Make the merge preserve a
   ///   pending local edit and this table can move here**; until then the
   ///   parity gain is not worth the loss.
-  static const List<String> tables = ['courses_progress', 'login_activities'];
+  static const List<String> tables = [
+    'courses_progress',
+    'login_activities',
+    // Added once it had a writer. It had none for several phases and was
+    // documented here as a gap rather than scheduled, because a scheduled
+    // table with no writer is a job that runs, finds nothing to do and
+    // reports success for ever. `TeamsRepository.insertTeamActivitiesFromSync`
+    // is that writer, wired in `heavy_sync_providers.dart`, and
+    // `writableTables` is what keeps the two from drifting apart again.
+    //
+    // It belongs *here* rather than in the interactive sync on the same
+    // evidence the other two are here for: planet.learning holds **13,659**
+    // `team_activities` documents — 69 pages at this table's size of 200 —
+    // which is between `login_activities` (19,324, and it aborted at depth)
+    // and the tables that walk inline. The checkpoint is load-bearing, not
+    // decorative.
+    'team_activities',
+  ];
 
   /// How long a persisted interactive-sync flag is believed.
   ///

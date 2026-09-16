@@ -151,7 +151,11 @@ class TeamsRepository {
     String? userParentCode,
     String? teamType,
   }) async {
-    if (teamId.isEmpty || userName == null || userName.trim().isEmpty) {
+    // `trim()` on both: Kotlin's guard is `teamId.isBlank() ||
+    // userName.isNullOrBlank()` (`TeamsRepositoryImpl.kt:842`), and the port
+    // tested `teamId.isEmpty`, so a whitespace-only team id was rejected there
+    // and accepted here — filing a visit against a team no screen can reach.
+    if (teamId.trim().isEmpty || userName == null || userName.trim().isEmpty) {
       return null;
     }
     final id = _createId();
@@ -176,6 +180,129 @@ class TeamsRepository {
   /// selects these, serializes each, and POSTs it to `team_activities`.
   Future<List<TeamLogRow>> pendingTeamLogUploads() =>
       _teamLogDao.pendingUploads();
+
+  /// Port of `TeamsRepositoryImpl.bulkInsertTeamActivitiesFromSync`
+  /// (`:1277`) → `insertTeamLogs` (`:1142`) — the `team_activities` pull the
+  /// port has never had.
+  ///
+  /// **What was missing and what it cost.** Kotlin walks `team_activities` on
+  /// the way in (`TransactionSyncManager.kt:251-253`); the port only ever
+  /// *uploaded* visit rows, so `TeamLogDao.teamVisitsForUsers` and
+  /// `lastTeamVisit` returned whatever this one handset happened to observe.
+  /// Those two feed the member-detail screen's visit count and last-visit row
+  /// **and the team leaderboard's ranking** — and a leaderboard is a
+  /// comparison between members by construction, so a member who does all
+  /// their work on another device ranked last. Same shape as the `ratings`
+  /// average this port already fixed.
+  ///
+  /// The rows land in the existing `team_log` table rather than a new one:
+  /// it is a field-for-field port of `model/TeamLog.kt`, which is the single
+  /// table Kotlin uses for both directions, and the readers are already
+  /// `TeamLogDao` methods over it. No schema change, therefore no bump —
+  /// which matters, because a bump discards unsynced local writes and
+  /// `team_log` is a preserved table precisely because its `uploaded` flag is
+  /// the only record that a visit has not left the device.
+  ///
+  /// The merge — resolve the local row, keep its primary key, and treat a
+  /// pulled document as already uploaded — is explained at [TeamLogMapper].
+  /// Two page-wide lookups instead of two per document, matching how
+  /// `ActivitiesRepositoryImpl.bulkInsertOfflineActivitiesFromSync` batches
+  /// the identical merge.
+  ///
+  /// Deliberately **no prune**. Kotlin issues no `deleteNotIn` for
+  /// `team_log`, and one here would delete exactly the visits the server has
+  /// not seen yet — the rows this table is preserved for. Returns the number
+  /// of documents written, so the caller can report a page count.
+  Future<int> insertTeamActivitiesFromSync(
+    List<Map<String, dynamic>> docs,
+  ) async {
+    // **Both halves of this predicate are load-bearing, and the empty-id half
+    // was missing.** `TeamLogMapper.fromDoc` also refuses these, so dropping
+    // `_design` rows here looks redundant — but a document that reaches the
+    // loop and yields no row still contributes its `time`/`user` to the two
+    // lookup lists below *and still consumes a `claimedRowIds` claim*. An
+    // id-less document ahead of a real one in the same page would therefore
+    // starve the real one of its local row: two rows for one visit, and the
+    // starved local row left `uploaded = false` so it uploads a second server
+    // document. Both of the failures this merge exists to prevent, from one
+    // malformed row.
+    //
+    // `extractDocs` already drops empty ids before the heavy writer calls
+    // this, so that page cannot arrive today — but this method is public and
+    // its guard should defend itself rather than rely on its only caller.
+    final documents = docs.where((doc) {
+      final id = JsonUtils.getString('_id', doc);
+      return id.isNotEmpty && !id.startsWith('_design');
+    }).toList();
+    if (documents.isEmpty) return 0;
+
+    final ids = documents
+        .map((doc) => JsonUtils.getString('_id', doc))
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    final existingById = {
+      for (final row in await _teamLogDao.getByCouchIds(ids))
+        row.couchId ?? '': row,
+    };
+
+    final times = documents
+        .map((doc) => JsonUtils.getLong('time', doc))
+        .where((time) => time > 0)
+        .toSet()
+        .toList(growable: false);
+    final userNames = documents
+        .map((doc) => JsonUtils.getString('user', doc))
+        .where((name) => name.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    final fallbackByKey = <String, TeamLogRow>{};
+    for (final row in await _teamLogDao.getByTimesAndUsers(times, userNames)) {
+      // A row that already carries a `_id` is reachable through
+      // [existingById]; letting it also occupy a natural-key slot would let it
+      // shadow the *unstamped* local row that this fallback exists to find.
+      if (row.couchId?.isNotEmpty == true) continue;
+      // `putIfAbsent` — and **not** "as the Kotlin does", which an earlier
+      // revision of this comment claimed. Kotlin builds its initial fallback
+      // map with `.associateBy` (`ActivitiesRepositoryImpl.kt:363-365`), where
+      // a duplicate key keeps the **last** row; its `putIfAbsent` (`:267`)
+      // applies only to entries added during the document loop. First-wins is
+      // this port's choice, reachable only with two local rows sharing an
+      // exact `(time, user, teamId)`, and it is stated as a choice because
+      // this is the file the next lane will cite.
+      fallbackByKey.putIfAbsent(TeamLogMapper.naturalKeyForRow(row), () => row);
+    }
+
+    final companions = <TeamLogTableCompanion>[];
+    // Tracks local rows consumed within this page, so two documents that
+    // resolve to the same one do not both adopt its primary key and collapse
+    // into a single row — the second must be keyed by its own `_id`.
+    //
+    // **This is a deliberate improvement on the Kotlin it is modelled on, not
+    // a copy of it.** `activityFromJson` mutates both lookup maps inside the
+    // loop (`ActivitiesRepositoryImpl.kt:265-267`), so two documents sharing a
+    // natural key resolve to the same entity object and Kotlin *does* collapse
+    // them, losing one row. Here two server documents are two visits.
+    final claimedRowIds = <String>{};
+    for (final doc in documents) {
+      final docId = JsonUtils.getString('_id', doc);
+      final existing = existingById[docId];
+      var fallback = fallbackByKey[TeamLogMapper.naturalKeyForDoc(doc)];
+      if (existing == null &&
+          fallback != null &&
+          !claimedRowIds.add(fallback.id)) {
+        fallback = null;
+      }
+      final companion = TeamLogMapper.fromDoc(
+        doc,
+        existing: existing,
+        fallback: fallback,
+      );
+      if (companion != null) companions.add(companion);
+    }
+    await _teamLogDao.upsertAllFromSync(companions);
+    return companions.length;
+  }
 
   /// Watch all transactions for a team.
   Stream<List<TeamRow>> watchTransactions(
@@ -365,6 +492,56 @@ class TeamsRepository {
     return b.toString();
   }
 
+  /// Port of `TeamsRepositoryImpl.createLocalResourceLink` (`:719-740`) and,
+  /// on its other caller, of `addResourceLinks` (`:681-704`).
+  ///
+  /// **[planetCode] is accepted and ignored, and closing that is a phase
+  /// rather than a line.** Kotlin stamps `sourcePlanet` and `teamPlanetCode`
+  /// from `planetCode?.takeIf { it.isNotBlank() } ?:
+  /// sharedPrefManager.getPlanetCode()`; this writes neither, because the
+  /// `Teams` drift table has neither column. What closing it actually needs,
+  /// measured rather than assumed:
+  ///
+  /// * **Four columns, not two.** `MyTeam` also carries `userPlanetCode` and
+  ///   `parentCode`, both read back by `populateTeamFields` (`MyTeam.kt:94`,
+  ///   `:96`) and both written by `serialize` (`:207-208`).
+  ///   [createJoinRequest] has this same defect and needs two of them, so
+  ///   doing only `resourceLink` pays the migration twice.
+  /// * **`teams` is in `localAuthorityTables`**, so `createAll` will not alter
+  ///   it: a schema bump plus one hand-written `_addColumnIfMissing` per
+  ///   column, whose absence does not fail loudly.
+  /// * **The two Kotlin producers stamp different fields.** This one method
+  ///   serves both: `ResourcesUploader._linkPrivateResourceToTeam` is the
+  ///   `createLocalResourceLink` path (both planet fields), while
+  ///   `TeamResourceActions.add` is the `addResourceLinks` path, which sets
+  ///   `teamPlanetCode` and `userPlanetCode` from the user and **never sets
+  ///   `sourcePlanet` at all**. Stamping both unconditionally would put a key
+  ///   on the wire that Kotlin's UI path omits.
+  /// * **`TeamMapper.fromDoc` must map them too**, or the first sync after the
+  ///   upload blanks them — the Phase 56/74/98 shape.
+  /// * **The fallback has no port counterpart.** Kotlin's `?:
+  ///   sharedPrefManager.getPlanetCode()` needs `PlanetPrefs`, which this
+  ///   repository does not hold; and `TeamResourceActions.add` reads
+  ///   `sessionProvider` without watching it, so it can hand this `null` on
+  ///   exactly the path the fallback exists for.
+  ///
+  /// Related and out of scope here: this method's document is serialized by
+  /// [serializeTeamDocument], which has no `resourceLink` branch, where
+  /// `MyTeam.serialize` returns early for that docType with nine keys
+  /// (`MyTeam.kt:167-179`). The port sends **three** keys Kotlin does not —
+  /// `createdDate`, `isLeader` and `public` — a divergence on the same
+  /// document in the opposite direction from the planet codes above.
+  ///
+  /// (An earlier revision of this sentence said fourteen. That is the number
+  /// of key names in [serializeTeamDocument] absent from Kotlin's branch, but
+  /// every one of them is `if (x != null)`-guarded and a row this method
+  /// creates leaves them all null, so they are never sent. A count of
+  /// *potential* keys stated as what the port sends, in a comment whose whole
+  /// job is to size a future phase.)
+  ///
+  /// Kotlin's `addResourceLinks` also stamps `status = user.parentCode`, which
+  /// the port never sets — but `MyTeam.serialize`'s resourceLink branch emits
+  /// no `status` either, so it stays device-local in both apps.
   Future<TeamRow?> addResourceLink({
     required String teamId,
     required String resourceId,

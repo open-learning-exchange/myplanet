@@ -116,9 +116,14 @@ void main() {
     // `HeavyTableSync.tables` without wiring its repository and this fails.
     final container = await containerFor();
 
+    // **Set equality, not `containsAll`.** That only asserted
+    // scheduled ⊆ writable, which catches a scheduled table with no writer;
+    // the other direction — a writer nobody schedules — is the "green, tested
+    // and dead" shape, and nothing asserted it. Adding
+    // `'ratings': (docs) async {}` to the writers map used to fail no test.
     expect(
       container.read(heavyTableSyncProvider).writableTables,
-      containsAll(HeavyTableSync.tables),
+      unorderedEquals(HeavyTableSync.tables),
     );
   });
 
@@ -154,6 +159,19 @@ void main() {
           'loginTime': 1757000000000,
         },
       ],
+      'team_activities': [
+        {
+          '_id': 'ta-1',
+          '_rev': '1-c',
+          'user': 'ada',
+          'type': 'teamVisit',
+          'teamId': 'team-1',
+          'teamType': 'sync',
+          'parentCode': 'nation',
+          'createdOn': 'planet-a',
+          'time': 1757000000000,
+        },
+      ],
     });
     final sync = HeavyTableSync(
       api: api,
@@ -173,6 +191,16 @@ void main() {
 
     expect(await db.courseProgressDao.getByIds(['cp-1']), hasLength(1));
     expect(await db.offlineActivityDao.getByCouchIds(['la-1']), hasLength(1));
+    expect(await db.teamLogDao.getByCouchIds(['ta-1']), hasLength(1));
+    // Not just *a* row: the row the leaderboard counts. `teamVisitsForUsers`
+    // is what `team_leaderboard_screen` ranks members by, and it joins on the
+    // user *name* and `type = 'teamVisit'` — so a writer that landed the
+    // document under the wrong user or type would satisfy the line above and
+    // still leave the leaderboard exactly as wrong as before this phase.
+    expect(
+      await db.teamLogDao.teamVisitsForUsers('team-1', ['ada']),
+      hasLength(1),
+    );
   });
 
   test('no configured server schedules nothing', () async {

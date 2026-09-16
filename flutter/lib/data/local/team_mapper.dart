@@ -86,3 +86,108 @@ class TeamMapper {
         .toList(growable: false);
   }
 }
+
+/// Port of `TeamsRepositoryImpl.teamLogFromJson` (`:1150`) — one row of the
+/// `team_activities` CouchDB database, which the port pulls for the first time
+/// in this phase.
+///
+/// **This is not a literal port of the Kotlin function, and the divergence is
+/// the point.** `teamLogFromJson` builds a bare `TeamLog` keyed by the server
+/// `_id`, so a visit this device authored — keyed by its own generated id, with
+/// `_id`/`_rev` stamped on by `markUploaded` — comes back as a *second* row and
+/// `getTeamVisitsForUsers` counts the same visit twice. The merge here is the
+/// shape Kotlin uses for the sibling table one file over
+/// (`ActivitiesRepositoryImpl.activityFromJson:241`, reached from
+/// `bulkInsertOfflineActivitiesFromSync`): resolve the local row first, keep
+/// its primary key, and overwrite only the server-owned fields. Kotlin's
+/// `TeamLogDao.getByRemoteIds` (`TeamLogDao.kt:25`) is the lookup that merge
+/// needs and it has **no caller anywhere in `app/src/main`** — the dedup was
+/// laid in and never wired, the same shape this port keeps finding.
+///
+/// [existing] is the row already carrying this `_id`; [fallback] is the row
+/// matched on `(time, user, teamId)`, which catches the window where a POST
+/// landed but `markUploaded` never ran — the device then holds an unstamped
+/// row for a visit the server already has.
+class TeamLogMapper {
+  const TeamLogMapper._();
+
+  /// The natural key a visit is identified by when no `_id` links the rows.
+  ///
+  /// Kotlin's analogue is `"${loginTime}_${userName}"`; `teamId` joins it here
+  /// because one user legitimately visits several teams, and two visits by the
+  /// same user at the same millisecond to *different* teams are distinct rows.
+  static String naturalKey({int? time, String? user, String? teamId}) =>
+      '${time ?? 0}_${user ?? ''}_${teamId ?? ''}';
+
+  static String naturalKeyForDoc(Map<String, dynamic> doc) => naturalKey(
+    time: JsonUtils.getLong('time', doc),
+    user: JsonUtils.getStringOrNull('user', doc),
+    teamId: JsonUtils.getStringOrNull('teamId', doc),
+  );
+
+  static String naturalKeyForRow(TeamLogRow row) =>
+      naturalKey(time: row.time, user: row.user, teamId: row.teamId);
+
+  /// Builds the companion for one synced document, or null when the document
+  /// carries no usable `_id`.
+  static TeamLogTableCompanion? fromDoc(
+    Map<String, dynamic> doc, {
+    TeamLogRow? existing,
+    TeamLogRow? fallback,
+  }) {
+    final docId = JsonUtils.getString('_id', doc);
+    if (docId.isEmpty || docId.startsWith('_design')) return null;
+    final base = existing ?? fallback;
+
+    return TeamLogTableCompanion(
+      // Keeping the local row's primary key is what makes this a merge rather
+      // than an insert; only a document with no local counterpart is keyed by
+      // its `_id`.
+      id: Value(base?.id ?? docId),
+      couchId: Value(docId),
+      rev: Value(JsonUtils.getStringOrNull('_rev', doc)),
+      teamId: Value(JsonUtils.getStringOrNull('teamId', doc)),
+      user: Value(JsonUtils.getStringOrNull('user', doc)),
+      type: Value(JsonUtils.getStringOrNull('type', doc)),
+      teamType: Value(JsonUtils.getStringOrNull('teamType', doc)),
+      createdOn: Value(JsonUtils.getStringOrNull('createdOn', doc)),
+      parentCode: Value(JsonUtils.getStringOrNull('parentCode', doc)),
+      time: Value(JsonUtils.getLong('time', doc)),
+      // **The one column that is not copied from the document, and the reason
+      // a literal port of `teamLogFromJson` would have been a data-multiplying
+      // bug rather than a missing feature.**
+      //
+      // Kotlin's pending-upload predicate is `TeamLogDao.getPendingUploads` =
+      // `WHERE _rev IS NULL`, so writing the document's `_rev` onto the row is
+      // itself what takes it out of the upload queue; `TeamLog.uploaded` is
+      // never read by a query and never set to true anywhere in
+      // `app/src/main`. This port expresses the same predicate as
+      // `uploaded = false` (`TeamLogDao.pendingUploads`), so `uploaded = true`
+      // is the *faithful* translation of Kotlin writing `_rev` — not a
+      // divergence from it.
+      //
+      // A document that came *from* `team_activities` has by definition
+      // reached `team_activities`.
+      //
+      // **What leaving it at the column default actually costs**, stated
+      // precisely because the first draft of this comment said "duplicates the
+      // whole database on the server" and that was the wrong mechanism.
+      // `TeamLogUploader.serialize` emits `_id` when `couchId` is set and
+      // `_rev` when `rev` is, so a pulled row POSTs *with both* — which
+      // CouchDB treats as an update of the existing document, not a second
+      // one. What happens instead, on all 13,659 documents planet.learning
+      // holds: `queuePending` enqueues one `outbox` row per document, in a
+      // **preserved** table that survives schema bumps; every sweep POSTs
+      // 13,659 times; every document's `_rev` is bumped, so every *other*
+      // handset re-pulls all of them and POSTs them back in turn; and once two
+      // devices race, most of those POSTs 409, which the Phase 148 policy
+      // classifies `rejected` and leaves as a terminal outbox row apiece.
+      //
+      // Genuine duplication is still one slip away, which is why this is
+      // spelled out rather than trimmed: a writer that set `uploaded = false`
+      // *without* also writing `couchId`/`rev` would make `serialize` omit
+      // `_id`, and the POST would create a brand-new document every sync.
+      uploaded: const Value(true),
+    );
+  }
+}

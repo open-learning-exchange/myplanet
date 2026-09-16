@@ -395,7 +395,13 @@ void main() {
       // Kotlin answers `Result.failure()` for a missing `KEY_TABLE`; neither
       // retries, and retrying would loop for ever on a task name persisted by
       // a later build.
-      expect(await build().run('team_activities', config: config), isTrue);
+      // Deliberately a name no build has ever walked. This used to say
+      // `team_activities`, which passed only because the file-local
+      // `build()` helper hard-codes its own table set — and that table now
+      // *has* a writer, which this same file asserts further down. Two
+      // statements a reader would take as contradictory, and a trap for
+      // anyone who later points `build()` at the real provider writers.
+      expect(await build().run('no_such_table', config: config), isTrue);
       verifyNever(
         () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
       );
@@ -473,18 +479,39 @@ void main() {
       ]);
     });
 
-    test('walks the two the port schedules, not the Kotlin five', () {
-      // Three of the Kotlin five are deliberately absent, each argued at
+    test('walks the three the port schedules, not the Kotlin five', () {
+      // Two of the Kotlin five are deliberately absent, each argued at
       // [HeavyTableSync.tables]: `ratings` stays an interactive sync area,
-      // `team_activities` has no writer in this port at all, and
-      // `submissions` keeps an inline pull whose ordering against the upload
-      // sweep a background walk cannot preserve. Pinned so that adding one
-      // back is a decision somebody has to defend rather than a one-line
+      // and `submissions` keeps an inline pull whose ordering against the
+      // upload sweep a background walk cannot preserve. Pinned so that adding
+      // one back is a decision somebody has to defend rather than a one-line
       // drift.
-      expect(HeavyTableSync.tables, ['courses_progress', 'login_activities']);
+      //
+      // `team_activities` joined this list once it had a writer. It was
+      // absent for several phases *because* it had none, which is the
+      // condition the next test pins for every entry.
+      expect(HeavyTableSync.tables, [
+        'courses_progress',
+        'login_activities',
+        'team_activities',
+      ]);
       expect(HeavyTableSync.tables, isNot(contains('ratings')));
-      expect(HeavyTableSync.tables, isNot(contains('team_activities')));
       expect(HeavyTableSync.tables, isNot(contains('submissions')));
+    });
+
+    test('every scheduled table has a page size other than the fallback', () {
+      // `pageSizeFor`'s `_ => 1000` arm is a fallback for a table nobody
+      // sized. A scheduled table landing on it would walk `team_activities`'
+      // 13,659 documents in 1000-row pages, which is the page size the two
+      // tables that aborted at depth were failing on.
+      for (final table in HeavyTableSync.tables) {
+        expect(
+          HeavyTableSync.pageSizeFor(table),
+          isNot(1000),
+          reason: '$table is scheduled but has no page size of its own',
+        );
+      }
+      expect(HeavyTableSync.pageSizeFor('team_activities'), 200);
     });
   });
 }
