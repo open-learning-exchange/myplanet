@@ -1693,7 +1693,7 @@ void main() {
     // from what drift emits would make every assertion below vacuous.
     expect(
       await liveDdl('my_library'),
-      _withMyLibraryV48Columns(myLibraryDdlFrozenAtV47),
+      _withMyLibraryColumnsAfterV47(myLibraryDdlFrozenAtV47),
       reason: 'the frozen my_library DDL no longer matches what drift creates',
     );
     await database.customStatement('DROP TABLE my_library');
@@ -1928,6 +1928,238 @@ void main() {
     expect(row.resourceLocalAddress, 'budget.pdf');
   });
 
+  // -------------------------------------------------------------------- v50
+
+  test('the resource cache gains the attachment-delivery column', () async {
+    // Same reasoning as the v48 test above: `onUpgrade` fires on a version
+    // difference, so a column added without moving `schemaVersion` reaches
+    // fresh installs and nobody else. These tests call `onUpgrade` directly
+    // and would stay green through exactly that mistake.
+    expect(
+      database.schemaVersion,
+      greaterThanOrEqualTo(50),
+      reason:
+          'attachment_pending reaches an existing install only if the version '
+          'moves',
+    );
+
+    await installMyLibraryShapeBeforeV48();
+    expect(
+      await columnsOf('my_library'),
+      isNot(contains('attachment_pending')),
+    );
+
+    await runUpgrade(from: 47);
+
+    expect(await columnsOf('my_library'), contains('attachment_pending'));
+  });
+
+  test('the v50 backfill flags only the resource that left evidence', () async {
+    // **The Phase 143 question, asked of two rows that differ in exactly one
+    // way.** After `markUploaded` a resource whose attachment landed and one
+    // whose attachment never will are byte-for-byte identical in this table —
+    // that is the defect the column exists for, and it means no backfill can
+    // separate them from `my_library` alone. One of the two classes does leave
+    // a trace elsewhere: `_enqueueAttachmentRetry` files a
+    // `resource_attachment` outbox row only after a refused PUT, and a
+    // succeeding drain deletes it, so a surviving row is proof of
+    // non-delivery. `outbox` is preserved, so it is still there after the
+    // bump.
+    //
+    // **The two rows are deliberately identical in `my_library`.** A fixture
+    // that made the flagged one different in any other way — a different
+    // revision, a missing `downloaded_rev`, no local address — would let the
+    // backfill pass on a clause that is not the one it claims to use, and the
+    // test would be green whatever `UPDATE` ran. Phase 156 found two tests
+    // whose fixtures could not distinguish the behaviours they pinned; this is
+    // the guard against being the third. Mutating the `WHERE` to the
+    // obvious-looking `_id IS NOT NULL AND resource_offline = 1` reds both
+    // this test and the catalog one below.
+    await installMyLibraryShapeBeforeV48();
+    for (final id in ['refused-1', 'delivered-1']) {
+      await database.customStatement(
+        'INSERT INTO my_library (id, _id, _rev, title, '
+        'resource_local_address, resource_offline, downloaded_rev) VALUES '
+        "('$id', '$id', '3-abc', 'Well survey', 'well.pdf', 1, '3-abc')",
+      );
+    }
+    await database.outboxDao.upsert(
+      OutboxEntriesCompanion.insert(
+        id: 'op-1',
+        uploadType: 'resource_attachment',
+        itemId: 'refused-1',
+        payload: '{"filename":"well.pdf","fileDocId":"refused-1"}',
+        endpoint: 'https://planet.example.org/db/resources',
+        createdAt: 1000,
+      ),
+    );
+
+    await runUpgrade(from: 47);
+
+    expect(
+      (await database.myLibraryDao.getById('refused-1'))?.attachmentPending,
+      isTrue,
+      reason:
+          'a surviving resource_attachment row is proof the PUT was refused '
+          'and never re-armed',
+    );
+    expect(
+      (await database.myLibraryDao.getById('delivered-1'))?.attachmentPending,
+      isFalse,
+      reason:
+          'flagging this one would re-PUT an attachment the server already '
+          'holds, for every resource on the handset',
+    );
+  });
+
+  test('the v50 backfill leaves the synced catalog alone', () async {
+    // The row class that outnumbers every other by four orders of magnitude.
+    // A backfill that flagged "every row with bytes and an `_id`" — the
+    // obvious-looking guess — would enqueue an attachment PUT for the whole
+    // planet's catalog, over the top of the server's own.
+    await installMyLibraryShapeBeforeV48();
+    await database.customStatement(
+      'INSERT INTO my_library (id, _id, _rev, title, '
+      'resource_local_address, resource_offline, downloaded_rev) VALUES '
+      "('catalog-1', 'catalog-1', '9-abc', 'Atlas', 'atlas.pdf', 1, '9-abc')",
+    );
+
+    await runUpgrade(from: 47);
+
+    expect(
+      (await database.myLibraryDao.getById('catalog-1'))?.attachmentPending,
+      isFalse,
+    );
+  });
+
+  /// The `teams` DDL **frozen before v50**, dumped from `sqlite_master` and
+  /// then stripped of the four planet-code columns — the shape a device that
+  /// has never run v50 carries.
+  ///
+  /// `teams` is preserved, so `createAll` emits `CREATE TABLE IF NOT EXISTS`
+  /// and no-ops over this shape: without the four hand-written
+  /// `_addColumnIfMissing` steps the columns simply never appear, on every
+  /// existing install, and **nothing fails** until a query names one. That is
+  /// the failure Phase 143 wrote down, and this fixture is what makes it loud.
+  ///
+  /// The existing v31 `image_name` test cannot do this job, and it is worth
+  /// saying why rather than assuming the pattern was already covered: it never
+  /// installs a v30-shaped table, so `image_name` is present from `createAll`
+  /// before the migration runs at all, and deleting that step leaves it green.
+  const teamsDdlFrozenBeforeV50 =
+      'CREATE TABLE "teams" ("_id" TEXT NOT NULL, "_rev" TEXT NULL'
+      ', "team_id" TEXT NULL, "user_id" TEXT NULL, "name" TEXT NULL'
+      ', "description" TEXT NULL, "resource_id" TEXT NULL, "title" TEXT NULL'
+      ', "type" TEXT NULL, "doc_type" TEXT NULL, "team_type" TEXT NULL'
+      ', "status" TEXT NULL, "services" TEXT NULL, "rules" TEXT NULL'
+      ', "created_by" TEXT NULL, "route" TEXT NULL'
+      ", \"courses\" TEXT NOT NULL DEFAULT '[]'"
+      ', "created_date" INTEGER NOT NULL DEFAULT 0'
+      ', "limit" INTEGER NOT NULL DEFAULT 0'
+      ', "is_public" INTEGER NOT NULL DEFAULT 0 CHECK ("is_public" IN (0, 1))'
+      ', "is_leader" INTEGER NOT NULL DEFAULT 0 CHECK ("is_leader" IN (0, 1))'
+      ', "beginning_balance" INTEGER NOT NULL DEFAULT 0'
+      ', "sales" INTEGER NOT NULL DEFAULT 0'
+      ', "other_income" INTEGER NOT NULL DEFAULT 0'
+      ', "wages" INTEGER NOT NULL DEFAULT 0'
+      ', "other_expenses" INTEGER NOT NULL DEFAULT 0'
+      ', "start_date" INTEGER NOT NULL DEFAULT 0'
+      ', "end_date" INTEGER NOT NULL DEFAULT 0'
+      ', "updated_date" INTEGER NOT NULL DEFAULT 0'
+      ', "date" INTEGER NOT NULL DEFAULT 0'
+      ', "amount" INTEGER NOT NULL DEFAULT 0, "image_name" TEXT NULL'
+      ', "is_updated" INTEGER NOT NULL DEFAULT 0 CHECK ("is_updated" IN (0, 1))'
+      ', PRIMARY KEY ("_id"))';
+
+  const teamsColumnsAddedAtV50 = {
+    'source_planet',
+    'team_planet_code',
+    'user_planet_code',
+    'parent_code',
+  };
+
+  /// The frozen literal with v50's four columns spliced back in, so a drift
+  /// that has moved on fails here rather than making every assertion below
+  /// vacuous — the guard `installMyLibraryShapeBeforeV48` carries.
+  String withTeamsV50Columns(String frozen) => frozen.replaceFirst(
+    ', PRIMARY KEY ("_id"))',
+    ', "source_planet" TEXT NULL, "team_planet_code" TEXT NULL'
+        ', "user_planet_code" TEXT NULL, "parent_code" TEXT NULL'
+        ', PRIMARY KEY ("_id"))',
+  );
+
+  Future<void> installTeamsShapeBeforeV50() async {
+    await database.customStatement('SELECT 1');
+    expect(
+      await liveDdl('teams'),
+      withTeamsV50Columns(teamsDdlFrozenBeforeV50),
+      reason: 'the frozen teams DDL no longer matches what drift creates',
+    );
+    await database.customStatement('DROP TABLE teams');
+    await database.customStatement(teamsDdlFrozenBeforeV50);
+  }
+
+  test('the teams table gains the four planet-code columns', () async {
+    expect(
+      database.schemaVersion,
+      greaterThanOrEqualTo(50),
+      reason: 'the columns reach an existing install only if the version moves',
+    );
+
+    await installTeamsShapeBeforeV50();
+    expect(
+      await columnsOf('teams'),
+      isNot(containsAll(teamsColumnsAddedAtV50)),
+      reason: 'the frozen shape is meant to predate them',
+    );
+
+    await runUpgrade(from: 49);
+
+    expect(await columnsOf('teams'), containsAll(teamsColumnsAddedAtV50));
+  });
+
+  test('a locally authored team document is writable after v50', () async {
+    // The columns existing is not the write path working. A preserved-but-
+    // unaltered table would still be missing them here, and this asserts it in
+    // the language `TeamsRepository.addResourceLink` and `createJoinRequest`
+    // actually use — a companion, through the DAO.
+    await installTeamsShapeBeforeV50();
+    await database.customStatement(
+      'INSERT INTO teams (_id, team_id, doc_type, is_updated) VALUES '
+      "('link-old', 'team-1', 'resourceLink', 1)",
+    );
+
+    await runUpgrade(from: 49);
+
+    // The pre-existing row survives the bump and reads NULL, which is the
+    // truthful value: this device never captured the planet code the link was
+    // created under, and writing today's would claim a link made on another
+    // planet was made here.
+    //
+    // `null`, not `isNull` — drift's query builder exports a matcher of that
+    // name too, as the team-notification test above notes.
+    final survivor = await database.teamDao.getById('link-old');
+    expect(survivor?.docType, 'resourceLink');
+    expect(survivor?.isUpdated, isTrue, reason: 'still owed to the server');
+    expect(survivor?.sourcePlanet, null);
+    expect(survivor?.teamPlanetCode, null);
+
+    await database.teamDao.upsert(
+      TeamsCompanion.insert(
+        id: 'link-new',
+        teamId: const Value('team-1'),
+        docType: const Value('resourceLink'),
+        sourcePlanet: const Value('guatemala'),
+        teamPlanetCode: const Value('guatemala'),
+        userPlanetCode: const Value('guatemala'),
+        parentCode: const Value('earth'),
+      ),
+    );
+    final written = await database.teamDao.getById('link-new');
+    expect(written?.sourcePlanet, 'guatemala');
+    expect(written?.parentCode, 'earth');
+  });
+
   test('every my_library column is either old or a deliberate decision', () {
     // The loop adds a missing column; it cannot *backfill* one. So a new
     // column whose default is wrong for existing rows is the
@@ -1978,6 +2210,14 @@ void main() {
         'private_for',
         'step_id',
         'course_id',
+        // v50. The backfill decision is taken at the v50 step in
+        // `AppDatabase.migration`: the `DEFAULT 0` is truthful for every
+        // pre-existing row except an uploaded one whose attachment was lost,
+        // and *that* class is unreachable by any query over this table — which
+        // is the whole reason the column exists. The step recovers the half
+        // that left evidence (a surviving `resource_attachment` outbox row)
+        // and states the other half as unrecoverable rather than guessing.
+        'attachment_pending',
       },
       reason:
           'a new column on a preserved table needs a backfill decision first; '
@@ -1986,9 +2226,19 @@ void main() {
   });
 }
 
-/// The frozen v47 literal with v48's two columns spliced in, for the
-/// drift-drift guard above.
-String _withMyLibraryV48Columns(String frozen) => frozen.replaceFirst(
+/// The frozen v47 literal with every column added since spliced in, for the
+/// drift-drift guard above: v48's `step_id`/`course_id` and v50's
+/// `attachment_pending`.
+///
+/// Renamed from `_withMyLibraryV48Columns` when v50 landed. The name carrying
+/// a version number is the point — it is what makes the next person adding a
+/// column notice that this splice is where the frozen literal and the live
+/// table are reconciled, rather than editing the frozen DDL itself and quietly
+/// destroying the fixture the migration tests depend on.
+String _withMyLibraryColumnsAfterV47(String frozen) => frozen.replaceFirst(
   ', PRIMARY KEY ("id"))',
-  ', "step_id" TEXT NULL, "course_id" TEXT NULL, PRIMARY KEY ("id"))',
+  ', "step_id" TEXT NULL, "course_id" TEXT NULL'
+      ', "attachment_pending" INTEGER NOT NULL DEFAULT 0'
+      ' CHECK ("attachment_pending" IN (0, 1))'
+      ', PRIMARY KEY ("id"))',
 );

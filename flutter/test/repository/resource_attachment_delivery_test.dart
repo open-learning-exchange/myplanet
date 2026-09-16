@@ -386,20 +386,46 @@ void main() {
       );
     });
 
-    test('leaves a synced catalog row alone', () async {
-      // The whole planet's catalog sits in this table with a `_rev` and no
-      // local bytes. A sweep that read `_rev IS NOT NULL` alone would PUT an
-      // attachment for every one of them.
+    test('leaves a downloaded catalog row alone', () async {
+      // The whole planet's catalog sits in this table with a `_rev`, and a
+      // sweep reading `_rev IS NOT NULL` alone would PUT an attachment for
+      // every one of them — over the top of the server's own.
+      //
+      // **The row is downloaded on purpose, and mutation testing is why.**
+      // The first cut of this fixture was a bare catalog row with no local
+      // address, which the sweep skips on the `localAddress == null` clause
+      // whether or not it reads the flag — so dropping the flag from
+      // `pendingAttachments` left this test green and the claim was pinned by
+      // nothing. A row the user has *downloaded* carries an address,
+      // `resourceOffline` and real bytes, so the flag is the only thing that
+      // excludes it. That is also the dangerous case rather than the tidy one.
+      const catalogId = 'catalog-1';
+      final file = await ResourceFiles.fileFor(
+        docId: catalogId,
+        filename: 'atlas.pdf',
+      );
+      await file.parent.create(recursive: true);
+      await file.writeAsString('someone else’s bytes');
       await database.myLibraryDao.upsertAll([
         MyLibraryTableCompanion.insert(
-          id: 'catalog-1',
-          couchId: const Value('catalog-1'),
+          id: catalogId,
+          couchId: const Value(catalogId),
           rev: const Value('9-rev'),
+          downloadedRev: const Value('9-rev'),
           title: const Value('Someone else’s book'),
+          resourceLocalAddress: const Value('atlas.pdf'),
+          filename: const Value('atlas.pdf'),
+          resourceOffline: const Value(true),
         ),
       ]);
 
-      expect(await uploader.queuePendingAttachments(config: config), 0);
+      expect(
+        await uploader.queuePendingAttachments(config: config),
+        0,
+        reason:
+            'a downloaded catalog row is indistinguishable from an uploaded '
+            'local one except by this column',
+      );
     });
   });
 
