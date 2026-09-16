@@ -67,11 +67,6 @@ class LifeRepositoryImpl @Inject constructor(
             ?: listOf(userId, isVisible, weight)
     }
 
-    /**
-     * Deduplicates items by key while preserving existing list order.
-     * MUST only be applied to results from [MyLifeDao.getByUserId] or
-     * [MyLifeDao.getVisibleByUserId] which carry SQL `ORDER BY weight ASC`.
-     */
     private fun List<MyLife>.dedupedByKey(): List<MyLife> = distinctBy { it.dedupKey() }
 
     override suspend fun getMyLifeByUserId(userId: String?, defaultItems: List<MyLife>): List<MyLife> {
