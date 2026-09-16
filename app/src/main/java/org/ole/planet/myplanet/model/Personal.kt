@@ -3,21 +3,9 @@ package org.ole.planet.myplanet.model
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.google.gson.JsonObject
-import java.util.Date
-import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.NetworkUtils
-import org.ole.planet.myplanet.utils.addDocumentOrigin
 
-/**
- * Room replacement for the former `Personal` model. The class name is kept because
- * the UI and upload path use it purely as a detached data holder. Persistence goes through
- * [org.ole.planet.myplanet.data.room.dao.PersonalDao].
- */
 @Entity(tableName = "my_personal", indices = [Index("userId")])
 open class Personal {
-    // @JvmField (field access, no generated getters) so Room does not treat the local `id` and the
-    // CouchDB `_id` as ambiguous accessors (getId vs get_id both normalise to "id").
     @PrimaryKey
     @JvmField
     var id: String = ""
@@ -31,26 +19,4 @@ open class Personal {
     var userId: String? = null
     var userName: String? = null
     var path: String? = null
-
-    companion object {
-        fun serialize(personal: Personal, customDeviceName: String): JsonObject {
-            val `object` = JsonObject()
-            `object`.addProperty("title", personal.title)
-            `object`.addProperty("uploadDate", Date().time)
-            `object`.addProperty("createdDate", personal.date)
-            `object`.addProperty("filename", FileUtils.getFileNameFromUrl(personal.path))
-            `object`.addProperty("author", personal.userName)
-            `object`.addProperty("addedBy", personal.userName)
-            `object`.addProperty("description", personal.description)
-            `object`.addProperty("resourceType", "Activities")
-            `object`.addProperty("private", true)
-            val object1 = JsonObject()
-            `object`.addDocumentOrigin()
-            `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
-            `object`.addProperty("customDeviceName", customDeviceName)
-            object1.addProperty("users", personal.userId)
-            `object`.add("privateFor", object1)
-            return `object`
-        }
-    }
 }
