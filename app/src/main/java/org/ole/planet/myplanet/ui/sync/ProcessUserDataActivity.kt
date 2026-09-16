@@ -138,13 +138,15 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:$port"
         }
 
-        prefData.setServerPin(password)
-        prefData.setUrlScheme(uri.scheme ?: "")
-        prefData.setUrlHost(uri.host ?: "")
-        prefData.setServerUrl(url)
-        prefData.setCouchdbUrl(couchdbURL)
-        prefData.setUrlUser(urlUser)
-        prefData.setUrlPwd(urlPwd)
+        prefData.saveServerConfig(
+            serverPin = password,
+            urlScheme = uri.scheme ?: "",
+            urlHost = uri.host ?: "",
+            serverUrl = url,
+            couchdbUrl = couchdbURL,
+            urlUser = urlUser,
+            urlPwd = urlPwd
+        )
 
         return UrlUtils.dbUrl(couchdbURL)
     }

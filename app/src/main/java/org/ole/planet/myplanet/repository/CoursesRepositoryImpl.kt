@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.repository
 
+import android.content.Context
 import android.util.Log
 import androidx.room.withTransaction
+import dagger.hilt.android.qualifiers.ApplicationContext
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Base64
@@ -50,6 +52,7 @@ import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class CoursesRepositoryImpl @Inject constructor(
+    @param:ApplicationContext private val context: Context,
     private val progressRepository: ProgressRepository,
     private val activitiesRepository: ActivitiesRepository,
     private val submissionsRepository: SubmissionsRepository,
@@ -855,6 +858,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 MyLibrary.Companion.InsertParams(
                     doc = pending.doc,
                     spm = sharedPrefManager,
+                    context = context,
                     courseId = pending.courseId,
                     stepId = pending.stepId,
                     existing = existing

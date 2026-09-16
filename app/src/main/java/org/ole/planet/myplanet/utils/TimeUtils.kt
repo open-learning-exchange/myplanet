@@ -46,27 +46,20 @@ object TimeUtils {
         DateTimeFormatter.ofPattern("EEEE, MMM dd, yyyy", defaultLocale).withZone(utcZone)
     }
 
-    private val dateTimeFormatter by lazy {
-        DateTimeFormatter
-            .ofPattern("EEE dd, MMMM yyyy , hh:mm a", defaultLocale)
-            .withZone(ZoneId.systemDefault())
-    }
+    private fun dateTimeFormatter() =
+        formatterFor("EEE dd, MMMM yyyy , hh:mm a", ZoneId.systemDefault())
 
-    private val tzFormatter by lazy {
-        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault())
-    }
+    private fun tzFormatter() =
+        formatterFor("yyyy-MM-dd HH:mm:ss", ZoneId.systemDefault(), locale = null)
 
-    private val dateOnlyFormatter by lazy {
-        DateTimeFormatter.ofPattern("EEE dd, MMMM yyyy", defaultLocale).withZone(ZoneId.systemDefault())
-    }
+    private fun dateOnlyFormatter() =
+        formatterFor("EEE dd, MMMM yyyy", ZoneId.systemDefault())
 
-    private val fallbackDateFormatter by lazy {
-        DateTimeFormatter.ofPattern("dd, MMMM yyyy", defaultLocale).withZone(ZoneId.systemDefault())
-    }
+    private fun fallbackDateFormatter() =
+        formatterFor("dd, MMMM yyyy")
 
-    private val csvDateFormatter by lazy {
-        DateTimeFormatter.ofPattern("EEE MMM dd yyyy HH:mm:ss 'GMT'Z (z)", Locale.US).withZone(ZoneId.systemDefault())
-    }
+    private fun csvDateFormatter() =
+        formatterFor("EEE MMM dd yyyy HH:mm:ss 'GMT'Z (z)", ZoneId.systemDefault(), Locale.US)
 
     private val iso8601Formatter by lazy {
         DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
@@ -96,13 +89,13 @@ object TimeUtils {
         formatInstant(Instant.ofEpochMilli(date), "N/A") { formatterFor(DATE_FORMAT, ZoneId.systemDefault()) }
 
     fun getFormattedDateWithTime(date: Long): String =
-        formatInstant(Instant.ofEpochMilli(date), "N/A") { dateTimeFormatter }
+        formatInstant(Instant.ofEpochMilli(date), "N/A") { dateTimeFormatter() }
 
     fun formatDateTZ(data: Long): String =
-        formatInstant(Instant.ofEpochMilli(data), "") { tzFormatter }
+        formatInstant(Instant.ofEpochMilli(data), "") { tzFormatter() }
 
     fun formatDateForCsv(date: Long): String =
-        formatInstant(Instant.ofEpochMilli(date), "") { csvDateFormatter }
+        formatInstant(Instant.ofEpochMilli(date), "") { csvDateFormatter() }
 
     fun getAge(date: String): Int {
         return try {
@@ -145,7 +138,7 @@ object TimeUtils {
     }
 
     fun formatDate(date: Long): String =
-        formatInstant(Instant.ofEpochMilli(date), "") { dateOnlyFormatter }
+        formatInstant(Instant.ofEpochMilli(date), "") { dateOnlyFormatter() }
 
     fun formatDate(
         date: Long,
@@ -156,9 +149,9 @@ object TimeUtils {
     fun parseDate(dateString: String): Long? =
         try {
             val localDate = runCatching {
-                LocalDate.parse(dateString, dateOnlyFormatter)
+                LocalDate.parse(dateString, dateOnlyFormatter())
             }.recoverCatching {
-                LocalDate.parse(dateString, fallbackDateFormatter)
+                LocalDate.parse(dateString, fallbackDateFormatter())
             }.getOrThrow()
             localDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
         } catch (e: Exception) {
