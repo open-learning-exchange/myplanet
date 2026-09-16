@@ -19,16 +19,16 @@
 
 ### Flutter port (in progress)
 
-**Migration progress: ≈95/100.** Report this figure whenever you report on the
+**Migration progress: ≈96/100.** Report this figure whenever you report on the
 port; it is the whole migration effort on a 1-to-100 scale, not a phase count.
 The basis, so it can be argued with rather than repeated:
 
 | Dimension | State | Est. |
 |---|---|---|
 | Feature breadth | all 28 UI packages have screens (enterprises is a team *type*, not a gap — Phase 99) | ~95 |
-| Behavioural parity | still the limiter and the lowest-confidence row: **reachability** audits keep finding ported, green, *dead* code — see below. Phase 154 closed two whole missing *directions*, which is why this moved | ~76 |
-| Test coverage | 3071 tests / 261 test files vs 260 Kotlin test files. The file counts being near-equal is a coincidence of counting and **not** a parity claim — Phase 155 is the standing reminder: 15 tests covered `add_examination_screen` and not one passed an `examinationId`, so a blank edit form that overwrote the record was green | ~93 |
-| Localisation | template is 923 keys; ar 864, es 900, fr 899, but **416–469 of those are unreviewed machine translation** (`"x-mt": true`, so the set is queryable); ne/so 457 with 25 each. Phase 141 measured the recoverable pool and found it **exhausted** — the next 42 values a looser matcher reaches are degradations | ~55 |
+| Behavioural parity | still the limiter and the lowest-confidence row: **reachability** audits keep finding ported, green, *dead* code — see below. Phase 154 closed two whole missing *directions* and Phase 156 closed a third plus a live data loss, which is why this moved. **It moved only two points because the same round's audits opened two new data-loss rows** (Phase 156, below) — finding them does not lower parity, it lowers confidence in this estimate, which is the row's whole character | ~78 |
+| Test coverage | 3147 tests / 264 test files vs 281 Kotlin test files. Never read the file counts as parity — Phase 155 is the standing reminder (15 tests covered `add_examination_screen` and not one passed an `examinationId`, so a blank edit form that overwrote the record was green), and Phase 156 added a second: **two integration tests could not fail on their first cut**, both because the *fixture* could not tell the two behaviours apart. See *A fixture that cannot distinguish* below | ~93 |
+| Localisation | template is 923 keys; ar 864, es 900, fr 899, but **416–469 of those are unreviewed machine translation** (ar 432, es 416, fr 469 — `"x-mt": true`, so the set is queryable); ne/so 457 with 25 each. Phase 141 measured the recoverable pool and found it **exhausted** — the next 42 values a looser matcher reaches are degradations | ~55 |
 | Background work | WorkManager gaps closed through Phase 94, platform channels in-tree | ~95 |
 
 Breadth is measurable and depth is not — 250 hand-written Dart files against 551
@@ -1109,6 +1109,114 @@ provider outside `build` and only watches it on the next frame, that gap is
 now a real window** — look for `ref.read(x.notifier)` before the first
 `ref.watch(x)` with an `await` between them.
 
+### Phase 156 — the largest harvest, and the two data-loss rows it opened
+
+**136 master commits**, `0.69.18 → 0.71.51` — Phase 126's was 18 and Phase 133's
+122. The triage: **125 Kotlin-only**, 9 no-counterpart, **2 Follow**. It merged
+cleanly and *both Kotlin jobs passed on the push*, which is the check that
+matters on a harvest and the one a Flutter-only round never runs.
+
+The subject lines were almost entirely `smoother X` and dependency bumps — the
+exact wording Phase 95 dismissed as refactors and Phase 126 found two Follows
+hiding under. **The second reading is what found these two**, and both are real:
+
+* **A user search for `%` returned every user.** `UserDao.search` built
+  `'%$query%'` raw, where `%` and `_` are `LIKE` wildcards. Master `bc8fd49`
+  added `searchPattern()` escaping and `ESCAPE '\'` to the Kotlin; the port had
+  the same hole. Sole caller is `HealthRepository.searchPatients`, so the shape
+  is a health provider filtering a patient list. Escaping happens **inside** the
+  DAO, on this side of its own `%…%` wrap — doing it in the caller would escape
+  the wrapping characters too. Drift's parameter is `escapeChar`, not `escape`.
+* **Same-date personal notes came back in arbitrary order** (master `7a9bb12`,
+  `ORDER BY date DESC, title COLLATE NOCASE ASC` where there had been no
+  `ORDER BY` at all). A note's date is the *day* it was written, so ties are the
+  common case.
+
+**Both Follows fell inside a file another lane owned, so both merged as reported
+rather than fixed** — the second instance of the Phase 154 shape, and the reason
+that rule now reads "wiring it is the integrator's job".
+
+#### A fixture that cannot distinguish
+
+Phase 134's rule was *a test that cannot fail reads as coverage*, and its example
+was a search window so wide it included the thing it searched for. Phase 156
+found the other half of the class, twice, in the integrator's own two tests —
+both **green on the fix and still green with the fix reverted**:
+
+* the `_` wildcard test seeded `ada`, which matches `%a_l%` under **neither**
+  reading. Nothing distinguished escaped from unescaped. `axl` — what an
+  unescaped `_` matches and a literal does not — is what makes it a test.
+* the sort test used `Apple`/`mango`/`zebra`, which order **identically** with
+  and without `COLLATE NOCASE`, so making the tie-break case-sensitive left the
+  suite green and the collation half of the claim was pinned by nothing.
+  `apple`/`Banana` straddle the ASCII case boundary.
+
+**Mutating the production code is what found both; reading the tests would not
+have.** So: after writing a test, revert the behaviour it claims to pin and
+watch it go red — and when it stays green, suspect the **fixture** before the
+assertion. Both decoys are documented at the tests, because the next person to
+touch those values needs to know which one is load-bearing.
+
+#### What the round closed
+
+* **A live data loss the previous round's own feature opened.** Adding the
+  resource upload direction made `markUploaded` write `rev`, and
+  `MyLibraryDao.deleteNotIn` prunes on `rev IS NOT NULL` while matching
+  survivors by `id` against a keep set of CouchDB `_id`s. So the first resources
+  sync after a successful upload inserted a second row keyed on the server id
+  and **pruned the user's own** — resource out of My Library, shown as not
+  downloaded, bytes under `ole/<uuid>/` orphaned for ever. Kotlin reaches the
+  identical outcome, which made it inherited rather than invented and **not** a
+  reason to ship it.
+* **`team_activities` pulls at last** — Kotlin walks it, the port only ever
+  uploaded, so `TeamLogDao.teamVisitsForUsers` and `lastTeamVisit` returned what
+  *this handset* had seen, and those feed the member-detail screen **and the
+  team leaderboard's ranking**. A leaderboard is a comparison by construction.
+  Two things the lane found while porting it, both worth keeping:
+  **Kotlin double-counts a visit** (`teamLogFromJson` keys the pulled row by
+  server `_id` while a locally authored visit keeps its own id; the dedup lookup
+  `TeamLogDao.getByRemoteIds` has **no caller anywhere in `app/src/main`** — laid
+  in and never wired), so the port merges instead, following the sibling table's
+  `activityFromJson`. And a pulled row must be written `uploaded = true`:
+  Kotlin's pending predicate is `_rev IS NULL`, so writing the revision is
+  itself what dequeues it, and at the column default all **13,659** documents
+  would have arrived flagged for upload and been POSTed straight back,
+  duplicating the server database every sync. **It needed no schema bump** — the
+  rows belong in the existing `team_log`, the one table Kotlin uses for both
+  directions; version 50 was allocated and deliberately not spent.
+* **The server-switch root cause.** `login_screen.dart`'s "change server" button
+  called `serverConfigProvider.notifier.clear()` purely so the router's redirect
+  would fire — destroying the identity of the server the on-device data belongs
+  to while leaving the database full. Three correct, fully tested behaviours were
+  dead because of it. Fixing it is also why the Connect-side gate exists at all:
+  see the open row below.
+* **Feedback** stops storing `_design` documents as rows (a manager saw one
+  bogus "Untitled feedback / Open" thread per design document, permanently kept
+  by `deleteNotIn`), among four smaller sync-shape fixes.
+
+#### Two data-loss rows this round opened and did not close
+
+Both were found by a lane's **mandatory ground-truth pass**, outside its own file
+set, and both are the top of the next round's list:
+
+1. **The background sync path never re-queues feedback, so an admin's reply is
+   destroyed on the server.** `FeedbackMapper._mergePendingReplies` is the port's
+   improvement over Kotlin, but the outbox holds a *snapshot* of the payload as
+   it was when the reply was written, so the merge only survives if something
+   re-queues after the pull. `FeedbackSyncNotifier.runSync` does;
+   `background_entrypoint.dart` calls `sync(...)` **directly** and nothing does.
+   The stale payload then drains, `ConflictRecovery.send` takes the 409, re-reads
+   the revision and re-sends **the stale bytes** under it, CouchDB accepts, and
+   the next pull brings the truncated thread back over the merged local copy.
+   **Ordering trap for whoever fixes it:** `drainOutbox` runs *before*
+   `syncSteps`, so a sweep in the drain leg is not sufficient.
+2. **A resource attachment can be lost with nothing able to detect it.** After
+   `markUploaded` the row has `rev == downloadedRev` and bytes on disk — which is
+   byte-for-byte the state of a resource whose attachment *did* land. Telling
+   them apart needs a column recording delivery, and `my_library` is preserved,
+   so that is a bump plus a hand-written `_addColumnIfMissing` step.
+   **Allocate a version to it rather than letting a lane improvise one.**
+
 ### Running parallel lanes
 
 Sibling sessions on their own branches, merged by an integrator. What this round
@@ -1160,6 +1268,13 @@ established, at the cost of a regression and five failing tests:
   grep the merged tree for each new top-level function and confirm something
   calls it**, then add the source-text call-site guard (the shape in
   `pending_submissions_sweep_test.dart`) so it cannot be lost again.
+  **Phase 156 is the second instance and it arrived differently**: the harvest
+  lane's two Follows were correct, small, and both landed in a DAO another lane
+  owned, so they merged as *reported* rather than as code. Nothing was dead this
+  time — the behaviour simply was not there. The generalisation: **anything a
+  lane reports because of a file boundary is the integrator's to land in the
+  same round, not the next one's to rediscover.** Read every lane's *Reported,
+  not fixed* list at merge time, not at briefing time.
 - **All four Phase 154 code lanes ran the mandatory second audit against their
   own finished, green code, and all four found real defects in it** — nine,
   four, five and five. Two were serious: a heavy-table walk scheduled at the
@@ -1170,6 +1285,12 @@ established, at the cost of a regression and five failing tests:
   configuration — wide open. Both were introduced by the lane's own first cut
   and caught only by the second pass. **The two-pass rule is not a formality
   and the second pass is the one that pays.**
+- **A lane declining an allocated schema version is a good sign, not a wasted
+  allocation.** Phase 156 gave version 50 to the `team_activities` lane; it
+  established that the rows belong in the existing `team_log` — the single table
+  Kotlin uses for both directions, whose readers were already the ones asking —
+  and did not spend it. Allocate so a lane is never *blocked* on the decision;
+  judge the round by whether the bump was needed, not by whether it was used.
 - **`outcome_branch` needs `source_url` and `source_revision`.** A
   `create_session` call with only `outcome_branch` is refused with
   *"outcome_branch requires a github.com git source"*.
@@ -1559,6 +1680,9 @@ There is no generic base repository; each implementation talks to its Room DAO(s
 ### Flutter port toolchain
 
 **Current Drift `schemaVersion` is 49** (`flutter/lib/data/local/app_database.dart`).
+**50 is free.** Phase 156 allocated it to the `team_activities` lane, which
+established the rows belong in the existing `team_log` and returned it unspent —
+so the next bump is 50, not 51.
 Bump it only when you have been allocated a number — parallel lanes must not each
 pick one, and a bump discards unsynced local writes on any device that has not
 synced, which is what `localAuthorityTables` and the hand-written
@@ -1963,6 +2087,6 @@ Note: SYSTEM_ALERT_WINDOW is **not** declared (removed at some point; older docs
 
 ---
 
-**Last Updated**: 2026-09-15
+**Last Updated**: 2026-09-16
 **Version**: 0.71.51
 **Maintainer**: Open Learning Exchange
