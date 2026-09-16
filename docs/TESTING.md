@@ -1,6 +1,6 @@
 # myPlanet Testing Guide
 
-This guide explains how tests are actually written in this codebase, based on the 265 test classes (1,962 `@Test` methods) under `app/src/test/`. When writing a new test, find the closest existing test of the same kind listed below and copy its shape — don't invent a new pattern.
+This guide explains how tests are actually written in this codebase, based on the 278 test classes (2,159 `@Test` methods) under `app/src/test/`. When writing a new test, find the closest existing test of the same kind listed below and copy its shape — don't invent a new pattern.
 
 > The app's local database is **Room** (the Realm migration is complete). Tests mock DAOs with MockK, or spin up a real in-memory Room database under Robolectric when actual SQL behavior matters.
 
@@ -29,7 +29,11 @@ There is currently **no `app/src/androidTest/` (instrumented) source set** — t
 
 When you need to verify real database behavior (actual SQL, `Converters`, transactions), you don't need a device: use **Robolectric + `Room.inMemoryDatabaseBuilder`** inside `src/test/` — see [DAO / Room round-trip tests](#daos--room-round-trip-tests) below.
 
-Package breakdown — every `.kt` under `app/src/test/java/org/ole/planet/myplanet/`, counted recursively, so `data/` includes `data/room/` and `data/api/`: **269 files = 265 test classes + 4 shared helpers**. `ui/` 90, `utils/` 57, `repository/` 37, `services/` 34, `model/` 21, `data/` 18, `base/` 9, `di/` 2, root 1.
+Package breakdown — every `.kt` under `app/src/test/java/org/ole/planet/myplanet/`, counted recursively, so `data/` includes `data/room/` and `data/api/`: **282 files = 278 test classes + 4 shared helpers**. `ui/` 93, `utils/` 61, `repository/` 40, `services/` 35, `data/` 21, `model/` 20, `base/` 9, `di/` 2, root 1.
+
+> Every suite-wide count in this guide was measured at `a02f806`. They move with almost every merge, so re-derive rather than trust:
+> `find app/src/test -name '*.kt' | wc -l`, `grep -rl 'io.mockk' app/src/test --include=*.kt | wc -l`, `grep -rho '@Test' app/src/test --include=*.kt | wc -l`.
+> The structural figures — 38 entities, `version = 12`, 37 DAOs, the pinned SDK levels — are the ones that stay put.
 
 ---
 
@@ -40,9 +44,9 @@ From `app/build.gradle` (`testImplementation` block) and what's actually importe
 | Library | Purpose | Notes |
 |---------|---------|-------|
 | JUnit 4 (`org.junit.Test`, `org.junit.Assert.*`) | Test runner and assertions | Used everywhere |
-| **MockK** (`io.mockk.*`) | Mocking | **The standard.** Used in 173 of the 269 files. |
+| **MockK** (`io.mockk.*`) | Mocking | **The standard.** Used in 179 of the 282 files. |
 | Mockito (`org.mockito.*`) | Mocking | Legacy — 5 files (`CoursesAdapterTest`, `ResourcesAdapterTest`, `DashboardSurveysAdapterTest`, `SubmissionViewModelTest`, `SubmissionDetailViewModelTest`). Don't introduce new Mockito usage; use MockK. |
-| Robolectric (`org.robolectric.*`) | Android framework on the JVM | 78 files — wherever a test needs real Android classes (`Context`, `View`, resource strings, Room) without an emulator |
+| Robolectric (`org.robolectric.*`) | Android framework on the JVM | 83 files — wherever a test needs real Android classes (`Context`, `View`, resource strings, Room) without an emulator |
 | `kotlinx-coroutines-test` | `runTest`, `TestDispatcher`, `UnconfinedTestDispatcher`, `StandardTestDispatcher` | For suspend functions and Flow/StateFlow-based ViewModels |
 | `androidx.test` (`ApplicationProvider`, `AndroidJUnit4`) | Application context access | Used inside Robolectric JVM tests |
 | `androidx.room:room-testing` | Room test helpers | Backs the in-memory Room tests |
@@ -143,7 +147,7 @@ Pin only when the assertion depends on the level, and say why in a comment so th
 | 28 (`P`) | `utils/VersionUtilsTest.kt` (one method) | `VersionUtils` branches on `SDK_INT >= P` |
 | 32 | `data/room/dao/CourseDaoTest.kt`, `data/room/dao/ExamDaoTest.kt`, `ui/resources/ResourcesAdapterTest.kt`, `ui/resources/ResourcesFilterFragmentTest.kt`, `ui/enterprises/EnterprisesReportsFragmentTest.kt` | no reason stated in any of the five |
 | 33 | `ui/chat/ChatAdapterTest.kt` | no reason stated |
-| 34 (`UPSIDE_DOWN_CAKE`) | `services/DownloadServiceTest.kt`, `services/DownloadServiceOnDownloadCompleteTest.kt`, `ui/life/LifeAdapterTest.kt`, `ui/sync/ServerAddressAdapterTest.kt`, `ui/voices/VoicesActionsTest.kt` | the two `DownloadService` classes assert the API-gated foreground-service/worker branches; the three UI ones state no reason |
+| 34 (`UPSIDE_DOWN_CAKE`) | `services/DownloadServiceTest.kt`, `services/DownloadServiceOnDownloadCompleteTest.kt`, `services/DownloadServiceResumeTest.kt`, `ui/life/LifeAdapterTest.kt`, `ui/sync/ServerAddressAdapterTest.kt`, `ui/voices/VoicesActionsTest.kt` | the three `DownloadService` classes assert the API-gated foreground-service/worker branches; the three UI ones state no reason |
 
 The suite therefore needs sandboxes at 26, 27, 28, 32, 33, 34 and the default 36. Two things follow from that table: `robolectricSdkJars` in `app/build.gradle` still stages 30 and 31, which nothing pins any more, and the nine pins marked "no reason stated" are the ones to try deleting first — each is a sandbox per fork bought for an unrecorded reason.
 
@@ -234,7 +238,7 @@ Two kinds of assertions dominate: pure helper logic tested directly (no stubbing
 
 ### DAOs / Room round-trip tests
 
-When mocked DAOs aren't enough — you need real SQL, `Converters` serialization, or transaction semantics — use Robolectric with an in-memory Room database. 17 test classes do this today: 11 under `data/room/dao/`, 2 under `data/room/`, and 4 repository sync/transaction tests.
+When mocked DAOs aren't enough — you need real SQL, `Converters` serialization, or transaction semantics — use Robolectric with an in-memory Room database. 20 test classes do this today: 14 under `data/room/dao/`, 2 under `data/room/`, and 4 repository sync/transaction tests.
 
 References: `data/room/AppDatabaseRoundTripTest.kt` (insert-and-read round-trips through the real DAOs and `Converters` against Robolectric's SQLite — guards the JSON list/embedded-object converters and the LIKE-on-JSON shelf-membership query), `data/room/dao/NewsDaoTest.kt` (LIKE-escaping in queries), `repository/TeamsRepositoryBulkInsertTransactionTest.kt` (verifies `bulkInsertFromSync` commits inside a single `appDatabase.withTransaction { }`). Note: the schema is not exported (`exportSchema = false`), so these tests exercise the live schema, not JSON schema files.
 
@@ -388,7 +392,7 @@ If the utility is pure Kotlin with no Android dependency, a plain JUnit test wit
 
 ## Naming Conventions
 
-The suite is genuinely mixed — of 1,962 `@Test` methods, 1,141 use the backtick style and 821 camelCase (roughly 58/42), sometimes within one file. Neither is enforced — pick whichever reads more clearly, but when adding tests to an existing file, match that file's style.
+The suite is genuinely mixed — of 2,159 `@Test` methods, 1,281 use the backtick style and 878 camelCase (roughly 59/41), sometimes within one file. Neither is enforced — pick whichever reads more clearly, but when adding tests to an existing file, match that file's style.
 
 ```kotlin
 // Backtick descriptive style — common for ViewModel/behavior tests
@@ -462,7 +466,7 @@ The workflow also fails the job if a jar turns up in Robolectric's own runtime c
 
 **Don't pin `@Config(sdk = [...])` out of habit.** A pin the assertions don't need still costs a per-fork sandbox build and an `android-all` jar download; see [Robolectric SDK levels](#robolectric-sdk-levels).
 
-**Don't introduce new Mockito usage.** Five legacy files use it (listed under [Libraries in Use](#libraries-in-use)); the other 173 mocking files use MockK. Use MockK for anything new.
+**Don't introduce new Mockito usage.** Five legacy files use it (listed under [Libraries in Use](#libraries-in-use)); the other 179 mocking files use MockK. Use MockK for anything new.
 
 **Don't forget `mockkStatic(Log::class)` (and stub each level) when the code under test logs.** Otherwise the test crashes calling into the real `android.util.Log`, which doesn't exist on the JVM.
 
