@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/app_providers.dart';
@@ -365,5 +366,81 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Teams are unavailable'), findsOneWidget);
+  });
+
+  group('the per-team feedback entry point', () {
+    /// Kotlin opens feedback from five places and this is the **only** one that
+    /// passes `item`/`state` (`TeamFragment.kt:270-274`). Without it the port's
+    /// `FeedbackCreateScreen.item`/`.state`, the router's query-parameter reads,
+    /// `createFeedback`'s two parameters and the `state != null` branch of
+    /// `FeedbackMapper.createFeedback` were a complete uncalled chain — and
+    /// every feedback the port filed was `"Question regarding /"`, which is the
+    /// field Planet's web UI groups by.
+    testWidgets('a team row files feedback against that team', (tester) async {
+      Map<String, String>? query;
+      await tester.pumpWidget(
+        wrapScreen(
+          const TeamsScreen(),
+          overrides: [
+            teamsRepositoryProvider.overrideWithValue(teams),
+            sessionProvider.overrideWith(
+              () => _TestSessionNotifier(buildUserRow(id: 'u1', name: 'ann')),
+            ),
+          ],
+          pushTargets: {
+            '/life/feedback/create': (context) {
+              query = GoRouterState.of(context).uri.queryParameters;
+              return const Scaffold(body: Text('create'));
+            },
+          },
+        ),
+      );
+      when(
+        () => teams.watchCatalog(type: any(named: 'type')),
+      ).thenAnswer((_) => Stream.value([_team(id: 't1', name: 'Readers')]));
+      when(
+        () => teams.watchMemberships(any()),
+      ).thenAnswer((_) => Stream.value(const <TeamRow>[]));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.feedback_outlined));
+      await tester.pumpAndSettle();
+
+      expect(find.text('create'), findsOneWidget);
+      // `item` is the team document's `_id`; `state` is what the title and the
+      // grouping `url` are built from.
+      expect(query, {'item': 't1', 'state': 'teams'});
+    });
+
+    /// No membership, leader or guest gate, because Kotlin has none:
+    /// `showActionButton` never touches `btnFeedback` and the layout declares
+    /// no `visibility`. A non-member looking at a public team is the case.
+    testWidgets('the button is offered to a non-member too', (tester) async {
+      await tester.pumpWidget(
+        harness(
+          catalog: [_team(id: 't1', name: 'Readers')],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.feedback_outlined), findsOneWidget);
+    });
+  });
+
+  group('teamFeedbackState', () {
+    test('a team and an enterprise are pluralised, as Kotlin does', () {
+      // `"${team.type}s"` — the two values the type-filtered list can hold.
+      expect(teamFeedbackState('team'), 'teams');
+      expect(teamFeedbackState('enterprise'), 'enterprises');
+    });
+
+    test('an empty or absent type falls back to teams', () {
+      // Kotlin's `if (team.type?.isEmpty() == true) "teams"` for the empty
+      // case, and the deliberate divergence for null: Kotlin's `== true` is
+      // false there, so its else arm would file the thread under `"nulls"`.
+      // Unreachable from a type-filtered list in either app.
+      expect(teamFeedbackState(''), 'teams');
+      expect(teamFeedbackState(null), 'teams');
+    });
   });
 }

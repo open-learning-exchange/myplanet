@@ -191,7 +191,7 @@ class FeedbackMapper {
   /// the server's away (`FeedbackRepositoryImpl.kt:154`) while still adopting
   /// the server's `_rev` (`:152`); the upload then POSTs that local array back
   /// under the fresh revision, and CouchDB replaces the document
-  /// (`UploadConfigs.kt:198-208`, no `dbIdExtractor`, so it is always a POST
+  /// (`UploadConfigs.kt:202-212`, no `dbIdExtractor`, so it is always a POST
   /// of the whole body). An admin who replies through the web UI while a
   /// handset has an unsent reply therefore loses their reply **on the server**,
   /// for every device and the web UI too. Both apps did this; the port stops.
@@ -213,20 +213,51 @@ class FeedbackMapper {
     Object? serverMessages,
   ) {
     if (serverMessages is! List) return localJson;
-    final local = _decodeMessages(localJson);
-
-    var shared = 0;
-    while (shared < local.length &&
-        shared < serverMessages.length &&
-        _sameMessage(local[shared], serverMessages[shared])) {
-      shared++;
-    }
-
-    if (shared == local.length) return jsonEncode(serverMessages);
-    return jsonEncode([...serverMessages, ...local.skip(shared)]);
+    return jsonEncode(mergeThreads(decodeMessages(localJson), serverMessages));
   }
 
+  /// The server's copy of a thread, plus whatever [local] holds that it does
+  /// not — the single rule three callers share.
+  ///
+  /// [FeedbackUploader] reconciles a conflicted send with it, writes the
+  /// result back to the row with it, and [_mergePendingReplies] merges a pull
+  /// with it. They must agree: the uploader can leave the server holding a
+  /// thread the row does not, and if the pull then judged sameness differently
+  /// it would re-append what the send had already delivered.
+  ///
+  /// **"Not already there" rather than "after the shared prefix", and the
+  /// difference is a duplicate.** The prefix rule this replaces was sound
+  /// while both arrays were append-only *from this device's point of view* —
+  /// but a reconciled send that reaches CouchDB and loses its response leaves
+  /// the server holding `[opening, admin, ours]` against a local
+  /// `[opening, ours]`, which diverges at index 1. The prefix scan stopped
+  /// there and appended `ours` a second time, and the re-queue after the pull
+  /// published the duplicate under a revision that matched. Matching anywhere
+  /// makes that pull a no-op.
+  ///
+  /// Idempotent for the same reason it was before: once our reply has been
+  /// pulled back, nothing in [local] is missing and the server's copy is
+  /// adopted unchanged.
+  ///
+  /// Position is the server's, with our unsent tail after it. That is what the
+  /// prefix rule produced too in the append-only case, and where the two
+  /// differ the server is the copy every other device sees.
+  static List<Object?> mergeThreads(
+    List<Object?> local,
+    List<Object?> server,
+  ) => [
+    ...server,
+    ...local.where(
+      (message) => !server.any((other) => sameMessage(message, other)),
+    ),
+  ];
+
   /// Whether two message elements are the same reply.
+  ///
+  /// Public because [FeedbackUploader] needs the same identity when it
+  /// reconciles a conflicted send against the server's copy of the thread: two
+  /// readings of "the same reply" would let one of them append a message the
+  /// other had already matched.
   ///
   /// A reply is a map and is compared on `message`/`user`/`time` rather than on
   /// its bytes, because a server that echoes it back with its keys reordered
@@ -241,7 +272,7 @@ class FeedbackMapper {
   /// which restores the prefix and with it the idempotence the merge depends
   /// on. Encoding is the right comparison here precisely because a non-map has
   /// no keys to reorder.
-  static bool _sameMessage(Object? a, Object? b) {
+  static bool sameMessage(Object? a, Object? b) {
     if (a is! Map<String, dynamic> || b is! Map<String, dynamic>) {
       // One map and one not is a divergence, and encoding them would compare
       // an object against a scalar for no gain.
@@ -323,7 +354,7 @@ class FeedbackMapper {
   /// total, so a surprising field degrades to `''` instead of emptying the
   /// thread.
   static List<FeedbackMessage> parseMessages(String? messagesJson) {
-    return _decodeMessages(messagesJson)
+    return decodeMessages(messagesJson)
         .map(
           (e) => e is Map<String, dynamic>
               ? FeedbackMessage(
@@ -343,7 +374,10 @@ class FeedbackMapper {
   /// non-array to `"[]"`, `JsonUtils.kt:126-129`) and what both apps' reply
   /// lists therefore show. [_messagesForAppend] is the one caller that must not
   /// use this, because *writing* that `[]` back is what destroys the value.
-  static List<dynamic> _decodeMessages(String? messagesJson) {
+  /// Public because [FeedbackUploader] reads a row's stored thread back
+  /// before merging what a reconciled send delivered into it, and decoding it
+  /// a second way is how the two would disagree about an odd element.
+  static List<dynamic> decodeMessages(String? messagesJson) {
     if (messagesJson == null || messagesJson.isEmpty) return [];
     try {
       final decoded = jsonDecode(messagesJson);
@@ -381,10 +415,10 @@ class FeedbackMapper {
   /// wrapped value reaches the server on the reply's upload; after that it is
   /// an ordinary element of the document's array. If it is a **map carrying
   /// none** of `message`/`user`/`time`, a later merge on a still-pending row
-  /// can drop it, because [_sameMessage] identifies maps by those fields alone
+  /// can drop it, because [sameMessage] identifies maps by those fields alone
   /// and two field-less maps therefore compare equal — a hole this helper
   /// widens rather than opens, since the server's own array could always hold
-  /// such an element. Non-map values are safe: [_sameMessage] compares those by
+  /// such an element. Non-map values are safe: [sameMessage] compares those by
   /// encoding.
   static List<dynamic> _messagesForAppend(String? messagesJson) {
     if (messagesJson == null || messagesJson.isEmpty) return [];

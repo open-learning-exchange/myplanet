@@ -162,8 +162,6 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // The close control is a manager-only affordance, hence the manager role
-    // on the session above.
     await tester.tap(find.byIcon(Icons.check));
     await tester.pumpAndSettle();
 
@@ -171,6 +169,57 @@ void main() {
       (await database.feedbackDao.getById('feedback-1'))?.status,
       'Closed',
     );
+    expect(
+      await database.outboxDao.findOpen(FeedbackUploader.type, 'feedback-1'),
+      isNotNull,
+    );
+  });
+
+  testWidgets('a plain learner can close their own thread', (tester) async {
+    // **The gate the port invented, removed.** Kotlin attaches the close
+    // handler unconditionally (`FeedbackDetailActivity.kt:73-75`), the layout
+    // declares no `visibility` on the button, and `FeedbackDetailViewModel`
+    // has no user or role in scope. The only gating anywhere is status-based
+    // (`:96-102`).
+    //
+    // The port required `UserMapper.isManager`, and a non-manager's list is
+    // `watchByOwner` — so every thread they can open is one they filed. ada
+    // could ask her question, read the answer, and have no way to close it.
+    final database = AppDatabase.memory();
+    addTearDown(database.close);
+    await _seedUploaded(database);
+
+    final learner = UserRow(
+      id: 'user-3',
+      name: 'ada',
+      rolesList: const ['learner'],
+      userAdmin: false,
+      joinDate: 0,
+      isArchived: false,
+      isUpdated: false,
+    );
+
+    await tester.pumpWidget(
+      _wrap(
+        database,
+        learner,
+        config,
+        const FeedbackDetailScreen(feedbackId: 'feedback-1'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.check));
+    await tester.pumpAndSettle();
+
+    expect(
+      (await database.feedbackDao.getById('feedback-1'))?.status,
+      'Closed',
+    );
+    // And the close is durable, which is the port's own divergence the other
+    // way: Kotlin's `closeFeedback` writes the status and stops, so the row
+    // keeps `isUploaded = true`, the sweep never sees it, and the next pull
+    // reverts it. Removing the role gate must not quietly remove that too.
     expect(
       await database.outboxDao.findOpen(FeedbackUploader.type, 'feedback-1'),
       isNotNull,

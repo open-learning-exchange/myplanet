@@ -82,7 +82,9 @@ Known gaps:
 - **Phase 19** -- chat: the AI-powered chat interface with chat history list, conversation detail,
   search/filter, message input, AI provider selection, and durable local storage via Drift.
 - **Phase 20** -- feedback: the user feedback/review system with list view, detail view with replies,
-  create feedback dialog, priority/type selection, close feedback action for managers, and
+  create feedback dialog, priority/type selection, close feedback action (open to anyone who can
+  open the thread, as `FeedbackDetailActivity.kt:73-75` has it — the manager gate this line used to
+  describe was the port's own, and it left a learner unable to close a thread they filed), and
   reactive Drift persistence.
 - **Phase 21** -- community: the community/nation tab with voices, leaders, calendar, services tabs.
   Leaders are parsed from the JSON stored in preferences. Services display team links/routes
