@@ -1,6 +1,6 @@
 # myPlanet Testing Guide
 
-This guide explains how tests are actually written in this codebase, based on the 163 test classes (984 `@Test` methods) under `app/src/test/`. When writing a new test, find the closest existing test of the same kind listed below and copy its shape — don't invent a new pattern.
+This guide explains how tests are actually written in this codebase, based on the 265 test classes (1,962 `@Test` methods) under `app/src/test/`. When writing a new test, find the closest existing test of the same kind listed below and copy its shape — don't invent a new pattern.
 
 > The app's local database is **Room** (the Realm migration is complete). Tests mock DAOs with MockK, or spin up a real in-memory Room database under Robolectric when actual SQL behavior matters.
 
@@ -23,13 +23,13 @@ This guide explains how tests are actually written in this codebase, based on th
 
 ### `app/src/test/` — JVM unit tests (the only source set)
 
-Everything runs on the local JVM — no emulator or device needed. **CI runs this**: `.github/workflows/test.yml` runs `./gradlew testDefaultDebugUnitTest` on every push to every branch. If a test isn't in `src/test/`, it isn't verified automatically.
+Everything runs on the local JVM — no emulator or device needed. **CI runs this**: `.github/workflows/test.yml` runs `./gradlew testDefaultDebugUnitTest` on every push to every branch, except pushes that touch only `docs/**` or `**/*.md` (`paths-ignore`). If a test isn't in `src/test/`, it isn't verified automatically.
 
 There is currently **no `app/src/androidTest/` (instrumented) source set** — the `androidTestImplementation` dependencies are still declared in `app/build.gradle`, but no instrumented sources exist and no workflow runs an emulator.
 
 When you need to verify real database behavior (actual SQL, `Converters`, transactions), you don't need a device: use **Robolectric + `Room.inMemoryDatabaseBuilder`** inside `src/test/` — see [DAO / Room round-trip tests](#daos--room-round-trip-tests) below.
 
-Package breakdown (269 files = 265 test classes + 4 shared infra; `.kt` files under subpackages are counted recursively): `utils/` 57, `ui/` 90, `repository/` 37, `services/` 34, `model/` 21, `data/` 18, `base/` 9, `di/` 2, root 1.
+Package breakdown — every `.kt` under `app/src/test/java/org/ole/planet/myplanet/`, counted recursively, so `data/` includes `data/room/` and `data/api/`: **269 files = 265 test classes + 4 shared helpers**. `ui/` 90, `utils/` 57, `repository/` 37, `services/` 34, `model/` 21, `data/` 18, `base/` 9, `di/` 2, root 1.
 
 ---
 
@@ -41,7 +41,7 @@ From `app/build.gradle` (`testImplementation` block) and what's actually importe
 |---------|---------|-------|
 | JUnit 4 (`org.junit.Test`, `org.junit.Assert.*`) | Test runner and assertions | Used everywhere |
 | **MockK** (`io.mockk.*`) | Mocking | **The standard.** Used in 173 of the 269 files. |
-| Mockito (`org.mockito.*`) | Mocking | Legacy — exactly 2 files (`CoursesAdapterTest`, `SubmissionViewModelTest`). Don't introduce new Mockito usage; use MockK. |
+| Mockito (`org.mockito.*`) | Mocking | Legacy — 5 files (`CoursesAdapterTest`, `ResourcesAdapterTest`, `DashboardSurveysAdapterTest`, `SubmissionViewModelTest`, `SubmissionDetailViewModelTest`). Don't introduce new Mockito usage; use MockK. |
 | Robolectric (`org.robolectric.*`) | Android framework on the JVM | 78 files — wherever a test needs real Android classes (`Context`, `View`, resource strings, Room) without an emulator |
 | `kotlinx-coroutines-test` | `runTest`, `TestDispatcher`, `UnconfinedTestDispatcher`, `StandardTestDispatcher` | For suspend functions and Flow/StateFlow-based ViewModels |
 | `androidx.test` (`ApplicationProvider`, `AndroidJUnit4`) | Application context access | Used inside Robolectric JVM tests |
@@ -51,7 +51,7 @@ From `app/build.gradle` (`testImplementation` block) and what's actually importe
 
 ## Shared Test Infrastructure
 
-All three helpers live in `app/src/test/java/org/ole/planet/myplanet/utils/` (package `org.ole.planet.myplanet.utils`).
+All four helpers live in `app/src/test/java/org/ole/planet/myplanet/utils/` (package `org.ole.planet.myplanet.utils`).
 
 ### `MainDispatcherRule`
 
@@ -85,7 +85,25 @@ Use it for any class that takes `DispatcherProvider` in its constructor (most re
 
 ### `TestTimeProvider`
 
-A controllable `TimeProvider`: `TestTimeProvider(var currentTime: Long = 0L)` with `advanceBy(millis)`. Use it for anything time-dependent instead of `System.currentTimeMillis()`.
+A controllable `TimeProvider`: `TestTimeProvider(var currentTime: Long = 0L)` with `advanceBy(millis)`. `sleep(millis)` advances instead of blocking. Use it for anything time-dependent instead of `System.currentTimeMillis()`.
+
+### `FlowTestUtils`
+
+One extension, `TestScope.collectEmissions(flow)`: collects a `Flow` on an `UnconfinedTestDispatcher(testScheduler)`, runs `advanceUntilIdle()`, cancels the collector, and returns the emissions as a `List`. Use it instead of hand-rolling a `launch { flow.toList(...) }` when asserting what a repository or ViewModel flow emitted — it makes "emitted exactly once" assertable.
+
+```kotlin
+// ui/dashboard/ActivitiesViewModelTest.kt
+@Test
+fun `offlineLogins emits empty list and nothing else when user is null`() = runTest(testDispatcher) {
+    coEvery { userRepository.getUserModel() } returns null
+    val viewModel = ActivitiesViewModel(userRepository, activitiesRepository)
+
+    val emissions = collectEmissions(viewModel.offlineLogins)
+
+    assertEquals(1, emissions.size)
+    assertEquals(emptyList<OfflineActivity>(), emissions[0])
+}
+```
 
 ---
 
@@ -110,7 +128,7 @@ stack trace in the uploaded `test-reports-*` artifact to find the coroutine that
 
 ### Robolectric SDK levels
 
-**Don't pin `@Config(sdk = [...])` unless the test is actually about that API level.** Robolectric builds one sandbox per distinct (SDK level, config) per test fork and each sandbox loads a 95-215 MB `android-all-instrumented` jar, so every extra level the suite mentions is paid again — up to `maxParallelForks` (4) times per shard. That cost shows up as a multi-second first test in the class: it was 16.0s for `TeamsRepositoryBulkInsertTransactionTest` (SDK 26) against a 0.43s average for the rest of its methods.
+**Don't pin `@Config(sdk = [...])` unless the test is actually about that API level.** Robolectric builds one sandbox per distinct (SDK level, config) per test fork and each sandbox loads a 95-215 MB `android-all-instrumented` jar, so every extra level the suite mentions is paid again — once per parallel fork, and `maxParallelForks` is `min(availableProcessors, 4)` unless `-PtestMaxParallelForks` overrides it. That cost shows up as a multi-second first test in the class: it was 16.0s for `TeamsRepositoryBulkInsertTransactionTest` (SDK 26) against a 0.43s average for the rest of its methods.
 
 Omit `sdk` and the test runs on the default, which Robolectric takes from `targetSdk` (36). Keep the rest of `@Config` (`application = ...`, `manifest = Config.NONE`) as needed — omitting `sdk` only drops the pin.
 
@@ -118,15 +136,18 @@ One consequence worth knowing: Robolectric keys a sandbox by SDK level (plus the
 
 Pin only when the assertion depends on the level, and say why in a comment so the next reader doesn't fold it away:
 
-| Test | Pin | Why |
+| Level | Pinned by | Why |
 | --- | --- | --- |
-| `services/DownloadServiceTest.kt` | class `UPSIDE_DOWN_CAKE` (34), methods `R` (30) / `S` (31) | asserts the API-gated foreground-service/worker branches |
-| `utils/VersionUtilsTest.kt` | methods `O` (26), `P` (28) | `VersionUtils` branches on `SDK_INT >= P` |
-| `utils/SecurePrefsTest.kt` | `O_MR1` (27) | keystore-backed prefs path |
-| `utils/NotificationUtilsTest.kt` | `O` (26) | notification channels exist only from `O` |
-| `repository/TeamsRepositoryBulkInsertTransactionTest.kt` | `26` | needs to sit below `S` so `processDescription` short-circuits instead of reaching for `MainApplication.context` |
+| 26 (`O`) | `utils/NotificationUtilsTest.kt`, `utils/VersionUtilsTest.kt` (one method), `repository/TeamsRepositoryBulkInsertTransactionTest.kt` | notification channels exist only from `O`; the repository test needs to sit below `S` so `processDescription` short-circuits instead of reaching for `MainApplication.context` |
+| 27 (`O_MR1`) | `utils/SecurePrefsTest.kt` | keystore-backed prefs path |
+| 28 (`P`) | `utils/VersionUtilsTest.kt` (one method) | `VersionUtils` branches on `SDK_INT >= P` |
+| 32 | `data/room/dao/CourseDaoTest.kt`, `data/room/dao/ExamDaoTest.kt`, `ui/resources/ResourcesAdapterTest.kt`, `ui/resources/ResourcesFilterFragmentTest.kt`, `ui/enterprises/EnterprisesReportsFragmentTest.kt` | no reason stated in any of the five |
+| 33 | `ui/chat/ChatAdapterTest.kt` | no reason stated |
+| 34 (`UPSIDE_DOWN_CAKE`) | `services/DownloadServiceTest.kt`, `services/DownloadServiceOnDownloadCompleteTest.kt`, `ui/life/LifeAdapterTest.kt`, `ui/sync/ServerAddressAdapterTest.kt`, `ui/voices/VoicesActionsTest.kt` | the two `DownloadService` classes assert the API-gated foreground-service/worker branches; the three UI ones state no reason |
 
-The suite therefore needs sandboxes at 26, 27, 28, 30, 31, 34 and the default 36 — nothing else.
+The suite therefore needs sandboxes at 26, 27, 28, 32, 33, 34 and the default 36. Two things follow from that table: `robolectricSdkJars` in `app/build.gradle` still stages 30 and 31, which nothing pins any more, and the nine pins marked "no reason stated" are the ones to try deleting first — each is a sandbox per fork bought for an unrecorded reason.
+
+`DownloadServiceTest` shows the cheaper shape when one class covers several levels: pin the class once (34) and drive the individual branches with `ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", …)`, which costs one sandbox instead of three.
 
 ### ViewModels
 
@@ -213,7 +234,7 @@ Two kinds of assertions dominate: pure helper logic tested directly (no stubbing
 
 ### DAOs / Room round-trip tests
 
-When mocked DAOs aren't enough — you need real SQL, `Converters` serialization, or transaction semantics — use Robolectric with an in-memory Room database. Six tests do this today.
+When mocked DAOs aren't enough — you need real SQL, `Converters` serialization, or transaction semantics — use Robolectric with an in-memory Room database. 17 test classes do this today: 11 under `data/room/dao/`, 2 under `data/room/`, and 4 repository sync/transaction tests.
 
 References: `data/room/AppDatabaseRoundTripTest.kt` (insert-and-read round-trips through the real DAOs and `Converters` against Robolectric's SQLite — guards the JSON list/embedded-object converters and the LIKE-on-JSON shelf-membership query), `data/room/dao/NewsDaoTest.kt` (LIKE-escaping in queries), `repository/TeamsRepositoryBulkInsertTransactionTest.kt` (verifies `bulkInsertFromSync` commits inside a single `appDatabase.withTransaction { }`). Note: the schema is not exported (`exportSchema = false`), so these tests exercise the live schema, not JSON schema files.
 
@@ -322,7 +343,7 @@ class RetryQueueWorkerTest {
 
 Use Robolectric (`@RunWith(RobolectricTestRunner::class)`) when the adapter touches real Android view/context behavior. Mock the `Context` and any `AdapterDataObserver` you verify against.
 
-Reference (pattern): `ui/courses/CoursesAdapterTest.kt` — but note this specific file is one of the 2 legacy **Mockito** files. **For a new adapter test, use MockK's equivalents** (`mockk<Context>()`, `verify(exactly = 1) { mockObserver.onItemRangeChanged(...) }`); the MockK-based adapter tests (`ui/events/EventsAdapterTest.kt`, `ui/notifications/NotificationsAdapterTest.kt`, `ui/teams/TeamsSelectionAdapterTest.kt`, …) are the shapes to copy.
+Reference (pattern): `ui/courses/CoursesAdapterTest.kt` — but note this specific file is one of the 5 legacy **Mockito** files. **For a new adapter test, use MockK's equivalents** (`mockk<Context>()`, `verify(exactly = 1) { mockObserver.onItemRangeChanged(...) }`); the MockK-based adapter tests (`ui/events/EventsAdapterTest.kt`, `ui/notifications/NotificationsAdapterTest.kt`, `ui/teams/TeamsSelectionAdapterTest.kt`, …) are the shapes to copy.
 
 ### Base/Abstract Classes
 
@@ -367,7 +388,7 @@ If the utility is pure Kotlin with no Android dependency, a plain JUnit test wit
 
 ## Naming Conventions
 
-The suite is genuinely mixed, roughly 50/50 (512 backtick-style vs 472 camelCase-style methods), sometimes within one file. Neither is enforced — pick whichever reads more clearly, but when adding tests to an existing file, match that file's style.
+The suite is genuinely mixed — of 1,962 `@Test` methods, 1,141 use the backtick style and 821 camelCase (roughly 58/42), sometimes within one file. Neither is enforced — pick whichever reads more clearly, but when adding tests to an existing file, match that file's style.
 
 ```kotlin
 // Backtick descriptive style — common for ViewModel/behavior tests
@@ -403,7 +424,7 @@ Test class names always match `{ClassUnderTest}Test.kt` (e.g. `CoursesRepository
 ./gradlew testLiteDebugUnitTest
 ```
 
-CI (`.github/workflows/test.yml`, "myPlanet test") runs on every push to every branch (no `pull_request` trigger — the push itself triggers it) plus manual dispatch: `./gradlew test${FLAVOR^}DebugUnitTest -PtestShardTotal=2 -PtestShardIndex=<0|1> -ProbolectricOffline=true --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4` (matrix is `default` only) on `ubuntu-24.04`, split across two shards that each run half the test classes (`app/build.gradle` `testOptions` hashes each top-level class into a shard). On failure each shard uploads `app/build/reports/tests/` as `test-reports-default-shard-<n>` (7-day retention); a timing summary always runs. There is no separate lint or coverage gate — passing `testDefaultDebugUnitTest` is the bar.
+CI (`.github/workflows/test.yml`, "myPlanet test") runs on every push to every branch (no `pull_request` trigger — the push itself triggers it; doc-only pushes are skipped via `paths-ignore`) plus manual dispatch: `./gradlew test${FLAVOR^}DebugUnitTest -PtestShardTotal=2 -PtestShardIndex=<0|1> -ProbolectricOffline=true --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4` (matrix is `default` only) on `ubuntu-24.04`, split across two shards that each run half the test classes (`app/build.gradle` `testOptions` hashes each top-level class into a shard). On failure each shard uploads `app/build/test-results/` as `test-reports-default-shard-<n>` (7-day retention); a timing summary always runs. There is no separate lint or coverage gate — passing `testDefaultDebugUnitTest` is the bar.
 
 ### The Robolectric `android-all` runtime
 
@@ -441,7 +462,7 @@ The workflow also fails the job if a jar turns up in Robolectric's own runtime c
 
 **Don't pin `@Config(sdk = [...])` out of habit.** A pin the assertions don't need still costs a per-fork sandbox build and an `android-all` jar download; see [Robolectric SDK levels](#robolectric-sdk-levels).
 
-**Don't introduce new Mockito usage.** Two legacy files use it (`CoursesAdapterTest`, `SubmissionViewModelTest`); the other 113 mocking files use MockK. Use MockK for anything new.
+**Don't introduce new Mockito usage.** Five legacy files use it (listed under [Libraries in Use](#libraries-in-use)); the other 173 mocking files use MockK. Use MockK for anything new.
 
 **Don't forget `mockkStatic(Log::class)` (and stub each level) when the code under test logs.** Otherwise the test crashes calling into the real `android.util.Log`, which doesn't exist on the JVM.
 

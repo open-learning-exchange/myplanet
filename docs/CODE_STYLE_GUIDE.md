@@ -210,7 +210,7 @@ companion object {
 | Repository interface | `*Repository.kt` | `CoursesRepository.kt` |
 | Repository implementation | `*RepositoryImpl.kt` | `CoursesRepositoryImpl.kt` |
 | Room entity | plain name in `model/` | `MyCourse.kt`, `Submission.kt`, `UserEntity.kt` |
-| Room DAO | `*Dao.kt` in `data/room/dao/` | `RatingDao.kt` (37 DAO interfaces in 37 files; each DAO lives in its own file) |
+| Room DAO | `*Dao.kt` in `data/room/dao/` | `RatingDao.kt` — one DAO per file (37 interfaces, 37 files) |
 | Worker | `*Worker.kt` | `AutoSyncWorker.kt` |
 | Callback interface | `On` prefix | `OnCourseItemSelectedListener.kt` |
 | DI module | `Module` suffix | `RepositoryModule.kt` |
@@ -518,7 +518,7 @@ If you need a dependency not in an existing entry point, add it there — don't 
 
 ### Existing Qualifiers
 
-`@StandardHttpClient` / `@StandardRetrofit` (NetworkModule), `@ApplicationScope` (ServiceModule), `@AppPreferences` / `@DefaultPreferences` / `@DownloadPreferences` (SharedPreferencesModule). There are no dispatcher qualifiers — dispatchers come from the unqualified `DispatcherProvider`.
+`@StandardHttpClient` / `@ReachabilityHttpClient` / `@StandardRetrofit` / `@PlainGson` (NetworkModule), `@ApplicationScope` (ServiceModule), `@AppPreferences` / `@DefaultPreferences` / `@DownloadPreferences` (SharedPreferencesModule). There are no dispatcher qualifiers — dispatchers come from the unqualified `DispatcherProvider`.
 
 ---
 
