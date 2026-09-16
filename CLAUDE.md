@@ -23,11 +23,19 @@
 port; it is the whole migration effort on a 1-to-100 scale, not a phase count.
 The basis, so it can be argued with rather than repeated:
 
+**Phase 157 moved parity 78 → 80 and left the headline at 96, deliberately.**
+Localisation is unchanged at ~55 and is now the binding constraint on the
+composite rather than parity — so a round that closes three unreachable screens
+moves the row it belongs to and not the total. *A figure that rises every round
+is not being measured;* when parity finally passes the point where l10n
+dominates, the headline stops tracking it, and that is the table working.
+
+
 | Dimension | State | Est. |
 |---|---|---|
 | Feature breadth | all 28 UI packages have screens (enterprises is a team *type*, not a gap — Phase 99) | ~95 |
-| Behavioural parity | still the limiter and the lowest-confidence row: **reachability** audits keep finding ported, green, *dead* code — see below. Phase 154 closed two whole missing *directions* and Phase 156 closed a third plus a live data loss, which is why this moved. **It moved only two points because the same round's audits opened two new data-loss rows** (Phase 156, below) — finding them does not lower parity, it lowers confidence in this estimate, which is the row's whole character | ~78 |
-| Test coverage | 3147 tests / 264 test files vs 281 Kotlin test files. Never read the file counts as parity — Phase 155 is the standing reminder (15 tests covered `add_examination_screen` and not one passed an `examinationId`, so a blank edit form that overwrote the record was green), and Phase 156 added a second: **two integration tests could not fail on their first cut**, both because the *fixture* could not tell the two behaviours apart. See *A fixture that cannot distinguish* below | ~93 |
+| Behavioural parity | still the limiter and the lowest-confidence row: **reachability** audits keep finding ported, green, *dead* code — see below. Phase 154 closed two missing *directions*, Phase 156 a third plus a live data loss, and Phase 157 **three unreachable screens plus the feedback data loss** — and, more durably, hardened the guard that had missed all three | ~80 |
+| Test coverage | 3212 tests / 268 test files vs 281 Kotlin test files. Never read the file counts as parity — Phase 155 is the standing reminder (15 tests covered `add_examination_screen` and not one passed an `examinationId`, so a blank edit form that overwrote the record was green), and Phase 156 added a second: **two integration tests could not fail on their first cut**, both because the *fixture* could not tell the two behaviours apart. See *A fixture that cannot distinguish* below | ~93 |
 | Localisation | template is 923 keys; ar 864, es 900, fr 899, but **416–469 of those are unreviewed machine translation** (ar 432, es 416, fr 469 — `"x-mt": true`, so the set is queryable); ne/so 457 with 25 each. Phase 141 measured the recoverable pool and found it **exhausted** — the next 42 values a looser matcher reaches are degradations | ~55 |
 | Background work | WorkManager gaps closed through Phase 94, platform channels in-tree | ~95 |
 
@@ -73,9 +81,18 @@ of the five had a Dart writer already sitting uncalled*, plumbing laid for a pul
 nobody wrote. Phase 120 found a submission uploaded on one handset and pulled on
 another yields answers with no questions.
 
-So, when you touch a screen or a table, ask the three questions the guards now
+So, when you touch a screen or a table, ask the questions the guards now
 encode: **who writes this table, can the writer produce values the reader's
-predicate matches, and does anything navigate here?** The guards are
+predicate matches, does anything navigate here — and does that navigation
+*arrive*?** Phase 157 added the fourth and it is not a restatement of the
+third: **a route can resolve perfectly and still be unreachable.**
+`/become-member` had a route, a screen, tests, and a button on the login screen
+— and the signed-out branch of `redirect` sent every location that was not
+`/login` back to `/login`, so the tap only ever flashed. The guard was green
+because a *different* caller (`guest_dialog.dart`, with a session) does reach
+it, and because **no rule ran `redirect` at all**. `redirect_reachability_test.dart`
+is the guard for it: drive the real router from a chosen gate state and ask
+whether the location ends at the route it names. The guards are
 `test/ui/route_reachability_test.dart`, `test/repository/shelf_membership_survives_sync_test.dart`,
 `test/data/local/mapper_preserves_local_columns_test.dart` and
 `test/repository/community_share_round_trip_test.dart`. A fixture that fabricates
@@ -1217,6 +1234,79 @@ set, and both are the top of the next round's list:
    so that is a bump plus a hand-written `_addColumnIfMissing` step.
    **Allocate a version to it rather than letting a lane improvise one.**
 
+### Phase 157 — three unreachable screens, and the guard that missed all three
+
+The round's shape: **the guard meant to catch *ported, tested, green and dead*
+had three blind spots, and a live screen was sitting behind each one.**
+
+* **Filing feedback was impossible.** `lib/ui/router.dart` declared
+  `:feedbackId` **before** `create`, and go_router takes the first match, so
+  `/life/feedback/create` built `FeedbackDetailScreen(feedbackId: 'create')` →
+  "Feedback not found". Both push sites were dead, including
+  `inactive_dashboard_screen` — **the only button an un-activated user has**,
+  whose single route to an administrator ended on that error. `chat` and
+  `events` both put their literal first and `chat` carries a comment saying
+  why; feedback was the only route in the table with a literal sibling after a
+  path parameter.
+* **`/become-member` was dead behind a redirect** — see *Reachability* above,
+  which now carries this as the fourth question.
+* **Rule five counted a literal-sibling push as reaching its `:param`
+  neighbour** — *this round's own failure class, inside the rule meant to catch
+  it.* `_pathsMatch` skipped `:` segments, so no-oping the feedback list's push
+  to the detail screen left every test green. Four routes were shielded that
+  way.
+
+Two smaller things the guard work turned up, both worth knowing before touching
+that file: **Dart adjacent-literal concatenation** (`'${Routes.submissions}/'
+'${Uri.encodeComponent(id)}'` is *one* string and the scanner read two — there
+are 91 such pairs in `lib/`, which is simply how `dart format` wraps a long
+interpolated string), merged at extraction time so every reported line number
+stays true; and **both `_indirectNavigators` exemptions were dead weight, with
+the test written to prevent exactly that unable to see it** because it walked
+every registered path without subtracting rule five's own `allowed` map.
+
+#### An exemption is a claim with an expiry date
+
+**The best thing in this round is a merge that failed.** Lane 2 added a rule —
+*every query parameter a route reads is supplied by some navigation* — and
+shipped it with `item` and `state` in a `knownMissingEntryPoint` map, because
+`feedback/create` read both and nothing passed either (**every feedback the port
+could file was `title: "Question regarding /"`, `url: "/"`**). The missing
+writer was the teams list's per-row feedback button, which was Lane 1's file, so
+Lane 2 reported it and left a comment ending *"Delete these two entries with the
+button."*
+
+Lane 1 landed the button. The rule then failed with the **inverse** message —
+*"These parameters are supplied now, so their entry point landed"* — an
+exemption noticing it had expired. Neither lane could have seen it: each was
+green alone, and only the pair is a statement about the port.
+
+**So: write an exemption that fails in both directions.** A `skip` or an
+allow-list entry that only suppresses is a silent debt; one that also fails when
+its reason stops being true is a scheduled reminder. And it makes the integrator's
+job mechanical — the failure message said what to delete and why.
+
+Mutation-test the emptied map afterwards, both ways, because **an exemption map
+emptied carelessly is a guard switched off**.
+
+#### The rest of what the round closed
+
+* **The feedback data loss.** The background path called `sync(...)` directly and
+  nothing re-queued, so the outbox drained a *stale snapshot*; `ConflictRecovery`
+  took the 409, re-read the revision and re-sent the stale bytes under it, and
+  CouchDB accepted — **destroying an admin's reply on the server**, then bringing
+  the truncated thread back over the merged local copy. The ordering matters and
+  the reporting lane had it right: `drainOutbox` runs *before* `syncSteps`, so a
+  sweep in the drain leg is not sufficient. The lane's own second pass found its
+  first cut was half a fix — the reconcile has to **write the merged thread
+  back**.
+* **Schema 50**, one migration, two preserved-table column sets: `my_library`'s
+  attachment-delivery flag (before it, the lost-attachment state was
+  byte-for-byte identical to success, so nothing could detect it) and `teams`'
+  planet codes.
+* The server-switch gate's remaining items, including a double tap that stacked
+  dialogs — not in the brief, found by the lane.
+
 ### Running parallel lanes
 
 Sibling sessions on their own branches, merged by an integrator. What this round
@@ -1291,6 +1381,14 @@ established, at the cost of a regression and five failing tests:
   Kotlin uses for both directions, whose readers were already the ones asking —
   and did not spend it. Allocate so a lane is never *blocked* on the decision;
   judge the round by whether the bump was needed, not by whether it was used.
+- **A lane that reports rather than fixes should leave a tripwire, not a note.**
+  Phase 157's Lane 2 could not port the button its new rule depended on, so it
+  recorded the gap as a test exemption whose failure message named the retirement
+  condition. When Lane 1 landed the button in the same round, the exemption
+  failed *because the gap had closed*, and the integrator's job was mechanical.
+  Compare Phase 154, where a reported hand-off was a paragraph in a PR body and
+  the wiring was rediscovered at merge time. **Where the report can be expressed
+  as a test that fails when the report stops being true, it should be.**
 - **`outcome_branch` needs `source_url` and `source_revision`.** A
   `create_session` call with only `outcome_branch` is refused with
   *"outcome_branch requires a github.com git source"*.
@@ -1679,10 +1777,12 @@ There is no generic base repository; each implementation talks to its Room DAO(s
 
 ### Flutter port toolchain
 
-**Current Drift `schemaVersion` is 49** (`flutter/lib/data/local/app_database.dart`).
-**50 is free.** Phase 156 allocated it to the `team_activities` lane, which
-established the rows belong in the existing `team_log` and returned it unspent —
-so the next bump is 50, not 51.
+**Current Drift `schemaVersion` is 50** (`flutter/lib/data/local/app_database.dart`),
+spent by Phase 157 on one migration carrying two preserved-table column sets —
+`my_library`'s attachment-delivery flag and `teams`' planet codes. **The next
+bump is 51.** Phase 156 had allocated 50 and returned it unspent, which is why
+it was still free a round later; read that as the allocation working, not as a
+number going missing.
 Bump it only when you have been allocated a number — parallel lanes must not each
 pick one, and a bump discards unsynced local writes on any device that has not
 synced, which is what `localAuthorityTables` and the hand-written
