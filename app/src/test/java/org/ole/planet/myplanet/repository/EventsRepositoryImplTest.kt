@@ -16,7 +16,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.UserEntity
@@ -26,7 +25,6 @@ import org.ole.planet.myplanet.utils.SystemTimeProvider
 class EventsRepositoryImplTest {
 
     private lateinit var meetupDao: MeetupDao
-    private lateinit var userDao: UserDao
     private lateinit var repository: EventsRepositoryImpl
 
     class SilentException(message: String) : Exception(message) {
@@ -36,8 +34,7 @@ class EventsRepositoryImplTest {
     @Before
     fun setup() {
         meetupDao = mockk(relaxed = true)
-        userDao = mockk(relaxed = true)
-        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, userDao, Gson())
+        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, Gson())
     }
 
     @Test
@@ -65,10 +62,7 @@ class EventsRepositoryImplTest {
 
     @Test
     fun getJoinedMembers() = runTest {
-        coEvery { meetupDao.getMemberUserIdsByMeetupId("meetup1") } returns listOf(
-            "user1", "user2", "user1"
-        )
-        coEvery { userDao.getUsersByAnyIds(any()) } returns listOf(
+        coEvery { meetupDao.getJoinedMembersByMeetupId("meetup1") } returns listOf(
             UserEntity(id = "user1"),
             UserEntity(id = "user2", _id = "remote-user2")
         )

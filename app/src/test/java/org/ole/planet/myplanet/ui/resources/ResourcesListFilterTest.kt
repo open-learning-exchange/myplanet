@@ -63,7 +63,8 @@ class ResourcesListFilterTest {
     fun `apply filters by selected tag`() {
         val models = listOf(
             model(id = "1", title = "A", tags = listOf(TagItem(id = "t1", name = "Math"))),
-            model(id = "2", title = "B", tags = listOf(TagItem(id = "t2", name = "Science")))
+            model(id = "2", title = "B", tags = listOf(TagItem(id = "t2", name = "Science"))),
+            model(id = "3", title = "C", tags = listOf(TagItem(id = "t3", name = "History"), TagItem(id = "t2", name = "Science")))
         )
         val filter = ResourcesListFilter()
 
@@ -71,6 +72,10 @@ class ResourcesListFilterTest {
 
         assertEquals(1, result.size)
         assertEquals("1", result[0].item.id)
+
+        val multiTagResult = filter.apply(models, noFilters.copy(searchTags = listOf(TagEntity().apply { id = "t1" }, TagEntity().apply { id = "t3" })), emptySet())
+        assertEquals(2, multiTagResult.size)
+        assertEquals(setOf("1", "3"), multiTagResult.map { it.item.id }.toSet())
     }
 
     @Test
@@ -218,5 +223,62 @@ class ResourcesListFilterTest {
         val filtered = filter.filterIfChanged(models, sameCriteria, emptySet())
 
         assertEquals(listOf("1"), filtered?.map { it.item.id })
+    }
+
+    @Test
+    fun `countMatching equals apply size under combined criteria`() {
+        val tag1 = TagEntity().apply { id = "t1" }
+        val tag2 = TagEntity().apply { id = "t2" }
+
+        val matchingModel = model(
+            id = "1", title = "Algebra 101",
+            subject = listOf("Math"), level = listOf("Grade 1"),
+            language = "English", mediaType = "Video",
+            isOffline = true,
+            tags = listOf(TagItem(id = "t1", name = "MathTag"))
+        )
+
+        val nonMatchingTag = model(
+            id = "2", title = "Algebra 102",
+            subject = listOf("Math"), level = listOf("Grade 1"),
+            language = "English", mediaType = "Video",
+            isOffline = true,
+            tags = listOf(TagItem(id = "t3", name = "OtherTag"))
+        )
+
+        val nonMatchingSubject = model(
+            id = "3", title = "Algebra 103",
+            subject = listOf("Science"), level = listOf("Grade 1"),
+            language = "English", mediaType = "Video",
+            isOffline = true,
+            tags = listOf(TagItem(id = "t1", name = "MathTag"))
+        )
+
+        val nonMatchingDownload = model(
+            id = "4", title = "Algebra 104",
+            subject = listOf("Math"), level = listOf("Grade 1"),
+            language = "English", mediaType = "Video",
+            isOffline = false,
+            tags = listOf(TagItem(id = "t1", name = "MathTag"))
+        )
+
+        val models = listOf(matchingModel, nonMatchingTag, nonMatchingSubject, nonMatchingDownload)
+        val filter = ResourcesListFilter()
+
+        val criteria = noFilters.copy(
+            searchQuery = "algebra",
+            searchTags = listOf(tag1, tag2),
+            subjects = setOf("Math"),
+            levels = setOf("Grade 1"),
+            languages = setOf("English"),
+            mediums = setOf("Video"),
+            downloadFilterIndex = 1
+        )
+        val locallyOfflineIds = setOf("99")
+
+        assertEquals(
+            filter.apply(models, criteria, locallyOfflineIds).size,
+            filter.countMatching(models, criteria, locallyOfflineIds)
+        )
     }
 }

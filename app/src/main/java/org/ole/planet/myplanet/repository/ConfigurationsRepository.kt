@@ -4,6 +4,12 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 
+data class CommunityConfiguration(
+    val parentCode: String,
+    val communityName: String,
+    val planetType: String?
+)
+
 interface ConfigurationsRepository {
     suspend fun checkHealth(): String
     fun checkVersion(callback: CheckVersionCallback, spm: SharedPrefManager)
@@ -15,6 +21,7 @@ interface ConfigurationsRepository {
     fun getPlanetType(): String?
     fun getParentCode(): String
     fun getCommunityName(): String
+    fun getCommunityConfiguration(): CommunityConfiguration
     fun getCommunityLeaders(): List<UserEntity>
     fun clearPreferences()
     suspend fun ensureServerUrlUpdated()

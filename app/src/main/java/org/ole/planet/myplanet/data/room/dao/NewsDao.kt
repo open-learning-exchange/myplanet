@@ -7,6 +7,12 @@ import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.News
 
+data class TeamNewsMembership(
+    val viewableBy: String?,
+    val viewableId: String?,
+    val viewIn: String?
+)
+
 @Dao
 interface NewsDao {
     @Query("SELECT * FROM news WHERE id = :id LIMIT 1")
@@ -24,12 +30,6 @@ interface NewsDao {
     @Query("SELECT * FROM news WHERE id IN (:ids)")
     suspend fun getByIds(ids: List<String>): List<News>
 
-    @Query("SELECT * FROM news WHERE replyTo IS NULL OR replyTo = '' ORDER BY time DESC")
-    suspend fun getTopLevel(): List<News>
-
-    @Query("SELECT * FROM news WHERE replyTo IS NULL OR replyTo = '' ORDER BY time DESC")
-    fun getTopLevelFlow(): Flow<List<News>>
-
     @Query("SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') AND ((viewableBy = 'teams' COLLATE NOCASE AND viewableId = :teamId COLLATE NOCASE) OR viewIn LIKE :teamPattern ESCAPE '\\') ORDER BY time DESC")
     suspend fun getTopLevelByTeam(teamId: String, teamPattern: String): List<News>
 
@@ -44,9 +44,6 @@ interface NewsDao {
 
     @Query("SELECT * FROM news WHERE replyTo = :newsId COLLATE NOCASE ORDER BY time DESC")
     suspend fun getReplies(newsId: String): List<News>
-
-    @Query("SELECT * FROM news WHERE replyTo = :newsId")
-    suspend fun getDirectReplies(newsId: String): List<News>
 
     @Query("SELECT COUNT(*) FROM news WHERE replyTo = :newsId COLLATE NOCASE")
     suspend fun getReplyCount(newsId: String): Int
@@ -79,6 +76,14 @@ interface NewsDao {
 
     @Query("SELECT COUNT(*) FROM news WHERE (replyTo IS NULL OR replyTo = '') AND ((viewableBy = 'teams' COLLATE NOCASE AND viewableId = :teamId COLLATE NOCASE) OR viewIn LIKE :teamPattern ESCAPE '\\')")
     suspend fun countTopLevelByTeam(teamId: String, teamPattern: String): Long
+
+    @Query(
+        "SELECT viewableBy, viewableId, viewIn FROM news " +
+            "WHERE (replyTo IS NULL OR replyTo = '') " +
+            "AND ((viewableBy = 'teams' COLLATE NOCASE AND viewableId COLLATE NOCASE IN (:teamIds)) " +
+            "OR viewIn LIKE '%\"_id\":\"%')"
+    )
+    suspend fun getTopLevelTeamMembership(teamIds: List<String>): List<TeamNewsMembership>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(news: News)

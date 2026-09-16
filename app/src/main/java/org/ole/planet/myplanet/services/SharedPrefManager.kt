@@ -186,7 +186,6 @@ class SharedPrefManager @Inject constructor(
     fun getUrlHost(): String = pref.getString(URL_HOST, "") ?: ""
     fun setUrlHost(host: String) = pref.edit { putString(URL_HOST, host) }
 
-    fun getAlternativeUrl(): String = pref.getString(ALTERNATIVE_URL, "") ?: ""
     fun setAlternativeUrl(url: String) = pref.edit { putString(ALTERNATIVE_URL, url) }
 
     fun getProcessedAlternativeUrl(): String = pref.getString(PROCESSED_ALTERNATIVE_URL, "") ?: ""
@@ -199,6 +198,73 @@ class SharedPrefManager @Inject constructor(
     fun setIsAlternativeUrl(value: Boolean) {
         pref.edit { putBoolean(IS_ALTERNATIVE_URL, value) }
         UrlUtils.invalidateCaches()
+    }
+
+    fun saveServerConfig(
+        serverPin: String,
+        urlScheme: String,
+        urlHost: String,
+        serverUrl: String,
+        couchdbUrl: String,
+        urlUser: String,
+        urlPwd: String
+    ) {
+        pref.edit {
+            putString(SERVER_PIN, serverPin)
+            putString(URL_SCHEME, urlScheme)
+            putString(URL_HOST, urlHost)
+            putString(SERVER_URL, serverUrl)
+            putString(COUCHDB_URL, couchdbUrl)
+            putString(URL_USER, urlUser)
+            putString(URL_PWD, urlPwd)
+        }
+        UrlUtils.invalidateCaches()
+    }
+
+    fun saveAlternativeServerConfig(
+        serverPin: String,
+        urlUser: String,
+        urlPwd: String,
+        urlScheme: String,
+        urlHost: String,
+        alternativeUrl: String,
+        processedAlternativeUrl: String,
+        isAlternativeUrl: Boolean = true
+    ) {
+        pref.edit {
+            putString(SERVER_PIN, serverPin)
+            putString(URL_USER, urlUser)
+            putString(URL_PWD, urlPwd)
+            putString(URL_SCHEME, urlScheme)
+            putString(URL_HOST, urlHost)
+            putString(ALTERNATIVE_URL, alternativeUrl)
+            putString(PROCESSED_ALTERNATIVE_URL, processedAlternativeUrl)
+            putBoolean(IS_ALTERNATIVE_URL, isAlternativeUrl)
+        }
+        UrlUtils.invalidateCaches()
+    }
+
+    fun saveUserInfo(
+        userId: String,
+        userName: String,
+        firstName: String?,
+        lastName: String?,
+        middleName: String?,
+        isUserAdmin: Boolean?,
+        lastLogin: Long
+    ) {
+        pref.edit {
+            putString(USER_ID, userId)
+            putString(USER_NAME, userName)
+            remove("password")
+            putString("firstName", firstName)
+            putString("lastName", lastName)
+            putString("middleName", middleName)
+            if (isUserAdmin != null) {
+                putBoolean("isUserAdmin", isUserAdmin)
+            }
+            putLong("lastLogin", lastLogin)
+        }
     }
 
     fun getPinnedServerUrl(): String? = pref.getString(PINNED_SERVER_URL, null)
@@ -214,7 +280,6 @@ class SharedPrefManager @Inject constructor(
     fun setParentCode(code: String) = pref.edit { putString(PARENT_CODE, code) }
 
     fun getPlanetCode(): String = pref.getString(PLANET_CODE, "") ?: ""
-    fun setPlanetCode(code: String) = pref.edit { putString(PLANET_CODE, code) }
 
     fun getCustomDeviceName(): String = pref.getString(CUSTOM_DEVICE_NAME, "") ?: ""
     fun setCustomDeviceName(name: String) = pref.edit { putString(CUSTOM_DEVICE_NAME, name) }
@@ -237,7 +302,6 @@ class SharedPrefManager @Inject constructor(
     fun getAutoSyncInterval(): Int = pref.getInt(AUTO_SYNC_INTERVAL, 60 * 60)
     fun setAutoSyncInterval(interval: Int) = pref.edit { putInt(AUTO_SYNC_INTERVAL, interval) }
 
-    fun getAutoSyncPosition(): Int = pref.getInt(AUTO_SYNC_POSITION, 0)
     fun setAutoSyncPosition(position: Int) = pref.edit { putInt(AUTO_SYNC_POSITION, position) }
 
     fun getFirstRun(): Boolean = pref.getBoolean(FIRST_RUN, true)
@@ -249,10 +313,8 @@ class SharedPrefManager @Inject constructor(
     fun getLastSync(): Long = pref.getLong(LAST_SYNC, 0L)
     fun setLastSync(time: Long) = pref.edit { putLong(LAST_SYNC, time) }
 
-    fun getLastWifiId(): Int = pref.getInt(LAST_WIFI_ID, -1)
     fun setLastWifiId(id: Int) = pref.edit { putInt(LAST_WIFI_ID, id) }
 
-    fun getLastWifiSsid(): String? = pref.getString(LAST_WIFI_SSID, null)
     fun setLastWifiSsid(ssid: String) = pref.edit { putString(LAST_WIFI_SSID, ssid) }
 
     fun getHasShownCongrats(): Boolean = pref.getBoolean(HAS_SHOWN_CONGRATS, false)
@@ -261,7 +323,6 @@ class SharedPrefManager @Inject constructor(
     fun isLoggedIn(): Boolean = pref.getBoolean(KEY_LOGIN, false)
     fun setLoggedIn(value: Boolean) = pref.edit { putBoolean(KEY_LOGIN, value) }
 
-    fun isNotificationShown(): Boolean = pref.getBoolean(KEY_NOTIFICATION_SHOWN, false)
     fun setNotificationShown(value: Boolean) = pref.edit { putBoolean(KEY_NOTIFICATION_SHOWN, value) }
 
     fun getBetaAutoDownload(): Boolean {

@@ -9,13 +9,11 @@ import java.util.LinkedHashSet
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.model.AppNotification
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotification
@@ -285,19 +283,15 @@ class NotificationsRepositoryImpl @Inject constructor(
         return map
     }
 
-    override suspend fun updateTeamNotification(teamId: String, count: Int) {
-        val existing = teamNotificationDao.findByParentAndType(teamId, "chat")
-        if (existing != null) {
-            existing.lastCount = count
-            teamNotificationDao.update(existing)
-        } else {
-            val notification = TeamNotification().apply {
+    override suspend fun updateTeamNotification(teamId: String, news: List<News>) {
+        val count = news.size
+        if (teamNotificationDao.updateCount(teamId, "chat", count) == 0) {
+            teamNotificationDao.insert(TeamNotification().apply {
                 id = UUID.randomUUID().toString()
                 parentId = teamId
                 type = "chat"
                 lastCount = count
-            }
-            teamNotificationDao.insert(notification)
+            })
         }
     }
 
@@ -315,11 +309,7 @@ class NotificationsRepositoryImpl @Inject constructor(
             }
         }
 
-        val chatCountsById = coroutineScope {
-            notificationsById.keys.map { teamId ->
-                async { teamId to voicesRepository.countTopLevelByTeam(teamId) }
-            }.awaitAll().toMap()
-        }
+        val chatCountsById = voicesRepository.countTopLevelByTeams(notificationsById.keys.toList())
 
         val current = timeProvider.now()
         val tomorrow = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
