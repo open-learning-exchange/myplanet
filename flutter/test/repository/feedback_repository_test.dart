@@ -233,6 +233,271 @@ void main() {
     );
   });
 
+  test('the sync skips the `_design` documents CouchDB keeps', () async {
+    // A `feedback` database holds CouchDB's own view documents alongside the
+    // threads. Kotlin drops them before the insert
+    // (`TransactionSyncManager.extractDocs:355-364`); the port did not, so a
+    // manager — who reads `watchAllSorted()` — saw one bogus "Untitled
+    // feedback / Open" row per design document, tappable and permanent.
+    //
+    // The ordinary document is here so the walk reaches `deleteNotIn` with a
+    // non-empty keep set: the design row must be absent because it was never
+    // inserted, not because the cleanup happened to sweep it.
+    when(
+      () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer((invocation) async {
+      final url = invocation.positionalArguments[0] as String;
+      if (url.contains('limit=0')) {
+        return const NetworkSuccess<Map<String, dynamic>>({'total_rows': 3});
+      }
+      return const NetworkSuccess<Map<String, dynamic>>({
+        'rows': [
+          {
+            'doc': {'_id': '_design/feedback', '_rev': '1-a', 'views': {}},
+          },
+          {
+            'doc': {'_id': 'fb-normal', '_rev': '1-b', 'title': 'ordinary'},
+          },
+          // No slash: `_design` is a prefix test in both apps, so an id that
+          // is exactly `_design` is a view document too.
+          {
+            'doc': {'_id': '_design', '_rev': '1-c'},
+          },
+        ],
+      });
+    });
+
+    final result = await repository.sync(config: config);
+
+    expect(result, isA<SyncComplete>());
+    expect((result as SyncComplete).savedCount, 1);
+    final stored = await database.feedbackDao.watchAllSorted().first;
+    expect(stored.map((row) => row.id), ['fb-normal']);
+  });
+
+  test(
+    'the cleanup removes an uploaded row the server no longer has',
+    () async {
+      // The prune is a deliberate divergence — Kotlin's `FeedbackDao` has no
+      // delete at all — so it is pinned rather than left to be "corrected" in
+      // either direction. A row that reached the server and is then absent from
+      // a complete walk is a thread deleted on the server.
+      await database.feedbackDao.upsert(
+        FeedbackEntriesCompanion.insert(
+          id: 'fb-deleted-on-server',
+          isUploaded: const Value(true),
+        ),
+      );
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer((invocation) async {
+        final url = invocation.positionalArguments[0] as String;
+        if (url.contains('limit=0')) {
+          return const NetworkSuccess<Map<String, dynamic>>({'total_rows': 1});
+        }
+        return const NetworkSuccess<Map<String, dynamic>>({
+          'rows': [
+            {
+              'doc': {'_id': 'fb-still-there', '_rev': '1-a'},
+            },
+          ],
+        });
+      });
+
+      await repository.sync(config: config);
+
+      final stored = await database.feedbackDao.watchAllSorted().first;
+      expect(stored.map((row) => row.id), ['fb-still-there']);
+    },
+  );
+
+  test('the cleanup spares a row uploaded while the walk was running', () async {
+    // Writer and reader driven together. `deleteNotIn` spares `isUploaded =
+    // false` as it is *when the cleanup runs*, but the outbox drains on its
+    // own schedule: a thread that was pending when the walk began can be
+    // uploaded while the pages are in flight, and those pages were read from a
+    // server that did not have its document yet. Without the snapshot taken
+    // before the walk, the thread the user filed a minute ago is deleted from
+    // their own list.
+    await database.feedbackDao.upsert(
+      FeedbackEntriesCompanion.insert(
+        id: 'fb-just-filed',
+        isUploaded: const Value(false),
+      ),
+    );
+    when(
+      () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer((invocation) async {
+      final url = invocation.positionalArguments[0] as String;
+      if (url.contains('limit=0')) {
+        return const NetworkSuccess<Map<String, dynamic>>({'total_rows': 1});
+      }
+      // The outbox drains mid-walk: the row is now uploaded, but the page
+      // below was read before the server had it.
+      await database.feedbackDao.markUploaded('fb-just-filed', '1-fresh');
+      return const NetworkSuccess<Map<String, dynamic>>({
+        'rows': [
+          {
+            'doc': {'_id': 'fb-other', '_rev': '1-a'},
+          },
+        ],
+      });
+    });
+
+    await repository.sync(config: config);
+
+    final stored = await database.feedbackDao.watchAllSorted().first;
+    expect(
+      stored.map((row) => row.id),
+      containsAll(['fb-just-filed', 'fb-other']),
+    );
+  });
+
+  test('a design document is never inserted, not merely swept', () async {
+    // The cleanup would hide the difference: an inserted design row the keep
+    // set omits is deleted in the same sync, so the table looks identical
+    // either way. This walk ends short — the second page comes back empty, so
+    // `walkedEveryPage` is false and nothing is pruned — which leaves only one
+    // reason the row can be absent.
+    var page = 0;
+    when(
+      () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer((invocation) async {
+      final url = invocation.positionalArguments[0] as String;
+      if (url.contains('limit=0')) {
+        return const NetworkSuccess<Map<String, dynamic>>({'total_rows': 9});
+      }
+      if (page++ > 0) {
+        return const NetworkSuccess<Map<String, dynamic>>({'rows': []});
+      }
+      return const NetworkSuccess<Map<String, dynamic>>({
+        'rows': [
+          {
+            'doc': {'_id': '_design/feedback', '_rev': '1-a'},
+          },
+          {
+            'doc': {'_id': 'fb-normal', '_rev': '1-b'},
+          },
+          // No readable id: such a row lands under the empty primary key, and
+          // with no `_rev` it is pending — so the cleanup could never remove
+          // it and the manager's list would carry it for ever.
+          {
+            'doc': {'title': 'no id at all'},
+          },
+        ],
+      });
+    });
+
+    await repository.sync(config: config);
+
+    final stored = await database.feedbackDao.watchAllSorted().first;
+    expect(stored.map((row) => row.id), ['fb-normal']);
+  });
+
+  test(
+    'the cleanup spares a thread filed while the walk was running',
+    () async {
+      // The stronger half of the same window: this row did not exist when the
+      // walk began, so no snapshot of *pending* ids could have covered it. The
+      // walk may only delete what the server already had when it started.
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer((invocation) async {
+        final url = invocation.positionalArguments[0] as String;
+        if (url.contains('limit=0')) {
+          return const NetworkSuccess<Map<String, dynamic>>({'total_rows': 1});
+        }
+        // Filed and drained mid-walk, after the pages were read from a server
+        // that had no document for it.
+        await database.feedbackDao.upsert(
+          FeedbackEntriesCompanion.insert(
+            id: 'fb-filed-mid-walk',
+            isUploaded: const Value(false),
+          ),
+        );
+        await database.feedbackDao.markUploaded('fb-filed-mid-walk', '1-fresh');
+        return const NetworkSuccess<Map<String, dynamic>>({
+          'rows': [
+            {
+              'doc': {'_id': 'fb-other', '_rev': '1-a'},
+            },
+          ],
+        });
+      });
+
+      await repository.sync(config: config);
+
+      final stored = await database.feedbackDao.watchAllSorted().first;
+      expect(
+        stored.map((row) => row.id),
+        containsAll(['fb-filed-mid-walk', 'fb-other']),
+      );
+    },
+  );
+
+  test('closing a row that is not there writes nothing', () async {
+    // What replaces the existence check the close used to make.
+    await repository.closeFeedback('fb-never-existed');
+
+    expect(await repository.getFeedbackById('fb-never-existed'), isNull);
+  });
+
+  test(
+    'a pull that omits `_rev` keeps the revision the row is holding',
+    () async {
+      // `upsertAll` writes `ON CONFLICT DO UPDATE SET` over the columns the
+      // companion carries, so `Value(null)` would write NULL over the revision
+      // a pending reply needs to update the document under — the Phase 56
+      // shape. Unreachable from `_all_docs?include_docs=true`; this pins the
+      // guard for the next caller of `insertFromJson`. Driven through the real
+      // DAO rather than the companion, because the claim is about what the
+      // upsert does with an absent column.
+      await repository.insertFromJson([
+        {'_id': 'fb1', '_rev': '3-c', 'title': 'from the server'},
+      ]);
+      await repository.addReply('fb1', 'pending reply', 'user1');
+
+      await repository.insertFromJson([
+        {'_id': 'fb1', 'title': 'no revision on this one'},
+      ]);
+
+      final stored = await repository.getFeedbackById('fb1');
+      expect(stored!.rev, '3-c');
+      expect(stored.title, 'no revision on this one');
+
+      // And the other direction: an absent `_rev` on a row that does not
+      // exist yet stores NULL, since the column has no default.
+      await repository.insertFromJson([
+        {'_id': 'fb-new', 'title': 'never seen before'},
+      ]);
+      final fresh = await repository.getFeedbackById('fb-new');
+      expect(fresh!.rev, isNull);
+      expect(fresh.isUploaded, isFalse);
+    },
+  );
+
+  test('a reply is signed by its author, not by the thread owner', () async {
+    // Kotlin passes `feedback?.owner` (`FeedbackDetailActivity.kt:82`), so an
+    // admin answering ada's question posts a reply that reads as ada's. The
+    // port signs with the signed-in user; this is here so the divergence is
+    // not "corrected" back by a later parity pass.
+    await database.feedbackDao.upsert(
+      FeedbackEntriesCompanion.insert(
+        id: 'fb1',
+        owner: const Value('ada'),
+        messages: const Value('[]'),
+        isUploaded: const Value(true),
+      ),
+    );
+
+    await repository.addReply('fb1', 'looking into it', 'admin');
+
+    final stored = await repository.getFeedbackById('fb1');
+    final parsed = FeedbackMapper.parseMessages(stored!.messages);
+    expect(parsed.single.user, 'admin');
+    expect(stored.owner, 'ada');
+  });
+
   test(
     'closeFeedback marks status as closed and resets isUploaded to false',
     () async {

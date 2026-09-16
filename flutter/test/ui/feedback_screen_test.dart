@@ -8,6 +8,7 @@ import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/core/providers/provider_retry.dart';
 import 'package:myplanet/core/system/device_identity.dart';
 import 'package:myplanet/data/local/app_database.dart';
+import 'package:myplanet/data/local/feedback_mapper.dart';
 import 'package:myplanet/l10n/app_localizations.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/session_provider.dart';
@@ -98,6 +99,52 @@ void main() {
       await database.outboxDao.findOpen(FeedbackUploader.type, 'feedback-1'),
       isNotNull,
     );
+  });
+
+  testWidgets('a reply is signed by whoever is signed in', (tester) async {
+    // The divergence lives here, at the screen, not in the repository: Kotlin
+    // passes the *thread owner* (`FeedbackDetailActivity.kt:82` →
+    // `viewModel.addReply(feedbackId, message, feedback?.owner)`), so an admin
+    // answering ada's question posts a reply that reads as ada's — on the
+    // server and on every other device. A parity pass "restoring" that edits
+    // `session.name` to `feedback.owner` in `feedback_detail_screen.dart`, and
+    // no repository test can fail on it.
+    //
+    // The seeded thread is ada's while the session is the admin's, because the
+    // two names have to differ for the assertion to discriminate.
+    final database = AppDatabase.memory();
+    addTearDown(database.close);
+    await _seedUploaded(database);
+
+    final admin = UserRow(
+      id: 'user-2',
+      name: 'admin',
+      rolesList: const ['manager'],
+      userAdmin: false,
+      joinDate: 0,
+      isArchived: false,
+      isUpdated: false,
+    );
+
+    await tester.pumpWidget(
+      _wrap(
+        database,
+        admin,
+        config,
+        const FeedbackDetailScreen(feedbackId: 'feedback-1'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'looking into it');
+    await tester.tap(find.byIcon(Icons.send));
+    await tester.pumpAndSettle();
+
+    final row = await database.feedbackDao.getById('feedback-1');
+    final replies = FeedbackMapper.parseMessages(row!.messages);
+    expect(replies.last.message, 'looking into it');
+    expect(replies.last.user, 'admin');
+    expect(row.owner, 'ada', reason: 'the thread is still ada\'s');
   });
 
   testWidgets('closing a thread queues the status change', (tester) async {

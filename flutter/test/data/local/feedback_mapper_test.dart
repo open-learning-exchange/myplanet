@@ -345,6 +345,77 @@ void main() {
 
       expect(jsonDecode(updated), hasLength(2));
     });
+
+    test('a `messages` column that is not an array survives the reply', () {
+      // `fromDoc` stores what the server sent, so a `messages` that is an
+      // object or a string lands in the column verbatim. Appending used to
+      // read it as `[]`, so the array became the reply alone — and `toDoc`
+      // sends that back under the document's `_rev`, taking the value off the
+      // server too. Neither app can read such a column; the reply is the half
+      // that cannot be recovered from anywhere, so both are kept.
+      final fromObject = jsonDecode(
+        FeedbackMapper.addReply('{"0":{"message":"hi"}}', 'thank you', 'ada'),
+      );
+      expect(fromObject, hasLength(2));
+      expect(fromObject.first, {
+        '0': {'message': 'hi'},
+      });
+      expect((fromObject.last as Map)['message'], 'thank you');
+
+      final fromString = jsonDecode(
+        FeedbackMapper.addReply('"just a string"', 'thank you', 'ada'),
+      );
+      expect(fromString, ['just a string', isA<Map<String, dynamic>>()]);
+    });
+
+    test('an empty or unparseable column still yields just the reply', () {
+      // Nothing to preserve: `toDoc` cannot decode bytes that are not JSON
+      // either, so they never reach the server under any behaviour.
+      expect(jsonDecode(FeedbackMapper.addReply(null, 'hi', 'ada')), [
+        isA<Map<String, dynamic>>(),
+      ]);
+      expect(jsonDecode(FeedbackMapper.addReply('', 'hi', 'ada')), [
+        isA<Map<String, dynamic>>(),
+      ]);
+      expect(jsonDecode(FeedbackMapper.addReply('{not json', 'hi', 'ada')), [
+        isA<Map<String, dynamic>>(),
+      ]);
+      expect(jsonDecode(FeedbackMapper.addReply('null', 'hi', 'ada')), [
+        isA<Map<String, dynamic>>(),
+      ]);
+    });
+  });
+
+  group('the `_rev` the row is stored with', () {
+    test('an absent `_rev` leaves the stored revision alone', () {
+      // `Value(null)` would write over it, and `FeedbackDao.upsertAll` is an
+      // insert-or-replace — the Phase 56 shape, where a fetch that omits a
+      // field wipes the stored one.
+      final mapped = FeedbackMapper.fromDoc({'_id': 'fb1', 'title': 'no rev'});
+
+      expect(mapped.rev.present, isFalse);
+      expect(mapped.isUploaded.value, isFalse);
+    });
+
+    test('an object `_rev` leaves the row coherent', () {
+      // The column and the flag are one read now. As two expressions they
+      // disagreed here: the row stored as `isUploaded = true, rev = null` —
+      // on the server, with no revision to update it under.
+      final mapped = FeedbackMapper.fromDoc({
+        '_id': 'fb1',
+        '_rev': {'unexpected': 'shape'},
+      });
+
+      expect(mapped.rev.present, isFalse);
+      expect(mapped.isUploaded.value, isFalse);
+    });
+
+    test('an ordinary `_rev` is stored and marks the row uploaded', () {
+      final mapped = FeedbackMapper.fromDoc({'_id': 'fb1', '_rev': '2-b'});
+
+      expect(mapped.rev.value, '2-b');
+      expect(mapped.isUploaded.value, isTrue);
+    });
   });
 
   group('the id both sides of the sync derive', () {
@@ -424,6 +495,42 @@ void main() {
         }).openTime.value,
         0,
       );
+    });
+  });
+
+  group('a preserved non-array value and the merge, driven together', () {
+    test('a pull cannot duplicate the thread it was wrapped into', () async {
+      // `_messagesForAppend` keeps an unreadable `messages` value as the
+      // array's first element. The merge identifies replies by
+      // `message`/`user`/`time`, which a wrapped string does not have — so an
+      // element-identity that reads it as "different" stops the shared prefix
+      // at zero and appends the whole local array to the server's copy again,
+      // on every pull while the row is still pending. The sync re-queues after
+      // a completed pull, so that doubled array is what uploads.
+      await repository.insertFromJson([
+        {'_id': 'fb1', '_rev': '1-a', 'messages': 'just a string'},
+      ]);
+      await repository.addReply('fb1', 'my reply', 'ada');
+
+      final afterReply = await repository.getFeedbackById('fb1');
+      final uploaded = FeedbackMapper.toDoc(afterReply!)['messages'];
+      expect(uploaded, [
+        'just a string',
+        isA<Map<String, dynamic>>(),
+      ], reason: 'the value the server sent must survive the reply');
+
+      // The server echoes back exactly what the upload sent, twice over.
+      for (var pull = 0; pull < 2; pull++) {
+        await repository.insertFromJson([
+          {'_id': 'fb1', '_rev': '1-a', 'messages': uploaded},
+        ]);
+        final merged = await repository.getFeedbackById('fb1');
+        expect(
+          jsonDecode(merged!.messages!),
+          hasLength(2),
+          reason: 'pull ${pull + 1} grew a thread that had not changed',
+        );
+      }
     });
   });
 

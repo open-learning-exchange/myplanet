@@ -123,12 +123,46 @@ class FeedbackMapper {
     final id = idOf(doc);
     final hasPendingLocalReply = existing != null && !existing.isUploaded;
     final serverMessages = doc['messages'];
-    final isUploaded =
-        !hasPendingLocalReply && doc.containsKey('_rev') && doc['_rev'] != null;
+    // One read of `_rev` for both the column and the flag. They used to be two
+    // expressions that disagreed: the column went through [_string] while the
+    // flag was a raw `doc.containsKey('_rev') && doc['_rev'] != null`, so an
+    // object-valued `_rev` stored the row as `isUploaded = true, rev = null` —
+    // on the server, and with no revision to update it under. It was the last
+    // raw *field* read in this mapper; `messages` above is read raw too, but
+    // it is handled by shape rather than cast, so it cannot throw.
+    // Unreachable from CouchDB; a row whose two halves describe different
+    // states is worth not leaving behind.
+    //
+    // Gating on `_rev` at all is the port's own choice, worth knowing before
+    // anyone "restores parity" here: Kotlin sets `isUploaded = true`
+    // unconditionally on this branch (`FeedbackRepositoryImpl.kt:158`). A
+    // document that reached the mapper without a `_rev` is one the server
+    // cannot be updating under a revision, so the port treats it as not yet
+    // uploaded and lets the outbox settle it.
+    final rev = _string('_rev', doc);
+    final isUploaded = !hasPendingLocalReply && rev != null;
 
     return FeedbackEntriesCompanion(
       id: Value(id),
-      rev: Value(_string('_rev', doc)),
+      // `Value.absent()`, not `Value(null)`. `FeedbackDao.upsertAll` is
+      // `insertAllOnConflictUpdate`, i.e. `ON CONFLICT DO UPDATE SET` over the
+      // columns the companion carries — so an absent column keeps the stored
+      // value and `Value(null)` writes NULL over it. (Kotlin's DAO is
+      // `@Insert(onConflict = REPLACE)`, `FeedbackDao.kt:39-40`, which really
+      // does delete and re-insert; the two are not the same mechanism and a
+      // fix reasoned from Kotlin's would be pointless here.) The revision it
+      // wrote over is the one a pending row needs to update its document
+      // under, which is the Phase 56 shape: a fetch that omits a field must
+      // not wipe the stored one.
+      //
+      // Not reachable today — every caller of `insertFromJson` comes from
+      // `_all_docs?include_docs=true`, which always carries `_rev` — so this
+      // guards the next caller rather than fixing a live defect, and the
+      // upload would in any case have recovered through `ConflictRecovery`'s
+      // 409 arm at the cost of a round trip. Kotlin writes `""` here
+      // (`FeedbackRepositoryImpl.kt:152`), which wipes just as effectively;
+      // the port keeps the revision instead.
+      rev: rev == null ? const Value.absent() : Value(rev),
       title: Value(_string('title', doc)),
       source: Value(_userString('source', doc)),
       status: Value(_string('status', doc) ?? 'Open'),
@@ -193,8 +227,27 @@ class FeedbackMapper {
   }
 
   /// Whether two message elements are the same reply.
+  ///
+  /// A reply is a map and is compared on `message`/`user`/`time` rather than on
+  /// its bytes, because a server that echoes it back with its keys reordered
+  /// would otherwise read as a divergence.
+  ///
+  /// An element that is **not** a map has no such fields, and returning false
+  /// for it is what an earlier cut of [_messagesForAppend] got wrong: the value
+  /// it wraps at index 0 stopped the shared-prefix scan at zero, so every pull
+  /// that landed while the row was pending appended the whole local array to
+  /// the server's copy again — and the re-queue after a completed sync sent
+  /// that doubled array back. Two bytes-equal non-maps are the same element,
+  /// which restores the prefix and with it the idempotence the merge depends
+  /// on. Encoding is the right comparison here precisely because a non-map has
+  /// no keys to reorder.
   static bool _sameMessage(Object? a, Object? b) {
-    if (a is! Map<String, dynamic> || b is! Map<String, dynamic>) return false;
+    if (a is! Map<String, dynamic> || b is! Map<String, dynamic>) {
+      // One map and one not is a divergence, and encoding them would compare
+      // an object against a scalar for no gain.
+      if (a is Map || b is Map) return false;
+      return jsonEncode(a) == jsonEncode(b);
+    }
     return _string('message', a) == _string('message', b) &&
         _userString('user', a) == _userString('user', b) &&
         _string('time', a) == _string('time', b);
@@ -285,12 +338,11 @@ class FeedbackMapper {
 
   /// The messages array exactly as stored, elements untouched.
   ///
-  /// A column that decodes to something other than a list is `[]` here, which
-  /// [addReply] then appends to — so a reply on a thread whose stored
-  /// `messages` is a JSON object or a JSON *string* still replaces it. Kotlin
-  /// has the same hole from the other side (`getJsonArray` normalises any
-  /// non-array to `"[]"`, `JsonUtils.kt:126-129`), so this is not a parity
-  /// gap; it is the one shape the array-preserving fix does not reach.
+  /// A column that decodes to something other than a list reads as `[]`, which
+  /// is what Kotlin stores for the same document (`getJsonArray` normalises any
+  /// non-array to `"[]"`, `JsonUtils.kt:126-129`) and what both apps' reply
+  /// lists therefore show. [_messagesForAppend] is the one caller that must not
+  /// use this, because *writing* that `[]` back is what destroys the value.
   static List<dynamic> _decodeMessages(String? messagesJson) {
     if (messagesJson == null || messagesJson.isEmpty) return [];
     try {
@@ -299,6 +351,52 @@ class FeedbackMapper {
     } catch (_) {
       return [];
     }
+  }
+
+  /// The stored thread as a list an appended reply cannot destroy.
+  ///
+  /// A well-formed column decodes to a list and is returned untouched, so
+  /// nothing about an ordinary thread changes here. The case this exists for is
+  /// a `messages` that is a JSON **object** or a JSON **string**: [fromDoc]
+  /// stores whatever the server sent, [_decodeMessages] reads it as `[]`, and
+  /// appending to that `[]` used to produce an array holding only the new
+  /// reply — which [toDoc] then sends back under the document's `_rev`, so the
+  /// value was gone from the server and every other device as well.
+  ///
+  /// Both apps already fail to *read* such a column (Kotlin normalises it to
+  /// `"[]"` at pull, `JsonUtils.kt:126-129`), so this is not a parity gap and
+  /// making it readable is not on offer. What is on offer is which of the two
+  /// values survives the reply, and the reply is the one that cannot be
+  /// recovered from anywhere: it is what the user just typed. So the
+  /// unreadable value is carried as the array's first element rather than
+  /// dropped — it stays in the document, on the server and on disk, at the
+  /// cost of one blank row in the thread where neither app can read it.
+  ///
+  /// Bytes that are not JSON at all are the one thing not preserved: [toDoc]
+  /// cannot decode them either, so they never reach the server under any
+  /// behaviour, and wrapping them would change a broken column into a
+  /// different broken column.
+  ///
+  /// Two limits worth knowing, because "kept" is not "kept for ever". The
+  /// wrapped value reaches the server on the reply's upload; after that it is
+  /// an ordinary element of the document's array. If it is a **map carrying
+  /// none** of `message`/`user`/`time`, a later merge on a still-pending row
+  /// can drop it, because [_sameMessage] identifies maps by those fields alone
+  /// and two field-less maps therefore compare equal — a hole this helper
+  /// widens rather than opens, since the server's own array could always hold
+  /// such an element. Non-map values are safe: [_sameMessage] compares those by
+  /// encoding.
+  static List<dynamic> _messagesForAppend(String? messagesJson) {
+    if (messagesJson == null || messagesJson.isEmpty) return [];
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(messagesJson);
+    } catch (_) {
+      return [];
+    }
+    if (decoded is List) return decoded;
+    if (decoded == null) return [];
+    return [decoded];
   }
 
   /// Gets the first message from the messages list.
@@ -323,7 +421,7 @@ class FeedbackMapper {
     String message,
     String user,
   ) {
-    final messages = _decodeMessages(existingMessagesJson);
+    final messages = _messagesForAppend(existingMessagesJson);
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     messages.add({
       'message': message,
