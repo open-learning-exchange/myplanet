@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -12,8 +13,12 @@ import com.applandeo.materialcalendarview.CalendarDay
 import com.applandeo.materialcalendarview.listeners.OnCalendarDayClickListener
 import dagger.hilt.android.AndroidEntryPoint
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.Calendar
+import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -56,14 +61,16 @@ class CalendarFragment : BaseBindingFragment<FragmentCalendarBinding>(FragmentCa
                     Instant.ofEpochMilli(meetup.startDate).atZone(ZoneId.systemDefault()).toLocalDate() == clickedDate
                 }
                 if (dayMeetups.isNotEmpty()) {
-                    showAgendaDialog(dayMeetups)
+                    showAgendaDialog(clickedDate, dayMeetups)
                 }
             }
         })
     }
 
-    private fun showAgendaDialog(dayMeetups: List<Meetup>) {
+    private fun showAgendaDialog(clickedDate: LocalDate, dayMeetups: List<Meetup>) {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.calendar_agenda_dialog, null)
+        val titleFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(Locale.getDefault())
+        dialogView.findViewById<TextView>(R.id.tvTitle).text = clickedDate.format(titleFormatter)
         val recyclerView = dialogView.findViewById<RecyclerView>(R.id.rvMeetups)
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = EventsAdapter(onMeetupClick = null) { meetup ->
