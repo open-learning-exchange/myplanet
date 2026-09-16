@@ -101,6 +101,15 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
   /// Empty on a configuration written before the field existed, and on a server
   /// whose `configurations` row carried no id. [_isKnownDifferentConfiguration]
   /// treats either as "unknown", never as "different".
+  ///
+  /// **Clearing it after a wipe is not observable today, and no test pins it.**
+  /// Its only reader is [_isKnownDifferentConfiguration], which
+  /// [_wipeRefusedFor] reaches only past `_deviceHoldsData()` — and a wipe sets
+  /// that false, so nothing gets as far as reading a stale id. It is cleared
+  /// anyway because the three fields describe one relationship that the wipe
+  /// ends, and a later change that moves the reader out from behind that gate
+  /// should not have to rediscover this. Said out loud rather than left as a
+  /// line that reads like coverage.
   String? _configuredId;
 
   /// Whether this device holds anything the switch would destroy.
@@ -447,6 +456,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
       setState(() {
         _holdsServerData = false;
         _configuredHost = null;
+        _configuredId = null;
       });
     }
     if (!mounted) return;
