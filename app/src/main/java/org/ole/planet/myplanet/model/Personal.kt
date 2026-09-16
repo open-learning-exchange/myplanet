@@ -4,15 +4,8 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-/**
- * Room replacement for the former `Personal` model. The class name is kept because
- * the UI and upload path use it purely as a detached data holder. Persistence goes through
- * [org.ole.planet.myplanet.data.room.dao.PersonalDao].
- */
 @Entity(tableName = "my_personal", indices = [Index("userId")])
 open class Personal {
-    // @JvmField (field access, no generated getters) so Room does not treat the local `id` and the
-    // CouchDB `_id` as ambiguous accessors (getId vs get_id both normalise to "id").
     @PrimaryKey
     @JvmField
     var id: String = ""
