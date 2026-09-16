@@ -52,8 +52,6 @@ class PersonalsRepositoryImplTest {
         every { UrlUtils.header } returns "mock-header"
         every { UrlUtils.getUrl() } returns "mock-url"
 
-        // NetworkUtils is no longer used by the repository, but keep its statics mocked in case
-        // shared helpers (e.g. Personal.serialize) reach into it indirectly.
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "mock-unique-id"
         every { NetworkUtils.getDeviceName() } returns "mock-device-name"
@@ -202,6 +200,80 @@ class PersonalsRepositoryImplTest {
 
         assertEquals("provider-device-name", bodySlot.captured.get("customDeviceName").asString)
         verify(exactly = 1) { deviceNameProvider.getCustomDeviceName() }
+    }
+
+    @Test
+    fun `uploadPersonalDocument serializes personal document correctly`() = runTest {
+        val personal = Personal().apply {
+            id = "test-id"
+            title = "My Personal Title"
+            date = 1600000000000L
+            path = "http://example.com/file.pdf"
+            userName = "John Doe"
+            description = "This is a description"
+            userId = "user123"
+        }
+
+        every { FileUtils.getFileNameFromUrl(any()) } returns "file.pdf"
+        every { NetworkUtils.getUniqueIdentifier() } returns "unique_id"
+        every { NetworkUtils.getDeviceName() } returns "device_name"
+        every { deviceNameProvider.getCustomDeviceName() } returns "custom_device_name"
+
+        val bodySlot = slot<JsonObject>()
+        coEvery { uploadRepository.postUpload(any(), capture(bodySlot)) } returns Response.success(JsonObject())
+
+        repository.uploadPersonalDocument(personal)
+
+        val serialized = bodySlot.captured
+        assertEquals("My Personal Title", serialized.get("title").asString)
+        assertTrue(serialized.has("uploadDate"))
+        assertEquals(1600000000000L, serialized.get("createdDate").asLong)
+        assertEquals("file.pdf", serialized.get("filename").asString)
+        assertEquals("John Doe", serialized.get("author").asString)
+        assertEquals("John Doe", serialized.get("addedBy").asString)
+        assertEquals("This is a description", serialized.get("description").asString)
+        assertEquals("Activities", serialized.get("resourceType").asString)
+        assertTrue(serialized.get("private").asBoolean)
+
+        assertEquals("unique_id", serialized.get("androidId").asString)
+        assertEquals("device_name", serialized.get("deviceName").asString)
+        assertEquals("custom_device_name", serialized.get("customDeviceName").asString)
+
+        val privateFor = serialized.getAsJsonObject("privateFor")
+        assertEquals("user123", privateFor.get("users").asString)
+    }
+
+    @Test
+    fun `uploadPersonalDocument serializes personal document with null values correctly`() = runTest {
+        val personal = Personal().apply { id = "test-id" } // all nullable fields are null by default
+
+        every { FileUtils.getFileNameFromUrl(null) } returns ""
+        every { NetworkUtils.getUniqueIdentifier() } returns "unique_id"
+        every { NetworkUtils.getDeviceName() } returns "device_name"
+        every { deviceNameProvider.getCustomDeviceName() } returns "custom_device_name"
+
+        val bodySlot = slot<JsonObject>()
+        coEvery { uploadRepository.postUpload(any(), capture(bodySlot)) } returns Response.success(JsonObject())
+
+        repository.uploadPersonalDocument(personal)
+
+        val serialized = bodySlot.captured
+        assertTrue(serialized.get("title").isJsonNull)
+        assertTrue(serialized.has("uploadDate"))
+        assertEquals(0L, serialized.get("createdDate").asLong)
+        assertEquals("", serialized.get("filename").asString)
+        assertTrue(serialized.get("author").isJsonNull)
+        assertTrue(serialized.get("addedBy").isJsonNull)
+        assertTrue(serialized.get("description").isJsonNull)
+        assertEquals("Activities", serialized.get("resourceType").asString)
+        assertTrue(serialized.get("private").asBoolean)
+
+        assertEquals("unique_id", serialized.get("androidId").asString)
+        assertEquals("device_name", serialized.get("deviceName").asString)
+        assertEquals("custom_device_name", serialized.get("customDeviceName").asString)
+
+        val privateFor = serialized.getAsJsonObject("privateFor")
+        assertTrue(privateFor.get("users").isJsonNull)
     }
 
     @Test
