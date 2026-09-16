@@ -551,6 +551,8 @@
     <string name="subject_level">Subject Level</string>
     <string name="order_by_date">Order by Date</string>
     <string name="order_by_title">Order by Title</string>
+    <string name="sort">Sort</string>
+    <string name="show_n_results">Show %1$d results</string>
     <string name="exams">Exams</string>
     <string name="survey">Survey</string>
     <string name="submitted_by">Submitted by</string>
@@ -914,11 +916,14 @@
     <string name="video_player">video player</string>
     <string name="video_unavailable">Video unavailable — file not found and could not connect to server</string>
     <string name="video_playback_error">Video playback error. Please try again or check your connection</string>
+    <string name="audio_unavailable">Audio unavailable — file not found and could not connect to server</string>
+    <string name="audio_playback_error">Audio playback error. Please try again or check your connection</string>
     <string name="video_loading_checking_server">Checking server availability…</string>
     <string name="video_loading_connecting">Connecting to server…</string>
     <string name="video_loading_buffering">Buffering…</string>
     <string name="video_loading_local">Loading video…</string>
     <string name="unable_to_play_video">Unable to Play Video</string>
+    <string name="unable_to_play_audio">Unable to Play Audio</string>
     <string name="go_back">Go Back</string>
     <string name="progress_bar">progress bar</string>
     <string name="web_view">web view</string>
@@ -1127,6 +1132,10 @@
     <string name="user_verification_in_progress">User verification in progress. Please wait while we process the data.</string>
     <string name="go_to_mylibrary">Go To MyLibrary</string>
     <string name="choose_an_option">Choose an option</string>
+    <string name="profile_guest_banner_message">Guest — sign in to save your profile</string>
+    <string name="profile_secondary_line">%1$s · %2$s</string>
+    <string name="profile_label_level">Level</string>
+    <string name="profile_activity_section">Activity</string>
     <string name="welcome">Welcome %1$s</string>
     <string name="edit_plan">Edit Plan</string>
     <string name="show_additional_fields">show additional fields</string>

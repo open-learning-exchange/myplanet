@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.ui.sync
 
-import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.milliseconds
 
 object ForceSyncPolicy {
 
@@ -24,7 +24,7 @@ object ForceSyncPolicy {
         if (lastSyncMillis <= 0) {
             return null
         }
-        val daysDiff = TimeUnit.MILLISECONDS.toDays(nowMillis - lastSyncMillis)
+        val daysDiff = (nowMillis - lastSyncMillis).milliseconds.inWholeDays
         return if (daysDiff >= maxDays) daysDiff else null
     }
 }

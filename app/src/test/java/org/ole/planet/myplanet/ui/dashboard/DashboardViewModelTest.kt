@@ -22,11 +22,13 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.DashboardProfile
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
@@ -54,6 +56,7 @@ class DashboardViewModelTest {
     private val surveysRepository = mockk<SurveysRepository>()
     private val progressRepository = mockk<ProgressRepository>()
     private val voicesRepository = mockk<VoicesRepository>()
+    private val activitiesRepository = mockk<ActivitiesRepository>()
     private val syncRepository = mockk<SyncRepository>()
     private val dispatcherProvider = mockk<DispatcherProvider>(relaxed = true)
 
@@ -78,6 +81,7 @@ class DashboardViewModelTest {
             surveysRepository,
             progressRepository,
             voicesRepository,
+            activitiesRepository,
             dispatcherProvider,
             syncRepository
         )
@@ -271,6 +275,7 @@ class DashboardViewModelTest {
         coEvery { submissionsRepository.hasPendingSurvey(any(), eq(userId)) } returns false
         every { application.getString(any(), any<String>()) } returns "completed"
         every { application.getString(any(), any<String>(), any<Int>(), any<Int>()) } returns "in progress"
+        every { progressRepository.findProgressForCourse(any(), any()) } returns null
         coEvery { progressRepository.hasUserCompletedSync(userId) } returns false
 
         viewModel.evaluateChallengeDialog(userId, isGuest = false, validUrls = listOf(validUrl), serverUrl = validUrl)
@@ -279,5 +284,47 @@ class DashboardViewModelTest {
 
         coVerify(exactly = 1) { voicesRepository.getCommunityVoiceDateCount(any(), any(), eq(userId)) }
         coVerify(exactly = 1) { voicesRepository.getCommunityVoiceDateCount(any(), any(), isNull()) }
+    }
+
+    @Test
+    fun `getGuestVisitState fetches the offline visit count once and memoizes it`() = runTest(testDispatcher) {
+        val userId = "guest-123"
+        coEvery { activitiesRepository.getOfflineVisitCount(userId) } returns 3
+
+        val first = viewModel.getGuestVisitState(userId).await()
+        val second = viewModel.getGuestVisitState(userId).await()
+
+        assertEquals(3, first.offlineVisits)
+        assertEquals(true, first.isGuest)
+        assertEquals(first, second)
+        coVerify(exactly = 1) { activitiesRepository.getOfflineVisitCount(userId) }
+    }
+
+    @Test
+    fun `getGuestVisitState never queries the repository for a non-guest user`() = runTest(testDispatcher) {
+        val userId = "member-456"
+
+        val state = viewModel.getGuestVisitState(userId).await()
+
+        assertEquals(0, state.offlineVisits)
+        assertEquals(false, state.isGuest)
+        assertEquals(null, state.bannerMessageRes)
+        assertEquals(false, state.shouldShowTrialEndedDialog)
+        assertEquals(true, state.shouldAutoOpenDrawer)
+        coVerify(exactly = 0) { activitiesRepository.getOfflineVisitCount(any()) }
+    }
+
+    @Test
+    fun `GuestVisitState derives banner, dialog and auto-open decisions from visit thresholds`() {
+        assertEquals(R.string.guest_visit_limit_warning, GuestVisitState(offlineVisits = 2, isGuest = true).bannerMessageRes)
+        assertEquals(R.string.last_login_message, GuestVisitState(offlineVisits = 3, isGuest = true).bannerMessageRes)
+        assertEquals(null, GuestVisitState(offlineVisits = 1, isGuest = true).bannerMessageRes)
+
+        assertEquals(false, GuestVisitState(offlineVisits = 3, isGuest = true).shouldShowTrialEndedDialog)
+        assertEquals(true, GuestVisitState(offlineVisits = 4, isGuest = true).shouldShowTrialEndedDialog)
+
+        assertEquals(true, GuestVisitState(offlineVisits = 2, isGuest = true).shouldAutoOpenDrawer)
+        assertEquals(false, GuestVisitState(offlineVisits = 3, isGuest = true).shouldAutoOpenDrawer)
+        assertEquals(true, GuestVisitState(offlineVisits = 10, isGuest = false).shouldAutoOpenDrawer)
     }
 }

@@ -70,6 +70,17 @@ class SharedPrefManagerTest {
     }
 
     @Test
+    fun testGetSavedUsersMalformedJson() {
+        every { mockSharedPreferences.getString("savedUsers", null) } returns "invalid json {"
+        try {
+            sharedPrefManager.getSavedUsers()
+            org.junit.Assert.fail("Expected JsonSyntaxException or similar error on malformed json")
+        } catch (e: Exception) {
+            assertTrue(e is com.google.gson.JsonSyntaxException || e is com.google.gson.JsonParseException)
+        }
+    }
+
+    @Test
     fun testGetSelectedTeamId() {
         // Test non-empty string
         every { mockSharedPreferences.getString("selectedTeamId", "") } returns "team123"
@@ -257,6 +268,90 @@ class SharedPrefManagerTest {
         verify(exactly = 3) { org.ole.planet.myplanet.utils.UrlUtils.invalidateCaches() }
 
         unmockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+    }
+
+    @Test
+    fun testSaveServerConfig() {
+        mockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+        every { org.ole.planet.myplanet.utils.UrlUtils.invalidateCaches() } just Runs
+
+        sharedPrefManager.saveServerConfig(
+            serverPin = "1234",
+            urlScheme = "http",
+            urlHost = "host.com",
+            serverUrl = "http://host.com",
+            couchdbUrl = "http://satellite:1234@host.com:80",
+            urlUser = "satellite",
+            urlPwd = "1234"
+        )
+
+        verify(exactly = 1) { mockSharedPreferences.edit() }
+        verify { mockEditor.putString("serverPin", "1234") }
+        verify { mockEditor.putString("url_Scheme", "http") }
+        verify { mockEditor.putString("url_Host", "host.com") }
+        verify { mockEditor.putString("serverURL", "http://host.com") }
+        verify { mockEditor.putString("couchdbURL", "http://satellite:1234@host.com:80") }
+        verify { mockEditor.putString("url_user", "satellite") }
+        verify { mockEditor.putString("url_pwd", "1234") }
+        verify { mockEditor.apply() }
+        verify(exactly = 1) { org.ole.planet.myplanet.utils.UrlUtils.invalidateCaches() }
+
+        unmockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+    }
+
+    @Test
+    fun testSaveAlternativeServerConfig() {
+        mockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+        every { org.ole.planet.myplanet.utils.UrlUtils.invalidateCaches() } just Runs
+
+        sharedPrefManager.saveAlternativeServerConfig(
+            serverPin = "5678",
+            urlUser = "admin",
+            urlPwd = "pass",
+            urlScheme = "https",
+            urlHost = "alt.com",
+            alternativeUrl = "https://alt.com",
+            processedAlternativeUrl = "https://admin:pass@alt.com:443",
+            isAlternativeUrl = true
+        )
+
+        verify(exactly = 1) { mockSharedPreferences.edit() }
+        verify { mockEditor.putString("serverPin", "5678") }
+        verify { mockEditor.putString("url_user", "admin") }
+        verify { mockEditor.putString("url_pwd", "pass") }
+        verify { mockEditor.putString("url_Scheme", "https") }
+        verify { mockEditor.putString("url_Host", "alt.com") }
+        verify { mockEditor.putString("alternativeUrl", "https://alt.com") }
+        verify { mockEditor.putString("processedAlternativeUrl", "https://admin:pass@alt.com:443") }
+        verify { mockEditor.putBoolean("isAlternativeUrl", true) }
+        verify { mockEditor.apply() }
+        verify(exactly = 1) { org.ole.planet.myplanet.utils.UrlUtils.invalidateCaches() }
+
+        unmockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+    }
+
+    @Test
+    fun testSaveUserInfo() {
+        sharedPrefManager.saveUserInfo(
+            userId = "usr123",
+            userName = "john_doe",
+            firstName = "John",
+            lastName = "Doe",
+            middleName = "M",
+            isUserAdmin = true,
+            lastLogin = 1000L
+        )
+
+        verify(exactly = 1) { mockSharedPreferences.edit() }
+        verify { mockEditor.putString("userId", "usr123") }
+        verify { mockEditor.putString("name", "john_doe") }
+        verify { mockEditor.remove("password") }
+        verify { mockEditor.putString("firstName", "John") }
+        verify { mockEditor.putString("lastName", "Doe") }
+        verify { mockEditor.putString("middleName", "M") }
+        verify { mockEditor.putBoolean("isUserAdmin", true) }
+        verify { mockEditor.putLong("lastLogin", 1000L) }
+        verify { mockEditor.apply() }
     }
 
 }

@@ -1,19 +1,18 @@
 package org.ole.planet.myplanet.ui.settings
 
 import android.app.Dialog
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.StringRes
-import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import javax.inject.Inject
@@ -22,20 +21,19 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingBottomSheetFragment
 import org.ole.planet.myplanet.databinding.FragmentStorageBreakdownBinding
 import org.ole.planet.myplanet.databinding.ItemStorageCategoryBinding
 import org.ole.planet.myplanet.services.FreeSpaceWorker
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
-class StorageBreakdownFragment : BottomSheetDialogFragment() {
-
-    private var _binding: FragmentStorageBreakdownBinding? = null
-    private val binding get() = _binding!!
+class StorageBreakdownFragment : BaseBindingBottomSheetFragment<FragmentStorageBreakdownBinding>(FragmentStorageBreakdownBinding::inflate) {
 
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
@@ -63,11 +61,6 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
         return dialog
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentStorageBreakdownBinding.inflate(inflater, container, false)
-        return binding.root
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -81,12 +74,11 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
         }
 
         binding.freeUpSpaceButton.setOnClickListener {
-            AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-                .setTitle(R.string.are_you_sure)
-                .setMessage(R.string.are_you_sure_want_to_delete_all_the_files)
-                .setPositiveButton(R.string.yes) { _, _ -> freeUpSpace() }
-                .setNegativeButton(R.string.no, null)
-                .show()
+            requireContext().confirmDialog(
+                title = getString(R.string.are_you_sure),
+                message = getString(R.string.are_you_sure_want_to_delete_all_the_files),
+                onPositive = ::freeUpSpace
+            )
         }
 
         loadStorage()
@@ -175,11 +167,18 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
         binding.contentLayout.visibility = View.GONE
         binding.emptyText.visibility = View.GONE
 
-        binding.availableSpaceText.text = getString(R.string.available_space_colon) +
-            " " + FileUtils.availableOverTotalMemoryFormattedString(requireContext())
+        val context = requireContext().applicationContext
 
         loadJob = viewLifecycleOwner.lifecycleScope.launch {
-            val result = withContext(dispatcherProvider.io) { scanStorage() }
+            val availableSpaceText = withContext(dispatcherProvider.io) {
+                FileUtils.availableOverTotalMemoryFormattedString(context)
+            }
+            binding.availableSpaceText.text = getString(R.string.available_space_colon) +
+                " " + availableSpaceText
+
+            val result = withContext(dispatcherProvider.io) {
+                scanStorage(context)
+            }
 
             categories.forEachIndexed { index, category ->
                 category.sizeBytes = result.sizes[index]
@@ -200,22 +199,25 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
         }
     }
 
-    private data class ScanResult(val totalBytes: Long, val sizes: LongArray, val counts: IntArray)
+    internal data class ScanResult(val totalBytes: Long, val sizes: LongArray, val counts: IntArray)
 
-    private fun scanStorage(): ScanResult {
+    private fun scanStorage(context: Context): ScanResult {
+        return scanStorage(File(FileUtils.getOlePath(context)))
+    }
+
+    internal fun scanStorage(oleDir: File): ScanResult {
         val sizes = LongArray(categories.size)
         val counts = IntArray(categories.size)
 
-        val oleDir = File(FileUtils.getOlePath(requireContext()))
         if (!oleDir.exists() || !oleDir.isDirectory) return ScanResult(0L, sizes, counts)
 
         var total = 0L
 
         oleDir.walkTopDown().filter { it.isFile }.forEach { file ->
-            val ext = file.extension.lowercase()
+            val ext = file.extension
+            val index = if (ext.isEmpty()) StorageCategories.OTHER_INDEX else StorageCategories.indexOf(ext)
             val size = file.length()
             total += size
-            val index = StorageCategories.indexOf(ext)
             sizes[index] += size
             counts[index]++
         }
@@ -254,7 +256,6 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
         super.onDestroyView()
         progressDialog?.dismiss()
         progressDialog = null
-        _binding = null
     }
 
     companion object {

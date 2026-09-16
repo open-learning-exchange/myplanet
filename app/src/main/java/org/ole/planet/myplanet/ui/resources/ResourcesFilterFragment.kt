@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.resources
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
+import android.app.Dialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -14,17 +15,17 @@ import android.widget.CheckedTextView
 import android.widget.ListView
 import android.widget.TextView
 import androidx.core.view.isGone
-import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import java.util.Locale
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingBottomSheetFragment
 import org.ole.planet.myplanet.callback.OnFilterListener
 import org.ole.planet.myplanet.databinding.FragmentLibraryFilterBinding
-import java.util.Locale
 
-class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListener {
-    private var _binding: FragmentLibraryFilterBinding? = null
-    private val binding get() = _binding!!
+class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFilterBinding>(FragmentLibraryFilterBinding::inflate), AdapterView.OnItemClickListener {
     var languages: Set<String>? = null
     var subjects: Set<String>? = null
     var mediums: Set<String>? = null
@@ -44,7 +45,7 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentLibraryFilterBinding.inflate(inflater, container, false)
+        val view = super.onCreateView(inflater, container, savedInstanceState)
         binding.listMedium.onItemClickListener = this
         binding.listLang.onItemClickListener = this
         binding.listLevel.onItemClickListener = this
@@ -82,12 +83,14 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
             )
             isLevelsExpanded = !isLevelsExpanded
         }
-        return binding.root
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
+        binding.btnClearTags.setOnClickListener {
+            filterListener?.clearAllFilters()
+            dismiss()
+        }
+        binding.btnConfirmFilters.setOnClickListener {
+            dismiss()
+        }
+        return view
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -95,21 +98,13 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
         initList()
     }
 
-    override fun onStart() {
-        super.onStart()
-        dialog?.window?.let { window ->
-            val params = window.attributes
-            val isLandscape = resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-            if (isLandscape) {
-                params.width = (resources.displayMetrics.widthPixels * 0.55).toInt()
-                params.height = (resources.displayMetrics.heightPixels * 0.85).toInt()
-                params.gravity = android.view.Gravity.END or android.view.Gravity.CENTER_VERTICAL
-            } else {
-                params.width = (resources.displayMetrics.widthPixels * 0.9).toInt()
-                params.height = ViewGroup.LayoutParams.WRAP_CONTENT
-            }
-            window.attributes = params
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        val dialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
+        dialog.behavior.apply {
+            state = BottomSheetBehavior.STATE_EXPANDED
+            skipCollapsed = true
         }
+        return dialog
     }
 
     private fun initList() {
@@ -128,7 +123,18 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
             setAdapter(binding.listLang, languages, selectedLang)
             setAdapter(binding.listMedium, mediums, selectedMeds, ::getMediumDisplayName)
             setAdapter(binding.listSub, subjects, selectedSubs)
+            updateResultCount()
         }
+    }
+
+    private fun updateResultCount() {
+        val count = filterListener?.getFilteredCount(selectedSubs, selectedLang, selectedMeds, selectedLvls) ?: 0
+        showResultCount(count)
+    }
+
+    private fun showResultCount(count: Int) {
+        if (_binding == null) return
+        binding.btnConfirmFilters.text = getString(R.string.show_n_results, count)
     }
 
     private fun setAdapter(listView: ListView, ar: Set<String>?, set: Set<String>, label: (String) -> String = { it }, ) {
@@ -159,7 +165,8 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
                 R.id.list_level -> addToList(s, selectedLvls)
                 R.id.list_medium -> addToList(s, selectedMeds)
             }
-            filterListener?.filter(selectedSubs, selectedLang, selectedMeds, selectedLvls)
+            val count = filterListener?.filter(selectedSubs, selectedLang, selectedMeds, selectedLvls) ?: 0
+            showResultCount(count)
         }
     }
 

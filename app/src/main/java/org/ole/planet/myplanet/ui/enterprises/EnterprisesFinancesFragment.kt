@@ -124,11 +124,11 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
         hBinding.imgDate.rotation = if (headerState.isAsc) 180f else 0f
 
-        val state = viewModel.headerState.value
-        hBinding.tvDebit.text = getString(R.string.number_placeholder, state.debit)
-        hBinding.tvCredit.text = getString(R.string.number_placeholder, state.credit)
-        hBinding.tvBalance.text = getString(R.string.number_placeholder, state.total)
-        hBinding.balanceCaution.visibility = if (state.isCautionVisible) View.VISIBLE else View.GONE
+        val summary = viewModel.financeSummary.value
+        hBinding.tvDebit.text = getString(R.string.number_placeholder, summary.debit)
+        hBinding.tvCredit.text = getString(R.string.number_placeholder, summary.credit)
+        hBinding.tvBalance.text = getString(R.string.number_placeholder, summary.total)
+        hBinding.balanceCaution.visibility = if (summary.isCautionVisible) View.VISIBLE else View.GONE
     }
 
     private fun showDatePickerDialog(isFromDate: Boolean) {
@@ -257,7 +257,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             transactions = results
             updatedFinanceList(results)
         }
-        collectLatestWhenStarted(viewModel.headerState) {
+        collectLatestWhenStarted(viewModel.financeSummary) {
             headerAdapter.notifyItemChanged(0, PAYLOAD_HEADER)
         }
         collectWhenStarted(viewModel.transactionCreated) { result ->

@@ -1,16 +1,8 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
-import android.os.SystemClock
 import android.util.Log
-import androidx.work.ExistingWorkPolicy
-import androidx.work.OneTimeWorkRequest
-import androidx.work.WorkInfo
-import androidx.work.WorkManager
-import androidx.work.workDataOf
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.async
@@ -18,11 +10,11 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.UserDataUploadScheduler
 import org.ole.planet.myplanet.services.UserDataWorker
 import org.ole.planet.myplanet.services.sync.AdaptiveBatchProcessor
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
@@ -37,7 +29,6 @@ import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
 class SyncRepositoryImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val apiInterface: ApiInterface,
     private val dispatcherProvider: DispatcherProvider,
     private val resourcesRepository: ResourcesRepository,
@@ -47,41 +38,24 @@ class SyncRepositoryImpl @Inject constructor(
     private val transactionSyncManager: dagger.Lazy<TransactionSyncManager>,
     private val syncTimeLogger: SyncTimeLogger,
     private val sharedPrefManager: SharedPrefManager,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    private val userDataUploadScheduler: UserDataUploadScheduler
 ) : SyncRepository {
+
+    private val shelfDispatchMap: Map<String, suspend (String?, List<JsonObject>) -> Int> by lazy {
+        mapOf(
+            "resources" to { shelfId, docs -> resourcesRepository.batchInsertMyLibrary(shelfId, docs) },
+            "courses" to { shelfId, docs -> coursesRepository.batchInsertMyCourses(shelfId, docs) },
+            "meetups" to { _, docs -> eventsRepository.batchInsertMeetups(docs) },
+            "teams" to { _, docs -> teamsSyncRepository.batchInsertMyTeams(docs) }
+        )
+    }
+
     override fun uploadLoginData(): Flow<SyncUiState> =
-        enqueueUserDataUpload("UploadUserData_Login", UserDataWorker.UPLOAD_TYPE_LOGIN)
+        userDataUploadScheduler.enqueueUserDataUpload("UploadUserData_Login", UserDataWorker.UPLOAD_TYPE_LOGIN)
 
     override fun uploadBulkData(): Flow<SyncUiState> =
-        enqueueUserDataUpload("UploadUserData_Bulk", UserDataWorker.UPLOAD_TYPE_BULK)
-
-    private fun enqueueUserDataUpload(uniqueWorkName: String, uploadType: String): Flow<SyncUiState> {
-        val workRequest = OneTimeWorkRequest.Builder(UserDataWorker::class.java)
-            .setInputData(workDataOf(UserDataWorker.KEY_UPLOAD_TYPE to uploadType))
-            .build()
-        val workManager = WorkManager.getInstance(context)
-        workManager.enqueueUniqueWork(
-            uniqueWorkName,
-            ExistingWorkPolicy.REPLACE,
-            workRequest
-        )
-        return workManager.getWorkInfoByIdFlow(workRequest.id).map { workInfo ->
-            mapWorkInfoToState(workInfo)
-        }
-    }
-
-    private fun mapWorkInfoToState(workInfo: WorkInfo?): SyncUiState {
-        return when (workInfo?.state) {
-            WorkInfo.State.SUCCEEDED -> {
-                val message = workInfo.outputData.getString(UserDataWorker.KEY_SUCCESS_MESSAGE)
-                SyncUiState.Success(message)
-            }
-            WorkInfo.State.FAILED -> SyncUiState.Error("Upload failed")
-            WorkInfo.State.CANCELLED -> SyncUiState.Error("Upload cancelled")
-            WorkInfo.State.RUNNING -> SyncUiState.Loading
-            else -> SyncUiState.Idle
-        }
-    }
+        userDataUploadScheduler.enqueueUserDataUpload("UploadUserData_Bulk", UserDataWorker.UPLOAD_TYPE_BULK)
 
     override suspend fun processShelfParallel(shelfId: String): Int {
         var processedItems = 0
@@ -147,7 +121,7 @@ class SyncRepositoryImpl @Inject constructor(
 
             while (i < validIds.size) {
                 batchNum++
-                val batchStartTime = SystemClock.elapsedRealtime()
+                val batchStartTime = timeProvider.elapsedRealtime()
 
                 val end = minOf(i + batchSizer.currentSize, validIds.size)
                 val batch = validIds.subList(i, end)
@@ -157,14 +131,14 @@ class SyncRepositoryImpl @Inject constructor(
                 keysObject.add("keys", gson.toJsonTree(batch))
 
                 // API call
-                val apiStartTime = SystemClock.elapsedRealtime()
+                val apiStartTime = timeProvider.elapsedRealtime()
                 var response: JsonObject? = null
                 ApiClient.executeWithRetryAndWrap {
                     apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/${shelfData.type}/_all_docs?include_docs=true", keysObject)
                 }?.let {
                     response = it.body()
                 }
-                val apiDuration = SystemClock.elapsedRealtime() - apiStartTime
+                val apiDuration = timeProvider.elapsedRealtime() - apiStartTime
 
                 if (response == null) {
                     batchSizer.recordFailure()
@@ -188,18 +162,16 @@ class SyncRepositoryImpl @Inject constructor(
                 }
 
                 if (documentsToProcess.isNotEmpty()) {
-                    val realmStartTime = SystemClock.elapsedRealtime()
-                    when (shelfData.type) {
-                        "resources" -> processedCount += resourcesRepository.batchInsertMyLibrary(shelfId, documentsToProcess)
-                        "courses" -> processedCount += coursesRepository.batchInsertMyCourses(shelfId, documentsToProcess)
-                        "meetups" -> processedCount += eventsRepository.batchInsertMeetups(documentsToProcess)
-                        "teams" -> processedCount += teamsSyncRepository.batchInsertMyTeams(documentsToProcess)
+                    val realmStartTime = timeProvider.elapsedRealtime()
+                    val handler = shelfDispatchMap[shelfData.type]
+                    if (handler != null) {
+                        processedCount += handler(shelfId, documentsToProcess)
                     }
-                    val realmDuration = SystemClock.elapsedRealtime() - realmStartTime
+                    val realmDuration = timeProvider.elapsedRealtime() - realmStartTime
                     logger.logDbOperation("shelf_insert", shelfData.type, realmDuration, documentsToProcess.size)
                 }
 
-                val batchDuration = SystemClock.elapsedRealtime() - batchStartTime
+                val batchDuration = timeProvider.elapsedRealtime() - batchStartTime
                 if (batchDuration > 1000) {
                     logger.logDetail("shelf_sync", "Shelf $shelfId ${shelfData.type} batch $batchNum ($end/${validIds.size} ids): ${batchDuration}ms for ${documentsToProcess.size} docs")
                 }

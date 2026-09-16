@@ -1,10 +1,10 @@
 package org.ole.planet.myplanet.utils
 
 import android.util.Log
-import java.util.Base64
 import androidx.annotation.VisibleForTesting
 import androidx.core.net.toUri
 import java.net.URLEncoder
+import java.util.Base64
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.services.SharedPrefManager
 
@@ -206,6 +206,27 @@ object UrlUtils {
     fun getApkUpdateUrl(path: String?): String {
         val url = baseUrl(spm())
         return "$url$path"
+    }
+
+    /** Strips the userinfo (user:password@) from a URL so it is safe to log. */
+    fun redactForLog(url: String?): String {
+        if (url.isNullOrBlank()) return "<unparseable url>"
+        return try {
+            val uri = android.net.Uri.parse(url)
+            val scheme = uri.scheme
+            val host = uri.host
+            if (scheme.isNullOrEmpty() || host.isNullOrEmpty()) {
+                "<unparseable url>"
+            } else {
+                val portStr = if (uri.port != -1) ":${uri.port}" else ""
+                val path = uri.path.orEmpty()
+                val queryStr = if (uri.query != null) "?${uri.query}" else ""
+                val fragmentStr = if (uri.fragment != null) "#${uri.fragment}" else ""
+                "$scheme://$host$portStr$path$queryStr$fragmentStr"
+            }
+        } catch (e: Exception) {
+            "<unparseable url>"
+        }
     }
 
     fun getUserInfo(userInfo: String?): Pair<String, String> {

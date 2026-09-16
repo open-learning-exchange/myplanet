@@ -6,7 +6,6 @@ import com.google.gson.JsonObject
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
-import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.async
@@ -62,6 +61,12 @@ class ActivitiesRepositoryImpl @Inject constructor(
         return offlineActivityDao.countByUserIdAndType(userId, UserSessionManager.KEY_LOGIN)
     }
 
+    override suspend fun getMemberVisitStats(userId: String?, userName: String?): MemberVisitStats {
+        val count = if (!userId.isNullOrEmpty()) getOfflineVisitCount(userId) else 0
+        val lastVisit = if (!userName.isNullOrEmpty()) getLastVisit(userName) else null
+        return MemberVisitStats(count, lastVisit)
+    }
+
     override suspend fun getOfflineLoginCount(userName: String): Int {
         return offlineActivityDao.countByUserNameAndType(userName, UserSessionManager.KEY_LOGIN)
     }
@@ -97,7 +102,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
                 type = "visit"
                 this.title = title
                 this.courseId = courseId
-                time = Date().time
+                time = timeProvider.now()
                 this.user = userId
 
                 if (user != null) {
@@ -125,14 +130,14 @@ class ActivitiesRepositoryImpl @Inject constructor(
                 _rev = null
                 _id = null
                 description = "Member login on offline application"
-                loginTime = Date().time
+                loginTime = timeProvider.now()
             }
         )
     }
 
     override suspend fun logLogout(userName: String?) {
         offlineActivityDao.getLatestByType(UserSessionManager.KEY_LOGIN)?.let { activity ->
-            offlineActivityDao.updateLogoutTime(activity.id, Date().time)
+            offlineActivityDao.updateLogoutTime(activity.id, timeProvider.now())
         }
     }
 
@@ -161,13 +166,21 @@ class ActivitiesRepositoryImpl @Inject constructor(
                 this.type = type
                 this.title = title
                 this.resourceId = resourceId
-                time = Date().time
+                time = timeProvider.now()
             }
         )
     }
 
+    override suspend fun getResourceOpenCount(userName: String): Long {
+        return getResourceOpenCount(userName, UserSessionManager.KEY_RESOURCE_OPEN)
+    }
+
     override suspend fun getResourceOpenCount(userName: String, type: String): Long {
         return resourceActivityDao.countByUserAndType(userName, type)
+    }
+
+    override suspend fun getMostOpenedResource(userName: String): Pair<String, Int>? {
+        return getMostOpenedResource(userName, UserSessionManager.KEY_RESOURCE_OPEN)
     }
 
     override suspend fun getMostOpenedResource(userName: String, type: String): Pair<String, Int>? = withContext(dispatcherProvider.io) {
@@ -177,6 +190,18 @@ class ActivitiesRepositoryImpl @Inject constructor(
         } else {
             null
         }
+    }
+
+    override suspend fun getProfileActivityStats(userName: String): ProfileActivityStats = coroutineScope {
+        val mostOpenedDeferred = async { getMostOpenedResource(userName) }
+        val lastVisitDeferred = async { getGlobalLastVisit() }
+        val countDeferred = async { getResourceOpenCount(userName) }
+
+        ProfileActivityStats(
+            mostOpenedResource = mostOpenedDeferred.await(),
+            lastVisit = lastVisitDeferred.await(),
+            resourceOpenCount = countDeferred.await()
+        )
     }
 
     private suspend fun getUnuploadedLoginActivities(): List<LoginActivityData> {
@@ -233,7 +258,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
                 this.parentCode = parentCode
                 this.createdOn = createdOn
                 type = "sync"
-                time = Date().time
+                time = timeProvider.now()
             }
         )
     }

@@ -67,7 +67,10 @@ class CoursesRepositoryImplTest {
 
     @Before
     fun setup() {
+        every { sharedPrefManager.getConcatenatedLinks() } returns "[]"
+        org.ole.planet.myplanet.utils.UrlUtils.init(sharedPrefManager)
         repository = CoursesRepositoryImpl(
+            mockk(relaxed = true),
             progressRepository,
             activitiesRepository,
             submissionsRepository,
@@ -88,8 +91,8 @@ class CoursesRepositoryImplTest {
             myLibraryDao,
             userRepository,
             dispatcherProvider,
-        realtimeSyncManager,
-        mockk(relaxed = true)
+            realtimeSyncManager,
+            mockk(relaxed = true)
         )
     }
 
@@ -171,7 +174,7 @@ class CoursesRepositoryImplTest {
             MyCourse(id = "3", courseId = "3", courseTitle = "cherry", courseTitleNormal = "cherry")
         )
         coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
-        coEvery { tagsRepository.getLinkIdsForTagNames(any(), any()) } returns emptyList()
+        coEvery { tagsRepository.getCourseLinkIds(any()) } returns emptySet()
 
         val result = repository.filterCourses("", "", "", emptyList())
 
@@ -373,7 +376,7 @@ class CoursesRepositoryImplTest {
         coEvery { myLibraryDao.getCourseResources("course_id", false) } returns emptyList()
         coEvery { myLibraryDao.getCourseResources("course_id", true) } returns emptyList()
         coEvery { courseStepDao.getByCourseId("course_id") } returns listOf(org.ole.planet.myplanet.model.CourseStep().apply { id = "step_1"; stepTitle = "Title" })
-        coEvery { submissionsRepository.getExamQuestionCount("step_1") } returns 3
+        coEvery { examDao.getByStepIds(listOf("step_1")) } returns listOf(org.ole.planet.myplanet.model.StepExam().apply { stepId = "step_1"; noOfQuestions = 3 })
 
         coEvery { ratingsRepository.getRatingSummary("course", "course_id", "user_1") } returns RatingSummary(
             existingRating = null,
@@ -428,5 +431,37 @@ class CoursesRepositoryImplTest {
         assertTrue(result.getOrDefault(false))
         coVerify(exactly = 1) { courseDao.upsertAll(any()) }
         assertEquals(listOf("userA", "userB", "userC"), capturedCourses.captured.first().userId)
+    }
+
+    @Test
+    fun `bulkInsertFromSync derives correct stepId matching expected base64 encoding`() = runTest {
+        val docWrapper = com.google.gson.JsonObject().apply {
+            addProperty("id", "course_101")
+            add("doc", com.google.gson.JsonObject().apply {
+                addProperty("_id", "course_101")
+                addProperty("courseTitle", "Test Course")
+                val steps = com.google.gson.JsonArray().apply {
+                    add(com.google.gson.JsonObject().apply {
+                        addProperty("stepTitle", "Step 1")
+                        addProperty("description", "Desc 1")
+                    })
+                }
+                add("steps", steps)
+            })
+        }
+        val syncData = com.google.gson.JsonArray().apply { add(docWrapper) }
+
+        val capturedSteps = slot<List<CourseStep>>()
+        coEvery { courseStepDao.upsertAll(capture(capturedSteps)) } returns Unit
+
+        repository.bulkInsertFromSync(syncData)
+
+        coVerify(exactly = 1) { courseStepDao.upsertAll(any()) }
+        assertEquals(1, capturedSteps.captured.size)
+
+        val stepElement = docWrapper.getAsJsonObject("doc").getAsJsonArray("steps")[0]
+        val expectedStepId = java.util.Base64.getEncoder().encodeToString(stepElement.toString().toByteArray())
+        assertEquals("eyJzdGVwVGl0bGUiOiJTdGVwIDEiLCJkZXNjcmlwdGlvbiI6IkRlc2MgMSJ9", expectedStepId)
+        assertEquals(expectedStepId, capturedSteps.captured.first().id)
     }
 }

@@ -66,17 +66,26 @@ class BellDashboardViewModel @Inject constructor(
     }
 
     private suspend fun handleDueReminders(remindersToShow: List<String>) {
-        val allSurveyIds = remindersToShow.flatMap { it.split(",") }.filter { it.isNotBlank() }.distinct()
+        val allSurveyIds = LinkedHashSet<String>()
+        for (reminder in remindersToShow) {
+            for (id in reminder.split(",")) {
+                if (id.isNotBlank()) {
+                    allSurveyIds.add(id)
+                }
+            }
+        }
         if (allSurveyIds.isEmpty()) return
 
-        val allSubmissions = submissionsRepository.getSubmissionsByIds(allSurveyIds)
+        val allSubmissions = submissionsRepository.getSubmissionsByIds(allSurveyIds.toList())
         val submissionsById = allSubmissions.associateBy { it.id }
 
         for (surveyIds in remindersToShow) {
             val surveyIdList = surveyIds.split(",").filter { it.isNotBlank() }
             if (surveyIdList.isEmpty()) continue
 
-            val pendingSurveys = surveyIdList.mapNotNull { submissionsById[it] }.filter { it.status == "pending" }
+            val pendingSurveys = surveyIdList.mapNotNull { id ->
+                submissionsById[id]?.takeIf { it.status == "pending" }
+            }
 
             if (pendingSurveys.isNotEmpty()) {
                 val surveyTitles = submissionsRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
