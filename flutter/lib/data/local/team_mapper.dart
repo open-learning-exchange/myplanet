@@ -55,6 +55,30 @@ class TeamMapper {
       date: Value(JsonUtils.getLong('date', doc)),
       amount: Value(JsonUtils.getInt('amount', doc)),
       imageName: Value(firstAttachmentName(doc['_attachments'])),
+      // The four planet-code fields, read back from the same keys
+      // `MyTeam.serialize` writes — `MyTeam.populateTeamFields` reads all four
+      // unconditionally at `MyTeam.kt:81`, `:86`, `:94`, `:96`, outside the
+      // `hadLocalChanges` guard that protects `docType`/`updated`/`courses`.
+      // Read and write agree on every key name; this is not the Phase 74 /
+      // Phase 100 mismatch shape.
+      //
+      // **Without these four reads the columns would be write-only**, and the
+      // first sync after an upload would blank them — the Phase 56 / 74 / 98
+      // shape, where a pull rewrites a locally authored column. The
+      // `existing.isUpdated` guard above is what protects a row between the
+      // stamp and its upload; after the upload the server's own copy is the
+      // authority, which is exactly what these reads restore.
+      //
+      // `getStringOrNull`, so an absent key lands as null. **Kotlin lands
+      // `""`** — `JsonUtils.getString` defaults to the empty string
+      // (`JsonUtils.kt:65-68`) — and the divergence is deliberate: see
+      // [TeamsRepository.serializeTeamDocument] for what each choice puts back
+      // on the wire. Nothing in either app queries these columns, so no
+      // predicate distinguishes the two.
+      sourcePlanet: Value(JsonUtils.getStringOrNull('sourcePlanet', doc)),
+      teamPlanetCode: Value(JsonUtils.getStringOrNull('teamPlanetCode', doc)),
+      userPlanetCode: Value(JsonUtils.getStringOrNull('userPlanetCode', doc)),
+      parentCode: Value(JsonUtils.getStringOrNull('parentCode', doc)),
     );
   }
 

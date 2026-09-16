@@ -641,6 +641,206 @@ void main() {
       expect(pending.map((row) => row.id), [second]);
     });
   });
+
+  // ------------------------------------------------------- planet codes (v50)
+
+  group('planet codes', () {
+    /// A repository with a deterministic id, so the row can be read back.
+    TeamsRepository withId(String id) => TeamsRepository(
+      api,
+      database.teamDao,
+      database.teamLogDao,
+      createId: () => id,
+    );
+
+    test('the two resource-link producers stamp different fields', () async {
+      // **The reason this is one test rather than two.** Kotlin has two
+      // producers and the port had one method serving both callers, which is
+      // precisely why the defect was invisible: whatever that method stamped
+      // was "the" answer. Asserting them side by side is what makes a future
+      // edit that merges them fail.
+      //
+      //   addResourceLinks     (:682-683) -> teamPlanetCode, userPlanetCode
+      //   createLocalResourceLink (:716,718) -> sourcePlanet, teamPlanetCode
+      final ui = await withId('link-ui').addResourceLink(
+        teamId: 'team-1',
+        resourceId: 'res-1',
+        title: 'Atlas',
+        planetCode: 'guatemala',
+      );
+      expect(ui!.teamPlanetCode, 'guatemala');
+      expect(ui.userPlanetCode, 'guatemala');
+      expect(
+        ui.sourcePlanet,
+        null,
+        reason:
+            'addResourceLinks never sets sourcePlanet (TeamsRepositoryImpl'
+            ' has exactly one assignment of it, at :716)',
+      );
+      expect(
+        ui.status,
+        null,
+        reason:
+            'Kotlin writes user.parentCode here (:677) but its resourceLink '
+            'serialize branch emits no status key, so the value never leaves '
+            'the device — and serializeTeamDocument would send it',
+      );
+
+      final upload = await withId('link-upload').createLocalResourceLink(
+        teamId: 'team-2',
+        resourceId: 'res-2',
+        title: 'Atlas',
+        planetCode: 'guatemala',
+      );
+      expect(upload!.sourcePlanet, 'guatemala');
+      expect(upload.teamPlanetCode, 'guatemala');
+      expect(
+        upload.userPlanetCode,
+        null,
+        reason: 'createLocalResourceLink never sets it (:702-723)',
+      );
+      expect(upload.parentCode, null, reason: 'neither producer sets it');
+    });
+
+    test('a blank planet code lands as absent, not empty', () async {
+      // Kotlin's `takeIf { it.isNotBlank() }` before the `?:`. The fallback it
+      // guards has no port counterpart (see createLocalResourceLink), but the
+      // guard itself is what stops a whitespace-only value being uploaded as a
+      // planet code — `serializeTeamDocument` omits null and would send `'  '`.
+      final link = await withId('link-blank').createLocalResourceLink(
+        teamId: 'team-1',
+        resourceId: 'res-1',
+        title: 'Atlas',
+        planetCode: '   ',
+      );
+
+      expect(link!.sourcePlanet, null);
+      expect(
+        TeamsRepository.serializeTeamDocument(link).containsKey('sourcePlanet'),
+        isFalse,
+      );
+    });
+
+    test('a join request carries both planet codes onto the wire', () async {
+      // `requestToJoin:623-624` writes the argument to both columns, and the
+      // general serialize branch uploads both (`MyTeam.kt:204`, `:207`). A
+      // request reaching Planet without them cannot be attributed to a planet.
+      final request = await withId('req-1').createJoinRequest(
+        teamId: 'team-1',
+        userId: 'user-1',
+        planetCode: 'guatemala',
+      );
+
+      expect(request!.teamPlanetCode, 'guatemala');
+      expect(request.userPlanetCode, 'guatemala');
+      expect(
+        request.sourcePlanet,
+        null,
+        reason: 'Kotlin sets neither sourcePlanet nor parentCode here',
+      );
+
+      final doc = TeamsRepository.serializeTeamDocument(request);
+      expect(doc['teamPlanetCode'], 'guatemala');
+      expect(doc['userPlanetCode'], 'guatemala');
+      expect(doc.containsKey('sourcePlanet'), isFalse);
+    });
+
+    test('a null planet code is not rescued, matching Kotlin', () async {
+      // Both Kotlin callers pass `user?.planetCode` raw (`TeamFragment.kt:289`,
+      // `TeamDetailFragment.kt:274-276`); only `createLocalResourceLink` has
+      // the prefs fallback. Pinned so a future lane adding a fallback here
+      // knows it is a divergence rather than a repair.
+      final request = await withId(
+        'req-2',
+      ).createJoinRequest(teamId: 'team-1', userId: 'user-1');
+
+      expect(request!.teamPlanetCode, null);
+      expect(request.userPlanetCode, null);
+    });
+
+    test('the round trip preserves what was stamped', () async {
+      // **The Phase 56 / 74 / 98 shape, tested as a pair rather than as two
+      // halves.** A writer and a reader that each pass their own test and
+      // disagree about a key is this project's most expensive recurring
+      // defect. Here the document the port *uploads* is fed straight back
+      // through the mapper that reads a *pull*, so a key name that drifts on
+      // either side fails.
+      final link = await withId('link-rt').createLocalResourceLink(
+        teamId: 'team-1',
+        resourceId: 'res-1',
+        title: 'Atlas',
+        planetCode: 'guatemala',
+      );
+      final uploaded = TeamsRepository.serializeTeamDocument(link!);
+
+      // The server echoes the document back on the next `teams` walk, with a
+      // revision. `isUpdated` is false because the upload cleared it — with it
+      // still true the mapper takes its early-return branch and this would
+      // assert nothing about the reads at all.
+      final pulled = TeamMapper.fromDoc({...uploaded, '_rev': '2-abc'})!;
+      await database.teamDao.upsert(pulled);
+      final row = await database.teamDao.getById('link-rt');
+
+      expect(row!.sourcePlanet, 'guatemala');
+      expect(row.teamPlanetCode, 'guatemala');
+      expect(
+        row.userPlanetCode,
+        null,
+        reason: 'absent from the document, and absent is what it stays',
+      );
+    });
+
+    test('a pull no longer blanks a stamped column', () async {
+      // The mutation that matters: delete the four reads from
+      // `TeamMapper.fromDoc` and this is what breaks. The columns become
+      // write-only, the first sync after the upload clears them, and the
+      // server keeps a document whose planet attribution this device supplied
+      // and then withdrew.
+      await database.teamDao.upsert(
+        TeamMapper.fromDoc({
+          '_id': 'team-1',
+          'name': 'District',
+          'type': 'team',
+          'sourcePlanet': 'guatemala',
+          'teamPlanetCode': 'guatemala',
+          'userPlanetCode': 'ada-planet',
+          'parentCode': 'earth',
+        })!,
+      );
+
+      final row = await database.teamDao.getById('team-1');
+      expect(row!.sourcePlanet, 'guatemala');
+      expect(row.teamPlanetCode, 'guatemala');
+      expect(row.userPlanetCode, 'ada-planet');
+      expect(row.parentCode, 'earth');
+
+      // And back out again on a local edit — the direction that was lossy
+      // before these columns existed, because the port could not emit what the
+      // row could not hold.
+      final doc = TeamsRepository.serializeTeamDocument(row);
+      expect(doc['sourcePlanet'], 'guatemala');
+      expect(doc['teamPlanetCode'], 'guatemala');
+      expect(doc['userPlanetCode'], 'ada-planet');
+      expect(doc['parentCode'], 'earth');
+    });
+
+    test('an absent key stays absent rather than becoming empty', () async {
+      // The deliberate divergence. `JsonUtils.getString` defaults to `""`, so
+      // Kotlin's row reads `""` and its serializer — which strips only
+      // `JsonNull` — re-uploads `"sourcePlanet": ""`. The port maps absent to
+      // null and omits it, restoring the document to the shape it arrived in.
+      await database.teamDao.upsert(
+        TeamMapper.fromDoc({'_id': 'team-2', 'name': 'District'})!,
+      );
+
+      final row = await database.teamDao.getById('team-2');
+      expect(row!.sourcePlanet, null);
+      expect(
+        TeamsRepository.serializeTeamDocument(row).containsKey('sourcePlanet'),
+        isFalse,
+      );
+    });
+  });
 }
 
 class MockPlanetApi extends Mock implements PlanetApi {}

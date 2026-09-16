@@ -589,12 +589,17 @@ class ResourcesUploader {
   /// `planetCode` comes out of the payload rather than a session read: the
   /// drain may run days later in a headless isolate, and `sourcePlanet` is the
   /// planet code this very document was serialized with, so it cannot drift
-  /// from it. **Note that [TeamsRepository.addResourceLink] currently accepts
-  /// `planetCode` and ignores it**, where Kotlin stamps `sourcePlanet` *and*
-  /// `teamPlanetCode` from it (`TeamsRepositoryImpl.kt:726-735`). Fixing that
-  /// means editing `teams_repository.dart`, which is outside this lane's file
-  /// set — it is passed here so the call is already correct once that lands,
-  /// and reported rather than reached for.
+  /// from it.
+  ///
+  /// **It now reaches the row**, which it did not when this paragraph was
+  /// written — it said `addResourceLink` *"currently accepts `planetCode` and
+  /// ignores it"*, and closing that needed the schema bump this call was
+  /// waiting on. It also needed a **different method**: Kotlin's two
+  /// resource-link producers stamp different fields, and the one this path
+  /// ports is `createLocalResourceLink` (`sourcePlanet` and `teamPlanetCode`),
+  /// not `addResourceLinks` (`teamPlanetCode` and `userPlanetCode`), which is
+  /// what [TeamsRepository.addResourceLink] is. Calling the wrong one would
+  /// have put `userPlanetCode` on the wire and left `sourcePlanet` off it.
   ///
   /// Best-effort, like the attachment: the resource document is already filed,
   /// and reporting failure would re-POST it and duplicate it to fix a missing
@@ -616,7 +621,7 @@ class ResourcesUploader {
     if (teamId == null || teamId.isEmpty) return;
 
     try {
-      final link = await _teams.addResourceLink(
+      final link = await _teams.createLocalResourceLink(
         teamId: teamId,
         resourceId: couchId,
         title: resource.title ?? '',
