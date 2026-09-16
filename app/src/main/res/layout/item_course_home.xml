@@ -15,7 +15,7 @@
             android:layout_width="@dimen/dashboard_chip_icon_size"
             android:layout_height="@dimen/dashboard_chip_icon_size"
             app:srcCompat="@drawable/mycourses"
-            app:tint="@color/dashboard_tile_courses"
+            app:tint="@color/dashboard_chip_icon_courses"
             android:contentDescription="@null" />
         <TextView
             android:id="@+id/title"

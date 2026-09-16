@@ -265,12 +265,90 @@ class NotificationsViewModelTest {
         assertFalse(item("1").isSelectionMode)
     }
 
+    @Test
+    fun testMarkSelectedAsRead_withPartiallyReadSelectedRows_decrementsUnreadCountOnlyForUnread() = runTest(testDispatcher) {
+        loadNotifications(unreadTask, readResource)
+        assertEquals(1, viewModel.unreadCount.value)
+
+        viewModel.toggleSelection("1")
+        viewModel.toggleSelection("2")
+
+        coEvery { repository.markNotificationsAsRead(setOf("1", "2")) } returns setOf("1", "2")
+
+        viewModel.markSelectedAsRead()
+        advanceUntilIdle()
+
+        assertEquals(0, viewModel.unreadCount.value)
+        assertTrue(viewModel.notifications.value.first { it.id == "1" }.isRead)
+    }
+
+    @Test
+    fun testDeleteSelected_withPartiallyReadSelectedRows_decrementsUnreadCountOnlyForUnread() = runTest(testDispatcher) {
+        val unreadTask2 = notification(id = "3", type = "task", isRead = false)
+        loadNotifications(unreadTask, readResource, unreadTask2)
+        assertEquals(2, viewModel.unreadCount.value)
+
+        viewModel.toggleSelection("1")
+        viewModel.toggleSelection("2")
+
+        coEvery { repository.deleteNotifications(setOf("1", "2")) } returns setOf("1", "2")
+
+        viewModel.deleteSelected()
+        advanceUntilIdle()
+
+        assertEquals(1, viewModel.unreadCount.value)
+        val remainingIds = viewModel.notifications.value.map { it.id }
+        assertFalse(remainingIds.contains("1"))
+        assertFalse(remainingIds.contains("2"))
+        assertTrue(remainingIds.contains("3"))
+    }
+
+    @Test
+    fun testMarkSelectedAsRead_underUnreadFilter_removesMarkedRowsAndDecrementsUnreadCount() = runTest(testDispatcher) {
+        val unreadTask2 = notification(id = "3", type = "task", isRead = false)
+        loadNotificationsWithFilter("unread", unreadTask, unreadTask2)
+        assertEquals(2, viewModel.unreadCount.value)
+
+        viewModel.toggleSelection("1")
+
+        coEvery { repository.markNotificationsAsRead(setOf("1")) } returns setOf("1")
+
+        viewModel.markSelectedAsRead()
+        advanceUntilIdle()
+
+        assertEquals(1, viewModel.unreadCount.value)
+        val remainingIds = viewModel.notifications.value.map { it.id }
+        assertFalse(remainingIds.contains("1"))
+        assertTrue(remainingIds.contains("3"))
+    }
+
+    @Test
+    fun testUnreadCountDoesNotGoBelowZeroWhenStoredCountIsSmallerThanAffected() = runTest(testDispatcher) {
+        val unreadTask2 = notification(id = "3", type = "task", isRead = false)
+        loadNotificationsWithFilter(FILTER_ALL, unreadTask, unreadTask2, unreadCountOverride = 1)
+        assertEquals(1, viewModel.unreadCount.value)
+
+        viewModel.toggleSelection("1")
+        viewModel.toggleSelection("3")
+
+        coEvery { repository.markNotificationsAsRead(setOf("1", "3")) } returns setOf("1", "3")
+
+        viewModel.markSelectedAsRead()
+        advanceUntilIdle()
+
+        assertEquals(0, viewModel.unreadCount.value)
+    }
+
     private fun item(id: String): NotificationListItem.Item =
         viewModel.groupedItems.value
             .filterIsInstance<NotificationListItem.Item>()
             .first { it.notification.id == id }
 
     private fun TestScope.loadNotifications(vararg payloads: NotificationPayload) {
+        loadNotificationsWithFilter(FILTER_ALL, *payloads)
+    }
+
+    private fun TestScope.loadNotificationsWithFilter(filter: String, vararg payloads: NotificationPayload, unreadCountOverride: Int? = null) {
         val taskNotifications = payloads.filter { it.type.equals("task", ignoreCase = true) }
         val parsedTaskDates = taskNotifications.associateBy({ it.id }, { TaskNotificationUtils.splitTitleAndDate(it.message) })
         val enrichment = EnrichedNotifications(
@@ -278,14 +356,14 @@ class NotificationsViewModelTest {
             taskTeamNames = emptyMap(),
             joinRequestDetails = emptyMap(),
             parsedTaskDates = parsedTaskDates,
-            unreadCount = payloads.count { !it.isRead }
+            unreadCount = unreadCountOverride ?: payloads.count { !it.isRead }
         )
-        coEvery { repository.getEnrichedNotifications(USER_ID, FILTER_ALL, false) } returns enrichment
+        coEvery { repository.getEnrichedNotifications(USER_ID, filter, false) } returns enrichment
         every { repository.resolveType(any(), any(), any()) } answers {
             firstArg<String>().lowercase()
         }
         backgroundScope.launch { viewModel.groupedItems.collect {} }
-        viewModel.loadNotifications(USER_ID, FILTER_ALL)
+        viewModel.loadNotifications(USER_ID, filter)
         advanceUntilIdle()
     }
 

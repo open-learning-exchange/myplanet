@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.ui.chat
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.graphics.Typeface
 import android.os.Bundle
 import android.speech.RecognitionListener
@@ -49,6 +49,8 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
+import org.ole.planet.myplanet.utils.hasPermission
+import org.ole.planet.myplanet.utils.showPermissionDeniedFeedback
 
 @AndroidEntryPoint
 class ChatDetailFragment : BaseBindingFragment<FragmentChatDetailBinding>(FragmentChatDetailBinding::inflate) {
@@ -86,13 +88,18 @@ class ChatDetailFragment : BaseBindingFragment<FragmentChatDetailBinding>(Fragme
     private var isListening = false
     private var textBeforeVoice: String = ""
 
-    private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-        if (isGranted) {
-            startSpeechToText()
-        } else {
-            Utilities.toast(requireContext(), getString(R.string.microphone_permission_required))
+    private val requestMicPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                startSpeechToText()
+            } else {
+                requireActivity().showPermissionDeniedFeedback(
+                    Manifest.permission.RECORD_AUDIO,
+                    R.string.microphone_permission_required,
+                )
+            }
         }
-    }
+
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     lateinit var customProgressDialog: DialogUtils.CustomProgressDialog
@@ -151,12 +158,10 @@ class ChatDetailFragment : BaseBindingFragment<FragmentChatDetailBinding>(Fragme
         binding.buttonGchatMic.setOnClickListener {
             if (isListening) {
                 stopSpeechToText()
+            } else if (requireContext().hasPermission(Manifest.permission.RECORD_AUDIO)) {
+                startSpeechToText()
             } else {
-                if (ContextCompat.checkSelfPermission(requireContext(), android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                    startSpeechToText()
-                } else {
-                    requestPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
-                }
+                requestMicPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
             }
         }
         initSpeechRecognizer()
