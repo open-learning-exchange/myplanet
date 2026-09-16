@@ -268,14 +268,30 @@ void main() {
       'state': 'the teams-list per-row feedback button is not ported',
     };
 
-    final router_ = _stripComments(
+    final routerSource = _stripComments(
       File('lib/ui/router.dart').readAsStringSync(),
     );
+    // Literal keys only. `router.dart:220` reads one through a private
+    // constant — `uri.queryParameters[_serverChangeFlag]` — and this does not
+    // see it, deliberately rather than by oversight: that flag is supplied by
+    // `Routes.changeServer` and guarded by `server_change_navigation_test.dart`.
+    // A named blind spot beats an assumed-empty one, which is how the rest of
+    // this file already treats what its scanners cannot read.
     final read = RegExp(
       r"queryParameters\['(\w+)'\]",
-    ).allMatches(router_).map((m) => m.group(1)!).toSet();
+    ).allMatches(routerSource).map((m) => m.group(1)!).toSet();
 
-    final supplied = <String>{};
+    // A `Routes` constant carrying its own query string is a supplier:
+    // `Routes.changeServer` is `/server?change=1`, and rule five already
+    // establishes that something navigates to it. The scan below skips
+    // `router.dart`, so without this, promoting that constant-key read to a
+    // literal one would report `change` dead. Found by reading this rule
+    // against the file it scans, not by a failure.
+    final supplied = <String>{
+      for (final value in _routeConstants().values)
+        for (final param in RegExp(r'[?&](\w+)=').allMatches(value))
+          param.group(1)!,
+    };
     for (final file
         in Directory('lib')
             .listSync(recursive: true)
