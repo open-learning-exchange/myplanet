@@ -11,8 +11,8 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao.UploadedPhoto
 import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.repository.PhotoUpload
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.services.FileUploader
@@ -38,8 +38,6 @@ class PhotoUploader @Inject constructor(
         }
 
         withContext(dispatcherProvider.io) {
-            data class UploadedPhotoInfo(val photoId: String, val rev: String, val id: String)
-
             val baseUrl = UrlUtils.getUrl()
 
             val semaphore = Semaphore(MAX_CONCURRENT_UPLOADS)
@@ -60,7 +58,7 @@ class PhotoUploader @Inject constructor(
                                 if (response.isSuccessful && `object` != null) {
                                     val rev = getString("rev", `object`)
                                     val id = getString("id", `object`)
-                                    UploadedPhotoInfo(photoId, rev, id)
+                                    PhotoUpload(photoId, rev, id)
                                 } else null
                             } catch (e: CancellationException) {
                                 throw e
@@ -73,18 +71,17 @@ class PhotoUploader @Inject constructor(
                 }
 
                 if (successfulUploads.isNotEmpty()) {
-                    val batchedMarks = successfulUploads.map { UploadedPhoto(it.photoId, it.rev, it.id) }
-                    submissionsRepository.markPhotosUploadedBatch(batchedMarks)
+                    submissionsRepository.markPhotosUploadedBatch(successfulUploads)
                 }
 
                 if (listener != null && successfulUploads.isNotEmpty()) {
                     val photoIds = successfulUploads.map { it.photoId }.toTypedArray()
                     val photosMap = submissionsRepository.getPhotosByIds(photoIds).associateBy { it.id }
 
-                    successfulUploads.forEach { uploadInfo ->
-                        val photo = photosMap[uploadInfo.photoId]
+                    successfulUploads.forEach { uploadResult ->
+                        val photo = photosMap[uploadResult.photoId]
                         if (photo != null) {
-                            uploadAttachment(photo.photoLocation, "%s/submissions/%s/%s", uploadInfo.id, uploadInfo.rev, listener)
+                            uploadAttachment(photo.photoLocation, "%s/submissions/%s/%s", uploadResult.remoteId, uploadResult.rev, listener)
                         }
                     }
                 }

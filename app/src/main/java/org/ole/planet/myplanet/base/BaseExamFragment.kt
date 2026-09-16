@@ -17,7 +17,6 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import io.noties.markwon.Markwon
 import io.noties.markwon.editor.MarkwonEditor
 import io.noties.markwon.editor.MarkwonEditorTextWatcher
 import java.util.Date
@@ -37,6 +36,7 @@ import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.surveys.SurveyFragment
 import org.ole.planet.myplanet.utils.CameraUtils
 import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
+import org.ole.planet.myplanet.utils.MarkdownUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -65,7 +65,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var teamId: String? = null
     internal var answerTextWatcher: TextWatcher? = null
     private var currentAnswerEditText: EditText? = null
-    private val markwon by lazy(LazyThreadSafetyMode.NONE) { Markwon.create(requireActivity()) }
+    private val markwon by lazy(LazyThreadSafetyMode.NONE) { MarkdownUtils.create(requireActivity()) }
     private val markwonEditor by lazy(LazyThreadSafetyMode.NONE) { MarkwonEditor.create(markwon) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
