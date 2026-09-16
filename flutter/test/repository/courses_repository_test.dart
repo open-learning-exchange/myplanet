@@ -545,7 +545,7 @@ void main() {
       expect(result, isA<SyncComplete>());
 
       final stepId = CourseMapper.stepIdFor('course-1', 1);
-      final exam = await db.examDao.getByStepId(stepId);
+      final exam = await db.examDao.getFirstByStepId(stepId);
       expect(exam, isNotNull);
       expect(exam!.id, 'exam-1');
       expect(exam.courseId, 'course-1');
@@ -598,7 +598,7 @@ void main() {
         })!;
         await db.examDao.upsertAll([mapped.exam], {'exam-1': mapped.questions});
 
-        final exam = await db.examDao.getByStepId(
+        final exam = await db.examDao.getFirstByStepId(
           CourseMapper.stepIdFor('course-1', 1),
         );
         expect(exam, isNotNull);

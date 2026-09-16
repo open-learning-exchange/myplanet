@@ -1144,7 +1144,19 @@ class TeamDao extends DatabaseAccessor<AppDatabase> with _$TeamDaoMixin {
               (t) =>
                   t.id.isIn(chunk) &
                   t.docType.isNull() &
-                  (t.status.isNull() | t.status.equals('archived').not()),
+                  (t.status.isNull() | t.status.equals('archived').not()) &
+                  // `it.type == "team" || it.type.isNullOrBlank()`, the last
+                  // clause of `TeamsRepositoryImpl.getMyTeamsFlow` (`:206`).
+                  // Missing here, so the dashboard's My teams card counted a
+                  // user's **enterprises** alongside their teams and drew a
+                  // tile for each — and `teamNotificationsProvider` reads the
+                  // same list, so an enterprise also got a chat badge
+                  // computed for it. An enterprise is a team *type*
+                  // (Phase 99), which is exactly why the type column has to
+                  // be read rather than assumed.
+                  (t.type.equals('team') |
+                      t.type.isNull() |
+                      t.type.trim().equals('')),
             ))
             .get(),
       );
@@ -1217,8 +1229,42 @@ class TeamDao extends DatabaseAccessor<AppDatabase> with _$TeamDaoMixin {
             ..orderBy([(t) => OrderingTerm.asc(t.userId)]))
           .watch();
 
+  /// Port of `TeamDao.getResourceIdsByTeamId` (`TeamDao.kt:13`) — the link
+  /// documents behind a team's Resources tab.
+  ///
+  /// ```sql
+  /// SELECT resourceId FROM teams WHERE teamId = :teamId
+  ///   AND resourceId IS NOT NULL AND TRIM(resourceId) != ''
+  ///   AND (docType IS NULL OR TRIM(docType) = ''
+  ///        OR docType = 'resourceLink' OR docType = 'link')
+  /// ```
+  ///
+  /// **Kotlin accepts four `docType` shapes and this accepted one.** It was
+  /// `watchTeamDocuments(teamId, 'resourceLink')`. `MyTeam.serialize` only
+  /// ever emits `'resourceLink'`, so the other three cannot come from either
+  /// app — which is the reason to keep them rather than to drop them: a
+  /// four-way alternation is not written for a single-shape corpus, and
+  /// `TeamMapper.fromDoc` copies `docType` off the server document verbatim.
+  /// A link Planet stored as `"link"`, or with the key absent, reached the
+  /// table and no reader could see it.
+  ///
+  /// The non-blank `resourceId` guard comes with them and is load-bearing
+  /// *because* of them: `docType IS NULL` is also true of an ordinary team
+  /// document, and `resourceId` is what tells a link from a team.
   Stream<List<TeamRow>> watchResourceLinks(String teamId) =>
-      watchTeamDocuments(teamId, 'resourceLink');
+      (select(teams)
+            ..where(
+              (t) =>
+                  t.teamId.equals(teamId) &
+                  t.resourceId.isNotNull() &
+                  t.resourceId.trim().equals('').not() &
+                  (t.docType.isNull() |
+                      t.docType.trim().equals('') |
+                      t.docType.equals('resourceLink') |
+                      t.docType.equals('link')),
+            )
+            ..orderBy([(t) => OrderingTerm.asc(t.userId)]))
+          .watch();
 
   /// Watch all documents of a specific docType (e.g., 'service').
   Stream<List<TeamRow>> watchTeamDocumentsByType(String docType) =>
@@ -4020,9 +4066,24 @@ class ExamDao extends DatabaseAccessor<AppDatabase> with _$ExamDaoMixin {
   Future<ExamRow?> getById(String id) =>
       (select(exams)..where((row) => row.id.equals(id))).getSingleOrNull();
 
-  Future<ExamRow?> getByStepId(String stepId) => (select(
-    exams,
-  )..where((row) => row.stepId.equals(stepId))).getSingleOrNull();
+  /// Port of `ExamDao.getFirstByStepId` (`ExamDao.kt:13`),
+  /// `… WHERE stepId = :stepId LIMIT 1`.
+  ///
+  /// **Renamed and bounded.** This was `getByStepId` returning
+  /// `getSingleOrNull()`, which is neither of Kotlin's two step lookups:
+  /// `getFirstByStepId` takes one row with `LIMIT 1`, `getByStepId` returns
+  /// the List, and `getSingleOrNull` instead *throws* `Bad state: Too many
+  /// elements` when a step has two exams. The `courses` walk writes one exam
+  /// per step, but a standalone `exams` document is free to carry a `stepId`
+  /// naming the same step, so the second row is reachable. It had no
+  /// production caller — `stepExamProvider` says in its own doc comment that
+  /// it avoids this method for exactly that reason — which is the shape Phase
+  /// 154 warns about: a trap sitting green until someone wires it up.
+  Future<ExamRow?> getFirstByStepId(String stepId) =>
+      (select(exams)
+            ..where((row) => row.stepId.equals(stepId))
+            ..limit(1))
+          .getSingleOrNull();
 
   Future<List<ExamRow>> getByCourseId(String courseId) =>
       (select(exams)..where((row) => row.courseId.equals(courseId))).get();

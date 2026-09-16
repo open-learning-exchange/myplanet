@@ -125,7 +125,7 @@ void main() {
       // `_presentOrAbsent` honest.
       stubExamsDatabase([examDoc('exam-1', stepId: 'step-7')]);
       await surveys.sync(config: config);
-      expect((await database.examDao.getByStepId('step-7'))?.id, 'exam-1');
+      expect((await database.examDao.getFirstByStepId('step-7'))?.id, 'exam-1');
     });
 
     test('a stale exam and its questions are evicted', () async {

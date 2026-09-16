@@ -106,12 +106,12 @@ void main() {
   });
 
   test('coverage is stated where the next round will read it', () {
-    // Phase 158 Lane 1 reached 63 of 312. The remainder is the next round's
+    // Phase 158 Lane 1 reached 77 of 312. The remainder is the next round's
     // work, and an honest partial number is worth more than an implied
     // complete one — so this is asserted rather than left in a PR body where
     // it would rot.
     final uncovered = corpus.length - _compared.length;
-    expect(uncovered, 312 - 63);
+    expect(uncovered, 312 - 77);
   });
 }
 
@@ -215,17 +215,31 @@ const _corpusSize = 312;
 
 /// Entries in [_compared], stated separately so the map and the claim about it
 /// cannot drift apart.
-const _comparedCount = 63;
+const _comparedCount = 77;
 
 /// Queries a lane has read against the port's Drift builder and reached a
 /// verdict on, with the digest the statement had at that moment.
 ///
-/// Phase 158 Lane 1 seeded all 63, working outward from the statements
+/// Phase 158 Lane 1 seeded all 77, working outward from the statements
 /// carrying `LIKE`, `ORDER BY`, `IS :param` and `LIMIT` — the classes where a
 /// divergence is silent. Two produced fixes (`NewsDao.countTopLevelByTeam`'s
 /// family and `TeamDao.countByTeamIdAndDocType`); the rest were confirmed at
 /// parity or reported.
 const _compared = <String, String>{
+  'TeamDao.getResourceIdsByTeamId': '2e5632059e3b',
+  'ExamDao.getFirstByStepId': 'e4c80c44fd26',
+  'ExamDao.getByStepId': '2095e7c10090',
+  'ExamDao.getByStepIds': '6ffcac1c67b0',
+  'MyLibraryDao.getTeamPrivate': 'b71238974e8d',
+  'TeamDao.getEligibleNextLeaderCandidates': '8c8ad4450999',
+  'TeamDao.teamNameExists': '16cc27e97d3e',
+  'MeetupDao.getPendingUploads': '3ef3f76a9cac',
+  'TeamTaskDao.getPendingUploads': '36f7b43063be',
+  'TeamLogDao.getRecentTeamVisits': 'c56d3d9701ce',
+  'TeamLogDao.getLastVisit': '4ad257e581b7',
+  'NewsDao.getNewsAndRepliesIds': '4162382f2192',
+  'NewsDao.getPlanetMessages': '083f202da4ee',
+  'SubmissionDao.getExamSubmissionsByUser': '029abbf7665e',
   'AchievementDao.getPendingUploads': '5d25f4a7f470',
   'CertificationDao.countByCourseId': '1c1ca01da1d3',
   'CommunityDao.getAllSorted': 'fe4003bc2615',
