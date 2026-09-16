@@ -1954,6 +1954,39 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
     });
   }
 
+  /// Port of `MyLibraryDao.getTeamPrivate` (`MyLibraryDao.kt:48-49`),
+  /// `WHERE isPrivate = 1 AND privateFor = :teamId` — a team's **private**
+  /// resources, the ones that live nowhere else.
+  ///
+  /// `TeamsRepositoryImpl.getTeamResources` (`:318-323`) is the union of two
+  /// arms, `getResourceIds(teamId)` → the library items behind the team's
+  /// `resourceLink` documents, **plus** this one, de-duplicated by id. The
+  /// port had only the first, and nothing in `lib/` read `privateFor` at all —
+  /// only writers ([saveLocalResource], [MyLibraryMapper.fromDoc]) and the
+  /// uploader.
+  ///
+  /// The consequence is a resource in **no view of the app**. `add_resource_screen`
+  /// defaults `isPrivate` to true when it is opened from a team, and
+  /// `saveLocalResource` then writes `isPrivate: true`, `privateFor: teamId`,
+  /// `userId: []` — excluded from the catalog ([watchResources] requires
+  /// `is_private = 0`), excluded from My Library (the shelf `LIKE` cannot
+  /// match an empty list), and absent from the team's Resources tab. It
+  /// reappears only once [ResourcesUploader] links it, so offline or after a
+  /// refused upload it stays invisible; and a private team resource **pulled**
+  /// from a server that holds no separate `resourceLink` document is invisible
+  /// permanently.
+  ///
+  /// **Not yet wired.** `teamResourcesProvider`
+  /// (`lib/providers/teams_provider.dart`) is another lane's file this round;
+  /// it needs to union this with the link arm and de-duplicate by id, as the
+  /// Kotlin does. `team_private_resources_test.dart` carries an exemption that
+  /// fails when it does.
+  Future<List<MyLibraryRow>> getTeamPrivate(String teamId) =>
+      (select(myLibraryTable)..where(
+            (r) => r.isPrivate.equals(true) & r.privateFor.equals(teamId),
+          ))
+          .get();
+
   /// Port of `MyLibraryDao.getByStepId` — a course step's embedded resources.
   ///
   /// Feeds `CourseStepFragment.setupInlineResources` / `autoDownloadResources`
