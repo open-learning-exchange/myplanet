@@ -6,7 +6,6 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Process
 import android.provider.Settings
@@ -15,7 +14,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import javax.inject.Inject
 import kotlinx.coroutines.launch
@@ -35,10 +33,8 @@ abstract class BasePermissionActivity : AppCompatActivity() {
     @Inject
     open lateinit var timeProvider: TimeProvider
 
-    fun checkPermission(strPermission: String?): Boolean {
-        val result = strPermission?.let { ContextCompat.checkSelfPermission(this, it) }
-        return result == PackageManager.PERMISSION_GRANTED
-    }
+    fun checkPermission(strPermission: String?): Boolean =
+        strPermission?.let { hasPermission(it) } == true
 
     fun checkUsagesPermission() {
         if (!getUsagesPermission(this)) {
@@ -349,18 +345,6 @@ abstract class BasePermissionActivity : AppCompatActivity() {
         } catch (e: ActivityNotFoundException) {
             startActivity(Intent(Settings.ACTION_SETTINGS))
             Log.e("BasePermissionActivity", "ActivityNotFoundException for notification settings", e)
-        }
-    }
-
-    fun openAppSettings() {
-        try {
-            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                data = Uri.fromParts("package", packageName, null)
-            }
-            startActivity(intent)
-        } catch (e: ActivityNotFoundException) {
-            startActivity(Intent(Settings.ACTION_SETTINGS))
-            Log.e("BasePermissionActivity", "ActivityNotFoundException for app settings", e)
         }
     }
 
