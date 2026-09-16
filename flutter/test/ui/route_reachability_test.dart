@@ -30,17 +30,29 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// enumerate a hand-written list, so a route or a `context.push` added later is
 /// covered without anyone remembering to come back here.
 ///
-/// Four rules over the route table:
+/// Five rules over the route table:
 ///
-/// 1. **Every `Routes` constant resolves to a registered route.** A constant
-///    naming a path the router does not serve is a screen nobody can open.
-/// 2. **Every navigation location in `lib/` resolves.** This catches a
+/// 1. **Every `Routes` constant resolves to the route it names.** Not merely
+///    to *some* route — to the one whose pattern is that constant.
+/// 2. **No registered route is shadowed by an earlier sibling.** Exhaustive
+///    over the table, including routes no `Routes` constant names.
+/// 3. **Every navigation location in `lib/` resolves.** This catches a
 ///    `context.push` whose target drifted away from the route table.
-/// 3. **No navigation carries an unsubstituted `:param`.** go_router matches a
+/// 4. **No navigation carries an unsubstituted `:param`.** go_router matches a
 ///    placeholder against its own literal text, so this one fails silently.
-/// 4. **Every registered route is navigated to from somewhere.** A route
+/// 5. **Every registered route is navigated to from somewhere.** A route
 ///    nothing links to is a screen the user cannot reach; the allowlist is the
 ///    set of deliberate exceptions, each with its reason.
+///
+/// **Rules 1 and 2 are the Phase 157 hardening, and they exist because the
+/// first four were green while a screen was unreachable.** Every rule here
+/// used to ask `_matches` — whether *some* route serves a location — and never
+/// which one. `/life/feedback/create` matched, as the **detail** route, because
+/// `:feedbackId` was declared above `create` and go_router takes the first
+/// match; so `FeedbackDetailScreen(feedbackId: 'create')` rendered "Feedback
+/// not found", filing feedback was impossible from either of its two buttons,
+/// and this file said nothing. The blind spot was the width of every literal
+/// sibling declared after a path parameter.
 ///
 /// And two over the entry points that do not go through `context.go` at all —
 /// the deep link, and (Phase 130) the **system-tray notification tap**. A tray
@@ -70,19 +82,59 @@ void main() {
     router = container.read(routerProvider);
   });
 
-  test('every Routes constant resolves to a registered route', () {
-    final unresolved = <String, String>{};
+  test('every Routes constant resolves to the route it names', () {
+    // The assertion is `fullPath`, not `isError`. A constant must resolve to
+    // the route whose pattern *is* that constant; resolving to some other
+    // route is the shape that made `Routes.feedbackCreate` dead.
+    final wrong = <String, String>{};
     _routeConstants().forEach((name, path) {
-      if (!_matches(router, _fillParams(path))) unresolved[name] = path;
+      final won = _winningPattern(router, _fillParams(path));
+      if (won != _normalize(path)) {
+        wrong[name] = '$path resolves to ${won ?? 'no route at all'}';
+      }
     });
 
     expect(
-      unresolved,
+      wrong,
       isEmpty,
       reason:
-          'These Routes constants name locations the router does not serve, so '
-          'every navigation through them lands on the error page:\n'
-          '${unresolved.entries.map((e) => '  Routes.${e.key} = ${e.value}').join('\n')}',
+          'These Routes constants do not resolve to the route they name, so a '
+          'navigation through them opens a different screen, or none:\n'
+          '${wrong.entries.map((e) => '  Routes.${e.key}: ${e.value}').join('\n')}',
+    );
+  });
+
+  test('no registered route is shadowed by an earlier sibling', () {
+    // Rule one over the *table* rather than over the constants, so a route
+    // declared inline with no `Routes` constant is covered too — it is
+    // shadowed in exactly the same way and rule one would never look at it.
+    //
+    // For each registered pattern, build the most ordinary location that
+    // pattern serves — its own text, with every `:param` filled by a stand-in
+    // no literal segment in the table uses — and ask which route wins. Anything
+    // but itself means an earlier sibling swallows every such location, and the
+    // screen behind it cannot be opened at all.
+    //
+    // Note what this deliberately does *not* flag: a literal sibling declared
+    // *above* a `:param` shadows that param only for its own one value, which
+    // is the whole point of declaring it there. Filling with a stand-in asks
+    // about the other values, which is the question that matters.
+    final shadowed = <String>[];
+    for (final path in _registeredPaths(router)) {
+      final won = _winningPattern(router, _fillParams(path));
+      if (won != path) shadowed.add('$path is served by ${won ?? 'no route'}');
+    }
+
+    expect(
+      shadowed,
+      isEmpty,
+      reason:
+          'These routes never win a match, so the screens behind them are '
+          'unreachable however correct the screen and its own tests are. '
+          'go_router takes the *first* match, so a literal segment has to be '
+          'declared above a sibling `:param` — as `chat/new` is above '
+          '`:chatId` and `feedback/create` above `:feedbackId`:\n'
+          '${shadowed.map((e) => '  $e').join('\n')}',
     );
   });
 
@@ -160,7 +212,10 @@ void main() {
           'Navigator.push',
     };
 
-    final reached = _navigationSites().map((s) => s.location).toSet();
+    final reached = _navigationSites()
+        .where((s) => s.fromCall || _indirectNavigators.containsKey(s.file))
+        .map((s) => s.location)
+        .toSet();
     final unreachable = _registeredPaths(router)
         .where((path) => !allowed.containsKey(path))
         .where((path) => !reached.any((r) => _pathsMatch(path, r)))
@@ -174,6 +229,151 @@ void main() {
           'so the screens behind them cannot be opened. Either add the entry '
           "point or record the route in this test's `allowed` map with its "
           'reason:\n${unreachable.map((p) => '  $p').join('\n')}',
+    );
+  });
+
+  test('every query parameter a route reads is supplied by a navigation', () {
+    // The reachability class turned on its side, and the one shape the other
+    // rules structurally cannot see.
+    //
+    // Rules one, two and five compare the port's route table with the port's
+    // own navigations, so they catch a route with no pusher. They cannot catch
+    // a route that *is* pushed, resolves correctly, and reads an argument
+    // nobody ever passes — the screen opens, and the feature the argument
+    // carried is missing. A parameter read but never supplied is the same
+    // fingerprint as a mapper with no caller: plumbing laid for a call nobody
+    // wrote, which Phase 119 found four of.
+    //
+    // Both supplier shapes count, because the port uses both: a literal
+    // `'…?tab=requests'`, and `Uri(queryParameters: {'origin': …})`, which is
+    // how the public-survey deep link passes the one value its route cannot
+    // recover. Reading only the first reports `origin` as dead, which it is
+    // not.
+    const knownMissingEntryPoint = <String, String>{
+      // `feedback/create` reads both, and nothing in `lib/` passes either:
+      // every feedback the port can file is `title: "Question regarding /"`,
+      // `url: "/"`, with `state` and `item` null.
+      //
+      // The missing writer is the teams list's per-row feedback button —
+      // `item_team_list.xml:59` (an `ImageView` with no `visibility`
+      // attribute), bound unconditionally at `TeamsAdapter.kt:80-82`, and
+      // `TeamFragment.kt:299-305`'s `getBundle` is what supplies the pair:
+      // `state` = `"${team.type}s"` (or `"teams"`), `item` = `team._id`.
+      // `FeedbackRepositoryImpl.kt:46-54` turns them into the report's title,
+      // url, state and item, so Planet can file it against that team.
+      //
+      // `lib/ui/teams/` belongs to another lane this round, so this is
+      // reported rather than fixed. Delete these two entries with the button.
+      'item': 'the teams-list per-row feedback button is not ported',
+      'state': 'the teams-list per-row feedback button is not ported',
+    };
+
+    final router_ = _stripComments(
+      File('lib/ui/router.dart').readAsStringSync(),
+    );
+    final read = RegExp(
+      r"queryParameters\['(\w+)'\]",
+    ).allMatches(router_).map((m) => m.group(1)!).toSet();
+
+    final supplied = <String>{};
+    for (final file
+        in Directory('lib')
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where((f) => f.path.endsWith('.dart'))
+            .where((f) => !f.path.endsWith('ui/router.dart'))) {
+      final source = _stripComments(file.readAsStringSync());
+      // Per *literal*, then every parameter within it. Scanning the file with
+      // one `'[^']*[?&](\w+)=' `is wrong in a way worth recording, because it
+      // looked right and was green on the cases that had a single parameter:
+      // `[^']*` is greedy, so in `'…?url=$u&title=$t'` it runs to the end and
+      // backtracks to the *last* `[?&]`, reporting `title` and never `url`.
+      // It read exactly one parameter per literal — the last — and the two it
+      // dropped, `url` and `stepId`, are both genuinely supplied.
+      for (final m in RegExp(r"'([^']*)'").allMatches(source)) {
+        for (final param in RegExp(r'[?&](\w+)=').allMatches(m.group(1)!)) {
+          supplied.add(param.group(1)!);
+        }
+      }
+      for (final m in RegExp(
+        r'queryParameters\s*:\s*\{([^}]*)\}',
+      ).allMatches(source)) {
+        for (final key in RegExp(r"'(\w+)'\s*:").allMatches(m.group(1)!)) {
+          supplied.add(key.group(1)!);
+        }
+      }
+    }
+
+    final dead = read
+        .where((name) => !supplied.contains(name))
+        .where((name) => !knownMissingEntryPoint.containsKey(name))
+        .toList();
+
+    expect(
+      dead,
+      isEmpty,
+      reason:
+          'These query parameters are read by a route builder and passed by no '
+          'navigation in lib/, so the screen always sees null and whatever the '
+          'parameter carried is silently missing. Either supply it at the call '
+          "site or record it in this test's `knownMissingEntryPoint` map with "
+          'the entry point it is waiting on:\n${dead.map((n) => '  $n').join('\n')}',
+    );
+
+    // The exception map must not outlive its reason — the shelf-life rule.
+    final resurrected = knownMissingEntryPoint.keys
+        .where(supplied.contains)
+        .toList();
+    expect(
+      resurrected,
+      isEmpty,
+      reason:
+          'These parameters are supplied now, so their entry point landed. '
+          "Delete them from this test's `knownMissingEntryPoint` map:\n"
+          '${resurrected.map((n) => '  $n').join('\n')}',
+    );
+  });
+
+  test('every indirect-navigator exemption is still load-bearing', () {
+    // An exemption nobody needs is an exemption nobody re-reads, and this file
+    // has already been bitten once by an entry that had outlived its reason
+    // (the `/server` note below, which described a mutation result it did not
+    // cause). So each entry has to still be carrying a route that would
+    // otherwise be reported unreachable.
+    //
+    // This fails in the *useful* direction: if a file's destinations gain
+    // ordinary `context.go` call sites, its entry becomes dead weight and this
+    // says so, rather than leaving a widening nobody can account for.
+    final callSites = _navigationSites()
+        .where((s) => s.fromCall)
+        .map((s) => s.location)
+        .toSet();
+    final registered = _registeredPaths(router);
+
+    final idle = <String>[];
+    for (final file in _indirectNavigators.keys) {
+      final carries = _navigationSites()
+          .where((s) => !s.fromCall && s.file == file)
+          .map((s) => s.location)
+          .where(
+            (loc) => registered.any(
+              (path) =>
+                  _pathsMatch(path, loc) &&
+                  !callSites.any((c) => _pathsMatch(path, c)),
+            ),
+          );
+      if (carries.isEmpty) idle.add(file);
+    }
+
+    expect(
+      idle,
+      isEmpty,
+      reason:
+          'These files are exempted from rule five but no longer carry a route '
+          'that needs the exemption — every destination they name is also '
+          'reached from a real navigation call. Drop them from '
+          '`_indirectNavigators` rather than leaving a widening with no live '
+          'reason:\n${idle.map((f) => '  $f').join('\n')}',
     );
   });
 
@@ -510,6 +710,51 @@ void main() {
 /// locations. `/db` is CouchDB's path suffix; `/` is a path separator.
 const _notALocation = <String>{'/', '/db'};
 
+/// Files that navigate to a location they *compute*, so their destinations sit
+/// loose in the file rather than in a `context.push`/`go` argument.
+///
+/// Rule five counts a location as reached when it is read out of a navigation
+/// call — or when it is a loose mention **in one of these files**. Everywhere
+/// else, a loose `Routes.x` no longer counts.
+///
+/// **This replaces a blanket permissiveness, and the replacement is measured
+/// rather than guessed.** The scanner deliberately reads locations from
+/// anywhere in `lib/`, because for rules three and four breadth is strength: a
+/// broken target is worth checking wherever it is written. For rule five
+/// breadth is the opposite — every extra site is one more thing counted as
+/// *reached* — so a `Routes.x` in a dead branch, a `case` label or an unused
+/// helper used to satisfy it, in any of 66 files.
+///
+/// Classifying every reachability witness in the tree by where it came from
+/// gives: **every** loose mention that rule five leans on is in one of the
+/// three files below, and **no** route is reached by a loose mention alone —
+/// all 63 non-exempt routes have a real call site today. So the narrowing
+/// costs nothing now, and what it buys is that the next dead branch naming a
+/// `Routes` constant does not quietly satisfy this rule.
+///
+/// These three stay because their indirection is real, not sloppy — and each
+/// already has a stronger, exhaustive guard in this same file, named here so
+/// the exemption is reviewable rather than inherited:
+const _indirectNavigators = <String, String>{
+  // Thirteen destinations collected into a list and handed over as
+  // `context.go(route)`. Also in `declared` below, for the same indirection.
+  'lib/ui/dashboard/dashboard_drawer.dart':
+      'a list of destinations, navigated as a variable',
+  // `notification_destination.dart` is deliberately **not** here, and the
+  // honesty test below is how that was settled rather than by taste. Its six
+  // destinations are every one of them also pushed from an ordinary screen, so
+  // exempting it widened the rule while carrying nothing; the enum is walked
+  // exhaustively by "every notification destination resolves to a registered
+  // route" either way. Should a tray notification ever become the only way to
+  // reach a screen, rule five will say so and the entry comes back with that
+  // as its reason.
+  //
+  // `deepLinkRoute(section)`. Guarded by "every deep-link section resolves to
+  // a registered route", which drives the real function.
+  'lib/providers/deep_link_provider.dart':
+      'a section-to-route map; driven directly above',
+};
+
 /// `static const String name = '/path';` in `lib/ui/router.dart`.
 Map<String, String> _routeConstants() {
   final source = _stripComments(File('lib/ui/router.dart').readAsStringSync());
@@ -521,10 +766,17 @@ Map<String, String> _routeConstants() {
 }
 
 class _NavSite {
-  const _NavSite(this.file, this.line, this.location);
+  const _NavSite(this.file, this.line, this.location, {this.fromCall = false});
   final String file;
   final int line;
   final String location;
+
+  /// Whether this location was read out of a `context.push`/`go`/… argument,
+  /// as opposed to a `Routes.x` or `'/…'` sitting loose in the file.
+  ///
+  /// Only rule five reads it, and only because the two kinds answer different
+  /// questions there — see the `_indirectNavigators` note.
+  final bool fromCall;
 
   @override
   String toString() => '$file:$line -> $location';
@@ -603,12 +855,17 @@ _Scan _scan() {
         file.path.startsWith('lib/providers/');
 
     /// Records one location; returns whether it turned out to be one.
-    bool record(int offset, String? raw) {
+    bool record(int offset, String? raw, {bool fromCall = false}) {
       if (raw == null) return false;
       final resolution = _resolve(raw, constants);
       final location = resolution.location;
       if (location == null || !location.startsWith('/')) return false;
-      final site = _NavSite(file.path, _lineOf(source, offset), location);
+      final site = _NavSite(
+        file.path,
+        _lineOf(source, offset),
+        location,
+        fromCall: fromCall,
+      );
       sites.add(site);
       if (resolution.partial) unresolved.add(site);
       return true;
@@ -625,10 +882,14 @@ _Scan _scan() {
       // which is what we want — either may be navigated to.
       var found = false;
       for (final hit in literal.allMatches(argument)) {
-        found |= record(open + 1 + hit.start, hit.group(1));
+        found |= record(open + 1 + hit.start, hit.group(1), fromCall: true);
       }
       for (final hit in bareConstant.allMatches(argument)) {
-        found |= record(open + 1 + hit.start, constants[hit.group(1)!]);
+        found |= record(
+          open + 1 + hit.start,
+          constants[hit.group(1)!],
+          fromCall: true,
+        );
       }
       if (!found) {
         // A location handed over in a variable: `context.go(route)`. Its real
@@ -728,8 +989,33 @@ String _normalize(String location) {
 String _fillParams(String path) =>
     _normalize(path).replaceAll(RegExp(r':[A-Za-z_]\w*'), 'x');
 
+/// The pattern of the route that actually serves [location], or null when none
+/// does.
+///
+/// `RouteMatchList.fullPath` is go_router's own answer to *which* route matched
+/// — "the full path pattern that matches the uri", `go_router-18.0.1`
+/// `lib/src/match.dart:541` — so this is the supported question rather than an
+/// inference from the widget it builds.
+///
+/// **Verified empirically against the pinned 18.0.1, not read off the source.**
+/// With `create` declared below `:feedbackId`, `/life/feedback/create` reports
+/// `/life/feedback/:feedbackId`; with the order swapped it reports itself.
+/// Ordering semantics are the thing this whole file now leans on, so they were
+/// probed against the version that ships.
+String? _winningPattern(GoRouter router, String location) {
+  final match = router.configuration.findMatch(Uri.parse(location));
+  return match.isError ? null : match.fullPath;
+}
+
+/// Whether *any* route serves [location].
+///
+/// Deliberately still the weak question, and only where the strong one has no
+/// answer: a navigation site's intended pattern is not recoverable from its
+/// text, so all rule three can ask is that the location goes somewhere. Rules
+/// one and two ask the strong question of the route table itself, which is
+/// where the shadowing lives.
 bool _matches(GoRouter router, String location) =>
-    !router.configuration.findMatch(Uri.parse(location)).isError;
+    _winningPattern(router, location) != null;
 
 /// Full paths of every route in the table, patterns included.
 List<String> _registeredPaths(GoRouter router) {
