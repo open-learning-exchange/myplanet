@@ -210,9 +210,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     // one. Porting the branch would add a limb no user can
                     // walk down.
                     //
-                    // `push`, so the form returns here: [Routes.loginFeedback]
-                    // is a location with nothing to re-read, unlike
-                    // [Routes.changeServer] whose marker a push would lose.
+                    // `push`, so the form returns here — and the reason
+                    // that is safe is narrower than it looks. A push stores
+                    // its *base* location for restoration
+                    // (`RouteMatchList.push` is a `copyWith(matches:)`), so a
+                    // router refresh re-parses `/login`, and if the redirect's
+                    // verdict on `/login` has changed the pushed screen is
+                    // collapsed and whatever was typed into it is gone. That
+                    // is the same hazard [Routes.changeServer] documents,
+                    // measured here too: a refresh that leaves the verdict
+                    // alone keeps the form and its text, while one that
+                    // resolves a session or clears the server config drops
+                    // both.
+                    //
+                    // It holds today because *no reachable event changes that
+                    // verdict while a signed-out user is on this form* — the
+                    // only writers of the three refresh sources are this
+                    // screen's own `_submit` (behind `_isSubmitting`, which
+                    // disables this button), the server-config screen,
+                    // settings, and screens that need a session. Add a guest
+                    // login or an auto-login here and this stops being true
+                    // silently.
                     TextButton(
                       onPressed: _isSubmitting
                           ? null

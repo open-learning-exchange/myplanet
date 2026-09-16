@@ -39,6 +39,18 @@ void main() {
   Future<List<OutboxRow>> queued(AppDatabase database) =>
       database.outboxDao.due(DateTime.now().millisecondsSinceEpoch + 1000);
 
+  /// Fills and submits the form.
+  ///
+  /// It never touches the urgency radio, and that is **not** an assertion that
+  /// leaving it alone is correct — it is a known divergence these tests inherit
+  /// rather than endorse. Kotlin pre-selects neither radio
+  /// (`fragment_feedback.xml:28-47` carries no `android:checked`) and refuses
+  /// with `feedback_priority_is_required` until one is picked
+  /// (`FeedbackFragment.validateAndSaveData`). The port defaults
+  /// `_priority = 'No'`, so `_priorityError` is only ever assigned null and the
+  /// error `Text` that reads it is dead code. Reported, not fixed: making the
+  /// field required is a validation change with a new ARB key in five locales,
+  /// and it is independent of anything this round is about.
   Future<void> fileFeedback(WidgetTester tester) async {
     await tester.tap(find.text('Bug'));
     await tester.pump();
@@ -87,6 +99,40 @@ void main() {
     // still drains. Asserted so a later "tidy" that makes it required has to
     // notice this caller.
     expect(entries.single.userId, isNull);
+  });
+
+  testWidgets('a double tap on Submit files one document, not two', (
+    tester,
+  ) async {
+    // Kotlin disables Submit *and* Cancel while a submit is in flight
+    // (`FeedbackFragment.kt:41-44`). The port wrote `isSubmitting` and read it
+    // nowhere, so the flag was inert; the session gate was the only thing
+    // standing in for it, and removing that gate — which this round had to do,
+    // because Kotlin has no user test — is what made the second tap land.
+    //
+    // Two rows is the visible half. The expensive half is the outbox: a
+    // second entry against the same `(uploadType, itemId)` is what Phase 148's
+    // policy says can never exist, and the duplicate POST of the same `_id`
+    // with no `_rev` 409s and is abandoned, leaving a dead row per double tap.
+    final database = AppDatabase.memory();
+    addTearDown(database.close);
+
+    await tester.pumpWidget(_wrap(database, _NoSession.new, config));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Bug'));
+    await tester.pump();
+    await tester.enterText(find.byType(TextField), 'twice');
+
+    // No pump between the taps: `onPressed: null` only takes effect on the
+    // next frame, so this is the case the button alone cannot catch and the
+    // re-entrancy read in `_submit` has to.
+    await tester.tap(find.text('Submit'));
+    await tester.tap(find.text('Submit'), warnIfMissed: false);
+    await tester.pumpAndSettle();
+
+    expect(await database.feedbackDao.getPending(), hasLength(1));
+    expect(await queued(database), hasLength(1));
   });
 
   testWidgets('a signed-in user still signs their own feedback', (

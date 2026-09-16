@@ -129,8 +129,10 @@ class Routes {
   /// `FeedbackFragment().show(...)` at `:200-202`), and it is the only route to
   /// an administrator a user has when they cannot get past that door at all —
   /// wrong PIN, unreachable server, un-activated account. The port had none:
-  /// the other two entry points are [feedbackCreate], which lives inside the
-  /// dashboard shell and so needs a signed-in user to make any sense.
+  /// every other way in is [feedbackCreate] — one route with three push sites
+  /// (`teams_screen.dart`, `feedback_list_screen.dart`,
+  /// `inactive_dashboard_screen.dart`), all of them inside the dashboard
+  /// shell, which is the signed-in stack.
   ///
   /// It is a second registration of the same screen rather than a move,
   /// deliberately. [feedbackCreate]'s declaration order — the literal `create`

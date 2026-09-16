@@ -13,6 +13,7 @@ import 'package:myplanet/l10n/app_localizations.dart';
 import 'package:myplanet/ui/feedback/feedback_create_screen.dart';
 import 'package:myplanet/ui/router.dart';
 import 'package:myplanet/ui/sync/login_screen.dart';
+import 'package:myplanet/ui/user/become_member_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../support/widget_harness.dart';
@@ -143,6 +144,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(harness.location, Routes.becomeMember);
+      // The load-bearing half, and this test shipped without it for a round.
+      // Deleting the route entirely leaves `location` reading
+      // `/become-member` — the push resolves against a match list that no
+      // longer has a screen behind it — so the string alone cannot fail on
+      // the mutation it most needs to catch. Measured, not reasoned.
+      expect(find.byType(BecomeMemberScreen), findsOneWidget);
     });
   });
 

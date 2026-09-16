@@ -258,14 +258,24 @@ class FeedbackCreateNotifier extends Notifier<FeedbackCreateState> {
   /// **One deliberate divergence, and it is the honest direction.** Kotlin
   /// resolves the name through `UserRepositoryImpl.getUserModel`, which reads
   /// the `userId` preference — and nothing clears that preference on logout
-  /// (`UserSessionManager.logoutAsync` only writes an activity row; the sole
-  /// `clear()` is `SharedPrefManager.clearPreferences`, reached from
-  /// `SyncActivity.clearDataDialog`). So after a logout the Android app files
+  /// (`UserSessionManager.logoutAsync` only writes an activity row, and
+  /// `DashboardElementActivity.logout` clears the `SecurePrefs` credentials
+  /// and the logged-in flag without touching `USER_ID`; the only `clear()` is
+  /// `SharedPrefManager.clearPreferences`, whose two callers are
+  /// `SyncActivity.clearDataDialog` and `SettingsViewModel` via
+  /// `ConfigurationsRepositoryImpl`). So after a logout the Android app files
   /// the *previous* user's name against feedback typed by whoever is holding
   /// the phone now. `SessionNotifier.signOut` clears the session here, so this
   /// writes `''` in that case. Matching Kotlin would mean attributing one
   /// person's words to another, which is a bug to leave behind rather than a
   /// behaviour to reproduce.
+  ///
+  /// **It has a cost, and it is the same one Kotlin pays on a fresh install.**
+  /// The list is `getByOwnerFlow(user.name)` for a non-manager, so a thread
+  /// filed with `owner: ''` never appears to its author — not even after they
+  /// sign in. Only a manager's all-threads view shows it. Kotlin's post-logout
+  /// attribution does make the thread visible to *someone*, which is the one
+  /// respect in which its behaviour is better than this.
   Future<bool> submit({String? item, String? feedbackState}) async {
     if (state.message.isEmpty) {
       state = state.copyWith(error: 'Please enter feedback');
