@@ -249,24 +249,19 @@ void main() {
     // how the public-survey deep link passes the one value its route cannot
     // recover. Reading only the first reports `origin` as dead, which it is
     // not.
-    const knownMissingEntryPoint = <String, String>{
-      // `feedback/create` reads both, and nothing in `lib/` passes either:
-      // every feedback the port can file is `title: "Question regarding /"`,
-      // `url: "/"`, with `state` and `item` null.
-      //
-      // The missing writer is the teams list's per-row feedback button —
-      // `item_team_list.xml:59` (an `ImageView` with no `visibility`
-      // attribute), bound unconditionally at `TeamsAdapter.kt:80-82`, and
-      // `TeamFragment.kt:299-305`'s `getBundle` is what supplies the pair:
-      // `state` = `"${team.type}s"` (or `"teams"`), `item` = `team._id`.
-      // `FeedbackRepositoryImpl.kt:46-54` turns them into the report's title,
-      // url, state and item, so Planet can file it against that team.
-      //
-      // `lib/ui/teams/` belongs to another lane this round, so this is
-      // reported rather than fixed. Delete these two entries with the button.
-      'item': 'the teams-list per-row feedback button is not ported',
-      'state': 'the teams-list per-row feedback button is not ported',
-    };
+    // Empty, and worth keeping as a map rather than collapsing to a bare
+    // `expect(unsupplied, isEmpty)`: the shape this rule guards recurs, and the
+    // next dead parameter wants a citation beside it rather than a bare name.
+    //
+    // It held `item` and `state` when this rule was written. `feedback/create`
+    // read both and nothing in `lib/` passed either, so every feedback the port
+    // could file was `title: "Question regarding /"`, `url: "/"`. The missing
+    // writer was the teams list's per-row feedback button — `TeamsAdapter.kt:
+    // 80-82` binds it on every row and `TeamFragment.kt:299-305`'s `getBundle`
+    // supplies the pair. `lib/ui/teams/` belonged to another lane that round,
+    // so the rule reported it; the button landed in the same round and these
+    // two entries went with it.
+    const knownMissingEntryPoint = <String, String>{};
 
     final routerSource = _stripComments(
       File('lib/ui/router.dart').readAsStringSync(),
