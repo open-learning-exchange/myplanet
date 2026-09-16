@@ -322,8 +322,53 @@ class ConfigurationsRepository {
       return _ConfigurationFetch.failed(diagnostic: 'no configuration rows');
     }
 
-    final firstRow = rows.first;
-    if (firstRow is! Map<String, dynamic>) return _ConfigurationFetch.failed();
+    // **A deliberate divergence from Kotlin, and the only one in this method.**
+    //
+    // `fetchConfiguration` (`ConfigurationsRepositoryImpl.kt:339-352`) takes
+    // `rows[0]` with no `_design` filter, and this did the same. But
+    // `_all_docs` returns design documents inline and orders by the raw id
+    // string, where `_` is 0x5F — after every digit, before every lowercase
+    // letter. A CouchDB-generated uuid starts with a hex character, so on the
+    // six ids in sixteen beginning `a`–`f` a `_design/…` row sorts **first**,
+    // and the walks in `feedback_repository_impl`, `teams_repository`,
+    // `progress_repository`, `shelf_sync_repository` and `health_repository`
+    // are five standing demonstrations that Planet databases carry them —
+    // Phase 157 fixed a manager seeing one bogus feedback thread per design
+    // document, from exactly this.
+    //
+    // The two apps do not even fail the same way when it happens, which is
+    // what settles it. Kotlin reads `doc.getAsJsonPrimitive("code").asString`
+    // and a design document has no `code`, so it throws, the outer catch
+    // returns null, and configuration fails — the first screen reporting an
+    // unreachable server. [JsonUtils.getString] returns `''` instead, and
+    // nothing downstream rejects an empty code, so this accepted a
+    // *configuration* whose id was `_design/…` and whose community code was
+    // blank, and `server_config_screen` stores that id as `_configuredId` —
+    // the veto in `_isKnownDifferentConfiguration`, which decides whether a
+    // user is asked to wipe their device.
+    //
+    // Skipping `_design` makes the two agree everywhere it is observable: a
+    // database with no design document behaves exactly as before in both
+    // apps, and one with a design document now finds the configuration Kotlin
+    // was looking for. It does **not** touch the other half of `rows[0]` —
+    // which of several *real* configurations wins is arbitrary in both apps,
+    // and there is no ground truth to prefer a different one.
+    //
+    // An explicit loop rather than `firstWhere(..., orElse: () => null)`:
+    // `rows` is statically `List<dynamic>` but its runtime type is whatever
+    // the decoder built, and passing a `Null Function()` where that list's
+    // element type is non-nullable fails the covariance check on the
+    // `orElse` argument — a `TypeError` at the call, not at the fallback.
+    Map<String, dynamic>? firstRow;
+    for (final row in rows) {
+      if (row is! Map<String, dynamic>) continue;
+      if (JsonUtils.getString('id', row).startsWith('_design')) continue;
+      firstRow = row;
+      break;
+    }
+    if (firstRow == null) {
+      return _ConfigurationFetch.failed(diagnostic: 'no configuration rows');
+    }
 
     final doc = JsonUtils.getObject('doc', firstRow);
     if (doc == null) return _ConfigurationFetch.failed();

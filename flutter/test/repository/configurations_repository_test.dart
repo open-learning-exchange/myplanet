@@ -72,6 +72,91 @@ void main() {
     );
   }
 
+  group('_all_docs returns design documents inline', () {
+    /// `_all_docs` orders by the raw id string and `_` is 0x5F — after every
+    /// digit, before every lowercase letter — so a `_design/…` row sorts ahead
+    /// of any configuration whose CouchDB uuid begins `a`–`f`. Kotlin takes
+    /// `rows[0]` unfiltered and throws on the missing `code`; this skips it.
+    void stubWithDesignDocFirst(String couchDbUrl) {
+      when(
+        () => api.getConfiguration(
+          '$couchDbUrl/db/configurations/_all_docs?include_docs=true',
+        ),
+      ).thenAnswer(
+        (_) async => const NetworkSuccess<Map<String, dynamic>>({
+          'rows': [
+            // The decoy that makes this a test: a design document whose `doc`
+            // is a **plausible** one, carrying `views` rather than nothing at
+            // all. A row with an empty `doc` would be rejected by the existing
+            // null guard below and pin nothing about the `_design` filter.
+            {
+              'id': '_design/configurations',
+              'doc': {
+                '_id': '_design/configurations',
+                'views': {'by_code': {}},
+              },
+            },
+            {
+              'id': 'e1f2a3b4c5d6',
+              'doc': {
+                'code': 'guatemala',
+                'parentCode': 'earth',
+                'preferredLang': 'Spanish',
+              },
+            },
+          ],
+        }),
+      );
+    }
+
+    test(
+      'the configuration is found behind a leading design document',
+      () async {
+        const url = 'https://planet.example.org';
+        const couchDbUrl = 'https://satellite:1234@planet.example.org:443';
+        stubVersions(url, minApk: '0.60.0');
+        stubWithDesignDocFirst(couchDbUrl);
+
+        final result = await buildRepository().getMinApk(url, '1234');
+
+        // Without the filter this is a "success" carrying id `_design/…` and an
+        // empty code — which `server_config_screen` stores as the configured id.
+        expect(result, isA<ConfigurationSuccess>());
+        final config = (result as ConfigurationSuccess).config;
+        expect(config.id, 'e1f2a3b4c5d6');
+        expect(config.code, 'guatemala');
+      },
+    );
+
+    test(
+      'a database holding only design documents has no configuration',
+      () async {
+        const url = 'https://planet.example.org';
+        const couchDbUrl = 'https://satellite:1234@planet.example.org:443';
+        stubVersions(url, minApk: '0.60.0');
+        when(
+          () => api.getConfiguration(
+            '$couchDbUrl/db/configurations/_all_docs?include_docs=true',
+          ),
+        ).thenAnswer(
+          (_) async => const NetworkSuccess<Map<String, dynamic>>({
+            'rows': [
+              {
+                'id': '_design/configurations',
+                'doc': {'views': <String, dynamic>{}},
+              },
+            ],
+          }),
+        );
+
+        expect(
+          await buildRepository().getMinApk(url, '1234'),
+          isNot(isA<ConfigurationSuccess>()),
+        );
+      },
+    );
+  });
+
   group('getMinApk — success', () {
     test(
       'returns the community configuration for a reachable server',
