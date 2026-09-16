@@ -220,6 +220,40 @@ void main() {
       );
     });
 
+    test('redaction preserves every line, so reported lines are true', () {
+      // **The `at <path>:<line>` list is the whole value of this guard**, and
+      // the second audit pass found it wrong by up to ~120 lines: the
+      // line-comment branch wrote its newline *and* left `i` pointing at it,
+      // so every `//` above a site shifted that site down by one.
+      //
+      // The shape-classification tests above could not see it — every fixture
+      // there is a single line with nothing above it. So this pins the
+      // invariant directly, on each construct that has its own branch.
+      for (final source in [
+        '// a comment\nfinal u = ref.read(sessionProvider).value;\n',
+        '/// doc\n/// doc\nclass A {}\n',
+        '/* block\nspanning\nlines */\nfinal x = 1;\n',
+        "final s = 'a\\nb';\nfinal t = '''\nmulti\n''';\n",
+        "final u = '\${d.month.toString().padLeft(2, '0')}';\n",
+      ]) {
+        expect(
+          '\n'.allMatches(redactCommentsAndStrings(source)).length,
+          '\n'.allMatches(source).length,
+          reason: 'newline count changed for: $source',
+        );
+      }
+
+      // And end to end, which is what actually gets reported.
+      expect(
+        findUnwatchedReads(
+          '// one\n'
+          '// two\n'
+          'final u = ref.read(sessionProvider).value;\n',
+        ).single.line,
+        3,
+      );
+    });
+
     test('the exemption bookkeeping fails in both directions', () {
       // An exemption that only suppresses is a silent debt. This is the half
       // that makes it a reminder instead, and mutating the map both ways is
@@ -287,164 +321,208 @@ void main() {
 ///
 /// **Not one of these is this lane's file.** Phase 158 Lane 2 owned
 /// `lib/providers/**` (less `feedback_provider.dart`) and resolved all 29
-/// sites there. Everything below is `lib/ui/` or another lane's file, and the
-/// three marked *Lane 3* were live in that lane's working tree as this was
-/// written.
+/// sites there. Everything below is `lib/ui/` or another lane's file.
+///
+/// ## How wide the window actually is, because the first cut of this map
+/// overstated it
+///
+/// `routerProvider`'s `_RouterRefresh` (`lib/ui/router.dart:780-785`) holds
+/// `ref.listen(sessionProvider, …)` for the life of the process, and
+/// `lib/background_entrypoint.dart` never touches `sessionProvider` at all —
+/// it goes straight to `prefs.loggedInUserId` and `userDaoProvider`. So in
+/// the shipping app there is no non-router entry point that reaches these
+/// sites, and the window is **first resolution only**: app start until the
+/// persisted session has been read back. Real — a deep link delivered at cold
+/// start lands squarely in it — but not the "silently discarded" this map
+/// first claimed of nine of its entries.
+///
+/// Each reason below therefore names the **gate**, in one of three classes:
+///
+/// * **unreachable** — the callback cannot run with a null value at all,
+///   because a `if (x != null)` or a `onPressed: x == null ? null : …`
+///   stands between it and the user.
+/// * **watched** — some mounted widget in the same tree watches the provider,
+///   so the element is driven and the only exposure is the frames before it
+///   emits, during which the screen shows a spinner or a placeholder.
+/// * **unwatched** — nothing drives it; this is the live class, and the
+///   entry is a defect waiting for its owner.
+///
+/// The first cut of this map applied *watched ⇒ safe* to `take_exam_screen`
+/// and its negation to six neighbours, having read each method without
+/// checking what gates its caller. Phase 149's rule — trace the caller chain
+/// to its end before judging a line — applies to writing an exemption too.
 const _exempt = <String, Exemption>{
-  // ---- genuinely safe, with the argument for why ----
+  // ---- unreachable: the callback cannot run with a null value ----
+  'lib/ui/resources/resource_detail_screen.dart::session': Exemption(
+    count: 1,
+    why:
+        '`_toggleLibraryMembership:446`. The button that calls it is rendered '
+        'under `if (session != null) ...[` (`:351`), where `session` is '
+        '`ref.watch(sessionProvider).value` at `:329` in the same '
+        '`ConsumerState`. With a null session the button does not exist.',
+    retire:
+        'Delete if the `:351` gate goes, or if another caller of '
+        '`_toggleLibraryMembership` appears outside it.',
+  ),
+  'lib/ui/feedback/feedback_create_screen.dart::session': Exemption(
+    count: 1,
+    why:
+        'Lane 3\'s file. `_submit:202` — and **not** the live defect an '
+        'earlier revision of this entry called it. `build:40` watches the '
+        'session and `:170` is `onPressed: session == null ? null : _submit`, '
+        'which is `_submit`\'s only trigger, so the button is disabled rather '
+        'than the form discarded.',
+    retire: 'Delete if the `:170` gate goes, or when the read is resolved.',
+  ),
+  'lib/ui/notifications/notifications_screen.dart::notifications': Exemption(
+    count: 1,
+    why:
+        '`:278`, inside `_GroupHeader` (`:264`), which is constructed at '
+        '`:247` from the grouped tree derived from `notificationsProvider` — '
+        'watched at `build:48`. A header cannot exist before the provider has '
+        'emitted, so the `?? const []` is unreachable.',
+    retire: 'Delete if `_GroupHeader` gains a caller outside that tree.',
+  ),
+
+  // ---- watched: driven by a mounted widget; exposure is the pre-emit frames
   'lib/ui/router.dart::session': Exemption(
     count: 1,
     why:
         'The two-step shape (`:240`, `:254`) — and the one place in `lib/` '
-        'that handles this class correctly rather than accidentally. `:252` '
+        'that handles this class deliberately rather than accidentally. `:252` '
         'is `if (session.isLoading) return null;`, so the redirect holds '
         'position until the persisted session has been read back and `.value` '
         'is only reached once resolved. go_router\'s `redirect` is the '
         'synchronous consumer this pattern exists for; awaiting here would '
         'change routing, not fix anything.',
     retire:
-        'Delete if the `session.isLoading` hold at router.dart:252 is ever '
-        'removed — without it this becomes the ordinary defect, on the one '
-        'read the whole app\'s latency depends on.',
+        'Delete if the `session.isLoading` hold at `:252` is ever removed — '
+        'without it this becomes the ordinary defect, on the one read the '
+        'whole app\'s first paint depends on.',
   ),
   'lib/ui/exam/take_exam_screen.dart::exam': Exemption(
     count: 1,
     why:
-        '`_submitExam:539`. The screen watches this provider in `build` '
-        '(`:92`) and the same flow already awaited `examProvider(...).future` '
-        'at `:453`, so it is resolved by the time `:539` reads it. Worth '
-        'stating rather than assuming: Phase 100 fixed the *session* read in '
-        'this very method, and this is its sibling.',
+        '`_submitExam:539`. `build:92` watches this provider and the same flow '
+        'already awaited `examProvider(...).future` at `:453`, so it is '
+        'resolved by the time `:539` reads it. Worth stating rather than '
+        'assuming: Phase 100 fixed the *session* read in this very method.',
     retire:
         'Delete if `:92`\'s `ref.watch` or the `:453` await goes — either '
         'alone is what makes this read safe.',
   ),
-
-  // ---- real defects, outside this lane's file set ----
-  // Ranked by consequence in the lane report; the severe ones first.
-  'lib/ui/submissions/submissions_screen.dart::session': Exemption(
-    count: 1,
-    why:
-        '`:173`, and a real defect. The user has typed a title and an answer '
-        'and confirmed the dialog; a null session drops the draft with no '
-        'snackbar and no row — the Phase 100 shape exactly.',
-    retire: 'Delete with the fix: `final user = await resolveSession(ref);`.',
-  ),
-  'lib/ui/achievements/edit_achievement_screen.dart::session': Exemption(
-    count: 2,
-    why:
-        'Two sites, and they differ. `_save:150` is a real defect — a '
-        'completed achievement form, CV bytes included, discarded silently. '
-        '`_initialize:72` is milder than it looks: the early return leaves '
-        '`_initialized` false (it is set at `:91`, past the guard), so the '
-        'prefill retries on the next build rather than leaving the blank form '
-        'that Phase 155 found in `add_examination_screen`.',
-    retire:
-        'Delete when `_save` resolves the session. Drop the count to 1 if '
-        'only one is fixed — do not delete the entry.',
-  ),
-  'lib/ui/resources/resource_detail_screen.dart::session': Exemption(
-    count: 1,
-    why:
-        '`_toggleLibraryMembership:446`. A null session makes the add/remove '
-        'button a no-op: no shelf write, no upload, no message.',
-    retire: 'Delete with the fix.',
-  ),
   'lib/ui/courses/course_detail_screen.dart::session': Exemption(
     count: 1,
     why:
-        '`:79`. Milder than its neighbours because the membership write has '
-        'already happened by then and is flagged for upload; what is skipped '
-        'is the immediate shelf push, which a later sync redoes.',
-    retire: 'Delete with the fix.',
+        '`_toggleMembership:79`, a method of `_CourseBody`, whose `build:92` '
+        'watches the session; `CourseDetailScreen.build:31` watches it too. '
+        'Pre-emit only, and even then the membership write has already '
+        'happened and is flagged for upload — what is skipped is the '
+        'immediate shelf push, which a later sync redoes.',
+    retire: 'Delete when the read is resolved, or if both watches go.',
   ),
   'lib/ui/dashboard/home_screen.dart::session': Exemption(
     count: 1,
     why:
-        '`_showDue:108` — the snoozed-survey reminder dialog is silently not '
-        'shown. Nothing is lost; the reminder is simply missed for that '
-        'launch.',
-    retire: 'Delete with the fix.',
+        '`_showDue:108`. `_HomeScreenState.initState:71` holds '
+        '`ref.listenManual(sessionProvider, fireImmediately: true, …)` and '
+        '`build:330` watches it, so the provider is driven from the first '
+        'frame. Pre-emit the snoozed-survey reminder is simply not shown.',
+    retire: 'Delete when the read is resolved, or if the `:71` listen goes.',
   ),
   'lib/ui/dashboard/home_screen.dart::myLibraryStream': Exemption(
     count: 1,
     why:
-        '`_openLibraryCard:310`. `?? const []` on an unresolved stream reads '
-        'as "empty shelf", so the card opens the full catalog instead of My '
-        'Library — the exact my/call split `08e18ffdc` added it for. Wrong '
-        'destination, nothing lost.',
-    retire: 'Delete with the fix.',
+        '`_openLibraryCard:310`. The card whose `onTap` calls it has '
+        '`_LibraryTiles(userId: session.id)` as its own child (`:500-501`), '
+        'and `_LibraryTiles.build:1091` watches '
+        '`myLibraryStreamProvider(userId)` on the **same family key** — so by '
+        'the time the card is tappable the provider is driven. Pre-emit, '
+        '`?? const []` reads as "empty shelf" and the card opens the catalog '
+        'rather than My Library: wrong destination, nothing lost.',
+    retire: 'Delete when the read is resolved, or if `_LibraryTiles` moves.',
   ),
   'lib/ui/dashboard/home_screen.dart::myCoursesStream': Exemption(
     count: 1,
-    why: '`_openCoursesCard:320` — the same shape as the library card above.',
-    retire: 'Delete with the fix.',
+    why:
+        '`_openCoursesCard:320` — identical to the library card above, via '
+        '`_CourseTiles` at `:520` and its watch at `:1138`.',
+    retire: 'Delete when the read is resolved, or if `_CourseTiles` moves.',
   ),
   'lib/ui/teams/team_courses_screen.dart::teamCourses': Exemption(
     count: 1,
     why:
-        '`_chooseCourse:83`. Unresolved reads as "nothing linked yet", so the '
-        'picker offers courses the team already has.',
-    retire: 'Delete with the fix.',
-  ),
-  'lib/ui/teams/team_courses_screen.dart::coursesStream': Exemption(
-    count: 1,
-    why:
-        '`_chooseCourse:85`. The worse half of the same dialog: unresolved '
-        'reads as "no courses exist" and the picker opens empty.',
-    retire: 'Delete with the fix.',
+        '`_chooseCourse:83`. `build:17` watches the same family key, so this '
+        'is pre-emit only; in that window "nothing linked yet" makes the '
+        'picker offer courses the team already has.',
+    retire: 'Delete when the read is resolved.',
   ),
   'lib/ui/teams/team_resources_screen.dart::teamResources': Exemption(
     count: 1,
     why: '`_chooseResource:69` — the resource analogue of `teamCourses` above.',
+    retire: 'Delete when the read is resolved.',
+  ),
+  'lib/ui/achievements/edit_achievement_screen.dart::session': Exemption(
+    count: 2,
+    why:
+        'Two sites, both watched, for different reasons. `_initialize:72` '
+        'early-returns without setting `_initialized` (set at `:91`, past the '
+        'guard), so the prefill simply retries on the next build rather than '
+        'leaving the blank form Phase 155 found in `add_examination_screen`. '
+        '`_save:150` is reached from under `build:250`\'s watch of '
+        '`achievementEntryProvider`, which itself does '
+        '`ref.watch(sessionProvider)` (`achievements_provider.dart:14`), so '
+        'the session is listened transitively from the first frame.',
+    retire:
+        'Delete when both reads are resolved. Drop the count to 1 if only one '
+        'is — do not delete the entry.',
+  ),
+  'lib/ui/achievements/edit_achievement_screen.dart::achievementEntry':
+      Exemption(
+        count: 1,
+        why:
+            '`_initialize:73`. `build:250` watches this provider and only '
+            'calls `_initialize` when `entry.value != null` (`:251`), so the '
+            'read is resolved. Listed rather than omitted because the guard '
+            'cannot see that gating, and a future edit moving the call out of '
+            '`build` would make it real.',
+        retire:
+            'Delete if `_initialize` stops being called from under the `:251` '
+            'gate, or when it is rewritten to take the row as a parameter.',
+      ),
+
+  // ---- unwatched: nothing drives these; the live class ----
+  'lib/ui/submissions/submissions_screen.dart::session': Exemption(
+    count: 1,
+    why:
+        '`:173`, and the one unambiguous defect in this map. It is the only '
+        'occurrence of `sessionProvider` in the file and nothing in its tree '
+        'watches it, so inside the first-resolution window a draft the user '
+        'has titled, answered and confirmed is dropped with no snackbar and '
+        'no row — the Phase 100 shape.',
+    retire: 'Delete with the fix: `final user = await resolveSession(ref);`.',
+  ),
+  'lib/ui/teams/team_courses_screen.dart::coursesStream': Exemption(
+    count: 1,
+    why:
+        '`_chooseCourse:85`, and unlike its `teamCourses` neighbour two lines '
+        'up, nothing watches this one. Pre-resolution it reads as "no courses '
+        'exist" and the picker opens empty.',
     retire: 'Delete with the fix.',
   ),
   'lib/ui/teams/team_resources_screen.dart::resourcesStream': Exemption(
     count: 1,
-    why:
-        '`_chooseResource:71` — the resource analogue of `coursesStream` '
-        'above; the picker opens empty.',
+    why: '`_chooseResource:71` — the resource analogue of `coursesStream`.',
     retire: 'Delete with the fix.',
   ),
-  'lib/ui/achievements/edit_achievement_screen.dart::achievementEntry': Exemption(
-    count: 1,
-    why:
-        '`_initialize:73`. Unlike its `session` neighbour this one is watched '
-        'by the caller — `build:250` does `ref.watch(achievementEntryProvider)` '
-        'and only calls `_initialize` when `entry.value != null` (`:251`) — so '
-        'the read is resolved. Listed rather than omitted because the guard '
-        'cannot see that gating, and a future edit that moves the call out of '
-        '`build` would make it real.',
-    retire:
-        'Delete if `_initialize` stops being called from under the `:251` '
-        'gate, or when the call is rewritten to take the row as a parameter.',
-  ),
-
-  // ---- Lane 3's files, live in this same round ----
   'lib/providers/feedback_provider.dart::session': Exemption(
     count: 2,
     why:
         'Lane 3\'s file, carved out of Lane 2\'s set. `:133` tags an outbox '
-        'row (inert — see the lane report on the unread `outbox.userId` '
-        'column); `:224` is the real one, on `FeedbackNotifier`\'s submit '
-        'path.',
+        'row (inert — the `outbox.userId` column has no reader in either app; '
+        'see the lane report); `:224` is on `FeedbackNotifier`\'s submit path '
+        'and nothing watches the session for it.',
     retire: 'Delete when Lane 3 lands the fix, which was in flight.',
-  ),
-  'lib/ui/feedback/feedback_create_screen.dart::session': Exemption(
-    count: 1,
-    why:
-        'Lane 3\'s file. `_submit:202` — a filled-in feedback form discarded '
-        'with no snackbar, and this screen is the only route an un-activated '
-        'user has to an administrator (Phase 157 fixed its *route*; this is '
-        'the read at the end of it).',
-    retire: 'Delete when Lane 3 lands the fix, which was in flight.',
-  ),
-  'lib/ui/notifications/notifications_screen.dart::notifications': Exemption(
-    count: 1,
-    why:
-        '`:278`. `?? const []` on an unresolved list makes the group-header '
-        'expand/collapse toggle operate on nothing.',
-    retire: 'Delete with the fix.',
   ),
 };
 
@@ -648,10 +726,14 @@ String redactCommentsAndStrings(String source) {
 
     if (open == null) {
       if (char == '/' && i + 1 < source.length && source[i + 1] == '/') {
+        // Stop *on* the newline and let the main loop write it. Writing it
+        // here and continuing emitted it twice — `i` had not advanced past it
+        // — so every line comment inflated every line number below it by one.
+        // Found by the second audit pass; `take_exam_screen.dart`'s read at
+        // 539 was being reported at 662.
         while (i < source.length && source[i] != '\n') {
           i++;
         }
-        out.write('\n');
         continue;
       }
       if (char == '/' && i + 1 < source.length && source[i + 1] == '*') {

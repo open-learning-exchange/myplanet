@@ -213,10 +213,12 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
   /// The pass itself, so [syncAll] can guarantee the interactive-sync flag is
   /// cleared however it ends.
   Future<void> _runPass() async {
-    // First, as `startFullSync` has it -- and before the challenge write
-    // below, which reads the session with `.value`: resolving
-    // `sessionProvider` here means that read finds a value rather than the
-    // null it would otherwise see on the first pass.
+    // First, as `startFullSync` has it. This used to carry a second reason
+    // -- that it had to precede the challenge write below, which read the
+    // session with `.value` and would otherwise see null on the first pass.
+    // That dependency is gone: `recordSyncChallengeAction` resolves its own
+    // session now (`activities_provider.dart`), as does every other caller in
+    // this file. The ordering stands on the Kotlin alone.
     await pushCurrentUserShelf();
 
     // `DashboardElementActivity.logSyncInSharedPrefs` records the challenge

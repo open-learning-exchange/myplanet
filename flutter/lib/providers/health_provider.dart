@@ -253,8 +253,9 @@ class HealthKeyIvSyncNotifier extends Notifier<SyncUiState> {
   /// — `launch` returns its `Job` synchronously, so the guard is closed before
   /// `syncKeyId` returns and a second call can never overlap.
   ///
-  /// Resolving the session is an `await`, which splits the test at `:250`
-  /// from the arming at `:257` across an event-loop turn. `home_screen.dart`
+  /// Resolving the session is an `await`, which splits the guard's test
+  /// (`:269`) from its arming (`:274`) across an event-loop turn.
+  /// `home_screen.dart`
   /// drives this from a `ref.listenManual(sessionProvider, fireImmediately:
   /// true, …)` that fires on **every** emission where `user.key` is empty, so
   /// two emissions in one turn — a `userDao` write during login, then an
