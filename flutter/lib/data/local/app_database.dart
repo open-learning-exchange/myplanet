@@ -1242,15 +1242,32 @@ class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
     );
   }
 
-  /// Port of `UserDao.search` — name/firstName/lastName containment, matching
-  /// the Kotlin `LIKE '%' || :query || '%'` predicate.
+  /// Port of `UserDao.search` — name/firstName/lastName containment.
+  ///
+  /// Harvested from master `bc8fd49`, which added `searchPattern()`
+  /// (`UserRepositoryImpl.kt:169`) and bound it with `ESCAPE '\\'`
+  /// (`UserDao.kt:17`). Before that escaping, the query text reached `LIKE`
+  /// raw, where `%` and `_` are **wildcards**: a health provider searching a
+  /// patient list for `%` matched every user, and `_` matched any single
+  /// character. That is the whole reason the upstream change exists, so it is
+  /// a Follow rather than a refactor.
+  ///
+  /// Kotlin escapes in the repository and takes a ready pattern in the DAO.
+  /// Here the DAO does its own `%…%` wrapping, so escaping must happen on this
+  /// side of that wrap — doing it in `health_repository.dart` would escape the
+  /// wrapping characters too and match nothing. Backslash first, or it would
+  /// re-escape the escapes this method just inserted.
   Future<List<UserRow>> search(String query) {
-    final pattern = '%$query%';
+    final escaped = query
+        .replaceAll(r'\', r'\\')
+        .replaceAll('%', r'\%')
+        .replaceAll('_', r'\_');
+    final pattern = '%$escaped%';
     return (select(users)..where(
           (u) =>
-              u.name.like(pattern) |
-              u.firstName.like(pattern) |
-              u.lastName.like(pattern),
+              u.name.like(pattern, escapeChar: r'\') |
+              u.firstName.like(pattern, escapeChar: r'\') |
+              u.lastName.like(pattern, escapeChar: r'\'),
         ))
         .get();
   }
@@ -2700,12 +2717,26 @@ class PersonalDao extends DatabaseAccessor<AppDatabase>
     with _$PersonalDaoMixin {
   PersonalDao(super.db);
 
+  /// Harvested from master `7a9bb12`, which gave `PersonalDao.kt:24` an
+  /// `ORDER BY date DESC, title COLLATE NOCASE ASC` where it previously had no
+  /// `ORDER BY` at all. Without the second term, notes sharing a date come back
+  /// in whatever order SQLite picks, so one device's list is not another's —
+  /// and a note's date is the *day* it was written, so ties are the common
+  /// case rather than the rare one.
+  ///
+  /// The sort belongs here rather than in `personals_repository.dart`, which is
+  /// where Kotlin has it: the repository is not the layer that knows the
+  /// collation.
   Stream<List<PersonalRow>> watchForUser(String userId) =>
       (select(personalEntries)
             ..where((row) => row.userId.equals(userId))
             ..orderBy([
               (row) =>
                   OrderingTerm(expression: row.date, mode: OrderingMode.desc),
+              (row) => OrderingTerm(
+                expression: row.title.collate(Collate.noCase),
+                mode: OrderingMode.asc,
+              ),
             ]))
           .watch();
 

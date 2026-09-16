@@ -14,6 +14,7 @@ void main() {
 
   Future<void> seedUser({
     String id = 'user-1',
+    String name = 'ada',
     String? couchId,
     bool isUpdated = false,
     bool isArchived = false,
@@ -25,7 +26,7 @@ void main() {
     UsersCompanion.insert(
       id: id,
       couchId: couchId == null ? const Value.absent() : Value(couchId),
-      name: const Value('ada'),
+      name: Value(name),
       rolesList: const Value(['learner']),
       userAdmin: const Value(false),
       joinDate: const Value(0),
@@ -216,6 +217,39 @@ void main() {
   });
 
   group('UserDao.search', () {
+    /// Harvested from master `bc8fd49`, which added `searchPattern()` escaping
+    /// and `ESCAPE '\\'` to the Kotlin. Before it, the query text reached
+    /// `LIKE` raw, where `%` and `_` are wildcards rather than literals.
+    ///
+    /// The sole caller is `HealthRepository.searchPatients`, so the user-facing
+    /// shape is a health provider filtering a patient list: typing `%` returned
+    /// **every** patient, and `_` matched any single character. Both now match
+    /// only a patient whose name actually contains that character.
+    test('treats % as a literal, not a wildcard', () async {
+      await seedUser(id: 'u1');
+      await seedUser(id: 'u2', name: '100% cotton');
+
+      expect((await db.userDao.search('%')).map((u) => u.id), ['u2']);
+    });
+
+    /// The decoy matters: `axl` is what an unescaped `_` matches and a literal
+    /// `_` does not, so the first cut of this test — seeding the default `ada`,
+    /// which matches `%a_l%` under **neither** reading — passed with the fix
+    /// reverted. A test that cannot fail reads as coverage.
+    test('treats _ as a literal, not a single-character wildcard', () async {
+      await seedUser(id: 'u1', name: 'axl');
+      await seedUser(id: 'u2', name: 'ada_lovelace');
+
+      expect((await db.userDao.search('a_l')).map((u) => u.id), ['u2']);
+    });
+
+    test('treats a backslash as a literal', () async {
+      await seedUser(id: 'u1');
+      await seedUser(id: 'u2', name: r'domain\user');
+
+      expect((await db.userDao.search(r'n\u')).map((u) => u.id), ['u2']);
+    });
+
     test('matches on the username', () async {
       await seedUser(id: 'u1');
 

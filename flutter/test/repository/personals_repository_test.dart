@@ -18,6 +18,66 @@ void main() {
   });
   tearDown(() => database.close());
 
+  /// Harvested from master `7a9bb12`, which gave `PersonalDao.kt:24` an
+  /// `ORDER BY date DESC, title COLLATE NOCASE ASC` where it had none at all.
+  ///
+  /// The tie-break is the point, and it is the common case rather than the
+  /// rare one: a note's date is the day it was written, so every note written
+  /// on one day ties. Without the second term SQLite picks, and one device's
+  /// list is not another's.
+  ///
+  /// Two decoys, both found by mutating the fix rather than by writing the
+  /// test:
+  ///
+  /// * `zebra` is seeded **first** so insertion order and title order
+  ///   disagree — otherwise the assertion holds whether or not the sort
+  ///   exists at all.
+  /// * The titles straddle the ASCII case boundary (`Banana` is `B`=66,
+  ///   `apple` is `a`=97). A first cut used `Apple`/`mango`/`zebra`, which
+  ///   sort **identically** with and without `COLLATE NOCASE`, so making the
+  ///   tie-break case-sensitive left the suite green and the collation half
+  ///   of the claim was pinned by nothing.
+  test('orders same-date notes by title, case-insensitively', () async {
+    for (final title in ['zebra', 'apple', 'Banana']) {
+      await database.personalDao.upsert(
+        PersonalEntriesCompanion.insert(
+          id: 'p-$title',
+          userId: 'user-1',
+          title: title,
+          titleNormalized: title.toLowerCase(),
+          date: 5000,
+        ),
+      );
+    }
+
+    final rows = await repository.watch('user-1').first;
+    expect(rows.map((row) => row.title), ['apple', 'Banana', 'zebra']);
+  });
+
+  test('a newer date still outranks the title tie-break', () async {
+    await database.personalDao.upsert(
+      PersonalEntriesCompanion.insert(
+        id: 'p-old',
+        userId: 'user-1',
+        title: 'Apple',
+        titleNormalized: 'apple',
+        date: 1000,
+      ),
+    );
+    await database.personalDao.upsert(
+      PersonalEntriesCompanion.insert(
+        id: 'p-new',
+        userId: 'user-1',
+        title: 'zebra',
+        titleNormalized: 'zebra',
+        date: 9000,
+      ),
+    );
+
+    final rows = await repository.watch('user-1').first;
+    expect(rows.map((row) => row.title), ['zebra', 'Apple']);
+  });
+
   test('creates, edits, orders, and deletes offline personal items', () async {
     await repository.create(
       userId: 'user-1',
