@@ -36,7 +36,7 @@ class VoicesViewModel @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val userRepository: UserRepository,
     private val resourcesRepository: ResourcesRepository
-) : ViewModel(), LabelManipulator by DefaultLabelManipulator(voicesRepository, dispatcherProvider) {
+) : ViewModel(), LabelManipulator by DefaultLabelManipulator(voicesRepository) {
 
     private val _searchQuery = MutableStateFlow("")
 
@@ -95,6 +95,20 @@ class VoicesViewModel @Inject constructor(
         }
     }
 
+    private fun buildDynamicLabelMap(list: List<News?>): Map<String, String> {
+        val dynamicLabelDisplayToValue = mutableMapOf<String, String>()
+        list.forEach { news ->
+            news?.labels?.forEach { label ->
+                if (!labelDisplayToValue.containsValue(label)) {
+                    val labelName = Constants.LABEL_VALUE_TO_NAME[label]
+                        ?: VoicesLabelManager.formatLabelValue(label)
+                    dynamicLabelDisplayToValue.putIfAbsent(labelName, label)
+                }
+            }
+        }
+        return dynamicLabelDisplayToValue
+    }
+
     private fun filterNews(
         list: List<News?>,
         query: String,
@@ -103,19 +117,8 @@ class VoicesViewModel @Inject constructor(
         val labelFiltered = if (selectedLabel == "All") {
             list
         } else {
-            val dynamicLabelDisplayToValue = mutableMapOf<String, String>()
-            list.forEach { news ->
-                news?.labels?.forEach { label ->
-                    if (!labelDisplayToValue.containsValue(label)) {
-                        val labelName = Constants.LABEL_VALUE_TO_NAME[label]
-                            ?: VoicesLabelManager.formatLabelValue(label)
-                        dynamicLabelDisplayToValue.putIfAbsent(labelName, label)
-                    }
-                }
-            }
-
-            val resolvedLabelValue = labelDisplayToValue[selectedLabel]
-                ?: dynamicLabelDisplayToValue[selectedLabel]
+            val staticLabelValue = labelDisplayToValue[selectedLabel]
+            val resolvedLabelValue = staticLabelValue ?: buildDynamicLabelMap(list)[selectedLabel]
 
             list.filter { news ->
                 when {
@@ -126,7 +129,7 @@ class VoicesViewModel @Inject constructor(
                         news?.labels?.contains(resolvedLabelValue) == true
                     }
                     else -> {
-                        JsonUtils.extractSharedTeamName(news) == selectedLabel
+                        (news?.parsedSharedTeamName ?: JsonUtils.extractSharedTeamName(news)) == selectedLabel
                     }
                 }
             }
@@ -200,7 +203,7 @@ class VoicesViewModel @Inject constructor(
         allLabels.add("Shared Chat")
 
         newsList.forEach { news ->
-            val sharedTeamName = JsonUtils.extractSharedTeamName(news)
+            val sharedTeamName = news?.parsedSharedTeamName ?: JsonUtils.extractSharedTeamName(news)
             if (sharedTeamName.isNotEmpty()) {
                 allLabels.add(sharedTeamName)
             }

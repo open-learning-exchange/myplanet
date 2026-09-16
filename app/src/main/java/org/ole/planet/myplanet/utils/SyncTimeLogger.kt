@@ -42,6 +42,9 @@ class SyncTimeLogger @Inject constructor(
     private val apiCallCounter = AtomicInteger(0)
     private val dbOpCounter = AtomicInteger(0)
 
+    var isVerbose: Boolean = false
+        private set
+
     data class ApiCallLog(
         val endpoint: String,
         val duration: Long,
@@ -61,6 +64,8 @@ class SyncTimeLogger @Inject constructor(
     fun startLogging() {
         startTime = timeProvider.now()
         isLogging = true
+        // Deliberately snapshot loggability once per sync session rather than checking per event
+        isVerbose = Log.isLoggable(TAG, Log.DEBUG)
         processTimes.clear()
         processItemCounts.clear()
         apiCallTimes.clear()
@@ -68,10 +73,10 @@ class SyncTimeLogger @Inject constructor(
         detailedLogs.clear()
         apiCallCounter.set(0)
         dbOpCounter.set(0)
-        if (Log.isLoggable("SyncPerf", Log.DEBUG)) {
-            Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-            Log.d("SyncPerf", "SYNC STARTED at ${formatTimestamp(startTime)}")
-            Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
+        if (isVerbose) {
+            Log.d(TAG, "═══════════════════════════════════════════════════════════════")
+            Log.d(TAG, "SYNC STARTED at ${formatTimestamp(startTime)}")
+            Log.d(TAG, "═══════════════════════════════════════════════════════════════")
         }
     }
 
@@ -83,11 +88,11 @@ class SyncTimeLogger @Inject constructor(
         val summary = generateSummary()
         saveSummaryToRoom(summary, uploadManager)
 
-        if (Log.isLoggable("SyncPerf", Log.DEBUG)) {
-            Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-            Log.d("SyncPerf", "SYNC COMPLETED at ${formatTimestamp(endTime)}")
-            Log.d("SyncPerf", "TOTAL DURATION: ${formatTime(endTime - startTime)}")
-            Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
+        if (isVerbose) {
+            Log.d(TAG, "═══════════════════════════════════════════════════════════════")
+            Log.d(TAG, "SYNC COMPLETED at ${formatTimestamp(endTime)}")
+            Log.d(TAG, "TOTAL DURATION: ${formatTime(endTime - startTime)}")
+            Log.d(TAG, "═══════════════════════════════════════════════════════════════")
         }
     }
 
@@ -117,7 +122,7 @@ class SyncTimeLogger @Inject constructor(
             try {
                 uploadManager?.uploadCrashLog()
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "crash log upload failed", e)
             }
         }
     }
@@ -141,12 +146,12 @@ class SyncTimeLogger @Inject constructor(
         processTimes[processName] = duration
         processItemCounts[processName] = itemCount
 
-        if (Log.isLoggable("SyncPerf", Log.DEBUG)) {
+        if (isVerbose) {
             val elapsed = endTime - this.startTime
             if (itemCount > 0) {
-                Log.d("SyncPerf", "[${formatElapsed(elapsed)}] ✓ $processName completed: ${formatTime(duration)}, $itemCount items")
+                Log.d(TAG, "[${formatElapsed(elapsed)}] ✓ $processName completed: ${formatTime(duration)}, $itemCount items")
             } else {
-                Log.d("SyncPerf", "[${formatElapsed(elapsed)}] ✓ $processName completed: ${formatTime(duration)}")
+                Log.d(TAG, "[${formatElapsed(elapsed)}] ✓ $processName completed: ${formatTime(duration)}")
             }
         }
     }
@@ -161,11 +166,11 @@ class SyncTimeLogger @Inject constructor(
         val log = ApiCallLog(endpoint, duration, timestamp, success, itemsReturned)
         apiCallTimes.getOrPut(processName) { mutableListOf() }.add(log)
 
-        if (Log.isLoggable("SyncPerf", Log.DEBUG)) {
+        if (isVerbose) {
             val elapsed = timestamp - startTime
             val statusIcon = if (success) "✓" else "✗"
             val itemInfo = if (itemsReturned > 0) ", $itemsReturned items" else ""
-            Log.d("SyncPerf", "[${formatElapsed(elapsed)}] $statusIcon API #$callNum: ${shortenEndpoint(endpoint)} - ${formatTime(duration)}$itemInfo")
+            Log.d(TAG, "[${formatElapsed(elapsed)}] $statusIcon API #$callNum: ${shortenEndpoint(endpoint)} - ${formatTime(duration)}$itemInfo")
         }
     }
 
@@ -178,9 +183,9 @@ class SyncTimeLogger @Inject constructor(
         val log = DbOperationLog(operation, model, duration, itemCount, timestamp)
         dbOperationTimes.getOrPut(model) { mutableListOf() }.add(log)
 
-        if (Log.isLoggable("SyncPerf", Log.DEBUG)) {
+        if (isVerbose) {
             val elapsed = timestamp - startTime
-            Log.d("SyncPerf", "[${formatElapsed(elapsed)}] 💾 DB #$opNum: $operation $model - ${formatTime(duration)}, $itemCount items")
+            Log.d(TAG, "[${formatElapsed(elapsed)}] 💾 DB #$opNum: $operation $model - ${formatTime(duration)}, $itemCount items")
         }
     }
 
@@ -189,10 +194,10 @@ class SyncTimeLogger @Inject constructor(
 
         detailedLogs.getOrPut(context) { mutableListOf() }.add(message)
 
-        if (Log.isLoggable("SyncPerf", Log.DEBUG)) {
+        if (isVerbose) {
             val timestamp = timeProvider.now()
             val elapsed = timestamp - startTime
-            Log.d("SyncPerf", "[${formatElapsed(elapsed)}] ℹ $context: $message")
+            Log.d(TAG, "[${formatElapsed(elapsed)}] ℹ $context: $message")
         }
     }
 
@@ -226,8 +231,8 @@ class SyncTimeLogger @Inject constructor(
         summaryBuilder.append("=== SYNC TIME SUMMARY ===\n")
         summaryBuilder.append("Total sync time: $totalMinutes min $totalSeconds sec (${formatTime(totalDuration)})\n\n")
 
-        val allApiCallLogs = apiCallTimes.values.flatten()
-        val allDbOpLogs = dbOperationTimes.values.flatten()
+        val totalApiTime = apiCallTimes.values.sumOf { logs -> logs.sumOf { it.duration } }
+        val totalDbTime = dbOperationTimes.values.sumOf { logs -> logs.sumOf { it.duration } }
 
         // Process times
         summaryBuilder.append("PROCESS BREAKDOWN:\n")
@@ -253,8 +258,7 @@ class SyncTimeLogger @Inject constructor(
         if (apiCallTimes.isNotEmpty()) {
             summaryBuilder.append("\nAPI CALL STATISTICS:\n")
             val totalApiCalls = apiCallTimes.values.sumOf { it.size }
-            val totalApiTime = allApiCallLogs.sumOf { it.duration }
-            val successfulCalls = allApiCallLogs.count { it.success }
+            val successfulCalls = apiCallTimes.values.sumOf { logs -> logs.count { it.success } }
 
             summaryBuilder.append(String.format(Locale.US, "  Total API calls: %d (Success: %d, Failed: %d)\n",
                 totalApiCalls, successfulCalls, totalApiCalls - successfulCalls))
@@ -274,8 +278,7 @@ class SyncTimeLogger @Inject constructor(
         if (dbOperationTimes.isNotEmpty()) {
             summaryBuilder.append("\nDB OPERATION STATISTICS:\n")
             val totalDbOps = dbOperationTimes.values.sumOf { it.size }
-            val totalDbTime = allDbOpLogs.sumOf { it.duration }
-            val totalDbItems = allDbOpLogs.sumOf { it.itemCount }
+            val totalDbItems = dbOperationTimes.values.sumOf { logs -> logs.sumOf { it.itemCount } }
 
             summaryBuilder.append(String.format(Locale.US, "  Total Db operations: %d\n", totalDbOps))
             summaryBuilder.append(String.format(Locale.US, "  Total Db time: %s (%.1f%% of total sync)\n",
@@ -294,10 +297,10 @@ class SyncTimeLogger @Inject constructor(
         // Performance insights
         summaryBuilder.append("\nPERFORMANCE INSIGHTS:\n")
         val apiPercentage = if (apiCallTimes.isNotEmpty()) {
-            (allApiCallLogs.sumOf { it.duration }.toDouble() / totalDuration * 100)
+            (totalApiTime.toDouble() / totalDuration * 100)
         } else 0.0
         val dbPercentage = if (dbOperationTimes.isNotEmpty()) {
-            (allDbOpLogs.sumOf { it.duration }.toDouble() / totalDuration * 100)
+            (totalDbTime.toDouble() / totalDuration * 100)
         } else 0.0
 
         summaryBuilder.append(String.format(Locale.US, "  Network time: %.1f%%\n", apiPercentage))
@@ -323,6 +326,8 @@ class SyncTimeLogger @Inject constructor(
 
 
     companion object {
+        private const val TAG = "SyncPerf"
+
         internal fun extractProcessName(endpoint: String): String {
             val segments = endpoint.split("/")
 

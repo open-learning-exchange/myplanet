@@ -329,10 +329,6 @@ object FileUtils {
         return Formatter.formatFileSize(context, size)
     }
 
-    fun totalMemoryCapacity(context: Context): Long = getStorageStats(context).first
-
-    fun totalAvailableMemory(context: Context): Long = getStorageStats(context).second
-
     fun totalAvailableMemoryRatio(context: Context): Long {
         val (total, available) = getStorageStats(context)
         return (available.toDouble() / total.toDouble() * 100).roundToLong()
@@ -379,5 +375,32 @@ object FileUtils {
             Log.e(TAG, "Failed to open PDF", e)
             Toast.makeText(context, "Could not open PDF. File saved at: ${file.absolutePath}", Toast.LENGTH_LONG).show()
         }
+    }
+}
+
+class FileExistenceCache(
+    private val ttlMs: Long = DEFAULT_TTL_MS
+) {
+    private val cache = HashMap<String, Pair<Boolean, Long>>()
+
+    fun clear() {
+        cache.clear()
+    }
+
+    fun exists(file: File?, now: Long): Boolean {
+        if (file == null) return false
+        val path = file.absolutePath
+        val cached = cache[path]
+        return if (cached != null && now - cached.second < ttlMs) {
+            cached.first
+        } else {
+            val freshExists = file.exists()
+            cache[path] = Pair(freshExists, now)
+            freshExists
+        }
+    }
+
+    companion object {
+        const val DEFAULT_TTL_MS = 5000L
     }
 }

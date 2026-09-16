@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import android.util.Log
 import com.google.gson.JsonParser
 import dagger.Lazy
 import io.mockk.coEvery
@@ -8,6 +9,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.unmockkObject
 import io.mockk.verify
@@ -40,12 +42,17 @@ import org.ole.planet.myplanet.data.room.dao.ResourceTitleProjection
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.SearchActivity
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.VersionUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ResourcesRepositoryImplTest {
@@ -65,6 +72,8 @@ class ResourcesRepositoryImplTest {
     private val userSessionManager: UserSessionManager = mockk(relaxed = true)
     private val configurationsRepository: ConfigurationsRepository = mockk(relaxed = true)
     private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
+    private val deviceNameProvider: DeviceNameProvider = mockk(relaxed = true)
+    private val timeProvider: TimeProvider = mockk(relaxed = true)
 
     @get:Rule
     val temporaryFolder = TemporaryFolder()
@@ -74,6 +83,15 @@ class ResourcesRepositoryImplTest {
     @Before
     fun setup() {
         Logger.getLogger("io.mockk").level = Level.OFF
+        mockkStatic(Log::class)
+        every { Log.e(any(), any(), any()) } returns 0
+        every { Log.e(any(), any()) } returns 0
+        every { Log.w(any(), any<String>()) } returns 0
+        every { Log.w(any(), any<Throwable>()) } returns 0
+        every { Log.d(any(), any()) } returns 0
+        every { Log.i(any(), any()) } returns 0
+        MainApplication.testContext = context
+        NetworkUtils.resetForTesting()
 
         repository = ResourcesRepositoryImpl(
             context,
@@ -89,7 +107,9 @@ class ResourcesRepositoryImplTest {
             teamsRepositoryLazy,
             userSessionManager,
             configurationsRepository,
-            dispatcherProvider
+            dispatcherProvider,
+            deviceNameProvider,
+            timeProvider
         )
         every { dispatcherProvider.io } returns testDispatcher
     }
@@ -123,6 +143,7 @@ class ResourcesRepositoryImplTest {
             id = "res-id"
             userId = listOf("user-123")
         }
+        coEvery { myLibraryDao.getById("res-id") } returns null
         coEvery { myLibraryDao.getByResourceId("res-id") } returns mockLibrary
 
         val result = repository.setUserLibrary("res-id", true)
@@ -140,6 +161,7 @@ class ResourcesRepositoryImplTest {
             id = "res-id"
             userId = emptyList()
         }
+        coEvery { myLibraryDao.getById("res-id") } returns null
         coEvery { myLibraryDao.getByResourceId("res-id") } returns mockLibrary
 
         val result = repository.setUserLibrary("res-id", false)
@@ -310,6 +332,32 @@ class ResourcesRepositoryImplTest {
 
         assertEquals(1, result.size)
         assertEquals("Test Library", result[0].title)
+    }
+
+    @Test
+    fun `resolveLibraryItem resolves by id first and falls back to resourceId`() = runTest {
+        val libById = MyLibrary().apply { id = "collisionKey"; resourceId = "other1"; title = "By ID" }
+        val libByResId = MyLibrary().apply { id = "other2"; resourceId = "collisionKey"; title = "By Res ID" }
+
+        coEvery { myLibraryDao.getById("collisionKey") } returns libById
+        coEvery { myLibraryDao.getByResourceId("collisionKey") } returns libByResId
+
+        val result = repository.resolveLibraryItem("collisionKey")
+
+        assertEquals("By ID", result?.title)
+    }
+
+    @Test
+    fun `resolveLibraryItemByResourceId resolves by resourceId first and falls back to id`() = runTest {
+        val libById = MyLibrary().apply { id = "collisionKey"; resourceId = "other1"; title = "By ID" }
+        val libByResId = MyLibrary().apply { id = "other2"; resourceId = "collisionKey"; title = "By Res ID" }
+
+        coEvery { myLibraryDao.getById("collisionKey") } returns libById
+        coEvery { myLibraryDao.getByResourceId("collisionKey") } returns libByResId
+
+        val result = repository.resolveLibraryItemByResourceId("collisionKey")
+
+        assertEquals("By Res ID", result?.title)
     }
 
     @Test
@@ -730,6 +778,66 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
+    fun `batchInsertResources skips blank ids and design docs and returns accepted ids in input order`() = runTest {
+        val docBlank = com.google.gson.JsonObject().apply { addProperty("_id", "  ") }
+        val docDesign = com.google.gson.JsonObject().apply { addProperty("_id", "_design/lib") }
+        val doc1 = com.google.gson.JsonObject().apply {
+            addProperty("_id", "id_1")
+            addProperty("_rev", "1-rev")
+            addProperty("title", "Resource 1")
+        }
+        val doc2 = com.google.gson.JsonObject().apply {
+            addProperty("_id", "id_2")
+            addProperty("_rev", "1-rev")
+            addProperty("title", "Resource 2")
+        }
+
+        val documents = listOf(docBlank, doc1, docDesign, doc2)
+
+        coEvery { myLibraryDao.getByIds(listOf("id_1", "id_2")) } returns emptyList()
+        coEvery { myLibraryDao.upsertAll(any()) } returns Unit
+
+        val savedIds = repository.batchInsertResources(documents)
+
+        assertEquals(listOf("id_1", "id_2"), savedIds)
+        coVerify(exactly = 1) { myLibraryDao.getByIds(listOf("id_1", "id_2")) }
+        coVerify(exactly = 1) { myLibraryDao.upsertAll(match { it.size == 2 }) }
+    }
+
+    @Test
+    fun `batchInsertResources continues when insertMyLibrary returns null or throws and excludes failed ids from savedIds`() = runTest {
+        val docValid1 = com.google.gson.JsonObject().apply {
+            addProperty("_id", "valid_1")
+            addProperty("_rev", "1-rev")
+            addProperty("title", "Valid 1")
+        }
+        val docNull = mockk<com.google.gson.JsonObject>()
+        every { docNull.entrySet() } returns mutableSetOf()
+        every { docNull.has("_id") } returns true
+        every { docNull.get("_id") } returns com.google.gson.JsonPrimitive("null_doc")
+        val docThrow = com.google.gson.JsonObject().apply {
+            addProperty("_id", "throw_doc")
+            addProperty("_attachments", "invalid_type_causes_throw")
+        }
+        val docValid2 = com.google.gson.JsonObject().apply {
+            addProperty("_id", "valid_2")
+            addProperty("_rev", "1-rev")
+            addProperty("title", "Valid 2")
+        }
+
+        val documents = listOf(docValid1, docNull, docThrow, docValid2)
+
+        coEvery { myLibraryDao.getByIds(listOf("valid_1", "null_doc", "throw_doc", "valid_2")) } returns emptyList()
+        coEvery { myLibraryDao.upsertAll(any()) } returns Unit
+
+        val savedIds = repository.batchInsertResources(documents)
+
+        assertEquals(listOf("valid_1", "valid_2"), savedIds)
+        coVerify(exactly = 1) { myLibraryDao.getByIds(listOf("valid_1", "null_doc", "throw_doc", "valid_2")) }
+        coVerify(exactly = 1) { myLibraryDao.upsertAll(match { it.size == 2 }) }
+    }
+
+    @Test
     fun `batchInsertMyLibrary avoids N plus one queries`() = runTest {
         val documents = (1..5).map {
             val doc = com.google.gson.JsonObject()
@@ -1127,6 +1235,67 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
+    fun `serializeForUpload formats library JSON payload correctly with custom device name`() = runTest {
+        every { deviceNameProvider.getCustomDeviceName() } returns "My Custom Device"
+
+        val library = MyLibrary().apply {
+            title = "Test Library Resource"
+            createdDate = 1600000000000L
+            resourceLocalAddress = "http://example.com/files/resource.pdf"
+            author = "Test Author"
+            medium = "PDF"
+            description = "Sample Description"
+            year = "2023"
+            language = "English"
+            publisher = "OLE"
+            linkToLicense = "MIT"
+            subject = listOf("Math", "Science")
+            level = listOf("Primary")
+            resourceType = "Book"
+            openWith = "PDF Reader"
+            mediaType = "document"
+            resourceFor = listOf("Students")
+            isPrivate = true
+            privateFor = "team123"
+        }
+
+        val user = UserEntity().apply {
+            id = "user_456"
+            planetCode = "planet_789"
+        }
+
+        mockkObject(VersionUtils)
+        mockkObject(NetworkUtils)
+        mockkObject(FileUtils)
+        try {
+            every { VersionUtils.getAndroidId(any()) } returns "test-android-id"
+            every { NetworkUtils.getDeviceName() } returns "TEST_DEVICE"
+            every { FileUtils.getFileNameFromUrl(any()) } returns "resource.pdf"
+
+            val json = repository.serializeForUpload(library, user)
+
+            assertEquals("Test Library Resource", json.get("title").asString)
+            assertEquals("user_456", json.get("addedBy").asString)
+            assertEquals("planet_789", json.get("sourcePlanet").asString)
+            assertEquals("planet_789", json.get("resideOn").asString)
+            assertEquals("resource.pdf", json.get("filename").asString)
+            assertEquals("My Custom Device", json.get("customDeviceName").asString)
+            assertEquals("Test Author", json.get("author").asString)
+            assertEquals("OLE", json.get("publisher").asString)
+            assertEquals("MIT", json.get("linkToLicense").asString)
+            assertEquals(true, json.get("private").asBoolean)
+            assertEquals("team123", json.getAsJsonObject("privateFor").get("teams").asString)
+            assertEquals(2, json.getAsJsonArray("subject").size())
+            assertEquals("Math", json.getAsJsonArray("subject").get(0).asString)
+            assertEquals("Science", json.getAsJsonArray("subject").get(1).asString)
+        } finally {
+            unmockkObject(FileUtils)
+            unmockkObject(NetworkUtils)
+            unmockkObject(VersionUtils)
+        }
+    }
+
+    @Test
     fun `saveLocalResource fails when the source file does not exist`() = runTest {
         val missingFile = File(temporaryFolder.root, "missing.pdf")
         coEvery { myLibraryDao.countByTitle("My Report") } returns 0
@@ -1135,6 +1304,56 @@ class ResourcesRepositoryImplTest {
 
         assertTrue(result.isFailure)
         coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
+    }
+
+    @Test
+    fun `getOfflineResourceItems returns empty list if ole directory does not exist or is not a directory`() = runTest {
+        val nonExistentDir = File(temporaryFolder.root, "non_existent")
+        val result1 = repository.getOfflineResourceItems(nonExistentDir.absolutePath, emptySet(), emptySet())
+        assertTrue(result1.isEmpty())
+
+        val regularFile = temporaryFolder.newFile("regular_file.txt")
+        val result2 = repository.getOfflineResourceItems(regularFile.absolutePath, emptySet(), emptySet())
+        assertTrue(result2.isEmpty())
+    }
+
+    @Test
+    fun `getOfflineResourceItems calculates size and path order in single pass`() = runTest {
+        val oleDir = temporaryFolder.newFolder("ole")
+        val res1Dir = File(oleDir, "res1").apply { mkdirs() }
+        val res2Dir = File(oleDir, "res2").apply { mkdirs() }
+
+        val file1 = File(res1Dir, "a.mp4").apply { writeText("12345") } // 5 bytes
+        val file2 = File(res1Dir, "b.mp4").apply { writeText("1234567890") } // 10 bytes
+        val file3 = File(res2Dir, "c.pdf").apply { writeText("123") } // 3 bytes
+        val file4 = File(res2Dir, "d.txt").apply { writeText("1") } // 1 byte
+
+        val projections = listOf(
+            ResourceTitleProjection("res1", "Video Resource"),
+            ResourceTitleProjection("res2", "")
+        )
+        coEvery { myLibraryDao.getResourceTitles() } returns projections
+        every { context.getString(org.ole.planet.myplanet.R.string.storage_unknown_resource) } returns "Unknown Resource"
+
+        val knownExtensions = setOf("mp4", "pdf")
+
+        // Test matching specific category (mp4)
+        val videoItems = repository.getOfflineResourceItems(oleDir.absolutePath, setOf("mp4"), knownExtensions)
+        assertEquals(1, videoItems.size)
+        val res1Item = videoItems[0]
+        assertEquals("res1", res1Item.resourceId)
+        assertEquals("Video Resource", res1Item.title)
+        assertEquals(15L, res1Item.totalSizeBytes)
+        assertEquals(listOf(file1.absolutePath, file2.absolutePath), res1Item.filePaths)
+
+        // Test fallback extension category (extensions.isEmpty() -> not in knownExtensions)
+        val otherItems = repository.getOfflineResourceItems(oleDir.absolutePath, emptySet(), knownExtensions)
+        assertEquals(1, otherItems.size)
+        val res2Item = otherItems[0]
+        assertEquals("res2", res2Item.resourceId)
+        assertEquals("Unknown Resource", res2Item.title)
+        assertEquals(1L, res2Item.totalSizeBytes)
+        assertEquals(listOf(file4.absolutePath), res2Item.filePaths)
     }
 
     private fun localResourceRequest(resourceUrl: String?): LocalResourceRequest {

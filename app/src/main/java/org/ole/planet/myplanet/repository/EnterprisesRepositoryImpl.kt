@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
 import com.google.gson.JsonObject
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
@@ -12,12 +10,13 @@ import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.distinctByContent
 
 class EnterprisesRepositoryImpl @Inject constructor(
-    @param:ApplicationContext private val context: Context,
+    private val storagePathResolver: StoragePathResolver,
     private val teamDao: TeamDao,
     private val timeProvider: TimeProvider,
     private val dispatcherProvider: DispatcherProvider
@@ -100,7 +99,7 @@ class EnterprisesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun exportReportsAsCsv(teamId: String, teamName: String): String {
-        val reports = teamDao.getNonArchivedReportsByTeamId(teamId)
+        val reports = teamDao.getNonArchivedReportCsvProjectionsByTeamId(teamId)
         val csvBuilder = StringBuilder()
         csvBuilder.append(teamName).append(" Financial Report Summary\n\n")
         csvBuilder.append("Start Date, End Date, Created Date, Updated Date, Beginning Balance, Sales, Other Income, Wages, Other Expenses, Profit/Loss, Ending Balance\n")
@@ -127,7 +126,7 @@ class EnterprisesRepositoryImpl @Inject constructor(
 
     private suspend fun attachTeamImage(teamId: String, imageName: String, imageData: ByteArray) {
         if (teamId.isBlank()) return
-        val destFile = MyTeam.getAttachmentFile(context, teamId, imageName) ?: return
+        val destFile = storagePathResolver.resolveTeamAttachment(teamId, imageName) ?: return
         withContext(dispatcherProvider.io) {
             destFile.parentFile?.mkdirs()
             destFile.writeBytes(imageData)
