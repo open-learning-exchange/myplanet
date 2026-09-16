@@ -67,9 +67,12 @@ class LifeRepositoryImpl @Inject constructor(
             ?: listOf(userId, isVisible, weight)
     }
 
+    private fun List<MyLife>.dedupedByKey(): List<MyLife> = distinctBy { it.dedupKey() }
+
     override suspend fun getMyLifeByUserId(userId: String?, defaultItems: List<MyLife>): List<MyLife> {
         val effectiveUserId = normalizeUserId(userId)
-        val items = myLifeDao.getByUserId(effectiveUserId).distinctBy { it.dedupKey() }.sortedBy { it.weight }
+        suspend fun loadItems() = myLifeDao.getByUserId(effectiveUserId).dedupedByKey()
+        val items = loadItems()
         if (items.isNotEmpty() || defaultItems.isEmpty()) {
             return items
         }
@@ -77,12 +80,12 @@ class LifeRepositoryImpl @Inject constructor(
         if (seeded.isNotEmpty()) {
             return seeded
         }
-        return myLifeDao.getByUserId(effectiveUserId).distinctBy { it.dedupKey() }.sortedBy { it.weight }
+        return loadItems()
     }
 
     private suspend fun getVisibleMyLifeByUserId(userId: String?): List<MyLife> {
         val effectiveUserId = normalizeUserId(userId)
-        return myLifeDao.getVisibleByUserId(effectiveUserId).distinctBy { it.dedupKey() }.sortedBy { it.weight }
+        return myLifeDao.getVisibleByUserId(effectiveUserId).dedupedByKey()
     }
 
     override suspend fun getMyLifeForDashboard(userId: String, seedBase: List<MyLife>): List<MyLife> {
