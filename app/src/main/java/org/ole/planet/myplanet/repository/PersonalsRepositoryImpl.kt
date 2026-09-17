@@ -97,7 +97,7 @@ class PersonalsRepositoryImpl @Inject constructor(
     private fun serialize(personal: Personal): JsonObject {
         val `object` = JsonObject()
         `object`.addProperty("title", personal.title)
-        `object`.addProperty("uploadDate", Date().time)
+        `object`.addProperty("uploadDate", System.currentTimeMillis())
         `object`.addProperty("createdDate", personal.date)
         `object`.addProperty("filename", FileUtils.getFileNameFromUrl(personal.path))
         `object`.addProperty("author", personal.userName)
