@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.edit
 import androidx.core.net.toUri
@@ -43,6 +44,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
 ) : CoroutineWorker(context, workerParams) {
 
     companion object {
+        private const val TAG = "ServerReachabilityWorker"
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "server_reachability_channel"
         private const val CHANNEL_NAME = "Server Connectivity"
@@ -87,7 +89,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
 
             Result.success()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "doWork failed", e)
             Result.retry()
         }
     }
@@ -121,7 +123,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "tryServerSwitch failed", e)
         }
     }
 
@@ -152,7 +154,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
         try {
             notificationManager.notify(NOTIFICATION_ID, notification)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "showServerNotification failed", e)
         }
     }
 
@@ -182,7 +184,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
             }
             uploadSubmissions()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "checkAvailableServerAndUpload failed", e)
             uploadSubmissions()
         }
     }
@@ -203,7 +205,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
                 RetryQueueWorker.triggerImmediateRetry(applicationContext)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "uploadSubmissions failed", e)
         }
     }
 
@@ -218,7 +220,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
             }
             uploadManager.uploadExamResult(successListener)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "uploadExamResultWrapper failed", e)
         }
     }
 
@@ -244,7 +246,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
                 planetString
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "getServerDisplayName failed", e)
             "Server"
         }
     }
