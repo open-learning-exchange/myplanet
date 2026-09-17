@@ -38,7 +38,6 @@ class PublicSurveyActivity : AppCompatActivity() {
     private var teamId = ""
     private var surveyId = ""
     private var surveyStarted = false
-    private var launchTime = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,6 +53,10 @@ class PublicSurveyActivity : AppCompatActivity() {
             return
         }
 
+        if (savedInstanceState != null) {
+            surveyStarted = savedInstanceState.getBoolean(KEY_SURVEY_STARTED, false)
+        }
+
         supportFragmentManager.registerFragmentLifecycleCallbacks(userInfoDialogCallback, true)
         backStackListener = FragmentManager.OnBackStackChangedListener {
             if (surveyStarted && supportFragmentManager.backStackEntryCount == 0 && !isFinishing) {
@@ -63,7 +66,14 @@ class PublicSurveyActivity : AppCompatActivity() {
         backStackListener?.let { supportFragmentManager.addOnBackStackChangedListener(it) }
 
         observeViewModel()
-        viewModel.loadSurvey(baseUrl, teamId, surveyId)
+        if (savedInstanceState == null) {
+            viewModel.loadSurvey(baseUrl, teamId, surveyId)
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(KEY_SURVEY_STARTED, surveyStarted)
     }
 
     private val userInfoDialogCallback = object : FragmentManager.FragmentLifecycleCallbacks() {
@@ -85,23 +95,25 @@ class PublicSurveyActivity : AppCompatActivity() {
                             }
                             is PublicSurveyViewModel.SurveyLoadState.Success -> {
                                 binding.progressBar.visibility = View.GONE
-                                launchTime = System.currentTimeMillis()
-                                surveyStarted = true
-                                val fragment = ExamTakingFragment().apply {
-                                    arguments = Bundle().apply {
-                                        putString("type", "survey")
-                                        putString("id", surveyId)
-                                        putBoolean("isMySurvey", false)
-                                        putBoolean("isTeam", true)
-                                        putString("teamId", teamId)
+                                if (!surveyStarted && supportFragmentManager.findFragmentById(R.id.fragment_container) == null) {
+                                    surveyStarted = true
+                                    val fragment = ExamTakingFragment().apply {
+                                        arguments = Bundle().apply {
+                                            putString("type", "survey")
+                                            putString("id", surveyId)
+                                            putBoolean("isMySurvey", false)
+                                            putBoolean("isTeam", true)
+                                            putString("teamId", teamId)
+                                        }
                                     }
+                                    supportFragmentManager.beginTransaction()
+                                        .replace(R.id.fragment_container, fragment)
+                                        .addToBackStack(null)
+                                        .commit()
                                 }
-                                supportFragmentManager.beginTransaction()
-                                    .replace(R.id.fragment_container, fragment)
-                                    .addToBackStack(null)
-                                    .commit()
                             }
                             is PublicSurveyViewModel.SurveyLoadState.Error -> {
+                                binding.progressBar.visibility = View.GONE
                                 Toast.makeText(this@PublicSurveyActivity, R.string.survey_load_failed, Toast.LENGTH_LONG).show()
                                 finish()
                             }
@@ -112,9 +124,7 @@ class PublicSurveyActivity : AppCompatActivity() {
 
                 launch {
                     viewModel.uploading.collect { uploading ->
-                        if (uploading) {
-                            binding.progressBar.visibility = View.VISIBLE
-                        }
+                        binding.progressBar.visibility = if (uploading) View.VISIBLE else View.GONE
                     }
                 }
 
@@ -136,7 +146,7 @@ class PublicSurveyActivity : AppCompatActivity() {
     }
 
     private fun uploadCompletedSubmission() {
-        viewModel.uploadCompletedSubmission(baseUrl, teamId, surveyId, launchTime)
+        viewModel.uploadCompletedSubmission(baseUrl, teamId, surveyId)
     }
 
     private fun navigateOnwardAndFinish() {
@@ -161,6 +171,7 @@ class PublicSurveyActivity : AppCompatActivity() {
         private const val EXTRA_BASE_URL = "base_url"
         private const val EXTRA_TEAM_ID = "team_id"
         private const val EXTRA_SURVEY_ID = "survey_id"
+        private const val KEY_SURVEY_STARTED = "survey_started"
 
         fun newIntent(context: Context, baseUrl: String, teamId: String, surveyId: String): Intent {
             return Intent(context, PublicSurveyActivity::class.java)

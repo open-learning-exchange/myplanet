@@ -42,10 +42,14 @@ class PublicSurveyViewModel @Inject constructor(
     private val _uploading = MutableStateFlow(false)
     val uploading: StateFlow<Boolean> = _uploading.asStateFlow()
 
-    private val _uploadEvents = MutableSharedFlow<UploadEvent>()
+    private val _uploadEvents = MutableSharedFlow<UploadEvent>(extraBufferCapacity = 1)
     val uploadEvents: SharedFlow<UploadEvent> = _uploadEvents.asSharedFlow()
 
+    var launchTime = 0L
+        private set
+
     fun loadSurvey(baseUrl: String, teamId: String, surveyId: String) {
+        if (_loadState.value !is SurveyLoadState.Idle) return
         _loadState.value = SurveyLoadState.Loading
         viewModelScope.launch {
             val response = surveysRepository.fetchPublicSurvey(baseUrl, teamId, surveyId)
@@ -59,31 +63,36 @@ class PublicSurveyViewModel @Inject constructor(
                 return@launch
             }
             surveysRepository.saveSurveyFromPublicApi(surveyDoc)
+            launchTime = System.currentTimeMillis()
             _loadState.value = SurveyLoadState.Success(surveyDoc)
         }
     }
 
-    fun uploadCompletedSubmission(baseUrl: String, teamId: String, surveyId: String, launchTime: Long) {
+    fun uploadCompletedSubmission(baseUrl: String, teamId: String, surveyId: String) {
         if (_uploading.value) return
         _uploading.value = true
         viewModelScope.launch {
-            val submission = submissionsRepository.getLatestSubmissionByParentId(surveyId, "complete")
-            if (submission == null || submission.lastUpdateTime < launchTime) {
-                _uploadEvents.emit(UploadEvent.NavigateOnward)
-                return@launch
-            }
-            val questions = surveysRepository.getExamQuestions(surveyId)
-            val answers = payloadBuilder.buildPublicAnswers(questions, submission)
-            val respondent = submission.user?.takeIf { it.isNotBlank() && it != "{}" }?.let {
-                try {
-                    JsonParser.parseString(it).asJsonObject.let(payloadBuilder::sanitizeRespondent)
-                } catch (e: Exception) {
-                    null
+            try {
+                val submission = submissionsRepository.getLatestSubmissionByParentId(surveyId, "complete")
+                if (submission == null || submission.lastUpdateTime < launchTime) {
+                    _uploadEvents.emit(UploadEvent.NavigateOnward)
+                    return@launch
                 }
+                val questions = surveysRepository.getExamQuestions(surveyId)
+                val answers = payloadBuilder.buildPublicAnswers(questions, submission)
+                val respondent = submission.user?.takeIf { it.isNotBlank() && it != "{}" }?.let {
+                    try {
+                        JsonParser.parseString(it).asJsonObject.let(payloadBuilder::sanitizeRespondent)
+                    } catch (e: Exception) {
+                        null
+                    }
+                }
+                val success = surveysRepository.submitPublicSurvey(baseUrl, teamId, surveyId, answers, respondent)
+                val messageResId = if (success) R.string.survey_submitted else R.string.survey_submit_failed
+                _uploadEvents.emit(UploadEvent.ShowToastAndNavigate(messageResId))
+            } finally {
+                _uploading.value = false
             }
-            val success = surveysRepository.submitPublicSurvey(baseUrl, teamId, surveyId, answers, respondent)
-            val messageResId = if (success) R.string.survey_submitted else R.string.survey_submit_failed
-            _uploadEvents.emit(UploadEvent.ShowToastAndNavigate(messageResId))
         }
     }
 }

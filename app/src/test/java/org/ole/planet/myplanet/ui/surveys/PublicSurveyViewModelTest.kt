@@ -52,7 +52,7 @@ class PublicSurveyViewModelTest {
     }
 
     @Test
-    fun `test loadSurvey success updates state and saves survey`() = runTest {
+    fun `test loadSurvey success updates state, sets launchTime, and saves survey`() = runTest {
         val surveyDoc = JsonObject().apply { addProperty("_id", "survey123") }
         val response = JsonObject().apply { add("survey", surveyDoc) }
 
@@ -64,6 +64,7 @@ class PublicSurveyViewModelTest {
         val state = viewModel.loadState.value
         assertTrue(state is PublicSurveyViewModel.SurveyLoadState.Success)
         assertEquals(surveyDoc, (state as PublicSurveyViewModel.SurveyLoadState.Success).surveyDoc)
+        assertTrue(viewModel.launchTime > 0L)
         coVerify { surveysRepository.saveSurveyFromPublicApi(surveyDoc) }
     }
 
@@ -87,7 +88,7 @@ class PublicSurveyViewModelTest {
             emittedEvent = viewModel.uploadEvents.first()
         }
 
-        viewModel.uploadCompletedSubmission("http://base", "team1", "survey123", 1000L)
+        viewModel.uploadCompletedSubmission("http://base", "team1", "survey123")
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(PublicSurveyViewModel.UploadEvent.NavigateOnward, emittedEvent)
@@ -96,9 +97,16 @@ class PublicSurveyViewModelTest {
 
     @Test
     fun `test uploadCompletedSubmission builds payload and submits survey`() = runTest {
+        val surveyDoc = JsonObject().apply { addProperty("_id", "survey123") }
+        val response = JsonObject().apply { add("survey", surveyDoc) }
+
+        coEvery { surveysRepository.fetchPublicSurvey("http://base", "team1", "survey123") } returns response
+        viewModel.loadSurvey("http://base", "team1", "survey123")
+        testDispatcher.scheduler.advanceUntilIdle()
+
         val submission = Submission().apply {
             id = "sub1"
-            lastUpdateTime = 2000L
+            lastUpdateTime = System.currentTimeMillis() + 1000L
             user = "{\"name\":\"John\", \"age\":\"30\"}"
         }
         val questions = listOf(ExamQuestion().apply { id = "q1"; type = "text" })
@@ -112,7 +120,7 @@ class PublicSurveyViewModelTest {
             emittedEvent = viewModel.uploadEvents.first()
         }
 
-        viewModel.uploadCompletedSubmission("http://base", "team1", "survey123", 1000L)
+        viewModel.uploadCompletedSubmission("http://base", "team1", "survey123")
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertTrue(emittedEvent is PublicSurveyViewModel.UploadEvent.ShowToastAndNavigate)
