@@ -8,6 +8,7 @@ import androidx.appcompat.view.ContextThemeWrapper
 import com.google.android.material.chip.Chip
 import java.util.Locale
 import java.util.WeakHashMap
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -53,6 +54,8 @@ class VoicesLabelManager(
                             withContext(dispatcherProvider.main) {
                                 Utilities.toast(context, context.getString(R.string.label_added))
                             }
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             Log.w(TAG, "addLabel failed", e)
                         }
@@ -88,6 +91,8 @@ class VoicesLabelManager(
                                 scope.launch {
                                     try {
                                         removeLabelFn(voiceId, selectedLabel)
+                                    } catch (e: CancellationException) {
+                                        throw e
                                     } catch (e: Exception) {
                                         Log.w(TAG, "removeLabel failed", e)
                                     }
