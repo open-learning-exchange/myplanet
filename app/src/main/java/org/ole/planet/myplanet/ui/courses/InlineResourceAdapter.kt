@@ -184,10 +184,21 @@ class InlineResourceAdapter(
                 binding.ivStatus.setImageResource(R.drawable.ic_eye)
 
                 val dir = externalFilesDir ?: FileUtils.getExternalFilesDir(context)
+                val mimeType = Utilities.getMimeType(resource.resourceLocalAddress)
+
+                if (mimeType?.contains("html") == true) {
+                    showHtmlPreview(binding, context, resource.id, File(dir, "ole/${resource.id}"))
+                    return@launch
+                }
+
                 val resourceFile = File(
                     dir,
                     "ole/${resource.id}/${resource.resourceLocalAddress}"
                 )
+
+                val needsCacheKey = mimeType?.startsWith("audio") == true ||
+                    mimeType?.contains("csv") == true || resource.resourceLocalAddress?.endsWith(".csv") == true ||
+                    mimeType?.startsWith("text") == true || resource.resourceLocalAddress?.endsWith(".txt") == true || resource.resourceLocalAddress?.endsWith(".md") == true
 
                 var exists = false
                 var lastModified = 0L
@@ -195,21 +206,19 @@ class InlineResourceAdapter(
 
                 withContext(dispatcherProvider.io) {
                     exists = resourceFile.exists()
-                    if (exists) {
+                    if (exists && needsCacheKey) {
                         lastModified = resourceFile.lastModified()
                         length = resourceFile.length()
                     }
                 }
 
-                val cacheKey = if (exists) getCacheKey(resourceFile, lastModified, length) else null
-                val mimeType = Utilities.getMimeType(resource.resourceLocalAddress)
+                val cacheKey = if (exists && needsCacheKey) getCacheKey(resourceFile, lastModified, length) else null
 
                 when {
                     mimeType?.startsWith("image") == true -> showImagePreview(binding, context, resourceFile, exists)
                     mimeType?.startsWith("video") == true -> showVideoPreview(binding, context, resourceFile, exists)
                     mimeType?.contains("pdf") == true -> showPdfPreview(holder, resourceFile, exists)
                     mimeType?.startsWith("audio") == true -> showAudioPreview(holder, resourceFile, cacheKey)
-                    mimeType?.contains("html") == true -> showHtmlPreview(binding, context, resource.id, File(dir, "ole/${resource.id}"))
                     mimeType?.contains("csv") == true || resource.resourceLocalAddress?.endsWith(".csv") == true -> showCsvPreview(holder, resourceFile, cacheKey)
                     mimeType?.startsWith("text") == true || resource.resourceLocalAddress?.endsWith(".txt") == true || resource.resourceLocalAddress?.endsWith(".md") == true -> showTextPreview(holder, resourceFile, cacheKey)
                 }
@@ -322,21 +331,8 @@ class InlineResourceAdapter(
     }
 
     @VisibleForTesting
-    internal suspend fun getFileCacheKeyIfExist(file: File): String? = withContext(dispatcherProvider.io) {
-        if (file.exists()) {
-            getCacheKey(file)
-        } else {
-            null
-        }
-    }
-
-    @VisibleForTesting
     internal fun getCacheKey(file: File, lastModified: Long, length: Long): String =
         "${file.absolutePath}_${lastModified}_${length}"
-
-    @VisibleForTesting
-    internal fun getCacheKey(file: File): String =
-        getCacheKey(file, file.lastModified(), file.length())
 
     private fun getPreviewDimensions(context: Context): Pair<Int, Int> {
         val widthPx = context.resources.displayMetrics.widthPixels

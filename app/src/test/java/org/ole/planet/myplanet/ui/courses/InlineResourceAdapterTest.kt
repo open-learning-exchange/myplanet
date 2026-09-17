@@ -231,9 +231,7 @@ class InlineResourceAdapterTest {
 
         val expected = "${file.absolutePath}_${file.lastModified()}_${file.length()}"
         val actualWithMetadata = adapter.getCacheKey(file, file.lastModified(), file.length())
-        val actualWithFile = adapter.getCacheKey(file)
 
         assertEquals(expected, actualWithMetadata)
-        assertEquals(expected, actualWithFile)
     }
 }
