@@ -26,6 +26,7 @@ class EnterprisesReportsAdapter(
 ) : ListAdapter<MyTeam, EnterprisesReportsAdapter.ReportsViewHolder>(diffCallback) {
     private var nonTeamMember = false
     private val attachmentPresenceCache = FileExistenceCache()
+    private val reportTitle: String by lazy { context.getString(R.string.team_financial_report, teamName) }
 
     override fun onCurrentListChanged(
         previousList: MutableList<MyTeam>,
@@ -62,7 +63,7 @@ class EnterprisesReportsAdapter(
         val binding = holder.binding
         setNonTeamMemberVisibility(binding)
         val report = getItem(position)
-        binding.tvReportTitle.text = context.getString(R.string.team_financial_report, teamName)
+        binding.tvReportTitle.text = reportTitle
         report?.let {
             val totals = reportTotals(it)
             with(binding) {
