@@ -73,6 +73,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
                         }
                     }
                 }
+            } catch (e: Exception) {
+                Log.e(TAG, "broadcast work failed", e)
             } finally {
                 try {
                     pendingResult.finish()
