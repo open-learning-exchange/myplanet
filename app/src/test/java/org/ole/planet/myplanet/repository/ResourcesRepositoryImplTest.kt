@@ -35,6 +35,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
@@ -324,13 +325,14 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
-    fun `getAllLibraries returns list of MyLibrary`() = runTest {
-        val mockLibrary = MyLibrary().apply { title = "Test Library" }
-        coEvery { myLibraryDao.getAll() } returns listOf(mockLibrary)
+    fun `getLibraryTitles returns list of LibraryTitleProjection`() = runTest {
+        val mockProjection = LibraryTitleProjection("lib1", "Test Library")
+        coEvery { myLibraryDao.getLibraryTitles() } returns listOf(mockProjection)
 
-        val result = repository.getAllLibraries()
+        val result = repository.getLibraryTitles()
 
         assertEquals(1, result.size)
+        assertEquals("lib1", result[0].id)
         assertEquals("Test Library", result[0].title)
     }
 
@@ -1344,7 +1346,7 @@ class ResourcesRepositoryImplTest {
         assertEquals("res1", res1Item.resourceId)
         assertEquals("Video Resource", res1Item.title)
         assertEquals(15L, res1Item.totalSizeBytes)
-        assertEquals(listOf(file1.absolutePath, file2.absolutePath), res1Item.filePaths)
+        assertEquals(setOf(file1.absolutePath, file2.absolutePath), res1Item.filePaths.toSet())
 
         // Test fallback extension category (extensions.isEmpty() -> not in knownExtensions)
         val otherItems = repository.getOfflineResourceItems(oleDir.absolutePath, emptySet(), knownExtensions)

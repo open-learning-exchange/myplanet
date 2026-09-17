@@ -44,11 +44,11 @@ import org.ole.planet.myplanet.databinding.AlertAddAttachmentBinding
 import org.ole.planet.myplanet.databinding.AlertReferenceBinding
 import org.ole.planet.myplanet.databinding.EditAttachementBinding
 import org.ole.planet.myplanet.databinding.EditOtherInfoBinding
+import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.databinding.FragmentEditAchievementBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.Achievement.Companion.createReference
-import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ProfileFieldsUpdate
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
@@ -410,7 +410,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     private fun showResourceListDialog(prevList: Set<String?>) {
         viewLifecycleOwner.lifecycleScope.launch {
-            val list = viewModel.getAllLibraries()
+            val list = viewModel.getLibraryTitles()
 
             if (isAdded) {
                 val builder = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
@@ -422,9 +422,13 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                 builder.setView(myLibraryAlertdialogView)
                 builder.setPositiveButton("Ok") { _: DialogInterface?, _: Int ->
                     val items = (lv.adapter as CheckboxAdapter).selectedItemsList
-                    resourceArray = JsonArray()
-                    for (ii in items) {
-                        resourceArray?.add(list[ii].serializeResource())
+                    val selectedIds = items.map { list[it].id }
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        val fullLibraries = viewModel.getLibraryItemsByIds(selectedIds)
+                        resourceArray = JsonArray()
+                        for (lib in fullLibraries) {
+                            resourceArray?.add(lib.serializeResource())
+                        }
                     }
                 }.setNegativeButton("Cancel", null).show()
             }
@@ -486,7 +490,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         return achievement?.resumeFileName ?: ""
     }
 
-    private fun createResourceList(myLibraryAlertdialogBinding: MyLibraryAlertdialogBinding, list: List<MyLibrary>, prevList: Set<String?>): RecyclerView {
+    private fun createResourceList(myLibraryAlertdialogBinding: MyLibraryAlertdialogBinding, list: List<LibraryTitleProjection>, prevList: Set<String?>): RecyclerView {
         val names = ArrayList<String>()
         val selected: ArrayList<Int> = ArrayList()
         for (i in list.indices) {
