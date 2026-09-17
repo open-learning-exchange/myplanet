@@ -4,6 +4,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.ServiceInfo
 import android.os.SystemClock
 import android.util.Log
 import androidx.hilt.work.HiltWorker
@@ -65,7 +66,7 @@ class DownloadWorker @AssistedInject constructor(
                 val success = try {
                     downloadFile(url, authHeader, index, urls.size)
                 } catch (e: Exception) {
-                    Log.e(TAG, "Failed to download $url", e)
+                    Log.e(TAG, "Failed to download ${getFileNameFromUrl(url)}", e)
                     false
                 }
                 results.add(success)
@@ -74,12 +75,12 @@ class DownloadWorker @AssistedInject constructor(
                 try {
                     showProgressNotification(completedCount - 1, urls.size, context.getString(R.string.downloaded_files, "$completedCount", "${urls.size}"), 100)
                 } catch (e: Exception) {
-                    Log.e(TAG, "Failed to update progress notification for $url", e)
+                    Log.e(TAG, "Failed to update progress notification for ${getFileNameFromUrl(url)}", e)
                 }
                 try {
                     sendDownloadUpdate(url, success, completedCount >= urls.size, fromSync)
                 } catch (e: Exception) {
-                    Log.e(TAG, "Failed to send download update for $url", e)
+                    Log.e(TAG, "Failed to send download update for ${getFileNameFromUrl(url)}", e)
                 }
             }
 
@@ -96,7 +97,7 @@ class DownloadWorker @AssistedInject constructor(
             try {
                 resourcesRepository.markResourceOfflineByUrl(url)
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to mark existing resource offline: $url", e)
+                Log.e(TAG, "Failed to mark existing resource offline: ${UrlUtils.redactForLog(url)}", e)
             }
             return true
         }
@@ -108,12 +109,12 @@ class DownloadWorker @AssistedInject constructor(
                     true
                 }
                 is DownloadResult.Error -> {
-                    Log.e(TAG, "Failed to download file: $url (code=${response.code}) ${response.message}")
+                    Log.e(TAG, "Failed to download file: ${getFileNameFromUrl(url)} (code=${response.code}) ${response.message}")
                     false
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to download file: $url", e)
+            Log.e(TAG, "Failed to download file: ${UrlUtils.redactForLog(url)}", e)
             false
         }
     }
@@ -149,7 +150,7 @@ class DownloadWorker @AssistedInject constructor(
         try {
             resourcesRepository.markResourceOfflineByUrl(url)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to mark downloaded resource offline: $url", e)
+            Log.e(TAG, "Failed to mark downloaded resource offline: ${UrlUtils.redactForLog(url)}", e)
         }
     }
 
@@ -164,7 +165,11 @@ class DownloadWorker @AssistedInject constructor(
         )
         if (DownloadUtils.canStartForegroundService(context)) {
             try {
-                setForeground(ForegroundInfo(WORKER_NOTIFICATION_ID, notification))
+                setForeground(
+                    ForegroundInfo(WORKER_NOTIFICATION_ID, notification,
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                    )
+                )
                 return
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to promote download worker to foreground, showing plain notification", e)

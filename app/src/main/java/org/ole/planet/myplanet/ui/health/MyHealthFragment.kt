@@ -10,10 +10,10 @@ import android.widget.AdapterView
 import android.widget.AdapterView.OnItemSelectedListener
 import android.widget.Button
 import android.widget.EditText
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatSpinner
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -31,8 +31,8 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
-import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.effectiveId
@@ -47,7 +47,7 @@ import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
 @OptIn(FlowPreview::class)
-class MyHealthFragment : Fragment() {
+class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentVitalSignBinding::inflate) {
 
     private val viewModel: HealthViewModel by viewModels()
 
@@ -55,14 +55,14 @@ class MyHealthFragment : Fragment() {
         const val SEARCH_DEBOUNCE_MS = 300L
     }
 
+    private val editHealthLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        viewModel.refreshSelectedPatient()
+    }
 
     @Inject
     lateinit var realtimeSyncManager: RealtimeSyncManager
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
-    private var _binding: FragmentVitalSignBinding? = null
-    private val binding get() = _binding!!
-    private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
     private var alertHealthListBinding: AlertHealthListBinding? = null
     var userId: String? = null
     var userModel: UserEntity? = null
@@ -74,24 +74,14 @@ class MyHealthFragment : Fragment() {
 
     private var searchJob: Job? = null
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-    }
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentVitalSignBinding.inflate(inflater, container, false)
-        return binding.root
-    }
-
     private fun refreshHealthData() {
         if (!isAdded || requireActivity().isFinishing) return
-        viewModel.loadInitialPatient()
+        viewModel.refreshSelectedPatient()
     }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         view.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
         setupRealtimeSync()
-        alertMyPersonalBinding = AlertMyPersonalBinding.inflate(LayoutInflater.from(context))
 
         val allowDateEdit = false
         if(allowDateEdit) {
@@ -191,7 +181,9 @@ class MyHealthFragment : Fragment() {
                     binding.tvDataPlaceholder.visibility = View.VISIBLE
 
                     if (!::healthAdapter.isInitialized) {
-                        healthAdapter = HealthExaminationAdapter(requireActivity(), mh, currentUser, userMap, dispatcherProvider)
+                        healthAdapter = HealthExaminationAdapter(requireActivity(), mh, currentUser, userMap, dispatcherProvider) { intent ->
+                            editHealthLauncher.launch(intent)
+                        }
                     }
                     healthAdapter.updateData(mh, currentUser, userMap, list)
                     binding.rvRecords.apply {
@@ -251,11 +243,11 @@ class MyHealthFragment : Fragment() {
         binding.updateHealth.visibility = View.VISIBLE
 
         binding.addNewRecord.setOnClickListener {
-            startActivity(Intent(activity, HealthExaminationActivity::class.java).putExtra("userId", userId))
+            editHealthLauncher.launch(Intent(activity, HealthExaminationActivity::class.java).putExtra("userId", userId))
         }
 
         binding.updateHealth.setOnClickListener {
-            startActivity(Intent(activity, AddHealthActivity::class.java).putExtra("userId", userId))
+            editHealthLauncher.launch(Intent(activity, AddHealthActivity::class.java).putExtra("userId", userId))
         }
 
         binding.txtDob.text = if (userModel?.dob.isNullOrEmpty()) getString(R.string.birth_date) else TimeUtils.formatDateToDDMMYYYY(userModel?.dob)
@@ -354,7 +346,6 @@ class MyHealthFragment : Fragment() {
         searchJob?.cancel()
         searchJob = null
 
-        _binding = null
         super.onDestroyView()
     }
 

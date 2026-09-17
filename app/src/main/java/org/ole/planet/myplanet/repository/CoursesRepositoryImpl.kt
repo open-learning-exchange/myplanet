@@ -1,7 +1,10 @@
 package org.ole.planet.myplanet.repository
 
+import android.content.Context
 import android.util.Log
 import androidx.room.withTransaction
+import androidx.sqlite.db.SimpleSQLiteQuery
+import dagger.hilt.android.qualifiers.ApplicationContext
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Base64
@@ -50,6 +53,7 @@ import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class CoursesRepositoryImpl @Inject constructor(
+    @param:ApplicationContext private val context: Context,
     private val progressRepository: ProgressRepository,
     private val activitiesRepository: ActivitiesRepository,
     private val submissionsRepository: SubmissionsRepository,
@@ -138,12 +142,26 @@ class CoursesRepositoryImpl @Inject constructor(
             val downloadedResources = getCourseOfflineResources(courseId)
             val rawSteps = getCourseSteps(courseId)
 
+            val stepIds = rawSteps.mapNotNull { it.id }
+            val questionCountsByStepId = if (stepIds.isEmpty()) {
+                emptyMap()
+            } else {
+                val exams = examDao.getByStepIds(stepIds)
+                val countsMap = mutableMapOf<String, Int>()
+                exams.forEach { exam ->
+                    val sId = exam.stepId
+                    if (sId != null && !countsMap.containsKey(sId)) {
+                        countsMap[sId] = exam.noOfQuestions
+                    }
+                }
+                countsMap
+            }
+
             val steps = rawSteps.map { step ->
-                val count = step.id.let { submissionsRepository.getExamQuestionCount(it) }
                 StepItem(
                     id = step.id,
                     stepTitle = step.stepTitle,
-                    questionCount = count
+                    questionCount = questionCountsByStepId[step.id] ?: 0
                 )
             }
 
@@ -253,33 +271,38 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun search(query: String): List<MyCourse> {
-        val allCourses = mapCourses(courseDao.getAll())
         if (query.isEmpty()) {
-            return allCourses
+            return mapCourses(courseDao.getAll())
         }
 
         val queryParts = query.split(" ").filterNot { it.isEmpty() }
         val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
         val normalizedQuery = Utilities.normalizeText(query)
 
-        val data = allCourses.filter { course ->
-            val title = course.courseTitleNormal ?: course.courseTitle?.let { Utilities.normalizeText(it) }
-            title != null && normalizedQueryParts.all { title.contains(it) }
+        val queryBuilder = StringBuilder("SELECT * FROM courses WHERE 1 = 1")
+        val bindArgs = mutableListOf<Any>()
+        normalizedQueryParts.forEach { token ->
+            val escapedToken = token
+                .replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_")
+            queryBuilder.append(" AND courseTitleNormal LIKE ? ESCAPE '\\'")
+            bindArgs.add("%${escapedToken}%")
         }
+
+        val matching = courseDao.filterByTitleNormal(SimpleSQLiteQuery(queryBuilder.toString(), bindArgs.toTypedArray()))
 
         val startsWithQuery = mutableListOf<MyCourse>()
         val containsQuery = mutableListOf<MyCourse>()
-
-        for (item in data) {
-            val title = item.courseTitleNormal ?: item.courseTitle?.let { Utilities.normalizeText(it) } ?: continue
-
+        for (item in matching) {
+            val title = item.courseTitleNormal ?: continue
             if (title.startsWith(normalizedQuery)) {
                 startsWithQuery.add(item)
-            } else if (matchesAllParts(title, normalizedQueryParts)) {
+            } else {
                 containsQuery.add(item)
             }
         }
-        return startsWithQuery + containsQuery
+        return mapCourses(startsWithQuery + containsQuery)
     }
 
     override suspend fun filterCourses(
@@ -841,6 +864,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 MyLibrary.Companion.InsertParams(
                     doc = pending.doc,
                     spm = sharedPrefManager,
+                    context = context,
                     courseId = pending.courseId,
                     stepId = pending.stepId,
                     existing = existing

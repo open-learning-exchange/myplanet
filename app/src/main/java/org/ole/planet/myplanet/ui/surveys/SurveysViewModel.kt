@@ -162,8 +162,10 @@ class SurveysViewModel @Inject constructor(
     }
 
     private fun filter(s: String, list: List<StepExam>): List<StepExam> {
-        val queryParts = s.split(" ").filterNot { it.isEmpty() }
-        val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
+        val normalizedQueryParts = s.splitToSequence(" ")
+            .filterNot { it.isEmpty() }
+            .map { Utilities.normalizeText(it) }
+            .toList()
         val normalizedQuery = Utilities.normalizeText(s)
         val startsWithQuery = mutableListOf<StepExam>()
         val containsQuery = mutableListOf<StepExam>()

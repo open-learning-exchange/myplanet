@@ -70,6 +70,7 @@ class CoursesRepositoryImplTest {
         every { sharedPrefManager.getConcatenatedLinks() } returns "[]"
         org.ole.planet.myplanet.utils.UrlUtils.init(sharedPrefManager)
         repository = CoursesRepositoryImpl(
+            mockk(relaxed = true),
             progressRepository,
             activitiesRepository,
             submissionsRepository,
@@ -90,8 +91,8 @@ class CoursesRepositoryImplTest {
             myLibraryDao,
             userRepository,
             dispatcherProvider,
-        realtimeSyncManager,
-        mockk(relaxed = true)
+            realtimeSyncManager,
+            mockk(relaxed = true)
         )
     }
 
@@ -137,9 +138,9 @@ class CoursesRepositoryImplTest {
 
     @Test
     fun `search filters query parts before fetching and sorts startsWith before contains`() = runTest {
-        coEvery { courseDao.getAll() } returns listOf(
+        val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
+        coEvery { courseDao.filterByTitleNormal(capture(querySlot)) } returns listOf(
             MyCourse(id = "1", courseId = "1", courseTitle = "Basic Math", courseTitleNormal = "basic math"),
-            MyCourse(id = "2", courseId = "2", courseTitle = "Science", courseTitleNormal = "science"),
             MyCourse(id = "3", courseId = "3", courseTitle = "Math 101", courseTitleNormal = "math 101")
         )
         coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
@@ -149,13 +150,14 @@ class CoursesRepositoryImplTest {
         assertEquals(2, result.size)
         assertEquals("Math 101", result[0].courseTitle)
         assertEquals("Basic Math", result[1].courseTitle)
+        assertTrue(querySlot.captured.sql.contains("courseTitleNormal LIKE ? ESCAPE '\\'"))
+        coVerify(exactly = 0) { courseDao.getAll() }
     }
 
     @Test
     fun `search multi word matches all parts`() = runTest {
-        coEvery { courseDao.getAll() } returns listOf(
-            MyCourse(id = "1", courseId = "1", courseTitle = "Basic Math 101", courseTitleNormal = "basic math 101"),
-            MyCourse(id = "2", courseId = "2", courseTitle = "Basic Science 101", courseTitleNormal = "basic science 101")
+        coEvery { courseDao.filterByTitleNormal(any()) } returns listOf(
+            MyCourse(id = "1", courseId = "1", courseTitle = "Basic Math 101", courseTitleNormal = "basic math 101")
         )
         coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
 
@@ -163,6 +165,27 @@ class CoursesRepositoryImplTest {
 
         assertEquals(1, result.size)
         assertEquals("Basic Math 101", result[0].courseTitle)
+    }
+
+    @Test
+    fun `search escapes LIKE wildcards present in the query`() = runTest {
+        val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
+        coEvery { courseDao.filterByTitleNormal(capture(querySlot)) } returns emptyList()
+
+        repository.search("100%_test")
+
+        val bindArgs = mutableMapOf<Int, Any?>()
+        querySlot.captured.bindTo(object : androidx.sqlite.db.SupportSQLiteProgram {
+            override fun bindNull(index: Int) { bindArgs[index] = null }
+            override fun bindLong(index: Int, value: Long) { bindArgs[index] = value }
+            override fun bindDouble(index: Int, value: Double) { bindArgs[index] = value }
+            override fun bindString(index: Int, value: String) { bindArgs[index] = value }
+            override fun bindBlob(index: Int, value: ByteArray) { bindArgs[index] = value }
+            override fun clearBindings() {}
+            override fun close() {}
+        })
+
+        assertEquals("%100\\%\\_test%", bindArgs[1])
     }
 
     @Test
@@ -375,7 +398,7 @@ class CoursesRepositoryImplTest {
         coEvery { myLibraryDao.getCourseResources("course_id", false) } returns emptyList()
         coEvery { myLibraryDao.getCourseResources("course_id", true) } returns emptyList()
         coEvery { courseStepDao.getByCourseId("course_id") } returns listOf(org.ole.planet.myplanet.model.CourseStep().apply { id = "step_1"; stepTitle = "Title" })
-        coEvery { submissionsRepository.getExamQuestionCount("step_1") } returns 3
+        coEvery { examDao.getByStepIds(listOf("step_1")) } returns listOf(org.ole.planet.myplanet.model.StepExam().apply { stepId = "step_1"; noOfQuestions = 3 })
 
         coEvery { ratingsRepository.getRatingSummary("course", "course_id", "user_1") } returns RatingSummary(
             existingRating = null,

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonObject
 import java.io.File
 import java.util.Date
 import java.util.UUID
@@ -11,7 +12,9 @@ import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.distinctByContent
 
 class PersonalsRepositoryImpl @Inject constructor(
@@ -44,7 +47,7 @@ class PersonalsRepositoryImpl @Inject constructor(
         personalDao.insert(personal)
     }
 
-    override suspend fun getPersonalResources(userId: String?): Flow<List<Personal>> {
+    override fun getPersonalResources(userId: String?): Flow<List<Personal>> {
         if (userId.isNullOrBlank()) {
             return flowOf(emptyList())
         }
@@ -71,10 +74,10 @@ class PersonalsRepositoryImpl @Inject constructor(
         personalDao.updateUploadedStatus(id, newId, rev)
     }
 
-    override suspend fun uploadPersonalDocument(personal: Personal): Pair<String, String>? {
+    internal suspend fun uploadPersonalDocument(personal: Personal): Pair<String, String>? {
         val response = uploadRepository.postUpload(
             "${UrlUtils.getUrl()}/resources",
-            Personal.serialize(personal, deviceNameProvider.getCustomDeviceName())
+            serialize(personal)
         )
 
         val `object` = response.body()
@@ -89,6 +92,26 @@ class PersonalsRepositoryImpl @Inject constructor(
             return Pair(id, rev)
         }
         return null
+    }
+
+    private fun serialize(personal: Personal): JsonObject {
+        val `object` = JsonObject()
+        `object`.addProperty("title", personal.title)
+        `object`.addProperty("uploadDate", System.currentTimeMillis())
+        `object`.addProperty("createdDate", personal.date)
+        `object`.addProperty("filename", FileUtils.getFileNameFromUrl(personal.path))
+        `object`.addProperty("author", personal.userName)
+        `object`.addProperty("addedBy", personal.userName)
+        `object`.addProperty("description", personal.description)
+        `object`.addProperty("resourceType", "Activities")
+        `object`.addProperty("private", true)
+        val object1 = JsonObject()
+        `object`.addDocumentOrigin()
+        `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
+        `object`.addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())
+        object1.addProperty("users", personal.userId)
+        `object`.add("privateFor", object1)
+        return `object`
     }
 
     override suspend fun uploadPersonal(personal: Personal): String {

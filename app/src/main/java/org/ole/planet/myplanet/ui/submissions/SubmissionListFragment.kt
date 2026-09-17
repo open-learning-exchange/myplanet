@@ -5,20 +5,18 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentSubmissionListBinding
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
-class SubmissionListFragment : Fragment() {
-    private var _binding: FragmentSubmissionListBinding? = null
-    private val binding get() = _binding!!
+class SubmissionListFragment : BaseBindingFragment<FragmentSubmissionListBinding>(FragmentSubmissionListBinding::inflate) {
     private val viewModel: SubmissionListViewModel by viewModels()
     private var parentId: String? = null
     private var examTitle: String? = null
@@ -32,11 +30,6 @@ class SubmissionListFragment : Fragment() {
             examTitle = it.getString("examTitle")
             userId = it.getString("userId")
         }
-    }
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentSubmissionListBinding.inflate(inflater, container, false)
-        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -103,10 +96,5 @@ class SubmissionListFragment : Fragment() {
 
     private fun generateReport(submissionIds: List<String>) {
         viewModel.generateMultipleSubmissionsPdf(submissionIds, examTitle ?: "Submissions")
-    }
-
-    override fun onDestroyView() {
-        _binding = null
-        super.onDestroyView()
     }
 }

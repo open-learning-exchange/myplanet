@@ -26,6 +26,7 @@ class LifeRepositoryImplTest {
     private lateinit var mockSharedPreferences: SharedPreferences
     private lateinit var mockEditor: SharedPreferences.Editor
     private lateinit var gson: Gson
+    private lateinit var lifeCache: LifeCache
     private lateinit var repository: LifeRepositoryImpl
     private val testDispatcher = UnconfinedTestDispatcher()
 
@@ -42,11 +43,11 @@ class LifeRepositoryImplTest {
         every { mockEditor.apply() } returns Unit
 
         gson = Gson()
+        lifeCache = LifeCache(mockSharedPreferences, gson)
         repository = LifeRepositoryImpl(
             myLifeDao,
             sharedPrefManager,
-            gson
-
+            lifeCache
         )
     }
 
@@ -129,6 +130,38 @@ class LifeRepositoryImplTest {
 
         assertEquals(1, firstLoad.size)
         assertEquals(1, secondLoad.size)
+    }
+
+    @Test
+    fun getMyLifeByUserId_preservesOrderAndFirstOccurrenceForDuplicatesInDaoOrderedInput() = runTest {
+        val userId = "user123"
+        // Input is already ordered by weight as returned by DAO (ORDER BY weight ASC)
+        // Item 1 and Item 3 share the same imageId ("duplicate_img"), so Item 1 must survive.
+        val item1 = MyLife().apply { _id = "1"; imageId = "duplicate_img"; weight = 1; this.userId = userId }
+        val item2 = MyLife().apply { _id = "2"; imageId = "unique_img"; weight = 2; this.userId = userId }
+        val item3 = MyLife().apply { _id = "3"; imageId = "duplicate_img"; weight = 3; this.userId = userId }
+
+        coEvery { myLifeDao.getByUserId(userId) } returns listOf(item1, item2, item3)
+
+        val result = repository.getMyLifeByUserId(userId)
+
+        assertEquals(2, result.size)
+        assertEquals("1", result[0]._id)
+        assertEquals(1, result[0].weight)
+        assertEquals("2", result[1]._id)
+        assertEquals(2, result[1].weight)
+    }
+
+    @Test
+    fun getMyLifeByUserId_earlyReturnQueriesDaoOnlyOnce() = runTest {
+        val userId = "user123"
+        val existingItem = MyLife().apply { title = "Existing"; this.userId = userId; weight = 1 }
+        coEvery { myLifeDao.getByUserId(userId) } returns listOf(existingItem)
+
+        val result = repository.getMyLifeByUserId(userId)
+
+        assertEquals(1, result.size)
+        coVerify(exactly = 1) { myLifeDao.getByUserId(userId) }
     }
 
     @Test

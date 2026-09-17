@@ -1,14 +1,18 @@
 package org.ole.planet.myplanet.utils
 
 import android.util.Log
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.ole.planet.myplanet.services.UploadManager
 
 class SyncTimeLoggerTest {
 
@@ -47,6 +51,8 @@ class SyncTimeLoggerTest {
 
         currentTime = 2000L
         logger.stopLogging()
+
+        assertTrue(logger.isVerbose)
 
         val summary = logger.generateSummary()
 
@@ -103,6 +109,56 @@ class SyncTimeLoggerTest {
     }
 
     @Test
+    fun testWhenTagNotLoggableNoPerEventLogOutput() {
+        mockkStatic(Log::class)
+        every { Log.isLoggable("SyncPerf", Log.DEBUG) } returns false
+        every { Log.d(any(), any()) } returns 0
+
+        var currentTime = 1000L
+        val timeProvider = mockk<TimeProvider> {
+            every { now() } answers { currentTime }
+        }
+
+        val testDispatcher = UnconfinedTestDispatcher()
+        val logger = SyncTimeLogger(
+            timeProvider = timeProvider,
+            appScope = CoroutineScope(testDispatcher),
+            dispatcherProvider = TestDispatcherProvider(testDispatcher),
+            sharedPrefManager = mockk(relaxed = true),
+            serverUrlMapper = mockk(relaxed = true),
+            diagnosticsRepository = mockk(relaxed = true),
+            serverReachabilityProvider = mockk(relaxed = true)
+        )
+
+        logger.startLogging()
+
+        assertTrue(!logger.isVerbose)
+
+        currentTime = 1200L
+        logger.startProcess("testProcess")
+
+        currentTime = 1400L
+        logger.logApiCall("http://server/api/v1/courses", duration = 200L, success = true, itemsReturned = 1)
+
+        currentTime = 1600L
+        logger.logDbOperation("INSERT", "CourseModel", duration = 150L, itemCount = 1)
+
+        currentTime = 1800L
+        logger.logDetail("context", "message")
+
+        currentTime = 2000L
+        logger.endProcess("testProcess", itemCount = 1)
+
+        currentTime = 2200L
+        logger.stopLogging()
+
+        io.mockk.verify(exactly = 0) { Log.d("SyncPerf", any()) }
+
+        val summary = logger.generateSummary()
+        assertTrue(summary.contains("Total API calls: 1"))
+    }
+
+    @Test
     fun testExtractProcessName() {
         assertEquals("Courses", SyncTimeLogger.extractProcessName("courses"))
         assertEquals("Courses", SyncTimeLogger.extractProcessName("api/v1/courses"))
@@ -111,5 +167,84 @@ class SyncTimeLoggerTest {
         assertEquals("Courses", SyncTimeLogger.extractProcessName("api//v1//courses//"))
         assertEquals("Api", SyncTimeLogger.extractProcessName("api"))
         assertEquals("Unknown", SyncTimeLogger.extractProcessName(""))
+    }
+
+    @Test
+    fun testGenerateSummaryMultipleKeysAndLogs() {
+        mockkStatic(Log::class)
+        every { Log.isLoggable(any(), any()) } returns true
+        every { Log.d(any(), any()) } returns 0
+
+        var currentTime = 0L
+        val timeProvider = mockk<TimeProvider> {
+            every { now() } answers { currentTime }
+        }
+
+        val testDispatcher = UnconfinedTestDispatcher()
+        val logger = SyncTimeLogger(
+            timeProvider = timeProvider,
+            appScope = CoroutineScope(testDispatcher),
+            dispatcherProvider = TestDispatcherProvider(testDispatcher),
+            sharedPrefManager = mockk(relaxed = true),
+            serverUrlMapper = mockk(relaxed = true),
+            diagnosticsRepository = mockk(relaxed = true),
+            serverReachabilityProvider = mockk(relaxed = true)
+        )
+
+        logger.startLogging()
+
+        currentTime = 100L
+        logger.logApiCall("http://server/api/v1/courses", duration = 300L, success = true, itemsReturned = 5)
+        logger.logApiCall("http://server/api/v1/courses", duration = 200L, success = false, itemsReturned = 0)
+        logger.logApiCall("http://server/api/v1/users", duration = 100L, success = true, itemsReturned = 2)
+        logger.logApiCall("http://server/api/v1/users", duration = 400L, success = true, itemsReturned = 8)
+
+        currentTime = 500L
+        logger.logDbOperation("INSERT", "CourseModel", duration = 200L, itemCount = 5)
+        logger.logDbOperation("UPDATE", "CourseModel", duration = 100L, itemCount = 3)
+        logger.logDbOperation("INSERT", "UserModel", duration = 300L, itemCount = 2)
+        logger.logDbOperation("UPDATE", "UserModel", duration = 200L, itemCount = 8)
+
+        currentTime = 2000L
+        logger.stopLogging()
+
+        val summary = logger.generateSummary()
+
+        assertTrue(summary.contains("Total API calls: 4 (Success: 3, Failed: 1)"))
+        assertTrue(summary.contains("Total API time: 1.00s (50.0% of total sync)"))
+        assertTrue(summary.contains("Total Db operations: 4"))
+        assertTrue(summary.contains("Total Db time: 800ms (40.0% of total sync)"))
+        assertTrue(summary.contains("Total items processed: 18"))
+        assertTrue(summary.contains("Network time: 50.0%"))
+        assertTrue(summary.contains("Database time: 40.0%"))
+        assertTrue(summary.contains("Other processing: 10.0%"))
+    }
+
+    @Test
+    fun testStopLoggingWhenUploadCrashLogThrows() {
+        mockkStatic(Log::class)
+        every { Log.isLoggable(any(), any()) } returns false
+        every { Log.e(any(), any(), any()) } returns 0
+
+        val testException = RuntimeException("Upload failed")
+        val uploadManager = mockk<UploadManager> {
+            coEvery { uploadCrashLog() } throws testException
+        }
+
+        val testDispatcher = UnconfinedTestDispatcher()
+        val logger = SyncTimeLogger(
+            timeProvider = mockk(relaxed = true),
+            appScope = CoroutineScope(testDispatcher),
+            dispatcherProvider = TestDispatcherProvider(testDispatcher),
+            sharedPrefManager = mockk(relaxed = true),
+            serverUrlMapper = mockk(relaxed = true),
+            diagnosticsRepository = mockk(relaxed = true),
+            serverReachabilityProvider = mockk(relaxed = true)
+        )
+
+        logger.startLogging()
+        logger.stopLogging(uploadManager)
+
+        verify { Log.e("SyncPerf", "crash log upload failed", testException) }
     }
 }
