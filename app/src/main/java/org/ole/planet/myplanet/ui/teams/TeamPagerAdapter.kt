@@ -4,7 +4,6 @@ import android.os.Bundle
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ApplicantsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.CoursesPage
@@ -79,12 +78,6 @@ class TeamPagerAdapter(
             }
             ApplicantsPage, JoinRequestsPage -> if (fragment is RequestsFragment) {
                 fragment.setOnMemberChangeListener(onMemberChangeListener)
-            }
-            CoursesPage -> if (fragment is TeamCoursesFragment) {
-                MainApplication.listener = fragment
-            }
-            DocumentsPage, ResourcesPage -> if (fragment is TeamResourcesFragment) {
-                MainApplication.listener = fragment
             }
             SurveyPage -> {
                 fragment.arguments = (fragment.arguments ?: Bundle()).apply {
