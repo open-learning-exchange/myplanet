@@ -229,13 +229,6 @@ class TeamDetailFragment : BaseTeamFragment() {
                                 teamLastPage[teamId] = it
                             }
                         }
-
-                        val itemId = adapter?.getItemId(position) ?: position.toLong()
-                        val fragmentTag = "f$itemId"
-                        val fragment = childFragmentManager.findFragmentByTag(fragmentTag)
-                        if (fragment is OnTeamPageListener) {
-                            MainApplication.listener = fragment
-                        }
                     }
                 }
             )
@@ -321,23 +314,17 @@ class TeamDetailFragment : BaseTeamFragment() {
 
             viewLifecycleOwner.lifecycleScope.launch {
                 delay(delayMs)
-                val pageListener = childFragmentManager.fragments.firstOrNull {
-                    it is OnTeamPageListener && it.arguments?.getString("fragmentType") == targetPageId
-                } as? OnTeamPageListener
-                when {
-                    pageListener != null -> {
-                        if (isEnterprise) {
-                            pageListener.onAddDocument()
-                        } else {
-                            pageListener.onAddCourse()
-                        }
+                val adapter = binding.viewPager2.adapter
+                val itemId = adapter?.getItemId(binding.viewPager2.currentItem)
+                val activeFragment = itemId?.let { childFragmentManager.findFragmentByTag("f$it") }
+                    ?: childFragmentManager.fragments.firstOrNull {
+                        it is OnTeamPageListener && it.arguments?.getString("fragmentType") == targetPageId
                     }
-                    MainApplication.listener is OnTeamPageListener -> {
-                        if (isEnterprise) {
-                            MainApplication.listener?.onAddDocument()
-                        } else {
-                            MainApplication.listener?.onAddCourse()
-                        }
+                if (activeFragment is OnTeamPageListener) {
+                    if (isEnterprise) {
+                        activeFragment.onAddDocument()
+                    } else {
+                        activeFragment.onAddCourse()
                     }
                 }
             }
