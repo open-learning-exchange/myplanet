@@ -6,6 +6,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -17,9 +18,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -28,6 +31,8 @@ class SurveysViewModelTest {
     private lateinit var surveysRepository: SurveysRepository
     private lateinit var submissionsRepository: SubmissionsRepository
     private lateinit var userRepository: UserRepository
+    private lateinit var realtimeSyncManager: RealtimeSyncManager
+    private lateinit var syncFlow: MutableSharedFlow<TableDataUpdate>
     private lateinit var viewModel: SurveysViewModel
     private val testDispatcher = StandardTestDispatcher()
     private val testDispatcherProvider = TestDispatcherProvider(testDispatcher)
@@ -38,12 +43,17 @@ class SurveysViewModelTest {
         surveysRepository = mockk()
         submissionsRepository = mockk()
         userRepository = mockk()
+        realtimeSyncManager = mockk()
+        syncFlow = MutableSharedFlow()
+
+        coEvery { realtimeSyncManager.updatesFor("exams") } returns syncFlow
 
         viewModel = SurveysViewModel(
             surveysRepository,
             submissionsRepository,
             userRepository,
-            testDispatcherProvider
+            testDispatcherProvider,
+            realtimeSyncManager
         )
     }
 
@@ -342,5 +352,33 @@ class SurveysViewModelTest {
         coVerify(exactly = 1) { surveysRepository.adoptSurvey("1", any(), any(), any()) }
         coVerify(exactly = 1) { surveysRepository.getIndividualSurveys() }
         assertEquals("Survey adopted successfully", viewModel.userMessage.value)
+    }
+
+    @Test
+    fun `test realtimeSyncManager update for exams table triggers survey reload`() = runTest {
+        backgroundScope.launch(testDispatcher) { viewModel.surveys.collect {} }
+        val survey1 = createSurvey("1", "Survey 1", 1000L, 0L)
+        val survey2 = createSurvey("2", "Survey 2", 2000L, 0L)
+
+        coEvery { userRepository.getUserModel() } returns mockk(relaxed = true)
+        coEvery { surveysRepository.getIndividualSurveys() } returnsMany listOf(
+            listOf(survey1),
+            listOf(survey1, survey2)
+        )
+        coEvery { surveysRepository.getSurveyInfos(any(), any(), any(), any()) } returns emptyMap()
+        coEvery { surveysRepository.getSurveyFormState(any(), any()) } returns emptyMap()
+
+        // Initial load
+        viewModel.loadSurveys(false, null, false)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(1, viewModel.surveys.value.size)
+
+        // Emit table update for "exams" with shouldRefreshUI = true
+        syncFlow.emit(TableDataUpdate("exams", 0, 1, shouldRefreshUI = true))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Verify reload occurred and updated list is published
+        coVerify(exactly = 2) { surveysRepository.getIndividualSurveys() }
+        assertEquals(2, viewModel.surveys.value.size)
     }
 }

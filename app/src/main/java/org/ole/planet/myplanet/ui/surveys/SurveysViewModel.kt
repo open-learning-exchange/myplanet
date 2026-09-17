@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -29,7 +30,8 @@ class SurveysViewModel @Inject constructor(
     private val surveysRepository: SurveysRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val userRepository: UserRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val realtimeSyncManager: RealtimeSyncManager
 ) : ViewModel() {
 
     enum class SortOption {
@@ -76,6 +78,16 @@ class SurveysViewModel @Inject constructor(
     private val _surveySent = MutableStateFlow(false)
     val surveySent: StateFlow<Boolean> = _surveySent.asStateFlow()
 
+    init {
+        viewModelScope.launch {
+            realtimeSyncManager.updatesFor("exams").collect { update ->
+                if (update.shouldRefreshUI) {
+                    loadSurveys(isTeam, teamId, _isTeamShareAllowed.value)
+                }
+            }
+        }
+    }
+
     fun loadSurveys(isTeam: Boolean, teamId: String?, isTeamShareAllowed: Boolean) {
         loadJob?.cancel()
         this.isTeam = isTeam
@@ -87,8 +99,7 @@ class SurveysViewModel @Inject constructor(
         val capturedTeamId = teamId
         val capturedIsTeamShareAllowed = isTeamShareAllowed
 
-        var currentJob: Job? = null
-        currentJob = viewModelScope.launch {
+        loadJob = viewModelScope.launch {
             try {
                 val currentSurveysList = when {
                     capturedIsTeam && capturedIsTeamShareAllowed -> surveysRepository.getAdoptableTeamSurveys(capturedTeamId)
@@ -105,7 +116,8 @@ class SurveysViewModel @Inject constructor(
                 )
                 val bindingData = surveysRepository.getSurveyFormState(currentSurveysList, capturedTeamId)
 
-                if (this@SurveysViewModel.isTeam == capturedIsTeam &&
+                if (!coroutineContext[Job]!!.isCancelled &&
+                    this@SurveysViewModel.isTeam == capturedIsTeam &&
                     this@SurveysViewModel.teamId == capturedTeamId &&
                     _isTeamShareAllowed.value == capturedIsTeamShareAllowed
                 ) {
@@ -116,16 +128,15 @@ class SurveysViewModel @Inject constructor(
                     applyFilterAndSort()
                 }
             } catch (e: Exception) {
-                if (loadJob === currentJob) {
+                if (!coroutineContext[Job]!!.isCancelled) {
                     _errorMessage.value = "Failed to load surveys: ${e.message}"
                 }
             } finally {
-                if (loadJob === currentJob) {
+                if (!coroutineContext[Job]!!.isCancelled) {
                     _isLoading.value = false
                 }
             }
         }
-        loadJob = currentJob
     }
 
     fun search(query: String) {
