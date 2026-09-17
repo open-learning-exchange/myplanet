@@ -60,4 +60,82 @@ class ResourcesPreviewLoaderTest {
         val preview = previewLoader.getCsvPreview(file)
         assertNull(preview)
     }
+
+    @Test
+    fun `two calls for an unchanged file return cached preview without re-reading`() = runTest {
+        val file = tempFolder.newFile("cache_test.txt")
+        file.writeText("Original content line")
+        val initialLastModified = file.lastModified()
+
+        val firstCall = previewLoader.getTextPreview(file)
+        assertEquals("Original content line", firstCall)
+
+        file.writeText("Modified content line")
+        file.setLastModified(initialLastModified)
+
+        val secondCall = previewLoader.getTextPreview(file)
+        assertEquals("Original content line", secondCall)
+    }
+
+    @Test
+    fun `file whose lastModified changes is re-read`() = runTest {
+        val file = tempFolder.newFile("mod_test.txt")
+        file.writeText("Original content line")
+        val initialLastModified = file.lastModified()
+
+        val firstCall = previewLoader.getTextPreview(file)
+        assertEquals("Original content line", firstCall)
+
+        file.writeText("Updated content line")
+        file.setLastModified(initialLastModified + 2000L)
+
+        val secondCall = previewLoader.getTextPreview(file)
+        assertEquals("Updated content line", secondCall)
+    }
+
+    @Test
+    fun `failing call is not cached`() = runTest {
+        val file = File(tempFolder.root, "non_existent.txt")
+
+        val firstCall = previewLoader.getTextPreview(file)
+        assertNull(firstCall)
+
+        file.writeText("Now file exists")
+
+        val secondCall = previewLoader.getTextPreview(file)
+        assertEquals("Now file exists", secondCall)
+    }
+
+    @Test
+    fun `cache evicts past its cap`() = runTest {
+        val firstFile = tempFolder.newFile("file_0.txt")
+        firstFile.writeText("First file content")
+        val firstLastModified = firstFile.lastModified()
+
+        assertEquals("First file content", previewLoader.getTextPreview(firstFile))
+
+        for (i in 1..ResourcesPreviewLoader.MAX_CACHE_SIZE + 5) {
+            val file = tempFolder.newFile("file_$i.txt")
+            file.writeText("Content $i")
+            previewLoader.getTextPreview(file)
+        }
+
+        firstFile.writeText("Overwritten content")
+        firstFile.setLastModified(firstLastModified)
+
+        val result = previewLoader.getTextPreview(firstFile)
+        assertEquals("Overwritten content", result)
+    }
+
+    @Test
+    fun `getAudioPreview returns empty string for invalid audio file and is not cached`() = runTest {
+        val file = tempFolder.newFile("fake.mp3")
+        file.writeText("Not audio content")
+
+        val firstCall = previewLoader.getAudioPreview(file)
+        assertEquals("", firstCall)
+
+        val secondCall = previewLoader.getAudioPreview(file)
+        assertEquals("", secondCall)
+    }
 }

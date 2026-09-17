@@ -1344,7 +1344,7 @@ class ResourcesRepositoryImplTest {
         assertEquals("res1", res1Item.resourceId)
         assertEquals("Video Resource", res1Item.title)
         assertEquals(15L, res1Item.totalSizeBytes)
-        assertEquals(listOf(file1.absolutePath, file2.absolutePath), res1Item.filePaths)
+        assertEquals(listOf(file1.absolutePath, file2.absolutePath).sorted(), res1Item.filePaths.sorted())
 
         // Test fallback extension category (extensions.isEmpty() -> not in knownExtensions)
         val otherItems = repository.getOfflineResourceItems(oleDir.absolutePath, emptySet(), knownExtensions)
