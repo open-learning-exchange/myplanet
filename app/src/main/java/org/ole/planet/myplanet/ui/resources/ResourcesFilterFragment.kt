@@ -152,7 +152,7 @@ class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFi
             }
         }
         for (i in arr.indices) {
-                listView.setItemChecked(i, set.contains(arr[i]))
+            listView.setItemChecked(i, set.contains(arr[i]))
         }
     }
 
@@ -235,6 +235,7 @@ class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFi
             "image" -> getString(R.string.storage_images)
             "text/html" -> getString(R.string.medium_text_html)
             "html" -> getString(R.string.medium_html)
+            "book", "books" -> getString(R.string.filter_books)
             "other" -> getString(R.string.other)
             else -> medium
         }

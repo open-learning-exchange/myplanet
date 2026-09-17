@@ -423,7 +423,22 @@ class ResourcesAdapter(
 
     private fun buildMetaLine(model: ResourceListModel, type: LibraryType, fileSize: Long?): String {
         val parts = mutableListOf<String>()
-        parts.add(context.getString(typeLabelRes(type)))
+        val mediaType = model.library.mediaType?.takeIf { it.isNotBlank() }
+        val typeLabel = if (mediaType != null) {
+            when (mediaType.lowercase()) {
+                "pdf" -> context.getString(R.string.filter_pdfs)
+                "video" -> context.getString(R.string.filter_videos)
+                "audio" -> context.getString(R.string.filter_audio)
+                "image", "graphic/pictures" -> context.getString(R.string.storage_images)
+                "text/html" -> context.getString(R.string.medium_text_html)
+                "html" -> context.getString(R.string.medium_html)
+                "book", "books" -> context.getString(R.string.filter_books)
+                else -> mediaType
+            }
+        } else {
+            context.getString(typeLabelRes(type))
+        }
+        parts.add(typeLabel)
         if (fileSize != null) {
             parts.add(FileUtils.formatSize(context, fileSize))
         }
