@@ -223,4 +223,17 @@ class InlineResourceAdapterTest {
         ioTestDispatcher.scheduler.advanceUntilIdle()
         coVerify(exactly = 1) { UrlUtils.getUrl(resource) }
     }
+
+    @Test
+    fun `cache key format matches absolutePath_lastModified_length`() {
+        val file = tempFolder.newFile("fixture.txt")
+        file.writeText("hello cache key test")
+
+        val expected = "${file.absolutePath}_${file.lastModified()}_${file.length()}"
+        val actualWithMetadata = adapter.getCacheKey(file, file.lastModified(), file.length())
+        val actualWithFile = adapter.getCacheKey(file)
+
+        assertEquals(expected, actualWithMetadata)
+        assertEquals(expected, actualWithFile)
+    }
 }
