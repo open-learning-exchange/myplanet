@@ -157,19 +157,12 @@ class UploadToShelfServiceTest {
 
     @Test
     fun `uploadHealth uploads and marks health records`() = runTest(testDispatcher) {
-        val healthRecords = mockk<List<HealthExamination>>(relaxed = true)
-        val uploadedRecords = mockk<Map<String, String?>>(relaxed = true)
-
-        coEvery { healthRepository.getUpdatedHealthExaminations() } returns healthRecords
-        coEvery { healthRepository.uploadHealthData(healthRecords) } returns uploadedRecords
-        coEvery { healthRepository.markHealthExaminationsUploaded(uploadedRecords) } returns Unit
+        coEvery { healthRepository.syncPendingHealthExaminations() } returns Unit
 
         service.uploadHealth()
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { healthRepository.getUpdatedHealthExaminations() }
-        coVerify(exactly = 1) { healthRepository.uploadHealthData(healthRecords) }
-        coVerify(exactly = 1) { healthRepository.markHealthExaminationsUploaded(uploadedRecords) }
+        coVerify(exactly = 1) { healthRepository.syncPendingHealthExaminations() }
     }
 
     @Test
@@ -179,31 +172,25 @@ class UploadToShelfServiceTest {
         service.uploadSingleUserHealth(null, listener)
         advanceUntilIdle()
 
-        coVerify(exactly = 0) { healthRepository.getUpdatedHealthForUser(any()) }
+        coVerify(exactly = 0) { healthRepository.syncPendingHealthExaminationsForUser(any()) }
 
         service.uploadSingleUserHealth("", listener)
         advanceUntilIdle()
 
-        coVerify(exactly = 0) { healthRepository.getUpdatedHealthForUser(any()) }
+        coVerify(exactly = 0) { healthRepository.syncPendingHealthExaminationsForUser(any()) }
     }
 
     @Test
     fun `uploadSingleUserHealth uploads data for specific user`() = runTest(testDispatcher) {
         val userId = "user123"
         val listener = mockk<OnSuccessListener>(relaxed = true)
-        val healthRecords = mockk<List<HealthExamination>>(relaxed = true)
-        val uploadedRecords = mockk<Map<String, String?>>(relaxed = true)
 
-        coEvery { healthRepository.getUpdatedHealthForUser(userId) } returns healthRecords
-        coEvery { healthRepository.uploadHealthData(healthRecords) } returns uploadedRecords
-        coEvery { healthRepository.markHealthExaminationsUploaded(uploadedRecords) } returns Unit
+        coEvery { healthRepository.syncPendingHealthExaminationsForUser(userId) } returns Unit
 
         service.uploadSingleUserHealth(userId, listener)
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { healthRepository.getUpdatedHealthForUser(userId) }
-        coVerify(exactly = 1) { healthRepository.uploadHealthData(healthRecords) }
-        coVerify(exactly = 1) { healthRepository.markHealthExaminationsUploaded(uploadedRecords) }
+        coVerify(exactly = 1) { healthRepository.syncPendingHealthExaminationsForUser(userId) }
         verify(exactly = 1) { listener.onSuccess("Health data for user $userId uploaded successfully") }
     }
 
@@ -212,7 +199,7 @@ class UploadToShelfServiceTest {
         val userId = "user123"
         val listener = mockk<OnSuccessListener>(relaxed = true)
 
-        coEvery { healthRepository.getUpdatedHealthForUser(userId) } throws RuntimeException("Health error")
+        coEvery { healthRepository.syncPendingHealthExaminationsForUser(userId) } throws RuntimeException("Health error")
 
         service.uploadSingleUserHealth(userId, listener)
         advanceUntilIdle()
