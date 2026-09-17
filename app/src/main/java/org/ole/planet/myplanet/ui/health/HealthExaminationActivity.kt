@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.health
 
 import android.os.Bundle
+import android.util.Log
 import android.view.ContextThemeWrapper
 import android.view.MenuItem
 import android.view.View
@@ -280,14 +281,14 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
                 val iv = user?.iv ?: generateIv().also { user?.iv = it }
                 examination?.data = encrypt(JsonUtils.gson.toJson(sign), key, iv)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "Encrypting examination data failed", e)
             }
 
             // Delegate save to ViewModel
             viewModel.saveExamination(examination, pojo, user)
 
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "Saving examination data failed", e)
             Utilities.toast(this@HealthExaminationActivity, getString(R.string.unable_to_add_health_record))
         }
     }
@@ -382,7 +383,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
                 pojo?.data = encrypt(JsonUtils.gson.toJson(health), userKey, userIv)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "Creating health examination pojo failed", e)
             Utilities.toast(this, getString(R.string.unable_to_add_health_record))
         }
     }
@@ -417,5 +418,9 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
         customDiag = null
         mapConditions = null
         super.onDestroy()
+    }
+
+    companion object {
+        private const val TAG = "HealthExaminationActivity"
     }
 }
