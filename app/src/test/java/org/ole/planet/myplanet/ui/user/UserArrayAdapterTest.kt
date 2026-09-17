@@ -39,6 +39,14 @@ class UserArrayAdapterTest {
         joinDate = 1600000000000L
     )
 
+    private val user3 = UserEntity(
+        id = "3",
+        name = "bobsmith",
+        firstName = "Bob",
+        lastName = "Smith",
+        joinDate = 1700000000000L
+    )
+
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
@@ -54,7 +62,12 @@ class UserArrayAdapterTest {
     @Test
     fun testOnBindViewHolder_cachesFormattedDateForSameJoinDate() {
         val parent = FrameLayout(context)
-        adapter.submitList(listOf(user1, user2))
+        adapter.submitList(listOf(user1, user2, user3))
+
+        val formattedDate1 = TimeUtils.formatDate(1600000000000L)
+        val expectedJoinedText1 = context.getString(R.string.joined_colon, formattedDate1)
+        val formattedDate3 = TimeUtils.formatDate(1700000000000L)
+        val expectedJoinedText3 = context.getString(R.string.joined_colon, formattedDate3)
 
         clearMocks(TimeUtils, answers = false)
 
@@ -64,14 +77,14 @@ class UserArrayAdapterTest {
         val holder2 = adapter.onCreateViewHolder(parent, 0)
         adapter.onBindViewHolder(holder2, 1)
 
-        val formattedDate = TimeUtils.formatDate(1600000000000L)
-        val expectedJoinedText = context.getString(R.string.joined_colon, formattedDate)
+        val holder3 = adapter.onCreateViewHolder(parent, 0)
+        adapter.onBindViewHolder(holder3, 2)
 
-        assertEquals(expectedJoinedText, holder1.binding.txtJoined.text.toString())
-        assertEquals(expectedJoinedText, holder2.binding.txtJoined.text.toString())
+        assertEquals(expectedJoinedText1, holder1.binding.txtJoined.text.toString())
+        assertEquals(expectedJoinedText1, holder2.binding.txtJoined.text.toString())
+        assertEquals(expectedJoinedText3, holder3.binding.txtJoined.text.toString())
 
-        // TimeUtils.formatDate was called once in adapter onBindViewHolder for holder1
-        // and once above in this test method to construct expectedJoinedText.
-        verify(exactly = 2) { TimeUtils.formatDate(1600000000000L) }
+        verify(exactly = 1) { TimeUtils.formatDate(1600000000000L) }
+        verify(exactly = 1) { TimeUtils.formatDate(1700000000000L) }
     }
 }
