@@ -23,6 +23,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ProfileFieldsUpdate
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
@@ -102,7 +103,7 @@ class AchievementViewModelTest {
 
         val achievements = JsonArray()
         val references = JsonArray()
-        val profileFields = JsonObject().apply { addProperty("firstName", "John") }
+        val profileFields = ProfileFieldsUpdate(firstName = "John")
 
         viewModel.saveAchievement(
             AchievementSaveRequest(
