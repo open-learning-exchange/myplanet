@@ -5,6 +5,8 @@ import io.mockk.mockk
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.ole.planet.myplanet.data.api.RetryInterceptor
@@ -60,5 +62,15 @@ class NetworkModuleTest {
             "A reachability probe must not retry, or an unreachable server takes tens of seconds to report",
             okHttpClient.interceptors.none { it is RetryInterceptor }
         )
+    }
+
+    @Test
+    fun `provided clients share connectionPool instance but use different dispatcher instances`() {
+        val mockRetryInterceptor = mockk<RetryInterceptor>(relaxed = true)
+        val standardClient = NetworkModule.provideStandardOkHttpClient(mockRetryInterceptor)
+        val reachabilityClient = NetworkModule.provideReachabilityOkHttpClient()
+
+        assertSame(standardClient.connectionPool, reachabilityClient.connectionPool)
+        assertNotSame(standardClient.dispatcher, reachabilityClient.dispatcher)
     }
 }
