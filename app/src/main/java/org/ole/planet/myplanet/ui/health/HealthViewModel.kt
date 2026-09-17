@@ -25,18 +25,8 @@ import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 class HealthViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val healthRepository: HealthRepository,
-    private val realtimeSyncManager: RealtimeSyncManager = RealtimeSyncManager()
+    private val realtimeSyncManager: RealtimeSyncManager
 ) : ViewModel() {
-
-    init {
-        viewModelScope.launch {
-            realtimeSyncManager.dataUpdateFlow.collect { update ->
-                if (update.table == "health" && update.shouldRefreshUI) {
-                    refreshSelectedPatient()
-                }
-            }
-        }
-    }
 
     private val _healthData = MutableStateFlow<HealthData?>(null)
     val healthData: StateFlow<HealthData?> = _healthData.asStateFlow()
@@ -66,6 +56,16 @@ class HealthViewModel @Inject constructor(
     private var searchJob: Job? = null
     private var selectPatientJob: Job? = null
     private var currentPatientId: String? = null
+
+    init {
+        viewModelScope.launch {
+            realtimeSyncManager.dataUpdateFlow.collect { update ->
+                if (update.table == "health" && update.shouldRefreshUI) {
+                    refreshSelectedPatient()
+                }
+            }
+        }
+    }
 
     fun loadPatients(sortBy: String = "joinDate", descending: Boolean = true) {
         viewModelScope.launch {

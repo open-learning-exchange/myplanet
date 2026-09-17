@@ -31,7 +31,7 @@ class HealthViewModelTest {
     fun setup() {
         userRepository = mockk()
         healthRepository = mockk()
-        viewModel = HealthViewModel(userRepository, healthRepository)
+        viewModel = HealthViewModel(userRepository, healthRepository, RealtimeSyncManager())
     }
 
     @Test
