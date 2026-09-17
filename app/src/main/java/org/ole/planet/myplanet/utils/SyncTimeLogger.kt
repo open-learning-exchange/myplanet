@@ -36,12 +36,16 @@ class SyncTimeLogger @Inject constructor(
     private val processItemCounts = ConcurrentHashMap<String, Int>()
     private val apiCallTimes = ConcurrentHashMap<String, MutableList<ApiCallLog>>()
     private val dbOperationTimes = ConcurrentHashMap<String, MutableList<DbOperationLog>>()
+    @Volatile
     private var startTime: Long = 0
+    @Volatile
     private var endTime: Long = 0
+    @Volatile
     private var isLogging = false
     private val apiCallCounter = AtomicInteger(0)
     private val dbOpCounter = AtomicInteger(0)
 
+    @Volatile
     var isVerbose: Boolean = false
         private set
 
