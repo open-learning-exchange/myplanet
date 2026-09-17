@@ -16,6 +16,7 @@ import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.MainApplication
@@ -88,6 +89,8 @@ class ServerReachabilityWorker @AssistedInject constructor(
             }
 
             Result.success()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.w(TAG, "doWork failed", e)
             Result.retry()
@@ -122,6 +125,8 @@ class ServerReachabilityWorker @AssistedInject constructor(
                     }
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.w(TAG, "tryServerSwitch failed", e)
         }
@@ -183,6 +188,8 @@ class ServerReachabilityWorker @AssistedInject constructor(
                 }
             }
             uploadSubmissions()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.w(TAG, "checkAvailableServerAndUpload failed", e)
             uploadSubmissions()
@@ -204,6 +211,8 @@ class ServerReachabilityWorker @AssistedInject constructor(
             if (!syncAlreadyRunning) {
                 RetryQueueWorker.triggerImmediateRetry(applicationContext)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.w(TAG, "uploadSubmissions failed", e)
         }
@@ -219,6 +228,8 @@ class ServerReachabilityWorker @AssistedInject constructor(
                 // No UI updates required for background sync completion.
             }
             uploadManager.uploadExamResult(successListener)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.w(TAG, "uploadExamResultWrapper failed", e)
         }
