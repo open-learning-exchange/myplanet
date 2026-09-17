@@ -1,6 +1,8 @@
 # myPlanet refactor backlog — merged and verified
 
-Merged from 12 submitted lists (120 task headings, 110 distinct tasks: list 11 is a byte-identical copy of list 5) down to **98 shipped tasks**, sorted by rating.
+Merged from 12 submitted lists (120 raw tasks) down to **101 shipped tasks**, sorted by rating.
+
+Note: the list-5 link originally supplied pointed at the list-11 URL, so the two were briefly treated as one document. They are distinct: list 5 is grok's repository-boundary round (branch d509e0a6), list 11 is grok's performance round (branch 32cb561a). Both are included here.
 
 Every task premise was re-checked against the working tree with grep and file reads. Ratings use evidence quality x impact x risk-adjusted feasibility (weights 0.35 / 0.35 / 0.30, geometric mean, 1-100).
 
@@ -18,7 +20,7 @@ duplicate credit: unique 1/1
 
 rating: 82  (evidence 1.00 x impact 0.65 x feasibility 0.85)
 proposed by: claude opus 5 (L2#1), devin swe 2 (L6#8)
-duplicate credit: 1/2 per proposal
+duplicate credit: 1/2 per proposing agent
 
 ---
 
@@ -33,16 +35,16 @@ duplicate credit: unique 1/1
 ## chatsearch-ignorecase — ChatSearch: drop redundant ignoreCase on pre-normalized text and assemble buckets in one pass
 
 rating: 76  (evidence 0.90 x impact 0.55 x feasibility 0.90)
-proposed by: claude opus 5 (L2#3), codex sol 5.6 (L3#5), copilot grok 4.5 (L5#5)
-duplicate credit: 1/3 per proposal
+proposed by: claude opus 5 (L2#3), codex sol 5.6 (L3#5), copilot grok 4.5 (L11#5)
+duplicate credit: 1/3 per proposing agent
 
 ---
 
 ## inline-adapter-fs-cache — InlineResourceAdapter: resolve the File once and use FileExistenceCache instead of per-bind re-stats
 
 rating: 74  (evidence 0.90 x impact 0.60 x feasibility 0.75)
-proposed by: devin swe 2 (L6#6), copilot grok 4.5 (L5#1)
-duplicate credit: 1/2 per proposal
+proposed by: devin swe 2 (L6#6), copilot grok 4.5 (L11#1)
+duplicate credit: 1/2 per proposing agent
 
 ---
 
@@ -66,6 +68,14 @@ duplicate credit: unique 1/1
 
 rating: 71  (evidence 0.95 x impact 0.45 x feasibility 0.85)
 proposed by: claude opus 5 (L8#1)
+duplicate credit: unique 1/1
+
+---
+
+## dictionary-reader-context — DictionaryFileReaderImpl: inject StoragePathResolver instead of @ApplicationContext Context
+
+rating: 71  (evidence 0.95 x impact 0.45 x feasibility 0.85)
+proposed by: copilot grok 4.5 (L5#3)
 duplicate credit: unique 1/1
 
 ---
@@ -126,10 +136,10 @@ duplicate credit: unique 1/1
 
 ---
 
-## courses-steps-prefetch — CoursesStepsViewModel: move next-step prefetch and path lookup behind ResourcesRepository
+## resources-repo-mainapp-statics — ResourcesRepositoryImpl: remove MainApplication.context and MainApplication.applicationScope usages
 
-rating: 68  (evidence 0.85 x impact 0.60 x feasibility 0.60)
-proposed by: codex sol 5.6 (L9#2)
+rating: 68  (evidence 0.90 x impact 0.50 x feasibility 0.70)
+proposed by: copilot grok 4.5 (L5#5)
 duplicate credit: unique 1/1
 
 ---
@@ -146,22 +156,14 @@ duplicate credit: unique 1/1
 
 rating: 68  (evidence 0.95 x impact 0.45 x feasibility 0.75)
 proposed by: claude opus 5 (L8#2), devin swe 2 (L12#8)
-duplicate credit: 1/2 per proposal
-
----
-
-## calendar-viewmodel-distinct — CalendarViewModel.loadMeetups: distinctUntilChanged before re-querying meetups
-
-rating: 67  (evidence 0.85 x impact 0.45 x feasibility 0.80)
-proposed by: copilot kimi k3 (L4#4)
-duplicate credit: unique 1/1
+duplicate credit: 1/2 per proposing agent
 
 ---
 
 ## downloadservice-prefs — DownloadService: stop SharedPreferences thrash in queue bookkeeping
 
 rating: 67  (evidence 0.90 x impact 0.45 x feasibility 0.75)
-proposed by: copilot grok 4.5 (L5#3)
+proposed by: copilot grok 4.5 (L11#3)
 duplicate credit: unique 1/1
 
 ---
@@ -174,11 +176,27 @@ duplicate credit: unique 1/1
 
 ---
 
+## public-survey-viewmodel — PublicSurveyViewModel plus payload builder: get buildPublicAnswers and sanitizeRespondent out of the Activity
+
+rating: 67  (evidence 0.90 x impact 0.55 x feasibility 0.60)
+proposed by: copilot kimi k3 (L10#5), copilot grok 4.5 (L5#8)
+duplicate credit: 1/2 per proposing agent
+
+---
+
 ## storage-scan — Storage breakdown disk scan: single-pass walk, moved out of the ViewModel into ResourcesRepository
 
 rating: 67  (evidence 0.85 x impact 0.50 x feasibility 0.70)
 proposed by: copilot kimi k3 (L4#9), claude opus 5 (L8#3)
-duplicate credit: 1/2 per proposal
+duplicate credit: 1/2 per proposing agent
+
+---
+
+## submissions-pdf-boundary — Take Context off the submissions PDF path and split PDF rendering into a writer helper
+
+rating: 67  (evidence 0.90 x impact 0.55 x feasibility 0.60)
+proposed by: copilot kimi k3 (L10#8), copilot grok 4.5 (L5#4)
+duplicate credit: 1/2 per proposing agent
 
 ---
 
@@ -186,6 +204,22 @@ duplicate credit: 1/2 per proposal
 
 rating: 66  (evidence 0.80 x impact 0.60 x feasibility 0.60)
 proposed by: codex sol 5.6 (L9#3)
+duplicate credit: unique 1/1
+
+---
+
+## course-step-resource-coordinator — CoursesStepsViewModel: move Context/path work and next-step prefetch behind a coordinator or ResourcesRepository
+
+rating: 66  (evidence 0.85 x impact 0.55 x feasibility 0.60)
+proposed by: codex sol 5.6 (L9#2), copilot grok 4.5 (L5#9)
+duplicate credit: 1/2 per proposing agent
+
+---
+
+## notifications-dto-formatting — getEnrichedNotifications: single pass plus ready-to-bind display strings built in the repository DTO
+
+rating: 66  (evidence 0.85 x impact 0.55 x feasibility 0.60)
+proposed by: copilot grok 4.5 (L5#7), copilot grok 4.5 (L11#7)
 duplicate credit: unique 1/1
 
 ---
@@ -281,8 +315,8 @@ duplicate credit: unique 1/1
 ## fileutils-caching — FileUtils: memoize findHtmlCoverImage, make getFileExtension string-only, cache a non-empty checkFileExist
 
 rating: 65  (evidence 0.90 x impact 0.50 x feasibility 0.60)
-proposed by: claude opus 5 (L2#4), copilot grok 4.5 (L5#2)
-duplicate credit: 1/2 per proposal
+proposed by: claude opus 5 (L2#4), copilot grok 4.5 (L11#2)
+duplicate credit: 1/2 per proposing agent
 
 ---
 
@@ -298,14 +332,6 @@ duplicate credit: unique 1/1
 
 rating: 65  (evidence 0.95 x impact 0.35 x feasibility 0.85)
 proposed by: claude opus 5 (L2#2)
-duplicate credit: unique 1/1
-
----
-
-## public-survey-builder — Extract PublicSurveyPayloadBuilder out of PublicSurveyActivity
-
-rating: 65  (evidence 0.85 x impact 0.50 x feasibility 0.65)
-proposed by: copilot kimi k3 (L10#5)
 duplicate credit: unique 1/1
 
 ---
@@ -369,7 +395,7 @@ duplicate credit: unique 1/1
 ## lifecache-memory — LifeCache: add an in-memory layer in front of SharedPreferences and Gson
 
 rating: 64  (evidence 0.85 x impact 0.45 x feasibility 0.70)
-proposed by: copilot grok 4.5 (L5#6)
+proposed by: copilot grok 4.5 (L11#6)
 duplicate credit: unique 1/1
 
 ---
@@ -379,6 +405,14 @@ duplicate credit: unique 1/1
 rating: 63  (evidence 0.90 x impact 0.40 x feasibility 0.70)
 proposed by: copilot kimi k3 (L10#3)
 duplicate credit: unique 1/1
+
+---
+
+## calendar-meetups-loader — CalendarViewModel: extract meetup loading into a loader helper and apply distinctUntilChanged to the teams flow
+
+rating: 63  (evidence 0.82 x impact 0.50 x feasibility 0.60)
+proposed by: copilot kimi k3 (L4#4), copilot grok 4.5 (L5#10)
+duplicate credit: 1/2 per proposing agent
 
 ---
 
@@ -417,7 +451,7 @@ duplicate credit: unique 1/1
 ## preview-loader-memo — ResourcesPreviewLoader: memoize audio, csv and text preview work
 
 rating: 62  (evidence 0.85 x impact 0.40 x feasibility 0.70)
-proposed by: copilot grok 4.5 (L5#8)
+proposed by: copilot grok 4.5 (L11#8)
 duplicate credit: unique 1/1
 
 ---
@@ -473,7 +507,7 @@ duplicate credit: unique 1/1
 ## resources-search-single-pass — ResourcesRepositoryImpl.search: single-pass startsWith ranking instead of two lists plus concat
 
 rating: 61  (evidence 0.85 x impact 0.35 x feasibility 0.80)
-proposed by: copilot grok 4.5 (L5#4)
+proposed by: copilot grok 4.5 (L11#4)
 duplicate credit: unique 1/1
 
 ---
@@ -542,22 +576,6 @@ duplicate credit: unique 1/1
 
 ---
 
-## notifications-enriched-passes — getEnrichedNotifications: fewer passes over payloads and one less DAO round-trip
-
-rating: 59  (evidence 0.80 x impact 0.40 x feasibility 0.65)
-proposed by: copilot grok 4.5 (L5#7)
-duplicate credit: unique 1/1
-
----
-
-## submissions-context — SubmissionsRepositoryImpl and exporter: stop threading Context into the PDF exporter
-
-rating: 59  (evidence 0.85 x impact 0.40 x feasibility 0.60)
-proposed by: copilot kimi k3 (L10#8)
-duplicate credit: unique 1/1
-
----
-
 ## synctimelogger-summary — SyncTimeLogger.generateSummary: aggregate each endpoint and model once instead of re-summing
 
 rating: 59  (evidence 0.90 x impact 0.30 x feasibility 0.80)
@@ -614,6 +632,14 @@ duplicate credit: unique 1/1
 
 ---
 
+## life-cache-package-move — Move LifeCache out of the repository package into a data/cache package
+
+rating: 57  (evidence 0.75 x impact 0.35 x feasibility 0.75)
+proposed by: copilot grok 4.5 (L5#2)
+duplicate credit: unique 1/1
+
+---
+
 ## notifications-distinct — NotificationsViewModel: drop the redundant distinct pass over ordered types
 
 rating: 57  (evidence 0.90 x impact 0.25 x feasibility 0.85)
@@ -641,7 +667,7 @@ duplicate credit: unique 1/1
 ## tts-stripmarkdown — TTSManager.stripMarkdown: fewer passes and intermediate strings
 
 rating: 56  (evidence 0.85 x impact 0.35 x feasibility 0.60)
-proposed by: copilot grok 4.5 (L5#9)
+proposed by: copilot grok 4.5 (L11#9)
 duplicate credit: unique 1/1
 
 ---
@@ -777,7 +803,7 @@ duplicate credit: unique 1/1
 ## chathistory-adapter — ChatHistoryAdapter: DiffUtil payloads and bind micro-costs
 
 rating: 38  (evidence 0.40 x impact 0.25 x feasibility 0.60)
-proposed by: copilot grok 4.5 (L5#10)
+proposed by: copilot grok 4.5 (L11#10)
 duplicate credit: unique 1/1
 
 ---
