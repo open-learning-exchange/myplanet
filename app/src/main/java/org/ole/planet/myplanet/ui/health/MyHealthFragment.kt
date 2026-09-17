@@ -100,6 +100,10 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
 
     private fun observeData() {
 
+        collectWhenStarted(viewModel.healthSyncUpdates) {
+            viewModel.refreshSelectedPatient()
+        }
+
         collectWhenStarted(viewModel.loggedInUser) { user ->
             loggedInUser = user
             setupButtons()

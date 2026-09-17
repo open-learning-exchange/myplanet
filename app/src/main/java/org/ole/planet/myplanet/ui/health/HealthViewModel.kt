@@ -5,13 +5,18 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.MyHealth
@@ -22,10 +27,11 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 
 @HiltViewModel
+@OptIn(FlowPreview::class)
 class HealthViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val healthRepository: HealthRepository,
-    private val realtimeSyncManager: RealtimeSyncManager
+    realtimeSyncManager: RealtimeSyncManager
 ) : ViewModel() {
 
     private val _healthData = MutableStateFlow<HealthData?>(null)
@@ -57,15 +63,14 @@ class HealthViewModel @Inject constructor(
     private var selectPatientJob: Job? = null
     private var currentPatientId: String? = null
 
-    init {
-        viewModelScope.launch {
-            realtimeSyncManager.dataUpdateFlow.collect { update ->
-                if (update.table == "health" && update.shouldRefreshUI) {
-                    refreshSelectedPatient()
-                }
-            }
-        }
-    }
+    /**
+     * Health-table sync events, filtered and coalesced. Collect it from the UI with a
+     * lifecycle-aware collector so no refresh runs while the screen is in the background.
+     */
+    val healthSyncUpdates: Flow<Unit> = realtimeSyncManager.dataUpdateFlow
+        .filter { it.table == HEALTH_TABLE && it.shouldRefreshUI }
+        .debounce(SYNC_REFRESH_DEBOUNCE_MS)
+        .map { }
 
     fun loadPatients(sortBy: String = "joinDate", descending: Boolean = true) {
         viewModelScope.launch {
@@ -118,9 +123,6 @@ class HealthViewModel @Inject constructor(
     }
 
     private fun fetchPatientData(userId: String) {
-        if (userId == currentPatientId && selectPatientJob?.isActive == true) {
-            return
-        }
         currentPatientId = userId
         selectPatientJob?.cancel()
         var job: Job? = null
@@ -186,6 +188,11 @@ class HealthViewModel @Inject constructor(
             healthRepository.updateUserHealthProfile(userId, userData)
             _isSaved.value = true
         }
+    }
+
+    private companion object {
+        const val HEALTH_TABLE = "health"
+        const val SYNC_REFRESH_DEBOUNCE_MS = 200L
     }
 }
 

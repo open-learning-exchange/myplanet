@@ -5,6 +5,7 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -241,18 +242,55 @@ class HealthViewModelTest {
     }
 
     @Test
-    fun `two rapid health-table events with load in flight produce one repository read`() = runTest {
+    fun `health sync event restarts an in-flight load so the newest read wins`() = runTest {
+        val realtimeSyncManager = RealtimeSyncManager()
+        val customViewModel = HealthViewModel(userRepository, healthRepository, realtimeSyncManager)
+        val staleUser = UserEntity().apply { id = "1"; name = "Stale Patient" }
+        val freshUser = UserEntity().apply { id = "1"; name = "Fresh Patient" }
+        val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
+
+        var reads = 0
+        coEvery { healthRepository.getPatientById("1") } coAnswers {
+            reads++
+            kotlinx.coroutines.delay(500)
+            if (reads == 1) staleUser else freshUser
+        }
+        coEvery { healthRepository.getPatientHealthRecords("1", any()) } returns record
+
+        backgroundScope.launch {
+            customViewModel.healthSyncUpdates.collect { customViewModel.refreshSelectedPatient() }
+        }
+        testScheduler.runCurrent()
+
+        customViewModel.selectPatient("1")
+        testScheduler.advanceTimeBy(100)
+
+        realtimeSyncManager.notifyTableUpdated(TableDataUpdate("health", 1, 0, true))
+
+        advanceUntilIdle()
+
+        coVerify(exactly = 2) { healthRepository.getPatientById("1") }
+        assertEquals(freshUser, customViewModel.patientDetailState.first().user)
+        assertEquals(false, customViewModel.isLoading.value)
+    }
+
+    @Test
+    fun `two rapid health-table events coalesce into a single refresh`() = runTest {
         val realtimeSyncManager = RealtimeSyncManager()
         val customViewModel = HealthViewModel(userRepository, healthRepository, realtimeSyncManager)
         val user = UserEntity().apply { id = "1"; name = "Test Patient" }
         val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
 
-        coEvery { userRepository.getUserModel() } returns user
         coEvery { healthRepository.getPatientById("1") } coAnswers {
             kotlinx.coroutines.delay(500)
             user
         }
         coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
+
+        backgroundScope.launch {
+            customViewModel.healthSyncUpdates.collect { customViewModel.refreshSelectedPatient() }
+        }
+        testScheduler.runCurrent()
 
         customViewModel.selectPatient("1")
         testScheduler.advanceTimeBy(100)
@@ -260,6 +298,51 @@ class HealthViewModelTest {
         realtimeSyncManager.notifyTableUpdated(TableDataUpdate("health", 1, 0, true))
         realtimeSyncManager.notifyTableUpdated(TableDataUpdate("health", 1, 0, true))
 
+        advanceUntilIdle()
+
+        coVerify(exactly = 2) { healthRepository.getPatientById("1") }
+        assertEquals(user, customViewModel.patientDetailState.first().user)
+    }
+
+    @Test
+    fun `health events are ignored while nothing collects the sync flow`() = runTest {
+        val realtimeSyncManager = RealtimeSyncManager()
+        val customViewModel = HealthViewModel(userRepository, healthRepository, realtimeSyncManager)
+        val user = UserEntity().apply { id = "1"; name = "Test Patient" }
+        val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
+
+        coEvery { healthRepository.getPatientById("1") } returns user
+        coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
+
+        customViewModel.selectPatient("1")
+        advanceUntilIdle()
+
+        realtimeSyncManager.notifyTableUpdated(TableDataUpdate("health", 1, 0, true))
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { healthRepository.getPatientById("1") }
+    }
+
+    @Test
+    fun `sync flow ignores other tables and updates that do not require a refresh`() = runTest {
+        val realtimeSyncManager = RealtimeSyncManager()
+        val customViewModel = HealthViewModel(userRepository, healthRepository, realtimeSyncManager)
+        val user = UserEntity().apply { id = "1"; name = "Test Patient" }
+        val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
+
+        coEvery { healthRepository.getPatientById("1") } returns user
+        coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
+
+        backgroundScope.launch {
+            customViewModel.healthSyncUpdates.collect { customViewModel.refreshSelectedPatient() }
+        }
+        testScheduler.runCurrent()
+
+        customViewModel.selectPatient("1")
+        advanceUntilIdle()
+
+        realtimeSyncManager.notifyTableUpdated(TableDataUpdate("courses", 1, 0, true))
+        realtimeSyncManager.notifyTableUpdated(TableDataUpdate("health", 1, 0, false))
         advanceUntilIdle()
 
         coVerify(exactly = 1) { healthRepository.getPatientById("1") }
