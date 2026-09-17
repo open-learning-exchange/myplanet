@@ -435,8 +435,12 @@ DAO methods are `suspend` (except `Flow`-returning `observe*`/`*Flow` methods, w
 @Dao
 interface RatingDao {
     // IS for nullable params (matches NULL rows), = for non-null params
-    @Query("SELECT * FROM rating WHERE type IS :type AND item IS :item")
-    suspend fun getByTypeAndItem(type: String?, item: String?): List<Rating>
+    @Query("SELECT * FROM rating WHERE type IS :type")
+    suspend fun getByType(type: String?): List<Rating>
+
+    @Query("SELECT COUNT(*) AS totalCount, AVG(rate) AS averageRate " +
+        "FROM rating WHERE type IS :type AND item IS :item")
+    suspend fun getAggregate(type: String?, item: String?): RatingAggregate?
 
     @Query("SELECT * FROM rating WHERE type = :type AND userId = :userId AND item = :item LIMIT 1")
     suspend fun findByTypeUserItem(type: String, userId: String, item: String): Rating?

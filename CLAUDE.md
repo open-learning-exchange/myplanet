@@ -8,7 +8,7 @@
 - **Primary Language**: Kotlin (100% — no Java sources remain)
 - **Min SDK**: 26 (Android 8.0)
 - **Target SDK**: 36 (Android 16); **Compile SDK**: 37
-- **Current Version**: 0.71.51 (versionCode: 7151)
+- **Current Version**: 0.71.77 (versionCode: 7177)
 - **Build System**: Gradle 9.7.1 with Android Gradle Plugin 9.3.1
 - **Local Database**: Room (AndroidX) 2.8.5 — the only local persistence store
 - **License**: AGPL v3
@@ -23,23 +23,39 @@
 port; it is the whole migration effort on a 1-to-100 scale, not a phase count.
 The basis, so it can be argued with rather than repeated:
 
-**Phase 157 moved parity 78 → 80 and left the headline at 96, deliberately.**
-Localisation is unchanged at ~55 and is now the binding constraint on the
-composite rather than parity — so a round that closes three unreachable screens
-moves the row it belongs to and not the total. *A figure that rises every round
-is not being measured;* when parity finally passes the point where l10n
+**Phase 158 moved parity 80 → 82 and left the headline at 96, for the second
+round running.** Localisation is unchanged at ~55 and is the binding constraint
+on the composite rather than parity, so a round that closes a missing entry
+point, a resource visible in no view of the app, and 29 unwatched-provider
+reads moves the row it belongs to and not the total. *A figure that rises every
+round is not being measured;* when parity finally passes the point where l10n
 dominates, the headline stops tracking it, and that is the table working.
+
+**And the l10n ceiling has the mechanism wrong in every previous revision of
+this file, including the one that said the pool was "exhausted".** Measured at
+the Phase 158 fold: Kotlin's `values-ne/strings.xml` holds **1,062 strings, of
+which 1,014 are genuinely Nepali** — so the translations exist, in quantity, for
+every language. What does not exist is a *mapping*: only **443 of the port's 923
+ARB keys have any Kotlin counterpart at all**, by snake_case name or by exact
+English value. The port's string set diverged from the Android app's as it
+grew its own screens. So ~480 keys can only ever be machine-translated or
+human-reviewed, permanently, and a looser matcher reaches about 50 more for
+Nepali (457 → ~507 of 923) before it starts degrading.
+
+Phase 141's conclusion stands; its *reason* did not. The ceiling is key-set
+divergence, not a shortage of translators' work — which matters because the two
+imply completely different remedies, and only one of them is available.
 
 
 | Dimension | State | Est. |
 |---|---|---|
 | Feature breadth | all 28 UI packages have screens (enterprises is a team *type*, not a gap — Phase 99) | ~95 |
-| Behavioural parity | still the limiter and the lowest-confidence row: **reachability** audits keep finding ported, green, *dead* code — see below. Phase 154 closed two missing *directions*, Phase 156 a third plus a live data loss, and Phase 157 **three unreachable screens plus the feedback data loss** — and, more durably, hardened the guard that had missed all three | ~80 |
-| Test coverage | 3212 tests / 268 test files vs 281 Kotlin test files. Never read the file counts as parity — Phase 155 is the standing reminder (15 tests covered `add_examination_screen` and not one passed an `examinationId`, so a blank edit form that overwrote the record was green), and Phase 156 added a second: **two integration tests could not fail on their first cut**, both because the *fixture* could not tell the two behaviours apart. See *A fixture that cannot distinguish* below | ~93 |
-| Localisation | template is 923 keys; ar 864, es 900, fr 899, but **416–469 of those are unreviewed machine translation** (ar 432, es 416, fr 469 — `"x-mt": true`, so the set is queryable); ne/so 457 with 25 each. Phase 141 measured the recoverable pool and found it **exhausted** — the next 42 values a looser matcher reaches are degradations | ~55 |
+| Behavioural parity | still the limiter and the lowest-confidence row: **reachability** audits keep finding ported, green, *dead* code — see below. Phase 154 closed two missing *directions*, Phase 156 a third plus a live data loss, Phase 157 three unreachable screens plus the feedback data loss, and Phase 158 a whole missing **entry point** (feedback from the login screen, Kotlin's only channel for a user who cannot get in) plus a resource in no view of the app. Each round has also hardened the guard that missed its own finding | ~82 |
+| Test coverage | 3264 tests / 277 test files vs 282 Kotlin test files. Never read the file counts as parity — Phase 155 is the standing reminder (15 tests covered `add_examination_screen` and not one passed an `examinationId`, so a blank edit form that overwrote the record was green), and Phase 156 added a second: **two integration tests could not fail on their first cut**, both because the *fixture* could not tell the two behaviours apart. See *A fixture that cannot distinguish* below. Phase 158 adds the third and it is about *removal*: retiring two expired tripwires left what they guarded pinned by **nothing** | ~93 |
+| Localisation | template is 923 keys; ar 864, es 900, fr 899, but **416–469 of those are unreviewed machine translation** (ar 432, es 416, fr 469 — `"x-mt": true`, so the set is queryable); ne/so 457 with 25 each. The ceiling is **key-set divergence, not a shortage of translations** — only 443 of the 923 ARB keys have any Kotlin counterpart, so ~480 can never be recovered from `values-*/strings.xml` at any matcher looseness. See above | ~55 |
 | Background work | WorkManager gaps closed through Phase 94, platform channels in-tree | ~95 |
 
-Breadth is measurable and depth is not — 250 hand-written Dart files against 551
+Breadth is measurable and depth is not — 257 hand-written Dart files against 576
 Kotlin sources mostly reflects Dart folding Fragment + ViewModel + Adapter + XML
 into one screen file, so it says little about parity. Depth is only ever revealed
 by auditing, and **every audit so far has found something**, which is why the
@@ -86,6 +102,14 @@ encode: **who writes this table, can the writer produce values the reader's
 predicate matches, does anything navigate here — and does that navigation
 *arrive*?** Phase 157 added the fourth and it is not a restatement of the
 third: **a route can resolve perfectly and still be unreachable.**
+
+Phase 158 adds a fifth that no guard can encode, because it is about absence:
+**does Kotlin offer a way in that the port never built?** Every question above
+starts from a port artefact and asks whether it is reachable. The login-screen
+feedback button was reachable in Kotlin and simply did not exist here, so
+nothing in `lib/` was wrong and no scan over the port could have found it — the
+only way in is from the Kotlin side. `route_reachability_test.dart` was green
+throughout.
 `/become-member` had a route, a screen, tests, and a button on the login screen
 — and the signed-out branch of `redirect` sent every location that was not
 `/login` back to `/login`, so the tap only ever flashed. The guard was green
@@ -813,9 +837,13 @@ commits — the first real backlog in many rounds. Two of them were titled
 Follow: one a new sync step in the data-loss class, one a **wire-format change on
 every uploaded document** (`app=myplanet` now stamps each one, hence 152 files).
 The lane ran `harvest-triage` for the first pass and then re-read every Follow
-against the Kotlin by hand, citing Phase 95/96 as the reason. **Do that.** A
-"no counterpart" verdict on a rename is the cheapest place in this project to
-lose a behaviour.
+against the Kotlin by hand, citing Phase 95/96 as the reason. **Do that** — and
+note *what* it tells you to do, because Phase 158 retired the commit walk
+itself (see *Harvesting by commit walk is retired*). The surviving lesson is not
+"read every commit twice"; it is that **a "no counterpart" verdict on a rename
+is the cheapest place in this project to lose a behaviour**, which is exactly
+why the ledger records a digest per *statement* rather than a verdict per
+commit.
 
 **Phase 122 mutation-tested its own migration.** Its commit
 *"make the v46 migration test able to fail"* is the practice worth copying: it
@@ -948,15 +976,51 @@ new ARB keys into all five locales rather than leaving the hand-off. **The
 "stop and report" rule should carve both out:** making an existing statement
 true, and deriving keys you added, cannot collide with another lane.
 
-### Harvesting master rebuilds the Kotlin app, and that is correct
+### Harvesting by commit walk is retired — read this before briefing one
 
-`build.yml` and `test.yml` carry `paths-ignore: flutter/**, docs/**, **.md`, so a
-Flutter-only push skips both and only `flutter.yml` runs. **A harvest push does
-not skip them, and should not**: merging `master` brings real changes under
-`app/` onto the branch — Phase 126's merge carried 117 of them and Phase 133's
-122 — so both Kotlin flavours build and the Kotlin unit tests run. That is the filter working, not
-leaking. Expect ~10 minutes of Kotlin CI on any round that merges master, and
-none on the rounds that do not.
+For fifteen rounds a lane read every master commit since the last harvest and
+decided which the port must follow. **Phase 158 retired that**, and the
+measurement is worth keeping because the instinct it overturns is a strong one:
+
+* **Master runs 110–129 commits a week.** When the round was briefed the branch
+  was 13 commits behind — **under twenty hours** of drift. A walk cannot catch
+  up, and what it merges is stale on landing.
+* **Follow yield is flat in batch size.** Phase 126 read 18 commits and found 2
+  Follows; Phase 156 read 136 and found 2. Cost is linear in commits, yield is
+  not, so harvesting *more often* costs more per finding — the opposite of what
+  this file used to advise.
+* **And none of those Follows needed the history.** Phase 156's `LIKE` hole and
+  missing `ORDER BY` were both visible by comparing the two implementations as
+  they stand. Phase 96 found the ranked-search gap by reading
+  `ResourcesSearchUtils` as *the* resource search — a state comparison — where
+  Phase 95 had read the same batch as diffs and found nothing.
+
+**What replaces it: compare current state to current state, and get the "what
+changed since anyone last looked?" signal from a ledger.** Kotlin keeps its SQL
+literally in `@Query` annotations, so `test/data/local/kotlin_query_ledger_test.dart`
+digests all of them and records the digest each had **when a lane read it
+against the port and reached a verdict**. A compared statement that changes
+upstream moves its digest and turns the *Flutter* gate red, naming the query to
+re-compare; a query added or removed anywhere moves the corpus count and reds
+too. It is explicitly **not** a parity claim — it records that a query was
+*looked at*, and inflating it would be *"a test that cannot fail reads as
+coverage"* one level up.
+
+It earned itself the same day. The integrator's merge of master (26 commits by
+then) turned the gate red on exactly one thing — a new `NewsDao.getTopLevelTeamMembership`,
+where Kotlin now batches the team chat badge and has left `countTopLevelByTeam`
+with no caller in `app/src/main`. **One query to read instead of 26 commit
+diffs**, triaged as batching rather than behaviour and recorded at the entry.
+
+**The merge itself stays, and it is the integrator's job now**, not a lane's:
+it keeps the branch mergeable and the Kotlin app on it current, and it is
+mechanical. `build.yml` and `test.yml` carry
+`paths-ignore: flutter/**, docs/**, **.md`, so a Flutter-only push skips both
+and only `flutter.yml` runs. **A push carrying a master merge does not skip
+them, and should not** — merging brings real changes under `app/`, so both
+Kotlin flavours build and the Kotlin unit tests run. That is the filter
+working, not leaking. Expect ~10 minutes of Kotlin CI on any push that merges
+master, and none on the others.
 
 ### Dependency drift is now its own debt
 
@@ -1307,6 +1371,137 @@ emptied carelessly is a guard switched off**.
 * The server-switch gate's remaining items, including a double tap that stacked
   dialogs — not in the brief, found by the lane.
 
+### Phase 158 — an exemption is not retired when its entry is deleted
+
+Three lanes: the query-semantics differential that replaced the harvest (above),
+a sweep of the port's most-repeated defect class, and feedback from the login
+screen. What the round is *for* is the last line of this section; the rest is
+context for it.
+
+**A user who cannot log in now has a way to say so.** Kotlin's `LoginActivity`
+carries a feedback button (`:145`, opening `FeedbackFragment` at `:200-202`) and
+the port's login screen had no feedback affordance at all — so the one channel
+to an administrator for someone stuck at the front door (wrong PIN, unreachable
+server, un-activated account) did not exist. Phase 157 had found the *other*
+such channel, `inactive_dashboard_screen`'s button, landing on "Feedback not
+found". Three things stood in the way and all three are the port's recurring
+shapes: the signed-out `redirect` would have eaten the tap exactly as it ate
+`/become-member` (`signedOutLocations` at `router.dart:299` is the whole gate);
+the create screen refused without a session in three places; and **Kotlin
+requires no session at all** — `FeedbackComposerViewModel.kt:38` is
+`userRepository.getUserModel()?.name ?: ""`, an elvis *default*, written into
+`owner`/`source`/`messages[0].user` and uploaded under the **server**
+credential. One deliberate divergence, with its cost recorded at the code:
+Kotlin never clears `USER_ID` on logout, so the Android app files the previous
+user's name against feedback typed by whoever holds the phone next; the port
+writes `''` instead, at the price that such a thread never appears in its own
+author's list.
+
+**The unwatched-read class now has a guard.** *A provider a screen reads but
+never watches is null* had been found by hand in five phases and guarded by
+nothing. `test/core/unwatched_provider_reads_test.dart` scans `lib/` with
+comments stripped and string bodies blanked, and 29 sites in `lib/providers/`
+were resolved through new `resolveSession(Ref)` helpers. Two things the lane
+got right that a first cut would not: **it narrowed its own claim** — the
+router's `_RouterRefresh` holds `ref.listen(sessionProvider, …)` for the life of
+the process and `background_entrypoint.dart` never touches `sessionProvider`, so
+the window is *first resolution only*, app start until the persisted session is
+read back, which a cold-start deep link lands squarely in; and its exemptions
+each name a **gate** (unreachable / watched / unwatched) rather than asserting
+safety. Nine of seventeen reasons in its first cut were false.
+
+The highest-value single fix was `deep_link_provider.handle:77`, where
+`isSignedIn` does not gate but *inverts the destination*: cold-starting from a
+public-survey link as a signed-in member put them on the **anonymous** answer
+sheet. Kotlin gates on a synchronous `prefData.isLoggedIn()` — two states where
+the port had three, with *loading* folded into *signed out*.
+
+#### The lesson, and it is about removal
+
+Three tripwires fired at merge, each naming its own retirement, and retiring
+them was mechanical — that is the Phase 157 pattern working at scale. **Then two
+of the three left what they guarded pinned by nothing.**
+
+Measured rather than assumed: with `team_private_resources_test`'s and
+`team_voices_feed_parity_test`'s expired groups deleted, reverting
+`teamResourcesProvider`'s private arm and putting `teamVoicesProvider` back on
+the wrong DAO statement each left the **whole suite green**. The DAO tests the
+lanes wrote prove the statements are right; nothing proved anything *called*
+them. That is Phase 154's *green, tested and dead* arriving one layer up —
+through the mechanism built to prevent it.
+
+> **An exemption is not retired when its entry is deleted. It is retired when
+> something else holds its subject.**
+
+So deleting an exemption is a two-step move: delete the entry, then mutate the
+thing it used to describe and watch something else go red.
+`team_tab_feeds_parity_test.dart` is what now holds these two, mutation-tested
+three ways — and **each mutation asserts its own anchor matched before believing
+a green run**, because Lane 1 hit a harness that had silently edited nothing
+(`dart format` had reflowed the string it searched for) and read the pass as
+evidence. *"Still green" means "nothing was mutated" as readily as "nothing is
+pinned".*
+
+#### What else the round closed
+
+* **A team resource link was in no view of the app.** `getTeamResources` is a
+  union of two arms and the port had one, so a resource added from a team screen
+  — where `isPrivate` defaults true — was absent from the catalog, from My
+  Library *and* from the team tab, permanently if the server held no
+  `resourceLink` document.
+* **The dashboard team-chat badge counted a population its own watermark does
+  not describe**, via a Kotlin query Kotlin does not use for it (and whose only
+  wrapper has no caller in `app/src/main`). It failed in both directions: never
+  lit for a team whose posts were all composed in-app, permanently lit for one
+  carrying a server-authored post. The fix derives the watermark from the same
+  statement, which the lane's *own second audit pass* found necessary after its
+  first cut made a reachable case worse.
+* `watchMemberCount` was three guards short, so "Leave" was offered on a team
+  the user was alone in; the My teams card counted enterprises; `submissions_screen`
+  dropped a confirmed draft with no snackbar and no row.
+
+#### Open after this round, highest first
+
+1. **Leadership succession is missing, and a team can be left unrecoverable.**
+   `team_members_screen.dart:162-168` → `teams_provider.dart:283-326`: a sole
+   leader leaving via *Members* is removed with no successor promoted and no
+   last-leader refusal, so the team is leaderless with no in-app route back.
+   Kotlin has `RequestsViewModel.kt:75-106` and
+   `TeamDao.getEligibleNextLeaderCandidates`. Note the scoping before porting:
+   `teams_screen.dart:251`'s leave is **at parity** — Kotlin's
+   `TeamDetailFragment:291-308` path has no succession either.
+2. **`apk_log` is entirely unported** — no table, no writer, no uploader, while
+   Kotlin writes from the uncaught-exception handler, download failures and sync
+   summaries and POSTs to `apk_logs` (`DiagnosticsRepositoryImpl`,
+   `UploadConfigs.CrashLog`). Operator telemetry for a fleet of offline handsets,
+   which is why it ranks this high.
+3. **235 of 313 Kotlin queries are still uncompared.** The ledger names the
+   gaps in the order to take them: `SubmissionDao` (32 queries, about half
+   done), then `QuestionDao`/`AnswerDao`, then `HealthExaminationDao` and
+   `ChatDao`.
+4. Smaller, each precise in the Phase 158 lane reports: a failed rating silently
+   discarded while the dialog closes looking successful (`rating_dialog.dart:112-123`);
+   `chat_detail_screen.dart:229-231` clearing the composer *before* the await;
+   `FeedbackMapper.createFeedback` writing `item`/`state` unconditionally where
+   Kotlin writes them only under `state != null`; the feedback urgency radio
+   pre-selected where Kotlin forces a choice, with its error string dead code;
+   `TeamDao.teamNameExists` having no counterpart, so the port permits duplicate
+   team names.
+
+#### The brief carried two errors again — the fourth consecutive round
+
+Both were the integrator's and both were caught by a lane's mandatory
+ground-truth pass. The brief cited `createLocalResourceLink`'s prefs fallback as
+the Kotlin counterpart for `teams_provider.dart:402`, but that caller reaches
+`addResourceLinks`, which has **no** fallback: the right file, the wrong method
+in the chain — *a Kotlin citation is not a Kotlin reading*, committed inside the
+brief that quoted the rule. And it asserted as verified that
+`feedback_create_screen:202` silently discards a filled-in form, when `:170` is
+`onPressed: session == null ? null : _submit` and the button is merely disabled;
+the early return was read and the consequence inferred without checking the
+caller. **Front-loading a brief is still right, and this is the cost of it:
+verify each claim against the code, and mark the ones you could not.**
+
 ### Running parallel lanes
 
 Sibling sessions on their own branches, merged by an integrator. What this round
@@ -1389,6 +1584,13 @@ established, at the cost of a regression and five failing tests:
   Compare Phase 154, where a reported hand-off was a paragraph in a PR body and
   the wiring was rediscovered at merge time. **Where the report can be expressed
   as a test that fails when the report stops being true, it should be.**
+  Phase 158 ran three of these in one round and they all worked — and then
+  exposed the other half of the rule. **Retiring a tripwire can leave its
+  subject pinned by nothing**: two of the three guarded behaviour that, once
+  their groups were deleted, could be reverted with the whole suite still green.
+  *An exemption is not retired when its entry is deleted; it is retired when
+  something else holds its subject.* Delete the entry, then mutate what it used
+  to describe and watch something else go red.
 - **`outcome_branch` needs `source_url` and `source_revision`.** A
   `create_session` call with only `outcome_branch` is refused with
   *"outcome_branch requires a github.com git source"*.
@@ -1434,7 +1636,10 @@ established, at the cost of a regression and five failing tests:
 
 Reach for the four `.claude/agents` subagents by name when the work fits one: they carry the
 port's conventions, and each pins its own model and effort so a session need not restate either.
-`harvest-triage` is the cheap one — drop it to `model: haiku` if a batch gets large. Parity
+`harvest-triage` is the cheap one — drop it to `model: haiku` if a batch gets large —
+but **it is no longer the default route to upstream changes**: Phase 158 replaced the
+commit walk with the query ledger, and this agent is now for the occasional question
+a diff genuinely answers better than current state, not for every round. Parity
 judgements go to `parity-auditor` at `effort: max`, never to a cheaper agent; it is where the
 drift traps and the broken round trips have actually been found. One harness caveat: a session reads
 `.claude/agents/` at **startup**, so an agent file added or pulled mid-session is not callable
@@ -1780,7 +1985,10 @@ There is no generic base repository; each implementation talks to its Room DAO(s
 **Current Drift `schemaVersion` is 50** (`flutter/lib/data/local/app_database.dart`),
 spent by Phase 157 on one migration carrying two preserved-table column sets —
 `my_library`'s attachment-delivery flag and `teams`' planet codes. **The next
-bump is 51.** Phase 156 had allocated 50 and returned it unspent, which is why
+bump is 51.** Phase 158 needed none: a query change alters no DDL, and its one
+new DAO method (`MyLibraryDao.getTeamPrivate`) reads a column that already
+existed. A round that touches the database and spends no version is the normal
+case, not a near miss. Phase 156 had allocated 50 and returned it unspent, which is why
 it was still free a round later; read that as the allocation working, not as a
 number going missing.
 Bump it only when you have been allocated a number — parallel lanes must not each
@@ -1960,8 +2168,12 @@ interface CourseDao {
 }
 
 // data/room/dao/RatingDao.kt — IS for nullable params, = for non-null
-@Query("SELECT * FROM rating WHERE type IS :type AND item IS :item")
-suspend fun getByTypeAndItem(type: String?, item: String?): List<Rating>
+@Query("SELECT * FROM rating WHERE type IS :type")
+suspend fun getByType(type: String?): List<Rating>
+
+@Query("SELECT COUNT(*) AS totalCount, AVG(rate) AS averageRate " +
+    "FROM rating WHERE type IS :type AND item IS :item")
+suspend fun getAggregate(type: String?, item: String?): RatingAggregate?
 
 @Insert(onConflict = OnConflictStrategy.REPLACE)
 suspend fun upsertAll(items: List<Rating>)
@@ -2048,7 +2260,7 @@ Supported languages: English (default) + Arabic (ar), Spanish (es), French (fr),
 > Full testing patterns (what to copy per layer, shared infra, naming) live in **`docs/TESTING.md`**.
 
 ### Current State
-- **A real unit-test suite exists**: 281 unit-test files in `app/src/test/`. There is currently **no** `app/src/androidTest/` (instrumented) source set.
+- **A real unit-test suite exists**: 282 unit-test files in `app/src/test/`. There is currently **no** `app/src/androidTest/` (instrumented) source set.
 - **Stack**: JUnit4, **MockK** (`mockk` / `mockk-android`), **Robolectric**, `kotlinx-coroutines-test`, AndroidX Test (`core`/`ext`/`runner`/`arch-core-testing`), **Room testing** (`room-testing`), and **Hilt testing** (`hilt-android-testing` with `kspTest`). Dependencies are declared in `app/build.gradle` (test block) and `gradle/libs.versions.toml`.
 - **Coverage**: nearly all 23 repositories, the sync managers (`services/sync/`), upload/retry services, most ViewModels, many `utils/`, several Room entities/DAOs, DI modules, and the API/auth layer.
 - **Shared test infra**: `MainDispatcherRule`, `TestDispatcherProvider` (inject deterministic dispatchers — production code uses an injectable `DispatcherProvider`, so avoid hard-coding `Dispatchers.*` in new code).
@@ -2150,7 +2362,7 @@ When making changes, verify:
 
 ## Codebase Inventory Summary
 
-### Source Files (572 total Kotlin files in `app/src/main/java`) + 281 unit-test files in `app/src/test` (no `app/src/androidTest` source set)
+### Source Files (576 total Kotlin files in `app/src/main/java`) + 282 unit-test files in `app/src/test` (no `app/src/androidTest` source set)
 
 | Component | Files | Purpose |
 |-----------|-------|---------|
@@ -2187,6 +2399,6 @@ Note: SYSTEM_ALERT_WINDOW is **not** declared (removed at some point; older docs
 
 ---
 
-**Last Updated**: 2026-09-16
-**Version**: 0.71.51
+**Last Updated**: 2026-09-17
+**Version**: 0.71.77
 **Maintainer**: Open Learning Exchange
