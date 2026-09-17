@@ -98,10 +98,12 @@ open class ExamQuestion(
                 myQuestion?.correctChoiceList = mutableListOf()
                 myQuestion?.setCorrectChoiceArray(JsonUtils.getJsonArray("correctChoice", question), myQuestion)
             } else {
+                val correctChoiceId = JsonUtils.getString("correctChoice", question)
                 for (a in 0 until array.size()) {
                     val res = array[a].asJsonObject
-                    if (JsonUtils.getString("correctChoice", question) == JsonUtils.getString("id", res)) {
+                    if (correctChoiceId == JsonUtils.getString("id", res)) {
                         myQuestion?.correctChoiceList = listOf(JsonUtils.getString("res", res))
+                        break
                     }
                 }
             }
