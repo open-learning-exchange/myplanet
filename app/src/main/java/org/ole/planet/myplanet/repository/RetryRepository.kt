@@ -4,7 +4,7 @@ import org.ole.planet.myplanet.model.RetryFailure
 import org.ole.planet.myplanet.model.RetryOperation
 
 sealed class RetryOperationResult {
-    object Success : RetryOperationResult()
+    data object Success : RetryOperationResult()
     data class RetryableFailure(val message: String?, val httpCode: Int? = null) : RetryOperationResult()
     data class TerminalFailure(val message: String?, val httpCode: Int? = null) : RetryOperationResult()
 }
