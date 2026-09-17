@@ -20,6 +20,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import io.mockk.coEvery
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -161,6 +162,24 @@ class NotificationActionReceiverTest {
         assert(targetIntent?.getStringExtra("related_id") == relatedId)
 
         verify { mockNotificationUtils.clearNotification(notificationId) }
+        verify { pendingResult.finish() }
+    }
+
+    @Test
+    fun `test onReceive calls finish when repository throws exception`() = testScope.runTest {
+        val notificationId = "test_id"
+        val mockIntent = Intent(NotificationUtils.ACTION_MARK_AS_READ)
+        mockIntent.putExtra(NotificationUtils.EXTRA_NOTIFICATION_ID, notificationId)
+
+        coEvery { mockNotificationsRepository.markNotificationsAsRead(setOf(notificationId)) } throws RuntimeException("Database error")
+
+        val pendingResult = mockk<BroadcastReceiver.PendingResult>(relaxed = true)
+        every { receiver.goAsync() } returns pendingResult
+
+        receiver.onReceive(mockContext, mockIntent)
+        advanceUntilIdle()
+
+        coVerify { mockNotificationsRepository.markNotificationsAsRead(setOf(notificationId)) }
         verify { pendingResult.finish() }
     }
 }

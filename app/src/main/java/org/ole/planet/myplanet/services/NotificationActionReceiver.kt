@@ -7,10 +7,11 @@ import android.provider.Settings
 import android.util.Log
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -29,7 +30,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
     lateinit var dispatcherProvider: DispatcherProvider
     override fun onReceive(context: Context, intent: Intent) {
         val pendingResult = goAsync()
-        MainApplication.applicationScope.launch {
+        val scope = CoroutineScope(dispatcherProvider.io)
+        scope.launch {
             try {
                 val action = intent.action
                 val notificationId = intent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_ID)
@@ -72,7 +74,11 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     }
                 }
             } finally {
-                pendingResult.finish()
+                try {
+                    pendingResult.finish()
+                } finally {
+                    scope.cancel()
+                }
             }
         }
     }
