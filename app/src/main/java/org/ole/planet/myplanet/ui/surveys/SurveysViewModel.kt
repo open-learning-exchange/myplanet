@@ -42,6 +42,7 @@ class SurveysViewModel @Inject constructor(
     private var isTeam: Boolean = false
     private var teamId: String? = null
     private var filterSortJob: Job? = null
+    private var loadJob: Job? = null
 
     private val _surveys = MutableStateFlow<List<StepExam>>(emptyList())
 
@@ -76,38 +77,55 @@ class SurveysViewModel @Inject constructor(
     val surveySent: StateFlow<Boolean> = _surveySent.asStateFlow()
 
     fun loadSurveys(isTeam: Boolean, teamId: String?, isTeamShareAllowed: Boolean) {
+        loadJob?.cancel()
         this.isTeam = isTeam
         this.teamId = teamId
         _isLoading.value = true
         _isTeamShareAllowed.value = isTeamShareAllowed
-        viewModelScope.launch {
+
+        val capturedIsTeam = isTeam
+        val capturedTeamId = teamId
+        val capturedIsTeamShareAllowed = isTeamShareAllowed
+
+        var currentJob: Job? = null
+        currentJob = viewModelScope.launch {
             try {
                 val currentSurveysList = when {
-                    isTeam && isTeamShareAllowed -> surveysRepository.getAdoptableTeamSurveys(teamId)
-                    isTeam -> surveysRepository.getTeamOwnedSurveys(teamId)
+                    capturedIsTeam && capturedIsTeamShareAllowed -> surveysRepository.getAdoptableTeamSurveys(capturedTeamId)
+                    capturedIsTeam -> surveysRepository.getTeamOwnedSurveys(capturedTeamId)
                     else -> surveysRepository.getIndividualSurveys()
                 }
 
                 val userModel = userRepository.getUserModel()
                 val surveyInfos = surveysRepository.getSurveyInfos(
-                    isTeam,
-                    teamId,
+                    capturedIsTeam,
+                    capturedTeamId,
                     userModel?.id,
                     currentSurveysList
                 )
-                val bindingData = surveysRepository.getSurveyFormState(currentSurveysList, teamId)
+                val bindingData = surveysRepository.getSurveyFormState(currentSurveysList, capturedTeamId)
 
-                _surveyInfos.value = surveyInfos
-                _bindingData.value = bindingData
+                if (this@SurveysViewModel.isTeam == capturedIsTeam &&
+                    this@SurveysViewModel.teamId == capturedTeamId &&
+                    _isTeamShareAllowed.value == capturedIsTeamShareAllowed
+                ) {
+                    _surveyInfos.value = surveyInfos
+                    _bindingData.value = bindingData
 
-                rawSurveys = currentSurveysList
-                applyFilterAndSort()
+                    rawSurveys = currentSurveysList
+                    applyFilterAndSort()
+                }
             } catch (e: Exception) {
-                _errorMessage.value = "Failed to load surveys: ${e.message}"
+                if (loadJob === currentJob) {
+                    _errorMessage.value = "Failed to load surveys: ${e.message}"
+                }
             } finally {
-                _isLoading.value = false
+                if (loadJob === currentJob) {
+                    _isLoading.value = false
+                }
             }
         }
+        loadJob = currentJob
     }
 
     fun search(query: String) {
