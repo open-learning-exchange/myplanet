@@ -19,12 +19,24 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.effectiveId
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 
 @HiltViewModel
 class HealthViewModel @Inject constructor(
     private val userRepository: UserRepository,
-    private val healthRepository: HealthRepository
+    private val healthRepository: HealthRepository,
+    private val realtimeSyncManager: RealtimeSyncManager = RealtimeSyncManager()
 ) : ViewModel() {
+
+    init {
+        viewModelScope.launch {
+            realtimeSyncManager.dataUpdateFlow.collect { update ->
+                if (update.table == "health" && update.shouldRefreshUI) {
+                    refreshSelectedPatient()
+                }
+            }
+        }
+    }
 
     private val _healthData = MutableStateFlow<HealthData?>(null)
     val healthData: StateFlow<HealthData?> = _healthData.asStateFlow()
@@ -106,6 +118,9 @@ class HealthViewModel @Inject constructor(
     }
 
     private fun fetchPatientData(userId: String) {
+        if (userId == currentPatientId && selectPatientJob?.isActive == true) {
+            return
+        }
         currentPatientId = userId
         selectPatientJob?.cancel()
         var job: Job? = null
@@ -117,13 +132,21 @@ class HealthViewModel @Inject constructor(
                     val record = healthRepository.getPatientHealthRecords(userId, user)
                     _patientDetailState.value = PatientDetailState(user, record)
                 } else {
-                    currentPatientId = null
-                    _patientDetailState.value = PatientDetailState(null, null)
+                    val isRefreshingCurrentPatient = _patientDetailState.value.user != null &&
+                        (_patientDetailState.value.user?.effectiveId == userId || _patientDetailState.value.user?.id == userId)
+                    if (!isRefreshingCurrentPatient) {
+                        currentPatientId = null
+                        _patientDetailState.value = PatientDetailState(null, null)
+                    }
                 }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
-                currentPatientId = null
-                _patientDetailState.value = PatientDetailState(null, null)
+                val isRefreshingCurrentPatient = _patientDetailState.value.user != null &&
+                    (_patientDetailState.value.user?.effectiveId == userId || _patientDetailState.value.user?.id == userId)
+                if (!isRefreshingCurrentPatient) {
+                    currentPatientId = null
+                    _patientDetailState.value = PatientDetailState(null, null)
+                }
             } finally {
                 if (selectPatientJob === job) {
                     _isLoading.value = false

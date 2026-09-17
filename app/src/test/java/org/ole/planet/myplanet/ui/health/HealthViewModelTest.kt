@@ -11,9 +11,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import org.ole.planet.myplanet.model.HealthRecord
+import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -209,5 +211,57 @@ class HealthViewModelTest {
         advanceUntilIdle()
 
         assertEquals(patients, viewModel.patientList.first())
+    }
+
+    @Test
+    fun `failing refresh leaves currentPatientId and displayed patient intact`() = runTest {
+        val user = UserEntity().apply { id = "1"; name = "Test Patient" }
+        val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
+        coEvery { healthRepository.getPatientById("1") } returns user
+        coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
+
+        viewModel.selectPatient("1")
+        advanceUntilIdle()
+
+        assertEquals(user, viewModel.patientDetailState.first().user)
+
+        coEvery { healthRepository.getPatientHealthRecords("1", user) } throws RuntimeException("Transient network error")
+
+        viewModel.refreshSelectedPatient()
+        advanceUntilIdle()
+
+        assertEquals(user, viewModel.patientDetailState.first().user)
+        assertEquals(record, viewModel.patientDetailState.first().healthRecord)
+
+        coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
+        viewModel.refreshSelectedPatient()
+        advanceUntilIdle()
+
+        coVerify(exactly = 3) { healthRepository.getPatientById("1") }
+    }
+
+    @Test
+    fun `two rapid health-table events with load in flight produce one repository read`() = runTest {
+        val realtimeSyncManager = RealtimeSyncManager()
+        val customViewModel = HealthViewModel(userRepository, healthRepository, realtimeSyncManager)
+        val user = UserEntity().apply { id = "1"; name = "Test Patient" }
+        val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
+
+        coEvery { userRepository.getUserModel() } returns user
+        coEvery { healthRepository.getPatientById("1") } coAnswers {
+            kotlinx.coroutines.delay(500)
+            user
+        }
+        coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
+
+        customViewModel.selectPatient("1")
+        testScheduler.advanceTimeBy(100)
+
+        realtimeSyncManager.notifyTableUpdated(TableDataUpdate("health", 1, 0, true))
+        realtimeSyncManager.notifyTableUpdated(TableDataUpdate("health", 1, 0, true))
+
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { healthRepository.getPatientById("1") }
     }
 }
