@@ -14,11 +14,12 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
@@ -37,6 +38,7 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
+import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -62,7 +64,9 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val configurationsRepository: ConfigurationsRepository,
     private val dispatcherProvider: DispatcherProvider,
     private val deviceNameProvider: DeviceNameProvider,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    @param:ApplicationScope private val appScope: CoroutineScope,
+    private val storagePathResolver: StoragePathResolver
 ) : ResourcesRepository {
 
     // Shelf membership is stored as a JSON userId list; match a single entry with LIKE %"id"%.
@@ -396,7 +400,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             return
         }
         val entryFile = library.openWhichFile?.takeIf { it.isNotBlank() } ?: "index.html"
-        val directory = File(MainApplication.context.getExternalFilesDir(null), "ole/$resourceId")
+        val directory = File(storagePathResolver.resolveOleDirectory(), resourceId)
         val entryExists = withContext(dispatcherProvider.io) {
             FileUtils.resolveHtmlEntryFile(directory, entryFile)?.exists() == true
         }
@@ -501,7 +505,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         val files = libraryList ?: getAllLibrariesToSync()
         val urls = DownloadUtils.downloadAllFiles(files)
 
-        MainApplication.applicationScope.launch {
+        appScope.launch {
             if (configurationsRepository.checkServerAvailability()) {
                 if (urls.isNotEmpty()) {
                     DownloadUtils.openDownloadService(context, urls, false)
