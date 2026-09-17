@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.LibraryTypeClassifier
 
 @HiltViewModel
 class ResourcesViewModel @Inject constructor(
@@ -127,7 +128,7 @@ class ResourcesViewModel @Inject constructor(
             library.language?.takeIf { it.isNotBlank() }?.let { languages.add(it) }
             library.subject?.let { subjects.addAll(it) }
             val mediaType = library.mediaType?.takeIf { it.isNotBlank() }
-                ?: org.ole.planet.myplanet.utils.LibraryTypeClassifier.classify(library).name.lowercase()
+                ?: LibraryTypeClassifier.classify(library).name.lowercase()
             mediums.add(mediaType)
             library.level?.let { levels.addAll(it) }
         }

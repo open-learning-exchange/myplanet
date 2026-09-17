@@ -24,6 +24,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnFilterListener
 import org.ole.planet.myplanet.databinding.FragmentLibraryFilterBinding
+import org.ole.planet.myplanet.utils.MediumUtils
 
 class ResourcesFilterFragment : BottomSheetDialogFragment(), AdapterView.OnItemClickListener {
     private var _binding: FragmentLibraryFilterBinding? = null
@@ -235,16 +236,6 @@ class ResourcesFilterFragment : BottomSheetDialogFragment(), AdapterView.OnItemC
     }
 
     fun getMediumDisplayName(medium: String): String {
-        return when (medium.lowercase(Locale.getDefault())) {
-            "pdf" -> getString(R.string.filter_pdfs)
-            "video" -> getString(R.string.filter_videos)
-            "audio" -> getString(R.string.filter_audio)
-            "image" -> getString(R.string.storage_images)
-            "text/html" -> getString(R.string.medium_text_html)
-            "html" -> getString(R.string.medium_html)
-            "book", "books" -> getString(R.string.filter_books)
-            "other" -> getString(R.string.other)
-            else -> medium
-        }
+        return MediumUtils.getMediumDisplayName(requireContext(), medium)
     }
 }

@@ -92,27 +92,18 @@ class ResourcesListFilter {
 
         return selectedMediums.any { selected ->
             val selLower = selected.lowercase().trim()
-            when {
-                selLower == "audio" || selLower.contains("audio") || selLower == "mp3" -> {
-                    classifiedType == LibraryType.AUDIO || mediaTypeLower.contains("audio") || mediaTypeLower.contains("mp3") || mediaTypeLower.contains("wav") || mediaTypeLower.contains("aac")
-                }
-                selLower == "video" || selLower.contains("video") || selLower == "mp4" -> {
-                    classifiedType == LibraryType.VIDEO || mediaTypeLower.contains("video") || mediaTypeLower.contains("mp4")
-                }
-                selLower == "pdf" || selLower.contains("pdf") -> {
-                    classifiedType == LibraryType.PDF || mediaTypeLower.contains("pdf")
-                }
-                selLower == "book" || selLower == "books" || selLower.contains("book") || selLower == "epub" || selLower == "textbook" -> {
-                    classifiedType == LibraryType.BOOK || mediaTypeLower.contains("book") || mediaTypeLower.contains("epub") || mediaTypeLower.contains("textbook")
-                }
-                else -> {
-                    mediaTypeLower.equals(selLower, ignoreCase = true) ||
-                            mediaTypeLower.contains(selLower) ||
-                            (classifiedType == LibraryType.AUDIO && (selLower.contains("audio") || selLower.contains("mp3"))) ||
-                            (classifiedType == LibraryType.VIDEO && (selLower.contains("video") || selLower.contains("mp4"))) ||
-                            (classifiedType == LibraryType.PDF && selLower.contains("pdf")) ||
-                            (classifiedType == LibraryType.BOOK && (selLower.contains("book") || selLower.contains("epub")))
-                }
+            val targetType = when {
+                selLower.contains("audio") || selLower == "mp3" -> LibraryType.AUDIO
+                selLower.contains("video") || selLower == "mp4" -> LibraryType.VIDEO
+                selLower.contains("pdf") -> LibraryType.PDF
+                selLower.contains("book") || selLower == "epub" || selLower == "textbook" -> LibraryType.BOOK
+                else -> null
+            }
+
+            if (targetType != null) {
+                classifiedType == targetType
+            } else {
+                mediaTypeLower == selLower || mediaTypeLower.contains(selLower)
             }
         }
     }

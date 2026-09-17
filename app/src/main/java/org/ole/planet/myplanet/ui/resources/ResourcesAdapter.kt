@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LibraryType
 import org.ole.planet.myplanet.utils.LibraryTypeClassifier
 import org.ole.planet.myplanet.utils.ListViewMode
+import org.ole.planet.myplanet.utils.MediumUtils
 import org.ole.planet.myplanet.utils.PdfThumbnailLoader
 import org.ole.planet.myplanet.utils.StableIdGenerator
 import org.ole.planet.myplanet.utils.Utilities
@@ -425,16 +426,7 @@ class ResourcesAdapter(
         val parts = mutableListOf<String>()
         val mediaType = model.library.mediaType?.takeIf { it.isNotBlank() }
         val typeLabel = if (mediaType != null) {
-            when (mediaType.lowercase()) {
-                "pdf" -> context.getString(R.string.filter_pdfs)
-                "video" -> context.getString(R.string.filter_videos)
-                "audio" -> context.getString(R.string.filter_audio)
-                "image", "graphic/pictures" -> context.getString(R.string.storage_images)
-                "text/html" -> context.getString(R.string.medium_text_html)
-                "html" -> context.getString(R.string.medium_html)
-                "book", "books" -> context.getString(R.string.filter_books)
-                else -> mediaType
-            }
+            MediumUtils.getMediumDisplayName(context, mediaType)
         } else {
             context.getString(typeLabelRes(type))
         }

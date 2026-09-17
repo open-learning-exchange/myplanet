@@ -11,13 +11,25 @@ import org.ole.planet.myplanet.model.TagItem
 
 class ResourcesListFilterTest {
 
-    private fun model(id: String, title: String, subject: List<String>? = null, level: List<String>? = null, language: String? = null, mediaType: String? = null, isOffline: Boolean = false, isLocallyOffline: Boolean = false, tags: List<TagItem> = emptyList()): ResourceListModel {
+    private fun model(
+        id: String,
+        title: String,
+        subject: List<String>? = null,
+        level: List<String>? = null,
+        language: String? = null,
+        mediaType: String? = null,
+        isOffline: Boolean = false,
+        isLocallyOffline: Boolean = false,
+        tags: List<TagItem> = emptyList(),
+        localAddress: String? = null
+    ): ResourceListModel {
         val library = MyLibrary().apply {
             this.id = id
             this.subject = subject
             this.level = level
             this.language = language
             this.mediaType = mediaType
+            this.resourceLocalAddress = localAddress
         }
         val item = ResourceItem(
             id = id,
@@ -30,7 +42,8 @@ class ResourcesListFilterTest {
             isOffline = isOffline,
             _rev = null,
             uploadDate = null,
-            filename = null
+            filename = null,
+            resourceLocalAddress = localAddress
         )
         return ResourceListModel(library, item, tags = tags, isLocallyOffline = isLocallyOffline)
     }
@@ -218,5 +231,34 @@ class ResourcesListFilterTest {
         val filtered = filter.filterIfChanged(models, sameCriteria, emptySet())
 
         assertEquals(listOf("1"), filtered?.map { it.item.id })
+    }
+
+    @Test
+    fun `apply filters matching case-insensitive subjects`() {
+        val models = listOf(
+            model(id = "1", title = "Math Book", subject = listOf("Math"))
+        )
+        val filter = ResourcesListFilter()
+
+        val result = filter.apply(models, noFilters.copy(subjects = setOf("math")), emptySet())
+
+        assertEquals(1, result.size)
+        assertEquals("1", result[0].item.id)
+    }
+
+    @Test
+    fun `apply filters resource with blank mediaType using classified fallback`() {
+        val pdfModel = model(
+            id = "1",
+            title = "PDF Doc",
+            mediaType = "",
+            localAddress = "document.pdf"
+        )
+        val filter = ResourcesListFilter()
+
+        val result = filter.apply(listOf(pdfModel), noFilters.copy(mediums = setOf("pdf")), emptySet())
+
+        assertEquals(1, result.size)
+        assertEquals("1", result[0].item.id)
     }
 }
