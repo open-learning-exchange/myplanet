@@ -16,10 +16,8 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkRequest
 import androidx.work.WorkerParameters
-import com.google.gson.JsonParser
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
@@ -30,11 +28,9 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withTimeout
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.repository.RetryOperationResult
 import org.ole.planet.myplanet.repository.RetryRepository
-import org.ole.planet.myplanet.utils.UrlUtils
 
 @HiltWorker
 class RetryQueueWorker @AssistedInject constructor(
@@ -43,82 +39,6 @@ class RetryQueueWorker @AssistedInject constructor(
     private val retryQueue: RetryQueue,
     private val retryRepository: RetryRepository
 ) : CoroutineWorker(context, workerParams) {
-
-    @Deprecated("For backward compatibility and existing unit tests")
-    constructor(
-        context: Context,
-        workerParams: WorkerParameters,
-        retryQueue: RetryQueue,
-        apiInterface: ApiInterface
-    ) : this(
-        context,
-        workerParams,
-        retryQueue,
-        object : RetryRepository {
-            override suspend fun executeOperation(operation: RetryOperation): RetryOperationResult {
-                retryQueue.markInProgress(operation.id)
-                val payload = try {
-                    JsonParser.parseString(operation.serializedPayload).asJsonObject
-                } catch (e: Exception) {
-                    if (e is CancellationException) throw e
-                    Log.e(TAG, "Invalid payload for ${operation.id}, abandoning")
-                    retryQueue.markFailed(operation.id, "Invalid payload", null)
-                    return RetryOperationResult.TerminalFailure("Invalid payload", null)
-                }
-                val baseUrl = UrlUtils.getUrl()
-                val authHeader = UrlUtils.header
-                val requestUrl = if (operation.dbId.isNullOrEmpty()) {
-                    "$baseUrl/${operation.endpoint}"
-                } else {
-                    "$baseUrl/${operation.endpoint}/${operation.dbId}"
-                }
-
-                return try {
-                    val response = if (operation.httpMethod == "PUT" && !operation.dbId.isNullOrEmpty()) {
-                        apiInterface.putDoc(authHeader, "application/json", requestUrl, payload)
-                    } else {
-                        apiInterface.postDoc(authHeader, "application/json", requestUrl, payload)
-                    }
-
-                    if (response.isSuccessful || response.code() == 409) {
-                        retryQueue.markCompleted(operation.id)
-                        RetryOperationResult.Success
-                    } else {
-                        val code = response.code()
-                        val isRetryable = code >= 500
-                        val msg = if (isRetryable) "HTTP $code" else "Non-retryable HTTP $code"
-                        retryQueue.markFailed(operation.id, msg, code)
-                        if (isRetryable) RetryOperationResult.RetryableFailure(msg, code)
-                        else RetryOperationResult.TerminalFailure(msg, code)
-                    }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: IOException) {
-                    retryQueue.markFailed(operation.id, e.message, null)
-                    RetryOperationResult.RetryableFailure(e.message, null)
-                } catch (e: Exception) {
-                    retryQueue.markFailed(operation.id, e.message, null)
-                    RetryOperationResult.RetryableFailure(e.message, null)
-                }
-            }
-
-            override suspend fun enqueue(uploadType: String, failure: org.ole.planet.myplanet.model.RetryFailure, payload: String, endpoint: String, httpMethod: String, dbId: String?, modelClassName: String, userId: String?) {}
-            override suspend fun updateAttempt(operationId: String, failure: org.ole.planet.myplanet.model.RetryFailure) {}
-            override suspend fun markInProgress(operationId: String) { retryQueue.markInProgress(operationId) }
-            override suspend fun markCompleted(operationId: String) { retryQueue.markCompleted(operationId) }
-            override suspend fun markFailed(operationId: String, errorMessage: String?, httpCode: Int?) { retryQueue.markFailed(operationId, errorMessage, httpCode) }
-            override suspend fun getPending(): List<RetryOperation> = retryQueue.getPendingOperations()
-            override suspend fun getPendingCount(): Long = 0
-            override suspend fun cleanup() { retryQueue.cleanup() }
-            override suspend fun getExistingOperation(itemId: String, uploadType: String): RetryOperation? = null
-            override suspend fun deletePendingAndAbandonedOperations() {}
-            override suspend fun recoverStuckOperations() { retryQueue.recoverStuckOperations() }
-            override fun isCurrentlyProcessing(): Boolean = retryQueue.isCurrentlyProcessing()
-            override fun setProcessing(processing: Boolean) {}
-            override suspend fun safeClearQueue(): Boolean = retryQueue.safeClearQueue()
-            override suspend fun getRetryQueueSnapshot(): org.ole.planet.myplanet.repository.RetryQueueDetails = org.ole.planet.myplanet.repository.RetryQueueDetails()
-        }
-    )
 
     companion object {
         private const val TAG = "RetryQueueWorker"

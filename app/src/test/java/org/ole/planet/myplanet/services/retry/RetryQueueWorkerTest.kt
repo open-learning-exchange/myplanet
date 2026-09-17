@@ -11,7 +11,6 @@ import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.impl.WorkManagerImpl
-import com.google.gson.JsonObject
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -27,16 +26,14 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
-import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.RetryOperation
+import org.ole.planet.myplanet.repository.RetryOperationResult
 import org.ole.planet.myplanet.repository.RetryRepository
-import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RetryQueueWorkerTest {
@@ -54,7 +51,7 @@ class RetryQueueWorkerTest {
     lateinit var retryQueue: RetryQueue
 
     @MockK
-    lateinit var apiInterface: ApiInterface
+    lateinit var retryRepository: RetryRepository
 
     private lateinit var worker: RetryQueueWorker
 
@@ -77,11 +74,7 @@ class RetryQueueWorkerTest {
         mockkStatic(WorkManager::class)
         every { WorkManager.getInstance(any()) } returns workManagerImpl
 
-        mockkObject(org.ole.planet.myplanet.utils.UrlUtils)
-        every { org.ole.planet.myplanet.utils.UrlUtils.getUrl() } returns "http://mock.url"
-        every { org.ole.planet.myplanet.utils.UrlUtils.header } returns "mockHeader"
-
-        worker = RetryQueueWorker(context, workerParams, retryQueue, apiInterface)
+        worker = RetryQueueWorker(context, workerParams, retryQueue, retryRepository)
 
         mockkObject(MainApplication)
     }
@@ -163,6 +156,7 @@ class RetryQueueWorkerTest {
 
         val operation = RetryOperation().apply { id = "testId" }
         coEvery { retryQueue.getPendingOperations() } returns listOf(operation)
+        coEvery { retryRepository.executeOperation(operation) } returns RetryOperationResult.Success
 
         val result = worker.doWork()
 
@@ -197,13 +191,11 @@ class RetryQueueWorkerTest {
             }
         }
         coEvery { retryQueue.getPendingOperations() } returns operations
-        coEvery { retryQueue.markInProgress(any()) } returns Unit
-        coEvery { retryQueue.markCompleted(any()) } returns Unit
 
         val activeRequests = AtomicInteger(0)
         var maxConcurrent = 0
 
-        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } coAnswers {
+        coEvery { retryRepository.executeOperation(any()) } coAnswers {
             val current = activeRequests.incrementAndGet()
             synchronized(this) {
                 if (current > maxConcurrent) {
@@ -212,14 +204,14 @@ class RetryQueueWorkerTest {
             }
             delay(50)
             activeRequests.decrementAndGet()
-            Response.success(JsonObject())
+            RetryOperationResult.Success
         }
 
         val result = worker.doWork()
 
         assertEquals(Result.success(), result)
         assertEquals(6, maxConcurrent)
-        coVerify(exactly = 10) { retryQueue.markCompleted(any()) }
+        coVerify(exactly = 10) { retryRepository.executeOperation(any()) }
     }
 
     @Test
@@ -238,25 +230,20 @@ class RetryQueueWorkerTest {
             }
         }
         coEvery { retryQueue.getPendingOperations() } returns ops
-        coEvery { retryQueue.markInProgress(any()) } returns Unit
-        coEvery { retryQueue.markCompleted(any()) } returns Unit
-        coEvery { retryQueue.markFailed(any(), any(), any()) } returns Unit
 
-        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } coAnswers {
-            val url = secondArg<String>() // requestUrl is 3rd param (index 2)
-            val requestUrl = arg<String>(2)
-            if (requestUrl.contains("op_2") || requestUrl.contains("op_4")) {
-                Response.error(500, "Server Error".toResponseBody(null))
+        coEvery { retryRepository.executeOperation(any()) } coAnswers {
+            val op = firstArg<RetryOperation>()
+            if (op.id == "op_2" || op.id == "op_4") {
+                RetryOperationResult.RetryableFailure("HTTP 500", 500)
             } else {
-                Response.success(JsonObject())
+                RetryOperationResult.Success
             }
         }
 
         val result = worker.doWork()
 
         assertEquals(Result.success(), result)
-        coVerify(exactly = 3) { retryQueue.markCompleted(any()) }
-        coVerify(exactly = 2) { retryQueue.markFailed(any(), any(), any()) }
+        coVerify(exactly = 5) { retryRepository.executeOperation(any()) }
     }
 
     @Test
@@ -275,20 +262,18 @@ class RetryQueueWorkerTest {
             }
         }
         coEvery { retryQueue.getPendingOperations() } returns ops
-        coEvery { retryQueue.markInProgress(any()) } returns Unit
-        coEvery { retryQueue.markCompleted(any()) } returns Unit
 
-        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } coAnswers {
+        coEvery { retryRepository.executeOperation(any()) } coAnswers {
             // When processing batch 1, set isSyncRunning = true so second batch won't run
             MainApplication.isSyncRunning.set(true)
-            Response.success(JsonObject())
+            RetryOperationResult.Success
         }
 
         val result = worker.doWork()
 
         assertEquals(Result.success(), result)
         // Only first batch of 50 operations should have completed
-        coVerify(exactly = 50) { retryQueue.markCompleted(any()) }
+        coVerify(exactly = 50) { retryRepository.executeOperation(any()) }
     }
 
     @Test
