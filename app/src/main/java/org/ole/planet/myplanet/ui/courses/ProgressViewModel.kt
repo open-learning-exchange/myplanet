@@ -6,6 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.CoursesProgressRow
 import org.ole.planet.myplanet.repository.ProgressRepository
@@ -18,7 +19,7 @@ class ProgressViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _courseData = MutableStateFlow<List<CoursesProgressRow>>(emptyList())
-    val courseData: StateFlow<List<CoursesProgressRow>> = _courseData
+    val courseData: StateFlow<List<CoursesProgressRow>> = _courseData.asStateFlow()
 
     fun loadCourseData() {
         viewModelScope.launch {

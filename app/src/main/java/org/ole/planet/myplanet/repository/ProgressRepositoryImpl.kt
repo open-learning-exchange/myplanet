@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import com.google.gson.reflect.TypeToken
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
@@ -108,7 +109,41 @@ class ProgressRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getCourseProgressRows(userId: String?): List<CoursesProgressRow> = withContext(dispatcherProvider.default) {
-        super.getCourseProgressRows(userId)
+        val jsonArray = fetchCourseData(userId)
+        parseCourseProgressRows(jsonArray)
+    }
+
+    private fun parseCourseProgressRows(jsonArray: JsonArray): List<CoursesProgressRow> {
+        return jsonArray.mapNotNull { element ->
+            if (!element.isJsonObject) return@mapNotNull null
+            val obj = element.asJsonObject
+
+            val courseId = if (obj.has("courseId") && !obj.get("courseId").isJsonNull) obj.get("courseId").asString else null
+            val courseName = if (obj.has("courseName") && !obj.get("courseName").isJsonNull) obj.get("courseName").asString else null
+            if (courseId == null || courseName == null) return@mapNotNull null
+
+            val progressObj = obj.get("progress")?.takeIf { it.isJsonObject }?.asJsonObject
+            val progressCurrent = progressObj?.get("current")?.takeIf { !it.isJsonNull }?.asInt
+            val progressMax = progressObj?.get("max")?.takeIf { !it.isJsonNull }?.asInt
+
+            val mistakes = obj.get("mistakes")?.takeIf { !it.isJsonNull }?.asInt
+
+            val stepMistakeElem = obj.get("stepMistake")
+            val stepMistake: Map<String, Int>? = if (stepMistakeElem != null && !stepMistakeElem.isJsonNull) {
+                JsonUtils.gson.fromJson(stepMistakeElem, stepMistakeMapType)
+            } else {
+                null
+            }
+
+            CoursesProgressRow(
+                courseId = courseId,
+                courseName = courseName,
+                progressCurrent = progressCurrent,
+                progressMax = progressMax,
+                mistakes = mistakes,
+                stepMistake = stepMistake
+            )
+        }
     }
 
     override suspend fun getCurrentProgress(
@@ -343,5 +378,9 @@ class ProgressRepositoryImpl @Inject constructor(
 
     override suspend fun markCourseProgressUploaded(localId: String, remoteId: String, rev: String): Boolean {
         return courseProgressDao.markUploaded(localId, remoteId, rev) != 0
+    }
+
+    companion object {
+        private val stepMistakeMapType = object : TypeToken<Map<String, Int>>() {}.type
     }
 }
