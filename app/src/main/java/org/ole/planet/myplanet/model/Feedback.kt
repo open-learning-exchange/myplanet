@@ -30,6 +30,7 @@ open class Feedback {
         set(value) {
             field = value
             cachedMessages = null
+            cachedMessageList = null
         }
     var item: String? = null
     var parentCode: String? = null
@@ -38,6 +39,10 @@ open class Feedback {
     @Ignore
     @Transient
     private var cachedMessages: JsonArray? = null
+
+    @Ignore
+    @Transient
+    private var cachedMessageList: List<FeedbackReply>? = null
 
     private fun parsedMessages(): JsonArray {
         if (messages.isNullOrEmpty()) return JsonArray()
@@ -55,6 +60,7 @@ open class Feedback {
     val messageList: List<FeedbackReply>?
         get() {
             if (messages.isNullOrEmpty()) return null
+            cachedMessageList?.let { return it }
             val feedbackReplies: MutableList<FeedbackReply> = ArrayList()
 
             val ar = parsedMessages()
@@ -68,6 +74,7 @@ open class Feedback {
                     )
                 )
             }
+            cachedMessageList = feedbackReplies
             return feedbackReplies
         }
 
