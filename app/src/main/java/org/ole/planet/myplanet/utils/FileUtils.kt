@@ -145,6 +145,8 @@ object FileUtils {
 
     fun findHtmlCoverImage(resourceDir: File): File? {
         if (!resourceDir.isDirectory) return null
+        // Note: Directory mtime does not change when a file inside it is modified in place, so replacing
+        // a file's contents under the same name leaves the cached decision stale until something is added or removed.
         val cacheKey = "${resourceDir.absolutePath}:${resourceDir.lastModified()}"
         val cached = htmlCoverImageCache.get(cacheKey)
         if (cached != null) return cached.file

@@ -271,10 +271,10 @@ class FileUtilsTest {
         val cover1 = FileUtils.findHtmlCoverImage(subDir)
         assertEquals("cover.png", cover1?.name)
 
-        // Delete image on disk without changing subDir mtime
+        val mtime = subDir.lastModified()
         image.delete()
+        subDir.setLastModified(mtime)
 
-        // Second call returns cached File reference from LRU cache
         val cover2 = FileUtils.findHtmlCoverImage(subDir)
         assertEquals(cover1, cover2)
     }
@@ -303,15 +303,14 @@ class FileUtilsTest {
         val cover1 = FileUtils.findHtmlCoverImage(subDir)
         assertNull(cover1)
 
-        // Add an image file without bumping subDir lastModified
+        val mtime = subDir.lastModified()
         File(subDir, "cover.png").writeBytes(ByteArray(100))
+        subDir.setLastModified(mtime)
 
-        // Since mtime hasn't changed, cached null entry is returned
         val cover2 = FileUtils.findHtmlCoverImage(subDir)
         assertNull(cover2)
 
-        // Explicitly update lastModified to invalidate cache and find new cover
-        subDir.setLastModified(subDir.lastModified() + 5000L)
+        subDir.setLastModified(mtime + 5000L)
         val cover3 = FileUtils.findHtmlCoverImage(subDir)
         assertEquals("cover.png", cover3?.name)
     }
