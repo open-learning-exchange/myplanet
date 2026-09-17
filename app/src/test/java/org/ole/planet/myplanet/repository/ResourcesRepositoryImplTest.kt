@@ -1319,7 +1319,7 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `getStorageBreakdown produces identical counts and total sizes for fixture tree`() = runTest {
-        val rootDir = temporaryFolder.newFolder("ole")
+        val rootDir = temporaryFolder.newFolder("ole_breakdown")
 
         // Create test files
         // Videos (Index 0): mp4 (100 bytes), MKV (uppercase, 200 bytes)
@@ -1406,7 +1406,7 @@ class ResourcesRepositoryImplTest {
         assertEquals("res1", res1Item.resourceId)
         assertEquals("Video Resource", res1Item.title)
         assertEquals(15L, res1Item.totalSizeBytes)
-        assertEquals(listOf(file1.absolutePath, file2.absolutePath).sorted(), res1Item.filePaths.sorted())
+        assertEquals(listOf(file1.absolutePath, file2.absolutePath), res1Item.filePaths)
 
         // Test fallback extension category (extensions.isEmpty() -> not in knownExtensions)
         val otherItems = repository.getOfflineResourceItems(oleDir.absolutePath, emptySet(), knownExtensions)
