@@ -80,6 +80,97 @@ class ProgressRepositoryImplTest {
     }
 
     @Test
+    fun testGetCourseProgressRows_wellFormedDocument() = testScope.runTest {
+        val myCourses = listOf(
+            MyCourse().apply {
+                courseId = "course1"
+                courseTitle = "Test Course 1"
+            }
+        )
+        val steps = listOf(CourseStep().apply { courseId = "course1" })
+        myCourses[0].courseSteps = steps.toMutableList()
+
+        val exams = listOf(StepExam().apply { id = "exam1"; courseId = "course1" })
+        val submissions = listOf(Submission().apply { id = "sub1"; userId = "user1"; parentId = "course1"; type = "exam" })
+        val answers = listOf(Answer().apply { submissionId = "sub1"; questionId = "q1"; mistakes = 3 })
+        val question = ExamQuestion().apply { id = "q1"; examId = "exam1" }
+
+        coEvery { mockCoursesRepository.getMyCourses("user1") } returns myCourses
+        coEvery { courseStepDao.getByCourseIds(listOf("course1")) } returns steps
+        coEvery { courseProgressDao.getByUserAndCourseIds("user1", listOf("course1")) } returns listOf(
+            CourseProgress().apply { stepNum = 1; courseId = "course1" }
+        )
+        coEvery { submissionDao.getExamSubmissionsByUser("user1") } returns submissions
+        coEvery { examDao.getByCourseIds(listOf("course1")) } returns exams
+        coEvery { answerDao.getBySubmissionIds(listOf("sub1")) } returns answers
+        coEvery { questionDao.getByIds(listOf("q1")) } returns listOf(question)
+
+        val rows = repository.getCourseProgressRows("user1")
+        advanceUntilIdle()
+
+        assertEquals(1, rows.size)
+        val row = rows[0]
+        assertEquals("course1", row.courseId)
+        assertEquals("Test Course 1", row.courseName)
+        assertEquals(1, row.progressCurrent)
+        assertEquals(1, row.progressMax)
+        assertEquals(3, row.mistakes)
+        assertEquals(mapOf("0" to 3), row.stepMistake)
+    }
+
+    @Test
+    fun testGetCourseProgressRows_missingCourseId_skipped() = testScope.runTest {
+        val myCourses = listOf(
+            MyCourse().apply {
+                courseId = null
+                courseTitle = "Course without ID"
+            },
+            MyCourse().apply {
+                courseId = "course2"
+                courseTitle = "Valid Course"
+            }
+        )
+
+        coEvery { mockCoursesRepository.getMyCourses("user1") } returns myCourses
+        coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
+        coEvery { courseProgressDao.getByUserAndCourseIds("user1", any()) } returns emptyList()
+        coEvery { submissionDao.getExamSubmissionsByUser("user1") } returns emptyList()
+        coEvery { examDao.getByCourseIds(any()) } returns emptyList()
+
+        val rows = repository.getCourseProgressRows("user1")
+        advanceUntilIdle()
+
+        assertEquals(1, rows.size)
+        assertEquals("course2", rows[0].courseId)
+        assertEquals("Valid Course", rows[0].courseName)
+    }
+
+    @Test
+    fun testGetCourseProgressRows_noStepMistake_yieldsNull() = testScope.runTest {
+        val myCourses = listOf(
+            MyCourse().apply {
+                courseId = "course1"
+                courseTitle = "Course No Submissions"
+            }
+        )
+
+        coEvery { mockCoursesRepository.getMyCourses("user1") } returns myCourses
+        coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
+        coEvery { courseProgressDao.getByUserAndCourseIds("user1", any()) } returns emptyList()
+        coEvery { submissionDao.getExamSubmissionsByUser("user1") } returns emptyList()
+        coEvery { examDao.getByCourseIds(any()) } returns emptyList()
+
+        val rows = repository.getCourseProgressRows("user1")
+        advanceUntilIdle()
+
+        assertEquals(1, rows.size)
+        assertEquals("course1", rows[0].courseId)
+        assertEquals("Course No Submissions", rows[0].courseName)
+        assertNull(rows[0].stepMistake)
+        assertNull(rows[0].mistakes)
+    }
+
+    @Test
     fun testGetCurrentProgress_EmptyProgress() = testScope.runTest {
         val steps = listOf(
             CourseStep().apply { id = "step1" },

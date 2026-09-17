@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.CourseProgress
 import org.ole.planet.myplanet.model.CourseProgressState
 import org.ole.planet.myplanet.model.CourseStep
+import org.ole.planet.myplanet.model.CoursesProgressRow
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -104,6 +105,10 @@ class ProgressRepositoryImpl @Inject constructor(
             arr.add(obj)
         }
         return arr
+    }
+
+    override suspend fun getCourseProgressRows(userId: String?): List<CoursesProgressRow> = withContext(dispatcherProvider.default) {
+        super.getCourseProgressRows(userId)
     }
 
     override suspend fun getCurrentProgress(
