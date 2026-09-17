@@ -12,6 +12,7 @@ import android.os.storage.StorageManager
 import android.provider.OpenableColumns
 import android.text.format.Formatter
 import android.util.Log
+import android.util.LruCache
 import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.core.content.FileProvider
@@ -139,8 +140,15 @@ object FileUtils {
     private val previewImageExtensions = setOf("png", "jpg", "jpeg", "gif", "webp")
     private val previewImageNameHints = listOf("cover", "thumbnail", "thumb", "screenshot", "poster")
 
+    private class CoverImageCacheEntry(val file: File?)
+    private val htmlCoverImageCache = LruCache<String, CoverImageCacheEntry>(64)
+
     fun findHtmlCoverImage(resourceDir: File): File? {
         if (!resourceDir.isDirectory) return null
+        val cacheKey = "${resourceDir.absolutePath}:${resourceDir.lastModified()}"
+        val cached = htmlCoverImageCache.get(cacheKey)
+        if (cached != null) return cached.file
+
         var largestFile: File? = null
         var maxBytes: Long = -1L
 
@@ -150,6 +158,7 @@ object FileUtils {
 
             val nameLower = file.nameWithoutExtension.lowercase()
             if (previewImageNameHints.any { nameLower.contains(it) }) {
+                htmlCoverImageCache.put(cacheKey, CoverImageCacheEntry(file))
                 return file
             }
 
@@ -160,6 +169,7 @@ object FileUtils {
             }
         }
 
+        htmlCoverImageCache.put(cacheKey, CoverImageCacheEntry(largestFile))
         return largestFile
     }
 
