@@ -76,6 +76,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private var achievementArray: JsonArray? = null
     private var resourceArray: JsonArray? = null
     private var referenceDialog: AlertDialog? = null
+    private var fetchResourcesJob: kotlinx.coroutines.Job? = null
 
     private val viewModel: AchievementViewModel by viewModels()
 
@@ -374,8 +375,11 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                     Toast.makeText(activity, getString(R.string.title_is_required), Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
-                if (`object` != null) achievementArray?.remove(`object`)
-                saveAchievement(desc, title)
+                viewLifecycleOwner.lifecycleScope.launch {
+                    fetchResourcesJob?.join()
+                    if (`object` != null) achievementArray?.remove(`object`)
+                    saveAchievement(desc, title)
+                }
             }.setNegativeButton(getString(R.string.cancel), null).show()
     }
 
@@ -423,11 +427,14 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                 builder.setPositiveButton("Ok") { _: DialogInterface?, _: Int ->
                     val items = (lv.adapter as CheckboxAdapter).selectedItemsList
                     val selectedIds = items.map { list[it].id }
-                    viewLifecycleOwner.lifecycleScope.launch {
+                    fetchResourcesJob = viewLifecycleOwner.lifecycleScope.launch {
                         val fullLibraries = viewModel.getLibraryItemsByIds(selectedIds)
+                        val libMap = fullLibraries.associateBy { it.id }
                         resourceArray = JsonArray()
-                        for (lib in fullLibraries) {
-                            resourceArray?.add(lib.serializeResource())
+                        for (id in selectedIds) {
+                            libMap[id]?.let { lib ->
+                                resourceArray?.add(lib.serializeResource())
+                            }
                         }
                     }
                 }.setNegativeButton("Cancel", null).show()

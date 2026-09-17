@@ -612,19 +612,19 @@ class ResourcesRepositoryImplTest {
         val result = repository.getLibraryItemsByIds(emptyList())
 
         assertTrue(result.isEmpty())
-        coVerify(exactly = 0) { myLibraryDao.getByUnderscoreIds(any()) }
+        coVerify(exactly = 0) { myLibraryDao.getByIds(any()) }
     }
 
     @Test
     fun `getLibraryItemsByIds returns items from dao`() = runTest {
         val ids = listOf("id1", "id2")
         val expectedList = listOf(MyLibrary().apply { id = "id1" })
-        coEvery { myLibraryDao.getByUnderscoreIds(ids) } returns expectedList
+        coEvery { myLibraryDao.getByIds(ids) } returns expectedList
 
         val result = repository.getLibraryItemsByIds(ids)
 
         assertEquals(expectedList, result)
-        coVerify(exactly = 1) { myLibraryDao.getByUnderscoreIds(ids) }
+        coVerify(exactly = 1) { myLibraryDao.getByIds(ids) }
     }
 
     @Test
@@ -1346,7 +1346,7 @@ class ResourcesRepositoryImplTest {
         assertEquals("res1", res1Item.resourceId)
         assertEquals("Video Resource", res1Item.title)
         assertEquals(15L, res1Item.totalSizeBytes)
-        assertEquals(setOf(file1.absolutePath, file2.absolutePath), res1Item.filePaths.toSet())
+        assertEquals(listOf(file1.absolutePath, file2.absolutePath), res1Item.filePaths)
 
         // Test fallback extension category (extensions.isEmpty() -> not in knownExtensions)
         val otherItems = repository.getOfflineResourceItems(oleDir.absolutePath, emptySet(), knownExtensions)

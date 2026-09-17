@@ -185,7 +185,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun getLibraryItemsByIds(ids: Collection<String>): List<MyLibrary> {
         if (ids.isEmpty()) return emptyList()
-        return myLibraryDao.getByUnderscoreIds(ids.toList())
+        return myLibraryDao.getByIds(ids.toList())
     }
 
     override suspend fun getLibraryItemsByResourceIds(ids: Collection<String>): List<MyLibrary> {

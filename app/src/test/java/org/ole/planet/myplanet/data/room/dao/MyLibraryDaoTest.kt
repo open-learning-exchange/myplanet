@@ -63,10 +63,10 @@ class MyLibraryDaoTest {
     }
 
     @Test
-    fun getLibraryItemsByIds_roundTripsProjectionIdsBackToFullEntities() = runBlocking {
+    fun getLibraryItemsByIds_roundTripsProjectionIdsBackToFullEntitiesWhenIdDiffersFromUnderscoreId() = runBlocking {
         val lib1 = MyLibrary().apply {
             id = "pk1"
-            _id = "pk1"
+            _id = "doc1"
             resourceId = "res1"
             title = "First Resource"
             description = "Description 1"
@@ -74,7 +74,7 @@ class MyLibraryDaoTest {
         }
         val lib2 = MyLibrary().apply {
             id = "pk2"
-            _id = "pk2"
+            _id = "doc2"
             resourceId = "res2"
             title = "Second Resource"
             description = "Description 2"
@@ -86,7 +86,7 @@ class MyLibraryDaoTest {
         val projections = myLibraryDao.getLibraryTitles()
         val projectionIds = projections.map { it.id }
 
-        val fullEntities = myLibraryDao.getByUnderscoreIds(projectionIds)
+        val fullEntities = myLibraryDao.getByIds(projectionIds)
 
         assertEquals(2, fullEntities.size)
         val entityMap = fullEntities.associateBy { it.id }
