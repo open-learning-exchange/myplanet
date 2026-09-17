@@ -18,6 +18,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseBindingFragment
@@ -40,7 +41,7 @@ class CalendarFragment : BaseBindingFragment<FragmentCalendarBinding>(FragmentCa
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        binding.calendarView.setDate(Calendar.getInstance().time)
+        binding.calendarView.setDate(Date())
 
         collectWhenStarted(viewModel.meetups) { updatedMeetups ->
             meetups = updatedMeetups

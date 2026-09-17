@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -104,14 +105,21 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
+    private fun applyAndCountUnread(
+        ids: Set<String>,
+        transform: (List<Notification>) -> List<Notification>
+    ): Int {
+        val previous = _notifications.getAndUpdate(transform)
+        return previous.count { it.id in ids && !it.isRead }
+    }
+
     fun markSelectedAsRead() {
         val ids = _selectedIds.value
         if (ids.isEmpty()) return
         viewModelScope.launch {
             val markedIds = notificationsRepository.markNotificationsAsRead(ids)
             if (markedIds.isNotEmpty()) {
-                val wasUnreadCount = _notifications.value.count { it.id in markedIds && !it.isRead }
-                _notifications.update { currentList ->
+                val wasUnreadCount = applyAndCountUnread(markedIds) { currentList ->
                     if (currentFilter == "unread") {
                         currentList.filterNot { it.id in markedIds }
                     } else {
@@ -130,8 +138,7 @@ class NotificationsViewModel @Inject constructor(
         viewModelScope.launch {
             val deletedIds = notificationsRepository.deleteNotifications(ids)
             if (deletedIds.isNotEmpty()) {
-                val wasUnreadCount = _notifications.value.count { it.id in deletedIds && !it.isRead }
-                _notifications.update { it.filterNot { n -> n.id in deletedIds } }
+                val wasUnreadCount = applyAndCountUnread(deletedIds) { it.filterNot { n -> n.id in deletedIds } }
                 _unreadCount.update { maxOf(0, it - wasUnreadCount) }
                 _selectedIds.value = emptySet()
             }
@@ -183,9 +190,6 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
-    private fun List<Notification>.markAsRead(id: String): List<Notification> {
-        return map { if (it.id == id && !it.isRead) it.copy(isRead = true) else it }
-    }
     private fun List<Notification>.markAsRead(ids: Set<String>): List<Notification> {
         return map { if (it.id in ids && !it.isRead) it.copy(isRead = true) else it }
     }
