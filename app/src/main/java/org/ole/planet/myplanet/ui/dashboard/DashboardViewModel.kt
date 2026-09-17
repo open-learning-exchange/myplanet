@@ -153,17 +153,11 @@ class DashboardViewModel @Inject constructor(
     }
 
     fun calculateIndividualProgress(voiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
-        val earnedDollarsVoice = minOf(voiceCount, 5) * 2
-        val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
-        val total = earnedDollarsVoice + earnedDollarsSurvey
-        return total.coerceAtMost(500)
+        return org.ole.planet.myplanet.utils.calculateIndividualProgress(voiceCount, hasUnfinishedSurvey)
     }
 
     fun calculateCommunityProgress(allVoiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
-        val earnedDollarsVoice = minOf(allVoiceCount, 5) * 2
-        val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
-        val total = earnedDollarsVoice + earnedDollarsSurvey
-        return total.coerceAtMost(11)
+        return org.ole.planet.myplanet.utils.calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey)
     }
 
     suspend fun updateResourceNotification(userId: String?) {
