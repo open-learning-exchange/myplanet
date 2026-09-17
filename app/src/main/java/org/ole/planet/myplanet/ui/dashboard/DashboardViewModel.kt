@@ -43,6 +43,8 @@ import org.ole.planet.myplanet.repository.SyncUiState
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.utils.calculateCommunityProgress as calculateCommunityProgressUtil
+import org.ole.planet.myplanet.utils.calculateIndividualProgress as calculateIndividualProgressUtil
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NotificationConfig
@@ -153,17 +155,11 @@ class DashboardViewModel @Inject constructor(
     }
 
     fun calculateIndividualProgress(voiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
-        val earnedDollarsVoice = minOf(voiceCount, 5) * 2
-        val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
-        val total = earnedDollarsVoice + earnedDollarsSurvey
-        return total.coerceAtMost(500)
+        return calculateIndividualProgressUtil(voiceCount, hasUnfinishedSurvey)
     }
 
     fun calculateCommunityProgress(allVoiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
-        val earnedDollarsVoice = minOf(allVoiceCount, 5) * 2
-        val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
-        val total = earnedDollarsVoice + earnedDollarsSurvey
-        return total.coerceAtMost(11)
+        return calculateCommunityProgressUtil(allVoiceCount, hasUnfinishedSurvey)
     }
 
     suspend fun updateResourceNotification(userId: String?) {
