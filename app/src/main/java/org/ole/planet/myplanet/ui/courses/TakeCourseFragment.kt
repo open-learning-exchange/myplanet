@@ -441,6 +441,7 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
 
                 Utilities.toast(activity, "course $statusMessage ${getString(R.string.my_courses)}")
             }.onFailure { e ->
+                if (e is CancellationException) throw e
                 Log.w(TAG, "addRemoveCourse failed", e)
                 Utilities.toast(activity, "Failed to update course: ${e.message}")
             }
