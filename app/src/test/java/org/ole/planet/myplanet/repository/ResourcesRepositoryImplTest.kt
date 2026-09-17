@@ -1358,7 +1358,7 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `getStorageBreakdown produces identical counts and total sizes for fixture tree`() = runTest {
-        val rootDir = temporaryFolder.newFolder("ole")
+        val rootDir = temporaryFolder.newFolder("ole_breakdown")
 
         // Create test files
         // Videos (Index 0): mp4 (100 bytes), MKV (uppercase, 200 bytes)
