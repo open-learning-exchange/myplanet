@@ -10,6 +10,7 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.load.model.LazyHeaders
 import com.bumptech.glide.signature.ObjectKey
+import androidx.annotation.VisibleForTesting
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.MyCourse
@@ -17,6 +18,12 @@ import org.ole.planet.myplanet.model.MyCourse
 internal object CoursesItemUtils {
     private val coverExistenceCache = FileExistenceCache()
     var timeProvider: TimeProvider = SystemTimeProvider()
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal fun resetForTesting() {
+        timeProvider = SystemTimeProvider()
+        coverExistenceCache.clear()
+    }
 
     fun subjectColorRes(subject: CourseSubject): Int = when (subject) {
         CourseSubject.MATHEMATICS -> R.color.subject_math

@@ -32,6 +32,7 @@ class CoursesItemUtilsTest {
 
     @Before
     fun setUp() {
+        CoursesItemUtils.resetForTesting()
         activity = Robolectric.buildActivity(AppCompatActivity::class.java).setup().get()
         activity.setTheme(com.google.android.material.R.style.Theme_MaterialComponents)
         CoursesItemUtils.timeProvider = testTimeProvider
@@ -41,6 +42,7 @@ class CoursesItemUtilsTest {
     @After
     fun tearDown() {
         unmockkObject(MyCourse)
+        CoursesItemUtils.resetForTesting()
     }
 
     @Test
