@@ -15,6 +15,9 @@ import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.MyCourse
 
 internal object CoursesItemUtils {
+    private val coverExistenceCache = FileExistenceCache()
+    var timeProvider: TimeProvider = SystemTimeProvider()
+
     fun subjectColorRes(subject: CourseSubject): Int = when (subject) {
         CourseSubject.MATHEMATICS -> R.color.subject_math
         CourseSubject.LITERACY -> R.color.subject_literacy
@@ -57,7 +60,7 @@ internal object CoursesItemUtils {
     ) {
         setCoverColor(context, coverContainer, subject)
         val coverFile = MyCourse.getCoverImageFile(context, course.courseId, course.coverFileName)
-        val model: Any? = if (coverFile?.exists() == true) {
+        val model: Any? = if (coverExistenceCache.exists(coverFile, timeProvider.now())) {
             coverFile
         } else {
             UrlUtils.getCourseImageUrl(course.courseId, course.coverFileName)?.let { url ->
