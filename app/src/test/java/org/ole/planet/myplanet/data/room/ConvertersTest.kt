@@ -56,4 +56,60 @@ class ConvertersTest {
         assertNull(converters.toAttachmentList(""))
         assertNull(converters.toAttachmentList("   "))
     }
+
+    // The following simulate JSON already sitting in an installed app's Room database, written
+    // by the prior Gson-based converter (which omits null-valued reference fields and never
+    // omits primitives, even at their zero/false default) - this locks in that the kotlinx
+    // migration doesn't require a schema version bump to keep reading pre-existing rows.
+
+    @Test
+    fun testStringListDecodesPriorGsonOutputVerbatim() {
+        val gsonWrittenJson = """["hello","world"]"""
+
+        assertEquals(listOf("hello", "world"), converters.toStringList(gsonWrittenJson))
+    }
+
+    @Test
+    fun testConversationListDecodesPriorGsonOutput_withNullFieldOmitted() {
+        // Gson omits a null `response` field entirely rather than writing "response":null.
+        val gsonWrittenJson = """[{"query":"msg1"},{"query":"msg2","response":"reply2"}]"""
+
+        val restored = converters.toConversationList(gsonWrittenJson)
+
+        assertEquals(2, restored?.size)
+        assertEquals("msg1", restored?.get(0)?.query)
+        assertNull(restored?.get(0)?.response)
+        assertEquals("reply2", restored?.get(1)?.response)
+    }
+
+    @Test
+    fun testAttachmentListDecodesPriorGsonOutput_withNullFieldsOmittedAndPrimitiveDefaultsPresent() {
+        // Gson always writes primitive fields (even at their zero/false default) but omits
+        // null reference fields - id/name/contentType/digest are all unset here.
+        val gsonWrittenJson = """[{"length":0,"isStub":false,"revpos":0}]"""
+
+        val restored = converters.toAttachmentList(gsonWrittenJson)
+
+        assertEquals(1, restored?.size)
+        assertNull(restored?.get(0)?.id)
+        assertNull(restored?.get(0)?.name)
+        assertEquals(0L, restored?.get(0)?.length)
+        assertEquals(false, restored?.get(0)?.isStub)
+    }
+
+    @Test
+    fun testAttachmentListDecodesPriorGsonOutput_withEveryFieldPopulated() {
+        val gsonWrittenJson =
+            """[{"id":"a1","name":"file1.pdf","contentType":"application/pdf","length":1024,"digest":"md5-abc","isStub":true,"revpos":2}]"""
+
+        val restored = converters.toAttachmentList(gsonWrittenJson)?.single()
+
+        assertEquals("a1", restored?.id)
+        assertEquals("file1.pdf", restored?.name)
+        assertEquals("application/pdf", restored?.contentType)
+        assertEquals(1024L, restored?.length)
+        assertEquals("md5-abc", restored?.digest)
+        assertEquals(true, restored?.isStub)
+        assertEquals(2, restored?.revpos)
+    }
 }
