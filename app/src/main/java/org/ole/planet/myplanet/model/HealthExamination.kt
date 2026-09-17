@@ -4,8 +4,12 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @Entity(tableName = "health_examinations", indices = [Index("userId")])
 class HealthExamination {
@@ -92,28 +96,31 @@ class HealthExamination {
         }
 
         fun serialize(health: HealthExamination): JsonObject {
-            val `object` = JsonObject()
-            if (!health.userId.isNullOrEmpty()) `object`.addProperty("_id", health.userId)
-            if (!health._rev.isNullOrEmpty()) `object`.addProperty("_rev", health._rev)
-            `object`.addProperty("data", health.data)
-            JsonUtils.addFloat(`object`, "temperature", health.temperature)
-            JsonUtils.addInteger(`object`, "pulse", health.pulse)
-            JsonUtils.addString(`object`, "bp", health.bp)
-            JsonUtils.addFloat(`object`, "height", health.height)
-            JsonUtils.addFloat(`object`, "weight", health.weight)
-            JsonUtils.addString(`object`, "vision", health.vision)
-            JsonUtils.addString(`object`, "hearing", health.hearing)
-            JsonUtils.addLong(`object`, "date", health.date)
-            `object`.addProperty("selfExamination", health.isSelfExamination)
-            JsonUtils.addString(`object`, "planetCode", health.planetCode)
-            `object`.addProperty("hasInfo", health.isHasInfo)
-            JsonUtils.addString(`object`, "profileId", health.profileId)
-            JsonUtils.addString(`object`, "creatorId", health.profileId)
-            JsonUtils.addString(`object`, "gender", health.gender)
-            `object`.addProperty("age", health.age)
-            JsonUtils.addJson(`object`, "conditions", JsonUtils.gson.fromJson(health.conditions, JsonObject::class.java)
-            )
-            return `object`
+            val conditionsJson = JsonUtils.gson.fromJson(health.conditions, JsonObject::class.java)
+            val `object` = buildJsonObject {
+                if (!health.userId.isNullOrEmpty()) put("_id", health.userId)
+                if (!health._rev.isNullOrEmpty()) put("_rev", health._rev)
+                put("data", health.data)
+                if (health.temperature != 0f) put("temperature", health.temperature)
+                if (health.pulse != 0) put("pulse", health.pulse)
+                if (!health.bp.isNullOrEmpty()) put("bp", health.bp)
+                if (health.height != 0f) put("height", health.height)
+                if (health.weight != 0f) put("weight", health.weight)
+                if (!health.vision.isNullOrEmpty()) put("vision", health.vision)
+                if (!health.hearing.isNullOrEmpty()) put("hearing", health.hearing)
+                if (health.date > 0) put("date", health.date)
+                put("selfExamination", health.isSelfExamination)
+                if (!health.planetCode.isNullOrEmpty()) put("planetCode", health.planetCode)
+                put("hasInfo", health.isHasInfo)
+                if (!health.profileId.isNullOrEmpty()) put("profileId", health.profileId)
+                if (!health.profileId.isNullOrEmpty()) put("creatorId", health.profileId)
+                if (!health.gender.isNullOrEmpty()) put("gender", health.gender)
+                put("age", health.age)
+                if (conditionsJson != null && conditionsJson.keySet().isNotEmpty()) {
+                    put("conditions", conditionsJson.toKotlinx())
+                }
+            }
+            return `object`.toGson()
         }
     }
 }

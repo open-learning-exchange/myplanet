@@ -9,6 +9,24 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser.parseString
 import org.ole.planet.myplanet.model.News
 
+// A private, unmocked Gson instance - kept separate from JsonUtils.gson and the JsonParser
+// static so a test mocking those for its own business logic (e.g. mockkStatic(JsonParser::class))
+// can't also break this bridge's internal round-trip, which is an implementation detail no
+// caller should need to know about.
+private val bridgeGson: Gson by lazy { Gson() }
+
+fun kotlinx.serialization.json.JsonObject.toGson(): JsonObject =
+    bridgeGson.fromJson(toString(), JsonObject::class.java)
+
+fun kotlinx.serialization.json.JsonArray.toGson(): JsonArray =
+    bridgeGson.fromJson(toString(), JsonArray::class.java)
+
+fun kotlinx.serialization.json.JsonElement.toGsonElement(): JsonElement =
+    bridgeGson.fromJson(toString(), JsonElement::class.java)
+
+fun JsonElement.toKotlinx(): kotlinx.serialization.json.JsonElement =
+    kotlinx.serialization.json.Json.parseToJsonElement(toString())
+
 object JsonUtils {
     private const val TAG = "JsonUtils"
 
