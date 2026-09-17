@@ -7,25 +7,56 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser.parseString
+import com.google.gson.JsonPrimitive
+import kotlinx.serialization.json.JsonArray as KJsonArray
+import kotlinx.serialization.json.JsonElement as KJsonElement
+import kotlinx.serialization.json.JsonNull as KJsonNull
+import kotlinx.serialization.json.JsonObject as KJsonObject
+import kotlinx.serialization.json.JsonPrimitive as KJsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.longOrNull
 import org.ole.planet.myplanet.model.News
 
-// A private, unmocked Gson instance - kept separate from JsonUtils.gson and the JsonParser
-// static so a test mocking those for its own business logic (e.g. mockkStatic(JsonParser::class))
-// can't also break this bridge's internal round-trip, which is an implementation detail no
-// caller should need to know about.
-private val bridgeGson: Gson by lazy { Gson() }
+fun KJsonObject.toGson(): JsonObject = toGsonElement() as JsonObject
 
-fun kotlinx.serialization.json.JsonObject.toGson(): JsonObject =
-    bridgeGson.fromJson(toString(), JsonObject::class.java)
+fun KJsonArray.toGson(): JsonArray = toGsonElement() as JsonArray
 
-fun kotlinx.serialization.json.JsonArray.toGson(): JsonArray =
-    bridgeGson.fromJson(toString(), JsonArray::class.java)
+fun KJsonElement.toGsonElement(): JsonElement = when (this) {
+    is KJsonNull -> JsonNull.INSTANCE
+    is KJsonObject -> {
+        val result = JsonObject()
+        for ((key, value) in this) result.add(key, value.toGsonElement())
+        result
+    }
+    is KJsonArray -> {
+        val result = JsonArray()
+        for (element in this) result.add(element.toGsonElement())
+        result
+    }
+    is KJsonPrimitive -> toGsonPrimitive()
+}
 
-fun kotlinx.serialization.json.JsonElement.toGsonElement(): JsonElement =
-    bridgeGson.fromJson(toString(), JsonElement::class.java)
+private fun KJsonPrimitive.toGsonPrimitive(): JsonElement {
+    if (isString) return JsonPrimitive(content)
+    booleanOrNull?.let { return JsonPrimitive(it) }
+    longOrNull?.let { return JsonPrimitive(it) }
+    doubleOrNull?.let { return JsonPrimitive(it) }
+    return JsonPrimitive(content)
+}
 
-fun JsonElement.toKotlinx(): kotlinx.serialization.json.JsonElement =
-    kotlinx.serialization.json.Json.parseToJsonElement(toString())
+fun JsonElement.toKotlinx(): KJsonElement = when {
+    isJsonNull -> KJsonNull
+    isJsonObject -> KJsonObject(asJsonObject.entrySet().associate { (key, value) -> key to value.toKotlinx() })
+    isJsonArray -> KJsonArray(asJsonArray.map { it.toKotlinx() })
+    else -> asJsonPrimitive.toKotlinxPrimitive()
+}
+
+private fun JsonPrimitive.toKotlinxPrimitive(): KJsonPrimitive = when {
+    isBoolean -> KJsonPrimitive(asBoolean)
+    isNumber -> KJsonPrimitive(asNumber)
+    else -> KJsonPrimitive(asString)
+}
 
 object JsonUtils {
     private const val TAG = "JsonUtils"
