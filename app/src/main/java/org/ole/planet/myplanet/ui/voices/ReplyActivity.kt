@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -234,7 +235,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         try {
             showSelectedImages()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "handleImageSelection failed", e)
         }
     }
 
@@ -274,5 +275,9 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
 
     override fun onDestroy() {
         super.onDestroy()
+    }
+
+    companion object {
+        private const val TAG = "ReplyActivity"
     }
 }

@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.teams.voices
 
 import android.content.res.Configuration
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,6 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
@@ -220,8 +222,10 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                             try {
                                 val result = viewModel.getReplyCount(newsId)
                                 onResult(result)
+                            } catch (e: CancellationException) {
+                                throw e
                             } catch (e: Exception) {
-                                e.printStackTrace()
+                                Log.w(TAG, "getReplyCount failed", e)
                             }
                         }
                         return@VoicesAdapter { job.cancel() }
@@ -283,5 +287,9 @@ class TeamsVoicesFragment : BaseTeamFragment() {
     override fun onDestroyView() {
         _binding = null
         super.onDestroyView()
+    }
+
+    companion object {
+        private const val TAG = "TeamsVoicesFragment"
     }
 }
