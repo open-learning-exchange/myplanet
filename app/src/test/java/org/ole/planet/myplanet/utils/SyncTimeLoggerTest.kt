@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.utils
 
 import android.util.Log
 import io.mockk.coEvery
-import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic

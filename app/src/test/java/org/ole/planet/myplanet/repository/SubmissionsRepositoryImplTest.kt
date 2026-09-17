@@ -26,7 +26,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.ole.planet.myplanet.model.Answer
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.AnswerDao
@@ -35,6 +34,7 @@ import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao.UploadedPhoto
+import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.ExamQuestion

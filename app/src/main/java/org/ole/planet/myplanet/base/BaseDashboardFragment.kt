@@ -1,12 +1,10 @@
 package org.ole.planet.myplanet.base
 
-import android.app.DatePickerDialog
 import android.content.Intent
 import android.graphics.Typeface
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.DatePicker
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -18,7 +16,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Calendar
 import javax.inject.Inject
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map

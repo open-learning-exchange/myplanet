@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.user
 
 import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
