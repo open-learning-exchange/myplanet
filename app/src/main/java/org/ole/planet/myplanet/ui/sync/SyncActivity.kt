@@ -760,7 +760,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
         lifecycleScope.launch {
-            val builder = getUpdateDialog(this@SyncActivity, info, customProgressDialog, lifecycleScope, configurationsRepository)
+            val builder = getUpdateDialog(this@SyncActivity, info, customProgressDialog, lifecycleScope, configurationsRepository::checkCheckSum)
             if (cancelable || getCustomDeviceName(this@SyncActivity).endsWith("###")) {
                 builder.setNegativeButton(R.string.update_later) { _: DialogInterface?, _: Int ->
                     continueSyncProcess()
