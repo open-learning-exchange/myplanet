@@ -23,6 +23,7 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
 import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
@@ -34,6 +35,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.RetryOperation
+import org.ole.planet.myplanet.repository.RetryRepository
 import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -287,5 +289,31 @@ class RetryQueueWorkerTest {
         assertEquals(Result.success(), result)
         // Only first batch of 50 operations should have completed
         coVerify(exactly = 50) { retryQueue.markCompleted(any()) }
+    }
+
+    @Test
+    fun doWork_cancelledRun_doesNotIncrementAttemptCount() = runTest {
+        MainApplication.isSyncRunning.set(false)
+        val mockRepo = mockk<RetryRepository>(relaxed = true)
+
+        val customWorker = RetryQueueWorker(context, workerParams, retryQueue, mockRepo)
+
+        coEvery { retryQueue.isCurrentlyProcessing() } returns false
+        val operation = RetryOperation().apply {
+            id = "op_cancelled"
+            serializedPayload = "{}"
+            endpoint = "test"
+        }
+        coEvery { retryQueue.getPendingOperations() } returns listOf(operation)
+        coEvery { mockRepo.executeOperation(operation) } throws CancellationException("Worker cancelled")
+
+        try {
+            customWorker.doWork()
+        } catch (e: CancellationException) {
+            // Cancellation propagates when WorkManager stops the worker
+        }
+
+        coVerify(exactly = 0) { mockRepo.markFailed(any(), any(), any()) }
+        coVerify(exactly = 0) { retryQueue.markFailed(any(), any(), any()) }
     }
 }
