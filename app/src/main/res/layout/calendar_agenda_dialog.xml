@@ -16,19 +16,18 @@
         android:textStyle="bold"
         android:textColor="@color/md_white_1000"
         android:padding="10dp"/>
-
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvMeetups"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:scrollbars="vertical" />
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:gravity="end">
+
         <Button
             android:id="@+id/btnClose"
             android:layout_width="wrap_content"
@@ -36,5 +35,4 @@
             android:text="@string/close"
             android:layout_gravity="end"/>
     </LinearLayout>
-
 </LinearLayout>
