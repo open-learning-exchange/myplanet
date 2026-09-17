@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.application)
     alias(libs.plugins.ksp)
     alias(libs.plugins.dagger.hilt.android)
+    alias(libs.plugins.kotlin.serialization)
 }
 android {
     compileSdk = 37
@@ -245,6 +246,7 @@ dependencies {
     implementation(libs.opencsv) { exclude group: 'commons-logging', module: 'commons-logging' }
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
+    implementation(libs.retrofit.converter.kotlinx.serialization)
     implementation(libs.okhttp)
     implementation(libs.circleimageview)
     implementation(libs.pbkdf2)
