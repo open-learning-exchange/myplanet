@@ -18,6 +18,7 @@ android {
     testOptions {
         unitTests {
             includeAndroidResources = true
+            returnDefaultValues = true
             all { test ->
                 def requested = project.findProperty('testMaxParallelForks') as String
                 test.maxParallelForks = requested ? requested.toInteger()

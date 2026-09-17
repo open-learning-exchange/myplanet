@@ -71,7 +71,7 @@ object TimeUtils {
         try {
             formatter().format(instant)
         } catch (e: Exception) {
-            runCatching { Log.w(TAG, "formatInstant failed", e) }
+            Log.w(TAG, "formatInstant failed", e)
             fallback
         }
 
@@ -114,7 +114,7 @@ object TimeUtils {
             val today = LocalDate.now()
             Period.between(dob, today).years
         } catch (e: Exception) {
-            runCatching { Log.w(TAG, "getAge failed", e) }
+            Log.w(TAG, "getAge failed", e)
             0
         }
     }
@@ -134,7 +134,7 @@ object TimeUtils {
             }
             getFormattedDate(instant.toEpochMilli())
         } catch (e: Exception) {
-            runCatching { Log.w(TAG, "getFormattedDate failed", e) }
+            Log.w(TAG, "getFormattedDate failed", e)
             "N/A"
         }
     }
@@ -157,7 +157,7 @@ object TimeUtils {
             }.getOrThrow()
             localDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
         } catch (e: Exception) {
-            runCatching { Log.w(TAG, "parseDate failed", e) }
+            Log.w(TAG, "parseDate failed", e)
             null
         }
 
@@ -169,7 +169,7 @@ object TimeUtils {
                 Instant.parse("${dateString}T00:00:00.000Z")
             }
         } catch (e: Exception) {
-            runCatching { Log.w(TAG, "parseInstantFromString failed", e) }
+            Log.w(TAG, "parseInstantFromString failed", e)
             null
         }
 
@@ -200,7 +200,7 @@ object TimeUtils {
             val formatter = formatterFor("dd-MM-yyyy")
             localDate.format(formatter)
         } catch (e: Exception) {
-            runCatching { Log.w(TAG, "formatDateToDDMMYYYY failed", e) }
+            Log.w(TAG, "formatDateToDDMMYYYY failed", e)
             dateString ?: ""
         }
     }
@@ -213,7 +213,7 @@ object TimeUtils {
             val isoDate = localDate.format(formatterFor("yyyy-MM-dd", locale = null))
             convertToISO8601(isoDate)
         } catch (e: Exception) {
-            runCatching { Log.w(TAG, "convertDDMMYYYYToISO failed", e) }
+            Log.w(TAG, "convertDDMMYYYYToISO failed", e)
             dateString ?: ""
         }
     }
