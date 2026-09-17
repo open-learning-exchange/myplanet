@@ -134,21 +134,11 @@ class HealthViewModel @Inject constructor(
                     val record = healthRepository.getPatientHealthRecords(userId, user)
                     _patientDetailState.value = PatientDetailState(user, record)
                 } else {
-                    val isRefreshingCurrentPatient = _patientDetailState.value.user != null &&
-                        (_patientDetailState.value.user?.effectiveId == userId || _patientDetailState.value.user?.id == userId)
-                    if (!isRefreshingCurrentPatient) {
-                        currentPatientId = null
-                        _patientDetailState.value = PatientDetailState(null, null)
-                    }
+                    clearPatientUnlessDisplayed(userId)
                 }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
-                val isRefreshingCurrentPatient = _patientDetailState.value.user != null &&
-                    (_patientDetailState.value.user?.effectiveId == userId || _patientDetailState.value.user?.id == userId)
-                if (!isRefreshingCurrentPatient) {
-                    currentPatientId = null
-                    _patientDetailState.value = PatientDetailState(null, null)
-                }
+                clearPatientUnlessDisplayed(userId)
             } finally {
                 if (selectPatientJob === job) {
                     _isLoading.value = false
@@ -156,6 +146,23 @@ class HealthViewModel @Inject constructor(
             }
         }
         selectPatientJob = job
+    }
+
+    /**
+     * Clears the detail view unless [userId] is the patient currently on screen: a failed or
+     * empty re-read of the displayed patient is far more likely to be transient than a real
+     * deletion, and blanking the screen for it loses data the user was reading. The trade-off is
+     * that a patient genuinely deleted server-side keeps showing until another patient is picked.
+     */
+    private fun clearPatientUnlessDisplayed(userId: String) {
+        val displayed = _patientDetailState.value.user
+        val isDisplayedPatient = displayed != null &&
+            (displayed.effectiveId == userId || displayed.id == userId)
+        if (isDisplayedPatient) {
+            return
+        }
+        currentPatientId = null
+        _patientDetailState.value = PatientDetailState(null, null)
     }
 
     fun loadHealthData(userId: String) {
