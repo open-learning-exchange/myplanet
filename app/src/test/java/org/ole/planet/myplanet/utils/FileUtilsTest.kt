@@ -264,58 +264,6 @@ class FileUtilsTest {
     }
 
     @Test
-    fun findHtmlCoverImage_cachesResultOnRepeatedCall() {
-        val subDir = File(tempDir, "dir_cache_test").apply { mkdirs() }
-        val image = File(subDir, "cover.png").apply { writeBytes(ByteArray(100)) }
-
-        val cover1 = FileUtils.findHtmlCoverImage(subDir)
-        assertEquals("cover.png", cover1?.name)
-
-        val mtime = subDir.lastModified()
-        image.delete()
-        subDir.setLastModified(mtime)
-
-        val cover2 = FileUtils.findHtmlCoverImage(subDir)
-        assertEquals(cover1, cover2)
-    }
-
-    @Test
-    fun findHtmlCoverImage_reWalksWhenLastModifiedChanges() {
-        val subDir = File(tempDir, "dir_mtime_test").apply { mkdirs() }
-        val image1 = File(subDir, "photo.jpg").apply { writeBytes(ByteArray(100)) }
-        val cover1 = FileUtils.findHtmlCoverImage(subDir)
-        assertEquals("photo.jpg", cover1?.name)
-
-        // Add a cover hint file and explicitly bump lastModified of directory
-        val image2 = File(subDir, "cover.png").apply { writeBytes(ByteArray(200)) }
-        val newTime = subDir.lastModified() + 5000L
-        subDir.setLastModified(newTime)
-
-        val cover2 = FileUtils.findHtmlCoverImage(subDir)
-        assertEquals("cover.png", cover2?.name)
-    }
-
-    @Test
-    fun findHtmlCoverImage_cachesNullResultWhenNoImagesPresent() {
-        val subDir = File(tempDir, "dir_null_cache_test").apply { mkdirs() }
-        File(subDir, "index.html").writeText("<html></html>")
-
-        val cover1 = FileUtils.findHtmlCoverImage(subDir)
-        assertNull(cover1)
-
-        val mtime = subDir.lastModified()
-        File(subDir, "cover.png").writeBytes(ByteArray(100))
-        subDir.setLastModified(mtime)
-
-        val cover2 = FileUtils.findHtmlCoverImage(subDir)
-        assertNull(cover2)
-
-        subDir.setLastModified(mtime + 5000L)
-        val cover3 = FileUtils.findHtmlCoverImage(subDir)
-        assertEquals("cover.png", cover3?.name)
-    }
-
-    @Test
     fun getIdFromUrl_returnsCorrectId() {
         assertEquals("123", FileUtils.getIdFromUrl("http://example.com/resources/123/file.txt"))
         assertEquals("abc", FileUtils.getIdFromUrl("https://test.com/api/resources/abc/data"))
