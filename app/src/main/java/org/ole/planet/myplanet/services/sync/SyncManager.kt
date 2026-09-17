@@ -291,7 +291,7 @@ class SyncManager @Inject constructor(
             val url = UrlUtils.getUrl()
             val header = UrlUtils.header
 
-            val newIds: MutableList<String?> = ArrayList()
+            val newIds: MutableList<String> = ArrayList()
             var totalRows = 0
             var hadBatchFailure = false
 
@@ -408,16 +408,15 @@ class SyncManager @Inject constructor(
             try {
                 syncTimeLogger.startProcess("resource_cleanup")
                 val cleanupStartTime = SystemClock.elapsedRealtime()
-                val validNewIds = newIds.filter { !it.isNullOrBlank() }
                 if (hadBatchFailure) {
                     syncTimeLogger.logDetail("resource_sync", "Skipping delete-cleanup: one or more batches failed, id list is incomplete")
-                } else if (validNewIds.isNotEmpty() && validNewIds.size == newIds.size) {
-                    resourcesRepository.removeDeletedResources(validNewIds)
+                } else if (newIds.isNotEmpty()) {
+                    resourcesRepository.removeDeletedResources(newIds)
                 }
                 val cleanupDuration = SystemClock.elapsedRealtime() - cleanupStartTime
                 syncTimeLogger.endProcess("resource_cleanup")
                 if (cleanupDuration > 100) {
-                    syncTimeLogger.logDbOperation("delete_cleanup", "resources", cleanupDuration, newIds.size - validNewIds.size)
+                    syncTimeLogger.logDbOperation("delete_cleanup", "resources", cleanupDuration, newIds.size)
                 }
             } catch (e: Exception) {
                 Log.e("SyncManager", "Resource cleanup failed", e)
