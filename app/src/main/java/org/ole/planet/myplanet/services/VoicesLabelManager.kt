@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.services
 
 import android.content.Context
+import android.util.Log
 import android.view.View
 import android.widget.PopupMenu
 import androidx.appcompat.view.ContextThemeWrapper
@@ -53,7 +54,7 @@ class VoicesLabelManager(
                                 Utilities.toast(context, context.getString(R.string.label_added))
                             }
                         } catch (e: Exception) {
-                            e.printStackTrace()
+                            Log.w(TAG, "addLabel failed", e)
                         }
                     }
                 }
@@ -88,7 +89,7 @@ class VoicesLabelManager(
                                     try {
                                         removeLabelFn(voiceId, selectedLabel)
                                     } catch (e: Exception) {
-                                        e.printStackTrace()
+                                        Log.w(TAG, "removeLabel failed", e)
                                     }
                                 }
                             }
@@ -126,6 +127,7 @@ class VoicesLabelManager(
     }
 
     companion object {
+        private const val TAG = "VoicesLabelManager"
         private val reverseLabels by lazy { Constants.LABELS.entries.associate { it.value to it.key } }
         private val separatorRegex by lazy { Regex("[_-]") }
         private val whitespaceRegex by lazy { Regex("\\s+") }
