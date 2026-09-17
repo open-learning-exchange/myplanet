@@ -72,6 +72,7 @@ class NotificationActionReceiverTest {
         receiver = spyk(NotificationActionReceiver().apply {
             notificationsRepository = mockNotificationsRepository
             dispatcherProvider = mockDispatcherProvider
+            applicationScope = testScope
         })
         try {
             val injectedField = Hilt_NotificationActionReceiver::class.java.getDeclaredField("injected")
@@ -166,12 +167,15 @@ class NotificationActionReceiverTest {
     }
 
     @Test
-    fun `test onReceive calls finish when repository throws exception`() = testScope.runTest {
+    fun `test onReceive calls finish when notification action throws exception`() = testScope.runTest {
         val notificationId = "test_id"
         val mockIntent = Intent(NotificationUtils.ACTION_MARK_AS_READ)
         mockIntent.putExtra(NotificationUtils.EXTRA_NOTIFICATION_ID, notificationId)
 
-        coEvery { mockNotificationsRepository.markNotificationsAsRead(setOf(notificationId)) } throws RuntimeException("Database error")
+        mockkStatic(android.util.Log::class)
+        every { android.util.Log.e(any(), any(), any()) } returns 0
+
+        every { mockNotificationUtils.clearNotification(notificationId) } throws RuntimeException("Clear error")
 
         val pendingResult = mockk<BroadcastReceiver.PendingResult>(relaxed = true)
         every { receiver.goAsync() } returns pendingResult
@@ -179,7 +183,7 @@ class NotificationActionReceiverTest {
         receiver.onReceive(mockContext, mockIntent)
         advanceUntilIdle()
 
-        coVerify { mockNotificationsRepository.markNotificationsAsRead(setOf(notificationId)) }
+        verify { android.util.Log.e("NotificationActionReceiver", "broadcast work failed", any()) }
         verify { pendingResult.finish() }
     }
 }

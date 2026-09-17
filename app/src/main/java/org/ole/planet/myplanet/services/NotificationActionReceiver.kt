@@ -7,11 +7,12 @@ import android.provider.Settings
 import android.util.Log
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -28,10 +29,13 @@ class NotificationActionReceiver : BroadcastReceiver() {
     lateinit var notificationsRepository: NotificationsRepository
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
+    @Inject
+    @ApplicationScope
+    lateinit var applicationScope: CoroutineScope
+
     override fun onReceive(context: Context, intent: Intent) {
         val pendingResult = goAsync()
-        val scope = CoroutineScope(dispatcherProvider.io)
-        scope.launch {
+        applicationScope.launch {
             try {
                 val action = intent.action
                 val notificationId = intent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_ID)
@@ -74,13 +78,10 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     }
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 Log.e(TAG, "broadcast work failed", e)
             } finally {
-                try {
-                    pendingResult.finish()
-                } finally {
-                    scope.cancel()
-                }
+                pendingResult.finish()
             }
         }
     }
