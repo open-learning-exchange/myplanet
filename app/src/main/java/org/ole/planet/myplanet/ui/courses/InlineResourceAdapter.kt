@@ -174,24 +174,8 @@ class InlineResourceAdapter(
         )
 
         holder.setPreviewJob(adapterScope.launch {
-            val dir = externalFilesDir ?: FileUtils.getExternalFilesDir(context)
-            val resourceFile = File(
-                dir,
-                "ole/${resource.id}/${resource.resourceLocalAddress}"
-            )
-
-            var exists = false
-            var lastModified = 0L
-            var length = 0L
-
             val isDownloaded = resource.isResourceOffline() || withContext(dispatcherProvider.io) {
-                UrlUtils.getUrl(resource)
-                exists = resourceFile.exists()
-                if (exists) {
-                    lastModified = resourceFile.lastModified()
-                    length = resourceFile.length()
-                }
-                exists && length > 0
+                FileUtils.checkFileExist(context, UrlUtils.getUrl(resource))
             }
 
             if (isDownloaded) {
@@ -199,13 +183,21 @@ class InlineResourceAdapter(
                 binding.ivStatus.visibility = View.VISIBLE
                 binding.ivStatus.setImageResource(R.drawable.ic_eye)
 
-                if (resource.isResourceOffline()) {
-                    withContext(dispatcherProvider.io) {
-                        exists = resourceFile.exists()
-                        if (exists) {
-                            lastModified = resourceFile.lastModified()
-                            length = resourceFile.length()
-                        }
+                val dir = externalFilesDir ?: FileUtils.getExternalFilesDir(context)
+                val resourceFile = File(
+                    dir,
+                    "ole/${resource.id}/${resource.resourceLocalAddress}"
+                )
+
+                var exists = false
+                var lastModified = 0L
+                var length = 0L
+
+                withContext(dispatcherProvider.io) {
+                    exists = resourceFile.exists()
+                    if (exists) {
+                        lastModified = resourceFile.lastModified()
+                        length = resourceFile.length()
                     }
                 }
 
@@ -217,7 +209,7 @@ class InlineResourceAdapter(
                     mimeType?.startsWith("video") == true -> showVideoPreview(binding, context, resourceFile, exists)
                     mimeType?.contains("pdf") == true -> showPdfPreview(holder, resourceFile, exists)
                     mimeType?.startsWith("audio") == true -> showAudioPreview(holder, resourceFile, cacheKey)
-                    mimeType?.contains("html") == true -> showHtmlPreview(binding, context, resource.id, File(externalFilesDir, "ole/${resource.id}"))
+                    mimeType?.contains("html") == true -> showHtmlPreview(binding, context, resource.id, File(dir, "ole/${resource.id}"))
                     mimeType?.contains("csv") == true || resource.resourceLocalAddress?.endsWith(".csv") == true -> showCsvPreview(holder, resourceFile, cacheKey)
                     mimeType?.startsWith("text") == true || resource.resourceLocalAddress?.endsWith(".txt") == true || resource.resourceLocalAddress?.endsWith(".md") == true -> showTextPreview(holder, resourceFile, cacheKey)
                 }
