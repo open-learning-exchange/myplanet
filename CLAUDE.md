@@ -26,6 +26,14 @@
 | `docs/CODE_STYLE_GUIDE.md` | You're writing code — naming, imports, coroutines, Room, Hilt, UI conventions |
 | `docs/TESTING.md` | You're writing or fixing tests — patterns to copy per layer |
 | `agents-summoning` skill — `.agents/skills/agents-summoning/SKILL.md` (or the `agents-summoning@summoning` plugin in a Claude Code session) | You're summoning another AI agent (`@coderabbitai` `@codex` `@copilot` `@devin` `@jules` `@openhands` `@dependabot`) on a PR or issue — who answers, how fast, with what side effects, and why a summon went silent. Dated receipts in the same skill's `NOTES.md`; connection checklists in its `references/connecting.md` |
+| `kotlin-importing` skill — `.agents/skills/kotlin-importing/SKILL.md` (or the `kotlin-importing@importing` plugin) | You're sorting, cleaning up, or organizing imports in `.kt` files, or removing unused imports without ktlint. Bundles `kotlin-importing.py`; run `python3 .agents/skills/kotlin-importing/kotlin-importing.py --check app/src` to preview, drop `--check` to apply |
+| `merge-prepping` skill — `.agents/skills/merge-prepping/SKILL.md` (or the `merge-prepping@prepping` plugin) | You're writing a PR title or getting a PR ready to merge — the house style `scope: smoother thing doing (fixes #N)`, and attaching the tracking issue so it closes on merge |
+| `branch-overtaking` skill — the `branch-overtaking@overtaking` plugin | This session opened on a branch that isn't `master` — see **Branch Strategy** below |
+
+**These skills live in git submodules.** A fresh clone leaves `.agents/skills/*` empty, and
+the `extraKnownMarketplaces` plugins in `.claude/settings.json` only load once Claude Code has
+installed them — so in a remote/web session neither path is guaranteed. Run
+`git submodule update --init --recursive` to populate them, then read the `SKILL.md` directly.
 
 Reviewers speak; doers act — an unleashed doer mention (`@openhands`, `@devin`,
 `@copilot`) defaults to commits on your branch, so add "comment only" when that
