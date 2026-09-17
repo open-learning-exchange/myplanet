@@ -451,9 +451,17 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         )
     }
 
+    private suspend fun fetchPendingByUserAndParent(parentId: String?, userId: String?): Submission? {
+        val bounded = submissionDao.getPendingByUserAndParent(parentId, userId)
+        if (bounded != null && !bounded.id.isNullOrEmpty()) {
+            return bounded
+        }
+        return submissionDao.getByParentUserAndStatus(parentId, userId, "pending").firstOrNull()
+    }
+
     override suspend fun startExamSession(examId: String, parentId: String?, userId: String?, request: CreateExamSubmissionRequest, recreate: Boolean, deleteStale: Boolean): Submission {
         if (!recreate) {
-            val submission = getSubmissionsByParentId(parentId, userId, "pending").firstOrNull()
+            val submission = hydrateSubmission(fetchPendingByUserAndParent(parentId, userId))
             if (submission != null) {
                 return submission
             }
@@ -535,10 +543,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             ?: run {
                 val parentId = question.examId?.let { eId ->
                     val exam = examDao.getById(eId)
-                    if (!exam?.courseId.isNullOrEmpty()) "$eId@${exam?.courseId}" else eId
+                    if (!exam?.courseId.isNullOrEmpty()) "$eId@${exam.courseId}" else eId
                 }
                 if (parentId != null) {
-                    getSubmissionsByParentId(parentId, userId ?: submission?.userId, "pending").firstOrNull()
+                    hydrateSubmission(fetchPendingByUserAndParent(parentId, userId ?: submission?.userId))
                 } else null
             }
             ?: submissionDao.getLatestPendingByUser(userId ?: submission?.userId)
