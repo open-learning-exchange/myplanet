@@ -5,6 +5,7 @@ import android.app.DatePickerDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -24,6 +25,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Locale
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
@@ -86,8 +88,10 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                                 outputStream.write(csvContent.toByteArray())
                             }
                             Utilities.toast(requireContext(), getString(R.string.csv_file_saved_successfully))
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: IOException) {
-                            e.printStackTrace()
+                            Log.w(TAG, "onCreateView failed", e)
                             Utilities.toast(requireContext(), getString(R.string.failed_to_save_csv_file))
                         }
                     }
@@ -399,6 +403,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
     }
 
     companion object {
+        private const val TAG = "EnterprisesReportsFragment"
         private val dateFormatter = DateTimeFormatter.ofPattern("EEE_MMM_dd_yyyy", Locale.US)
     }
 }
