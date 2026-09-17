@@ -1,0 +1,1 @@
+["app/src/main/java/org/ole/planet/myplanet/ui/sync/LoginActivity.kt", "app/src/main/res/layout-large-land/activity_login.xml", "app/src/main/res/layout-night/activity_login.xml", "app/src/main/res/layout-normal-land/activity_login.xml", "app/src/main/res/layout-xlarge-land/activity_login.xml", "app/src/main/res/layout/activity_login.xml", "app/src/main/res/layout/item_user.xml"]

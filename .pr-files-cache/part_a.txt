@@ -1,0 +1,699 @@
+PR #17255
+title: navigation: ole logo adjusting to landscape mode (fixes #16573)
+head: 16573-navigation-logo-cropped-in-landscape
+author: J-S-webskas
+files (3):
+  - app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.kt
+  - app/src/main/res/layout-night/app_bar_bell.xml
+  - app/src/main/res/layout/app_bar_bell.xml
+
+PR #17254
+title: teams: refactored resources to match library (fixes #16927)
+head: 16927-update-team-resources-ui
+author: J-S-webskas
+files (2):
+  - app/src/main/java/org/ole/planet/myplanet/ui/teams/resources/TeamResourcesAdapter.kt
+  - app/src/main/res/layout/row_team_resource.xml
+
+PR #17222
+title: Cache parsed saved users list in SharedPrefManager
+head: cache-saved-users-sharedprefmanager-15464668619814106154
+author: dogi
+files (2):
+  - app/src/main/java/org/ole/planet/myplanet/services/SharedPrefManager.kt
+  - app/src/test/java/org/ole/planet/myplanet/services/SharedPrefManagerTest.kt
+
+PR #17187
+title: resources: refactored filter logic (fixes #16282)
+head: 16282-resources-not-filtering-all-the-available-resources
+author: J-S-webskas
+files (6):
+  - app/src/main/java/org/ole/planet/myplanet/ui/resources/ResourcesAdapter.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/resources/ResourcesFilterFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/resources/ResourcesListFilter.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/resources/ResourcesViewModel.kt
+  - app/src/main/java/org/ole/planet/myplanet/utils/MediumUtils.kt
+  - app/src/test/java/org/ole/planet/myplanet/ui/resources/ResourcesListFilterTest.kt
+
+PR #16624
+title: search: smoother offline full text search matching (fixes #16615)
+head: 16615-offline-fulltext-search
+author: ragilzakaria
+files (5):
+  - app/src/main/java/org/ole/planet/myplanet/repository/CoursesRepository.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/CoursesRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/utils/ResourcesSearchUtils.kt
+  - app/src/test/java/org/ole/planet/myplanet/repository/CoursesRepositoryImplTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/utils/ResourcesSearchUtilsTest.kt
+
+PR #16623
+title: teams: smoother interactive team tasks status and board handling (fixes #16616)
+head: 16616-interactive-team-tasks
+author: ragilzakaria
+files (19):
+  - app/src/main/java/org/ole/planet/myplanet/callback/OnTaskCompletedListener.kt
+  - app/src/main/java/org/ole/planet/myplanet/model/TeamTask.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepository.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/teams/tasks/TeamsTasksAdapter.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/teams/tasks/TeamsTasksFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/teams/tasks/TeamsTasksViewModel.kt
+  - app/src/main/res/drawable/bg_task_status_badge.xml
+  - app/src/main/res/layout/fragment_teams_tasks.xml
+  - app/src/main/res/layout/row_task.xml
+  - app/src/main/res/values-ar/strings.xml
+  - app/src/main/res/values-es/strings.xml
+  - app/src/main/res/values-fr/strings.xml
+  - app/src/main/res/values-ne/strings.xml
+  - app/src/main/res/values-so/strings.xml
+  - app/src/main/res/values/strings.xml
+  - app/src/test/java/org/ole/planet/myplanet/model/TeamTaskTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/ui/teams/tasks/TeamsTasksFilterAndStatusTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/ui/teams/tasks/TeamsTasksViewModelTest.kt
+
+PR #16594
+title: actions: smoother size labeller fetching (fixes #16344)
+head: openhands/labels-no-patch
+author: dogi
+files (5):
+  - .github/scripts/labels.sh
+  - .github/scripts/test_helper.bash
+  - .github/scripts/test_labels.bats
+  - .github/workflows/labels.yml
+  - .github/workflows/scripts.yml
+
+PR #16270
+title: Initialize Codex Cloud skill submodules with .codex/setup.sh and update AGENTS.md
+head: codex/create-environment-for-codex-cloud
+author: dogi
+files (2):
+  - .codex/setup.sh
+  - AGENTS.md
+
+PR #15951
+title: teams: smoother repository update requesting (fixes #15568)
+head: 15568-rework-the-design-of-team-to-enable-card-views-and-a-more-modern-look
+author: J-S-webskas
+files (23):
+  - app/src/main/java/org/ole/planet/myplanet/data/room/AppDatabase.kt
+  - app/src/main/java/org/ole/planet/myplanet/model/CreateTeamRequest.kt
+  - app/src/main/java/org/ole/planet/myplanet/model/MyTeam.kt
+  - app/src/main/java/org/ole/planet/myplanet/model/TeamDetails.kt
+  - app/src/main/java/org/ole/planet/myplanet/model/TeamUpdateRequest.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepository.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/teams/PlanFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/teams/TeamFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/teams/TeamViewModel.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/teams/TeamsAdapter.kt
+  - app/src/main/java/org/ole/planet/myplanet/utils/TimeUtils.kt
+  - app/src/main/res/layout/alert_create_team.xml
+  - app/src/main/res/layout/fragment_plan.xml
+  - app/src/main/res/layout/fragment_team.xml
+  - app/src/main/res/layout/item_team_list.xml
+  - app/src/main/res/values-ar/strings.xml
+  - app/src/main/res/values-es/strings.xml
+  - app/src/main/res/values-fr/strings.xml
+  - app/src/main/res/values-ne/strings.xml
+  - app/src/main/res/values-so/strings.xml
+  - app/src/main/res/values/strings.xml
+  - app/src/test/java/org/ole/planet/myplanet/ui/teams/TeamViewModelTest.kt
+
+PR #15825
+title: local event task reminders workmanager notifications (address #15115)
+head: 15115-local-event-task-reminders-workmanager-notifications
+author: ragilzakaria
+files (34):
+  - app/src/main/AndroidManifest.xml
+  - app/src/main/java/org/ole/planet/myplanet/MainApplication.kt
+  - app/src/main/java/org/ole/planet/myplanet/data/room/AppDatabase.kt
+  - app/src/main/java/org/ole/planet/myplanet/data/room/dao/MeetupDao.kt
+  - app/src/main/java/org/ole/planet/myplanet/di/RepositoryModule.kt
+  - app/src/main/java/org/ole/planet/myplanet/model/TeamTask.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/EventsRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepository.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/services/TaskNotificationWorker.kt
+  - app/src/main/java/org/ole/planet/myplanet/services/reminders/LocalReminderScheduler.kt
+  - app/src/main/java/org/ole/planet/myplanet/services/reminders/LocalReminderSchedulerImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/services/reminders/ReminderAlarmReceiver.kt
+  - app/src/main/java/org/ole/planet/myplanet/services/reminders/ReminderBootReceiver.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/teams/tasks/TeamsTasksFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/teams/tasks/TeamsTasksViewModel.kt
+  - app/src/main/java/org/ole/planet/myplanet/utils/ActivityTracker.kt
+  - app/src/main/java/org/ole/planet/myplanet/utils/InAppNotificationHelper.kt
+  - app/src/main/java/org/ole/planet/myplanet/utils/NotificationUtils.kt
+  - app/src/main/res/layout/alert_task.xml
+  - app/src/main/res/layout/in_app_notification_banner.xml
+  - app/src/main/res/values/strings.xml
+  - app/src/main/res/xml/pref.xml
+  - app/src/test/java/org/ole/planet/myplanet/repository/EventsRepositoryImplTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/repository/TeamsRepositoryBenchmarkTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/repository/TeamsRepositoryBulkInsertTransactionTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/repository/TeamsRepositoryImplTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/services/TaskNotificationWorkerTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/services/reminders/LocalReminderSchedulerImplTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/services/reminders/ReminderAlarmReceiverTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/services/reminders/ReminderBootReceiverTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/ui/teams/tasks/TeamsTasksViewModelTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/utils/NotificationUtilsTest.kt
+
+PR #15824
+title: gamification achievement hub offline badges streaks (address #15114)
+head: 15114-gamification-achievement-hub-offline-badges-streaks
+author: ragilzakaria
+files (40):
+  - app/build.gradle
+  - app/src/main/java/org/ole/planet/myplanet/data/room/dao/CourseProgressDao.kt
+  - app/src/main/java/org/ole/planet/myplanet/data/room/dao/NewsDao.kt
+  - app/src/main/java/org/ole/planet/myplanet/data/room/dao/OfflineActivityDao.kt
+  - app/src/main/java/org/ole/planet/myplanet/data/room/dao/SubmissionDao.kt
+  - app/src/main/java/org/ole/planet/myplanet/data/room/dao/TeamTaskDao.kt
+  - app/src/main/java/org/ole/planet/myplanet/di/RepositoryModule.kt
+  - app/src/main/java/org/ole/planet/myplanet/model/gamification/BadgeCategory.kt
+  - app/src/main/java/org/ole/planet/myplanet/model/gamification/CourseCertificate.kt
+  - app/src/main/java/org/ole/planet/myplanet/model/gamification/GamificationBadge.kt
+  - app/src/main/java/org/ole/planet/myplanet/model/gamification/GamificationSummary.kt
+  - app/src/main/java/org/ole/planet/myplanet/model/gamification/StudyStreakInfo.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/GamificationRepository.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/GamificationRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/user/AchievementFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/user/CertificateDialogFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/user/CourseCertificatesAdapter.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/user/GamificationBadgesAdapter.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/user/GamificationViewModel.kt
+  - app/src/main/res/color/chip_filter_bg_color.xml
+  - app/src/main/res/color/chip_filter_stroke_color.xml
+  - app/src/main/res/color/chip_filter_text_color.xml
+  - app/src/main/res/color/tab_toggle_bg_color.xml
+  - app/src/main/res/color/tab_toggle_text_color.xml
+  - app/src/main/res/drawable/bg_badge_locked_circle.xml
+  - app/src/main/res/drawable/bg_badge_unlocked_circle.xml
+  - app/src/main/res/drawable/bg_certificate_card.xml
+  - app/src/main/res/drawable/bg_certificate_dialog.xml
+  - app/src/main/res/drawable/bg_streak_card.xml
+  - app/src/main/res/drawable/bg_streak_pill_active.xml
+  - app/src/main/res/drawable/bg_streak_pill_inactive.xml
+  - app/src/main/res/layout/dialog_course_certificate.xml
+  - app/src/main/res/layout/fragment_achievement.xml
+  - app/src/main/res/layout/item_course_certificate.xml
+  - app/src/main/res/layout/item_gamification_badge.xml
+  - app/src/main/res/values/strings.xml
+  - app/src/test/java/org/ole/planet/myplanet/repository/GamificationRepositoryImplTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/ui/user/CourseCertificatesAdapterTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/ui/user/GamificationBadgesAdapterTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/ui/user/GamificationViewModelTest.kt
+
+PR #15820
+title: teams: smoother task and meetup comment threads managing (fixes #15112)
+head: 15112-team-tasks-meetups-comment-threads
+author: ragilzakaria
+files (27):
+  - app/build.gradle
+  - app/src/main/java/org/ole/planet/myplanet/data/room/dao/NewsDao.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/EventsRepository.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/EventsRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepository.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/events/EventsAdapter.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/teams/InlineCommentsAdapter.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/teams/TeamCalendarFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/teams/TeamCalendarViewModel.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/teams/tasks/TeamsTasksAdapter.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/teams/tasks/TeamsTasksFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/teams/tasks/TeamsTasksViewModel.kt
+  - app/src/main/res/drawable/bg_comment_input.xml
+  - app/src/main/res/layout/item_inline_comment.xml
+  - app/src/main/res/layout/item_meetup.xml
+  - app/src/main/res/layout/row_task.xml
+  - app/src/main/res/values/strings.xml
+  - app/src/test/java/org/ole/planet/myplanet/repository/EventsRepositoryImplTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/repository/TeamsRepositoryBenchmarkTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/repository/TeamsRepositoryBulkInsertTransactionTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/repository/TeamsRepositoryImplTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/ui/events/EventsAdapterTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/ui/teams/InlineCommentsAdapterTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/ui/teams/TeamCalendarViewModelTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/ui/teams/tasks/TeamsTasksAdapterTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/ui/teams/tasks/TeamsTasksViewModelTest.kt
+
+PR #15808
+title: sync: intelligent incremental sync via couchdb  changes feed (fixes #15807)
+head: 15807-intelligent-incremental-sync-via-couchdb-_changes-feed
+author: Okuro3499
+files (50):
+  - app/src/main/java/org/ole/planet/myplanet/data/room/AppDatabase.kt
+  - app/src/main/java/org/ole/planet/myplanet/data/room/dao/AchievementDao.kt
+  - app/src/main/java/org/ole/planet/myplanet/data/room/dao/CertificationDao.kt
+  - app/src/main/java/org/ole/planet/myplanet/data/room/dao/ChatDao.kt
+  - app/src/main/java/org/ole/planet/myplanet/data/room/dao/CourseDao.kt
+  - app/src/main/java/org/ole/planet/myplanet/data/room/dao/CourseProgressDao.kt
+  - app/src/main/java/org/ole/planet/myplanet/data/room/dao/ExamDao.kt
+  - app/src/main/java/org/ole/planet/myplanet/data/room/dao/FeedbackDao.kt
+  - app/src/main/java/org/ole/planet/myplanet/data/room/dao/HealthExaminationDao.kt
+  - app/src/main/java/org/ole/planet/myplanet/data/room/dao/MeetupDao.kt
+  - app/src/main/java/org/ole/planet/myplanet/data/room/dao/RatingDao.kt
+  - app/src/main/java/org/ole/planet/myplanet/data/room/dao/SyncCursorDao.kt
+  - app/src/main/java/org/ole/planet/myplanet/data/room/dao/TagDao.kt
+  - app/src/main/java/org/ole/planet/myplanet/data/room/dao/TeamTaskDao.kt
+  - app/src/main/java/org/ole/planet/myplanet/di/RoomModule.kt
+  - app/src/main/java/org/ole/planet/myplanet/di/ServiceModule.kt
+  - app/src/main/java/org/ole/planet/myplanet/model/SyncCursor.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/ChatRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/ChatSyncWriter.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/CommunityRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/CommunitySyncWriter.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/CoursesRepository.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/CoursesRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/FeedbackRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/FeedbackSyncWriter.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/HealthRepository.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/HealthRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/ProgressRepository.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/ProgressRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/RatingsRepository.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/RatingsRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/SubmissionsRepository.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/SubmissionsRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/SurveysRepository.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/SurveysRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/TagsRepository.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/TagsRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/TeamsSyncRepository.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/UserRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/UserSyncRepository.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/VoicesRepository.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/VoicesRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/services/ServerReachabilityWorker.kt
+  - app/src/main/java/org/ole/planet/myplanet/services/sync/HeavyTableSyncWorker.kt
+  - app/src/main/java/org/ole/planet/myplanet/services/sync/TransactionSyncManager.kt
+  - app/src/test/java/org/ole/planet/myplanet/data/room/dao/SyncCursorDaoTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/data/room/dao/SyncDeletionDaoTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/services/sync/TransactionSyncManagerCheckpointTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/services/sync/TransactionSyncManagerTest.kt
+
+PR #15559
+title: exam: redesign UI with elapsed timer and cards (fixes #15558)
+head: 15558-redesign-exam-ui
+author: Okuro3499
+files (24):
+  - app/src/main/java/org/ole/planet/myplanet/ui/exam/ExamTakingFragment.kt
+  - app/src/main/res/color/choice_button_tint.xml
+  - app/src/main/res/drawable/bg_choice_card.xml
+  - app/src/main/res/drawable/ic_timer.xml
+  - app/src/main/res/drawable/pill_elapsed_chip.xml
+  - app/src/main/res/layout-w640dp/fragment_exam_taking.xml
+  - app/src/main/res/layout/fragment_exam_taking.xml
+  - app/src/main/res/layout/item_checkbox.xml
+  - app/src/main/res/layout/item_radio_btn.xml
+  - app/src/main/res/values-ar-sw320dp/strings.xml
+  - app/src/main/res/values-ar/strings.xml
+  - app/src/main/res/values-es-sw320dp/strings.xml
+  - app/src/main/res/values-es/strings.xml
+  - app/src/main/res/values-fr-sw320dp/strings.xml
+  - app/src/main/res/values-fr/strings.xml
+  - app/src/main/res/values-ne-sw320dp/strings.xml
+  - app/src/main/res/values-ne/strings.xml
+  - app/src/main/res/values-night/colors.xml
+  - app/src/main/res/values-so-sw320dp/strings.xml
+  - app/src/main/res/values-so/strings.xml
+  - app/src/main/res/values-sw320dp/strings.xml
+  - app/src/main/res/values/colors.xml
+  - app/src/main/res/values/dimens.xml
+  - app/src/main/res/values/strings.xml
+
+PR #15519
+title: add dismiss button to last synced status container (fixes #15516)
+head: 15516-add-dismiss-button-to-last-synced-status-container
+author: ragilzakaria
+files (4):
+  - app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.kt
+  - app/src/main/res/layout/activity_dashboard.xml
+  - app/src/main/res/values-ne/strings.xml
+  - app/src/test/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivityTest.kt
+
+PR #15412
+title: courses limited space for content in landscape mode (fixes #15264)
+head: 15264-courses-limited-space-for-content-in-landscape-mode
+author: ragilzakaria
+files (10):
+  - app/src/main/java/org/ole/planet/myplanet/ui/courses/CourseSelectionController.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/courses/CoursesAdapter.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/courses/CoursesFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/courses/CoursesViewModel.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/resources/ResourcesFragment.kt
+  - app/src/main/res/layout-land/fragment_my_course.xml
+  - app/src/main/res/layout-land/layout_search.xml
+  - app/src/main/res/layout/fragment_my_course.xml
+  - app/src/main/res/layout/fragment_my_course_land.xml
+  - app/src/main/res/layout/layout_search.xml
+
+PR #15267
+title: prevent download popup dialog cropping when text size is large (fixes #15263)
+head: 15263-download-popup-window-in-text-size-large-is-cropped
+author: ragilzakaria
+files (10):
+  - app/src/main/java/org/ole/planet/myplanet/base/BaseRecyclerFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/base/BaseResourceFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/resources/ResourcesAdapter.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/resources/ResourcesFragment.kt
+  - app/src/main/res/layout-land/fragment_my_library.xml
+  - app/src/main/res/layout-land/my_library_alertdialog.xml
+  - app/src/main/res/layout-sw600dp/fragment_my_library.xml
+  - app/src/main/res/layout/fragment_my_library.xml
+  - app/src/main/res/layout/my_library_alertdialog.xml
+  - app/src/main/res/values/styles.xml
+
+PR #15266
+title: prevent team calendar cropping in landscape mode by using NestedScrollView (fixes #15265)
+head: 15265-team-calendar-is-cropped-in-landscape-mode
+author: ragilzakaria
+files (2):
+  - app/src/main/res/layout/fragment_calendar.xml
+  - app/src/main/res/layout/fragment_enterprise_calendar.xml
+
+PR #15226
+title: feat(flutter): Flutter/Dart port of myPlanet (phases 1–28)
+head: claude/kotlin-flutter-dart-migration-d3gmrd
+author: dogi
+files (695):
+  [695 paths — predominantly flutter/**; full list in offlimits set and per_pr.json]
+  - .claude/agents/flutter-ci-green.md
+  - .claude/agents/harvest-triage.md
+  - .claude/agents/parity-auditor.md
+  - .claude/agents/port-implementer.md
+  - .claude/hooks/session-start.sh
+  - .claude/settings.json
+  - .github/dependabot.yml
+  - .github/workflows/build.yml
+  - .github/workflows/flutter.yml
+  - .github/workflows/test.yml
+  - AGENTS.md
+  - CLAUDE.md
+  - README.md
+  - docs/CODE_STYLE_GUIDE.md
+  - docs/PROGRESS_RATING.md
+  - docs/kotlin-to-flutter-migration.md
+  - flutter/** (679 files)
+
+PR #15198
+title: Preserve input text when switching AI providers (fixes #15125)
+head: 15125-input-text-disappears-switching-chats
+author: ragilzakaria
+files (3):
+  - app/src/main/java/org/ole/planet/myplanet/ui/chat/ChatDetailFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/chat/ChatViewModel.kt
+  - app/src/test/java/org/ole/planet/myplanet/ui/chat/ChatViewModelTest.kt
+
+PR #15108
+title: fix event calendar marking (fixes #15107)
+head: 15107-fix-recurring-event-calendar-marking
+author: ragilzakaria
+files (10):
+  - app/src/main/java/org/ole/planet/myplanet/model/Meetup.kt
+  - app/src/main/java/org/ole/planet/myplanet/model/MeetupCreationParams.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/EventsRepository.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/EventsRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/events/EventsDetailFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/events/EventsDetailViewModel.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/teams/TeamCalendarFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/teams/TeamCalendarViewModel.kt
+  - app/src/main/res/layout/add_meetup.xml
+  - app/src/main/res/values/strings.xml
+
+PR #14960
+title: login: make login history visible and scrollable in landscape mode (fixes #14947)
+head: 14947-fix-login-history-landscape-visibility
+author: ragilzakaria
+files (7):
+  - app/src/main/java/org/ole/planet/myplanet/ui/sync/LoginActivity.kt
+  - app/src/main/res/layout-large-land/activity_login.xml
+  - app/src/main/res/layout-night/activity_login.xml
+  - app/src/main/res/layout-normal-land/activity_login.xml
+  - app/src/main/res/layout-xlarge-land/activity_login.xml
+  - app/src/main/res/layout/activity_login.xml
+  - app/src/main/res/layout/item_user.xml
+
+PR #14893
+title: dashboard: fix ui cropping and logo stretching in landscape orientation (fixes #14891)
+head: 14891-fix-landscape-ui-cropping
+author: ragilzakaria
+files (7):
+  - app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.kt
+  - app/src/main/res/layout/home_card_courses.xml
+  - app/src/main/res/layout/home_card_library.xml
+  - app/src/main/res/layout/home_card_mylife.xml
+  - app/src/main/res/layout/home_card_teams.xml
+  - app/src/main/res/values-land/dimens.xml
+  - app/src/main/res/values/dimens.xml
+
+PR #14883
+title: team: add leaderboard tab (fixes #14880)
+head: 14880-add-team-and-enterprise-leaderboards
+author: Okuro3499
+files (28):
+  - app/src/main/java/org/ole/planet/myplanet/model/TeamLeaderboardEntry.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/ProgressRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/SurveysRepository.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/SurveysRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/teams/TeamDetailFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/teams/TeamPageConfig.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/teams/leaderboard/TeamLeaderboardAdapter.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/teams/leaderboard/TeamLeaderboardCalculator.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/teams/leaderboard/TeamLeaderboardFragment.kt
+  - app/src/main/res/drawable/bg_period_chip_active.xml
+  - app/src/main/res/drawable/bg_period_chip_inactive.xml
+  - app/src/main/res/drawable/bg_pill_primary.xml
+  - app/src/main/res/drawable/bg_summary_banner.xml
+  - app/src/main/res/drawable/ic_expand_more.xml
+  - app/src/main/res/drawable/ic_groups.xml
+  - app/src/main/res/drawable/ic_history.xml
+  - app/src/main/res/drawable/ic_poll.xml
+  - app/src/main/res/drawable/ic_school.xml
+  - app/src/main/res/drawable/oval_neutral.xml
+  - app/src/main/res/layout/fragment_team_leaderboard.xml
+  - app/src/main/res/layout/row_leaderboard_member.xml
+  - app/src/main/res/values-night/colors.xml
+  - app/src/main/res/values/colors.xml
+  - app/src/main/res/values/strings.xml
+  - app/src/test/java/org/ole/planet/myplanet/repository/ProgressRepositoryImplTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/repository/SurveysRepositoryImplTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/ui/teams/leaderboard/TeamLeaderboardAdapterTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/ui/teams/leaderboard/TeamLeaderboardCalculatorTest.kt
+
+PR #14650
+title: survey: smoother submissions display (fixes #14619)
+head: 14619-survey-shows-continue-progress-dialog-after-already-being-completed-and-submitted
+author: Okuro3499
+files (10):
+  - app/src/main/java/org/ole/planet/myplanet/base/BaseDashboardFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/model/AssignedSurvey.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/SurveysRepository.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/SurveysRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardViewModel.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/exam/ExamTakingFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/submissions/SubmissionUiModel.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/submissions/SubmissionViewModel.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/submissions/SubmissionsAdapter.kt
+  - app/src/test/java/org/ole/planet/myplanet/ui/submissions/SubmissionViewModelTest.kt
+
+PR #14427
+title: Course streak
+head: course-streak
+author: Okuro3499
+files (24):
+  - app/src/main/java/org/ole/planet/myplanet/repository/ActivitiesRepository.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/ActivitiesRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/ProgressRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/SubmissionsRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/courses/CoursesAdapter.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/courses/CoursesViewModel.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/dashboard/BellDashboardFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/dashboard/BellDashboardViewModel.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardViewModel.kt
+  - app/src/main/java/org/ole/planet/myplanet/utils/StreakUtils.kt
+  - app/src/main/res/layout-large-land/card_profile_bell.xml
+  - app/src/main/res/layout-normal-land/card_profile_bell.xml
+  - app/src/main/res/layout-xlarge-land/card_profile_bell.xml
+  - app/src/main/res/layout/card_profile_bell.xml
+  - app/src/main/res/values-ar/strings.xml
+  - app/src/main/res/values-es/strings.xml
+  - app/src/main/res/values-fr/strings.xml
+  - app/src/main/res/values-ne/strings.xml
+  - app/src/main/res/values-so/strings.xml
+  - app/src/main/res/values/strings.xml
+  - app/src/test/java/org/ole/planet/myplanet/repository/ProgressRepositoryImplTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/repository/SubmissionsRepositoryImplTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/ui/dashboard/BellDashboardViewModelTest.kt
+  - app/src/test/java/org/ole/planet/myplanet/utils/StreakUtilsTest.kt
+
+PR #13928
+title: Add baseline profile module and installer (fixes #13927)
+head: 13927-add-baseline-profile-to-reduce-cold-start-times
+author: Okuro3499
+files (6):
+  - app/build.gradle
+  - baselineprofile/build.gradle
+  - baselineprofile/src/main/java/org/ole/planet/myplanet/baselineprofile/BaselineProfileGenerator.kt
+  - build.gradle.kts
+  - gradle/libs.versions.toml
+  - settings.gradle
+
+PR #13848
+title: all: introduce Course/Grade models and wire into UI (fixes #13802)
+head: 13802-refactor-string-resources-for-localization-consistency-and-reduce-fragility
+author: Okuro3499
+files (13):
+  - app/src/main/java/org/ole/planet/myplanet/model/CourseLevel.kt
+  - app/src/main/java/org/ole/planet/myplanet/model/GradeLevel.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/courses/CourseFilterController.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/exam/UserInformationFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/resources/AddResourceActivity.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/user/BecomeMemberActivity.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/user/UserProfileFragment.kt
+  - app/src/main/res/values-ar/strings.xml
+  - app/src/main/res/values-es/strings.xml
+  - app/src/main/res/values-fr/strings.xml
+  - app/src/main/res/values-ne/strings.xml
+  - app/src/main/res/values-so/strings.xml
+  - app/src/main/res/values/strings.xml
+
+PR #13657
+title: course: Archive course My Courses library (fixes #13559)
+head: 13559-archive-and-remove-course-actions-perform-identical-operations
+author: Valerie923
+files (15):
+  - app/src/main/java/org/ole/planet/myplanet/model/Course.kt
+  - app/src/main/java/org/ole/planet/myplanet/model/RealmMyCourse.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/CoursesRepository.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/CoursesRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/courses/CourseFilterController.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/courses/CourseSelectionController.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/courses/CoursesFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/courses/CoursesViewModel.kt
+  - app/src/main/res/layout/fragment_my_course.xml
+  - app/src/main/res/values-ar/strings.xml
+  - app/src/main/res/values-es/strings.xml
+  - app/src/main/res/values-fr/strings.xml
+  - app/src/main/res/values-ne/strings.xml
+  - app/src/main/res/values-so/strings.xml
+  - app/src/main/res/values/strings.xml
+
+PR #13604
+title: teams: Add sort by completeness option in Survey section (fixes #13590)
+head: 13590-add-incomplete-surveys-first-sort-option-in-survey-section
+author: Valerie923
+files (8):
+  - app/src/main/java/org/ole/planet/myplanet/ui/surveys/SurveyFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/surveys/SurveysViewModel.kt
+  - app/src/main/res/values-ar/strings.xml
+  - app/src/main/res/values-es/strings.xml
+  - app/src/main/res/values-fr/strings.xml
+  - app/src/main/res/values-ne/strings.xml
+  - app/src/main/res/values-so/strings.xml
+  - app/src/main/res/values/strings.xml
+
+PR #13415
+title: voices: Add emoji reactions (fixes #13357)
+head: 13357-add-emoji-reactions-to-community-voices-and-teamenterprise-news
+author: Valerie923
+files (19):
+  - app/src/main/java/org/ole/planet/myplanet/base/BaseVoicesFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/data/DatabaseService.kt
+  - app/src/main/java/org/ole/planet/myplanet/data/RealmMigrations.kt
+  - app/src/main/java/org/ole/planet/myplanet/model/RealmNews.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/VoicesRepository.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/VoicesRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/resources/ResourcesViewModel.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/voices/VoicesAdapter.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/voices/VoicesFragment.kt
+  - app/src/main/res/drawable/reaction_chip_active.xml
+  - app/src/main/res/drawable/reaction_chip_inactive.xml
+  - app/src/main/res/layout/popup_emoji_picker.xml
+  - app/src/main/res/layout/row_news.xml
+  - app/src/main/res/values-ar/strings.xml
+  - app/src/main/res/values-es/strings.xml
+  - app/src/main/res/values-fr/strings.xml
+  - app/src/main/res/values-ne/strings.xml
+  - app/src/main/res/values-so/strings.xml
+  - app/src/main/res/values/strings.xml
+
+PR #13355
+title: Add P2P resource sharing (Wi‑Fi P2P) (fixes #13353)
+head: 13353-offline-p2p-resource-sharing-enable-resource-sharing-via-bluetooth-wi-fi-direct
+author: Okuro3499
+files (17):
+  - app/src/main/AndroidManifest.xml
+  - app/src/main/java/org/ole/planet/myplanet/callback/OnLibraryItemSelectedListener.kt
+  - app/src/main/java/org/ole/planet/myplanet/services/P2pTransferManager.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/resources/P2pTransferActivity.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/resources/ResourceDetailFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/resources/ResourcesAdapter.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/resources/ResourcesFragment.kt
+  - app/src/main/res/layout/activity_p2p_transfer.xml
+  - app/src/main/res/layout/fragment_library_detail.xml
+  - app/src/main/res/layout/row_library.xml
+  - app/src/main/res/layout/row_p2p_peer.xml
+  - app/src/main/res/values-ar/strings.xml
+  - app/src/main/res/values-es/strings.xml
+  - app/src/main/res/values-fr/strings.xml
+  - app/src/main/res/values-ne/strings.xml
+  - app/src/main/res/values-so/strings.xml
+  - app/src/main/res/values/strings.xml
+
+PR #13287
+title: profile: no char limit for edit texts (fixes #13283)
+head: 13283-no-char-limit-for-edit-texts
+author: UmutDiler0
+files (2):
+  - app/src/main/res/layout/activity_become_member.xml
+  - app/src/main/res/layout/edit_profile_dialog.xml
+
+PR #10993
+title: Voices video
+head: voicesVideo
+author: Okuro3499
+files (24):
+  - app/src/main/java/org/ole/planet/myplanet/base/BaseVoicesFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/callback/OnNewsItemClickListener.kt
+  - app/src/main/java/org/ole/planet/myplanet/model/News.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/VoicesRepository.kt
+  - app/src/main/java/org/ole/planet/myplanet/repository/VoicesRepositoryImpl.kt
+  - app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/teams/voices/TeamsVoicesFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/teams/voices/TeamsVoicesViewModel.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/voices/ReplyActivity.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/voices/VoicesAdapter.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/voices/VoicesFragment.kt
+  - app/src/main/java/org/ole/planet/myplanet/ui/voices/VoicesViewModel.kt
+  - app/src/main/res/drawable/circle_background.xml
+  - app/src/main/res/layout/alert_input.xml
+  - app/src/main/res/layout/fragment_discussion_list.xml
+  - app/src/main/res/layout/fragment_voices.xml
+  - app/src/main/res/layout/row_news.xml
+  - app/src/main/res/layout/video_thumb.xml
+  - app/src/main/res/values-ar/strings.xml
+  - app/src/main/res/values-es/strings.xml
+  - app/src/main/res/values-fr/strings.xml
+  - app/src/main/res/values-ne/strings.xml
+  - app/src/main/res/values-so/strings.xml
+  - app/src/main/res/values/strings.xml
+
+PR #8175
+title: roboscript update (fixes #7986)
+head: 7986-roboscript-update1
+author: jessewashburn
+files (3):
+  - app/build.gradle
+  - ci/robo/myplanet_robo.json
+  - ci/robo/run_robo.sh
+
+PR #4075
+title: robo movie (fixes #4074)
+head: testrobo
+author: dogi
+files (1):
+  - .github/workflows/android-release.yml
+

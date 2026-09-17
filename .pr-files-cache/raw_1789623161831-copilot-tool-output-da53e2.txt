@@ -1,0 +1,1 @@
+[".github/scripts/labels.sh", ".github/scripts/test_helper.bash", ".github/scripts/test_labels.bats", ".github/workflows/labels.yml", ".github/workflows/scripts.yml"]
