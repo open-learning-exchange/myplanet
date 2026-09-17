@@ -210,7 +210,7 @@ companion object {
 | Repository interface | `*Repository.kt` | `CoursesRepository.kt` |
 | Repository implementation | `*RepositoryImpl.kt` | `CoursesRepositoryImpl.kt` |
 | Room entity | plain name in `model/` | `MyCourse.kt`, `Submission.kt`, `UserEntity.kt` |
-| Room DAO | `*Dao.kt` in `data/room/dao/` | `RatingDao.kt` (several small DAOs share `LegacyEntityDaos.kt`) |
+| Room DAO | `*Dao.kt` in `data/room/dao/` | `RatingDao.kt` — one DAO per file (37 interfaces, 37 files) |
 | Worker | `*Worker.kt` | `AutoSyncWorker.kt` |
 | Callback interface | `On` prefix | `OnCourseItemSelectedListener.kt` |
 | DI module | `Module` suffix | `RepositoryModule.kt` |
@@ -401,7 +401,7 @@ For internal-only network calls use `NetworkResult<T>` (the sealed class in `dat
 
 ## Room Database
 
-All local persistence goes through Room: `AppDatabase` (`data/room/AppDatabase.kt`, 37 entities, `version = 6`), DAOs in `data/room/dao/`, and `Converters` (`data/room/Converters.kt`). There is no other local store.
+All local persistence goes through Room: `AppDatabase` (`data/room/AppDatabase.kt`, 38 entities, `version = 12`), DAOs in `data/room/dao/`, and `Converters` (`data/room/Converters.kt`). There is no other local store.
 
 ### Entity Classes
 
@@ -518,7 +518,7 @@ If you need a dependency not in an existing entry point, add it there — don't 
 
 ### Existing Qualifiers
 
-`@StandardHttpClient` / `@StandardRetrofit` (NetworkModule), `@ApplicationScope` (ServiceModule), `@AppPreferences` / `@DefaultPreferences` / `@DownloadPreferences` (SharedPreferencesModule). There are no dispatcher qualifiers — dispatchers come from the unqualified `DispatcherProvider`.
+`@StandardHttpClient` / `@ReachabilityHttpClient` / `@StandardRetrofit` / `@PlainGson` (NetworkModule), `@ApplicationScope` (ServiceModule), `@AppPreferences` / `@DefaultPreferences` / `@DownloadPreferences` (SharedPreferencesModule). There are no dispatcher qualifiers — dispatchers come from the unqualified `DispatcherProvider`.
 
 ---
 
