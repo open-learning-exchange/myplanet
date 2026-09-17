@@ -73,12 +73,11 @@ object NetworkModule {
     }
 
     private const val MAX_REQUESTS_PER_HOST = 20
-    private val sharedConnectionPool = ConnectionPool(MAX_REQUESTS_PER_HOST, 5, TimeUnit.MINUTES)
 
     @Provides
     @Singleton
     fun provideConnectionPool(): ConnectionPool {
-        return sharedConnectionPool
+        return ConnectionPool(MAX_REQUESTS_PER_HOST, 5, TimeUnit.MINUTES)
     }
 
     private fun buildOkHttpClient(
@@ -111,7 +110,7 @@ object NetworkModule {
     @StandardHttpClient
     fun provideStandardOkHttpClient(
         retryInterceptor: RetryInterceptor,
-        connectionPool: ConnectionPool = provideConnectionPool()
+        connectionPool: ConnectionPool
     ): OkHttpClient {
         return buildOkHttpClient(
             CONNECT_TIMEOUT_SECONDS,
@@ -126,7 +125,7 @@ object NetworkModule {
     @Singleton
     @ReachabilityHttpClient
     fun provideReachabilityOkHttpClient(
-        connectionPool: ConnectionPool = provideConnectionPool()
+        connectionPool: ConnectionPool
     ): OkHttpClient {
         return buildOkHttpClient(
             REACHABILITY_TIMEOUT_SECONDS,
