@@ -48,16 +48,10 @@ class VoicesLabelManager(
                 val selectedLabel = Constants.LABELS[menuItem.title]
                 val voiceId = voice?.id
                 if (selectedLabel != null && voiceId != null && voice.labels?.contains(selectedLabel) != true) {
-                    scope.launch {
-                        try {
-                            addLabelFn(voiceId, selectedLabel)
-                            withContext(dispatcherProvider.main) {
-                                Utilities.toast(context, context.getString(R.string.label_added))
-                            }
-                        } catch (e: CancellationException) {
-                            throw e
-                        } catch (e: Exception) {
-                            Log.w(TAG, "addLabel failed", e)
+                    launchLabelWrite("addLabel") {
+                        addLabelFn(voiceId, selectedLabel)
+                        withContext(dispatcherProvider.main) {
+                            Utilities.toast(context, context.getString(R.string.label_added))
                         }
                     }
                 }
@@ -88,15 +82,7 @@ class VoicesLabelManager(
                             val selectedLabel = Constants.LABELS[label] ?: labels.firstOrNull { getLabel(it) == text }
                             val voiceId = voice.id
                             if (selectedLabel != null && voiceId != null) {
-                                scope.launch {
-                                    try {
-                                        removeLabelFn(voiceId, selectedLabel)
-                                    } catch (e: CancellationException) {
-                                        throw e
-                                    } catch (e: Exception) {
-                                        Log.w(TAG, "removeLabel failed", e)
-                                    }
-                                }
+                                launchLabelWrite("removeLabel") { removeLabelFn(voiceId, selectedLabel) }
                             }
                         }
                     }
@@ -107,6 +93,18 @@ class VoicesLabelManager(
 
         renderedStateCache[binding] = renderedState
         updateAddLabelVisibility(binding, voice, canManageLabels)
+    }
+
+    private fun launchLabelWrite(operation: String, write: suspend () -> Unit) {
+        scope.launch {
+            try {
+                write()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "$operation failed", e)
+            }
+        }
     }
 
     private data class RenderedState(val voiceId: String?, val labels: List<String>, val canManageLabels: Boolean)
