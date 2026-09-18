@@ -69,6 +69,20 @@ class PublicSurveyViewModelTest {
     }
 
     @Test
+    fun `test loadSurvey ignores duplicate re-entrant calls when state is not Idle`() = runTest {
+        val surveyDoc = JsonObject().apply { addProperty("_id", "survey123") }
+        val response = JsonObject().apply { add("survey", surveyDoc) }
+
+        coEvery { surveysRepository.fetchPublicSurvey("http://base", "team1", "survey123") } returns response
+
+        viewModel.loadSurvey("http://base", "team1", "survey123")
+        viewModel.loadSurvey("http://base", "team1", "survey123")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { surveysRepository.fetchPublicSurvey("http://base", "team1", "survey123") }
+    }
+
+    @Test
     fun `test loadSurvey error updates state to Error`() = runTest {
         coEvery { surveysRepository.fetchPublicSurvey("http://base", "team1", "survey123") } returns null
 
@@ -93,6 +107,23 @@ class PublicSurveyViewModelTest {
 
         assertEquals(PublicSurveyViewModel.UploadEvent.NavigateOnward, emittedEvent)
         collectJob.cancel()
+    }
+
+    @Test
+    fun `test uploadCompletedSubmission prevents concurrent duplicate uploads`() = runTest {
+        val submission = Submission().apply {
+            id = "sub1"
+            lastUpdateTime = System.currentTimeMillis() + 1000L
+        }
+        coEvery { submissionsRepository.getLatestSubmissionByParentId("survey123", "complete") } returns submission
+        coEvery { surveysRepository.getExamQuestions("survey123") } returns emptyList()
+        coEvery { surveysRepository.submitPublicSurvey(any(), any(), any(), any(), any()) } returns true
+
+        viewModel.uploadCompletedSubmission("http://base", "team1", "survey123")
+        viewModel.uploadCompletedSubmission("http://base", "team1", "survey123")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { surveysRepository.submitPublicSurvey(any(), any(), any(), any(), any()) }
     }
 
     @Test

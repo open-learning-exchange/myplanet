@@ -6,12 +6,12 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.repository.SubmissionsRepository
@@ -42,8 +42,8 @@ class PublicSurveyViewModel @Inject constructor(
     private val _uploading = MutableStateFlow(false)
     val uploading: StateFlow<Boolean> = _uploading.asStateFlow()
 
-    private val _uploadEvents = MutableSharedFlow<UploadEvent>(extraBufferCapacity = 1)
-    val uploadEvents: SharedFlow<UploadEvent> = _uploadEvents.asSharedFlow()
+    private val _uploadEvents = Channel<UploadEvent>(Channel.BUFFERED)
+    val uploadEvents: Flow<UploadEvent> = _uploadEvents.receiveAsFlow()
 
     var launchTime = 0L
         private set
@@ -75,7 +75,7 @@ class PublicSurveyViewModel @Inject constructor(
             try {
                 val submission = submissionsRepository.getLatestSubmissionByParentId(surveyId, "complete")
                 if (submission == null || submission.lastUpdateTime < launchTime) {
-                    _uploadEvents.emit(UploadEvent.NavigateOnward)
+                    _uploadEvents.send(UploadEvent.NavigateOnward)
                     return@launch
                 }
                 val questions = surveysRepository.getExamQuestions(surveyId)
@@ -89,7 +89,7 @@ class PublicSurveyViewModel @Inject constructor(
                 }
                 val success = surveysRepository.submitPublicSurvey(baseUrl, teamId, surveyId, answers, respondent)
                 val messageResId = if (success) R.string.survey_submitted else R.string.survey_submit_failed
-                _uploadEvents.emit(UploadEvent.ShowToastAndNavigate(messageResId))
+                _uploadEvents.send(UploadEvent.ShowToastAndNavigate(messageResId))
             } finally {
                 _uploading.value = false
             }

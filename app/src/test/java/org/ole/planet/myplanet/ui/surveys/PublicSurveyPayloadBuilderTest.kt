@@ -132,6 +132,23 @@ class PublicSurveyPayloadBuilderTest {
     }
 
     @Test
+    fun `test sanitizeRespondent removes age when age is JsonObject or JsonArray`() {
+        val userWithObjectAge = JsonObject().apply {
+            addProperty("name", "Dave")
+            add("age", JsonObject().apply { addProperty("number", 30) })
+        }
+        val resultObj = payloadBuilder.sanitizeRespondent(userWithObjectAge)
+        assertFalse(resultObj.has("age"))
+
+        val userWithArrayAge = JsonObject().apply {
+            addProperty("name", "Eve")
+            add("age", JsonArray().apply { add(20) })
+        }
+        val resultArray = payloadBuilder.sanitizeRespondent(userWithArrayAge)
+        assertFalse(resultArray.has("age"))
+    }
+
+    @Test
     fun `test sanitizeRespondent leaves object without age untouched`() {
         val user = JsonObject().apply {
             addProperty("name", "Charlie")

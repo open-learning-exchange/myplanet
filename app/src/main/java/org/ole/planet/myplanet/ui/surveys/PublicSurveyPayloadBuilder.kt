@@ -13,9 +13,14 @@ class PublicSurveyPayloadBuilder @Inject constructor() {
 
     fun sanitizeRespondent(user: JsonObject): JsonObject {
         if (user.has("age")) {
-            val age = user.get("age").asString.trim().toIntOrNull()
-            if (age != null) {
-                user.addProperty("age", age)
+            val ageElement = user.get("age")
+            if (ageElement != null && ageElement.isJsonPrimitive) {
+                val age = ageElement.asString.trim().toIntOrNull()
+                if (age != null) {
+                    user.addProperty("age", age)
+                } else {
+                    user.remove("age")
+                }
             } else {
                 user.remove("age")
             }
