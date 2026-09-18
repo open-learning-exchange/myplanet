@@ -34,17 +34,18 @@ import kotlin.Array
 import kotlin.Int
 import kotlin.String
 import kotlin.arrayOf
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
+import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.databinding.AlertAddAttachmentBinding
 import org.ole.planet.myplanet.databinding.AlertReferenceBinding
 import org.ole.planet.myplanet.databinding.EditAttachementBinding
 import org.ole.planet.myplanet.databinding.EditOtherInfoBinding
-import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.databinding.FragmentEditAchievementBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.model.Achievement
@@ -76,7 +77,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private var achievementArray: JsonArray? = null
     private var resourceArray: JsonArray? = null
     private var referenceDialog: AlertDialog? = null
-    private var fetchResourcesJob: kotlinx.coroutines.Job? = null
+    private var fetchResourcesJob: Job? = null
 
     private val viewModel: AchievementViewModel by viewModels()
 
