@@ -87,7 +87,7 @@ class SubmissionsUploader @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.w(TAG, "uploadSubmissionsWithTiming failed", e)
+            Log.e(TAG, "uploadSubmissionsWithTiming failed", e)
         }
     }
 

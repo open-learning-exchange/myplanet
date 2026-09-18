@@ -25,7 +25,6 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Locale
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
@@ -88,10 +87,8 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                                 outputStream.write(csvContent.toByteArray())
                             }
                             Utilities.toast(requireContext(), getString(R.string.csv_file_saved_successfully))
-                        } catch (e: CancellationException) {
-                            throw e
                         } catch (e: IOException) {
-                            Log.w(TAG, "onCreateView failed", e)
+                            Log.w(TAG, "CSV export write failed", e)
                             Utilities.toast(requireContext(), getString(R.string.failed_to_save_csv_file))
                         }
                     }
