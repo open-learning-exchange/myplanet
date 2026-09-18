@@ -4,6 +4,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -76,11 +77,11 @@ class HealthViewModelTest {
         val record2 = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
 
         coEvery { healthRepository.getPatientById("1") } coAnswers {
-            kotlinx.coroutines.delay(1000)
+            delay(1000)
             user1
         }
         coEvery { healthRepository.getPatientById("2") } coAnswers {
-            kotlinx.coroutines.delay(1000)
+            delay(1000)
             user2
         }
         coEvery { healthRepository.getPatientHealthRecords("2", user2) } returns record2
@@ -242,6 +243,27 @@ class HealthViewModelTest {
     }
 
     @Test
+    fun `failed load for a different patient clears the displayed one`() = runTest {
+        val displayed = UserEntity().apply { id = "1"; name = "Displayed Patient" }
+        val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
+        coEvery { healthRepository.getPatientById("1") } returns displayed
+        coEvery { healthRepository.getPatientHealthRecords("1", displayed) } returns record
+
+        viewModel.selectPatient("1")
+        advanceUntilIdle()
+
+        assertEquals(displayed, viewModel.patientDetailState.first().user)
+
+        coEvery { healthRepository.getPatientById("2") } throws RuntimeException("Transient network error")
+
+        viewModel.selectPatient("2")
+        advanceUntilIdle()
+
+        assertNull(viewModel.patientDetailState.first().user)
+        assertNull(viewModel.patientDetailState.first().healthRecord)
+    }
+
+    @Test
     fun `health sync event restarts an in-flight load so the newest read wins`() = runTest {
         val realtimeSyncManager = RealtimeSyncManager()
         val customViewModel = HealthViewModel(userRepository, healthRepository, realtimeSyncManager)
@@ -252,7 +274,7 @@ class HealthViewModelTest {
         var reads = 0
         coEvery { healthRepository.getPatientById("1") } coAnswers {
             reads++
-            kotlinx.coroutines.delay(500)
+            delay(500)
             if (reads == 1) staleUser else freshUser
         }
         coEvery { healthRepository.getPatientHealthRecords("1", any()) } returns record
@@ -282,7 +304,7 @@ class HealthViewModelTest {
         val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
 
         coEvery { healthRepository.getPatientById("1") } coAnswers {
-            kotlinx.coroutines.delay(500)
+            delay(500)
             user
         }
         coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record

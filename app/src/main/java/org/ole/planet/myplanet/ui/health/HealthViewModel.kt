@@ -27,7 +27,6 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 
 @HiltViewModel
-@OptIn(FlowPreview::class)
 class HealthViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val healthRepository: HealthRepository,
@@ -67,6 +66,7 @@ class HealthViewModel @Inject constructor(
      * Health-table sync events, filtered and coalesced. Collect it from the UI with a
      * lifecycle-aware collector so no refresh runs while the screen is in the background.
      */
+    @OptIn(FlowPreview::class)
     val healthSyncUpdates: Flow<Unit> = realtimeSyncManager.dataUpdateFlow
         .filter { it.table == HEALTH_TABLE && it.shouldRefreshUI }
         .debounce(SYNC_REFRESH_DEBOUNCE_MS)
@@ -153,6 +153,8 @@ class HealthViewModel @Inject constructor(
      * empty re-read of the displayed patient is far more likely to be transient than a real
      * deletion, and blanking the screen for it loses data the user was reading. The trade-off is
      * that a patient genuinely deleted server-side keeps showing until another patient is picked.
+     * The mirror case is deliberate too: a failed load for a *different* patient does clear the
+     * display, since the user asked for that patient and showing the previous one would mislead.
      */
     private fun clearPatientUnlessDisplayed(userId: String) {
         val displayed = _patientDetailState.value.user
