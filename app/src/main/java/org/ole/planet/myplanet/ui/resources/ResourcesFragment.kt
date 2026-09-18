@@ -495,7 +495,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private fun updateFilterBadge() {
         if (_binding == null) return
         val count = searchTags.size + subjects.size + languages.size + mediums.size + levels.size +
-            (if (selectedDownloadFilterIndex != 0) 1 else 0)
+                (if (selectedDownloadFilterIndex != 0) 1 else 0)
         if (count > 0) {
             filterBadge.text = count.toString()
             filterBadge.visibility = View.VISIBLE
@@ -560,17 +560,15 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     override fun clearAllFilters() {
         saveSearchActivity()
         selectedDownloadFilterIndex = 0
-        val chipRow = binding.chipFilterRow
-        if (chipRow != null) {
-            renderDownloadChipSelection(chipRow)
-        }
         searchTags.clear()
-        renderSearchTagsUi()
-        etSearch.setText(R.string.empty_text)
         levels.clear()
         mediums.clear()
         subjects.clear()
         languages.clear()
+
+        setupDownloadFilterChips()
+        renderSearchTagsUi()
+        etSearch.setText(R.string.empty_text)
         updateFilterBadge()
         scheduleFilterRefresh()
     }
@@ -663,12 +661,20 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
     }
 
-    override fun filter(subjects: MutableSet<String>, languages: MutableSet<String>, mediums: MutableSet<String>, levels: MutableSet<String>): Int {
+    override fun filter(
+        subjects: MutableSet<String>,
+        languages: MutableSet<String>,
+        mediums: MutableSet<String>,
+        levels: MutableSet<String>
+    ): Int {
         this.subjects = subjects
         this.languages = languages
         this.mediums = mediums
         this.levels = levels
+
+        setupDownloadFilterChips()
         updateFilterBadge()
+
         if (view == null) return lastFilteredCount
         searchJob?.cancel()
         return applyFiltersAndUpdateUI()
@@ -856,32 +862,69 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     private fun setupDownloadFilterChips() {
-        val chipRow = binding.chipFilterRow
+        val chipRow = binding.chipFilterRow ?: return
         chipRow.removeAllViews()
-        val options = requireContext().resources.getStringArray(R.array.download_filter)
+
+        val context = context ?: return
+        val chipContext = ContextThemeWrapper(context, R.style.Theme_App_Chip)
+
+        val options = context.resources.getStringArray(R.array.download_filter)
         options.indices.forEach { label ->
             val chip = layoutInflater.inflate(R.layout.item_filter_chip, chipRow, false) as TextView
             chip.text = options[label]
             chip.tag = label
             chip.setOnClickListener {
                 selectedDownloadFilterIndex = label
-                renderDownloadChipSelection(chipRow)
+                setupDownloadFilterChips()
                 updateFilterBadge()
                 applyFiltersAndUpdateUI()
             }
             chipRow.addView(chip)
         }
+
         renderDownloadChipSelection(chipRow)
+
+        renderActiveFacetChips(chipRow, chipContext)
+    }
+
+    private fun renderActiveFacetChips(chipRow: LinearLayout, chipContext: ContextThemeWrapper) {
+        val facetFilters = listOf(
+            Triple(subjects, "Subject") { item: String -> subjects.remove(item) },
+            Triple(languages, "Language") { item: String -> languages.remove(item) },
+            Triple(mediums, "Medium") { item: String -> mediums.remove(item) },
+            Triple(levels, "Level") { item: String -> levels.remove(item) }
+        )
+
+        for ((set, category, removeAction) in facetFilters) {
+            for (item in set) {
+                val chip = Chip(chipContext).apply {
+                    text = "$item"
+                    isCloseIconVisible = true
+                    setOnCloseIconClickListener {
+                        removeAction(item)
+                        setupDownloadFilterChips()
+                        updateFilterBadge()
+                        scheduleFilterRefresh()
+                    }
+                }
+                chipRow.addView(chip)
+            }
+        }
     }
 
     private fun renderDownloadChipSelection(chipRow: LinearLayout) {
         val selected = selectedDownloadFilterIndex
         for (i in 0 until chipRow.childCount) {
             val chip = chipRow.getChildAt(i) as? TextView ?: continue
-            val isSelected = (chip.tag as? Int) == selected
+            val tagIndex = chip.tag as? Int ?: continue
+            val isSelected = tagIndex == selected
             chip.setBackgroundResource(if (isSelected) R.drawable.bg_chip_selected else R.drawable.bg_chip_unselected)
-            chip.setTextColor(ContextCompat.getColor(requireContext(),
-                if (isSelected) R.color.chip_selected_text else R.color.daynight_textColor))
+            chip.setTextColor(
+                ContextCompat.getColor(
+                    requireContext(),
+                    if (isSelected) R.color.chip_selected_text else R.color.daynight_textColor
+                )
+            )
         }
     }
 
