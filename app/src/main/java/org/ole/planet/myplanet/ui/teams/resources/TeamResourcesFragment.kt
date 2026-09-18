@@ -86,6 +86,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
                 safeActivity,
                 state.canRemove,
                 this@TeamResourcesFragment,
+                dispatcherProvider,
             ) { resource, position ->
                 handleResourceRemoval(resource, position)
             }
@@ -187,7 +188,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
     }
 
     private fun handleResourceRemoval(resource: MyLibrary, position: Int) {
-        val resourceId = resource.id ?: resource.resourceId
+        val resourceId = resource.id.ifEmpty { resource.resourceId }
         if (resourceId.isNullOrBlank()) {
             onResourceUpdateFailed(R.string.failed_to_remove_resource)
             return

@@ -42,21 +42,29 @@
 
             <FrameLayout
                 android:id="@+id/fl_remove_container"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:layout_gravity="top|end"
-                android:layout_margin="6dp"
-                android:background="@drawable/bg_badge_circle">
+                android:clickable="true"
+                android:contentDescription="@string/remove"
+                android:focusable="true"
+                android:padding="10dp">
 
-                <ImageView
-                    android:id="@+id/iv_remove"
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:layout_gravity="center"
-                    android:contentDescription="@null"
-                    android:importantForAccessibility="no"
-                    android:src="@drawable/baseline_close_24"
-                    app:tint="@color/daynight_textColor" />
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_badge_circle">
+
+                    <ImageView
+                        android:id="@+id/iv_remove"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/baseline_close_24"
+                        app:tint="@color/daynight_textColor" />
+                </FrameLayout>
             </FrameLayout>
         </FrameLayout>
 
@@ -76,15 +84,15 @@
                 android:textSize="@dimen/text_size_mid"
                 android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/tv_meta"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="@color/hint_color"
-            android:textSize="11sp" />
+            <TextView
+                android:id="@+id/tv_meta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/hint_color"
+                android:textSize="11sp" />
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
