@@ -228,7 +228,7 @@ class DownloadService : Service() {
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Operation failed", e)
                 }
                 onDownloadComplete(url)
                 return true
@@ -559,7 +559,7 @@ class DownloadService : Service() {
             try {
                 resourcesRepository.markResourceOfflineByUrl(url)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Operation failed", e)
             }
         }
 
