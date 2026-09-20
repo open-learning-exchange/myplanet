@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.services
 
+import android.util.Log
+
 import android.content.Context
 import android.view.View
 import android.widget.PopupMenu
@@ -24,6 +26,8 @@ class VoicesLabelManager(
     private val addLabelFn: suspend (String, String) -> Unit,
     private val removeLabelFn: suspend (String, String) -> Unit
 ) {
+    companion object { private const val TAG = "VoicesLabelManager" }
+
     private val renderedStateCache = WeakHashMap<RowNewsBinding, RenderedState>()
 
     fun setupAddLabelMenu(binding: RowNewsBinding, voice: News?, canManageLabels: Boolean) {
@@ -53,7 +57,7 @@ class VoicesLabelManager(
                                 Utilities.toast(context, context.getString(R.string.label_added))
                             }
                         } catch (e: Exception) {
-                            e.printStackTrace()
+                            Log.e(TAG, "Label write failed", e)
                         }
                     }
                 }
@@ -88,7 +92,7 @@ class VoicesLabelManager(
                                     try {
                                         removeLabelFn(voiceId, selectedLabel)
                                     } catch (e: Exception) {
-                                        e.printStackTrace()
+                                        Log.e(TAG, "Label write failed", e)
                                     }
                                 }
                             }
