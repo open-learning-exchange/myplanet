@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Log
+
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
@@ -55,6 +57,8 @@ class SurveysRepositoryImpl @Inject constructor(
     }
 
     companion object {
+        private const val TAG = "SurveysRepositoryImpl"
+
         private const val PREF_SURVEY_REMINDERS = "survey_reminders"
         private const val KEY_LAST_SURVEY_DIALOG_SHOWN = "last_survey_dialog_shown"
     }
@@ -490,7 +494,7 @@ class SurveysRepositoryImpl @Inject constructor(
             val response = apiInterface.getJsonObject(null, url)
             if (response.isSuccessful) response.body() else null
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Operation failed", e)
             null
         }
     }
@@ -504,7 +508,7 @@ class SurveysRepositoryImpl @Inject constructor(
             }
             apiInterface.postDoc(null, "application/json", url, body).isSuccessful
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Operation failed", e)
             false
         }
     }
