@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.ui.enterprises
 
+import android.util.Log
+
 import android.app.DatePickerDialog
 import android.content.DialogInterface
 import android.net.Uri
@@ -41,6 +43,8 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class EnterprisesFinancesFragment : BaseTeamFragment() {
+    private companion object { const val TAG = "EnterprisesFinancesFragment" }
+
     private val viewModel: EnterprisesFinancesViewModel by viewModels()
     private var _binding: FragmentFinanceBinding? = null
     private val binding get() = _binding!!
@@ -231,9 +235,9 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             observeTransactions()
 
         } catch (e: DateTimeParseException) {
-            e.printStackTrace()
+            Log.e(TAG, "Operation failed", e)
         } catch (e: IllegalArgumentException) {
-            e.printStackTrace()
+            Log.e(TAG, "Operation failed", e)
         }
     }
 
