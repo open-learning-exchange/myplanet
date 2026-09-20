@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Log
+
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import javax.inject.Inject
@@ -17,6 +19,8 @@ class CommunityRepositoryImpl @Inject constructor(
     private val communityDao: CommunityDao,
     private val meetupDao: MeetupDao
 ) : CommunityRepository, CommunitySyncWriter {
+    private companion object { const val TAG = "CommunityRepositoryImpl" }
+
 
     override suspend fun replaceAll(rows: JsonArray) {
         val communities = mutableListOf<Community>()
@@ -53,7 +57,7 @@ class CommunityRepositoryImpl @Inject constructor(
                 false
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Operation failed", e)
             false
         }
     }

@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.ui.courses
 
+import android.util.Log
+
 import android.os.Bundle
 import android.text.Spannable
 import android.text.style.URLSpan
@@ -192,7 +194,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 viewModel.saveCourseProgress(stepNumber)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Operation failed", e)
         }
     }
 
@@ -256,6 +258,8 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
 
     private companion object {
+        private const val TAG = "CourseStepFragment"
+
         const val MENU_ITEM_ASK_AI = 42
     }
 

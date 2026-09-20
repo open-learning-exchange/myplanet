@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.ui.user
 
+import android.util.Log
+
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -36,6 +38,8 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class AchievementFragment : BaseContainerFragment() {
+    private companion object { const val TAG = "AchievementFragment" }
+
 
     private val viewModel: AchievementViewModel by viewModels()
 
@@ -75,7 +79,7 @@ class AchievementFragment : BaseContainerFragment() {
                 achievementData = loadAchievementDataAsync()
                 updateAchievementUI()
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Operation failed", e)
             }
         }
     }
