@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.base
 
+import android.util.Log
+
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -38,6 +40,8 @@ import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utils.JsonUtils
 
 abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickListener {
+    private companion object { const val TAG = "BaseVoicesFragment" }
+
     lateinit var imageList: MutableList<String>
 
     @Inject
@@ -164,7 +168,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
             llImage?.addView(imageBinding.root)
             if (resultCode == 102) adapterNews?.setImageList(imageList)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Operation failed", e)
         }
     }
 

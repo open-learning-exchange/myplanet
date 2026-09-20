@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.ui.teams.voices
 
+import android.util.Log
+
 import android.content.res.Configuration
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -33,6 +35,8 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class TeamsVoicesFragment : BaseTeamFragment() {
+    private companion object { const val TAG = "TeamsVoicesFragment" }
+
     private var _binding: FragmentDiscussionListBinding? = null
     private var shouldScrollToTopNextUpdate = false
     private val binding get() = _binding!!
@@ -221,7 +225,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                                 val result = viewModel.getReplyCount(newsId)
                                 onResult(result)
                             } catch (e: Exception) {
-                                e.printStackTrace()
+                                Log.e(TAG, "Operation failed", e)
                             }
                         }
                         return@VoicesAdapter { job.cancel() }

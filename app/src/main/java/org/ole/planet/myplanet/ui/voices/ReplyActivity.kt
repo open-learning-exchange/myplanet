@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.ui.voices
 
+import android.util.Log
+
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -43,6 +45,8 @@ import org.ole.planet.myplanet.utils.JsonUtils.getString
 
 @AndroidEntryPoint
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
+    private companion object { const val TAG = "ReplyActivity" }
+
     private lateinit var activityReplyBinding: ActivityReplyBinding
     var id: String? = null
     private lateinit var newsAdapter: VoicesAdapter
@@ -234,7 +238,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         try {
             showSelectedImages()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Operation failed", e)
         }
     }
 
