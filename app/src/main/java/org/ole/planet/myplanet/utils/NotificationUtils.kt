@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.utils
 
+import android.util.Log
+
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager as SystemNotificationManager
@@ -37,6 +39,8 @@ data class NotificationConfig(
 )
 
 object NotificationUtils {
+    private companion object { const val TAG = "NotificationUtils" }
+
     const val CHANNEL_GENERAL = "general_notifications"
     const val CHANNEL_SURVEYS = "survey_notifications"
     const val CHANNEL_TASKS = "task_notifications"
@@ -248,7 +252,7 @@ object NotificationUtils {
             val daysUntilDeadline = timeDiff / (1000 * 60 * 60 * 24)
             daysUntilDeadline <= 2
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Operation failed", e)
             false
         }
     }
@@ -325,7 +329,7 @@ object NotificationUtils {
                 markNotificationAsShown(config.id)
                 true
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Operation failed", e)
                 false
             }
         }
