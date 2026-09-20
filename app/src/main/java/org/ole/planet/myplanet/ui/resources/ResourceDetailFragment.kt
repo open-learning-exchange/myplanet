@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.ui.resources
 
+import android.util.Log
+
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -27,6 +29,8 @@ import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
+    private companion object { const val TAG = "ResourceDetailFragment" }
+
     @Inject
     lateinit var ratingsRepository: RatingsRepository
     private var _binding: FragmentLibraryDetailBinding? = null
@@ -66,7 +70,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Operation failed", e)
             }
             updateDownloadButtonState()
         }
@@ -136,7 +140,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             try {
                 onRatingChanged()
             } catch (ex: Exception) {
-                ex.printStackTrace()
+                Log.e(TAG, "Operation failed", ex)
             }
             setupDownloadButton()
             setClickListeners()
@@ -241,7 +245,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                         setLibraryData()
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Operation failed", e)
                 }
             }
         }
@@ -269,7 +273,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 lastKnownRating = rating
                 setRatings(rating)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Operation failed", e)
             }
         }
     }
