@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.ui.voices
 
+import android.util.Log
+
 import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Context
@@ -115,6 +117,8 @@ class VoicesAdapter(
     )
 ) {
     companion object {
+        private const val TAG = "VoicesAdapter"
+
         const val PAYLOAD_TEAM_LEADER_CHANGED = "PAYLOAD_TEAM_LEADER_CHANGED"
         const val PAYLOAD_CURRENT_USER_CHANGED = "PAYLOAD_CURRENT_USER_CHANGED"
         const val PAYLOAD_NON_TEAM_MEMBER_CHANGED = "PAYLOAD_NON_TEAM_MEMBER_CHANGED"
@@ -591,7 +595,7 @@ class VoicesAdapter(
         return try {
             JsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Operation failed", e)
             null
         }
     }
@@ -601,7 +605,7 @@ class VoicesAdapter(
         return try {
             JsonUtils.gson.fromJson(conversations, Array<Conversation>::class.java).toList()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Operation failed", e)
             null
         }
     }
@@ -611,7 +615,7 @@ class VoicesAdapter(
         return try {
             imageUrls.map { JsonUtils.gson.fromJson(it, JsonObject::class.java) }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Operation failed", e)
             null
         }
     }
@@ -650,7 +654,7 @@ class VoicesAdapter(
                 it.parsedSharedTeamName = JsonUtils.extractSharedTeamName(it)
             } catch (e: Exception) {
                 // Catch any parsing exceptions so one bad row doesn't break submitList
-                e.printStackTrace()
+                Log.e(TAG, "Operation failed", e)
             }
         }
     }
@@ -733,7 +737,7 @@ class VoicesAdapter(
                 replyCountCache[newsId] = replyCount
                 applyReplyCount(viewHolder.binding, replyCount, position)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Operation failed", e)
             }
         }
     }
