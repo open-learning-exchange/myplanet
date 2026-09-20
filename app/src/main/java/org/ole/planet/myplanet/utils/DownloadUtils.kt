@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.utils
 
+import android.util.Log
+
 import android.app.ActivityManager
 import android.app.AlarmManager
 import android.app.Notification
@@ -21,6 +23,8 @@ import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.services.DownloadWorker
 
 object DownloadUtils {
+    private companion object { const val TAG = "DownloadUtils" }
+
     private const val DOWNLOAD_CHANNEL = "DownloadChannel"
     private const val COMPLETION_CHANNEL = "DownloadCompletionChannel"
     private const val WORKER_CHANNEL = "DownloadWorkerChannel"
@@ -178,7 +182,7 @@ object DownloadUtils {
             try {
                 DownloadService.startService(context, urlsKey, fromSync)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Operation failed", e)
                 handleForegroundServiceNotAllowed(context, urlsKey, fromSync)
             }
         } else {

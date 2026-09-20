@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.base
 
+import android.util.Log
+
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -183,7 +185,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 postAddRefresh()
 
                 errorOccurred?.let {
-                    it.printStackTrace()
+                    iLog.e(TAG, "Operation failed", t)
                     toast(activity, "An error occurred: ${it.message}")
                     return@launch
                 }
@@ -262,6 +264,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     companion object {
+        private const val TAG = "BaseRecyclerFragment"
+
         private val noDataMessages = mapOf(
             "courses" to R.string.no_courses,
             "resources" to R.string.no_resources,

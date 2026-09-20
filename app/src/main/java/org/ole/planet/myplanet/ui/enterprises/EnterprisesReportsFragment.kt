@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.ui.enterprises
 
+import android.util.Log
+
 import android.app.Activity
 import android.app.DatePickerDialog
 import android.content.Intent
@@ -87,7 +89,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                             }
                             Utilities.toast(requireContext(), getString(R.string.csv_file_saved_successfully))
                         } catch (e: IOException) {
-                            e.printStackTrace()
+                            Log.e(TAG, "Operation failed", e)
                             Utilities.toast(requireContext(), getString(R.string.failed_to_save_csv_file))
                         }
                     }
@@ -399,6 +401,8 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
     }
 
     companion object {
+        private const val TAG = "EnterprisesReportsFragment"
+
         private val dateFormatter = DateTimeFormatter.ofPattern("EEE_MMM_dd_yyyy", Locale.US)
     }
 }

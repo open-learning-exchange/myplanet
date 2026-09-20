@@ -18,6 +18,8 @@ class SubmissionsUploader @Inject constructor(
     private val submissionUploadExecutor: SubmissionUploadExecutor,
     private val serverReachabilityProvider: ServerReachabilityProvider
 ) {
+    private companion object { const val TAG = "SubmissionsUploader" }
+
     fun checkAvailableServer(syncStartTime: Long) {
         Log.d("SubmissionsUploader", "checkAvailableServer started, syncStartTime: $syncStartTime")
         val updateUrl = sharedPrefManager.getServerUrl()
@@ -85,7 +87,7 @@ class SubmissionsUploader @Inject constructor(
             uploadManager.uploadSubmissions(syncStartTime)
         } catch (e: Exception) {
             Log.e("SubmissionsUploader", "Error during upload", e)
-            e.printStackTrace()
+            Log.e(TAG, "Operation failed", e)
         }
     }
 }
