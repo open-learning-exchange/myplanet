@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.ui.sync
 
+import android.util.Log
+
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.DialogInterface
@@ -99,7 +101,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             try {
                 customProgressDialog.dismiss()
             } catch (e: IllegalArgumentException) {
-                e.printStackTrace()
+                Log.e(TAG, "Operation failed", e)
             }
         }
     }
@@ -238,6 +240,8 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     companion object {
+        private const val TAG = "ProcessUserDataActivity"
+
         fun getUserInfo(uri: Uri): Array<String> {
             val (u, p) = UrlUtils.getUserInfo(uri.userInfo)
             return arrayOf(u, p)
@@ -249,7 +253,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             try {
                 userRepository.fetchUserSecurityData(name)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Operation failed", e)
             } finally {
                 withContext(dispatcherProvider.main) {
                     securityCallback?.onChanged()
