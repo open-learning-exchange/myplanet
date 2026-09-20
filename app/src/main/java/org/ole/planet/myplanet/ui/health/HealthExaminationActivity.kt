@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.ui.health
 
+import android.util.Log
+
 import android.os.Bundle
 import android.view.ContextThemeWrapper
 import android.view.MenuItem
@@ -39,6 +41,8 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
+    private companion object { const val TAG = "HealthExaminationActivity" }
+
     @Inject
     lateinit var userSessionManager: UserSessionManager
 
@@ -280,14 +284,14 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
                 val iv = user?.iv ?: generateIv().also { user?.iv = it }
                 examination?.data = encrypt(JsonUtils.gson.toJson(sign), key, iv)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Operation failed", e)
             }
 
             // Delegate save to ViewModel
             viewModel.saveExamination(examination, pojo, user)
 
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Operation failed", e)
             Utilities.toast(this@HealthExaminationActivity, getString(R.string.unable_to_add_health_record))
         }
     }
@@ -382,7 +386,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
                 pojo?.data = encrypt(JsonUtils.gson.toJson(health), userKey, userIv)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Operation failed", e)
             Utilities.toast(this, getString(R.string.unable_to_add_health_record))
         }
     }
