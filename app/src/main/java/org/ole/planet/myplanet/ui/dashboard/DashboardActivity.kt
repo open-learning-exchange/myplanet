@@ -673,7 +673,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
             systemNotificationReceiver = receiver
         } catch (e: IllegalArgumentException) {
-            e.printStackTrace()
+            Log.e(TAG, "Operation failed", e)
         }
     }
 
@@ -683,7 +683,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         try {
             unregisterReceiver(receiver)
         } catch (e: IllegalArgumentException) {
-            e.printStackTrace()
+            Log.e(TAG, "Operation failed", e)
         }
     }
 
@@ -1131,6 +1131,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     companion object {
+        private const val TAG = "DashboardActivity"
+
         const val MESSAGE_PROGRESS = "message_progress"
         var isFromNotificationAction = false
         private const val LAST_SYNC_STATUS_REFRESH_INTERVAL_MS = 60_000L
