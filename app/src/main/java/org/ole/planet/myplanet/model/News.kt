@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.model
 
+import android.util.Log
+
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
@@ -20,6 +22,8 @@ import org.ole.planet.myplanet.utils.JsonUtils
  */
 @Entity(tableName = "news", indices = [Index("userId"), Index("replyTo"), Index("_id")])
 open class News {
+    private companion object { const val TAG = "News" }
+
     // @JvmField on id/_id so Room does not see ambiguous getId/get_id accessors.
     @PrimaryKey
     @JvmField
@@ -143,7 +147,7 @@ open class News {
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "News parse failed", e)
             }
             return false
         }
@@ -160,7 +164,7 @@ open class News {
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "News parse failed", e)
         }
         return time
     }
@@ -197,7 +201,7 @@ open class News {
             try {
                 news.updatedDate = map["updatedDate"]?.toLong() ?: 0
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "News parse failed", e)
             }
 
             news.userId = user?.id
@@ -232,14 +236,14 @@ open class News {
                                     news.conversations = JsonUtils.gson.toJson(conversationsList)
                                 }
                             } catch (e: JsonSyntaxException) {
-                                e.printStackTrace()
+                                Log.e(TAG, "News parse failed", e)
                             }
                         }
                     }
                     news.newsCreatedDate = JsonUtils.getLong("createdDate", newsJson)
                     news.newsUpdatedDate = JsonUtils.getLong("updatedDate", newsJson)
                 } catch (e: JsonSyntaxException) {
-                    e.printStackTrace()
+                    Log.e(TAG, "News parse failed", e)
                 }
             }
 
