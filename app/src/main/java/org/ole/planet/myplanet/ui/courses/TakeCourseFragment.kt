@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.ui.courses
 
+import android.util.Log
+
 import android.content.DialogInterface
 import android.os.Bundle
 import android.view.View
@@ -241,7 +243,7 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Operation failed", e)
             }
         }
     }
@@ -437,7 +439,7 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
 
                 Utilities.toast(activity, "course $statusMessage ${getString(R.string.my_courses)}")
             }.onFailure { e ->
-                e.printStackTrace()
+                Log.e(TAG, "Operation failed", e)
                 Utilities.toast(activity, "Failed to update course: ${e.message}")
             }
         }
@@ -470,6 +472,8 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
     private val isValidClickLeft: Boolean get() = binding.viewPager2.adapter != null && binding.viewPager2.currentItem > 0
 
     companion object {
+        private const val TAG = "TakeCourseFragment"
+
         // Special course with mandatory completion survey (e.g. MyPlanet Onboarding course)
         private const val MANDATORY_SURVEY_COURSE_ID = "4e6b78800b6ad18b4e8b0e1e38a98cac"
         private const val JOIN_DIALOG_FALLBACK_MS = 5000L
