@@ -376,16 +376,17 @@ class NotificationsRepositoryImplTest {
     }
 
     @Test
-    fun `markNotificationsAsRead marks existing notifications as read and returns ids`() = runTest {
+    fun `markNotificationsAsRead marks existing notifications as read using timeProvider now`() = runTest {
         val ids = setOf("id1", "id2", "id3")
         coEvery { notificationDao.getIdsByIds(any()) } returns listOf("id1", "id2")
-        coEvery { notificationDao.markAsRead(any<List<String>>(), any()) } returns 2
+        val dateSlot = slot<java.util.Date>()
+        coEvery { notificationDao.markAsRead(any<List<String>>(), capture(dateSlot)) } returns 2
 
         val result = repository.markNotificationsAsRead(ids)
 
         assertEquals(setOf("id1", "id2"), result)
         coVerify { notificationDao.getIdsByIds(ids.toList()) }
-        coVerify { notificationDao.markAsRead(listOf("id1", "id2"), any()) }
+        assertEquals(TestTimeProvider().now(), dateSlot.captured.time)
     }
 
     @Test
@@ -697,6 +698,29 @@ class NotificationsRepositoryImplTest {
     }
 
     @Test
+    fun `getTeamNotifications attributes task badge only to the team owning the due task`() = runTest {
+        val team1 = "team1"
+        val team2 = "team2"
+        val teamIds = listOf(team1, team2)
+        val userId = "user1"
+
+        val taskForTeam1 = org.ole.planet.myplanet.model.TeamTask().apply {
+            id = "task1"
+            teamId = team1
+        }
+
+        coEvery { teamNotificationDao.getByTypeAndParentIds("chat", teamIds) } returns emptyList()
+        coEvery { voicesRepository.countTopLevelByTeams(emptyList()) } returns emptyMap()
+        coEvery { teamTaskDao.getTasksForUserBetween(eq(userId), any(), any()) } returns listOf(taskForTeam1)
+
+        val result = repository.getTeamNotifications(teamIds, userId)
+
+        assertEquals(2, result.size)
+        assertTrue(result[team1]?.hasTask == true)
+        assertFalse(result[team2]?.hasTask == true)
+    }
+
+    @Test
     fun `getTeamNotifications only counts messages for teams with chat notification row`() = runTest {
         val chatTrackedTeamId = "teamTracked"
         val untrackedTeamId = "teamUntracked"
@@ -838,7 +862,7 @@ class NotificationsRepositoryImplTest {
         assertFalse(saved.isRead)
         assertEquals("10", saved.message)
         assertEquals("10", saved.relatedId)
-        assertTrue(saved.createdAt.after(initialDate))
+        assertEquals(TestTimeProvider().now(), saved.createdAt.time)
     }
 
     @Test
@@ -926,7 +950,7 @@ class NotificationsRepositoryImplTest {
         assertFalse(saved.isRead)
         assertEquals("5%", saved.message)
         assertEquals("storage", saved.relatedId)
-        assertTrue(saved.createdAt.after(initialDate))
+        assertEquals(TestTimeProvider().now(), saved.createdAt.time)
     }
 
     @Test
