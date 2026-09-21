@@ -313,9 +313,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private fun setColor(courseId: String?, star: ImageView) {
         viewLifecycleOwner.lifecycleScope.launch {
             if (courseId != null && viewModel.isCourseCertified(courseId)) {
-                star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
+                star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.dashboard_star_filled))
             } else {
-                star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_grey_300))
+                star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.dashboard_star_empty))
             }
         }
     }

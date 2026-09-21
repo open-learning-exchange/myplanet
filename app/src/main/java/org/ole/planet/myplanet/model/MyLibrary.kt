@@ -1,10 +1,10 @@
 package org.ole.planet.myplanet.model
 
+import android.content.Context
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import android.content.Context
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
@@ -149,10 +149,6 @@ open class MyLibrary {
 
     fun removeUserId(id: String?) {
         this.userId = this.userId?.filterNot { it == id }
-    }
-
-    fun needToUpdate(): Boolean {
-        return !resourceOffline || resourceLocalAddress != null && _rev != downloadedRev
     }
 
     companion object {

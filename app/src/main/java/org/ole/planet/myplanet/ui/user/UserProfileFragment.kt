@@ -5,12 +5,10 @@ import android.app.Activity.RESULT_OK
 import android.app.DatePickerDialog
 import android.app.Dialog
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
-import android.provider.Settings
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
@@ -19,10 +17,8 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -51,6 +47,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.language
 import org.ole.planet.myplanet.R.array.subject_level
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.databinding.DialogPhotoPickerBinding
 import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
 import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding
@@ -63,11 +60,11 @@ import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
+import org.ole.planet.myplanet.utils.hasPermission
+import org.ole.planet.myplanet.utils.showPermissionDeniedFeedback
 
 @AndroidEntryPoint
-class UserProfileFragment : Fragment() {
-    private var _binding: FragmentUserProfileBinding? = null
-    private val binding get() = _binding!!
+class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(FragmentUserProfileBinding::inflate) {
     private val viewModel: UserProfileViewModel by viewModels()
     @Inject
     lateinit var userSessionManager: UserSessionManager
@@ -124,30 +121,17 @@ class UserProfileFragment : Fragment() {
             }
         }
 
-        requestCameraLauncher = registerForActivityResult(
-            ActivityResultContracts.RequestPermission()
-        ) { isGranted ->
-            if (isGranted) {
-                takePhoto()
-            } else {
-                if (!shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
-                    AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-                        .setTitle(R.string.permission_required)
-                        .setMessage(R.string.camera_permission_required)
-                        .setPositiveButton(R.string.settings) { dialog, _ ->
-                            dialog.dismiss()
-                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                            val uri: Uri = Uri.fromParts("package", requireContext().packageName, null)
-                            intent.data = uri
-                            startActivity(intent)
-                        }
-                        .setNegativeButton(R.string.cancel) { dialog, _ -> dialog.dismiss() }
-                        .show()
+        requestCameraLauncher =
+            registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+                if (granted) {
+                    capturePhoto()
                 } else {
-                    Utilities.toast(requireContext(), "camera permission is required.")
+                    requireActivity().showPermissionDeniedFeedback(
+                        Manifest.permission.CAMERA,
+                        R.string.camera_permission_required,
+                    )
                 }
             }
-        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -173,12 +157,6 @@ class UserProfileFragment : Fragment() {
                 setupStatsRecycler()
             }
         }
-    }
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentUserProfileBinding.inflate(inflater, container, false)
-
-        return binding.root
     }
 
     private fun initializeDependencies() {
@@ -527,11 +505,14 @@ class UserProfileFragment : Fragment() {
     }
 
     private fun takePhoto() {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
-            != PackageManager.PERMISSION_GRANTED){
+        if (requireContext().hasPermission(Manifest.permission.CAMERA)) {
+            capturePhoto()
+        } else {
             requestCameraLauncher.launch(Manifest.permission.CAMERA)
-            return
         }
+    }
+
+    private fun capturePhoto() {
         val context = requireContext()
         viewLifecycleOwner.lifecycleScope.launch {
             photoURI = withContext(dispatcherProvider.io) {
@@ -553,7 +534,6 @@ class UserProfileFragment : Fragment() {
     override fun onDestroyView() {
         editProfileDialog?.dismiss()
         editProfileDialog = null
-        _binding = null
         super.onDestroyView()
     }
 }

@@ -26,7 +26,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.ole.planet.myplanet.model.Answer
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.AnswerDao
@@ -35,6 +34,7 @@ import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao.UploadedPhoto
+import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.ExamQuestion
@@ -102,11 +102,14 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
-    fun `getPendingSurveysFlow handles null userId`() = runTest {
-        every { submissionDao.observePendingSurveys(null) } returns kotlinx.coroutines.flow.flowOf(emptyList())
+    fun `getPendingSurveysFlow handles null or empty userId`() = runTest {
+        val nullResult = repository.getPendingSurveysFlow(null).first()
+        assertTrue(nullResult.isEmpty())
 
-        val result = repository.getPendingSurveysFlow(null).first()
-        assertTrue(result.isEmpty())
+        val emptyResult = repository.getPendingSurveysFlow("").first()
+        assertTrue(emptyResult.isEmpty())
+
+        verify(exactly = 0) { submissionDao.observePendingSurveys(any()) }
     }
 
     @Test
@@ -1024,14 +1027,19 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
-    fun `markPhotosUploadedBatch delegates batch to dao in one call`() = runTest {
+    fun `markPhotosUploadedBatch maps PhotoUpload to SubmitPhotosDao UploadedPhoto and delegates to dao`() = runTest {
         val uploads = listOf(
-            UploadedPhoto("photo1", "rev1", "remote1"),
-            UploadedPhoto("photo2", "rev2", "remote2"),
-            UploadedPhoto("photo3", "rev3", "remote3")
+            PhotoUpload(photoId = "photo1", rev = "rev1", remoteId = "remote1"),
+            PhotoUpload(photoId = "photo2", rev = "rev2", remoteId = "remote2")
         )
+        val expectedDaoUploads = listOf(
+            UploadedPhoto(photoId = "photo1", rev = "rev1", remoteId = "remote1"),
+            UploadedPhoto(photoId = "photo2", rev = "rev2", remoteId = "remote2")
+        )
+
         repository.markPhotosUploadedBatch(uploads)
-        coVerify(exactly = 1) { submitPhotosDao.markUploadedBatch(uploads) }
+
+        coVerify(exactly = 1) { submitPhotosDao.markUploadedBatch(expectedDaoUploads) }
     }
 
     @Test

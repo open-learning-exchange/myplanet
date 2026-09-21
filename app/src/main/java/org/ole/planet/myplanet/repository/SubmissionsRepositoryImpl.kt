@@ -14,6 +14,7 @@ import javax.inject.Provider
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.ExamDao
@@ -80,6 +81,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override fun getPendingSurveysFlow(userId: String?): Flow<List<Submission>> {
+        if (userId.isNullOrEmpty()) return flowOf(emptyList())
         return submissionDao.observePendingSurveys(userId)
     }
 
@@ -638,9 +640,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         photoId?.let { submitPhotosDao.markUploaded(it, rev, id) }
     }
 
-    override suspend fun markPhotosUploadedBatch(uploads: List<UploadedPhoto>) {
+    override suspend fun markPhotosUploadedBatch(uploads: List<PhotoUpload>) {
         if (uploads.isNotEmpty()) {
-            submitPhotosDao.markUploadedBatch(uploads)
+            val daoUploads = uploads.map { UploadedPhoto(it.photoId, it.rev, it.remoteId) }
+            submitPhotosDao.markUploadedBatch(daoUploads)
         }
     }
 

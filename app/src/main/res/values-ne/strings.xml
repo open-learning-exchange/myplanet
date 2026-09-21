@@ -913,11 +913,14 @@
     <string name="video_player">भिडियो प्लेयर</string>
     <string name="video_unavailable">भिडियो उपलब्ध छैन — फाइल फेला परेन र सर्भरमा जडान हुन सकेन</string>
     <string name="video_playback_error">भिडियो प्लेब्याक त्रुटि। पुनः प्रयास गर्नुहोस् वा आफ्नो जडान जाँच गर्नुहोस्</string>
+    <string name="audio_unavailable">अडियो उपलब्ध छैन — फाइल फेला परेन र सर्भरमा जडान हुन सकेन</string>
+    <string name="audio_playback_error">अडियो प्लेब्याक त्रुटि। पुनः प्रयास गर्नुहोस् वा आफ्नो जडान जाँच गर्नुहोस्</string>
     <string name="video_loading_checking_server">सर्भरको उपलब्धता जाँच गर्दै…</string>
     <string name="video_loading_connecting">सर्भरमा जडान गर्दै…</string>
     <string name="video_loading_buffering">बफर गर्दै…</string>
     <string name="video_loading_local">भिडियो लोड गर्दै…</string>
     <string name="unable_to_play_video">भिडियो चलाउन असमर्थ</string>
+    <string name="unable_to_play_audio">अडियो चलाउन असमर्थ</string>
     <string name="go_back">फिर्ता जानुहोस्</string>
     <string name="progress_bar">प्रगति पट्टि</string>
     <string name="web_view">वेब दृश्य</string>
@@ -983,6 +986,7 @@
     <string name="location_colon">स्थान:&#160;</string>
     <string name="recurring_colon">आवर्तमान:&#160;</string>
     <string name="created_by_colon">बनाएको:&#160;</string>
+    <string name="team_colon">टोली:&#160;</string>
     <string name="you_want_to_connect_to_a_different_server">तपाईं अर्को सर्भरमा जडान गर्न चाहनुहुन्छ। अगाडि बढ्नका लागि एपको डेटा मेटाउनुहोस्</string>
     <string name="are_you_sure_you_want_to_clear_data">के तपाईं सबै डाटा हटाउन निश्चित हुनुहुन्छ?</string>
     <string name="feedback_list">प्रतिक्रिया सूची</string>

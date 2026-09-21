@@ -50,6 +50,7 @@ import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.Achievement.Companion.createReference
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ProfileFieldsUpdate
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
@@ -177,13 +178,13 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
             lifecycleScope.launch {
                 val cvFilename = computeCvFilename()
-                val userPayload = JsonObject().apply {
-                    addProperty("firstName", firstName)
-                    addProperty("lastName", lastName)
-                    if (middleName.isNotEmpty()) addProperty("middleName", middleName)
-                    if (birthPlace.isNotEmpty()) addProperty("birthPlace", birthPlace)
-                    selectedDobIso?.let { addProperty("birthDate", it) }
-                }
+                val userPayload = ProfileFieldsUpdate(
+                    firstName = firstName.takeIf { it.isNotEmpty() },
+                    lastName = lastName.takeIf { it.isNotEmpty() },
+                    middleName = middleName.takeIf { it.isNotEmpty() },
+                    birthPlace = birthPlace.takeIf { it.isNotEmpty() },
+                    birthDate = selectedDobIso?.takeIf { it.isNotEmpty() }
+                )
                 viewModel.saveAchievement(
                     AchievementSaveRequest(
                         achievementId = achievementId,

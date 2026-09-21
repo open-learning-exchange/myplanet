@@ -1,12 +1,10 @@
 package org.ole.planet.myplanet.base
 
-import android.app.DatePickerDialog
 import android.content.Intent
 import android.graphics.Typeface
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.DatePicker
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -18,7 +16,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Calendar
 import javax.inject.Inject
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -101,19 +98,6 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
             v.findViewById<TextView>(R.id.txtRole).text =
                 getString(R.string.user_role, model?.getRoleAsString())
         }
-    }
-
-    fun forceDownloadNewsImages() {
-        Utilities.toast(activity, getString(R.string.please_select_starting_date))
-        val now = Calendar.getInstance()
-        val dpd = DatePickerDialog(requireActivity(), { _: DatePicker?, i: Int, i1: Int, i2: Int ->
-            now[Calendar.YEAR] = i
-            now[Calendar.MONTH] = i1
-            now[Calendar.DAY_OF_MONTH] = i2
-            newsViewModel.getPrivateImageUrlsCreatedAfter(now.timeInMillis)
-        }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH])
-        dpd.setTitle(getString(R.string.read_offline_news_from))
-        dpd.show()
     }
 
     private fun observeUiState() {
@@ -359,14 +343,6 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
                 is SyncUiState.Error -> onSyncFailed(state.message)
                 else -> {}
             }
-        }
-    }
-
-    fun showResourceDownloadDialog() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val userId = prefData.getUserId().ifEmpty { "--" }
-            val libraryList = viewModel.getLibraryListForUser(userId)
-            showDownloadDialog(libraryList)
         }
     }
 

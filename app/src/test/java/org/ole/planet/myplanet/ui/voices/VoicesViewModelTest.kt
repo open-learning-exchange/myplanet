@@ -3,6 +3,9 @@ package org.ole.planet.myplanet.ui.voices
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
+import io.mockk.verify
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -17,6 +20,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
@@ -250,5 +254,91 @@ class VoicesViewModelTest {
         advanceUntilIdle()
 
         coVerify(exactly = 0) { resourcesRepository.downloadResources(any()) }
+    }
+
+    @Test
+    fun `test filtering uses parsedSharedTeamName memo when present`() = runTest {
+        val newsWithMemo = News().apply {
+            parsedSharedTeamName = "Team X"
+            viewIn = """[{"name":"Team Y"}, {"name":"Team Y"}]"""
+        }
+
+        coEvery { voicesRepository.getCommunityNews(any()) } returns flowOf(listOf(newsWithMemo))
+
+        var result: List<News?> = emptyList()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.filteredNews.collect { result = it }
+        }
+
+        viewModel.observeCommunityNews("test_user")
+        advanceUntilIdle()
+
+        viewModel.updateSelectedLabel("Team X")
+        advanceUntilIdle()
+
+        assertEquals(1, result.size)
+        assertEquals(newsWithMemo, result[0])
+
+        viewModel.updateSelectedLabel("Team Y")
+        advanceUntilIdle()
+
+        assertEquals(0, result.size)
+    }
+
+    @Test
+    fun `test filtering falls back to JsonUtils when parsedSharedTeamName is null`() = runTest {
+        val newsWithoutMemo = News().apply {
+            parsedSharedTeamName = null
+            viewIn = """[{"name":"Team Z"}, {"name":"Team Z"}]"""
+        }
+
+        coEvery { voicesRepository.getCommunityNews(any()) } returns flowOf(listOf(newsWithoutMemo))
+
+        var result: List<News?> = emptyList()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.filteredNews.collect { result = it }
+        }
+
+        viewModel.observeCommunityNews("test_user")
+        advanceUntilIdle()
+
+        viewModel.updateSelectedLabel("Team Z")
+        advanceUntilIdle()
+
+        assertEquals(1, result.size)
+        assertEquals(newsWithoutMemo, result[0])
+    }
+
+    @Test
+    fun `test built-in static label filtering skips formatLabelValue for unknown labels`() = runTest {
+        val offerNews = News().apply {
+            labels = listOf("offer")
+        }
+        val unknownLabelNews = News().apply {
+            labels = listOf("custom:unknown:label")
+        }
+
+        coEvery { voicesRepository.getCommunityNews(any()) } returns flowOf(listOf(offerNews, unknownLabelNews))
+
+        var result: List<News?> = emptyList()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.filteredNews.collect { result = it }
+        }
+
+        viewModel.observeCommunityNews("test_user")
+        advanceUntilIdle()
+
+        mockkObject(VoicesLabelManager.Companion)
+        try {
+            viewModel.updateSelectedLabel("Offer")
+            advanceUntilIdle()
+
+            assertEquals(1, result.size)
+            assertEquals(offerNews, result[0])
+
+            verify(exactly = 0) { VoicesLabelManager.formatLabelValue(any()) }
+        } finally {
+            unmockkObject(VoicesLabelManager.Companion)
+        }
     }
 }
