@@ -17,11 +17,6 @@ class RatingsRepositoryImpl @Inject constructor(
     private val ratingDao: RatingDao,
 ) : RatingsRepository {
 
-    override suspend fun getRatingsById(type: String, resourceId: String?, userId: String?): RatingSummary? {
-        if (resourceId == null) return null
-        return getRatingSummary(type, resourceId, userId)
-    }
-
     override suspend fun isRatingPrompted(userId: String, resourceId: String): Boolean {
         return ratingDao.isRatingPrompted(userId = userId, item = resourceId, type = "resource")
     }
