@@ -29,7 +29,6 @@
             android:src="@drawable/ole_logo"
             app:tint="@color/md_white_1000"
             android:contentDescription="@string/menu" />
-
         <TextView
             android:id="@+id/app_title_name"
             android:layout_width="0dp"
