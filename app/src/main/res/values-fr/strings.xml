@@ -987,6 +987,7 @@
     <string name="location_colon">emplacement:&#160;</string>
     <string name="recurring_colon">récurrent:&#160;</string>
     <string name="created_by_colon">créé par:&#160;</string>
+    <string name="team_colon">équipe:&#160;</string>
     <string name="you_want_to_connect_to_a_different_server">Vous souhaitez vous connecter à un autre serveur. Effacez les données de l\'application pour continuer</string>
     <string name="are_you_sure_you_want_to_clear_data">Êtes-vous sûr de vouloir effacer toutes les données ?</string>
     <string name="feedback_list">liste des retours</string>

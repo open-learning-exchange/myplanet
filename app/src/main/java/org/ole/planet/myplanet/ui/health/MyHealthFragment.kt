@@ -5,7 +5,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.AdapterView.OnItemSelectedListener
 import android.widget.Button
@@ -33,7 +32,6 @@ import kotlinx.coroutines.flow.onEach
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
-import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.effectiveId
@@ -64,7 +62,6 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
     lateinit var realtimeSyncManager: RealtimeSyncManager
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
-    private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
     private var alertHealthListBinding: AlertHealthListBinding? = null
     var userId: String? = null
     var userModel: UserEntity? = null
@@ -76,10 +73,6 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
 
     private var searchJob: Job? = null
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-    }
-
     private fun refreshHealthData() {
         if (!isAdded || requireActivity().isFinishing) return
         viewModel.refreshSelectedPatient()
@@ -88,7 +81,6 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
         super.onViewCreated(view, savedInstanceState)
         view.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
         setupRealtimeSync()
-        alertMyPersonalBinding = AlertMyPersonalBinding.inflate(LayoutInflater.from(context))
 
         val allowDateEdit = false
         if(allowDateEdit) {

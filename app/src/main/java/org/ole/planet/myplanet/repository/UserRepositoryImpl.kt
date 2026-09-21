@@ -464,30 +464,24 @@ class UserRepositoryImpl @Inject constructor(
         return upsertUser(user)
     }
 
-    override suspend fun updateProfileFields(userId: String?, payload: JsonObject) {
+    override suspend fun updateProfileFields(userId: String?, update: ProfileFieldsUpdate) {
         if (userId.isNullOrBlank()) {
             return
         }
 
         val model = getUserByAnyId(userId) ?: return
-        payload.entrySet().forEach { (key, value) ->
-            if (value != null && !value.isJsonNull && value.isJsonPrimitive) {
-                val strValue = value.asString
-                when (key) {
-                    "firstName" -> model.firstName = strValue
-                    "lastName" -> model.lastName = strValue
-                    "middleName" -> model.middleName = strValue
-                    "email" -> model.email = strValue
-                    "language" -> model.language = strValue
-                    "phoneNumber" -> model.phoneNumber = strValue
-                    "birthDate" -> model.dob = strValue
-                    "birthPlace" -> model.birthPlace = strValue
-                    "level" -> model.level = strValue
-                    "gender" -> model.gender = strValue
-                    "age" -> model.age = strValue
-                }
-            }
-        }
+        update.firstName?.let { model.firstName = it }
+        update.lastName?.let { model.lastName = it }
+        update.middleName?.let { model.middleName = it }
+        update.email?.let { model.email = it }
+        update.language?.let { model.language = it }
+        update.phoneNumber?.let { model.phoneNumber = it }
+        update.birthDate?.let { model.dob = it }
+        update.birthPlace?.let { model.birthPlace = it }
+        update.level?.let { model.level = it }
+        update.gender?.let { model.gender = it }
+        update.age?.let { model.age = it }
+
         model.isUpdated = true
         upsertUser(model)
     }
