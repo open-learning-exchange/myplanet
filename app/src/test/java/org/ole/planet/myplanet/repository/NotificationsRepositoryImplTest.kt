@@ -697,6 +697,29 @@ class NotificationsRepositoryImplTest {
     }
 
     @Test
+    fun `getTeamNotifications attributes task badge only to the team owning the due task`() = runTest {
+        val team1 = "team1"
+        val team2 = "team2"
+        val teamIds = listOf(team1, team2)
+        val userId = "user1"
+
+        val taskForTeam1 = org.ole.planet.myplanet.model.TeamTask().apply {
+            id = "task1"
+            teamId = team1
+        }
+
+        coEvery { teamNotificationDao.getByTypeAndParentIds("chat", teamIds) } returns emptyList()
+        coEvery { voicesRepository.countTopLevelByTeams(emptyList()) } returns emptyMap()
+        coEvery { teamTaskDao.getTasksForUserBetween(eq(userId), any(), any()) } returns listOf(taskForTeam1)
+
+        val result = repository.getTeamNotifications(teamIds, userId)
+
+        assertEquals(2, result.size)
+        assertTrue(result[team1]?.hasTask == true)
+        assertFalse(result[team2]?.hasTask == true)
+    }
+
+    @Test
     fun `getTeamNotifications only counts messages for teams with chat notification row`() = runTest {
         val chatTrackedTeamId = "teamTracked"
         val untrackedTeamId = "teamUntracked"
