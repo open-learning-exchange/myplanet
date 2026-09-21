@@ -1,15 +1,9 @@
 package org.ole.planet.myplanet.ui.resources
 
-import android.app.Dialog
-import android.os.Bundle
-import android.view.View
-import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.google.android.material.bottomsheet.BottomSheetDialog
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseBindingBottomSheetFragment
-import org.ole.planet.myplanet.databinding.FragmentResourcesSortBinding
+import org.ole.planet.myplanet.base.BaseSortBottomSheetFragment
 
-class ResourcesSortFragment : BaseBindingBottomSheetFragment<FragmentResourcesSortBinding>(FragmentResourcesSortBinding::inflate) {
+class ResourcesSortFragment : BaseSortBottomSheetFragment<ResourcesViewModel.SortMode>() {
     fun interface SortSelectionListener {
         fun onSortSelected(mode: ResourcesViewModel.SortMode)
     }
@@ -18,6 +12,9 @@ class ResourcesSortFragment : BaseBindingBottomSheetFragment<FragmentResourcesSo
     private var currentMode: ResourcesViewModel.SortMode = ResourcesViewModel.SortMode.NONE
     private var isDateAscending: Boolean = true
     private var isTitleAscending: Boolean = false
+
+    override val dateSortValue = ResourcesViewModel.SortMode.DATE
+    override val titleSortValue = ResourcesViewModel.SortMode.TITLE
 
     fun setListener(listener: SortSelectionListener) {
         this.listener = listener
@@ -32,42 +29,19 @@ class ResourcesSortFragment : BaseBindingBottomSheetFragment<FragmentResourcesSo
         this.isTitleAscending = isTitleAscending
     }
 
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val dialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
-        dialog.behavior.apply {
-            state = BottomSheetBehavior.STATE_EXPANDED
-            skipCollapsed = true
-        }
-        return dialog
+    override fun currentSortValue(): ResourcesViewModel.SortMode = currentMode
+
+    override fun onSortSelected(value: ResourcesViewModel.SortMode) {
+        listener?.onSortSelected(value)
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        binding.ivCloseSort.setOnClickListener { dismiss() }
-
-        when (currentMode) {
-            ResourcesViewModel.SortMode.DATE -> binding.sortOrderByDate.isChecked = true
-            ResourcesViewModel.SortMode.TITLE -> binding.sortOrderByTitle.isChecked = true
-            ResourcesViewModel.SortMode.NONE -> Unit
-        }
-
-        updateDirectionLabels()
-
-        binding.sortOrderByDate.setOnClickListener {
-            listener?.onSortSelected(ResourcesViewModel.SortMode.DATE)
-            dismiss()
-        }
-        binding.sortOrderByTitle.setOnClickListener {
-            listener?.onSortSelected(ResourcesViewModel.SortMode.TITLE)
-            dismiss()
-        }
+    override fun dateLabel(): String {
+        val arrow = if (isDateAscending) "↑" else "↓"
+        return "${getString(R.string.order_by_date)} $arrow"
     }
 
-    private fun updateDirectionLabels() {
-        val dateArrow = if (isDateAscending) "↑" else "↓"
-        val titleArrow = if (isTitleAscending) "↑" else "↓"
-        binding.sortOrderByDate.text = "${getString(R.string.order_by_date)} $dateArrow"
-        binding.sortOrderByTitle.text = "${getString(R.string.order_by_title)} $titleArrow"
+    override fun titleLabel(): String {
+        val arrow = if (isTitleAscending) "↑" else "↓"
+        return "${getString(R.string.order_by_title)} $arrow"
     }
-
 }

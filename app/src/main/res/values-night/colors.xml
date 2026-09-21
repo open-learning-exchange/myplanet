@@ -95,5 +95,6 @@
     <color name="list_status_not_started_bg">#3A3B3C</color>
     <color name="list_status_not_started_text">@color/status_not_started</color>
 
+    <!-- courses / resources sort/filter capsule -->
     <color name="ink_1">@color/card_bg</color>
 </resources>
