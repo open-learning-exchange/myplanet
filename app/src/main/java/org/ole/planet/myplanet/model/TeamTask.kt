@@ -4,8 +4,13 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @Entity(tableName = "team_tasks", indices = [Index("teamId")])
 class TeamTask {
@@ -55,20 +60,22 @@ class TeamTask {
         }
 
         fun serialize(task: TeamTask, user: UserEntity?): JsonObject {
-            val `object` = JsonObject()
-            if (!task._id.isNullOrEmpty()) {
-                `object`.addProperty("_id", task._id)
-                `object`.addProperty("_rev", task._rev)
-            }
-            `object`.addProperty("title", task.title)
-            `object`.addProperty("deadline", task.deadline)
-            `object`.addProperty("description", task.description)
-            `object`.addProperty("completed", task.completed)
-            `object`.addProperty("completedTime", task.completedTime)
-            if (user != null) `object`.add("assignee", user.serialize())
-            else `object`.addProperty("assignee", "")
-            `object`.add("sync", JsonUtils.gson.fromJson(task.sync, JsonObject::class.java))
-            `object`.add("link", JsonUtils.gson.fromJson(task.link, JsonObject::class.java))
+            val syncJson = JsonUtils.gson.fromJson(task.sync, JsonObject::class.java)
+            val linkJson = JsonUtils.gson.fromJson(task.link, JsonObject::class.java)
+            val `object` = buildJsonObject {
+                if (!task._id.isNullOrEmpty()) {
+                    put("_id", task._id)
+                    put("_rev", task._rev)
+                }
+                put("title", task.title)
+                put("deadline", task.deadline)
+                put("description", task.description)
+                put("completed", task.completed)
+                put("completedTime", task.completedTime)
+                if (user != null) put("assignee", user.serialize().toKotlinx()) else put("assignee", "")
+                put("sync", syncJson?.toKotlinx() ?: JsonNull)
+                put("link", linkJson?.toKotlinx() ?: JsonNull)
+            }.toGson()
             `object`.addDocumentOrigin()
             return `object`
         }

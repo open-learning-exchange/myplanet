@@ -4,16 +4,20 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import org.ole.planet.myplanet.model.HealthRecord
+import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -29,7 +33,7 @@ class HealthViewModelTest {
     fun setup() {
         userRepository = mockk()
         healthRepository = mockk()
-        viewModel = HealthViewModel(userRepository, healthRepository)
+        viewModel = HealthViewModel(userRepository, healthRepository, RealtimeSyncManager())
     }
 
     @Test
@@ -73,11 +77,11 @@ class HealthViewModelTest {
         val record2 = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
 
         coEvery { healthRepository.getPatientById("1") } coAnswers {
-            kotlinx.coroutines.delay(1000)
+            delay(1000)
             user1
         }
         coEvery { healthRepository.getPatientById("2") } coAnswers {
-            kotlinx.coroutines.delay(1000)
+            delay(1000)
             user2
         }
         coEvery { healthRepository.getPatientHealthRecords("2", user2) } returns record2
@@ -209,5 +213,160 @@ class HealthViewModelTest {
         advanceUntilIdle()
 
         assertEquals(patients, viewModel.patientList.first())
+    }
+
+    @Test
+    fun `failing refresh leaves currentPatientId and displayed patient intact`() = runTest {
+        val user = UserEntity().apply { id = "1"; name = "Test Patient" }
+        val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
+        coEvery { healthRepository.getPatientById("1") } returns user
+        coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
+
+        viewModel.selectPatient("1")
+        advanceUntilIdle()
+
+        assertEquals(user, viewModel.patientDetailState.first().user)
+
+        coEvery { healthRepository.getPatientHealthRecords("1", user) } throws RuntimeException("Transient network error")
+
+        viewModel.refreshSelectedPatient()
+        advanceUntilIdle()
+
+        assertEquals(user, viewModel.patientDetailState.first().user)
+        assertEquals(record, viewModel.patientDetailState.first().healthRecord)
+
+        coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
+        viewModel.refreshSelectedPatient()
+        advanceUntilIdle()
+
+        coVerify(exactly = 3) { healthRepository.getPatientById("1") }
+    }
+
+    @Test
+    fun `failed load for a different patient clears the displayed one`() = runTest {
+        val displayed = UserEntity().apply { id = "1"; name = "Displayed Patient" }
+        val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
+        coEvery { healthRepository.getPatientById("1") } returns displayed
+        coEvery { healthRepository.getPatientHealthRecords("1", displayed) } returns record
+
+        viewModel.selectPatient("1")
+        advanceUntilIdle()
+
+        assertEquals(displayed, viewModel.patientDetailState.first().user)
+
+        coEvery { healthRepository.getPatientById("2") } throws RuntimeException("Transient network error")
+
+        viewModel.selectPatient("2")
+        advanceUntilIdle()
+
+        assertNull(viewModel.patientDetailState.first().user)
+        assertNull(viewModel.patientDetailState.first().healthRecord)
+    }
+
+    @Test
+    fun `health sync event restarts an in-flight load so the newest read wins`() = runTest {
+        val realtimeSyncManager = RealtimeSyncManager()
+        val customViewModel = HealthViewModel(userRepository, healthRepository, realtimeSyncManager)
+        val staleUser = UserEntity().apply { id = "1"; name = "Stale Patient" }
+        val freshUser = UserEntity().apply { id = "1"; name = "Fresh Patient" }
+        val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
+
+        var reads = 0
+        coEvery { healthRepository.getPatientById("1") } coAnswers {
+            reads++
+            delay(500)
+            if (reads == 1) staleUser else freshUser
+        }
+        coEvery { healthRepository.getPatientHealthRecords("1", any()) } returns record
+
+        backgroundScope.launch {
+            customViewModel.healthSyncUpdates.collect { customViewModel.refreshSelectedPatient() }
+        }
+        testScheduler.runCurrent()
+
+        customViewModel.selectPatient("1")
+        testScheduler.advanceTimeBy(100)
+
+        realtimeSyncManager.notifyTableUpdated(TableDataUpdate("health", 1, 0, true))
+
+        advanceUntilIdle()
+
+        coVerify(exactly = 2) { healthRepository.getPatientById("1") }
+        assertEquals(freshUser, customViewModel.patientDetailState.first().user)
+        assertEquals(false, customViewModel.isLoading.value)
+    }
+
+    @Test
+    fun `two rapid health-table events coalesce into a single refresh`() = runTest {
+        val realtimeSyncManager = RealtimeSyncManager()
+        val customViewModel = HealthViewModel(userRepository, healthRepository, realtimeSyncManager)
+        val user = UserEntity().apply { id = "1"; name = "Test Patient" }
+        val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
+
+        coEvery { healthRepository.getPatientById("1") } coAnswers {
+            delay(500)
+            user
+        }
+        coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
+
+        backgroundScope.launch {
+            customViewModel.healthSyncUpdates.collect { customViewModel.refreshSelectedPatient() }
+        }
+        testScheduler.runCurrent()
+
+        customViewModel.selectPatient("1")
+        testScheduler.advanceTimeBy(100)
+
+        realtimeSyncManager.notifyTableUpdated(TableDataUpdate("health", 1, 0, true))
+        realtimeSyncManager.notifyTableUpdated(TableDataUpdate("health", 1, 0, true))
+
+        advanceUntilIdle()
+
+        coVerify(exactly = 2) { healthRepository.getPatientById("1") }
+        assertEquals(user, customViewModel.patientDetailState.first().user)
+    }
+
+    @Test
+    fun `health events are ignored while nothing collects the sync flow`() = runTest {
+        val realtimeSyncManager = RealtimeSyncManager()
+        val customViewModel = HealthViewModel(userRepository, healthRepository, realtimeSyncManager)
+        val user = UserEntity().apply { id = "1"; name = "Test Patient" }
+        val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
+
+        coEvery { healthRepository.getPatientById("1") } returns user
+        coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
+
+        customViewModel.selectPatient("1")
+        advanceUntilIdle()
+
+        realtimeSyncManager.notifyTableUpdated(TableDataUpdate("health", 1, 0, true))
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { healthRepository.getPatientById("1") }
+    }
+
+    @Test
+    fun `sync flow ignores other tables and updates that do not require a refresh`() = runTest {
+        val realtimeSyncManager = RealtimeSyncManager()
+        val customViewModel = HealthViewModel(userRepository, healthRepository, realtimeSyncManager)
+        val user = UserEntity().apply { id = "1"; name = "Test Patient" }
+        val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
+
+        coEvery { healthRepository.getPatientById("1") } returns user
+        coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
+
+        backgroundScope.launch {
+            customViewModel.healthSyncUpdates.collect { customViewModel.refreshSelectedPatient() }
+        }
+        testScheduler.runCurrent()
+
+        customViewModel.selectPatient("1")
+        advanceUntilIdle()
+
+        realtimeSyncManager.notifyTableUpdated(TableDataUpdate("courses", 1, 0, true))
+        realtimeSyncManager.notifyTableUpdated(TableDataUpdate("health", 1, 0, false))
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { healthRepository.getPatientById("1") }
     }
 }
