@@ -536,7 +536,7 @@ class SubmissionsRepositoryImplTest {
         val request = CreateExamSubmissionRequest("user", "dob", "gender", exam, "survey", null)
         val existingSubmission = Submission().apply { id = "existing_id" }
 
-        coEvery { submissionDao.getByParentUserAndStatus("parentId", "user", "pending") } returns listOf(existingSubmission)
+        coEvery { submissionDao.getPendingByUserAndParent("parentId", "user") } returns existingSubmission
 
         val result = repository.startExamSession("exam_id", "parentId", "user", request, recreate = false)
 
@@ -552,7 +552,7 @@ class SubmissionsRepositoryImplTest {
         }
         val request = CreateExamSubmissionRequest("user", "dob", "gender", exam, "survey", null)
 
-        coEvery { submissionDao.getByParentUserAndStatus("parentId", "user", "pending") } returns emptyList()
+        coEvery { submissionDao.getPendingByUserAndParent("parentId", "user") } returns null
         coEvery { answerDao.deleteBySubmissionIds(any()) } returns 1
 
         val result = repository.startExamSession("exam_id", "parentId", "user", request, recreate = false)
