@@ -126,4 +126,32 @@ class ChatSearchTest {
         assertEquals(1, result.size)
         assertEquals("Chat With Null Query", result[0].title)
     }
+
+    @Test
+    fun `mixed-case query matches lowercase conversation`() = runTest(testDispatcher) {
+        val chat1 = ChatHistory().apply {
+            title = "Chat 1"
+            conversations = listOf(Conversation().apply { query = "hello world" })
+        }
+        val chats = listOf(chat1)
+
+        val result = ChatSearch.search("HeLLo", ChatSearchMode.QUESTION, chats, testDispatcher)
+
+        assertEquals(1, result.size)
+        assertEquals("Chat 1", result[0].title)
+    }
+
+    @Test
+    fun `accented query matches unaccented conversation`() = runTest(testDispatcher) {
+        val chat1 = ChatHistory().apply {
+            title = "Chat 1"
+            conversations = listOf(Conversation().apply { query = "welcome to the cafe" })
+        }
+        val chats = listOf(chat1)
+
+        val result = ChatSearch.search("café", ChatSearchMode.QUESTION, chats, testDispatcher)
+
+        assertEquals(1, result.size)
+        assertEquals("Chat 1", result[0].title)
+    }
 }
