@@ -8,6 +8,7 @@ import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
+import kotlinx.serialization.Serializable
 import java.util.UUID
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.FileUtils
@@ -284,6 +285,7 @@ open class MyLibrary {
  * Value-object attachment embedded (as JSON) in [MyLibrary]. Never persisted or queried on
  * its own, so it is a plain class rather than a Room entity.
  */
+@Serializable
 open class Attachment {
     var id: String? = null
     var name: String? = null
