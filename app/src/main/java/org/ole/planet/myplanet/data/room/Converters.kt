@@ -8,18 +8,6 @@ import kotlinx.serialization.json.Json
 import org.ole.planet.myplanet.model.Attachment
 import org.ole.planet.myplanet.model.Conversation
 
-/**
- * Room type converters used across the Room schema.
- *
- * Realm modelled multivalued primitive fields with `RealmList<String>`. In Room those become
- * plain `List<String>` columns persisted as a JSON string, so the on-device representation is
- * self-describing and survives the drop-and-resync migration away from Realm.
- *
- * [json] tolerates unknown/missing keys and coerces malformed values to defaults so that rows
- * already written by a prior app version - back when this used Gson - keep decoding correctly;
- * a plain field-matching class with no custom names/serializers round-trips identically either
- * way, so no Room schema version bump is needed for this converter alone.
- */
 class Converters {
     @TypeConverter
     fun fromDate(value: Date?): Long? {
