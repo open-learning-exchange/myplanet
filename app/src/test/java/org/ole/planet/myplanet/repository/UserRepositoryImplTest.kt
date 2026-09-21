@@ -32,12 +32,15 @@ import org.junit.Test
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.UserDao
+import org.ole.planet.myplanet.model.MemberInfo
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
+import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.VersionUtils
 import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -54,6 +57,7 @@ class UserRepositoryImplTest {
     private lateinit var activitiesRepository: ActivitiesRepository
     private lateinit var activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>
     private lateinit var userDao: UserDao
+    private lateinit var deviceNameProvider: DeviceNameProvider
 
     private lateinit var repository: UserRepositoryImpl
 
@@ -88,6 +92,7 @@ class UserRepositoryImplTest {
         every { dispatcherProvider.unconfined } returns testDispatcher
 
         userDao = mockk(relaxed = true)
+        deviceNameProvider = mockk(relaxed = true)
 
         repository = UserRepositoryImpl(
             settings,
@@ -107,7 +112,8 @@ class UserRepositoryImplTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             userDao,
-            mockk(relaxed = true)
+            mockk(relaxed = true),
+            deviceNameProvider
         )
     }
 
@@ -390,6 +396,42 @@ class UserRepositoryImplTest {
         val slot = slot<String>()
         coVerify { userDao.search(capture(slot)) }
         assertEquals("%john%", slot.captured)
+    }
+
+    @Test
+    fun `createMember carries deviceNameProvider device name and injected context android id`() = runTest(testDispatcher) {
+        mockkObject(VersionUtils)
+        every { VersionUtils.getAndroidId(any()) } returns "mock_android_id"
+        every { deviceNameProvider.getCustomDeviceName() } returns "mock_device_name"
+
+        val spyRepository = spyk(repository)
+        val jsonSlot = slot<JsonObject>()
+        coEvery { spyRepository.becomeMember(capture(jsonSlot)) } returns Pair(true, "success")
+
+        val memberInfo = MemberInfo(
+            username = "testuser",
+            password = "password123",
+            rePassword = "password123",
+            fName = "John",
+            lName = "Doe",
+            mName = "M",
+            email = "test@example.com",
+            language = "en",
+            level = "1",
+            phoneNumber = "123456",
+            birthDate = "2000-01-01",
+            gender = "male"
+        )
+
+        spyRepository.createMember(memberInfo)
+
+        val builtJson = jsonSlot.captured
+        assertEquals("mock_android_id", builtJson.get("uniqueAndroidId").asString)
+        assertEquals("mock_device_name", builtJson.get("customDeviceName").asString)
+        verify { VersionUtils.getAndroidId(context) }
+        verify { deviceNameProvider.getCustomDeviceName() }
+
+        unmockkObject(VersionUtils)
     }
 
     @Test
