@@ -208,22 +208,27 @@ open class MyLibrary {
                 if (params.doc.has("_attachments")) {
                     val attachmentsObj = params.doc["_attachments"].asJsonObject
                     val attachmentList = this.attachments?.toMutableList() ?: mutableListOf()
+                    val existingNames = attachmentList.mapNotNullTo(mutableSetOf()) { it.name }
+                    val couchdbUrl = params.spm.getCouchdbUrl().ifEmpty { "http://" }
 
                     attachmentsObj.entrySet().forEach { (key, attachmentValue) ->
-                        val attachmentObj = attachmentValue.asJsonObject
-                        val realmAttachment = Attachment().apply {
-                            id = UUID.randomUUID().toString()
-                            name = key
-                            contentType = attachmentObj.get("content_type")?.asString
-                            length = attachmentObj.get("length")?.asLong ?: 0
-                            digest = attachmentObj.get("digest")?.asString
-                            isStub = attachmentObj.get("stub")?.asBoolean == true
-                            revpos = attachmentObj.get("revpos")?.asInt ?: 0
+                        if (key !in existingNames) {
+                            val attachmentObj = attachmentValue.asJsonObject
+                            val realmAttachment = Attachment().apply {
+                                id = UUID.randomUUID().toString()
+                                name = key
+                                contentType = attachmentObj.get("content_type")?.asString
+                                length = attachmentObj.get("length")?.asLong ?: 0
+                                digest = attachmentObj.get("digest")?.asString
+                                isStub = attachmentObj.get("stub")?.asBoolean == true
+                                revpos = attachmentObj.get("revpos")?.asInt ?: 0
+                            }
+                            attachmentList.add(realmAttachment)
+                            existingNames.add(key)
                         }
-                        attachmentList.add(realmAttachment)
 
                         if (key.indexOf("/") < 0) {
-                            resourceRemoteAddress = "${params.spm.getCouchdbUrl().ifEmpty { "http://" }}/resources/$resourceId/$key"
+                            resourceRemoteAddress = "$couchdbUrl/resources/$resourceId/$key"
                             resourceLocalAddress = key
                             resourceOffline = FileUtils.checkFileExist(params.context, resourceRemoteAddress)
                             if (resourceOffline) {

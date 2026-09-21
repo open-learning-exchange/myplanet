@@ -74,9 +74,12 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun isAlreadyShared(chatId: String, viewInId: String): Boolean {
-        return newsDao.getByNewsId(chatId).any { news ->
-            news.viewIn?.contains("\"_id\":\"$viewInId\"", ignoreCase = true) == true
-        }
+        val escaped = viewInId
+            .replace("\\", "\\\\")
+            .replace("%", "\\%")
+            .replace("_", "\\_")
+        val pattern = "%\"_id\":\"$escaped\"%"
+        return newsDao.isSharedWith(chatId, pattern)
     }
 
     override suspend fun createNews(map: HashMap<String?, String>, user: UserEntity?, imageList: List<String>?): News {
