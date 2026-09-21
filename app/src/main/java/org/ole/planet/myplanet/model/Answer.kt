@@ -6,7 +6,14 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @Entity(tableName = "answers", indices = [Index("examId"), Index("questionId"), Index("submissionId")])
 open class Answer(
@@ -23,38 +30,35 @@ open class Answer(
     @get:Ignore
     val valueChoicesArray: JsonArray
         get() {
-            val array = JsonArray()
             if (valueChoices == null) {
-                return array
+                return JsonArray()
             }
-            for (choice in valueChoices ?: emptyList()) {
-                array.add(JsonUtils.gson.fromJson(choice, JsonObject::class.java))
-            }
-            return array
+            return buildJsonArray {
+                for (choice in valueChoices ?: emptyList()) {
+                    val parsed = JsonUtils.gson.fromJson(choice, JsonObject::class.java)
+                    add(parsed?.toKotlinx() ?: JsonNull)
+                }
+            }.toGson()
         }
 
     companion object {
-        fun serializeAnswer(answers: List<Answer>): JsonArray {
-            val array = JsonArray()
+        fun serializeAnswer(answers: List<Answer>): JsonArray = buildJsonArray {
             for (ans in answers) {
-                array.add(createObject(ans))
+                add(createObject(ans).toKotlinx())
             }
-            return array
-        }
+        }.toGson()
 
-        private fun createObject(ans: Answer): JsonObject {
-            val `object` = JsonObject()
+        private fun createObject(ans: Answer): JsonObject = buildJsonObject {
             if (!ans.value.isNullOrEmpty()) {
-                `object`.addProperty("value", ans.value)
+                put("value", ans.value)
             } else {
-                `object`.add("value", ans.valueChoicesArray)
+                put("value", ans.valueChoicesArray.toKotlinx())
             }
-            `object`.addProperty("mistakes", ans.mistakes)
-            `object`.addProperty("passed", ans.isPassed)
+            put("mistakes", ans.mistakes)
+            put("passed", ans.isPassed)
             if (!ans.questionId.isNullOrEmpty()) {
-                `object`.addProperty("questionId", ans.questionId)
+                put("questionId", ans.questionId)
             }
-            return `object`
-        }
+        }.toGson()
     }
 }
