@@ -19,7 +19,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.VersionUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UserEntityTest {
@@ -140,5 +142,68 @@ class UserEntityTest {
     fun testEffectiveIdWhenCouchIdEmpty() {
         val user = UserEntity(id = "local_123", _id = "")
         assertEquals("local_123", user.effectiveId)
+    }
+
+    @Test
+    fun serialize_existingUser_includesCredentialFields_omitsNewUserFields() {
+        val user = UserEntity(
+            id = "local_123",
+            _id = "couch_456",
+            _rev = "1-abc",
+            name = "Jane Doe",
+            derived_key = "derived-key-value",
+            salt = "salt-value",
+            password_scheme = "pbkdf2",
+            password = "should-not-be-serialized"
+        )
+        user.rolesList = mutableListOf("learner")
+
+        val json = user.serialize()
+
+        assertEquals("couch_456", json.get("_id").asString)
+        assertEquals("1-abc", json.get("_rev").asString)
+        assertEquals("derived-key-value", json.get("derived_key").asString)
+        assertEquals("salt-value", json.get("salt").asString)
+        assertEquals("pbkdf2", json.get("password_scheme").asString)
+        assertEquals(1, json.getAsJsonArray("roles").size())
+        assertEquals("learner", json.getAsJsonArray("roles")[0].asString)
+        assertFalse(json.has("password"))
+        assertFalse(json.has("androidId"))
+        assertFalse(json.has("app"))
+        assertFalse(json.has("uniqueAndroidId"))
+    }
+
+    @Test
+    fun serialize_newUser_includesPasswordAndDeviceFields_omitsCredentialFields() {
+        mockkObject(VersionUtils)
+        mockkObject(NetworkUtils)
+        every { VersionUtils.getAndroidId(any()) } returns "android-id-1"
+        every { NetworkUtils.getUniqueIdentifier() } returns "unique-id-1"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom-device-1"
+
+        val user = UserEntity(id = "local_123", _id = "", name = "New User", password = "plaintext-password")
+        user.rolesList = mutableListOf()
+
+        val json = user.serialize()
+
+        assertEquals("plaintext-password", json.get("password").asString)
+        assertEquals("unique-id-1", json.get("androidId").asString)
+        assertEquals("myplanet", json.get("app").asString)
+        assertEquals("android-id-1", json.get("uniqueAndroidId").asString)
+        assertEquals("custom-device-1", json.get("customDeviceName").asString)
+        assertFalse(json.has("_id"))
+        assertFalse(json.has("derived_key"))
+        assertFalse(json.has("salt"))
+        assertFalse(json.has("password_scheme"))
+    }
+
+    @Test
+    fun serialize_invalidIterationsFallsBackToTen() {
+        val user = UserEntity(id = "local_123", _id = "couch_456", iterations = "not-a-number")
+        user.rolesList = mutableListOf()
+
+        val json = user.serialize()
+
+        assertEquals(10, json.get("iterations").asInt)
     }
 }

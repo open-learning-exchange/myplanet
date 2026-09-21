@@ -230,7 +230,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 override fun onVersionCheckSuccess() {
                     isSync = false
                     forceSync = true
-                    configurationsRepository.checkVersion(this@SyncActivity, prefData)
+                    configurationsRepository.checkVersion(this@SyncActivity)
                 }
 
                 override fun onContinueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {
