@@ -66,7 +66,7 @@ class AutoSyncWorker @AssistedInject constructor(
             }
             suspendCancellableCoroutine { continuation ->
                 syncContinuation = continuation
-                configurationsRepository.checkVersion(this@AutoSyncWorker, sharedPrefManager)
+                configurationsRepository.checkVersion(this@AutoSyncWorker)
             }
         }
         return@coroutineScope Result.success()

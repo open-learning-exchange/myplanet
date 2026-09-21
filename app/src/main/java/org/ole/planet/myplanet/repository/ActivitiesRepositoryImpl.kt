@@ -173,19 +173,19 @@ class ActivitiesRepositoryImpl @Inject constructor(
         )
     }
 
-    override suspend fun getResourceOpenCount(userName: String): Long {
+    suspend fun getResourceOpenCount(userName: String): Long {
         return getResourceOpenCount(userName, UserSessionManager.KEY_RESOURCE_OPEN)
     }
 
-    override suspend fun getResourceOpenCount(userName: String, type: String): Long {
+    suspend fun getResourceOpenCount(userName: String, type: String): Long {
         return resourceActivityDao.countByUserAndType(userName, type)
     }
 
-    override suspend fun getMostOpenedResource(userName: String): Pair<String, Int>? {
+    suspend fun getMostOpenedResource(userName: String): Pair<String, Int>? {
         return getMostOpenedResource(userName, UserSessionManager.KEY_RESOURCE_OPEN)
     }
 
-    override suspend fun getMostOpenedResource(userName: String, type: String): Pair<String, Int>? = withContext(dispatcherProvider.io) {
+    suspend fun getMostOpenedResource(userName: String, type: String): Pair<String, Int>? = withContext(dispatcherProvider.io) {
         val result = resourceActivityDao.getMostOpenedResource(userName, type)
         if (result != null) {
             Pair(result.title, result.openCount)
