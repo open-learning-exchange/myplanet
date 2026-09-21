@@ -57,11 +57,6 @@ class ConvertersTest {
         assertNull(converters.toAttachmentList("   "))
     }
 
-    // The following simulate JSON already sitting in an installed app's Room database, written
-    // by the prior Gson-based converter (which omits null-valued reference fields and never
-    // omits primitives, even at their zero/false default) - this locks in that the kotlinx
-    // migration doesn't require a schema version bump to keep reading pre-existing rows.
-
     @Test
     fun testStringListDecodesPriorGsonOutputVerbatim() {
         val gsonWrittenJson = """["hello","world"]"""
@@ -71,7 +66,6 @@ class ConvertersTest {
 
     @Test
     fun testConversationListDecodesPriorGsonOutput_withNullFieldOmitted() {
-        // Gson omits a null `response` field entirely rather than writing "response":null.
         val gsonWrittenJson = """[{"query":"msg1"},{"query":"msg2","response":"reply2"}]"""
 
         val restored = converters.toConversationList(gsonWrittenJson)
@@ -84,8 +78,6 @@ class ConvertersTest {
 
     @Test
     fun testAttachmentListDecodesPriorGsonOutput_withNullFieldsOmittedAndPrimitiveDefaultsPresent() {
-        // Gson always writes primitive fields (even at their zero/false default) but omits
-        // null reference fields - id/name/contentType/digest are all unset here.
         val gsonWrittenJson = """[{"length":0,"isStub":false,"revpos":0}]"""
 
         val restored = converters.toAttachmentList(gsonWrittenJson)
