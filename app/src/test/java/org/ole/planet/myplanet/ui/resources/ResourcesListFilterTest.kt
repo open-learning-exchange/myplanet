@@ -261,4 +261,36 @@ class ResourcesListFilterTest {
         assertEquals(1, result.size)
         assertEquals("1", result[0].item.id)
     }
+
+    @Test
+    fun `book filter does not return image or text html resources`() {
+        val imageModel = model(
+            id = "1",
+            title = "Image Resource",
+            mediaType = "image",
+            localAddress = "photo.png"
+        )
+        val htmlModel = model(
+            id = "2",
+            title = "HTML Article",
+            mediaType = "text/html",
+            localAddress = "index.html"
+        )
+        val bookModel = model(
+            id = "3",
+            title = "Physics Textbook",
+            mediaType = "book",
+            localAddress = "physics.epub"
+        )
+        val filter = ResourcesListFilter()
+
+        val result = filter.apply(
+            listOf(imageModel, htmlModel, bookModel),
+            noFilters.copy(mediums = setOf("book")),
+            emptySet()
+        )
+
+        assertEquals(1, result.size)
+        assertEquals("3", result[0].item.id)
+    }
 }

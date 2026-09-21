@@ -273,7 +273,7 @@ class ResourcesAdapter(
 
     private fun bindGrid(holder: GridViewHolder, model: ResourceListModel) {
         val binding = holder.binding
-        val type = LibraryTypeClassifier.classify(model.library)
+        val type = LibraryTypeClassifier.classify(model.library) ?: LibraryType.BOOK
         binding.title.text = model.item.title
         binding.tvMeta.text = buildMetaLine(model, type, fileSize = null)
         bindSelectionAndDownload(binding.checkbox, binding.ivDownloaded, model)
@@ -289,7 +289,7 @@ class ResourcesAdapter(
 
     private fun bindList(holder: ListViewHolder, model: ResourceListModel) {
         val binding = holder.binding
-        val type = LibraryTypeClassifier.classify(model.library)
+        val type = LibraryTypeClassifier.classify(model.library) ?: LibraryType.BOOK
         binding.title.text = model.item.title
         binding.tvMeta.text = buildMetaLine(model, type, fileSize = null)
         bindSelectionAndDownload(binding.checkbox, binding.ivDownloaded, model)

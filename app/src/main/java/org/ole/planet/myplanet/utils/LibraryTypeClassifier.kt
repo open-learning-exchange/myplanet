@@ -12,18 +12,20 @@ enum class LibraryType {
 object LibraryTypeClassifier {
     private val videoExtensions = setOf("mp4", "mov", "mkv", "webm", "avi", "3gp")
     private val audioExtensions = setOf("mp3", "aac", "wav", "ogg", "m4a")
+    private val bookExtensions = setOf("epub", "mobi", "azw", "azw3", "fb2", "cbz", "cbr")
 
-    fun classify(library: MyLibrary): LibraryType {
+    fun classify(library: MyLibrary): LibraryType? {
         val extension = FileUtils.getFileExtension(
             library.resourceLocalAddress ?: library.resourceRemoteAddress
         ).lowercase()
         val mediaType = library.mediaType?.lowercase().orEmpty()
 
         return when {
-            extension == "pdf" -> LibraryType.PDF
+            extension == "pdf" || mediaType.contains("pdf") -> LibraryType.PDF
             extension in videoExtensions || mediaType.startsWith("video") -> LibraryType.VIDEO
             extension in audioExtensions || mediaType.startsWith("audio") -> LibraryType.AUDIO
-            else -> LibraryType.BOOK
+            extension in bookExtensions || mediaType.contains("book") || mediaType.contains("epub") || mediaType.contains("textbook") -> LibraryType.BOOK
+            else -> null
         }
     }
 }

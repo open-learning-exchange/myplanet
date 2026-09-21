@@ -101,7 +101,7 @@ class ResourcesListFilter {
             }
 
             if (targetType != null) {
-                classifiedType == targetType
+                classifiedType == targetType || mediaTypeLower.contains(selLower)
             } else {
                 mediaTypeLower == selLower || mediaTypeLower.contains(selLower)
             }

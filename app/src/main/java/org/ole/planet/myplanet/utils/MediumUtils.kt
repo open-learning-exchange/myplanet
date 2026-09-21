@@ -1,20 +1,35 @@
 package org.ole.planet.myplanet.utils
 
 import android.content.Context
+import java.util.Locale
 import org.ole.planet.myplanet.R
 
 object MediumUtils {
+    fun getCanonicalMedium(medium: String): String {
+        val lower = medium.lowercase(Locale.ROOT).trim()
+        return when {
+            lower.contains("pdf") -> "pdf"
+            lower.contains("video") || lower == "mp4" -> "video"
+            lower.contains("audio") || lower == "mp3" -> "audio"
+            lower.contains("image") || lower.contains("graphic") -> "image"
+            lower.contains("html") -> "html"
+            lower.contains("book") || lower == "epub" || lower == "textbook" -> "book"
+            else -> medium.trim()
+        }
+    }
+
     fun getMediumDisplayName(context: Context, medium: String): String {
-        return when (medium.lowercase().trim()) {
+        val canonical = getCanonicalMedium(medium)
+        return when (canonical.lowercase(Locale.ROOT)) {
             "pdf" -> context.getString(R.string.filter_pdfs)
             "video" -> context.getString(R.string.filter_videos)
             "audio" -> context.getString(R.string.filter_audio)
-            "image", "graphic/pictures" -> context.getString(R.string.storage_images)
-            "text/html" -> context.getString(R.string.medium_text_html)
+            "image" -> context.getString(R.string.storage_images)
             "html" -> context.getString(R.string.medium_html)
-            "book", "books" -> context.getString(R.string.filter_books)
+            "text/html" -> context.getString(R.string.medium_text_html)
+            "book" -> context.getString(R.string.filter_books)
             "other" -> context.getString(R.string.other)
-            else -> medium
+            else -> canonical.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }
         }
     }
 }
