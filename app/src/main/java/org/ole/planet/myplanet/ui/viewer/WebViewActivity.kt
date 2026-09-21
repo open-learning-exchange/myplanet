@@ -30,11 +30,9 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.io.FileInputStream
 import java.net.URLConnection
-import javax.inject.Inject
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityWebViewBinding
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ServerConfigUtils
@@ -44,11 +42,9 @@ import org.ole.planet.myplanet.utils.WebViewSafety
 class WebViewActivity : AppCompatActivity() {
     private lateinit var activityWebViewBinding: ActivityWebViewBinding
     private var fromDeepLink = false
-    @Inject
-    lateinit var userRepository: UserRepository
     private val viewModel: ResourceViewerViewModel by viewModels()
     private val exitCoordinator by lazy {
-        ResourcesExitCoordinator(this, userRepository, viewModel)
+        ResourcesExitCoordinator(this, viewModel)
     }
     private lateinit var link: String
     private val trustedHosts by lazy {
