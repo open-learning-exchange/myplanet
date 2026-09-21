@@ -168,7 +168,7 @@ class ConfigurationsRepositoryImplTest {
 
         val callback = mockk<ConfigurationsRepository.CheckVersionCallback>(relaxed = true)
 
-        repository.checkVersion(callback, sharedPrefManager)
+        repository.checkVersion(callback)
 
         verify { callback.onError("Server URL not configured", true) }
     }
@@ -218,7 +218,7 @@ class ConfigurationsRepositoryImplTest {
 
         val callback = mockk<ConfigurationsRepository.CheckVersionCallback>(relaxed = true)
 
-        repository.checkVersion(callback, sharedPrefManager)
+        repository.checkVersion(callback)
 
         // advance coroutine time for serviceScope
         testDispatcher.scheduler.advanceUntilIdle()
@@ -285,7 +285,7 @@ class ConfigurationsRepositoryImplTest {
 
         val callback = mockk<ConfigurationsRepository.CheckVersionCallback>(relaxed = true)
 
-        repository.checkVersion(callback, sharedPrefManager)
+        repository.checkVersion(callback)
 
         testDispatcher.scheduler.advanceUntilIdle()
 

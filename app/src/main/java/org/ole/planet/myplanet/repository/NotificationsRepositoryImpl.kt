@@ -104,7 +104,7 @@ class NotificationsRepositoryImpl @Inject constructor(
                 this.relatedId = relatedId
                 if (valueChanged) {
                     this.isRead = false
-                    this.createdAt = Date()
+                    this.createdAt = Date(timeProvider.now())
                 }
             } ?: AppNotification().apply {
                 this.id = notificationId
@@ -112,7 +112,7 @@ class NotificationsRepositoryImpl @Inject constructor(
                 this.type = type
                 this.message = formattedMessage
                 this.relatedId = relatedId
-                this.createdAt = Date()
+                this.createdAt = Date(timeProvider.now())
             }
             notificationDao.upsert(notification)
         } else {
@@ -125,7 +125,7 @@ class NotificationsRepositoryImpl @Inject constructor(
 
         val existingIds = notificationDao.getIdsByIds(notificationIds.toList())
         if (existingIds.isEmpty()) return emptySet()
-        notificationDao.markAsRead(existingIds, Date())
+        notificationDao.markAsRead(existingIds, Date(timeProvider.now()))
         return existingIds.toSet()
     }
 
@@ -133,11 +133,11 @@ class NotificationsRepositoryImpl @Inject constructor(
         val actualUserId = userId ?: return emptySet()
         val unreadIds = notificationDao.getUnreadIds(actualUserId).toSet()
         if (unreadIds.isEmpty()) return emptySet()
-        notificationDao.markAllUnreadAsRead(actualUserId, Date())
+        notificationDao.markAllUnreadAsRead(actualUserId, Date(timeProvider.now()))
         return unreadIds
     }
 
-    override suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean): List<NotificationPayload> {
+    suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean = false): List<NotificationPayload> {
         val normalizedFilter = when (filter) {
             "read", "unread" -> filter
             else -> ""
@@ -394,13 +394,13 @@ class NotificationsRepositoryImpl @Inject constructor(
         val current = timeProvider.now()
         val tomorrow = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
         val tasks = teamTaskDao.getTasksForUserBetween(userId, current, tomorrow.timeInMillis)
-        val hasTask = tasks.isNotEmpty()
+        val taskTeamIds = tasks.mapNotNull { it.teamId }.toSet()
 
         for (teamId in teamIds) {
             val notification = notificationsById[teamId]
             val chatCount = chatCountsById[teamId] ?: 0L
             val hasChat = notification != null && notification.lastCount < chatCount
-            notificationMap[teamId] = TeamNotificationInfo(hasTask, hasChat)
+            notificationMap[teamId] = TeamNotificationInfo(teamId in taskTeamIds, hasChat)
         }
         return notificationMap
     }
@@ -458,7 +458,7 @@ class NotificationsRepositoryImpl @Inject constructor(
             priority = doc.get("priority")?.asInt ?: 0
             rev = doc.get("_rev")?.asString
             isRead = doc.get("status")?.asString != "unread"
-            createdAt = doc.get("time")?.let { Date(it.asLong) } ?: Date()
+            createdAt = doc.get("time")?.let { Date(it.asLong) } ?: Date(timeProvider.now())
             isFromServer = true
         }
     }

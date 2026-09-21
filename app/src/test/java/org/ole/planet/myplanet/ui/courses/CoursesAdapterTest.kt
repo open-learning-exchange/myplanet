@@ -145,4 +145,56 @@ class CoursesAdapterTest {
         val listHolder = destroyedActivityAdapter.onCreateViewHolder(parent, destroyedActivityAdapter.getItemViewType(0))
         destroyedActivityAdapter.onViewRecycled(listHolder)
     }
+
+    @Test
+    fun `test removeCourses with empty courseIds fires onComplete exactly once`() {
+        val courses = listOf(
+            Course("1", "A", "desc", "grade", "subject", 0, 10, isMyCourse = false),
+            Course("2", "B", "desc", "grade", "subject", 0, 10, isMyCourse = false)
+        )
+        var initCommitted = false
+        adapter.submitList(courses) { initCommitted = true }
+        while (!initCommitted) {
+            org.robolectric.shadows.ShadowLooper.idleMainLooper()
+        }
+
+        var completeCallCount = 0
+        var removeCommitted = false
+        adapter.removeCourses(emptyList()) {
+            completeCallCount++
+            removeCommitted = true
+        }
+        while (!removeCommitted) {
+            org.robolectric.shadows.ShadowLooper.idleMainLooper()
+        }
+
+        assertEquals(1, completeCallCount)
+        assertEquals(2, adapter.currentList.size)
+    }
+
+    @Test
+    fun `test removeCourses preserves surviving items original order after partial removal`() {
+        val course1 = Course("1", "A", "desc", "grade", "subject", 0, 10, isMyCourse = false)
+        val course2 = Course("2", "B", "desc", "grade", "subject", 0, 10, isMyCourse = false)
+        val course3 = Course("3", "C", "desc", "grade", "subject", 0, 10, isMyCourse = false)
+        val course4 = Course("4", "D", "desc", "grade", "subject", 0, 10, isMyCourse = false)
+        val courses = listOf(course1, course2, course3, course4)
+        var initCommitted = false
+        adapter.submitList(courses) { initCommitted = true }
+        while (!initCommitted) {
+            org.robolectric.shadows.ShadowLooper.idleMainLooper()
+        }
+
+        var removeCommitted = false
+        adapter.removeCourses(listOf("2", "4")) {
+            removeCommitted = true
+        }
+        while (!removeCommitted) {
+            org.robolectric.shadows.ShadowLooper.idleMainLooper()
+        }
+
+        assertEquals(listOf(course1, course3), adapter.currentList)
+        assertEquals("1", adapter.currentList[0].courseId)
+        assertEquals("3", adapter.currentList[1].courseId)
+    }
 }
