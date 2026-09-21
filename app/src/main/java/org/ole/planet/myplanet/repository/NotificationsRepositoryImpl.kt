@@ -394,13 +394,13 @@ class NotificationsRepositoryImpl @Inject constructor(
         val current = timeProvider.now()
         val tomorrow = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
         val tasks = teamTaskDao.getTasksForUserBetween(userId, current, tomorrow.timeInMillis)
-        val hasTask = tasks.isNotEmpty()
+        val taskTeamIds = tasks.mapNotNull { it.teamId }.toSet()
 
         for (teamId in teamIds) {
             val notification = notificationsById[teamId]
             val chatCount = chatCountsById[teamId] ?: 0L
             val hasChat = notification != null && notification.lastCount < chatCount
-            notificationMap[teamId] = TeamNotificationInfo(hasTask, hasChat)
+            notificationMap[teamId] = TeamNotificationInfo(teamId in taskTeamIds, hasChat)
         }
         return notificationMap
     }
