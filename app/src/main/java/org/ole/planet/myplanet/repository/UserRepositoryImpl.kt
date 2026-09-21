@@ -146,11 +146,13 @@ class UserRepositoryImpl @Inject constructor(
             ?.takeIf { !it._id.isNullOrBlank() && !it.id.startsWith("guest") }
     }
 
-    private fun buildGuestUserJson(username: String): JsonObject {
+    private suspend fun buildGuestUserJson(username: String): JsonObject {
         return JsonObject().apply {
             addProperty("_id", "guest_$username")
             addProperty("name", username)
             addProperty("firstName", username)
+            addProperty("planetCode", getConnectedCommunityCode())
+            addProperty("parentCode", sharedPrefManager.getParentCode())
             add("roles", JsonArray().apply { add("guest") })
         }
     }
@@ -489,6 +491,10 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getCurrentUserId(): String? {
         return sharedPrefManager.getUserId().takeIf { it.isNotBlank() }
+    }
+
+    override suspend fun getConnectedCommunityCode(): String {
+        return sharedPrefManager.getPlanetCode().ifBlank { sharedPrefManager.getCommunityName() }
     }
 
     override suspend fun getUserModel(): UserEntity? {
