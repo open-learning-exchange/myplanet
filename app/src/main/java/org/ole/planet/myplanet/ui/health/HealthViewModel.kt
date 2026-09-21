@@ -62,10 +62,6 @@ class HealthViewModel @Inject constructor(
     private var selectPatientJob: Job? = null
     private var currentPatientId: String? = null
 
-    /**
-     * Health-table sync events, filtered and coalesced. Collect it from the UI with a
-     * lifecycle-aware collector so no refresh runs while the screen is in the background.
-     */
     @OptIn(FlowPreview::class)
     val healthSyncUpdates: Flow<Unit> = realtimeSyncManager.dataUpdateFlow
         .filter { it.table == HEALTH_TABLE && it.shouldRefreshUI }
