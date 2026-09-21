@@ -10,10 +10,15 @@ import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import kotlinx.serialization.Serializable
 import java.util.UUID
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.toGson
 
 /**
  * Room replacement for the former `MyLibrary` model (resources).
@@ -84,46 +89,42 @@ open class MyLibrary {
     var privateFor: String? = null
     var attachments: List<Attachment>? = null
 
-    fun serializeResource(): JsonObject {
-        return JsonObject().apply {
-            addProperty("_id", _id)
-            addProperty("_rev", _rev)
-            addProperty("need_optimization", needsOptimization)
-            add("resourceFor", resourceFor.toJsonArray())
-            addProperty("publisher", publisher)
-            addProperty("linkToLicense", linkToLicense)
-            addProperty("addedBy", addedBy)
-            addProperty("uploadDate", uploadDate)
-            addProperty("openWith", openWith)
-            add("subject", subject.toJsonArray())
-            addProperty("kind", kind)
-            addProperty("medium", medium)
-            addProperty("language", language)
-            addProperty("author", author)
-            addProperty("sum", sum)
-            addProperty("createdDate", uploadDate)
-            add("level", level.toJsonArray())
-            add("languages", languages.toJsonArray())
-            add("tag", tag.toJsonArray())
-            addProperty("timesRated", timesRated)
-            addProperty("year", year)
-            addProperty("title", title)
-            addProperty("averageRating", averageRating)
-            addProperty("filename", filename)
-            addProperty("mediaType", mediaType)
-            addProperty("description", description)
-            val ob = JsonObject()
+    fun serializeResource(): JsonObject = buildJsonObject {
+        put("_id", _id)
+        put("_rev", _rev)
+        put("need_optimization", needsOptimization)
+        put("resourceFor", resourceFor.toJsonArray())
+        put("publisher", publisher)
+        put("linkToLicense", linkToLicense)
+        put("addedBy", addedBy)
+        put("uploadDate", uploadDate)
+        put("openWith", openWith)
+        put("subject", subject.toJsonArray())
+        put("kind", kind)
+        put("medium", medium)
+        put("language", language)
+        put("author", author)
+        put("sum", sum)
+        put("createdDate", uploadDate)
+        put("level", level.toJsonArray())
+        put("languages", languages.toJsonArray())
+        put("tag", tag.toJsonArray())
+        put("timesRated", timesRated)
+        put("year", year)
+        put("title", title)
+        put("averageRating", averageRating)
+        put("filename", filename)
+        put("mediaType", mediaType)
+        put("description", description)
+        put("_attachments", buildJsonObject {
             resourceLocalAddress?.let { addr ->
-                ob.add(addr, JsonObject())
+                put(addr, buildJsonObject { })
             }
-            add("_attachments", ob)
-        }
-    }
+        })
+    }.toGson()
 
-    private fun List<String>?.toJsonArray(): JsonArray {
-        return JsonArray().apply {
-            this@toJsonArray?.forEach { add(it) }
-        }
+    private fun List<String>?.toJsonArray() = buildJsonArray {
+        this@toJsonArray?.forEach { add(it) }
     }
 
     fun setUserId(userId: String?) {
