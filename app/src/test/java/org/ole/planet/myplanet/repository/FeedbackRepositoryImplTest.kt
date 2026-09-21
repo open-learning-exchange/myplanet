@@ -129,13 +129,14 @@ class FeedbackRepositoryImplTest {
     fun `getFeedback deduplicates byte-identical flow emissions for manager`() = runTest {
         val user = mockk<UserEntity> {
             every { isManager() } returns true
+            every { name } returns "managerName"
         }
         val f1 = Feedback().apply { id = "f1"; _rev = "rev1"; status = "Open"; isUploaded = true; messages = "[]" }
         val f2 = Feedback().apply { id = "f1"; _rev = "rev1"; status = "Open"; isUploaded = true; messages = "[]" }
         coEvery { feedbackDao.getAllSortedFlow() } returns flowOf(listOf(f1), listOf(f2))
 
         val emissions = mutableListOf<List<Feedback>>()
-        repository.getFeedback(user).collect { emissions.add(it) }
+        repository.getFeedback(user.name, user.isManager()).collect { emissions.add(it) }
 
         assertEquals(1, emissions.size)
     }
@@ -151,7 +152,7 @@ class FeedbackRepositoryImplTest {
         coEvery { feedbackDao.getByOwnerFlow("ownerName") } returns flowOf(listOf(f1), listOf(f2))
 
         val emissions = mutableListOf<List<Feedback>>()
-        repository.getFeedback(user).collect { emissions.add(it) }
+        repository.getFeedback(user.name, user.isManager()).collect { emissions.add(it) }
 
         assertEquals(1, emissions.size)
     }
