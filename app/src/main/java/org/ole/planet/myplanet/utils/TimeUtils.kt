@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.utils
 
 import android.text.format.DateUtils
+import android.util.Log
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -11,6 +12,7 @@ import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 
 object TimeUtils {
+    private const val TAG = "TimeUtils"
     const val DATE_FORMAT = "dd MMM yyyy"
 
     private val defaultLocale: Locale
@@ -69,7 +71,7 @@ object TimeUtils {
         try {
             formatter().format(instant)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "formatInstant failed", e)
             fallback
         }
 
@@ -112,7 +114,7 @@ object TimeUtils {
             val today = LocalDate.now()
             Period.between(dob, today).years
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "getAge failed", e)
             0
         }
     }
@@ -132,7 +134,7 @@ object TimeUtils {
             }
             getFormattedDate(instant.toEpochMilli())
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "getFormattedDate failed", e)
             "N/A"
         }
     }
@@ -155,7 +157,7 @@ object TimeUtils {
             }.getOrThrow()
             localDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "parseDate failed", e)
             null
         }
 
@@ -167,7 +169,7 @@ object TimeUtils {
                 Instant.parse("${dateString}T00:00:00.000Z")
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "parseInstantFromString failed", e)
             null
         }
 
@@ -198,7 +200,7 @@ object TimeUtils {
             val formatter = formatterFor("dd-MM-yyyy")
             localDate.format(formatter)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "formatDateToDDMMYYYY failed", e)
             dateString ?: ""
         }
     }
@@ -211,7 +213,7 @@ object TimeUtils {
             val isoDate = localDate.format(formatterFor("yyyy-MM-dd", locale = null))
             convertToISO8601(isoDate)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "convertDDMMYYYYToISO failed", e)
             dateString ?: ""
         }
     }
