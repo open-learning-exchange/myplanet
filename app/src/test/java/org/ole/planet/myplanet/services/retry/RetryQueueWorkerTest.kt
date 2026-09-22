@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.repository.RetryOperationResult
 import org.ole.planet.myplanet.repository.RetryRepository
+import org.ole.planet.myplanet.services.sync.SyncManager
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RetryQueueWorkerTest {
@@ -52,6 +53,9 @@ class RetryQueueWorkerTest {
 
     @MockK
     lateinit var retryRepository: RetryRepository
+
+    @MockK
+    lateinit var syncManager: SyncManager
 
     private lateinit var worker: RetryQueueWorker
 
@@ -74,7 +78,9 @@ class RetryQueueWorkerTest {
         mockkStatic(WorkManager::class)
         every { WorkManager.getInstance(any()) } returns workManagerImpl
 
-        worker = RetryQueueWorker(context, workerParams, retryQueue, retryRepository)
+        every { syncManager.isMainSyncActive() } returns false
+
+        worker = RetryQueueWorker(context, workerParams, retryQueue, retryRepository, syncManager)
 
         mockkObject(MainApplication)
     }
@@ -129,6 +135,17 @@ class RetryQueueWorkerTest {
     @Test
     fun doWork_returnsSuccessImmediately_whenSyncIsRunning() = runTest {
         MainApplication.isSyncRunning.set(true)
+
+        val result = worker.doWork()
+
+        assertEquals(Result.success(), result)
+        coVerify(exactly = 0) { retryQueue.isCurrentlyProcessing() }
+    }
+
+    @Test
+    fun doWork_returnsSuccessImmediately_whenSyncManagerReportsMainSyncActive() = runTest {
+        MainApplication.isSyncRunning.set(false)
+        every { syncManager.isMainSyncActive() } returns true
 
         val result = worker.doWork()
 
