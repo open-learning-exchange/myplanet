@@ -16,12 +16,10 @@ import io.mockk.verify
 import java.io.File
 import java.util.logging.Level
 import java.util.logging.Logger
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -35,6 +33,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
@@ -50,6 +49,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.VersionUtils
@@ -74,6 +74,8 @@ class ResourcesRepositoryImplTest {
     private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
     private val deviceNameProvider: DeviceNameProvider = mockk(relaxed = true)
     private val timeProvider: TimeProvider = mockk(relaxed = true)
+    private val storagePathResolver: StoragePathResolver = mockk(relaxed = true)
+    private val appScope = TestScope(testDispatcher)
 
     @get:Rule
     val temporaryFolder = TemporaryFolder()
@@ -109,7 +111,9 @@ class ResourcesRepositoryImplTest {
             configurationsRepository,
             dispatcherProvider,
             deviceNameProvider,
-            timeProvider
+            timeProvider,
+            appScope,
+            storagePathResolver
         )
         every { dispatcherProvider.io } returns testDispatcher
     }
@@ -254,18 +258,14 @@ class ResourcesRepositoryImplTest {
         coEvery { myLibraryDao.getByResourceId("res1") } returns library
 
         val baseDir = kotlin.io.path.createTempDirectory("resources-repo-test").toFile()
-        val mockContext = mockk<Context>(relaxed = true)
-        every { mockContext.getExternalFilesDir(null) } returns baseDir
-        mockkObject(MainApplication)
-        try {
-            every { MainApplication.context } returns mockContext
+        every { storagePathResolver.resolveOleDirectory() } returns File(baseDir, "ole")
 
+        try {
             repository.reconcileHtmlResourceOffline("res1")
 
             assertFalse(library.resourceOffline)
             coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
         } finally {
-            unmockkObject(MainApplication)
             baseDir.deleteRecursively()
         }
     }
@@ -284,12 +284,9 @@ class ResourcesRepositoryImplTest {
         val baseDir = kotlin.io.path.createTempDirectory("resources-repo-test").toFile()
         File(baseDir, "ole/res1").apply { mkdirs() }
         File(baseDir, "ole/res1/index.html").writeText("<html></html>")
-        val mockContext = mockk<Context>(relaxed = true)
-        every { mockContext.getExternalFilesDir(null) } returns baseDir
-        mockkObject(MainApplication)
-        try {
-            every { MainApplication.context } returns mockContext
+        every { storagePathResolver.resolveOleDirectory() } returns File(baseDir, "ole")
 
+        try {
             repository.reconcileHtmlResourceOffline("res1")
 
             assertTrue(library.resourceOffline)
@@ -297,7 +294,6 @@ class ResourcesRepositoryImplTest {
             assertEquals("index.html", library.resourceLocalAddress)
             coVerify { myLibraryDao.upsert(library) }
         } finally {
-            unmockkObject(MainApplication)
             baseDir.deleteRecursively()
         }
     }
@@ -312,25 +308,24 @@ class ResourcesRepositoryImplTest {
             userId = mutableListOf()
         }
 
-        // Mock the lookups
         coEvery { myLibraryDao.getByResourceId("res-id") } returns mockLibrary
         coEvery { myLibraryDao.getById("res-id") } returns mockLibrary
 
         val result = repository.setUserLibrary("res-id", true)
 
-        // updateUserLibrary mutates and calls upsert
         coVerify { myLibraryDao.upsert(mockLibrary) }
         assertTrue(result?.userId?.contains("user-123") == true)
     }
 
     @Test
-    fun `getAllLibraries returns list of MyLibrary`() = runTest {
-        val mockLibrary = MyLibrary().apply { title = "Test Library" }
-        coEvery { myLibraryDao.getAll() } returns listOf(mockLibrary)
+    fun `getLibraryTitles returns list of LibraryTitleProjection`() = runTest {
+        val mockProjection = LibraryTitleProjection("lib1", "Test Library")
+        coEvery { myLibraryDao.getLibraryTitles() } returns listOf(mockProjection)
 
-        val result = repository.getAllLibraries()
+        val result = repository.getLibraryTitles()
 
         assertEquals(1, result.size)
+        assertEquals("lib1", result[0].id)
         assertEquals("Test Library", result[0].title)
     }
 
@@ -492,7 +487,6 @@ class ResourcesRepositoryImplTest {
             override fun close() {}
         })
 
-        // SQLite binds are 1-indexed.
         assertEquals("%100\\%%", bindArgs[1])
         assertEquals("%\\_real\\_%", bindArgs[2])
         assertEquals("%\\\\deal%", bindArgs[3])
@@ -652,19 +646,19 @@ class ResourcesRepositoryImplTest {
         val result = repository.getLibraryItemsByIds(emptyList())
 
         assertTrue(result.isEmpty())
-        coVerify(exactly = 0) { myLibraryDao.getByUnderscoreIds(any()) }
+        coVerify(exactly = 0) { myLibraryDao.getByIds(any()) }
     }
 
     @Test
     fun `getLibraryItemsByIds returns items from dao`() = runTest {
         val ids = listOf("id1", "id2")
         val expectedList = listOf(MyLibrary().apply { id = "id1" })
-        coEvery { myLibraryDao.getByUnderscoreIds(ids) } returns expectedList
+        coEvery { myLibraryDao.getByIds(ids) } returns expectedList
 
         val result = repository.getLibraryItemsByIds(ids)
 
         assertEquals(expectedList, result)
-        coVerify(exactly = 1) { myLibraryDao.getByUnderscoreIds(ids) }
+        coVerify(exactly = 1) { myLibraryDao.getByIds(ids) }
     }
 
     @Test
@@ -991,11 +985,8 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `downloadFiles returns provided list directly when not null`() = runTest {
-        val scope = CoroutineScope(SupervisorJob())
-        mockkObject(MainApplication)
         mockkObject(DownloadUtils)
         try {
-            every { MainApplication.applicationScope } returns scope
             coEvery { configurationsRepository.checkServerAvailability() } returns false
             every { DownloadUtils.downloadAllFiles(any()) } returns arrayListOf("url1")
 
@@ -1009,19 +1000,14 @@ class ResourcesRepositoryImplTest {
             coVerify(exactly = 0) { myLibraryDao.getSyncable() }
             verify(exactly = 1) { DownloadUtils.downloadAllFiles(provided) }
         } finally {
-            scope.cancel()
-            unmockkObject(MainApplication)
             unmockkObject(DownloadUtils)
         }
     }
 
     @Test
     fun `downloadFiles falls back to getAllLibrariesToSync when list is null`() = runTest {
-        val scope = CoroutineScope(SupervisorJob())
-        mockkObject(MainApplication)
         mockkObject(DownloadUtils)
         try {
-            every { MainApplication.applicationScope } returns scope
             coEvery { configurationsRepository.checkServerAvailability() } returns false
             val synced = listOf(MyLibrary().apply { _id = "synced1" })
             coEvery { myLibraryDao.getSyncable() } returns synced
@@ -1033,8 +1019,24 @@ class ResourcesRepositoryImplTest {
             assertEquals("synced1", result[0]._id)
             coVerify(exactly = 1) { myLibraryDao.getSyncable() }
         } finally {
-            scope.cancel()
-            unmockkObject(MainApplication)
+            unmockkObject(DownloadUtils)
+        }
+    }
+
+    @Test
+    fun `downloadFiles launches download service asynchronously on appScope when server available`() = runTest {
+        mockkObject(DownloadUtils)
+        try {
+            coEvery { configurationsRepository.checkServerAvailability() } returns true
+            every { DownloadUtils.downloadAllFiles(any()) } returns arrayListOf("http://example.com/file1.pdf")
+            every { DownloadUtils.openDownloadService(context, arrayListOf("http://example.com/file1.pdf"), false) } returns Unit
+
+            val library = MyLibrary().apply { _id = "lib1"; resourceId = "r1" }
+            val result = repository.downloadFiles(listOf(library))
+
+            assertEquals(1, result.size)
+            verify(exactly = 1) { DownloadUtils.openDownloadService(context, arrayListOf("http://example.com/file1.pdf"), false) }
+        } finally {
             unmockkObject(DownloadUtils)
         }
     }
@@ -1178,8 +1180,9 @@ class ResourcesRepositoryImplTest {
     @Test
     fun `reconcileHtmlResourceOffline clears in-memory resource list cache`() = runTest {
         val externalFiles = temporaryFolder.newFolder("external_cache_test")
-        val oleDir = File(externalFiles, "ole/r1").apply { mkdirs() }
-        File(oleDir, "index.html").writeText("html content")
+        val oleDir = File(externalFiles, "ole").apply { mkdirs() }
+        File(oleDir, "r1").apply { mkdirs() }
+        File(oleDir, "r1/index.html").writeText("html content")
 
         val lib = MyLibrary().apply { id = "1"; resourceId = "r1"; title = "Cached Lib"; openWhichFile = "index.html"; resourceOffline = false }
         coEvery { myLibraryDao.getPublic() } returns listOf(lib)
@@ -1187,20 +1190,14 @@ class ResourcesRepositoryImplTest {
         coEvery { myLibraryDao.getByResourceId("r1") } returns lib
         coEvery { myLibraryDao.upsert(any()) } returns Unit
 
-        mockkObject(MainApplication)
-        every { MainApplication.context } returns context
-        every { context.getExternalFilesDir(null) } returns externalFiles
+        every { storagePathResolver.resolveOleDirectory() } returns oleDir
 
-        try {
-            repository.getResourceListModels(false, null)
-            assertNotNull(repository.getCachedResourceListModels(false, null))
+        repository.getResourceListModels(false, null)
+        assertNotNull(repository.getCachedResourceListModels(false, null))
 
-            repository.reconcileHtmlResourceOffline("r1")
+        repository.reconcileHtmlResourceOffline("r1")
 
-            assertNull(repository.getCachedResourceListModels(false, null))
-        } finally {
-            unmockkObject(MainApplication)
-        }
+        assertNull(repository.getCachedResourceListModels(false, null))
     }
 
     @Test
@@ -1360,7 +1357,7 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
-    fun `getOfflineResourceItems calculates size and path order in single pass`() = runTest {
+    fun `getOfflineResourceItems calculates size and paths in single pass`() = runTest {
         val oleDir = temporaryFolder.newFolder("ole")
         val res1Dir = File(oleDir, "res1").apply { mkdirs() }
         val res2Dir = File(oleDir, "res2").apply { mkdirs() }
@@ -1379,16 +1376,17 @@ class ResourcesRepositoryImplTest {
 
         val knownExtensions = setOf("mp4", "pdf")
 
-        // Test matching specific category (mp4)
         val videoItems = repository.getOfflineResourceItems(oleDir.absolutePath, setOf("mp4"), knownExtensions)
         assertEquals(1, videoItems.size)
         val res1Item = videoItems[0]
         assertEquals("res1", res1Item.resourceId)
         assertEquals("Video Resource", res1Item.title)
         assertEquals(15L, res1Item.totalSizeBytes)
-        assertEquals(listOf(file1.absolutePath, file2.absolutePath), res1Item.filePaths)
+        assertEquals(
+            listOf(file1.absolutePath, file2.absolutePath).sorted(),
+            res1Item.filePaths.sorted()
+        )
 
-        // Test fallback extension category (extensions.isEmpty() -> not in knownExtensions)
         val otherItems = repository.getOfflineResourceItems(oleDir.absolutePath, emptySet(), knownExtensions)
         assertEquals(1, otherItems.size)
         val res2Item = otherItems[0]

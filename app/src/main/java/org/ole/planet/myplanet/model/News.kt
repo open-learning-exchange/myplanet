@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model
 
+import android.util.Log
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
@@ -146,7 +147,7 @@ open class News {
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "community section check failed", e)
             }
             return false
         }
@@ -163,12 +164,14 @@ open class News {
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "calculateSortDate failed", e)
         }
         return time
     }
 
     companion object {
+        private const val TAG = "News"
+
         /**
          * Builds an unmanaged [News] from a form map. The caller persists it via the DAO.
          */
@@ -200,7 +203,7 @@ open class News {
             try {
                 news.updatedDate = map["updatedDate"]?.toLong() ?: 0
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "updatedDate parse failed", e)
             }
 
             news.userId = user?.id
@@ -235,14 +238,14 @@ open class News {
                                     news.conversations = JsonUtils.gson.toJson(conversationsList)
                                 }
                             } catch (e: JsonSyntaxException) {
-                                e.printStackTrace()
+                                Log.w(TAG, "conversation parse failed", e)
                             }
                         }
                     }
                     news.newsCreatedDate = JsonUtils.getLong("createdDate", newsJson)
                     news.newsUpdatedDate = JsonUtils.getLong("updatedDate", newsJson)
                 } catch (e: JsonSyntaxException) {
-                    e.printStackTrace()
+                    Log.w(TAG, "news json parse failed", e)
                 }
             }
 

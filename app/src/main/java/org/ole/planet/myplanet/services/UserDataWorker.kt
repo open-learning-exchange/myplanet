@@ -49,65 +49,45 @@ class UserDataWorker @AssistedInject constructor(
                 runCatching { uploadManager.uploadCrashLog() }
 
                 runCatching {
-                    val d = CompletableDeferred<Unit>()
-                    uploadToShelfService.uploadUserData {
-                        uploadToShelfService.uploadHealth()
-                        d.complete(Unit)
+                    awaitUploadCompletion { onComplete ->
+                        uploadToShelfService.uploadUserData {
+                            uploadToShelfService.uploadHealth()
+                            onComplete()
+                        }
                     }
-                    withTimeoutOrNull(30000L) { d.await() }
                 }
 
                 runCatching {
-                    val d = CompletableDeferred<Unit>()
-                    uploadManager.uploadUserActivities(object : OnSuccessListener {
-                        override fun onSuccess(success: String?) {
-                            d.complete(Unit)
-                        }
-                    })
-                    withTimeoutOrNull(30000L) { d.await() }
+                    awaitUploadCompletion { onComplete ->
+                        uploadManager.uploadUserActivities { onComplete() }
+                    }
                 }
 
                 runCatching {
-                    val d = CompletableDeferred<Unit>()
-                    uploadManager.uploadExamResult(object : OnSuccessListener {
-                        override fun onSuccess(success: String?) {
-                            d.complete(Unit)
-                        }
-                    })
-                    withTimeoutOrNull(30000L) { d.await() }
+                    awaitUploadCompletion { onComplete ->
+                        uploadManager.uploadExamResult { onComplete() }
+                    }
                 }
 
                 runCatching { uploadManager.uploadFeedback() }
 
                 runCatching {
-                    val d = CompletableDeferred<Unit>()
-                    uploadManager.uploadResource(object : OnSuccessListener {
-                        override fun onSuccess(success: String?) {
-                            d.complete(Unit)
-                        }
-                    })
-                    withTimeoutOrNull(30000L) { d.await() }
+                    awaitUploadCompletion { onComplete ->
+                        uploadManager.uploadResource { onComplete() }
+                    }
                     uploadManager.uploadTeams()
                 }
 
                 runCatching {
-                    val d = CompletableDeferred<Unit>()
-                    uploadManager.uploadSubmitPhotos(object : OnSuccessListener {
-                        override fun onSuccess(success: String?) {
-                            d.complete(Unit)
-                        }
-                    })
-                    withTimeoutOrNull(30000L) { d.await() }
+                    awaitUploadCompletion { onComplete ->
+                        uploadManager.uploadSubmitPhotos { onComplete() }
+                    }
                 }
 
                 runCatching {
-                    val d = CompletableDeferred<Unit>()
-                    uploadManager.uploadActivities(object : OnSuccessListener {
-                        override fun onSuccess(success: String?) {
-                            d.complete(Unit)
-                        }
-                    })
-                    withTimeoutOrNull(30000L) { d.await() }
+                    awaitUploadCompletion { onComplete ->
+                        uploadManager.uploadActivities { onComplete() }
+                    }
                 }
 
                 return@coroutineScope Result.success()
@@ -117,6 +97,15 @@ class UserDataWorker @AssistedInject constructor(
             Log.e("UserDataWorker", "Error uploading user data", e)
             Result.failure()
         }
+    }
+
+    private suspend fun awaitUploadCompletion(
+        timeoutMs: Long = 30000L,
+        start: suspend (onComplete: () -> Unit) -> Unit
+    ) {
+        val d = CompletableDeferred<Unit>()
+        start { d.complete(Unit) }
+        withTimeoutOrNull(timeoutMs) { d.await() }
     }
 
     companion object {
