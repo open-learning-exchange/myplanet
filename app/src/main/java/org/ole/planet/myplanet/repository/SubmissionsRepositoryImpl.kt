@@ -1,11 +1,9 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.util.Date
 import java.util.UUID
@@ -38,6 +36,7 @@ import org.ole.planet.myplanet.model.SubmitPhotos
 import org.ole.planet.myplanet.model.TeamReference
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.ExamAnswerUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -47,7 +46,6 @@ import org.ole.planet.myplanet.utils.toSyncDocuments
 class SubmissionsRepositoryImpl @Inject internal constructor(
     private val teamsRepositoryProvider: Provider<TeamsRepository>,
     private val userRepository: UserRepository,
-    @ApplicationContext private val context: Context,
     private val sharedPrefManager: SharedPrefManager,
     private val exporter: SubmissionsRepositoryExporter,
     private val submitPhotosDao: SubmitPhotosDao,
@@ -55,15 +53,16 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     private val answerDao: AnswerDao,
     private val examDao: ExamDao,
     private val questionDao: QuestionDao,
-    @PlainGson private val gson: Gson
+    @PlainGson private val gson: Gson,
+    private val deviceNameProvider: DeviceNameProvider
 ) : SubmissionsRepository {
 
     override suspend fun generateSubmissionPdf(submissionId: String): File? {
-        return exporter.generateSubmissionPdf(context, submissionId)
+        return exporter.generateSubmissionPdf(submissionId)
     }
 
     override suspend fun generateMultipleSubmissionsPdf(submissionIds: List<String>, examTitle: String): File? {
-        return exporter.generateMultipleSubmissionsPdf(context, submissionIds, examTitle)
+        return exporter.generateMultipleSubmissionsPdf(submissionIds, examTitle)
     }
 
     private fun Submission.examIdFromParentId(): String? {
@@ -451,9 +450,12 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         )
     }
 
+    private suspend fun fetchPendingByUserAndParent(parentId: String?, userId: String?): Submission? =
+        submissionDao.getPendingByUserAndParent(parentId, userId)
+
     override suspend fun startExamSession(examId: String, parentId: String?, userId: String?, request: CreateExamSubmissionRequest, recreate: Boolean, deleteStale: Boolean): Submission {
         if (!recreate) {
-            val submission = getSubmissionsByParentId(parentId, userId, "pending").firstOrNull()
+            val submission = hydrateSubmission(fetchPendingByUserAndParent(parentId, userId))
             if (submission != null) {
                 return submission
             }
@@ -538,7 +540,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                     if (!exam?.courseId.isNullOrEmpty()) "$eId@${exam?.courseId}" else eId
                 }
                 if (parentId != null) {
-                    getSubmissionsByParentId(parentId, userId ?: submission?.userId, "pending").firstOrNull()
+                    hydrateSubmission(fetchPendingByUserAndParent(parentId, userId ?: submission?.userId))
                 } else null
             }
             ?: submissionDao.getLatestPendingByUser(userId ?: submission?.userId)
@@ -811,7 +813,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         `object`.addProperty("status", submission.status)
         `object`.addDocumentOrigin()
         `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
-        `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
+        `object`.addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())
         `object`.addProperty("sender", submission.sender)
         `object`.addProperty("source", sharedPrefManager.getPlanetCode())
         `object`.addProperty("parentCode", sharedPrefManager.getParentCode())
@@ -882,7 +884,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             jsonObject.addProperty("status", submission.status ?: "pending")
             jsonObject.addDocumentOrigin()
             jsonObject.addProperty("deviceName", NetworkUtils.getDeviceName())
-            jsonObject.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
+            jsonObject.addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())
             jsonObject.addProperty("sender", submission.sender)
             jsonObject.addProperty("source", source)
             jsonObject.addProperty("parentCode", parentCode)
