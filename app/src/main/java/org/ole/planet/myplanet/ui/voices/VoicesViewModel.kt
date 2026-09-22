@@ -232,7 +232,7 @@ class VoicesViewModel @Inject constructor(
         }
         viewModelScope.launch {
             if (resourceIds.isNotEmpty()) {
-                val libraries = resourcesRepository.getLibraryItemsByIds(resourceIds)
+                val libraries = resourcesRepository.getLibraryItemsByResourceIds(resourceIds)
                 resourcesRepository.downloadResources(libraries)
             }
         }

@@ -35,6 +35,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
@@ -324,13 +325,14 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
-    fun `getAllLibraries returns list of MyLibrary`() = runTest {
-        val mockLibrary = MyLibrary().apply { title = "Test Library" }
-        coEvery { myLibraryDao.getAll() } returns listOf(mockLibrary)
+    fun `getLibraryTitles returns list of LibraryTitleProjection`() = runTest {
+        val mockProjection = LibraryTitleProjection("lib1", "Test Library")
+        coEvery { myLibraryDao.getLibraryTitles() } returns listOf(mockProjection)
 
-        val result = repository.getAllLibraries()
+        val result = repository.getLibraryTitles()
 
         assertEquals(1, result.size)
+        assertEquals("lib1", result[0].id)
         assertEquals("Test Library", result[0].title)
     }
 
@@ -652,19 +654,19 @@ class ResourcesRepositoryImplTest {
         val result = repository.getLibraryItemsByIds(emptyList())
 
         assertTrue(result.isEmpty())
-        coVerify(exactly = 0) { myLibraryDao.getByUnderscoreIds(any()) }
+        coVerify(exactly = 0) { myLibraryDao.getByIds(any()) }
     }
 
     @Test
     fun `getLibraryItemsByIds returns items from dao`() = runTest {
         val ids = listOf("id1", "id2")
         val expectedList = listOf(MyLibrary().apply { id = "id1" })
-        coEvery { myLibraryDao.getByUnderscoreIds(ids) } returns expectedList
+        coEvery { myLibraryDao.getByIds(ids) } returns expectedList
 
         val result = repository.getLibraryItemsByIds(ids)
 
         assertEquals(expectedList, result)
-        coVerify(exactly = 1) { myLibraryDao.getByUnderscoreIds(ids) }
+        coVerify(exactly = 1) { myLibraryDao.getByIds(ids) }
     }
 
     @Test
