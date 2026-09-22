@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model
 
+import android.util.Log
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
@@ -8,7 +9,12 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonSyntaxException
 import java.util.UUID
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.toGson
 
 /**
  * Room replacement for the former `News` model (voices/discussion posts).
@@ -105,13 +111,11 @@ open class News {
 
     @get:Ignore
     val labelsArray: JsonArray
-        get() {
-            val array = JsonArray()
+        get() = buildJsonArray {
             labels?.forEach { s ->
-                array.add(s)
+                add(s)
             }
-            return array
-        }
+        }.toGson()
 
     fun updateMessage(newMessage: String) {
         this.message = newMessage
@@ -143,7 +147,7 @@ open class News {
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "community section check failed", e)
             }
             return false
         }
@@ -160,12 +164,14 @@ open class News {
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "calculateSortDate failed", e)
         }
         return time
     }
 
     companion object {
+        private const val TAG = "News"
+
         /**
          * Builds an unmanaged [News] from a form map. The caller persists it via the DAO.
          */
@@ -197,7 +203,7 @@ open class News {
             try {
                 news.updatedDate = map["updatedDate"]?.toLong() ?: 0
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "updatedDate parse failed", e)
             }
 
             news.userId = user?.id
@@ -232,14 +238,14 @@ open class News {
                                     news.conversations = JsonUtils.gson.toJson(conversationsList)
                                 }
                             } catch (e: JsonSyntaxException) {
-                                e.printStackTrace()
+                                Log.w(TAG, "conversation parse failed", e)
                             }
                         }
                     }
                     news.newsCreatedDate = JsonUtils.getLong("createdDate", newsJson)
                     news.newsUpdatedDate = JsonUtils.getLong("updatedDate", newsJson)
                 } catch (e: JsonSyntaxException) {
-                    e.printStackTrace()
+                    Log.w(TAG, "news json parse failed", e)
                 }
             }
 
@@ -247,15 +253,16 @@ open class News {
         }
 
         fun getViewInJson(map: HashMap<String?, String>): String {
-            val viewInArray = JsonArray()
-            if (!map["viewInId"].isNullOrEmpty()) {
-                val `object` = JsonObject()
-                `object`.addProperty("_id", map["viewInId"])
-                `object`.addProperty("section", map["viewInSection"])
-                `object`.addProperty("name", map["name"])
-                viewInArray.add(`object`)
+            val viewInArray = buildJsonArray {
+                if (!map["viewInId"].isNullOrEmpty()) {
+                    add(buildJsonObject {
+                        put("_id", map["viewInId"])
+                        put("section", map["viewInSection"])
+                        put("name", map["name"])
+                    })
+                }
             }
-            return JsonUtils.gson.toJson(viewInArray)
+            return viewInArray.toString()
         }
     }
 }

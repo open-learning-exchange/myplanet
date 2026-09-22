@@ -14,6 +14,8 @@ import org.ole.planet.myplanet.utils.TimeUtils
 class HealthUsersAdapter(private val clickListener: ((UserEntity) -> Unit)? = null) :
     ListAdapter<UserEntity, HealthUsersAdapter.ViewHolder>(DIFF_CALLBACK) {
 
+    private val dateCache = HashMap<Long, String>()
+
     companion object {
         private val DIFF_CALLBACK = DiffUtils.itemCallback<UserEntity>(
             areItemsTheSame = { old, new -> old.id == new.id },
@@ -32,7 +34,7 @@ class HealthUsersAdapter(private val clickListener: ((UserEntity) -> Unit)? = nu
         )
     }
 
-    class ViewHolder(private val binding: ItemUserBinding, private val avatarSize: Int) : RecyclerView.ViewHolder(binding.root) {
+    inner class ViewHolder(private val binding: ItemUserBinding, private val avatarSize: Int) : RecyclerView.ViewHolder(binding.root) {
         fun bind(user: UserEntity, clickListener: ((UserEntity) -> Unit)?) {
             bindName(user)
             bindDate(user)
@@ -47,7 +49,8 @@ class HealthUsersAdapter(private val clickListener: ((UserEntity) -> Unit)? = nu
         }
 
         fun bindDate(user: UserEntity) {
-            binding.txtJoined.text = binding.root.context.getString(R.string.joined_colon, TimeUtils.formatDate(user.joinDate))
+            val formattedDate = dateCache.getOrPut(user.joinDate) { TimeUtils.formatDate(user.joinDate) }
+            binding.txtJoined.text = binding.root.context.getString(R.string.joined_colon, formattedDate)
         }
 
         fun bindImage(user: UserEntity) {
