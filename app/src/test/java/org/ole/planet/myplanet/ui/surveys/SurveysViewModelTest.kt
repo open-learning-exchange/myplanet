@@ -1,12 +1,16 @@
 package org.ole.planet.myplanet.ui.surveys
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -14,9 +18,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -25,6 +31,8 @@ class SurveysViewModelTest {
     private lateinit var surveysRepository: SurveysRepository
     private lateinit var submissionsRepository: SubmissionsRepository
     private lateinit var userRepository: UserRepository
+    private lateinit var realtimeSyncManager: RealtimeSyncManager
+    private lateinit var syncFlow: MutableSharedFlow<TableDataUpdate>
     private lateinit var viewModel: SurveysViewModel
     private val testDispatcher = StandardTestDispatcher()
     private val testDispatcherProvider = TestDispatcherProvider(testDispatcher)
@@ -35,12 +43,17 @@ class SurveysViewModelTest {
         surveysRepository = mockk()
         submissionsRepository = mockk()
         userRepository = mockk()
+        realtimeSyncManager = mockk()
+        syncFlow = MutableSharedFlow()
+
+        coEvery { realtimeSyncManager.updatesFor("exams") } returns syncFlow
 
         viewModel = SurveysViewModel(
             surveysRepository,
             submissionsRepository,
             userRepository,
-            testDispatcherProvider
+            testDispatcherProvider,
+            realtimeSyncManager
         )
     }
 
@@ -280,5 +293,92 @@ class SurveysViewModelTest {
         org.junit.Assert.assertTrue(ids.contains("1"))
         org.junit.Assert.assertTrue(ids.contains("3"))
         org.junit.Assert.assertFalse(ids.contains("2"))
+    }
+
+    @Test
+    fun `test overlapping loadSurveys calls publish the latest selection when first call completes last`() = runTest {
+        backgroundScope.launch(testDispatcher) { viewModel.surveys.collect {} }
+        val team1Survey = createSurvey("t1", "Team 1 Survey", 1000L, 0L)
+        val team2Survey = createSurvey("t2", "Team 2 Survey", 2000L, 0L)
+
+        val deferredTeam1 = CompletableDeferred<List<StepExam>>()
+        val deferredTeam2 = CompletableDeferred<List<StepExam>>()
+
+        coEvery { surveysRepository.getTeamOwnedSurveys("team1") } coAnswers { deferredTeam1.await() }
+        coEvery { surveysRepository.getTeamOwnedSurveys("team2") } coAnswers { deferredTeam2.await() }
+        coEvery { userRepository.getUserModel() } returns mockk(relaxed = true)
+        coEvery { surveysRepository.getSurveyInfos(any(), any(), any(), any()) } returns emptyMap()
+        coEvery { surveysRepository.getSurveyFormState(any(), any()) } returns emptyMap()
+
+        // Start first load for team1
+        viewModel.loadSurveys(true, "team1", false)
+        runCurrent()
+
+        // Start second load for team2 before team1 completes
+        viewModel.loadSurveys(true, "team2", false)
+        runCurrent()
+
+        // Second load completes first
+        deferredTeam2.complete(listOf(team2Survey))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Assert team2 surveys are published
+        assertEquals(1, viewModel.surveys.value.size)
+        assertEquals("t2", viewModel.surveys.value[0].exam.id)
+
+        // Now first load completes last
+        deferredTeam1.complete(listOf(team1Survey))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Assert stale team1 survey result is discarded and team2 remains published
+        assertEquals(1, viewModel.surveys.value.size)
+        assertEquals("t2", viewModel.surveys.value[0].exam.id)
+    }
+
+    @Test
+    fun `test adoptSurvey triggers exactly one reload`() = runTest {
+        backgroundScope.launch(testDispatcher) { viewModel.surveys.collect {} }
+        val survey = createSurvey("1", "Survey 1", 1000L, 0L)
+
+        coEvery { userRepository.getUserModel() } returns mockk(relaxed = true)
+        coEvery { surveysRepository.adoptSurvey(any(), any(), any(), any()) } returns Unit
+        coEvery { surveysRepository.getIndividualSurveys() } returns listOf(survey)
+        coEvery { surveysRepository.getSurveyInfos(any(), any(), any(), any()) } returns emptyMap()
+        coEvery { surveysRepository.getSurveyFormState(any(), any()) } returns emptyMap()
+
+        viewModel.adoptSurvey("1")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { surveysRepository.adoptSurvey("1", any(), any(), any()) }
+        coVerify(exactly = 1) { surveysRepository.getIndividualSurveys() }
+        assertEquals("Survey adopted successfully", viewModel.userMessage.value)
+    }
+
+    @Test
+    fun `test realtimeSyncManager update for exams table triggers survey reload`() = runTest {
+        backgroundScope.launch(testDispatcher) { viewModel.surveys.collect {} }
+        val survey1 = createSurvey("1", "Survey 1", 1000L, 0L)
+        val survey2 = createSurvey("2", "Survey 2", 2000L, 0L)
+
+        coEvery { userRepository.getUserModel() } returns mockk(relaxed = true)
+        coEvery { surveysRepository.getIndividualSurveys() } returnsMany listOf(
+            listOf(survey1),
+            listOf(survey1, survey2)
+        )
+        coEvery { surveysRepository.getSurveyInfos(any(), any(), any(), any()) } returns emptyMap()
+        coEvery { surveysRepository.getSurveyFormState(any(), any()) } returns emptyMap()
+
+        // Initial load
+        viewModel.loadSurveys(false, null, false)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(1, viewModel.surveys.value.size)
+
+        // Emit table update for "exams" with shouldRefreshUI = true
+        syncFlow.emit(TableDataUpdate("exams", 0, 1, shouldRefreshUI = true))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Verify reload occurred and updated list is published
+        coVerify(exactly = 2) { surveysRepository.getIndividualSurveys() }
+        assertEquals(2, viewModel.surveys.value.size)
     }
 }

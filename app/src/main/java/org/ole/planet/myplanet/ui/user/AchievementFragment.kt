@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.user
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,6 +16,7 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.time.Instant
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -74,8 +76,10 @@ class AchievementFragment : BaseContainerFragment() {
             try {
                 achievementData = loadAchievementDataAsync()
                 updateAchievementUI()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "refreshAchievementData failed", e)
             }
         }
     }
@@ -238,5 +242,7 @@ class AchievementFragment : BaseContainerFragment() {
         }
     }
 
-
+    companion object {
+        private const val TAG = "AchievementFragment"
+    }
 }

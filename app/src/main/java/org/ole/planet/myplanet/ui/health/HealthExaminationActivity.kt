@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.health
 
 import android.os.Bundle
+import android.util.Log
 import android.view.ContextThemeWrapper
 import android.view.MenuItem
 import android.view.View
@@ -15,7 +16,6 @@ import com.google.android.material.chip.Chip
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Date
 import java.util.Locale
-import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -24,7 +24,6 @@ import org.ole.planet.myplanet.model.Examination
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.encrypt
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateKey
@@ -39,9 +38,6 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
-    @Inject
-    lateinit var userSessionManager: UserSessionManager
-
     private val viewModel: HealthExaminationViewModel by viewModels()
     private lateinit var binding: ActivityHealthExaminationBinding
     var userId: String? = null
@@ -74,9 +70,6 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         customDiag = HashSet()
         initViews()
-        lifecycleScope.launch {
-            currentUser = userSessionManager.getUserModel()
-        }
         mapConditions = HashMap()
         userId = intent.getStringExtra("userId")
         val btnSave = findViewById<View>(R.id.btn_save)
@@ -96,6 +89,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
         lifecycleScope.launch {
             val state = viewModel.state.first { !it.isLoading }
             user = state.user
+            currentUser = state.currentUser
             pojo = state.pojo
             health = state.health
             examination = state.examination
@@ -198,7 +192,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
 
     private fun preloadCustomDiagnosis() {
         val arr = resources.getStringArray(R.array.diagnosis_list)
-        val mainList = listOf(*arr)
+        val mainList = arr.toHashSet()
         if (customDiag?.isEmpty() == true && examination != null) {
             for ((s, value) in conditionsMap) {
                 if (!mainList.contains(s) && value) {
@@ -211,15 +205,18 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
     private fun showCheckbox(examination: HealthExamination?) {
         val arr = resources.getStringArray(R.array.diagnosis_list)
         binding.containerCheckbox.removeAllViews()
+        val textColorStateList = ContextCompat.getColorStateList(this, R.color.daynight_textColor)
+        val textColor = ContextCompat.getColor(this, R.color.daynight_textColor)
+        val padding = dpToPx(8)
         for (s in arr) {
             val c = CheckBox(this)
-            c.buttonTintList = ContextCompat.getColorStateList(this, R.color.daynight_textColor)
-            c.setTextColor(ContextCompat.getColor(this, R.color.daynight_textColor))
+            c.buttonTintList = textColorStateList
+            c.setTextColor(textColor)
 
             if (examination != null) {
                 c.isChecked = conditionsMap[s] ?: false
             }
-            c.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8))
+            c.setPadding(padding, padding, padding, padding)
             c.text = s
             c.tag = s
             c.setOnCheckedChangeListener(this)
@@ -280,14 +277,14 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
                 val iv = user?.iv ?: generateIv().also { user?.iv = it }
                 examination?.data = encrypt(JsonUtils.gson.toJson(sign), key, iv)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "Encrypting examination data failed", e)
             }
 
             // Delegate save to ViewModel
             viewModel.saveExamination(examination, pojo, user)
 
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "Saving examination data failed", e)
             Utilities.toast(this@HealthExaminationActivity, getString(R.string.unable_to_add_health_record))
         }
     }
@@ -382,7 +379,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
                 pojo?.data = encrypt(JsonUtils.gson.toJson(health), userKey, userIv)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "Creating health examination pojo failed", e)
             Utilities.toast(this, getString(R.string.unable_to_add_health_record))
         }
     }
@@ -417,5 +414,9 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
         customDiag = null
         mapConditions = null
         super.onDestroy()
+    }
+
+    companion object {
+        private const val TAG = "HealthExaminationActivity"
     }
 }

@@ -7,6 +7,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.repository.EventsRepository
@@ -33,10 +34,13 @@ class CalendarViewModel @Inject constructor(
     private fun loadMeetups() {
         viewModelScope.launch {
             val userId = userRepository.getUserModel()?.id ?: return@launch
-            teamsRepository.getMyTeamsFlow(userId).collect { teams ->
-                _teamNames.value = teams.associate { it._id to it.name.orEmpty() }
-                _meetups.value = eventsRepository.getMeetupsForTeams(teams.map { it._id })
-            }
+            teamsRepository.getMyTeamsFlow(userId)
+                .distinctUntilChangedBy { teams -> teams.map { t -> t._id to t.name } }
+                .collect { teams ->
+                    val teamIds = teams.map { it._id }
+                    _teamNames.value = teams.associate { it._id to it.name.orEmpty() }
+                    _meetups.value = eventsRepository.getMeetupsForTeams(teamIds)
+                }
         }
     }
 }
