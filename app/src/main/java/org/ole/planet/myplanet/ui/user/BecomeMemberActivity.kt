@@ -130,6 +130,7 @@ class BecomeMemberActivity : BaseActivity() {
                 } else {
                     Utilities.toast(this@BecomeMemberActivity, result.second)
                     customProgressDialog.dismiss()
+                    activityBecomeMemberBinding.btnSubmit.isEnabled = true
                 }
             }
         }
@@ -170,14 +171,18 @@ class BecomeMemberActivity : BaseActivity() {
         }
 
         activityBecomeMemberBinding.btnSubmit.setOnClickListener {
+            activityBecomeMemberBinding.btnSubmit.isEnabled = false
             val info = collectMemberInfo()
             lifecycleScope.launch {
                 val error = userRepository.validateUsername(info.username)
                 withContext(dispatcherProvider.main) {
                     if (error != null) {
                         activityBecomeMemberBinding.etUsername.error = error
+                        activityBecomeMemberBinding.btnSubmit.isEnabled = true
                     } else if (validateMemberInfo(info)) {
                         addMember(info)
+                    } else {
+                        activityBecomeMemberBinding.btnSubmit.isEnabled = true
                     }
                 }
             }

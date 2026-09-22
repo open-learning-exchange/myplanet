@@ -57,6 +57,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private var addMeetupDialog: AlertDialog? = null
     private var meetupDialog: AlertDialog? = null
     private var meetupAdapter: EventsAdapter? = null
+    private var pendingSaveButton: Button? = null
     private val viewModel: TeamCalendarViewModel by viewModels()
     private var cachedCardHeight: Int? = null
     private var lastWidthPixels: Int? = null
@@ -174,6 +175,8 @@ class TeamCalendarFragment : BaseTeamFragment() {
             endMillis = endMillis,
             teamId = currentTeamId
         )
+        addMeetupBinding.btnSave.isEnabled = false
+        pendingSaveButton = addMeetupBinding.btnSave
         viewModel.createMeetup(params)
     }
 
@@ -245,6 +248,8 @@ class TeamCalendarFragment : BaseTeamFragment() {
             }
         }
         collectWhenStarted(viewModel.createMeetupResult) { success ->
+            pendingSaveButton?.isEnabled = true
+            pendingSaveButton = null
             if (success) {
                 Utilities.toast(activity, getString(R.string.meetup_added))
                 addMeetupDialog?.dismiss()
@@ -317,9 +322,15 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 else -> "none"
             }
 
+            val meetupId = meetup.id
+            if (meetupId == null) {
+                return@setOnClickListener
+            }
+
+            dialogBinding.btnSave.isEnabled = false
             viewLifecycleOwner.lifecycleScope.launch {
                 val success = viewModel.updateMeetup(
-                    meetupId = meetup.id ?: return@launch,
+                    meetupId = meetupId,
                     title = newTitle,
                     description = dialogBinding.etDescription.text.toString().trim(),
                     startDate = editStart.timeInMillis,
@@ -336,6 +347,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
                     meetupDialog?.dismiss()
                     viewModel.fetchMeetups(teamId)
                 } else {
+                    dialogBinding.btnSave.isEnabled = true
                     Utilities.toast(activity, getString(R.string.meetup_not_updated))
                 }
             }

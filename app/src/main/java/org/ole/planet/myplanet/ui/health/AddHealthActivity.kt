@@ -35,6 +35,7 @@ class AddHealthActivity : AppCompatActivity() {
         supportActionBar?.setHomeButtonEnabled(true)
         userId = intent.getStringExtra("userId")
         binding.btnSubmit.setOnClickListener {
+            it.isEnabled = false
             createMyHealth()
         }
 
