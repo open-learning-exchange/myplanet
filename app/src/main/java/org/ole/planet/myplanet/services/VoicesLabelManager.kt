@@ -1,12 +1,14 @@
 package org.ole.planet.myplanet.services
 
 import android.content.Context
+import android.util.Log
 import android.view.View
 import android.widget.PopupMenu
 import androidx.appcompat.view.ContextThemeWrapper
 import com.google.android.material.chip.Chip
 import java.util.Locale
 import java.util.WeakHashMap
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -46,14 +48,10 @@ class VoicesLabelManager(
                 val selectedLabel = Constants.LABELS[menuItem.title]
                 val voiceId = voice?.id
                 if (selectedLabel != null && voiceId != null && voice.labels?.contains(selectedLabel) != true) {
-                    scope.launch {
-                        try {
-                            addLabelFn(voiceId, selectedLabel)
-                            withContext(dispatcherProvider.main) {
-                                Utilities.toast(context, context.getString(R.string.label_added))
-                            }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
+                    launchLabelWrite("addLabel") {
+                        addLabelFn(voiceId, selectedLabel)
+                        withContext(dispatcherProvider.main) {
+                            Utilities.toast(context, context.getString(R.string.label_added))
                         }
                     }
                 }
@@ -84,13 +82,7 @@ class VoicesLabelManager(
                             val selectedLabel = Constants.LABELS[label] ?: labels.firstOrNull { getLabel(it) == text }
                             val voiceId = voice.id
                             if (selectedLabel != null && voiceId != null) {
-                                scope.launch {
-                                    try {
-                                        removeLabelFn(voiceId, selectedLabel)
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                    }
-                                }
+                                launchLabelWrite("removeLabel") { removeLabelFn(voiceId, selectedLabel) }
                             }
                         }
                     }
@@ -101,6 +93,18 @@ class VoicesLabelManager(
 
         renderedStateCache[binding] = renderedState
         updateAddLabelVisibility(binding, voice, canManageLabels)
+    }
+
+    private fun launchLabelWrite(operation: String, write: suspend () -> Unit) {
+        scope.launch {
+            try {
+                write()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "$operation failed", e)
+            }
+        }
     }
 
     private data class RenderedState(val voiceId: String?, val labels: List<String>, val canManageLabels: Boolean)
@@ -126,6 +130,7 @@ class VoicesLabelManager(
     }
 
     companion object {
+        private const val TAG = "VoicesLabelManager"
         private val reverseLabels by lazy { Constants.LABELS.entries.associate { it.value to it.key } }
         private val separatorRegex by lazy { Regex("[_-]") }
         private val whitespaceRegex by lazy { Regex("\\s+") }
