@@ -20,12 +20,10 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import io.mockk.coEvery
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -51,8 +49,6 @@ class NotificationActionReceiverTest {
     fun setUp() {
         testDispatcher = StandardTestDispatcher()
         testScope = TestScope(testDispatcher)
-
-        MainApplication.applicationScope = testScope
 
         mockContext = spyk(ApplicationProvider.getApplicationContext<Context>())
         every { mockContext.startActivity(any()) } returns Unit
