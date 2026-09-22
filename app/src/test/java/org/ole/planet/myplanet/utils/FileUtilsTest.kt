@@ -277,6 +277,13 @@ class FileUtilsTest {
         assertEquals("jpg", FileUtils.getFileExtension("image.jpg"))
         assertEquals("", FileUtils.getFileExtension("file_without_extension"))
         assertEquals("", FileUtils.getFileExtension(null))
+        assertEquals("", FileUtils.getFileExtension(""))
+        assertEquals("hidden", FileUtils.getFileExtension(".hidden"))
+        assertEquals("hidden", FileUtils.getFileExtension("/path/to/.hidden"))
+        assertEquals("", FileUtils.getFileExtension("/path.with.dot/file_without_extension"))
+        assertEquals("", FileUtils.getFileExtension("archive.zip/README"))
+        assertEquals("jpg", FileUtils.getFileExtension("IMAGE.JPG"))
+        assertEquals("txt", FileUtils.getFileExtension("/path/file.Txt"))
     }
 
     @Test
