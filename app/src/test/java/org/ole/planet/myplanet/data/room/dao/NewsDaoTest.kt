@@ -10,6 +10,7 @@ import java.util.UUID
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -268,5 +269,53 @@ class NewsDaoTest {
         // All-community count covers both users (two distinct days across the set).
         val allCount = newsDao.countDistinctCommunityVoiceDates(1735257600000L, 1735430400000L)
         assertEquals(2, allCount)
+    }
+
+    @Test
+    fun isSharedWith_matches_nonMatches_and_handles_escaped_metacharacters() = runBlocking {
+        val newsMatch = News().apply {
+            id = UUID.randomUUID().toString()
+            newsId = "chat_1"
+            viewIn = "[{\"_id\":\"view_1\"}]"
+        }
+
+        val newsSpecial = News().apply {
+            id = UUID.randomUUID().toString()
+            newsId = "chat_special"
+            viewIn = "[{\"_id\":\"team_100%\"}]"
+        }
+
+        val newsWildcardTarget = News().apply {
+            id = UUID.randomUUID().toString()
+            newsId = "chat_wildcard"
+            viewIn = "[{\"_id\":\"teamX100Y\"}]"
+        }
+
+        newsDao.upsertAll(listOf(newsMatch, newsSpecial, newsWildcardTarget))
+
+        // 1. Match
+        val patternMatch = "%\"_id\":\"view_1\"%"
+        assertTrue(newsDao.isSharedWith("chat_1", patternMatch))
+
+        // 2. Non-match (wrong viewInId)
+        val patternNonMatch = "%\"_id\":\"view_2\"%"
+        assertFalse(newsDao.isSharedWith("chat_1", patternNonMatch))
+
+        // Non-match (wrong chatId)
+        assertFalse(newsDao.isSharedWith("chat_other", patternMatch))
+
+        // 3. ID containing % and _ metacharacters must not match a row holding a different ID
+        val viewInIdWithMeta = "team_100%"
+        val escaped = viewInIdWithMeta
+            .replace("\\", "\\\\")
+            .replace("%", "\\%")
+            .replace("_", "\\_")
+        val patternSpecial = "%\"_id\":\"$escaped\"%"
+
+        // Must match exact literal "team_100%"
+        assertTrue(newsDao.isSharedWith("chat_special", patternSpecial))
+
+        // Must NOT match "teamX100Y" where _ and % would have acted as wildcards if unescaped
+        assertFalse(newsDao.isSharedWith("chat_wildcard", patternSpecial))
     }
 }
