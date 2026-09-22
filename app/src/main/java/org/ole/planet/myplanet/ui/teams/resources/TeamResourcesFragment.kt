@@ -86,6 +86,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
                 safeActivity,
                 state.canRemove,
                 this@TeamResourcesFragment,
+                dispatcherProvider,
             ) { resource, position ->
                 handleResourceRemoval(resource, position)
             }

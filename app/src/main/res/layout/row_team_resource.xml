@@ -42,11 +42,14 @@
 
             <FrameLayout
                 android:id="@+id/fl_remove_container"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
                 android:layout_gravity="top|end"
-                android:layout_margin="6dp"
-                android:background="@drawable/bg_badge_circle">
+                android:layout_margin="2dp"
+                android:background="@drawable/bg_badge_circle"
+                android:clickable="true"
+                android:focusable="true"
+                android:importantForAccessibility="yes">
 
                 <ImageView
                     android:id="@+id/iv_remove"
@@ -76,15 +79,15 @@
                 android:textSize="@dimen/text_size_mid"
                 android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/tv_meta"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="@color/hint_color"
-            android:textSize="11sp" />
+            <TextView
+                android:id="@+id/tv_meta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/hint_color"
+                android:textSize="11sp" />
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
