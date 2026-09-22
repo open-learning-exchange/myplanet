@@ -119,53 +119,33 @@ class ResourcesViewModel @Inject constructor(
         resourcesRepository.removeResourcesFromShelf(resourceIds, userId)
     }
 
-    suspend fun getFilterFacets(
-        libraries: List<MyLibrary>
-    ): Map<String, Set<String>> = withContext(dispatcherProvider.default) {
-        val languages = mutableSetOf<String>()
-        val subjects = mutableSetOf<String>()
-        val mediums = mutableSetOf<String>()
-        val levels = mutableSetOf<String>()
-
-        libraries.forEach { library ->
-            library.language
-                ?.trim()
-                ?.takeIf { it.isNotEmpty() }
-                ?.let(languages::add)
-
-            library.subject
-                .orEmpty()
-                .asSequence()
-                .map(String::trim)
-                .filter(String::isNotEmpty)
-                .forEach(subjects::add)
-
-            library.level
-                .orEmpty()
-                .asSequence()
-                .map(String::trim)
-                .filter(String::isNotEmpty)
-                .forEach(levels::add)
-
-            val medium = library.mediaType
-                ?.trim()
-                ?.takeIf { it.isNotEmpty() }
-                ?: LibraryTypeClassifier.classify(library)?.name
-
-            medium
-                ?.let(MediumUtils::getCanonicalMedium)
-                ?.trim()
-                ?.takeIf { it.isNotEmpty() }
-                ?.let(mediums::add)
-        }
-
-        mapOf(
-            "languages" to languages,
-            "subjects" to subjects,
-            "mediums" to mediums,
-            "levels" to levels
-        )
+    private fun addFacetValue(facets: MutableMap<String, String>, raw: String?) {
+        val value = raw?.trim() ?: return
+        if (value.isEmpty()) return
+        facets.putIfAbsent(value.lowercase(Locale.ROOT), value)
     }
+
+    suspend fun getFilterFacets(libraries: List<MyLibrary>): Map<String, Set<String>> =
+        withContext(dispatcherProvider.default) {
+            val languages = linkedMapOf<String, String>()
+            val subjects = linkedMapOf<String, String>()
+            val mediums = linkedMapOf<String, String>()
+            val levels = linkedMapOf<String, String>()
+
+            libraries.forEach { library ->
+                library.language?.let { addFacetValue(languages, it) }
+                library.subject?.forEach { addFacetValue(subjects, it) }
+                library.mediaType?.let { addFacetValue(mediums, it) }
+                library.level?.forEach { addFacetValue(levels, it) }
+            }
+
+            mapOf(
+                "languages" to languages.values.toSet(),
+                "subjects" to subjects.values.toSet(),
+                "mediums" to mediums.values.toSet(),
+                "levels" to levels.values.toSet()
+            )
+        }
 
     private val listFilter = ResourcesListFilter()
 
