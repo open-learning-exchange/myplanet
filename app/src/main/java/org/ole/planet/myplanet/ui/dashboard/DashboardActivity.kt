@@ -18,6 +18,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewTreeObserver
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
@@ -48,6 +49,7 @@ import com.mikepenz.materialdrawer.model.interfaces.Nameable
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.math.ceil
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -652,10 +654,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                                         refreshNotificationsWithRetry(userId)
                                     }
                                 } else {
-                                    Log.w("DashboardActivity", "SystemNotificationReceiver: User ID is null")
+                                    Log.w(TAG, "SystemNotificationReceiver: User ID is null")
                                 }
                             }
                         }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Log.w(TAG, "systemNotificationReceiver failed", e)
                     } finally {
                         pendingResult.finish()
                     }
@@ -673,7 +679,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
             systemNotificationReceiver = receiver
         } catch (e: IllegalArgumentException) {
-            e.printStackTrace()
+            Log.w(TAG, "registerSystemNotificationReceiver failed", e)
         }
     }
 
@@ -683,7 +689,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         try {
             unregisterReceiver(receiver)
         } catch (e: IllegalArgumentException) {
-            e.printStackTrace()
+            Log.w(TAG, "unregisterSystemNotificationReceiver failed", e)
         }
     }
 
@@ -834,40 +840,35 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private val accountHeader: AccountHeader
         get() {
             val displayMetrics = resources.displayMetrics
-            val screenWidth = displayMetrics.widthPixels
-            val screenHeight = displayMetrics.heightPixels
             val density = displayMetrics.density
-
-            var paddingVerticalPx = screenHeight * 0.15
-            var paddingHorizontalPx = screenWidth * 0.15
-            if(screenWidth > screenHeight){ //sizing for tablets
-                paddingVerticalPx = screenHeight * 0.05
-                paddingHorizontalPx = screenWidth * 0.05
-            }
-
-            val paddingVerticalDp = (paddingVerticalPx / density).toInt()
-            val paddingHorizontalDp = (paddingHorizontalPx / density).toInt()
+            val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
             val statusBarHeight = ViewCompat.getRootWindowInsets(binding.root)
                 ?.getInsets(WindowInsetsCompat.Type.systemBars())?.top
                 ?: ceil(25 * density).toInt()
-
+            val paddingHorizontalDp = 16
+            val paddingVerticalDp = if (isLandscape) 8 else 16
+            val headerHeightDp = if (isLandscape) 120 else 160
             val header = AccountHeaderBuilder()
                 .withActivity(this@DashboardActivity)
                 .withTextColor(ContextCompat.getColor(this, R.color.bg_white))
                 .withHeaderBackground(R.drawable.ole_logo)
+                .withHeaderBackgroundScaleType(ImageView.ScaleType.FIT_CENTER)
                 .withDividerBelowHeader(false)
                 .withTranslucentStatusBar(false)
-                .withHeightDp(paddingVerticalDp + 20 * 2 + (statusBarHeight / density).toInt())
+                .withHeightDp(headerHeightDp + (statusBarHeight / density).toInt())
                 .build()
             val headerBackground = header.headerBackgroundView
+            headerBackground.scaleType = ImageView.ScaleType.FIT_CENTER
             headerBackground.setPadding(
-                paddingHorizontalDp, paddingVerticalDp + statusBarHeight + 25,
-                paddingHorizontalDp, paddingVerticalDp + 50
+                (paddingHorizontalDp * density).toInt(),
+                statusBarHeight + (paddingVerticalDp * density).toInt(),
+                (paddingHorizontalDp * density).toInt(),
+                (paddingVerticalDp * density).toInt()
             )
-
-            val currentNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-            if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_NO ||
-                (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM && currentNightMode == Configuration.UI_MODE_NIGHT_NO)) {
+            val isDarkMode = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+            if (isDarkMode) {
+                headerBackground.clearColorFilter()
+            } else {
                 headerBackground.setColorFilter(
                     ContextCompat.getColor(this, R.color.md_white_1000),
                     PorterDuff.Mode.SRC_IN
@@ -1131,6 +1132,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     companion object {
+        private const val TAG = "DashboardActivity"
         const val MESSAGE_PROGRESS = "message_progress"
         var isFromNotificationAction = false
         private const val LAST_SYNC_STATUS_REFRESH_INTERVAL_MS = 60_000L
