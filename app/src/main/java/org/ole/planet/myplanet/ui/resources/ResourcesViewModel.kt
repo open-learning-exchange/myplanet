@@ -119,21 +119,44 @@ class ResourcesViewModel @Inject constructor(
         resourcesRepository.removeResourcesFromShelf(resourceIds, userId)
     }
 
-    suspend fun getFilterFacets(libraries: List<MyLibrary>): Map<String, Set<String>> = withContext(dispatcherProvider.default) {
+    suspend fun getFilterFacets(
+        libraries: List<MyLibrary>
+    ): Map<String, Set<String>> = withContext(dispatcherProvider.default) {
         val languages = mutableSetOf<String>()
         val subjects = mutableSetOf<String>()
         val mediums = mutableSetOf<String>()
         val levels = mutableSetOf<String>()
 
         libraries.forEach { library ->
-            library.language?.takeIf { it.isNotBlank() }?.let { languages.add(it) }
-            library.subject?.let { subjects.addAll(it) }
-            val mediaType = library.mediaType?.takeIf { it.isNotBlank() }
+            library.language
+                ?.trim()
+                ?.takeIf { it.isNotEmpty() }
+                ?.let(languages::add)
+
+            library.subject
+                .orEmpty()
+                .asSequence()
+                .map(String::trim)
+                .filter(String::isNotEmpty)
+                .forEach(subjects::add)
+
+            library.level
+                .orEmpty()
+                .asSequence()
+                .map(String::trim)
+                .filter(String::isNotEmpty)
+                .forEach(levels::add)
+
+            val medium = library.mediaType
+                ?.trim()
+                ?.takeIf { it.isNotEmpty() }
                 ?: LibraryTypeClassifier.classify(library)?.name
-            if (mediaType != null) {
-                mediums.add(MediumUtils.getCanonicalMedium(mediaType))
-            }
-            library.level?.let { levels.addAll(it) }
+
+            medium
+                ?.let(MediumUtils::getCanonicalMedium)
+                ?.trim()
+                ?.takeIf { it.isNotEmpty() }
+                ?.let(mediums::add)
         }
 
         mapOf(

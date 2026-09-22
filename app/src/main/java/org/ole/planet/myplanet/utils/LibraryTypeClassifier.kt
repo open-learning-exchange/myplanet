@@ -31,7 +31,7 @@ object LibraryTypeClassifier {
             extension in videoExtensions || mediaType.startsWith("video") -> LibraryType.VIDEO
             extension in audioExtensions || mediaType.startsWith("audio") -> LibraryType.AUDIO
             extension in bookExtensions || mediaType.contains("book") || mediaType.contains("epub") || mediaType.contains("textbook") -> LibraryType.BOOK
-            else -> null
+            else -> LibraryType.BOOK
         }
     }
 }
