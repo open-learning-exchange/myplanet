@@ -8,7 +8,13 @@ import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Locale
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @Entity(tableName = "exam_questions", indices = [Index("examId")])
 open class ExamQuestion(
@@ -46,13 +52,11 @@ open class ExamQuestion(
 
     @get:Ignore
     val correctChoiceArray: JsonArray
-        get() {
-            val array = JsonArray()
-            for (s in correctChoiceList ?: emptyList()){
-                array.add(s)
+        get() = buildJsonArray {
+            for (s in correctChoiceList ?: emptyList()) {
+                add(s)
             }
-            return array
-        }
+        }.toGson()
 
     companion object {
         fun insertExamQuestions(questions: JsonArray, examId: String?): List<ExamQuestion> {
@@ -109,20 +113,18 @@ open class ExamQuestion(
             }
         }
 
-        fun serializeQuestions(question: List<ExamQuestion>): JsonArray {
-            val array = JsonArray()
+        fun serializeQuestions(question: List<ExamQuestion>): JsonArray = buildJsonArray {
             for (que in question) {
-                val `object` = JsonObject()
-                `object`.addProperty("header", que.header)
-                `object`.addProperty("body", que.body)
-                `object`.addProperty("type", que.type)
-                `object`.addProperty("marks", que.marks)
-                `object`.add("choices", JsonUtils.getStringAsJsonArray(que.choices))
-                `object`.add("correctChoice", que.correctChoiceArray)
-                `object`.addProperty("hasOtherOption", que.hasOtherOption)
-                array.add(`object`)
+                add(buildJsonObject {
+                    put("header", que.header)
+                    put("body", que.body)
+                    put("type", que.type)
+                    put("marks", que.marks)
+                    put("choices", JsonUtils.getStringAsJsonArray(que.choices).toKotlinx())
+                    put("correctChoice", que.correctChoiceArray.toKotlinx())
+                    put("hasOtherOption", que.hasOtherOption)
+                })
             }
-            return array
-        }
+        }.toGson()
     }
 }
