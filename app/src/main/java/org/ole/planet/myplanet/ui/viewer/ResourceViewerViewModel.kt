@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
@@ -28,11 +29,14 @@ class ResourceViewerViewModel @Inject constructor(
     private val authSessionUpdaterFactory: AuthSessionUpdater.Factory,
     private val ratingsRepository: RatingsRepository,
     private val configurationsRepository: ConfigurationsRepository,
+    private val userRepository: UserRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
-    suspend fun shouldShowResourceRatingDialog(userId: String, resourceId: String): Boolean {
+    suspend fun shouldShowResourceRatingDialog(resourceId: String): Boolean {
+        val userId = userRepository.getUserModel()?.id?.takeIf { it.isNotBlank() } ?: return false
+
         if (isRatingPrompted(userId, resourceId)) {
             return false
         }
@@ -53,7 +57,8 @@ class ResourceViewerViewModel @Inject constructor(
         return ratingsRepository.isRatingPrompted(userId, resourceId)
     }
 
-    suspend fun setRatingPrompted(userId: String, resourceId: String) {
+    suspend fun setRatingPrompted(resourceId: String) {
+        val userId = userRepository.getUserModel()?.id?.takeIf { it.isNotBlank() } ?: return
         ratingsRepository.setRatingPrompted(userId, resourceId)
     }
 
