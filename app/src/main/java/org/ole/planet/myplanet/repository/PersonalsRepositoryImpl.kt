@@ -83,11 +83,7 @@ class PersonalsRepositoryImpl @Inject constructor(
         if (`object` != null) {
             val rev = getString("rev", `object`)
             val id = getString("id", `object`)
-
-            personal.id.let { personalId ->
-                updatePersonalAfterSync(personalId, id, rev)
-            }
-
+            personalDao.updateRemoteDocRef(personal.id, id, rev)
             return Pair(id, rev)
         }
         return null
@@ -119,35 +115,37 @@ class PersonalsRepositoryImpl @Inject constructor(
         }
 
         try {
-            val result = uploadPersonalDocument(personal)
-            if (result != null) {
-                val (id, rev) = result
-
-                val path = personal.path
-                if (path != null) {
-                    val file = File(path)
-                    val name = FileUtils.getFileNameFromUrl(path)
-
-                    try {
-                        val response = uploadRepository.uploadAttachment(
-                            file = file,
-                            destinationFormat = "%s/resources/%s/%s",
-                            id = id,
-                            rev = rev,
-                            name = name
-                        )
-                        // Note: ignoring specific response success check to match old behavior
-                        // which relied on callback but didn't block returning success
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        // Attachment upload failed but document succeeded
-                    }
-                }
-
-                return "Personal resource uploaded successfully"
+            val existingId = personal._id
+            val existingRev = personal._rev
+            val (id, rev) = if (!existingId.isNullOrBlank() && !existingRev.isNullOrBlank()) {
+                existingId to existingRev
             } else {
-                return "Failed to upload personal resource: No response"
+                val result = uploadPersonalDocument(personal)
+                    ?: return "Failed to upload personal resource: No response"
+                result
             }
+
+            val path = personal.path
+            if (path != null) {
+                val file = File(path)
+                val name = FileUtils.getFileNameFromUrl(path)
+
+                try {
+                    uploadRepository.uploadAttachment(
+                        file = file,
+                        destinationFormat = "%s/resources/%s/%s",
+                        id = id,
+                        rev = rev,
+                        name = name
+                    )
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    return "Uploaded document but failed to upload attachment: ${e.message}"
+                }
+            }
+
+            updatePersonalAfterSync(personal.id, id, rev)
+            return "Personal resource uploaded successfully"
         } catch (e: Exception) {
             e.printStackTrace()
             return "Unable to upload resource: ${e.message}"
