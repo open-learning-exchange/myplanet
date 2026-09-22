@@ -272,8 +272,9 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         if (view == null) return
         viewLifecycleOwner.lifecycleScope.launch {
             if (!isAdded) return@launch
+            val resourceId = library.resourceId ?: return@launch
             try {
-                val rating = ratingsRepository.getRatingsById("resource", library.resourceId, userModel?.id)
+                val rating = ratingsRepository.getRatingSummary("resource", resourceId, userModel?.id)
                 lastKnownRating = rating
                 setRatings(rating)
             } catch (e: CancellationException) {

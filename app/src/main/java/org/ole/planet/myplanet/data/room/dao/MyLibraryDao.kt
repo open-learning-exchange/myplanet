@@ -162,6 +162,9 @@ interface MyLibraryDao {
     @Query("SELECT resourceId, title FROM my_library WHERE resourceId IS NOT NULL")
     suspend fun getResourceTitles(): List<ResourceTitleProjection>
 
+    @Query("SELECT id, title FROM my_library")
+    suspend fun getLibraryTitles(): List<LibraryTitleProjection>
+
     @Query(
         "DELETE FROM my_library WHERE _rev IS NOT NULL AND _rev != '' AND isPrivate = 0 " +
             "AND resourceId NOT IN (:currentResourceIds)"
@@ -174,5 +177,10 @@ interface MyLibraryDao {
 
 data class ResourceTitleProjection(
     val resourceId: String?,
+    val title: String?
+)
+
+data class LibraryTitleProjection(
+    val id: String,
     val title: String?
 )

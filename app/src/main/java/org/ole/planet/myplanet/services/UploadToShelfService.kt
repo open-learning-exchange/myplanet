@@ -69,9 +69,7 @@ class UploadToShelfService @Inject constructor(
 
     fun uploadHealth() {
         appScope.launch(dispatcherProvider.io) {
-            val myHealths = healthRepository.getUpdatedHealthExaminations()
-            val uploadedHealths = healthRepository.uploadHealthData(myHealths)
-            healthRepository.markHealthExaminationsUploaded(uploadedHealths)
+            healthRepository.syncPendingHealthExaminations()
         }
     }
 
@@ -80,9 +78,7 @@ class UploadToShelfService @Inject constructor(
             try {
                 if (userId.isNullOrEmpty()) return@launch
 
-                val myHealths = healthRepository.getUpdatedHealthForUser(userId)
-                val uploadedHealths = healthRepository.uploadHealthData(myHealths)
-                healthRepository.markHealthExaminationsUploaded(uploadedHealths)
+                healthRepository.syncPendingHealthExaminationsForUser(userId)
 
                 withContext(dispatcherProvider.main) {
                     listener?.onSuccess("Health data for user $userId uploaded successfully")

@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
@@ -74,8 +75,8 @@ class ResourcesRepositoryImpl @Inject constructor(
         return "%\"$escaped\"%"
     }
 
-    override suspend fun getAllLibraries(): List<MyLibrary> {
-        return myLibraryDao.getAll()
+    override suspend fun getLibraryTitles(): List<LibraryTitleProjection> {
+        return myLibraryDao.getLibraryTitles()
     }
 
     override suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<MyLibrary> {
@@ -121,17 +122,18 @@ class ResourcesRepositoryImpl @Inject constructor(
 
         val matching = myLibraryDao.filterByTitleNormal(SimpleSQLiteQuery(queryBuilder.toString(), bindArgs.toTypedArray()))
 
-        val startsWithQuery = mutableListOf<MyLibrary>()
         val containsQuery = mutableListOf<MyLibrary>()
-        for (item in matching) {
-            val titleNormal = item.titleNormal ?: continue
-            if (titleNormal.startsWith(normalizedQuery)) {
-                startsWithQuery.add(item)
-            } else {
-                containsQuery.add(item)
+        return buildList(matching.size) {
+            for (item in matching) {
+                val titleNormal = item.titleNormal ?: continue
+                if (titleNormal.startsWith(normalizedQuery)) {
+                    add(item)
+                } else {
+                    containsQuery.add(item)
+                }
             }
+            addAll(containsQuery)
         }
-        return startsWithQuery + containsQuery
     }
 
     override suspend fun getResourceById(id: String): MyLibrary? {
@@ -184,7 +186,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun getLibraryItemsByIds(ids: Collection<String>): List<MyLibrary> {
         if (ids.isEmpty()) return emptyList()
-        return myLibraryDao.getByUnderscoreIds(ids.toList())
+        return myLibraryDao.getByIds(ids.toList())
     }
 
     override suspend fun getLibraryItemsByResourceIds(ids: Collection<String>): List<MyLibrary> {
