@@ -15,9 +15,15 @@ object LibraryTypeClassifier {
     private val bookExtensions = setOf("epub", "mobi", "azw", "azw3", "fb2", "cbz", "cbr")
 
     fun classify(library: MyLibrary): LibraryType? {
-        val extension = FileUtils.getFileExtension(
-            library.resourceLocalAddress ?: library.resourceRemoteAddress
-        ).lowercase()
+        val address = library.resourceLocalAddress?.takeIf { it.isNotBlank() }
+            ?: library.resourceRemoteAddress?.takeIf { it.isNotBlank() }
+
+        val extension = address
+            ?.substringBefore('?')
+            ?.substringBefore('#')
+            ?.substringAfterLast('.', "")
+            ?.lowercase()
+
         val mediaType = library.mediaType?.lowercase().orEmpty()
 
         return when {

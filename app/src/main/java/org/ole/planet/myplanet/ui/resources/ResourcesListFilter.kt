@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.resources
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TagEntity
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LibraryType
 import org.ole.planet.myplanet.utils.LibraryTypeClassifier
 import org.ole.planet.myplanet.utils.ResourcesSearchUtils
@@ -101,9 +102,20 @@ class ResourcesListFilter {
             }
 
             if (targetType != null) {
-                classifiedType == targetType || mediaTypeLower.contains(selLower)
+                if (targetType == LibraryType.BOOK) {
+                    val extension = FileUtils.getFileExtension(
+                        library.resourceLocalAddress ?: library.resourceRemoteAddress
+                    ).lowercase()
+                    val isExplicitNonBook = mediaTypeLower.startsWith("image") ||
+                            mediaTypeLower.contains("html") ||
+                            mediaTypeLower.startsWith("text") ||
+                            extension in setOf("png", "jpg", "jpeg", "gif", "bmp", "webp", "html", "htm", "txt")
+                    classifiedType == LibraryType.BOOK && !isExplicitNonBook
+                } else {
+                    classifiedType == targetType || mediaTypeLower == selLower || (mediaTypeLower.isNotBlank() && mediaTypeLower.contains(selLower))
+                }
             } else {
-                mediaTypeLower == selLower || mediaTypeLower.contains(selLower)
+                mediaTypeLower == selLower || (mediaTypeLower.isNotBlank() && mediaTypeLower.contains(selLower))
             }
         }
     }

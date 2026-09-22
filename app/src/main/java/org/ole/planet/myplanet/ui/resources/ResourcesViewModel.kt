@@ -129,7 +129,7 @@ class ResourcesViewModel @Inject constructor(
             library.language?.takeIf { it.isNotBlank() }?.let { languages.add(it) }
             library.subject?.let { subjects.addAll(it) }
             val mediaType = library.mediaType?.takeIf { it.isNotBlank() }
-                ?: LibraryTypeClassifier.classify(library)?.name?.lowercase()
+                ?: LibraryTypeClassifier.classify(library)?.name
             if (mediaType != null) {
                 mediums.add(MediumUtils.getCanonicalMedium(mediaType))
             }
