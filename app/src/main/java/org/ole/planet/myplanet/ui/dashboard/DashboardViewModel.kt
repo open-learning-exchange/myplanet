@@ -43,8 +43,6 @@ import org.ole.planet.myplanet.repository.SyncUiState
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.utils.calculateCommunityProgress as calculateCommunityProgressUtil
-import org.ole.planet.myplanet.utils.calculateIndividualProgress as calculateIndividualProgressUtil
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NotificationConfig
@@ -152,14 +150,6 @@ class DashboardViewModel @Inject constructor(
 
     fun setUnreadNotifications(count: Int) {
         _uiState.update { it.copy(unreadNotifications = count) }
-    }
-
-    fun calculateIndividualProgress(voiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
-        return calculateIndividualProgressUtil(voiceCount, hasUnfinishedSurvey)
-    }
-
-    fun calculateCommunityProgress(allVoiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
-        return calculateCommunityProgressUtil(allVoiceCount, hasUnfinishedSurvey)
     }
 
     suspend fun updateResourceNotification(userId: String?) {
