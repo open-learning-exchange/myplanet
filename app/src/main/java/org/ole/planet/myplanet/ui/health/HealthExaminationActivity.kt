@@ -191,7 +191,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
 
     private fun preloadCustomDiagnosis() {
         val arr = resources.getStringArray(R.array.diagnosis_list)
-        val mainList = listOf(*arr)
+        val mainList = arr.toHashSet()
         if (customDiag?.isEmpty() == true && examination != null) {
             for ((s, value) in conditionsMap) {
                 if (!mainList.contains(s) && value) {
@@ -204,15 +204,18 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
     private fun showCheckbox(examination: HealthExamination?) {
         val arr = resources.getStringArray(R.array.diagnosis_list)
         binding.containerCheckbox.removeAllViews()
+        val textColorStateList = ContextCompat.getColorStateList(this, R.color.daynight_textColor)
+        val textColor = ContextCompat.getColor(this, R.color.daynight_textColor)
+        val padding = dpToPx(8)
         for (s in arr) {
             val c = CheckBox(this)
-            c.buttonTintList = ContextCompat.getColorStateList(this, R.color.daynight_textColor)
-            c.setTextColor(ContextCompat.getColor(this, R.color.daynight_textColor))
+            c.buttonTintList = textColorStateList
+            c.setTextColor(textColor)
 
             if (examination != null) {
                 c.isChecked = conditionsMap[s] ?: false
             }
-            c.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8))
+            c.setPadding(padding, padding, padding, padding)
             c.text = s
             c.tag = s
             c.setOnCheckedChangeListener(this)
