@@ -95,8 +95,8 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun checkVersion(callback: ConfigurationsRepository.CheckVersionCallback, spm: SharedPrefManager) {
-        val baseUrl = UrlUtils.baseUrl(spm)
+    override fun checkVersion(callback: ConfigurationsRepository.CheckVersionCallback) {
+        val baseUrl = UrlUtils.baseUrl(sharedPrefManager)
         if (baseUrl.isEmpty()) {
             callback.onError(context.getString(R.string.server_url_not_configured), true)
             return
@@ -125,7 +125,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
 
             try {
-                val planetInfo = fetchVersionInfo(spm)
+                val planetInfo = fetchVersionInfo(sharedPrefManager)
                 if (planetInfo == null) {
                     callback.onError(context.getString(R.string.version_not_found), true)
                     return@launch
@@ -137,7 +137,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 sharedPrefManager.setLastWifiId(NetworkUtils.getCurrentNetworkId(context))
                 sharedPrefManager.setVersionDetail(gson.toJson(planetInfo))
 
-                val rawApkVersion = fetchApkVersionString(spm)
+                val rawApkVersion = fetchApkVersionString(sharedPrefManager)
                 val versionStr = gson.fromJson(rawApkVersion, String::class.java)
                 if (versionStr.isNullOrEmpty()) {
                     callback.onError(context.getString(R.string.planet_is_up_to_date), false)
