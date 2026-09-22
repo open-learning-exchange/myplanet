@@ -21,7 +21,7 @@ import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.api.RetryInterceptor
-import org.ole.planet.myplanet.data.api.SelectiveKotlinxConverterFactory
+import org.ole.planet.myplanet.data.api.AllowlistFactory
 import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.MyPlanet
@@ -152,7 +152,7 @@ object NetworkModule {
         return Retrofit.Builder()
             .baseUrl("https://vi.media.mit.edu/")
             .client(okHttpClient)
-            .addConverterFactory(SelectiveKotlinxConverterFactory(json, kotlinxHandledTypes))
+            .addConverterFactory(AllowlistFactory(json, kotlinxHandledTypes))
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
     }

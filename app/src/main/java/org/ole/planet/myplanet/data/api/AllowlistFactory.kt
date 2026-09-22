@@ -15,7 +15,7 @@ import retrofit2.Retrofit
  * has no serializer for. This factory only delegates to kotlinx.serialization for [handledTypes]
  * and returns null otherwise, letting the next factory in the chain (Gson) handle the rest.
  */
-class SelectiveKotlinxConverterFactory(
+class AllowlistFactory(
     json: Json,
     private val handledTypes: Set<Type>
 ) : Converter.Factory() {

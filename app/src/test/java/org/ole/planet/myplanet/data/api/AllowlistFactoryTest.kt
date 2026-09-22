@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.model.MyPlanet
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-class SelectiveKotlinxConverterFactoryTest {
+class AllowlistFactoryTest {
     private val json = Json { ignoreUnknownKeys = true }
     private val handledTypes = setOf<java.lang.reflect.Type>(
         MyPlanet::class.java,
@@ -23,7 +23,7 @@ class SelectiveKotlinxConverterFactoryTest {
     )
     private val retrofit = Retrofit.Builder()
         .baseUrl("http://localhost/")
-        .addConverterFactory(SelectiveKotlinxConverterFactory(json, handledTypes))
+        .addConverterFactory(AllowlistFactory(json, handledTypes))
         .addConverterFactory(GsonConverterFactory.create(Gson()))
         .build()
 
@@ -67,7 +67,7 @@ class SelectiveKotlinxConverterFactoryTest {
 
     @Test
     fun `factory itself returns null for unhandled types`() {
-        val factory = SelectiveKotlinxConverterFactory(json, handledTypes)
+        val factory = AllowlistFactory(json, handledTypes)
         val converter = factory.responseBodyConverter(JsonObject::class.java, emptyArray(), retrofit)
 
         assertNull(converter)
