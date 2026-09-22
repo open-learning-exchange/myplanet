@@ -233,21 +233,21 @@ class VoicesViewModelTest {
             images = """[{"resourceId":""}]"""
         }
 
-        coEvery { resourcesRepository.getLibraryItemsByIds(any()) } returns emptyList()
+        coEvery { resourcesRepository.getLibraryItemsByResourceIds(any()) } returns emptyList()
         coEvery { resourcesRepository.downloadResources(any()) } returns true
 
         viewModel.downloadReferencedResources(listOf(newsWithResource, newsWithEmptyImages, newsWithNoResourceId))
         advanceUntilIdle()
 
         coVerify {
-            resourcesRepository.getLibraryItemsByIds(match { it.contains("res-123") && it.size == 1 })
+            resourcesRepository.getLibraryItemsByResourceIds(match { it.contains("res-123") && it.size == 1 })
             resourcesRepository.downloadResources(any())
         }
     }
 
     @Test
     fun `test downloadReferencedResources does nothing for null news or empty list`() = runTest {
-        coEvery { resourcesRepository.getLibraryItemsByIds(any()) } returns emptyList()
+        coEvery { resourcesRepository.getLibraryItemsByResourceIds(any()) } returns emptyList()
         coEvery { resourcesRepository.downloadResources(any()) } returns true
 
         viewModel.downloadReferencedResources(listOf(null))

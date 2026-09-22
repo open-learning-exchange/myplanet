@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
+import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
@@ -36,7 +37,7 @@ data class LocalResourceRequest(
 )
 
 interface ResourcesRepository {
-    suspend fun getAllLibraries(): List<MyLibrary>
+    suspend fun getLibraryTitles(): List<LibraryTitleProjection>
     suspend fun getLibraryItemById(id: String): MyLibrary?
     suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<MyLibrary>
     suspend fun getLibraryItemByResourceId(resourceId: String): MyLibrary?
