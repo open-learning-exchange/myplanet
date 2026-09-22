@@ -69,4 +69,53 @@ class MyCourseTest {
             savedSet
         )
     }
+
+    @Test
+    fun testSerialize_embedsStepsAndTheirResources() {
+        val resource = MyLibrary().apply {
+            _id = "resource1"
+            title = "Resource One"
+        }
+        val course = MyCourse(
+            id = "c1",
+            courseId = "course1",
+            courseRev = "1-abc",
+            courseTitle = "Course One",
+            description = "A course",
+            memberLimit = 20
+        )
+        course.courseSteps = mutableListOf(
+            CourseStep(id = "step1", stepTitle = "Step One", description = "First step")
+        )
+
+        val json = MyCourse.serialize(course, mapOf("step1" to listOf(resource)))
+
+        assertEquals("course1", json.get("_id").asString)
+        assertEquals("1-abc", json.get("_rev").asString)
+        assertEquals("Course One", json.get("courseTitle").asString)
+        assertEquals(20, json.get("memberLimit").asInt)
+
+        val steps = json.getAsJsonArray("steps")
+        assertEquals(1, steps.size())
+        val step = steps[0].asJsonObject
+        assertEquals("Step One", step.get("stepTitle").asString)
+        assertEquals("step1", step.get("id").asString)
+
+        val resources = step.getAsJsonArray("resources")
+        assertEquals(1, resources.size())
+        assertEquals("resource1", resources[0].asJsonObject.get("_id").asString)
+
+        assertEquals(0, json.getAsJsonArray("images").size())
+    }
+
+    @Test
+    fun testSerialize_stepWithNoMatchingResources_getsEmptyResourcesArray() {
+        val course = MyCourse(id = "c1", courseId = "course1")
+        course.courseSteps = mutableListOf(CourseStep(id = "step1", stepTitle = "Step One"))
+
+        val json = MyCourse.serialize(course, emptyMap())
+
+        val step = json.getAsJsonArray("steps")[0].asJsonObject
+        assertEquals(0, step.getAsJsonArray("resources").size())
+    }
 }
