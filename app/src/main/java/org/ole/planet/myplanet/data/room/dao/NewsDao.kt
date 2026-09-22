@@ -68,8 +68,8 @@ interface NewsDao {
     )
     suspend fun countDistinctCommunityVoiceDatesForUser(startTime: Long, endTime: Long, userId: String): Int
 
-    @Query("SELECT * FROM news WHERE newsId = :chatId")
-    suspend fun getByNewsId(chatId: String): List<News>
+    @Query("SELECT EXISTS(SELECT 1 FROM news WHERE newsId = :chatId AND viewIn LIKE :viewInPattern ESCAPE '\\')")
+    suspend fun isSharedWith(chatId: String, viewInPattern: String): Boolean
 
     @Query("SELECT COUNT(*) FROM news WHERE viewableBy = 'teams' AND viewableId = :teamId")
     suspend fun countTeamChats(teamId: String): Long

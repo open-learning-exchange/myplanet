@@ -9,7 +9,6 @@ import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.model.Feedback
-import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.distinctByContent
@@ -33,7 +32,7 @@ class FeedbackRepositoryImpl @Inject constructor(
         saveFeedback(feedback)
     }
 
-    override fun createFeedback(
+    fun createFeedback(
         user: String?,
         urgent: String,
         type: String,
@@ -70,11 +69,11 @@ class FeedbackRepositoryImpl @Inject constructor(
         return feedback
     }
 
-    override suspend fun getFeedback(userModel: UserEntity?): Flow<List<Feedback>> {
-        val flow = if (userModel?.isManager() == true) {
+    override fun getFeedback(ownerName: String?, isManager: Boolean): Flow<List<Feedback>> {
+        val flow = if (isManager) {
             feedbackDao.getAllSortedFlow()
         } else {
-            feedbackDao.getByOwnerFlow(userModel?.name)
+            feedbackDao.getByOwnerFlow(ownerName)
         }
         return flow.distinctByContent { a, b ->
             // Compare CouchDB sync markers alongside local status changes and reply messages
@@ -112,7 +111,7 @@ class FeedbackRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun saveFeedback(feedback: Feedback) {
+    private suspend fun saveFeedback(feedback: Feedback) {
         feedbackDao.upsert(feedback)
     }
 
