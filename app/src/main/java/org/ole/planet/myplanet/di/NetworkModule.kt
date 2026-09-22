@@ -88,8 +88,6 @@ object NetworkModule {
         }
     }
 
-    // Endpoints that already return a typed, @Serializable model - everything else
-    // (raw JsonObject/JsonArray CouchDB payloads) keeps going through Gson below.
     private val kotlinxHandledTypes: Set<Type> = setOf(
         MyPlanet::class.java,
         ChatResponse::class.java,
