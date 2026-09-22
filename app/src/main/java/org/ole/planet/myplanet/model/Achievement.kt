@@ -6,7 +6,11 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import java.util.Collections
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @Entity(tableName = "achievements", indices = [androidx.room.Index("isUpdated")])
 class Achievement {
@@ -127,34 +131,30 @@ class Achievement {
             }
         }
 
-        fun serialize(sub: Achievement): JsonObject {
-            val `object` = JsonObject()
-            `object`.addProperty("_id", sub._id)
-            if (!sub._rev.isNullOrEmpty()) `object`.addProperty("_rev", sub._rev)
-            `object`.addProperty("goals", sub.goals)
-            `object`.addProperty("purpose", sub.purpose)
-            `object`.addProperty("achievementsHeader", sub.achievementsHeader)
-            `object`.addProperty("sendToNation", sub.sendToNation?.toBoolean() ?: false)
-            `object`.addProperty("dateSortOrder", sub.dateSortOrder ?: "none")
-            `object`.addProperty("createdOn", sub.createdOn ?: "")
-            `object`.addProperty("username", sub.username ?: "")
-            `object`.addProperty("parentCode", sub.parentCode ?: "")
-            `object`.add("references", sub.getReferencesArray())
-            `object`.add("achievements", sub.achievementsArray)
-            `object`.add("links", sub.linksArray)
-            `object`.add("otherInfo", sub.otherInfoArray)
-            `object`.addProperty("resumeFileName", sub.resumeFileName ?: "")
-            return `object`
-        }
+        fun serialize(sub: Achievement): JsonObject = buildJsonObject {
+            put("_id", sub._id)
+            if (!sub._rev.isNullOrEmpty()) put("_rev", sub._rev)
+            put("goals", sub.goals)
+            put("purpose", sub.purpose)
+            put("achievementsHeader", sub.achievementsHeader)
+            put("sendToNation", sub.sendToNation?.toBoolean() ?: false)
+            put("dateSortOrder", sub.dateSortOrder ?: "none")
+            put("createdOn", sub.createdOn ?: "")
+            put("username", sub.username ?: "")
+            put("parentCode", sub.parentCode ?: "")
+            put("references", sub.getReferencesArray().toKotlinx())
+            put("achievements", sub.achievementsArray.toKotlinx())
+            put("links", sub.linksArray.toKotlinx())
+            put("otherInfo", sub.otherInfoArray.toKotlinx())
+            put("resumeFileName", sub.resumeFileName ?: "")
+        }.toGson()
 
-        fun createReference(name: String?, relation: String, phone: String, email: String): JsonObject {
-            val ob = JsonObject()
-            ob.addProperty("name", name)
-            ob.addProperty("phone", phone)
-            ob.addProperty("relationship", relation)
-            ob.addProperty("email", email)
-            return ob
-        }
+        fun createReference(name: String?, relation: String, phone: String, email: String): JsonObject = buildJsonObject {
+            put("name", name)
+            put("phone", phone)
+            put("relationship", relation)
+            put("email", email)
+        }.toGson()
 
     }
 }

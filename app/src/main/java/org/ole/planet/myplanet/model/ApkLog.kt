@@ -3,8 +3,11 @@ package org.ole.planet.myplanet.model
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
+import org.ole.planet.myplanet.utils.toGson
 
 /**
  * Room entity for crash/ANR/error logs, replacing the former APK log model. Logs are written via
@@ -29,18 +32,19 @@ open class ApkLog {
         const val ERROR_TYPE_CRASH = "crash"
 
         fun serialize(log: ApkLog, customDeviceName: String): JsonObject {
-            val `object` = JsonObject()
-            `object`.addProperty("type", log.type)
-            `object`.addProperty("error", log.error)
-            `object`.addProperty("page", log.page)
-            `object`.addProperty("time", log.time)
-            `object`.addProperty("userId", log.userId)
-            `object`.addProperty("version", log.version)
-            `object`.addProperty("createdOn", log.createdOn)
+            val `object` = buildJsonObject {
+                put("type", log.type)
+                put("error", log.error)
+                put("page", log.page)
+                put("time", log.time)
+                put("userId", log.userId)
+                put("version", log.version)
+                put("createdOn", log.createdOn)
+                put("deviceName", NetworkUtils.getDeviceName())
+                put("customDeviceName", customDeviceName)
+                put("parentCode", log.parentCode)
+            }.toGson()
             `object`.addDocumentOrigin()
-            `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
-            `object`.addProperty("customDeviceName", customDeviceName)
-            `object`.addProperty("parentCode", log.parentCode)
             return `object`
         }
     }

@@ -68,6 +68,22 @@ class RequestsViewModelTest {
         assertEquals(2, uiState.members.size)
         assertTrue(uiState.isLeader)
         assertEquals(1, uiState.memberCount)
+        assertEquals(currentUser, uiState.currentUser)
+    }
+
+    @Test
+    fun `fetchMembers sets currentUser in uiState or falls back to empty UserEntity when null`() = runTest(testDispatcher) {
+        val teamId = "team1"
+        coEvery { teamsRepository.getRequestedMembers(teamId) } returns emptyList()
+        coEvery { teamsRepository.getJoinedMemberCount(teamId) } returns 0
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { teamsRepository.isTeamLeader(teamId, null) } returns false
+
+        viewModel.fetchMembers(teamId)
+        advanceUntilIdle()
+
+        val uiState = viewModel.uiState.value
+        assertEquals("", uiState.currentUser.id)
     }
 
     @Test

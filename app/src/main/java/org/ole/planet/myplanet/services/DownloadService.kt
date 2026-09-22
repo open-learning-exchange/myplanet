@@ -636,6 +636,7 @@ class DownloadService : Service() {
         ): QueuedUrl? {
             val urls = preferences.getStringSet(key, emptySet()) ?: emptySet()
             return urls
+                .asSequence()
                 .filter { it !in processedUrls && it.isNotBlank() }
                 .minOrNull()
                 ?.let { QueuedUrl(it, isPriority) }
