@@ -35,6 +35,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
@@ -324,13 +325,14 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
-    fun `getAllLibraries returns list of MyLibrary`() = runTest {
-        val mockLibrary = MyLibrary().apply { title = "Test Library" }
-        coEvery { myLibraryDao.getAll() } returns listOf(mockLibrary)
+    fun `getLibraryTitles returns list of LibraryTitleProjection`() = runTest {
+        val mockProjection = LibraryTitleProjection("lib1", "Test Library")
+        coEvery { myLibraryDao.getLibraryTitles() } returns listOf(mockProjection)
 
-        val result = repository.getAllLibraries()
+        val result = repository.getLibraryTitles()
 
         assertEquals(1, result.size)
+        assertEquals("lib1", result[0].id)
         assertEquals("Test Library", result[0].title)
     }
 
@@ -499,6 +501,48 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
+    fun `search ranking order puts all starts-with matches before contains matches and preserves relative tie order`() = runTest {
+        val startsWith1 = MyLibrary().apply { id = "sw1"; title = "Math Algebra 1"; titleNormal = "math algebra 1" }
+        val contains1 = MyLibrary().apply { id = "c1"; title = "Advanced Math"; titleNormal = "advanced math" }
+        val startsWith2 = MyLibrary().apply { id = "sw2"; title = "Math Geometry"; titleNormal = "math geometry" }
+        val contains2 = MyLibrary().apply { id = "c2"; title = "Discrete Math"; titleNormal = "discrete math" }
+
+        val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
+        coEvery { myLibraryDao.filterByTitleNormal(capture(querySlot)) } returns listOf(startsWith1, contains1, startsWith2, contains2)
+
+        val result = repository.search("Math", false, null)
+
+        assertEquals(4, result.size)
+        assertEquals(listOf(startsWith1, startsWith2, contains1, contains2), result)
+    }
+
+    @Test
+    fun `search with query containing percent and underscore escapes wildcards and prevents matching arbitrary characters`() = runTest {
+        val exactMatch = MyLibrary().apply { id = "1"; title = "100%_pure"; titleNormal = "100%_pure" }
+
+        val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
+        coEvery { myLibraryDao.filterByTitleNormal(capture(querySlot)) } returns listOf(exactMatch)
+
+        val result = repository.search("100%_pure", false, null)
+
+        assertEquals(1, result.size)
+        assertEquals("100%_pure", result[0].title)
+
+        val bindArgs = mutableMapOf<Int, Any?>()
+        querySlot.captured.bindTo(object : androidx.sqlite.db.SupportSQLiteProgram {
+            override fun bindNull(index: Int) { bindArgs[index] = null }
+            override fun bindLong(index: Int, value: Long) { bindArgs[index] = value }
+            override fun bindDouble(index: Int, value: Double) { bindArgs[index] = value }
+            override fun bindString(index: Int, value: String) { bindArgs[index] = value }
+            override fun bindBlob(index: Int, value: ByteArray) { bindArgs[index] = value }
+            override fun clearBindings() {}
+            override fun close() {}
+        })
+
+        assertEquals("%100\\%\\_pure%", bindArgs[1])
+    }
+
+    @Test
     fun `saveSearchActivity writes resource search activity to Room`() = runTest {
         val savedActivity = slot<SearchActivity>()
 
@@ -610,19 +654,19 @@ class ResourcesRepositoryImplTest {
         val result = repository.getLibraryItemsByIds(emptyList())
 
         assertTrue(result.isEmpty())
-        coVerify(exactly = 0) { myLibraryDao.getByUnderscoreIds(any()) }
+        coVerify(exactly = 0) { myLibraryDao.getByIds(any()) }
     }
 
     @Test
     fun `getLibraryItemsByIds returns items from dao`() = runTest {
         val ids = listOf("id1", "id2")
         val expectedList = listOf(MyLibrary().apply { id = "id1" })
-        coEvery { myLibraryDao.getByUnderscoreIds(ids) } returns expectedList
+        coEvery { myLibraryDao.getByIds(ids) } returns expectedList
 
         val result = repository.getLibraryItemsByIds(ids)
 
         assertEquals(expectedList, result)
-        coVerify(exactly = 1) { myLibraryDao.getByUnderscoreIds(ids) }
+        coVerify(exactly = 1) { myLibraryDao.getByIds(ids) }
     }
 
     @Test
