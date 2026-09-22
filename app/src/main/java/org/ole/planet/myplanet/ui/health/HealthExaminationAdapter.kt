@@ -66,7 +66,7 @@ class HealthExaminationAdapter(
                 val (resolvedName, isSelfExamination) = if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userModel?.id)) {
                     val name = displayNameCache.getOrPut(createdBy) {
                         val model = userMap[createdBy]
-                        model?.getFullName() ?: createdBy.split(colonRegex).dropLastWhile { it.isEmpty() }.toTypedArray().getOrNull(1) ?: createdBy
+                        model?.getFullName() ?: createdBy.substringAfter(':', "").takeIf { it.isNotBlank() } ?: createdBy
                     }
                     name to false
                 } else {
@@ -101,7 +101,7 @@ class HealthExaminationAdapter(
 
         binding.txtTemp.text = checkEmpty(realmExamination.temperature)
         if (!item.isSelfExamination) {
-            binding.txtDate.text = context.getString(R.string.two_strings, item.formattedDate, item.resolvedName).trimIndent()
+            binding.txtDate.text = context.getString(R.string.two_strings, item.formattedDate, item.resolvedName)
             holder.itemView.setBackgroundColor(colorGrey50)
         } else {
             binding.txtDate.text = context.getString(R.string.self_examination, item.formattedDate)
@@ -173,7 +173,6 @@ class HealthExaminationAdapter(
     class HealthExaminationViewHolder(val binding: RowExaminationBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
-        private val colonRegex by lazy { ":".toRegex() }
         private val DIFF_CALLBACK = DiffUtils.itemCallback<HealthExaminationItem>(
             { oldItem, newItem -> oldItem.examination._id == newItem.examination._id },
             { oldItem, newItem ->

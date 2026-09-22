@@ -11,9 +11,8 @@ interface HealthRepository {
     suspend fun getExaminationById(id: String): HealthExamination?
     suspend fun initHealth(): MyHealth
     suspend fun saveExamination(examination: HealthExamination?, pojo: HealthExamination?, user: UserEntity?)
-    suspend fun getUpdatedHealthExaminations(): List<HealthExamination>
-    suspend fun getUpdatedHealthForUser(userId: String): List<HealthExamination>
-    suspend fun markHealthExaminationsUploaded(idToRevMap: Map<String, String?>)
+    suspend fun syncPendingHealthExaminations()
+    suspend fun syncPendingHealthExaminationsForUser(userId: String)
     suspend fun updateExaminationUserId(id: String, userId: String)
     suspend fun bulkInsertFromSync(jsonArray: JsonArray)
     suspend fun uploadHealthData(myHealths: List<HealthExamination>): Map<String, String?>

@@ -122,17 +122,18 @@ class ResourcesRepositoryImpl @Inject constructor(
 
         val matching = myLibraryDao.filterByTitleNormal(SimpleSQLiteQuery(queryBuilder.toString(), bindArgs.toTypedArray()))
 
-        val startsWithQuery = mutableListOf<MyLibrary>()
         val containsQuery = mutableListOf<MyLibrary>()
-        for (item in matching) {
-            val titleNormal = item.titleNormal ?: continue
-            if (titleNormal.startsWith(normalizedQuery)) {
-                startsWithQuery.add(item)
-            } else {
-                containsQuery.add(item)
+        return buildList(matching.size) {
+            for (item in matching) {
+                val titleNormal = item.titleNormal ?: continue
+                if (titleNormal.startsWith(normalizedQuery)) {
+                    add(item)
+                } else {
+                    containsQuery.add(item)
+                }
             }
+            addAll(containsQuery)
         }
-        return startsWithQuery + containsQuery
     }
 
     override suspend fun getResourceById(id: String): MyLibrary? {
