@@ -5,10 +5,17 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.json.JSONArray
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 /**
  * Room replacement for the former `Meetup` model. Meetups are both synced (pulled from
@@ -80,13 +87,11 @@ open class Meetup {
             return meetup
         }
 
-        fun getMyMeetUpIds(meetups: List<Meetup>): JsonArray {
-            val ids = JsonArray()
+        fun getMyMeetUpIds(meetups: List<Meetup>): JsonArray = buildJsonArray {
             for (meetup in meetups) {
-                ids.add(meetup.meetupId)
+                add(meetup.meetupId)
             }
-            return ids
-        }
+        }.toGson()
 
         fun getHashMap(meetups: Meetup): HashMap<String, String> {
             val map = HashMap<String, String>()
@@ -122,30 +127,30 @@ open class Meetup {
         }
 
         fun serialize(meetup: Meetup): JsonObject {
-            val `object` = JsonObject()
-            if (!meetup.meetupId.isNullOrEmpty()) `object`.addProperty("_id", meetup.meetupId)
-            if (!meetup.meetupIdRev.isNullOrEmpty()) `object`.addProperty("_rev", meetup.meetupIdRev)
-            `object`.addProperty("title", meetup.title)
-            `object`.addProperty("description", meetup.description)
-            `object`.addProperty("startDate", meetup.startDate)
-            `object`.addProperty("endDate", meetup.endDate)
-            `object`.addProperty("startTime", meetup.startTime)
-            `object`.addProperty("endTime", meetup.endTime)
-            `object`.addProperty("recurring", meetup.recurring)
-            `object`.addProperty("meetupLocation", meetup.meetupLocation)
-            `object`.addProperty("meetupLink", meetup.meetupLink)
-            `object`.addProperty("createdBy", meetup.creator)
-            `object`.addProperty("teamId", meetup.teamId)
-            `object`.addProperty("category", meetup.category)
-            `object`.addProperty("createdDate", meetup.createdDate)
-            `object`.addProperty("recurringNumber", meetup.recurringNumber)
-            `object`.addProperty("sourcePlanet", meetup.sourcePlanet)
-            `object`.addProperty("sync", meetup.sync)
-
-            if (!meetup.link.isNullOrEmpty()) {
-                val linksJson = JsonUtils.gson.fromJson(meetup.link, JsonObject::class.java)
-                `object`.add("link", linksJson)
-            }
+            val linksJson = if (!meetup.link.isNullOrEmpty()) {
+                JsonUtils.gson.fromJson(meetup.link, JsonObject::class.java)
+            } else null
+            val `object` = buildJsonObject {
+                if (!meetup.meetupId.isNullOrEmpty()) put("_id", meetup.meetupId)
+                if (!meetup.meetupIdRev.isNullOrEmpty()) put("_rev", meetup.meetupIdRev)
+                put("title", meetup.title)
+                put("description", meetup.description)
+                put("startDate", meetup.startDate)
+                put("endDate", meetup.endDate)
+                put("startTime", meetup.startTime)
+                put("endTime", meetup.endTime)
+                put("recurring", meetup.recurring)
+                put("meetupLocation", meetup.meetupLocation)
+                put("meetupLink", meetup.meetupLink)
+                put("createdBy", meetup.creator)
+                put("teamId", meetup.teamId)
+                put("category", meetup.category)
+                put("createdDate", meetup.createdDate)
+                put("recurringNumber", meetup.recurringNumber)
+                put("sourcePlanet", meetup.sourcePlanet)
+                put("sync", meetup.sync)
+                if (!meetup.link.isNullOrEmpty()) put("link", linksJson?.toKotlinx() ?: JsonNull)
+            }.toGson()
 
             `object`.addDocumentOrigin()
             return `object`

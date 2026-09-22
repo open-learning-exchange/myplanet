@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.repository
 
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.services.SharedPrefManager
 
 data class CommunityConfiguration(
     val parentCode: String,
@@ -12,7 +11,7 @@ data class CommunityConfiguration(
 
 interface ConfigurationsRepository {
     suspend fun checkHealth(): String
-    fun checkVersion(callback: CheckVersionCallback, spm: SharedPrefManager)
+    fun checkVersion(callback: CheckVersionCallback)
     suspend fun checkServerAvailability(): Boolean
     suspend fun checkServerAvailability(url: String): Boolean
     suspend fun checkCheckSum(path: String): Boolean

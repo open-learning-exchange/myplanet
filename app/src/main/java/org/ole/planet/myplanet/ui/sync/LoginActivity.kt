@@ -180,7 +180,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         if (versionInfo != null) {
             onUpdateAvailable(versionInfo, intent.getBooleanExtra("cancelable", false))
         } else {
-            configurationsRepository.checkVersion(this, prefData)
+            configurationsRepository.checkVersion(this)
         }
         forceSyncTrigger()
     }

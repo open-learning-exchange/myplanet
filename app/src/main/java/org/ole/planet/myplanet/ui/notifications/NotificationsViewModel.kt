@@ -204,8 +204,8 @@ class NotificationsViewModel @Inject constructor(
             val t = notif.type.lowercase(Locale.ROOT)
             if (t in NotificationsRepository.KNOWN_TYPES) t else "notification"
         }
-        val orderedTypes = (TYPE_ORDER.filter { grouped.containsKey(it) } +
-                grouped.keys.filter { it !in TYPE_ORDER }).distinct()
+        val orderedTypes = TYPE_ORDER.filter { grouped.containsKey(it) } +
+                grouped.keys.filter { it !in TYPE_ORDER }
         return orderedTypes.mapNotNull { type ->
             val items = grouped[type] ?: return@mapNotNull null
             val unreadCount = items.count { !it.isRead }
