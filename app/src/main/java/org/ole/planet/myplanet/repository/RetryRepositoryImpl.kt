@@ -1,18 +1,29 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Log
+import com.google.gson.JsonParser
+import java.io.IOException
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.RetryDao
 import org.ole.planet.myplanet.model.RetryFailure
 import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.utils.TimeProvider
+import org.ole.planet.myplanet.utils.UrlUtils
 
 class RetryRepositoryImpl @Inject constructor(
     private val retryDao: RetryDao,
+    private val apiInterface: ApiInterface,
     private val timeProvider: TimeProvider
 ) : RetryRepository {
+
+    companion object {
+        private const val TAG = "RetryRepository"
+    }
 
     private val isProcessing = AtomicBoolean(false)
     private val mutex = Mutex()
@@ -51,6 +62,78 @@ class RetryRepositoryImpl @Inject constructor(
 
     override suspend fun markFailed(operationId: String, errorMessage: String?, httpCode: Int?) {
         retryDao.recordFailedAttempt(operationId, errorMessage, httpCode, timeProvider.now())
+    }
+
+    override suspend fun executeOperation(operation: RetryOperation): RetryOperationResult {
+        markInProgress(operation.id)
+
+        return try {
+            val payload = try {
+                JsonParser.parseString(operation.serializedPayload).asJsonObject
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                Log.e(TAG, "Invalid payload for ${operation.id}, abandoning")
+                markFailed(operation.id, "Invalid payload", null)
+                return RetryOperationResult.TerminalFailure("Invalid payload", null)
+            }
+
+            val baseUrl = UrlUtils.getUrl()
+            val authHeader = UrlUtils.header
+            val requestUrl = if (operation.dbId.isNullOrEmpty()) {
+                "$baseUrl/${operation.endpoint}"
+            } else {
+                "$baseUrl/${operation.endpoint}/${operation.dbId}"
+            }
+
+            val response = if (operation.httpMethod == "PUT" && !operation.dbId.isNullOrEmpty()) {
+                apiInterface.putDoc(
+                    authHeader,
+                    "application/json",
+                    requestUrl,
+                    payload
+                )
+            } else {
+                apiInterface.postDoc(
+                    authHeader,
+                    "application/json",
+                    requestUrl,
+                    payload
+                )
+            }
+
+            if (response.isSuccessful) {
+                markCompleted(operation.id)
+                Log.d(TAG, "Successfully retried operation ${operation.id}")
+                RetryOperationResult.Success
+            } else if (response.code() == 409) {
+                // 409 Conflict means document already exists - data is already synced
+                markCompleted(operation.id)
+                Log.d(TAG, "Operation ${operation.id} already synced (409 conflict)")
+                RetryOperationResult.Success
+            } else {
+                val code = response.code()
+                val isRetryable = code >= 500
+                if (isRetryable) {
+                    markFailed(operation.id, "HTTP $code", code)
+                    Log.w(TAG, "Retry failed for ${operation.id}: HTTP $code")
+                    RetryOperationResult.RetryableFailure("HTTP $code", code)
+                } else {
+                    markFailed(operation.id, "Non-retryable HTTP $code", code)
+                    Log.w(TAG, "Retry failed for ${operation.id}: HTTP $code")
+                    RetryOperationResult.TerminalFailure("Non-retryable HTTP $code", code)
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            markFailed(operation.id, e.message, null)
+            Log.w(TAG, "Network error during retry for ${operation.id}", e)
+            RetryOperationResult.RetryableFailure(e.message, null)
+        } catch (e: Exception) {
+            markFailed(operation.id, e.message, null)
+            Log.e(TAG, "Unexpected error during retry for ${operation.id}", e)
+            RetryOperationResult.RetryableFailure(e.message, null)
+        }
     }
 
     override suspend fun getPending(): List<RetryOperation> {

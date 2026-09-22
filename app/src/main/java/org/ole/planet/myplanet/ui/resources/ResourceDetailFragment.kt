@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.resources
 
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,6 +11,7 @@ import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -65,8 +67,10 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                         binding.btnRemove.contentDescription = getString(R.string.remove)
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "onDownloadComplete failed", e)
             }
             updateDownloadButtonState()
         }
@@ -135,8 +139,10 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
             try {
                 onRatingChanged()
+            } catch (e: CancellationException) {
+                throw e
             } catch (ex: Exception) {
-                ex.printStackTrace()
+                Log.w(TAG, "setLibraryData failed", ex)
             }
             setupDownloadButton()
             setClickListeners()
@@ -240,8 +246,10 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                         Utilities.toast(activity, getString(formatRes, getString(R.string.resources)))
                         setLibraryData()
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.w(TAG, "setClickListeners failed", e)
                 }
             }
         }
@@ -269,8 +277,10 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 val rating = ratingsRepository.getRatingSummary("resource", resourceId, userModel?.id)
                 lastKnownRating = rating
                 setRatings(rating)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "onRatingChanged failed", e)
             }
         }
     }
@@ -278,5 +288,9 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onDestroyView() {
         _binding = null
         super.onDestroyView()
+    }
+
+    companion object {
+        private const val TAG = "ResourceDetailFragment"
     }
 }

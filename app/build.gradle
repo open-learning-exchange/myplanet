@@ -11,8 +11,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7231
-        versionName = "0.72.31"
+        versionCode = 7267
+        versionName = "0.72.67"
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
@@ -247,6 +247,7 @@ dependencies {
     implementation(libs.opencsv) { exclude group: 'commons-logging', module: 'commons-logging' }
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
+    implementation(libs.retrofit.converter.kotlinx.serialization)
     implementation(libs.okhttp)
     implementation(libs.circleimageview)
     implementation(libs.pbkdf2)

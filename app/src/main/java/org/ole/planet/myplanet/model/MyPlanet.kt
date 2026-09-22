@@ -8,6 +8,7 @@ import com.google.gson.JsonObject
 import java.io.Serializable
 import java.util.Calendar
 import java.util.Date
+import kotlinx.serialization.Serializable as KSerializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -18,6 +19,7 @@ import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 
+@KSerializable
 class MyPlanet : Serializable {
     var planetVersion: String? = null
     var minapkcode = 0

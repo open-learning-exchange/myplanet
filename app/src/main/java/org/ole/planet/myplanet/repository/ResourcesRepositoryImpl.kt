@@ -11,18 +11,20 @@ import java.io.IOException
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.model.RemovedLog
@@ -40,6 +42,7 @@ import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -62,7 +65,9 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val configurationsRepository: ConfigurationsRepository,
     private val dispatcherProvider: DispatcherProvider,
     private val deviceNameProvider: DeviceNameProvider,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    @param:ApplicationScope private val appScope: CoroutineScope,
+    private val storagePathResolver: StoragePathResolver
 ) : ResourcesRepository {
 
     // Shelf membership is stored as a JSON userId list; match a single entry with LIKE %"id"%.
@@ -74,8 +79,8 @@ class ResourcesRepositoryImpl @Inject constructor(
         return "%\"$escaped\"%"
     }
 
-    override suspend fun getAllLibraries(): List<MyLibrary> {
-        return myLibraryDao.getAll()
+    override suspend fun getLibraryTitles(): List<LibraryTitleProjection> {
+        return myLibraryDao.getLibraryTitles()
     }
 
     override suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<MyLibrary> {
@@ -185,7 +190,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun getLibraryItemsByIds(ids: Collection<String>): List<MyLibrary> {
         if (ids.isEmpty()) return emptyList()
-        return myLibraryDao.getByUnderscoreIds(ids.toList())
+        return myLibraryDao.getByIds(ids.toList())
     }
 
     override suspend fun getLibraryItemsByResourceIds(ids: Collection<String>): List<MyLibrary> {
@@ -397,7 +402,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             return
         }
         val entryFile = library.openWhichFile?.takeIf { it.isNotBlank() } ?: "index.html"
-        val directory = File(MainApplication.context.getExternalFilesDir(null), "ole/$resourceId")
+        val directory = File(storagePathResolver.resolveOleDirectory(), resourceId)
         val entryExists = withContext(dispatcherProvider.io) {
             FileUtils.resolveHtmlEntryFile(directory, entryFile)?.exists() == true
         }
@@ -502,7 +507,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         val files = libraryList ?: getAllLibrariesToSync()
         val urls = DownloadUtils.downloadAllFiles(files)
 
-        MainApplication.applicationScope.launch {
+        appScope.launch {
             if (configurationsRepository.checkServerAvailability()) {
                 if (urls.isNotEmpty()) {
                     DownloadUtils.openDownloadService(context, urls, false)

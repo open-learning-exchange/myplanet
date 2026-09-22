@@ -1,17 +1,21 @@
 package org.ole.planet.myplanet.model
 
 import com.google.gson.annotations.SerializedName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class ChatResponse(
-    @SerializedName("message") var message: String? = null,
-    @SerializedName("error") var error: String? = null,
-    @SerializedName("status") var status: String? = null,
-    @SerializedName("chat") var chat: String? = null,
-    @SerializedName("couchDBResponse") var couchDBResponse: CouchDBResponse? = CouchDBResponse()
+    @SerialName("message") @SerializedName("message") var message: String? = null,
+    @SerialName("error") @SerializedName("error") var error: String? = null,
+    @SerialName("status") @SerializedName("status") var status: String? = null,
+    @SerialName("chat") @SerializedName("chat") var chat: String? = null,
+    @SerialName("couchDBResponse") @SerializedName("couchDBResponse") var couchDBResponse: CouchDBResponse? = CouchDBResponse()
 )
 
+@Serializable
 data class CouchDBResponse(
-    @SerializedName("ok") var ok: Boolean? = null,
-    @SerializedName("id") var id: String? = null,
-    @SerializedName("rev") var rev: String? = null
+    @SerialName("ok") @SerializedName("ok") var ok: Boolean? = null,
+    @SerialName("id") @SerializedName("id") var id: String? = null,
+    @SerialName("rev") @SerializedName("rev") var rev: String? = null
 )

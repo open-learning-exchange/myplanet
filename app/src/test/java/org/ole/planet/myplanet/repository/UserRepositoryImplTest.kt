@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
 import retrofit2.Response
@@ -68,6 +69,9 @@ class UserRepositoryImplTest {
         mockkObject(UrlUtils)
         every { UrlUtils.header } returns "Basic auth"
         every { UrlUtils.getUrl() } returns "http://test.url"
+
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "mock_unique_id"
 
         mockkStatic(Log::class)
         every { Log.e(any(), any()) } returns 0
@@ -120,6 +124,7 @@ class UserRepositoryImplTest {
     @After
     fun tearDown() {
         unmockkObject(UrlUtils)
+        unmockkObject(NetworkUtils)
         unmockkStatic(Log::class)
     }
 

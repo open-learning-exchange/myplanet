@@ -9,10 +9,13 @@ import androidx.test.core.app.ApplicationProvider
 import com.google.android.flexbox.FlexboxLayout
 import com.google.android.material.chip.Chip
 import io.mockk.clearAllMocks
+import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.job
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -31,6 +34,8 @@ import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
+import org.robolectric.shadows.ShadowPopupMenu
 
 @RunWith(RobolectricTestRunner::class)
 class VoicesLabelManagerTest {
@@ -120,6 +125,33 @@ class VoicesLabelManagerTest {
         scope.advanceUntilIdle()
 
         coVerify(timeout = 1000) { removeLabelFn("test-id", "offer") }
+    }
+
+    @Test
+    fun testRemoveLabelCancellation_IsRethrownNotSwallowed() {
+        coEvery { removeLabelFn(any(), any()) } throws CancellationException("scope cancelled")
+        voice.labels = listOf("offer")
+        voicesLabelManager.showChips(binding, voice, true)
+
+        (fbChips.getChildAt(0) as Chip).performCloseIconClick()
+        val job = scope.coroutineContext.job.children.first()
+        scope.advanceUntilIdle()
+
+        assertTrue(job.isCancelled)
+    }
+
+    @Test
+    fun testAddLabelCancellation_IsRethrownNotSwallowed() {
+        coEvery { addLabelFn(any(), any()) } throws CancellationException("scope cancelled")
+        voicesLabelManager.setupAddLabelMenu(binding, voice, true)
+
+        btnAddLabel.performClick()
+        val popupMenu = ShadowPopupMenu.getLatestPopupMenu()
+        shadowOf(popupMenu).onMenuItemClickListener.onMenuItemClick(popupMenu.menu.getItem(0))
+        val job = scope.coroutineContext.job.children.first()
+        scope.advanceUntilIdle()
+
+        assertTrue(job.isCancelled)
     }
 
     @Test

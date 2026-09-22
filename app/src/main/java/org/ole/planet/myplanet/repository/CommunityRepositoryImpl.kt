@@ -1,8 +1,10 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import javax.inject.Singleton
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.CommunityDao
@@ -52,8 +54,10 @@ class CommunityRepositoryImpl @Inject constructor(
             } else {
                 false
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "syncCommunityDocs failed", e)
             false
         }
     }
@@ -75,5 +79,9 @@ class CommunityRepositoryImpl @Inject constructor(
         if (meetupsToInsert.isNotEmpty()) {
             meetupDao.upsertAll(meetupsToInsert)
         }
+    }
+
+    companion object {
+        private const val TAG = "CommunityRepositoryImpl"
     }
 }
