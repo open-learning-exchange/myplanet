@@ -21,7 +21,8 @@ import org.ole.planet.myplanet.repository.UserRepository
 data class RequestsUiState(
     val members: List<UserEntity> = emptyList(),
     val isLeader: Boolean = false,
-    val memberCount: Int = 0
+    val memberCount: Int = 0,
+    val currentUser: UserEntity = UserEntity()
 )
 
 data class MembersUiState(
@@ -133,7 +134,8 @@ class RequestsViewModel @Inject constructor(
                 _uiState.value = RequestsUiState(
                     members = membersDeferred.await(),
                     isLeader = isLeader,
-                    memberCount = memberCountDeferred.await()
+                    memberCount = memberCountDeferred.await(),
+                    currentUser = user ?: UserEntity()
                 )
             }
         }

@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.ServerReachabilityProvider
 
 @Singleton
 class ChatRepositoryImpl @Inject constructor(
@@ -33,12 +34,13 @@ class ChatRepositoryImpl @Inject constructor(
     private val serverUrlMapper: ServerUrlMapper,
     private val sharedPrefManager: SharedPrefManager,
     private val dispatcherProvider: DispatcherProvider,
+    private val serverReachabilityProvider: ServerReachabilityProvider,
     @PlainGson private val gson: Gson
 ) : ChatRepository, ChatSyncWriter {
 
     @VisibleForTesting
     internal var reachabilityCheck: suspend (String) -> Boolean = { url ->
-        org.ole.planet.myplanet.MainApplication.isServerReachable(url)
+        serverReachabilityProvider.isServerReachable(url)
     }
 
     override suspend fun sendNewChatRequest(

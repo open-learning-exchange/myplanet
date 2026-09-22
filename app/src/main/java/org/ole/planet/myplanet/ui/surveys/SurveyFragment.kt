@@ -12,7 +12,6 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
@@ -26,15 +25,11 @@ import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnSurveyAdoptListener
 import org.ole.planet.myplanet.databinding.FragmentSurveyBinding
 import org.ole.planet.myplanet.model.StepExam
-import org.ole.planet.myplanet.model.TableDataUpdate
-import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
-import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
-import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
-class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener, RealtimeSyncMixin {
+class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener {
     private var _binding: FragmentSurveyBinding? = null
     private val binding get() = _binding!!
     private var adapter: SurveysAdapter? = null
@@ -43,10 +38,6 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener,
     private var teamId: String? = null
     private val viewModel: SurveysViewModel by viewModels()
 
-    @Inject
-    lateinit var realtimeSyncManager: RealtimeSyncManager
-
-    private lateinit var realtimeSyncHelper: RealtimeSyncHelper
     private val adapterMutex = Mutex()
 
     override fun getLayout(): Int = R.layout.fragment_survey
@@ -89,8 +80,6 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener,
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        realtimeSyncHelper = RealtimeSyncHelper(this, this, realtimeSyncManager)
-        realtimeSyncHelper.setupRealtimeSync()
         initializeViews()
         binding.layoutSearch.etSearch.textChanges()
             .drop(1)
@@ -191,22 +180,6 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener,
             _binding?.spnSort?.visibility = if (itemCount == 0) View.GONE else View.VISIBLE
             showNoData(tvMessage, itemCount, "survey")
         }
-    }
-
-    override fun getWatchedTables(): List<String> {
-        return listOf("exams")
-    }
-
-    override fun onDataUpdated(table: String, update: TableDataUpdate) {
-        if (table == "exams" && update.shouldRefreshUI) {
-            viewModel.loadSurveys(isTeam, teamId, viewModel.isTeamShareAllowed.value)
-        }
-    }
-
-    override fun shouldAutoRefresh(table: String): Boolean = false
-
-    override fun getSyncRecyclerView(): RecyclerView? {
-        return if (::recyclerView.isInitialized) recyclerView else null
     }
 
     override fun onDestroyView() {
