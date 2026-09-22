@@ -53,6 +53,8 @@ class ResourcesRepositoryBenchmarkTest {
             configurationsRepository,
             dispatcherProvider,
             mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
             mockk(relaxed = true)
         )
     }

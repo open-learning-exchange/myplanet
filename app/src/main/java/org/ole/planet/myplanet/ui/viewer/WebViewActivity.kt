@@ -50,6 +50,9 @@ class WebViewActivity : AppCompatActivity() {
     private val trustedHosts by lazy {
         ServerConfigUtils.getTrustedServerHosts()
     }
+    private val resourceDirectory: File? by lazy {
+        getLocalResourceDirectory(intent.getStringExtra("RESOURCE_ID"))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,7 +63,6 @@ class WebViewActivity : AppCompatActivity() {
         fromDeepLink = !TextUtils.isEmpty(dataFromDeepLink)
         val title: String? = intent.getStringExtra("title")
         link = intent.getStringExtra("link") ?: ""
-        val resourceDirectory = getLocalResourceDirectory(intent.getStringExtra("RESOURCE_ID"))
         clearCookie()
         if (!TextUtils.isEmpty(title)) {
             activityWebViewBinding.contentWebView.webTitle.text = title
@@ -83,12 +85,13 @@ class WebViewActivity : AppCompatActivity() {
             }
         }
 
-        if (resourceDirectory != null) {
+        val dir = resourceDirectory
+        if (dir != null) {
             val entryRelativePath = intent.getStringExtra("OPEN_WHICH_FILE")
-            val indexFile = FileUtils.resolveHtmlEntryFile(resourceDirectory, entryRelativePath)
+            val indexFile = FileUtils.resolveHtmlEntryFile(dir, entryRelativePath)
 
             if (indexFile?.exists() == true) {
-                val entryPath = indexFile.relativeTo(resourceDirectory).invariantSeparatorsPath
+                val entryPath = indexFile.relativeTo(dir).invariantSeparatorsPath
                 val encodedEntryPath = entryPath.split("/").joinToString("/") { Uri.encode(it) }
                 activityWebViewBinding.contentWebView.wv.loadUrl("https://appassets.androidplatform.net/assets/$encodedEntryPath")
             }
@@ -100,7 +103,7 @@ class WebViewActivity : AppCompatActivity() {
     private fun setupWebView() {
         activityWebViewBinding.contentWebView.wv.settings.apply {
             // Only enable JavaScript for local resources that need it
-            val isLocalResource = getLocalResourceDirectory(intent.getStringExtra("RESOURCE_ID")) != null
+            val isLocalResource = resourceDirectory != null
             javaScriptEnabled = isLocalResource
             javaScriptCanOpenWindowsAutomatically = false
             
@@ -167,7 +170,7 @@ class WebViewActivity : AppCompatActivity() {
     }
 
     private fun setupAssetLoader(): WebViewAssetLoader? {
-        val directory = getLocalResourceDirectory(intent.getStringExtra("RESOURCE_ID")) ?: return null
+        val directory = resourceDirectory ?: return null
         val externalPathHandler = WebViewAssetLoader.PathHandler { path ->
             try {
                 val file = File(directory, path)
@@ -282,7 +285,7 @@ class WebViewActivity : AppCompatActivity() {
     }
     
     private fun checkUrlSafety(url: String): Boolean {
-        val resourceId = getLocalResourceDirectory(intent.getStringExtra("RESOURCE_ID"))?.name
+        val resourceId = resourceDirectory?.name
         val appDir = getExternalFilesDir(null)?.absolutePath ?: ""
         return WebViewSafety.isUrlSafe(url, trustedHosts, resourceId, appDir)
     }
@@ -307,11 +310,13 @@ class WebViewActivity : AppCompatActivity() {
         }
     }
 
-    private fun isWithinDirectory(file: File, directory: File): Boolean {
-        val canonicalFile = file.canonicalFile
-        val canonicalDirectory = directory.canonicalFile
-        return canonicalFile.path == canonicalDirectory.path ||
-            canonicalFile.path.startsWith(canonicalDirectory.path + File.separator)
+    companion object {
+        internal fun isWithinDirectory(file: File, directory: File): Boolean {
+            val canonicalFile = file.canonicalFile
+            val canonicalDirectory = directory.canonicalFile
+            return canonicalFile.path == canonicalDirectory.path ||
+                canonicalFile.path.startsWith(canonicalDirectory.path + File.separator)
+        }
     }
 
     private fun setListeners() {

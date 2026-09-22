@@ -79,6 +79,7 @@ object ExamAnswerUtils {
         correctChoices: List<String>?
     ): Boolean {
         if (listAns == null || correctChoices == null) return false
+        if (listAns.size != correctChoices.size) return false
         val locale = Locale.getDefault()
         val selectedAns = listAns.values.map { it.lowercase(locale) }.sorted()
         val correctList = correctChoices.map { it.lowercase(locale) }.sorted()

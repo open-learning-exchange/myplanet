@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -164,7 +165,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
             llImage?.addView(imageBinding.root)
             if (resultCode == 102) adapterNews?.setImageList(imageList)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "processImageUri failed", e)
         }
     }
 
@@ -177,5 +178,9 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
                 false
             }
         }
+    }
+
+    companion object {
+        private const val TAG = "BaseVoicesFragment"
     }
 }

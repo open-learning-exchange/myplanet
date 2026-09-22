@@ -49,6 +49,7 @@ import com.mikepenz.materialdrawer.model.interfaces.Nameable
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.math.ceil
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -653,10 +654,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                                         refreshNotificationsWithRetry(userId)
                                     }
                                 } else {
-                                    Log.w("DashboardActivity", "SystemNotificationReceiver: User ID is null")
+                                    Log.w(TAG, "SystemNotificationReceiver: User ID is null")
                                 }
                             }
                         }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Log.w(TAG, "systemNotificationReceiver failed", e)
                     } finally {
                         pendingResult.finish()
                     }
@@ -674,7 +679,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
             systemNotificationReceiver = receiver
         } catch (e: IllegalArgumentException) {
-            e.printStackTrace()
+            Log.w(TAG, "registerSystemNotificationReceiver failed", e)
         }
     }
 
@@ -684,7 +689,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         try {
             unregisterReceiver(receiver)
         } catch (e: IllegalArgumentException) {
-            e.printStackTrace()
+            Log.w(TAG, "unregisterSystemNotificationReceiver failed", e)
         }
     }
 
@@ -1127,6 +1132,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     companion object {
+        private const val TAG = "DashboardActivity"
         const val MESSAGE_PROGRESS = "message_progress"
         var isFromNotificationAction = false
         private const val LAST_SYNC_STATUS_REFRESH_INTERVAL_MS = 60_000L
