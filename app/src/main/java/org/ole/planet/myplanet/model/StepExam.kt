@@ -4,8 +4,12 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @Entity(tableName = "exams", indices = [Index("courseId"), Index("stepId"), Index("teamId"), Index("sourceSurveyId")])
 open class StepExam(
@@ -69,28 +73,29 @@ open class StepExam(
         }
 
         fun serializeExam(exam: StepExam, questions: List<ExamQuestion>): JsonObject {
-            val `object` = JsonObject()
-            `object`.addProperty("_id", exam.id)
-            if (exam._rev != null) {
-                `object`.addProperty("_rev", exam._rev)
-            }
-            `object`.addProperty("name", exam.name)
-            `object`.addProperty("description", exam.description)
-            `object`.addProperty("passingPercentage", exam.passingPercentage)
-            `object`.addProperty("type", exam.type)
-            `object`.addProperty("updatedDate", exam.updatedDate)
-            `object`.addProperty("createdDate", exam.createdDate)
-            `object`.addProperty("adoptionDate", exam.adoptionDate)
-            `object`.addProperty("sourcePlanet", exam.sourcePlanet)
-            `object`.addProperty("totalMarks", exam.totalMarks)
-            `object`.addProperty("createdBy", exam.createdBy)
-            if (exam.sourceSurveyId != null) {
-                `object`.addProperty("sourceSurveyId", exam.sourceSurveyId)
-            }
-            if (exam.teamId != null) {
-                `object`.addProperty("teamId", exam.teamId)
-            }
-            `object`.add("questions", ExamQuestion.serializeQuestions(questions))
+            val `object` = buildJsonObject {
+                put("_id", exam.id)
+                if (exam._rev != null) {
+                    put("_rev", exam._rev)
+                }
+                put("name", exam.name)
+                put("description", exam.description)
+                put("passingPercentage", exam.passingPercentage)
+                put("type", exam.type)
+                put("updatedDate", exam.updatedDate)
+                put("createdDate", exam.createdDate)
+                put("adoptionDate", exam.adoptionDate)
+                put("sourcePlanet", exam.sourcePlanet)
+                put("totalMarks", exam.totalMarks)
+                put("createdBy", exam.createdBy)
+                if (exam.sourceSurveyId != null) {
+                    put("sourceSurveyId", exam.sourceSurveyId)
+                }
+                if (exam.teamId != null) {
+                    put("teamId", exam.teamId)
+                }
+                put("questions", ExamQuestion.serializeQuestions(questions).toKotlinx())
+            }.toGson()
             `object`.addDocumentOrigin()
             return `object`
         }
