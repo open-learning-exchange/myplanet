@@ -8,13 +8,6 @@ import okhttp3.ResponseBody
 import retrofit2.Converter
 import retrofit2.Retrofit
 
-/**
- * kotlinx.serialization's own converter factory claims every requested type unconditionally,
- * so it can't simply be appended alongside [retrofit2.converter.gson.GsonConverterFactory] -
- * it would either shadow Gson entirely or throw for the raw JsonObject/JsonArray endpoints it
- * has no serializer for. This factory only delegates to kotlinx.serialization for [handledTypes]
- * and returns null otherwise, letting the next factory in the chain (Gson) handle the rest.
- */
 class AllowlistFactory(
     json: Json,
     private val handledTypes: Set<Type>
