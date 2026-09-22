@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.user
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +15,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ProfileFieldsUpdate
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
@@ -31,7 +31,7 @@ data class AchievementSaveRequest(
     val username: String,
     val parentCode: String,
     val resumeFileName: String,
-    val profileFields: JsonObject,
+    val profileFields: ProfileFieldsUpdate,
 )
 
 @HiltViewModel

@@ -5,6 +5,7 @@ import android.app.Dialog
 import android.content.Context
 import android.os.Build
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -34,8 +35,8 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.VoicesEditActions
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
-import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
+import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -115,6 +116,7 @@ class VoicesAdapter(
     )
 ) {
     companion object {
+        private const val TAG = "VoicesAdapter"
         const val PAYLOAD_TEAM_LEADER_CHANGED = "PAYLOAD_TEAM_LEADER_CHANGED"
         const val PAYLOAD_CURRENT_USER_CHANGED = "PAYLOAD_CURRENT_USER_CHANGED"
         const val PAYLOAD_NON_TEAM_MEMBER_CHANGED = "PAYLOAD_NON_TEAM_MEMBER_CHANGED"
@@ -591,7 +593,7 @@ class VoicesAdapter(
         return try {
             JsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "parseViewIn failed", e)
             null
         }
     }
@@ -601,7 +603,7 @@ class VoicesAdapter(
         return try {
             JsonUtils.gson.fromJson(conversations, Array<Conversation>::class.java).toList()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "parseConversations failed", e)
             null
         }
     }
@@ -611,7 +613,7 @@ class VoicesAdapter(
         return try {
             imageUrls.map { JsonUtils.gson.fromJson(it, JsonObject::class.java) }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "parseImageUrls failed", e)
             null
         }
     }
@@ -650,7 +652,7 @@ class VoicesAdapter(
                 it.parsedSharedTeamName = JsonUtils.extractSharedTeamName(it)
             } catch (e: Exception) {
                 // Catch any parsing exceptions so one bad row doesn't break submitList
-                e.printStackTrace()
+                Log.w(TAG, "preParseNews failed", e)
             }
         }
     }
@@ -733,7 +735,7 @@ class VoicesAdapter(
                 replyCountCache[newsId] = replyCount
                 applyReplyCount(viewHolder.binding, replyCount, position)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "updateReplyCount failed", e)
             }
         }
     }

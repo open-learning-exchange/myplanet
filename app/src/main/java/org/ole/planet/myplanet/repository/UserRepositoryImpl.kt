@@ -29,7 +29,6 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.AchievementDao
@@ -50,6 +49,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter
+import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -79,7 +79,8 @@ class UserRepositoryImpl @Inject constructor(
     private val removedLogDao: RemovedLogDao,
     private val achievementDao: AchievementDao,
     private val userDao: UserDao,
-    private val realtimeSyncManager: RealtimeSyncManager
+    private val realtimeSyncManager: RealtimeSyncManager,
+    private val deviceNameProvider: DeviceNameProvider
 ) : UserRepository, UserSyncRepository {
     override val achievementUpdates: Flow<Unit> = realtimeSyncManager.dataUpdateFlow
         .filter { it.table == "achievements" && it.shouldRefreshUI }
@@ -464,30 +465,24 @@ class UserRepositoryImpl @Inject constructor(
         return upsertUser(user)
     }
 
-    override suspend fun updateProfileFields(userId: String?, payload: JsonObject) {
+    override suspend fun updateProfileFields(userId: String?, update: ProfileFieldsUpdate) {
         if (userId.isNullOrBlank()) {
             return
         }
 
         val model = getUserByAnyId(userId) ?: return
-        payload.entrySet().forEach { (key, value) ->
-            if (value != null && !value.isJsonNull && value.isJsonPrimitive) {
-                val strValue = value.asString
-                when (key) {
-                    "firstName" -> model.firstName = strValue
-                    "lastName" -> model.lastName = strValue
-                    "middleName" -> model.middleName = strValue
-                    "email" -> model.email = strValue
-                    "language" -> model.language = strValue
-                    "phoneNumber" -> model.phoneNumber = strValue
-                    "birthDate" -> model.dob = strValue
-                    "birthPlace" -> model.birthPlace = strValue
-                    "level" -> model.level = strValue
-                    "gender" -> model.gender = strValue
-                    "age" -> model.age = strValue
-                }
-            }
-        }
+        update.firstName?.let { model.firstName = it }
+        update.lastName?.let { model.lastName = it }
+        update.middleName?.let { model.middleName = it }
+        update.email?.let { model.email = it }
+        update.language?.let { model.language = it }
+        update.phoneNumber?.let { model.phoneNumber = it }
+        update.birthDate?.let { model.dob = it }
+        update.birthPlace?.let { model.birthPlace = it }
+        update.level?.let { model.level = it }
+        update.gender?.let { model.gender = it }
+        update.age?.let { model.age = it }
+
         model.isUpdated = true
         upsertUser(model)
     }
@@ -530,8 +525,8 @@ class UserRepositoryImpl @Inject constructor(
             addProperty("type", "user")
             addProperty("betaEnabled", false)
             addDocumentOrigin()
-            addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
-            addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
+            addProperty("uniqueAndroidId", VersionUtils.getAndroidId(context))
+            addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())
             val roles = JsonArray().apply { add("learner") }
             add("roles", roles)
         }

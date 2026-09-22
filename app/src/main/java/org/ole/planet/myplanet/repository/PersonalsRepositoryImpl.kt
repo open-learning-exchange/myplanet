@@ -12,7 +12,6 @@ import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
-import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.distinctByContent
@@ -97,7 +96,7 @@ class PersonalsRepositoryImpl @Inject constructor(
     private fun serialize(personal: Personal): JsonObject {
         val `object` = JsonObject()
         `object`.addProperty("title", personal.title)
-        `object`.addProperty("uploadDate", Date().time)
+        `object`.addProperty("uploadDate", System.currentTimeMillis())
         `object`.addProperty("createdDate", personal.date)
         `object`.addProperty("filename", FileUtils.getFileNameFromUrl(personal.path))
         `object`.addProperty("author", personal.userName)
@@ -107,7 +106,7 @@ class PersonalsRepositoryImpl @Inject constructor(
         `object`.addProperty("private", true)
         val object1 = JsonObject()
         `object`.addDocumentOrigin()
-        `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
+        `object`.addProperty("deviceName", deviceNameProvider.getDeviceName())
         `object`.addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())
         object1.addProperty("users", personal.userId)
         `object`.add("privateFor", object1)

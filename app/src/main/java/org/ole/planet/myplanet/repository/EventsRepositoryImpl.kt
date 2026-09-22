@@ -23,6 +23,11 @@ class EventsRepositoryImpl @Inject constructor(
         return meetupDao.getByTeamId(teamId)
     }
 
+    override suspend fun getMeetupsForTeams(teamIds: List<String>): List<Meetup> {
+        if (teamIds.isEmpty()) return emptyList()
+        return meetupDao.getByTeamIds(teamIds)
+    }
+
     override suspend fun updateMeetup(
         meetupId: String, title: String, description: String,
         startDate: Long, endDate: Long, startTime: String,
