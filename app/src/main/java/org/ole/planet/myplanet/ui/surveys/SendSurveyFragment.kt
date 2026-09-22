@@ -49,6 +49,7 @@ class SendSurveyFragment : BaseDialogFragment() {
 
         fragmentSendSurveyBinding.sendSurvey.setOnClickListener {
             val surveyId = id ?: return@setOnClickListener
+            it.isEnabled = false
             val selectedItems = (fragmentSendSurveyBinding.listUsers.adapter as CheckboxAdapter).selectedItemsList
             val selectedUserIds = selectedItems.mapNotNull { users.getOrNull(it)?.id }
             viewModel.sendSurveyToUsers(surveyId, selectedUserIds)
