@@ -19,7 +19,6 @@ data class EnrichedNotifications(
 interface NotificationsRepository {
     suspend fun refresh()
     suspend fun markNotificationAsRead(notificationId: String, userId: String?)
-    suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean = false): List<NotificationPayload>
     suspend fun getEnrichedNotifications(userId: String, filter: String, isAdmin: Boolean = false): EnrichedNotifications
     suspend fun getUnreadCount(userId: String?, isAdmin: Boolean = false): Int
     suspend fun updateResourceNotification(userId: String?, resourceCount: Int)

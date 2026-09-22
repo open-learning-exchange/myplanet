@@ -339,6 +339,22 @@ class NotificationsViewModelTest {
         assertEquals(0, viewModel.unreadCount.value)
     }
 
+    @Test
+    fun testNotificationGroupOrdering_knownTypesFirstInTypeOrder_unknownTypesAfterInFirstSeenOrder() = runTest(testDispatcher) {
+        val resourceNotif = notification(id = "1", type = "resource", isRead = false)
+        val unknownNotif = notification(id = "2", type = "unknown_type", isRead = false)
+        val taskNotif = notification(id = "3", type = "task", isRead = false)
+        val joinNotif = notification(id = "4", type = "join_request", isRead = false)
+
+        loadNotifications(resourceNotif, unknownNotif, taskNotif, joinNotif)
+
+        val headerTypes = viewModel.groupedItems.value
+            .filterIsInstance<NotificationListItem.Header>()
+            .map { it.type }
+
+        assertEquals(listOf("join_request", "task", "resource", "notification"), headerTypes)
+    }
+
     private fun item(id: String): NotificationListItem.Item =
         viewModel.groupedItems.value
             .filterIsInstance<NotificationListItem.Item>()
