@@ -5,6 +5,7 @@ import android.app.DatePickerDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -87,7 +88,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                             }
                             Utilities.toast(requireContext(), getString(R.string.csv_file_saved_successfully))
                         } catch (e: IOException) {
-                            e.printStackTrace()
+                            Log.w(TAG, "CSV export write failed", e)
                             Utilities.toast(requireContext(), getString(R.string.failed_to_save_csv_file))
                         }
                     }
@@ -399,6 +400,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
     }
 
     companion object {
+        private const val TAG = "EnterprisesReportsFragment"
         private val dateFormatter = DateTimeFormatter.ofPattern("EEE_MMM_dd_yyyy", Locale.US)
     }
 }

@@ -183,27 +183,50 @@ class InlineResourceAdapter(
                 binding.ivStatus.visibility = View.VISIBLE
                 binding.ivStatus.setImageResource(R.drawable.ic_eye)
 
+                val dir = externalFilesDir ?: FileUtils.getExternalFilesDir(context)
                 val mimeType = Utilities.getMimeType(resource.resourceLocalAddress)
+
+                if (mimeType?.contains("html") == true) {
+                    showHtmlPreview(binding, context, resource.id, File(dir, "ole/${resource.id}"))
+                    return@launch
+                }
+
                 val resourceFile = File(
-                    externalFilesDir,
+                    dir,
                     "ole/${resource.id}/${resource.resourceLocalAddress}"
                 )
 
+                val needsCacheKey = mimeType?.startsWith("audio") == true ||
+                    mimeType?.contains("csv") == true || resource.resourceLocalAddress?.endsWith(".csv") == true ||
+                    mimeType?.startsWith("text") == true || resource.resourceLocalAddress?.endsWith(".txt") == true || resource.resourceLocalAddress?.endsWith(".md") == true
+
+                var exists = false
+                var lastModified = 0L
+                var length = 0L
+
+                withContext(dispatcherProvider.io) {
+                    exists = resourceFile.exists()
+                    if (exists && needsCacheKey) {
+                        lastModified = resourceFile.lastModified()
+                        length = resourceFile.length()
+                    }
+                }
+
+                val cacheKey = if (exists && needsCacheKey) getCacheKey(resourceFile, lastModified, length) else null
+
                 when {
-                    mimeType?.startsWith("image") == true -> showImagePreview(binding, context, resourceFile)
-                    mimeType?.startsWith("video") == true -> showVideoPreview(binding, context, resourceFile)
-                    mimeType?.contains("pdf") == true -> showPdfPreview(holder, resourceFile)
-                    mimeType?.startsWith("audio") == true -> showAudioPreview(holder, resourceFile)
-                    mimeType?.contains("html") == true -> showHtmlPreview(binding, context, resource.id, File(externalFilesDir, "ole/${resource.id}"))
-                    mimeType?.contains("csv") == true || resource.resourceLocalAddress?.endsWith(".csv") == true -> showCsvPreview(holder, resourceFile)
-                    mimeType?.startsWith("text") == true || resource.resourceLocalAddress?.endsWith(".txt") == true || resource.resourceLocalAddress?.endsWith(".md") == true -> showTextPreview(holder, resourceFile)
+                    mimeType?.startsWith("image") == true -> showImagePreview(binding, context, resourceFile, exists)
+                    mimeType?.startsWith("video") == true -> showVideoPreview(binding, context, resourceFile, exists)
+                    mimeType?.contains("pdf") == true -> showPdfPreview(holder, resourceFile, exists)
+                    mimeType?.startsWith("audio") == true -> showAudioPreview(holder, resourceFile, cacheKey)
+                    mimeType?.contains("csv") == true || resource.resourceLocalAddress?.endsWith(".csv") == true -> showCsvPreview(holder, resourceFile, cacheKey)
+                    mimeType?.startsWith("text") == true || resource.resourceLocalAddress?.endsWith(".txt") == true || resource.resourceLocalAddress?.endsWith(".md") == true -> showTextPreview(holder, resourceFile, cacheKey)
                 }
             }
         })
     }
 
-    private suspend fun showImagePreview(binding: ItemInlineResourceBinding, context: Context, file: File) {
-        val exists = withContext(dispatcherProvider.io) { file.exists() }
+    private suspend fun showImagePreview(binding: ItemInlineResourceBinding, context: Context, file: File, exists: Boolean) {
         if (exists) {
             val (widthPx, heightPx) = getPreviewDimensions(context)
             binding.ivResourcePreview.visibility = View.VISIBLE
@@ -218,9 +241,8 @@ class InlineResourceAdapter(
         }
     }
 
-    private suspend fun showVideoPreview(binding: ItemInlineResourceBinding, context: Context, file: File) {
+    private suspend fun showVideoPreview(binding: ItemInlineResourceBinding, context: Context, file: File, exists: Boolean) {
         binding.videoThumbnailContainer.visibility = View.VISIBLE
-        val exists = withContext(dispatcherProvider.io) { file.exists() }
         if (exists) {
             val (widthPx, heightPx) = getPreviewDimensions(context)
             Glide.with(context)
@@ -232,8 +254,7 @@ class InlineResourceAdapter(
         }
     }
 
-    private suspend fun showPdfPreview(holder: ViewHolder, file: File) {
-        val exists = withContext(dispatcherProvider.io) { file.exists() }
+    private suspend fun showPdfPreview(holder: ViewHolder, file: File, exists: Boolean) {
         if (!exists) return
         val context = holder.itemView.context
         val targetWidthPx = (PDF_PREVIEW_WIDTH_DP * context.resources.displayMetrics.density).toInt()
@@ -269,25 +290,25 @@ class InlineResourceAdapter(
         }
     }
 
-    private suspend fun showAudioPreview(holder: ViewHolder, file: File) {
+    private suspend fun showAudioPreview(holder: ViewHolder, file: File, cacheKey: String?) {
         holder.binding.audioPreviewContainer.visibility = View.VISIBLE
-        val cacheKey = getFileCacheKeyIfExist(file) ?: return
-        val cachedDuration = textCache[cacheKey]
+        val key = cacheKey ?: return
+        val cachedDuration = textCache[key]
         val durationText = if (cachedDuration != null) {
             cachedDuration
         } else {
-            previewLoader.getAudioPreview(file).also { textCache[cacheKey] = it }
+            previewLoader.getAudioPreview(file).also { textCache[key] = it }
         }
         holder.binding.tvAudioDuration.text = durationText
     }
 
-    private suspend fun showCsvPreview(holder: ViewHolder, file: File) {
-        val cacheKey = getFileCacheKeyIfExist(file) ?: return
-        val cachedPreview = textCache[cacheKey]
+    private suspend fun showCsvPreview(holder: ViewHolder, file: File, cacheKey: String?) {
+        val key = cacheKey ?: return
+        val cachedPreview = textCache[key]
         val preview = if (cachedPreview != null) {
             cachedPreview
         } else {
-            previewLoader.getCsvPreview(file)?.also { textCache[cacheKey] = it }
+            previewLoader.getCsvPreview(file)?.also { textCache[key] = it }
         }
         if (!preview.isNullOrEmpty()) {
             holder.binding.tvTextPreview.visibility = View.VISIBLE
@@ -295,13 +316,13 @@ class InlineResourceAdapter(
         }
     }
 
-    private suspend fun showTextPreview(holder: ViewHolder, file: File) {
-        val cacheKey = getFileCacheKeyIfExist(file) ?: return
-        val cachedText = textCache[cacheKey]
+    private suspend fun showTextPreview(holder: ViewHolder, file: File, cacheKey: String?) {
+        val key = cacheKey ?: return
+        val cachedText = textCache[key]
         val text = if (cachedText != null) {
             cachedText
         } else {
-            previewLoader.getTextPreview(file)?.also { textCache[cacheKey] = it }
+            previewLoader.getTextPreview(file)?.also { textCache[key] = it }
         }
         if (!text.isNullOrEmpty()) {
             holder.binding.tvTextPreview.visibility = View.VISIBLE
@@ -309,15 +330,9 @@ class InlineResourceAdapter(
         }
     }
 
-    private suspend fun getFileCacheKeyIfExist(file: File): String? = withContext(dispatcherProvider.io) {
-        if (file.exists()) {
-            getCacheKey(file)
-        } else {
-            null
-        }
-    }
-
-    private fun getCacheKey(file: File): String = "${file.absolutePath}_${file.lastModified()}_${file.length()}"
+    @VisibleForTesting
+    internal fun getCacheKey(file: File, lastModified: Long, length: Long): String =
+        "${file.absolutePath}_${lastModified}_${length}"
 
     private fun getPreviewDimensions(context: Context): Pair<Int, Int> {
         val widthPx = context.resources.displayMetrics.widthPixels

@@ -4,6 +4,7 @@ import android.app.DatePickerDialog
 import android.content.DialogInterface
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -231,9 +232,9 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             observeTransactions()
 
         } catch (e: DateTimeParseException) {
-            e.printStackTrace()
+            Log.w(TAG, "Date range parsing failed", e)
         } catch (e: IllegalArgumentException) {
-            e.printStackTrace()
+            Log.w(TAG, "Date range filtering failed", e)
         }
     }
 
@@ -409,5 +410,9 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         }
 
         override fun getItemCount(): Int = 1
+    }
+
+    companion object {
+        private const val TAG = "EnterprisesFinancesFragment"
     }
 }
