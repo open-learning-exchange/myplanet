@@ -16,12 +16,10 @@ import io.mockk.verify
 import java.io.File
 import java.util.logging.Level
 import java.util.logging.Logger
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -51,6 +49,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.VersionUtils
@@ -75,6 +74,8 @@ class ResourcesRepositoryImplTest {
     private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
     private val deviceNameProvider: DeviceNameProvider = mockk(relaxed = true)
     private val timeProvider: TimeProvider = mockk(relaxed = true)
+    private val storagePathResolver: StoragePathResolver = mockk(relaxed = true)
+    private val appScope = TestScope(testDispatcher)
 
     @get:Rule
     val temporaryFolder = TemporaryFolder()
@@ -110,7 +111,9 @@ class ResourcesRepositoryImplTest {
             configurationsRepository,
             dispatcherProvider,
             deviceNameProvider,
-            timeProvider
+            timeProvider,
+            appScope,
+            storagePathResolver
         )
         every { dispatcherProvider.io } returns testDispatcher
     }
@@ -255,18 +258,14 @@ class ResourcesRepositoryImplTest {
         coEvery { myLibraryDao.getByResourceId("res1") } returns library
 
         val baseDir = kotlin.io.path.createTempDirectory("resources-repo-test").toFile()
-        val mockContext = mockk<Context>(relaxed = true)
-        every { mockContext.getExternalFilesDir(null) } returns baseDir
-        mockkObject(MainApplication)
-        try {
-            every { MainApplication.context } returns mockContext
+        every { storagePathResolver.resolveOleDirectory() } returns File(baseDir, "ole")
 
+        try {
             repository.reconcileHtmlResourceOffline("res1")
 
             assertFalse(library.resourceOffline)
             coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
         } finally {
-            unmockkObject(MainApplication)
             baseDir.deleteRecursively()
         }
     }
@@ -285,12 +284,9 @@ class ResourcesRepositoryImplTest {
         val baseDir = kotlin.io.path.createTempDirectory("resources-repo-test").toFile()
         File(baseDir, "ole/res1").apply { mkdirs() }
         File(baseDir, "ole/res1/index.html").writeText("<html></html>")
-        val mockContext = mockk<Context>(relaxed = true)
-        every { mockContext.getExternalFilesDir(null) } returns baseDir
-        mockkObject(MainApplication)
-        try {
-            every { MainApplication.context } returns mockContext
+        every { storagePathResolver.resolveOleDirectory() } returns File(baseDir, "ole")
 
+        try {
             repository.reconcileHtmlResourceOffline("res1")
 
             assertTrue(library.resourceOffline)
@@ -298,7 +294,6 @@ class ResourcesRepositoryImplTest {
             assertEquals("index.html", library.resourceLocalAddress)
             coVerify { myLibraryDao.upsert(library) }
         } finally {
-            unmockkObject(MainApplication)
             baseDir.deleteRecursively()
         }
     }
@@ -990,11 +985,8 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `downloadFiles returns provided list directly when not null`() = runTest {
-        val scope = CoroutineScope(SupervisorJob())
-        mockkObject(MainApplication)
         mockkObject(DownloadUtils)
         try {
-            every { MainApplication.applicationScope } returns scope
             coEvery { configurationsRepository.checkServerAvailability() } returns false
             every { DownloadUtils.downloadAllFiles(any()) } returns arrayListOf("url1")
 
@@ -1008,19 +1000,14 @@ class ResourcesRepositoryImplTest {
             coVerify(exactly = 0) { myLibraryDao.getSyncable() }
             verify(exactly = 1) { DownloadUtils.downloadAllFiles(provided) }
         } finally {
-            scope.cancel()
-            unmockkObject(MainApplication)
             unmockkObject(DownloadUtils)
         }
     }
 
     @Test
     fun `downloadFiles falls back to getAllLibrariesToSync when list is null`() = runTest {
-        val scope = CoroutineScope(SupervisorJob())
-        mockkObject(MainApplication)
         mockkObject(DownloadUtils)
         try {
-            every { MainApplication.applicationScope } returns scope
             coEvery { configurationsRepository.checkServerAvailability() } returns false
             val synced = listOf(MyLibrary().apply { _id = "synced1" })
             coEvery { myLibraryDao.getSyncable() } returns synced
@@ -1032,8 +1019,24 @@ class ResourcesRepositoryImplTest {
             assertEquals("synced1", result[0]._id)
             coVerify(exactly = 1) { myLibraryDao.getSyncable() }
         } finally {
-            scope.cancel()
-            unmockkObject(MainApplication)
+            unmockkObject(DownloadUtils)
+        }
+    }
+
+    @Test
+    fun `downloadFiles launches download service asynchronously on appScope when server available`() = runTest {
+        mockkObject(DownloadUtils)
+        try {
+            coEvery { configurationsRepository.checkServerAvailability() } returns true
+            every { DownloadUtils.downloadAllFiles(any()) } returns arrayListOf("http://example.com/file1.pdf")
+            every { DownloadUtils.openDownloadService(context, arrayListOf("http://example.com/file1.pdf"), false) } returns Unit
+
+            val library = MyLibrary().apply { _id = "lib1"; resourceId = "r1" }
+            val result = repository.downloadFiles(listOf(library))
+
+            assertEquals(1, result.size)
+            verify(exactly = 1) { DownloadUtils.openDownloadService(context, arrayListOf("http://example.com/file1.pdf"), false) }
+        } finally {
             unmockkObject(DownloadUtils)
         }
     }
@@ -1177,8 +1180,9 @@ class ResourcesRepositoryImplTest {
     @Test
     fun `reconcileHtmlResourceOffline clears in-memory resource list cache`() = runTest {
         val externalFiles = temporaryFolder.newFolder("external_cache_test")
-        val oleDir = File(externalFiles, "ole/r1").apply { mkdirs() }
-        File(oleDir, "index.html").writeText("html content")
+        val oleDir = File(externalFiles, "ole").apply { mkdirs() }
+        File(oleDir, "r1").apply { mkdirs() }
+        File(oleDir, "r1/index.html").writeText("html content")
 
         val lib = MyLibrary().apply { id = "1"; resourceId = "r1"; title = "Cached Lib"; openWhichFile = "index.html"; resourceOffline = false }
         coEvery { myLibraryDao.getPublic() } returns listOf(lib)
@@ -1186,20 +1190,14 @@ class ResourcesRepositoryImplTest {
         coEvery { myLibraryDao.getByResourceId("r1") } returns lib
         coEvery { myLibraryDao.upsert(any()) } returns Unit
 
-        mockkObject(MainApplication)
-        every { MainApplication.context } returns context
-        every { context.getExternalFilesDir(null) } returns externalFiles
+        every { storagePathResolver.resolveOleDirectory() } returns oleDir
 
-        try {
-            repository.getResourceListModels(false, null)
-            assertNotNull(repository.getCachedResourceListModels(false, null))
+        repository.getResourceListModels(false, null)
+        assertNotNull(repository.getCachedResourceListModels(false, null))
 
-            repository.reconcileHtmlResourceOffline("r1")
+        repository.reconcileHtmlResourceOffline("r1")
 
-            assertNull(repository.getCachedResourceListModels(false, null))
-        } finally {
-            unmockkObject(MainApplication)
-        }
+        assertNull(repository.getCachedResourceListModels(false, null))
     }
 
     @Test
