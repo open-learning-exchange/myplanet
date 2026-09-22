@@ -31,12 +31,12 @@ import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.SearchActivity
+import org.ole.planet.myplanet.model.StorageCategoryType
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.ui.settings.StorageCategories
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
@@ -900,16 +900,15 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getStorageBreakdown(oleDir: File): StorageBreakdown = withContext(dispatcherProvider.io) {
-        val sizes = LongArray(StorageCategories.all.size)
-        val counts = IntArray(StorageCategories.all.size)
+        val sizes = LongArray(StorageCategoryType.entries.size)
+        val counts = IntArray(StorageCategoryType.entries.size)
 
         if (!oleDir.exists() || !oleDir.isDirectory) return@withContext StorageBreakdown(0L, sizes, counts)
 
         var total = 0L
 
         oleDir.walkTopDown().filter { it.isFile }.forEach { file ->
-            val ext = file.extension
-            val index = if (ext.isEmpty()) StorageCategories.OTHER_INDEX else StorageCategories.indexOf(ext)
+            val index = StorageCategoryType.indexOf(file.extension)
             val size = file.length()
             total += size
             sizes[index] += size
