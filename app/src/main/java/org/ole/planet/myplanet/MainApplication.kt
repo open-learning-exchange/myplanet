@@ -35,7 +35,6 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.di.DefaultPreferences
@@ -114,10 +113,6 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         var isCollectionSwitchOn = false
         var showDownload = false
         val isSyncRunning = AtomicBoolean(false)
-        private var _listener: WeakReference<OnTeamPageListener>? = null
-        var listener: OnTeamPageListener?
-            get() = _listener?.get()
-            set(value) { _listener = value?.let { WeakReference(it) } }
         val androidId: String get() {
             try {
                 return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
