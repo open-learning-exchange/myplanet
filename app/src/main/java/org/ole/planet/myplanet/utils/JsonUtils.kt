@@ -7,7 +7,56 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser.parseString
+import com.google.gson.JsonPrimitive
+import kotlinx.serialization.json.JsonArray as KJsonArray
+import kotlinx.serialization.json.JsonElement as KJsonElement
+import kotlinx.serialization.json.JsonNull as KJsonNull
+import kotlinx.serialization.json.JsonObject as KJsonObject
+import kotlinx.serialization.json.JsonPrimitive as KJsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.longOrNull
 import org.ole.planet.myplanet.model.News
+
+fun KJsonObject.toGson(): JsonObject = toGsonElement() as JsonObject
+
+fun KJsonArray.toGson(): JsonArray = toGsonElement() as JsonArray
+
+fun KJsonElement.toGsonElement(): JsonElement = when (this) {
+    is KJsonNull -> JsonNull.INSTANCE
+    is KJsonObject -> {
+        val result = JsonObject()
+        for ((key, value) in this) result.add(key, value.toGsonElement())
+        result
+    }
+    is KJsonArray -> {
+        val result = JsonArray()
+        for (element in this) result.add(element.toGsonElement())
+        result
+    }
+    is KJsonPrimitive -> toGsonPrimitive()
+}
+
+private fun KJsonPrimitive.toGsonPrimitive(): JsonElement {
+    if (isString) return JsonPrimitive(content)
+    booleanOrNull?.let { return JsonPrimitive(it) }
+    longOrNull?.let { return JsonPrimitive(it) }
+    doubleOrNull?.let { return JsonPrimitive(it) }
+    return JsonPrimitive(content)
+}
+
+fun JsonElement.toKotlinx(): KJsonElement = when {
+    isJsonNull -> KJsonNull
+    isJsonObject -> KJsonObject(asJsonObject.entrySet().associate { (key, value) -> key to value.toKotlinx() })
+    isJsonArray -> KJsonArray(asJsonArray.map { it.toKotlinx() })
+    else -> asJsonPrimitive.toKotlinxPrimitive()
+}
+
+private fun JsonPrimitive.toKotlinxPrimitive(): KJsonPrimitive = when {
+    isBoolean -> KJsonPrimitive(asBoolean)
+    isNumber -> KJsonPrimitive(asNumber)
+    else -> KJsonPrimitive(asString)
+}
 
 object JsonUtils {
     private const val TAG = "JsonUtils"

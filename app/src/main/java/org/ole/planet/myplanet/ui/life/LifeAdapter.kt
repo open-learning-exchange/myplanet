@@ -56,6 +56,8 @@ class LifeAdapter(
                 holder.imageView.setImageResource(resId)
             }
             holder.imageView.contentDescription = context.getString(R.string.icon, myLife.title)
+            holder.dragImageButton.contentDescription = context.getString(R.string.drag, myLife.title)
+            holder.visibility.contentDescription = context.getString(R.string.visibility_of, myLife.title)
 
             holder.imageView.setOnClickListener { view: View ->
                 val fragment = findFragment(myLife.imageId)
@@ -64,14 +66,12 @@ class LifeAdapter(
                 }
             }
             holder.dragImageButton.setOnTouchListener { _: View?, event: MotionEvent ->
-                holder.dragImageButton.contentDescription = context.getString(R.string.drag, myLife.title)
                 if (event.actionMasked == MotionEvent.ACTION_DOWN) {
                     mDragStartListener.onStartDrag(holder)
                 }
                 false
             }
             holder.visibility.setOnClickListener {
-                holder.visibility.contentDescription = context.getString(R.string.visibility_of, myLife.title)
                 updateVisibility(holder)
             }
             if (!myLife.isVisible) {

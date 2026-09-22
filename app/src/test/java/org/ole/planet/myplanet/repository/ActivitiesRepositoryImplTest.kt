@@ -44,6 +44,7 @@ import org.ole.planet.myplanet.model.UserChallengeActions
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
@@ -65,6 +66,7 @@ class ActivitiesRepositoryImplTest {
     private lateinit var removedLogDao: RemovedLogDao
     private lateinit var searchActivityDao: org.ole.planet.myplanet.data.room.dao.SearchActivityDao
     private lateinit var userDao: org.ole.planet.myplanet.data.room.dao.UserDao
+    private lateinit var deviceNameProvider: DeviceNameProvider
     private lateinit var dispatcherProvider: DispatcherProvider
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
@@ -96,6 +98,8 @@ class ActivitiesRepositoryImplTest {
         removedLogDao = mockk(relaxed = true)
         searchActivityDao = mockk(relaxed = true)
         userDao = mockk(relaxed = true)
+        deviceNameProvider = mockk(relaxed = true)
+        every { deviceNameProvider.getCustomDeviceName() } returns "mock_custom_device_provider"
         dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
         UrlUtils.init(sharedPrefManager)
@@ -113,7 +117,8 @@ class ActivitiesRepositoryImplTest {
             offlineActivityDao,
             removedLogDao,
             searchActivityDao,
-            userDao
+            userDao,
+            deviceNameProvider
         )
     }
 
@@ -515,6 +520,35 @@ class ActivitiesRepositoryImplTest {
         coVerify(exactly = 0) { offlineActivityDao.getByRemoteIds(any()) }
         coVerify(exactly = 0) { offlineActivityDao.getByLoginTimesAndUserNames(any(), any()) }
         coVerify(exactly = 0) { offlineActivityDao.upsertAll(any()) }
+    }
+
+    @Test
+    fun `uploadActivities serializes customDeviceName using deviceNameProvider`() = testScope.runTest {
+        val mockActivity = OfflineActivity().apply {
+            id = "act1"
+            userId = "user1"
+            userName = "john"
+            type = "login"
+            loginTime = 1000L
+        }
+        coEvery { offlineActivityDao.getPendingLoginUploads() } returns listOf(mockActivity)
+
+        val postedBodySlot = slot<JsonObject>()
+        val mockResponse = mockk<retrofit2.Response<JsonObject>>()
+        every { mockResponse.body() } returns JsonObject().apply { addProperty("ok", true) }
+        coEvery {
+            apiInterface.postDoc(
+                any(),
+                eq("application/json"),
+                any(),
+                capture(postedBodySlot)
+            )
+        } returns mockResponse
+        coEvery { offlineActivityDao.getByIds(listOf("act1")) } returns listOf(mockActivity)
+
+        repository.uploadActivities()
+
+        assertEquals("mock_custom_device_provider", postedBodySlot.captured.get("customDeviceName")?.asString)
     }
 
     @Test

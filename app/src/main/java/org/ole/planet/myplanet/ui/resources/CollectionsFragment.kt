@@ -37,6 +37,7 @@ class CollectionsFragment : BaseBindingDialogFragment<FragmentCollectionsBinding
     private var listener: OnTagClickListener? = null
     private var selectedItemsList: ArrayList<TagEntity> = ArrayList()
     private var currentTagDataList: List<TagData> = emptyList()
+    private var isCollectionSwitchOn = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -159,7 +160,7 @@ class CollectionsFragment : BaseBindingDialogFragment<FragmentCollectionsBinding
 
     private fun buildTagDataList(parents: List<TagEntity>): List<TagData> {
         val tagDataList = mutableListOf<TagData>()
-        val isSelectMultiple = MainApplication.isCollectionSwitchOn
+        val isSelectMultiple = isCollectionSwitchOn
         val parentMap = HashMap<String, TagData.Parent>()
         currentTagDataList.forEach {
             if (it is TagData.Parent && !parentMap.containsKey(it.tag.id)) {
@@ -230,7 +231,7 @@ class CollectionsFragment : BaseBindingDialogFragment<FragmentCollectionsBinding
     }
 
     override fun onCheckedChanged(compoundButton: CompoundButton, b: Boolean) {
-        MainApplication.isCollectionSwitchOn = b
+        isCollectionSwitchOn = b
         currentTagDataList = buildTagDataList(list)
         adapter.submitList(currentTagDataList)
         binding.btnOk.visibility = if (b) View.VISIBLE else View.GONE

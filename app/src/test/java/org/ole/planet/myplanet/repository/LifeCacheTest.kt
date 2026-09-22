@@ -105,4 +105,56 @@ class LifeCacheTest {
 
         assertEquals("myLifeCache_--", keySlot.captured)
     }
+
+    @Test
+    fun read_hitsSharedPreferencesOnce_onMultipleReads() {
+        val items = listOf(
+            CachedMyLifeItem("img1", "Title 1", true, 1)
+        )
+        val json = gson.toJson(items)
+        every { mockSharedPreferences.getString("myLifeCache_user1", null) } returns json
+
+        val firstRead = lifeCache.read("user1")
+        val secondRead = lifeCache.read("user1")
+
+        assertNotNull(firstRead)
+        assertNotNull(secondRead)
+        assertEquals(firstRead, secondRead)
+        verify(exactly = 1) { mockSharedPreferences.getString("myLifeCache_user1", null) }
+    }
+
+    @Test
+    fun write_followedByRead_returnsNewValue_withoutSharedPreferencesRead() {
+        val item = MyLife().apply {
+            imageId = "img_new"
+            title = "New Title"
+            isVisible = true
+            weight = 5
+        }
+
+        lifeCache.write("user1", listOf(item))
+
+        val readBack = lifeCache.read("user1")
+
+        assertNotNull(readBack)
+        assertEquals(1, readBack!!.size)
+        assertEquals("img_new", readBack[0].imageId)
+        assertEquals("New Title", readBack[0].title)
+        verify(exactly = 0) { mockSharedPreferences.getString("myLifeCache_user1", null) }
+    }
+
+    @Test
+    fun read_returnsDefensiveCopy_mutationDoesNotAffectSubsequentRead() {
+        val items = listOf(
+            CachedMyLifeItem("img1", "Original Title", true, 1)
+        )
+        val json = gson.toJson(items)
+        every { mockSharedPreferences.getString("myLifeCache_user1", null) } returns json
+
+        val firstRead = lifeCache.read("user1")!!
+        firstRead[0].title = "Mutated Title"
+
+        val secondRead = lifeCache.read("user1")!!
+        assertEquals("Original Title", secondRead[0].title)
+    }
 }
