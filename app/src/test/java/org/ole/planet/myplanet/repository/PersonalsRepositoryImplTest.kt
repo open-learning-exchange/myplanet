@@ -46,6 +46,7 @@ class PersonalsRepositoryImplTest {
         personalDao = mockk(relaxed = true)
         uploadRepository = mockk(relaxed = true)
         deviceNameProvider = mockk(relaxed = true)
+        every { deviceNameProvider.getDeviceName() } returns "mock-device-name"
         every { deviceNameProvider.getCustomDeviceName() } returns "mock-custom-device-name"
 
         mockkObject(UrlUtils)
@@ -216,7 +217,7 @@ class PersonalsRepositoryImplTest {
 
         every { FileUtils.getFileNameFromUrl(any()) } returns "file.pdf"
         every { NetworkUtils.getUniqueIdentifier() } returns "unique_id"
-        every { NetworkUtils.getDeviceName() } returns "device_name"
+        every { deviceNameProvider.getDeviceName() } returns "device_name"
         every { deviceNameProvider.getCustomDeviceName() } returns "custom_device_name"
 
         val bodySlot = slot<JsonObject>()
@@ -249,7 +250,7 @@ class PersonalsRepositoryImplTest {
 
         every { FileUtils.getFileNameFromUrl(null) } returns ""
         every { NetworkUtils.getUniqueIdentifier() } returns "unique_id"
-        every { NetworkUtils.getDeviceName() } returns "device_name"
+        every { deviceNameProvider.getDeviceName() } returns "device_name"
         every { deviceNameProvider.getCustomDeviceName() } returns "custom_device_name"
 
         val bodySlot = slot<JsonObject>()
@@ -274,6 +275,27 @@ class PersonalsRepositoryImplTest {
 
         val privateFor = serialized.getAsJsonObject("privateFor")
         assertTrue(privateFor.get("users").isJsonNull)
+    }
+
+    @Test
+    fun `uploadPersonalDocument sources deviceName and customDeviceName from DeviceNameProvider`() = runTest {
+        val personal = Personal().apply { id = "test-id" }
+        every { deviceNameProvider.getDeviceName() } returns "provider-standard-device-name"
+        every { deviceNameProvider.getCustomDeviceName() } returns "provider-custom-device-name"
+
+        val responseJson = JsonObject().apply {
+            addProperty("id", "new-id")
+            addProperty("rev", "rev-1")
+        }
+        val bodySlot = slot<JsonObject>()
+        coEvery { uploadRepository.postUpload(any(), capture(bodySlot)) } returns Response.success(responseJson)
+
+        repository.uploadPersonalDocument(personal)
+
+        assertEquals("provider-standard-device-name", bodySlot.captured.get("deviceName").asString)
+        assertEquals("provider-custom-device-name", bodySlot.captured.get("customDeviceName").asString)
+        verify(exactly = 1) { deviceNameProvider.getDeviceName() }
+        verify(exactly = 1) { deviceNameProvider.getCustomDeviceName() }
     }
 
     @Test

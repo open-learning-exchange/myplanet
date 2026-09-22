@@ -25,6 +25,7 @@ class UserArrayAdapter(
 
     var selectedUser: UserEntity? = null
     private var avatarSize = 0
+    private val dateCache = HashMap<Long, String>()
     private val selectedColor by lazy(LazyThreadSafetyMode.NONE) {
         ContextCompat.getColor(context, R.color.md_grey_300)
     }
@@ -59,7 +60,10 @@ class UserArrayAdapter(
         val user = getItem(position)
 
         holder.binding.txtName.text = context.getString(R.string.two_strings, user.getFullName(), "(${user.name})")
-        holder.binding.txtJoined.text = context.getString(R.string.joined_colon, TimeUtils.formatDate(user.joinDate))
+        holder.binding.txtJoined.text = context.getString(
+            R.string.joined_colon,
+            dateCache.getOrPut(user.joinDate) { TimeUtils.formatDate(user.joinDate) }
+        )
 
         if (!user.userImage.isNullOrEmpty()) {
             ImageUtils.loadProfileImage(user.userImage, holder.binding.ivUser, avatarSize)
