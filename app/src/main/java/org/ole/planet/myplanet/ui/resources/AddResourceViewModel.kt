@@ -8,12 +8,17 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.PersonalsRepository
+import org.ole.planet.myplanet.repository.UserRepository
 
 @HiltViewModel
 class AddResourceViewModel @Inject constructor(
-    private val personalsRepository: PersonalsRepository
+    private val personalsRepository: PersonalsRepository,
+    private val userRepository: UserRepository
 ) : ViewModel() {
+
+    suspend fun currentUser(): UserEntity? = userRepository.getUserModel()
 
     private val _state = MutableStateFlow<AddResourceState>(AddResourceState.Idle)
     val state: StateFlow<AddResourceState> = _state.asStateFlow()

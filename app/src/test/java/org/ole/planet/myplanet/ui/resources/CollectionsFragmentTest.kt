@@ -27,12 +27,12 @@ class CollectionsFragmentTest {
         selected: List<TagEntity> = emptyList(),
         selectMultiple: Boolean = false,
     ): CollectionsFragment {
-        MainApplication.isCollectionSwitchOn = selectMultiple
         val fragment = CollectionsFragment()
         setField(fragment, "list", parents)
         setField(fragment, "childMap", childMap)
         setField(fragment, "selectedItemsList", ArrayList(selected))
         setField(fragment, "currentTagDataList", emptyList<TagData>())
+        setField(fragment, "isCollectionSwitchOn", selectMultiple)
         return fragment
     }
 
@@ -201,6 +201,16 @@ class CollectionsFragmentTest {
         val tagDataList = buildTagDataList(fragment, parents)
         assertEquals(2, tagDataList.size)
         assertTrue((tagDataList[1] as TagData.Parent).isSelected)
+    }
+
+    @Test
+    fun `multiple CollectionsFragment instances maintain independent isCollectionSwitchOn state`() {
+        val fragment1 = newFragment(emptyList(), selectMultiple = true)
+        val fragment2 = newFragment(emptyList(), selectMultiple = false)
+
+        val isSwitchOnField = findField(CollectionsFragment::class.java, "isCollectionSwitchOn").apply { isAccessible = true }
+        assertTrue(isSwitchOnField.getBoolean(fragment1))
+        assertFalse(isSwitchOnField.getBoolean(fragment2))
     }
 }
 
