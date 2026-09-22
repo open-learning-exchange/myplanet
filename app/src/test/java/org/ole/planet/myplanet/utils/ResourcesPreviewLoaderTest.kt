@@ -120,11 +120,13 @@ class ResourcesPreviewLoaderTest {
             previewLoader.getTextPreview(file)
         }
 
-        firstFile.writeText("Overwritten content")
+        // Write new text with identical length (18 chars) and same lastModified so CacheKey remains identical.
+        // If eviction broke, getTextPreview would return the old cached value ("First file content").
+        firstFile.writeText("Overwritten text!!")
         firstFile.setLastModified(firstLastModified)
 
         val result = previewLoader.getTextPreview(firstFile)
-        assertEquals("Overwritten content", result)
+        assertEquals("Overwritten text!!", result)
     }
 
     @Test
