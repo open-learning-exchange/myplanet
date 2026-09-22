@@ -6,9 +6,12 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import java.util.Collections
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.KotlinxJsonUtils
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 
@@ -111,23 +114,24 @@ class Achievement {
         }
 
         fun fromJson(act: JsonObject): Achievement {
+            val kAct = act.toKotlinx().jsonObject
             return Achievement().apply {
-                _id = GsonUtils.getString("_id", act)
-                _rev = GsonUtils.getString("_rev", act)
-                purpose = GsonUtils.getString("purpose", act)
-                goals = GsonUtils.getString("goals", act)
-                achievementsHeader = GsonUtils.getString("achievementsHeader", act)
-                sendToNation = act.get("sendToNation")?.asString ?: "false"
-                dateSortOrder = GsonUtils.getString("dateSortOrder", act)
-                createdOn = GsonUtils.getString("createdOn", act)
-                username = GsonUtils.getString("username", act)
-                parentCode = GsonUtils.getString("parentCode", act)
+                _id = KotlinxJsonUtils.getString("_id", kAct)
+                _rev = KotlinxJsonUtils.getString("_rev", kAct)
+                purpose = KotlinxJsonUtils.getString("purpose", kAct)
+                goals = KotlinxJsonUtils.getString("goals", kAct)
+                achievementsHeader = KotlinxJsonUtils.getString("achievementsHeader", kAct)
+                sendToNation = (kAct["sendToNation"] as? JsonPrimitive)?.content ?: "false"
+                dateSortOrder = KotlinxJsonUtils.getString("dateSortOrder", kAct)
+                createdOn = KotlinxJsonUtils.getString("createdOn", kAct)
+                username = KotlinxJsonUtils.getString("username", kAct)
+                parentCode = KotlinxJsonUtils.getString("parentCode", kAct)
                 isUpdated = false
                 setReferences(GsonUtils.getJsonArray("references", act))
                 setAchievements(GsonUtils.getJsonArray("achievements", act))
                 setLinks(GsonUtils.getJsonArray("links", act))
                 setOtherInfo(GsonUtils.getJsonArray("otherInfo", act))
-                resumeFileName = GsonUtils.getString("resumeFileName", act)
+                resumeFileName = KotlinxJsonUtils.getString("resumeFileName", kAct)
             }
         }
 

@@ -10,15 +10,22 @@ import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import kotlinx.serialization.Serializable
 import java.util.UUID
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.KotlinxJsonUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
+import kotlinx.serialization.json.JsonArray as KJsonArray
+import kotlinx.serialization.json.JsonNull as KJsonNull
+import kotlinx.serialization.json.JsonObject as KJsonObject
 
 /**
  * Room replacement for the former `MyLibrary` model (resources).
@@ -164,16 +171,16 @@ open class MyLibrary {
             val existing: MyLibrary? = null
         )
 
-        private fun JsonArray?.mergeInto(target: MutableList<String>) {
+        private fun KJsonArray?.mergeInto(target: MutableList<String>) {
             this?.forEach { jsonElement ->
-                val value = jsonElement.takeIf { it !is JsonNull }?.asString ?: return@forEach
+                val value = (jsonElement as? JsonPrimitive)?.takeIf { it != KJsonNull }?.content ?: return@forEach
                 if (value !in target) {
                     target.add(value)
                 }
             }
         }
 
-        private fun mergedList(current: List<String>?, array: JsonArray?): List<String> {
+        private fun mergedList(current: List<String>?, array: KJsonArray?): List<String> {
             val target = current?.toMutableList() ?: mutableListOf()
             array.mergeInto(target)
             return target
@@ -184,8 +191,9 @@ open class MyLibrary {
          * [InsertParams.existing] when supplied (mirrors the former find-or-create logic).
          */
         fun insertMyLibrary(params: InsertParams): MyLibrary? {
-            if (params.doc.entrySet().isEmpty()) return null
-            val resourceId = GsonUtils.getString("_id", params.doc)
+            val kDoc = params.doc.toKotlinx().jsonObject
+            if (kDoc.isEmpty()) return null
+            val resourceId = KotlinxJsonUtils.getString("_id", kDoc)
             val resource = params.existing ?: MyLibrary().apply { id = resourceId }
             val wasPrivate = params.existing?.isPrivate == true
             val hadPrivateFor = params.existing?.privateFor
@@ -201,29 +209,29 @@ open class MyLibrary {
                 if (!params.courseId.isNullOrBlank()) {
                     this.courseId = params.courseId
                 }
-                _rev = GsonUtils.getString("_rev", params.doc)
+                _rev = KotlinxJsonUtils.getString("_rev", kDoc)
                 this.resourceId = resourceId
-                val titleString = GsonUtils.getString("title", params.doc)
+                val titleString = KotlinxJsonUtils.getString("title", kDoc)
                 title = titleString
                 titleNormal = Utilities.normalizeText(titleString)
-                description = GsonUtils.getString("description", params.doc)
-                if (params.doc.has("_attachments")) {
-                    val attachmentsObj = params.doc["_attachments"].asJsonObject
+                description = KotlinxJsonUtils.getString("description", kDoc)
+                if (kDoc.containsKey("_attachments")) {
+                    val attachmentsObj = kDoc.getValue("_attachments").jsonObject
                     val attachmentList = this.attachments?.toMutableList() ?: mutableListOf()
                     val existingNames = attachmentList.mapNotNullTo(mutableSetOf()) { it.name }
                     val couchdbUrl = params.spm.getCouchdbUrl().ifEmpty { "http://" }
 
-                    attachmentsObj.entrySet().forEach { (key, attachmentValue) ->
+                    attachmentsObj.entries.forEach { (key, attachmentValue) ->
                         if (key !in existingNames) {
-                            val attachmentObj = attachmentValue.asJsonObject
+                            val attachmentObj = attachmentValue.jsonObject
                             val realmAttachment = Attachment().apply {
                                 id = UUID.randomUUID().toString()
                                 name = key
-                                contentType = attachmentObj.get("content_type")?.asString
-                                length = attachmentObj.get("length")?.asLong ?: 0
-                                digest = attachmentObj.get("digest")?.asString
-                                isStub = attachmentObj.get("stub")?.asBoolean == true
-                                revpos = attachmentObj.get("revpos")?.asInt ?: 0
+                                contentType = KotlinxJsonUtils.rawString("content_type", attachmentObj)
+                                length = KotlinxJsonUtils.rawLong("length", attachmentObj) ?: 0
+                                digest = KotlinxJsonUtils.rawString("digest", attachmentObj)
+                                isStub = KotlinxJsonUtils.rawBoolean("stub", attachmentObj) == true
+                                revpos = KotlinxJsonUtils.rawInt("revpos", attachmentObj) ?: 0
                             }
                             attachmentList.add(realmAttachment)
                             existingNames.add(key)
@@ -234,44 +242,44 @@ open class MyLibrary {
                             resourceLocalAddress = key
                             resourceOffline = FileUtils.checkFileExist(params.context, resourceRemoteAddress)
                             if (resourceOffline) {
-                                downloadedRev = GsonUtils.getString("_rev", params.doc)
+                                downloadedRev = KotlinxJsonUtils.getString("_rev", kDoc)
                             }
                         }
                     }
                     this.attachments = attachmentList
                 }
-                filename = GsonUtils.getString("filename", params.doc)
-                averageRating = GsonUtils.getString("averageRating", params.doc)
-                uploadDate = GsonUtils.getString("uploadDate", params.doc)
-                year = GsonUtils.getString("year", params.doc)
-                addedBy = GsonUtils.getString("addedBy", params.doc)
-                publisher = GsonUtils.getString("publisher", params.doc)
-                linkToLicense = GsonUtils.getString("linkToLicense", params.doc)
-                openWith = GsonUtils.getString("openWith", params.doc)
-                openWhichFile = GsonUtils.getString("openWhichFile", params.doc).takeIf { it.isNotBlank() }
-                articleDate = GsonUtils.getString("articleDate", params.doc)
-                kind = GsonUtils.getString("kind", params.doc)
-                createdDate = GsonUtils.getLong("createdDate", params.doc)
-                language = GsonUtils.getString("language", params.doc)
-                author = GsonUtils.getString("author", params.doc)
-                mediaType = GsonUtils.getString("mediaType", params.doc)
-                resourceType = GsonUtils.getString("resourceType", params.doc)
-                timesRated = GsonUtils.getInt("timesRated", params.doc)
-                medium = GsonUtils.getString("medium", params.doc)
-                resourceFor = mergedList(resourceFor, GsonUtils.getJsonArray("resourceFor", params.doc))
-                subject = mergedList(subject, GsonUtils.getJsonArray("subject", params.doc))
-                level = mergedList(level, GsonUtils.getJsonArray("level", params.doc))
-                tag = mergedList(tag, GsonUtils.getJsonArray("tags", params.doc))
+                filename = KotlinxJsonUtils.getString("filename", kDoc)
+                averageRating = KotlinxJsonUtils.getString("averageRating", kDoc)
+                uploadDate = KotlinxJsonUtils.getString("uploadDate", kDoc)
+                year = KotlinxJsonUtils.getString("year", kDoc)
+                addedBy = KotlinxJsonUtils.getString("addedBy", kDoc)
+                publisher = KotlinxJsonUtils.getString("publisher", kDoc)
+                linkToLicense = KotlinxJsonUtils.getString("linkToLicense", kDoc)
+                openWith = KotlinxJsonUtils.getString("openWith", kDoc)
+                openWhichFile = KotlinxJsonUtils.getString("openWhichFile", kDoc).takeIf { it.isNotBlank() }
+                articleDate = KotlinxJsonUtils.getString("articleDate", kDoc)
+                kind = KotlinxJsonUtils.getString("kind", kDoc)
+                createdDate = KotlinxJsonUtils.getLong("createdDate", kDoc)
+                language = KotlinxJsonUtils.getString("language", kDoc)
+                author = KotlinxJsonUtils.getString("author", kDoc)
+                mediaType = KotlinxJsonUtils.getString("mediaType", kDoc)
+                resourceType = KotlinxJsonUtils.getString("resourceType", kDoc)
+                timesRated = KotlinxJsonUtils.getInt("timesRated", kDoc)
+                medium = KotlinxJsonUtils.getString("medium", kDoc)
+                resourceFor = mergedList(resourceFor, KotlinxJsonUtils.getJsonArray("resourceFor", kDoc))
+                subject = mergedList(subject, KotlinxJsonUtils.getJsonArray("subject", kDoc))
+                level = mergedList(level, KotlinxJsonUtils.getJsonArray("level", kDoc))
+                tag = mergedList(tag, KotlinxJsonUtils.getJsonArray("tags", kDoc))
                 if (!isLocalOnlyPrivate) {
-                    isPrivate = GsonUtils.getBoolean("private", params.doc)
-                    if (isPrivate && params.doc.has("privateFor")) {
-                        val privateForElement = params.doc.get("privateFor")
-                        if (privateForElement.isJsonObject) {
-                            privateFor = privateForElement.asJsonObject.get("teams")?.asString
+                    isPrivate = KotlinxJsonUtils.getBoolean("private", kDoc)
+                    if (isPrivate && kDoc.containsKey("privateFor")) {
+                        val privateForElement = kDoc["privateFor"]
+                        if (privateForElement is KJsonObject) {
+                            privateFor = KotlinxJsonUtils.rawString("teams", privateForElement)
                         }
                     }
                 }
-                languages = mergedList(languages, GsonUtils.getJsonArray("languages", params.doc))
+                languages = mergedList(languages, KotlinxJsonUtils.getJsonArray("languages", kDoc))
             }
             return resource
         }

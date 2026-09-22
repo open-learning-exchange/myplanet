@@ -8,10 +8,13 @@ import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.File
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.utils.FileUtils.getOlePath
 import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.KotlinxJsonUtils
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 
@@ -76,60 +79,61 @@ open class MyTeam(
         }
 
         fun populateTeamFields(doc: JsonObject, team: MyTeam, includeCourses: Boolean = false) {
+            val kDoc = doc.toKotlinx().jsonObject
             val hadLocalChanges = team.updated
 
-            team.userId = GsonUtils.getString("userId", doc)
-            team.teamId = GsonUtils.getString("teamId", doc)
-            team._rev = GsonUtils.getString("_rev", doc)
-            team.name = GsonUtils.getString("name", doc)
-            team.sourcePlanet = GsonUtils.getString("sourcePlanet", doc)
-            team.title = GsonUtils.getString("title", doc)
-            team.description = GsonUtils.getString("description", doc)
-            team.limit = GsonUtils.getInt("limit", doc)
-            team.status = GsonUtils.getString("status", doc)
-            team.teamPlanetCode = GsonUtils.getString("teamPlanetCode", doc)
-            team.createdDate = GsonUtils.getLong("createdDate", doc)
-            team.resourceId = GsonUtils.getString("resourceId", doc)
-            team.teamType = GsonUtils.getString("teamType", doc)
-            team.route = GsonUtils.getString("route", doc)
-            team.type = GsonUtils.getString("type", doc)
-            team.services = GsonUtils.getString("services", doc)
-            team.rules = GsonUtils.getString("rules", doc)
-            team.parentCode = GsonUtils.getString("parentCode", doc)
-            team.createdBy = GsonUtils.getString("createdBy", doc)
-            team.userPlanetCode = GsonUtils.getString("userPlanetCode", doc)
-            team.isLeader = GsonUtils.getBoolean("isLeader", doc)
-            team.amount = GsonUtils.getInt("amount", doc)
-            team.date = GsonUtils.getLong("date", doc)
+            team.userId = KotlinxJsonUtils.getString("userId", kDoc)
+            team.teamId = KotlinxJsonUtils.getString("teamId", kDoc)
+            team._rev = KotlinxJsonUtils.getString("_rev", kDoc)
+            team.name = KotlinxJsonUtils.getString("name", kDoc)
+            team.sourcePlanet = KotlinxJsonUtils.getString("sourcePlanet", kDoc)
+            team.title = KotlinxJsonUtils.getString("title", kDoc)
+            team.description = KotlinxJsonUtils.getString("description", kDoc)
+            team.limit = KotlinxJsonUtils.getInt("limit", kDoc)
+            team.status = KotlinxJsonUtils.getString("status", kDoc)
+            team.teamPlanetCode = KotlinxJsonUtils.getString("teamPlanetCode", kDoc)
+            team.createdDate = KotlinxJsonUtils.getLong("createdDate", kDoc)
+            team.resourceId = KotlinxJsonUtils.getString("resourceId", kDoc)
+            team.teamType = KotlinxJsonUtils.getString("teamType", kDoc)
+            team.route = KotlinxJsonUtils.getString("route", kDoc)
+            team.type = KotlinxJsonUtils.getString("type", kDoc)
+            team.services = KotlinxJsonUtils.getString("services", kDoc)
+            team.rules = KotlinxJsonUtils.getString("rules", kDoc)
+            team.parentCode = KotlinxJsonUtils.getString("parentCode", kDoc)
+            team.createdBy = KotlinxJsonUtils.getString("createdBy", kDoc)
+            team.userPlanetCode = KotlinxJsonUtils.getString("userPlanetCode", kDoc)
+            team.isLeader = KotlinxJsonUtils.getBoolean("isLeader", kDoc)
+            team.amount = KotlinxJsonUtils.getInt("amount", kDoc)
+            team.date = KotlinxJsonUtils.getLong("date", kDoc)
             if (!hadLocalChanges) {
-                team.docType = GsonUtils.getString("docType", doc)
+                team.docType = KotlinxJsonUtils.getString("docType", kDoc)
             }
-            team.isPublic = GsonUtils.getBoolean("public", doc)
-            team.beginningBalance = GsonUtils.getInt("beginningBalance", doc)
-            team.sales = GsonUtils.getInt("sales", doc)
-            team.otherIncome = GsonUtils.getInt("otherIncome", doc)
-            team.wages = GsonUtils.getInt("wages", doc)
-            team.otherExpenses = GsonUtils.getInt("otherExpenses", doc)
-            team.startDate = GsonUtils.getLong("startDate", doc)
-            team.endDate = GsonUtils.getLong("endDate", doc)
-            team.updatedDate = GsonUtils.getLong("updatedDate", doc)
+            team.isPublic = KotlinxJsonUtils.getBoolean("public", kDoc)
+            team.beginningBalance = KotlinxJsonUtils.getInt("beginningBalance", kDoc)
+            team.sales = KotlinxJsonUtils.getInt("sales", kDoc)
+            team.otherIncome = KotlinxJsonUtils.getInt("otherIncome", kDoc)
+            team.wages = KotlinxJsonUtils.getInt("wages", kDoc)
+            team.otherExpenses = KotlinxJsonUtils.getInt("otherExpenses", kDoc)
+            team.startDate = KotlinxJsonUtils.getLong("startDate", kDoc)
+            team.endDate = KotlinxJsonUtils.getLong("endDate", kDoc)
+            team.updatedDate = KotlinxJsonUtils.getLong("updatedDate", kDoc)
             getFirstAttachmentName(doc)?.let { team.imageName = it }
 
             val localCourses = team.courses?.toList() ?: emptyList()
 
             if (!hadLocalChanges) {
-                team.updated = GsonUtils.getBoolean("updated", doc)
+                team.updated = KotlinxJsonUtils.getBoolean("updated", kDoc)
             }
 
-            val coursesArray = GsonUtils.getJsonArray("courses", doc)
+            val coursesArray = KotlinxJsonUtils.getJsonArray("courses", kDoc)
             val serverCourseIds = mutableListOf<String>()
             for (e in coursesArray) {
                 try {
-                    val id = e.asJsonObject["_id"].asString
+                    val id = (e.jsonObject["_id"] as JsonPrimitive).content
                     serverCourseIds.add(id)
                 } catch (ex: Exception) {
-                    if (e.isJsonPrimitive) {
-                        serverCourseIds.add(e.asString)
+                    if (e is JsonPrimitive) {
+                        serverCourseIds.add(e.content)
                     }
                 }
             }
@@ -144,16 +148,17 @@ open class MyTeam(
         }
 
         fun populateReportFields(doc: JsonObject, team: MyTeam) {
-            team.description = GsonUtils.getString("description", doc)
-            team.beginningBalance = GsonUtils.getInt("beginningBalance", doc)
-            team.sales = GsonUtils.getInt("sales", doc)
-            team.otherIncome = GsonUtils.getInt("otherIncome", doc)
-            team.wages = GsonUtils.getInt("wages", doc)
-            team.otherExpenses = GsonUtils.getInt("otherExpenses", doc)
-            team.startDate = GsonUtils.getLong("startDate", doc)
-            team.endDate = GsonUtils.getLong("endDate", doc)
-            team.updatedDate = GsonUtils.getLong("updatedDate", doc)
-            team.updated = GsonUtils.getBoolean("updated", doc)
+            val kDoc = doc.toKotlinx().jsonObject
+            team.description = KotlinxJsonUtils.getString("description", kDoc)
+            team.beginningBalance = KotlinxJsonUtils.getInt("beginningBalance", kDoc)
+            team.sales = KotlinxJsonUtils.getInt("sales", kDoc)
+            team.otherIncome = KotlinxJsonUtils.getInt("otherIncome", kDoc)
+            team.wages = KotlinxJsonUtils.getInt("wages", kDoc)
+            team.otherExpenses = KotlinxJsonUtils.getInt("otherExpenses", kDoc)
+            team.startDate = KotlinxJsonUtils.getLong("startDate", kDoc)
+            team.endDate = KotlinxJsonUtils.getLong("endDate", kDoc)
+            team.updatedDate = KotlinxJsonUtils.getLong("updatedDate", kDoc)
+            team.updated = KotlinxJsonUtils.getBoolean("updated", kDoc)
             getFirstAttachmentName(doc)?.let { team.imageName = it }
         }
 

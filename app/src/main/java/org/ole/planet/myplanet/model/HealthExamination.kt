@@ -5,9 +5,11 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.KotlinxJsonUtils
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 
@@ -70,28 +72,29 @@ class HealthExamination {
         }
 
         fun fromJson(act: JsonObject?): HealthExamination {
+            val kAct = act?.toKotlinx()?.jsonObject
             val myHealth = HealthExamination()
-            myHealth._id = GsonUtils.getString("_id", act)
-            myHealth.data = GsonUtils.getString("data", act)
-            myHealth.userId = GsonUtils.getString("_id", act)
-            myHealth._rev = GsonUtils.getString("_rev", act)
-            myHealth.setTemperature(GsonUtils.getFloat("temperature", act))
+            myHealth._id = KotlinxJsonUtils.getString("_id", kAct)
+            myHealth.data = KotlinxJsonUtils.getString("data", kAct)
+            myHealth.userId = KotlinxJsonUtils.getString("_id", kAct)
+            myHealth._rev = KotlinxJsonUtils.getString("_rev", kAct)
+            myHealth.setTemperature(KotlinxJsonUtils.getFloat("temperature", kAct))
             myHealth.isUpdated = false
-            myHealth.pulse = GsonUtils.getInt("pulse", act)
-            myHealth.height = GsonUtils.getFloat("height", act)
-            myHealth.setWeight(GsonUtils.getFloat("weight", act))
-            myHealth.vision = GsonUtils.getString("vision", act)
-            myHealth.hearing = GsonUtils.getString("hearing", act)
-            myHealth.bp = GsonUtils.getString("bp", act)
-            myHealth.isSelfExamination = GsonUtils.getBoolean("selfExamination", act)
-            myHealth.isHasInfo = GsonUtils.getBoolean("hasInfo", act)
-            myHealth.date = GsonUtils.getLong("date", act)
-            myHealth.profileId = GsonUtils.getString("profileId", act)
-            myHealth.creatorId = GsonUtils.getString("creatorId", act)
-            myHealth.age = GsonUtils.getInt("age", act)
-            myHealth.gender = GsonUtils.getString("gender", act)
-            myHealth.planetCode = GsonUtils.getString("planetCode", act)
-            myHealth.conditions = GsonUtils.gson.toJson(GsonUtils.getJsonObject("conditions", act))
+            myHealth.pulse = KotlinxJsonUtils.getInt("pulse", kAct)
+            myHealth.height = KotlinxJsonUtils.getFloat("height", kAct)
+            myHealth.setWeight(KotlinxJsonUtils.getFloat("weight", kAct))
+            myHealth.vision = KotlinxJsonUtils.getString("vision", kAct)
+            myHealth.hearing = KotlinxJsonUtils.getString("hearing", kAct)
+            myHealth.bp = KotlinxJsonUtils.getString("bp", kAct)
+            myHealth.isSelfExamination = KotlinxJsonUtils.getBoolean("selfExamination", kAct)
+            myHealth.isHasInfo = KotlinxJsonUtils.getBoolean("hasInfo", kAct)
+            myHealth.date = KotlinxJsonUtils.getLong("date", kAct)
+            myHealth.profileId = KotlinxJsonUtils.getString("profileId", kAct)
+            myHealth.creatorId = KotlinxJsonUtils.getString("creatorId", kAct)
+            myHealth.age = KotlinxJsonUtils.getInt("age", kAct)
+            myHealth.gender = KotlinxJsonUtils.getString("gender", kAct)
+            myHealth.planetCode = KotlinxJsonUtils.getString("planetCode", kAct)
+            myHealth.conditions = KotlinxJsonUtils.getJsonObject("conditions", kAct).toString()
             return myHealth
         }
 
