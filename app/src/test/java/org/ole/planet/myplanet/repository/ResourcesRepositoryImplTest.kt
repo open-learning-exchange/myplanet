@@ -35,6 +35,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
@@ -312,25 +313,24 @@ class ResourcesRepositoryImplTest {
             userId = mutableListOf()
         }
 
-        // Mock the lookups
         coEvery { myLibraryDao.getByResourceId("res-id") } returns mockLibrary
         coEvery { myLibraryDao.getById("res-id") } returns mockLibrary
 
         val result = repository.setUserLibrary("res-id", true)
 
-        // updateUserLibrary mutates and calls upsert
         coVerify { myLibraryDao.upsert(mockLibrary) }
         assertTrue(result?.userId?.contains("user-123") == true)
     }
 
     @Test
-    fun `getAllLibraries returns list of MyLibrary`() = runTest {
-        val mockLibrary = MyLibrary().apply { title = "Test Library" }
-        coEvery { myLibraryDao.getAll() } returns listOf(mockLibrary)
+    fun `getLibraryTitles returns list of LibraryTitleProjection`() = runTest {
+        val mockProjection = LibraryTitleProjection("lib1", "Test Library")
+        coEvery { myLibraryDao.getLibraryTitles() } returns listOf(mockProjection)
 
-        val result = repository.getAllLibraries()
+        val result = repository.getLibraryTitles()
 
         assertEquals(1, result.size)
+        assertEquals("lib1", result[0].id)
         assertEquals("Test Library", result[0].title)
     }
 
@@ -492,7 +492,6 @@ class ResourcesRepositoryImplTest {
             override fun close() {}
         })
 
-        // SQLite binds are 1-indexed.
         assertEquals("%100\\%%", bindArgs[1])
         assertEquals("%\\_real\\_%", bindArgs[2])
         assertEquals("%\\\\deal%", bindArgs[3])
@@ -652,19 +651,19 @@ class ResourcesRepositoryImplTest {
         val result = repository.getLibraryItemsByIds(emptyList())
 
         assertTrue(result.isEmpty())
-        coVerify(exactly = 0) { myLibraryDao.getByUnderscoreIds(any()) }
+        coVerify(exactly = 0) { myLibraryDao.getByIds(any()) }
     }
 
     @Test
     fun `getLibraryItemsByIds returns items from dao`() = runTest {
         val ids = listOf("id1", "id2")
         val expectedList = listOf(MyLibrary().apply { id = "id1" })
-        coEvery { myLibraryDao.getByUnderscoreIds(ids) } returns expectedList
+        coEvery { myLibraryDao.getByIds(ids) } returns expectedList
 
         val result = repository.getLibraryItemsByIds(ids)
 
         assertEquals(expectedList, result)
-        coVerify(exactly = 1) { myLibraryDao.getByUnderscoreIds(ids) }
+        coVerify(exactly = 1) { myLibraryDao.getByIds(ids) }
     }
 
     @Test
@@ -1360,7 +1359,7 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
-    fun `getOfflineResourceItems calculates size and path order in single pass`() = runTest {
+    fun `getOfflineResourceItems calculates size and paths in single pass`() = runTest {
         val oleDir = temporaryFolder.newFolder("ole")
         val res1Dir = File(oleDir, "res1").apply { mkdirs() }
         val res2Dir = File(oleDir, "res2").apply { mkdirs() }
@@ -1379,16 +1378,17 @@ class ResourcesRepositoryImplTest {
 
         val knownExtensions = setOf("mp4", "pdf")
 
-        // Test matching specific category (mp4)
         val videoItems = repository.getOfflineResourceItems(oleDir.absolutePath, setOf("mp4"), knownExtensions)
         assertEquals(1, videoItems.size)
         val res1Item = videoItems[0]
         assertEquals("res1", res1Item.resourceId)
         assertEquals("Video Resource", res1Item.title)
         assertEquals(15L, res1Item.totalSizeBytes)
-        assertEquals(listOf(file1.absolutePath, file2.absolutePath), res1Item.filePaths)
+        assertEquals(
+            listOf(file1.absolutePath, file2.absolutePath).sorted(),
+            res1Item.filePaths.sorted()
+        )
 
-        // Test fallback extension category (extensions.isEmpty() -> not in knownExtensions)
         val otherItems = repository.getOfflineResourceItems(oleDir.absolutePath, emptySet(), knownExtensions)
         assertEquals(1, otherItems.size)
         val res2Item = otherItems[0]

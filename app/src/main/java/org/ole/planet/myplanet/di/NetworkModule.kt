@@ -96,11 +96,22 @@ object NetworkModule {
 
     private const val MAX_REQUESTS_PER_HOST = 20
 
-    private fun buildOkHttpClient(connect: Long, read: Long, write: Long, retryInterceptor: RetryInterceptor? = null): OkHttpClient {
+    @Provides
+    @Singleton
+    fun provideConnectionPool(): ConnectionPool {
+        return ConnectionPool(MAX_REQUESTS_PER_HOST, 5, TimeUnit.MINUTES)
+    }
+
+    private fun buildOkHttpClient(
+        connect: Long,
+        read: Long,
+        write: Long,
+        connectionPool: ConnectionPool,
+        retryInterceptor: RetryInterceptor? = null
+    ): OkHttpClient {
         val dispatcher = Dispatcher().apply {
             maxRequestsPerHost = MAX_REQUESTS_PER_HOST
         }
-        val connectionPool = ConnectionPool(MAX_REQUESTS_PER_HOST, 5, TimeUnit.MINUTES)
         val builder = OkHttpClient.Builder()
             .dispatcher(dispatcher)
             .connectionPool(connectionPool)
@@ -119,11 +130,15 @@ object NetworkModule {
     @Provides
     @Singleton
     @StandardHttpClient
-    fun provideStandardOkHttpClient(retryInterceptor: RetryInterceptor): OkHttpClient {
+    fun provideStandardOkHttpClient(
+        retryInterceptor: RetryInterceptor,
+        connectionPool: ConnectionPool
+    ): OkHttpClient {
         return buildOkHttpClient(
             CONNECT_TIMEOUT_SECONDS,
             READ_TIMEOUT_SECONDS,
             WRITE_TIMEOUT_SECONDS,
+            connectionPool,
             retryInterceptor
         )
     }
@@ -131,11 +146,14 @@ object NetworkModule {
     @Provides
     @Singleton
     @ReachabilityHttpClient
-    fun provideReachabilityOkHttpClient(): OkHttpClient {
+    fun provideReachabilityOkHttpClient(
+        connectionPool: ConnectionPool
+    ): OkHttpClient {
         return buildOkHttpClient(
             REACHABILITY_TIMEOUT_SECONDS,
             REACHABILITY_TIMEOUT_SECONDS,
-            REACHABILITY_TIMEOUT_SECONDS
+            REACHABILITY_TIMEOUT_SECONDS,
+            connectionPool
         )
     }
 
