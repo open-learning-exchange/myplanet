@@ -124,6 +124,37 @@ class SubmissionsRepository {
   /// of this method is team-less in Kotlin too — the individual survey list,
   /// the dashboard's pending-survey prompt and a course step all pass
   /// `isTeam = false` — so a null here is a positive answer, not a hole.
+  ///
+  /// **It resumes a pending sheet rather than inserting a second one, and the
+  /// gate on that is [teamId] rather than the caller.** Kotlin reaches this
+  /// writer through `startExamSession`, whose *first statement* is
+  /// `if (!recreate) fetchPendingByUserAndParent(parentId, userId)` returning
+  /// early when it finds one (`SubmissionsRepositoryImpl.kt:456-462`), and the
+  /// survey launch passes **`recreate = isTeam`**
+  /// (`ExamTakingFragment.kt:154`) — so an individual survey resumes and a
+  /// team or public one always creates. The port had no resume on this path at
+  /// all: `surveys_screen.dart:125` pushes `/surveys/<id>` with no
+  /// `?submission=`, so a member whose leader had sent them the survey
+  /// (`createBulkSurveySubmissions` -> [getOrCreateSurveySubmission], a
+  /// `pending` row) answered it from the list, got a **second** row, and the
+  /// first stayed `pending` for ever. `pendingSurveysProvider` reads exactly
+  /// those rows, so the dashboard kept telling them to complete a survey they
+  /// had completed, and the prompt reopened a blank form.
+  ///
+  /// A resumed row is written through a **second, narrower companion** rather
+  /// than the insert one, and the difference is *which columns are named*, not
+  /// which constructor is used. `insertAllOnConflictUpdate` emits
+  /// `ON CONFLICT DO UPDATE SET` over exactly the columns the companion
+  /// carries, so a column left absent survives the upsert either way — the
+  /// mutation that swaps `SubmissionsCompanion(...)` for
+  /// `SubmissionsCompanion.insert(...)` over the same fields is a no-op, and
+  /// this comment said otherwise until it was run. What the insert branch
+  /// carries and this one must not is `startTime`: a resume is not a start,
+  /// and that column is `getByParentUserAndStatus`'s sort key. `couchId` and
+  /// `rev` are named by neither branch, which is what keeps a sheet pulled
+  /// from Planet PUT-able instead of turning its next upload into a POST —
+  /// pinned here because "absent" is a property of this code rather than of
+  /// drift, and a later edit that filled them in would be silent.
   Future<String> createSurveyDraft({
     required SurveyRow survey,
     required List<SurveyQuestionRow> questions,
@@ -137,29 +168,51 @@ class SubmissionsRepository {
     final persistedTeamId = (teamId == null || teamId.trim().isEmpty)
         ? null
         : teamId;
-    final id = sha1
-        .convert(utf8.encode('$userId:$timestamp:${survey.id}'))
-        .toString();
+    // `"$surveyId@$courseId"` for a course-attached survey, as
+    // `createExamSubmission` writes it — see [examParentId]. Storing the bare
+    // id here is what made the mandatory-survey gate unsatisfiable.
+    final parentId = examParentId(examId: survey.id, courseId: survey.courseId);
+    // `if (!recreate)` with `recreate = isTeam` — see the doc comment. A
+    // public respondent's `public_<millis>` owner is minted per submission, so
+    // this lookup cannot match on that path even though it runs there.
+    final resumed = persistedTeamId == null
+        ? await _dao.latestPendingByUserAndParent(userId, parentId)
+        : null;
+    final id =
+        resumed?.id ??
+        sha1.convert(utf8.encode('$userId:$timestamp:${survey.id}')).toString();
+    final parentBlob = jsonEncode({'_id': survey.id, 'name': survey.name});
     await _dao.upsertAll(
       [
-        SubmissionsCompanion.insert(
-          id: id,
-          // `"$surveyId@$courseId"` for a course-attached survey, as
-          // `createExamSubmission` writes it — see [examParentId]. Storing the
-          // bare id here is what made the mandatory-survey gate unsatisfiable.
-          parentId: Value(
-            examParentId(examId: survey.id, courseId: survey.courseId),
+        if (resumed == null)
+          SubmissionsCompanion.insert(
+            id: id,
+            parentId: Value(parentId),
+            parent: Value(parentBlob),
+            userId: Value(userId),
+            type: const Value('survey'),
+            teamId: Value(persistedTeamId),
+            startTime: Value(timestamp),
+            lastUpdateTime: Value(timestamp),
+            status: const Value('complete'),
+            uploaded: const Value(false),
+            isUpdated: const Value(true),
+          )
+        else
+          SubmissionsCompanion(
+            id: Value(id),
+            parentId: Value(parentId),
+            // The pending sheet [getOrCreateSurveySubmission] writes carries
+            // no `parent`, and `_parentDocument` prefers the live survey
+            // anyway; filling it keeps a resumed row indistinguishable from a
+            // freshly created one for every other reader.
+            parent: Value(parentBlob),
+            type: const Value('survey'),
+            lastUpdateTime: Value(timestamp),
+            status: const Value('complete'),
+            uploaded: const Value(false),
+            isUpdated: const Value(true),
           ),
-          parent: Value(jsonEncode({'_id': survey.id, 'name': survey.name})),
-          userId: Value(userId),
-          type: const Value('survey'),
-          teamId: Value(persistedTeamId),
-          startTime: Value(timestamp),
-          lastUpdateTime: Value(timestamp),
-          status: const Value('complete'),
-          uploaded: const Value(false),
-          isUpdated: const Value(true),
-        ),
       ],
       // A submission question row id is `submissionId:rawQuestionId`, and the
       // exporter recovers `rawQuestionId` by stripping that prefix to look up
@@ -197,7 +250,83 @@ class SubmissionsRepository {
         ],
       },
     );
+    if (persistedTeamId == null) {
+      await deletePendingSurveyOrphans(parentId: parentId, userId: userId);
+    }
     return id;
+  }
+
+  /// Port of `SubmissionDao.deletePendingSurveyOrphans` (`SubmissionDao.kt:30`):
+  ///
+  /// ```sql
+  /// DELETE FROM submissions WHERE parentId IS :parentId AND userId IS :userId
+  ///   AND status = 'pending' AND type = 'survey' AND teamId IS NULL
+  /// ```
+  ///
+  /// Kotlin runs it from the one place a survey sheet becomes `complete` —
+  /// `saveExamAnswer`'s `newStatus == "complete" && type == "survey"` arm
+  /// (`SubmissionsRepositoryImpl.kt:608-610`) — passing the **completed row's
+  /// own** `parentId` and `userId`. The row just completed is no longer
+  /// `pending`, so it is not what this deletes; what it deletes is every other
+  /// individual pending sheet the same person holds for the same survey.
+  ///
+  /// The port has two such moments where Kotlin has one, because
+  /// [createSurveyDraft] and [updateSurveyAnswers] split `saveExamAnswer`'s
+  /// final-question branch between them. Both call it.
+  ///
+  /// **`teamId IS NULL` is taken literally rather than widened to
+  /// `IS NULL OR = ''`**, although [SubmissionDao.pendingSurveySubmissions] —
+  /// the reader whose prompt this clears — accepts both. No writer produces
+  /// the empty string: [createSurveyDraft] nulls a blank `teamId` before
+  /// storing it, [getOrCreateSurveySubmission] omits the column, and the
+  /// sync-in writes `getStringOrNull`, which is null for `''`. A `DELETE`
+  /// reaching further than its Kotlin counterpart is how data goes missing, so
+  /// the unreachable case stays out of the predicate.
+  ///
+  /// The answer and question rows go with it, which Kotlin's single statement
+  /// does not do — Room has no cascade here either, so the Android app leaves
+  /// them orphaned. [_deleteExamSubmissions] already takes the same liberty
+  /// for the same reason: nothing in the port reads an answer except through
+  /// its submission, so an orphan is dead weight that a `deleteNotIn` will
+  /// never collect.
+  ///
+  /// A sheet that was *pulled* from the server is deleted locally and comes
+  /// back on the next sync, re-lighting the prompt. That is Kotlin's behaviour
+  /// too — neither app deletes the document — and it is recorded rather than
+  /// fixed here.
+  ///
+  /// Built in this repository rather than on `SubmissionDao` because
+  /// `app_database.dart` belongs to another lane this round, exactly as
+  /// [_deleteExamSubmissions] is. Both should move there.
+  Future<int> deletePendingSurveyOrphans({
+    required String? parentId,
+    required String? userId,
+  }) async {
+    final stale =
+        await (_dao.select(_dao.submissions)..where(
+              (row) =>
+                  row.parentId.equalsNullable(parentId) &
+                  row.userId.equalsNullable(userId) &
+                  row.status.equals('pending') &
+                  row.type.equals('survey') &
+                  row.teamId.isNull(),
+            ))
+            .get();
+    final ids = stale.map((row) => row.id).toList(growable: false);
+    if (ids.isEmpty) return 0;
+    var deleted = 0;
+    await _dao.transaction(() async {
+      await (_dao.delete(
+        _dao.submissionAnswers,
+      )..where((row) => row.submissionId.isIn(ids))).go();
+      await (_dao.delete(
+        _dao.submissionQuestions,
+      )..where((row) => row.submissionId.isIn(ids))).go();
+      deleted = await (_dao.delete(
+        _dao.submissions,
+      )..where((row) => row.id.isIn(ids))).go();
+    });
+    return deleted;
   }
 
   /// One survey answer row, shaped by [AnswerShape] so it matches what the
@@ -255,6 +384,20 @@ class SubmissionsRepository {
         ],
       },
     );
+    // `saveExamAnswer`'s `newStatus == "complete" && type == "survey"` arm,
+    // which runs **after** the status write — see [deletePendingSurveyOrphans].
+    // The row just marked complete is therefore excluded by its own status,
+    // and what goes is any sibling sheet the same person still holds pending
+    // for the same survey. Resolved from the row rather than taken as
+    // parameters because that is what Kotlin passes:
+    // `deletePendingSurveyOrphans(submissionRow.parentId, submissionRow.userId)`.
+    final completed = await _dao.getById(submissionId);
+    if (completed != null && completed.teamId == null) {
+      await deletePendingSurveyOrphans(
+        parentId: completed.parentId,
+        userId: completed.userId,
+      );
+    }
   }
 
   /// The server-assigned question id, or the synthetic `surveyId:index` when
