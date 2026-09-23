@@ -7,7 +7,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 
 class DictionaryRepositoryImpl @Inject constructor(
     private val dictionaryDao: DictionaryDao,
@@ -45,7 +45,7 @@ class DictionaryRepositoryImpl @Inject constructor(
 
                 try {
                     val data = dictionaryFileReader.readText()
-                    val json = data?.let { JsonUtils.gson.fromJson(it, JsonArray::class.java) }
+                    val json = data?.let { GsonUtils.gson.fromJson(it, JsonArray::class.java) }
                     if (json != null) {
                         val entities = DictionaryMapper.mapJsonArrayToEntities(json)
                         dictionaryDao.insertAll(entities)

@@ -47,7 +47,7 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.Sha256Utils
 import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TestTimeProvider
@@ -168,7 +168,7 @@ class ConfigurationsRepositoryImplTest {
 
         val callback = mockk<ConfigurationsRepository.CheckVersionCallback>(relaxed = true)
 
-        repository.checkVersion(callback, sharedPrefManager)
+        repository.checkVersion(callback)
 
         verify { callback.onError("Server URL not configured", true) }
     }
@@ -189,7 +189,7 @@ class ConfigurationsRepositoryImplTest {
             minapkcode = 1
             latestapkcode = 2
         }
-        val planetJson = JsonUtils.gson.toJson(myPlanet)
+        val planetJson = GsonUtils.gson.toJson(myPlanet)
 
         every { sharedPrefManager.getVersionDetail() } returns planetJson
         every { rawPrefs.getInt("cachedApkVersion", -1) } returns 2
@@ -218,7 +218,7 @@ class ConfigurationsRepositoryImplTest {
 
         val callback = mockk<ConfigurationsRepository.CheckVersionCallback>(relaxed = true)
 
-        repository.checkVersion(callback, sharedPrefManager)
+        repository.checkVersion(callback)
 
         // advance coroutine time for serviceScope
         testDispatcher.scheduler.advanceUntilIdle()
@@ -253,7 +253,7 @@ class ConfigurationsRepositoryImplTest {
         }
 
         val responsePlanet = retrofit2.Response.success(myPlanet)
-        val apkStringJson = JsonUtils.gson.toJson("v3")
+        val apkStringJson = GsonUtils.gson.toJson("v3")
         val responseApk = retrofit2.Response.success(apkStringJson.toResponseBody("application/json".toMediaTypeOrNull()))
 
         coEvery { apiInterface.checkVersion(any()) } returns responsePlanet
@@ -285,7 +285,7 @@ class ConfigurationsRepositoryImplTest {
 
         val callback = mockk<ConfigurationsRepository.CheckVersionCallback>(relaxed = true)
 
-        repository.checkVersion(callback, sharedPrefManager)
+        repository.checkVersion(callback)
 
         testDispatcher.scheduler.advanceUntilIdle()
 

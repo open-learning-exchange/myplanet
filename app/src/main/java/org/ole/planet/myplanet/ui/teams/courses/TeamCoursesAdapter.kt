@@ -23,6 +23,7 @@ class TeamCoursesAdapter(
     private val canRemove: Boolean,
     private val onRemove: (MyCourse) -> Unit = {}
 ) : ListAdapter<MyCourse, TeamCoursesAdapter.ViewHolder>(DIFF_CALLBACK) {
+    private val removeLabel: String by lazy { context.getString(R.string.remove) }
     private var listener: OnHomeItemClickListener? = null
 
     init {
@@ -59,7 +60,7 @@ class TeamCoursesAdapter(
 
         if (canRemove) {
             binding.ivChevron.setImageResource(R.drawable.baseline_close_24)
-            binding.ivChevron.contentDescription = context.getString(R.string.remove)
+            binding.ivChevron.contentDescription = removeLabel
             binding.ivChevron.setOnClickListener { onRemove(myCourse) }
         } else {
             binding.ivChevron.setImageResource(R.drawable.ic_right_arrow)

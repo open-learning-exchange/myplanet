@@ -6,6 +6,8 @@ import android.view.View
 import androidx.appcompat.R as AppCompatR
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import io.mockk.spyk
+import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -256,6 +258,28 @@ class EnterprisesReportsAdapterTest {
         } finally {
             io.mockk.unmockkObject(org.ole.planet.myplanet.utils.FileUtils)
             tempDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun testOnBindViewHolder_hoistedReportTitleResolvedOnceAcrossMultipleBinds() {
+        val spyContext = spyk(context)
+        val spyAdapter = EnterprisesReportsAdapter(spyContext, "Test Team", {}, {}, timeProvider)
+
+        val report1 = MyTeam().apply { _id = "report1" }
+        val report2 = MyTeam().apply { _id = "report2" }
+        val list = listOf(report1, report2)
+
+        spyAdapter.submitList(list) {
+            val binding1 = ReportListItemBinding.inflate(LayoutInflater.from(spyContext))
+            val viewHolder1 = EnterprisesReportsAdapter.ReportsViewHolder(binding1)
+            val binding2 = ReportListItemBinding.inflate(LayoutInflater.from(spyContext))
+            val viewHolder2 = EnterprisesReportsAdapter.ReportsViewHolder(binding2)
+
+            spyAdapter.onBindViewHolder(viewHolder1, 0)
+            spyAdapter.onBindViewHolder(viewHolder2, 1)
+
+            verify(exactly = 1) { spyContext.getString(R.string.team_financial_report, "Test Team") }
         }
     }
 }

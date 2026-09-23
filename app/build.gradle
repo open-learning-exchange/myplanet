@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.application)
     alias(libs.plugins.ksp)
     alias(libs.plugins.dagger.hilt.android)
+    alias(libs.plugins.kotlin.serialization)
 }
 android {
     compileSdk = 37
@@ -10,14 +11,15 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7182
-        versionName = "0.71.82"
+        versionCode = 7273
+        versionName = "0.72.73"
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
     testOptions {
         unitTests {
             includeAndroidResources = true
+            returnDefaultValues = true
             all { test ->
                 def requested = project.findProperty('testMaxParallelForks') as String
                 test.maxParallelForks = requested ? requested.toInteger()
@@ -245,6 +247,7 @@ dependencies {
     implementation(libs.opencsv) { exclude group: 'commons-logging', module: 'commons-logging' }
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
+    implementation(libs.retrofit.converter.kotlinx.serialization)
     implementation(libs.okhttp)
     implementation(libs.circleimageview)
     implementation(libs.pbkdf2)

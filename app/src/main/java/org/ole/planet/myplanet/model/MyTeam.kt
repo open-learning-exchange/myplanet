@@ -8,8 +8,15 @@ import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.File
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.utils.FileUtils.getOlePath
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @Entity(tableName = "teams", indices = [Index("_id"), Index("teamId"), Index("userId"), Index("type"), Index("docType")])
 open class MyTeam(
@@ -72,60 +79,61 @@ open class MyTeam(
         }
 
         fun populateTeamFields(doc: JsonObject, team: MyTeam, includeCourses: Boolean = false) {
+            val kDoc = doc.toKotlinx().jsonObject
             val hadLocalChanges = team.updated
 
-            team.userId = JsonUtils.getString("userId", doc)
-            team.teamId = JsonUtils.getString("teamId", doc)
-            team._rev = JsonUtils.getString("_rev", doc)
-            team.name = JsonUtils.getString("name", doc)
-            team.sourcePlanet = JsonUtils.getString("sourcePlanet", doc)
-            team.title = JsonUtils.getString("title", doc)
-            team.description = JsonUtils.getString("description", doc)
-            team.limit = JsonUtils.getInt("limit", doc)
-            team.status = JsonUtils.getString("status", doc)
-            team.teamPlanetCode = JsonUtils.getString("teamPlanetCode", doc)
-            team.createdDate = JsonUtils.getLong("createdDate", doc)
-            team.resourceId = JsonUtils.getString("resourceId", doc)
-            team.teamType = JsonUtils.getString("teamType", doc)
-            team.route = JsonUtils.getString("route", doc)
-            team.type = JsonUtils.getString("type", doc)
-            team.services = JsonUtils.getString("services", doc)
-            team.rules = JsonUtils.getString("rules", doc)
-            team.parentCode = JsonUtils.getString("parentCode", doc)
-            team.createdBy = JsonUtils.getString("createdBy", doc)
-            team.userPlanetCode = JsonUtils.getString("userPlanetCode", doc)
-            team.isLeader = JsonUtils.getBoolean("isLeader", doc)
-            team.amount = JsonUtils.getInt("amount", doc)
-            team.date = JsonUtils.getLong("date", doc)
+            team.userId = JsonUtils.getString("userId", kDoc)
+            team.teamId = JsonUtils.getString("teamId", kDoc)
+            team._rev = JsonUtils.getString("_rev", kDoc)
+            team.name = JsonUtils.getString("name", kDoc)
+            team.sourcePlanet = JsonUtils.getString("sourcePlanet", kDoc)
+            team.title = JsonUtils.getString("title", kDoc)
+            team.description = JsonUtils.getString("description", kDoc)
+            team.limit = JsonUtils.getInt("limit", kDoc)
+            team.status = JsonUtils.getString("status", kDoc)
+            team.teamPlanetCode = JsonUtils.getString("teamPlanetCode", kDoc)
+            team.createdDate = JsonUtils.getLong("createdDate", kDoc)
+            team.resourceId = JsonUtils.getString("resourceId", kDoc)
+            team.teamType = JsonUtils.getString("teamType", kDoc)
+            team.route = JsonUtils.getString("route", kDoc)
+            team.type = JsonUtils.getString("type", kDoc)
+            team.services = JsonUtils.getString("services", kDoc)
+            team.rules = JsonUtils.getString("rules", kDoc)
+            team.parentCode = JsonUtils.getString("parentCode", kDoc)
+            team.createdBy = JsonUtils.getString("createdBy", kDoc)
+            team.userPlanetCode = JsonUtils.getString("userPlanetCode", kDoc)
+            team.isLeader = JsonUtils.getBoolean("isLeader", kDoc)
+            team.amount = JsonUtils.getInt("amount", kDoc)
+            team.date = JsonUtils.getLong("date", kDoc)
             if (!hadLocalChanges) {
-                team.docType = JsonUtils.getString("docType", doc)
+                team.docType = JsonUtils.getString("docType", kDoc)
             }
-            team.isPublic = JsonUtils.getBoolean("public", doc)
-            team.beginningBalance = JsonUtils.getInt("beginningBalance", doc)
-            team.sales = JsonUtils.getInt("sales", doc)
-            team.otherIncome = JsonUtils.getInt("otherIncome", doc)
-            team.wages = JsonUtils.getInt("wages", doc)
-            team.otherExpenses = JsonUtils.getInt("otherExpenses", doc)
-            team.startDate = JsonUtils.getLong("startDate", doc)
-            team.endDate = JsonUtils.getLong("endDate", doc)
-            team.updatedDate = JsonUtils.getLong("updatedDate", doc)
+            team.isPublic = JsonUtils.getBoolean("public", kDoc)
+            team.beginningBalance = JsonUtils.getInt("beginningBalance", kDoc)
+            team.sales = JsonUtils.getInt("sales", kDoc)
+            team.otherIncome = JsonUtils.getInt("otherIncome", kDoc)
+            team.wages = JsonUtils.getInt("wages", kDoc)
+            team.otherExpenses = JsonUtils.getInt("otherExpenses", kDoc)
+            team.startDate = JsonUtils.getLong("startDate", kDoc)
+            team.endDate = JsonUtils.getLong("endDate", kDoc)
+            team.updatedDate = JsonUtils.getLong("updatedDate", kDoc)
             getFirstAttachmentName(doc)?.let { team.imageName = it }
 
             val localCourses = team.courses?.toList() ?: emptyList()
 
             if (!hadLocalChanges) {
-                team.updated = JsonUtils.getBoolean("updated", doc)
+                team.updated = JsonUtils.getBoolean("updated", kDoc)
             }
 
-            val coursesArray = JsonUtils.getJsonArray("courses", doc)
+            val coursesArray = JsonUtils.getJsonArray("courses", kDoc)
             val serverCourseIds = mutableListOf<String>()
             for (e in coursesArray) {
                 try {
-                    val id = e.asJsonObject["_id"].asString
+                    val id = (e.jsonObject["_id"] as JsonPrimitive).content
                     serverCourseIds.add(id)
                 } catch (ex: Exception) {
-                    if (e.isJsonPrimitive) {
-                        serverCourseIds.add(e.asString)
+                    if (e is JsonPrimitive) {
+                        serverCourseIds.add(e.content)
                     }
                 }
             }
@@ -140,84 +148,91 @@ open class MyTeam(
         }
 
         fun populateReportFields(doc: JsonObject, team: MyTeam) {
-            team.description = JsonUtils.getString("description", doc)
-            team.beginningBalance = JsonUtils.getInt("beginningBalance", doc)
-            team.sales = JsonUtils.getInt("sales", doc)
-            team.otherIncome = JsonUtils.getInt("otherIncome", doc)
-            team.wages = JsonUtils.getInt("wages", doc)
-            team.otherExpenses = JsonUtils.getInt("otherExpenses", doc)
-            team.startDate = JsonUtils.getLong("startDate", doc)
-            team.endDate = JsonUtils.getLong("endDate", doc)
-            team.updatedDate = JsonUtils.getLong("updatedDate", doc)
-            team.updated = JsonUtils.getBoolean("updated", doc)
+            val kDoc = doc.toKotlinx().jsonObject
+            team.description = JsonUtils.getString("description", kDoc)
+            team.beginningBalance = JsonUtils.getInt("beginningBalance", kDoc)
+            team.sales = JsonUtils.getInt("sales", kDoc)
+            team.otherIncome = JsonUtils.getInt("otherIncome", kDoc)
+            team.wages = JsonUtils.getInt("wages", kDoc)
+            team.otherExpenses = JsonUtils.getInt("otherExpenses", kDoc)
+            team.startDate = JsonUtils.getLong("startDate", kDoc)
+            team.endDate = JsonUtils.getLong("endDate", kDoc)
+            team.updatedDate = JsonUtils.getLong("updatedDate", kDoc)
+            team.updated = JsonUtils.getBoolean("updated", kDoc)
             getFirstAttachmentName(doc)?.let { team.imageName = it }
         }
 
         fun serialize(team: MyTeam): JsonObject {
-            val `object` = JsonObject()
-
-            JsonUtils.addString(`object`, "_id", team._id)
-            JsonUtils.addString(`object`, "_rev", team._rev)
-
             if (team.isDeletePending) {
-                `object`.addProperty("_deleted", true)
-                return `object`
+                return buildJsonObject {
+                    if (!team._id.isNullOrEmpty()) put("_id", team._id)
+                    if (!team._rev.isNullOrEmpty()) put("_rev", team._rev)
+                    put("_deleted", true)
+                }.toGson()
             }
 
             if (team.docType == "resourceLink") {
-                `object`.addProperty("resourceId", team.resourceId)
-                `object`.addProperty("title", team.title)
-                JsonUtils.addString(`object`, "teamId", team.teamId)
-                `object`.addProperty("teamPlanetCode", team.teamPlanetCode)
-                `object`.addProperty("teamType", team.teamType)
-                `object`.addProperty("sourcePlanet", team.sourcePlanet)
-                `object`.addProperty("docType", team.docType)
+                val `object` = buildJsonObject {
+                    if (!team._id.isNullOrEmpty()) put("_id", team._id)
+                    if (!team._rev.isNullOrEmpty()) put("_rev", team._rev)
+                    put("resourceId", team.resourceId)
+                    put("title", team.title)
+                    if (!team.teamId.isNullOrEmpty()) put("teamId", team.teamId)
+                    put("teamPlanetCode", team.teamPlanetCode)
+                    put("teamType", team.teamType)
+                    put("sourcePlanet", team.sourcePlanet)
+                    put("docType", team.docType)
+                }.toGson()
 
                 val keysToRemove = `object`.keySet().filter { `object`.get(it).isJsonNull }
                 keysToRemove.forEach { `object`.remove(it) }
                 return `object`
             }
 
-            `object`.addProperty("name", team.name)
-            `object`.addProperty("userId", team.userId)
-            if (team.docType != "report" && team.docType != "request") {
-                `object`.addProperty("limit", team.limit)
-                `object`.addProperty("amount", team.amount)
-                `object`.addProperty("date", team.date)
-                `object`.addProperty("public", team.isPublic)
-                `object`.addProperty("isLeader", team.isLeader)
-            }
-            if (team.docType != "request") {
-                `object`.addProperty("createdDate", team.createdDate)
-                `object`.addProperty("description", team.description)
-                `object`.addProperty("beginningBalance", team.beginningBalance)
-                `object`.addProperty("sales", team.sales)
-                `object`.addProperty("otherIncome", team.otherIncome)
-                `object`.addProperty("wages", team.wages)
-                `object`.addProperty("otherExpenses", team.otherExpenses)
-                `object`.addProperty("startDate", team.startDate)
-                `object`.addProperty("endDate", team.endDate)
-                `object`.addProperty("updatedDate", team.updatedDate)
-            }
-            JsonUtils.addString(`object`, "teamId", team.teamId)
-            `object`.addProperty("teamType", team.teamType)
-            `object`.addProperty("teamPlanetCode", team.teamPlanetCode)
-            `object`.addProperty("docType", team.docType)
-            `object`.addProperty("status", team.status)
-            `object`.addProperty("userPlanetCode", team.userPlanetCode)
-            `object`.addProperty("parentCode", team.parentCode)
-            `object`.addProperty("type", team.type)
-            `object`.addProperty("route", team.route)
-            `object`.addProperty("sourcePlanet", team.sourcePlanet)
-            `object`.addProperty("services", team.services)
-            `object`.addProperty("createdBy", team.createdBy)
-            `object`.addProperty("resourceId", team.resourceId)
-            `object`.addProperty("title", team.title)
-            `object`.addProperty("rules", team.rules)
+            val `object` = buildJsonObject {
+                if (!team._id.isNullOrEmpty()) put("_id", team._id)
+                if (!team._rev.isNullOrEmpty()) put("_rev", team._rev)
+                put("name", team.name)
+                put("userId", team.userId)
+                if (team.docType != "report" && team.docType != "request") {
+                    put("limit", team.limit)
+                    put("amount", team.amount)
+                    put("date", team.date)
+                    put("public", team.isPublic)
+                    put("isLeader", team.isLeader)
+                }
+                if (team.docType != "request") {
+                    put("createdDate", team.createdDate)
+                    put("description", team.description)
+                    put("beginningBalance", team.beginningBalance)
+                    put("sales", team.sales)
+                    put("otherIncome", team.otherIncome)
+                    put("wages", team.wages)
+                    put("otherExpenses", team.otherExpenses)
+                    put("startDate", team.startDate)
+                    put("endDate", team.endDate)
+                    put("updatedDate", team.updatedDate)
+                }
+                if (!team.teamId.isNullOrEmpty()) put("teamId", team.teamId)
+                put("teamType", team.teamType)
+                put("teamPlanetCode", team.teamPlanetCode)
+                put("docType", team.docType)
+                put("status", team.status)
+                put("userPlanetCode", team.userPlanetCode)
+                put("parentCode", team.parentCode)
+                put("type", team.type)
+                put("route", team.route)
+                put("sourcePlanet", team.sourcePlanet)
+                put("services", team.services)
+                put("createdBy", team.createdBy)
+                put("resourceId", team.resourceId)
+                put("title", team.title)
+                put("rules", team.rules)
 
-            if (team.teamType == "debit" || team.teamType == "credit") {
-                `object`.addProperty("type", team.teamType)
-            }
+                if (team.teamType == "debit" || team.teamType == "credit") {
+                    put("type", team.teamType)
+                }
+            }.toGson()
 
             val keysToRemove = `object`.keySet().filter { `object`.get(it).isJsonNull }
             keysToRemove.forEach { `object`.remove(it) }
