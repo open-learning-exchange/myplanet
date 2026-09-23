@@ -153,7 +153,7 @@ void main() {
     // family is the risky part), the rest of `SubmissionDao` above, `NewsDao`,
     // `CourseDao`/`CourseStepDao`, then `NotificationDao`.
     final uncovered = corpus.length - _compared.length;
-    expect(uncovered, 316 - 198);
+    expect(uncovered, 316 - 204);
   });
 }
 
@@ -257,7 +257,7 @@ const _corpusSize = 316;
 
 /// Entries in [_compared], stated separately so the map and the claim about it
 /// cannot drift apart.
-const _comparedCount = 198;
+const _comparedCount = 204;
 
 /// Queries a lane has read against the port's Drift builder and reached a
 /// verdict on, with the digest the statement had at that moment.
@@ -916,4 +916,33 @@ const _compared = <String, String>{
   // and `COALESCE('', …)` writes the empty string. The comment now says all
   // of this.
   'PersonalDao.updateFields': '44c2c177b1bf',
+
+  // --- UserDao finished off ---------------------------------------------
+  'UserDao.getAll': '7b6ddc41e5c5',
+  'UserDao.count': 'c8df01c9cbdf',
+  'UserDao.deleteById': '3ad0aec54bc8',
+  'UserDao.deleteByIds': '338a01649c2c',
+  // **The plural the previous round flagged as the one to take next**, and it
+  // is the method with the port counterpart. `SUBSTR(_id, 1, 6) = 'guest_'`
+  // done in Dart at `app_database.dart:1654` precisely because
+  // `LIKE 'guest_%'` would read the underscore as LIKE's single-character
+  // wildcard. The `name IN (:names)` half is SQL on both sides.
+  'UserDao.getGuestUsersByNames': 'b6108be85495',
+  // **No port counterpart, and this one is a judgement rather than an
+  // equivalence.** Kotlin sweeps rows sharing a name
+  // (`IFNULL(name,'') IN (SELECT … GROUP BY … HAVING COUNT(*) > 1)`) and
+  // deletes all but the `org.couchdb.user:` one
+  // (`UserRepositoryImpl.kt:854-871`). The port prevents the duplicate instead
+  // of repairing it: `_cacheUserDoc` (`user_repository.dart:172-175`) resolves
+  // the row by `couchId` before writing, and `insertUsersFromSync`
+  // (`:229-234,247-250`) adopts a guest row by name rather than adding a
+  // second — both documented, both read. So the sweep has nothing to sweep.
+  // What the port does **not** have is a repair path for a duplicate that
+  // arrived some other way, and `user_repository.dart:160` is explicit that a
+  // duplicate here costs a member their health records. Recorded as a
+  // difference in strategy with a residual, not as a gap to fill: adding a
+  // name-collision delete would be a destructive sweep over a preserved
+  // table, which is a decision for a round that has evidence a duplicate can
+  // occur.
+  'UserDao.getDuplicateUsers': 'abd443b77f6e',
 };
