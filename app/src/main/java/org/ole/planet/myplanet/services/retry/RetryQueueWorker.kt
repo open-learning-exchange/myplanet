@@ -19,6 +19,8 @@ import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
@@ -31,13 +33,15 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.repository.RetryOperationResult
 import org.ole.planet.myplanet.repository.RetryRepository
+import org.ole.planet.myplanet.services.sync.SyncManager
 
 @HiltWorker
 class RetryQueueWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted workerParams: WorkerParameters,
     private val retryQueue: RetryQueue,
-    private val retryRepository: RetryRepository
+    private val retryRepository: RetryRepository,
+    private val syncManager: SyncManager
 ) : CoroutineWorker(context, workerParams) {
 
     companion object {
@@ -95,8 +99,11 @@ class RetryQueueWorker @AssistedInject constructor(
         }
     }
 
+    private fun isAnySyncRunning(): Boolean =
+        MainApplication.isSyncRunning.get() || syncManager.isMainSyncActive()
+
     override suspend fun doWork(): Result {
-        if (MainApplication.isSyncRunning.get()) {
+        if (isAnySyncRunning()) {
             Log.d(TAG, "Sync is running, skipping retry processing")
             return Result.success()
         }
@@ -125,10 +132,10 @@ class RetryQueueWorker @AssistedInject constructor(
             val semaphore = Semaphore(MAX_CONCURRENT_RETRIES)
 
             // Add timeout for entire batch processing (5 minutes max)
-            withTimeout(5 * 60 * 1000L) {
+            withTimeout(5.minutes) {
                 pendingOperations.chunked(BATCH_SIZE).forEach { batch ->
                     // Check if sync started while we're processing
-                    if (MainApplication.isSyncRunning.get()) {
+                    if (isAnySyncRunning()) {
                         Log.d(TAG, "Sync started, pausing retry processing")
                         return@withTimeout
                     }
@@ -154,7 +161,7 @@ class RetryQueueWorker @AssistedInject constructor(
             retryQueue.cleanup()
 
             Result.success()
-        } catch (e: TimeoutCancellationException) {
+        } catch (_: TimeoutCancellationException) {
             Log.w(TAG, "Retry processing timed out, will continue next cycle")
             Result.success()
         } catch (e: Exception) {
@@ -168,14 +175,14 @@ class RetryQueueWorker @AssistedInject constructor(
     private suspend fun processOperation(operation: RetryOperation): Boolean {
         return try {
             // Timeout for individual operation (30 seconds)
-            withTimeout(30_000L) {
+            withTimeout(30.seconds) {
                 when (retryRepository.executeOperation(operation)) {
                     is RetryOperationResult.Success -> true
                     is RetryOperationResult.RetryableFailure,
                     is RetryOperationResult.TerminalFailure -> false
                 }
             }
-        } catch (e: TimeoutCancellationException) {
+        } catch (_: TimeoutCancellationException) {
             Log.w(TAG, "Operation ${operation.id} timed out")
             retryRepository.markFailed(operation.id, "Timeout", null)
             false

@@ -27,6 +27,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
@@ -40,6 +41,7 @@ class ServerReachabilityWorkerTest {
     private val uploadManager: UploadManager = mockk(relaxed = true)
     private val submissionsRepository: SubmissionsRepository = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
+    private val syncManager: SyncManager = mockk(relaxed = true)
     private val timeProvider = TestTimeProvider(NOW)
 
     @Before
@@ -55,6 +57,7 @@ class ServerReachabilityWorkerTest {
         every { context.applicationContext } returns context
         every { workerParams.inputData } returns Data.EMPTY
         every { sharedPrefManager.getServerUrl() } returns SERVER_URL
+        every { syncManager.isMainSyncActive() } returns false
         // Hold the notification cooldown shut so no test wanders into the notification builder.
         every { sharedPrefManager.getRawLong(any(), any()) } returns NOW
     }
@@ -72,7 +75,8 @@ class ServerReachabilityWorkerTest {
         submissionsRepository,
         serverUrlMapper,
         TestDispatcherProvider(dispatcher),
-        timeProvider
+        timeProvider,
+        syncManager
     )
 
     @Test
