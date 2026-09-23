@@ -381,10 +381,12 @@ void _reportUnreviewed(List<String> args) {
 // adoptable tiers:
 //
 //   [MatchTier.exact]       identical after trimming. No transformation at all.
-//   [MatchTier.punctuation] identical once a trailing `: . … !` run and its
+//   [MatchTier.punctuation] identical once a trailing `: . … ! *` run and its
 //                           surrounding space are removed from both. Kotlin
 //                           labels carry the colon the layout draws
-//                           (`author` → "Author:"); the ARB does not. The
+//                           (`author` → "Author:") and the asterisk that
+//                           marks a required field (`note` → "Note *",
+//                           `levels` → "Levels*"); the ARB draws neither. The
 //                           translation is stripped the same way, then given the
 //                           template's own trailing punctuation back, so the
 //                           port's English and its translations agree on it.
@@ -855,10 +857,19 @@ String _ordinarySpaces(String value) =>
     value.trim().replaceAll(RegExp(r'[\s\u00a0\u202f\u2009]+'), ' ');
 
 /// A trailing run of label punctuation, with the space Android puts around it.
-final _trailingLabelPunctuation = RegExp('[\\s ]*[:.…!]+[\\s ]*\$');
+///
+/// The `*` is in this class for the same reason the colon is: Android writes
+/// the required-field marker into the string itself, because the layout has
+/// nowhere else to put it — `note` is "Note *", `levels` is "Levels*",
+/// `feedback_type` is "Feedback Type: *" — and every locale carries it
+/// through. The port marks a required field in its own widgets, so the marker
+/// is layout rather than message. A `*` is also never the last character of a
+/// sentence, which is why stripping it cannot eat meaning the way stripping a
+/// `?` would.
+final _trailingLabelPunctuation = RegExp('[\\s ]*[:.…!*]+[\\s ]*\$');
 
 /// The same run, unanchored to whitespace, as the template writes it.
-final _trailingPunctuationOnly = RegExp(r'[:.…!]+$');
+final _trailingPunctuationOnly = RegExp(r'[:.…!*]+$');
 
 /// [text] with every trailing run of label punctuation removed.
 String _core(String text) {

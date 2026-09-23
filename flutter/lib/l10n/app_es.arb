@@ -336,9 +336,6 @@
   "phone": "Número de teléfono",
   "level": "Nivel",
   "levels": "Niveles",
-  "@levels": {
-    "x-mt": true
-  },
   "language": "Idioma",
   "languages": "Idiomas",
   "gender": "Género",
@@ -508,9 +505,6 @@
     "x-mt": true
   },
   "taskNotification": "Tarea",
-  "@taskNotification": {
-    "x-mt": true
-  },
   "chatNotification": "Chat",
   "replyNotification": "Nueva respuesta",
   "@replyNotification": {
@@ -1338,19 +1332,13 @@
   "@isUrgent": {
     "x-mt": true
   },
-  "feedbackType": "Tipo de retroalimentación",
-  "@feedbackType": {
-    "x-mt": true
-  },
+  "feedbackType": "Tipo de comentario",
   "feedbackTypeRequired": "Please select a feedback type",
   "@feedbackTypeRequired": {
     "x-mt": true
   },
   "feedbackPriorityRequired": "Se requiere prioridad de comentario.",
-  "yourFeedback": "Tus comentarios",
-  "@yourFeedback": {
-    "x-mt": true
-  },
+  "yourFeedback": "Tu comentario",
   "pleaseEnterFeedback": "Por favor ingrese sus comentarios",
   "@pleaseEnterFeedback": {
     "x-mt": true

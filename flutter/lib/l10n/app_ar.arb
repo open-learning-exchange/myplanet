@@ -310,9 +310,6 @@
   },
   "level": "مستوى",
   "levels": "المستويات",
-  "@levels": {
-    "x-mt": true
-  },
   "language": "اللغة",
   "languages": "اللغات",
   "gender": "الجنس",
@@ -467,10 +464,7 @@
   "@deleteNotificationConfirmation": {
     "x-mt": true
   },
-  "taskNotification": "مهمة",
-  "@taskNotification": {
-    "x-mt": true
-  },
+  "taskNotification": "* المهمة",
   "chatNotification": "الدردشة",
   "replyNotification": "رد جديد",
   "@replyNotification": {
@@ -1271,19 +1265,13 @@
   "@isUrgent": {
     "x-mt": true
   },
-  "feedbackType": "نوع ردود الفعل",
-  "@feedbackType": {
-    "x-mt": true
-  },
+  "feedbackType": "نوع التعليق",
   "feedbackTypeRequired": "Please select a feedback type",
   "@feedbackTypeRequired": {
     "x-mt": true
   },
   "feedbackPriorityRequired": "يجب تحديد أولوية التعليقات.",
-  "yourFeedback": "ملاحظاتك",
-  "@yourFeedback": {
-    "x-mt": true
-  },
+  "yourFeedback": "تعليقك",
   "pleaseEnterFeedback": "الرجاء إدخال ملاحظاتك",
   "@pleaseEnterFeedback": {
     "x-mt": true
@@ -1388,10 +1376,7 @@
   "credit": "دائن",
   "balance": "الرصيد",
   "amount": "المبلغ",
-  "note": "ملحوظة",
-  "@note": {
-    "x-mt": true
-  },
+  "note": "ملاحظة",
   "date": "التاريخ",
   "fromDate": "من تاريخ",
   "toDate": "إلى تاريخ",

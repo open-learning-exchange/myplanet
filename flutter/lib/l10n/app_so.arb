@@ -544,5 +544,10 @@
   "activitySummary": "Firfircoonaanta",
   "shareChat": "La wadaag sheekaysiga",
   "shareWithTeamEnterprise": "La wadaag kooxda/ganacsiga",
-  "addNoteOptional": "Ku dar falanqeey (ixtiyaacsi ah)"
+  "addNoteOptional": "Ku dar falanqeey (ixtiyaacsi ah)",
+  "levels": "Heerarka",
+  "taskNotification": "Hawlo",
+  "feedbackType": "Nooca jawaab celinta",
+  "yourFeedback": "Jawaab celintaada",
+  "note": "Fariin"
 }

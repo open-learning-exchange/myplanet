@@ -346,9 +346,6 @@
   },
   "level": "Niveau",
   "levels": "Niveaux",
-  "@levels": {
-    "x-mt": true
-  },
   "language": "Langue",
   "languages": "Langues",
   "gender": "Sexe",
@@ -516,9 +513,6 @@
     "x-mt": true
   },
   "taskNotification": "Tâche",
-  "@taskNotification": {
-    "x-mt": true
-  },
   "chatNotification": "Discussion",
   "replyNotification": "Nouvelle réponse",
   "@replyNotification": {
@@ -1379,19 +1373,13 @@
   "@isUrgent": {
     "x-mt": true
   },
-  "feedbackType": "Type de commentaires",
-  "@feedbackType": {
-    "x-mt": true
-  },
+  "feedbackType": "Type de retour d'information",
   "feedbackTypeRequired": "Please select a feedback type",
   "@feedbackTypeRequired": {
     "x-mt": true
   },
   "feedbackPriorityRequired": "La priorité du commentaire est requise.",
-  "yourFeedback": "Vos commentaires",
-  "@yourFeedback": {
-    "x-mt": true
-  },
+  "yourFeedback": "Votre retour d'information",
   "pleaseEnterFeedback": "Veuillez entrer vos commentaires",
   "@pleaseEnterFeedback": {
     "x-mt": true

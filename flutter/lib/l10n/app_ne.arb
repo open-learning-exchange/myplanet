@@ -544,5 +544,10 @@
   "activitySummary": "गतिविधि",
   "shareChat": "च्याट साझेदारी गर्नुहोस्",
   "shareWithTeamEnterprise": "टोली/उद्यमसँग साझा गर्नुहोस्",
-  "addNoteOptional": "नोट थप्नुहोस् (वैकल्पिक)"
+  "addNoteOptional": "नोट थप्नुहोस् (वैकल्पिक)",
+  "levels": "स्तरहरू",
+  "taskNotification": "कार्य",
+  "feedbackType": "प्रतिक्रिया प्रकार",
+  "yourFeedback": "तपाईंको प्रतिक्रिया",
+  "note": "नोट"
 }
