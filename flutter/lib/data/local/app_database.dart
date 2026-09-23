@@ -1223,6 +1223,49 @@ class TeamDao extends DatabaseAccessor<AppDatabase> with _$TeamDaoMixin {
     readsFrom: {teams, users},
   ).watchSingle().map((row) => row.read<int>('c'));
 
+  /// Port of `TeamDao.getEligibleNextLeaderCandidates` (`TeamDao.kt:22`) —
+  /// the pool `TeamsRepositoryImpl.getNextLeaderCandidate` ranks when a
+  /// member leaves and leadership has to pass to someone.
+  ///
+  /// ```sql
+  /// SELECT * FROM teams WHERE teamId = :teamId AND docType = 'membership'
+  ///   AND isLeader = 0
+  ///   AND (status IS NULL OR status != 'archived')
+  ///   AND (:excludeUserId IS NULL OR userId != :excludeUserId)
+  /// ```
+  ///
+  /// Four conjuncts, and the two written the long way are written that way
+  /// because SQL's three-valued logic would otherwise drop rows:
+  ///
+  /// * `status IS NULL OR status != 'archived'` — a bare `status != 'archived'`
+  ///   evaluates to NULL, not true, for the null `status` that every
+  ///   locally-authored membership carries, so it would exclude exactly the
+  ///   members this device knows best.
+  /// * `NOT (user_id = ?)` for the exclusion, **not** `user_id IS NOT ?`. The
+  ///   Kotlin's `userId != :excludeUserId` is also NULL for a null `userId`,
+  ///   so a membership with no user is excluded while someone is being
+  ///   excluded and included when [excludeUserId] is null. That asymmetry is
+  ///   Kotlin's, it is harmless (a candidate with no `userId` resolves to no
+  ///   user and can never be promoted), and reproducing it keeps this
+  ///   statement comparable to the one in the ledger.
+  Future<List<TeamRow>> eligibleNextLeaderCandidates(
+    String teamId,
+    String? excludeUserId,
+  ) {
+    final query = select(teams)
+      ..where(
+        (t) =>
+            t.teamId.equals(teamId) &
+            t.docType.equals('membership') &
+            t.isLeader.equals(false) &
+            (t.status.isNull() | t.status.equals('archived').not()),
+      );
+    if (excludeUserId != null) {
+      query.where((t) => t.userId.equals(excludeUserId).not());
+    }
+    return query.get();
+  }
+
   Stream<List<TeamRow>> watchTeamDocuments(String teamId, String docType) =>
       (select(teams)
             ..where((t) => t.teamId.equals(teamId) & t.docType.equals(docType))
