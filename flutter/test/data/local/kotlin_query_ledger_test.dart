@@ -153,7 +153,7 @@ void main() {
     // family is the risky part), the rest of `SubmissionDao` above, `NewsDao`,
     // `CourseDao`/`CourseStepDao`, then `NotificationDao`.
     final uncovered = corpus.length - _compared.length;
-    expect(uncovered, 316 - 204);
+    expect(uncovered, 316 - 225);
   });
 }
 
@@ -257,7 +257,7 @@ const _corpusSize = 316;
 
 /// Entries in [_compared], stated separately so the map and the claim about it
 /// cannot drift apart.
-const _comparedCount = 204;
+const _comparedCount = 225;
 
 /// Queries a lane has read against the port's Drift builder and reached a
 /// verdict on, with the digest the statement had at that moment.
@@ -284,6 +284,21 @@ const _compared = <String, String>{
   'TeamDao.getByTeamIdUserIdAndDocType': 'd0cbe64d50e2',
   'TeamDao.getByTeamIdAndDocType': '144d788d1f94',
   'TeamDao.getEligibleNextLeaderCandidates': '8c8ad4450999',
+  // **The open list's "the port permits duplicate team names" is refuted, and
+  // the first half of it is true.** (Phase 160.) There is indeed no port
+  // counterpart — `nameExists` appears nowhere in `lib/`. It is not owed
+  // today, because neither Kotlin caller has a port equivalent: both
+  // `isTeamNameExists` call sites are `TeamViewModel.kt:164` (create) and
+  // `:195` (`updateExistingTeam`, reached from `TeamFragment.kt:139`), i.e.
+  // the teams-list create/edit dialog, and **the port creates no teams at
+  // all** — its four `TeamsCompanion.insert` sites write transaction, report,
+  // resourceLink and request (`teams_repository.dart:358,409,666,801`). The
+  // port's one rename path, `team_plan_screen` → `updateTeam`, mirrors
+  // `PlanFragment.kt:169` → `updateTeamDetails` (`TeamsRepositoryImpl:861`),
+  // which carries **no name check in Kotlin either** — the two chains are
+  // disjoint. It becomes owed the moment a create-team or list-edit
+  // affordance is added. (And per `getUpdatedTeams` below, that rename does
+  // not reach the server anyway.)
   'TeamDao.teamNameExists': '16cc27e97d3e',
   'MeetupDao.getPendingUploads': '3ef3f76a9cac',
   'TeamTaskDao.getPendingUploads': '36f7b43063be',
@@ -945,4 +960,176 @@ const _compared = <String, String>{
   // table, which is a decision for a round that has evidence a duplicate can
   // occur.
   'UserDao.getDuplicateUsers': 'abd443b77f6e',
+
+  // --- TeamDao, the twenty-one the previous round named first -----------
+  //
+  // The ledger's stated order put `TeamDao` first because of its
+  // `IFNULL(status, '') != 'archived'` family, on the reasoning that an
+  // `IFNULL` around a nullable column is where a Drift port silently
+  // disagrees. **It does not disagree, anywhere**, and the inventory is worth
+  // recording so the suspicion is retired rather than re-raised:
+  // `IFNULL(s,'') != 'archived'` ≡ `s IS NULL OR s != 'archived'` ≡ Kotlin's
+  // in-memory `it.status != "archived"` on a nullable String, and there is
+  // **no bare `status != 'archived'` on either side**. Kotlin uses the
+  // `IFNULL` form six times (`TeamDao.kt:24,25,26,42,45,51`), the spelled-out
+  // form once (`:22`), and an in-memory test four times; the port writes
+  // `status.isNull() | status.equals('archived').not()` at every one.
+  //
+  // What the pass found instead is that the divergences are in **other**
+  // conjuncts, and three of them are live. The verdicts below come from a
+  // `parity-auditor` pass at `effort: max` over every caller chain; the three
+  // marked **verified here** were re-opened and re-read by this lane before
+  // being written down, because they are the severe ones.
+  //
+  // **A team-document edit never leaves the device, and the row then freezes.
+  // (verified here)** `getUpdatedTeams` (`WHERE isUpdated = 1`) is the only
+  // route a plain team edit takes off an Android handset:
+  // `TeamsRepositoryImpl.getTeamsForUpload:88` → `TeamsUploader.kt:37`. The
+  // port has no query selecting `isUpdated` on `teams` at all — the only
+  // `teams`+`isUpdated` read in `lib/` is `deleteNotIn`'s
+  // `isUpdated.equals(false)` — and `TeamsUploader`'s five types
+  // (`teams_uploader.dart:37-41`) are membership/resource/courses/reports/
+  // finances, none of them the document itself. `team_plan_screen.dart:183`
+  // awaits `updateTeam` and pops, enqueueing nothing, while
+  // `TeamsRepository.updateTeam` writes `isUpdated: true`. The second half is
+  // worse than the first: `TeamMapper.fromDoc:16` short-circuits on
+  // `existing.isUpdated` and its own comment says the row outranks the server
+  // *"until something uploads it"* — so with nothing to clear the flag, that
+  // team row never takes another server-side change for the life of the
+  // install, and `deleteNotIn` skips it for ever.
+  'TeamDao.getUpdatedTeams': '14028cfd129c',
+  // **A whole Community tab is permanently empty. (verified here)** Kotlin
+  // reads `getByDocType("link")` (`TeamsRepositoryImpl:355`) for the services
+  // list; the port's `watchTeamLinks` (`teams_repository.dart:766`) reads
+  // `watchTeamDocumentsByType('service')`, and `"service"` appears **nowhere**
+  // in `app/src/main` — no writer on either side ever produces it. The screen
+  // is a live tab of `community_screen.dart`, and all five of its tests
+  // override the provider, so the statement is never exercised. A one-word
+  // change and a DAO-level test.
+  'TeamDao.getByDocType': 'fc0b7632061c',
+  // **The port moved this sort into SQL, and the default Finances view now
+  // shows both the wrong order and backwards running balances. (verified
+  // here)** Kotlin has no `ORDER BY` and sorts afterwards, but the ordering
+  // is load-bearing: `getTeamTransactionsWithBalance:432` passes
+  // `sortAscending = true` **hard-coded**, accumulates the balance
+  // oldest→newest, and reverses for display only at the end. The port's
+  // `watchTransactions` sorts in SQL by the caller's direction, and
+  // `teams_provider.dart:170` then reads
+  // `for (final row in params.ascending ? rows : rows)` — a ternary whose two
+  // branches are the same expression. So under the screen's default
+  // (`team_finances_screen.dart:39`, `_ascending = false`) the rows arrive
+  // date DESC, the balance accumulates newest→oldest, and the result is
+  // reversed back to ascending. The no-op ternary is the tell that the
+  // intent was Kotlin's shape. All four tests of that screen override the
+  // provider.
+  'TeamDao.observeByTeamIdAndDocType': '144d788d1f94',
+  // **The sync has no request/membership dedup.** Kotlin runs both of these
+  // from one place (`insertMyTeam:1220-1225`): an arriving `membership`
+  // deletes the local `request` row for that (team, user), and an arriving
+  // `request` is dropped when a membership already exists. The port's
+  // `TeamsRepository.sync` maps and upserts with neither. Where Planet writes
+  // a separate membership document, the accepted requester stays under **Join
+  // requests** for every leader indefinitely, with Accept/Decline live, and
+  // declining enqueues a `_deleted` tombstone for a document the server still
+  // holds.
+  'TeamDao.countByTeamIdUserIdAndDocType': 'c0589cb0c584',
+  'TeamDao.deleteByTeamIdUserIdAndDocType': '5b9d45b3eea8',
+  // **`status = 'active'` — strict equality, the one predicate in this DAO
+  // that is not the archived test, and deliberately narrower**: a team whose
+  // document omits `status` stores `''` in Kotlin (`JsonUtils.getString`
+  // defaults to `""`) and is therefore excluded. No port counterpart, and
+  // neither has the affordance: its chain is `getAllActiveTeams:188` →
+  // `LoginViewModel.kt:43` → `LoginActivity.setupTeamDropdown:445-491`, the
+  // login screen's team spinner, which seeds the saved-user list so a team's
+  // members can sign in by tapping their name. `login_screen.dart` mentions
+  // teams nowhere. Phase 158's fifth question again — nothing in `lib/` is
+  // wrong, so no scan over the port finds it.
+  'TeamDao.getActiveRootTeams': 'a07ef769c35c',
+  // `observeAll` feeds two Kotlin readers and the port matches neither
+  // exactly. `getMyTeamsFlow:192` backs the **calendar**, whose meetup markers
+  // and day-click agenda (`CalendarFragment.kt:53,57`) the port's bare
+  // `CalendarDatePicker` does not have — and whose own doc comment says
+  // Android "leaves selection entirely local to the widget", which is a
+  // misreading of those two lines. `getMyTeamDetailsFlow:279` backs the
+  // dashboard's **My teams** card, reached only under `fromDashboard`
+  // (`TeamViewModel.kt:73`); the port's `home_screen.dart:533` pushes the
+  // catalog route unconditionally, so tapping "My teams" opens every team on
+  // the planet. `getAll` is the same statement and has **no caller in
+  // `app/src/main`** — `TeamsRepositoryImplTest` asserts `exactly = 0` on it,
+  // so it is a guard rather than an oversight. Nothing owed for that one.
+  'TeamDao.observeAll': 'b0f044f81c1f',
+  'TeamDao.getAll': 'b0f044f81c1f',
+  // Community leaders never appear in a team's member list. Kotlin reads every
+  // docType for the team (`getJoinedMembersWithVisitInfo:969`) so it can append
+  // a cached community admin whose `org.couchdb.user:<name>` is in that set,
+  // and sorts leaders first (`:992-1002`). The port's member list is
+  // `watchTeamDocuments(teamId,'membership')` ordered by `user_id`, with no
+  // admin arm and no leaders-first rule.
+  'TeamDao.getAllByTeamId': '971ace5365e3',
+  // Narrower lookup on Kotlin's side, more destructive removal on the port's.
+  // Kotlin's strict `docType = 'resourceLink'` misses the three other link
+  // shapes its own `getResourceIdsByTeamId` admits, where the port unlinks
+  // through `watchResourceLinks` and finds them. But Kotlin's
+  // `removeResourceLink:692` blanks `resourceId` and keeps the document, while
+  // the port hard-deletes and enqueues `{_deleted: true}` — same result in
+  // both apps' Resources tab, different state for Planet's web UI.
+  'TeamDao.getResourceLink': '5583a6fc3ac0',
+  // **The root-team test, settled rather than asserted.** Kotlin's is
+  // `teamId IS NULL OR TRIM(teamId) = ''` (and `MyTeam.isRootTeam()` is
+  // `teamId.isNullOrBlank()`); the port's `watchCatalog`/`teamsByIds` test
+  // `docType IS NULL`. Coextensive over anything either app writes: a team
+  // document reaches CouchDB with **neither** key — `createTeamAndAddMember`
+  // sets `teamId = ""` and no `docType`, and `MyTeam.serialize` strips empty
+  // and null keys — while every sub-document carries both. Two classes where
+  // they would part: a link document with no `docType` (which Kotlin's own
+  // four-way alternation says exists) has a real `teamId`, so Kotlin excludes
+  // it and `docType IS NULL` admits it — blocked independently, by
+  // `watchCatalog`'s `type = 'team'` conjunct, since a link row's `type` is
+  // null in both apps; and a **child team** document, which Kotlin's test
+  // exists to exclude and the port's would show in the catalog. Nothing in
+  // `app/src/main` creates one. Recorded as the shape to watch, not a live
+  // defect.
+  'TeamDao.getRootTeamsByType': '502c4c4c222d',
+  'TeamDao.getRootTeamsByTypeAndIds': '4ef3f5e1a399',
+  // **A missing team looks different in the two apps, and the port's is
+  // better.** Kotlin's `_id = :teamId OR teamId = :teamId LIMIT 1` is the
+  // fallback arm of `getTeamEntityByAnyId:1275`, and every caller passes what
+  // is meant to be a team's `_id` — so the arm only fires when the team
+  // document is *not cached*, at which point it returns an arbitrary
+  // sub-document of that team picked by scan order, with a null `name`.
+  // Android draws a detail screen with a blank title; the port's `getById`
+  // matches `_id` alone (its comment at `app_database.dart:1112` records why)
+  // and shows "Team not found".
+  'TeamDao.getByTeamId': '4b06559b03c1',
+  'TeamDao.getById': '1665ff896123',
+  // Kotlin chunks 500 at all five call sites and de-duplicates with
+  // `distinctBy`; the port chunks at the same width and returns a `Map` keyed
+  // by id, so the dedup is structural.
+  'TeamDao.getByIds': '8813a6d74109',
+  // The membership half is pushed into SQL by the port
+  // (`watchMemberships`/`membershipsForUser`) where Kotlin reads every docType
+  // and filters in memory — same rows. The **request** half has no
+  // counterpart: `getTeamMemberStatuses:574` also builds a pending-request
+  // set, and the port's `TeamMemberStatus` carries no `hasPendingRequest`. Not
+  // lost — `team_detail_screen` recovers it from `teamRequestsProvider` — and
+  // moot in the catalog, because the port's catalog row has no join/leave
+  // affordance where `TeamsAdapter.showActionButton:90-146` gives Kotlin's
+  // four states. That is a breadth gap, not a query divergence.
+  'TeamDao.getByUserId': '8672d14e22f8',
+  // **No caller in `app/src/main`** — only a DAO test. The live report reader
+  // is the `Flow` sibling below. Nothing owed.
+  'TeamDao.getNonArchivedReportsByTeamId': 'dce31e3d595b',
+  // Identical predicate and identical `ORDER BY createdDate DESC` in
+  // `watchReports`.
+  'TeamDao.observeNonArchivedReportsByTeamId': 'dce31e3d595b',
+  // Kotlin re-queries a projection for the CSV export; the port passes the
+  // list `watchReports` has already delivered (`team_reports_screen.dart:124`).
+  // Same rows, same order, same column order.
+  'TeamDao.getNonArchivedReportCsvProjectionsByTeamId': 'ef96613c2df2',
+  'TeamDao.deleteById': '30bb666a416f',
+  // No counterpart and none owed: Kotlin's only caller cleans up after a
+  // `_deleted` bulk upload (`deleteLocalTeamRecords:115` ← `TeamsUploader:69`),
+  // and the port deletes the row *before* enqueueing the tombstone on all four
+  // such paths. Same end state, the other order.
+  'TeamDao.deleteByIds': '8e40c51a936b',
 };
