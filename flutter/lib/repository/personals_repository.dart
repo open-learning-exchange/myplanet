@@ -74,17 +74,26 @@ class PersonalsRepository {
     // matched. There is no `@Update` in `PersonalDao`, and there never has
     // been.** Kotlin's edit is `updateFields`, a hand-written
     // `UPDATE … SET title = COALESCE(:title, title), description =
-    // COALESCE(:description, description)` — which writes *two* columns and,
-    // because of the `COALESCE`, cannot clear a description at all. So the
-    // sentence named a construct that does not exist to justify a behaviour
-    // Kotlin does not have. The behaviour is kept (clearing a description the
-    // user cleared is right, and `PersonalsFragment.onEditPersonal` offers no
-    // way to do it in Kotlin); only the false citation goes.
+    // COALESCE(:description, description)`, which writes two columns rather
+    // than every one.
+    //
+    // **The replacement sentence then went on to get Kotlin wrong a second
+    // time**, claiming the `COALESCE` means Kotlin "cannot clear a description
+    // at all". `COALESCE` falls back on SQL `NULL`, not on `''`, and
+    // `PersonalsFragment.kt:114` reads
+    // `etDescription.text.toString().trim { it <= ' ' }` — a non-null String
+    // that is `""` when the user clears the field. So Kotlin does clear it, to
+    // the empty string; the `COALESCE` is there for the interface's
+    // `PersonalUpdate(title = null, description = null)` defaults, which the
+    // one caller never uses. The port stores `null` instead of `''` via
+    // `_nullable`, which no user can tell apart. Only the justification was
+    // false, twice over — which is the cost of writing a replacement claim
+    // without opening its citation.
     //
     // `isUploaded` is reset **only when the attachment changes**, and the
     // narrowing is the point. Kotlin never resets it, so an edited note is
     // never re-sent there at all — but Kotlin also cannot edit the file, which
-    // the port can (`personals_screen.dart:317`, `:321`). Leaving a new file
+    // the port can (`personals_screen.dart:317-318`, `:321`). Leaving a new file
     // undelivered would strand it, so a changed path re-opens the note for
     // upload.
     //
@@ -116,7 +125,11 @@ class PersonalsRepository {
   Future<List<PersonalRow>> pendingUploads(String userId) =>
       _dao.pendingUploads(userId);
 
-  /// Port of `Personal.serialize`.
+  /// Port of the private `PersonalsRepositoryImpl.serialize` (`:93-111`).
+  ///
+  /// **Not `Personal.serialize`, which an earlier revision of this line named
+  /// and which does not exist** — `model/Personal.kt` is 22 lines of fields
+  /// with no methods at all.
   ///
   /// Device telemetry is deliberately added by [PersonalsUploader], where the
   /// platform seam is available.
@@ -196,12 +209,40 @@ class PersonalsRepository {
   /// [rev] is Kotlin's `finalRev`: the revision the *attachment* response
   /// reported, falling back to the POST's when there is no attachment or the
   /// response did not carry one.
-  Future<void> markUploaded(String id, String couchId, String rev) async {
+  ///
+  /// [deliveredPath] is the `path` the delivered bytes came from, read before
+  /// the upload began. **It is required rather than optional because omitting
+  /// the check is the bug it exists to prevent**, and it has to be checked
+  /// here rather than at the call site: this method's own `getById` is the
+  /// read the decision must be made against, so a caller comparing first
+  /// would leave the window open between its read and this one.
+  ///
+  /// An edit landing while the PUT is on the wire sets a different `path` and
+  /// clears `isUploaded` precisely so the new file is sent
+  /// ([PersonalsRepository.update]). Writing `isUploaded: true` unconditionally
+  /// then goes straight over that reset, and because
+  /// `OutboxRepository.markCompleted` only deletes an `in_progress` row — the
+  /// re-enqueue has already put this one back to `pending` — the next drain
+  /// sees a note flagged delivered and retires the row. The file the user
+  /// attached is never uploaded and nothing says so. So when the path has
+  /// moved, the ids are recorded and the flag is not: that is exactly
+  /// [recordRemoteDocRef]'s state, and it leaves the note in
+  /// [pendingUploads] where the new file's own drain will find it.
+  Future<void> markUploaded(
+    String id,
+    String couchId,
+    String rev, {
+    required String? deliveredPath,
+  }) async {
     final current = await _dao.getById(id);
     if (current == null) return;
     await _dao.upsert(
       current
-          .copyWith(isUploaded: true, couchId: Value(couchId), rev: Value(rev))
+          .copyWith(
+            isUploaded: current.path == deliveredPath,
+            couchId: Value(couchId),
+            rev: Value(rev),
+          )
           .toCompanion(false),
     );
   }

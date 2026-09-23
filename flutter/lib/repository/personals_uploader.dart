@@ -82,7 +82,10 @@ class PersonalsUploader {
           // `uploadedAt` is passed, and passed *deterministically*, because
           // `serialize`'s default is `DateTime.now()` — and this payload is
           // re-serialized on every sweep, not once at send time as Kotlin's is
-          // (`Personal.serialize:39`). A drifting field makes the payload
+          // (`PersonalsRepositoryImpl.serialize:96`, `System.currentTimeMillis()`
+          // — there is no `serialize` on `model/Personal.kt`, which is 22 lines
+          // of fields; an earlier revision of this line cited one). A drifting
+          // field makes the payload
           // differ from the one already recorded against this note, so
           // `OutboxRepository.enqueue`'s memo can never match and a note the
           // server refused is POSTed again on every sweep. That is the
@@ -122,9 +125,10 @@ class PersonalsUploader {
   ///    whose bytes did land, and re-armable by nothing.
   /// 2. **A failed attachment is the handler's answer**, so `markUploaded`
   ///    does not run and the note stays in [PersonalsRepository.pendingUploads]
-  ///    (Kotlin returns early at `:145`/`:150`, past its sole
-  ///    `updateUploadedStatus` call site in `app/src/main`, reached at
-  ///    `:155`).
+  ///    (Kotlin returns early at `:145` on a throw and `:150` on a non-2xx,
+  ///    both ahead of the `updatePersonalAfterSync` call at `:155` — and that
+  ///    method, `:73-75`, is the sole caller of `updateUploadedStatus` in
+  ///    `app/src/main`, at `:74`).
   /// 3. **A retry skips the POST** when the note already carries both ids
   ///    (Kotlin's `if (!existingId.isNullOrBlank() && !existingRev
   ///    .isNullOrBlank())` at `:119-127`), so re-sending a note whose document
@@ -193,11 +197,37 @@ class PersonalsUploader {
     // so this row stays true for the attachment step below.
     final note = await _personals.getById(row.itemId);
 
+    // **The note is gone, so nothing here is owed to anyone.** Kotlin cannot
+    // reach this: `getPendingPersonalUploads` reads the live table, so a
+    // deleted note is simply not in the list it iterates. The port's queue is
+    // durable and outlives the row it describes, so the handler has to make
+    // the same check the query makes there.
+    //
+    // Without it the delete is *worse* than a no-op, because the
+    // skip-the-POST guard below reads its ids off this row: a note deleted
+    // between two drain attempts loses `_id`/`_rev`, the guard fails, and the
+    // retry POSTs a **second** document — the exact duplicate property 3
+    // exists to prevent, arriving through the retry loop property 2 added.
+    // `notSent` rather than a success because nothing was sent and the row
+    // should say so; terminal because a deleted note does not come back.
+    //
+    // The proper fix is upstream of here — `PersonalActions.delete` should
+    // call `OutboxRepository.cancel`, as `voices_provider.dart:309` and
+    // `team_tasks_provider.dart:55` both do — but that file is another lane's
+    // this round, and this guard is worth having regardless: the outbox is
+    // durable, so the handler cannot assume its subject still exists.
+    if (note == null) {
+      return const NetworkError<Map<String, dynamic>>(
+        OutboxRepository.notSent,
+        'The personal note this operation describes no longer exists',
+      );
+    }
+
     // Kotlin's `if (personal.isUploaded) return "Resource already uploaded"`
     // (`:113-116`). Reachable here when two drains race a row that a third
     // party has already settled; re-PUTting the attachment would be harmless
     // but pointless, and re-POSTing would not be.
-    if (note != null && note.isUploaded) {
+    if (note.isUploaded) {
       return NetworkSuccess<Map<String, dynamic>>({
         'id': note.couchId,
         'rev': note.rev,
@@ -207,8 +237,8 @@ class PersonalsUploader {
     final String couchId;
     final String rev;
 
-    final knownId = note?.couchId;
-    final knownRev = note?.rev;
+    final knownId = note.couchId;
+    final knownRev = note.rev;
     if (knownId != null &&
         knownId.isNotEmpty &&
         knownRev != null &&
@@ -273,7 +303,18 @@ class PersonalsUploader {
         : null;
     final finalRev = attached is String && attached.isNotEmpty ? attached : rev;
 
-    await _personals.markUploaded(row.itemId, couchId, finalRev);
+    // `deliveredPath` is the path read at the top of this handler — the file
+    // these bytes came from. An edit landing while the PUT was on the wire
+    // sets a *different* path and clears `isUploaded` to have the new file
+    // sent; flagging the note here regardless would write straight over that
+    // and the newly attached file would never be uploaded, with the note
+    // reading as delivered. See [PersonalsRepository.markUploaded].
+    await _personals.markUploaded(
+      row.itemId,
+      couchId,
+      finalRev,
+      deliveredPath: note.path,
+    );
     return NetworkSuccess<Map<String, dynamic>>({
       'id': couchId,
       'rev': finalRev,
@@ -349,10 +390,66 @@ class PersonalsUploader {
       contentType: contentType,
       ifMatch: rev,
     );
-    if (attachResult is! NetworkSuccess<Map<String, dynamic>>) {
-      log('Personal attachment upload failed: $attachResult');
+    if (attachResult is NetworkSuccess<Map<String, dynamic>>) {
+      return attachResult;
     }
-    return attachResult;
+
+    // **A 409 here is the one refusal that is not about the bytes**, and
+    // leaving it to the drainer strands the note for good. `classifyStatus`
+    // reads 409 as `rejected`, so the row is abandoned on its first attempt
+    // and `enqueue`'s memo refuses it for ever after; nothing in `lib/` calls
+    // [OutboxRepository.rearm] for personals and the screen has no retry
+    // action, so there is no route back.
+    //
+    // And it is reachable by the ordinary bad link this app is built for: a
+    // PUT that *lands* whose response is lost comes back as a transport
+    // failure, so the ladder retries — with the `_rev` from before the PUT,
+    // which the PUT itself bumped. `If-Match` is stale, CouchDB says 409, and
+    // the file is already on the server. Property 2 is what made this state
+    // reachable at all, so property 2 owes it an answer.
+    //
+    // The answer is the one `ConflictRecovery`'s update arm makes, for the
+    // same reason and with the same bound: re-read the document, take its
+    // current revision, and send once more. Bounded to a single extra round
+    // trip and no loop — a second 409 is returned as the refusal it is. This
+    // cannot duplicate anything: an attachment PUT names its document *and*
+    // its filename, so re-sending writes the same bytes to the same place.
+    //
+    // `ConflictRecovery` itself is deliberately not used. It is not armed for
+    // personals and must not be, because the operation it would wrap is the
+    // append POST, where a re-send files a second document.
+    if (attachResult is! NetworkError<Map<String, dynamic>> ||
+        attachResult.code != 409) {
+      log('Personal attachment upload failed: $attachResult');
+      return attachResult;
+    }
+
+    final documentUrl = '$base/resources/${Uri.encodeComponent(couchId)}';
+    final existing = await _api.getJsonObject(
+      documentUrl,
+      authHeader: authHeader,
+    );
+    if (existing is! NetworkSuccess<Map<String, dynamic>>) return attachResult;
+
+    final currentRev = existing.data['_rev'];
+    // Nothing new to ask: the revision the server reports is the one already
+    // refused, so the conflict was not about staleness after all.
+    if (currentRev is! String || currentRev.isEmpty || currentRev == rev) {
+      log('Personal attachment upload failed: $attachResult');
+      return attachResult;
+    }
+
+    final retried = await _api.uploadAttachment(
+      attachmentUrl,
+      bytes: bytes,
+      authHeader: authHeader,
+      contentType: contentType,
+      ifMatch: currentRev,
+    );
+    if (retried is! NetworkSuccess<Map<String, dynamic>>) {
+      log('Personal attachment upload failed after a rev refresh: $retried');
+    }
+    return retried;
   }
 
   static String authHeaderFor(ServerConfig config) =>

@@ -152,7 +152,12 @@ void main() {
     );
 
     // `markUploaded` is the second statement, and only it closes the note.
-    await repository.markUploaded('personal-0', 'srv-1', '2-b');
+    await repository.markUploaded(
+      'personal-0',
+      'srv-1',
+      '2-b',
+      deliveredPath: null,
+    );
     expect(
       (await database.personalDao.getById('personal-0'))?.isUploaded,
       isTrue,
@@ -173,7 +178,12 @@ void main() {
         title: 'Field notes',
         path: '/storage/notes/photo.jpg',
       );
-      await repository.markUploaded('personal-0', 'srv-1', '1-a');
+      await repository.markUploaded(
+        'personal-0',
+        'srv-1',
+        '1-a',
+        deliveredPath: '/storage/notes/photo.jpg',
+      );
     });
 
     test('a title-only edit leaves the note delivered', () async {
