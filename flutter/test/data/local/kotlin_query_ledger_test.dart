@@ -147,13 +147,20 @@ void main() {
     //  * "the remaining … `SUBSTR` statements" — `UserDao.getGuestUsersByNames`
     //    is still uncompared, and it is the one with a port counterpart.
     //
+    // **137 of 316 after the Phase 159 integrator landed the four queries
+    // Lane 1 had read but could not record**, then **138 of 317** after the
+    // Phase 160 master merge. That merge is the ledger's third catch and its
+    // first Follow: 11 commits, one new query, no compared statement changed.
+    // See `PersonalDao.updateRemoteDocRef` below — it cost one query to read
+    // instead of 11 commit diffs, which is the whole argument for this file.
+    //
     // Found by this lane's second `parity-auditor` pass, aimed at its own
     // finished, green work. Next round's order: `TeamDao` (~22 uncompared,
     // and its `IFNULL(status, '') != 'archived' ORDER BY createdDate DESC`
     // family is the risky part), the rest of `SubmissionDao` above, `NewsDao`,
     // `CourseDao`/`CourseStepDao`, then `NotificationDao`.
     final uncovered = corpus.length - _compared.length;
-    expect(uncovered, 316 - 137);
+    expect(uncovered, 317 - 138);
   });
 }
 
@@ -253,11 +260,11 @@ Map<String, String> _kotlinQueries() {
 }
 
 /// `@Query` annotations in `app/src/main/.../data/room/dao/`, as of Phase 158.
-const _corpusSize = 316;
+const _corpusSize = 317;
 
 /// Entries in [_compared], stated separately so the map and the claim about it
 /// cannot drift apart.
-const _comparedCount = 137;
+const _comparedCount = 138;
 
 /// Queries a lane has read against the port's Drift builder and reached a
 /// verdict on, with the digest the statement had at that moment.
@@ -268,6 +275,37 @@ const _comparedCount = 137;
 /// family and `TeamDao.countByTeamIdAndDocType`); the rest were confirmed at
 /// parity or reported.
 const _compared = <String, String>{
+  // **The ledger's third catch, and the first that is a Follow.** The
+  // integrator's Phase 160 master merge (11 commits) moved the corpus 316 →
+  // 317 and changed no compared statement. The one addition is this, and it is
+  // `updateUploadedStatus` with `isUploaded = 1` removed:
+  //
+  //   updateUploadedStatus  UPDATE my_personal SET isUploaded = 1, _id = :newId, _rev = :rev WHERE id = :id
+  //   updateRemoteDocRef    UPDATE my_personal SET              _id = :newId, _rev = :rev WHERE id = :id
+  //
+  // Kotlin split a personal note's two-step upload. `uploadPersonalDocument`
+  // (`PersonalsRepositoryImpl:87`) now records the document's `_id`/`_rev`
+  // **without** marking the row uploaded; an attachment failure returns early
+  // (`:145`, `:150`) so `updatePersonalAfterSync` — the only caller of
+  // `updateUploadedStatus` — never runs and the row stays pending; and the
+  // retry reads `existingId`/`existingRev` (`:119-122`) and **skips the POST**,
+  // so re-sending cannot duplicate the document.
+  //
+  // That is a fix for the class CLAUDE.md carries as an open data-loss row —
+  // *a resource attachment can be lost with nothing able to detect it* — which
+  // the port closed for `my_library` at schema 50 and has **not** closed here.
+  // `personals_uploader.dart:117-118` calls `markUploaded` *before*
+  // `_uploadAttachment` and the attachment failure only logs, so a note whose
+  // bytes never land is permanently `isUploaded = true` with no attachment on
+  // the server and nothing able to tell it from one that succeeded.
+  //
+  // The uploader's own doc comment (`:27-30`) says the second step "is
+  // best-effort in the Kotlin source". That was true when it was written and
+  // is now a stale statement about Kotlin; the fix and the comment go together.
+  // Phase 160 Lane 5 owns it — the port's half needs both of Kotlin's halves,
+  // because adopting the pending state without the skip-the-POST guard would
+  // make every drain a fresh duplicate document.
+  'PersonalDao.updateRemoteDocRef': '74b11cdce08e',
   'TeamDao.getResourceIdsByTeamId': '2e5632059e3b',
   'ExamDao.getFirstByStepId': 'e4c80c44fd26',
   'ExamDao.getByStepId': '2095e7c10090',

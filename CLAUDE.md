@@ -8,7 +8,7 @@
 - **Primary Language**: Kotlin (100% — no Java sources remain)
 - **Min SDK**: 26 (Android 8.0)
 - **Target SDK**: 36 (Android 16); **Compile SDK**: 37
-- **Current Version**: 0.72.69 (versionCode: 7269)
+- **Current Version**: 0.72.80 (versionCode: 7280)
 - **Build System**: Gradle 9.7.1 (wrapper) with Android Gradle Plugin 9.3.1
 - **Local Database**: Room (AndroidX) 2.8.5 — the only local persistence store
 - **License**: AGPL v3
@@ -23,24 +23,68 @@
 port; it is the whole migration effort on a 1-to-100 scale, not a phase count.
 The basis, so it can be argued with rather than repeated:
 
-**Phase 158 moved parity 80 → 82 and left the headline at 96, for the second
+**Phase 159 moved parity 82 → 84 and left the headline at 96, for the third
 round running.** Localisation is unchanged at ~55 and is the binding constraint
-on the composite rather than parity, so a round that closes a missing entry
-point, a resource visible in no view of the app, and 29 unwatched-provider
-reads moves the row it belongs to and not the total. *A figure that rises every
-round is not being measured;* when parity finally passes the point where l10n
-dominates, the headline stops tracking it, and that is the table working.
+on the composite rather than parity, so a round that closes leadership
+succession, a survey-resume duplication and three silent discards moves the row
+it belongs to and not the total. *A figure that rises every round is not being
+measured;* when parity finally passes the point where l10n dominates, the
+headline stops tracking it, and that is the table working.
+
+**Three rounds of a held headline is the table asking for a localisation
+round**, not evidence that the port has stopped improving. The arithmetic is
+public: parity is an estimate that has moved 6 points in three rounds and l10n
+has moved 0, so every further parity point buys less of the composite than the
+one before it. Phase 160 gives a whole lane to the l10n row for the first time
+since Phase 121 — see *What is actually left in localisation* below.
 
 **And the l10n ceiling has the mechanism wrong in every previous revision of
 this file, including the one that said the pool was "exhausted".** Measured at
 the Phase 158 fold: Kotlin's `values-ne/strings.xml` holds **1,062 strings, of
 which 1,014 are genuinely Nepali** — so the translations exist, in quantity, for
-every language. What does not exist is a *mapping*: only **443 of the port's 923
-ARB keys have any Kotlin counterpart at all**, by snake_case name or by exact
+every language. What does not exist is a *mapping*: only **443 of the port's ARB
+keys have any Kotlin counterpart at all**, by snake_case name or by exact
 English value. The port's string set diverged from the Android app's as it
-grew its own screens. So ~480 keys can only ever be machine-translated or
-human-reviewed, permanently, and a looser matcher reaches about 50 more for
-Nepali (457 → ~507 of 923) before it starts degrading.
+grew its own screens, so a large share of keys can only ever be
+machine-translated or human-reviewed, permanently.
+
+**The template is 926 keys as of the Phase 159 fold**, not the 923 three
+revisions of this file quoted; the 443 above was measured against 923 and has
+not been re-derived, so treat it as a ratio rather than a count. That is the
+standing failure mode of this section — *measure the tree when you fold*.
+
+#### What is actually left in localisation
+
+Measured at the Phase 159 fold by running the derivation's own report
+(`cd flutter && dart tool/arb_from_strings_xml.dart --candidates`), which is one
+command and settles arguments this file has had with itself for four rounds:
+
+| locale | translated | `x-mt` | human |
+|---|---:|---:|---:|
+| ar | 867 | 433 | 434 |
+| es | 903 | 417 | 486 |
+| fr | 902 | 470 | 432 |
+| ne | 459 | 25 | 434 |
+| so | 459 | 25 | 434 |
+
+The tool matches in five tiers. Three are adopted automatically — `exact`,
+`punctuation` (a trailing `: . … !` run stripped from both) and `casing`. Two
+are **reported and never applied**, and they are where the remaining work is:
+
+* `nameOnly` — the key name matches, the English does not.
+* `containment` — one English contains the other. The port paraphrased a string
+  Kotlin already had, so resolving it means editing `app_en.arb`, "which is a
+  judgement about what the screen should say, not a derivation".
+
+**That pile is 137 keys per locale**, against 3–4 per locale still adoptable
+automatically. Each one resolved in favour of Kotlin's wording brings a real
+human translation in all five locales at once, which beats machine translation
+outright — and each one resolved the other way is a deliberate divergence worth
+recording. **The pile is noisy and most of it will be rejected**: the report
+matches `syncTasksDescription` ("Refresh team tasks created on the server") to
+`created_on="Created On"` purely on a substring. So 137 is a count of decisions
+needed, not of recoveries available, and anyone reporting it as the latter is
+repeating the mistake this section is otherwise about.
 
 Phase 141's conclusion stands; its *reason* did not. The ceiling is key-set
 divergence, not a shortage of translators' work — which matters because the two
@@ -50,12 +94,12 @@ imply completely different remedies, and only one of them is available.
 | Dimension | State | Est. |
 |---|---|---|
 | Feature breadth | all 28 UI packages have screens (enterprises is a team *type*, not a gap — Phase 99) | ~95 |
-| Behavioural parity | still the limiter and the lowest-confidence row: **reachability** audits keep finding ported, green, *dead* code — see below. Phase 154 closed two missing *directions*, Phase 156 a third plus a live data loss, Phase 157 three unreachable screens plus the feedback data loss, and Phase 158 a whole missing **entry point** (feedback from the login screen, Kotlin's only channel for a user who cannot get in) plus a resource in no view of the app. Each round has also hardened the guard that missed its own finding | ~82 |
-| Test coverage | 3264 tests / 277 test files vs 282 Kotlin test files. Never read the file counts as parity — Phase 155 is the standing reminder (15 tests covered `add_examination_screen` and not one passed an `examinationId`, so a blank edit form that overwrote the record was green), and Phase 156 added a second: **two integration tests could not fail on their first cut**, both because the *fixture* could not tell the two behaviours apart. See *A fixture that cannot distinguish* below. Phase 158 adds the third and it is about *removal*: retiring two expired tripwires left what they guarded pinned by **nothing** | ~93 |
-| Localisation | template is 923 keys; ar 864, es 900, fr 899, but **416–469 of those are unreviewed machine translation** (ar 432, es 416, fr 469 — `"x-mt": true`, so the set is queryable); ne/so 457 with 25 each. The ceiling is **key-set divergence, not a shortage of translations** — only 443 of the 923 ARB keys have any Kotlin counterpart, so ~480 can never be recovered from `values-*/strings.xml` at any matcher looseness. See above | ~55 |
+| Behavioural parity | still the limiter and the lowest-confidence row: **reachability** audits keep finding ported, green, *dead* code — see below. Phase 154 closed two missing *directions*, Phase 156 a third plus a live data loss, Phase 157 three unreachable screens plus the feedback data loss, Phase 158 a whole missing **entry point** (feedback from the login screen) plus a resource in no view of the app, and Phase 159 **leadership succession** — a sole leader could leave and strand a team with no in-app route back — plus a survey-resume duplication that kept telling a member to answer a survey they had answered. Each round has also hardened the guard that missed its own finding | ~84 |
+| Test coverage | 3349 tests / 285 test files vs 306 Kotlin test files. Never read the file counts as parity — Phase 155 is the standing reminder (15 tests covered `add_examination_screen` and not one passed an `examinationId`, so a blank edit form that overwrote the record was green), and Phase 156 added a second: **two integration tests could not fail on their first cut**, both because the *fixture* could not tell the two behaviours apart. See *A fixture that cannot distinguish* below. Phase 158 adds the third and it is about *removal*: retiring two expired tripwires left what they guarded pinned by **nothing** | ~93 |
+| Localisation | template is 926 keys; ar 867, es 903, fr 902, but **417–470 of those are unreviewed machine translation** (ar 433, es 417, fr 470 — `"x-mt": true`, so the set is queryable); ne/so 459 with 25 each, so the **human-reviewed** count is 434/486/432/434/434. The ceiling is **key-set divergence, not a shortage of translations**. What is reachable and untaken is the derivation's 137-key `nameOnly`/`containment` report pile — see *What is actually left in localisation* above | ~55 |
 | Background work | WorkManager gaps closed through Phase 94, platform channels in-tree | ~95 |
 
-Breadth is measurable and depth is not — 257 hand-written Dart files against 576
+Breadth is measurable and depth is not — 265 hand-written Dart files against 585
 Kotlin sources mostly reflects Dart folding Fragment + ViewModel + Adapter + XML
 into one screen file, so it says little about parity. Depth is only ever revealed
 by auditing, and **every audit so far has found something**, which is why the
@@ -164,6 +208,12 @@ a join is not evidence; a document shaped like the server's is.
 - **Generated sources are gitignored**, so after any merge touching a Drift table
   or converter, run `dart run build_runner build` *before* trusting
   `flutter analyze` — stale output produces phantom type errors, 14 in one case.
+  **`build_runner` does not cover l10n**, and Phase 159 is why that sentence is
+  here: merging two lanes' ARB additions left `AppLocalizations` stale and
+  analyze reported three `undefined_getter` errors that no amount of
+  `build_runner` would fix. After any `.arb` change run `flutter gen-l10n` as
+  well — the session-start hook runs both, which is exactly why the gap is
+  invisible until a merge adds a key mid-session.
 
 A Flutter/Dart port lives in **`flutter/`**, alongside — not replacing — the Kotlin app. `app/`
 is unchanged and remains the shipping app. **All 28 UI packages** have a screen, plus a durable
@@ -1460,7 +1510,11 @@ pinned".*
   the user was alone in; the My teams card counted enterprises; `submissions_screen`
   dropped a confirmed draft with no snackbar and no row.
 
-#### Open after this round, highest first
+#### Open after Phase 158 — superseded, kept because the corrections are the record
+
+**1 and 3 are closed** (Phase 159 ported succession and moved the ledger to
+137 of 316); **2 and most of 4 are still open** and are restated in Phase 159's
+own list below. Read that one.
 
 1. **Leadership succession is missing, and a team can be left unrecoverable.**
    `team_members_screen.dart:162-168` → `teams_provider.dart:283-326`: a sole
@@ -1501,6 +1555,141 @@ brief that quoted the rule. And it asserted as verified that
 the early return was read and the consequence inferred without checking the
 caller. **Front-loading a brief is still right, and this is the cost of it:
 verify each claim against the code, and mark the ones you could not.**
+
+### Phase 159 — a team you could strand, and a guard that fired on the merge
+
+Three lanes: leadership succession, the silent-discard class, and the query
+differential. What it closed, then the two things about the *method* that are
+worth more than any of it.
+
+**A sole leader could leave and strand the team.** `team_members_screen.dart`'s
+leave path removed the member with no successor promoted and no last-leader
+refusal, so a team could be left leaderless with no in-app route back — Kotlin
+has `RequestsViewModel` and `TeamDao.getEligibleNextLeaderCandidates` for
+exactly this. Two things the lane established that the brief had wrong, both
+recorded as deliberate divergences in `docs/kotlin-to-flutter-migration.md`:
+**Kotlin demotes a sitting leader whenever any member leaves**, and **Kotlin's
+identity map is keyed on one id spelling where memberships carry two**. Note the
+scoping, which is not a gap: `teams_screen.dart`'s leave is at parity, because
+Kotlin's `TeamDetailFragment` path has no succession either.
+
+**A survey answer sheet could duplicate**, so the app kept telling a member to
+answer a survey they had already answered.
+
+**Three silent discards**, the class Phase 158 opened and this round finished.
+
+#### The l10n count guard fired on the merge, and that is it working
+
+Lane 1 and Lane 2 each recovered one translation per locale and each pinned
+`placeholder_integrity_test.dart`'s count map **from its own tree**, so neither
+side's numbers survived the merge. The conflict is the guard doing its job: the
+rule the file states is *count the tree rather than increment a remembered
+number*, and the merge is precisely where a remembered number gets caught.
+Measured after merging all three lanes: ar 434, es 486, fr 432, ne 434, so 434.
+
+The follow-on is that **two lanes adding ARB keys in one round is a design
+error, not an accident**. Phase 160 gives all localisation — `lib/l10n/*.arb`,
+`tool/`, `test/l10n/` — to a single lane and forbids the other four from
+touching any of it, which removes the whole collision class rather than
+re-resolving it each round.
+
+#### `flutter gen-l10n` is not covered by `build_runner`
+
+Three `undefined_getter` errors after the ARB merge, from a stale
+`AppLocalizations`. This file's standing rule — *generated sources are
+gitignored, run codegen before trusting analyze* — named only `build_runner`.
+The gap is invisible in normal work because the session-start hook runs both;
+it only appears when a **merge** adds a key mid-session. The codegen rule above
+now says so.
+
+#### The fifth consecutive round in which the integrator's brief carried errors
+
+Three this time, all mine, all caught by a lane's mandatory ground-truth pass
+before any code was written:
+
+* The brief claimed Kotlin's leave path has a **last-leader refusal**. It does
+  not. The real guard is `MembersAdapter`'s `itemCount > 1` menu gate — a
+  different mechanism in a different layer, and one that fails differently.
+* It claimed the chat composer clear loses the message with "no bubble, no
+  snackbar, no row". **False on all three counts.**
+* It claimed `RatingsFragment:68-70` holds Submit disabled after a failure.
+  Line 68 is a different method.
+
+Lane 2's own words on its second report are the ones to keep: *"Report 2 was
+overstated in the direction its own brief warned about."* That is the shape —
+not random error, but error biased toward the finding the brief was hoping for.
+**Front-loading a brief is still right; marking each claim verified or not is
+what makes it survivable**, and Phase 160's briefs do that explicitly with a ✅/⚠️
+per claim.
+
+#### Both lanes found real defects in their own green code
+
+The two-pass rule paying again, and both are instructive:
+
+* **Lane 2's first cut _relocated_ a data loss rather than removing it** — the
+  catch arm it added moved where the message was lost. That is the Phase 143
+  shape exactly, and the question that separates the two is still *what is this
+  row's state afterwards*, not *did it survive*.
+* `case ChatError(message: final message)` **shadowed `sendMessage`'s own
+  `message` parameter**, so the retry row carried the server's refusal text
+  instead of what the user typed. A pattern-match binding that shadows an
+  enclosing parameter is legal, silent, and reads correctly.
+
+#### Open after Phase 159, highest first
+
+1. **`apk_log` is entirely unported** — no table, no writer, no uploader, while
+   Kotlin writes from the uncaught-exception handler, download failures and sync
+   summaries and POSTs to `apk_logs`. Operator telemetry for a fleet of offline
+   handsets, which is why it ranks this high. Verified still at zero at the
+   Phase 160 briefing: no match for `apk_log` anywhere in `flutter/`.
+2. **A personal note's attachment can be lost with nothing able to detect it**,
+   and Kotlin fixed its own instance of this during the Phase 160 merge — see
+   the addendum below. The port's `personals_uploader.dart` marks the row
+   uploaded at the *document* step, so a failed attachment is indistinguishable
+   from a delivered one. Same class as the `my_library` hole schema 50 closed.
+3. **`take_survey_screen.dart` gates Submit on `question.required`**, which
+   Kotlin has no counterpart for — `ExamTakingFragment.isQuestionAnswered`
+   branches only on question *type* and hides `btnNext` until the current
+   question is answered. The port's column defaults false and the mapper reads
+   a key Planet may never write, so a learner can upload a sheet of empty
+   strings where Kotlin structurally cannot. It also disagrees with its own
+   sibling `public_survey_screen.dart`, which removed that conjunct
+   deliberately and says so at the code.
+4. **179 of 317 Kotlin queries are uncompared.** The ledger names its own order:
+   `TeamDao` (~22, and its `IFNULL(status, '') != 'archived'` family is the
+   risky part), the 17 named `SubmissionDao` statements, `NewsDao`,
+   `CourseDao`/`CourseStepDao`, then `NotificationDao`.
+5. **The localisation report pile** — 137 keys per locale in the `nameOnly` and
+   `containment` tiers, described above.
+6. Smaller: `FeedbackMapper.createFeedback` writing `item`/`state`
+   unconditionally where Kotlin writes them only under `state != null`;
+   `TeamDao.teamNameExists` having no counterpart, so the port permits duplicate
+   team names; `makeLeader` returning failure on a no-op, because
+   `_promoteLeader` returns false when `updateTeamLeader` changes no rows.
+
+#### Addendum — the Phase 160 master merge, and the ledger's first Follow
+
+11 commits. The ledger read **one query** instead of 11 diffs: corpus 316 → 317,
+**no compared statement changed**, and the addition is
+`PersonalDao.updateRemoteDocRef` — which is `updateUploadedStatus` with
+`isUploaded = 1` removed.
+
+Kotlin split a personal note's two-step upload. The document POST now records
+`_id`/`_rev` **without** marking the row uploaded; an attachment failure returns
+early so `updatePersonalAfterSync` never runs and the row stays pending; and the
+retry reads the recorded `existingId`/`existingRev` and **skips the POST**, so
+re-sending cannot duplicate the document. Both halves are needed — adopting the
+pending state without the skip-the-POST guard would make every drain a fresh
+duplicate.
+
+**The port has the hole this closes**, and that is open row 2 above. The
+uploader's own doc comment says the attachment step "is best-effort in the
+Kotlin source"; that was true when written and is now a stale statement about
+Kotlin. Recorded in full at the ledger entry.
+
+This is the ledger's third catch and the first that is a Follow, which is the
+argument for the file in one line: **one query to read instead of eleven commit
+diffs.**
 
 ### Running parallel lanes
 
@@ -1998,7 +2187,9 @@ There is no generic base repository; each implementation talks to its Room DAO(s
 **Current Drift `schemaVersion` is 50** (`flutter/lib/data/local/app_database.dart`),
 spent by Phase 157 on one migration carrying two preserved-table column sets —
 `my_library`'s attachment-delivery flag and `teams`' planet codes. **The next
-bump is 51.** Phase 158 needed none: a query change alters no DDL, and its one
+bump is 51, and it is allocated to Phase 160 Lane 1 for `apk_log`** — do not
+take it for anything else while that lane is in flight. If that lane returns it
+unspent, as Phase 156 did with 50, read that as the allocation working. Phase 158 needed none: a query change alters no DDL, and its one
 new DAO method (`MyLibraryDao.getTeamPrivate`) reads a column that already
 existed. A round that touches the database and spends no version is the normal
 case, not a near miss. Phase 156 had allocated 50 and returned it unspent, which is why
@@ -2375,19 +2566,19 @@ When making changes, verify:
 
 ## Codebase Inventory Summary
 
-### Source Files (580 total Kotlin files in `app/src/main/java`) + 303 unit-test files in `app/src/test`, 298 with `@Test` cases (no `app/src/androidTest` source set)
+### Source Files (585 total Kotlin files in `app/src/main/java`) + 306 unit-test files in `app/src/test` (no `app/src/androidTest` source set)
 
 | Component | Files | Purpose |
 |-----------|-------|---------|
 | `model/` | 100 | Room `@Entity` models + DTOs |
 | `repository/` | 69 | Data access abstraction (27 domain Interface+Impl pairs + 10 Impl-less interfaces + 1 exporter class) |
-| `ui/` | 207 | User interface across 28 feature packages |
+| `ui/` | 209 | User interface across 28 feature packages |
 | `services/` | 43 | Background tasks & managers (23 root-level + sync/upload/retry sub-packages) |
 | `di/` | 9 | Dependency injection (7 modules + 2 entry points) |
-| `base/` | 17 | Reusable base classes |
+| `base/` | 18 | Reusable base classes |
 | `callback/` | 25 | Event listeners and interfaces |
 | `data/` | 47 | Data services, Room (AppDatabase, Converters, 37 DAO interfaces one-per-file), API, auth |
-| `utils/` | 62 | Helper utilities |
+| `utils/` | 64 | Helper utilities |
 | Root | 1 | MainApplication.kt |
 
 ### Resource Files
@@ -2412,6 +2603,6 @@ Not declared: SYSTEM_ALERT_WINDOW, REQUEST_WRITE_PERMISSION (not a real Android 
 
 ---
 
-**Last Updated**: 2026-09-23 (counts measured at the fold, not inherited)
-**Version**: 0.72.69
+**Last Updated**: 2026-09-23 (Phase 159 fold; counts measured at the fold, not inherited)
+**Version**: 0.72.80
 **Maintainer**: Open Learning Exchange
