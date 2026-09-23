@@ -115,7 +115,7 @@ void main() {
     // ledger's first live catch — see `NewsDao.getTopLevelTeamMembership`
     // below.
     //
-    // **125 of 316 after Phase 159 Lane 3**, which took the ledger's own
+    // **133 of 316 after Phase 159 Lane 3**, which took the ledger's own
     // running order: `SubmissionDao` first (all 32 read), then
     // `QuestionDao`/`AnswerDao`, `HealthExaminationDao` and `ChatDao`, then
     // outward through the remaining `COLLATE NOCASE`, `IS :param` and
@@ -123,7 +123,7 @@ void main() {
     // next round's order is `TeamDao` (22 uncompared), `NewsDao`,
     // `CourseDao`/`CourseStepDao`, then `NotificationDao`.
     final uncovered = corpus.length - _compared.length;
-    expect(uncovered, 316 - 125);
+    expect(uncovered, 316 - 133);
   });
 }
 
@@ -227,7 +227,7 @@ const _corpusSize = 316;
 
 /// Entries in [_compared], stated separately so the map and the claim about it
 /// cannot drift apart.
-const _comparedCount = 125;
+const _comparedCount = 133;
 
 /// Queries a lane has read against the port's Drift builder and reached a
 /// verdict on, with the digest the statement had at that moment.
@@ -524,6 +524,56 @@ const _compared = <String, String>{
   // over `team_tasks` serves the same purpose. Traced to the end because a
   // query with no reader is exactly where a missing screen would hide.
   'TeamTaskDao.getOpenTasksForUser': '5cf38a9d940a',
+
+  // **`RetryDao`, read whole against the port's `OutboxDao` and
+  // `outbox_repository.dart`.** The port replaced `RetryQueue`'s worker with a
+  // drain on app resume, and Phase 148 then gave the table a policy — *an
+  // `outbox` item owns exactly one row, for ever; a terminal row is a memo* —
+  // so several of these diverge **deliberately** and are documented at the
+  // code rather than being drift.
+  //
+  // `findExisting`'s `status != 'completed' AND status != 'abandoned'` and the
+  // port's `findOpen`'s `status IN ('pending','in_progress')` select the same
+  // rows: the four statuses are exhaustive and SQL excludes a NULL status
+  // under both spellings.
+  'RetryDao.findExisting': 'e4f07ac70358',
+  'RetryDao.findById': '9cbc5a8eaaff',
+  // `attemptCount < maxAttempts` is **not** in the port's `due(now)`. It moved
+  // to the transition: the drainer writes `abandoned` when the attempts run
+  // out, so an exhausted row is already outside `status = 'pending'`. Moved
+  // across the boundary, not lost — and the memo the abandoned row leaves is
+  // the point of Phase 148's policy.
+  'RetryDao.getPending': '1a76b4339062',
+  // Kotlin counts `pending OR in_progress`; the port's `watchPendingCount` is
+  // `pending` only, so a claimed-but-unfinished item is not in the badge.
+  // Cosmetic, and recorded rather than closed.
+  'RetryDao.getActiveCount': '5061973bf199',
+  // No age cutoff in the port, and `cleanup()` has no caller at all — which is
+  // the Phase 148 policy working rather than a gap: the terminal row is how a
+  // permanent refusal is read back, and `clearAbandonedFor` removes it at the
+  // one event that makes it untrue.
+  'RetryDao.deleteOldCompleted': '5998b03e5a7f',
+
+  // Kotlin keeps surveys and tests in one `exams` table and filters on `type`;
+  // the port splits them into [Exams] and [Surveys] at mapper time, so the
+  // `type` predicate *becomes the table choice*. One Kotlin lookup is two port
+  // lookups, and `_liveParentDocument` documents the one place that costs
+  // something.
+  'ExamDao.getById': 'b37f66ab510e',
+  'ExamDao.getByType': 'e7773f2bdab4',
+  // **No port counterpart, and none is owed — the Kotlin path is dead.** This
+  // is `SurveysRepositoryImpl.getSurvey`'s fallback, `examDao.getById(id) ?:
+  // getByTypeAndName("surveys", id)`, i.e. look the survey up by *name* when
+  // the id misses. Its one caller chain is
+  // `DashboardActivity:543` -> `DashboardViewModel.handleSurveyNavigation`,
+  // reached only from an `auto_navigate` intent carrying
+  // `NotificationUtils.TYPE_SURVEY` — and **`createSurveyNotification`
+  // (`NotificationUtils.kt:109`) has no caller in `app/src/main`**, so no such
+  // notification is ever posted. Recorded because the shape without this trace
+  // reads like a missing entry point (Phase 158's fifth question), and a lane
+  // could spend a round building one Kotlin does not ship. Phase 149's rule:
+  // trace the caller chain to its end before porting a line.
+  'ExamDao.getByTypeAndName': '5d56c90172f9',
 
   // `userId IS :userId` ported as drift's `equalsNullable`, which is the
   // spelling of `IS`. Re-read rather than inherited from the comment at it,
