@@ -233,12 +233,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     // is `maxLines: 4`, so a pasted or soft-keyboard newline survived into the
     // request body where the Kotlin would have sent a space.
     final message = _messageController.text.replaceAll('\n', ' ').trim();
-    final messenger = ScaffoldMessenger.of(context);
     if (message.isEmpty) {
       // `setupSendButton:299-302` shows `kindly_enter_message` in
       // `textGchatIndicator` here; the port returned in silence, so Send did
       // visibly nothing at all.
-      messenger.showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppLocalizations.of(context).emptyMessageNotAllowed),
         ),
