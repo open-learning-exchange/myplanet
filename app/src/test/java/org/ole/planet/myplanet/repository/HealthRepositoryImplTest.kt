@@ -15,6 +15,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.put
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -278,10 +279,10 @@ class HealthRepositoryImplTest {
             userId = "exam1" // Serialize uses userId as _id in the request
         })
 
-        val mockResponseObject = JsonObject().apply {
-            addProperty("id", "exam1")
-            addProperty("rev", "rev1")
-        }
+        val mockResponseObject = kotlinx.serialization.json.buildJsonObject {
+            put("id", "exam1")
+            put("rev", "rev1")
+    }
         val mockResponse = retrofit2.Response.success(mockResponseObject)
         coEvery { mockApiInterface.postDoc(any(), any(), any(), any()) } returns mockResponse
 
@@ -429,10 +430,10 @@ class HealthRepositoryImplTest {
         }
         coEvery { healthExaminationDao.getUpdated() } returns listOf(examination)
 
-        val mockResponseObject = JsonObject().apply {
-            addProperty("id", "exam1")
-            addProperty("rev", "rev1")
-        }
+        val mockResponseObject = kotlinx.serialization.json.buildJsonObject {
+            put("id", "exam1")
+            put("rev", "rev1")
+    }
         val mockResponse = retrofit2.Response.success(mockResponseObject)
         coEvery { mockApiInterface.postDoc(any(), any(), any(), any()) } returns mockResponse
 
@@ -466,10 +467,10 @@ class HealthRepositoryImplTest {
         }
         coEvery { healthExaminationDao.getUpdatedForUser("user1") } returns listOf(examination)
 
-        val mockResponseObject = JsonObject().apply {
-            addProperty("id", "exam2")
-            addProperty("rev", "rev2")
-        }
+        val mockResponseObject = kotlinx.serialization.json.buildJsonObject {
+            put("id", "exam2")
+            put("rev", "rev2")
+    }
         val mockResponse = retrofit2.Response.success(mockResponseObject)
         coEvery { mockApiInterface.postDoc(any(), any(), any(), any()) } returns mockResponse
 

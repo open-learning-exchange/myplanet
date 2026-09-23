@@ -120,50 +120,53 @@ class UploadRepositoryImplTest {
     fun `postUpload calls postDoc on ApiInterface`() = runTest {
         val url = "testUrl"
         val data = com.google.gson.JsonObject()
-        val expectedResponse = mockk<retrofit2.Response<com.google.gson.JsonObject>>()
-        coEvery { apiInterface.postDoc(any(), eq("application/json"), eq(url), eq(data)) } returns expectedResponse
+        val kotlinxData = kotlinx.serialization.json.JsonObject(emptyMap())
+        val expectedResponse = retrofit2.Response.success(kotlinxData)
+        coEvery { apiInterface.postDoc(any(), eq("application/json"), eq(url), eq(kotlinxData)) } returns expectedResponse
 
         val result = repository.postUpload(url, data)
 
-        assertEquals(expectedResponse, result)
-        coVerify(exactly = 1) { apiInterface.postDoc(any(), eq("application/json"), eq(url), eq(data)) }
+        assertEquals(true, result.isSuccessful)
+        coVerify(exactly = 1) { apiInterface.postDoc(any(), eq("application/json"), eq(url), eq(kotlinxData)) }
     }
 
     @Test
     fun `postUploadArray calls postDocArray on ApiInterface`() = runTest {
         val url = "testUrl"
         val data = com.google.gson.JsonObject()
-        val expectedResponse = mockk<retrofit2.Response<com.google.gson.JsonArray>>()
-        coEvery { apiInterface.postDocArray(any(), eq("application/json"), eq(url), eq(data)) } returns expectedResponse
+        val kotlinxData = kotlinx.serialization.json.JsonObject(emptyMap())
+        val expectedResponse = retrofit2.Response.success(kotlinx.serialization.json.JsonArray(emptyList()))
+        coEvery { apiInterface.postDocArray(any(), eq("application/json"), eq(url), eq(kotlinxData)) } returns expectedResponse
 
         val result = repository.postUploadArray(url, data)
 
-        assertEquals(expectedResponse, result)
-        coVerify(exactly = 1) { apiInterface.postDocArray(any(), eq("application/json"), eq(url), eq(data)) }
+        assertEquals(true, result.isSuccessful)
+        coVerify(exactly = 1) { apiInterface.postDocArray(any(), eq("application/json"), eq(url), eq(kotlinxData)) }
     }
 
     @Test
     fun `putUpload calls putDoc on ApiInterface`() = runTest {
         val url = "testUrl"
         val data = com.google.gson.JsonObject()
-        val expectedResponse = mockk<retrofit2.Response<com.google.gson.JsonObject>>()
-        coEvery { apiInterface.putDoc(any(), eq("application/json"), eq(url), eq(data)) } returns expectedResponse
+        val kotlinxData = kotlinx.serialization.json.JsonObject(emptyMap())
+        val expectedResponse = retrofit2.Response.success(kotlinxData)
+        coEvery { apiInterface.putDoc(any(), eq("application/json"), eq(url), eq(kotlinxData)) } returns expectedResponse
 
         val result = repository.putUpload(url, data)
 
-        assertEquals(expectedResponse, result)
-        coVerify(exactly = 1) { apiInterface.putDoc(any(), eq("application/json"), eq(url), eq(data)) }
+        assertEquals(true, result.isSuccessful)
+        coVerify(exactly = 1) { apiInterface.putDoc(any(), eq("application/json"), eq(url), eq(kotlinxData)) }
     }
 
     @Test
     fun `fetchExistingDoc calls getJsonObject on ApiInterface`() = runTest {
         val url = "testUrl"
-        val expectedResponse = mockk<retrofit2.Response<com.google.gson.JsonObject>>()
+        val expectedResponse = retrofit2.Response.success(kotlinx.serialization.json.JsonObject(emptyMap()))
         coEvery { apiInterface.getJsonObject(any(), eq(url)) } returns expectedResponse
 
         val result = repository.fetchExistingDoc(url)
 
-        assertEquals(expectedResponse, result)
+        assertEquals(true, result.isSuccessful)
         coVerify(exactly = 1) { apiInterface.getJsonObject(any(), eq(url)) }
     }
 
@@ -173,7 +176,7 @@ class UploadRepositoryImplTest {
         file.writeText("test content")
         file.deleteOnExit()
 
-        val expectedResponse = mockk<retrofit2.Response<com.google.gson.JsonObject>>()
+        val expectedResponse = retrofit2.Response.success(kotlinx.serialization.json.JsonObject(emptyMap()))
         coEvery { apiInterface.uploadResource(any(), any(), any()) } returns expectedResponse
 
         val result = repository.uploadAttachment(
@@ -184,7 +187,7 @@ class UploadRepositoryImplTest {
             name = "file.txt"
         )
 
-        assertEquals(expectedResponse, result)
+        assertEquals(true, result.isSuccessful)
         coVerify(exactly = 1) { apiInterface.uploadResource(any(), any(), any()) }
     }
 
@@ -204,7 +207,7 @@ class UploadRepositoryImplTest {
             file.deleteOnExit()
 
             val slot = io.mockk.slot<Map<String, String>>()
-            coEvery { apiInterface.uploadResource(capture(slot), any(), any()) } returns mockk()
+            coEvery { apiInterface.uploadResource(capture(slot), any(), any()) } returns retrofit2.Response.success(kotlinx.serialization.json.JsonObject(emptyMap()))
 
             repository.uploadAttachment(
                 file = file,
@@ -223,7 +226,7 @@ class UploadRepositoryImplTest {
         extensionlessFile.deleteOnExit()
 
         val slot = io.mockk.slot<Map<String, String>>()
-        coEvery { apiInterface.uploadResource(capture(slot), any(), any()) } returns mockk()
+        coEvery { apiInterface.uploadResource(capture(slot), any(), any()) } returns retrofit2.Response.success(kotlinx.serialization.json.JsonObject(emptyMap()))
 
         repository.uploadAttachment(
             file = extensionlessFile,

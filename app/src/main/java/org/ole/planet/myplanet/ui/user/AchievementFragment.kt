@@ -30,9 +30,9 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils.getString
 import org.ole.planet.myplanet.utils.ImageUtils
-import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
@@ -138,7 +138,7 @@ class AchievementFragment : BaseContainerFragment() {
             resource.id?.let { id -> id to resource }
         }.toMap()
         data.achievements.forEach { json ->
-            val element = JsonUtils.gson.fromJson(json, JsonElement::class.java)
+            val element = GsonUtils.gson.fromJson(json, JsonElement::class.java)
             val view = if (element is JsonObject) createAchievementView(element, resourcesMap) else null
             view?.let {
                 if (it.parent != null) {

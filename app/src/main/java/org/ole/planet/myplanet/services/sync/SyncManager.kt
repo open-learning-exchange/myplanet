@@ -46,15 +46,16 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils.getInt
-import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
-import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
-import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.GsonUtils.getInt
+import org.ole.planet.myplanet.utils.GsonUtils.getJsonArray
+import org.ole.planet.myplanet.utils.GsonUtils.getJsonObject
+import org.ole.planet.myplanet.utils.GsonUtils.getString
 import org.ole.planet.myplanet.utils.NotificationUtils.cancel
 import org.ole.planet.myplanet.utils.NotificationUtils.create
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.toGson
 
 @Singleton
 class SyncManager @Inject constructor(
@@ -300,7 +301,7 @@ class SyncManager @Inject constructor(
             ApiClient.executeWithRetryAndWrap {
                 apiInterface.getJsonObject(header, "$url/resources/_all_docs?limit=0")
             }?.let { response ->
-                response.body()?.let { body ->
+                response.body()?.toGson()?.let { body ->
                     totalRows = getInt("total_rows", body)
                 }
             }
@@ -326,7 +327,7 @@ class SyncManager @Inject constructor(
                     ApiClient.executeWithRetryAndWrap {
                         apiInterface.getJsonObject(header, "$url/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip")
                     }?.let {
-                        response = it.body()
+                        response = it.body()?.toGson()
                     }
                     val batchApiDuration = SystemClock.elapsedRealtime() - batchApiStartTime
 

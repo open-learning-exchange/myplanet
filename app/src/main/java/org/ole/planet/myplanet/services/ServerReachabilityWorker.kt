@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.services.sync.HeavyTableSyncWorker
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -41,7 +42,8 @@ class ServerReachabilityWorker @AssistedInject constructor(
     private val submissionsRepository: SubmissionsRepository,
     private val serverUrlMapper: ServerUrlMapper,
     private val dispatcherProvider: DispatcherProvider,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    private val syncManager: SyncManager
 ) : CoroutineWorker(context, workerParams) {
 
     companion object {
@@ -198,7 +200,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
 
     private suspend fun uploadSubmissions() {
         try {
-            val syncAlreadyRunning = MainApplication.isSyncRunning.get()
+            val syncAlreadyRunning = MainApplication.isSyncRunning.get() || syncManager.isMainSyncActive()
             if (!syncAlreadyRunning) {
                 if (submissionsRepository.hasPendingOfflineSubmissions()) {
                     withContext(dispatcherProvider.io) {

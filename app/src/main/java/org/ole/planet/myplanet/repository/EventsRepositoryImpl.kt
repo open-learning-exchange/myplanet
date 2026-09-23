@@ -9,7 +9,7 @@ import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 
 @Singleton
@@ -97,11 +97,11 @@ class EventsRepositoryImpl @Inject constructor(
     override suspend fun batchInsertMeetups(documents: List<JsonObject>): Int {
         if (documents.isEmpty()) return 0
         return try {
-            val ids = documents.map { JsonUtils.getString("_id", it) }
+            val ids = documents.map { GsonUtils.getString("_id", it) }
             val existingByMeetupId = meetupDao.getByMeetupIds(ids).associateBy { it.meetupId }
 
             val meetupsToInsert = documents.mapNotNull { meetupDoc ->
-                val id = JsonUtils.getString("_id", meetupDoc)
+                val id = GsonUtils.getString("_id", meetupDoc)
                 val existing = existingByMeetupId[id]
                 if (existing?.updated == true) {
                     null

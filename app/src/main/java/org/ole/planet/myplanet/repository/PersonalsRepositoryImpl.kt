@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Log
 import com.google.gson.JsonObject
 import java.io.File
 import java.util.Date
@@ -11,7 +12,7 @@ import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.GsonUtils.getString
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.distinctByContent
@@ -83,11 +84,7 @@ class PersonalsRepositoryImpl @Inject constructor(
         if (`object` != null) {
             val rev = getString("rev", `object`)
             val id = getString("id", `object`)
-
-            personal.id.let { personalId ->
-                updatePersonalAfterSync(personalId, id, rev)
-            }
-
+            personalDao.updateRemoteDocRef(personal.id, id, rev)
             return Pair(id, rev)
         }
         return null
@@ -119,38 +116,51 @@ class PersonalsRepositoryImpl @Inject constructor(
         }
 
         try {
-            val result = uploadPersonalDocument(personal)
-            if (result != null) {
-                val (id, rev) = result
-
-                val path = personal.path
-                if (path != null) {
-                    val file = File(path)
-                    val name = FileUtils.getFileNameFromUrl(path)
-
-                    try {
-                        val response = uploadRepository.uploadAttachment(
-                            file = file,
-                            destinationFormat = "%s/resources/%s/%s",
-                            id = id,
-                            rev = rev,
-                            name = name
-                        )
-                        // Note: ignoring specific response success check to match old behavior
-                        // which relied on callback but didn't block returning success
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        // Attachment upload failed but document succeeded
-                    }
-                }
-
-                return "Personal resource uploaded successfully"
+            val existingId = personal._id
+            val existingRev = personal._rev
+            val (id, rev) = if (!existingId.isNullOrBlank() && !existingRev.isNullOrBlank()) {
+                existingId to existingRev
             } else {
-                return "Failed to upload personal resource: No response"
+                val result = uploadPersonalDocument(personal)
+                    ?: return "Failed to upload personal resource: No response"
+                result
             }
+
+            var finalRev = rev
+            val path = personal.path
+            if (path != null) {
+                val file = File(path)
+                val name = FileUtils.getFileNameFromUrl(path)
+
+                val response = try {
+                    uploadRepository.uploadAttachment(
+                        file = file,
+                        destinationFormat = "%s/resources/%s/%s",
+                        id = id,
+                        rev = rev,
+                        name = name
+                    )
+                } catch (e: Exception) {
+                    Log.w(TAG, "Attachment upload failed for ${personal.id}", e)
+                    return "Uploaded document but failed to upload attachment: ${e.message}"
+                }
+                
+                if (!response.isSuccessful) {
+                    Log.w(TAG, "Attachment upload failed for ${personal.id}: HTTP ${response.code()}")
+                    return "Uploaded document but failed to upload attachment: HTTP ${response.code()}"
+                }
+                finalRev = getString("rev", response.body()).ifBlank { rev }
+            }
+
+            updatePersonalAfterSync(personal.id, id, finalRev)
+            return "Personal resource uploaded successfully"
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "Unable to upload personal resource ${personal.id}", e)
             return "Unable to upload resource: ${e.message}"
         }
+    }
+
+    companion object {
+        private const val TAG = "PersonalsRepository"
     }
 }

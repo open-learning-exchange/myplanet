@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.utils
 
 import android.app.Notification
 import android.app.NotificationChannel
-import android.util.Log
 import android.app.NotificationManager as SystemNotificationManager
 import android.app.NotificationManager.IMPORTANCE_DEFAULT
 import android.app.NotificationManager.IMPORTANCE_HIGH
@@ -11,6 +10,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat

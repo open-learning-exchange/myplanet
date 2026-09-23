@@ -24,6 +24,9 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject as KJsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -202,7 +205,7 @@ class UserRepositoryImplTest {
         every { context.getString(R.string.unable_to_create_user_user_already_exists) } returns errorMessage
 
         // Mock API response to simulate user already exists
-        val existsResponseBody = JsonObject().apply { addProperty("_id", "some_id") }
+        val existsResponseBody = buildJsonObject { put("_id", "some_id") }
         val response = Response.success(existsResponseBody)
         coEvery { apiInterface.getJsonObject("Basic auth", userUrl) } returns response
 
@@ -225,20 +228,22 @@ class UserRepositoryImplTest {
         every { context.getString(R.string.user_created_successfully) } returns successMessage
 
         // 1. User doesn't exist check
-        val notExistsResponseBody = JsonObject()
+        val notExistsResponseBody = KJsonObject(emptyMap())
         val notFoundResponse = Response.success(notExistsResponseBody)
         coEvery { apiInterface.getJsonObject("Basic auth", userUrl) } returns notFoundResponse
 
         // 2. User creation mock
-        val createdResponseBody = JsonObject().apply { addProperty("id", id) }
+        val createdResponseBody = buildJsonObject { put("id", id) }
         val createdResponse = Response.success(createdResponseBody)
-        coEvery { apiInterface.putDoc(null, "application/json", userUrl, userObj) } returns createdResponse
+        coEvery {
+            apiInterface.putDoc(null, "application/json", userUrl, buildJsonObject { put("name", userName) })
+        } returns createdResponse
 
         // 3. User save to db fetch
         val userFetchUrl = "http://test.url/_users/$id"
-        val userFetchResponse = Response.success(JsonObject().apply {
-            addProperty("_id", id)
-            addProperty("name", userName)
+        val userFetchResponse = Response.success(buildJsonObject {
+            put("_id", id)
+            put("name", userName)
         })
         coEvery { apiInterface.getJsonObject("Basic auth", userFetchUrl) } returns userFetchResponse
 

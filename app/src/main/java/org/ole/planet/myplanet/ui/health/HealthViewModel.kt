@@ -11,8 +11,11 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
@@ -41,6 +44,9 @@ class HealthViewModel @Inject constructor(
 
     private val _isSaved = MutableStateFlow(false)
     val isSaved: StateFlow<Boolean> = _isSaved.asStateFlow()
+
+    private val _saveFailed = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val saveFailed: SharedFlow<Unit> = _saveFailed.asSharedFlow()
 
 
     private val _patientList = MutableStateFlow<List<UserEntity>>(emptyList())
@@ -190,8 +196,13 @@ class HealthViewModel @Inject constructor(
 
     fun saveHealthData(userId: String, userData: Map<String, Any?>) {
         viewModelScope.launch {
-            healthRepository.updateUserHealthProfile(userId, userData)
-            _isSaved.value = true
+            try {
+                healthRepository.updateUserHealthProfile(userId, userData)
+                _isSaved.value = true
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                _saveFailed.emit(Unit)
+            }
         }
     }
 
