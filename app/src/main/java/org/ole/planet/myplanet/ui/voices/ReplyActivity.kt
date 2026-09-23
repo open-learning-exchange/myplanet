@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -38,8 +39,8 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utils.FileUtils.resolveUriToPath
-import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils.getString
 
 @AndroidEntryPoint
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
@@ -229,19 +230,19 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         val jsonObject = JsonObject()
         jsonObject.addProperty("imageUrl", path)
         jsonObject.addProperty("fileName", getFileNameFromUrl(path))
-        imageList.add(JsonUtils.gson.toJson(jsonObject))
+        imageList.add(GsonUtils.gson.toJson(jsonObject))
 
         try {
             showSelectedImages()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "handleImageSelection failed", e)
         }
     }
 
     private fun isImageAlreadyAdded(path: String): Boolean {
         return imageList.any { imageJson ->
             try {
-                val imgObject = JsonUtils.gson.fromJson(imageJson, JsonObject::class.java)
+                val imgObject = GsonUtils.gson.fromJson(imageJson, JsonObject::class.java)
                 getString("imageUrl", imgObject) == path
             } catch (e: Exception) {
                 false
@@ -253,7 +254,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         llImage?.removeAllViews()
         llImage?.visibility = View.VISIBLE
         for (img in imageList) {
-            val ob = JsonUtils.gson.fromJson(img, JsonObject::class.java)
+            val ob = GsonUtils.gson.fromJson(img, JsonObject::class.java)
             val inflater = LayoutInflater.from(this).inflate(R.layout.image_thumb, llImage, false)
             val imgView = inflater.findViewById<ImageView>(R.id.thumb)
             Glide.with(this)
@@ -274,5 +275,9 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
 
     override fun onDestroy() {
         super.onDestroy()
+    }
+
+    companion object {
+        private const val TAG = "ReplyActivity"
     }
 }

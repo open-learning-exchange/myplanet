@@ -4,8 +4,14 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.put
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @Entity(tableName = "exams", indices = [Index("courseId"), Index("stepId"), Index("teamId"), Index("sourceSurveyId")])
 open class StepExam(
@@ -35,27 +41,28 @@ open class StepExam(
         }
 
         fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject, parentId: String?): StepExam {
-            val examId = JsonUtils.getString("_id", exam)
+            val kExam = exam.toKotlinx().jsonObject
+            val examId = JsonUtils.getString("_id", kExam)
             val myExam = StepExam().apply {
                 id = (if (examId.isNullOrEmpty()) parentId else examId).orEmpty()
             }
             checkIdsAndInsert(myCoursesID, stepId, myExam)
-            myExam.type = if (exam.has("type")) JsonUtils.getString("type", exam) else "exam"
-            myExam.name = JsonUtils.getString("name", exam)
-            myExam.description = JsonUtils.getString("description", exam)
-            myExam.passingPercentage = JsonUtils.getString("passingPercentage", exam)
-            myExam._rev = JsonUtils.getString("_rev", exam)
-            myExam.createdBy = JsonUtils.getString("createdBy", exam)
-            myExam.sourcePlanet = JsonUtils.getString("sourcePlanet", exam)
-            myExam.createdDate = JsonUtils.getLong("createdDate", exam)
-            myExam.updatedDate = JsonUtils.getLong("updatedDate", exam)
-            myExam.adoptionDate = JsonUtils.getLong("adoptionDate", exam)
-            myExam.totalMarks = JsonUtils.getInt("totalMarks", exam)
-            myExam.noOfQuestions = JsonUtils.getJsonArray("questions", exam).size()
+            myExam.type = if (kExam.containsKey("type")) JsonUtils.getString("type", kExam) else "exam"
+            myExam.name = JsonUtils.getString("name", kExam)
+            myExam.description = JsonUtils.getString("description", kExam)
+            myExam.passingPercentage = JsonUtils.getString("passingPercentage", kExam)
+            myExam._rev = JsonUtils.getString("_rev", kExam)
+            myExam.createdBy = JsonUtils.getString("createdBy", kExam)
+            myExam.sourcePlanet = JsonUtils.getString("sourcePlanet", kExam)
+            myExam.createdDate = JsonUtils.getLong("createdDate", kExam)
+            myExam.updatedDate = JsonUtils.getLong("updatedDate", kExam)
+            myExam.adoptionDate = JsonUtils.getLong("adoptionDate", kExam)
+            myExam.totalMarks = JsonUtils.getInt("totalMarks", kExam)
+            myExam.noOfQuestions = JsonUtils.getJsonArray("questions", kExam).size
             myExam.isFromNation = !parentId.isNullOrEmpty()
-            myExam.teamId = JsonUtils.getString("teamId", exam)
-            myExam.isTeamShareAllowed = JsonUtils.getBoolean("teamShareAllowed", exam)
-            myExam.sourceSurveyId = JsonUtils.getString("sourceSurveyId", exam)
+            myExam.teamId = JsonUtils.getString("teamId", kExam)
+            myExam.isTeamShareAllowed = JsonUtils.getBoolean("teamShareAllowed", kExam)
+            myExam.sourceSurveyId = JsonUtils.getString("sourceSurveyId", kExam)
             return myExam
         }
 
@@ -69,28 +76,29 @@ open class StepExam(
         }
 
         fun serializeExam(exam: StepExam, questions: List<ExamQuestion>): JsonObject {
-            val `object` = JsonObject()
-            `object`.addProperty("_id", exam.id)
-            if (exam._rev != null) {
-                `object`.addProperty("_rev", exam._rev)
-            }
-            `object`.addProperty("name", exam.name)
-            `object`.addProperty("description", exam.description)
-            `object`.addProperty("passingPercentage", exam.passingPercentage)
-            `object`.addProperty("type", exam.type)
-            `object`.addProperty("updatedDate", exam.updatedDate)
-            `object`.addProperty("createdDate", exam.createdDate)
-            `object`.addProperty("adoptionDate", exam.adoptionDate)
-            `object`.addProperty("sourcePlanet", exam.sourcePlanet)
-            `object`.addProperty("totalMarks", exam.totalMarks)
-            `object`.addProperty("createdBy", exam.createdBy)
-            if (exam.sourceSurveyId != null) {
-                `object`.addProperty("sourceSurveyId", exam.sourceSurveyId)
-            }
-            if (exam.teamId != null) {
-                `object`.addProperty("teamId", exam.teamId)
-            }
-            `object`.add("questions", ExamQuestion.serializeQuestions(questions))
+            val `object` = buildJsonObject {
+                put("_id", exam.id)
+                if (exam._rev != null) {
+                    put("_rev", exam._rev)
+                }
+                put("name", exam.name)
+                put("description", exam.description)
+                put("passingPercentage", exam.passingPercentage)
+                put("type", exam.type)
+                put("updatedDate", exam.updatedDate)
+                put("createdDate", exam.createdDate)
+                put("adoptionDate", exam.adoptionDate)
+                put("sourcePlanet", exam.sourcePlanet)
+                put("totalMarks", exam.totalMarks)
+                put("createdBy", exam.createdBy)
+                if (exam.sourceSurveyId != null) {
+                    put("sourceSurveyId", exam.sourceSurveyId)
+                }
+                if (exam.teamId != null) {
+                    put("teamId", exam.teamId)
+                }
+                put("questions", ExamQuestion.serializeQuestions(questions).toKotlinx())
+            }.toGson()
             `object`.addDocumentOrigin()
             return `object`
         }

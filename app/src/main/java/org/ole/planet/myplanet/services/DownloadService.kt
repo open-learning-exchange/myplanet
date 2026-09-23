@@ -228,7 +228,7 @@ class DownloadService : Service() {
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.w(TAG, "initDownload failed", e)
                 }
                 onDownloadComplete(url)
                 return true
@@ -558,8 +558,10 @@ class DownloadService : Service() {
         if ((outputFile?.length() ?: 0) > 0) {
             try {
                 resourcesRepository.markResourceOfflineByUrl(url)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "onDownloadComplete failed", e)
             }
         }
 
@@ -634,6 +636,7 @@ class DownloadService : Service() {
         ): QueuedUrl? {
             val urls = preferences.getStringSet(key, emptySet()) ?: emptySet()
             return urls
+                .asSequence()
                 .filter { it !in processedUrls && it.isNotBlank() }
                 .minOrNull()
                 ?.let { QueuedUrl(it, isPriority) }

@@ -5,7 +5,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 
 class DictionaryMapperTest {
 
@@ -26,7 +26,7 @@ class DictionaryMapperTest {
             ]
         """.trimIndent()
 
-        val jsonArray = JsonUtils.gson.fromJson(jsonString, JsonArray::class.java)
+        val jsonArray = GsonUtils.gson.fromJson(jsonString, JsonArray::class.java)
         val entities = DictionaryMapper.mapJsonArrayToEntities(jsonArray)
 
         assertEquals(1, entities.size)
@@ -51,7 +51,7 @@ class DictionaryMapperTest {
             ]
         """.trimIndent()
 
-        val jsonArray = JsonUtils.gson.fromJson(jsonString, JsonArray::class.java)
+        val jsonArray = GsonUtils.gson.fromJson(jsonString, JsonArray::class.java)
         val entities = DictionaryMapper.mapJsonArrayToEntities(jsonArray)
 
         assertEquals(2, entities.size)
@@ -69,7 +69,7 @@ class DictionaryMapperTest {
     @Test
     fun `mapJsonArrayToEntities handles missing fields with default empty strings`() {
         val jsonString = """[{}]"""
-        val jsonArray = JsonUtils.gson.fromJson(jsonString, JsonArray::class.java)
+        val jsonArray = GsonUtils.gson.fromJson(jsonString, JsonArray::class.java)
         val entities = DictionaryMapper.mapJsonArrayToEntities(jsonArray)
 
         assertEquals(1, entities.size)
