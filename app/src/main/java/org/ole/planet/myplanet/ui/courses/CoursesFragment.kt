@@ -6,7 +6,6 @@ import android.content.DialogInterface
 import android.os.Bundle
 import android.os.Parcelable
 import android.view.View
-import android.widget.Button
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -22,6 +21,9 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
@@ -51,8 +53,6 @@ import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedListener, OnTagClickListener, RealtimeSyncMixin {
     override val shouldShowDownloadDialog = false
     private lateinit var adapterCourses: CoursesAdapter
-    private var orderByDate: Button? = null
-    private var orderByTitle: Button? = null
     private lateinit var filterController: CourseFilterController
     private lateinit var selectionController: CourseSelectionController
     private var toggleGridButton: ImageButton? = null
@@ -131,7 +131,6 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         }
 
         adapterCourses.setListener(this@CoursesFragment)
-        enableSortButtons()
 
         val cachedState = viewModel.coursesState.value
         if (cachedState.courses.isNotEmpty()) {
@@ -174,7 +173,6 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
             model = userModel
             initializeView()
             setupButtonVisibility()
-            setupEventListeners()
             if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
             if (::adapterCourses.isInitialized) {
                 showNoData(tvMessage, adapterCourses.itemCount, "courses")
@@ -237,6 +235,8 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         var isFirstEmission = true
         collectLatestWhenStarted(filterController.filterState) { state ->
             chipRow?.let { renderCourseChipSelection(it) }
+            updateFilterBadge(state)
+
             if (isFirstEmission) {
                 isFirstEmission = false
                 if (!state.isActive) {
@@ -292,6 +292,19 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         checkList()
     }
 
+    private fun updateFilterBadge(state: FilterState) {
+        val badge = view?.findViewById<TextView>(R.id.tv_capsule_filter_badge) ?: return
+        val count = state.tagNames.size +
+            (if (state.grade.isNotEmpty()) 1 else 0) +
+            (if (state.subject.isNotEmpty()) 1 else 0)
+        if (count > 0) {
+            badge.text = count.toString()
+            badge.visibility = View.VISIBLE
+        } else {
+            badge.visibility = View.GONE
+        }
+    }
+
     private fun setupButtonVisibility() {
         if (::selectionController.isInitialized) {
             val isEmpty = !::adapterCourses.isInitialized || adapterCourses.currentList.isEmpty()
@@ -303,12 +316,10 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         }
     }
 
-    private fun setupEventListeners() {
-        requireView().findViewById<View>(R.id.btn_collections).setOnClickListener {
-            val f = CollectionsFragment.getInstance(filterController.searchTags, "courses")
-            f.setListener(this)
-            f.show(childFragmentManager, "")
-        }
+    private fun openCollectionsFragment() {
+        val f = CollectionsFragment.getInstance(filterController.searchTags, "courses")
+        f.setListener(this)
+        f.show(childFragmentManager, "")
     }
 
     private fun setupMyProgressButton() {
@@ -331,37 +342,45 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     }
 
     private fun additionalSetup() {
-        val bottomSheet = requireView().findViewById<View>(R.id.card_filter)
-        requireView().findViewById<View>(R.id.filter).setOnClickListener {
-            bottomSheet.visibility = if (bottomSheet.isVisible) View.GONE else View.VISIBLE
-        }
-        requireView().findViewById<View>(R.id.btn_close_filter)?.setOnClickListener {
-            bottomSheet.visibility = View.GONE
-        }
-        requireView().findViewById<View>(R.id.btn_collections)?.setOnClickListener {
-            bottomSheet.visibility = View.GONE
-        }
-        orderByDate = requireView().findViewById(R.id.order_by_date_button)
-        orderByTitle = requireView().findViewById(R.id.order_by_title_button)
-        orderByDate?.isEnabled = false
-        orderByTitle?.isEnabled = false
-        orderByDate?.setOnClickListener {
-            bottomSheet.visibility = View.GONE
-            if (!::adapterCourses.isInitialized) return@setOnClickListener
-            viewModel.toggleDateSort()
-            scrollToTop()
-        }
-        orderByTitle?.setOnClickListener {
-            bottomSheet.visibility = View.GONE
-            if (!::adapterCourses.isInitialized) return@setOnClickListener
-            viewModel.toggleTitleSort()
-            scrollToTop()
-        }
+        requireView().findViewById<View>(R.id.btn_capsule_sort).setOnClickListener { showSortSheet() }
+        requireView().findViewById<View>(R.id.btn_capsule_filters).setOnClickListener { showFilterSheet() }
     }
 
-    private fun enableSortButtons() {
-        orderByDate?.isEnabled = true
-        orderByTitle?.isEnabled = true
+    private fun showSortSheet() {
+        if (!::adapterCourses.isInitialized) return
+        val f = CoursesSortFragment()
+        f.setCurrentType(viewModel.currentSortType)
+        f.setListener(CoursesSortFragment.SortSelectionListener { type ->
+            when (type) {
+                CoursesViewModel.SortType.DATE -> viewModel.toggleDateSort()
+                CoursesViewModel.SortType.TITLE -> viewModel.toggleTitleSort()
+            }
+            scrollToTop()
+        })
+        f.show(childFragmentManager, "courses_sort")
+    }
+
+    private fun showFilterSheet() {
+        if (!::filterController.isInitialized) return
+        val f = CoursesFilterFragment()
+        f.setInitialSelection(filterController.currentGrade(), filterController.currentSubject())
+        f.setListener(object : CoursesFilterSheetListener {
+            override fun onGradeSubjectChanged(grade: String, subject: String) {
+                filterController.setGradeSubject(grade, subject)
+            }
+
+            override val resultCount: Flow<Int> =
+                viewModel.coursesState.map { it.courses.size }.distinctUntilChanged()
+
+            override fun onClearRequested() {
+                filterController.clearAll()
+            }
+
+            override fun onCollectionsRequested() {
+                openCollectionsFragment()
+            }
+        })
+        f.show(childFragmentManager, "courses_filter")
     }
 
     private fun setupCourseFilterChips() {
@@ -562,8 +581,6 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         }
         toggleGridButton = null
         toggleListButton = null
-        orderByDate = null
-        orderByTitle = null
         super.onDestroyView()
     }
 
