@@ -147,6 +147,17 @@ Future<bool> executeBackgroundTask(String taskName) async {
             config: config,
             userId: prefs.loggedInUserId,
           );
+          // The crash/telemetry sweep, ahead of the drain for the same reason
+          // as the three above: the rows it queues go out in this same
+          // invocation. Kotlin reaches `uploadCrashLog()` from
+          // `AutoSyncWorker:135` and `UserDataWorker:49` only — a manual full
+          // sync does **not** upload crash logs — so a background invocation
+          // is the faithful home for it, not the sync centre.
+          await sweepPendingApkLogs(
+            container,
+            config: config,
+            userId: prefs.loggedInUserId,
+          );
           await drainer.drain(
             authHeader: PersonalsUploader.authHeaderFor(config),
           );
@@ -633,6 +644,42 @@ Future<void> sweepPendingFeedback(
   try {
     await container
         .read(feedbackUploaderProvider)
+        .queuePending(config: config, userId: userId);
+  } catch (_) {
+    // Deliberately ignored — see above.
+  }
+}
+
+/// Queues every unsent `apk_log` row. Port of `UploadManager.uploadCrashLog()`
+/// as `AutoSyncWorker:135` and `UserDataWorker:49` reach it.
+///
+/// This is the only caller of [ApkLogUploader.queuePending] that runs with no
+/// user present, and that is deliberate: a handset whose session has gone is
+/// exactly the one holding a crash report nobody has seen. Kotlin's fetch is
+/// handset-wide for the same reason — `RoomUploadConfig` has no `filterGuests`
+/// field, so `shouldFilter` takes the interface default `false` and a guest's
+/// reports upload too.
+///
+/// Swallowed rather than reported, like the three sweeps above: a throwing
+/// `drainOutbox` adds `outboxDrain` to the runner's `failedSteps` and asks the
+/// OS to retry the whole task, and no Kotlin caller of `uploadCrashLog` does
+/// that — `UserDataWorker:49` wraps it in `runCatching` and `AutoSyncWorker`
+/// discards the result. **Telemetry failing must not fail the sync it is
+/// telling you about.** It is not hypothetical here either: `queuePending`
+/// reads device identity, which rethrows on a headless engine with no channel
+/// and no primed cache.
+///
+/// Its own `try`, not a share of the block's, so a failure here cannot skip a
+/// sweep that carries the user's own work.
+@visibleForTesting
+Future<void> sweepPendingApkLogs(
+  ProviderContainer container, {
+  required ServerConfig config,
+  required String? userId,
+}) async {
+  try {
+    await container
+        .read(apkLogUploaderProvider)
         .queuePending(config: config, userId: userId);
   } catch (_) {
     // Deliberately ignored — see above.

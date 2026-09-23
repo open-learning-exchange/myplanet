@@ -62,6 +62,7 @@ part 'app_database.g.dart';
     Tags,
     Achievements,
     UserChallengeActions,
+    ApkLogs,
   ],
   daos: [
     UserDao,
@@ -97,6 +98,7 @@ part 'app_database.g.dart';
     TagDao,
     AchievementDao,
     UserChallengeActionDao,
+    ApkLogDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -109,7 +111,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 50;
+  int get schemaVersion => 51;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -357,6 +359,28 @@ class AppDatabase extends _$AppDatabase {
     // (`clientDefault`, `currentDateAndTime`) that SQLite refuses in an
     // `ALTER TABLE ADD COLUMN` and would abort the upgrade on every install.
     'my_library',
+    // Write-only operator telemetry: crash reports, download failures and
+    // sync summaries, POSTed to `apk_logs` and **never pulled back**. Nothing
+    // in `app/src/main` reads that database — the endpoint appears once, in
+    // `UploadConfigs.CrashLog` — so the operative test (*can a sync restore
+    // this?*) answers no for every row, and a bump would silently discard the
+    // only record of a failure that happened in the field.
+    //
+    // Unlike the entries above this one, preserving it costs nothing: there
+    // is no cache half to go stale, so no `deleteNotIn` is needed and none
+    // must ever be added (a prune against a synced id set is impossible here
+    // — there is no id set to prune against).
+    //
+    // **A brand-new preserved table needs no hand-written
+    // [_addColumnIfMissing] step, and that is worth stating because Phase
+    // 143's rule is about the opposite case.** The drop loop steps over a
+    // preserved name, and on an upgrade from any version below 51 there is
+    // nothing at that name to step over; `createAll` then emits
+    // `CREATE TABLE IF NOT EXISTS` and builds it complete. What Phase 143's
+    // rule governs is a *column* added to a table that already exists on
+    // disk, which `createAll` cannot ALTER. The first such column on this
+    // table will need that step; the table itself does not.
+    'apk_log',
   };
 
   @override
@@ -5764,6 +5788,96 @@ class SearchActivityDao extends DatabaseAccessor<AppDatabase>
       (update(searchActivities)..where((row) => row.id.equals(id))).write(
         SearchActivitiesCompanion(couchId: Value(couchId), rev: Value(rev)),
       );
+}
+
+/// Port of `data/room/dao/ApkLogDao.kt`.
+///
+/// **Two `@Query` statements, not four.** (The Phase 160 brief said four; the
+/// file has two `@Query`, two `@Insert`, one `@Update` and one `@Transaction`
+/// wrapping them.) What became of each:
+///
+///  * `SELECT * FROM apk_log WHERE _rev IS NULL` → [pendingUploads], as
+///    `_rev = ''` — see [ApkLogs.rev] for why the two describe one set.
+///  * `@Insert(REPLACE)` `insert`/`insertAll` → [insert] and [insertAll].
+///  * `SELECT id FROM apk_log WHERE id IN (:ids)`, the `@Update(entity =
+///    ApkLog::class)` over the partial `UploadUpdate(id, _rev)` POJO, and the
+///    `@Transaction` `markUploadedBatch` wrapping both → [markUploadedBatch].
+///    Kotlin reads the existing ids in chunks of 900 *before* applying the
+///    updates and returns the ids that were **not** found, so
+///    `UploadConfigs.CrashLog`'s `markUploaded` can report those documents as
+///    failures — `markUploadedBatchInternal` is declared to return `Unit`, so
+///    Room discards the affected-row count and the pre-read is the only way to
+///    know what matched. The port keeps that contract: [markUploadedBatch]
+///    returns the ids it could not apply.
+///
+///    **The partial update is the faithful port here, not the trap.** Room
+///    generates `UPDATE apk_log SET _rev = ? WHERE id = ?` from that POJO — it
+///    writes one column and no other — so [ApkLogsCompanion] carrying only
+///    `rev` is exactly right, and a whole-row write would be the defect.
+///
+/// The chunking is Kotlin's alone: it exists because SQLite's variable limit
+/// (999 by default) applies to the `IN (:ids)` binding. Drift's
+/// `isIn` has the same limit, so the port chunks too.
+@DriftAccessor(tables: [ApkLogs])
+class ApkLogDao extends DatabaseAccessor<AppDatabase> with _$ApkLogDaoMixin {
+  ApkLogDao(super.db);
+
+  /// SQLite's default `SQLITE_MAX_VARIABLE_NUMBER` is 999; Kotlin uses 900 for
+  /// the same reason and the port keeps the number so the two chunk alike.
+  static const int idChunkSize = 900;
+
+  Future<void> insert(ApkLogsCompanion row) =>
+      into(apkLogs).insertOnConflictUpdate(row);
+
+  Future<void> insertAll(List<ApkLogsCompanion> rows) =>
+      batch((b) => b.insertAllOnConflictUpdate(apkLogs, rows));
+
+  /// Rows the server has not acknowledged. Port of `ApkLogDao.getPending`.
+  Future<List<ApkLog>> pendingUploads() =>
+      (select(apkLogs)..where((row) => row.rev.equals(''))).get();
+
+  Future<ApkLog?> getById(String id) =>
+      (select(apkLogs)..where((row) => row.id.equals(id))).getSingleOrNull();
+
+  Future<int> countAll() async => (await select(apkLogs).get()).length;
+
+  /// Applies a batch of `(id, rev)` acknowledgements and returns the ids that
+  /// matched no row — the contract `ApkLogDao.markUploadedBatch` holds.
+  ///
+  /// The existence read happens **before** the writes and inside the same
+  /// transaction, exactly as the Kotlin `@Transaction` does. Reading after
+  /// would answer a different question (every id would then exist or not for
+  /// reasons the update caused), and reading outside the transaction would let
+  /// a concurrent delete fall between the two.
+  Future<Set<String>> markUploadedBatch(Map<String, String> revsById) async {
+    if (revsById.isEmpty) return const <String>{};
+    return transaction(() async {
+      final ids = revsById.keys.toList();
+      final existing = <String>{};
+      for (var i = 0; i < ids.length; i += idChunkSize) {
+        final chunk = ids.sublist(
+          i,
+          i + idChunkSize > ids.length ? ids.length : i + idChunkSize,
+        );
+        final rows =
+            await (selectOnly(apkLogs)
+                  ..addColumns([apkLogs.id])
+                  ..where(apkLogs.id.isIn(chunk)))
+                .get();
+        existing.addAll(rows.map((row) => row.read(apkLogs.id)!));
+      }
+      await batch((b) {
+        revsById.forEach((id, rev) {
+          b.update(
+            apkLogs,
+            ApkLogsCompanion(rev: Value(rev)),
+            where: (row) => row.id.equals(id),
+          );
+        });
+      });
+      return ids.where((id) => !existing.contains(id)).toSet();
+    });
+  }
 }
 
 /// Port of `data/room/dao/TagDao.kt`.
