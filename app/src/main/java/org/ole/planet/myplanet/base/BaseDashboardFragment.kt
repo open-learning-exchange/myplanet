@@ -73,6 +73,22 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
     fun onLoaded(v: View) {
         val llPrompt = v.findViewById<LinearLayout>(R.id.ll_prompt)
         val icClose = v.findViewById<ImageView>(R.id.ic_close)
+
+        icClose.setOnClickListener {
+            llPrompt.visibility = View.GONE
+        }
+
+        childFragmentManager.setFragmentResultListener(
+            UserInformationFragment.PROFILE_UPDATE_REQUEST_KEY, viewLifecycleOwner
+        ) { _, _ ->
+            refreshProfilePrompt(v)
+        }
+
+        refreshProfilePrompt(v)
+    }
+
+    private fun refreshProfilePrompt(v: View) {
+        val llPrompt = v.findViewById<LinearLayout>(R.id.ll_prompt)
         val imageView = v.findViewById<ImageView>(R.id.imageView)
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -88,9 +104,6 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
                     }
                 }
             } else {
-                llPrompt.visibility = View.GONE
-            }
-            icClose.setOnClickListener {
                 llPrompt.visibility = View.GONE
             }
             ImageUtils.loadProfileImage(model?.userImage, imageView, 200)

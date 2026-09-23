@@ -20,7 +20,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class JsonUtilsKotlinxBridgeTest {
+class GsonUtilsKotlinxBridgeTest {
     @Test
     fun `toGson converts primitives, nulls and nested arrays into an equivalent Gson tree`() {
         val kotlinxObject = buildJsonObject {

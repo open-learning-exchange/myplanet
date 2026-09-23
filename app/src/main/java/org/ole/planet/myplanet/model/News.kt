@@ -13,7 +13,7 @@ import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.toGson
 
 /**
@@ -100,7 +100,7 @@ open class News {
                 JsonArray()
             } else {
                 try {
-                    JsonUtils.gson.fromJson(currentImages, JsonArray::class.java) ?: JsonArray()
+                    GsonUtils.gson.fromJson(currentImages, JsonArray::class.java) ?: JsonArray()
                 } catch (e: Exception) {
                     JsonArray()
                 }
@@ -136,7 +136,7 @@ open class News {
         get() {
             try {
                 val array = parsedViewIn ?: if (!viewIn.isNullOrEmpty()) {
-                    JsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
+                    GsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
                 } else null
                 if (array != null) {
                     for (e in array) {
@@ -155,11 +155,11 @@ open class News {
     fun calculateSortDate(): Long {
         try {
             if (!viewIn.isNullOrEmpty()) {
-                val ar = parsedViewIn ?: JsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
+                val ar = parsedViewIn ?: GsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
                 for (elem in ar) {
                     val obj = elem.asJsonObject
-                    if (JsonUtils.getString("section", obj).equals("community", true) && obj.has("sharedDate")) {
-                        return JsonUtils.getLong("sharedDate", obj)
+                    if (GsonUtils.getString("section", obj).equals("community", true) && obj.has("sharedDate")) {
+                        return GsonUtils.getLong("sharedDate", obj)
                     }
                 }
             }
@@ -208,42 +208,42 @@ open class News {
 
             news.userId = user?.id
             news.replyTo = map["replyTo"] ?: ""
-            news.user = JsonUtils.gson.toJson(user?.serialize())
+            news.user = GsonUtils.gson.toJson(user?.serialize())
             news.imageUrls = imageUrls?.toList() ?: emptyList()
 
             map["news"]?.let { newsObj ->
                 try {
                     val newsJsonString = newsObj.replace("=", ":")
-                    val newsJson = JsonUtils.gson.fromJson(newsJsonString, JsonObject::class.java)
-                    news.newsId = JsonUtils.getString("_id", newsJson)
-                    news.newsRev = JsonUtils.getString("_rev", newsJson)
-                    news.newsUser = JsonUtils.getString("user", newsJson)
-                    news.aiProvider = JsonUtils.getString("aiProvider", newsJson)
-                    news.newsTitle = JsonUtils.getString("title", newsJson)
+                    val newsJson = GsonUtils.gson.fromJson(newsJsonString, JsonObject::class.java)
+                    news.newsId = GsonUtils.getString("_id", newsJson)
+                    news.newsRev = GsonUtils.getString("_rev", newsJson)
+                    news.newsUser = GsonUtils.getString("user", newsJson)
+                    news.aiProvider = GsonUtils.getString("aiProvider", newsJson)
+                    news.newsTitle = GsonUtils.getString("title", newsJson)
                     if (newsJson.has("conversations")) {
                         val conversationsElement = newsJson.get("conversations")
                         if (conversationsElement.isJsonPrimitive && conversationsElement.asJsonPrimitive.isString) {
                             val conversationsString = conversationsElement.asString
                             try {
-                                val conversationsArray = JsonUtils.gson.fromJson(conversationsString, JsonArray::class.java)
+                                val conversationsArray = GsonUtils.gson.fromJson(conversationsString, JsonArray::class.java)
                                 if (!conversationsArray.isEmpty()) {
                                     val conversationsList = ArrayList<HashMap<String, String>>()
                                     conversationsArray.forEach { conversationElement ->
                                         val conversationObj = conversationElement.asJsonObject
                                         val conversationMap = HashMap<String, String>()
-                                        conversationMap["query"] = JsonUtils.getString("query", conversationObj)
-                                        conversationMap["response"] = JsonUtils.getString("response", conversationObj)
+                                        conversationMap["query"] = GsonUtils.getString("query", conversationObj)
+                                        conversationMap["response"] = GsonUtils.getString("response", conversationObj)
                                         conversationsList.add(conversationMap)
                                     }
-                                    news.conversations = JsonUtils.gson.toJson(conversationsList)
+                                    news.conversations = GsonUtils.gson.toJson(conversationsList)
                                 }
                             } catch (e: JsonSyntaxException) {
                                 Log.w(TAG, "conversation parse failed", e)
                             }
                         }
                     }
-                    news.newsCreatedDate = JsonUtils.getLong("createdDate", newsJson)
-                    news.newsUpdatedDate = JsonUtils.getLong("updatedDate", newsJson)
+                    news.newsCreatedDate = GsonUtils.getLong("createdDate", newsJson)
+                    news.newsUpdatedDate = GsonUtils.getLong("updatedDate", newsJson)
                 } catch (e: JsonSyntaxException) {
                     Log.w(TAG, "news json parse failed", e)
                 }

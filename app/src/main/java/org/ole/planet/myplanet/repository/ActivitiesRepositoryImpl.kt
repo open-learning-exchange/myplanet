@@ -36,7 +36,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -270,24 +270,24 @@ class ActivitiesRepositoryImpl @Inject constructor(
         existingActivitiesMap: MutableMap<String, OfflineActivity>,
         fallbackActivitiesMap: MutableMap<String, OfflineActivity>
     ): OfflineActivity {
-        val serverId = JsonUtils.getString("_id", json)
-        val loginTime = JsonUtils.getLong("loginTime", json)
-        val userName = JsonUtils.getString("user", json)
+        val serverId = GsonUtils.getString("_id", json)
+        val loginTime = GsonUtils.getLong("loginTime", json)
+        val userName = GsonUtils.getString("user", json)
 
         val fallbackKey = "${loginTime}_${userName}"
         val activity = existingActivitiesMap[serverId]
             ?: fallbackActivitiesMap[fallbackKey]
             ?: OfflineActivity().apply { id = serverId }
 
-        activity._rev = JsonUtils.getString("_rev", json)
+        activity._rev = GsonUtils.getString("_rev", json)
         activity._id = serverId
         activity.loginTime = loginTime
-        activity.type = JsonUtils.getString("type", json)
+        activity.type = GsonUtils.getString("type", json)
         activity.userName = userName
-        activity.parentCode = JsonUtils.getString("parentCode", json)
-        activity.createdOn = JsonUtils.getString("createdOn", json)
-        activity.logoutTime = JsonUtils.getLong("logoutTime", json)
-        activity.androidId = JsonUtils.getString("androidId", json)
+        activity.parentCode = GsonUtils.getString("parentCode", json)
+        activity.createdOn = GsonUtils.getString("createdOn", json)
+        activity.logoutTime = GsonUtils.getLong("logoutTime", json)
+        activity.androidId = GsonUtils.getString("androidId", json)
 
         existingActivitiesMap[serverId] = activity
         if (loginTime > 0 && userName.isNotEmpty()) {
@@ -364,7 +364,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
 
     override suspend fun insertLoginActivitiesFromSync(docs: List<JsonObject>) {
         val documentList = docs.filter { jsonDoc ->
-            !JsonUtils.getString("_id", jsonDoc).startsWith("_design")
+            !GsonUtils.getString("_id", jsonDoc).startsWith("_design")
         }
         if (documentList.isEmpty()) return
 
@@ -372,11 +372,11 @@ class ActivitiesRepositoryImpl @Inject constructor(
         val loginTimes = LinkedHashSet<Long>()
         val userNames = LinkedHashSet<String>()
         for (jsonDoc in documentList) {
-            val id = JsonUtils.getString("_id", jsonDoc)
+            val id = GsonUtils.getString("_id", jsonDoc)
             if (id.isNotEmpty()) ids.add(id)
-            val loginTime = JsonUtils.getLong("loginTime", jsonDoc)
+            val loginTime = GsonUtils.getLong("loginTime", jsonDoc)
             if (loginTime > 0) loginTimes.add(loginTime)
-            val userName = JsonUtils.getString("user", jsonDoc)
+            val userName = GsonUtils.getString("user", jsonDoc)
             if (userName.isNotEmpty()) userNames.add(userName)
         }
 

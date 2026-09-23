@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 
 @HiltViewModel
 class VoicesViewModel @Inject constructor(
@@ -129,7 +129,7 @@ class VoicesViewModel @Inject constructor(
                         news?.labels?.contains(resolvedLabelValue) == true
                     }
                     else -> {
-                        (news?.parsedSharedTeamName ?: JsonUtils.extractSharedTeamName(news)) == selectedLabel
+                        (news?.parsedSharedTeamName ?: GsonUtils.extractSharedTeamName(news)) == selectedLabel
                     }
                 }
             }
@@ -203,7 +203,7 @@ class VoicesViewModel @Inject constructor(
         allLabels.add("Shared Chat")
 
         newsList.forEach { news ->
-            val sharedTeamName = news?.parsedSharedTeamName ?: JsonUtils.extractSharedTeamName(news)
+            val sharedTeamName = news?.parsedSharedTeamName ?: GsonUtils.extractSharedTeamName(news)
             if (sharedTeamName.isNotEmpty()) {
                 allLabels.add(sharedTeamName)
             }
@@ -224,7 +224,7 @@ class VoicesViewModel @Inject constructor(
             val images = news?.imagesArray
             if (images?.isEmpty() == false) {
                 val ob = images[0]?.asJsonObject
-                val resourceId = JsonUtils.getString("resourceId", ob?.asJsonObject)
+                val resourceId = GsonUtils.getString("resourceId", ob?.asJsonObject)
                 if (!resourceId.isNullOrBlank()) {
                     resourceIds.add(resourceId)
                 }
@@ -232,7 +232,7 @@ class VoicesViewModel @Inject constructor(
         }
         viewModelScope.launch {
             if (resourceIds.isNotEmpty()) {
-                val libraries = resourcesRepository.getLibraryItemsByIds(resourceIds)
+                val libraries = resourcesRepository.getLibraryItemsByResourceIds(resourceIds)
                 resourcesRepository.downloadResources(libraries)
             }
         }

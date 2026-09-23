@@ -36,6 +36,7 @@ circleimageview = "3.1.0"
 pbkdf2 = "1.1.4"
 osmdroidAndroid = "6.1.20"
 kotlinxSerializationJson = "1.11.0"
+retrofitKotlinxSerializationConverter = "1.0.0"
 kotlinxCoroutinesAndroid = "1.11.0"
 androidGifDrawable = "1.2.32"
 webkit = "1.17.0"
@@ -127,6 +128,7 @@ markwon-ext-tables = { module = "io.noties.markwon:ext-tables", version.ref = "m
 osmdroid-android = { module = "org.osmdroid:osmdroid-android", version.ref = "osmdroidAndroid" }
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
+retrofit-converter-kotlinx-serialization = { module = "com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter", version.ref = "retrofitKotlinxSerializationConverter" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutinesAndroid" }
 android-gif-drawable = { module = "pl.droidsonroids.gif:android-gif-drawable", version.ref = "androidGifDrawable" }
 tink-android = { module = "com.google.crypto.tink:tink-android", version.ref = "tink" }

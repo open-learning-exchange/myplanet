@@ -80,6 +80,13 @@ class FreeSpaceWorkerTest {
         return File(dir, fileName).apply { writeText(content) }
     }
 
+   private fun emptyDirectoryByteSize(): Long {
+        val probe = File(oleDir, "probe-${System.nanoTime()}").apply { mkdirs() }
+        val size = probe.length()
+        probe.delete()
+        return size
+    }
+
     @Test
     fun `doWork deletes resource files then clears only their offline flags`() = runTest(testDispatcher) {
         val book = addResource("res1", "book.pdf")
@@ -148,7 +155,7 @@ class FreeSpaceWorkerTest {
         val file2 = File(subDir, "file2.txt").apply { writeText("world") }
         val file3 = File(resDir, "file3.txt").apply { writeText("foo") }
 
-        val expectedFreedBytes = file1.length() + file2.length() + file3.length() + subDir.length() + resDir.length()
+        val expectedFreedBytes = file1.length() + file2.length() + file3.length() + emptyDirectoryByteSize() * 2
 
         val result = worker.doWork()
         advanceUntilIdle()
@@ -172,7 +179,7 @@ class FreeSpaceWorkerTest {
         val file1 = File(resDir, "file1.txt").apply { writeText("hello") }
         val file2 = File(resDir, "file2.txt").apply { writeText("disappearing") }
 
-        val expectedFreedBytes = file1.length() + resDir.length()
+        val expectedFreedBytes = file1.length() + emptyDirectoryByteSize()
         file2.delete() // File disappears before walk processes it
 
         val result = worker.doWork()

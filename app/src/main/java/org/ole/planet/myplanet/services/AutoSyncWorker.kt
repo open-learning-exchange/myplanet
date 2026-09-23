@@ -90,7 +90,7 @@ class AutoSyncWorker @AssistedInject constructor(
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
         workerScope.launch(dispatcherProvider.main) {
-            startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), null, workerScope, configurationsRepository)
+            startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), null, workerScope, configurationsRepository::checkCheckSum)
         }
         syncContinuation?.takeIf { it.isActive }?.resume(Unit)
         syncContinuation = null

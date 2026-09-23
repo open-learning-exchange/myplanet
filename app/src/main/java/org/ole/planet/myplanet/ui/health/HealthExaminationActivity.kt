@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.health
 
 import android.os.Bundle
+import android.util.Log
 import android.view.ContextThemeWrapper
 import android.view.MenuItem
 import android.view.View
@@ -29,8 +30,8 @@ import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DimenUtils.dpToPx
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils.getString
 import org.ole.planet.myplanet.utils.TimeUtils.getAge
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -191,7 +192,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
 
     private fun preloadCustomDiagnosis() {
         val arr = resources.getStringArray(R.array.diagnosis_list)
-        val mainList = listOf(*arr)
+        val mainList = arr.toHashSet()
         if (customDiag?.isEmpty() == true && examination != null) {
             for ((s, value) in conditionsMap) {
                 if (!mainList.contains(s) && value) {
@@ -204,15 +205,18 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
     private fun showCheckbox(examination: HealthExamination?) {
         val arr = resources.getStringArray(R.array.diagnosis_list)
         binding.containerCheckbox.removeAllViews()
+        val textColorStateList = ContextCompat.getColorStateList(this, R.color.daynight_textColor)
+        val textColor = ContextCompat.getColor(this, R.color.daynight_textColor)
+        val padding = dpToPx(8)
         for (s in arr) {
             val c = CheckBox(this)
-            c.buttonTintList = ContextCompat.getColorStateList(this, R.color.daynight_textColor)
-            c.setTextColor(ContextCompat.getColor(this, R.color.daynight_textColor))
+            c.buttonTintList = textColorStateList
+            c.setTextColor(textColor)
 
             if (examination != null) {
                 c.isChecked = conditionsMap[s] ?: false
             }
-            c.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8))
+            c.setPadding(padding, padding, padding, padding)
             c.text = s
             c.tag = s
             c.setOnCheckedChangeListener(this)
@@ -253,7 +257,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             examination?.setWeight(getFloat("${binding.etWeight.text}".trim { it <= ' ' }))
             examination?.height = getFloat("${binding.etHeight.text}".trim { it <= ' ' })
             otherConditions
-            examination?.conditions = JsonUtils.gson.toJson(mapConditions)
+            examination?.conditions = GsonUtils.gson.toJson(mapConditions)
             examination?.hearing = "${binding.etHearing.text}".trim { it <= ' ' }
             sign.immunizations = "${binding.etImmunization.text}".trim { it <= ' ' }
             sign.tests = "${binding.etLabtest.text}".trim { it <= ' ' }
@@ -271,16 +275,16 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             try {
                 val key = user?.key ?: generateKey().also { user?.key = it }
                 val iv = user?.iv ?: generateIv().also { user?.iv = it }
-                examination?.data = encrypt(JsonUtils.gson.toJson(sign), key, iv)
+                examination?.data = encrypt(GsonUtils.gson.toJson(sign), key, iv)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "Encrypting examination data failed", e)
             }
 
             // Delegate save to ViewModel
             viewModel.saveExamination(examination, pojo, user)
 
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "Saving examination data failed", e)
             Utilities.toast(this@HealthExaminationActivity, getString(R.string.unable_to_add_health_record))
         }
     }
@@ -372,10 +376,10 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             val userKey = user?.key
             val userIv = user?.iv
             if (userKey != null && userIv != null) {
-                pojo?.data = encrypt(JsonUtils.gson.toJson(health), userKey, userIv)
+                pojo?.data = encrypt(GsonUtils.gson.toJson(health), userKey, userIv)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "Creating health examination pojo failed", e)
             Utilities.toast(this, getString(R.string.unable_to_add_health_record))
         }
     }
@@ -410,5 +414,9 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
         customDiag = null
         mapConditions = null
         super.onDestroy()
+    }
+
+    companion object {
+        private const val TAG = "HealthExaminationActivity"
     }
 }
