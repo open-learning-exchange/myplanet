@@ -267,7 +267,17 @@ void main() {
     final saved = await database.personalDao.getById('note-0');
     expect(saved?.isUploaded, isTrue);
     expect(saved?.couchId, 'srv-1');
-    expect(saved?.rev, '1-a');
+    expect(
+      saved?.rev,
+      '2-b',
+      reason:
+          "Kotlin's `finalRev`: `getString(\"rev\", response.body())"
+          '.ifBlank { rev }` (`PersonalsRepositoryImpl:154`). A CouchDB '
+          'attachment PUT bumps the revision, so keeping the POST rev here '
+          'would leave the note holding a stale `_rev` and earn the next '
+          'write against this document a 409 for no reason. This expected '
+          "'1-a' until Phase 160.",
+    );
   });
 
   test('a failed upload leaves the note pending for the next drain', () async {
@@ -320,5 +330,323 @@ void main() {
     final due = await reopened.due();
     expect(due, hasLength(1));
     expect(due.single.endpoint, PersonalsUploader.endpointFor(config));
+  });
+
+  // ---------------------------------------------------------------------
+  // Phase 160: an attachment that never reaches CouchDB.
+  //
+  // Port of the three properties master gave `PersonalsRepositoryImpl`
+  // (`updateRemoteDocRef`; the early returns at `:145`/`:150`; the
+  // skip-the-POST guard at `:119-122`). The defect these close is *two states
+  // that look identical*: before them, `markUploaded` ran before the
+  // attachment and only `log`ged its failure, so a note whose bytes never
+  // arrived was permanently `isUploaded == true` — byte for byte the row of a
+  // note whose bytes did arrive.
+  //
+  // Every test below was mutation-checked by reverting the property it names
+  // and confirming it goes red; where a fixture could pass under both
+  // readings, the decoy is documented at the value.
+  // ---------------------------------------------------------------------
+
+  /// Writes a note with a real file on disk and queues it. Returns the path.
+  Future<String> noteWithFile({String contents = 'hello'}) async {
+    final tempDir = await Directory.systemTemp.createTemp('personals_test');
+    addTearDown(() => tempDir.delete(recursive: true));
+    final file = File('${tempDir.path}/attach.txt')
+      ..writeAsBytesSync(utf8.encode(contents));
+    await personals.create(
+      userId: 'user-1',
+      userName: 'ada',
+      title: 'Note with file',
+      path: file.path,
+    );
+    await uploader.queuePending(config: config, userId: 'user-1');
+    return file.path;
+  }
+
+  void stubAttachment(NetworkResult<Map<String, dynamic>> result) {
+    when(
+      () => api.uploadAttachment(
+        any(),
+        bytes: any(named: 'bytes'),
+        authHeader: any(named: 'authHeader'),
+        contentType: any(named: 'contentType'),
+        ifMatch: any(named: 'ifMatch'),
+      ),
+    ).thenAnswer((_) async => result);
+  }
+
+  int postCount() => verify(
+    () =>
+        api.postJsonObject(any(), any(), authHeader: any(named: 'authHeader')),
+  ).callCount;
+
+  test(
+    'a failed attachment leaves the note pending and does not re-POST it',
+    () async {
+      // **The decisive test, and both halves belong in one.** Either alone
+      // passes under a broken implementation:
+      //
+      //  * `isUploaded == false` alone is satisfied by a handler that reports
+      //    the attachment failure but re-POSTs the document on every retry —
+      //    one duplicate per drain, undetectable afterwards because a personal
+      //    note is an append with a server-minted id.
+      //  * `postCount() == 1` alone is satisfied by the *pre-fix* code, which
+      //    completed the outbox row on the POST's success and so was never
+      //    re-drained at all. It reached one POST by losing the file.
+      //
+      // Together they say: the document landed once, the note knows the
+      // attachment did not, and the retry re-sends only what is outstanding.
+      await noteWithFile();
+      stubPost(
+        const NetworkSuccess<Map<String, dynamic>>({
+          'id': 'srv-1',
+          'rev': '1-a',
+        }),
+      );
+      // 503 rather than 400: a transient refusal keeps the row on the ladder,
+      // which is what gives this test a second drain to make its second
+      // assertion about. The terminal case has its own test below.
+      stubAttachment(
+        const NetworkError<Map<String, dynamic>>(503, 'unavailable'),
+      );
+
+      expect(await drainer().drain(), [OutboxOutcome.retryScheduled]);
+
+      final afterFirst = await database.personalDao.getById('note-0');
+      expect(
+        afterFirst?.isUploaded,
+        isFalse,
+        reason:
+            'the file never reached CouchDB, so nothing may report the note '
+            'as uploaded — this is the state that did not exist before '
+            'Phase 160',
+      );
+      expect(
+        afterFirst?.couchId,
+        'srv-1',
+        reason:
+            'and the ids the POST assigned are recorded anyway: without them '
+            'the retry could not tell "the document landed" from "nothing '
+            'landed", which is the whole discriminator',
+      );
+      expect(afterFirst?.rev, '1-a');
+      expect(await personals.pendingUploads('user-1'), hasLength(1));
+
+      // The retry: the attachment succeeds this time.
+      clock = clock.add(const Duration(minutes: 5));
+      stubAttachment(
+        const NetworkSuccess<Map<String, dynamic>>({'ok': true, 'rev': '2-b'}),
+      );
+      expect(await drainer().drain(), [OutboxOutcome.completed]);
+
+      expect(
+        postCount(),
+        1,
+        reason:
+            'the second drain must skip the POST — the document is already '
+            'on the server and a second one could never be detected',
+      );
+      final settled = await database.personalDao.getById('note-0');
+      expect(settled?.isUploaded, isTrue);
+      expect(settled?.couchId, 'srv-1');
+      expect(settled?.rev, '2-b');
+      expect(await personals.pendingUploads('user-1'), isEmpty);
+    },
+  );
+
+  test(
+    'an attachment the server refuses is terminal, and never re-POSTs',
+    () async {
+      // 400 is a verdict on the bytes, so the ladder is not the answer: the row
+      // is abandoned carrying the reason and the note stays pending. What must
+      // not happen is the sweep reading that pending note as a fresh upload.
+      await noteWithFile();
+      stubPost(
+        const NetworkSuccess<Map<String, dynamic>>({
+          'id': 'srv-1',
+          'rev': '1-a',
+        }),
+      );
+      stubAttachment(
+        const NetworkError<Map<String, dynamic>>(400, 'bad bytes'),
+      );
+
+      expect(await drainer().drain(), [OutboxOutcome.abandoned]);
+
+      // Five sweeps, each the shape `PersonalActions._queuePending` produces
+      // after any user write, against a note whose document is already filed.
+      for (var sweep = 0; sweep < 5; sweep++) {
+        await uploader.queuePending(config: config, userId: 'user-1');
+        await drainer().drain();
+        clock = clock.add(const Duration(hours: 1));
+      }
+
+      expect(
+        postCount(),
+        1,
+        reason:
+            'the memo holds the row and the skip-the-POST guard holds the '
+            'handler; either failing files a duplicate document per sweep',
+      );
+      final row = (await database.outboxDao.forItem(
+        PersonalsUploader.type,
+        'note-0',
+      )).single;
+      expect(row.status, OutboxDao.statusAbandoned);
+      expect(
+        row.errorMessage,
+        'bad bytes',
+        reason:
+            'the refusal is inspectable rather than swallowed by a log line',
+      );
+      expect(
+        (await database.personalDao.getById('note-0'))?.isUploaded,
+        isFalse,
+      );
+    },
+  );
+
+  test('a missing attachment file is recorded, not swallowed', () async {
+    // Pre-Phase-160 this was a silent `return` that still marked the note
+    // uploaded. `my_library` settled the same question the other way and for
+    // the reason that applies here: "the bytes are not where the row says they
+    // are" is not evidence the attachment was delivered.
+    final path = await noteWithFile();
+    await File(path).delete();
+    stubPost(
+      const NetworkSuccess<Map<String, dynamic>>({'id': 'srv-1', 'rev': '1-a'}),
+    );
+
+    expect(await drainer().drain(), [OutboxOutcome.retryScheduled]);
+
+    verifyNever(
+      () => api.uploadAttachment(
+        any(),
+        bytes: any(named: 'bytes'),
+        authHeader: any(named: 'authHeader'),
+        contentType: any(named: 'contentType'),
+        ifMatch: any(named: 'ifMatch'),
+      ),
+    );
+    expect((await database.personalDao.getById('note-0'))?.isUploaded, isFalse);
+    final row = (await database.outboxDao.forItem(
+      PersonalsUploader.type,
+      'note-0',
+    )).single;
+    expect(
+      row.httpCode,
+      isNull,
+      reason:
+          'transient, not terminal: a missing file is about the environment — '
+          'an unmounted card — not about the bytes, and Kotlin stays pending '
+          'and retryable here too. A null status is what `classifyStatus` '
+          'reads as transient, which is what lets a later sweep re-arm it',
+    );
+    expect(row.status, OutboxDao.statusPending);
+    expect(row.errorMessage, contains('missing'));
+
+    // And the file coming back is all it takes.
+    clock = clock.add(const Duration(minutes: 5));
+    File(path).writeAsBytesSync(utf8.encode('hello'));
+    stubAttachment(
+      const NetworkSuccess<Map<String, dynamic>>({'ok': true, 'rev': '2-b'}),
+    );
+    expect(await drainer().drain(), [OutboxOutcome.completed]);
+    expect(postCount(), 1);
+    expect((await database.personalDao.getById('note-0'))?.isUploaded, isTrue);
+  });
+
+  test('a note with no attachment still settles on the POST alone', () async {
+    // The guard against over-correcting: most notes carry no file, and for
+    // those the POST *is* the whole delivery. A handler that treated "no
+    // attachment" as "attachment not delivered" would strand every plain note
+    // in the pending set for ever.
+    await personals.create(userId: 'user-1', userName: 'ada', title: 'Plain');
+    await uploader.queuePending(config: config, userId: 'user-1');
+    stubPost(
+      const NetworkSuccess<Map<String, dynamic>>({'id': 'srv-1', 'rev': '1-a'}),
+    );
+
+    expect(await drainer().drain(), [OutboxOutcome.completed]);
+
+    final saved = await database.personalDao.getById('note-0');
+    expect(saved?.isUploaded, isTrue);
+    expect(saved?.rev, '1-a');
+  });
+
+  test('the skip-the-POST guard reads _rev, not _id', () async {
+    // `create` seeds `couchId` with the note's own local id, exactly as
+    // `savePersonalResource` does (`_id = id`), so `_id` is non-null from the
+    // first insert and says nothing about whether the server has seen the
+    // note. A guard reading it would skip the POST of every note ever written
+    // and PUT the attachment at a document that does not exist.
+    await personals.create(userId: 'user-1', userName: 'ada', title: 'Plain');
+    expect(
+      (await database.personalDao.getById('note-0'))?.couchId,
+      'note-0',
+      reason: 'the decoy this test exists for: `_id` is already set',
+    );
+    expect((await database.personalDao.getById('note-0'))?.rev, isNull);
+
+    await uploader.queuePending(config: config, userId: 'user-1');
+    stubPost(
+      const NetworkSuccess<Map<String, dynamic>>({'id': 'srv-1', 'rev': '1-a'}),
+    );
+    await drainer().drain();
+
+    expect(postCount(), 1, reason: 'the note had to be POSTed at all');
+  });
+
+  test('a blank id or rev in the response is not adopted', () async {
+    // The empty string is not "no id": `couchId is! String` passes it, and
+    // writing it would defeat the skip-the-POST guard on the retry and file
+    // the duplicate the guard exists to prevent.
+    await personals.create(userId: 'user-1', userName: 'ada', title: 'Plain');
+    await uploader.queuePending(config: config, userId: 'user-1');
+    stubPost(
+      const NetworkSuccess<Map<String, dynamic>>({'id': 'srv-1', 'rev': ''}),
+    );
+
+    await drainer().drain();
+
+    final saved = await database.personalDao.getById('note-0');
+    expect(saved?.isUploaded, isFalse);
+    expect(saved?.rev, isNull);
+  });
+
+  test('an already-uploaded note is not sent a second time', () async {
+    // Kotlin's `if (personal.isUploaded) return "Resource already uploaded"`
+    // (`PersonalsRepositoryImpl:110-112`). Reachable when a drain claims a row
+    // another pass has already settled.
+    //
+    // **The note must carry a file, and the assertion must be about the
+    // attachment.** A first cut used a plain note and asserted no POST — and
+    // stayed green with this early return deleted, because the skip-the-POST
+    // guard below it fires on the same row and suppresses the POST anyway.
+    // The PUT is the only request the early return uniquely prevents, so it
+    // is the only thing that distinguishes the two readings.
+    final path = await noteWithFile();
+    expect(path, isNotEmpty);
+    await personals.markUploaded('note-0', 'srv-1', '1-a');
+
+    expect(await drainer().drain(), [OutboxOutcome.completed]);
+
+    verifyNever(
+      () => api.postJsonObject(
+        any(),
+        any(),
+        authHeader: any(named: 'authHeader'),
+      ),
+    );
+    verifyNever(
+      () => api.uploadAttachment(
+        any(),
+        bytes: any(named: 'bytes'),
+        authHeader: any(named: 'authHeader'),
+        contentType: any(named: 'contentType'),
+        ifMatch: any(named: 'ifMatch'),
+      ),
+    );
   });
 }

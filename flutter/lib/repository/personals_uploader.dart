@@ -23,11 +23,28 @@ import 'personals_repository.dart';
 /// exists only locally until it is POSTed, and a push lost to a dead network is
 /// lost outright unless something durable remembers to send it again.
 ///
-/// When a note carries a local [PersonalRow.path] the Kotlin flow POSTs the
-/// document and then PUTs the file as a CouchDB attachment. That second step
-/// is best-effort in the Kotlin source: the document is already uploaded before
-/// the attachment is attempted, and an attachment failure does not roll the
-/// document back. This handler mirrors that ordering.
+/// When a note carries a local [PersonalRow.path] the flow POSTs the document
+/// and then PUTs the file as a CouchDB attachment.
+///
+/// **That second step is not best-effort, and a previous revision of this
+/// comment said it was.** The claim — *"best-effort in the Kotlin source: the
+/// document is already uploaded before the attachment is attempted, and an
+/// attachment failure does not roll the document back"* — described Kotlin as
+/// it stood when this file was written, and Kotlin has since moved. It now
+/// splits the two-request delivery across two DAO statements
+/// (`PersonalDao.updateRemoteDocRef` and `updateUploadedStatus`, the same
+/// statement with `isUploaded = 1` removed) and returns early on an attachment
+/// failure (`PersonalsRepositoryImpl:145` on a throw, `:150` on a non-2xx), so
+/// `updatePersonalAfterSync` — the sole caller of `updateUploadedStatus` — is
+/// unreachable unless the file landed.
+///
+/// Neither half of the old claim is defended here even as a description of the
+/// port. Nothing rolls the document back, which is true and unavoidable: a
+/// CouchDB POST cannot be un-made cheaply, and the document is worth keeping
+/// anyway. What changed is that the port no longer *reports* the note as
+/// uploaded on the strength of the POST alone. See [PersonalsRepository
+/// .recordRemoteDocRef] for the three-state table that buys, and [handler]
+/// for the guard that makes retrying safe.
 class PersonalsUploader {
   PersonalsUploader(this._api, this._personals, this._outbox, this._identity);
 
@@ -93,59 +110,233 @@ class PersonalsUploader {
   ///
   /// A plain replay would POST correctly but drop the ids CouchDB assigns, so
   /// the note would stay `isUploaded == false` and be posted again on the next
-  /// drain — one duplicate per drain, forever. Adopting `id`/`rev` on success
-  /// is what closes the loop.
+  /// drain — one duplicate per drain, forever. Adopting `id`/`rev` is what
+  /// closes the loop. Port of `PersonalsRepositoryImpl.uploadPersonal`, whose
+  /// three load-bearing properties this mirrors in order:
+  ///
+  /// 1. **The POST records `_id`/`_rev` without marking the note uploaded**
+  ///    ([PersonalsRepository.recordRemoteDocRef], Kotlin's
+  ///    `updateRemoteDocRef` at `:87`). Until this, `markUploaded` ran here,
+  ///    before the attachment, and a note whose bytes never reached CouchDB
+  ///    was permanently `isUploaded == true` — indistinguishable from one
+  ///    whose bytes did land, and re-armable by nothing.
+  /// 2. **A failed attachment is the handler's answer**, so `markUploaded`
+  ///    does not run and the note stays in [PersonalsRepository.pendingUploads]
+  ///    (Kotlin returns early at `:145`/`:150`, past its sole
+  ///    `updateUploadedStatus` call site in `app/src/main`, reached at
+  ///    `:155`).
+  /// 3. **A retry skips the POST** when the note already carries both ids
+  ///    (Kotlin's `if (!existingId.isNullOrBlank() && !existingRev
+  ///    .isNullOrBlank())` at `:119-127`), so re-sending a note whose document
+  ///    already landed cannot file a second one.
+  ///
+  /// Property 3 is what makes property 2 safe, and the order matters: adopting
+  /// the pending state without the skip-the-POST guard would turn every drain
+  /// of a note with a failed attachment into a fresh duplicate document —
+  /// undetectable afterwards, because a personal note is an append with a
+  /// server-minted id.
+  ///
+  /// `_rev` is the load-bearing half of that guard. `_id` is never blank:
+  /// `create` seeds `couchId` with the *local* id, exactly as
+  /// `savePersonalResource` does (`_id = id`), so it is non-null from the
+  /// first insert and says nothing about whether the server has seen the note.
+  /// `_rev` is written only from a response. Both are tested, as Kotlin tests
+  /// both, because an `_id` still holding the local id would address the
+  /// attachment PUT at a document that does not exist.
+  ///
+  /// ### What this does to the outbox row, and why it stays inside Phase 148
+  ///
+  /// The policy is that an item owns one row for ever, and that a terminal row
+  /// is a memo nothing re-asks unattended. Returning the attachment's own
+  /// refusal keeps that intact rather than working around it, because the
+  /// drainer already classifies what comes back:
+  ///
+  /// * **5xx, a transport failure, 401/403/404/408/429** —
+  ///   [OutboxRefusal.transient]. Retried under the backoff, and re-armable by
+  ///   a later sweep. Each retry skips the POST and re-attempts only the PUT,
+  ///   which is Kotlin's behaviour exactly.
+  /// * **400, 409, 413, 415, 422** — [OutboxRefusal.rejected]. Terminal: the
+  ///   server considered these bytes and refused them, and re-sending them
+  ///   cannot help. The row is kept `abandoned` carrying the reason, and the
+  ///   note stays pending, which is the honest pair of facts.
+  /// * **Bytes that cannot be sent at all** — no file where the note says one
+  ///   is, or an unreadable one — answered as a [NetworkException], which the
+  ///   drainer records with no status and therefore as transient. Retried, and
+  ///   re-armed by a later sweep.
+  ///
+  /// That last verdict is the one deliberate change of *kind* rather than of
+  /// timing, and **the first cut of this fix had it terminal, which was
+  /// wrong.** A missing file used to be a silent `return` that still reported
+  /// the note as uploaded, so recording it is not optional — `my_library`
+  /// settled the same question and for the reason that applies here, *"the
+  /// bytes are not where the row says they are" is not evidence the attachment
+  /// was delivered* ([MyLibraryTable.attachmentPending]). But *terminal*
+  /// overstates what is known. Kotlin never stats the file: the read throws
+  /// inside `uploadRepository.uploadAttachment`, is caught at `:143`, and the
+  /// note stays pending and retryable. A missing file is about the environment
+  /// rather than about the bytes — an unmounted card is the ordinary case on
+  /// these handsets — so it belongs with the 5xx and not with the 400.
+  /// Terminal would also have been unrecoverable in practice: nothing in
+  /// `lib/` calls [OutboxRepository.rearm] for personals and the screen offers
+  /// no retry action, so such a note would be stranded on the device for
+  /// good.
+  ///
+  /// **What no longer happens unattended is a retry past the ladder**, and
+  /// that is the policy's intent rather than a gap in it. A `transient`
+  /// refusal is re-armed by the next [queuePending]; a `rejected` one is not,
+  /// and wants [OutboxRepository.rearm] — a person asking — as its own dartdoc
+  /// reserves. Kotlin, by contrast, re-reads the live table and retries a
+  /// refused attachment for ever. See the PR body for the one sweep the port
+  /// is missing on top of this, which lives in files this lane does not own.
   OutboxHandler get handler => (row, payload, authHeader) async {
-    final result = await _api.postJsonObject(
-      row.endpoint,
-      payload,
-      authHeader: authHeader,
-    );
+    // Read once. `recordRemoteDocRef` touches neither `path` nor `isUploaded`,
+    // so this row stays true for the attachment step below.
+    final note = await _personals.getById(row.itemId);
 
-    if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
-      final couchId = data['id'];
-      final rev = data['rev'];
-      if (couchId is! String || rev is! String) {
+    // Kotlin's `if (personal.isUploaded) return "Resource already uploaded"`
+    // (`:113-116`). Reachable here when two drains race a row that a third
+    // party has already settled; re-PUTting the attachment would be harmless
+    // but pointless, and re-POSTing would not be.
+    if (note != null && note.isUploaded) {
+      return NetworkSuccess<Map<String, dynamic>>({
+        'id': note.couchId,
+        'rev': note.rev,
+      });
+    }
+
+    final String couchId;
+    final String rev;
+
+    final knownId = note?.couchId;
+    final knownRev = note?.rev;
+    if (knownId != null &&
+        knownId.isNotEmpty &&
+        knownRev != null &&
+        knownRev.isNotEmpty) {
+      // Property 3. This device has already published this document: the only
+      // thing outstanding is the attachment.
+      couchId = knownId;
+      rev = knownRev;
+    } else {
+      final result = await _api.postJsonObject(
+        row.endpoint,
+        payload,
+        authHeader: authHeader,
+      );
+      if (result is! NetworkSuccess<Map<String, dynamic>>) return result;
+
+      final postedId = result.data['id'];
+      final postedRev = result.data['rev'];
+      if (postedId is! String ||
+          postedRev is! String ||
+          postedId.isEmpty ||
+          postedRev.isEmpty) {
         // Reporting success here would delete the outbox row while the note
         // stays `isUploaded == false`, so the next `queuePending` would POST
         // it again — a fresh duplicate document on every drain.
+        //
+        // Empty strings are rejected alongside absent ones because the
+        // skip-the-POST guard reads these two columns back: a blank `_rev`
+        // written here would fail that guard on the retry and file the
+        // duplicate this branch exists to prevent.
         return const NetworkError<Map<String, dynamic>>(
           null,
           'Upload response carried no id/rev',
         );
       }
-      await _personals.markUploaded(row.itemId, couchId, rev);
-      await _uploadAttachment(row, couchId, rev, authHeader);
+      couchId = postedId;
+      rev = postedRev;
+      // Property 1: the ids, not the flag.
+      await _personals.recordRemoteDocRef(row.itemId, couchId, rev);
     }
-    return result;
+
+    final attachment = await _uploadAttachment(
+      note,
+      row.endpoint,
+      couchId,
+      rev,
+      authHeader,
+    );
+    // Property 2: the note stays pending, and the drainer decides whether this
+    // is worth another attempt.
+    if (attachment != null &&
+        attachment is! NetworkSuccess<Map<String, dynamic>>) {
+      return attachment;
+    }
+
+    // Kotlin's `finalRev`: `getString("rev", response.body()).ifBlank { rev }`
+    // (`:152`). A CouchDB attachment PUT bumps the revision, so keeping the
+    // POST's would leave the note holding a stale `_rev` — and the next write
+    // against this document would earn a 409 for no reason.
+    final attached = attachment is NetworkSuccess<Map<String, dynamic>>
+        ? attachment.data['rev']
+        : null;
+    final finalRev = attached is String && attached.isNotEmpty ? attached : rev;
+
+    await _personals.markUploaded(row.itemId, couchId, finalRev);
+    return NetworkSuccess<Map<String, dynamic>>({
+      'id': couchId,
+      'rev': finalRev,
+    });
   };
 
-  Future<void> _uploadAttachment(
-    OutboxRow row,
+  /// Sends the note's file, or says why it could not.
+  ///
+  /// `null` means *there was nothing to send* — the note carries no local
+  /// path, which is most notes. That is the one case the caller may treat as
+  /// success, and it is why this returns a nullable result rather than a bare
+  /// [NetworkResult]: "no attachment" and "the attachment failed" were the two
+  /// states the old `Future<void>` collapsed, and collapsing them is what lost
+  /// the file.
+  ///
+  /// Everything else comes back as a result the drainer classifies. Two of the
+  /// three local refusals are [NetworkException]s, which it records with no
+  /// status and therefore retries; only a path naming no file is terminal.
+  /// [handler] argues both.
+  Future<NetworkResult<Map<String, dynamic>>?> _uploadAttachment(
+    PersonalRow? note,
+    String endpoint,
     String couchId,
     String rev,
     String? authHeader,
   ) async {
-    final localPath = (await _personals.getById(row.itemId))?.path;
-    if (localPath == null || localPath.isEmpty) return;
+    final localPath = note?.path;
+    if (localPath == null || localPath.isEmpty) return null;
 
     final file = File(localPath);
-    if (!await file.exists()) return;
+    if (!await file.exists()) {
+      // Transient, not terminal — see [handler]. The drainer's exception arm
+      // records no status, and `classifyStatus(null)` is transient, so the
+      // ladder retries this and a later sweep re-arms it.
+      return NetworkException<Map<String, dynamic>>(
+        FileSystemException('Personal attachment file is missing', localPath),
+      );
+    }
 
-    late final List<int> bytes;
+    final List<int> bytes;
     try {
       bytes = await file.readAsBytes();
     } on FileSystemException catch (e, stack) {
       log('Could not read personal attachment', error: e, stackTrace: stack);
-      return;
+      return NetworkException<Map<String, dynamic>>(e);
     }
 
     final filename = p.basename(localPath);
-    if (filename.isEmpty) return;
+    if (filename.isEmpty) {
+      // This one is terminal, and about the row rather than the moment: a
+      // stored path that names no file will not start naming one. Unreachable
+      // by construction — `PersonalsRepository._nullable` stores a blank path
+      // as null, which returned above — so it is a guard rather than a branch
+      // with a scenario behind it.
+      return NetworkError<Map<String, dynamic>>(
+        OutboxRepository.notSent,
+        'Personal attachment path names no file: $localPath',
+      );
+    }
 
-    final base = row.endpoint.endsWith('/resources')
-        ? row.endpoint.substring(0, row.endpoint.length - 10)
-        : row.endpoint;
+    final base = endpoint.endsWith('/resources')
+        ? endpoint.substring(0, endpoint.length - 10)
+        : endpoint;
     final attachmentUrl =
         '$base/resources'
         '/${Uri.encodeComponent(couchId)}/${Uri.encodeComponent(filename)}';
@@ -161,6 +352,7 @@ class PersonalsUploader {
     if (attachResult is! NetworkSuccess<Map<String, dynamic>>) {
       log('Personal attachment upload failed: $attachResult');
     }
+    return attachResult;
   }
 
   static String authHeaderFor(ServerConfig config) =>
