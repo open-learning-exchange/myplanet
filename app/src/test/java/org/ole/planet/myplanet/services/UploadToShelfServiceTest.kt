@@ -80,15 +80,20 @@ class UploadToShelfServiceTest {
     }
 
     @Test
-    fun `uploadUserData does nothing when no pending users`() = runTest(testDispatcher) {
+    fun `uploadUserData still uploads shelves and notifies when no pending users`() = runTest(testDispatcher) {
+        val syncedUser = mockk<UserEntity>(relaxed = true)
         coEvery { userRepository.getPendingSyncUsers(100) } returns emptyList()
+        coEvery { userRepository.getSyncedUsers() } returns listOf(syncedUser)
+        coEvery { userSyncRepository.uploadAllSyncedUsersToShelf(listOf(syncedUser)) } returns Result.success(Unit)
         val listener = mockk<OnSuccessListener>(relaxed = true)
 
         service.uploadUserData(listener)
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { userRepository.getPendingSyncUsers(100) }
         verify(exactly = 0) { SecurePrefs.getPassword(any(), any()) }
+        coVerify(exactly = 0) { userSyncRepository.checkAndUploadUser(any(), any(), any()) }
+        coVerify(exactly = 1) { userSyncRepository.uploadAllSyncedUsersToShelf(listOf(syncedUser)) }
+        verify(exactly = 1) { listener.onSuccess("Sync with server completed successfully") }
     }
 
     @Test

@@ -15,30 +15,19 @@ import org.ole.planet.myplanet.utils.distinctByContent
 
 @Singleton
 class FeedbackRepositoryImpl @Inject constructor(
-    private val feedbackDao: FeedbackDao,
-    private val gson: Gson,
-    private val timeProvider: TimeProvider
+    private val feedbackDao: FeedbackDao, private val gson: Gson, private val timeProvider: TimeProvider
 ) : FeedbackRepository, FeedbackSyncWriter {
 
     override suspend fun createAndSaveFeedback(
-        user: String?,
-        urgent: String,
-        type: String,
-        message: String,
-        item: String?,
-        state: String?,
+        user: String?, urgent: String, type: String, message: String, item: String?,
+        state: String?
     ) {
         val feedback = createFeedback(user, urgent, type, message, item, state)
         saveFeedback(feedback)
     }
 
     fun createFeedback(
-        user: String?,
-        urgent: String,
-        type: String,
-        message: String,
-        item: String?,
-        state: String?,
+        user: String?, urgent: String, type: String, message: String, item: String?, state: String?
     ): Feedback {
         val feedback = Feedback()
         feedback.id = UUID.randomUUID().toString()
@@ -129,18 +118,18 @@ class FeedbackRepositoryImpl @Inject constructor(
         )
     }
 
-    override suspend fun markFeedbackUploaded(id: String): Boolean {
-        return feedbackDao.markUploaded(id) > 0
+    override suspend fun markFeedbackUploaded(id: String, remoteId: String, remoteRev: String): Boolean {
+        return feedbackDao.markUploaded(id, remoteId, remoteRev) > 0
     }
 
     private fun mapToFeedback(act: JsonObject, existing: Feedback?, idStr: String): Feedback {
-        val hasPendingLocalReply = existing?.isUploaded == false
+        val hasPendingLocalChange = existing?.isUploaded == false
         return Feedback().apply {
             id = idStr
             _id = idStr
             title = GsonUtils.getString("title", act)
             source = GsonUtils.getString("source", act)
-            status = GsonUtils.getString("status", act)
+            status = if (hasPendingLocalChange && existing.status == "Closed") existing.status else GsonUtils.getString("status", act)
             priority = GsonUtils.getString("priority", act)
             owner = GsonUtils.getString("owner", act)
             openTime = GsonUtils.getLong("openTime", act)
@@ -150,7 +139,7 @@ class FeedbackRepositoryImpl @Inject constructor(
             item = GsonUtils.getString("item", act)
             state = GsonUtils.getString("state", act)
             _rev = GsonUtils.getString("_rev", act)
-            if (hasPendingLocalReply) {
+            if (hasPendingLocalChange) {
                 messages = existing.messages
                 isUploaded = false
             } else {
