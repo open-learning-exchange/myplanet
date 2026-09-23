@@ -1,9 +1,9 @@
 package org.ole.planet.myplanet.ui.resources
 
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseSortBottomSheetFragment
+import org.ole.planet.myplanet.base.BaseSortFragment
 
-class ResourcesSortFragment : BaseSortBottomSheetFragment<ResourcesViewModel.SortMode>() {
+class ResourcesSortFragment : BaseSortFragment<ResourcesViewModel.SortMode>() {
     fun interface SortSelectionListener {
         fun onSortSelected(mode: ResourcesViewModel.SortMode)
     }

@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.ui.courses
 
-import org.ole.planet.myplanet.base.BaseSortBottomSheetFragment
+import org.ole.planet.myplanet.base.BaseSortFragment
 
-class CoursesSortFragment : BaseSortBottomSheetFragment<CoursesViewModel.SortType>() {
+class CoursesSortFragment : BaseSortFragment<CoursesViewModel.SortType>() {
     fun interface SortSelectionListener {
         fun onSortSelected(type: CoursesViewModel.SortType)
     }

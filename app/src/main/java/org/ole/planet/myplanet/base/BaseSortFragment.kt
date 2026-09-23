@@ -8,7 +8,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentSortOptionsBinding
 
-abstract class BaseSortBottomSheetFragment<T : Any> :
+abstract class BaseSortFragment<T : Any> :
     BaseBindingBottomSheetFragment<FragmentSortOptionsBinding>(FragmentSortOptionsBinding::inflate) {
     protected abstract val dateSortValue: T
     protected abstract val titleSortValue: T
