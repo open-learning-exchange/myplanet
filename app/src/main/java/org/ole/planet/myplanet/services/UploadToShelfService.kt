@@ -33,11 +33,11 @@ class UploadToShelfService @Inject constructor(
             try {
                 val userModels = userRepository.getPendingSyncUsers(100)
 
-                if (userModels.isEmpty()) return@launch
-
-                val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
-                userModels.forEach { model ->
-                    userSyncRepository.checkAndUploadUser(model, password) { userId: String, examinationId: String -> healthRepository.updateExaminationUserId(userId, examinationId) }
+                if (userModels.isNotEmpty()) {
+                    val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
+                    userModels.forEach { model ->
+                        userSyncRepository.checkAndUploadUser(model, password) { userId: String, examinationId: String -> healthRepository.updateExaminationUserId(userId, examinationId) }
+                    }
                 }
 
                 uploadToShelf(listener)
