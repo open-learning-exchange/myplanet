@@ -120,10 +120,13 @@ void main() {
     // useful record.
     //
     // **242 of 316 after Phase 160 Lane 3**, taking the order the previous
-    // round set down. Fourteen DAOs are now complete: `TeamDao`,
-    // `SubmissionDao`, `NewsDao`, `CourseDao`, `CourseStepDao`,
-    // `NotificationDao`, `UserDao`, `FeedbackDao`, `PersonalDao`, and the six
-    // small ones that had no coverage at all.
+    // round set down. **29 of the 37 DAOs are now complete, 23 of them
+    // finished off this round**; the eight with anything left are listed
+    // below. Those two figures were counted against the tree rather than
+    // remembered, and the first draft of this sentence said "fourteen" and
+    // then enumerated fifteen — which is the same failure as the four
+    // corrections above, caught here only because the count was re-run. If
+    // you edit this paragraph, re-measure it; do not adjust it.
     //
     // **Phase 160's own second pass corrected this file again, in the same
     // direction, and that is now three rounds running.** Two of the Phase 159
