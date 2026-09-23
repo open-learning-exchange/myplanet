@@ -115,6 +115,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         }
 
         addMeetupDialog?.setOnDismissListener {
+            pendingSaveButton = null
             if (selectedDates.contains(clickedCalendar)) {
                 selectedDates.remove(clickedCalendar)
             }

@@ -86,7 +86,13 @@ class AddHealthActivity : AppCompatActivity() {
             "notes" to otherNeed
         )
 
-        userId?.let { viewModel.saveHealthData(it, userData) }
+        val id = userId
+        if (id == null) {
+            binding.btnSubmit.isEnabled = true
+            Utilities.toast(this, getString(R.string.unable_to_add_health_record))
+            return
+        }
+        viewModel.saveHealthData(id, userData)
     }
 
     private fun initViews() {
@@ -133,6 +139,11 @@ class AddHealthActivity : AppCompatActivity() {
                 Utilities.toast(this@AddHealthActivity, getString(R.string.my_health_saved_successfully))
                 finish()
             }
+        }
+
+        collectWhenStarted(viewModel.saveFailed) {
+            binding.btnSubmit.isEnabled = true
+            Utilities.toast(this@AddHealthActivity, getString(R.string.unable_to_add_health_record))
         }
     }
 
