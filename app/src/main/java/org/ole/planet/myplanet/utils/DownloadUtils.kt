@@ -7,6 +7,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.annotation.VisibleForTesting
 import androidx.core.app.NotificationCompat
@@ -21,6 +22,7 @@ import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.services.DownloadWorker
 
 object DownloadUtils {
+    private const val TAG = "DownloadUtils"
     private const val DOWNLOAD_CHANNEL = "DownloadChannel"
     private const val COMPLETION_CHANNEL = "DownloadCompletionChannel"
     private const val WORKER_CHANNEL = "DownloadWorkerChannel"
@@ -178,7 +180,7 @@ object DownloadUtils {
             try {
                 DownloadService.startService(context, urlsKey, fromSync)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "startDownloadServiceSafely failed", e)
                 handleForegroundServiceNotAllowed(context, urlsKey, fromSync)
             }
         } else {

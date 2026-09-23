@@ -734,16 +734,16 @@ When making changes, verify:
 | Menu files | 2 |
 | XML config files | 3 |
 
-### AndroidManifest Permissions (14 `<uses-permission>` in the main manifest)
+### AndroidManifest Permissions (15 `<uses-permission>` in the main manifest)
 
 **Network**: INTERNET, ACCESS_NETWORK_STATE, ACCESS_WIFI_STATE, CHANGE_WIFI_STATE, CHANGE_NETWORK_STATE
-**Device**: CAMERA, RECORD_AUDIO, WAKE_LOCK
-**System**: REQUEST_INSTALL_PACKAGES (default flavor only — `app/src/lite/AndroidManifest.xml` is a three-line manifest whose sole job is `tools:node="remove"` on it)
+**Device**: CAMERA, RECORD_AUDIO, WAKE_LOCK, BLUETOOTH (`android:required="false"` — Wi-Fi P2P resource sharing, see `NetworkUtils`/`DialogUtils`)
+**System**: REQUEST_INSTALL_PACKAGES (default flavor only — `app/src/lite/AndroidManifest.xml` is a three-line manifest whose sole job is `tools:node="remove"` on it); PACKAGE_USAGE_STATS (`tools:ignore="ProtectedPermissions"` — used by `MyPlanet.queryUsageStats` and checked at runtime in `BasePermissionActivity`)
 **Notifications**: POST_NOTIFICATIONS, C2DM RECEIVE
 **Foreground services**: FOREGROUND_SERVICE_DATA_SYNC (FOREGROUND_SERVICE appears only as the `android:permission` attribute on the DownloadService `<service>` element, not as a `<uses-permission>`)
-**Other**: SEND_DOWNLOAD_COMPLETED_INTENTS; REQUEST_WRITE_PERMISSION (not a real Android permission — candidate for removal)
+**Other**: SEND_DOWNLOAD_COMPLETED_INTENTS
 
-Not declared, despite older docs claiming them: SYSTEM_ALERT_WINDOW, PACKAGE_USAGE_STATS, BLUETOOTH.
+Not declared: SYSTEM_ALERT_WINDOW, REQUEST_WRITE_PERMISSION (not a real Android permission — both removed from the manifest; older revisions of this doc still listed them).
 
 ---
 
