@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.model
 
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 
 object ChatSharePayload {
     fun buildShareMap(
@@ -19,7 +19,7 @@ object ChatSharePayload {
         serializedMap["aiProvider"] = chat.aiProvider ?: ""
         serializedMap["createdDate"] = "$nowMillis"
         serializedMap["updatedDate"] = "$nowMillis"
-        serializedMap["conversations"] = JsonUtils.gson.toJson(serializedConversations)
+        serializedMap["conversations"] = GsonUtils.gson.toJson(serializedConversations)
 
         val map = HashMap<String?, String>()
         map["message"] = note
@@ -28,7 +28,7 @@ object ChatSharePayload {
         map["messageType"] = team?.teamType ?: ""
         map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
         map["chat"] = "true"
-        map["news"] = JsonUtils.gson.toJson(serializedMap)
+        map["news"] = GsonUtils.gson.toJson(serializedMap)
 
         return map
     }

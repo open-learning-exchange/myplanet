@@ -5,8 +5,6 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -124,12 +122,7 @@ class CoursesViewModel @Inject constructor(
 
                     val allCourseIds = validCourses.mapNotNull { it.courseId }
 
-                    val progressMap = coroutineScope {
-                        val progressDeferred = async {
-                            progressRepository.getCourseProgress(allCourseIds, userId)
-                        }
-                        progressDeferred.await()
-                    }
+                    val progressMap = progressRepository.getCourseProgress(allCourseIds, userId)
 
                     val tagsMap = coursesRepository.getCourseTagsBulk(allCourseIds)
                         .mapValues { entry -> entry.value.map { it.toTag() } }

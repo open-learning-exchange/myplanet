@@ -10,7 +10,7 @@ import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.RatingPromptLog
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 
 class RatingsRepositoryImpl @Inject constructor(
     private val gson: Gson,
@@ -83,23 +83,23 @@ class RatingsRepositoryImpl @Inject constructor(
             // that bloat the stored blob past SQLite's ~2MB CursorWindow limit, crashing later
             // `SELECT *` reads with SQLiteBlobTooBigException. Attachments aren't needed to
             // round-trip a rating on upload, so drop them before persisting.
-            val userObject = JsonUtils.getJsonObject("user", act).apply { remove("_attachments") }
+            val userObject = GsonUtils.getJsonObject("user", act).apply { remove("_attachments") }
             Rating().apply {
-                _rev = JsonUtils.getString("_rev", act)
-                _id = JsonUtils.getString("_id", act)
-                id = JsonUtils.getString("_id", act)
-                time = JsonUtils.getLong("time", act)
-                title = JsonUtils.getString("title", act)
-                type = JsonUtils.getString("type", act)
-                item = JsonUtils.getString("item", act)
-                rate = JsonUtils.getInt("rate", act)
+                _rev = GsonUtils.getString("_rev", act)
+                _id = GsonUtils.getString("_id", act)
+                id = GsonUtils.getString("_id", act)
+                time = GsonUtils.getLong("time", act)
+                title = GsonUtils.getString("title", act)
+                type = GsonUtils.getString("type", act)
+                item = GsonUtils.getString("item", act)
+                rate = GsonUtils.getInt("rate", act)
                 isUpdated = false
-                comment = JsonUtils.getString("comment", act)
-                user = JsonUtils.gson.toJson(userObject)
-                userId = JsonUtils.getString("_id", userObject)
-                parentCode = JsonUtils.getString("parentCode", act)
-                planetCode = JsonUtils.getString("planetCode", act)
-                createdOn = JsonUtils.getString("createdOn", act)
+                comment = GsonUtils.getString("comment", act)
+                user = GsonUtils.gson.toJson(userObject)
+                userId = GsonUtils.getString("_id", userObject)
+                parentCode = GsonUtils.getString("parentCode", act)
+                planetCode = GsonUtils.getString("planetCode", act)
+                createdOn = GsonUtils.getString("createdOn", act)
             }
         }
         ratingDao.upsertAll(entities)

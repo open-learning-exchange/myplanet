@@ -6,8 +6,12 @@ import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import org.ole.planet.myplanet.utils.JsonUtils
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @Entity(tableName = "feedback", indices = [androidx.room.Index("openTime"), androidx.room.Index("owner"), androidx.room.Index("isUploaded")])
 open class Feedback {
@@ -30,6 +34,7 @@ open class Feedback {
         set(value) {
             field = value
             cachedMessages = null
+            cachedMessageList = null
         }
     var item: String? = null
     var parentCode: String? = null
@@ -38,6 +43,10 @@ open class Feedback {
     @Ignore
     @Transient
     private var cachedMessages: JsonArray? = null
+
+    @Ignore
+    @Transient
+    private var cachedMessageList: List<FeedbackReply>? = null
 
     private fun parsedMessages(): JsonArray {
         if (messages.isNullOrEmpty()) return JsonArray()
@@ -48,13 +57,14 @@ open class Feedback {
     }
 
     fun setMessages(messages: JsonArray?) {
-        this.messages = JsonUtils.gson.toJson(messages)
+        this.messages = GsonUtils.gson.toJson(messages)
     }
 
     @get:Ignore
     val messageList: List<FeedbackReply>?
         get() {
             if (messages.isNullOrEmpty()) return null
+            cachedMessageList?.let { return it }
             val feedbackReplies: MutableList<FeedbackReply> = ArrayList()
 
             val ar = parsedMessages()
@@ -68,6 +78,7 @@ open class Feedback {
                     )
                 )
             }
+            cachedMessageList = feedbackReplies
             return feedbackReplies
         }
 
@@ -86,26 +97,28 @@ open class Feedback {
 
     companion object {
         fun serializeFeedback(feedback: Feedback): JsonObject {
-            val `object` = JsonObject()
-            `object`.addProperty("title", feedback.title)
-            `object`.addProperty("source", feedback.source)
-            `object`.addProperty("status", feedback.status)
-            `object`.addProperty("priority", feedback.priority)
-            `object`.addProperty("owner", feedback.owner)
-            `object`.addProperty("openTime", feedback.openTime)
-            `object`.addProperty("type", feedback.type)
-            `object`.addProperty("url", feedback.url)
-            `object`.addProperty("parentCode", feedback.parentCode)
-            `object`.addProperty("state", feedback.state)
-            `object`.addProperty("item", feedback.item)
-            if (feedback._id != null) `object`.addProperty("_id", feedback._id)
-            if (feedback._rev != null) `object`.addProperty("_rev", feedback._rev)
-
-            try {
-                `object`.add("messages", JsonParser.parseString(feedback.messages))
+            val messagesJson = try {
+                JsonParser.parseString(feedback.messages)
             } catch (err: Exception) {
                 err.printStackTrace()
+                null
             }
+            val `object` = buildJsonObject {
+                put("title", feedback.title)
+                put("source", feedback.source)
+                put("status", feedback.status)
+                put("priority", feedback.priority)
+                put("owner", feedback.owner)
+                put("openTime", feedback.openTime)
+                put("type", feedback.type)
+                put("url", feedback.url)
+                put("parentCode", feedback.parentCode)
+                put("state", feedback.state)
+                put("item", feedback.item)
+                if (feedback._id != null) put("_id", feedback._id)
+                if (feedback._rev != null) put("_rev", feedback._rev)
+                if (messagesJson != null) put("messages", messagesJson.toKotlinx())
+            }.toGson()
             `object`.addDocumentOrigin()
             return `object`
         }

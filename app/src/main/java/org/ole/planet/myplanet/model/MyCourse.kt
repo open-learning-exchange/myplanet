@@ -8,9 +8,15 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.FileUtils.getOlePath
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @Entity(tableName = "courses", indices = [Index("courseId"), Index("_id"), Index("courseTitleNormal"), Index("gradeLevel"), Index("subjectLevel")])
 open class MyCourse(
@@ -92,7 +98,7 @@ open class MyCourse(
         fun saveConcatenatedLinksToPrefs(spm: SharedPrefManager) {
             val existingJsonLinks = spm.getConcatenatedLinks()
             val existingConcatenatedLinks = if (existingJsonLinks != null) {
-                JsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toHashSet()
+                GsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toHashSet()
             } else {
                 hashSetOf()
             }
@@ -101,44 +107,40 @@ open class MyCourse(
                 linksToProcess = concatenatedLinks.toList()
             }
             existingConcatenatedLinks.addAll(linksToProcess)
-            val jsonConcatenatedLinks = JsonUtils.gson.toJson(existingConcatenatedLinks)
+            val jsonConcatenatedLinks = GsonUtils.gson.toJson(existingConcatenatedLinks)
             spm.setConcatenatedLinks(jsonConcatenatedLinks)
         }
 
-        fun serialize(course: MyCourse, resourcesByStepId: Map<String?, List<MyLibrary>>): JsonObject {
-            val obj = JsonObject()
-            obj.addProperty("_id", course.courseId)
-            obj.addProperty("_rev", course.courseRev)
-            obj.addProperty("courseTitle", course.courseTitle)
-            obj.addProperty("description", course.description)
-            obj.addProperty("languageOfInstruction", course.languageOfInstruction)
-            obj.addProperty("gradeLevel", course.gradeLevel)
-            obj.addProperty("subjectLevel", course.subjectLevel)
-            obj.addProperty("createdDate", course.createdDate)
-            obj.addProperty("method", course.method)
-            obj.addProperty("memberLimit", course.memberLimit)
-            course.coverFileName?.let { obj.addProperty("coverFileName", it) }
+        fun serialize(course: MyCourse, resourcesByStepId: Map<String?, List<MyLibrary>>): JsonObject = buildJsonObject {
+            put("_id", course.courseId)
+            put("_rev", course.courseRev)
+            put("courseTitle", course.courseTitle)
+            put("description", course.description)
+            put("languageOfInstruction", course.languageOfInstruction)
+            put("gradeLevel", course.gradeLevel)
+            put("subjectLevel", course.subjectLevel)
+            put("createdDate", course.createdDate)
+            put("method", course.method)
+            put("memberLimit", course.memberLimit)
+            course.coverFileName?.let { put("coverFileName", it) }
 
-            val stepsArray = JsonArray()
+            put("steps", buildJsonArray {
+                course.courseSteps?.forEach { step ->
+                    add(buildJsonObject {
+                        put("stepTitle", step.stepTitle)
+                        put("description", step.description)
+                        put("id", step.id)
 
-            course.courseSteps?.forEach { step ->
-                val stepObj = JsonObject()
-                stepObj.addProperty("stepTitle", step.stepTitle)
-                stepObj.addProperty("description", step.description)
-                stepObj.addProperty("id", step.id)
-
-                val resourcesArray = JsonArray()
-                val stepResources = resourcesByStepId[step.id] ?: emptyList()
-
-                stepResources.forEach { resource ->
-                    resourcesArray.add(resource.serializeResource())
+                        val stepResources = resourcesByStepId[step.id] ?: emptyList()
+                        put("resources", buildJsonArray {
+                            stepResources.forEach { resource ->
+                                add(resource.serializeResource().toKotlinx())
+                            }
+                        })
+                    })
                 }
-                stepObj.add("resources", resourcesArray)
-                stepsArray.add(stepObj)
-            }
-            obj.add("steps", stepsArray)
-            obj.add("images", JsonArray())
-            return obj
-        }
+            })
+            put("images", buildJsonArray { })
+        }.toGson()
     }
 }
