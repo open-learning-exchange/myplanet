@@ -153,7 +153,7 @@ void main() {
     // family is the risky part), the rest of `SubmissionDao` above, `NewsDao`,
     // `CourseDao`/`CourseStepDao`, then `NotificationDao`.
     final uncovered = corpus.length - _compared.length;
-    expect(uncovered, 316 - 137);
+    expect(uncovered, 316 - 172);
   });
 }
 
@@ -257,7 +257,7 @@ const _corpusSize = 316;
 
 /// Entries in [_compared], stated separately so the map and the claim about it
 /// cannot drift apart.
-const _comparedCount = 137;
+const _comparedCount = 172;
 
 /// Queries a lane has read against the port's Drift builder and reached a
 /// verdict on, with the digest the statement had at that moment.
@@ -633,4 +633,184 @@ const _compared = <String, String>{
   // because this is the write in the `IS`-vs-`=` class with the largest blast
   // radius: without the scope it clears a peer's server-granted pass.
   'CourseProgressDao.updatePassedByCourseAndStep': '21bb072171b2',
+
+  // ---------------------------------------------------------------------
+  // Phase 160 Lane 3, taking the running order this file states above.
+  //
+  // **`ApkLogDao`'s four statements are deliberately left uncompared.** They
+  // are in the corpus and they are the obvious cheap win, and taking them
+  // would have been dishonest: Lane 1 is porting that table this round, so
+  // there is no port counterpart on this branch to read them against. An
+  // entry recording a comparison against a method that does not exist yet is
+  // the inflation this file's header refuses.
+  // ---------------------------------------------------------------------
+
+  // --- NewsDao, the last four ------------------------------------------
+  // `getById` is the primary key, so the port's `getSingleOrNull` without a
+  // `LIMIT 1` cannot return two rows where Kotlin returns one.
+  'NewsDao.getById': '09bfeba3cec8',
+  'NewsDao.getAll': 'f2d049eef89b',
+  // **No port counterpart on the `id` column, and the reason is worth a line
+  // because the shape reads like a gap.** Kotlin's one caller is
+  // `VoicesRepositoryImpl.markNewsUploaded` (`:52`), a fetch-then-mutate over
+  // the whole row set; the port's `voices_repository.markUploaded` (`:1044`)
+  // writes each row by id instead, so it needs no bulk read. The port's
+  // `NewsDao.getByDocIds` is the same statement on `docId`, not `id`, and is
+  // a different question.
+  'NewsDao.getByIds': 'd997732fcabd',
+  'NewsDao.deleteByIds': '125a745485e4',
+
+  // --- CourseDao / CourseStepDao ---------------------------------------
+  // **The port answers three Kotlin columns with one, and it is the same rows
+  // — but only because of what the mapper writes.** Kotlin's
+  // `getByCourseId` is `courseId = :x OR id = :x LIMIT 1` and
+  // `getByCourseIdsInternal` is `courseId IN (…) OR id IN (…) OR _id IN (…)`,
+  // a three-way alternation over columns the port's `Courses` table also has
+  // (`id`, `couchId`/`_id`, `courseId` — `tables.dart:5-8`). The port's
+  // `CourseDao.getById`/`getByIds` test `id` alone. That is safe here and not
+  // in general: `CourseMapper.fromDoc` (`course_mapper.dart:73-75`) writes the
+  // document's `_id` into **all three** columns, and it is the only writer of
+  // the table in `lib/`, so the three predicates select identically. A second
+  // writer that set `courseId` to anything else would silently narrow every
+  // one of these lookups, which is why the alternation is recorded here rather
+  // than dismissed.
+  'CourseDao.getByCourseId': '7b223bebeeea',
+  'CourseDao.observeByCourseId': '7b223bebeeea',
+  'CourseDao.getByCourseIdsInternal': '4ac5ca683dc9',
+  // Same statement, and `observeAll` has **no caller in `app/src/main`** while
+  // `getAll` has three (`CoursesRepositoryImpl.kt:107,275,324`). The port's
+  // nearest is `watchCourses()` with every filter omitted, which adds
+  // `ORDER BY courseTitleNormal`; Kotlin sorts afterwards in `mapCourses`'
+  // consumers. Stronger, not different.
+  'CourseDao.getAll': '321a08fd26e9',
+  'CourseDao.observeAll': '321a08fd26e9',
+  // The port folds `CourseStepDao` into its own `CourseDao`: `getSteps` and
+  // `watchSteps` are `getByCourseId`, and both add
+  // `ORDER BY stepIndex` where Kotlin has no `ORDER BY` and leans on insertion
+  // order from the course document. `stepCountsByCourseIds` is the plural,
+  // chunked and aggregated in SQL rather than returning rows.
+  'CourseStepDao.getByCourseId': 'a8cb34df37c3',
+  'CourseStepDao.getByCourseIds': '96498e6ba6f3',
+  // **No port counterpart and none is owed.** Its one caller is
+  // `CoursesRepositoryImpl.getCourseStepData(stepId, userId)` (`:549-551`),
+  // which assembles a step's resources, exams and survey from a step id alone.
+  // The port cannot need it: its step ids are positional
+  // (`CourseMapper.stepIdFor` is `'$courseId:$index'`,
+  // `course_mapper.dart:198`), so a step is only ever reached through the
+  // course that owns it and the screen already holds `getSteps(courseId)`.
+  'CourseStepDao.getById': 'dda73647ccb8',
+
+  // --- NotificationDao, the eleven remaining ---------------------------
+  // **The badge counts a population the list refuses to show, in both apps.**
+  // `getNotifications` (compared above) carries
+  // `message != 'INVALID' AND message != ''`; this does not. So a row whose
+  // message failed to parse is counted by the bell and then absent from the
+  // list the bell opens. The port reproduces it exactly — `watchUnreadCount`
+  // is `_userMatch & isRead = false` with no message predicate, against
+  // `watchForUser`'s two `.not()` clauses. Recorded as parity rather than
+  // repaired: the divergence is Kotlin's own and closing it here would make
+  // the two apps disagree about an unread count.
+  'NotificationDao.getUnreadCount': '0a7c2a5c7e72',
+  // The singular; the port's `markOneAsRead` is the same statement written
+  // out in raw SQL, `CASE WHEN is_from_server` included.
+  'NotificationDao.markAsRead': '63986920dd24',
+  // **The plural, and the one entry here that needs its reasoning kept.**
+  // Kotlin sets `isRead`, `createdAt` and the conditional `needsSync` in
+  // **one** statement over `id IN (:ids)`. The port splits it into two writes
+  // (`app_database.dart`: the companion update, then a `needsSync` update
+  // filtered on `isFromServer`). That is the shape Phase 98 recorded as a
+  // defect — a read-then-flag whose second statement can no longer identify
+  // the rows the first changed — and here it is **safe, for the reason that
+  // rule gives**: the ids are captured first (`values`), so the second write
+  // re-selects by `id IN (values) AND is_from_server`, never by
+  // `is_read = 1`. Written down so the next reader neither "fixes" it into
+  // Phase 98's bug nor reports it as one.
+  'NotificationDao.markAsRead#2': '18fc7688b0e1',
+  // `WHERE userId = :userId AND isRead = 0` — **no `SYSTEM` arm**, where
+  // `getUnreadCount` above has one for an admin. So "mark all read" leaves an
+  // admin's SYSTEM notifications unread in both apps. The port's
+  // `markAllAsRead` is the same single statement and the same population. The
+  // *display* then diverges in the port's favour and not by design: Kotlin's
+  // `NotificationsViewModel.markAllAsRead` (`:184`) sets `_unreadCount.value
+  // = 0` optimistically, so the badge shows zero and jumps back on the next
+  // recount, while the port's badge is a drift stream that re-emits the true
+  // residual immediately.
+  'NotificationDao.markAllUnreadAsRead': '1e06a5d7c508',
+  // **No port counterpart, and the reactive stream is why.** Kotlin reads the
+  // unread ids *before* the update purely so
+  // `NotificationsViewModel.markAllAsRead` can patch its in-memory
+  // `MutableStateFlow` list without re-querying (`:177-189`). The port's list
+  // is `watchForUser`, a drift stream over the same table, so the write
+  // re-emits it. Behaviour moved across the boundary rather than lost — and
+  // note it carries the same missing `SYSTEM` arm as the update it precedes.
+  'NotificationDao.getUnreadIds': '8c47f026e237',
+  // An existence probe (`SELECT id … WHERE id IN (:ids)`) used twice, to
+  // narrow a caller's id set to rows that exist before marking
+  // (`NotificationsRepositoryImpl.kt:126`) or deleting (`:500`). The port asks
+  // the same question through `NotificationDao.getByIds(...).keys`
+  // (`notifications_repository.dart:75,131`) — a widened projection over
+  // identical rows.
+  'NotificationDao.getIdsByIds': '9ab385a3e868',
+  // The port chunks this at the SQLite variable limit and Kotlin does not.
+  // Not a port gap: `bulkInsertFromSync` (`:511`) hands it every id in a sync
+  // page, so the **Kotlin** is the side that can exceed 999 bound variables.
+  'NotificationDao.getByIds': '6d93610f88e8',
+  'NotificationDao.getById': '5d990dda3c25',
+  'NotificationDao.deleteById': '4214b52de826',
+  'NotificationDao.deleteByIds': 'ac097307bbc7',
+  // Kotlin splits the sync acknowledgement by whether the server returned a
+  // revision: this one clears `needsSync` and leaves `rev` untouched, while
+  // the non-null half goes through a hand-built `CASE id WHEN … END` raw
+  // query. The port's `markSynced(id, rev)` is one method doing both, with
+  // `Value.absent()` for a null `rev` — which is precisely "leave the column
+  // alone", the same rule Phase 56 established for the security-data write.
+  'NotificationDao.markSyncedNullRevs': '148e55d04d8d',
+
+  // --- The six fully-uncompared small DAOs ------------------------------
+  // Three different spellings of "this row has not been uploaded yet", and
+  // each one is the class where a port silently disagrees, so each was
+  // checked against its column's nullability rather than its wording:
+  //
+  //  * `course_activity`: `_rev IS NULL AND type != 'sync'`. `CourseActivity._rev`
+  //    is `String?` and defaults null, so `IS NULL` is the right test, and the
+  //    `type` clause keeps sync rows out of this pipeline. The port is the
+  //    same two clauses (`rev.isNull() & type.equals(ActivityTypes.sync).not()`).
+  //  * `search_activity`: `_rev = ''` — strict equality, which would exclude a
+  //    NULL row. It cannot arise: `SearchActivity._rev` is a non-null
+  //    `String = ""` (`SearchActivity.kt:26`), and the port's column is
+  //    `text().named('_rev').withDefault(const Constant(''))`
+  //    (`tables.dart`), non-nullable with the same default. Both sides are
+  //    consistent with themselves; neither is one nullable column away from
+  //    never uploading anything.
+  //  * `news_log`: `_id IS NULL OR _id = ''`, and see below.
+  'CourseActivityDao.getPendingUploads': '182727d23df2',
+  'CourseActivityDao.markUploaded': '67971ee47ca8',
+  'SearchActivityDao.getPendingUploads': '2061a81b76b0',
+  'SearchActivityDao.markUploaded': '1a25fb2886db',
+  // **No port counterpart, and none is owed, because the Kotlin table has no
+  // writer.** `newsLogDao.insert` has **zero callers in `app/src/main`** and
+  // nothing anywhere constructs a `NewsLog`; the only references are the read
+  // sweep (`VoicesRepositoryImpl:509-514`) and a complete upload pipeline
+  // wired around it (`UploadConfigs.kt:62-68`, serializer and all). So
+  // `getPendingUploads` returns empty for ever and the pipeline uploads
+  // nothing. Recorded rather than left blank because the shape is exactly
+  // Phase 158's fifth question — *does Kotlin offer something the port never
+  // built?* — and the honest answer here is no: a lane that saw the missing
+  // table and ported it would be building a feature Kotlin does not ship.
+  // Phase 149's rule, and the fourth instance of it in this file.
+  'NewsLogDao.getPendingUploads': 'd055a59fea56',
+  'NewsLogDao.markUploaded': 'a70474fc2653',
+  // The port narrows `getByIds` by dropping empty ids before binding; an
+  // empty id matches no primary key either way, so the rows are identical.
+  'SubmitPhotosDao.getUnuploaded': '5d7cf3e142d9',
+  'SubmitPhotosDao.getByIds': '75d570557986',
+  'SubmitPhotosDao.markUploaded': '4d78fa70e1e8',
+  // `updateCount` is an `UPDATE … WHERE parentId = … AND type = …` whose one
+  // caller reads its row count and inserts when it is zero
+  // (`NotificationsRepositoryImpl.kt:368`) — an upsert written as two steps.
+  // The port's `upsert` is that upsert. Same end state; the port cannot
+  // reach the window between the two statements, which is a narrowing.
+  'TeamNotificationDao.updateCount': '65344064e897',
+  'TeamNotificationDao.getByTypeAndParentIds': '08049ab5c51a',
+  'UserChallengeActionsDao.countByUserAndType': '6ecaa1081fc0',
 };
