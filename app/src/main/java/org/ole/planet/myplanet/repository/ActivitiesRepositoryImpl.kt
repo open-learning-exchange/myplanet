@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
@@ -42,6 +43,8 @@ import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.distinctByContent
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 class ActivitiesRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -340,8 +343,8 @@ class ActivitiesRepositoryImpl @Inject constructor(
                             val `object` = semaphore.withPermit {
                                 apiInterface.postDoc(
                                     UrlUtils.header, "application/json",
-                                    "${UrlUtils.getUrl()}/login_activities", activityData.serialized
-                                ).body()
+                                    "${UrlUtils.getUrl()}/login_activities", activityData.serialized.toKotlinx().jsonObject
+                                ).body()?.toGson()
                             }
                             activityData.id to `object`
                         } catch (e: IOException) {
@@ -434,7 +437,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
             UrlUtils.header,
             "application/json",
             "${UrlUtils.getUrl()}/myplanet_activities",
-            MyPlanet.getNormalMyPlanetActivities(context, sharedPrefManager, userModel)
+            MyPlanet.getNormalMyPlanetActivities(context, sharedPrefManager, userModel).toKotlinx().jsonObject
         )
 
         val response = apiInterface.getJsonObject(
@@ -442,7 +445,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
             "${UrlUtils.getUrl()}/myplanet_activities/${org.ole.planet.myplanet.utils.VersionUtils.getAndroidId(context)}@${NetworkUtils.getUniqueIdentifier()}"
         )
 
-        var `object` = response.body()
+        var `object` = response.body()?.toGson()
 
         if (`object` != null) {
             val usages = `object`.getAsJsonArray("usages")
@@ -461,7 +464,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
             UrlUtils.header,
             "application/json",
             "${UrlUtils.getUrl()}/myplanet_activities",
-            `object`
+            `object`.toKotlinx().jsonObject
         )
     }
 }

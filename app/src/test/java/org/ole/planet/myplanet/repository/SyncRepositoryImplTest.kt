@@ -1,9 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.util.Log
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
-import com.google.gson.JsonPrimitive
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -16,6 +13,12 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject as KJsonObject
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -151,12 +154,12 @@ class SyncRepositoryImplTest {
     fun `processShelfParallel dispatches known shelf types to correct repositories`() = runTest {
         val shelfId = "shelf123"
 
-        val shelfDoc = JsonObject().apply {
-            add("_id", JsonPrimitive(shelfId))
-            add("resourceIds", JsonArray().apply { add("res1") })
-            add("courseIds", JsonArray().apply { add("course1") })
-            add("meetupIds", JsonArray().apply { add("meetup1") })
-            add("myTeamIds", JsonArray().apply { add("team1") })
+        val shelfDoc = buildJsonObject {
+            put("_id", shelfId)
+            putJsonArray("resourceIds") { add("res1") }
+            putJsonArray("courseIds") { add("course1") }
+            putJsonArray("meetupIds") { add("meetup1") }
+            putJsonArray("myTeamIds") { add("team1") }
         }
 
         coEvery {
@@ -165,11 +168,11 @@ class SyncRepositoryImplTest {
             Response.success(shelfDoc)
         }
 
-        fun createDocResponse(id: String): Response<JsonObject> {
-            val doc = JsonObject().apply { addProperty("_id", id) }
-            val row = JsonObject().apply { add("doc", doc) }
-            val rows = JsonArray().apply { add(row) }
-            val body = JsonObject().apply { add("rows", rows) }
+        fun createDocResponse(id: String): Response<KJsonObject> {
+            val doc = buildJsonObject { put("_id", id) }
+            val row = buildJsonObject { put("doc", doc) }
+            val rows = buildJsonArray { add(row) }
+            val body = buildJsonObject { put("rows", rows) }
             return Response.success(body)
         }
 
@@ -182,7 +185,7 @@ class SyncRepositoryImplTest {
                 url.contains("courses") -> createDocResponse("course1")
                 url.contains("meetups") -> createDocResponse("meetup1")
                 url.contains("teams") -> createDocResponse("team1")
-                else -> Response.success(JsonObject())
+                else -> Response.success(KJsonObject(emptyMap()))
             }
         }
 
@@ -204,8 +207,8 @@ class SyncRepositoryImplTest {
     fun `processShelfParallel handles unknown shelf type by performing no dispatch`() = runTest {
         val shelfId = "shelfUnknown"
 
-        val shelfDoc = JsonObject().apply {
-            add("unknownKey", JsonArray().apply { add("unknownItem1") })
+        val shelfDoc = buildJsonObject {
+            putJsonArray("unknownKey") { add("unknownItem1") }
         }
 
         coEvery {
@@ -217,10 +220,10 @@ class SyncRepositoryImplTest {
         coEvery {
             apiInterface.postDoc(any(), any(), any(), any())
         } answers {
-            Response.success(JsonObject().apply {
-                val doc = JsonObject().apply { addProperty("_id", "unknownItem1") }
-                val row = JsonObject().apply { add("doc", doc) }
-                add("rows", JsonArray().apply { add(row) })
+            Response.success(buildJsonObject {
+                val doc = buildJsonObject { put("_id", "unknownItem1") }
+                val row = buildJsonObject { put("doc", doc) }
+                putJsonArray("rows") { add(row) }
             })
         }
 

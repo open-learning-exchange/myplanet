@@ -4,9 +4,6 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
 import com.google.gson.Gson
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
-import com.google.gson.JsonPrimitive
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -28,6 +25,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.put
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.ResponseBody
 import okhttp3.ResponseBody.Companion.toResponseBody
@@ -624,8 +623,8 @@ class ConfigurationsRepositoryImplTest {
 
         // Mock checkConfigurationUrl response (versionsUrl)
         val versionsUrl = "$url/versions"
-        val versionsJson = JsonObject().apply {
-            add("minapk", JsonPrimitive("1.0.0"))
+        val versionsJson = kotlinx.serialization.json.buildJsonObject {
+            put("minapk", "1.0.0")
         }
         val versionsResponse = Response.success(200, versionsJson)
 
@@ -640,17 +639,17 @@ class ConfigurationsRepositoryImplTest {
         val couchdbURL = "http://satellite:1234@test.url:80"
         val configUrl = "http://satellite:1234@test.url:80/configurations/_all_docs?include_docs=true"
 
-        val docJson = JsonObject().apply {
-            add("code", JsonPrimitive("config_code"))
-            add("parentCode", JsonPrimitive("parent_code"))
+        val docJson = kotlinx.serialization.json.buildJsonObject {
+            put("code", "config_code")
+            put("parentCode", "parent_code")
         }
-        val rowJson = JsonObject().apply {
-            add("id", JsonPrimitive("config_id"))
-            add("doc", docJson)
+        val rowJson = kotlinx.serialization.json.buildJsonObject {
+            put("id", "config_id")
+            put("doc", docJson)
         }
-        val rowsArray = JsonArray().apply { add(rowJson) }
-        val configJson = JsonObject().apply {
-            add("rows", rowsArray)
+        val rowsArray = kotlinx.serialization.json.buildJsonArray { add(rowJson) }
+        val configJson = kotlinx.serialization.json.buildJsonObject {
+            put("rows", rowsArray)
         }
         val configResponse = Response.success(200, configJson)
 
@@ -699,8 +698,8 @@ class ConfigurationsRepositoryImplTest {
 
         // Mock checkConfigurationUrl response (versionsUrl)
         val versionsUrl = "$url/versions"
-        val versionsJson = JsonObject().apply {
-            add("minapk", JsonPrimitive("2.0.0"))
+        val versionsJson = kotlinx.serialization.json.buildJsonObject {
+            put("minapk", "2.0.0")
         }
         val versionsResponse = Response.success(200, versionsJson)
 

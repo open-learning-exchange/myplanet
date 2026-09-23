@@ -150,7 +150,7 @@ class RetryRepositoryImplTest {
             endpoint = "test"
             httpMethod = "POST"
         }
-        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns Response.success(JsonObject())
+        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns Response.success(kotlinx.serialization.json.JsonObject(emptyMap()))
 
         val result = repository.executeOperation(op)
 

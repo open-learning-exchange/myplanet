@@ -12,6 +12,7 @@ import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
 import org.ole.planet.myplanet.di.PlainGson
@@ -24,6 +25,8 @@ import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class HealthRepositoryImpl @Inject constructor(
@@ -123,11 +126,12 @@ class HealthRepositoryImpl @Inject constructor(
                                 UrlUtils.header,
                                 "application/json",
                                 "${UrlUtils.getUrl()}/health",
-                                serialize(pojo)
+                                serialize(pojo).toKotlinx().jsonObject
                             )
+                            val resBody = res.body()?.toGson()
 
-                            if (res.body() != null && res.body()?.has("id") == true) {
-                                val rev = res.body()?.get("rev")?.asString
+                            if (resBody != null && resBody.has("id") == true) {
+                                val rev = resBody.get("rev")?.asString
                                 return@async pojo._id to rev
                             }
                         } catch (e: Throwable) {
