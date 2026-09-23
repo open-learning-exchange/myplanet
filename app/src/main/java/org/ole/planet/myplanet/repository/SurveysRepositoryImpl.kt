@@ -33,7 +33,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
@@ -382,14 +382,14 @@ class SurveysRepositoryImpl @Inject constructor(
 
         for (row in jsonArray) {
             var jsonDoc = row.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = GsonUtils.getJsonObject("doc", jsonDoc)
+            val id = GsonUtils.getString("_id", jsonDoc)
             if (id.startsWith("_design")) continue
 
             val exam = StepExam.insertCourseStepsExams("", "", jsonDoc, "")
             exams += exam
             questions += ExamQuestion.insertExamQuestions(
-                JsonUtils.getJsonArray("questions", jsonDoc),
+                GsonUtils.getJsonArray("questions", jsonDoc),
                 exam.id
             )
         }

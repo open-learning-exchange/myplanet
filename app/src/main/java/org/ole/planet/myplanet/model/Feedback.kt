@@ -8,7 +8,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
@@ -57,7 +57,7 @@ open class Feedback {
     }
 
     fun setMessages(messages: JsonArray?) {
-        this.messages = JsonUtils.gson.toJson(messages)
+        this.messages = GsonUtils.gson.toJson(messages)
     }
 
     @get:Ignore

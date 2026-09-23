@@ -12,7 +12,7 @@ import kotlinx.serialization.Serializable as KSerializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.VersionUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
@@ -38,7 +38,7 @@ class MyPlanet : Serializable {
             model: UserEntity,
             now: Long = System.currentTimeMillis()
         ): JsonObject {
-            val planet = JsonUtils.gson.fromJson(spm.getVersionDetail() ?: "", MyPlanet::class.java)
+            val planet = GsonUtils.gson.fromJson(spm.getVersionDetail() ?: "", MyPlanet::class.java)
             val usages = getTabletUsages(context, spm, now)
             return buildJsonObject {
                 if (planet != null) put("planetVersion", planet.planetVersion)
@@ -52,7 +52,7 @@ class MyPlanet : Serializable {
         }
 
         fun getNormalMyPlanetActivities(context: Context, spm: SharedPrefManager, model: UserEntity): JsonObject {
-            val planet = JsonUtils.gson.fromJson(spm.getVersionDetail() ?: "", MyPlanet::class.java)
+            val planet = GsonUtils.gson.fromJson(spm.getVersionDetail() ?: "", MyPlanet::class.java)
             val postJSON = buildJsonObject {
                 if (planet != null) put("planetVersion", planet.planetVersion)
                 put("last_synced", spm.getLastSync())

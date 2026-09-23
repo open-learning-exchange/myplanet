@@ -59,7 +59,7 @@ class MyCourseTest {
 
         MyCourse.saveConcatenatedLinksToPrefs(spm)
 
-        val savedSet = org.ole.planet.myplanet.utils.JsonUtils.gson.fromJson(
+        val savedSet = org.ole.planet.myplanet.utils.GsonUtils.gson.fromJson(
             capturedJson.captured,
             Array<String>::class.java
         ).toHashSet()

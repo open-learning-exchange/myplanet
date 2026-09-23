@@ -17,7 +17,7 @@ import org.junit.Test
 
 class NewsTest {
 
-    // News logs its parse-failure fallbacks through android.util.Log, and JsonUtils logs on its
+    // News logs its parse-failure fallbacks through android.util.Log, and GsonUtils logs on its
     // own fallback path, neither of which has a JVM implementation in a plain unit test. The
     // malformed-input cases below reach both, so Log needs stubbing. Mirrors HealthExaminationTest.
     @Before
