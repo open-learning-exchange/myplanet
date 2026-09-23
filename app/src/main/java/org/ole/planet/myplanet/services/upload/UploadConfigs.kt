@@ -207,7 +207,7 @@ class UploadConfigs @Inject constructor(
         idExtractor = { it.id },
         markUploaded = { results ->
             // Mark each uploaded feedback; rows that no longer exist are reported as failures.
-            results.filter { result -> !feedbackRepository.markFeedbackUploaded(result.localId) }
+            results.filter { result -> !feedbackRepository.markFeedbackUploaded(result.localId, result.remoteId, result.remoteRev) }
         }
     )
 
