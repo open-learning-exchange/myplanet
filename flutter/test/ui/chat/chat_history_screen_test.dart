@@ -52,7 +52,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('No chats yet'), findsOneWidget);
+    expect(find.text('No previous chats'), findsOneWidget);
     expect(find.byIcon(Icons.chat_bubble_outline), findsOneWidget);
   });
 

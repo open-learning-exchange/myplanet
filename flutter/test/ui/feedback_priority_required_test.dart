@@ -198,9 +198,9 @@ void main() {
     await tester.tap(find.text('Submit'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Please enter your feedback'), findsOneWidget);
+    expect(find.text('Please enter feedback.'), findsOneWidget);
     expect(find.text('Feedback priority is required.'), findsOneWidget);
-    expect(find.text('Please select a feedback type'), findsOneWidget);
+    expect(find.text('Feedback type is required.'), findsOneWidget);
     expect(await database.feedbackDao.getPending(), isEmpty);
   });
 
@@ -223,8 +223,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Feedback priority is required.'), findsNothing);
-    expect(find.text('Please select a feedback type'), findsOneWidget);
-    expect(find.text('Please enter your feedback'), findsOneWidget);
+    expect(find.text('Feedback type is required.'), findsOneWidget);
+    expect(find.text('Please enter feedback.'), findsOneWidget);
   });
 }
 

@@ -107,7 +107,7 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Save'));
     await tester.pump();
 
-    expect(find.text('Enter a valid email address'), findsOneWidget);
+    expect(find.text('Invalid email.'), findsOneWidget);
     expect(notifier.updateCalls, 0);
 
     await tester.enterText(
@@ -489,7 +489,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(notifier.updateCalls, 1);
-    expect(find.text('Enter a valid email address'), findsNothing);
+    expect(find.text('Invalid email.'), findsNothing);
   });
 
   testWidgets('hides the edit button when no user is signed in', (

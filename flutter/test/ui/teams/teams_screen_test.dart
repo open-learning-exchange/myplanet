@@ -127,7 +127,7 @@ void main() {
     await tester.pumpWidget(harness());
     await tester.pumpAndSettle();
 
-    expect(find.text('No teams available'), findsOneWidget);
+    expect(find.text('Teams not available'), findsOneWidget);
   });
 
   testWidgets('a team row shows its name, description and chevron', (

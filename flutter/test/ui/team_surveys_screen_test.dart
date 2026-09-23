@@ -96,7 +96,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('No surveys available'), findsOneWidget);
+    expect(find.text('Surveys not available'), findsOneWidget);
     expect(find.text('No surveys available to adopt'), findsOneWidget);
   });
 
@@ -266,6 +266,6 @@ void main() {
         isTeam: true,
       ),
     ).called(1);
-    expect(find.text('Survey adopted'), findsOneWidget);
+    expect(find.text('Survey adopted successfully!'), findsOneWidget);
   });
 }

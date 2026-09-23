@@ -77,7 +77,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('No financial reports yet'), findsOneWidget);
+    expect(find.text('No reports available'), findsOneWidget);
     // A non-leader sees no add-report FAB.
     expect(find.byType(FloatingActionButton), findsNothing);
   });
@@ -215,7 +215,7 @@ void main() {
       'Wages',
       'Other expenses',
       'Total expenses',
-      'Profit / loss',
+      'Profit/loss',
       'Ending balance',
     ]) {
       expect(find.text(label), findsOneWidget, reason: 'missing row: $label');

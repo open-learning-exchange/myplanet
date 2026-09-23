@@ -300,10 +300,7 @@
     }
   },
   "gradeLevel": "Nivel de grado",
-  "subjectLevel": "Sujeto",
-  "@subjectLevel": {
-    "x-mt": true
-  },
+  "subjectLevel": "Nivel de asignatura",
   "allLevels": "Todos",
   "clearFilters": "Limpiar filtros",
   "@clearFilters": {
@@ -336,9 +333,6 @@
   "phone": "Número de teléfono",
   "level": "Nivel",
   "levels": "Niveles",
-  "@levels": {
-    "x-mt": true
-  },
   "language": "Idioma",
   "languages": "Idiomas",
   "gender": "Género",
@@ -380,10 +374,7 @@
   "@profileSaved": {
     "x-mt": true
   },
-  "invalidEmail": "Introduzca una dirección de correo electrónico válida",
-  "@invalidEmail": {
-    "x-mt": true
-  },
+  "invalidEmail": "Correo electrónico inválido.",
   "appearance": "Apariencia",
   "@appearance": {
     "x-mt": true
@@ -508,9 +499,6 @@
     "x-mt": true
   },
   "taskNotification": "Tarea",
-  "@taskNotification": {
-    "x-mt": true
-  },
   "chatNotification": "Chat",
   "replyNotification": "Nueva respuesta",
   "@replyNotification": {
@@ -916,19 +904,13 @@
   "@surveysUnavailable": {
     "x-mt": true
   },
-  "noSurveys": "No hay encuestas disponibles",
-  "@noSurveys": {
-    "x-mt": true
-  },
+  "noSurveys": "Encuestas no disponibles",
   "untitledSurvey": "Encuesta sin título",
   "@untitledSurvey": {
     "x-mt": true
   },
   "takeSurvey": "Realizar encuesta",
-  "surveyLoadFailed": "No se pudo cargar la encuesta",
-  "@surveyLoadFailed": {
-    "x-mt": true
-  },
+  "surveyLoadFailed": "No se pudo cargar la encuesta. Inténtalo de nuevo.",
   "surveyHasNoQuestions": "Esta encuesta no tiene preguntas.",
   "@surveyHasNoQuestions": {
     "x-mt": true
@@ -1001,11 +983,7 @@
   "@thread": {
     "x-mt": true
   },
-  "surveySubmitFailed": "No se pudieron guardar tus respuestas",
-  "@surveySubmitFailed": {
-    "x-mt": true
-  },
-  "sendSurveyTo": "Seleccionar usuarios para enviar encuesta",
+  "surveySubmitFailed": "No se pudo enviar la encuesta. Inténtalo de nuevo.",
   "sendSurvey": "Enviar encuesta",
   "surveySentToUsers": "Encuesta enviada a usuarios seleccionados",
   "noUsersAvailable": "No hay usuarios disponibles",
@@ -1022,10 +1000,7 @@
   "@teamsUnavailable": {
     "x-mt": true
   },
-  "noTeams": "No hay equipos disponibles",
-  "@noTeams": {
-    "x-mt": true
-  },
+  "noTeams": "Equipos no disponibles",
   "untitledTeam": "Equipo sin título",
   "@untitledTeam": {
     "x-mt": true
@@ -1168,10 +1143,6 @@
   "@resourcesUnavailable": {
     "x-mt": true
   },
-  "noTeamResources": "No hay recursos vinculados a este equipo.",
-  "@noTeamResources": {
-    "x-mt": true
-  },
   "untitledResource": "recurso sin título",
   "@untitledResource": {
     "x-mt": true
@@ -1195,23 +1166,14 @@
   "@fileSelected": {
     "x-mt": true
   },
-  "privateResource": "recurso privado",
-  "@privateResource": {
-    "x-mt": true
-  },
+  "privateResource": "Recurso privado (visible solo para este equipo)",
   "saveChanges": "Guardar cambios",
   "selectOpenWith": "Seleccione abrir con",
   "@selectOpenWith": {
     "x-mt": true
   },
-  "selectMedia": "Seleccionar medios",
-  "@selectMedia": {
-    "x-mt": true
-  },
-  "selectResourceType": "Seleccionar tipo de recurso",
-  "@selectResourceType": {
-    "x-mt": true
-  },
+  "selectMedia": "Medios",
+  "selectResourceType": "Tipo de recurso",
   "linkToLicense": "Enlace a la licencia",
   "noResourcesToAdd": "Todos los recursos disponibles ya están vinculados.",
   "@noResourcesToAdd": {
@@ -1219,10 +1181,6 @@
   },
   "coursesUnavailable": "Los cursos no están disponibles",
   "@coursesUnavailable": {
-    "x-mt": true
-  },
-  "noTeamCourses": "No hay cursos vinculados a este equipo.",
-  "@noTeamCourses": {
     "x-mt": true
   },
   "untitledCourse": "Curso sin título",
@@ -1242,10 +1200,7 @@
   "@reportsUnavailable": {
     "x-mt": true
   },
-  "noReports": "Aún no hay informes financieros",
-  "@noReports": {
-    "x-mt": true
-  },
+  "noReports": "No hay informes disponibles",
   "addReport": "Agregar informe",
   "editReport": "Editar informe",
   "@editReport": {
@@ -1265,10 +1220,7 @@
   },
   "totalIncome": "Ingresos totales",
   "totalExpenses": "Gastos totales",
-  "profitLoss": "Ganancia/pérdida",
-  "@profitLoss": {
-    "x-mt": true
-  },
+  "profitLoss": "Ganancia/Pérdida",
   "endingBalance": "Saldo final",
   "negativeBalance": "¡El saldo actual es negativo!",
   "reportDateDetails": "Informe creado el: {created} | Actualizado el: {updated}",
@@ -1282,10 +1234,7 @@
   "@searchChats": {
     "x-mt": true
   },
-  "noChats": "Aún no hay chats",
-  "@noChats": {
-    "x-mt": true
-  },
+  "noChats": "No hay chats anteriores",
   "noSearchResults": "No hay chats coincidentes",
   "@noSearchResults": {
     "x-mt": true
@@ -1334,27 +1283,12 @@
     "x-mt": true
   },
   "feedbackSaved": "Comentario guardado",
-  "isUrgent": "¿Es esto urgente?",
-  "@isUrgent": {
-    "x-mt": true
-  },
-  "feedbackType": "Tipo de retroalimentación",
-  "@feedbackType": {
-    "x-mt": true
-  },
-  "feedbackTypeRequired": "Please select a feedback type",
-  "@feedbackTypeRequired": {
-    "x-mt": true
-  },
+  "isUrgent": "¿Tu comentario es urgente?",
+  "feedbackType": "Tipo de comentario",
+  "feedbackTypeRequired": "Se requiere tipo de comentario.",
   "feedbackPriorityRequired": "Se requiere prioridad de comentario.",
-  "yourFeedback": "Tus comentarios",
-  "@yourFeedback": {
-    "x-mt": true
-  },
-  "pleaseEnterFeedback": "Por favor ingrese sus comentarios",
-  "@pleaseEnterFeedback": {
-    "x-mt": true
-  },
+  "yourFeedback": "Tu comentario",
+  "pleaseEnterFeedback": "Por favor, ingresa tu comentario.",
   "question": "Pregunta",
   "bug": "Error",
   "suggestion": "Sugerencia",
@@ -1546,10 +1480,7 @@
   "@yearOfBirthRequired": {
     "x-mt": true
   },
-  "invalidYear": "Por favor ingrese un año válido",
-  "@invalidYear": {
-    "x-mt": true
-  },
+  "invalidYear": "Por favor ingrese un año de nacimiento válido",
   "yearBetween": "El año debe estar entre {min} y ​​{max}",
   "@yearBetween": {
     "x-mt": true
@@ -1584,10 +1515,7 @@
   "loadingMedia": "Cargando...",
   "resourceUnavailable": "Este recurso no está disponible para visualización sin conexión",
   "healthRecordNotAvailable": "Registro de salud no disponible",
-  "updateHealth": "Actualizar salud",
-  "@updateHealth": {
-    "x-mt": true
-  },
+  "updateHealth": "Actualizar registro de salud",
   "addHealthRecord": "Agregar registro de salud",
   "@addHealthRecord": {
     "x-mt": true
@@ -1782,10 +1710,7 @@
   "@storageDeleteSelectedConfirm": {
     "x-mt": true
   },
-  "storageDeleteConfirm": "¿Eliminar todos los {category} archivos?",
-  "@storageDeleteConfirm": {
-    "x-mt": true
-  },
+  "storageDeleteConfirm": "¿Eliminar todas las descargas de {category}?",
   "storageSelectedCount": "{count} seleccionado(s)",
   "deleteSelected": "Eliminar seleccionados",
   "deleteAll": "Eliminar todo",
@@ -1821,10 +1746,7 @@
   "@enterPassword": {
     "x-mt": true
   },
-  "retypePassword": "Vuelva a escribir la contraseña",
-  "@retypePassword": {
-    "x-mt": true
-  },
+  "retypePassword": "Confirmar contraseña",
   "becomeMember": "convertirse en miembro",
   "toAccessThisFeatureBecomeAMember": "Actualmente eres un usuario invitado. Para acceder a esta función, hazte miembro.",
   "creatingMember": "Creando cuenta de miembro...",
@@ -1929,10 +1851,7 @@
   "@resourceInformation": {
     "x-mt": true
   },
-  "resourceFor": "Para",
-  "@resourceFor": {
-    "x-mt": true
-  },
+  "resourceFor": "Recurso para",
   "mediaType": "Tipo de medio",
   "@mediaType": {
     "x-mt": true
@@ -2001,10 +1920,7 @@
   "adoptableSurveys": "Encuestas disponibles para adoptar",
   "noAdoptableSurveys": "No hay encuestas disponibles para adoptar",
   "adoptSurvey": "Adoptar encuesta",
-  "surveyAdopted": "Encuesta adoptada",
-  "@surveyAdopted": {
-    "x-mt": true
-  },
+  "surveyAdopted": "¡Encuesta adoptada con éxito!",
   "completedCourse": "curso completado",
   "userNameWithLogins": "{name} ({logins})",
   "@userNameWithLogins": {
@@ -2033,9 +1949,6 @@
   "arabic": "عربى",
   "french": "français",
   "activitySummary": "Actividad",
-  "@activitySummary": {
-    "x-mt": true
-  },
   "lastLogin": "Último inicio de sesión",
   "memberDetail": "Detalle de miembro",
   "@memberDetail": {
@@ -2177,5 +2090,17 @@
   "showLess": "mostrar menos",
   "youWantToConnectToADifferentServer": "¿Estás seguro de que deseas cambiar la configuración? Esta acción borrará los datos de la aplicación",
   "clearData": "Borrar datos",
-  "clearingData": "Borrando datos…"
+  "clearingData": "Borrando datos…",
+  "shareChat": "Compartir chat",
+  "shareWithTeamEnterprise": "Compartir con el equipo/empresa",
+  "addNoteOptional": "Agregar una nota (opcional)",
+  "sendSurveyTo": "Seleccionar usuarios para enviar encuesta",
+  "noTeamCourses": "No hay cursos vinculados a este equipo.",
+  "@noTeamCourses": {
+    "x-mt": true
+  },
+  "noTeamResources": "No hay recursos vinculados a este equipo.",
+  "@noTeamResources": {
+    "x-mt": true
+  }
 }

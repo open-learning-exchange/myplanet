@@ -136,7 +136,7 @@ void main() {
       password,
     );
     await tester.enterText(
-      find.widgetWithText(TextFormField, 'Retype password'),
+      find.widgetWithText(TextFormField, 'Confirm password'),
       password,
     );
   }
@@ -171,7 +171,7 @@ void main() {
         'secret',
       );
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Retype password'),
+        find.widgetWithText(TextFormField, 'Confirm password'),
         'different',
       );
       await tapSubmit(tester);
@@ -185,7 +185,7 @@ void main() {
         'not-an-email',
       );
       await tapSubmit(tester);
-      expect(find.text('Enter a valid email address'), findsOneWidget);
+      expect(find.text('Invalid email.'), findsOneWidget);
     });
 
     testWidgets('accepts a blank email without error', (tester) async {
@@ -194,7 +194,7 @@ void main() {
       await selectMale(tester);
       await tapSubmit(tester);
       await tester.pumpAndSettle();
-      expect(find.text('Enter a valid email address'), findsNothing);
+      expect(find.text('Invalid email.'), findsNothing);
     });
   });
 
@@ -367,7 +367,7 @@ void main() {
         'secret',
       );
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Retype password'),
+        find.widgetWithText(TextFormField, 'Confirm password'),
         'secret',
       );
       await selectMale(tester);
@@ -564,7 +564,7 @@ void main() {
         'secret',
       );
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Retype password'),
+        find.widgetWithText(TextFormField, 'Confirm password'),
         'different',
       );
       await selectMale(tester);
@@ -588,7 +588,7 @@ void main() {
         'secret',
       );
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Retype password'),
+        find.widgetWithText(TextFormField, 'Confirm password'),
         'different',
       );
       await selectMale(tester);
@@ -598,7 +598,7 @@ void main() {
 
       // Fix the retyped password.
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Retype password'),
+        find.widgetWithText(TextFormField, 'Confirm password'),
         'secret',
       );
       await tapSubmit(tester);
