@@ -10,10 +10,13 @@ import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
@@ -72,6 +75,38 @@ class TeamViewPagerListenerTest {
             layout.addView(viewPager2)
             return layout
         }
+    }
+
+    @Test
+    fun `TeamPagerAdapter assigns distinct item IDs for each page position`() {
+        val activity = Robolectric.buildActivity(AppCompatActivity::class.java).setup().get()
+        val hostFragment = TestHostFragment()
+
+        activity.supportFragmentManager.beginTransaction()
+            .add(android.R.id.content, hostFragment)
+            .commitNow()
+
+        val pages = listOf(
+            TeamPageConfig.ChatPage,
+            TeamPageConfig.PlanPage,
+            TeamPageConfig.MembersPage
+        )
+
+        val adapter = TeamPagerAdapter(
+            hostFragment,
+            pages,
+            "team_123",
+            OnChangedListener {},
+            OnChangedListener {}
+        )
+
+        val id0 = adapter.getItemId(0)
+        val id1 = adapter.getItemId(1)
+        val id2 = adapter.getItemId(2)
+
+        assertNotEquals(id0, id1)
+        assertNotEquals(id1, id2)
+        assertEquals(3, adapter.itemCount)
     }
 
     @Test
