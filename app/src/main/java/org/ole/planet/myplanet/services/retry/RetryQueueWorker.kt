@@ -19,7 +19,8 @@ import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.concurrent.TimeUnit
-import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
@@ -131,7 +132,7 @@ class RetryQueueWorker @AssistedInject constructor(
             val semaphore = Semaphore(MAX_CONCURRENT_RETRIES)
 
             // Add timeout for entire batch processing (5 minutes max)
-            withTimeout((5 * 60 * 1000L).milliseconds) {
+            withTimeout(5.minutes) {
                 pendingOperations.chunked(BATCH_SIZE).forEach { batch ->
                     // Check if sync started while we're processing
                     if (isAnySyncRunning()) {
@@ -174,7 +175,7 @@ class RetryQueueWorker @AssistedInject constructor(
     private suspend fun processOperation(operation: RetryOperation): Boolean {
         return try {
             // Timeout for individual operation (30 seconds)
-            withTimeout(30_000L.milliseconds) {
+            withTimeout(30.seconds) {
                 when (retryRepository.executeOperation(operation)) {
                     is RetryOperationResult.Success -> true
                     is RetryOperationResult.RetryableFailure,
