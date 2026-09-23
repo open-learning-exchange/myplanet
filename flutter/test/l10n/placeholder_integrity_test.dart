@@ -473,12 +473,22 @@ void main() {
     // the wipe dialog's button, progress text and message, all three of which
     // ship human translations in every `values-*/strings.xml`. Counted from
     // the tree after the derivation run. Nothing existing changed value.
+    //
+    // The leadership-succession round adds one per locale, recovered rather
+    // than generated: `cannotRemoveUser` derives by name from Kotlin's
+    // `cannot_remove_user` (`values/strings.xml:169`), the toast
+    // `MembersFragment:108-110` shows when a team's last leader cannot be
+    // removed, and it ships a human translation in all five
+    // `values-*/strings.xml`. The French value drops Android's XML escaping
+    // — `L\'utilisateur` in the source is `L'utilisateur` here — which is the
+    // Phase 114 rule, not a retranslation. Counted from the tree at the fold,
+    // not incremented from the previous line. Nothing existing changed value.
     const humanReviewed = {
-      'ar': 432,
-      'es': 484,
-      'fr': 430,
-      'ne': 432,
-      'so': 432,
+      'ar': 433,
+      'es': 485,
+      'fr': 431,
+      'ne': 433,
+      'so': 433,
     };
 
     for (final code in locales) {
