@@ -3,7 +3,7 @@ description: "myPlanet — offline extension of the Planet Learning Management S
 publish_to: 'none'
 
 # Kept in step with the Kotlin app's versionName/versionCode in app/build.gradle.
-version: 0.71.51+7151
+version: 0.72.69+7269
 
 environment:
   sdk: '>=3.11.0 <4.0.0'

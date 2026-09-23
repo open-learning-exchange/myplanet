@@ -115,7 +115,7 @@ void main() {
     // ledger's first live catch — see `NewsDao.getTopLevelTeamMembership`
     // below.
     final uncovered = corpus.length - _compared.length;
-    expect(uncovered, 313 - 78);
+    expect(uncovered, 316 - 83);
   });
 }
 
@@ -215,11 +215,11 @@ Map<String, String> _kotlinQueries() {
 }
 
 /// `@Query` annotations in `app/src/main/.../data/room/dao/`, as of Phase 158.
-const _corpusSize = 313;
+const _corpusSize = 316;
 
 /// Entries in [_compared], stated separately so the map and the claim about it
 /// cannot drift apart.
-const _comparedCount = 78;
+const _comparedCount = 83;
 
 /// Queries a lane has read against the port's Drift builder and reached a
 /// verdict on, with the digest the statement had at that moment.
@@ -299,7 +299,41 @@ const _compared = <String, String>{
   // CouchDB `_id`, which is lower-case hex, but it is Kotlin that carries it
   // now, not the port.
   'NewsDao.getTopLevelTeamMembership': 'd81260f5b43e',
-  'NewsDao.getByNewsId': '5fc9981fbfb7',
+  // Not a rename, although the ledger first read it as one. `getByNewsId` was
+  // `SELECT * FROM news WHERE newsId = :chatId` returning a **list**, and it is
+  // gone — its one caller is now `isSharedWith` (above). `getByUnderscoreId` is
+  // a different statement on a different column (`_id`, `LIMIT 1`), compared
+  // here fresh. The port's counterpart is `NewsDao.getById`; nothing in `lib/`
+  // queried the `newsId` column the deleted method used.
+  'NewsDao.getByUnderscoreId': 'a57b090ac069',
+  // **The ledger's second catch: 92 master commits, five queries to read.**
+  // Corpus 313 → 316, one rename, and *no compared statement's SQL changed* —
+  // that assertion passed, which is the whole claim the ledger exists to make.
+  //
+  // `isSharedWith` replaced `getByNewsId`, which this ledger had compared and
+  // which is now gone. Kotlin moved `VoicesRepositoryImpl.isAlreadyShared` from
+  // `SELECT *` plus an in-memory `contains(…, ignoreCase = true)` to an
+  // `EXISTS` with `viewIn LIKE :pattern ESCAPE '\'`, escaping `\`, `%` and `_`
+  // in the id first. **Not a Follow**: same population for a CouchDB `_id`
+  // (lower-case hex, so the case-folding difference between Kotlin's
+  // Unicode-aware `contains` and SQLite's ASCII `LIKE` is unreachable), and the
+  // port answers the question a third way — `chat_history_screen.dart:434`
+  // tests `sharedIds.contains(target.id)` against a set it already holds.
+  //
+  // The other three additions are batching and projection with no port
+  // counterpart needed: `MeetupDao.getByTeamIdsInternal` (an `IN` over team
+  // ids), `MyLibraryDao.getLibraryTitles` (`SELECT id, title`, a projection),
+  // `NewsDao.getByUnderscoreIds` (the plural of an existing lookup).
+  //
+  // `SubmissionDao.getPendingByUserAndParent` is worth one line beyond "no
+  // Follow": it is `status = 'pending'` with **no `type` filter**, which
+  // corroborates the open report that the port's `getLatestPendingByUserAndParent`
+  // adds a `type = 'survey'` conjunct Kotlin does not have.
+  'NewsDao.isSharedWith': 'c7c2ce462c5c',
+  'NewsDao.getByUnderscoreIds': 'e3d8b8b73970',
+  'MeetupDao.getByTeamIdsInternal': 'f112d1ae9997',
+  'MyLibraryDao.getLibraryTitles': 'e931d4909697',
+  'SubmissionDao.getPendingByUserAndParent': 'ae2bb3697f06',
   'NewsDao.getReplies': '9fccefc24993',
   'NewsDao.getReplyCount': 'dc0dad1ce2aa',
   'NewsDao.getTopLevelByTeam': '2b3afdf288a2',
