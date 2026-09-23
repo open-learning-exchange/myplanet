@@ -671,10 +671,12 @@ class CoursesRepositoryImpl @Inject constructor(
 
         if (courses.isEmpty() && steps.isEmpty() && exams.isEmpty() && questions.isEmpty()) return processedCount
 
-        if (courses.isNotEmpty()) courseDao.upsertAll(courses)
-        if (steps.isNotEmpty()) courseStepDao.upsertAll(steps)
-        if (exams.isNotEmpty()) examDao.upsertAll(exams)
-        if (questions.isNotEmpty()) questionDao.upsertAll(questions)
+        appDatabase.withTransaction {
+            if (courses.isNotEmpty()) courseDao.upsertAll(courses)
+            if (steps.isNotEmpty()) courseStepDao.upsertAll(steps)
+            if (exams.isNotEmpty()) examDao.upsertAll(exams)
+            if (questions.isNotEmpty()) questionDao.upsertAll(questions)
+        }
         return processedCount
     }
 

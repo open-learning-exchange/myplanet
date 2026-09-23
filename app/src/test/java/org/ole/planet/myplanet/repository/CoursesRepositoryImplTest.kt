@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import androidx.room.withTransaction
 import com.google.gson.JsonParser
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -62,6 +63,7 @@ class CoursesRepositoryImplTest {
     private val userRepository: dagger.Lazy<UserRepository> = mockk(relaxed = true)
     private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider = object : org.ole.planet.myplanet.utils.DispatcherProvider { override val main = kotlinx.coroutines.Dispatchers.Unconfined; override val io = kotlinx.coroutines.Dispatchers.Unconfined; override val default = kotlinx.coroutines.Dispatchers.Unconfined; override val unconfined = kotlinx.coroutines.Dispatchers.Unconfined }
     private val realtimeSyncManager: org.ole.planet.myplanet.services.sync.RealtimeSyncManager = mockk(relaxed = true)
+    private val appDatabase: org.ole.planet.myplanet.data.room.AppDatabase = mockk(relaxed = true)
 
     private lateinit var repository: CoursesRepositoryImpl
 
@@ -92,7 +94,7 @@ class CoursesRepositoryImplTest {
             userRepository,
             dispatcherProvider,
             realtimeSyncManager,
-            mockk(relaxed = true)
+            appDatabase
         )
     }
 
@@ -457,6 +459,12 @@ class CoursesRepositoryImplTest {
 
     @Test
     fun `bulkInsertFromSync derives correct stepId matching expected base64 encoding`() = runTest {
+        io.mockk.mockkStatic("androidx.room.RoomDatabaseKt")
+        val transactionBlock = io.mockk.slot<suspend () -> Any?>()
+        coEvery { appDatabase.withTransaction(capture(transactionBlock)) } coAnswers {
+            transactionBlock.captured.invoke()
+        }
+
         val docWrapper = com.google.gson.JsonObject().apply {
             addProperty("id", "course_101")
             add("doc", com.google.gson.JsonObject().apply {
@@ -485,5 +493,7 @@ class CoursesRepositoryImplTest {
         val expectedStepId = java.util.Base64.getEncoder().encodeToString(stepElement.toString().toByteArray())
         assertEquals("eyJzdGVwVGl0bGUiOiJTdGVwIDEiLCJkZXNjcmlwdGlvbiI6IkRlc2MgMSJ9", expectedStepId)
         assertEquals(expectedStepId, capturedSteps.captured.first().id)
+
+        io.mockk.unmockkStatic("androidx.room.RoomDatabaseKt")
     }
 }
