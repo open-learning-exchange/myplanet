@@ -23,7 +23,6 @@ import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.annotation.StringRes
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.ViewCompat
@@ -123,7 +122,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     @Inject
     override lateinit var resourcesRepository: ResourcesRepository
     private val challengeManager: ChallengePrompter by lazy {
-        ChallengePrompter(this, prefData, dashboardViewModel)
+        ChallengePrompter(this, prefData)
     }
     private var notificationManager: NotificationUtils.NotificationManager? = null
     private var notificationsShownThisSession = false

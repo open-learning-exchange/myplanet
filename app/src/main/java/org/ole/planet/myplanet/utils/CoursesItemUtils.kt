@@ -4,13 +4,13 @@ import android.content.Context
 import android.graphics.drawable.GradientDrawable
 import android.view.View
 import android.widget.ImageView
+import androidx.annotation.VisibleForTesting
 import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.load.model.LazyHeaders
 import com.bumptech.glide.signature.ObjectKey
-import androidx.annotation.VisibleForTesting
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.MyCourse

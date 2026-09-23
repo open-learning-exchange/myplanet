@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.services.sync
 
 import android.content.SharedPreferences
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.every
@@ -12,6 +10,11 @@ import io.mockk.unmockkObject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.JsonObject as KJsonObject
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -65,17 +68,17 @@ class TransactionSyncManagerCheckpointTest {
     // flagging the CancellationException/RuntimeException these tests deliberately drive.
     private val dispatcherProvider: DispatcherProvider = mockk()
 
-    private fun rowsResponse(count: Int): Response<JsonObject> {
-        val body = JsonObject().apply {
-            add("rows", JsonArray().apply {
+    private fun rowsResponse(count: Int): Response<KJsonObject> {
+        val body = buildJsonObject {
+            putJsonArray("rows") {
                 repeat(count) { i ->
-                    add(JsonObject().apply {
-                        add("doc", JsonObject().apply { addProperty("_id", "rating_$i") })
+                    add(buildJsonObject {
+                        put("doc", buildJsonObject { put("_id", "rating_$i") })
                     })
                 }
-            })
+            }
         }
-        val response = mockk<Response<JsonObject>>()
+        val response = mockk<Response<KJsonObject>>()
         every { response.isSuccessful } returns true
         every { response.body() } returns body
         every { response.code() } returns 200

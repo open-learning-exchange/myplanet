@@ -41,6 +41,7 @@ import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
+import org.ole.planet.myplanet.utils.toGson
 
 class ConfigurationsRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -314,7 +315,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
 
             if (versionsResponse.isSuccessful) {
-                val jsonObject = versionsResponse.body()
+                val jsonObject = versionsResponse.body()?.toGson()
                 val minApkVersion = jsonObject?.get("minapk")?.asString
                 val currentVersion = context.getString(R.string.app_version)
 
@@ -344,7 +345,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
 
             if (configResponse.isSuccessful) {
-                val rows = configResponse.body()?.getAsJsonArray("rows")
+                val rows = configResponse.body()?.toGson()?.getAsJsonArray("rows")
 
                 if (rows != null && !rows.isEmpty()) {
                     val firstRow = rows[0].asJsonObject
