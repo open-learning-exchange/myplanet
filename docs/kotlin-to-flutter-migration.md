@@ -3516,9 +3516,23 @@ applies to the port:
   submission in a single `createExamDraft` transaction at submit time, so the
   concurrent-write problem that motivated the retry does not arise; the catch
   + `examSubmitFailed` snackbar is the user-facing equivalent of the toast.
-  Survey resume (the `recreate = false` path) is already handled by
-  `getOrCreateSurveySubmission`, which checks `latestPendingByUserAndParent`
-  first. The exam-resume path (a pending exam submission) remains a deliberate
+  Survey resume (the `recreate = false` path) **was not** handled, although
+  this entry said it was for eleven phases: `getOrCreateSurveySubmission` does
+  check for a pending sheet, but until Phase 159 its only caller in `lib/` was
+  `createBulkSurveySubmissions` — the survey **send** path — and
+  `TakeSurveyScreen` never reached it. `surveys_screen.dart` pushes
+  `/surveys/<id>` with no `?submission=`, so answering a survey from the list
+  inserted a second row and left the first `pending`, keeping the dashboard
+  prompt lit for a survey the learner had answered. Phase 159 Lane 3 put the
+  resume inside `createSurveyDraft`, ordered on `startTime DESC` to match
+  Kotlin's live `getPendingByUserAndParent` rather than the `lastUpdateTime`
+  statement whose Kotlin caller is dead, and ported
+  `deletePendingSurveyOrphans` alongside it. What is *still* missing is the
+  prefill: Kotlin's resume runs `populateCacheFromSavedAnswers` and offers a
+  Continue / Start over dialog (`ExamTakingFragment.kt:151-169`), where the
+  port re-renders a blank form — so a resumed sheet's stored answers are
+  carried forward by `_surveyAnswer` rather than shown to the learner. The
+  exam-resume path (a pending exam submission) remains a deliberate
   divergence: the port chose in-memory answers over per-question persistence.
 - `d64e98a30` (submissions repository detail view modelling) — removes the
   `Lazy<UserRepository>` from `SubmissionsRepositoryImpl` (breaking a Dagger

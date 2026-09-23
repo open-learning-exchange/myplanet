@@ -141,6 +141,29 @@ class SubmissionsRepository {
   /// those rows, so the dashboard kept telling them to complete a survey they
   /// had completed, and the prompt reopened a blank form.
   ///
+  /// **The statement this resumes by is `getPendingByUserAndParent`
+  /// (`SubmissionDao.kt:26`), `ORDER BY startTime DESC LIMIT 1`** — not
+  /// `getLatestPendingByUserAndParent` (`:29`), which orders by
+  /// `lastUpdateTime DESC` and whose only Kotlin caller,
+  /// `getOrCreateSubmission`, has **no caller anywhere in `app/`**. The first
+  /// cut of this used the port's `latestPendingByUserAndParent`, which names
+  /// that dead statement, and with two pending sheets for one `(user, parent)`
+  /// the two apps would have resumed **different rows** — updating different
+  /// CouchDB documents where each carries a `_rev`. Both of Kotlin's live call
+  /// sites (`startExamSession` and `SubmissionListViewModel`) sort on
+  /// `startTime`, so this is not a judgement call.
+  ///
+  /// The `type = 'survey'` conjunct the port adds and Kotlin does not have is
+  /// **kept, deliberately**. It is redundant on a port-only handset — the two
+  /// id spaces are disjoint there, see [_liveParentDocument] — but not on a
+  /// mixed fleet: `BaseExamFragment` resolves a step's test through
+  /// `ExamDao.getFirstByStepId`, which has no type filter, so an Android
+  /// learner on a step carrying both a test and a survey can author a
+  /// `type = 'exam'` sheet under the *survey's* `parentId`, and
+  /// `getPendingExamResults` has no status test, so Planet receives it. Without
+  /// the conjunct this method would adopt that row as the learner's survey
+  /// sheet and overwrite its answers.
+  ///
   /// A resumed row is written through a **second, narrower companion** rather
   /// than the insert one, and the difference is *which columns are named*, not
   /// which constructor is used. `insertAllOnConflictUpdate` emits
@@ -172,12 +195,26 @@ class SubmissionsRepository {
     // `createExamSubmission` writes it — see [examParentId]. Storing the bare
     // id here is what made the mandatory-survey gate unsatisfiable.
     final parentId = examParentId(examId: survey.id, courseId: survey.courseId);
-    // `if (!recreate)` with `recreate = isTeam` — see the doc comment. A
-    // public respondent's `public_<millis>` owner is minted per submission, so
-    // this lookup cannot match on that path even though it runs there.
+    // `if (!recreate)` with `recreate = isTeam` — see the doc comment. The
+    // public deep link carries the link's team, so it takes the create branch
+    // for the same reason the team surveys tab does; and were it ever to
+    // arrive team-less, a `public_<millis>` owner is minted per submission and
+    // could not match a stored row anyway.
     final resumed = persistedTeamId == null
-        ? await _dao.latestPendingByUserAndParent(userId, parentId)
+        ? await _pendingSurveySheet(userId: userId, parentId: parentId)
         : null;
+    // Kotlin's resume *prefills the form* (`populateCacheFromSavedAnswers`,
+    // `ExamTakingFragment.kt:157`) before the learner touches it, so an answer
+    // already on the sheet is carried forward by the submit that follows.
+    // `take_survey_screen` only prefills when the route named the submission,
+    // and on this path it did not — and its Submit button has no
+    // every-question-answered gate, unlike the public screen's. So without
+    // this, resuming would *replace* a stored answer with a blank one, which
+    // is the same class of loss the resume exists to prevent, moved one step
+    // along. Nothing is preserved over an answer the learner did give.
+    final carried = resumed == null
+        ? const <String, SubmissionAnswerRow>{}
+        : {for (final row in await _dao.answersFor(resumed.id)) row.id: row};
     final id =
         resumed?.id ??
         sha1.convert(utf8.encode('$userId:$timestamp:${survey.id}')).toString();
@@ -246,13 +283,20 @@ class SubmissionsRepository {
               submissionId: id,
               question: question,
               draft: answers[question.id],
+              carried: carried['$id:${_rawQuestionId(question)}'],
             ),
         ],
       },
     );
-    if (persistedTeamId == null) {
-      await deletePendingSurveyOrphans(parentId: parentId, userId: userId);
-    }
+    // **No team gate.** `saveExamAnswer`'s arm is
+    // `if (newStatus == "complete" && type == "survey")`
+    // (`SubmissionsRepositoryImpl.kt:610-612`) with no team condition at all —
+    // the scoping is the statement's own `teamId IS NULL`, which excludes the
+    // team-scoped row just written and takes the learner's *individual*
+    // pending sheets for the same survey. A gate here as well would leave the
+    // team surveys tab, the port's only team survey entry point, with exactly
+    // the stale prompt this round is closing.
+    await deletePendingSurveyOrphans(parentId: parentId, userId: userId);
     return id;
   }
 
@@ -331,10 +375,15 @@ class SubmissionsRepository {
 
   /// One survey answer row, shaped by [AnswerShape] so it matches what the
   /// exam path writes — Kotlin has a single `saveExamAnswer` for both.
+  /// [carried] is the answer row already on a **resumed** sheet, and it is used
+  /// only when this question's draft is empty — the stand-in for Kotlin
+  /// prefilling the form before the learner sees it. A draft the learner did
+  /// fill in always wins, so this cannot resurrect an answer they cleared.
   SubmissionAnswersCompanion _surveyAnswer({
     required String submissionId,
     required SurveyQuestionRow question,
     required SubmissionDraftAnswer? draft,
+    SubmissionAnswerRow? carried,
   }) {
     final shape = AnswerShape.forQuestion(
       type: question.type,
@@ -344,14 +393,56 @@ class SubmissionsRepository {
           .whereType<ExamChoice>(),
       text: draft?.value,
     );
+    // Both halves, because `selectMultiple` writes the **empty string** as its
+    // `value` even when choices are picked (see [AnswerShape]) — testing
+    // `value` alone would call an answered multi-select blank.
+    final blank = (shape.value ?? '').isEmpty && shape.valueChoices.isEmpty;
     return SubmissionAnswersCompanion.insert(
       id: '$submissionId:${_rawQuestionId(question)}',
       submissionId: submissionId,
       questionId: Value(_rawQuestionId(question)),
-      value: Value(shape.value),
-      valueChoices: Value(shape.valueChoices),
+      value: Value(blank && carried != null ? carried.value : shape.value),
+      valueChoices: Value(
+        blank && carried != null ? carried.valueChoices : shape.valueChoices,
+      ),
     );
   }
+
+  /// The pending sheet a survey launch resumes: the port of
+  /// `SubmissionDao.getPendingByUserAndParent` (`SubmissionDao.kt:26`),
+  ///
+  /// ```sql
+  /// SELECT * FROM submissions WHERE parentId IS :parentId AND userId IS :userId
+  ///   AND status = 'pending' ORDER BY startTime DESC LIMIT 1
+  /// ```
+  ///
+  /// plus the `type = 'survey'` conjunct the doc comment on [createSurveyDraft]
+  /// argues for keeping. Built here rather than on `SubmissionDao` because
+  /// `app_database.dart` belongs to another lane this round — the DAO's
+  /// `latestPendingByUserAndParent` is the **other** Kotlin statement
+  /// (`lastUpdateTime DESC`, from a method with no Kotlin caller) and is the
+  /// wrong one for a resume. Both should become one DAO method ordered on
+  /// `startTime`.
+  Future<SubmissionRow?> _pendingSurveySheet({
+    required String? userId,
+    required String? parentId,
+  }) =>
+      (_dao.select(_dao.submissions)
+            ..where(
+              (row) =>
+                  row.parentId.equalsNullable(parentId) &
+                  row.userId.equalsNullable(userId) &
+                  row.status.equals('pending') &
+                  row.type.equals('survey'),
+            )
+            ..orderBy([
+              (row) => OrderingTerm(
+                expression: row.startTime,
+                mode: OrderingMode.desc,
+              ),
+            ])
+            ..limit(1))
+          .getSingleOrNull();
 
   /// Replaces the answer rows on an existing survey submission (resuming a
   /// pending attempt) and marks it complete + locally updated. Unlike
@@ -392,7 +483,7 @@ class SubmissionsRepository {
     // parameters because that is what Kotlin passes:
     // `deletePendingSurveyOrphans(submissionRow.parentId, submissionRow.userId)`.
     final completed = await _dao.getById(submissionId);
-    if (completed != null && completed.teamId == null) {
+    if (completed != null) {
       await deletePendingSurveyOrphans(
         parentId: completed.parentId,
         userId: completed.userId,

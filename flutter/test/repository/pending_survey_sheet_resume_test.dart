@@ -48,7 +48,10 @@ void main() {
   /// `survey-1@course-1` (Phase 125) rather than the bare id. That is
   /// load-bearing as a fixture: a resume keyed on the bare id would find
   /// nothing and this file would report a pass for an unfixed port.
-  Future<SurveyRow> seedSurvey({String? courseId = 'course-1'}) async {
+  Future<SurveyRow> seedSurvey({
+    String? courseId = 'course-1',
+    int questionCount = 1,
+  }) async {
     await database.surveyDao.upsertAll(
       [
         SurveysCompanion.insert(
@@ -59,14 +62,15 @@ void main() {
       ],
       {
         'survey-1': [
-          SurveyQuestionsCompanion.insert(
-            id: 'survey-1:q1',
-            surveyId: 'survey-1',
-            questionId: const Value('q1'),
-            header: const Value('How far is the well?'),
-            type: const Value('input'),
-            position: 0,
-          ),
+          for (var i = 1; i <= questionCount; i++)
+            SurveyQuestionsCompanion.insert(
+              id: 'survey-1:q$i',
+              surveyId: 'survey-1',
+              questionId: Value('q$i'),
+              header: Value('Question $i'),
+              type: const Value('input'),
+              position: i - 1,
+            ),
         ],
       },
     );
@@ -163,14 +167,18 @@ void main() {
         reason: 'a team sheet does not adopt the individual pending one',
       );
       final all = await database.submissionDao.watchForUser('member-1').first;
-      expect(all, hasLength(2));
       expect(
-        (await database.submissionDao.getById(pendingId))!.status,
-        'pending',
+        all.map((row) => row.id),
+        [answeredId],
         reason:
-            'and the orphan sweep is likewise skipped, so the individual sheet '
-            'the leader sent still stands',
+            'but the sweep still runs — `saveExamAnswer`\'s arm is '
+            '`newStatus == "complete" && type == "survey"` with no team '
+            'condition, and the statement\'s own `teamId IS NULL` is what '
+            'spares the team row. Gating the sweep on the team as well left '
+            'the team surveys tab, the port\'s only team survey entry point, '
+            'with the stale prompt this file exists to close.',
       );
+      expect(all.single.teamId, 'team-1');
     },
   );
 
@@ -314,16 +322,38 @@ void main() {
     /// build or a pull can produce this — `getOrCreateSurveySubmission` is
     /// find-or-create — which is exactly why Kotlin carries a sweep rather
     /// than relying on its writers.
+    /// The two timestamps **disagree**, and that is the whole point of the
+    /// fixture. `sheet-a` is the older sheet that was touched most recently;
+    /// `sheet-b` is the newer sheet touched longest ago. Kotlin's live resume
+    /// is `getPendingByUserAndParent`, `ORDER BY startTime DESC`, so it takes
+    /// `sheet-b`; the dead `getLatestPendingByUserAndParent` — which the port's
+    /// DAO method is named after, and which this lane's first cut called —
+    /// orders by `lastUpdateTime DESC` and takes `sheet-a`. Give both rows the
+    /// same `startTime` and the two readings become indistinguishable and this
+    /// group stops being a test of anything.
     Future<void> seedTwoPending() => database.submissionDao.upsertAll([
-      for (final id in ['sheet-a', 'sheet-b'])
-        SubmissionsCompanion.insert(
-          id: id,
-          userId: const Value('member-1'),
-          parentId: const Value('survey-1@course-1'),
-          type: const Value('survey'),
-          status: const Value('pending'),
-          lastUpdateTime: Value(id == 'sheet-a' ? 2000 : 1000),
-        ),
+      // `sheet-a` is inserted first *and* has the earlier `startTime`, so an
+      // unordered `LIMIT 1` and the correct ordering disagree on which row
+      // comes back — without that the `ORDER BY` could be deleted outright
+      // with this group still green.
+      SubmissionsCompanion.insert(
+        id: 'sheet-a',
+        userId: const Value('member-1'),
+        parentId: const Value('survey-1@course-1'),
+        type: const Value('survey'),
+        status: const Value('pending'),
+        startTime: const Value(100),
+        lastUpdateTime: const Value(500),
+      ),
+      SubmissionsCompanion.insert(
+        id: 'sheet-b',
+        userId: const Value('member-1'),
+        parentId: const Value('survey-1@course-1'),
+        type: const Value('survey'),
+        status: const Value('pending'),
+        startTime: const Value(200),
+        lastUpdateTime: const Value(300),
+      ),
     ]);
 
     test('createSurveyDraft', () async {
@@ -342,9 +372,10 @@ void main() {
       final rows = await database.submissionDao.watchForUser('member-1').first;
       expect(
         rows.map((row) => row.id),
-        // `lastUpdateTime DESC LIMIT 1` picks `sheet-a`; the sweep takes the
-        // one left behind.
-        ['sheet-a'],
+        // `ORDER BY startTime DESC LIMIT 1` picks `sheet-b`; the sweep takes
+        // the one left behind. Resuming `sheet-a` here would mean the port and
+        // the Android app update **different** CouchDB documents.
+        ['sheet-b'],
         reason: 'one resumed, the other swept — not two rows, not three',
       );
       expect(rows.single.status, 'complete');
@@ -368,6 +399,151 @@ void main() {
       expect(rows.map((row) => row.id), ['sheet-b']);
       expect(rows.single.status, 'complete');
     });
+  });
+
+  test(
+    'the resume looks only at this learner\'s pending survey sheets',
+    () async {
+      final survey = await seedSurvey();
+      // **One mutation this file does not pin, stated rather than hidden:**
+      // deleting the resume's `ORDER BY` outright leaves the suite green.
+      // Without it SQLite is free to return any matching row for `LIMIT 1` and
+      // here it happens to return the right one; seeding around that would pin
+      // a query plan rather than a behaviour. The mutation that matters —
+      // ordering by `lastUpdateTime` instead, which is the dead Kotlin
+      // statement's key and what this lane's first cut used — *is* red, below.
+      //
+      // Every decoy carries a **later** `startTime` than the real sheet, so
+      // dropping any one conjunct from the resume predicate makes that decoy win
+      // the `ORDER BY startTime DESC LIMIT 1` and this test go red. Give them
+      // earlier timestamps and the predicate could be emptied out with the suite
+      // still green — the sort would hide it.
+      await database.submissionDao.upsertAll([
+        SubmissionsCompanion.insert(
+          id: 'the-real-one',
+          userId: const Value('member-1'),
+          parentId: const Value('survey-1@course-1'),
+          type: const Value('survey'),
+          status: const Value('pending'),
+          startTime: const Value(100),
+        ),
+        SubmissionsCompanion.insert(
+          id: 'already-complete',
+          userId: const Value('member-1'),
+          parentId: const Value('survey-1@course-1'),
+          type: const Value('survey'),
+          status: const Value('complete'),
+          startTime: const Value(900),
+        ),
+        SubmissionsCompanion.insert(
+          id: 'an-exam-attempt',
+          userId: const Value('member-1'),
+          parentId: const Value('survey-1@course-1'),
+          type: const Value('exam'),
+          status: const Value('pending'),
+          startTime: const Value(900),
+        ),
+        SubmissionsCompanion.insert(
+          id: 'another-member',
+          userId: const Value('member-2'),
+          parentId: const Value('survey-1@course-1'),
+          type: const Value('survey'),
+          status: const Value('pending'),
+          startTime: const Value(900),
+        ),
+        SubmissionsCompanion.insert(
+          id: 'the-bare-parent-id',
+          userId: const Value('member-1'),
+          // `parentId` is compared whole, so a sheet stored under the bare
+          // survey id by a pre-Phase-125 build is a different key.
+          parentId: const Value('survey-1'),
+          type: const Value('survey'),
+          status: const Value('pending'),
+          startTime: const Value(900),
+        ),
+      ]);
+
+      final id = await submissions.createSurveyDraft(
+        survey: survey,
+        questions: await questions(),
+        userId: 'member-1',
+        answers: {
+          'survey-1:q1': const SubmissionDraftAnswer(value: 'Two hours'),
+        },
+      );
+
+      expect(id, 'the-real-one');
+    },
+  );
+
+  test('a resumed sheet keeps an answer the form did not carry', () async {
+    final survey = await seedSurvey(questionCount: 2);
+    // A `pending` sheet Planet itself authored, with question 1 already
+    // answered. Kotlin's resume prefills the form from exactly these rows
+    // (`populateCacheFromSavedAnswers`, `ExamTakingFragment.kt:157`), so the
+    // submit that follows carries the stored answer forward.
+    // `take_survey_screen` prefills only when the route named the submission,
+    // and the surveys-list route does not — **and its Submit button has no
+    // every-question-answered gate**, so a resume that simply overwrote would
+    // move the data loss rather than remove it (Phase 143).
+    await database.submissionDao.upsertAll(
+      [
+        SubmissionsCompanion.insert(
+          id: 'from-planet',
+          userId: const Value('member-1'),
+          parentId: const Value('survey-1@course-1'),
+          type: const Value('survey'),
+          status: const Value('pending'),
+        ),
+      ],
+      answers: {
+        'from-planet': [
+          SubmissionAnswersCompanion.insert(
+            id: 'from-planet:q1',
+            submissionId: 'from-planet',
+            questionId: const Value('q1'),
+            value: const Value('Answered last week'),
+          ),
+          // A stored answer for the question the form **does** fill. Without
+          // it, "carried wins whenever there is one" and "carried wins only
+          // when the draft is blank" are indistinguishable, because q2 would
+          // have nothing to be carried from — the decoy that makes the
+          // precedence half of this test a test.
+          SubmissionAnswersCompanion.insert(
+            id: 'from-planet:q2',
+            submissionId: 'from-planet',
+            questionId: const Value('q2'),
+            value: const Value('A stale figure'),
+          ),
+        ],
+      },
+    );
+
+    final id = await submissions.createSurveyDraft(
+      survey: survey,
+      questions: await questions(),
+      userId: 'member-1',
+      // Only q2 this time.
+      answers: {
+        'survey-1:q2': const SubmissionDraftAnswer(value: 'Ten litres'),
+      },
+    );
+
+    expect(id, 'from-planet');
+    final byQuestion = {
+      for (final row in await database.submissionDao.answersFor(id))
+        row.questionId: row.value,
+    };
+    expect(
+      byQuestion['q1'],
+      'Answered last week',
+      reason: 'the stored answer survives a form that did not carry it',
+    );
+    expect(
+      byQuestion['q2'],
+      'Ten litres',
+      reason: 'and an answer the learner did give still wins',
+    );
   });
 
   test('resuming a pulled sheet keeps its server identity', () async {
