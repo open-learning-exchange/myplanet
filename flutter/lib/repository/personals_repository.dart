@@ -65,10 +65,23 @@ class PersonalsRepository {
     if (await _dao.titleExists(current.userId, normalized, excludingId: id)) {
       throw const DuplicatePersonalTitle();
     }
-    // `toCompanion(false)` writes every column, matching Room's `@Update` in
-    // `PersonalDao`. With `nullToAbsent: true` a cleared description would be
-    // dropped from the statement instead of nulling the column, so editing a
-    // note could never remove its description.
+    // `toCompanion(false)` writes every column. With `nullToAbsent: true` a
+    // cleared description would be dropped from the statement instead of
+    // nulling the column, so editing a note could never remove its
+    // description.
+    //
+    // **This is deliberately wider than the Kotlin, which has no `@Update` at
+    // all.** `PersonalDao` carries one `@Insert` and no `@Update`
+    // (`PersonalDao.kt:20`); the edit path is `updateFields` (`:41`), a
+    // targeted `SET title = COALESCE(:title, title), description =
+    // COALESCE(:description, description)`. Two consequences, both checked:
+    // clearing the description still works on Android, because
+    // `PersonalsFragment.kt:120-122` passes the dialog's text rather than
+    // null and `COALESCE('', …)` writes the empty string; but `updateFields`
+    // never touches `isUploaded`, so editing an already-uploaded note leaves
+    // it flagged as uploaded and the edit is never sent. `isUploaded: false`
+    // below is what closes that, and it is a divergence in the port's favour
+    // rather than a port of the line.
     await _dao.upsert(
       current
           .copyWith(
