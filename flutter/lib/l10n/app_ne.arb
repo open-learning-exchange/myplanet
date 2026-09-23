@@ -226,6 +226,7 @@
   "@feedbackTypeRequired": {
     "x-mt": true
   },
+  "feedbackPriorityRequired": "प्रतिक्रिया प्राथमिकता आवश्यक छ।",
   "question": "प्रश्न",
   "bug": "बग",
   "suggestion": "सुझाव",

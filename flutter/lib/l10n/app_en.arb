@@ -675,6 +675,7 @@
     }
   },
   "ratingRequired": "Choose a rating",
+  "ratingSubmitFailed": "Could not submit your rating. Please try again.",
   "commentOptional": "Comment (optional)",
   "submitRating": "Submit rating",
   "skip": "Skip",
@@ -927,6 +928,7 @@
   "isUrgent": "Is this urgent?",
   "feedbackType": "Feedback type",
   "feedbackTypeRequired": "Please select a feedback type",
+  "feedbackPriorityRequired": "Feedback priority is required.",
   "yourFeedback": "Your feedback",
   "pleaseEnterFeedback": "Please enter your feedback",
   "question": "Question",

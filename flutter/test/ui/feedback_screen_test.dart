@@ -54,6 +54,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    // Urgency is picked because the form requires it — `fragment_feedback.xml`
+    // pre-checks neither radio and `FeedbackFragment.validateAndSaveData:96-99`
+    // refuses until one is chosen. The port used to default it to `'No'`, so
+    // these tests filed a value nobody selected.
+    await tester.tap(find.text('No'));
+    await tester.pump();
     await tester.tap(find.text('Bug'));
     await tester.pump();
     await tester.enterText(find.byType(TextField), 'Sync fails offline');
@@ -239,6 +245,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    // Urgency is picked because the form requires it — `fragment_feedback.xml`
+    // pre-checks neither radio and `FeedbackFragment.validateAndSaveData:96-99`
+    // refuses until one is chosen. The port used to default it to `'No'`, so
+    // these tests filed a value nobody selected.
+    await tester.tap(find.text('No'));
+    await tester.pump();
     await tester.tap(find.text('Bug'));
     await tester.pump();
     await tester.enterText(find.byType(TextField), 'Sync fails offline');

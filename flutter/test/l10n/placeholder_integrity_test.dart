@@ -483,12 +483,33 @@ void main() {
     // — `L\'utilisateur` in the source is `L'utilisateur` here — which is the
     // Phase 114 rule, not a retranslation. Counted from the tree at the fold,
     // not incremented from the previous line. Nothing existing changed value.
+    //
+    // Phase 159 lane 2 adds one per locale: `feedbackPriorityRequired`, the
+    // refusal the feedback form shows when no urgency has been picked. Kotlin
+    // has had `feedback_priority_is_required` since the screen existed and it
+    // ships a human translation in all five `values-*/strings.xml`, so the
+    // English is Kotlin's verbatim and the five values are recovered rather
+    // than generated. Counted from the tree, not remembered.
+    //
+    // The same change adds a second template key, `ratingSubmitFailed`, which
+    // moves no count here: Kotlin toasts the raw exception message
+    // (`RatingsViewModel.kt:105-107`) and has no string to derive from, so
+    // ar/es/fr take machine translation flagged `x-mt` and ne/so fall back to
+    // clean English.
+    //
+    // **Both lanes of Phase 159 added a key and each pinned the map from its
+    // own tree, so neither side's numbers survived the merge.** The values
+    // below are measured after merging all three lanes — one higher per locale
+    // than either branch carried. That is this guard working: it fired on the
+    // merge rather than on a release, and the rule it enforces is the file's
+    // own — count the tree, never increment a remembered number.
+
     const humanReviewed = {
-      'ar': 433,
-      'es': 485,
-      'fr': 431,
-      'ne': 433,
-      'so': 433,
+      'ar': 434,
+      'es': 486,
+      'fr': 432,
+      'ne': 434,
+      'so': 434,
     };
 
     for (final code in locales) {

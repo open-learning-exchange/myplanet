@@ -226,6 +226,7 @@
   "@feedbackTypeRequired": {
     "x-mt": true
   },
+  "feedbackPriorityRequired": "Tabinta faahfaahinta waa loo baahan yahay",
   "question": "Su'aal",
   "bug": "Bug",
   "suggestion": "talo soo jeedin",

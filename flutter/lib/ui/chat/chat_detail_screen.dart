@@ -184,6 +184,14 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                   Expanded(
                     child: TextField(
                       controller: _messageController,
+                      // `ChatDetailFragment.refreshInputState:596-602` disables
+                      // the **field**, not only the button, while the profile
+                      // is still loading — so Kotlin never has text to lose
+                      // when a send would be refused. The port gated the
+                      // button alone and left `onSubmitted` live, so the
+                      // soft-keyboard Send key reached `_sendMessage` with no
+                      // session and the composer was cleared into nothing.
+                      enabled: !_isSending && session != null,
                       decoration: InputDecoration(
                         hintText: l10n.typeMessage,
                         border: const OutlineInputBorder(),
@@ -225,15 +233,39 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     // is `maxLines: 4`, so a pasted or soft-keyboard newline survived into the
     // request body where the Kotlin would have sent a space.
     final message = _messageController.text.replaceAll('\n', ' ').trim();
-    if (message.isEmpty) return;
+    if (message.isEmpty) {
+      // `setupSendButton:297-303` shows `kindly_enter_message` in
+      // `textGchatIndicator` here; the port returned in silence, so Send did
+      // visibly nothing at all.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).emptyMessageNotAllowed),
+        ),
+      );
+      return;
+    }
 
     setState(() => _isSending = true);
-    _messageController.clear();
 
-    await ref.read(chatConversationProvider.notifier).sendMessage(message);
+    // The clear used to run *here*, before the await. The `message` local is
+    // captured above so the request body was never affected — what was lost
+    // was the person's typed text, on any path where the send did not produce
+    // a bubble. It now happens only once the conversation has taken the
+    // message, which costs the text staying visible in a disabled field for
+    // the length of the round trip. Kotlin clears eagerly because it decides
+    // synchronously and has already called `mAdapter.addQuery(message)`
+    // (`ChatDetailFragment.kt:306`, with the clear at `:321`); the port's
+    // decision is an `await`
+    // away, so the order has to be the other one.
+    final outcome = await ref
+        .read(chatConversationProvider.notifier)
+        .sendMessage(message);
 
     if (!mounted) return;
     setState(() => _isSending = false);
+    if (outcome == ChatSendOutcome.declined) return;
+
+    _messageController.clear();
     _scrollToBottom();
   }
 
@@ -243,10 +275,15 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   /// [ScrollController.position] asserts when nothing is attached, and nothing
   /// is: the message list is replaced by an empty-state [Column] until there
   /// is at least one message, and a rebuild is a frame away rather than an
-  /// `await` away. So a send that resolved without adding a bubble — the
-  /// notifier declining it, which is exactly what happens when `onSubmitted`
-  /// fires with no session and bypasses the disabled button — took the whole
-  /// screen down on a keystroke.
+  /// `await` away. So a send that resolved without adding a bubble took the
+  /// whole screen down on a keystroke.
+  ///
+  /// The route that used to reach it — `onSubmitted` firing with no session
+  /// and bypassing the disabled button — is closed twice now, by the field's
+  /// own `enabled` gate and by the [ChatSendOutcome.declined] early return.
+  /// The guard stays load-bearing all the same: a throw *before* the
+  /// optimistic bubble also returns with an empty message list, and that one
+  /// reaches here.
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_scrollController.hasClients) return;

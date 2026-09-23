@@ -298,11 +298,30 @@ class FeedbackMapper {
     final id = _generateId();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
 
+    // `state` is the branch key, and `item` rides with it: Kotlin assigns
+    // **both** inside `if (state != null)`
+    // (`FeedbackRepositoryImpl.kt:45-53`) and writes neither in the else arm.
+    // Writing `item` unconditionally here meant a bundle carrying only `item`
+    // produced a row Kotlin cannot file at all. The reader is [toDoc], which
+    // sends both keys explicitly — null rather than omitted, as Kotlin's
+    // `buildJsonObject.put(String, String?)` does (`Feedback.kt:116-117`) —
+    // so the difference leaves the device: `{"url":"/","state":null,
+    // "item":"<teamId>"}` names a row whose collection is unstated while the
+    // title and url still say `/`. Nothing in `lib/` reads these columns
+    // otherwise; an earlier revision of this comment cited a
+    // `getFeedbackByItem` that exists in neither app, which is the house rule
+    // about citations applying to a comment. No caller passes one without the
+    // other today; that is a property of the call sites, not of this
+    // function.
     String title;
     String url;
+    String? scopedItem;
+    String? scopedState;
     if (state != null) {
       title = 'Question regarding /$state';
       url = '/$state';
+      scopedState = state;
+      scopedItem = item;
     } else {
       title = 'Question regarding /';
       url = '/';
@@ -328,8 +347,8 @@ class FeedbackMapper {
       parentCode: const Value('dev'),
       isUploaded: const Value(false),
       messages: Value(messagesJson),
-      item: Value(item),
-      state: Value(state),
+      item: Value(scopedItem),
+      state: Value(scopedState),
     );
   }
 

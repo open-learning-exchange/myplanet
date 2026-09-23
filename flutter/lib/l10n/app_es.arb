@@ -778,6 +778,10 @@
   "@ratingRequired": {
     "x-mt": true
   },
+  "ratingSubmitFailed": "No se pudo enviar tu valoración. Por favor inténtalo de nuevo.",
+  "@ratingSubmitFailed": {
+    "x-mt": true
+  },
   "commentOptional": "Comentario (opcional)",
   "@commentOptional": {
     "x-mt": true
@@ -1342,6 +1346,7 @@
   "@feedbackTypeRequired": {
     "x-mt": true
   },
+  "feedbackPriorityRequired": "Se requiere prioridad de comentario.",
   "yourFeedback": "Tus comentarios",
   "@yourFeedback": {
     "x-mt": true
