@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.ui.health
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
+import java.util.Locale
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -60,5 +62,25 @@ class HealthExaminationActivityTest {
 
         assertFalse("Condition present in diagnosis_list should NOT be added to customDiag", customDiag.contains(inListCondition))
         assertTrue("Condition NOT present in diagnosis_list with value=true SHOULD be added to customDiag", customDiag.contains(notInListCondition))
+    }
+
+    @Test
+    fun getFloat_commaDecimalLocale_keepsDecimalVitals() {
+        val originalLocale = Locale.getDefault()
+        Locale.setDefault(Locale.FRANCE)
+        try {
+            val activity = Robolectric.buildActivity(HealthExaminationActivity::class.java).create().get()
+            val getFloat = HealthExaminationActivity::class.java.getDeclaredMethod("getFloat", String::class.java)
+            getFloat.isAccessible = true
+
+            assertEquals(36.6f, getFloat.invoke(activity, "36.6") as Float, 0f)
+            assertEquals(36.6f, getFloat.invoke(activity, "36,6") as Float, 0f)
+            assertEquals(72.5f, getFloat.invoke(activity, "72.46") as Float, 0f)
+            assertEquals(170f, getFloat.invoke(activity, "170") as Float, 0f)
+            assertEquals(0f, getFloat.invoke(activity, "") as Float, 0f)
+            assertEquals(0f, getFloat.invoke(activity, "abc") as Float, 0f)
+        } finally {
+            Locale.setDefault(originalLocale)
+        }
     }
 }
