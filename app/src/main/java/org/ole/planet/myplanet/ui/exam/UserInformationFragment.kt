@@ -49,6 +49,8 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     private var syncStartTime: Long = 0L
 
     companion object {
+        const val PROFILE_UPDATE_REQUEST_KEY = "user_information_profile_updated"
+
         fun getInstance(id: String?, teamId: String?, shouldHideElements: Boolean): UserInformationFragment {
             val f = UserInformationFragment()
             setArgs(f, id, teamId, shouldHideElements)
@@ -180,17 +182,16 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     private fun submitForm() {
         val profile = createUserProfile() ?: return
-        val user = profile.toJson()
 
         val teamId = arguments?.getString("teamId")
 
         if (!teamId.isNullOrEmpty()) {
-            saveSubmission(user)
+            saveSubmission(profile.toJson())
         } else if (TextUtils.isEmpty(id)) {
             val userId = userModel?.id
-            viewModel.updateProfile(userId, user)
+            viewModel.updateProfile(userId, profile.toProfileFieldsUpdate())
         } else {
-            saveSubmission(user)
+            saveSubmission(profile.toJson())
         }
     }
 
@@ -283,6 +284,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     override fun onDismiss(dialog: DialogInterface) {
         super.onDismiss(dialog)
+        parentFragmentManager.setFragmentResult(PROFILE_UPDATE_REQUEST_KEY, Bundle())
         Log.d("UserInformationFragment", "onDismiss called, syncStartTime: $syncStartTime")
         val safeTeamId = arguments?.getString("teamId") ?: ""
         Log.d("UserInformationFragment", "teamId: $safeTeamId")

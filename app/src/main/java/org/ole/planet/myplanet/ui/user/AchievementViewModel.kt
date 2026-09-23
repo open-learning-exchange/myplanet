@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.user
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,9 +12,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ProfileFieldsUpdate
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
@@ -31,7 +32,7 @@ data class AchievementSaveRequest(
     val username: String,
     val parentCode: String,
     val resumeFileName: String,
-    val profileFields: JsonObject,
+    val profileFields: ProfileFieldsUpdate,
 )
 
 @HiltViewModel
@@ -82,7 +83,11 @@ class AchievementViewModel @Inject constructor(
         userRepository.updateProfileFields(_user.value?.id, request.profileFields)
     }
 
-    suspend fun getAllLibraries(): List<MyLibrary> {
-        return resourcesRepository.getAllLibraries()
+    suspend fun getLibraryTitles(): List<LibraryTitleProjection> {
+        return resourcesRepository.getLibraryTitles()
+    }
+
+    suspend fun getLibraryItemsByIds(ids: Collection<String>): List<MyLibrary> {
+        return resourcesRepository.getLibraryItemsByIds(ids)
     }
 }

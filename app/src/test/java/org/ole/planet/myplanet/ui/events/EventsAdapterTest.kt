@@ -25,9 +25,9 @@ class EventsAdapterTest {
     @Before
     fun setup() {
         context = ApplicationProvider.getApplicationContext()
-        adapter = EventsAdapter { meetup ->
+        adapter = EventsAdapter(onMeetupClick = { meetup ->
             clickedMeetup = meetup
-        }
+        })
     }
 
     @Test

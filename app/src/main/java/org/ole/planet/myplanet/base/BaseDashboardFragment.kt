@@ -1,12 +1,10 @@
 package org.ole.planet.myplanet.base
 
-import android.app.DatePickerDialog
 import android.content.Intent
 import android.graphics.Typeface
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.DatePicker
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -18,7 +16,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Calendar
 import javax.inject.Inject
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -76,6 +73,22 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
     fun onLoaded(v: View) {
         val llPrompt = v.findViewById<LinearLayout>(R.id.ll_prompt)
         val icClose = v.findViewById<ImageView>(R.id.ic_close)
+
+        icClose.setOnClickListener {
+            llPrompt.visibility = View.GONE
+        }
+
+        childFragmentManager.setFragmentResultListener(
+            UserInformationFragment.PROFILE_UPDATE_REQUEST_KEY, viewLifecycleOwner
+        ) { _, _ ->
+            refreshProfilePrompt(v)
+        }
+
+        refreshProfilePrompt(v)
+    }
+
+    private fun refreshProfilePrompt(v: View) {
+        val llPrompt = v.findViewById<LinearLayout>(R.id.ll_prompt)
         val imageView = v.findViewById<ImageView>(R.id.imageView)
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -91,9 +104,6 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
                     }
                 }
             } else {
-                llPrompt.visibility = View.GONE
-            }
-            icClose.setOnClickListener {
                 llPrompt.visibility = View.GONE
             }
             ImageUtils.loadProfileImage(model?.userImage, imageView, 200)

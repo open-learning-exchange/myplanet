@@ -55,16 +55,28 @@ class HealthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getUpdatedHealthExaminations(): List<HealthExamination> {
+    suspend fun getUpdatedHealthExaminations(): List<HealthExamination> {
         return healthExaminationDao.getUpdated()
     }
 
-    override suspend fun getUpdatedHealthForUser(userId: String): List<HealthExamination> {
+    suspend fun getUpdatedHealthForUser(userId: String): List<HealthExamination> {
         return healthExaminationDao.getUpdatedForUser(userId)
     }
 
-    override suspend fun markHealthExaminationsUploaded(idToRevMap: Map<String, String?>) {
+    suspend fun markHealthExaminationsUploaded(idToRevMap: Map<String, String?>) {
         healthExaminationDao.markUploaded(idToRevMap)
+    }
+
+    override suspend fun syncPendingHealthExaminations() {
+        val myHealths = getUpdatedHealthExaminations()
+        val uploadedHealths = uploadHealthData(myHealths)
+        markHealthExaminationsUploaded(uploadedHealths)
+    }
+
+    override suspend fun syncPendingHealthExaminationsForUser(userId: String) {
+        val myHealths = getUpdatedHealthForUser(userId)
+        val uploadedHealths = uploadHealthData(myHealths)
+        markHealthExaminationsUploaded(uploadedHealths)
     }
 
     override suspend fun saveExamination(examination: HealthExamination?, pojo: HealthExamination?, user: UserEntity?) {

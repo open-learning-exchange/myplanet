@@ -2,9 +2,7 @@ package org.ole.planet.myplanet.ui.ratings
 
 import android.content.DialogInterface
 import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.widget.RatingBar
 import android.widget.RatingBar.OnRatingBarChangeListener
 import androidx.core.view.isVisible

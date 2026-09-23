@@ -20,7 +20,6 @@ import org.ole.planet.myplanet.databinding.ItemCourseGridBinding
 import org.ole.planet.myplanet.databinding.ItemCourseListBinding
 import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.CourseProgressState
-import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.utils.CourseSubjectClassifier
 import org.ole.planet.myplanet.utils.CoursesItemUtils
 import org.ole.planet.myplanet.utils.DiffUtils
@@ -118,7 +117,8 @@ class CoursesAdapter(
     }
 
     fun removeCourses(courseIds: List<String>, onComplete: (() -> Unit)? = null) {
-        val updated = currentList.filter { it.courseId !in courseIds }
+        val idsSet = courseIds.toSet()
+        val updated = currentList.filter { it.courseId !in idsSet }
         submitList(updated) {
             onComplete?.invoke()
         }

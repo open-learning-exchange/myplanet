@@ -34,12 +34,14 @@ import kotlin.Array
 import kotlin.Int
 import kotlin.String
 import kotlin.arrayOf
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
+import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.databinding.AlertAddAttachmentBinding
 import org.ole.planet.myplanet.databinding.AlertReferenceBinding
 import org.ole.planet.myplanet.databinding.EditAttachementBinding
@@ -48,8 +50,8 @@ import org.ole.planet.myplanet.databinding.FragmentEditAchievementBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.Achievement.Companion.createReference
-import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ProfileFieldsUpdate
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
@@ -75,6 +77,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private var achievementArray: JsonArray? = null
     private var resourceArray: JsonArray? = null
     private var referenceDialog: AlertDialog? = null
+    private var fetchResourcesJob: Job? = null
 
     private val viewModel: AchievementViewModel by viewModels()
 
@@ -177,13 +180,13 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
             lifecycleScope.launch {
                 val cvFilename = computeCvFilename()
-                val userPayload = JsonObject().apply {
-                    addProperty("firstName", firstName)
-                    addProperty("lastName", lastName)
-                    if (middleName.isNotEmpty()) addProperty("middleName", middleName)
-                    if (birthPlace.isNotEmpty()) addProperty("birthPlace", birthPlace)
-                    selectedDobIso?.let { addProperty("birthDate", it) }
-                }
+                val userPayload = ProfileFieldsUpdate(
+                    firstName = firstName.takeIf { it.isNotEmpty() },
+                    lastName = lastName.takeIf { it.isNotEmpty() },
+                    middleName = middleName.takeIf { it.isNotEmpty() },
+                    birthPlace = birthPlace.takeIf { it.isNotEmpty() },
+                    birthDate = selectedDobIso?.takeIf { it.isNotEmpty() }
+                )
                 viewModel.saveAchievement(
                     AchievementSaveRequest(
                         achievementId = achievementId,
@@ -373,8 +376,11 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                     Toast.makeText(activity, getString(R.string.title_is_required), Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
-                if (`object` != null) achievementArray?.remove(`object`)
-                saveAchievement(desc, title)
+                viewLifecycleOwner.lifecycleScope.launch {
+                    fetchResourcesJob?.join()
+                    if (`object` != null) achievementArray?.remove(`object`)
+                    saveAchievement(desc, title)
+                }
             }.setNegativeButton(getString(R.string.cancel), null).show()
     }
 
@@ -409,7 +415,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     private fun showResourceListDialog(prevList: Set<String?>) {
         viewLifecycleOwner.lifecycleScope.launch {
-            val list = viewModel.getAllLibraries()
+            val list = viewModel.getLibraryTitles()
 
             if (isAdded) {
                 val builder = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
@@ -421,9 +427,16 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                 builder.setView(myLibraryAlertdialogView)
                 builder.setPositiveButton("Ok") { _: DialogInterface?, _: Int ->
                     val items = (lv.adapter as CheckboxAdapter).selectedItemsList
-                    resourceArray = JsonArray()
-                    for (ii in items) {
-                        resourceArray?.add(list[ii].serializeResource())
+                    val selectedIds = items.map { list[it].id }
+                    fetchResourcesJob = viewLifecycleOwner.lifecycleScope.launch {
+                        val fullLibraries = viewModel.getLibraryItemsByIds(selectedIds)
+                        val libMap = fullLibraries.associateBy { it.id }
+                        resourceArray = JsonArray()
+                        for (id in selectedIds) {
+                            libMap[id]?.let { lib ->
+                                resourceArray?.add(lib.serializeResource())
+                            }
+                        }
                     }
                 }.setNegativeButton("Cancel", null).show()
             }
@@ -485,7 +498,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         return achievement?.resumeFileName ?: ""
     }
 
-    private fun createResourceList(myLibraryAlertdialogBinding: MyLibraryAlertdialogBinding, list: List<MyLibrary>, prevList: Set<String?>): RecyclerView {
+    private fun createResourceList(myLibraryAlertdialogBinding: MyLibraryAlertdialogBinding, list: List<LibraryTitleProjection>, prevList: Set<String?>): RecyclerView {
         val names = ArrayList<String>()
         val selected: ArrayList<Int> = ArrayList()
         for (i in list.indices) {

@@ -8,8 +8,8 @@
 - **Primary Language**: Kotlin (100% — no Java sources remain)
 - **Min SDK**: 26 (Android 8.0)
 - **Target SDK**: 36 (Android 16); **Compile SDK**: 37
-- **Current Version**: 0.71.77 (versionCode: 7177)
-- **Build System**: Gradle 9.7.1 with Android Gradle Plugin 9.3.1
+- **Current Version**: 0.72.69 (versionCode: 7269)
+- **Build System**: Gradle 9.7.1 (wrapper) with Android Gradle Plugin 9.3.1
 - **Local Database**: Room (AndroidX) 2.8.5 — the only local persistence store
 - **License**: AGPL v3
 
@@ -1633,6 +1633,9 @@ established, at the cost of a regression and five failing tests:
 | `docs/PROGRESS_RATING.md` | You're reporting how far along a long port/rewrite is — the *method* behind the Migration progress table above: which dimensions to score, the eight rules that stop a summary drifting, and why breadth must never be reported under the word "parity". Project-agnostic; the live figure stays in this file |
 | `agents-summoning` skill — `.agents/skills/agents-summoning/SKILL.md` (or the `agents-summoning@summoning` plugin in a Claude Code session) | You're summoning another AI agent (`@coderabbitai` `@codex` `@copilot` `@devin` `@jules` `@openhands` `@dependabot`) on a PR or issue — who answers, how fast, with what side effects, and why a summon went silent. Dated receipts in the same skill's `NOTES.md`; connection checklists in its `references/connecting.md` |
 | `.claude/agents/*.md` | You're delegating Flutter-port work to a subagent — `parity-auditor` (is a slice really at parity?), `port-implementer` (write a slice), `harvest-triage` (which upstream commits the port must follow), `flutter-ci-green` (get the gate passing). Each pins its own model and effort |
+| `kotlin-importing` skill — `.agents/skills/kotlin-importing/SKILL.md` (or the `kotlin-importing@importing` plugin) | You're sorting, cleaning up, or organizing imports in `.kt` files, or removing unused imports without ktlint. Bundles `kotlin-importing.py`; run `python3 .agents/skills/kotlin-importing/kotlin-importing.py --check app/src` to preview, drop `--check` to apply |
+| `merge-prepping` skill — `.agents/skills/merge-prepping/SKILL.md` (or the `merge-prepping@prepping` plugin) | You're writing a PR title or getting a PR ready to merge — the house style `scope: smoother thing doing (fixes #N)`, and attaching the tracking issue so it closes on merge |
+| `branch-overtaking` skill — the `branch-overtaking@overtaking` plugin | This session opened on a branch that isn't `master` — see **Branch Strategy** below |
 
 Reach for the four `.claude/agents` subagents by name when the work fits one: they carry the
 port's conventions, and each pins its own model and effort so a session need not restate either.
@@ -1645,6 +1648,11 @@ drift traps and the broken round trips have actually been found. One harness cav
 `.claude/agents/` at **startup**, so an agent file added or pulled mid-session is not callable
 until the session restarts — `Agent type '<name>' not found` with only the built-ins listed is
 that, not a malformed definition.
+
+**These skills live in git submodules.** A fresh clone leaves `.agents/skills/*` empty, and
+the `extraKnownMarketplaces` plugins in `.claude/settings.json` only load once Claude Code has
+installed them — so in a remote/web session neither path is guaranteed. Run
+`git submodule update --init --recursive` to populate them, then read the `SKILL.md` directly.
 
 Reviewers speak; doers act — an unleashed doer mention (`@openhands`, `@devin`,
 `@copilot`) defaults to commits on your branch, so add "comment only" when that
@@ -1703,46 +1711,46 @@ myplanet/
 | Package | Purpose | Files | Key Items |
 |---------|---------|-------|-----------|
 | `base/` | Base classes for common functionality | 13 | BaseActivity, BaseRecyclerFragment, BasePermissionActivity, BaseContainerFragment, BaseDashboardFragment, BaseResourceFragment, BaseTeamFragment, BaseExamFragment, BaseMemberFragment, BaseDialogFragment, BaseVoicesFragment, BaseRecyclerParentFragment |
-| `callback/` | Event listeners and interfaces | 28 | OnLibraryItemSelectedListener, OnSyncListener, OnTeamUpdateListener, OnChatItemClickListener, OnNewsItemClickListener, and more |
-| `data/` | Data access, Room persistence, and API | 46 | NetworkResult.kt; `room/` (AppDatabase, Converters, 36 DAO interfaces in 37 files — several share `LegacyEntityDaos.kt`), `api/` (ApiInterface, ApiClient, ChatApiService, RetryInterceptor), `auth/` (AuthSessionUpdater) |
-| `di/` | Hilt dependency injection | 10 | Modules (NetworkModule, RoomModule, RepositoryModule, ServiceModule, SharedPreferencesModule, DispatcherModule, TimeModule) + entry points (CoreDependenciesEntryPoint, ServiceDependenciesEntryPoint) |
+| `callback/` | Event listeners and interfaces | 25 | OnLibraryItemSelectedListener, OnSyncListener, OnTeamUpdateListener, OnChatItemClickListener, OnNewsItemClickListener, and more |
+| `data/` | Data access, Room persistence, and API | 46 | NetworkResult.kt; `room/` (AppDatabase, Converters, 37 DAO interfaces one-per-file in `room/dao/`), `api/` (ApiInterface, ApiClient, ChatApiService, RetryInterceptor), `auth/` (AuthSessionUpdater) |
+| `di/` | Hilt dependency injection | 9 | 7 modules (NetworkModule, RoomModule, RepositoryModule, ServiceModule, SharedPreferencesModule, DispatcherModule, TimeModule) + 2 entry points (CoreDependenciesEntryPoint, ServiceDependenciesEntryPoint) |
 | `model/` | Room `@Entity` models and DTOs | 100 | 38 `@Entity` classes (MyCourse, MyLibrary, News, Submission, TeamTask, UserEntity, …) + DTOs (ChatMessage, ChatRequest, ChatResponse, CourseProgressData, Download, ServerAddress, User) |
-| `repository/` | Repository pattern implementations | 68 | 27 domain Interface + Impl pairs + sync-facing interfaces (SyncRepository, TeamsSyncRepository, UserSyncRepository) + SubmissionsRepositoryExporter |
+| `repository/` | Repository pattern implementations | 69 | 27 domain Interface + Impl pairs + 10 interfaces with no Impl of their own (sync views, sync writers, the three `TeamsRepository` parents, VoicesEditActions) + the SubmissionsRepositoryExporter class |
 | `services/` | Background services and workers | 43 | 23 root-level + `sync/` (7), `upload/` (11), `retry/` (2) |
-| `ui/` | User interface components | 204 | 28 feature packages with 16+ ViewModels (courses, resources, teams, chat, etc.) |
-| `utils/` | Helper functions | 46 | NetworkUtils, ImageUtils, DialogUtils, FileUploader, AuthUtils, SecurePrefs, ANRWatchdog, and more |
+| `ui/` | User interface components | 207 | 28 feature packages (courses, resources, teams, chat, etc.); 54 `*ViewModel.kt` across the app |
+| `utils/` | Helper functions | 62 | NetworkUtils, ImageUtils, DialogUtils, FileUploader, AuthUtils, SecurePrefs, ANRWatchdog, and more |
 
-### UI Sub-packages (28 feature packages, 183 files)
+### UI Sub-packages (28 feature packages, 202 files)
 
 | Package | Files | Key Components |
 |---------|-------|----------------|
 | `ui/calendar/` | 1 | CalendarFragment |
 | `ui/chat/` | 8 | ChatDetailFragment, ChatHistoryFragment, ChatViewModel |
-| `ui/community/` | 6 | CommunityTabFragment, LeadersFragment |
-| `ui/components/` | 5 | CustomSpinner, MarkdownDialogFragment, FragmentNavigator |
-| `ui/courses/` | 22 | CourseDetailFragment, TakeCourseFragment, ProgressViewModel |
-| `ui/dashboard/` | 12 | DashboardActivity, DashboardViewModel, BellDashboardViewModel |
-| `ui/dictionary/` | 1 | DictionaryActivity |
+| `ui/community/` | 9 | CommunityTabFragment, LeadersFragment |
+| `ui/components/` | 8 | CustomSpinner, MarkdownDialogFragment, FragmentNavigator |
+| `ui/courses/` | 23 | CourseDetailFragment, TakeCourseFragment, ProgressViewModel |
+| `ui/dashboard/` | 13 | DashboardActivity, DashboardViewModel, BellDashboardViewModel |
+| `ui/dictionary/` | 2 | DictionaryActivity |
 | `ui/enterprises/` | 6 | EnterprisesViewModel, FinancesFragment, ReportsFragment |
 | `ui/events/` | 4 | EventsDetailFragment, EventsAdapter |
 | `ui/exam/` | 2 | ExamTakingFragment, UserInformationFragment |
-| `ui/feedback/` | 7 | FeedbackFragment, FeedbackDetailActivity, FeedbackListViewModel |
+| `ui/feedback/` | 8 | FeedbackFragment, FeedbackDetailActivity, FeedbackListViewModel |
 | `ui/health/` | 7 | MyHealthFragment, AddExaminationActivity |
-| `ui/life/` | 2 | LifeFragment, LifeAdapter |
+| `ui/life/` | 3 | LifeFragment, LifeAdapter |
 | `ui/maps/` | 1 | OfflineMapsActivity |
 | `ui/notifications/` | 3 | NotificationsFragment, NotificationsViewModel |
 | `ui/onboarding/` | 2 | OnboardingActivity, OnboardingAdapter |
 | `ui/personals/` | 3 | PersonalsFragment, PersonalsAdapter |
 | `ui/ratings/` | 2 | RatingsFragment, RatingsViewModel |
 | `ui/references/` | 2 | ReferencesFragment, ReferencesAdapter |
-| `ui/resources/` | 10 | ResourcesFragment, AddResourceFragment, CollectionsFragment |
-| `ui/settings/` | 4 | SettingsActivity, SettingsViewModel, StorageBreakdownFragment, StorageCategoryDetailFragment |
+| `ui/resources/` | 13 | ResourcesFragment, AddResourceFragment, CollectionsFragment |
+| `ui/settings/` | 6 | SettingsActivity, SettingsViewModel, StorageBreakdownFragment, StorageCategoryDetailFragment |
 | `ui/submissions/` | 10 | SubmissionsFragment, SubmissionViewModel |
 | `ui/surveys/` | 5 | SurveyFragment, SendSurveyFragment |
 | `ui/sync/` | 10 | LoginActivity, LoginViewModel, SyncActivity, SyncConfigurationCoordinator, ProcessUserDataActivity |
-| `ui/teams/` | 25 | TeamFragment, TeamDetailFragment, TeamViewModel (largest UI package) |
+| `ui/teams/` | 27 | TeamFragment, TeamDetailFragment, TeamViewModel (largest UI package) |
 | `ui/user/` | 10 | UserProfileFragment, UserProfileViewModel, BecomeMemberActivity |
-| `ui/viewer/` | 4 | ResourceViewerActivity, ResourceViewerFragment, ResourceViewerViewModel, WebViewActivity (all media types render through the shared resource viewer) |
+| `ui/viewer/` | 5 | ResourceViewerActivity, ResourceViewerFragment, ResourceViewerViewModel, WebViewActivity (all media types render through the shared resource viewer) |
 | `ui/voices/` | 9 | VoicesFragment, NewsViewModel, ReplyActivity |
 
 ### Critical Files to Understand
@@ -1755,22 +1763,22 @@ myplanet/
    - Location: `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt`
 
 2. **`AppDatabase.kt`** (~172 lines) — the Room database
-   - `@Database` with 38 entities, `version = 12`, `@TypeConverters(Converters::class)`
-   - Declares all 30+ DAO accessors; provisioned by `RoomModule` with a **drop-and-resync** (`fallbackToDestructiveMigration`) strategy — no hand-written migrations; data is re-pulled from CouchDB on first launch after a schema bump
+   - `@Database` with 38 entities, `version = 12`, `exportSchema = false`, `@TypeConverters(Converters::class)`
+   - Declares all 37 DAO accessors; provisioned by `RoomModule` with a **drop-and-resync** (`fallbackToDestructiveMigration`) strategy — no hand-written migrations; data is re-pulled from CouchDB on first launch after a schema bump
    - Location: `app/src/main/java/org/ole/planet/myplanet/data/room/AppDatabase.kt`
 
-3. **`SyncManager.kt`** (~551 lines)
+3. **`SyncManager.kt`** (~550 lines)
    - Orchestrates data synchronization with server via StateFlow-based state management (`SyncStatus` Idle/Syncing/Success/Error)
    - Delegates per-table pulls to TransactionSyncManager; notifies UI via RealtimeSyncManager's SharedFlow; batch sizing via AdaptiveBatchProcessor
    - Location: `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt`
 
 4. **`UploadManager.kt`** (~431 lines)
-   - File and data uploads with batch processing (BATCH_SIZE = 50)
+   - File and data uploads, chunked by `UploadConstants.BATCH_SIZE` (= 50)
    - Integrates with UploadCoordinator for orchestrated uploads
    - Handles activities, submissions, photos, news uploads
    - Location: `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt`
 
-5. **`TeamsRepositoryImpl.kt`** (~1347 lines — largest file; candidate for splitting by responsibility)
+5. **`TeamsRepositoryImpl.kt`** (~1347 lines — largest file; `UserRepositoryImpl` is next, both candidates for splitting by responsibility)
    - Team management with reactive Flow-based queries
    - Team creation, task management, membership roles
    - Location: `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt`
@@ -1788,7 +1796,7 @@ myplanet/
 | Category | Technology | Version | Purpose |
 |----------|-----------|---------|---------|
 | **Language** | Kotlin | 2.4.20 | Primary development language |
-| **Build System** | Gradle | 9.7.1 | Build automation |
+| **Build System** | Gradle | 9.7.1 | Build automation (wrapper) |
 | **Build Plugin** | Android Gradle Plugin | 9.3.1 | Android build tooling |
 | **DI Framework** | Dagger Hilt | 2.60.1 | Dependency injection |
 | **Database** | Room (AndroidX) | 2.8.5 | Local SQLite object database |
@@ -1818,9 +1826,8 @@ Kotlin itself is applied via AGP's built-in Kotlin support (no `kotlin-android` 
 **Compiler Settings:**
 - Java Compatibility: 17
 - Kotlin JVM Target: 17
-- View Binding: Enabled
-- Data Binding: Not enabled
-- BuildConfig: Enabled
+- View Binding: Enabled; Data Binding: **not** enabled
+- BuildConfig: Enabled; `resValues` enabled (the flavors write `app_version` through it)
 
 ---
 
@@ -1829,9 +1836,9 @@ Kotlin itself is applied via AGP's built-in Kotlin support (no `kotlin-android` 
 ### 1. Layered Architecture
 
 ```
-UI Layer (Activities/Fragments + 16+ ViewModels)
+UI Layer (Activities/Fragments + 49 ViewModels)
     ↓
-Repository Layer (23 domains, Interface + Impl pairs, Flow-based queries)
+Repository Layer (27 domains, Interface + Impl pairs, Flow-based queries)
     ↓
 Service Layer (ApiInterface, SyncManager, UploadCoordinator)
     ↓
@@ -1862,12 +1869,16 @@ class DownloadRepositoryImpl @Inject constructor(
 }
 ```
 
-**All 23 Domain Repositories:**
-Activities, Chat, Community, Configurations, Courses, Download, Events, Feedback, Health, Life, Notifications, Personals, Progress, Ratings, Resources, Retry, Submissions, Surveys, Tags, Teams, Upload, User, Voices
+**All 27 Domain Repositories** (each an `Interface` + `Impl` pair):
+Activities, Chat, Community, Configurations, Courses, Diagnostics, Dictionary, Download, Enterprises, Events, Feedback, Health, Life, Notifications, Personals, Progress, Ratings, Resources, Retry, Submissions, Surveys, Sync, Tags, Teams, Upload, User, Voices
 
-**Sync-facing interfaces & utilities:**
-- `SyncRepository`, `TeamsSyncRepository`, `UserSyncRepository` - narrow interfaces the sync managers depend on
-- `SubmissionsRepositoryExporter` - Export utilities
+**Interfaces with no `Impl` of their own** — each is satisfied by one of the 27 above, so bind that `Impl`, never write a second implementation:
+- `TeamsSyncRepository`, `UserSyncRepository` — narrow sync views on `TeamsRepositoryImpl` / `UserRepositoryImpl`
+- `ChatSyncWriter`, `CommunitySyncWriter`, `EventsSyncWriter`, `FeedbackSyncWriter` — write-side seams the sync managers depend on, implemented by the matching `*RepositoryImpl`
+- `TeamsFinancesRepository`, `TeamsMembersRepository`, `TeamsNotificationsRepository` — `TeamsRepository` extends all three, splitting that large surface by concern
+- `VoicesEditActions` (in `VoicesEditor.kt`) — the edit/reply slice `VoicesRepository` extends, so `VoicesAdapter` depends on three methods instead of the whole repository
+
+`SubmissionsRepositoryExporter` is the exception in this package: a concrete `@Inject` class (PDF export off the submission DAOs), injected into `SubmissionsRepositoryImpl` rather than bound to anything.
 
 There is no generic base repository; each implementation talks to its Room DAO(s) directly.
 
@@ -1875,7 +1886,7 @@ There is no generic base repository; each implementation talks to its Room DAO(s
 
 ### 3. Dependency Injection (Hilt)
 
-**Module Structure (8 modules):**
+**Module Structure (7 modules):**
 - `NetworkModule.kt` - Provides Retrofit, OkHttp
 - `RoomModule.kt` - Builds the `AppDatabase` (with `fallbackToDestructiveMigration`) and provides every DAO
 - `RepositoryModule.kt` - Binds repository interfaces to implementations
@@ -1904,6 +1915,7 @@ There is no generic base repository; each implementation talks to its Room DAO(s
 | `BaseMemberFragment` | Member management base functionality |
 | `BaseDialogFragment` | Dialog base class |
 | `BaseVoicesFragment` | Voices/news-specific base functionality |
+| `BaseAdapterFactory` | Interface for building `ResourcesAdapter` / `CoursesAdapter`, so fragments don't own their construction |
 
 **Location**: `app/src/main/java/org/ole/planet/myplanet/base/`
 
@@ -1935,11 +1947,12 @@ There is no generic base repository; each implementation talks to its Room DAO(s
 - `ResourceDownloadCoordinator` - Orchestrates resource downloads
 - `SubmissionUploadExecutor` - Executes submission uploads
 - `VoicesLabelManager` - Voice/discussion forum label management
+- `SubmissionsUploader` - Injectable submission-upload entry point (used by `ui/exam/UserInformationFragment`)
 - `ChallengePrompter` - Challenge prompt generation
 - `NotificationActionReceiver` - Broadcast receiver for notification actions
 
 **Sync Sub-package (`services/sync/` - 7 files):**
-- `SyncManager` (~551) - Orchestrates sync via StateFlow; the entry point for full syncs
+- `SyncManager` (~550) - Orchestrates sync via StateFlow; the entry point for full syncs
 - `TransactionSyncManager` (~466) - Per-table paginated pulls from CouchDB with checkpoint/resume
 - `LoginSyncManager` (~187) - Sync triggered around the login flow
 - `ServerUrlMapper` (~131) - Maps primary server URLs to alternative/clone URLs
@@ -1950,11 +1963,11 @@ There is no generic base repository; each implementation talks to its Room DAO(s
 **Upload Sub-package (`services/upload/` - 11 files):**
 - `UploadCoordinator` (~325) - Central orchestration for all upload operations with batch processing and retry
 - `UploadConfigs` - Configuration objects for different upload types (NewsActivities, Submissions, Photos, etc.)
-- `UploadConfig` - Generic configuration template with batch size and model binding
-- `RoomUploadConfig` - Room-DAO-backed upload configuration
+- `UploadConfig` / `RoomUploadConfig` / `UploadPipelineConfig` - Generic template, Room-DAO-backed variant, and pipeline wiring
 - `UploadResult` - Result wrapper with success/failure/empty states
 - `UploadConstants` - Shared upload constants
-- `PhotoUploader`, `AchievementUploader` - Type-specific uploaders
+- `PhotoUploader`, `AchievementUploader`, `TeamsUploader` - Type-specific uploaders
+- `BulkDocsUploader` - Batches a `{"docs": [...]}` payload through `UploadRepository.postUploadArray` and reports a per-document `Accepted`/`Rejected`/`RequestFailed` outcome
 
 **Retry Sub-package (`services/retry/` - 2 files):**
 - `RetryQueue` - Queue-based retry mechanism for failed operations
@@ -2038,22 +2051,20 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 
 ### CI/CD Pipeline
 
+**Doc-only pushes start no code workflow.** `build.yml` and `test.yml` share `paths-ignore: ['docs/**', '**/*.md']`, so a push touching nothing outside those paths runs neither. A documentation-only PR therefore collects only the myPlanet labels check, and that one green check is its complete CI state — there is no build or test run pending behind it.
+
 **Build Workflow** (`.github/workflows/build.yml`)
-- Triggers: All branches except `master` (includes `claude/**`, `codex/**`, `dependabot/**`, `jules/**`)
-- Runs on Ubuntu 24.04
-- Matrix builds both `default` and `lite` flavors with fail-fast disabled
-- Uses `gradle/actions/setup-gradle@v6` with a remote Gradle build cache
+- Triggers: push to every branch except `master` (so `claude/**`, `codex/**`, `dependabot/**`, `jules/**` all build), minus the doc-only exclusion above; no manual dispatch. `permissions: contents: read`
+- Ubuntu 24.04, 10-min job timeout; `default` + `lite` matrix with `fail-fast: false`; a new push to the same ref cancels the run in flight
 - Build command: `./gradlew assemble${FLAVOR^}Debug --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4`
 
 **Test Workflow** (`.github/workflows/test.yml`)
-- Triggers: every push (all branches) + manual dispatch; `permissions: contents: read`
-- Runs `./gradlew testDefaultDebugUnitTest` — **fails the build on any unit-test failure**
-- **Two shards, prioritizing wall clock.** `app/build.gradle` `testOptions` implements `-PtestShardTotal=N -PtestShardIndex=I` (each top-level test class is hashed by class-file path into a shard; inner classes follow their outer class; an out-of-range index aborts at configuration time; shards verified disjoint and exactly covering — 174 classes = 86 + 88). CI runs `shard: [1, 2]`: measured on this branch, shards were equal-or-faster in every cache regime (warm source change ~3:03–3:37 vs ~3:57–4:14 unsharded; cold ~4:53 vs ~6:25; no-change ties at ~0:45) at the cost of a second runner per push. Drop the matrix entry to fall back to one job if runner budget outranks wall time
-- `default` flavor only (the `lite` flavor's unit tests are not run in CI)
+- Triggers: push to every branch **including `master`**, minus the doc-only exclusion above, plus manual dispatch; `permissions: contents: read`. Ubuntu 24.04, 15-min job timeout. A branch run is cancelled by the next push to that ref; `master` runs are keyed per `run_id` and never cancel each other
+- Runs `./gradlew testDefaultDebugUnitTest` — **fails the build on any unit-test failure**. `default` flavor only (the `lite` flavor's unit tests are not run in CI), and no instrumented (`androidTest`) execution anywhere in CI
+- **Two shards, prioritizing wall clock.** `app/build.gradle` `testOptions` implements `-PtestShardTotal=N -PtestShardIndex=I` (each top-level test class is hashed by class-file path into a shard; inner classes follow their outer class; an out-of-range index aborts at configuration time; shards verified disjoint and exactly covering). CI runs `shard: [1, 2]`: measured on this branch, shards were equal-or-faster in every cache regime (warm source change ~3:03–3:37 vs ~3:57–4:14 unsharded; cold ~4:53 vs ~6:25; no-change ties at ~0:45) at the cost of a second runner per push. Drop the matrix entry to fall back to one job if runner budget outranks wall time
 - Passes `-ProbolectricOffline=true`, which makes Gradle stage Robolectric's `android-all-instrumented` jars into `build/robolectric-sdks` (see `robolectricSdkJars` in `app/build.gradle`) instead of letting each test fork download them at runtime — concurrent forks fetching the same jar were poisoning one fork's Robolectric sandbox (`AndroidVersions.CURRENT` null, then `NoSuchFieldError` on framework fields) and costing a rerun. Adding a `@Config(sdk = [N])` for a new API level means adding its jar to that map
-- Both `test.yml` and `build.yml` cache `app/build` + `.gradle` per job (`actions/cache`, keyed on the SHA and falling back to the newest earlier run) and pass `cache-read-only: false` to `setup-gradle` — without the latter, `setup-gradle` keeps the Gradle home (and its local build cache) read-only off master, so no branch run could seed it and every push started cold. Measured on one branch: 6m25s cold → ~4m for a push that touches one source file → ~45s for a push that touches no Gradle inputs (workflow/doc-only), where every task, including the test task, is `FROM-CACHE`
-- `GRADLE_BUILD_CACHE_URL/USER/PASS` are currently **empty secrets**, so `settings.gradle` disables the remote cache and `GRADLE_BUILD_CACHE_PUSH` is inert; all cache hits today come from the Actions-cached Gradle home
-- No instrumented (`androidTest`) execution in CI
+- Both `test.yml` and `build.yml` cache `app/build` + `.gradle` per job (`actions/cache`, keyed on the SHA and falling back to the newest earlier run) and pass `cache-read-only: false` to `setup-gradle` — without the latter, `setup-gradle` keeps the Gradle home (and its local build cache) read-only off master, so no branch run could seed it and every push started cold. Measured on one branch: 6m25s cold → ~4m for a push that touches one source file → ~45s for a push that touches no Gradle inputs (workflow-only), where every task, including the test task, is `FROM-CACHE`
+- `GRADLE_BUILD_CACHE_URL/USER/PASS` are currently **empty secrets**, so `settings.gradle` leaves `buildCache.remote` unconfigured (local cache only) and `GRADLE_BUILD_CACHE_PUSH` is inert; all cache hits today come from the Actions-cached Gradle home. `settings.gradle` also reads these from `local.properties` (`gradle.buildCache.url/user/pass/push`) for local use
 
 **Release Workflow** (`.github/workflows/release.yml`)
 - Triggers: `master` branch push or manual dispatch
@@ -2086,9 +2097,10 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
   - **`less`** when the PR only removes code (0 additions, some deletions). It sits *alongside* the size label (`small` + `less`), matching how the label has been used by hand
 - Two exclusions, and both are load-bearing. `EXCLUDE_PATHS` drops `values-*/strings.xml`, because one translated string lands in all five and would count 6×. The version-only lines `automerge.sh` writes into `app/build.gradle` are discounted, because that bump takes a pure deletion from 0 additions to 2 — without the discount, draining the queue would strip `less` from exactly the PRs that earned it
 
-**Dependabot** (`.github/dependabot.yml`)
-- Daily checks for GitHub Actions updates (max 10 open PRs)
-- Daily checks for Gradle dependency updates (max 15 open PRs)
+**Dependabot** (`.github/dependabot.yml`) — all three ecosystems checked daily
+- GitHub Actions at `/`, max 10 open PRs, commit prefix `actions:`
+- Gradle at `/` and `/app`, max 15 open PRs, commit prefix `all:`
+- Git submodules at `/`, max 5 open PRs, commit prefix `all:` — these are the `.agents/skills/*` skill repos in `.gitmodules`
 
 ### Adding New Features
 
@@ -2260,11 +2272,11 @@ Supported languages: English (default) + Arabic (ar), Spanish (es), French (fr),
 > Full testing patterns (what to copy per layer, shared infra, naming) live in **`docs/TESTING.md`**.
 
 ### Current State
-- **A real unit-test suite exists**: 282 unit-test files in `app/src/test/`. There is currently **no** `app/src/androidTest/` (instrumented) source set.
+- **A real unit-test suite exists**: 303 Kotlin files in `app/src/test/`, 298 of them carrying `@Test` cases. There is currently **no** `app/src/androidTest/` (instrumented) source set.
 - **Stack**: JUnit4, **MockK** (`mockk` / `mockk-android`), **Robolectric**, `kotlinx-coroutines-test`, AndroidX Test (`core`/`ext`/`runner`/`arch-core-testing`), **Room testing** (`room-testing`), and **Hilt testing** (`hilt-android-testing` with `kspTest`). Dependencies are declared in `app/build.gradle` (test block) and `gradle/libs.versions.toml`.
-- **Coverage**: nearly all 23 repositories, the sync managers (`services/sync/`), upload/retry services, most ViewModels, many `utils/`, several Room entities/DAOs, DI modules, and the API/auth layer.
+- **Coverage**: nearly all 27 repositories, the sync managers (`services/sync/`), upload/retry services, most ViewModels, many `utils/`, several Room entities/DAOs, DI modules, and the API/auth layer.
 - **Shared test infra**: `MainDispatcherRule`, `TestDispatcherProvider` (inject deterministic dispatchers — production code uses an injectable `DispatcherProvider`, so avoid hard-coding `Dispatchers.*` in new code).
-- **CI enforcement**: `.github/workflows/test.yml` runs `./gradlew testDefaultDebugUnitTest` on every push and fails the build on any test failure. (Instrumented tests are **not** run in CI.)
+- **CI enforcement**: `.github/workflows/test.yml` runs `./gradlew testDefaultDebugUnitTest` on every push except doc-only ones (`docs/**`, `**/*.md`) and fails the build on any test failure. (Instrumented tests are **not** run in CI.)
 
 ### Running Tests
 
@@ -2351,30 +2363,31 @@ When making changes, verify:
 | Main entry point | `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt` | ~489 |
 | REST API endpoints | `app/src/main/java/org/ole/planet/myplanet/data/api/ApiInterface.kt` | ~65 |
 | Room database | `app/src/main/java/org/ole/planet/myplanet/data/room/AppDatabase.kt` | ~172 |
-| Sync orchestration | `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt` | ~551 |
-| Upload handling | `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt` | ~431 |
+| Sync orchestration | `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt` | ~553 |
+| Upload handling | `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt` | ~444 |
 | Upload orchestration | `app/src/main/java/org/ole/planet/myplanet/services/upload/UploadCoordinator.kt` | ~325 |
-| Team management | `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt` | ~1347 |
-| Build configuration | `app/build.gradle` | ~308 |
+| Team management | `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt` | ~1358 |
+| User management | `app/src/main/java/org/ole/planet/myplanet/repository/UserRepositoryImpl.kt` | ~1265 |
+| Build configuration | `app/build.gradle` | ~305 |
 | Dependency versions | `gradle/libs.versions.toml` | ~134 |
 
 ---
 
 ## Codebase Inventory Summary
 
-### Source Files (576 total Kotlin files in `app/src/main/java`) + 282 unit-test files in `app/src/test` (no `app/src/androidTest` source set)
+### Source Files (580 total Kotlin files in `app/src/main/java`) + 303 unit-test files in `app/src/test`, 298 with `@Test` cases (no `app/src/androidTest` source set)
 
 | Component | Files | Purpose |
 |-----------|-------|---------|
 | `model/` | 100 | Room `@Entity` models + DTOs |
-| `repository/` | 68 | Data access abstraction (27 domain Interface+Impl pairs + sync interfaces + utilities) |
-| `ui/` | 204 | User interface across 28 feature packages |
+| `repository/` | 69 | Data access abstraction (27 domain Interface+Impl pairs + 10 Impl-less interfaces + 1 exporter class) |
+| `ui/` | 207 | User interface across 28 feature packages |
 | `services/` | 43 | Background tasks & managers (23 root-level + sync/upload/retry sub-packages) |
-| `di/` | 9 | Dependency injection (8 modules + 2 entry points) |
+| `di/` | 9 | Dependency injection (7 modules + 2 entry points) |
 | `base/` | 17 | Reusable base classes |
 | `callback/` | 25 | Event listeners and interfaces |
-| `data/` | 46 | Data services, Room (AppDatabase, Converters, 36 DAO interfaces in 37 files), API, auth |
-| `utils/` | 59 | Helper utilities |
+| `data/` | 47 | Data services, Room (AppDatabase, Converters, 37 DAO interfaces one-per-file), API, auth |
+| `utils/` | 62 | Helper utilities |
 | Root | 1 | MainApplication.kt |
 
 ### Resource Files
@@ -2386,19 +2399,19 @@ When making changes, verify:
 | Menu files | 2 |
 | XML config files | 3 |
 
-### AndroidManifest Permissions (16 total)
+### AndroidManifest Permissions (15 `<uses-permission>` in the main manifest)
 
 **Network**: INTERNET, ACCESS_NETWORK_STATE, ACCESS_WIFI_STATE, CHANGE_WIFI_STATE, CHANGE_NETWORK_STATE
-**Device**: CAMERA, RECORD_AUDIO, WAKE_LOCK, BLUETOOTH
-**System**: PACKAGE_USAGE_STATS, REQUEST_INSTALL_PACKAGES (default flavor only; removed in lite)
+**Device**: CAMERA, RECORD_AUDIO, WAKE_LOCK, BLUETOOTH (`android:required="false"` — Wi-Fi P2P resource sharing, see `NetworkUtils`/`DialogUtils`)
+**System**: REQUEST_INSTALL_PACKAGES (default flavor only — `app/src/lite/AndroidManifest.xml` is a three-line manifest whose sole job is `tools:node="remove"` on it); PACKAGE_USAGE_STATS (`tools:ignore="ProtectedPermissions"` — used by `MyPlanet.queryUsageStats` and checked at runtime in `BasePermissionActivity`)
 **Notifications**: POST_NOTIFICATIONS, C2DM RECEIVE
 **Foreground services**: FOREGROUND_SERVICE_DATA_SYNC (FOREGROUND_SERVICE appears only as the `android:permission` attribute on the DownloadService `<service>` element, not as a `<uses-permission>`)
-**Other**: SEND_DOWNLOAD_COMPLETED_INTENTS; REQUEST_WRITE_PERMISSION (not a real Android permission — candidate for removal)
+**Other**: SEND_DOWNLOAD_COMPLETED_INTENTS
 
-Note: SYSTEM_ALERT_WINDOW is **not** declared (removed at some point; older docs claimed it).
+Not declared: SYSTEM_ALERT_WINDOW, REQUEST_WRITE_PERMISSION (not a real Android permission — both removed from the manifest; older revisions of this doc still listed them).
 
 ---
 
-**Last Updated**: 2026-09-17
-**Version**: 0.71.77
+**Last Updated**: 2026-09-23 (counts measured at the fold, not inherited)
+**Version**: 0.72.69
 **Maintainer**: Open Learning Exchange

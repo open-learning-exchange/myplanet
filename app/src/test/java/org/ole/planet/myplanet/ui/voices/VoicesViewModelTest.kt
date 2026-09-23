@@ -6,7 +6,6 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import io.mockk.verify
-import org.ole.planet.myplanet.services.VoicesLabelManager
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -21,6 +20,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
@@ -233,21 +233,21 @@ class VoicesViewModelTest {
             images = """[{"resourceId":""}]"""
         }
 
-        coEvery { resourcesRepository.getLibraryItemsByIds(any()) } returns emptyList()
+        coEvery { resourcesRepository.getLibraryItemsByResourceIds(any()) } returns emptyList()
         coEvery { resourcesRepository.downloadResources(any()) } returns true
 
         viewModel.downloadReferencedResources(listOf(newsWithResource, newsWithEmptyImages, newsWithNoResourceId))
         advanceUntilIdle()
 
         coVerify {
-            resourcesRepository.getLibraryItemsByIds(match { it.contains("res-123") && it.size == 1 })
+            resourcesRepository.getLibraryItemsByResourceIds(match { it.contains("res-123") && it.size == 1 })
             resourcesRepository.downloadResources(any())
         }
     }
 
     @Test
     fun `test downloadReferencedResources does nothing for null news or empty list`() = runTest {
-        coEvery { resourcesRepository.getLibraryItemsByIds(any()) } returns emptyList()
+        coEvery { resourcesRepository.getLibraryItemsByResourceIds(any()) } returns emptyList()
         coEvery { resourcesRepository.downloadResources(any()) } returns true
 
         viewModel.downloadReferencedResources(listOf(null))

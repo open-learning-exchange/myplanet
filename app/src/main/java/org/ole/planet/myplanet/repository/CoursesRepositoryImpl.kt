@@ -4,9 +4,9 @@ import android.content.Context
 import android.util.Log
 import androidx.room.withTransaction
 import androidx.sqlite.db.SimpleSQLiteQuery
-import dagger.hilt.android.qualifiers.ApplicationContext
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Base64
 import java.util.Calendar
 import java.util.UUID
@@ -671,10 +671,12 @@ class CoursesRepositoryImpl @Inject constructor(
 
         if (courses.isEmpty() && steps.isEmpty() && exams.isEmpty() && questions.isEmpty()) return processedCount
 
-        if (courses.isNotEmpty()) courseDao.upsertAll(courses)
-        if (steps.isNotEmpty()) courseStepDao.upsertAll(steps)
-        if (exams.isNotEmpty()) examDao.upsertAll(exams)
-        if (questions.isNotEmpty()) questionDao.upsertAll(questions)
+        appDatabase.withTransaction {
+            if (courses.isNotEmpty()) courseDao.upsertAll(courses)
+            if (steps.isNotEmpty()) courseStepDao.upsertAll(steps)
+            if (exams.isNotEmpty()) examDao.upsertAll(exams)
+            if (questions.isNotEmpty()) questionDao.upsertAll(questions)
+        }
         return processedCount
     }
 

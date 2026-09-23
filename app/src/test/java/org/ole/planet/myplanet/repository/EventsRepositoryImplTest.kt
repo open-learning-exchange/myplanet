@@ -48,6 +48,26 @@ class EventsRepositoryImplTest {
     }
 
     @Test
+    fun getMeetupsForTeams() = runTest {
+        coEvery { meetupDao.getByTeamIds(listOf("team1", "team2")) } returns listOf(
+            Meetup().apply { id = "1"; teamId = "team1" },
+            Meetup().apply { id = "2"; teamId = "team2" }
+        )
+
+        val result = repository.getMeetupsForTeams(listOf("team1", "team2"))
+
+        assertEquals(2, result.size)
+    }
+
+    @Test
+    fun getMeetupsForTeamsReturnsEmptyForEmptyInput() = runTest {
+        val result = repository.getMeetupsForTeams(emptyList())
+
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 0) { meetupDao.getByTeamIds(any()) }
+    }
+
+    @Test
     fun getMeetupById() = runTest {
         val mockMeetup = Meetup().apply { meetupId = "meetup1" }
         coEvery { meetupDao.getByMeetupId("meetup1") } returns mockMeetup

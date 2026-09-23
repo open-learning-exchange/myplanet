@@ -4,9 +4,14 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @Entity(
     tableName = "search_activity",
@@ -28,17 +33,19 @@ open class SearchActivity(
     var parentCode: String = ""
 ) {
     fun serialize(androidId: String?, customDeviceName: String): JsonObject {
-        val obj = JsonObject()
-        obj.addProperty("text", text)
-        obj.addProperty("type", type)
-        obj.addProperty("time", time)
-        obj.addProperty("user", user)
+        val filterJson = JsonUtils.gson.fromJson(filter, JsonObject::class.java)
+        val obj = buildJsonObject {
+            put("text", text)
+            put("type", type)
+            put("time", time)
+            put("user", user)
+            put("customDeviceName", customDeviceName)
+            put("deviceName", NetworkUtils.getDeviceName())
+            put("createdOn", createdOn)
+            put("parentCode", parentCode)
+            put("filter", filterJson?.toKotlinx() ?: JsonNull)
+        }.toGson()
         obj.addDocumentOrigin(androidId)
-        obj.addProperty("customDeviceName", customDeviceName)
-        obj.addProperty("deviceName", NetworkUtils.getDeviceName())
-        obj.addProperty("createdOn", createdOn)
-        obj.addProperty("parentCode", parentCode)
-        obj.add("filter", JsonUtils.gson.fromJson(filter, JsonObject::class.java))
         return obj
     }
 

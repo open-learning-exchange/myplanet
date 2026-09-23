@@ -5,7 +5,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.AdapterView.OnItemSelectedListener
 import android.widget.Button
@@ -36,7 +35,6 @@ import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.effectiveId
-import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.ImageUtils
@@ -60,8 +58,6 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
     }
 
     @Inject
-    lateinit var realtimeSyncManager: RealtimeSyncManager
-    @Inject
     lateinit var dispatcherProvider: DispatcherProvider
     private var alertHealthListBinding: AlertHealthListBinding? = null
     var userId: String? = null
@@ -74,14 +70,9 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
 
     private var searchJob: Job? = null
 
-    private fun refreshHealthData() {
-        if (!isAdded || requireActivity().isFinishing) return
-        viewModel.refreshSelectedPatient()
-    }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         view.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
-        setupRealtimeSync()
 
         val allowDateEdit = false
         if(allowDateEdit) {
@@ -108,6 +99,10 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
     }
 
     private fun observeData() {
+
+        collectWhenStarted(viewModel.healthSyncUpdates) {
+            viewModel.refreshSelectedPatient()
+        }
 
         collectWhenStarted(viewModel.loggedInUser) { user ->
             loggedInUser = user
@@ -251,14 +246,6 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
         }
 
         binding.txtDob.text = if (userModel?.dob.isNullOrEmpty()) getString(R.string.birth_date) else TimeUtils.formatDateToDDMMYYYY(userModel?.dob)
-    }
-
-    private fun setupRealtimeSync() {
-        collectWhenStarted(realtimeSyncManager.dataUpdateFlow) { update ->
-            if (update.table == "health" && update.shouldRefreshUI) {
-                refreshHealthData()
-            }
-        }
     }
 
     private fun selectPatient() {
