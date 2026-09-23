@@ -45,6 +45,8 @@ class CoursesViewModel @Inject constructor(
 
     enum class SortType { TITLE, DATE }
 
+    val currentSortType: SortType? get() = activeSort
+
     fun toggleTitleSort() {
         isTitleAscending = !isTitleAscending
         activeSort = SortType.TITLE
@@ -187,31 +189,34 @@ class CoursesViewModel @Inject constructor(
         )
         val myCourses = coursesRepository.getMyCourses(userId, filteredCourses)
         val baseCourses = if (isMyCourseLib) myCourses else filteredCourses
-
-        val progressFilter = filterState.progressFilter
-        val progressFilteredCourses = if (progressFilter.isEmpty() || progressMap == null) {
-            baseCourses
-        } else {
-            baseCourses.filter { course ->
-                val courseKey = course.courseId.takeIf { !it.isNullOrBlank() }
-                    ?: course.id.takeIf { !it.isNullOrBlank() }
-                    ?: course._id
-                val p = progressMap[courseKey] ?: progressMap[course.courseId] ?: progressMap[course.id]
-                val current = p?.current ?: 0
-                val max = p?.max?.takeIf { it > 0 } ?: course.getNumberOfSteps()
-                when (progressFilter) {
-                    "Not Started" -> current == 0
-                    "In Progress" -> current > 0 && (max == 0 || current < max)
-                    "Completed"   -> max > 0 && current >= max
-                    else -> true
-                }
-            }
-        }
+        val progressFilteredCourses = applyProgressFilter(baseCourses, progressMap, filterState.progressFilter)
 
         return if (isMyCourseLib) {
             processCourses(isMyCourseLib, userId, filteredCourses, progressFilteredCourses, progressMap, tagsMap)
         } else {
             processCourses(isMyCourseLib, userId, progressFilteredCourses, myCourses, progressMap, tagsMap)
+        }
+    }
+
+    private fun applyProgressFilter(
+        courses: List<MyCourse>,
+        progressMap: Map<String, CourseProgressState>?,
+        progressFilter: String
+    ): List<MyCourse> {
+        if (progressFilter.isEmpty() || progressMap == null) return courses
+        return courses.filter { course ->
+            val courseKey = course.courseId.takeIf { !it.isNullOrBlank() }
+                ?: course.id.takeIf { !it.isNullOrBlank() }
+                ?: course._id
+            val p = progressMap[courseKey] ?: progressMap[course.courseId] ?: progressMap[course.id]
+            val current = p?.current ?: 0
+            val max = p?.max?.takeIf { it > 0 } ?: course.getNumberOfSteps()
+            when (progressFilter) {
+                "Not Started" -> current == 0
+                "In Progress" -> current > 0 && (max == 0 || current < max)
+                "Completed"   -> max > 0 && current >= max
+                else -> true
+            }
         }
     }
 

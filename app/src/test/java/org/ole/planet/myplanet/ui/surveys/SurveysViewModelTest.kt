@@ -7,6 +7,8 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -15,6 +17,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.StepExam
@@ -380,5 +384,46 @@ class SurveysViewModelTest {
         // Verify reload occurred and updated list is published
         coVerify(exactly = 2) { surveysRepository.getIndividualSurveys() }
         assertEquals(2, viewModel.surveys.value.size)
+    }
+
+    @Test
+    fun `test sendSurveyToUsers publishes surveySent and clears sending on success`() = runTest {
+        coEvery { submissionsRepository.createBulkSurveySubmissions(any(), any()) } returns Unit
+
+        viewModel.sendSurveyToUsers("survey", listOf("u1", "u2"))
+        assertTrue(viewModel.isSendingSurvey.value)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { submissionsRepository.createBulkSurveySubmissions("survey", listOf("u1", "u2")) }
+        assertTrue(viewModel.surveySent.value)
+        assertFalse(viewModel.isSendingSurvey.value)
+    }
+
+    @Test
+    fun `test sendSurveyToUsers signals failure and clears sending when repository throws`() = runTest {
+        coEvery { submissionsRepository.createBulkSurveySubmissions(any(), any()) } throws RuntimeException("boom")
+        val failure = backgroundScope.async(testDispatcher) { viewModel.surveySendFailed.first() }
+        testDispatcher.scheduler.runCurrent()
+
+        viewModel.sendSurveyToUsers("survey", listOf("u1"))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(failure.isCompleted)
+        assertFalse(viewModel.surveySent.value)
+        assertFalse(viewModel.isSendingSurvey.value)
+    }
+
+    @Test
+    fun `test sendSurveyToUsers ignores a second call while a send is in flight`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        coEvery { submissionsRepository.createBulkSurveySubmissions(any(), any()) } coAnswers { gate.await() }
+
+        viewModel.sendSurveyToUsers("survey", listOf("u1"))
+        testDispatcher.scheduler.runCurrent()
+        viewModel.sendSurveyToUsers("survey", listOf("u1"))
+        gate.complete(Unit)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { submissionsRepository.createBulkSurveySubmissions(any(), any()) }
     }
 }

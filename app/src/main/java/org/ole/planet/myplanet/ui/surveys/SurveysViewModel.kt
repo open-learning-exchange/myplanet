@@ -4,10 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
@@ -77,6 +81,12 @@ class SurveysViewModel @Inject constructor(
 
     private val _surveySent = MutableStateFlow(false)
     val surveySent: StateFlow<Boolean> = _surveySent.asStateFlow()
+
+    private val _isSendingSurvey = MutableStateFlow(false)
+    val isSendingSurvey: StateFlow<Boolean> = _isSendingSurvey.asStateFlow()
+
+    private val _surveySendFailed = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val surveySendFailed: SharedFlow<Unit> = _surveySendFailed.asSharedFlow()
 
     init {
         viewModelScope.launch {
@@ -232,9 +242,19 @@ class SurveysViewModel @Inject constructor(
     }
 
     fun sendSurveyToUsers(surveyId: String, selectedUserIds: List<String>) {
+        if (_isSendingSurvey.value) return
+        _isSendingSurvey.value = true
         viewModelScope.launch {
-            submissionsRepository.createBulkSurveySubmissions(surveyId, selectedUserIds)
-            _surveySent.value = true
+            try {
+                submissionsRepository.createBulkSurveySubmissions(surveyId, selectedUserIds)
+                _surveySent.value = true
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _surveySendFailed.tryEmit(Unit)
+            } finally {
+                _isSendingSurvey.value = false
+            }
         }
     }
 }

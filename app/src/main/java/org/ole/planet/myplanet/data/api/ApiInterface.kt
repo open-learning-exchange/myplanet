@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.data.api
 
-import com.google.gson.JsonObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.model.ChatResponse
@@ -36,7 +37,7 @@ interface ApiInterface {
     suspend fun postDoc(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Response<JsonObject>
 
     @POST
-    suspend fun postDocArray(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Response<com.google.gson.JsonArray>
+    suspend fun postDocArray(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Response<JsonArray>
 
     @PUT
     suspend fun uploadResource(@HeaderMap headerMap: Map<String, String>, @Url url: String?, @Body body: RequestBody?): Response<JsonObject>

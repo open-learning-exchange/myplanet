@@ -11,6 +11,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -26,6 +27,8 @@ import org.ole.planet.myplanet.utils.GsonUtils.gson
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @Singleton
 class SyncRepositoryImpl @Inject constructor(
@@ -69,7 +72,7 @@ class SyncRepositoryImpl @Inject constructor(
                         "${UrlUtils.getUrl()}/shelf/$shelfId"
                     )
                 }?.let {
-                    doc = it.body()
+                    doc = it.body()?.toGson()
                 }
                 coroutineContext.ensureActive()
                 doc
@@ -134,9 +137,14 @@ class SyncRepositoryImpl @Inject constructor(
                 val apiStartTime = timeProvider.elapsedRealtime()
                 var response: JsonObject? = null
                 ApiClient.executeWithRetryAndWrap {
-                    apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/${shelfData.type}/_all_docs?include_docs=true", keysObject)
+                    apiInterface.postDoc(
+                        UrlUtils.header,
+                        "application/json",
+                        "${UrlUtils.getUrl()}/${shelfData.type}/_all_docs?include_docs=true",
+                        keysObject.toKotlinx().jsonObject
+                    )
                 }?.let {
-                    response = it.body()
+                    response = it.body()?.toGson()
                 }
                 val apiDuration = timeProvider.elapsedRealtime() - apiStartTime
 

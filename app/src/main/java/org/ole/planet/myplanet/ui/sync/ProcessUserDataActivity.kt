@@ -11,7 +11,6 @@ import android.os.Build
 import android.text.TextUtils
 import android.util.Log
 import android.view.View
-import kotlinx.coroutines.CancellationException
 import android.view.inputmethod.InputMethodManager
 import android.webkit.URLUtil
 import android.widget.ImageView
@@ -21,6 +20,7 @@ import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

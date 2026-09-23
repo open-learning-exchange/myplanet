@@ -6,7 +6,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.model.TagData
 import org.ole.planet.myplanet.model.TagEntity
 

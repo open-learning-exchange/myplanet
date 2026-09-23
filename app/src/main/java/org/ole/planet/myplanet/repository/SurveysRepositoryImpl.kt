@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.jsonObject
 import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
@@ -37,6 +38,8 @@ import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 class SurveysRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -491,7 +494,7 @@ class SurveysRepositoryImpl @Inject constructor(
         return try {
             val url = "${baseUrl.trimEnd('/')}/api/public/surveys/$teamId/$surveyId"
             val response = apiInterface.getJsonObject(null, url)
-            if (response.isSuccessful) response.body() else null
+            if (response.isSuccessful) response.body()?.toGson() else null
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -507,7 +510,7 @@ class SurveysRepositoryImpl @Inject constructor(
                 add("answers", answers)
                 respondent?.let { add("user", it) }
             }
-            apiInterface.postDoc(null, "application/json", url, body).isSuccessful
+            apiInterface.postDoc(null, "application/json", url, body.toKotlinx().jsonObject).isSuccessful
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

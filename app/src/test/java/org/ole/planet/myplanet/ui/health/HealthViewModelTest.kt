@@ -10,7 +10,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.TableDataUpdate
@@ -368,5 +370,29 @@ class HealthViewModelTest {
         advanceUntilIdle()
 
         coVerify(exactly = 1) { healthRepository.getPatientById("1") }
+    }
+
+    @Test
+    fun `saveHealthData sets isSaved on success`() = runTest {
+        coEvery { healthRepository.updateUserHealthProfile("1", any()) } returns Unit
+
+        viewModel.saveHealthData("1", emptyMap())
+        advanceUntilIdle()
+
+        assertTrue(viewModel.isSaved.value)
+    }
+
+    @Test
+    fun `saveHealthData emits saveFailed and leaves isSaved false when the repository throws`() = runTest {
+        coEvery { healthRepository.updateUserHealthProfile("1", any()) } throws IllegalStateException("boom")
+        var failures = 0
+        val job = launch(mainDispatcherRule.testDispatcher) { viewModel.saveFailed.collect { failures++ } }
+
+        viewModel.saveHealthData("1", emptyMap())
+        advanceUntilIdle()
+
+        assertEquals(1, failures)
+        assertFalse(viewModel.isSaved.value)
+        job.cancel()
     }
 }

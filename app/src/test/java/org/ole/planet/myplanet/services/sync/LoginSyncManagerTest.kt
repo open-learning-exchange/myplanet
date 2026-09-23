@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.services.sync
 import android.content.Context
 import android.util.Base64
 import android.util.Log
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.every
@@ -18,6 +17,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
@@ -127,7 +129,7 @@ class LoginSyncManagerTest {
 
     @Test
     fun `login handles missing auth data`() = runTest {
-        val jsonDoc = JsonObject() // No derived_key or salt
+        val jsonDoc = kotlinx.serialization.json.JsonObject(emptyMap()) // No derived_key or salt
         coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
 
         loginSyncManager.login("testUser", "testPass", listener)
@@ -137,12 +139,11 @@ class LoginSyncManagerTest {
 
     @Test
     fun `login with valid credentials and manager role`() = runTest {
-        val jsonDoc = JsonObject()
-        jsonDoc.addProperty("derived_key", "test_derived_key")
-        jsonDoc.addProperty("salt", "test_salt")
-        val roles = JsonArray()
-        roles.add("manager")
-        jsonDoc.add("roles", roles)
+        val jsonDoc = kotlinx.serialization.json.buildJsonObject {
+            put("derived_key", "test_derived_key")
+            put("salt", "test_salt")
+            putJsonArray("roles") { add("manager") }
+        }
 
         coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
 
@@ -157,9 +158,10 @@ class LoginSyncManagerTest {
 
     @Test
     fun `login with valid credentials but not manager`() = runTest {
-        val jsonDoc = JsonObject()
-        jsonDoc.addProperty("derived_key", "test_derived_key")
-        jsonDoc.addProperty("salt", "test_salt")
+        val jsonDoc = kotlinx.serialization.json.buildJsonObject {
+            put("derived_key", "test_derived_key")
+            put("salt", "test_salt")
+        }
 
         coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
         every { AndroidDecrypter.androidDecrypter(any(), any(), any(), any()) } returns true
@@ -172,12 +174,11 @@ class LoginSyncManagerTest {
 
     @Test
     fun `login with valid credentials and capital Manager role`() = runTest {
-        val jsonDoc = JsonObject()
-        jsonDoc.addProperty("derived_key", "test_derived_key")
-        jsonDoc.addProperty("salt", "test_salt")
-        val roles = JsonArray()
-        roles.add("Manager")
-        jsonDoc.add("roles", roles)
+        val jsonDoc = kotlinx.serialization.json.buildJsonObject {
+            put("derived_key", "test_derived_key")
+            put("salt", "test_salt")
+            putJsonArray("roles") { add("Manager") }
+        }
 
         coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
 
@@ -192,12 +193,11 @@ class LoginSyncManagerTest {
 
     @Test
     fun `login with valid credentials and managerial role`() = runTest {
-        val jsonDoc = JsonObject()
-        jsonDoc.addProperty("derived_key", "test_derived_key")
-        jsonDoc.addProperty("salt", "test_salt")
-        val roles = JsonArray()
-        roles.add("managerial")
-        jsonDoc.add("roles", roles)
+        val jsonDoc = kotlinx.serialization.json.buildJsonObject {
+            put("derived_key", "test_derived_key")
+            put("salt", "test_salt")
+            putJsonArray("roles") { add("managerial") }
+        }
 
         coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
         every { AndroidDecrypter.androidDecrypter(any(), any(), any(), any()) } returns true
@@ -210,10 +210,11 @@ class LoginSyncManagerTest {
 
     @Test
     fun `login with valid credentials and admin without manager role`() = runTest {
-        val jsonDoc = JsonObject()
-        jsonDoc.addProperty("derived_key", "test_derived_key")
-        jsonDoc.addProperty("salt", "test_salt")
-        jsonDoc.addProperty("isUserAdmin", true)
+        val jsonDoc = kotlinx.serialization.json.buildJsonObject {
+            put("derived_key", "test_derived_key")
+            put("salt", "test_salt")
+            put("isUserAdmin", true)
+        }
 
         coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
 
@@ -228,10 +229,11 @@ class LoginSyncManagerTest {
 
     @Test
     fun `login with valid credentials and null roles`() = runTest {
-        val jsonDoc = JsonObject()
-        jsonDoc.addProperty("derived_key", "test_derived_key")
-        jsonDoc.addProperty("salt", "test_salt")
-        // Note: roles property is intentionally omitted
+        val jsonDoc = kotlinx.serialization.json.buildJsonObject {
+            put("derived_key", "test_derived_key")
+            put("salt", "test_salt")
+            // Note: roles property is intentionally omitted
+        }
 
         coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
         every { AndroidDecrypter.androidDecrypter(any(), any(), any(), any()) } returns true
@@ -244,9 +246,10 @@ class LoginSyncManagerTest {
 
     @Test
     fun `login with invalid credentials`() = runTest {
-        val jsonDoc = JsonObject()
-        jsonDoc.addProperty("derived_key", "test_derived_key")
-        jsonDoc.addProperty("salt", "test_salt")
+        val jsonDoc = kotlinx.serialization.json.buildJsonObject {
+            put("derived_key", "test_derived_key")
+            put("salt", "test_salt")
+        }
 
         coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
         every { AndroidDecrypter.androidDecrypter(any(), any(), any(), any()) } returns false
