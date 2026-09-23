@@ -112,8 +112,14 @@ enum ChatSendOutcome {
   /// The assistant answered; both bubbles are on screen.
   sent,
 
-  /// The request failed. The query bubble is kept, `state.error` is set, and
-  /// a pending row is waiting for the outbox.
+  /// The conversation took the message and the exchange then failed. The
+  /// query bubble is on screen holding the text, and `state.error` is set.
+  ///
+  /// Deliberately **not** promising a pending outbox row. The `ChatError`
+  /// path does write one, but a throw out of `savePendingChat` or
+  /// `queuePending` lands here too, and a contract the caller relies on to
+  /// clear the composer must state only what every path that returns it
+  /// guarantees. The bubble is that floor.
   failed,
 
   /// Nothing was recorded anywhere. The caller must keep the typed text.
@@ -187,12 +193,23 @@ class ChatConversationNotifier extends Notifier<ChatConversationState> {
   /// mirrors that gate; this return value is the second line of defence.
   ///
   /// [ChatSendOutcome.failed] is *not* a discard: the query bubble is on
-  /// screen, `state.error` renders in the banner, and `savePendingChat` has
-  /// written a row for [ChatQueue] to drain. The composer is cleared for it
-  /// exactly as for a success.
+  /// screen holding the text and `state.error` renders in the banner, so the
+  /// composer is cleared for it exactly as for a success.
   Future<ChatSendOutcome> sendMessage(String message) async {
+    // Whether the optimistic bubble landed, and so whether the text still
+    // exists anywhere once this returns.
+    //
+    // The first cut answered `failed` for *any* throw, which was the round's
+    // own defect relocated rather than removed: `ref.read(
+    // chatRepositoryProvider)` runs one line **above** the bubble and reaches
+    // `appDatabaseProvider`, so a `ProviderException` there left no bubble, no
+    // row and no text — and told the screen to clear the composer. A fix that
+    // relocates a data loss reads exactly like a fix that removes one
+    // (Phase 143); the question that separates them is *what is the state
+    // after this returns*, not whether a message was shown.
+    var taken = false;
     try {
-      return await _sendMessage(message);
+      return await _sendMessage(message, onTaken: () => taken = true);
     } catch (error) {
       // `resolveSession` can reject where `.value` could only have been null,
       // and `savePendingChat`/`queuePending` touch the database. Without this
@@ -200,11 +217,14 @@ class ChatConversationNotifier extends Notifier<ChatConversationState> {
       // `_isSending` true for the life of the screen — a permanently spinning
       // Send button — on top of the lost text.
       state = state.copyWith(isLoading: false, error: '$error');
-      return ChatSendOutcome.failed;
+      return taken ? ChatSendOutcome.failed : ChatSendOutcome.declined;
     }
   }
 
-  Future<ChatSendOutcome> _sendMessage(String message) async {
+  Future<ChatSendOutcome> _sendMessage(
+    String message, {
+    required void Function() onTaken,
+  }) async {
     final session = await resolveSession(ref);
     if (session == null || message.trim().isEmpty) {
       return ChatSendOutcome.declined;
@@ -222,6 +242,7 @@ class ChatConversationNotifier extends Notifier<ChatConversationState> {
       isLoading: true,
       error: null,
     );
+    onTaken();
 
     ChatResult result;
     if (currentState.id.isEmpty) {
@@ -260,7 +281,15 @@ class ChatConversationNotifier extends Notifier<ChatConversationState> {
           isLoading: false,
         );
         return ChatSendOutcome.sent;
-      case ChatError(message: final message):
+      // Bound as `error`, not `message`, and that is the whole of a data loss.
+      // `ChatError(message: final message)` **shadows** this method's own
+      // `message` parameter, so `query: message` below handed
+      // `savePendingChat` the server's refusal text — "no provider available"
+      // — in place of the person's question. The row the retry path exists to
+      // write was written with the wrong contents, and `ChatUploader` then
+      // uploaded the error string as the query. Found by the first test ever
+      // to drive this arm and read the row back.
+      case ChatError(message: final error):
         // Keep the message rather than dropping it, and hand it to the outbox.
         // `ChatUploader` was registered on the drain with nothing ever queuing
         // for it, because a failed send left no pending row to find.
@@ -274,7 +303,7 @@ class ChatConversationNotifier extends Notifier<ChatConversationState> {
           existingRev: currentState.rev.isEmpty ? null : currentState.rev,
         );
         await ref.read(chatQueueProvider).queuePending();
-        state = state.copyWith(isLoading: false, error: message);
+        state = state.copyWith(isLoading: false, error: error);
         return ChatSendOutcome.failed;
     }
   }

@@ -652,6 +652,37 @@ void main() {
       expect(row.url.value, '/teams');
     });
 
+    test('the upload sends both keys explicitly, null rather than omitted', () {
+      // The group's whole argument is that the difference *reaches the
+      // server*, and nothing held that: making `toDoc` omit a null `item` or
+      // `state` left the suite green, which would have made the scoping fix
+      // invisible on the wire and the justification above untrue.
+      //
+      // Kotlin's `Feedback.serializeFeedback` (`Feedback.kt:116-117`) uses
+      // kotlinx `buildJsonObject.put(String, String?)`, which writes
+      // `JsonNull` rather than dropping the key, and `JsonUtils.toGsonElement`
+      // preserves it — so every non-team feedback the Android app uploads
+      // carries `"state":null,"item":null`.
+      final doc = FeedbackMapper.toDoc(
+        FeedbackRow(
+          id: 'fb1',
+          title: 'Question regarding /',
+          url: '/',
+          status: 'Open',
+          priority: 'No',
+          type: 'Bug',
+          openTime: 0,
+          parentCode: 'dev',
+          isUploaded: false,
+        ),
+      );
+
+      expect(doc.containsKey('item'), isTrue);
+      expect(doc.containsKey('state'), isTrue);
+      expect(doc['item'], isNull);
+      expect(doc['state'], isNull);
+    });
+
     test('a state with no item keeps the state', () {
       // The one asymmetry Kotlin *can* produce, because `TeamFragment
       // .getBundle:299-305` puts `team._id`, which is nullable, under a

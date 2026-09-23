@@ -9,6 +9,7 @@ import 'package:myplanet/core/system/device_identity.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/l10n/app_localizations.dart';
 import 'package:myplanet/providers/app_providers.dart';
+import 'package:myplanet/providers/feedback_provider.dart';
 import 'package:myplanet/providers/session_provider.dart';
 import 'package:myplanet/ui/feedback/feedback_create_screen.dart';
 
@@ -114,7 +115,7 @@ void main() {
     expect(find.text('Feedback priority is required.'), findsOneWidget);
 
     // `rgUrgent.setOnCheckedChangeListener { _, _ -> binding.tlUrgent.error =
-    // null }` (`FeedbackFragment.kt:71-73`).
+    // null }` (`FeedbackFragment.kt:70-72`).
     await tester.tap(find.text('Yes'));
     await tester.pumpAndSettle();
     expect(find.text('Feedback priority is required.'), findsNothing);
@@ -141,6 +142,90 @@ void main() {
 
     expect((await database.feedbackDao.getPending()).single.priority, 'No');
   });
+
+  testWidgets('the notifier refuses an unchosen priority too', (tester) async {
+    // The screen must not be the only gate. `FeedbackCreateState.priority`
+    // used to default to `'No'` and `submit` never looked at it, so a second
+    // caller — there is one screen today and nothing stops there being two —
+    // filed a document as not-urgent on its author's behalf, which is the
+    // defect this round removed from the form.
+    //
+    // Kotlin cannot express the state:
+    // `FeedbackComposerViewModel.submitFeedback(urgent, …)` takes the value
+    // with no default, and the fragment refuses before calling it.
+    //
+    // Driven through a pumped widget rather than a bare container because
+    // `feedbackCreateProvider` is a `NotifierProvider` the screen owns; this
+    // reaches the notifier directly and never touches the form.
+    final database = AppDatabase.memory();
+    addTearDown(database.close);
+
+    late WidgetRef widgetRef;
+    await tester.pumpWidget(
+      _wrap(database, config, onRef: (r) => widgetRef = r),
+    );
+    await tester.pumpAndSettle();
+
+    final notifier = widgetRef.read(feedbackCreateProvider.notifier)
+      ..setType('Bug')
+      ..setMessage('filed by a caller that forgot');
+
+    expect(await notifier.submit(), isFalse);
+    expect(await database.feedbackDao.getPending(), isEmpty);
+    expect(widgetRef.read(feedbackCreateProvider).error, isNotNull);
+  });
+
+  testWidgets('every missing field is named at once, not one per tap', (
+    tester,
+  ) async {
+    // A **deliberate divergence**, and it was pinned by nothing: Kotlin's
+    // `validateAndSaveData:88-109` returns after the first failure, so exactly
+    // one error is ever on screen (and `onClick:81` clears all three first).
+    // The port accumulates, which it already did for message and type before
+    // urgency joined them — so this widens an existing divergence rather than
+    // creating one, and it is kept because a form that reveals its
+    // requirements one tap at a time is worse on a phone than one that names
+    // them together.
+    //
+    // Mutation: add `return;` after each branch in `_submit` and this goes
+    // red while nothing else does.
+    final database = AppDatabase.memory();
+    addTearDown(database.close);
+
+    await tester.pumpWidget(_wrap(database, config));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Submit'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Please enter your feedback'), findsOneWidget);
+    expect(find.text('Feedback priority is required.'), findsOneWidget);
+    expect(find.text('Please select a feedback type'), findsOneWidget);
+    expect(await database.feedbackDao.getPending(), isEmpty);
+  });
+
+  testWidgets('resolving one refusal leaves the others standing', (
+    tester,
+  ) async {
+    // The other half of accumulating: each branch clears only its own error.
+    // `FeedbackFragment.kt:70-75` wires one listener per group for exactly
+    // that reason.
+    final database = AppDatabase.memory();
+    addTearDown(database.close);
+
+    await tester.pumpWidget(_wrap(database, config));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Submit'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Yes'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Feedback priority is required.'), findsNothing);
+    expect(find.text('Please select a feedback type'), findsOneWidget);
+    expect(find.text('Please enter your feedback'), findsOneWidget);
+  });
 }
 
 class _NoSession extends SessionNotifier {
@@ -156,7 +241,11 @@ class _TestServerConfig extends ServerConfigNotifier {
   ServerConfig? build() => config;
 }
 
-Widget _wrap(AppDatabase database, ServerConfig? config) {
+Widget _wrap(
+  AppDatabase database,
+  ServerConfig? config, {
+  void Function(WidgetRef)? onRef,
+}) {
   final router = GoRouter(
     initialLocation: '/login/feedback',
     routes: [
@@ -166,7 +255,17 @@ Widget _wrap(AppDatabase database, ServerConfig? config) {
         routes: [
           GoRoute(
             path: 'feedback',
-            builder: (_, _) => const FeedbackCreateScreen(),
+            // `onRef` hands the test a `WidgetRef` inside the same container
+            // the screen resolves against, so a notifier test does not need a
+            // second, differently-overridden `ProviderContainer`.
+            builder: (_, _) => onRef == null
+                ? const FeedbackCreateScreen()
+                : Consumer(
+                    builder: (_, ref, _) {
+                      onRef(ref);
+                      return const FeedbackCreateScreen();
+                    },
+                  ),
           ),
         ],
       ),

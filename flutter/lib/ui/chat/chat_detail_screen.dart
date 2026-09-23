@@ -234,7 +234,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     // request body where the Kotlin would have sent a space.
     final message = _messageController.text.replaceAll('\n', ' ').trim();
     if (message.isEmpty) {
-      // `setupSendButton:299-302` shows `kindly_enter_message` in
+      // `setupSendButton:297-303` shows `kindly_enter_message` in
       // `textGchatIndicator` here; the port returned in silence, so Send did
       // visibly nothing at all.
       ScaffoldMessenger.of(context).showSnackBar(
@@ -254,7 +254,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     // message, which costs the text staying visible in a disabled field for
     // the length of the round trip. Kotlin clears eagerly because it decides
     // synchronously and has already called `mAdapter.addQuery(message)`
-    // (`ChatDetailFragment.kt:305-319`); the port's decision is an `await`
+    // (`ChatDetailFragment.kt:306`, with the clear at `:321`); the port's
+    // decision is an `await`
     // away, so the order has to be the other one.
     final outcome = await ref
         .read(chatConversationProvider.notifier)
@@ -274,10 +275,15 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   /// [ScrollController.position] asserts when nothing is attached, and nothing
   /// is: the message list is replaced by an empty-state [Column] until there
   /// is at least one message, and a rebuild is a frame away rather than an
-  /// `await` away. So a send that resolved without adding a bubble — the
-  /// notifier declining it, which is exactly what happens when `onSubmitted`
-  /// fires with no session and bypasses the disabled button — took the whole
-  /// screen down on a keystroke.
+  /// `await` away. So a send that resolved without adding a bubble took the
+  /// whole screen down on a keystroke.
+  ///
+  /// The route that used to reach it — `onSubmitted` firing with no session
+  /// and bypassing the disabled button — is closed twice now, by the field's
+  /// own `enabled` gate and by the [ChatSendOutcome.declined] early return.
+  /// The guard stays load-bearing all the same: a throw *before* the
+  /// optimistic bubble also returns with an empty message list, and that one
+  /// reaches here.
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_scrollController.hasClients) return;

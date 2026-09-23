@@ -23,7 +23,20 @@ class RatingActions {
   const RatingActions(this.ref);
   final Ref ref;
 
-  /// Returns whether the rating was recorded **and** handed to the outbox.
+  /// Returns whether the rating was recorded, and — where there is anything
+  /// to hand it to — queued.
+  ///
+  /// Read that qualification literally, because the first draft of this line
+  /// said "recorded **and** handed to the outbox" and was false on two live
+  /// paths. [queuePending] answers 0 rather than throwing when no server is
+  /// configured, and `RatingDao.pendingUploads` excludes a guest
+  /// (`userId LIKE 'guest%'`, mirroring Kotlin's `RatingDao.kt:36`), so both
+  /// reach `true` with nothing in the outbox. That is parity, not a hole:
+  /// Kotlin's dialog toasts "Thank you, your rating is submitted." for the
+  /// guest too, and the local row is the whole of what its `submitRating`
+  /// does (`RatingsRepositoryImpl.kt:49-77` touches no network). What a
+  /// person is being told is that their rating was *recorded*, which is true
+  /// in both apps.
   ///
   /// It used to return `void`, and [RatingDialog] popped `true` regardless —
   /// so a rating that was never written looked, to the person who typed it,

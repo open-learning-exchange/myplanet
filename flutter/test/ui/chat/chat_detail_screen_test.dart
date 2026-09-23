@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/data/local/app_database.dart';
@@ -17,9 +19,17 @@ class _TestSessionNotifier extends SessionNotifier {
 /// Stands in for the real notifier so the screen can be driven without the
 /// repository, the outbox, or a server. Records what the send button asked for.
 class _TestChatNotifier extends ChatConversationNotifier {
-  _TestChatNotifier(this.initial, {this.outcome = ChatSendOutcome.sent});
+  _TestChatNotifier(
+    this.initial, {
+    this.outcome = ChatSendOutcome.sent,
+    this.pending,
+  });
 
   final ChatConversationState initial;
+
+  /// When set, the send hangs on this until the test completes it — which is
+  /// the only way to observe the screen *during* a send.
+  final Future<ChatSendOutcome>? pending;
 
   /// What the conversation reports back. [ChatSendOutcome.declined] is the one
   /// that means the message exists nowhere, and so the one the composer must
@@ -33,7 +43,8 @@ class _TestChatNotifier extends ChatConversationNotifier {
   @override
   Future<ChatSendOutcome> sendMessage(String message) async {
     sent.add(message);
-    return outcome;
+    final gate = pending;
+    return gate == null ? outcome : await gate;
   }
 }
 
@@ -47,8 +58,13 @@ void main() {
     Map<String, bool>? providers,
     String? chatId,
     ChatSendOutcome outcome = ChatSendOutcome.sent,
+    Future<ChatSendOutcome>? pending,
   }) async {
-    final notifier = _TestChatNotifier(state, outcome: outcome);
+    final notifier = _TestChatNotifier(
+      state,
+      outcome: outcome,
+      pending: pending,
+    );
     await tester.pumpWidget(
       wrapScreen(
         ChatDetailScreen(chatId: chatId),
@@ -219,7 +235,7 @@ void main() {
   });
 
   testWidgets('Send with an empty field says so', (tester) async {
-    // `setupSendButton:299-302` shows `kindly_enter_message` in
+    // `setupSendButton:297-303` shows `kindly_enter_message` in
     // `textGchatIndicator`. The port returned in silence, so the button
     // visibly did nothing.
     final notifier = await pumpDetail(tester, user: _user());
@@ -273,5 +289,37 @@ void main() {
     await tester.pump();
 
     expect(notifier.sent, ['first line second line']);
+  });
+
+  testWidgets('the composer is dead while a send is in flight', (tester) async {
+    // Not cosmetic, and not covered by the `session != null` half of the same
+    // gate: without `!_isSending` a person can type a second message during
+    // the round trip and the clear at the end of `_sendMessage` destroys it —
+    // the same loss this round is about, one frame later. Kotlin closes it
+    // with `disableUI()` (`ChatDetailFragment.kt:558`, `:573`), which sets
+    // `editGchatMessage.isEnabled = false` for the duration of the request.
+    //
+    // Mutation: `enabled: session != null` leaves every other test here green.
+    final gate = Completer<ChatSendOutcome>();
+    final notifier = await pumpDetail(
+      tester,
+      user: _user(),
+      pending: gate.future,
+    );
+
+    await tester.enterText(find.byType(TextField), 'Capital of Iceland?');
+    await tester.tap(find.byIcon(Icons.send));
+    await tester.pump();
+
+    expect(notifier.sent, ['Capital of Iceland?']);
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).enabled,
+      isFalse,
+      reason: 'a second message typed now is cleared away by the first send',
+    );
+
+    gate.complete(ChatSendOutcome.sent);
+    await tester.pump();
+    expect(tester.widget<TextField>(find.byType(TextField)).enabled, isTrue);
   });
 }

@@ -191,14 +191,24 @@ final feedbackSyncProvider =
 /// State for feedback creation.
 class FeedbackCreateState {
   const FeedbackCreateState({
-    this.priority = 'No',
+    this.priority,
     this.type = '',
     this.message = '',
     this.isSubmitting = false,
     this.error,
   });
 
-  final String priority; // 'Yes' or 'No'
+  /// `'Yes'`, `'No'`, or null for "nobody has chosen yet".
+  ///
+  /// It used to default to `'No'`, which made the screen the only thing
+  /// standing between a caller and a document filed as not-urgent on its
+  /// author's behalf. Kotlin cannot express that state:
+  /// `FeedbackComposerViewModel.submitFeedback(urgent, …)` takes the value
+  /// with no default, and `FeedbackFragment.validateAndSaveData:96-99`
+  /// refuses while `rgUrgent.checkedRadioButtonId` is `NO_ID`. Null here says
+  /// the same thing, and [submit] refuses on it the way it already refuses an
+  /// empty message or type.
+  final String? priority;
   final String type; // 'Question', 'Bug', 'Suggestion'
   final String message;
   final bool isSubmitting;
@@ -287,6 +297,12 @@ class FeedbackCreateNotifier extends Notifier<FeedbackCreateState> {
       return false;
     }
 
+    final priority = state.priority;
+    if (priority == null) {
+      state = state.copyWith(error: 'Please select a priority');
+      return false;
+    }
+
     state = state.copyWith(isSubmitting: true, error: null);
 
     try {
@@ -299,7 +315,7 @@ class FeedbackCreateNotifier extends Notifier<FeedbackCreateState> {
           .read(feedbackRepositoryProvider)
           .createFeedback(
             user: session?.name ?? '',
-            priority: state.priority,
+            priority: priority,
             type: state.type,
             message: state.message,
             item: item,

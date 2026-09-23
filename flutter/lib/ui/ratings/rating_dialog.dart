@@ -42,70 +42,84 @@ class _RatingDialogState extends ConsumerState<RatingDialog> {
     }
     return AlertDialog(
       title: Text(l10n.rateTitle(widget.title)),
-      content: summary.when(
-        loading: () => const SizedBox(
-          height: 120,
-          child: Center(child: CircularProgressIndicator()),
-        ),
-        error: (_, _) => Text(l10n.ratingsUnavailable),
-        data: (data) => Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (data.total > 0)
-              Text(l10n.ratingSummary(data.average, data.total)),
-            const SizedBox(height: 12),
-            Semantics(
-              label: l10n.ratingOutOfFive(_rating),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  for (var value = 1; value <= 5; value++)
-                    IconButton(
-                      tooltip: l10n.setRating(value),
-                      onPressed: _submitting
-                          ? null
-                          : () => setState(() => _rating = value),
-                      icon: Icon(
-                        value <= _rating ? Icons.star : Icons.star_border,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                ],
-              ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          summary.when(
+            loading: () => const SizedBox(
+              height: 120,
+              child: Center(child: CircularProgressIndicator()),
             ),
-            if (_rating == 0)
-              Text(
-                l10n.ratingRequired,
-                style: const TextStyle(color: Colors.red),
-              ),
-            // `RatingsFragment:115-117` toasts `SubmitState.Error` and leaves
-            // the dialog up — only `Success` reaches `dismiss()`. Drawn inline
-            // rather than as a toast/snackbar because this dialog already
-            // reports its other refusal that way (`ratingRequired` above), and
-            // because a four-second snackbar behind a modal is the wrong
-            // lifetime for a message whose whole job is to explain why the
-            // dialog did not close.
-            if (_failed)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  l10n.ratingSubmitFailed,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+            error: (_, _) => Text(l10n.ratingsUnavailable),
+            data: (data) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (data.total > 0)
+                  Text(l10n.ratingSummary(data.average, data.total)),
+                const SizedBox(height: 12),
+                Semantics(
+                  label: l10n.ratingOutOfFive(_rating),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      for (var value = 1; value <= 5; value++)
+                        IconButton(
+                          tooltip: l10n.setRating(value),
+                          // Clearing `_failed` here mirrors
+                          // `RatingsFragment.kt:59-64`, whose
+                          // `OnRatingBarChangeListener` hides the dialog's other
+                          // error on any `fromUser` change — and Kotlin's toast
+                          // expires on its own in any case, where this text would
+                          // otherwise describe input the person has since
+                          // changed.
+                          onPressed: _submitting
+                              ? null
+                              : () => setState(() {
+                                  _rating = value;
+                                  _failed = false;
+                                }),
+                          icon: Icon(
+                            value <= _rating ? Icons.star : Icons.star_border,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _comment,
-              enabled: !_submitting,
-              minLines: 2,
-              maxLines: 4,
-              decoration: InputDecoration(
-                labelText: l10n.commentOptional,
-                border: const OutlineInputBorder(),
+                if (_rating == 0)
+                  Text(
+                    l10n.ratingRequired,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _comment,
+                  enabled: !_submitting,
+                  minLines: 2,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    labelText: l10n.commentOptional,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Outside `summary.when`, deliberately. It used to sit in the
+          // `data:` arm, so a stream error arriving *after* the person had
+          // chosen a rating swapped the content for `ratingsUnavailable`
+          // while Submit stayed enabled — a failed submit then set the flag
+          // with nowhere to draw it, and the dialog simply refused to close
+          // with no explanation. The silent-failure shape, one arm over.
+          if (_failed)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                l10n.ratingSubmitFailed,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ),
-          ],
-        ),
+        ],
       ),
       actions: [
         TextButton(

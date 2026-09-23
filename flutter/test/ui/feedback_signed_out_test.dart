@@ -46,7 +46,7 @@ void main() {
   /// behalf. Kotlin pre-selects neither radio (`fragment_feedback.xml:28-47`
   /// carries no `android:checked`) and refuses with
   /// `feedback_priority_is_required` until one is chosen
-  /// (`FeedbackFragment.validateAndSaveData:90-97`); the port's default made
+  /// (`FeedbackFragment.validateAndSaveData:96-99`); the port's default made
   /// `_priorityError` a field that only ever took null, so the error `Text`
   /// reading it was unreachable. Closed this round — the note that stood here
   /// saying otherwise is retired, and

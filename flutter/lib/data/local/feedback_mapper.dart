@@ -302,11 +302,17 @@ class FeedbackMapper {
     // **both** inside `if (state != null)`
     // (`FeedbackRepositoryImpl.kt:45-53`) and writes neither in the else arm.
     // Writing `item` unconditionally here meant a bundle carrying only `item`
-    // produced a row Kotlin would have left `item`-less — the
-    // writer/reader-disagreement shape, where the reader (`getFeedbackByItem`
-    // and the detail screen's context line) would find a row the Kotlin app
-    // never files. No caller passes one without the other today; that is a
-    // property of the call sites, not of this function.
+    // produced a row Kotlin cannot file at all. The reader is [toDoc], which
+    // sends both keys explicitly — null rather than omitted, as Kotlin's
+    // `buildJsonObject.put(String, String?)` does (`Feedback.kt:116-117`) —
+    // so the difference leaves the device: `{"url":"/","state":null,
+    // "item":"<teamId>"}` names a row whose collection is unstated while the
+    // title and url still say `/`. Nothing in `lib/` reads these columns
+    // otherwise; an earlier revision of this comment cited a
+    // `getFeedbackByItem` that exists in neither app, which is the house rule
+    // about citations applying to a comment. No caller passes one without the
+    // other today; that is a property of the call sites, not of this
+    // function.
     String title;
     String url;
     String? scopedItem;

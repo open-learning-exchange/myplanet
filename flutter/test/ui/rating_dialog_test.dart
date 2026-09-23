@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -129,6 +131,8 @@ void main() {
 
     await tester.tap(find.byTooltip('Set rating to 4'));
     await tester.pump();
+    await tester.enterText(find.byType(TextField), 'Very useful');
+    await tester.pump();
     // Never `pumpAndSettle` past this point: while `_submitting` is true the
     // button holds a `CircularProgressIndicator`, whose indefinite animation
     // spins `pumpAndSettle` to its ten-minute default and reads exactly like a
@@ -180,6 +184,92 @@ void main() {
     );
     expect(button.onPressed, isNotNull);
     expect(find.byIcon(Icons.star), findsNWidgets(4));
+    // The comment half of "input intact", which the test name claimed and
+    // nothing held: clearing `_comment` in the failure arm left every
+    // assertion here green while costing the person everything they had
+    // typed. `_ratingState` is reassigned on Kotlin's success path only
+    // (`RatingsViewModel.kt:103`), so the collector that writes `etComment`
+    // never fires on a failure and the field keeps its text.
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      'Very useful',
+    );
+  });
+
+  testWidgets('changing the rating retires the refusal', (tester) async {
+    // A message that outlives the input it describes is a message about
+    // nothing. `RatingsFragment.kt:59-64` hides the dialog's other error on
+    // any `fromUser` change, and Kotlin's toast expires by itself in ~2s
+    // where this text would sit there indefinitely.
+    await openDialog(tester, verdict: false);
+    expect(
+      find.text('Could not submit your rating. Please try again.'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byTooltip('Set rating to 5'));
+    await tester.pump();
+
+    expect(
+      find.text('Could not submit your rating. Please try again.'),
+      findsNothing,
+    );
+  });
+
+  testWidgets('a refusal still shows when the summary stream errors', (
+    tester,
+  ) async {
+    // The message used to live inside `summary.when(data:)`. A stream error
+    // arriving after the person had chosen a rating swapped the content for
+    // `ratingsUnavailable` while Submit stayed enabled — so a failed submit
+    // set the flag with nowhere to draw it and the dialog refused to close
+    // saying nothing at all.
+    //
+    // Driven by erroring the stream *after* the rating is set, because that
+    // ordering is the only one that reaches the state.
+    //
+    // Mutating this one took two goes, and the first is worth recording.
+    // `if (_failed && summary.hasValue)` left the whole suite green — Riverpod
+    // 3's `AsyncError` keeps the previous value, so `hasValue` is still true
+    // here and the guard changed nothing. What the defect actually was is that
+    // `when` does not call its `data:` builder at all on an error, so the
+    // equivalent mutation is `if (_failed && !summary.hasError)`, and that
+    // does go red. A mutation that stays green means "nothing was mutated" as
+    // readily as "nothing is pinned".
+    final actions = _FakeRatingActions(false);
+    final controller = StreamController<RatingSummary>();
+    addTearDown(controller.close);
+
+    await tester.pumpWidget(
+      wrapScreen(
+        const RatingDialog(target: target, title: 'Course'),
+        overrides: [
+          ratingSummaryProvider(
+            target,
+          ).overrideWith((ref) => controller.stream),
+          ratingActionsProvider.overrideWithValue(actions),
+        ],
+      ),
+    );
+    controller.add(const RatingSummary(average: 0, total: 0));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Set rating to 4'));
+    await tester.pump();
+    controller.addError(StateError('the ratings stream died'));
+    await tester.pump();
+
+    expect(find.text('Ratings are unavailable'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Submit rating'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(actions.calls, 1);
+    expect(
+      find.text('Could not submit your rating. Please try again.'),
+      findsOneWidget,
+      reason: 'the dialog refused to close and would not say why',
+    );
   });
 
   testWidgets('a recorded rating closes the dialog', (tester) async {
