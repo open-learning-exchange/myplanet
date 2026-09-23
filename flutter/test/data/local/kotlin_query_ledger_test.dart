@@ -113,47 +113,54 @@ void main() {
     //
     // 78 of 313 after the integrator's master merge, and that +1 is the
     // ledger's first live catch — see `NewsDao.getTopLevelTeamMembership`
-    // below.
+    // below. **133 of 316 after Phase 159 Lane 3**, whose own second audit
+    // pass found four of its coverage claims wrong in this file's worst
+    // direction — overstating what had been looked at. Those corrections are
+    // kept at their entries rather than deleted, because the correction is the
+    // useful record.
     //
-    // **133 of 316 after Phase 159 Lane 3**, which took the ledger's own
-    // running order: `SubmissionDao`, then `QuestionDao`/`AnswerDao`,
-    // `HealthExaminationDao` and `ChatDao`, then outward through the
-    // statements carrying `COLLATE NOCASE`, `IS :param`, `SUBSTR` and `LIKE`.
+    // **242 of 316 after Phase 160 Lane 3**, taking the order the previous
+    // round set down. Fourteen DAOs are now complete: `TeamDao`,
+    // `SubmissionDao`, `NewsDao`, `CourseDao`, `CourseStepDao`,
+    // `NotificationDao`, `UserDao`, `FeedbackDao`, `PersonalDao`, and the six
+    // small ones that had no coverage at all.
     //
-    // **183 left**, and the four sentences this paragraph used to contain
-    // were each wrong in the ledger's own worst direction — overstating what
-    // had been looked at. They are corrected rather than deleted, because the
-    // correction is the useful record:
+    // **Phase 160's own second pass corrected this file again, in the same
+    // direction, and that is now three rounds running.** Two of the Phase 159
+    // justifications at `SubmissionDao.getLatestPendingByUserAndParent` were
+    // wrong: one vacuous, one describing a mapper mechanism that does not
+    // exist. The *verdict* those arguments supported is right and stands.
+    // Read that entry before trusting any reasoning here that you have not
+    // opened the citation for — **the failure mode of this file is a
+    // confident sentence, not a missing one.**
     //
-    //  * "`SubmissionDao` first (all 32 read)" — the file has **33** `@Query`
-    //    statements and **16** are recorded here. The Kotlin side was read end
-    //    to end; what is recorded is the subset this lane also traced to a
-    //    port counterpart itself. Seventeen remain, and they are the next
-    //    round's first target because the reading is half done:
-    //    `getByIds`, `getByUserIdAndTeamId`, `getPendingSurveys`,
-    //    `countPendingSurveys`, `observePendingSurveys`,
-    //    `countPendingOfflineSubmissions`, `countPendingExamResults`,
-    //    `getByParentUserAndStatus`, `getByParentIdsAndTeamId`,
-    //    `getLatestByParentIdAndStatus`, `getLatestPendingByUser`,
-    //    `getFirstByParentIdContaining`, `getUnuploadedNonSurveyByParentIds`,
-    //    `updateStatus`, `updateStatusAndLastUpdate`, `deleteByParentAndUser`,
-    //    `deleteByIds`.
-    //  * "The 191 left" — 316 − 133 is **183**.
-    //  * "`COLLATE NOCASE`, all three instances of it in the corpus" — there
-    //    are **15**. Coverage of that class does happen to be complete, the
-    //    nine `NewsDao` ones having arrived with Phase 158, but the claim as
-    //    written was false and `DictionaryDao.count` sits under that heading
-    //    carrying no `COLLATE NOCASE` at all.
-    //  * "the remaining … `SUBSTR` statements" — `UserDao.getGuestUsersByNames`
-    //    is still uncompared, and it is the one with a port counterpart.
+    // **74 left, and the running order for Phase 161**, by remaining count:
     //
-    // Found by this lane's second `parity-auditor` pass, aimed at its own
-    // finished, green work. Next round's order: `TeamDao` (~22 uncompared,
-    // and its `IFNULL(status, '') != 'archived' ORDER BY createdDate DESC`
-    // family is the risky part), the rest of `SubmissionDao` above, `NewsDao`,
-    // `CourseDao`/`CourseStepDao`, then `NotificationDao`.
+    //  * `MyLibraryDao` — 19 of 36 left, and the biggest. It is also where
+    //    the `LIKE`-shaped shelf predicates live, so take it first.
+    //  * `ExamDao` — 16 of 22 left. Kotlin keeps surveys and tests in one
+    //    table and filters on `type`, which the port answers by splitting into
+    //    [Exams] and [Surveys]; every entry here has to say which table
+    //    answers it, and the six already compared show the shape.
+    //  * `OfflineActivityDao` — 10 of 11 left.
+    //  * `TeamTaskDao` — 9 of 11 left.
+    //  * `TagDao` — 7 of 8 left.
+    //  * `MeetupDao` — 6 of 8 left.
+    //  * `RetryDao` — 5 of 10 left. The port's `OutboxDao` diverges here
+    //    *deliberately* under Phase 148's policy, so read the five entries
+    //    already recorded before judging the rest. Two things established this
+    //    round but not yet recorded, since the lane ran out of round: Kotlin's
+    //    `markCompleted` keeps a `'completed'` row where the port's
+    //    `markCompleted` is `deleteIfInProgress` and deletes it; and
+    //    `recoverStuck` resets every `in_progress` row and rewrites
+    //    `nextRetryTime`, where the port's resets only rows older than a
+    //    staleness window and leaves `nextAttemptAt` alone. The backoff
+    //    itself matches: base 30 s, cap 30 min, doubling, on both sides.
+    //  * `ApkLogDao` — 2, deliberately skipped this round because Lane 1 was
+    //    porting that table and there was nothing on this branch to read its
+    //    queries against. It is the cheapest entry in the next round.
     final uncovered = corpus.length - _compared.length;
-    expect(uncovered, 316 - 225);
+    expect(uncovered, 316 - 242);
   });
 }
 
@@ -257,7 +264,7 @@ const _corpusSize = 316;
 
 /// Entries in [_compared], stated separately so the map and the claim about it
 /// cannot drift apart.
-const _comparedCount = 225;
+const _comparedCount = 242;
 
 /// Queries a lane has read against the port's Drift builder and reached a
 /// verdict on, with the digest the statement had at that moment.
@@ -438,19 +445,58 @@ const _compared = <String, String>{
   // **The round's fix.** `getLatestPendingByUserAndParent` has no `type`
   // filter and the port's `latestPendingByUserAndParent` adds
   // `type = 'survey'` — the open report Phase 158 recorded. Settled: **keep
-  // the conjunct.** Its one Kotlin caller (`getOrCreateSubmission`) is reached
-  // only from survey flows, so the conjunct is redundant rather than
-  // restrictive; and `_liveParentDocument` documents that the port's exam and
-  // survey id spaces are *not* disjoint (`ExamMapper.mapStepExams` and
-  // `SurveyMapper.fromCourseDoc` synthesize the same
-  // `'$courseId-$stepId-$examKey'` for a step document with no `_id`), so
-  // removing it would let an exam row be handed to a survey caller. Deleting
-  // it on sight would have been the wrong move.
+  // the conjunct.**
+  //
+  // **Phase 160 correction: the verdict stands and both justifications given
+  // for it were wrong.** Found by this round's ground-truth pass and
+  // re-verified by hand before being written here, because propagating it
+  // once was enough.
+  //
+  //  * *"Its one Kotlin caller (`getOrCreateSubmission`) is reached only from
+  //    survey flows, so the conjunct is redundant rather than restrictive."*
+  //    Vacuous: `getOrCreateSubmission` appears exactly twice in `app/src` —
+  //    its interface (`SubmissionsRepository.kt:65`) and its impl
+  //    (`SubmissionsRepositoryImpl.kt:666`) — and is **reached from nothing**,
+  //    which the very next lines of this entry already said. And the rows that
+  //    method *writes* being `type = "survey"` says nothing about what the
+  //    query *finds*.
+  //  * *"the port's exam and survey id spaces are not disjoint, because
+  //    `ExamMapper.mapStepExams` and `SurveyMapper.fromCourseDoc` synthesize
+  //    the same `'$courseId-$stepId-$examKey'`."* **The mechanism does not
+  //    exist.** The two arms are partitioned: `ExamMapper.fromCourseDoc`
+  //    passes `examKey: 'exam'` with `accept: (j) => !isSurveyType(j)`
+  //    (`exam_mapper.dart:234,243`) and `SurveyMapper`'s first arm passes the
+  //    same key with `accept: ExamMapper.isSurveyType`
+  //    (`survey_mapper.dart:125-126`) — mutual complements over one object, so
+  //    it lands in exactly one table — while its second arm passes
+  //    `examKey: 'survey'` (`:132`), which mints a **different** suffix.
+  //    Synthesised ids are disjoint across the two tables.
+  //
+  // The two id spaces *do* overlap, by a route neither comment named: both
+  // tables are filled from the same `exams` database, and a standalone
+  // document and its copy embedded under `steps[i].exam` are routed
+  // independently — an embedded object omitting `type` (the common shape,
+  // `exam_mapper.dart:24-27`) goes to [Exams] under its server `_id` while the
+  // standalone document carrying `type: 'surveys'` goes to [Surveys]. One
+  // `_id`, two tables. The stronger reason is the mixed fleet:
+  // `ExamDao.getFirstByStepId` is `WHERE stepId = :stepId LIMIT 1` with no
+  // type filter and no `ORDER BY`, and `createExamSubmission` builds
+  // `parentId` from whatever it returns, so an Android learner on a step
+  // carrying both can author a `type='exam'` sheet under the survey's
+  // `parentId`.
   //
   // What the same reading *did* find is that the port never called this
   // lookup from the path that needs it. Kotlin resumes a pending sheet in
   // `startExamSession`'s first statement under `recreate = isTeam`
-  // (`ExamTakingFragment.kt:154`); the port's surveys list pushed
+  // (`ExamTakingFragment.kt:154`) — though **not through this statement or
+  // its live sibling**: Phase 160 traced it and the resume that actually
+  // fires is `getByParentUserAndStatus` (`:25`) at
+  // `ExamTakingFragment.kt:106-109`. `getPendingByUserAndParent`'s two
+  // callers are `startExamSession:458`, where it is a guaranteed-null
+  // re-query (identical predicate and sort to the lookup that just returned
+  // nothing), and `saveExamAnswer:543`. `SubmissionListViewModel` reaches
+  // neither — it calls `getSubmissionItems` → `getByParentUserAndStatus`.
+  // The port's surveys list pushed
   // `/surveys/<id>` with no `?submission=` and inserted a second row, leaving
   // the leader's `pending` sheet — and the dashboard prompt that reads it —
   // for ever. See `test/repository/pending_survey_sheet_resume_test.dart`.
@@ -1132,4 +1178,158 @@ const _compared = <String, String>{
   // and the port deletes the row *before* enqueueing the tombstone on all four
   // such paths. Same end state, the other order.
   'TeamDao.deleteByIds': '8e40c51a936b',
+
+  // --- SubmissionDao, the seventeen the previous round enumerated -------
+  //
+  // `SubmissionDao` is now complete: 33 of 33. Four of the seventeen are dead
+  // upstream, five are at parity by another spelling, and eight diverge —
+  // none of them losing data today.
+  //
+  // **Dead upstream, nothing owed.** `getPendingSurveys`
+  // (`SubmissionsRepositoryImpl:137` → `SubmissionsRepository.kt:29`, no
+  // caller in `app/src`) and `countPendingSurveys`
+  // (`SurveysRepositoryImpl:366`, likewise).
+  'SubmissionDao.getPendingSurveys': '5ddf8ef4b72c',
+  'SubmissionDao.countPendingSurveys': 'a8f88525d633',
+  // **Live chain, empty result set, and establishing that took the work.**
+  // `CoursesFragment.kt:265,273` always calls `deleteSelected(true)`, so
+  // leaving *or* archiving a course reaches `deleteCoursesProgress:612-631`,
+  // which feeds `getByCourseIds`' exam ids into
+  // `parentId IN (:parentIds) AND type != 'survey' AND uploaded = 0` and then
+  // deletes them. But every exam `getByCourseIds` returns has a non-empty
+  // `courseId`, and `createExamSubmission:489-496` writes such a submission's
+  // `parentId` as `"$examId@$courseId"` — never the bare id. **The `IN`
+  // matches nothing.** So the port having no counterpart costs nothing today;
+  // it is a coincidence rather than a design, and it is a latent divergence
+  // with a trigger, because the port's `pendingUploads()` is unscoped and
+  // status-blind, so a `requires grading` attempt for a course the learner
+  // deliberately left would still reach Planet the moment any writer produces
+  // a bare-id `parentId`.
+  'SubmissionDao.getUnuploadedNonSurveyByParentIds': 'ff6b6638ca67',
+  'SubmissionDao.deleteByIds': '2b998521b193',
+
+  // **At parity by another spelling.** `getByIds` feeds the due-reminder
+  // lookup (`BellDashboardViewModel:80`) and the multi-submission PDF; the
+  // port re-reads `pendingSurveysProvider` and filters by id, which is the
+  // same population because the reminder ids came from that set to begin
+  // with. The multi-submission PDF has no counterpart — a feature gap, not a
+  // query gap.
+  'SubmissionDao.getByIds': 'e6f971d73cbb',
+  // `userId = ? AND teamId = ?` for `findExistingAdoption`; the port runs
+  // `byTeam(teamId)` and filters `row.userId` in Dart. The filter moved out of
+  // SQL, the rows did not change.
+  'SubmissionDao.getByUserIdAndTeamId': '90a8230d3aad',
+  // **Both are gates, not badges** — the brief's premise that a `countPending*`
+  // divergence would be visible does not hold here. `ServerReachabilityWorker:203,222`
+  // uses them as cheap "should I bother?" tests in front of upload configs
+  // that carry their own predicates, and the port has no gate at all
+  // (`dashboard_sync_provider.queuePendingSubmissions` calls `pendingUploads()`
+  // directly). Worth one line because **Kotlin's second gate does not describe
+  // its own payload**: `countPendingExamResults` counts
+  // `LOWER(status) = 'pending' AND id IN (SELECT submissionId FROM answers …)`
+  // while the payload query `getPendingExamResults` has **no status test** at
+  // all, so a finished `requires grading` attempt is uploadable and uncounted
+  // and the worker skips it. The port cannot reproduce the miss.
+  'SubmissionDao.countPendingOfflineSubmissions': 'c0316ed67598',
+  'SubmissionDao.countPendingExamResults': 'fa83fb1c24e8',
+  // `SET status = ?, isUpdated = 1 WHERE id = ?`, from the arm of
+  // `showUserInfoDialog` taken when `isMySurvey || exam?.isFromNation`.
+  // `take_survey_screen.dart:236-251` reproduces that gate literally and both
+  // of its routes write `status: 'complete', isUpdated: true`.
+  'SubmissionDao.updateStatus': 'fe59d8e87e12',
+
+  // **The eight that diverge.**
+  //
+  // **The port's delete is narrower by a `type = 'exam'` conjunct.** Kotlin is
+  // `DELETE FROM submissions WHERE parentId = :parentId AND userId IS :userId`
+  // with no type filter, from `deleteExamSubmissions:396` ←
+  // `startExamSession:469` under `recreate = true`. The port does not delete by
+  // predicate at all: it reads `getExamSubmissionsByUser(userId)`
+  // (`userId = ? AND type = 'exam'`) and filters `parentId` in Dart. A
+  // non-exam-typed sheet at the same `(parentId, userId)` survives here and
+  // not there — reachable exactly where the `_id` overlap above makes one
+  // `parentId` name both. Conservative direction: a stale row, not lost
+  // answers.
+  'SubmissionDao.deleteByParentAndUser': 'e8768f17a3ea',
+  // **The zero-question survey the port offers and Android hides.** This
+  // drives `SurveysAdapter.kt:79-103`, whose `shouldAdopt` the port covers by
+  // sectioning the list instead (`team_surveys_screen.dart:23-24`) — same
+  // information, another route. What has no counterpart is the sibling rule in
+  // the same block: `if (questionCount == 0) { sendSurvey.visibility = GONE;
+  // startSurvey.visibility = GONE }`. A `type: 'surveys'` document with an
+  // empty `questions` array — how a survey looks between being created on
+  // Planet and its author adding questions — is hidden on Android and offered
+  // here, opening a form with nothing to answer.
+  'SubmissionDao.getByParentIdsAndTeamId': '4ceb7a7bdfdc',
+  // **An unescaped `LIKE` with a `LIMIT 1` and no `ORDER BY`, and no exposure
+  // on either side.** `parentId LIKE '%' || :parentIdFragment || '%'`, no
+  // `ESCAPE`, from the `?:` fallback of `getSubmissionByRemoteIdOrParentId:285`.
+  // Its two push sites (`SubmissionsAdapter:100`, `SubmissionsListAdapter:52`)
+  // both pass a **submission row id** — a UUID or CouchDB hex — against a
+  // column holding exam/survey ids, so the fallback is unreachable and the
+  // parameter name records an intent the callers do not honour. Neither shape
+  // contains a `%` or `_`, so nothing leaks. The port has no counterpart
+  // statement: its detail screen goes straight to `watchById`
+  // (`id = ? OR _id = ? LIMIT 1`), the port of `getByIdOrRemoteId` alone. The
+  // port's one unescaped `parentId` `LIKE` is `countCompletedByUserAndExamId`,
+  // already compared above and deliberately unescaped because escaping would
+  // make it *stricter* than Kotlin.
+  'SubmissionDao.getFirstByParentIdContaining': 'b0d909c90a9f',
+  // **Three Kotlin uses, one ported, and this is the statement that performs
+  // Kotlin's survey resume** — see the correction at
+  // `getLatestPendingByUserAndParent` above. `parentId IS ? AND userId IS ?
+  // AND (:status IS NULL OR status = ?) ORDER BY startTime DESC`, both ids
+  // null-safe. The port's `_pendingSurveySheet` matches it with
+  // `equalsNullable` on both, plus the `type = 'survey'` conjunct, which makes
+  // the port *safer*: Kotlin's resume would adopt a pending `type='exam'`
+  // sheet at the same key and overwrite its answers with survey answers.
+  // The second use has no counterpart: `getSubmissionItems` backs
+  // `SubmissionsAdapter.showAllSubmissions`' "(N)" badge and its per-parent
+  // drill-down, where `submissions_screen.dart` is a flat list of every
+  // submission. Five attempts at one exam are one row on Android and five
+  // here. Presentation, not data.
+  'SubmissionDao.getByParentUserAndStatus': 'db86115e98d0',
+  // **No `userId` predicate at all**, and none should be written here.
+  // `parentId = ? AND status = ? ORDER BY lastUpdateTime DESC LIMIT 1`, from
+  // `PublicSurveyActivity:121` with `(surveyId, "complete")`, guarded only by
+  // `lastUpdateTime < launchTime`. On a shared handset it can return *another
+  // respondent's* completed sheet for the same public survey, with that
+  // staleness filter the only thing between it and an upload of the wrong
+  // person's answers. The port holds the id `createSurveyDraft` returned and
+  // never re-looks-up, so it cannot express this.
+  'SubmissionDao.getLatestByParentIdAndStatus': '9ac796b8b039',
+  // **No `parentId` either**, and reproducing it would mis-file an answer.
+  // `userId IS ? AND status = 'pending' ORDER BY startTime DESC LIMIT 1`, the
+  // last `?:` in `saveExamAnswer:535-546`, reached when the exam session never
+  // opened: it attaches the answer to *any* pending sheet the learner holds,
+  // plausibly a different exam entirely, and nothing logs it. The port's
+  // `saveExamAnswer` takes `submissionId` as a required parameter and has no
+  // fallback chain.
+  'SubmissionDao.getLatestPendingByUser': '2b08a320f8f2',
+  // **A no-effect trigger, traced to its end.** `LOWER(status) = 'pending'` —
+  // inconsistent with the three sibling statements' plain `=`, since SQLite's
+  // `=` on TEXT is BINARY-collated. It merges into
+  // `DashboardViewModel.dashboardDataFlow:246` → `DashboardActivity:594` →
+  // `checkAndCreateNewNotifications:389-397`, whose entire body is
+  // `updateResourceNotification(userId)` plus an unread count — **neither
+  // reads pending surveys**. So the flow's only effect is to re-run the
+  // *resource* notification update when a survey row changes, which that
+  // method short-circuits when the message is unchanged. Nothing owed, and
+  // the case difference is moot because the statement that drives the
+  // dashboard prompt is `getUniquePendingSurveyCandidates` (compared above,
+  // case-sensitive), which the port matches.
+  'SubmissionDao.observePendingSurveys': 'a8a4d6fa6e2e',
+  // **`UPDATE … WHERE id = ?` against an upsert, and that is a real
+  // difference in the statement.** Kotlin's affects zero rows when the id is
+  // absent; the port writes the same three columns through
+  // `_dao.upsertAll([SubmissionsCompanion(id, status, lastUpdateTime,
+  // isUpdated)])`, i.e. `insertAllOnConflictUpdate`, and every column but `id`
+  // on [Submissions] is nullable or defaulted — so an absent id **inserts** a
+  // ghost sheet with no `userId`, no `parentId`, no `type` and
+  // `startTime = 0`. Latent, because both callers hold an id from a row they
+  // just wrote; it matters because such a row is invisible to every
+  // type-scoped reader and, at `requires grading`, enters `pendingUploads()`.
+  // The `isUpdated: Value(status == 'requires grading')` divergence from
+  // Kotlin's unconditional `1` is separate and already documented at the code.
+  'SubmissionDao.updateStatusAndLastUpdate': 'a991096f608a',
 };
