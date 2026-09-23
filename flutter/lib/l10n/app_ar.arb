@@ -458,7 +458,6 @@
   "@deleteNotificationConfirmation": {
     "x-mt": true
   },
-  "taskNotification": "* المهمة",
   "chatNotification": "الدردشة",
   "replyNotification": "رد جديد",
   "@replyNotification": {
@@ -908,7 +907,6 @@
     "x-mt": true
   },
   "surveySubmitFailed": "تعذر إرسال الاستبانة. حاول مرة أخرى.",
-  "sendSurveyTo": "إرسال الاستبيان إلى",
   "sendSurvey": "إرسال الاستبيان",
   "surveySentToUsers": "تم إرسال الاستبيان للمستخدمين",
   "noUsersAvailable": "لا يوجد مستخدمين متاحين",
@@ -1071,7 +1069,6 @@
   "@resourcesUnavailable": {
     "x-mt": true
   },
-  "noTeamResources": "لا تتوفر موارد الفريق",
   "untitledResource": "مورد بلا عنوان",
   "@untitledResource": {
     "x-mt": true
@@ -1112,7 +1109,6 @@
   "@coursesUnavailable": {
     "x-mt": true
   },
-  "noTeamCourses": "لا تتوفر دورات الفريق",
   "untitledCourse": "دورة بدون عنوان",
   "addCourse": "إضافة دورة",
   "@addCourse": {
@@ -2065,7 +2061,6 @@
   "chatAlreadyShared": "تمت مشاركة هذه الدردشة بالفعل إلى هذه الوجهة",
   "joinTeamFirst": "يرجى الانضمام إلى فريق لمشاركة هذه المحادثة",
   "joinEnterpriseFirst": "يرجى الانضمام إلى مؤسسة لمشاركة هذه المحادثة",
-  "syncToServer": ":المزامنة إلى الخادم",
   "showMore": "عرض المزيد",
   "showLess": "عرض أقل",
   "youWantToConnectToADifferentServer": "تريد الاتصال بخادم مختلف. امسح بيانات التطبيق للمتابعة",
@@ -2074,5 +2069,19 @@
   "shareChat": "شارك الدردشة",
   "shareWithTeamEnterprise": "مشاركة مع الفريق/المؤسسة",
   "addNoteOptional": "إضافة ملاحظة (اختياري)",
-  "storageDeleteConfirm": "حذف جميع تنزيلات {category}؟"
+  "storageDeleteConfirm": "حذف جميع تنزيلات {category}؟",
+  "sendSurveyTo": "حدد المستخدمين لإرسال الاستطلاع إليهم",
+  "@sendSurveyTo": {
+    "x-mt": true
+  },
+  "noTeamCourses": "لا توجد دورات مرتبطة بهذا الفريق",
+  "@noTeamCourses": {
+    "x-mt": true
+  },
+  "noTeamResources": "لا توجد موارد مرتبطة بهذا الفريق",
+  "@noTeamResources": {
+    "x-mt": true
+  },
+  "syncToServer": ":المزامنة إلى الخادم",
+  "taskNotification": "المهمة"
 }

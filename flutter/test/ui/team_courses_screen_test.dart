@@ -78,7 +78,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Team courses not available'), findsOneWidget);
+    expect(find.text('No courses linked to this team'), findsOneWidget);
     expect(find.byType(FloatingActionButton), findsNothing);
   });
 

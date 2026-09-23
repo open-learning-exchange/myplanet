@@ -504,12 +504,13 @@ void main() {
     // merge rather than on a release, and the rule it enforces is the file's
     // own — count the tree, never increment a remembered number.
 
-    // Phase 160 lane 4 moves all five, by +38 in ar/ne/so, +31 in es and +37
-    // in fr, and every one of them is a translation **recovered** from
+    // Phase 160 lane 4 moves all five — see the note at the map below for the
+    // final deltas, which the audit pass reduced — and every one of them is a
+    // translation **recovered** from
     // `values-*/strings.xml` rather than generated. Three sources, in
     // descending order of how much judgement they took:
     //
-    //   * 26 template keys whose English was changed to the Kotlin app's own
+    //   * 23 template keys whose English was changed to the Kotlin app's own
     //     wording, which is the whole of the judgement this round: the port
     //     had paraphrased a string Kotlin already ships in five languages, so
     //     `noTeams` says "Teams not available" where it said "No teams
@@ -522,8 +523,11 @@ void main() {
     //     (Kotlin folds the unit into the label and the port appends it in
     //     Dart, so adopting would render "Height (cm) (cm)").
     //   * 5 keys the widened label-punctuation class reaches, `*` now being
-    //     stripped alongside `: . … !`: `note`, `levels`, `feedbackType`,
-    //     `yourFeedback` and `taskNotification`.
+    //     stripped alongside `: . … !`, at both ends of the string rather than
+    //     only the trailing one: `note`, `levels`, `feedbackType`,
+    //     `yourFeedback` and `taskNotification`. Arabic stores the marker at
+    //     the logical start, so an end-anchored strip shipped
+    //     `ar/taskNotification` as "* المهمة".
     //   * 3 onboarding paragraphs the new composite rule reaches, each a
     //     newline join of Kotlin strings that exists nowhere in the XML as one
     //     string.
@@ -543,12 +547,29 @@ void main() {
     // previous line — which is the rule this map exists to enforce and the one
     // Phase 159 broke by pinning from two branches at once.
 
+    // The audit pass moved these again, downwards, and that is the guard
+    // working rather than a regression: three template edits were reverted and
+    // two Somali values refused, so the round lands at ar +35, es +29, fr +34,
+    // ne +35, so +33 rather than the +38/+31/+37/+38/+38 its first cut claimed.
+    //
+    // `sendSurveyTo`, `noTeamCourses` and `noTeamResources` went back to the
+    // port's own English. Somali's `send_survey_to` is "Soo dir Survey to" —
+    // half translated — and Nepali's is byte-identical to `sendSurvey`, which
+    // is the confirm button on the very dialog `sendSurveyTo` titles. The two
+    // team empty states lost the "linked to this team" that distinguishes them
+    // from the port's own error states (`resourcesUnavailable`), which is the
+    // stated bar — *unless it loses something the screen needs* — being crossed.
+    //
+    // `so/noSurveys` and `so/updateHealth` are refused outright; see
+    // `refusedTranslations` in the tool for the evidence and for why a refusal
+    // list rather than a deletion.
+
     const humanReviewed = {
-      'ar': 472,
-      'es': 517,
-      'fr': 469,
-      'ne': 472,
-      'so': 472,
+      'ar': 469,
+      'es': 515,
+      'fr': 466,
+      'ne': 469,
+      'so': 467,
     };
 
     for (final code in locales) {

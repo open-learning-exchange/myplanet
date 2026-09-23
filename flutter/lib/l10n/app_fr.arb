@@ -1007,7 +1007,6 @@
     "x-mt": true
   },
   "surveySubmitFailed": "Impossible d'envoyer l'enquête. Veuillez réessayer.",
-  "sendSurveyTo": "Envoyer l'enquête à",
   "sendSurvey": "Envoyer l'enquête",
   "surveySentToUsers": "Enquête envoyée aux utilisateurs",
   "noUsersAvailable": "Aucun utilisateur disponible",
@@ -1170,7 +1169,6 @@
   "@resourcesUnavailable": {
     "x-mt": true
   },
-  "noTeamResources": "Aucune ressource d'équipe disponible",
   "untitledResource": "Ressource sans titre",
   "@untitledResource": {
     "x-mt": true
@@ -1211,7 +1209,6 @@
   "@coursesUnavailable": {
     "x-mt": true
   },
-  "noTeamCourses": "Aucun cours d'équipe disponible",
   "untitledCourse": "Cours sans titre",
   "addCourse": "Ajouter un cours",
   "@addCourse": {
@@ -2219,5 +2216,17 @@
   "clearingData": "Suppression des données…",
   "shareChat": "Partager le chat",
   "shareWithTeamEnterprise": "Partager avec l'équipe/l'entreprise",
-  "addNoteOptional": "Ajouter une note (optionnel)"
+  "addNoteOptional": "Ajouter une note (optionnel)",
+  "sendSurveyTo": "Sélectionnez les utilisateurs auxquels envoyer l'enquête",
+  "@sendSurveyTo": {
+    "x-mt": true
+  },
+  "noTeamCourses": "Aucun cours lié à cette équipe",
+  "@noTeamCourses": {
+    "x-mt": true
+  },
+  "noTeamResources": "Aucune ressource liée à cette équipe",
+  "@noTeamResources": {
+    "x-mt": true
+  }
 }

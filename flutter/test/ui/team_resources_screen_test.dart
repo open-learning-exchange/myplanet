@@ -29,7 +29,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Team resources not available'), findsOneWidget);
+    expect(find.text('No resources linked to this team'), findsOneWidget);
     // A non-leader sees no add button.
     expect(find.byType(FloatingActionButton), findsNothing);
   });

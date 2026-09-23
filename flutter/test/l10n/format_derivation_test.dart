@@ -272,8 +272,15 @@ void main() {
     // because the layout has nowhere else to put it, exactly as it writes the
     // colon a label draws: `note` is "Note *", `levels` is "Levels*",
     // `feedback_type` is "Feedback Type: *". Every locale carries the marker
-    // through, the port marks a required field in its own widgets, so the
-    // marker is layout and not message.
+    // through.
+    //
+    // The justification is the **template's own English**: `app_en.arb` writes
+    // "Note", "Levels", "Feedback type" and "Your feedback" with no marker, so
+    // a translation carrying one disagrees with the string it translates. A
+    // first cut of this comment said instead that "the port marks a required
+    // field in its own widgets", and an audit disproved it at all six call
+    // sites — the port draws a required marker in exactly one place,
+    // `take_survey_screen.dart`'s question prompt, and none of these is it.
     //
     // These pin the *rule*, not the shipped values. The five keys the change
     // recovered stay correct in the `.arb` after the class is narrowed again —
@@ -304,9 +311,19 @@ void main() {
     });
 
     test('only a trailing run, and only punctuation', () {
-      // An asterisk anywhere but the end is content.
+      // An asterisk in the middle is content and is left alone.
       expect(stripLabelPunctuation('2 * 3 = 6'), '2 * 3 = 6');
-      expect(stripLabelPunctuation('*emphasis* here'), '*emphasis* here');
+      expect(stripLabelPunctuation('a *bold* word'), 'a *bold* word');
+      // A *leading* run is stripped, because Arabic puts the marker there —
+      // see the group below. That does mean a string opening with markdown
+      // emphasis would lose its first `*`, which is safe here by measurement
+      // rather than by construction: no string in `values/strings.xml` begins
+      // with a run of this class, and `no English string has one, so matching
+      // cannot change` is the test that keeps it that way. The two Kotlin
+      // strings that *do* use `*` for markdown bold (`community_earnings`,
+      // `your_earnings`) both carry `%1$d`, so `_printfSpecifier` rejects them
+      // in both derivation paths long before any stripping.
+      expect(stripLabelPunctuation('*emphasis* here'), 'emphasis* here');
       // A question mark is not in the class and must not join it: "Is your
       // feedback Urgent? *" keeps its question mark, which is why `isUrgent`
       // needed a template edit rather than riding this rule.
@@ -318,6 +335,126 @@ void main() {
       // `subject` is "Subject(s)*:", whose core is "Subject(s)" and not the
       // template's "Subject".
       expect(stripLabelPunctuation(_kotlin('en', 'subject')), 'Subject(s)');
+    });
+  });
+
+  group('the marker at the other end', () {
+    // An audit found `app_ar.arb` shipping `taskNotification` as "* المهمة":
+    // Arabic stores the required-field marker at the *logical start*, and the
+    // strip was end-anchored. A required-field asterisk on a screen that draws
+    // none — the exact outcome the trailing rule exists to prevent, arriving
+    // from the other end, and past the test written to catch it, because that
+    // test's fixture (`ne/note`) has the marker trailing and so could not tell
+    // the two readings apart. The Phase 156 shape, inside the rule meant to
+    // catch it.
+
+    test('a leading run is stripped too', () {
+      expect(stripLabelPunctuation(_kotlin('ar', 'task')), 'المهمة');
+      expect(_readArb('ar')['taskNotification'], 'المهمة');
+    });
+
+    test('no English string has one, so matching cannot change', () {
+      // This is why stripping from the front is safe by measurement rather
+      // than by argument. If a Kotlin English string ever begins with a run of
+      // this class, the leading strip starts affecting which keys match which
+      // strings, and that has to be thought about rather than assumed.
+      final leading = RegExp('^[\\s\u00a0]*[:.…!*]+');
+      final offenders = <String>[];
+      for (final entry in _allKotlin('en').entries) {
+        if (entry.value.trim().isEmpty) continue;
+        if (leading.hasMatch(entry.value)) offenders.add(entry.key);
+      }
+      expect(offenders, isEmpty);
+    });
+
+    test('exactly three translations in the corpus have one', () {
+      // All three Arabic, all three the right-to-left mirror. If this count
+      // moves, a new one arrived and wants reading before it is stripped.
+      //
+      // `deadline_required` is here because of *unquoting*, and it is why this
+      // reads the corpus through `_allKotlin` rather than the raw XML. Arabic
+      // writes it `"* الموعد النهائي   "` — Android-quoted to preserve the
+      // trailing spaces — so a scan of the raw text sees a leading `"` and
+      // misses it. A first cut of this test expected two for exactly that
+      // reason and went red on the third. Nothing reads it today (no template
+      // value's English is "Deadline"), so the leading strip protects it in
+      // advance rather than repairing it.
+      final leading = RegExp('^[\\s\u00a0]*[:.…!*]+');
+      final found = <String>[];
+      for (final code in ['ar', 'es', 'fr', 'ne', 'so']) {
+        for (final entry in _allKotlin(code).entries) {
+          if (entry.value.trim().isEmpty) continue;
+          if (leading.hasMatch(entry.value)) found.add('$code/${entry.key}');
+        }
+      }
+      expect(found..sort(), [
+        'ar/deadline_required',
+        'ar/sync_to_server',
+        'ar/task',
+      ]);
+    });
+
+    test('a template that keeps its colon keeps the translation\'s', () {
+      // `ar/sync_to_server` is ":المزامنة إلى الخادم" and was reported as the
+      // same defect. It is not: `app_en.arb`'s `syncToServer` **is**
+      // "Sync to server:", so the template carries the colon and Arabic puts
+      // it where Arabic puts it. The exact tier copies the translation
+      // verbatim and must keep doing so.
+      expect(_readArb('en')['syncToServer'], 'Sync to server:');
+      expect(_readArb('ar')['syncToServer'], _kotlin('ar', 'sync_to_server'));
+    });
+  });
+
+  group('refused translations', () {
+    // An English fallback beats a confident wrong translation, so two Somali
+    // values the tool *could* derive are refused. See [refusedTranslations] for
+    // the evidence; this pins that the refusal is live and that it expires.
+
+    test('a refused key falls back to English', () {
+      for (final entry in refusedTranslations.entries) {
+        final arb = _readArb(entry.key);
+        for (final key in entry.value.keys) {
+          expect(
+            arb.containsKey(key),
+            isFalse,
+            reason: '${entry.key}/$key is refused and must stay absent',
+          );
+        }
+      }
+    });
+
+    test('both derivation paths consult the refusal', () {
+      // Mutation-testing found this one: flipping `isRefusedTranslation` to
+      // always return false left the whole suite green, because the two tests
+      // around this one check the *state* of the `.arb` — which a test run does
+      // not regenerate — and nothing checked that the derivation asks. An
+      // exemption whose enforcement is held by nothing is the Phase 158 shape
+      // one level down.
+      final source = File('tool/arb_from_strings_xml.dart').readAsStringSync();
+      expect(
+        'isRefusedTranslation('.allMatches(source).length,
+        greaterThanOrEqualTo(3),
+        reason: 'one declaration plus a call from each derivation path',
+      );
+    });
+
+    test('every refusal still quotes the live Kotlin string', () {
+      // The exemption expires in both directions. If upstream retranslates one
+      // of these, the quoted text stops matching and this says to delete the
+      // entry — an entry that no longer describes anything is a silent debt.
+      for (final entry in refusedTranslations.entries) {
+        final kotlin = _allKotlin(entry.key);
+        for (final row in entry.value.entries) {
+          final name = _snakeCase(row.key);
+          expect(
+            kotlin[name],
+            row.value,
+            reason:
+                'values-${entry.key}/$name has changed. Re-read it: if it is a '
+                'real translation now, delete this refusal.',
+          );
+        }
+      }
     });
   });
 
@@ -625,6 +762,13 @@ void main() {
 String _spacing(String value) =>
     value.trim().replaceAll(RegExp(r'[\s\u00a0\u202f\u2009]+'), ' ');
 
+/// The Kotlin `strings.xml` name an ARB key is refused against.
+String _snakeCase(String key) => switch (key) {
+  'noSurveys' => 'no_surveys',
+  'updateHealth' => 'update_health_record',
+  _ => throw ArgumentError('no mapping for $key'),
+};
+
 Map<String, Object?> _readArb(String locale) =>
     jsonDecode(File('lib/l10n/app_$locale.arb').readAsStringSync())
         as Map<String, Object?>;
@@ -642,10 +786,19 @@ Map<String, String> _allKotlin(String locale) {
   };
 }
 
-String _unquote(String raw) =>
-    raw.length > 1 && raw.startsWith('"') && raw.endsWith('"')
-    ? raw.substring(1, raw.length - 1)
-    : raw;
+/// Android's quoting undone, the way `tool/arb_from_strings_xml.dart` does it.
+///
+/// The surrounding `"…"` **and** the backslash escapes. A first cut stripped
+/// only the quotes, which the composite tests could not notice because
+/// `ob_desc*` carries no escape in `en` or `ne` — but `values-fr`'s
+/// `ob_desc2_1` is `l\'apprentissage`, so extending a test one locale would
+/// have failed it for a reason with nothing to do with the rule under test.
+String _unquote(String raw) {
+  final value = raw.length > 1 && raw.startsWith('"') && raw.endsWith('"')
+      ? raw.substring(1, raw.length - 1)
+      : raw;
+  return value.replaceAllMapped(RegExp(r"""\\(['"])"""), (match) => match[1]!);
+}
 
 /// One string out of a `values*` directory, with Android's quoting undone —
 /// the same reading `tool/arb_from_strings_xml.dart` does.

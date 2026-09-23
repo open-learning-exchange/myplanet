@@ -984,7 +984,6 @@
     "x-mt": true
   },
   "surveySubmitFailed": "No se pudo enviar la encuesta. Inténtalo de nuevo.",
-  "sendSurveyTo": "Seleccionar usuarios para enviar encuesta",
   "sendSurvey": "Enviar encuesta",
   "surveySentToUsers": "Encuesta enviada a usuarios seleccionados",
   "noUsersAvailable": "No hay usuarios disponibles",
@@ -1144,7 +1143,6 @@
   "@resourcesUnavailable": {
     "x-mt": true
   },
-  "noTeamResources": "Recursos de equipo no disponibles",
   "untitledResource": "recurso sin título",
   "@untitledResource": {
     "x-mt": true
@@ -1185,7 +1183,6 @@
   "@coursesUnavailable": {
     "x-mt": true
   },
-  "noTeamCourses": "Cursos de equipo no disponibles",
   "untitledCourse": "Curso sin título",
   "addCourse": "Agregar curso",
   "@addCourse": {
@@ -2096,5 +2093,14 @@
   "clearingData": "Borrando datos…",
   "shareChat": "Compartir chat",
   "shareWithTeamEnterprise": "Compartir con el equipo/empresa",
-  "addNoteOptional": "Agregar una nota (opcional)"
+  "addNoteOptional": "Agregar una nota (opcional)",
+  "sendSurveyTo": "Seleccionar usuarios para enviar encuesta",
+  "noTeamCourses": "No hay cursos vinculados a este equipo.",
+  "@noTeamCourses": {
+    "x-mt": true
+  },
+  "noTeamResources": "No hay recursos vinculados a este equipo.",
+  "@noTeamResources": {
+    "x-mt": true
+  }
 }

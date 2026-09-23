@@ -87,6 +87,44 @@ const allLocales = defaultLocales;
 /// The ARB attribute marking a string as unreviewed machine translation.
 const machineTranslatedFlag = 'x-mt';
 
+/// Kotlin translations this script refuses to carry across, keyed by locale
+/// and ARB key, with the exact `values-<locale>` string each refusal is about.
+///
+/// The standing rule is that an English fallback beats a confident wrong
+/// translation: a wrong one can mislead a learner where English merely
+/// inconveniences them. These two are wrong by the file's own usage, which is
+/// checkable without reading Somali:
+///
+///   * `no_surveys` renders "survey" as *saamayn*, a word `values-so` uses for
+///     this nowhere else — its other ten survey strings all say *sahan*
+///     (`survey_load_failed`, `redo_survey`, `no_survey_submissions`, …).
+///   * `update_health_record` renders "health record" as *dabeecada
+///     caafimaadka*, where every other health-record string in the same file
+///     says *diiwaan caafimaad* (`unable_to_add_health_record`,
+///     `health_record_not_available`, `no_health_records_available`).
+///
+/// A hapax against ten consistent uses is evidence; both keys were **absent**
+/// from `app_so.arb` before Phase 160, so carrying them would replace a clean
+/// English fallback rather than a worse translation. That is the trade the rule
+/// forbids, which is why this list exists at all rather than the values simply
+/// being deleted — a deletion would be undone by the next merge run.
+///
+/// **This map is an exemption, so it expires in both directions.**
+/// `test/l10n/format_derivation_test.dart` asserts each entry still quotes the
+/// live `values-<locale>` string: if upstream retranslates one, the quoted text
+/// stops matching and the test says to delete the entry. An entry that no
+/// longer describes anything is a silent debt, not a guard.
+const refusedTranslations = <String, Map<String, String>>{
+  'so': {
+    'noSurveys': 'saamayn ma jiraan',
+    'updateHealth': 'Cusbooneysiinta Dabeecada Caafimaadka',
+  },
+};
+
+/// Whether [locale] refuses to take [key] from the Kotlin XML.
+bool isRefusedTranslation(String locale, String key) =>
+    refusedTranslations[locale]?.containsKey(key) ?? false;
+
 void main(List<String> args) {
   if (args.isNotEmpty && args.first == '--unreviewed') {
     _reportUnreviewed(args.skip(1).toList());
@@ -153,6 +191,8 @@ void main(List<String> args) {
       // then fails on it. Leave them absent until `app_en.arb` is corrected to
       // `{amount}`/`{status}`.
       if (_printfSpecifier.hasMatch(templateValue)) continue;
+      // A translation this locale refuses — see [refusedTranslations].
+      if (isRefusedTranslation(locale, key)) continue;
 
       // A message with ICU placeholders is derived through the format layer at
       // the foot of this file, which lines the two notations up by argument
@@ -527,6 +567,7 @@ void _recover(List<String> args, {required bool apply}) {
       final key = entry.key;
       final templateValue = template[key];
       if (templateValue is! String) continue;
+      if (isRefusedTranslation(locale, key)) continue;
       final current = arb[key] is String ? arb[key] as String : null;
       // Keyed by Kotlin name, because when two names disagree the name itself
       // is the tiebreak — see below.
@@ -1031,11 +1072,36 @@ String _ordinarySpaces(String value) =>
 /// the required-field marker into the string itself, because the layout has
 /// nowhere else to put it — `note` is "Note *", `levels` is "Levels*",
 /// `feedback_type` is "Feedback Type: *" — and every locale carries it
-/// through. The port marks a required field in its own widgets, so the marker
-/// is layout rather than message. A `*` is also never the last character of a
-/// sentence, which is why stripping it cannot eat meaning the way stripping a
-/// `?` would.
+/// through.
+///
+/// The justification is the **template's own English**, not the port's
+/// widgets. `app_en.arb` writes "Note", "Levels", "Feedback type" and "Your
+/// feedback" with no marker, so a translation carrying one disagrees with the
+/// string it is a translation of. An earlier revision of this comment claimed
+/// instead that "the port marks a required field in its own widgets", and an
+/// audit disproved it at all six call sites: the port draws a required marker
+/// in exactly one place, `take_survey_screen.dart`'s question prompt, and none
+/// of these is it. That Kotlin marks six required fields where the port marks
+/// none is a real parity gap, and it is nothing to do with this rule.
+///
+/// A `*` is also never the last character of a sentence, which is why widening
+/// the class here cannot eat meaning the way widening it to `?` would.
 final _trailingLabelPunctuation = RegExp('[\\s ]*[:.…!*]+[\\s ]*\$');
+
+/// The same run at the *start* of a string — the right-to-left mirror.
+///
+/// Arabic stores the marker at the logical start, so `values-ar`'s `task` is
+/// `"* المهمة"` and its `sync_to_server` puts the colon there too. An
+/// end-anchored strip leaves those untouched, and this lane shipped
+/// `app_ar.arb`'s `taskNotification` as `"* المهمة"` — a required-field
+/// asterisk on a screen that draws none, which is the exact outcome the
+/// trailing rule exists to prevent, arriving from the other end.
+///
+/// Stripping here is safe by measurement rather than by argument: **no** string
+/// in `values/strings.xml` begins with a run of this class, so English matching
+/// cannot change, and exactly two translations in the whole corpus do — the two
+/// above. `test/l10n/format_derivation_test.dart` pins both facts.
+final _leadingLabelPunctuation = RegExp('^[\\s ]*[:.…!*]+[\\s ]*');
 
 /// The same run, unanchored to whitespace, as the template writes it.
 final _trailingPunctuationOnly = RegExp(r'[:.…!*]+$');
@@ -1049,7 +1115,8 @@ final _trailingPunctuationOnly = RegExp(r'[:.…!*]+$');
 String stripLabelPunctuation(String text) {
   var value = text.trim();
   while (true) {
-    final next = value.replaceFirst(_trailingLabelPunctuation, '').trim();
+    var next = value.replaceFirst(_trailingLabelPunctuation, '').trim();
+    next = next.replaceFirst(_leadingLabelPunctuation, '').trim();
     if (next == value || next.isEmpty) return value;
     value = next;
   }
