@@ -133,9 +133,23 @@ void main() {
     // justifications at `SubmissionDao.getLatestPendingByUserAndParent` were
     // wrong: one vacuous, one describing a mapper mechanism that does not
     // exist. The *verdict* those arguments supported is right and stands.
-    // Read that entry before trusting any reasoning here that you have not
-    // opened the citation for — **the failure mode of this file is a
-    // confident sentence, not a missing one.**
+    //
+    // **And then it corrected Phase 160's own entries, nine of them**, which
+    // is the part worth reading. The worst was `TeamDao.getUpdatedTeams`,
+    // which was marked *"(verified here)"* and still claimed a team edit
+    // "never leaves the device" when `teamCourses` uploads the whole root
+    // document; two more named a real mechanism that does no work
+    // (`QuestionDao.getByIds`) or an absolute its own next sentence undercut
+    // (`SubmissionDao.getUnuploadedNonSurveyByParentIds`). Every one is
+    // corrected at its entry with what the first cut said, because a
+    // correction that hides the error teaches nothing. Six line citations
+    // were wrong too, and one of *those* corrections was itself wrong in the
+    // audit report and caught by re-measuring.
+    //
+    // So: **the failure mode of this file is a confident sentence, not a
+    // missing one**, and "(verified here)" is not a defence — it was on the
+    // worst of the nine. Open the citation before trusting the reasoning,
+    // including the reasoning in this paragraph.
     //
     // **74 left, and the running order for Phase 161**, by remaining count:
     //
@@ -612,7 +626,7 @@ const _compared = <String, String>{
   // `SUBSTR(_id, 1, 6) = 'guest_'` done right: the port tests the prefix in
   // Dart precisely because `LIKE 'guest_%'` would read the underscore as
   // LIKE's single-character wildcard. The code that does so
-  // (`app_database.dart:1603`) belongs to the **plural**
+  // (`app_database.dart:1654`) belongs to the **plural**
   // `getGuestUsersByNames`, which is the method with a port counterpart and is
   // itself **not yet compared** — the singular one is recorded here because
   // its statement was read, and the next round should take the plural.
@@ -701,7 +715,7 @@ const _compared = <String, String>{
   // ---------------------------------------------------------------------
   // Phase 160 Lane 3, taking the running order this file states above.
   //
-  // **`ApkLogDao`'s four statements are deliberately left uncompared.** They
+  // **`ApkLogDao`'s two statements are deliberately left uncompared.** They
   // are in the corpus and they are the obvious cheap win, and taking them
   // would have been dishonest: Lane 1 is porting that table this round, so
   // there is no port counterpart on this branch to read them against. An
@@ -730,7 +744,7 @@ const _compared = <String, String>{
   // `getByCourseId` is `courseId = :x OR id = :x LIMIT 1` and
   // `getByCourseIdsInternal` is `courseId IN (…) OR id IN (…) OR _id IN (…)`,
   // a three-way alternation over columns the port's `Courses` table also has
-  // (`id`, `couchId`/`_id`, `courseId` — `tables.dart:5-8`). The port's
+  // (`id`, `couchId`/`_id`, `courseId` — `tables.dart`'s `Courses`, from `:252`). The port's
   // `CourseDao.getById`/`getByIds` test `id` alone. That is safe here and not
   // in general: `CourseMapper.fromDoc` (`course_mapper.dart:73-75`) writes the
   // document's `_id` into **all three** columns, and it is the only writer of
@@ -795,7 +809,7 @@ const _compared = <String, String>{
   // admin's SYSTEM notifications unread in both apps. The port's
   // `markAllAsRead` is the same single statement and the same population. The
   // *display* then diverges in the port's favour and not by design: Kotlin's
-  // `NotificationsViewModel.markAllAsRead` (`:184`) sets `_unreadCount.value
+  // `NotificationsViewModel.markAllAsRead` (`:186`) sets `_unreadCount.value
   // = 0` optimistically, so the badge shows zero and jumps back on the next
   // recount, while the port's badge is a drift stream that re-emits the true
   // residual immediately.
@@ -887,10 +901,14 @@ const _compared = <String, String>{
   // (`:189`), which turns a submission's answers into the per-step mistake
   // counts the My Progress **list row** renders. The port computes the same
   // `stepMistakes` map in `courseProgressStreamProvider`
-  // (`courses_providers.dart:714-727,745`), reaching questions through
-  // `questionsForExams(examIds)` — the exam, not the question — and joining in
-  // Dart. `progress_repository.dart:69-72` documents the split and was
-  // checked rather than taken on trust.
+  // (`courses_providers.dart:813-874`) — and **not** by the route the first
+  // cut named. It does not reach questions at all: it indexes exams with
+  // `examDao.getByCourseIds` (`:806-819`) and joins on the **answer row's own
+  // `examId`** (`:846`), whose comment says so outright — *"Here the exam id
+  // is on the answer"*. (`questionsForExams` has one caller in `lib/`,
+  // `progress_repository.dart:103`, and that is the grid, not the list.) The
+  // verdict — no by-question-id lookup, none owed — is not weakened by that;
+  // it is stronger, because the port never needs the question row at all.
   'QuestionDao.getByIds': '6765d757a427',
   'ResourceActivityDao.markUploaded': 'd72379b98ce9',
   'CourseProgressDao.getByIds': '24038d7bf283',
@@ -901,7 +919,8 @@ const _compared = <String, String>{
   // `UPDATE my_life SET isVisible = :isVisible WHERE _id = :id OR imageId = :id
   // OR title = :id`; the port's `setVisibility` matches the primary key alone,
   // and `MyLifeEntries` has **no `imageId` column at all** (`tables.dart`), so
-  // the other two arms are not narrowed here, they are unrepresentable. Same
+  // that arm is unrepresentable rather than narrowed; the `title` arm is
+  // representable and simply not written. Same
   // rows for the caller either app actually uses: the port's chain is
   // `life_screen.dart:105` → `life_provider.dart:27`, which passes `row.id`,
   // and that column is `text().named('_id')` — Kotlin's primary key under its
@@ -991,9 +1010,10 @@ const _compared = <String, String>{
   // **This one corrected a wrong statement in the port**, which is the one
   // thing this lane is allowed to fix outside its file.
   // `personals_repository.dart`'s `update` carried a comment saying its
-  // whole-row write matches "Room's `@Update` in `PersonalDao`". There is no
-  // `@Update` in `PersonalDao` — one `@Insert` and nine `@Query`s
-  // (`PersonalDao.kt:20`) — and the edit path is this method, a targeted
+  // whole-row write matches "Room's `@Update` in `PersonalDao`". **There is no
+  // `@Update` in `PersonalDao`** — its only non-`@Query` annotation is the
+  // `@Insert` at `PersonalDao.kt:20` — and the edit path is this method, a
+  // targeted
   // `SET title = COALESCE(:title, title), description = COALESCE(:description,
   // description) WHERE _id = :id OR id = :id`.
   //
@@ -1047,8 +1067,12 @@ const _compared = <String, String>{
   // in-memory `it.status != "archived"` on a nullable String, and there is
   // **no bare `status != 'archived'` on either side**. Kotlin uses the
   // `IFNULL` form six times (`TeamDao.kt:24,25,26,42,45,51`), the spelled-out
-  // form once (`:22`), and an in-memory test four times; the port writes
-  // `status.isNull() | status.equals('archived').not()` at every one.
+  // form once (`:22`), and an in-memory test four times; **wherever the port
+  // has a counterpart it writes `status.isNull() |
+  // status.equals('archived').not()`** — five such predicates on `teams`
+  // (`app_database.dart:1106,1147,1265,1329,1346`) against eleven Kotlin
+  // sites, the shortfall being statements with no port counterpart at all,
+  // `teamNameExists` among them.
   //
   // What the pass found instead is that the divergences are in **other**
   // conjuncts, and three of them are live. The verdicts below come from a
@@ -1056,22 +1080,37 @@ const _compared = <String, String>{
   // marked **verified here** were re-opened and re-read by this lane before
   // being written down, because they are the severe ones.
   //
-  // **A team-document edit never leaves the device, and the row then freezes.
-  // (verified here)** `getUpdatedTeams` (`WHERE isUpdated = 1`) is the only
-  // route a plain team edit takes off an Android handset:
-  // `TeamsRepositoryImpl.getTeamsForUpload:88` → `TeamsUploader.kt:37`. The
-  // port has no query selecting `isUpdated` on `teams` at all — the only
-  // `teams`+`isUpdated` read in `lib/` is `deleteNotIn`'s
-  // `isUpdated.equals(false)` — and `TeamsUploader`'s five types
-  // (`teams_uploader.dart:37-41`) are membership/resource/courses/reports/
-  // finances, none of them the document itself. `team_plan_screen.dart:183`
-  // awaits `updateTeam` and pops, enqueueing nothing, while
-  // `TeamsRepository.updateTeam` writes `isUpdated: true`. The second half is
-  // worse than the first: `TeamMapper.fromDoc:16` short-circuits on
-  // `existing.isUpdated` and its own comment says the row outranks the server
-  // *"until something uploads it"* — so with nothing to clear the flag, that
-  // team row never takes another server-side change for the life of the
-  // install, and `deleteNotIn` skips it for ever.
+  // **A team-document edit is delivered only incidentally, and until then the
+  // row is frozen against the server.**
+  //
+  // **Corrected by this lane's own second audit pass, and the first cut was
+  // marked "verified here", which is what makes it worth keeping.** It said
+  // the edit "never leaves the device" and that `TeamsUploader`'s five types
+  // include "none of them the document itself". **`teamCourses` *is* the root
+  // team document.** `TeamCourseActions._queue` (`teams_provider.dart:772-787`)
+  // enqueues `TeamsRepository.serializeTeamDocument(team)`, whose
+  // `_serializeGeneralTeamDocument` emits `name`, `description`, `services`,
+  // `rules`, `type` and `status`; its two callers `addCourses` and
+  // `removeCourse` both return early unless `team.docType == null`, i.e. the
+  // root document; and `teams_uploader.dart:84` then calls `markUploaded`,
+  // which writes `isUpdated: false`.
+  //
+  // What is true: Kotlin sweeps `WHERE isUpdated = 1`
+  // (`getTeamsForUpload:88` → `TeamsUploader.kt:37`), so a plain edit is
+  // delivered on its own. **The port has no such sweep** — no query selects
+  // `isUpdated` on `teams`; `deleteNotIn` and `TeamMapper.fromDoc` read the
+  // column but neither uploads — and `team_plan_screen.dart:182-195` awaits
+  // `updateTeam` and pops with no enqueue between them. So the edit rides the
+  // *next* team-course add or remove, an unrelated action on a different
+  // screen that may never happen, and until it does `TeamMapper.fromDoc`'s
+  // short-circuit holds the row: it adopts `rev` and the four planet codes but
+  // freezes `name`, `description`, `status` and `courses` against the server,
+  // and `deleteNotIn` skips it.
+  //
+  // So: not the permanent data loss the first cut claimed, and not parity
+  // either. **Do not build a `teams`+`isUpdated` sweep from this entry without
+  // reading `TeamCourseActions._queue` first** — it would duplicate an upload
+  // path that already exists.
   'TeamDao.getUpdatedTeams': '14028cfd129c',
   // **A whole Community tab is permanently empty. (verified here)** Kotlin
   // reads `getByDocType("link")` (`TeamsRepositoryImpl:355`) for the services
@@ -1089,7 +1128,7 @@ const _compared = <String, String>{
   // `sortAscending = true` **hard-coded**, accumulates the balance
   // oldest→newest, and reverses for display only at the end. The port's
   // `watchTransactions` sorts in SQL by the caller's direction, and
-  // `teams_provider.dart:170` then reads
+  // `teams_provider.dart:171` then reads
   // `for (final row in params.ascending ? rows : rows)` — a ternary whose two
   // branches are the same expression. So under the screen's default
   // (`team_finances_screen.dart:39`, `_ascending = false`) the rows arrive
@@ -1215,9 +1254,11 @@ const _compared = <String, String>{
   // none of them losing data today.
   //
   // **Dead upstream, nothing owed.** `getPendingSurveys`
-  // (`SubmissionsRepositoryImpl:137` → `SubmissionsRepository.kt:29`, no
-  // caller in `app/src`) and `countPendingSurveys`
-  // (`SurveysRepositoryImpl:366`, likewise).
+  // (`SubmissionsRepositoryImpl:137` → `SubmissionsRepository.kt:29`) and
+  // `countPendingSurveys` (`SurveysRepositoryImpl:369`). Both are dead in
+  // `app/src/main`; each has exactly one test driving it, which is why that
+  // qualifier is load-bearing and the bare "no caller in `app/src`" the first
+  // cut wrote was false.
   'SubmissionDao.getPendingSurveys': '5ddf8ef4b72c',
   'SubmissionDao.countPendingSurveys': 'a8f88525d633',
   // **Live chain, empty result set, and establishing that took the work.**
@@ -1227,13 +1268,23 @@ const _compared = <String, String>{
   // `parentId IN (:parentIds) AND type != 'survey' AND uploaded = 0` and then
   // deletes them. But every exam `getByCourseIds` returns has a non-empty
   // `courseId`, and `createExamSubmission:489-496` writes such a submission's
-  // `parentId` as `"$examId@$courseId"` — never the bare id. **The `IN`
-  // matches nothing.** So the port having no counterpart costs nothing today;
-  // it is a coincidence rather than a design, and it is a latent divergence
-  // with a trigger, because the port's `pendingUploads()` is unscoped and
-  // status-blind, so a `requires grading` attempt for a course the learner
-  // deliberately left would still reach Planet the moment any writer produces
-  // a bare-id `parentId`.
+  // `parentId` as `"$examId@$courseId"` **when the exam row carries a
+  // `courseId`**, so in the ordinary case the `IN` matches nothing and the
+  // port having no counterpart costs nothing.
+  //
+  // **The first cut said "the `IN` matches nothing" flatly, and its own next
+  // sentence undercut it.** `createExamSubmission:492-493` writes the *bare*
+  // `exam.id` whenever `exam.courseId` is null or empty, and that state is
+  // reachable for a course exam: `StepExam.courseId` defaults null,
+  // `checkIdsAndInsert` only sets it when `myCoursesID` is non-empty, and
+  // `bulkInsertExamsFromSync` re-inserts whole rows through the exams walk —
+  // the exams-vs-courses race `exam_mapper.dart:41-50` already records as a
+  // Kotlin defect. A learner who opens the exam in that window authors a
+  // bare-id `parentId`, the next courses walk restores `courseId`, and the
+  // `IN` then matches. So the divergence has a trigger that **already
+  // exists**, and because the port's `pendingUploads()` is unscoped and
+  // status-blind, a `requires grading` attempt for a course the learner
+  // deliberately left would reach Planet.
   'SubmissionDao.getUnuploadedNonSurveyByParentIds': 'ff6b6638ca67',
   'SubmissionDao.deleteByIds': '2b998521b193',
 
@@ -1288,12 +1339,16 @@ const _compared = <String, String>{
   // startSurvey.visibility = GONE }`. A `type: 'surveys'` document with an
   // empty `questions` array — how a survey looks between being created on
   // Planet and its author adding questions — is hidden on Android and offered
-  // here, opening a form with nothing to answer.
+  // here. **An affordance divergence, not a data one**, and the first cut
+  // overstated it as "a form with nothing to answer":
+  // `take_survey_screen.dart:130-131` renders `l10n.surveyHasNoQuestions` and
+  // the submit button at `:155` sits inside the non-empty branch, so the tap
+  // lands on a message rather than an empty form.
   'SubmissionDao.getByParentIdsAndTeamId': '4ceb7a7bdfdc',
   // **An unescaped `LIKE` with a `LIMIT 1` and no `ORDER BY`, and no exposure
   // on either side.** `parentId LIKE '%' || :parentIdFragment || '%'`, no
   // `ESCAPE`, from the `?:` fallback of `getSubmissionByRemoteIdOrParentId:285`.
-  // Its two push sites (`SubmissionsAdapter:100`, `SubmissionsListAdapter:52`)
+  // Its two push sites (`SubmissionsAdapter:100`, `SubmissionsListAdapter:51`)
   // both pass a **submission row id** — a UUID or CouchDB hex — against a
   // column holding exam/survey ids, so the fallback is unreachable and the
   // parameter name records an intent the callers do not honour. Neither shape
@@ -1338,8 +1393,8 @@ const _compared = <String, String>{
   // **A no-effect trigger, traced to its end.** `LOWER(status) = 'pending'` —
   // inconsistent with the three sibling statements' plain `=`, since SQLite's
   // `=` on TEXT is BINARY-collated. It merges into
-  // `DashboardViewModel.dashboardDataFlow:246` → `DashboardActivity:594` →
-  // `checkAndCreateNewNotifications:389-397`, whose entire body is
+  // `DashboardViewModel.dashboardDataFlow:232` → `DashboardActivity:594` →
+  // `checkAndCreateNewNotifications:375-383`, whose entire body is
   // `updateResourceNotification(userId)` plus an unread count — **neither
   // reads pending surveys**. So the flow's only effect is to re-run the
   // *resource* notification update when a survey row changes, which that
