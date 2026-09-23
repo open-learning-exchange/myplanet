@@ -14,6 +14,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -106,6 +107,7 @@ class PublicSurveyViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(PublicSurveyViewModel.UploadEvent.NavigateOnward, emittedEvent)
+        assertFalse(viewModel.uploading.value)
         collectJob.cancel()
     }
 
@@ -124,6 +126,25 @@ class PublicSurveyViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         coVerify(exactly = 1) { surveysRepository.submitPublicSurvey(any(), any(), any(), any(), any()) }
+        assertFalse(viewModel.uploading.value)
+    }
+
+    @Test
+    fun `test uploadCompletedSubmission handles exception gracefully`() = runTest {
+        coEvery { submissionsRepository.getLatestSubmissionByParentId("survey123", "complete") } throws RuntimeException("Network error")
+
+        var emittedEvent: PublicSurveyViewModel.UploadEvent? = null
+        val collectJob = launch(testDispatcher) {
+            emittedEvent = viewModel.uploadEvents.first()
+        }
+
+        viewModel.uploadCompletedSubmission("http://base", "team1", "survey123")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(emittedEvent is PublicSurveyViewModel.UploadEvent.ShowToastAndNavigate)
+        assertEquals(R.string.survey_submit_failed, (emittedEvent as PublicSurveyViewModel.UploadEvent.ShowToastAndNavigate).messageResId)
+        assertFalse(viewModel.uploading.value)
+        collectJob.cancel()
     }
 
     @Test
@@ -156,6 +177,7 @@ class PublicSurveyViewModelTest {
 
         assertTrue(emittedEvent is PublicSurveyViewModel.UploadEvent.ShowToastAndNavigate)
         assertEquals(R.string.survey_submitted, (emittedEvent as PublicSurveyViewModel.UploadEvent.ShowToastAndNavigate).messageResId)
+        assertFalse(viewModel.uploading.value)
 
         coVerify {
             surveysRepository.submitPublicSurvey(
