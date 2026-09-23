@@ -401,7 +401,7 @@ class SubmissionsRepository {
       id: '$submissionId:${_rawQuestionId(question)}',
       submissionId: submissionId,
       questionId: Value(_rawQuestionId(question)),
-      value: Value(blank && carried != null ? carried.value : shape.value),
+      value: Value(shape.value),
       valueChoices: Value(
         blank && carried != null ? carried.valueChoices : shape.valueChoices,
       ),

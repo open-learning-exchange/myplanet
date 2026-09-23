@@ -3531,7 +3531,8 @@ applies to the port:
   prefill: Kotlin's resume runs `populateCacheFromSavedAnswers` and offers a
   Continue / Start over dialog (`ExamTakingFragment.kt:151-169`), where the
   port re-renders a blank form — so a resumed sheet's stored answers are
-  carried forward by `_surveyAnswer` rather than shown to the learner. The
+  carried forward by `_surveyAnswer` (for an optional question; a required one
+  cannot be submitted blank) rather than shown to the learner. The
   exam-resume path (a pending exam submission) remains a deliberate
   divergence: the port chose in-memory answers over per-question persistence.
 - `d64e98a30` (submissions repository detail view modelling) — removes the

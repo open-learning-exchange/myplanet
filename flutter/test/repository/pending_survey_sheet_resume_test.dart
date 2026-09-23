@@ -483,8 +483,9 @@ void main() {
     // (`populateCacheFromSavedAnswers`, `ExamTakingFragment.kt:157`), so the
     // submit that follows carries the stored answer forward.
     // `take_survey_screen` prefills only when the route named the submission,
-    // and the surveys-list route does not — **and its Submit button has no
-    // every-question-answered gate**, so a resume that simply overwrote would
+    // and the surveys-list route does not. Its Submit gate covers **required**
+    // questions only (`take_survey_screen.dart:174-178`), so an optional one
+    // can be submitted blank — and a resume that simply overwrote would then
     // move the data loss rather than remove it (Phase 143).
     await database.submissionDao.upsertAll(
       [
