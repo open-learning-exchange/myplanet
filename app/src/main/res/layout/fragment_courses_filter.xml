@@ -18,7 +18,6 @@
         app:layout_constraintEnd_toStartOf="@id/iv_close"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-
     <ImageView
         android:id="@+id/iv_close"
         android:layout_width="wrap_content"
@@ -29,7 +28,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:tint="@color/daynight_textColor" />
-
     <androidx.core.widget.NestedScrollView
         android:id="@+id/scrollView"
         android:layout_width="match_parent"
@@ -54,7 +52,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:entries="@array/grade_level" />
-
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -66,7 +63,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:entries="@array/subject_level" />
-
             <Button
                 android:id="@+id/btn_collections"
                 android:layout_width="match_parent"
@@ -90,7 +86,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/scrollView" />
-
     <LinearLayout
         android:id="@+id/filter_footer"
         android:layout_width="match_parent"
@@ -112,7 +107,6 @@
             android:text="@string/clear_tags"
             android:textAllCaps="false"
             android:textColor="@color/daynight_textColor" />
-
         <Button
             android:id="@+id/btn_confirm_filters"
             android:layout_width="0dp"
