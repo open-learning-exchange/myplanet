@@ -973,12 +973,37 @@ const _compared = <String, String>{
   'FeedbackDao.getPending': '10f71ca95fc3',
   'FeedbackDao.findById': '8665edb47fca',
   'FeedbackDao.getByIds': '2e032cf2d3ac',
-  'FeedbackDao.closeById': 'ca3a7e93cd26',
-  // Kotlin sets `isUploaded = 1` alone; the port's `markUploaded(id, rev)`
-  // writes the revision with it, which `ConflictRecovery` needs and Kotlin
-  // takes from a separate path. A superset, and Phase 157's feedback fix is
-  // built on it.
-  'FeedbackDao.markUploaded': '6ef7bc2f6fa6',
+  // **The ledger's fourth catch, and the first where upstream moved *toward*
+  // the port.** A Phase 160 master merge changed both of these statements, the
+  // gate named them, and neither is a Follow — for opposite reasons.
+  //
+  // `closeById` is now `SET status = 'Closed', isUploaded = 0`, with the
+  // comment *"Clears isUploaded so the close is pushed to the server on the
+  // next upload"*. **That is the port's own deliberate divergence, adopted by
+  // Kotlin.** `FeedbackRepositoryImpl.closeFeedback` reached it first: it
+  // diagnosed that Kotlin's close kept `isUploaded = true`, so the sweep
+  // (`isUploaded = 0`) never saw it, the close never reached the server, and
+  // the next pull reverted it on the device too. The port fixed it in two
+  // statements inside a transaction; Kotlin has now folded it into one.
+  // Nothing to port — but the divergence note in that file described a Kotlin
+  // that no longer exists, and has been corrected. **A recorded divergence can
+  // be retired by upstream agreeing with it, and nothing but the ledger was
+  // going to notice.**
+  'FeedbackDao.closeById': '6fc90f354452',
+  // `markUploaded` gained `_id`/`_rev` adoption via
+  // `COALESCE(NULLIF(:remoteId, ''), _id)`, the same shape as
+  // `PersonalDao.updateRemoteDocRef` earlier in this round — Kotlin is
+  // sweeping "marked uploaded without adopting server identity" across its
+  // uploaders. **No port counterpart is needed here**: `FeedbackEntries` has
+  // no second id column (`id` is the primary key and the document id) and the
+  // port's `markUploaded(id, rev)` already writes the revision, which
+  // `ConflictRecovery` needs. The port is a superset on `_rev` and has no `_id`
+  // to adopt.
+  //
+  // **The pattern is worth a round, though**, and it is the open item this
+  // entry hands forward: two of Kotlin's uploaders were fixed for the same
+  // shape in one day. The port has ~20. Sweep them.
+  'FeedbackDao.markUploaded': 'c2fa6222db33',
   'PersonalDao.getPendingUploads': 'bfc74c05a209',
   'PersonalDao.findById': '4981b637eb70',
   // **No caller in `app/src/main`** — the by-`_id` twin of `findById`, laid in

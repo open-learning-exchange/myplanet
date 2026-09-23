@@ -65,14 +65,22 @@ class FeedbackRepositoryImpl implements FeedbackRepository {
   /// Closes the thread **and queues the close for upload** — a deliberate
   /// divergence, not an oversight to be tidied away.
   ///
-  /// Kotlin writes the status and stops (`FeedbackDao.kt:29-30`,
-  /// `UPDATE feedback SET status = 'Closed' WHERE id = :id`, and
-  /// `FeedbackRepositoryImpl.closeFeedback` calls nothing else). The row keeps
-  /// `isUploaded = true`, so the upload sweep — which selects on
-  /// `isUploaded = 0` — never sees it: the close never reaches the server, and
-  /// the next pull maps the server's still-open document back over the row and
-  /// reverts it on the device too. Closing a thread in the Android app is a
-  /// gesture that undoes itself.
+  /// **Kotlin has since adopted this, and the divergence is retired by
+  /// convergence rather than by anyone editing it.** `FeedbackDao.closeById`
+  /// is now `UPDATE feedback SET status = 'Closed', isUploaded = 0 WHERE
+  /// id = :id`, carrying the comment *"Clears isUploaded so the close is
+  /// pushed to the server on the next upload"* — the same behaviour this
+  /// method reached first, folded into one statement where the port uses two
+  /// inside a transaction. The query ledger caught the change on a master
+  /// merge and this passage was corrected then.
+  ///
+  /// What it used to say, kept because the reasoning is why the port was
+  /// right to diverge: Kotlin wrote the status and stopped, so the row kept
+  /// `isUploaded = true` and the upload sweep — which selects on
+  /// `isUploaded = 0` — never saw it. The close never reached the server, and
+  /// the next pull mapped the server's still-open document back over the row
+  /// and reverted it on the device too. Closing a thread in the Android app
+  /// was a gesture that undid itself.
   ///
   /// Marking the row pending is what makes the close mean something. The
   /// caller queues it (`feedback_detail_screen._closeFeedback`), the outbox
