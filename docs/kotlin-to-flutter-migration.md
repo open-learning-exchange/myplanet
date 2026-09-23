@@ -3516,9 +3516,35 @@ applies to the port:
   submission in a single `createExamDraft` transaction at submit time, so the
   concurrent-write problem that motivated the retry does not arise; the catch
   + `examSubmitFailed` snackbar is the user-facing equivalent of the toast.
-  Survey resume (the `recreate = false` path) is already handled by
-  `getOrCreateSurveySubmission`, which checks `latestPendingByUserAndParent`
-  first. The exam-resume path (a pending exam submission) remains a deliberate
+  Survey resume (the `recreate = false` path) **was not** handled, although
+  this entry said it was from Phase 79 until Phase 159 — eighty phases, not the
+  "eleven" an earlier revision of this sentence claimed, which was remembered
+  rather than counted. `getOrCreateSurveySubmission` does check for a pending
+  sheet, but its only caller in `lib/` is `createBulkSurveySubmissions` — the
+  survey **send** path — and `TakeSurveyScreen` has never reached it. That is
+  still true: Phase 159 did not re-point it, it added a separate
+  `_pendingSurveySheet` inside `createSurveyDraft`. `surveys_screen.dart` pushes
+  `/surveys/<id>` with no `?submission=`, so answering a survey from the list
+  inserted a second row and left the first `pending`, keeping the dashboard
+  prompt lit for a survey the learner had answered. Phase 159 Lane 3 put the
+  resume inside `createSurveyDraft`, ordered on `startTime DESC` to match
+  Kotlin's live `getPendingByUserAndParent` rather than the `lastUpdateTime`
+  statement whose Kotlin caller is dead, and ported
+  `deletePendingSurveyOrphans` alongside it. What the port is missing is not the
+  prefill: `populateCacheFromSavedAnswers` and the Continue / Start over dialog
+  (`ExamTakingFragment.kt:150-169`) are in the `sub != null` arm, which is the
+  port's `?submission=` route and already prefills. On the arm Phase 159
+  ported, Kotlin does not prefill either. It does not need to, because it never
+  writes a blank answer: `isQuestionAnswered()` (`:289-321`) has **no
+  `required` test**, so Submit refuses until every question is answered. The
+  port's `take_survey_screen.dart:174-178` gates on `question.required &&`,
+  which Kotlin has no counterpart for, while its sibling
+  `public_survey_screen.dart:202-207` requires all of them — **the two port
+  screens disagree and the survey-list one is the one that diverges**, so a
+  learner there can upload `value: ''` to Planet where Kotlin cannot. That gate
+  is the open item; `_surveyAnswer`'s carry-over only keeps it from destroying
+  a resumed sheet's stored answer. The
+  exam-resume path (a pending exam submission) remains a deliberate
   divergence: the port chose in-memory answers over per-question persistence.
 - `d64e98a30` (submissions repository detail view modelling) — removes the
   `Lazy<UserRepository>` from `SubmissionsRepositoryImpl` (breaking a Dagger

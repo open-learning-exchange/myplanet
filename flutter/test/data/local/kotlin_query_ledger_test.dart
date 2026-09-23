@@ -114,8 +114,46 @@ void main() {
     // 78 of 313 after the integrator's master merge, and that +1 is the
     // ledger's first live catch — see `NewsDao.getTopLevelTeamMembership`
     // below.
+    //
+    // **133 of 316 after Phase 159 Lane 3**, which took the ledger's own
+    // running order: `SubmissionDao`, then `QuestionDao`/`AnswerDao`,
+    // `HealthExaminationDao` and `ChatDao`, then outward through the
+    // statements carrying `COLLATE NOCASE`, `IS :param`, `SUBSTR` and `LIKE`.
+    //
+    // **183 left**, and the four sentences this paragraph used to contain
+    // were each wrong in the ledger's own worst direction — overstating what
+    // had been looked at. They are corrected rather than deleted, because the
+    // correction is the useful record:
+    //
+    //  * "`SubmissionDao` first (all 32 read)" — the file has **33** `@Query`
+    //    statements and **16** are recorded here. The Kotlin side was read end
+    //    to end; what is recorded is the subset this lane also traced to a
+    //    port counterpart itself. Seventeen remain, and they are the next
+    //    round's first target because the reading is half done:
+    //    `getByIds`, `getByUserIdAndTeamId`, `getPendingSurveys`,
+    //    `countPendingSurveys`, `observePendingSurveys`,
+    //    `countPendingOfflineSubmissions`, `countPendingExamResults`,
+    //    `getByParentUserAndStatus`, `getByParentIdsAndTeamId`,
+    //    `getLatestByParentIdAndStatus`, `getLatestPendingByUser`,
+    //    `getFirstByParentIdContaining`, `getUnuploadedNonSurveyByParentIds`,
+    //    `updateStatus`, `updateStatusAndLastUpdate`, `deleteByParentAndUser`,
+    //    `deleteByIds`.
+    //  * "The 191 left" — 316 − 133 is **183**.
+    //  * "`COLLATE NOCASE`, all three instances of it in the corpus" — there
+    //    are **15**. Coverage of that class does happen to be complete, the
+    //    nine `NewsDao` ones having arrived with Phase 158, but the claim as
+    //    written was false and `DictionaryDao.count` sits under that heading
+    //    carrying no `COLLATE NOCASE` at all.
+    //  * "the remaining … `SUBSTR` statements" — `UserDao.getGuestUsersByNames`
+    //    is still uncompared, and it is the one with a port counterpart.
+    //
+    // Found by this lane's second `parity-auditor` pass, aimed at its own
+    // finished, green work. Next round's order: `TeamDao` (~22 uncompared,
+    // and its `IFNULL(status, '') != 'archived' ORDER BY createdDate DESC`
+    // family is the risky part), the rest of `SubmissionDao` above, `NewsDao`,
+    // `CourseDao`/`CourseStepDao`, then `NotificationDao`.
     final uncovered = corpus.length - _compared.length;
-    expect(uncovered, 316 - 83);
+    expect(uncovered, 316 - 133);
   });
 }
 
@@ -219,7 +257,7 @@ const _corpusSize = 316;
 
 /// Entries in [_compared], stated separately so the map and the claim about it
 /// cannot drift apart.
-const _comparedCount = 83;
+const _comparedCount = 133;
 
 /// Queries a lane has read against the port's Drift builder and reached a
 /// verdict on, with the digest the statement had at that moment.
@@ -363,4 +401,226 @@ const _compared = <String, String>{
   'UserDao.getSyncedUsers': 'e16d1cba09cd',
   'UserDao.getUsersForHealthSync': '691c508bc3ae',
   'UserDao.search': '56f1c4215fdc',
+
+  // ---------------------------------------------------------------------
+  // Phase 159 Lane 3. `SubmissionDao` read end to end (all 32 statements),
+  // then `QuestionDao`/`AnswerDao`, `HealthExaminationDao` and `ChatDao`, then
+  // the remaining `COLLATE NOCASE`, `IS :param` and `SUBSTR` statements
+  // wherever they live. Verdicts are in the lane's report; the ones worth a
+  // line here are marked at their entry.
+  // ---------------------------------------------------------------------
+
+  // **The round's fix.** `getLatestPendingByUserAndParent` has no `type`
+  // filter and the port's `latestPendingByUserAndParent` adds
+  // `type = 'survey'` — the open report Phase 158 recorded. Settled: **keep
+  // the conjunct.** Its one Kotlin caller (`getOrCreateSubmission`) is reached
+  // only from survey flows, so the conjunct is redundant rather than
+  // restrictive; and `_liveParentDocument` documents that the port's exam and
+  // survey id spaces are *not* disjoint (`ExamMapper.mapStepExams` and
+  // `SurveyMapper.fromCourseDoc` synthesize the same
+  // `'$courseId-$stepId-$examKey'` for a step document with no `_id`), so
+  // removing it would let an exam row be handed to a survey caller. Deleting
+  // it on sight would have been the wrong move.
+  //
+  // What the same reading *did* find is that the port never called this
+  // lookup from the path that needs it. Kotlin resumes a pending sheet in
+  // `startExamSession`'s first statement under `recreate = isTeam`
+  // (`ExamTakingFragment.kt:154`); the port's surveys list pushed
+  // `/surveys/<id>` with no `?submission=` and inserted a second row, leaving
+  // the leader's `pending` sheet — and the dashboard prompt that reads it —
+  // for ever. See `test/repository/pending_survey_sheet_resume_test.dart`.
+  'SubmissionDao.getLatestPendingByUserAndParent': 'c1e117c053ac',
+  // Ported this round alongside it: Kotlin runs it from the single place a
+  // survey sheet becomes `complete`, the port from the two paths its split
+  // creates.
+  'SubmissionDao.deletePendingSurveyOrphans': '59024aa403e1',
+  'SubmissionDao.getByIdOrRemoteId': '42d5719de5b7',
+  'SubmissionDao.getByUserIdWithoutTeam': 'fb6858798471',
+  // The port's `watchForUser` adds `ORDER BY lastUpdateTime DESC` where this
+  // has no `ORDER BY` at all. A superset of Kotlin's guarantees, and the
+  // submissions screen sorts on that column anyway.
+  'SubmissionDao.observeByUserId': 'd1791b52a151',
+  // The port's `pendingSurveySubmissions` widens `teamId IS NULL` to
+  // `IS NULL OR = ''` and adds `ORDER BY startTime`. The empty string is
+  // unreachable — every writer nulls a blank `teamId` and the sync-in reads
+  // it with `getStringOrNull` — so the widening selects the same rows.
+  'SubmissionDao.getUniquePendingSurveyCandidates': '01af19676abf',
+  'SubmissionDao.countByUserParentAndType': '0b5ce3936e12',
+  // The three claims in the port's own comment on this one were re-read
+  // against the Kotlin rather than trusted, and all three hold: no `type`
+  // predicate, an unescaped `LIKE` pattern, and a NULL `status` excluded by
+  // SQL's three-valued `!=`.
+  'SubmissionDao.countCompletedByUserAndExamId': '7e2ec8323366',
+  'SubmissionDao.getByTeamId': '97a67ac57ebb',
+  // No port counterpart and none needed: `createBulkSurveySubmissions` uses
+  // this to skip members who already hold a sheet, and the port's loop over
+  // `getOrCreateSurveySubmission` is find-or-create per member. The behaviour
+  // moved across the SQL/Dart boundary rather than being lost at it.
+  'SubmissionDao.getPendingByUsersAndParent': 'd89ab798aa1f',
+  'SubmissionDao.markComplete': '3bdd9b57ed69',
+  'SubmissionDao.getPendingExamResults': 'e61e5bb33f42',
+  'SubmissionDao.getPendingSubmissions': '56f1bd0cf04c',
+  'SubmissionDao.markUploaded': '36a146efe07a',
+
+  // The port orders `exam_questions` by its own `position` column where these
+  // have no `ORDER BY`; Kotlin leans on insertion order from the exam
+  // document. Stronger, not different.
+  'QuestionDao.getByExamId': '6f1dd22d3049',
+  'QuestionDao.getByExamIds': '2f8b9ab282a6',
+  // `hasSubmission`'s gate. The port branches on the submission `type` across
+  // two tables because it splits Kotlin's single `exam_questions` into
+  // `exam_questions` + `survey_questions`; one Kotlin count is two here.
+  'QuestionDao.countByExamId': 'd6d76c91a20f',
+  'AnswerDao.getBySubmissionId': 'dabf59be27d1',
+  'AnswerDao.getBySubmissionIdsInternal': '7e32ad862fc3',
+  // Kotlin looks an answer up by `(submissionId, questionId)` and mints a
+  // random UUID when there is none; the port derives the row id as
+  // `'$submissionId:$questionId'` and filters the submission's own answer set
+  // in Dart. Same one-row-per-question identity, reached by a deterministic
+  // key instead of a lookup.
+  'AnswerDao.getBySubmissionAndQuestion': '44e06507bc0d',
+  'AnswerDao.deleteBySubmissionIdsInternal': '67501479715a',
+
+  // All eight read against `HealthExaminationDao` in `app_database.dart` and
+  // `health_repository.dart`. The port's `id` column carries the CouchDB
+  // `_id` for a synced row (`_docToCompanion` writes both), so `_id = :id`
+  // and `id.equals(id)` select the same rows, and `id` is the primary key, so
+  // the missing `LIMIT 1` on `getById` cannot matter.
+  'HealthExaminationDao.getByIdOrUserId': 'b70ae2ad0950',
+  'HealthExaminationDao.getById': 'e16d767cabd5',
+  'HealthExaminationDao.getUpdated': '333cb69e5fb1',
+  'HealthExaminationDao.getUpdatedForUser': '165dfff996d0',
+  // The port collapses Kotlin's two overloads into one nullable-`rev` method;
+  // the comment at it explains why that is parity rather than an improvement.
+  'HealthExaminationDao.markUploaded': '30745a1231f8',
+  'HealthExaminationDao.markUploaded#2': 'd693d3aa9945',
+  'HealthExaminationDao.updateUserId': '23f1c650d3d1',
+  'HealthExaminationDao.getByProfileId': '0db4c46e69fb',
+
+  // `getByUser` has no `ORDER BY` and `ChatRepositoryImpl.sortChats` sorts by
+  // `max(createdDate, updatedDate)` descending afterwards. The port's DAO adds
+  // `ORDER BY id DESC` — a CouchDB uuid, so not a recency order — and
+  // `chat_repository_impl.dart:246` then applies the same `sortChatsByRecency`.
+  // Behaviour moved, not lost.
+  'ChatDao.getByUser': 'db2bb05c99ee',
+  'ChatDao.getByDocId': 'af0fad4b07fb',
+  'ChatDao.findByDocId': 'b683ae64ac8f',
+
+  // **The three `COLLATE NOCASE` statements outside `NewsDao`** — the corpus
+  // holds 15, the other twelve being `NewsDao`'s, already compared. (The
+  // `DictionaryDao.count` entry below carries no `COLLATE NOCASE`; it is here
+  // because the DAO was read whole.) The port
+  // answers each with a stored normalized column plus a Dart-side
+  // `toLowerCase()`, which is *stronger* than `NOCASE` — that collation folds
+  // ASCII only, so Kotlin treats `ÉCOLE` and `école` as different words and
+  // the port does not. Recorded rather than "fixed" toward Kotlin: the port's
+  // reading is the useful one and matching the ASCII limitation would be a
+  // regression.
+  //
+  // `findByWord` additionally trims, where Kotlin does not, so a query with a
+  // stray space finds its entry here and returns nothing on Android.
+  'DictionaryDao.findByWord': '14713292992b',
+  'DictionaryDao.count': '2242af130070',
+  'MyLibraryDao.countByTitle': '323254318596',
+  // The one of the three with a real divergence, and it is narrow. Kotlin's
+  // `(:userId IS NULL OR :userId = '' OR userId = :userId)` makes the guard
+  // **global** for a null or blank user — any note with that title blocks —
+  // while the port's `titleExists` always scopes to the user. Reached from
+  // `AddResourceViewModel.checkTitleExists(title, userId)`, whose `userId` is
+  // `String?`, so a session that has not resolved gives Kotlin a cross-user
+  // check and the port a per-user one. The port also adds an `excludingId`
+  // Kotlin has no counterpart for, so renaming a note to its own title is
+  // refused on Android and allowed here. Both are in the lane's report; the
+  // fix is in `app_database.dart` and `personals_repository.dart`, neither of
+  // which this lane owns.
+  'PersonalDao.countByTitle': 'ebecc1111d01',
+
+  // `SUBSTR(_id, 1, 6) = 'guest_'` done right: the port tests the prefix in
+  // Dart precisely because `LIKE 'guest_%'` would read the underscore as
+  // LIKE's single-character wildcard. The code that does so
+  // (`app_database.dart:1603`) belongs to the **plural**
+  // `getGuestUsersByNames`, which is the method with a port counterpart and is
+  // itself **not yet compared** — the singular one is recorded here because
+  // its statement was read, and the next round should take the plural.
+  'UserDao.getGuestUserByName': 'd413ad67e2d1',
+
+  // The port keys `removed_log` on a percent-encoded `type:user:doc` composite
+  // and deletes by that key, so Kotlin's three `IS :param` predicates collapse
+  // into one primary-key match, and the port's `record`/`clear`/`removedDocIds`
+  // all take non-nullable strings. **The reason first given for that being
+  // safe — "every Kotlin caller passes a resolved `userId`" — is wrong**:
+  // `ActivitiesRepository.markResourceAdded(userId: String?)` is nullable and
+  // so is `LocalResourceRequest.userId` (`ResourcesRepository.kt:34`), so
+  // `deleteByTypeUserAndDoc("resources", null, id)` is reachable from
+  // `AddResourceActivity`. The verdict stands on the port side, where no
+  // caller can supply a null; what does not stand is the claim about Kotlin.
+  // The bulk `deleteByTypeUserAndDocs`
+  // has no single counterpart; the port's batch paths loop `clear`.
+  'RemovedLogDao.deleteByTypeUserAndDoc': '5d6e6e8b7d9e',
+  'RemovedLogDao.deleteByTypeUserAndDocs': 'd61e8ed27f41',
+  'RemovedLogDao.getRemovedDocIds': '910de1e79b57',
+
+  // No port counterpart, and none is owed: `TeamsRepositoryImpl.getTasksFlow`
+  // is consumed by `DashboardViewModel.dashboardDataFlow` as
+  // `teamsRepository.getTasksFlow(userId).map {}` — the **rows are discarded**
+  // and the flow is a change signal merged into a refresh. Any port stream
+  // over `team_tasks` serves the same purpose. Traced to the end because a
+  // query with no reader is exactly where a missing screen would hide.
+  'TeamTaskDao.getOpenTasksForUser': '5cf38a9d940a',
+
+  // **`RetryDao`, read whole against the port's `OutboxDao` and
+  // `outbox_repository.dart`.** The port replaced `RetryQueue`'s worker with a
+  // drain on app resume, and Phase 148 then gave the table a policy — *an
+  // `outbox` item owns exactly one row, for ever; a terminal row is a memo* —
+  // so several of these diverge **deliberately** and are documented at the
+  // code rather than being drift.
+  //
+  // `findExisting`'s `status != 'completed' AND status != 'abandoned'` and the
+  // port's `findOpen`'s `status IN ('pending','in_progress')` select the same
+  // rows: the four statuses are exhaustive and SQL excludes a NULL status
+  // under both spellings.
+  'RetryDao.findExisting': 'e4f07ac70358',
+  'RetryDao.findById': '9cbc5a8eaaff',
+  // `attemptCount < maxAttempts` is **not** in the port's `due(now)`. It moved
+  // to the transition: the drainer writes `abandoned` when the attempts run
+  // out, so an exhausted row is already outside `status = 'pending'`. Moved
+  // across the boundary, not lost — and the memo the abandoned row leaves is
+  // the point of Phase 148's policy.
+  'RetryDao.getPending': '1a76b4339062',
+  // Kotlin counts `pending OR in_progress`; the port's `watchPendingCount` is
+  // `pending` only, so a claimed-but-unfinished item is not in the badge.
+  // Cosmetic, and recorded rather than closed.
+  'RetryDao.getActiveCount': '5061973bf199',
+  // No age cutoff in the port, and `cleanup()` has no caller at all — which is
+  // the Phase 148 policy working rather than a gap: the terminal row is how a
+  // permanent refusal is read back, and `clearAbandonedFor` removes it at the
+  // one event that makes it untrue.
+  'RetryDao.deleteOldCompleted': '5998b03e5a7f',
+
+  // Kotlin keeps surveys and tests in one `exams` table and filters on `type`;
+  // the port splits them into [Exams] and [Surveys] at mapper time, so the
+  // `type` predicate *becomes the table choice*. One Kotlin lookup is two port
+  // lookups, and `_liveParentDocument` documents the one place that costs
+  // something.
+  'ExamDao.getById': 'b37f66ab510e',
+  'ExamDao.getByType': 'e7773f2bdab4',
+  // **No port counterpart, and none is owed — the Kotlin path is dead.** This
+  // is `SurveysRepositoryImpl.getSurvey`'s fallback, `examDao.getById(id) ?:
+  // getByTypeAndName("surveys", id)`, i.e. look the survey up by *name* when
+  // the id misses. Its one caller chain is
+  // `DashboardActivity:543` -> `DashboardViewModel.handleSurveyNavigation`,
+  // reached only from an `auto_navigate` intent carrying
+  // `NotificationUtils.TYPE_SURVEY` — and **`createSurveyNotification`
+  // (`NotificationUtils.kt:109`) has no caller in `app/src/main`**, so no such
+  // notification is ever posted. Recorded because the shape without this trace
+  // reads like a missing entry point (Phase 158's fifth question), and a lane
+  // could spend a round building one Kotlin does not ship. Phase 149's rule:
+  // trace the caller chain to its end before porting a line.
+  'ExamDao.getByTypeAndName': '5d56c90172f9',
+
+  // `userId IS :userId` ported as drift's `equalsNullable`, which is the
+  // spelling of `IS`. Re-read rather than inherited from the comment at it,
+  // because this is the write in the `IS`-vs-`=` class with the largest blast
+  // radius: without the scope it clears a peer's server-granted pass.
+  'CourseProgressDao.updatePassedByCourseAndStep': '21bb072171b2',
 };
