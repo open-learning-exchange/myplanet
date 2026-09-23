@@ -1106,6 +1106,55 @@ void main() {
     expect(survivor, 1);
   });
 
+  test('an unsent crash report survives a schema bump', () async {
+    // `apk_log` is write-only: nothing in `app/src/main` pulls `apk_logs`
+    // back — the endpoint appears once, in `UploadConfigs.CrashLog` — so the
+    // operative test (*can a sync restore this?*) answers no for every row.
+    // A crash report dropped by a bump is the only record of a failure that
+    // happened where no operator was watching.
+    await database.apkLogDao.insert(
+      ApkLogsCompanion.insert(
+        id: 'crash:1700:crash',
+        type: const Value('crash'),
+        error: const Value('stack trace'),
+        time: const Value('1700'),
+      ),
+    );
+
+    await runUpgrade();
+
+    final survivors = await database.apkLogDao.pendingUploads();
+    expect(
+      survivors.map((row) => row.error),
+      ['stack trace'],
+      reason: 'no sync can give a crash report back',
+    );
+  });
+
+  test('a brand-new preserved table is created by the upgrade', () async {
+    // The Phase 143 rule is about a *column* added to a table already on disk,
+    // which `createAll` cannot ALTER — hence every hand-written
+    // `_addColumnIfMissing` step. A brand-new table is the opposite case and
+    // this pins the difference: the drop loop steps over the name, finds
+    // nothing at it, and `createAll` builds the table complete. Nothing
+    // hand-written is needed, and this test is what would fail if that stopped
+    // being true.
+    await database.customStatement('DROP TABLE IF EXISTS apk_log');
+    expect(
+      await database
+          .customSelect("SELECT name FROM sqlite_master WHERE name = 'apk_log'")
+          .get(),
+      isEmpty,
+    );
+
+    await runUpgrade(from: 50);
+
+    await database.apkLogDao.insert(
+      ApkLogsCompanion.insert(id: 'after', type: const Value('crash')),
+    );
+    expect((await database.apkLogDao.pendingUploads()).single.id, 'after');
+  });
+
   test('every preserved table has a preservation test', () {
     // `my_life` and the submissions tables were added to the preserved set
     // without one. This fails the moment another name is added, so the next
@@ -1139,6 +1188,7 @@ void main() {
       'surveys',
       'survey_questions',
       'my_library',
+      'apk_log',
     };
     expect(
       AppDatabase.localAuthorityTables,

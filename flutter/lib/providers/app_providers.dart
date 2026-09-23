@@ -21,6 +21,8 @@ import '../repository/achievements_uploader.dart';
 import '../repository/adopted_surveys_uploader.dart';
 import '../repository/activities_repository.dart';
 import '../repository/activities_uploader.dart';
+import '../repository/apk_log_uploader.dart';
+import '../repository/diagnostics_repository.dart';
 import '../repository/chat_repository.dart';
 import '../repository/chat_repository_impl.dart';
 import '../repository/chat_uploader.dart';
@@ -207,6 +209,25 @@ final searchActivityUploaderProvider = Provider<SearchActivityUploader>(
     ref.watch(outboxRepositoryProvider),
     ref.watch(deviceIdentitySourceProvider),
     ref.watch(deviceStatsProvider),
+  ),
+);
+
+/// The `apk_log` slice — operator telemetry the port had never had. Kotlin's
+/// `DiagnosticsRepositoryImpl` + `UploadConfigs.CrashLog`.
+final apkLogDaoProvider = Provider<ApkLogDao>(
+  (ref) => ref.watch(appDatabaseProvider).apkLogDao,
+);
+
+final diagnosticsRepositoryProvider = Provider<DiagnosticsRepository>(
+  (ref) => DiagnosticsRepository(ref.watch(apkLogDaoProvider)),
+);
+
+final apkLogUploaderProvider = Provider<ApkLogUploader>(
+  (ref) => ApkLogUploader(
+    ref.watch(diagnosticsRepositoryProvider),
+    ref.watch(planetApiProvider),
+    ref.watch(outboxRepositoryProvider),
+    ref.watch(deviceIdentitySourceProvider),
   ),
 );
 
@@ -693,6 +714,13 @@ final outboxDrainerProvider = Provider<OutboxDrainer>((ref) {
       SearchActivityUploader.type: ref
           .watch(searchActivityUploaderProvider)
           .handler,
+      // Without this entry the drainer's generic fallback would POST the
+      // stored payload and never write `_rev` back, so `pendingUploads` would
+      // still report the row and the next sweep would file a **second**
+      // crash document — the Kotlin retry-path defect
+      // (`RetryRepositoryImpl:67-125`) reproduced by omission.
+      // `apk_log_wiring_test.dart` is what makes losing it loud.
+      ApkLogUploader.type: ref.watch(apkLogUploaderProvider).handler,
       for (final type in TeamsUploader.types)
         type: ref.watch(teamsUploaderProvider).handler,
       FeedbackUploader.type: ref.watch(feedbackUploaderProvider).handler,

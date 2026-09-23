@@ -1543,3 +1543,85 @@ class UserChallengeActions extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Port of `model/ApkLog.kt` (`@Entity(tableName = "apk_log")`) — the crash,
+/// download-failure and sync-summary telemetry Kotlin POSTs to the
+/// `apk_logs` CouchDB database (`UploadConfigs.CrashLog`).
+///
+/// **Write-only, and that is what makes it local authority.** Nothing in
+/// `app/src/main` pulls `apk_logs` back — the endpoint appears exactly once,
+/// in the upload config — so the operative test (*can a sync restore this?*)
+/// answers no for every row. A crash report dropped by a schema bump is gone,
+/// and it is the one record of a failure that happened where no operator was
+/// watching. Hence [localAuthorityTables].
+///
+/// Columns mirror the Kotlin entity one for one, including two shapes a
+/// naive port would modernise and get wrong on the wire:
+///
+///  * `time` is **text**, not an integer. `DiagnosticsRepositoryImpl` is
+///    handed `"${timeProvider.now()}"` and `ApkLog.serialize` does
+///    `put("time", log.time)`, so the document carries a JSON *string* where
+///    the sibling `search_activity` carries a number.
+///  * `createdOn` holds the **planet code**, not a date.
+///    `DiagnosticsRepositoryImpl.buildApkLog` assigns `createdOn = planetCode`
+///    — the same field name every other Planet document uses for the
+///    authoring planet — so a `DateTime` here would be a wire break, not a
+///    tidy-up.
+///
+/// The `@TableIndex` mirrors `@Entity(indices = [Index("_rev")])`: the table is
+/// append-only and pruned by nothing in either app, so the pending scan is the
+/// one statement whose cost grows with the install's whole history. It is safe
+/// to declare on a preserved table only because the table is *new* — the
+/// upgrade's index-drop loop and `createAll` build both together, where an
+/// index added later onto a column an older install lacks would abort the
+/// whole upgrade. See the `surveys_course_id` block in `app_database.dart`.
+@TableIndex(name: 'apk_log_rev', columns: {#rev})
+class ApkLogs extends Table {
+  @override
+  String get tableName => 'apk_log';
+
+  /// UUID minted at insert, matching `buildApkLog`'s `"${UUID.randomUUID()}"`.
+  TextColumn get id => text()();
+
+  /// The CouchDB revision, and therefore the pending predicate.
+  ///
+  /// Kotlin's is `SELECT * FROM apk_log WHERE _rev IS NULL` — the column has
+  /// no default there, so an inserted row is pending by construction. The
+  /// port follows its own established convention instead (`search_activity`,
+  /// `team_log`): the column defaults to the empty string and
+  /// [ApkLogDao.pendingUploads] tests `_rev = ''`. The two describe the same
+  /// set because nothing but the uploader ever writes this column.
+  ///
+  /// **The default is what decides whether a row is pending, so it is stated
+  /// here deliberately.** Phase 156 is the cautionary tale: when `team_log`
+  /// gained a pull direction, rows arriving from the server at the column
+  /// default would have been flagged for upload and POSTed straight back,
+  /// duplicating ~13,659 documents on every sync. `apk_log` has no pull
+  /// direction at all, so no row ever enters this table except through
+  /// [DiagnosticsRepository], and "just inserted" and "not yet delivered" are
+  /// the same state. **If a sync-in is ever added here, this default becomes
+  /// wrong and the writer must set `_rev` from the document.**
+  TextColumn get rev => text().named('_rev').withDefault(const Constant(''))();
+
+  TextColumn get userId => text().withDefault(const Constant(''))();
+  TextColumn get type => text().withDefault(const Constant(''))();
+  TextColumn get error => text().withDefault(const Constant(''))();
+
+  /// Always `""`. `buildApkLog` assigns `page = ""` unconditionally and no
+  /// other writer exists, so the column is vestigial in both apps — kept
+  /// because `ApkLog.serialize` puts it on the wire and Planet's aggregation
+  /// reads the key.
+  TextColumn get page => text().withDefault(const Constant(''))();
+
+  TextColumn get parentCode => text().withDefault(const Constant(''))();
+  TextColumn get version => text().withDefault(const Constant(''))();
+
+  /// The **planet code** — see the class doc.
+  TextColumn get createdOn => text().withDefault(const Constant(''))();
+
+  /// Epoch millis rendered as text — see the class doc.
+  TextColumn get time => text().withDefault(const Constant(''))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

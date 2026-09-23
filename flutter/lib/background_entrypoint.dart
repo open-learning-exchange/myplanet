@@ -147,6 +147,16 @@ Future<bool> executeBackgroundTask(String taskName) async {
             config: config,
             userId: prefs.loggedInUserId,
           );
+          // The crash/telemetry sweep, ahead of the drain for the same reason
+          // as the three above: the rows it queues go out in this same
+          // invocation. See [sweepPendingApkLogs] for why this is currently
+          // the *only* home it has, and why that is half of Kotlin's answer
+          // rather than all of it.
+          await sweepPendingApkLogs(
+            container,
+            config: config,
+            userId: prefs.loggedInUserId,
+          );
           await drainer.drain(
             authHeader: PersonalsUploader.authHeaderFor(config),
           );
@@ -633,6 +643,62 @@ Future<void> sweepPendingFeedback(
   try {
     await container
         .read(feedbackUploaderProvider)
+        .queuePending(config: config, userId: userId);
+  } catch (_) {
+    // Deliberately ignored — see above.
+  }
+}
+
+/// Queues every unsent `apk_log` row. Port of `UploadManager.uploadCrashLog()`
+/// as `AutoSyncWorker:135` and `UserDataWorker:49` reach it.
+///
+/// **This is half of Kotlin's answer, and the missing half belongs to a file
+/// this lane does not own.** `UserDataWorker` is not a background cadence: it
+/// is a `OneTimeWorkRequest` a *user-initiated* action enqueues
+/// (`SyncActivity:815 startUpload("")` → `ProcessUserDataActivity:172` →
+/// `SyncRepositoryImpl:57` → `UserDataUploadScheduler:30-38`), and its
+/// `UPLOAD_TYPE_BULK` branch runs `uploadSubmissions()` at `:48` and
+/// `uploadCrashLog()` at `:49`, one line apart. The port already sweeps `:48`
+/// from **both** `dashboard_sync_provider` and here (Phase 134); `:49` is
+/// swept only here, so a crash report leaves the handset only when WorkManager
+/// actually runs `autoSync` or `maintenance` — hours or days under Doze — and
+/// pressing Sync does nothing for it. `dashboard_sync_provider.dart` needs the
+/// matching call, and it is reported rather than written because that file is
+/// outside this lane's set.
+///
+/// (A third Kotlin call site exists and is inert: `SyncTimeLogger:123`'s
+/// `uploadManager?.uploadCrashLog()`, whose only caller — `SyncManager:209` —
+/// passes no `uploadManager`. Worth naming, because an earlier revision of
+/// this comment said there were two call sites "only", which a reader checking
+/// it would find contradicted.)
+///
+/// This is the only caller of [ApkLogUploader.queuePending] that runs with no
+/// user present, and that is deliberate: a handset whose session has gone is
+/// exactly the one holding a crash report nobody has seen. Kotlin's fetch is
+/// handset-wide for the same reason — `RoomUploadConfig` has no `filterGuests`
+/// field, so `shouldFilter` takes the interface default `false` and a guest's
+/// reports upload too.
+///
+/// Swallowed rather than reported, like the three sweeps above: a throwing
+/// `drainOutbox` adds `outboxDrain` to the runner's `failedSteps` and asks the
+/// OS to retry the whole task, and no Kotlin caller of `uploadCrashLog` does
+/// that — `UserDataWorker:49` wraps it in `runCatching` and `AutoSyncWorker`
+/// discards the result. **Telemetry failing must not fail the sync it is
+/// telling you about.** It is not hypothetical here either: `queuePending`
+/// reads device identity, which rethrows on a headless engine with no channel
+/// and no primed cache.
+///
+/// Its own `try`, not a share of the block's, so a failure here cannot skip a
+/// sweep that carries the user's own work.
+@visibleForTesting
+Future<void> sweepPendingApkLogs(
+  ProviderContainer container, {
+  required ServerConfig config,
+  required String? userId,
+}) async {
+  try {
+    await container
+        .read(apkLogUploaderProvider)
         .queuePending(config: config, userId: userId);
   } catch (_) {
     // Deliberately ignored — see above.
