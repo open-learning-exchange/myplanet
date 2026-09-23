@@ -21,7 +21,16 @@ class FeedbackCreateScreen extends ConsumerStatefulWidget {
 
 class _FeedbackCreateScreenState extends ConsumerState<FeedbackCreateScreen> {
   final _messageController = TextEditingController();
-  String _priority = 'No';
+
+  /// Null until the person picks one, because `fragment_feedback.xml:28-47`
+  /// gives neither radio `android:checked` and
+  /// `FeedbackFragment.validateAndSaveData` refuses with
+  /// `feedback_priority_is_required` while `checkedRadioButtonId` resolves to
+  /// nothing. Defaulting it to `'No'` filed every unattended form as
+  /// not-urgent on the author's behalf, and left `_priorityError` a field
+  /// that only ever took `null` — so the `Text` that reads it was unreachable
+  /// code standing in for a validation the port did not have.
+  String? _priority;
   String _type = '';
   String? _priorityError;
   String? _typeError;
@@ -222,6 +231,11 @@ class _FeedbackCreateScreenState extends ConsumerState<FeedbackCreateScreen> {
       hasError = true;
     }
 
+    if (_priority == null) {
+      setState(() => _priorityError = l10n.feedbackPriorityRequired);
+      hasError = true;
+    }
+
     if (_type.isEmpty) {
       setState(() => _typeError = l10n.feedbackTypeRequired);
       hasError = true;
@@ -244,8 +258,11 @@ class _FeedbackCreateScreenState extends ConsumerState<FeedbackCreateScreen> {
     // `queuePending()`, and nothing else in the app hands feedback to the
     // outbox. Calling the repository straight from here saved the row to disk
     // and left it there forever.
+    // Non-null past the guard above, which is the whole point of the guard:
+    // Kotlin reads `rbUrgent.text` only after establishing that a radio is
+    // checked.
     final notifier = ref.read(feedbackCreateProvider.notifier)
-      ..setPriority(_priority)
+      ..setPriority(_priority!)
       ..setType(_type)
       ..setMessage(message);
 

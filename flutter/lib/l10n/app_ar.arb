@@ -705,6 +705,10 @@
   "@ratingRequired": {
     "x-mt": true
   },
+  "ratingSubmitFailed": "تعذر إرسال تقييمك. يرجى المحاولة مرة أخرى.",
+  "@ratingSubmitFailed": {
+    "x-mt": true
+  },
   "commentOptional": "تعليق (اختياري)",
   "@commentOptional": {
     "x-mt": true
@@ -1274,6 +1278,7 @@
   "@feedbackTypeRequired": {
     "x-mt": true
   },
+  "feedbackPriorityRequired": "يجب تحديد أولوية التعليقات.",
   "yourFeedback": "ملاحظاتك",
   "@yourFeedback": {
     "x-mt": true

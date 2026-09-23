@@ -22,6 +22,7 @@ class _RatingDialogState extends ConsumerState<RatingDialog> {
   int _rating = 0;
   bool _initialized = false;
   bool _submitting = false;
+  bool _failed = false;
 
   @override
   void dispose() {
@@ -77,6 +78,21 @@ class _RatingDialogState extends ConsumerState<RatingDialog> {
                 l10n.ratingRequired,
                 style: const TextStyle(color: Colors.red),
               ),
+            // `RatingsFragment:115-117` toasts `SubmitState.Error` and leaves
+            // the dialog up — only `Success` reaches `dismiss()`. Drawn inline
+            // rather than as a toast/snackbar because this dialog already
+            // reports its other refusal that way (`ratingRequired` above), and
+            // because a four-second snackbar behind a modal is the wrong
+            // lifetime for a message whose whole job is to explain why the
+            // dialog did not close.
+            if (_failed)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  l10n.ratingSubmitFailed,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
             const SizedBox(height: 12),
             TextField(
               controller: _comment,
@@ -109,9 +125,25 @@ class _RatingDialogState extends ConsumerState<RatingDialog> {
     );
   }
 
+  /// Port of `RatingsFragment.observeViewModel`'s `submitState` arm
+  /// (`RatingsFragment.kt:101-122`).
+  ///
+  /// The result used to be thrown away and `Navigator.pop(context, true)`
+  /// called unconditionally, so a rating that never reached the database — a
+  /// still-unresolved session, a failing write, an outbox that could not take
+  /// it — closed the dialog with the same gesture as one that had. Kotlin
+  /// dismisses on `Success` only.
+  ///
+  /// `_submitting` is cleared before the message renders so Submit comes back:
+  /// `updateSubmitButtonState` (`:147-151`) re-enables on anything that is not
+  /// `Submitting`, so `Error` leaves the button live and the typed rating and
+  /// comment in place for a retry.
   Future<void> _submit() async {
-    setState(() => _submitting = true);
-    await ref
+    setState(() {
+      _submitting = true;
+      _failed = false;
+    });
+    final saved = await ref
         .read(ratingActionsProvider)
         .submit(
           target: widget.target,
@@ -119,6 +151,14 @@ class _RatingDialogState extends ConsumerState<RatingDialog> {
           rate: _rating,
           comment: _comment.text,
         );
-    if (mounted) Navigator.pop(context, true);
+    if (!mounted) return;
+    if (saved) {
+      Navigator.pop(context, true);
+      return;
+    }
+    setState(() {
+      _submitting = false;
+      _failed = true;
+    });
   }
 }

@@ -595,4 +595,78 @@ void main() {
       },
     );
   });
+
+  group('createFeedback scopes item to state', () {
+    // `FeedbackRepositoryImpl.kt:45-53` assigns `state` and `item` **inside**
+    // `if (state != null)` and neither in the else arm:
+    //
+    // ```kotlin
+    // if (state != null) {
+    //     feedback.title = "Question regarding /$state"
+    //     feedback.url = "/$state"
+    //     feedback.state = state
+    //     feedback.item = item
+    // } else {
+    //     feedback.title = "Question regarding /"
+    //     feedback.url = "/"
+    // }
+    // ```
+    //
+    // The port wrote both outside the branch, so it could emit a document the
+    // Kotlin app is structurally incapable of producing: `item` naming a row
+    // whose collection is unstated, while `title` and `url` still say `/`.
+    // `serializeFeedback` sends both keys explicitly (null rather than
+    // omitted, matching Kotlin's `buildJsonObject.put(String, String?)`), so
+    // the difference reaches the server.
+
+    test('an item with no state is dropped, as Kotlin drops it', () {
+      final row = FeedbackMapper.createFeedback(
+        user: 'ada',
+        priority: 'No',
+        type: 'Bug',
+        message: 'from a screen that knows the row but not the collection',
+        item: 'team-1',
+      );
+
+      expect(row.item.value, isNull);
+      expect(row.state.value, isNull);
+      expect(row.title.value, 'Question regarding /');
+      expect(row.url.value, '/');
+    });
+
+    test('an item riding with its state is kept', () {
+      // The fixture that makes the assertion above mean something: without
+      // this pair, dropping `item` unconditionally would also be green.
+      final row = FeedbackMapper.createFeedback(
+        user: 'ada',
+        priority: 'No',
+        type: 'Bug',
+        message: 'from the teams list',
+        item: 'team-1',
+        state: 'teams',
+      );
+
+      expect(row.item.value, 'team-1');
+      expect(row.state.value, 'teams');
+      expect(row.title.value, 'Question regarding /teams');
+      expect(row.url.value, '/teams');
+    });
+
+    test('a state with no item keeps the state', () {
+      // The one asymmetry Kotlin *can* produce, because `TeamFragment
+      // .getBundle:299-305` puts `team._id`, which is nullable, under a
+      // `state` that never is.
+      final row = FeedbackMapper.createFeedback(
+        user: 'ada',
+        priority: 'No',
+        type: 'Bug',
+        message: 'a team with no id',
+        state: 'teams',
+      );
+
+      expect(row.item.value, isNull);
+      expect(row.state.value, 'teams');
+      expect(row.url.value, '/teams');
+    });
+  });
 }

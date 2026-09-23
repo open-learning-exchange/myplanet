@@ -41,17 +41,19 @@ void main() {
 
   /// Fills and submits the form.
   ///
-  /// It never touches the urgency radio, and that is **not** an assertion that
-  /// leaving it alone is correct — it is a known divergence these tests inherit
-  /// rather than endorse. Kotlin pre-selects neither radio
-  /// (`fragment_feedback.xml:28-47` carries no `android:checked`) and refuses
-  /// with `feedback_priority_is_required` until one is picked
-  /// (`FeedbackFragment.validateAndSaveData`). The port defaults
-  /// `_priority = 'No'`, so `_priorityError` is only ever assigned null and the
-  /// error `Text` that reads it is dead code. Reported, not fixed: making the
-  /// field required is a validation change with a new ARB key in five locales,
-  /// and it is independent of anything this round is about.
+  /// The urgency radio is now **picked**, which the previous revision of this
+  /// helper could not do because the port pre-selected `'No'` on the author's
+  /// behalf. Kotlin pre-selects neither radio (`fragment_feedback.xml:28-47`
+  /// carries no `android:checked`) and refuses with
+  /// `feedback_priority_is_required` until one is chosen
+  /// (`FeedbackFragment.validateAndSaveData:90-97`); the port's default made
+  /// `_priorityError` a field that only ever took null, so the error `Text`
+  /// reading it was unreachable. Closed this round — the note that stood here
+  /// saying otherwise is retired, and
+  /// `feedback_priority_required_test.dart` is what holds the behaviour now.
   Future<void> fileFeedback(WidgetTester tester) async {
+    await tester.tap(find.text('No'));
+    await tester.pump();
     await tester.tap(find.text('Bug'));
     await tester.pump();
     await tester.enterText(find.byType(TextField), 'I cannot sign in');
@@ -120,6 +122,8 @@ void main() {
     await tester.pumpWidget(_wrap(database, _NoSession.new, config));
     await tester.pumpAndSettle();
 
+    await tester.tap(find.text('No'));
+    await tester.pump();
     await tester.tap(find.text('Bug'));
     await tester.pump();
     await tester.enterText(find.byType(TextField), 'twice');
@@ -179,6 +183,8 @@ void main() {
     );
     await tester.pump();
 
+    await tester.tap(find.text('No'));
+    await tester.pump();
     await tester.tap(find.text('Bug'));
     await tester.pump();
     await tester.enterText(find.byType(TextField), 'I cannot sign in');

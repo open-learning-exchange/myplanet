@@ -1,10 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/providers/ratings_provider.dart';
 import 'package:myplanet/repository/ratings_repository.dart';
 import 'package:myplanet/ui/ratings/rating_dialog.dart';
 
 import '../support/widget_harness.dart';
+
+/// Stands in for the real [RatingActions] so the dialog can be driven without
+/// a session, a repository or an outbox. [verdict] is the whole point: the
+/// defect being closed here is that the dialog could not tell a rating that
+/// was recorded from one that was not.
+class _FakeRatingActions implements RatingActions {
+  _FakeRatingActions(this.verdict);
+
+  final bool verdict;
+  int calls = 0;
+
+  @override
+  Ref get ref => throw UnimplementedError();
+
+  @override
+  Future<bool> submit({
+    required RatingTarget target,
+    required String title,
+    required int rate,
+    String? comment,
+  }) async {
+    calls++;
+    return verdict;
+  }
+
+  @override
+  Future<int> queuePending() async => 0;
+}
 
 void main() {
   const target = (type: 'course', itemId: 'course-1');
@@ -55,5 +84,114 @@ void main() {
       find.widgetWithText(FilledButton, 'Submit rating'),
     );
     expect(button.onPressed, isNull);
+  });
+
+  /// Opens the dialog through `showDialog`, as all three of its call sites do
+  /// (`take_course_screen`, `course_detail_screen`, `resource_detail_screen`),
+  /// and records what it popped with. Rendering it as the home widget instead
+  /// would make `Navigator.pop` pop the whole app, which is exactly the
+  /// difference this file has to be able to see.
+  Future<({_FakeRatingActions actions, List<Object?> popped})> openDialog(
+    WidgetTester tester, {
+    required bool verdict,
+  }) async {
+    final actions = _FakeRatingActions(verdict);
+    final popped = <Object?>[];
+    await tester.pumpWidget(
+      wrapScreen(
+        Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: ElevatedButton(
+                onPressed: () async => popped.add(
+                  await showDialog<bool>(
+                    context: context,
+                    builder: (_) =>
+                        const RatingDialog(target: target, title: 'Course'),
+                  ),
+                ),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+        overrides: [
+          ratingSummaryProvider(target).overrideWith(
+            (ref) => Stream.value(const RatingSummary(average: 0, total: 0)),
+          ),
+          ratingActionsProvider.overrideWithValue(actions),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Set rating to 4'));
+    await tester.pump();
+    // Never `pumpAndSettle` past this point: while `_submitting` is true the
+    // button holds a `CircularProgressIndicator`, whose indefinite animation
+    // spins `pumpAndSettle` to its ten-minute default and reads exactly like a
+    // hang.
+    await tester.tap(find.widgetWithText(FilledButton, 'Submit rating'));
+    await tester.pump();
+    await tester.pump();
+    return (actions: actions, popped: popped);
+  }
+
+  testWidgets('a rating that was not recorded keeps the dialog open and says '
+      'so', (tester) async {
+    // The defect in one test. `_submit` used to throw the result away and call
+    // `Navigator.pop(context, true)` unconditionally, so a rating that reached
+    // nothing — an unresolved session, a failing write, an outbox that could
+    // not take it — closed the dialog with the same gesture as one that had.
+    //
+    // `RatingsFragment.kt:115-117` toasts `SubmitState.Error` and does **not**
+    // dismiss; only `SubmitState.Success` reaches `dismiss()` (`:104-113`).
+    final opened = await openDialog(tester, verdict: false);
+
+    expect(opened.actions.calls, 1);
+    expect(opened.popped, isEmpty, reason: 'the dialog popped on a failure');
+    expect(
+      find.byType(RatingDialog),
+      findsOneWidget,
+      reason: 'the dialog closed on a rating that was never recorded',
+    );
+    // The message is the assertion that matters: a test that only counted the
+    // call could not tell a reported failure from a silent one, which is the
+    // entire class being closed.
+    expect(
+      find.text('Could not submit your rating. Please try again.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('a failed rating leaves Submit live and the input intact', (
+    tester,
+  ) async {
+    // `updateSubmitButtonState` (`RatingsFragment.kt:147-151`) re-enables on
+    // anything that is not `Submitting`, so `Error` hands the button back and
+    // the rating bar and comment keep what the person entered — the retry
+    // costs them nothing.
+    await openDialog(tester, verdict: false);
+
+    final button = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Submit rating'),
+    );
+    expect(button.onPressed, isNotNull);
+    expect(find.byIcon(Icons.star), findsNWidgets(4));
+  });
+
+  testWidgets('a recorded rating closes the dialog', (tester) async {
+    final opened = await openDialog(tester, verdict: true);
+
+    expect(opened.actions.calls, 1);
+    await tester.pumpAndSettle();
+    expect(find.byType(RatingDialog), findsNothing);
+    expect(opened.popped, [true]);
+    expect(
+      find.text('Could not submit your rating. Please try again.'),
+      findsNothing,
+    );
   });
 }

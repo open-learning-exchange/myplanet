@@ -102,6 +102,24 @@ class ChatMessage {
   final String id;
 }
 
+/// What [ChatConversationNotifier.sendMessage] did with a message.
+///
+/// The distinction the screen needs is not success-vs-failure but *did the
+/// conversation take it* — because a failed send keeps the bubble, shows the
+/// error and queues a retry row, so the composer has nothing left to hold.
+/// Only [declined] means the text exists nowhere but the field.
+enum ChatSendOutcome {
+  /// The assistant answered; both bubbles are on screen.
+  sent,
+
+  /// The request failed. The query bubble is kept, `state.error` is set, and
+  /// a pending row is waiting for the outbox.
+  failed,
+
+  /// Nothing was recorded anywhere. The caller must keep the typed text.
+  declined,
+}
+
 /// Notifier for managing chat conversation state.
 class ChatConversationNotifier extends Notifier<ChatConversationState> {
   @override
@@ -151,10 +169,46 @@ class ChatConversationNotifier extends Notifier<ChatConversationState> {
     state = const ChatConversationState();
   }
 
-  /// Sends a message.
-  Future<void> sendMessage(String message) async {
+  /// Sends a message, reporting whether the conversation took it.
+  ///
+  /// It used to return `void`, and [ChatDetailScreen] cleared the composer
+  /// *before* awaiting it — so the two refusals below
+  /// ([ChatSendOutcome.declined]) consumed the person's typed text and left
+  /// nothing at all behind: no bubble, no banner, no pending row. The button
+  /// is disabled with no session, but `onSubmitted` was not, so the
+  /// soft-keyboard Send key reached this path; `_scrollToBottom`'s own doc
+  /// comment already named that route as the one that "resolved without
+  /// adding a bubble".
+  ///
+  /// Kotlin cannot reach the equivalent state, because it disables the input
+  /// **field** rather than only the button while the profile loads
+  /// (`ChatDetailFragment.refreshInputState:596-602`, `editGchatMessage
+  /// .isEnabled = enableInput`), so there is never text to lose. The screen
+  /// mirrors that gate; this return value is the second line of defence.
+  ///
+  /// [ChatSendOutcome.failed] is *not* a discard: the query bubble is on
+  /// screen, `state.error` renders in the banner, and `savePendingChat` has
+  /// written a row for [ChatQueue] to drain. The composer is cleared for it
+  /// exactly as for a success.
+  Future<ChatSendOutcome> sendMessage(String message) async {
+    try {
+      return await _sendMessage(message);
+    } catch (error) {
+      // `resolveSession` can reject where `.value` could only have been null,
+      // and `savePendingChat`/`queuePending` touch the database. Without this
+      // the throw escaped into the screen's unguarded `await`, which left
+      // `_isSending` true for the life of the screen — a permanently spinning
+      // Send button — on top of the lost text.
+      state = state.copyWith(isLoading: false, error: '$error');
+      return ChatSendOutcome.failed;
+    }
+  }
+
+  Future<ChatSendOutcome> _sendMessage(String message) async {
     final session = await resolveSession(ref);
-    if (session == null || message.trim().isEmpty) return;
+    if (session == null || message.trim().isEmpty) {
+      return ChatSendOutcome.declined;
+    }
 
     final repo = ref.read(chatRepositoryProvider);
     final currentState = state;
@@ -205,6 +259,7 @@ class ChatConversationNotifier extends Notifier<ChatConversationState> {
           rev: rev,
           isLoading: false,
         );
+        return ChatSendOutcome.sent;
       case ChatError(message: final message):
         // Keep the message rather than dropping it, and hand it to the outbox.
         // `ChatUploader` was registered on the drain with nothing ever queuing
@@ -220,6 +275,7 @@ class ChatConversationNotifier extends Notifier<ChatConversationState> {
         );
         await ref.read(chatQueueProvider).queuePending();
         state = state.copyWith(isLoading: false, error: message);
+        return ChatSendOutcome.failed;
     }
   }
 

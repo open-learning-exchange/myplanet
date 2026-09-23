@@ -797,6 +797,10 @@
   "@ratingRequired": {
     "x-mt": true
   },
+  "ratingSubmitFailed": "Impossible d'envoyer votre évaluation. Veuillez réessayer.",
+  "@ratingSubmitFailed": {
+    "x-mt": true
+  },
   "commentOptional": "Commentaire (facultatif)",
   "@commentOptional": {
     "x-mt": true
@@ -1382,6 +1386,7 @@
   "@feedbackTypeRequired": {
     "x-mt": true
   },
+  "feedbackPriorityRequired": "La priorité du commentaire est requise.",
   "yourFeedback": "Vos commentaires",
   "@yourFeedback": {
     "x-mt": true

@@ -473,12 +473,25 @@ void main() {
     // the wipe dialog's button, progress text and message, all three of which
     // ship human translations in every `values-*/strings.xml`. Counted from
     // the tree after the derivation run. Nothing existing changed value.
+    //
+    // Phase 159 lane 2 adds one per locale: `feedbackPriorityRequired`, the
+    // refusal the feedback form shows when no urgency has been picked. Kotlin
+    // has had `feedback_priority_is_required` since the screen existed and it
+    // ships a human translation in all five `values-*/strings.xml`, so the
+    // English is Kotlin's verbatim and the five values are recovered rather
+    // than generated. Counted from the tree, not remembered.
+    //
+    // The same change adds a second template key, `ratingSubmitFailed`, which
+    // moves no count here: Kotlin toasts the raw exception message
+    // (`RatingsViewModel.kt:105-107`) and has no string to derive from, so
+    // ar/es/fr take machine translation flagged `x-mt` and ne/so fall back to
+    // clean English.
     const humanReviewed = {
-      'ar': 432,
-      'es': 484,
-      'fr': 430,
-      'ne': 432,
-      'so': 432,
+      'ar': 433,
+      'es': 485,
+      'fr': 431,
+      'ne': 433,
+      'so': 433,
     };
 
     for (final code in locales) {
