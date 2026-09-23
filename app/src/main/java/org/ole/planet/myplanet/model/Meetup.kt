@@ -11,7 +11,7 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.json.JSONArray
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.toGson
@@ -57,24 +57,24 @@ open class Meetup {
          */
         fun fromJson(meetupDoc: JsonObject, userId: String?, existingMeetup: Meetup?): Meetup {
             val meetup = Meetup()
-            meetup.id = JsonUtils.getString("_id", meetupDoc)
-            meetup.meetupId = JsonUtils.getString("_id", meetupDoc)
+            meetup.id = GsonUtils.getString("_id", meetupDoc)
+            meetup.meetupId = GsonUtils.getString("_id", meetupDoc)
             meetup.userId = userId
-            meetup.meetupIdRev = JsonUtils.getString("_rev", meetupDoc)
-            meetup.title = JsonUtils.getString("title", meetupDoc)
-            meetup.description = JsonUtils.getString("description", meetupDoc)
-            meetup.startDate = JsonUtils.getLong("startDate", meetupDoc)
-            meetup.endDate = JsonUtils.getLong("endDate", meetupDoc)
-            meetup.recurring = JsonUtils.getString("recurring", meetupDoc)
-            meetup.startTime = JsonUtils.getString("startTime", meetupDoc)
-            meetup.endTime = JsonUtils.getString("endTime", meetupDoc)
-            meetup.category = JsonUtils.getString("category", meetupDoc)
-            meetup.meetupLocation = JsonUtils.getString("meetupLocation", meetupDoc)
-            meetup.meetupLink = JsonUtils.getString("meetupLink", meetupDoc)
-            meetup.creator = JsonUtils.getString("createdBy", meetupDoc)
-            meetup.day = JsonUtils.getJsonArray("day", meetupDoc).toString()
-            meetup.link = JsonUtils.getJsonObject("link", meetupDoc).toString()
-            meetup.teamId = JsonUtils.getString("teams", JsonUtils.getJsonObject("link", meetupDoc))
+            meetup.meetupIdRev = GsonUtils.getString("_rev", meetupDoc)
+            meetup.title = GsonUtils.getString("title", meetupDoc)
+            meetup.description = GsonUtils.getString("description", meetupDoc)
+            meetup.startDate = GsonUtils.getLong("startDate", meetupDoc)
+            meetup.endDate = GsonUtils.getLong("endDate", meetupDoc)
+            meetup.recurring = GsonUtils.getString("recurring", meetupDoc)
+            meetup.startTime = GsonUtils.getString("startTime", meetupDoc)
+            meetup.endTime = GsonUtils.getString("endTime", meetupDoc)
+            meetup.category = GsonUtils.getString("category", meetupDoc)
+            meetup.meetupLocation = GsonUtils.getString("meetupLocation", meetupDoc)
+            meetup.meetupLink = GsonUtils.getString("meetupLink", meetupDoc)
+            meetup.creator = GsonUtils.getString("createdBy", meetupDoc)
+            meetup.day = GsonUtils.getJsonArray("day", meetupDoc).toString()
+            meetup.link = GsonUtils.getJsonObject("link", meetupDoc).toString()
+            meetup.teamId = GsonUtils.getString("teams", GsonUtils.getJsonObject("link", meetupDoc))
 
             if (existingMeetup != null) {
                 meetup.createdDate = existingMeetup.createdDate
@@ -128,7 +128,7 @@ open class Meetup {
 
         fun serialize(meetup: Meetup): JsonObject {
             val linksJson = if (!meetup.link.isNullOrEmpty()) {
-                JsonUtils.gson.fromJson(meetup.link, JsonObject::class.java)
+                GsonUtils.gson.fromJson(meetup.link, JsonObject::class.java)
             } else null
             val `object` = buildJsonObject {
                 if (!meetup.meetupId.isNullOrEmpty()) put("_id", meetup.meetupId)

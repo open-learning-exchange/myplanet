@@ -16,7 +16,7 @@ import org.junit.runner.RunWith
 import org.ole.planet.myplanet.databinding.RowOtherInfoBinding
 import org.ole.planet.myplanet.ui.user.AchievementsAdapter.Companion.PAYLOAD_EMAIL
 import org.ole.planet.myplanet.ui.user.AchievementsAdapter.Companion.PAYLOAD_PHONE
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
@@ -43,7 +43,7 @@ class AchievementsAdapterTest {
         ref2.addProperty("name", "Jane Smith")
         ref2.addProperty("relationship", "Colleague")
 
-        val jsonList = listOf(JsonUtils.gson.toJson(ref1), JsonUtils.gson.toJson(ref2))
+        val jsonList = listOf(GsonUtils.gson.toJson(ref1), GsonUtils.gson.toJson(ref2))
 
         adapter = AchievementsAdapter(jsonList)
     }
@@ -73,7 +73,7 @@ class AchievementsAdapterTest {
         ref3.addProperty("phone", "555")
         ref3.addProperty("email", "bob@ex.com")
 
-        val jsonList = listOf(JsonUtils.gson.toJson(ref3))
+        val jsonList = listOf(GsonUtils.gson.toJson(ref3))
 
         adapter.submitJsonList(jsonList)
 
@@ -129,7 +129,7 @@ class AchievementsAdapterTest {
         ref.addProperty("relationship", "Friend")
         ref.addProperty("phone", "123-456-7890")
         ref.addProperty("email", "john@example.com")
-        adapter = AchievementsAdapter(listOf(JsonUtils.gson.toJson(ref)))
+        adapter = AchievementsAdapter(listOf(GsonUtils.gson.toJson(ref)))
 
         val binding = RowOtherInfoBinding.inflate(LayoutInflater.from(context))
         val holder = AchievementsAdapter.AchievementsViewHolder(binding)
@@ -153,7 +153,7 @@ class AchievementsAdapterTest {
         ref.addProperty("relationship", "Friend")
         ref.addProperty("phone", "123-456-7890")
         ref.addProperty("email", "john@example.com")
-        adapter = AchievementsAdapter(listOf(JsonUtils.gson.toJson(ref)))
+        adapter = AchievementsAdapter(listOf(GsonUtils.gson.toJson(ref)))
 
         val binding = RowOtherInfoBinding.inflate(LayoutInflater.from(context))
         val holder = AchievementsAdapter.AchievementsViewHolder(binding)
@@ -174,7 +174,7 @@ class AchievementsAdapterTest {
         ref.addProperty("relationship", "Friend")
         ref.addProperty("phone", "123-456-7890")
         ref.addProperty("email", "john@example.com")
-        adapter = AchievementsAdapter(listOf(JsonUtils.gson.toJson(ref)))
+        adapter = AchievementsAdapter(listOf(GsonUtils.gson.toJson(ref)))
 
         val binding = RowOtherInfoBinding.inflate(LayoutInflater.from(context))
         val holder = AchievementsAdapter.AchievementsViewHolder(binding)
@@ -192,7 +192,7 @@ class AchievementsAdapterTest {
         ref.addProperty("relationship", "Friend")
         ref.addProperty("phone", "123-456-7890")
         ref.addProperty("email", "john@example.com")
-        adapter = AchievementsAdapter(listOf(JsonUtils.gson.toJson(ref)))
+        adapter = AchievementsAdapter(listOf(GsonUtils.gson.toJson(ref)))
 
         val binding = RowOtherInfoBinding.inflate(LayoutInflater.from(context))
         val holder = AchievementsAdapter.AchievementsViewHolder(binding)
@@ -214,7 +214,7 @@ class AchievementsAdapterTest {
         ref.addProperty("relationship", "Friend")
         ref.addProperty("phone", "123-456-7890")
         ref.addProperty("email", "john@example.com")
-        adapter = AchievementsAdapter(listOf(JsonUtils.gson.toJson(ref)))
+        adapter = AchievementsAdapter(listOf(GsonUtils.gson.toJson(ref)))
 
         val binding = RowOtherInfoBinding.inflate(LayoutInflater.from(context))
         val holder = AchievementsAdapter.AchievementsViewHolder(binding)

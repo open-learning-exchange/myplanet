@@ -16,7 +16,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.toGson
 
@@ -185,7 +185,7 @@ open class MyLibrary {
          */
         fun insertMyLibrary(params: InsertParams): MyLibrary? {
             if (params.doc.entrySet().isEmpty()) return null
-            val resourceId = JsonUtils.getString("_id", params.doc)
+            val resourceId = GsonUtils.getString("_id", params.doc)
             val resource = params.existing ?: MyLibrary().apply { id = resourceId }
             val wasPrivate = params.existing?.isPrivate == true
             val hadPrivateFor = params.existing?.privateFor
@@ -201,12 +201,12 @@ open class MyLibrary {
                 if (!params.courseId.isNullOrBlank()) {
                     this.courseId = params.courseId
                 }
-                _rev = JsonUtils.getString("_rev", params.doc)
+                _rev = GsonUtils.getString("_rev", params.doc)
                 this.resourceId = resourceId
-                val titleString = JsonUtils.getString("title", params.doc)
+                val titleString = GsonUtils.getString("title", params.doc)
                 title = titleString
                 titleNormal = Utilities.normalizeText(titleString)
-                description = JsonUtils.getString("description", params.doc)
+                description = GsonUtils.getString("description", params.doc)
                 if (params.doc.has("_attachments")) {
                     val attachmentsObj = params.doc["_attachments"].asJsonObject
                     val attachmentList = this.attachments?.toMutableList() ?: mutableListOf()
@@ -234,36 +234,36 @@ open class MyLibrary {
                             resourceLocalAddress = key
                             resourceOffline = FileUtils.checkFileExist(params.context, resourceRemoteAddress)
                             if (resourceOffline) {
-                                downloadedRev = JsonUtils.getString("_rev", params.doc)
+                                downloadedRev = GsonUtils.getString("_rev", params.doc)
                             }
                         }
                     }
                     this.attachments = attachmentList
                 }
-                filename = JsonUtils.getString("filename", params.doc)
-                averageRating = JsonUtils.getString("averageRating", params.doc)
-                uploadDate = JsonUtils.getString("uploadDate", params.doc)
-                year = JsonUtils.getString("year", params.doc)
-                addedBy = JsonUtils.getString("addedBy", params.doc)
-                publisher = JsonUtils.getString("publisher", params.doc)
-                linkToLicense = JsonUtils.getString("linkToLicense", params.doc)
-                openWith = JsonUtils.getString("openWith", params.doc)
-                openWhichFile = JsonUtils.getString("openWhichFile", params.doc).takeIf { it.isNotBlank() }
-                articleDate = JsonUtils.getString("articleDate", params.doc)
-                kind = JsonUtils.getString("kind", params.doc)
-                createdDate = JsonUtils.getLong("createdDate", params.doc)
-                language = JsonUtils.getString("language", params.doc)
-                author = JsonUtils.getString("author", params.doc)
-                mediaType = JsonUtils.getString("mediaType", params.doc)
-                resourceType = JsonUtils.getString("resourceType", params.doc)
-                timesRated = JsonUtils.getInt("timesRated", params.doc)
-                medium = JsonUtils.getString("medium", params.doc)
-                resourceFor = mergedList(resourceFor, JsonUtils.getJsonArray("resourceFor", params.doc))
-                subject = mergedList(subject, JsonUtils.getJsonArray("subject", params.doc))
-                level = mergedList(level, JsonUtils.getJsonArray("level", params.doc))
-                tag = mergedList(tag, JsonUtils.getJsonArray("tags", params.doc))
+                filename = GsonUtils.getString("filename", params.doc)
+                averageRating = GsonUtils.getString("averageRating", params.doc)
+                uploadDate = GsonUtils.getString("uploadDate", params.doc)
+                year = GsonUtils.getString("year", params.doc)
+                addedBy = GsonUtils.getString("addedBy", params.doc)
+                publisher = GsonUtils.getString("publisher", params.doc)
+                linkToLicense = GsonUtils.getString("linkToLicense", params.doc)
+                openWith = GsonUtils.getString("openWith", params.doc)
+                openWhichFile = GsonUtils.getString("openWhichFile", params.doc).takeIf { it.isNotBlank() }
+                articleDate = GsonUtils.getString("articleDate", params.doc)
+                kind = GsonUtils.getString("kind", params.doc)
+                createdDate = GsonUtils.getLong("createdDate", params.doc)
+                language = GsonUtils.getString("language", params.doc)
+                author = GsonUtils.getString("author", params.doc)
+                mediaType = GsonUtils.getString("mediaType", params.doc)
+                resourceType = GsonUtils.getString("resourceType", params.doc)
+                timesRated = GsonUtils.getInt("timesRated", params.doc)
+                medium = GsonUtils.getString("medium", params.doc)
+                resourceFor = mergedList(resourceFor, GsonUtils.getJsonArray("resourceFor", params.doc))
+                subject = mergedList(subject, GsonUtils.getJsonArray("subject", params.doc))
+                level = mergedList(level, GsonUtils.getJsonArray("level", params.doc))
+                tag = mergedList(tag, GsonUtils.getJsonArray("tags", params.doc))
                 if (!isLocalOnlyPrivate) {
-                    isPrivate = JsonUtils.getBoolean("private", params.doc)
+                    isPrivate = GsonUtils.getBoolean("private", params.doc)
                     if (isPrivate && params.doc.has("privateFor")) {
                         val privateForElement = params.doc.get("privateFor")
                         if (privateForElement.isJsonObject) {
@@ -271,7 +271,7 @@ open class MyLibrary {
                         }
                     }
                 }
-                languages = mergedList(languages, JsonUtils.getJsonArray("languages", params.doc))
+                languages = mergedList(languages, GsonUtils.getJsonArray("languages", params.doc))
             }
             return resource
         }

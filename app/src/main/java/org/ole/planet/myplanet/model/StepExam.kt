@@ -6,7 +6,7 @@ import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
@@ -39,27 +39,27 @@ open class StepExam(
         }
 
         fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject, parentId: String?): StepExam {
-            val examId = JsonUtils.getString("_id", exam)
+            val examId = GsonUtils.getString("_id", exam)
             val myExam = StepExam().apply {
                 id = (if (examId.isNullOrEmpty()) parentId else examId).orEmpty()
             }
             checkIdsAndInsert(myCoursesID, stepId, myExam)
-            myExam.type = if (exam.has("type")) JsonUtils.getString("type", exam) else "exam"
-            myExam.name = JsonUtils.getString("name", exam)
-            myExam.description = JsonUtils.getString("description", exam)
-            myExam.passingPercentage = JsonUtils.getString("passingPercentage", exam)
-            myExam._rev = JsonUtils.getString("_rev", exam)
-            myExam.createdBy = JsonUtils.getString("createdBy", exam)
-            myExam.sourcePlanet = JsonUtils.getString("sourcePlanet", exam)
-            myExam.createdDate = JsonUtils.getLong("createdDate", exam)
-            myExam.updatedDate = JsonUtils.getLong("updatedDate", exam)
-            myExam.adoptionDate = JsonUtils.getLong("adoptionDate", exam)
-            myExam.totalMarks = JsonUtils.getInt("totalMarks", exam)
-            myExam.noOfQuestions = JsonUtils.getJsonArray("questions", exam).size()
+            myExam.type = if (exam.has("type")) GsonUtils.getString("type", exam) else "exam"
+            myExam.name = GsonUtils.getString("name", exam)
+            myExam.description = GsonUtils.getString("description", exam)
+            myExam.passingPercentage = GsonUtils.getString("passingPercentage", exam)
+            myExam._rev = GsonUtils.getString("_rev", exam)
+            myExam.createdBy = GsonUtils.getString("createdBy", exam)
+            myExam.sourcePlanet = GsonUtils.getString("sourcePlanet", exam)
+            myExam.createdDate = GsonUtils.getLong("createdDate", exam)
+            myExam.updatedDate = GsonUtils.getLong("updatedDate", exam)
+            myExam.adoptionDate = GsonUtils.getLong("adoptionDate", exam)
+            myExam.totalMarks = GsonUtils.getInt("totalMarks", exam)
+            myExam.noOfQuestions = GsonUtils.getJsonArray("questions", exam).size()
             myExam.isFromNation = !parentId.isNullOrEmpty()
-            myExam.teamId = JsonUtils.getString("teamId", exam)
-            myExam.isTeamShareAllowed = JsonUtils.getBoolean("teamShareAllowed", exam)
-            myExam.sourceSurveyId = JsonUtils.getString("sourceSurveyId", exam)
+            myExam.teamId = GsonUtils.getString("teamId", exam)
+            myExam.isTeamShareAllowed = GsonUtils.getBoolean("teamShareAllowed", exam)
+            myExam.sourceSurveyId = GsonUtils.getString("sourceSurveyId", exam)
             return myExam
         }
 

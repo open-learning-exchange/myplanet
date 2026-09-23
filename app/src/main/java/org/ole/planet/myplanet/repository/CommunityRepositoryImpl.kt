@@ -11,7 +11,7 @@ import org.ole.planet.myplanet.data.room.dao.CommunityDao
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.model.Community
 import org.ole.planet.myplanet.model.Meetup
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 
 @Singleton
 class CommunityRepositoryImpl @Inject constructor(
@@ -24,17 +24,17 @@ class CommunityRepositoryImpl @Inject constructor(
         val communities = mutableListOf<Community>()
         for (j in rows) {
             var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = GsonUtils.getJsonObject("doc", jsonDoc)
+            val id = GsonUtils.getString("_id", jsonDoc)
             val community = Community()
             community.id = id
-            if (JsonUtils.getString("name", jsonDoc) == "learning") {
+            if (GsonUtils.getString("name", jsonDoc) == "learning") {
                 community.weight = 0
             }
-            community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
-            community.name = JsonUtils.getString("name", jsonDoc)
-            community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
-            community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
+            community.localDomain = GsonUtils.getString("localDomain", jsonDoc)
+            community.name = GsonUtils.getString("name", jsonDoc)
+            community.parentDomain = GsonUtils.getString("parentDomain", jsonDoc)
+            community.registrationRequest = GsonUtils.getString("registrationRequest", jsonDoc)
             communities.add(community)
         }
         communityDao.replaceAll(communities)
@@ -48,7 +48,7 @@ class CommunityRepositoryImpl @Inject constructor(
         return try {
             val response = apiInterface.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true")
             if (response.isSuccessful && response.body() != null) {
-                val arr = JsonUtils.getJsonArray("rows", response.body())
+                val arr = GsonUtils.getJsonArray("rows", response.body())
                 replaceAll(arr)
                 true
             } else {
@@ -64,11 +64,11 @@ class CommunityRepositoryImpl @Inject constructor(
 
     override suspend fun insertMeetupsFromSync(docs: List<JsonObject>) {
         if (docs.isEmpty()) return
-        val ids = docs.map { JsonUtils.getString("_id", it) }
+        val ids = docs.map { GsonUtils.getString("_id", it) }
         val existingByMeetupId = meetupDao.getByMeetupIds(ids).associateBy { it.meetupId }
 
         val meetupsToInsert = docs.mapNotNull { meetupDoc ->
-            val id = JsonUtils.getString("_id", meetupDoc)
+            val id = GsonUtils.getString("_id", meetupDoc)
             val existing = existingByMeetupId[id]
             if (existing?.updated == true) {
                 null

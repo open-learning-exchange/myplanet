@@ -9,7 +9,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.model.Feedback
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.distinctByContent
 
@@ -116,13 +116,13 @@ class FeedbackRepositoryImpl @Inject constructor(
     }
 
     suspend fun insertFromJson(jsonObject: JsonObject) {
-        val id = JsonUtils.getString("_id", jsonObject)
+        val id = GsonUtils.getString("_id", jsonObject)
         val existing = feedbackDao.findById(id)
         feedbackDao.upsert(mapToFeedback(jsonObject, existing, id))
     }
 
     override suspend fun insertFeedbackList(jsonObjects: List<JsonObject>) {
-        val ids = jsonObjects.map { JsonUtils.getString("_id", it) }
+        val ids = jsonObjects.map { GsonUtils.getString("_id", it) }
         val existingById = feedbackDao.getByIds(ids).associateBy { it.id }
         feedbackDao.upsertAll(
             jsonObjects.zip(ids) { json, id -> mapToFeedback(json, existingById[id], id) }
@@ -138,23 +138,23 @@ class FeedbackRepositoryImpl @Inject constructor(
         return Feedback().apply {
             id = idStr
             _id = idStr
-            title = JsonUtils.getString("title", act)
-            source = JsonUtils.getString("source", act)
-            status = JsonUtils.getString("status", act)
-            priority = JsonUtils.getString("priority", act)
-            owner = JsonUtils.getString("owner", act)
-            openTime = JsonUtils.getLong("openTime", act)
-            type = JsonUtils.getString("type", act)
-            url = JsonUtils.getString("url", act)
-            parentCode = JsonUtils.getString("parentCode", act)
-            item = JsonUtils.getString("item", act)
-            state = JsonUtils.getString("state", act)
-            _rev = JsonUtils.getString("_rev", act)
+            title = GsonUtils.getString("title", act)
+            source = GsonUtils.getString("source", act)
+            status = GsonUtils.getString("status", act)
+            priority = GsonUtils.getString("priority", act)
+            owner = GsonUtils.getString("owner", act)
+            openTime = GsonUtils.getLong("openTime", act)
+            type = GsonUtils.getString("type", act)
+            url = GsonUtils.getString("url", act)
+            parentCode = GsonUtils.getString("parentCode", act)
+            item = GsonUtils.getString("item", act)
+            state = GsonUtils.getString("state", act)
+            _rev = GsonUtils.getString("_rev", act)
             if (hasPendingLocalReply) {
                 messages = existing.messages
                 isUploaded = false
             } else {
-                messages = JsonUtils.gson.toJson(JsonUtils.getJsonArray("messages", act))
+                messages = GsonUtils.gson.toJson(GsonUtils.getJsonArray("messages", act))
                 isUploaded = true
             }
         }

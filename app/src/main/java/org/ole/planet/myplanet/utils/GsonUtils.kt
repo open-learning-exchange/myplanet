@@ -58,8 +58,8 @@ private fun JsonPrimitive.toKotlinxPrimitive(): KJsonPrimitive = when {
     else -> KJsonPrimitive(asString)
 }
 
-object JsonUtils {
-    private const val TAG = "JsonUtils"
+object GsonUtils {
+    private const val TAG = "GsonUtils"
 
     val gson: Gson by lazy {
         Gson()
@@ -199,7 +199,7 @@ object JsonUtils {
 
 fun JsonArray.toSyncDocuments(): List<Pair<String, JsonObject>> =
     mapNotNull { element ->
-        val doc = JsonUtils.getJsonObject("doc", element.asJsonObject)
-        val id = JsonUtils.getString("_id", doc)
+        val doc = GsonUtils.getJsonObject("doc", element.asJsonObject)
+        val id = GsonUtils.getString("_id", doc)
         if (id.startsWith("_design")) null else id to doc
     }

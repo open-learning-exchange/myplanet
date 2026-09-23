@@ -16,7 +16,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.News
 
-class JsonUtilsTest {
+class GsonUtilsTest {
 
     @Before
     fun setUp() {
@@ -36,20 +36,20 @@ class JsonUtilsTest {
     fun testGetStringWithValidString() {
         val jsonObject = JsonObject()
         jsonObject.addProperty("key", "value")
-        assertEquals("value", JsonUtils.getString("key", jsonObject))
+        assertEquals("value", GsonUtils.getString("key", jsonObject))
     }
 
     @Test
     fun testGetStringWithJsonNull() {
         val jsonObject = JsonObject()
         jsonObject.add("key", JsonNull.INSTANCE)
-        assertEquals("", JsonUtils.getString("key", jsonObject))
+        assertEquals("", GsonUtils.getString("key", jsonObject))
     }
 
     @Test
     fun testGetStringWithMissingKey() {
         val jsonObject = JsonObject()
-        assertEquals("", JsonUtils.getString("missing", jsonObject))
+        assertEquals("", GsonUtils.getString("missing", jsonObject))
     }
 
     @Test
@@ -58,9 +58,9 @@ class JsonUtilsTest {
         jsonObject.addProperty("flagTrue", true)
         jsonObject.addProperty("flagFalse", false)
 
-        assertEquals(true, JsonUtils.getBoolean("flagTrue", jsonObject))
-        assertEquals(false, JsonUtils.getBoolean("flagFalse", jsonObject))
-        assertEquals(false, JsonUtils.getBoolean("missing", jsonObject))
+        assertEquals(true, GsonUtils.getBoolean("flagTrue", jsonObject))
+        assertEquals(false, GsonUtils.getBoolean("flagFalse", jsonObject))
+        assertEquals(false, GsonUtils.getBoolean("missing", jsonObject))
     }
 
     @Test
@@ -72,12 +72,12 @@ class JsonUtilsTest {
         obj.add("nullVal", JsonNull.INSTANCE)
         obj.add("wrongType", JsonObject())
 
-        assertEquals(42, JsonUtils.getInt("num", obj))
-        assertEquals(42, JsonUtils.getInt("strNum", obj))
-        assertEquals(0, JsonUtils.getInt("empty", obj))
-        assertEquals(0, JsonUtils.getInt("nullVal", obj))
-        assertEquals(0, JsonUtils.getInt("missing", obj))
-        assertEquals(0, JsonUtils.getInt("wrongType", obj))
+        assertEquals(42, GsonUtils.getInt("num", obj))
+        assertEquals(42, GsonUtils.getInt("strNum", obj))
+        assertEquals(0, GsonUtils.getInt("empty", obj))
+        assertEquals(0, GsonUtils.getInt("nullVal", obj))
+        assertEquals(0, GsonUtils.getInt("missing", obj))
+        assertEquals(0, GsonUtils.getInt("wrongType", obj))
     }
 
     @Test
@@ -89,25 +89,25 @@ class JsonUtilsTest {
         obj.add("nullVal", JsonNull.INSTANCE)
         obj.add("wrongType", JsonObject())
 
-        assertEquals(42.5f, JsonUtils.getFloat("num", obj))
-        assertEquals(42.5f, JsonUtils.getFloat("strNum", obj))
-        assertEquals(0f, JsonUtils.getFloat("empty", obj))
-        assertEquals(0f, JsonUtils.getFloat("nullVal", obj))
-        assertEquals(0f, JsonUtils.getFloat("missing", obj))
-        assertEquals(0f, JsonUtils.getFloat("wrongType", obj))
+        assertEquals(42.5f, GsonUtils.getFloat("num", obj))
+        assertEquals(42.5f, GsonUtils.getFloat("strNum", obj))
+        assertEquals(0f, GsonUtils.getFloat("empty", obj))
+        assertEquals(0f, GsonUtils.getFloat("nullVal", obj))
+        assertEquals(0f, GsonUtils.getFloat("missing", obj))
+        assertEquals(0f, GsonUtils.getFloat("wrongType", obj))
     }
 
     @Test
     fun testAddJsonWithNullValue() {
         val obj = JsonObject()
-        JsonUtils.addJson(obj, "field", null)
+        GsonUtils.addJson(obj, "field", null)
         assertFalse(obj.has("field"))
     }
 
     @Test
     fun testAddJsonWithEmptyObject() {
         val obj = JsonObject()
-        JsonUtils.addJson(obj, "field", JsonObject())
+        GsonUtils.addJson(obj, "field", JsonObject())
         assertFalse(obj.has("field"))
     }
 
@@ -115,7 +115,7 @@ class JsonUtilsTest {
     fun testAddJsonWithNonEmptyObject() {
         val obj = JsonObject()
         val value = JsonObject().apply { addProperty("inner", "val") }
-        JsonUtils.addJson(obj, "field", value)
+        GsonUtils.addJson(obj, "field", value)
         assertTrue(obj.has("field"))
         assertEquals("val", obj.getAsJsonObject("field").get("inner").asString)
     }
@@ -129,10 +129,10 @@ class JsonUtilsTest {
         obj.add("nullVal", JsonNull.INSTANCE)
         obj.add("wrongType", JsonObject())
 
-        assertEquals(arr, JsonUtils.getJsonArray("arr", obj))
-        assertEquals(JsonArray(), JsonUtils.getJsonArray("nullVal", obj))
-        assertEquals(JsonArray(), JsonUtils.getJsonArray("missing", obj))
-        assertEquals(JsonArray(), JsonUtils.getJsonArray("wrongType", obj))
+        assertEquals(arr, GsonUtils.getJsonArray("arr", obj))
+        assertEquals(JsonArray(), GsonUtils.getJsonArray("nullVal", obj))
+        assertEquals(JsonArray(), GsonUtils.getJsonArray("missing", obj))
+        assertEquals(JsonArray(), GsonUtils.getJsonArray("wrongType", obj))
     }
 
     @Test
@@ -145,10 +145,10 @@ class JsonUtilsTest {
         val arr = JsonArray()
         obj.add("wrongType", arr)
 
-        assertEquals(innerObj, JsonUtils.getJsonObject("obj", obj))
-        assertEquals(JsonObject(), JsonUtils.getJsonObject("nullVal", obj))
-        assertEquals(JsonObject(), JsonUtils.getJsonObject("missing", obj))
-        assertEquals(JsonObject(), JsonUtils.getJsonObject("wrongType", obj))
+        assertEquals(innerObj, GsonUtils.getJsonObject("obj", obj))
+        assertEquals(JsonObject(), GsonUtils.getJsonObject("nullVal", obj))
+        assertEquals(JsonObject(), GsonUtils.getJsonObject("missing", obj))
+        assertEquals(JsonObject(), GsonUtils.getJsonObject("wrongType", obj))
     }
 
     @Test
@@ -159,13 +159,13 @@ class JsonUtilsTest {
         array.add(JsonObject())
         obj.add("wrongArr", array)
 
-        JsonUtils.getInt("wrongType", obj)
-        JsonUtils.getFloat("wrongType", obj)
-        JsonUtils.getString(array, 0)
-        JsonUtils.getJsonArray("wrongType", obj)
-        JsonUtils.getJsonObject("wrongArr", obj)
-        JsonUtils.getLong("wrongType", obj)
-        JsonUtils.getBoolean("wrongType", obj)
+        GsonUtils.getInt("wrongType", obj)
+        GsonUtils.getFloat("wrongType", obj)
+        GsonUtils.getString(array, 0)
+        GsonUtils.getJsonArray("wrongType", obj)
+        GsonUtils.getJsonObject("wrongArr", obj)
+        GsonUtils.getLong("wrongType", obj)
+        GsonUtils.getBoolean("wrongType", obj)
 
         // #16652: accessors type-check instead of throwing, so the catch is never entered.
         verify(exactly = 0) { Log.isLoggable(any(), any()) }
@@ -179,10 +179,10 @@ class JsonUtilsTest {
         news.id = "test"
         news.viewIn = "not a json array"
 
-        assertEquals("", JsonUtils.extractSharedTeamName(news))
+        assertEquals("", GsonUtils.extractSharedTeamName(news))
 
         // malformed server data is unexpected, so it surfaces as a warning (with the throwable),
         // not the quiet DEBUG fallback used for expected type mismatches
-        verify(atLeast = 1) { Log.w("JsonUtils", "failed to parse viewIn", any()) }
+        verify(atLeast = 1) { Log.w("GsonUtils", "failed to parse viewIn", any()) }
     }
 }

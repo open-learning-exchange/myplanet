@@ -40,7 +40,7 @@ import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TimeProvider
@@ -464,7 +464,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             add("level", getJsonArrayFromList(levels))
             add("mediaType", getJsonArrayFromList(mediums))
         }
-        val filterPayload = JsonUtils.gson.toJson(filter)
+        val filterPayload = GsonUtils.gson.toJson(filter)
 
         searchActivityDao.insert(
             SearchActivity(
@@ -632,7 +632,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     override suspend fun batchInsertMyLibrary(shelfId: String?, documents: List<JsonObject>): Int {
         var processedCount = 0
 
-        val resourceIds = documents.mapNotNull { JsonUtils.getString("_id", it).takeIf { id -> id.isNotBlank() } }
+        val resourceIds = documents.mapNotNull { GsonUtils.getString("_id", it).takeIf { id -> id.isNotBlank() } }
         val existingItems = mutableMapOf<String, MyLibrary>()
         if (resourceIds.isNotEmpty()) {
             resourceIds.chunked(900).forEach { chunk ->
@@ -643,7 +643,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         val librariesToUpsert = mutableListOf<MyLibrary>()
         documents.forEach { doc ->
             try {
-                val resourceId = JsonUtils.getString("_id", doc)
+                val resourceId = GsonUtils.getString("_id", doc)
                 val existing = existingItems[resourceId]
                 val library = MyLibrary.insertMyLibrary(
                     MyLibrary.Companion.InsertParams(
@@ -677,7 +677,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         val validDocs = ArrayList<Pair<JsonObject, String>>(documents.size)
         val resourceIds = ArrayList<String>(documents.size)
         for (doc in documents) {
-            val id = JsonUtils.getString("_id", doc)
+            val id = GsonUtils.getString("_id", doc)
             if (id.isNotBlank() && !id.startsWith("_design")) {
                 validDocs.add(doc to id)
                 resourceIds.add(id)
@@ -917,12 +917,12 @@ class ResourcesRepositoryImpl @Inject constructor(
             addProperty("language", personal.language)
             addProperty("publisher", personal.publisher ?: "")
             addProperty("linkToLicense", personal.linkToLicense ?: "")
-            add("subject", JsonUtils.getAsJsonArray(personal.subject))
-            add("level", JsonUtils.getAsJsonArray(personal.level))
+            add("subject", GsonUtils.getAsJsonArray(personal.subject))
+            add("level", GsonUtils.getAsJsonArray(personal.level))
             addProperty("resourceType", personal.resourceType)
             addProperty("openWith", personal.openWith)
             addProperty("mediaType", personal.mediaType ?: "other")
-            add("resourceFor", JsonUtils.getAsJsonArray(personal.resourceFor))
+            add("resourceFor", GsonUtils.getAsJsonArray(personal.resourceFor))
             addProperty("private", personal.isPrivate)
             if (personal.isPrivate && personal.privateFor != null) {
                 val privateForObj = JsonObject()

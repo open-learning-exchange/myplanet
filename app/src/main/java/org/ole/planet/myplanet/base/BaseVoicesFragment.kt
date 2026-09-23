@@ -36,7 +36,7 @@ import org.ole.planet.myplanet.ui.voices.VoicesActions
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 
 abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickListener {
     lateinit var imageList: MutableList<String>
@@ -154,7 +154,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         val `object` = JsonObject()
         `object`.addProperty("imageUrl", path)
         `object`.addProperty("fileName", getFileNameFromUrl(path))
-        imageList.add(JsonUtils.gson.toJson(`object`))
+        imageList.add(GsonUtils.gson.toJson(`object`))
 
         try {
             llImage?.visibility = View.VISIBLE
@@ -172,8 +172,8 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
     private fun isImageAlreadyAdded(path: String): Boolean {
         return imageList.any { imageJson ->
             try {
-                val imgObject = JsonUtils.gson.fromJson(imageJson, JsonObject::class.java)
-                JsonUtils.getString("imageUrl", imgObject) == path
+                val imgObject = GsonUtils.gson.fromJson(imageJson, JsonObject::class.java)
+                GsonUtils.getString("imageUrl", imgObject) == path
             } catch (e: Exception) {
                 false
             }

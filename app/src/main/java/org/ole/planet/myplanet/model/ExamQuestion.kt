@@ -12,7 +12,7 @@ import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 
@@ -37,7 +37,7 @@ open class ExamQuestion(
         val list = question.correctChoiceList?.toMutableList() ?: mutableListOf()
         val defaultLocale = Locale.getDefault()
         for (i in 0 until array.size()) {
-            list.add(JsonUtils.getString(array, i).lowercase(defaultLocale))
+            list.add(GsonUtils.getString(array, i).lowercase(defaultLocale))
         }
         question.correctChoiceList = list
     }
@@ -67,7 +67,7 @@ open class ExamQuestion(
             for (i in 0 until questions.size()) {
                 val question = questions[i].asJsonObject
                 val questionId = if (question.has("id")) {
-                    JsonUtils.getString("id", question)
+                    GsonUtils.getString("id", question)
                 } else {
                     "$examId-${i}"
                 }
@@ -75,18 +75,18 @@ open class ExamQuestion(
                 val myQuestion = ExamQuestion().apply {
                     this.id = questionId
                     this.examId = examId
-                    body = JsonUtils.getString("body", question)
-                    type = JsonUtils.getString("type", question)
-                    header = JsonUtils.getString("title", question)
-                    marks = JsonUtils.getString("marks", question)
+                    body = GsonUtils.getString("body", question)
+                    type = GsonUtils.getString("type", question)
+                    header = GsonUtils.getString("title", question)
+                    marks = GsonUtils.getString("marks", question)
                     choices = if (question.has("choices")) {
-                        JsonUtils.gson.toJson(JsonUtils.getJsonArray("choices", question))
+                        GsonUtils.gson.toJson(GsonUtils.getJsonArray("choices", question))
                     } else {
                         "[]"
                     }
 
-                    hasOtherOption = JsonUtils.getBoolean("hasOtherOption", question)
-                    scaleMax = JsonUtils.getInt("scaleMax", question).let { if (it <= 0) 9 else it }
+                    hasOtherOption = GsonUtils.getBoolean("hasOtherOption", question)
+                    scaleMax = GsonUtils.getInt("scaleMax", question).let { if (it <= 0) 9 else it }
                     val isMultipleChoice = type?.startsWith("select") == true && question.has("choices")
                     if (isMultipleChoice) {
                         insertCorrectChoice(question["choices"].asJsonArray, question, this)
@@ -100,13 +100,13 @@ open class ExamQuestion(
         private fun insertCorrectChoice(array: JsonArray, question: JsonObject, myQuestion: ExamQuestion?) {
             if (question.has("correctChoice") && question["correctChoice"].isJsonArray) {
                 myQuestion?.correctChoiceList = mutableListOf()
-                myQuestion?.setCorrectChoiceArray(JsonUtils.getJsonArray("correctChoice", question), myQuestion)
+                myQuestion?.setCorrectChoiceArray(GsonUtils.getJsonArray("correctChoice", question), myQuestion)
             } else {
-                val correctChoiceId = JsonUtils.getString("correctChoice", question)
+                val correctChoiceId = GsonUtils.getString("correctChoice", question)
                 for (a in 0 until array.size()) {
                     val res = array[a].asJsonObject
-                    if (correctChoiceId == JsonUtils.getString("id", res)) {
-                        myQuestion?.correctChoiceList = listOf(JsonUtils.getString("res", res))
+                    if (correctChoiceId == GsonUtils.getString("id", res)) {
+                        myQuestion?.correctChoiceList = listOf(GsonUtils.getString("res", res))
                         break
                     }
                 }
@@ -120,7 +120,7 @@ open class ExamQuestion(
                     put("body", que.body)
                     put("type", que.type)
                     put("marks", que.marks)
-                    put("choices", JsonUtils.getStringAsJsonArray(que.choices).toKotlinx())
+                    put("choices", GsonUtils.getStringAsJsonArray(que.choices).toKotlinx())
                     put("correctChoice", que.correctChoiceArray.toKotlinx())
                     put("hasOtherOption", que.hasOtherOption)
                 })

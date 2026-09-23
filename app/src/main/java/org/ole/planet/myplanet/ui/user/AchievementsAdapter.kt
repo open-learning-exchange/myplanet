@@ -8,8 +8,8 @@ import com.google.gson.JsonObject
 import org.ole.planet.myplanet.databinding.RowOtherInfoBinding
 import org.ole.planet.myplanet.ui.user.AchievementsAdapter.AchievementsViewHolder
 import org.ole.planet.myplanet.utils.DiffUtils
-import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils.getString
 
 class AchievementsAdapter(list: List<String>) : ListAdapter<ReferenceRow, AchievementsViewHolder>(DIFF_CALLBACK) {
     init {
@@ -20,7 +20,7 @@ class AchievementsAdapter(list: List<String>) : ListAdapter<ReferenceRow, Achiev
         val rows = list.map { jsonString ->
             var obj: JsonObject? = null
             try {
-                obj = JsonUtils.gson.fromJson(jsonString, JsonObject::class.java)
+                obj = GsonUtils.gson.fromJson(jsonString, JsonObject::class.java)
             } catch (e: Exception) {
             }
             if (obj == null) {

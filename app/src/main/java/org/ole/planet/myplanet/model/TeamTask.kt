@@ -7,7 +7,7 @@ import com.google.gson.JsonObject
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
@@ -40,28 +40,28 @@ class TeamTask {
     companion object {
         fun fromJson(obj: JsonObject?): TeamTask {
             val task = TeamTask()
-            task.id = JsonUtils.getString("_id", obj)
-            task._id = JsonUtils.getString("_id", obj)
-            task._rev = JsonUtils.getString("_rev", obj)
-            task.title = JsonUtils.getString("title", obj)
-            task.status = JsonUtils.getString("status", obj)
-            task.deadline = JsonUtils.getLong("deadline", obj)
-            task.completedTime = JsonUtils.getLong("completedTime", obj)
-            task.description = JsonUtils.getString("description", obj)
-            task.link = JsonUtils.gson.toJson(JsonUtils.getJsonObject("link", obj))
-            task.sync = JsonUtils.gson.toJson(JsonUtils.getJsonObject("sync", obj))
-            task.teamId = JsonUtils.getString("teams", JsonUtils.getJsonObject("link", obj))
-            val user = JsonUtils.getJsonObject("assignee", obj)
+            task.id = GsonUtils.getString("_id", obj)
+            task._id = GsonUtils.getString("_id", obj)
+            task._rev = GsonUtils.getString("_rev", obj)
+            task.title = GsonUtils.getString("title", obj)
+            task.status = GsonUtils.getString("status", obj)
+            task.deadline = GsonUtils.getLong("deadline", obj)
+            task.completedTime = GsonUtils.getLong("completedTime", obj)
+            task.description = GsonUtils.getString("description", obj)
+            task.link = GsonUtils.gson.toJson(GsonUtils.getJsonObject("link", obj))
+            task.sync = GsonUtils.gson.toJson(GsonUtils.getJsonObject("sync", obj))
+            task.teamId = GsonUtils.getString("teams", GsonUtils.getJsonObject("link", obj))
+            val user = GsonUtils.getJsonObject("assignee", obj)
             if (user.has("_id")) {
-                task.assignee = JsonUtils.getString("_id", user)
+                task.assignee = GsonUtils.getString("_id", user)
             }
-            task.completed = JsonUtils.getBoolean("completed", obj)
+            task.completed = GsonUtils.getBoolean("completed", obj)
             return task
         }
 
         fun serialize(task: TeamTask, user: UserEntity?): JsonObject {
-            val syncJson = JsonUtils.gson.fromJson(task.sync, JsonObject::class.java)
-            val linkJson = JsonUtils.gson.fromJson(task.link, JsonObject::class.java)
+            val syncJson = GsonUtils.gson.fromJson(task.sync, JsonObject::class.java)
+            val linkJson = GsonUtils.gson.fromJson(task.link, JsonObject::class.java)
             val `object` = buildJsonObject {
                 if (!task._id.isNullOrEmpty()) {
                     put("_id", task._id)

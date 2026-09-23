@@ -11,7 +11,7 @@ import java.io.File
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.utils.FileUtils.getOlePath
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 
@@ -78,50 +78,50 @@ open class MyTeam(
         fun populateTeamFields(doc: JsonObject, team: MyTeam, includeCourses: Boolean = false) {
             val hadLocalChanges = team.updated
 
-            team.userId = JsonUtils.getString("userId", doc)
-            team.teamId = JsonUtils.getString("teamId", doc)
-            team._rev = JsonUtils.getString("_rev", doc)
-            team.name = JsonUtils.getString("name", doc)
-            team.sourcePlanet = JsonUtils.getString("sourcePlanet", doc)
-            team.title = JsonUtils.getString("title", doc)
-            team.description = JsonUtils.getString("description", doc)
-            team.limit = JsonUtils.getInt("limit", doc)
-            team.status = JsonUtils.getString("status", doc)
-            team.teamPlanetCode = JsonUtils.getString("teamPlanetCode", doc)
-            team.createdDate = JsonUtils.getLong("createdDate", doc)
-            team.resourceId = JsonUtils.getString("resourceId", doc)
-            team.teamType = JsonUtils.getString("teamType", doc)
-            team.route = JsonUtils.getString("route", doc)
-            team.type = JsonUtils.getString("type", doc)
-            team.services = JsonUtils.getString("services", doc)
-            team.rules = JsonUtils.getString("rules", doc)
-            team.parentCode = JsonUtils.getString("parentCode", doc)
-            team.createdBy = JsonUtils.getString("createdBy", doc)
-            team.userPlanetCode = JsonUtils.getString("userPlanetCode", doc)
-            team.isLeader = JsonUtils.getBoolean("isLeader", doc)
-            team.amount = JsonUtils.getInt("amount", doc)
-            team.date = JsonUtils.getLong("date", doc)
+            team.userId = GsonUtils.getString("userId", doc)
+            team.teamId = GsonUtils.getString("teamId", doc)
+            team._rev = GsonUtils.getString("_rev", doc)
+            team.name = GsonUtils.getString("name", doc)
+            team.sourcePlanet = GsonUtils.getString("sourcePlanet", doc)
+            team.title = GsonUtils.getString("title", doc)
+            team.description = GsonUtils.getString("description", doc)
+            team.limit = GsonUtils.getInt("limit", doc)
+            team.status = GsonUtils.getString("status", doc)
+            team.teamPlanetCode = GsonUtils.getString("teamPlanetCode", doc)
+            team.createdDate = GsonUtils.getLong("createdDate", doc)
+            team.resourceId = GsonUtils.getString("resourceId", doc)
+            team.teamType = GsonUtils.getString("teamType", doc)
+            team.route = GsonUtils.getString("route", doc)
+            team.type = GsonUtils.getString("type", doc)
+            team.services = GsonUtils.getString("services", doc)
+            team.rules = GsonUtils.getString("rules", doc)
+            team.parentCode = GsonUtils.getString("parentCode", doc)
+            team.createdBy = GsonUtils.getString("createdBy", doc)
+            team.userPlanetCode = GsonUtils.getString("userPlanetCode", doc)
+            team.isLeader = GsonUtils.getBoolean("isLeader", doc)
+            team.amount = GsonUtils.getInt("amount", doc)
+            team.date = GsonUtils.getLong("date", doc)
             if (!hadLocalChanges) {
-                team.docType = JsonUtils.getString("docType", doc)
+                team.docType = GsonUtils.getString("docType", doc)
             }
-            team.isPublic = JsonUtils.getBoolean("public", doc)
-            team.beginningBalance = JsonUtils.getInt("beginningBalance", doc)
-            team.sales = JsonUtils.getInt("sales", doc)
-            team.otherIncome = JsonUtils.getInt("otherIncome", doc)
-            team.wages = JsonUtils.getInt("wages", doc)
-            team.otherExpenses = JsonUtils.getInt("otherExpenses", doc)
-            team.startDate = JsonUtils.getLong("startDate", doc)
-            team.endDate = JsonUtils.getLong("endDate", doc)
-            team.updatedDate = JsonUtils.getLong("updatedDate", doc)
+            team.isPublic = GsonUtils.getBoolean("public", doc)
+            team.beginningBalance = GsonUtils.getInt("beginningBalance", doc)
+            team.sales = GsonUtils.getInt("sales", doc)
+            team.otherIncome = GsonUtils.getInt("otherIncome", doc)
+            team.wages = GsonUtils.getInt("wages", doc)
+            team.otherExpenses = GsonUtils.getInt("otherExpenses", doc)
+            team.startDate = GsonUtils.getLong("startDate", doc)
+            team.endDate = GsonUtils.getLong("endDate", doc)
+            team.updatedDate = GsonUtils.getLong("updatedDate", doc)
             getFirstAttachmentName(doc)?.let { team.imageName = it }
 
             val localCourses = team.courses?.toList() ?: emptyList()
 
             if (!hadLocalChanges) {
-                team.updated = JsonUtils.getBoolean("updated", doc)
+                team.updated = GsonUtils.getBoolean("updated", doc)
             }
 
-            val coursesArray = JsonUtils.getJsonArray("courses", doc)
+            val coursesArray = GsonUtils.getJsonArray("courses", doc)
             val serverCourseIds = mutableListOf<String>()
             for (e in coursesArray) {
                 try {
@@ -144,16 +144,16 @@ open class MyTeam(
         }
 
         fun populateReportFields(doc: JsonObject, team: MyTeam) {
-            team.description = JsonUtils.getString("description", doc)
-            team.beginningBalance = JsonUtils.getInt("beginningBalance", doc)
-            team.sales = JsonUtils.getInt("sales", doc)
-            team.otherIncome = JsonUtils.getInt("otherIncome", doc)
-            team.wages = JsonUtils.getInt("wages", doc)
-            team.otherExpenses = JsonUtils.getInt("otherExpenses", doc)
-            team.startDate = JsonUtils.getLong("startDate", doc)
-            team.endDate = JsonUtils.getLong("endDate", doc)
-            team.updatedDate = JsonUtils.getLong("updatedDate", doc)
-            team.updated = JsonUtils.getBoolean("updated", doc)
+            team.description = GsonUtils.getString("description", doc)
+            team.beginningBalance = GsonUtils.getInt("beginningBalance", doc)
+            team.sales = GsonUtils.getInt("sales", doc)
+            team.otherIncome = GsonUtils.getInt("otherIncome", doc)
+            team.wages = GsonUtils.getInt("wages", doc)
+            team.otherExpenses = GsonUtils.getInt("otherExpenses", doc)
+            team.startDate = GsonUtils.getLong("startDate", doc)
+            team.endDate = GsonUtils.getLong("endDate", doc)
+            team.updatedDate = GsonUtils.getLong("updatedDate", doc)
+            team.updated = GsonUtils.getBoolean("updated", doc)
             getFirstAttachmentName(doc)?.let { team.imageName = it }
         }
 

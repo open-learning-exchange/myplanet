@@ -8,7 +8,7 @@ import com.google.gson.JsonObject
 import java.util.Collections
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 
@@ -52,7 +52,7 @@ class Achievement {
         }
         val uniqueItems = LinkedHashSet<String>()
         for (el in la) {
-            uniqueItems.add(JsonUtils.gson.toJson(el))
+            uniqueItems.add(GsonUtils.gson.toJson(el))
         }
         links = uniqueItems.toList()
     }
@@ -64,7 +64,7 @@ class Achievement {
         }
         val uniqueItems = LinkedHashSet<String>()
         for (el in oi) {
-            uniqueItems.add(JsonUtils.gson.toJson(el))
+            uniqueItems.add(GsonUtils.gson.toJson(el))
         }
         otherInfo = uniqueItems.toList()
     }
@@ -72,7 +72,7 @@ class Achievement {
     fun setAchievements(ac: JsonArray) {
         val uniqueItems = LinkedHashSet<String>()
         for (el in ac) {
-            uniqueItems.add(JsonUtils.gson.toJson(el))
+            uniqueItems.add(GsonUtils.gson.toJson(el))
         }
         achievements = uniqueItems.toList()
     }
@@ -84,7 +84,7 @@ class Achievement {
         }
         val uniqueItems = LinkedHashSet<String>()
         for (el in of) {
-            uniqueItems.add(JsonUtils.gson.toJson(el))
+            uniqueItems.add(GsonUtils.gson.toJson(el))
         }
         references = uniqueItems.toList()
     }
@@ -102,7 +102,7 @@ class Achievement {
             for (s in list ?: emptyList()) {
                 var ob = parsedJsonCache[s]
                 if (ob == null) {
-                    ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
+                    ob = GsonUtils.gson.fromJson(s, JsonElement::class.java)
                     parsedJsonCache[s] = ob
                 }
                 array.add(ob?.deepCopy())
@@ -112,22 +112,22 @@ class Achievement {
 
         fun fromJson(act: JsonObject): Achievement {
             return Achievement().apply {
-                _id = JsonUtils.getString("_id", act)
-                _rev = JsonUtils.getString("_rev", act)
-                purpose = JsonUtils.getString("purpose", act)
-                goals = JsonUtils.getString("goals", act)
-                achievementsHeader = JsonUtils.getString("achievementsHeader", act)
+                _id = GsonUtils.getString("_id", act)
+                _rev = GsonUtils.getString("_rev", act)
+                purpose = GsonUtils.getString("purpose", act)
+                goals = GsonUtils.getString("goals", act)
+                achievementsHeader = GsonUtils.getString("achievementsHeader", act)
                 sendToNation = act.get("sendToNation")?.asString ?: "false"
-                dateSortOrder = JsonUtils.getString("dateSortOrder", act)
-                createdOn = JsonUtils.getString("createdOn", act)
-                username = JsonUtils.getString("username", act)
-                parentCode = JsonUtils.getString("parentCode", act)
+                dateSortOrder = GsonUtils.getString("dateSortOrder", act)
+                createdOn = GsonUtils.getString("createdOn", act)
+                username = GsonUtils.getString("username", act)
+                parentCode = GsonUtils.getString("parentCode", act)
                 isUpdated = false
-                setReferences(JsonUtils.getJsonArray("references", act))
-                setAchievements(JsonUtils.getJsonArray("achievements", act))
-                setLinks(JsonUtils.getJsonArray("links", act))
-                setOtherInfo(JsonUtils.getJsonArray("otherInfo", act))
-                resumeFileName = JsonUtils.getString("resumeFileName", act)
+                setReferences(GsonUtils.getJsonArray("references", act))
+                setAchievements(GsonUtils.getJsonArray("achievements", act))
+                setLinks(GsonUtils.getJsonArray("links", act))
+                setOtherInfo(GsonUtils.getJsonArray("otherInfo", act))
+                resumeFileName = GsonUtils.getString("resumeFileName", act)
             }
         }
 
