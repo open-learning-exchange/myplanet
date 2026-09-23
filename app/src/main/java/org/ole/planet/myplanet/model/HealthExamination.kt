@@ -9,7 +9,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.GsonUtils
-import org.ole.planet.myplanet.utils.KotlinxJsonUtils
+import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 
@@ -74,27 +74,27 @@ class HealthExamination {
         fun fromJson(act: JsonObject?): HealthExamination {
             val kAct = act?.toKotlinx()?.jsonObject
             val myHealth = HealthExamination()
-            myHealth._id = KotlinxJsonUtils.getString("_id", kAct)
-            myHealth.data = KotlinxJsonUtils.getString("data", kAct)
-            myHealth.userId = KotlinxJsonUtils.getString("_id", kAct)
-            myHealth._rev = KotlinxJsonUtils.getString("_rev", kAct)
-            myHealth.setTemperature(KotlinxJsonUtils.getFloat("temperature", kAct))
+            myHealth._id = JsonUtils.getString("_id", kAct)
+            myHealth.data = JsonUtils.getString("data", kAct)
+            myHealth.userId = JsonUtils.getString("_id", kAct)
+            myHealth._rev = JsonUtils.getString("_rev", kAct)
+            myHealth.setTemperature(JsonUtils.getFloat("temperature", kAct))
             myHealth.isUpdated = false
-            myHealth.pulse = KotlinxJsonUtils.getInt("pulse", kAct)
-            myHealth.height = KotlinxJsonUtils.getFloat("height", kAct)
-            myHealth.setWeight(KotlinxJsonUtils.getFloat("weight", kAct))
-            myHealth.vision = KotlinxJsonUtils.getString("vision", kAct)
-            myHealth.hearing = KotlinxJsonUtils.getString("hearing", kAct)
-            myHealth.bp = KotlinxJsonUtils.getString("bp", kAct)
-            myHealth.isSelfExamination = KotlinxJsonUtils.getBoolean("selfExamination", kAct)
-            myHealth.isHasInfo = KotlinxJsonUtils.getBoolean("hasInfo", kAct)
-            myHealth.date = KotlinxJsonUtils.getLong("date", kAct)
-            myHealth.profileId = KotlinxJsonUtils.getString("profileId", kAct)
-            myHealth.creatorId = KotlinxJsonUtils.getString("creatorId", kAct)
-            myHealth.age = KotlinxJsonUtils.getInt("age", kAct)
-            myHealth.gender = KotlinxJsonUtils.getString("gender", kAct)
-            myHealth.planetCode = KotlinxJsonUtils.getString("planetCode", kAct)
-            myHealth.conditions = KotlinxJsonUtils.getJsonObject("conditions", kAct).toString()
+            myHealth.pulse = JsonUtils.getInt("pulse", kAct)
+            myHealth.height = JsonUtils.getFloat("height", kAct)
+            myHealth.setWeight(JsonUtils.getFloat("weight", kAct))
+            myHealth.vision = JsonUtils.getString("vision", kAct)
+            myHealth.hearing = JsonUtils.getString("hearing", kAct)
+            myHealth.bp = JsonUtils.getString("bp", kAct)
+            myHealth.isSelfExamination = JsonUtils.getBoolean("selfExamination", kAct)
+            myHealth.isHasInfo = JsonUtils.getBoolean("hasInfo", kAct)
+            myHealth.date = JsonUtils.getLong("date", kAct)
+            myHealth.profileId = JsonUtils.getString("profileId", kAct)
+            myHealth.creatorId = JsonUtils.getString("creatorId", kAct)
+            myHealth.age = JsonUtils.getInt("age", kAct)
+            myHealth.gender = JsonUtils.getString("gender", kAct)
+            myHealth.planetCode = JsonUtils.getString("planetCode", kAct)
+            myHealth.conditions = JsonUtils.getJsonObject("conditions", kAct).toString()
             return myHealth
         }
 

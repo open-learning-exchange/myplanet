@@ -15,7 +15,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.utils.GsonUtils
-import org.ole.planet.myplanet.utils.KotlinxJsonUtils
+import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 import kotlinx.serialization.json.JsonArray as KJsonArray
@@ -42,7 +42,7 @@ open class ExamQuestion(
         val list = question.correctChoiceList?.toMutableList() ?: mutableListOf()
         val defaultLocale = Locale.getDefault()
         for (i in array.indices) {
-            list.add(KotlinxJsonUtils.getString(array, i).lowercase(defaultLocale))
+            list.add(JsonUtils.getString(array, i).lowercase(defaultLocale))
         }
         question.correctChoiceList = list
     }
@@ -73,7 +73,7 @@ open class ExamQuestion(
             for (i in kQuestions.indices) {
                 val question = kQuestions[i].jsonObject
                 val questionId = if (question.containsKey("id")) {
-                    KotlinxJsonUtils.getString("id", question)
+                    JsonUtils.getString("id", question)
                 } else {
                     "$examId-${i}"
                 }
@@ -81,18 +81,18 @@ open class ExamQuestion(
                 val myQuestion = ExamQuestion().apply {
                     this.id = questionId
                     this.examId = examId
-                    body = KotlinxJsonUtils.getString("body", question)
-                    type = KotlinxJsonUtils.getString("type", question)
-                    header = KotlinxJsonUtils.getString("title", question)
-                    marks = KotlinxJsonUtils.getString("marks", question)
+                    body = JsonUtils.getString("body", question)
+                    type = JsonUtils.getString("type", question)
+                    header = JsonUtils.getString("title", question)
+                    marks = JsonUtils.getString("marks", question)
                     choices = if (question.containsKey("choices")) {
-                        KotlinxJsonUtils.getJsonArray("choices", question).toString()
+                        JsonUtils.getJsonArray("choices", question).toString()
                     } else {
                         "[]"
                     }
 
-                    hasOtherOption = KotlinxJsonUtils.getBoolean("hasOtherOption", question)
-                    scaleMax = KotlinxJsonUtils.getInt("scaleMax", question).let { if (it <= 0) 9 else it }
+                    hasOtherOption = JsonUtils.getBoolean("hasOtherOption", question)
+                    scaleMax = JsonUtils.getInt("scaleMax", question).let { if (it <= 0) 9 else it }
                     val isMultipleChoice = type?.startsWith("select") == true && question.containsKey("choices")
                     if (isMultipleChoice) {
                         insertCorrectChoice(question.getValue("choices").jsonArray, question, this)
@@ -106,13 +106,13 @@ open class ExamQuestion(
         private fun insertCorrectChoice(array: KJsonArray, question: KJsonObject, myQuestion: ExamQuestion?) {
             if (question.containsKey("correctChoice") && question.getValue("correctChoice") is KJsonArray) {
                 myQuestion?.correctChoiceList = mutableListOf()
-                myQuestion?.setCorrectChoiceArray(KotlinxJsonUtils.getJsonArray("correctChoice", question), myQuestion)
+                myQuestion?.setCorrectChoiceArray(JsonUtils.getJsonArray("correctChoice", question), myQuestion)
             } else {
-                val correctChoiceId = KotlinxJsonUtils.getString("correctChoice", question)
+                val correctChoiceId = JsonUtils.getString("correctChoice", question)
                 for (a in array.indices) {
                     val res = array[a].jsonObject
-                    if (correctChoiceId == KotlinxJsonUtils.getString("id", res)) {
-                        myQuestion?.correctChoiceList = listOf(KotlinxJsonUtils.getString("res", res))
+                    if (correctChoiceId == JsonUtils.getString("id", res)) {
+                        myQuestion?.correctChoiceList = listOf(JsonUtils.getString("res", res))
                         break
                     }
                 }

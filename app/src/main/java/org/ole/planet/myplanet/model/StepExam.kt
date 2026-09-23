@@ -8,7 +8,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.utils.GsonUtils
-import org.ole.planet.myplanet.utils.KotlinxJsonUtils
+import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
@@ -42,27 +42,27 @@ open class StepExam(
 
         fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject, parentId: String?): StepExam {
             val kExam = exam.toKotlinx().jsonObject
-            val examId = KotlinxJsonUtils.getString("_id", kExam)
+            val examId = JsonUtils.getString("_id", kExam)
             val myExam = StepExam().apply {
                 id = (if (examId.isNullOrEmpty()) parentId else examId).orEmpty()
             }
             checkIdsAndInsert(myCoursesID, stepId, myExam)
-            myExam.type = if (kExam.containsKey("type")) KotlinxJsonUtils.getString("type", kExam) else "exam"
-            myExam.name = KotlinxJsonUtils.getString("name", kExam)
-            myExam.description = KotlinxJsonUtils.getString("description", kExam)
-            myExam.passingPercentage = KotlinxJsonUtils.getString("passingPercentage", kExam)
-            myExam._rev = KotlinxJsonUtils.getString("_rev", kExam)
-            myExam.createdBy = KotlinxJsonUtils.getString("createdBy", kExam)
-            myExam.sourcePlanet = KotlinxJsonUtils.getString("sourcePlanet", kExam)
-            myExam.createdDate = KotlinxJsonUtils.getLong("createdDate", kExam)
-            myExam.updatedDate = KotlinxJsonUtils.getLong("updatedDate", kExam)
-            myExam.adoptionDate = KotlinxJsonUtils.getLong("adoptionDate", kExam)
-            myExam.totalMarks = KotlinxJsonUtils.getInt("totalMarks", kExam)
-            myExam.noOfQuestions = KotlinxJsonUtils.getJsonArray("questions", kExam).size
+            myExam.type = if (kExam.containsKey("type")) JsonUtils.getString("type", kExam) else "exam"
+            myExam.name = JsonUtils.getString("name", kExam)
+            myExam.description = JsonUtils.getString("description", kExam)
+            myExam.passingPercentage = JsonUtils.getString("passingPercentage", kExam)
+            myExam._rev = JsonUtils.getString("_rev", kExam)
+            myExam.createdBy = JsonUtils.getString("createdBy", kExam)
+            myExam.sourcePlanet = JsonUtils.getString("sourcePlanet", kExam)
+            myExam.createdDate = JsonUtils.getLong("createdDate", kExam)
+            myExam.updatedDate = JsonUtils.getLong("updatedDate", kExam)
+            myExam.adoptionDate = JsonUtils.getLong("adoptionDate", kExam)
+            myExam.totalMarks = JsonUtils.getInt("totalMarks", kExam)
+            myExam.noOfQuestions = JsonUtils.getJsonArray("questions", kExam).size
             myExam.isFromNation = !parentId.isNullOrEmpty()
-            myExam.teamId = KotlinxJsonUtils.getString("teamId", kExam)
-            myExam.isTeamShareAllowed = KotlinxJsonUtils.getBoolean("teamShareAllowed", kExam)
-            myExam.sourceSurveyId = KotlinxJsonUtils.getString("sourceSurveyId", kExam)
+            myExam.teamId = JsonUtils.getString("teamId", kExam)
+            myExam.isTeamShareAllowed = JsonUtils.getBoolean("teamShareAllowed", kExam)
+            myExam.sourceSurveyId = JsonUtils.getString("sourceSurveyId", kExam)
             return myExam
         }
 

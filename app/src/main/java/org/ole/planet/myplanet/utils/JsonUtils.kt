@@ -8,7 +8,7 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.longOrNull
 
-object KotlinxJsonUtils {
+object JsonUtils {
     private fun field(fieldName: String, jsonObject: JsonObject?): kotlinx.serialization.json.JsonElement? =
         jsonObject?.get(fieldName)?.takeIf { it != JsonNull }
 

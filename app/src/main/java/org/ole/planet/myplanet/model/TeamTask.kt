@@ -9,7 +9,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.utils.GsonUtils
-import org.ole.planet.myplanet.utils.KotlinxJsonUtils
+import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
@@ -43,23 +43,23 @@ class TeamTask {
         fun fromJson(obj: JsonObject?): TeamTask {
             val kObj = obj?.toKotlinx()?.jsonObject
             val task = TeamTask()
-            task.id = KotlinxJsonUtils.getString("_id", kObj)
-            task._id = KotlinxJsonUtils.getString("_id", kObj)
-            task._rev = KotlinxJsonUtils.getString("_rev", kObj)
-            task.title = KotlinxJsonUtils.getString("title", kObj)
-            task.status = KotlinxJsonUtils.getString("status", kObj)
-            task.deadline = KotlinxJsonUtils.getLong("deadline", kObj)
-            task.completedTime = KotlinxJsonUtils.getLong("completedTime", kObj)
-            task.description = KotlinxJsonUtils.getString("description", kObj)
-            val kLink = KotlinxJsonUtils.getJsonObject("link", kObj)
+            task.id = JsonUtils.getString("_id", kObj)
+            task._id = JsonUtils.getString("_id", kObj)
+            task._rev = JsonUtils.getString("_rev", kObj)
+            task.title = JsonUtils.getString("title", kObj)
+            task.status = JsonUtils.getString("status", kObj)
+            task.deadline = JsonUtils.getLong("deadline", kObj)
+            task.completedTime = JsonUtils.getLong("completedTime", kObj)
+            task.description = JsonUtils.getString("description", kObj)
+            val kLink = JsonUtils.getJsonObject("link", kObj)
             task.link = kLink.toString()
-            task.sync = KotlinxJsonUtils.getJsonObject("sync", kObj).toString()
-            task.teamId = KotlinxJsonUtils.getString("teams", kLink)
-            val user = KotlinxJsonUtils.getJsonObject("assignee", kObj)
+            task.sync = JsonUtils.getJsonObject("sync", kObj).toString()
+            task.teamId = JsonUtils.getString("teams", kLink)
+            val user = JsonUtils.getJsonObject("assignee", kObj)
             if (user.containsKey("_id")) {
-                task.assignee = KotlinxJsonUtils.getString("_id", user)
+                task.assignee = JsonUtils.getString("_id", user)
             }
-            task.completed = KotlinxJsonUtils.getBoolean("completed", kObj)
+            task.completed = JsonUtils.getBoolean("completed", kObj)
             return task
         }
 
