@@ -15,7 +15,7 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.chip.Chip
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Date
-import java.util.Locale
+import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -358,11 +358,8 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
     }
 
     private fun getFloat(trim: String): Float {
-        return try {
-            String.format(Locale.getDefault(), "%.1f", trim.toFloat()).toFloat()
-        } catch (e: Exception) {
-            getInt(trim).toFloat()
-        }
+        val value = trim.replace(',', '.').toFloatOrNull()?.takeIf { it.isFinite() } ?: return 0f
+        return (value * 10).roundToInt() / 10f
     }
 
     private fun createPojo() {
