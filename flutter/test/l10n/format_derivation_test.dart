@@ -423,19 +423,52 @@ void main() {
       }
     });
 
-    test('both derivation paths consult the refusal', () {
-      // Mutation-testing found this one: flipping `isRefusedTranslation` to
-      // always return false left the whole suite green, because the two tests
-      // around this one check the *state* of the `.arb` — which a test run does
-      // not regenerate — and nothing checked that the derivation asks. An
-      // exemption whose enforcement is held by nothing is the Phase 158 shape
-      // one level down.
-      final source = File('tool/arb_from_strings_xml.dart').readAsStringSync();
-      expect(
-        'isRefusedTranslation('.allMatches(source).length,
-        greaterThanOrEqualTo(3),
-        reason: 'one declaration plus a call from each derivation path',
-      );
+    test('the recovery path honours the refusal', () {
+      // Driven through `recoverProposals`, not the merge path, because the
+      // merge path cannot distinguish: both refused keys differ from Kotlin's
+      // English by case, a tier only `--adopt` has, so a merge-path assertion
+      // would read `null` whether the refusal fired or not. Third fixture this
+      // round that had to be chosen rather than assumed.
+      final english = _allKotlin('en');
+      final translated = _allKotlin('so');
+      final matches = matchTemplateToKotlin(_readArb('en'), english);
+      for (final key in refusedTranslations['so']!.keys) {
+        final match = matches[key];
+        // The control: absent the refusal this key *is* adoptable, so a null
+        // below means the refusal and not a missing match.
+        expect(match, isNotNull, reason: key);
+        expect(match!.tier.isAdoptable, isTrue, reason: key);
+        expect(
+          translated[_snakeCase(key)],
+          isNotNull,
+          reason: 'values-so has a string to adopt for $key',
+        );
+        expect(
+          recoverProposals(
+            locale: 'so',
+            key: key,
+            templateValue: _readArb('en')[key]! as String,
+            match: match,
+            english: english,
+            translated: translated,
+          ),
+          isNull,
+          reason: 'so/$key is refused',
+        );
+        // …and another locale, not refused, does propose one.
+        expect(
+          recoverProposals(
+            locale: 'ne',
+            key: key,
+            templateValue: _readArb('en')[key]! as String,
+            match: match,
+            english: english,
+            translated: _allKotlin('ne'),
+          ),
+          isNotEmpty,
+          reason: 'ne/$key is not refused and is otherwise recoverable',
+        );
+      }
     });
 
     test('every refusal still quotes the live Kotlin string', () {
@@ -550,23 +583,77 @@ void main() {
       );
     });
 
-    test('both derivation paths call the shared composite rule', () {
-      // The merge path's branch was unreachable on its first cut — an early
-      // `continue` on an empty shared-English list exited before it — so
-      // `--adopt` derived the three paragraphs and a plain re-run reported
-      // `0 added`, which reads exactly like `nothing to add`. Neither the unit
-      // tests above nor the shipped values could see that, because `--adopt`
-      // had already written them.
-      final source = File('tool/arb_from_strings_xml.dart').readAsStringSync();
-      expect(
-        'compositeSegments('.allMatches(source).length,
-        greaterThanOrEqualTo(3),
-        reason: 'one declaration plus a call from each derivation path',
+    test('the merge path actually derives a composite', () {
+      // This replaces a guard that counted occurrences of `compositeSegments(`
+      // in the tool's source. That count is three whether the branch runs or
+      // is stranded behind an early `continue` — so it could not fail on the
+      // exact defect its own comment named, which a second audit pass proved
+      // by reintroducing that `continue` and watching the suite stay green.
+      //
+      // This drives `deriveMergeValue` instead, with no `.arb` involved: a
+      // dead branch returns null and the assertion goes red.
+      final english = _allKotlin('en');
+      final translated = _allKotlin('ne');
+      final outcome = deriveMergeValue(
+        key: 'onboardingOfflineDescription',
+        templateValue:
+            _readArb('en')['onboardingOfflineDescription']! as String,
+        locale: 'ne',
+        english: english,
+        translated: translated,
+        byCamelCase: _byCamelCase(english),
+        byEnglishText: _byEnglishText(english),
+        byEnglishFormat: const {},
       );
+      expect(outcome, isNotNull);
       expect(
-        'deriveCompositeValue('.allMatches(source).length,
-        greaterThanOrEqualTo(3),
-        reason: 'one declaration plus a call from each derivation path',
+        outcome!.value,
+        '${translated['ob_desc2_1']}\n${translated['ob_desc2_2']}',
+      );
+    });
+
+    test('the recovery path assigns the composite tier', () {
+      // The other half of the same reachability question, asked of
+      // `--candidates`/`--adopt`: does the matcher hand the key a tier the
+      // adopt step will act on?
+      final matches = matchTemplateToKotlin(_readArb('en'), _allKotlin('en'));
+      for (final key in [
+        'onboardingOfflineDescription',
+        'onboardingOpenDescription',
+        'onboardingPowerDescription',
+      ]) {
+        expect(matches[key]?.tier, MatchTier.composite, reason: key);
+        expect(matches[key]!.tier.isAdoptable, isTrue, reason: key);
+      }
+    });
+
+    test('a piece its candidates disagree about derives nothing', () {
+      // The unanimity rule, which nothing pinned: `values/strings.xml` gives
+      // several names to one English phrase and they do not always agree in
+      // translation. Two Kotlin names share the English "Join requests" and
+      // render it differently in Nepali, so a composite built on it must
+      // refuse rather than pick one.
+      final english = _allKotlin('en');
+      final translated = _allKotlin('ne');
+      final shared = _byEnglishText(english)['Join Requests'];
+      expect(shared, isNotNull);
+      expect(shared!.length, greaterThan(1), reason: 'need a disputed piece');
+      expect(
+        shared.map((name) => translated[name]).toSet().length,
+        greaterThan(1),
+        reason: 'the candidates must actually disagree in Nepali',
+      );
+
+      const template = 'Join Requests\nCancel';
+      final match = compositeSegments(template, _byEnglishText(english))!;
+      expect(
+        deriveCompositeValue(
+          templateEnglish: template,
+          segments: match,
+          english: english,
+          translated: translated,
+        ),
+        isNull,
       );
     });
   });
@@ -761,6 +848,34 @@ void main() {
 /// Every run of whitespace as one ordinary space — see the caller.
 String _spacing(String value) =>
     value.trim().replaceAll(RegExp(r'[\s\u00a0\u202f\u2009]+'), ' ');
+
+/// The tool's own two indexes over the English corpus, rebuilt for a test.
+Map<String, List<String>> _byEnglishText(Map<String, String> english) {
+  final out = <String, List<String>>{};
+  for (final entry in english.entries) {
+    out.putIfAbsent(entry.value.trim(), () => []).add(entry.key);
+  }
+  return out;
+}
+
+Map<String, List<String>> _byCamelCase(Map<String, String> english) {
+  final out = <String, List<String>>{};
+  for (final name in english.keys) {
+    final parts = name.split('_');
+    final camel =
+        parts.first +
+        parts
+            .skip(1)
+            .map(
+              (part) => part.isEmpty
+                  ? part
+                  : part[0].toUpperCase() + part.substring(1),
+            )
+            .join();
+    out.putIfAbsent(camel, () => []).add(name);
+  }
+  return out;
+}
 
 /// The Kotlin `strings.xml` name an ARB key is refused against.
 String _snakeCase(String key) => switch (key) {

@@ -532,11 +532,23 @@ void main() {
     //     newline join of Kotlin strings that exists nowhere in the XML as one
     //     string.
     //
-    // es moves by less because three of the 26 hit an existing unflagged
-    // Spanish value and were left alone — `sendSurveyTo`, `surveySentToUsers`
-    // and `stepProgress` still read as translations of the superseded English,
-    // which is accurate about the same event and is not a reason to overwrite
-    // somebody's work.
+    // es moves by less (+29 against ne's +35) because **six** keys hit an
+    // existing unflagged Spanish value and were left alone: `note`,
+    // `stepProgress`, `surveySentToUsers` and all three onboarding paragraphs.
+    // Substituting one valid translation for another is not a repair. An
+    // earlier draft of this note said "three", counting only the ones inside
+    // the template edits and reading as if that accounted for the whole gap;
+    // it is the six, and they are listed so the next reader can check rather
+    // than believe.
+    //
+    // Two of them, `surveySentToUsers` and `stepProgress`, now read as
+    // translations of the *superseded* English — "Encuesta enviada a usuarios
+    // seleccionados" where the English says "Survey sent to users". Both still
+    // describe the same event accurately. That is the standing cost of
+    // rewriting a template value, and nothing in the suite detects it: only
+    // `--candidates` shows which locales decoupled.
+    //
+    // so moves by 33, two behind ne, and those two are the refusals.
     //
     // Two of ne/so's `x-mt` flags go as well: `feedbackTypeRequired` and
     // `surveySentToUsers` held literal English under the flag in all five

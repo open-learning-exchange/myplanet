@@ -6,8 +6,10 @@
 // were paid for. This script carries across the ones that can be matched
 // *safely* and leaves the rest absent so `gen-l10n` falls back to English.
 //
-// Nothing here machine-translates. A key is carried only when one of two rules
-// holds, which are the rules `app_es.arb` was originally built with:
+// Nothing here machine-translates. A key is carried only when one of three
+// rules holds. The first two are the rules `app_es.arb` was originally built
+// with; the third was added once it became clear that some of the port's copy
+// is several Kotlin strings joined together:
 //
 //   1. The Kotlin string's name normalises to the ARB key (snake_case →
 //      camelCase) *and* its English text matches the template exactly.
@@ -16,6 +18,12 @@
 //      translation in the target locale. (Unanimity matters: `values/strings.xml`
 //      has several names for one English phrase, and they do not always agree in
 //      translation.)
+//
+//   3. The template value is several Kotlin strings joined by newlines — the
+//      onboarding paragraphs, where the Android layout has a `TextView` per
+//      line. Every non-blank piece must match some Kotlin English exactly and
+//      every piece's candidates must agree, so this is as strict as rule 2,
+//      applied per line. See [compositeSegments].
 //
 // Keys carrying ICU placeholders or plurals are skipped outright. Kotlin writes
 // `%1$s`/`%1$d`, and where a namesake exists its wording is usually a different
@@ -46,9 +54,12 @@
 //
 // Machine-translation flags (Phase 109) survive a re-run too, and are kept
 // *honest* across one. `"@<key>": {"x-mt": true}` in a locale file marks a
-// string as unreviewed machine output; 496–545 keys carry it in ar/es/fr and
-// 26 in ne/so, where the external pass emitted a `[Nepali] `-style marker
-// instead of a translation and Phase 118 deleted those. The merge
+// string as unreviewed machine output; 391–439 keys carry it in ar/es/fr and
+// 23 in ne/so, where the external pass emitted a `[Nepali] `-style marker
+// instead of a translation and Phase 118 deleted those. (Counted at the
+// Phase 160 fold. The figure this line carried before was two rounds stale,
+// which is the hazard of writing a count into prose at all —
+// `--unreviewed` prints the live one.) The merge
 // carries those blocks over verbatim, and then reconciles them, because merely
 // preserving them is not enough:
 //
@@ -182,118 +193,21 @@ void main(List<String> args) {
     for (final key in keys) {
       final templateValue = template[key];
       if (templateValue is! String) continue;
-      // Kotlin's printf syntax in the *template*. Three keys —
-      // `communityEarnings`, `perSurvey`, `yourEarnings` — declare ICU
-      // placeholders but write their English with `%1$d`/`%1$s`, which ICU
-      // never interpolates: the generated getter takes the argument and drops
-      // it, in every language including English. Deriving a translation would
-      // spread that defect into the locale files, where the placeholder guard
-      // then fails on it. Leave them absent until `app_en.arb` is corrected to
-      // `{amount}`/`{status}`.
-      if (_printfSpecifier.hasMatch(templateValue)) continue;
-      // A translation this locale refuses — see [refusedTranslations].
-      if (isRefusedTranslation(locale, key)) continue;
-
-      // A message with ICU placeholders is derived through the format layer at
-      // the foot of this file, which lines the two notations up by argument
-      // index. Everything else is plain text and matches on the text itself.
-      if (templateValue.contains('{')) {
-        final format = _parseIcuFormat(templateValue);
-        if (format == null || format.holes.isEmpty || !format.hasWords) {
-          continue;
-        }
-        final named = byCamelCase[key] ?? const [];
-        String? fromName;
-        for (final name in named) {
-          final source = english[name];
-          final value = translated[name];
-          if (source == null || value == null) continue;
-          fromName = convertAndroidFormat(
-            templateValue: templateValue,
-            kotlinEnglish: source,
-            translation: value,
-          );
-          if (fromName != null) break;
-        }
-        if (fromName != null) {
-          derived[key] = fromName;
-          byName++;
-          continue;
-        }
-        // No name match: fall back to every Kotlin string whose English says
-        // the same thing, and require them to agree — the same unanimity rule
-        // the plain-text path uses, for the same reason.
-        final proposals = <String>{};
-        for (final name in byEnglishFormat[format.literal.trim()] ?? const []) {
-          final value = translated[name];
-          if (value == null) continue;
-          final converted = convertAndroidFormat(
-            templateValue: templateValue,
-            kotlinEnglish: english[name]!,
-            translation: value,
-          );
-          if (converted != null) proposals.add(converted);
-        }
-        if (proposals.length == 1) {
-          derived[key] = proposals.single;
-          byText++;
-        }
-        continue;
-      }
-      final wanted = templateValue.trim();
-
-      final named = byCamelCase[key] ?? const [];
-      final exactNamed = named.firstWhere(
-        (name) => english[name]?.trim() == wanted,
-        orElse: () => '',
-      );
-      if (exactNamed.isNotEmpty) {
-        final value = derivePlainTextValue(
-          templateEnglish: templateValue,
-          translation: translated[exactNamed],
-        );
-        if (value != null) {
-          derived[key] = value;
-          byName++;
-          continue;
-        }
-      }
-
-      final sameText = byEnglishText[wanted] ?? const [];
-      // No `continue` on an empty `sameText`: the composite rule below is the
-      // last thing tried, and an early exit here made it unreachable in this
-      // path while `--adopt` reached it fine. Three onboarding paragraphs
-      // derived on one route and not the other, which is the shape a plain
-      // re-run would never have shown — `0 added` reads exactly like `nothing
-      // to add`.
-      final candidates = sameText
-          .map(
-            (name) => derivePlainTextValue(
-              templateEnglish: templateValue,
-              translation: translated[name],
-            ),
-          )
-          .whereType<String>()
-          .toSet();
-      if (candidates.length == 1) {
-        derived[key] = candidates.single;
-        byText++;
-        continue;
-      }
-      // Last resort: the value is several Kotlin strings joined by newlines.
-      // Same function `--adopt` uses, so the two paths cannot disagree about
-      // what a composite derives to — the divergence that cost the port a
-      // character in ten places is documented at [derivePlainTextValue].
-      final composite = compositeSegments(templateValue, byEnglishText);
-      if (composite == null) continue;
-      final joined = deriveCompositeValue(
-        templateEnglish: templateValue,
-        segments: composite,
+      final outcome = deriveMergeValue(
+        key: key,
+        templateValue: templateValue,
+        locale: locale,
         english: english,
         translated: translated,
+        byCamelCase: byCamelCase,
+        byEnglishText: byEnglishText,
+        byEnglishFormat: byEnglishFormat,
       );
-      if (joined != null) {
-        derived[key] = joined;
+      if (outcome == null) continue;
+      derived[key] = outcome.value;
+      if (outcome.byName) {
+        byName++;
+      } else {
         byText++;
       }
     }
@@ -345,6 +259,131 @@ void main(List<String> args) {
       '${cleared == 0 ? '' : ' ($cleared flag(s) cleared)'}',
     );
   }
+}
+
+/// The value the **merge path** derives for one key, or null when it derives
+/// nothing, with `byName` saying which rule produced it (for the run summary).
+///
+/// Extracted from `main`'s loop so the rules can be driven by a test rather
+/// than inferred from the `.arb` files the loop happens to have written. That
+/// distinction is the whole reason this exists: the first guard over the
+/// composite rule counted occurrences of `compositeSegments(` in this file,
+/// which stays at three whether the branch runs or is stranded behind an early
+/// `continue` — so it could not fail on the exact defect its own comment
+/// named. A test that calls this and asserts a value comes back can.
+({String value, bool byName})? deriveMergeValue({
+  required String key,
+  required String templateValue,
+  required String locale,
+  required Map<String, String> english,
+  required Map<String, String> translated,
+  required Map<String, List<String>> byCamelCase,
+  required Map<String, List<String>> byEnglishText,
+  required Map<String, List<String>> byEnglishFormat,
+}) {
+  // Kotlin's printf syntax in the *template*. Three keys —
+  // `communityEarnings`, `perSurvey`, `yourEarnings` — declare ICU
+  // placeholders but write their English with `%1$d`/`%1$s`, which ICU
+  // never interpolates: the generated getter takes the argument and drops
+  // it, in every language including English. Deriving a translation would
+  // spread that defect into the locale files, where the placeholder guard
+  // then fails on it. Leave them absent until `app_en.arb` is corrected to
+  // `{amount}`/`{status}`.
+  if (_printfSpecifier.hasMatch(templateValue)) return null;
+  // A translation this locale refuses — see [refusedTranslations].
+  if (isRefusedTranslation(locale, key)) return null;
+
+  // A message with ICU placeholders is derived through the format layer at
+  // the foot of this file, which lines the two notations up by argument
+  // index. Everything else is plain text and matches on the text itself.
+  if (templateValue.contains('{')) {
+    final format = _parseIcuFormat(templateValue);
+    if (format == null || format.holes.isEmpty || !format.hasWords) {
+      return null;
+    }
+    final named = byCamelCase[key] ?? const [];
+    String? fromName;
+    for (final name in named) {
+      final source = english[name];
+      final value = translated[name];
+      if (source == null || value == null) continue;
+      fromName = convertAndroidFormat(
+        templateValue: templateValue,
+        kotlinEnglish: source,
+        translation: value,
+      );
+      if (fromName != null) break;
+    }
+    if (fromName != null) {
+      return (value: fromName, byName: true);
+    }
+    // No name match: fall back to every Kotlin string whose English says
+    // the same thing, and require them to agree — the same unanimity rule
+    // the plain-text path uses, for the same reason.
+    final proposals = <String>{};
+    for (final name in byEnglishFormat[format.literal.trim()] ?? const []) {
+      final value = translated[name];
+      if (value == null) continue;
+      final converted = convertAndroidFormat(
+        templateValue: templateValue,
+        kotlinEnglish: english[name]!,
+        translation: value,
+      );
+      if (converted != null) proposals.add(converted);
+    }
+    if (proposals.length == 1) {
+      return (value: proposals.single, byName: false);
+    }
+    return null;
+  }
+  final wanted = templateValue.trim();
+
+  final named = byCamelCase[key] ?? const [];
+  final exactNamed = named.firstWhere(
+    (name) => english[name]?.trim() == wanted,
+    orElse: () => '',
+  );
+  if (exactNamed.isNotEmpty) {
+    final value = derivePlainTextValue(
+      templateEnglish: templateValue,
+      translation: translated[exactNamed],
+    );
+    if (value != null) return (value: value, byName: true);
+  }
+
+  final sameText = byEnglishText[wanted] ?? const [];
+  // No `continue` on an empty `sameText`: the composite rule below is the
+  // last thing tried, and an early exit here made it unreachable in this
+  // path while `--adopt` reached it fine. Three onboarding paragraphs
+  // derived on one route and not the other, which is the shape a plain
+  // re-run would never have shown — `0 added` reads exactly like `nothing
+  // to add`.
+  final candidates = sameText
+      .map(
+        (name) => derivePlainTextValue(
+          templateEnglish: templateValue,
+          translation: translated[name],
+        ),
+      )
+      .whereType<String>()
+      .toSet();
+  if (candidates.length == 1) {
+    return (value: candidates.single, byName: false);
+  }
+  // Last resort: the value is several Kotlin strings joined by newlines.
+  // Same function `--adopt` uses, so the two paths cannot disagree about
+  // what a composite derives to — the divergence that cost the port a
+  // character in ten places is documented at [derivePlainTextValue].
+  final composite = compositeSegments(templateValue, byEnglishText);
+  if (composite == null) return null;
+  final joined = deriveCompositeValue(
+    templateEnglish: templateValue,
+    segments: composite,
+    english: english,
+    translated: translated,
+  );
+  if (joined != null) return (value: joined, byName: false);
+  return null;
 }
 
 /// Kotlin's `%s`/`%d`/`%1$s` format specifiers, which ICU does not interpolate.
@@ -439,7 +478,7 @@ void _reportUnreviewed(List<String> args) {
 // **How a match is made.** Never by key name alone — the ARB key and the Kotlin
 // name agree on a concept, not on a string, and `achievements`/`myAchievements`
 // or `teamLeader` ("You lead this team" vs "Team Leader") would silently swap in
-// a translation of different words. The English text is the evidence, in three
+// a translation of different words. The English text is the evidence, in four
 // adoptable tiers:
 //
 //   [MatchTier.exact]       identical after trimming. No transformation at all.
@@ -458,6 +497,12 @@ void _reportUnreviewed(List<String> args) {
 //                           only upwards: lowercasing a foreign string's first
 //                           letter is not safe in general, and no rule here
 //                           needs it.
+//   [MatchTier.composite]   the value is several Kotlin strings joined by
+//                           newlines, each piece matching exactly. Ranked below
+//                           the whole-string tiers on purpose: a value that
+//                           matches some Kotlin string outright *is* that
+//                           string, whatever its newlines say. Alone among the
+//                           adoptable tiers it does not go through `_proposal`.
 //
 // and two that are reported and never applied:
 //
@@ -501,8 +546,10 @@ enum MatchTier {
 }
 
 /// A Kotlin string (or several sharing one English text) matched to an ARB key.
-class _Match {
-  const _Match(this.tier, this.names, {this.segments});
+/// Public so [matchTemplateToKotlin] can be, which is what lets a test ask
+/// which tier a key landed at instead of counting this file's own source.
+class TemplateMatch {
+  const TemplateMatch(this.tier, this.names, {this.segments});
 
   final MatchTier tier;
   final List<String> names;
@@ -526,7 +573,7 @@ class _Candidate {
   });
 
   final String key;
-  final _Match match;
+  final TemplateMatch match;
   final String? current;
   final String? proposed;
 
@@ -548,7 +595,7 @@ void _recover(List<String> args, {required bool apply}) {
   final locales = args.isEmpty ? defaultLocales : args;
   final template = _readArb('lib/l10n/app_en.arb');
   final english = _readStringsXml('${resDir.path}/values/strings.xml');
-  final matches = _matchTemplateToKotlin(template, english);
+  final matches = matchTemplateToKotlin(template, english);
 
   final tally = <String, int>{};
   for (final locale in locales) {
@@ -567,70 +614,16 @@ void _recover(List<String> args, {required bool apply}) {
       final key = entry.key;
       final templateValue = template[key];
       if (templateValue is! String) continue;
-      if (isRefusedTranslation(locale, key)) continue;
       final current = arb[key] is String ? arb[key] as String : null;
-      // Keyed by Kotlin name, because when two names disagree the name itself
-      // is the tiebreak — see below.
-      final byKotlinName = <String, String>{};
-      final isFormat = templateValue.contains('{');
-      final segments = entry.value.segments;
-      if (segments != null) {
-        // A composite's names are parts, not alternatives, so the loop below
-        // — which reads them as candidates that must agree with each other —
-        // would be asking the wrong question of them. One proposal or none.
-        final composite = deriveCompositeValue(
-          templateEnglish: templateValue,
-          segments: segments,
-          english: english,
-          translated: translated,
-        );
-        if (composite != null) {
-          byKotlinName[entry.value.names.join('+')] = composite;
-        }
-      }
-      for (final name
-          in segments != null ? const <String>[] : entry.value.names) {
-        final value = translated[name];
-        if (value == null || value.trim().isEmpty) continue;
-        if (isFormat) {
-          // The format layer does its own guarding, and a null from it means
-          // "not unambiguous" — the candidate simply drops out.
-          final converted = convertAndroidFormat(
-            templateValue: templateValue,
-            kotlinEnglish: english[name] ?? '',
-            translation: value,
-          );
-          if (converted != null) byKotlinName[name] = converted;
-          continue;
-        }
-        final proposal = _proposal(entry.value.tier, value, templateValue);
-        // The template is placeholder-free by the time it gets here, but a
-        // translation is a separate string and could carry syntax of its own.
-        // A stray `{` in a locale value is an ICU parse error at build time;
-        // `%1$s` renders literally. Neither belongs in a value derived for a
-        // key whose English has no placeholders.
-        if (proposal.contains('{') ||
-            proposal.contains('}') ||
-            _printfSpecifier.hasMatch(proposal)) {
-          continue;
-        }
-        if (isUntranslatedSource(
-          localeValue: value,
-          kotlinEnglish: english[name] ?? '',
-          templateEnglish: templateValue,
-        )) {
-          continue;
-        }
-        byKotlinName[name] = proposal;
-      }
-      // A locale entry that is still the English is an untranslated string, not
-      // a translation, and adopting one *replaces* a translation with English.
-      // `values-so` renders `settings` as "Settings"; with the namesake rule
-      // below that string would otherwise have won the tie against the real
-      // Somali `Goobooyinka` the moment anybody flagged that key.
-      byKotlinName.removeWhere(
-        (_, proposal) => proposal.trim() == templateValue.trim(),
+      final byKotlinName = recoverProposals(
+        locale: locale,
+        key: key,
+        templateValue: templateValue,
+        match: entry.value,
+        english: english,
+        translated: translated,
       );
+      if (byKotlinName == null) continue;
       var proposals = byKotlinName.values.toSet();
       // Two Kotlin names sharing one English, translated differently. The
       // English alone cannot choose between them — but a name that *also*
@@ -660,7 +653,13 @@ void _recover(List<String> args, {required bool apply}) {
         verdict = 'report';
       } else if (proposals.isEmpty) {
         // The Kotlin name exists but this locale never translated it. Nothing
-        // to recover; not a disagreement either.
+        // to recover.
+        //
+        // "not a disagreement either" used to end that sentence, and the
+        // composite tier made it false: a composite whose pieces *do* disagree
+        // in this locale, or whose translation carries `{` or `%1$s`, produces
+        // no proposal at all and lands here too. Worth knowing before reading
+        // a `no-translation` tally as "this locale has nothing".
         verdict = 'no-translation';
       } else if (current != null && proposals.contains(current)) {
         // The value already *is* one of the Kotlin translations — which settles
@@ -733,9 +732,100 @@ void _recover(List<String> args, {required bool apply}) {
   }
 }
 
+/// Every proposal the **recovery path** has for one key in one locale, keyed
+/// by the Kotlin name that produced it, or null when the locale refuses the
+/// key outright.
+///
+/// Extracted from `_recover` for the same reason [deriveMergeValue] was
+/// extracted from `main`: the two refused Somali values are **not** derivable
+/// by the merge path at all (their English differs from Kotlin's by case, a
+/// tier only `--adopt` has), so a merge-path test of the refusal would pass
+/// whether the refusal fired or not — a fixture that cannot distinguish,
+/// which is the shape this round has now hit three times. This is where the
+/// refusal actually bites, so this is where it has to be driven from.
+Map<String, String>? recoverProposals({
+  required String locale,
+  required String key,
+  required String templateValue,
+  required TemplateMatch match,
+  required Map<String, String> english,
+  required Map<String, String> translated,
+}) {
+  if (isRefusedTranslation(locale, key)) return null;
+  // Keyed by Kotlin name, because when two names disagree the name itself
+  // is the tiebreak — see below.
+  final byKotlinName = <String, String>{};
+  final isFormat = templateValue.contains('{');
+  final segments = match.segments;
+  if (segments != null) {
+    // A composite's names are parts, not alternatives, so the loop below
+    // — which reads them as candidates that must agree with each other —
+    // would be asking the wrong question of them. One proposal or none.
+    final composite = deriveCompositeValue(
+      templateEnglish: templateValue,
+      segments: segments,
+      english: english,
+      translated: translated,
+    );
+    if (composite != null) {
+      byKotlinName[match.names.join('+')] = composite;
+    }
+  }
+  for (final name in segments != null ? const <String>[] : match.names) {
+    final value = translated[name];
+    if (value == null || value.trim().isEmpty) continue;
+    if (isFormat) {
+      // The format layer does its own guarding, and a null from it means
+      // "not unambiguous" — the candidate simply drops out.
+      final converted = convertAndroidFormat(
+        templateValue: templateValue,
+        kotlinEnglish: english[name] ?? '',
+        translation: value,
+      );
+      if (converted != null) byKotlinName[name] = converted;
+      continue;
+    }
+    final proposal = _proposal(match.tier, value, templateValue);
+    // The template is placeholder-free by the time it gets here, but a
+    // translation is a separate string and could carry syntax of its own.
+    // A stray `{` in a locale value is an ICU parse error at build time;
+    // `%1$s` renders literally. Neither belongs in a value derived for a
+    // key whose English has no placeholders.
+    if (proposal.contains('{') ||
+        proposal.contains('}') ||
+        _printfSpecifier.hasMatch(proposal)) {
+      continue;
+    }
+    if (isUntranslatedSource(
+      localeValue: value,
+      kotlinEnglish: english[name] ?? '',
+      templateEnglish: templateValue,
+    )) {
+      continue;
+    }
+    byKotlinName[name] = proposal;
+  }
+  // A locale entry that is still the English is an untranslated string, not
+  // a translation, and adopting one *replaces* a translation with English.
+  // `values-so` renders `settings` as "Settings"; with the namesake rule
+  // below that string would otherwise have won the tie against the real
+  // Somali `Goobooyinka` the moment anybody flagged that key.
+  byKotlinName.removeWhere(
+    (_, proposal) => proposal.trim() == templateValue.trim(),
+  );
+  byKotlinName.removeWhere(
+    (_, proposal) => proposal.trim() == templateValue.trim(),
+  );
+  return byKotlinName;
+}
+
 /// Matches every template key to the Kotlin strings whose English it shares,
 /// most confident tier first. A key stops at the first tier that hits.
-Map<String, _Match> _matchTemplateToKotlin(
+///
+/// Exported so a test can assert which tier a key lands at. Counting this
+/// file's own text cannot: a tier branch stranded behind an earlier `continue`
+/// still contributes its source to the count.
+Map<String, TemplateMatch> matchTemplateToKotlin(
   Map<String, Object?> template,
   Map<String, String> english,
 ) {
@@ -749,7 +839,7 @@ Map<String, _Match> _matchTemplateToKotlin(
     byEnglishText.putIfAbsent(entry.value.trim(), () => []).add(entry.key);
   }
 
-  final matches = <String, _Match>{};
+  final matches = <String, TemplateMatch>{};
   for (final key in template.keys) {
     final value = template[key];
     if (key.startsWith('@') || value is! String) continue;
@@ -771,9 +861,9 @@ Map<String, _Match> _matchTemplateToKotlin(
         if (other.literal.trim() == literal) sameLiteral.add(entry.key);
       }
       if (sameLiteral.isNotEmpty) {
-        matches[key] = _Match(MatchTier.exact, sameLiteral);
+        matches[key] = TemplateMatch(MatchTier.exact, sameLiteral);
       } else if (byCamelCase.containsKey(key)) {
-        matches[key] = _Match(MatchTier.nameOnly, byCamelCase[key]!);
+        matches[key] = TemplateMatch(MatchTier.nameOnly, byCamelCase[key]!);
       }
       continue;
     }
@@ -800,23 +890,23 @@ Map<String, _Match> _matchTemplateToKotlin(
     }
     final segments = compositeSegments(value, byEnglishText);
     if (exact.isNotEmpty) {
-      matches[key] = _Match(MatchTier.exact, exact);
+      matches[key] = TemplateMatch(MatchTier.exact, exact);
     } else if (punctuation.isNotEmpty) {
-      matches[key] = _Match(MatchTier.punctuation, punctuation);
+      matches[key] = TemplateMatch(MatchTier.punctuation, punctuation);
     } else if (casing.isNotEmpty) {
-      matches[key] = _Match(MatchTier.casing, casing);
+      matches[key] = TemplateMatch(MatchTier.casing, casing);
     } else if (segments != null) {
       // Below the whole-string tiers on purpose: a value that matches some
       // Kotlin string outright is that string, whatever its newlines say.
-      matches[key] = _Match(
+      matches[key] = TemplateMatch(
         MatchTier.composite,
         segments.names,
         segments: segments,
       );
     } else if (byCamelCase.containsKey(key)) {
-      matches[key] = _Match(MatchTier.nameOnly, byCamelCase[key]!);
+      matches[key] = TemplateMatch(MatchTier.nameOnly, byCamelCase[key]!);
     } else if (containment.isNotEmpty) {
-      matches[key] = _Match(MatchTier.containment, containment);
+      matches[key] = TemplateMatch(MatchTier.containment, containment);
     }
   }
   return matches;
@@ -829,7 +919,7 @@ String _proposal(MatchTier tier, String translation, String templateEnglish) {
   }
   var value = stripLabelPunctuation(translation);
   // Give the template's own trailing punctuation back — but only onto a word.
-  // Nepali ends a sentence with the danda `।`, which `_core` does not strip and
+  // Nepali ends a sentence with the danda `।`, which `stripLabelPunctuation` does not strip and
   // which must not be followed by a full stop: `CSV फाइल सुरक्षित गर्न असफल।.`
   if (_endsWithWordCharacter.hasMatch(value)) {
     value += _trailingPunctuation(templateEnglish);
@@ -884,43 +974,6 @@ String? derivePlainTextValue({
 String _mirrorTrailingSpace(String value, String templateEnglish) =>
     templateEnglish.endsWith(' ') && !value.endsWith(' ') ? '$value ' : value;
 
-/// Whether [localeValue] is really the Kotlin *source* string sitting
-/// untranslated in a `values-<locale>` file, and must therefore not be adopted.
-///
-/// 47 of the Kotlin app's 1056 strings are byte-identical to their English in at
-/// least four of the five locales — `my_survey` is the literal token
-/// `mySurveys` in all five, `my_library` is `"mylibrary"` in all five. They are
-/// not translations, and adopting one *replaces* a translation with English:
-/// `app_ar.arb` holds `استطلاعاتي` for `mySurveys` and `app_fr.arb` holds
-/// `Mes enquêtes`, both of which such an adoption would overwrite.
-///
-/// The caller already drops a proposal equal to the *template's* English, which
-/// is the same idea — but only sound while every tier matches English that is
-/// byte-identical to the template's. The three tiers today do: `_proposal`
-/// normalises a punctuation- or casing-tier value back toward the template, so
-/// an untranslated one collapses onto it and is caught. A tier matching on
-/// anything looser would not, and the `my*` compound family is exactly what
-/// such a tier reaches — the port re-spaced Kotlin's `myLibrary`/`mySurveys`
-/// into "My Library"/"My surveys", so those keys sit one notch below the
-/// ladder's floor with Kotlin translations that inherit the original defect.
-///
-/// So the comparison that actually means "untranslated" is against the Kotlin
-/// string's *own* English, and only where that differs from the template's —
-/// otherwise this would reject the legitimately invariant values ("HTML",
-/// "PDF", "N/A"), which are translations that happen to equal their source.
-///
-/// **Judge the raw `values-<locale>` string, never the proposal.** The first
-/// cut of this took `_proposal`'s output and was inert: `_proposal` runs
-/// `_alignInitialCase` for every non-`exact` tier, so `values-ar`'s `mySurveys`
-/// arrives as `MySurveys` and no longer equals the `mySurveys` it is a copy of.
-/// The guard returned false on both examples its own comment names, and the
-/// unit test pinning it passed only because the fixture handed it a `proposal`
-/// the pipeline cannot produce — a fabricated join, which is the shape this
-/// project has been caught by before. Comparing the untransformed locale value
-/// is what makes the question answerable at all: "did this translator leave the
-/// source string in place" is a fact about the XML, not about our rendering
-/// of it.
-///
 /// A template value recognised as several Kotlin strings joined by newlines.
 ///
 /// The port writes some multi-line copy as one ARB value where the Android
@@ -1015,6 +1068,15 @@ String? deriveCompositeValue({
     if (proposals.length != 1) return null;
     parts.add(proposals.single);
   }
+  // Known limitation, latent today: a piece is trimmed, so a *deliberate*
+  // trailing space inside a line would be lost — only the whole join is run
+  // through `_mirrorTrailingSpace`. Everywhere else in this file treats such a
+  // space as load-bearing (see [derivePlainTextValue], and
+  // `locale_coverage_test`'s "a deliberate trailing space survives into every
+  // locale"). No composite template has one, and none could without the piece
+  // also matching a Kotlin string that carries it, so this is recorded rather
+  // than fixed — but it is the one place the composite rule disagrees with the
+  // file's most-documented convention.
   final joined = parts.join('\n');
   // A translation is a separate string and may carry syntax of its own; the
   // template here is placeholder-free by construction.
@@ -1027,6 +1089,48 @@ String? deriveCompositeValue({
   return _mirrorTrailingSpace(joined, templateEnglish);
 }
 
+/// Whether [localeValue] is really the Kotlin *source* string sitting
+/// untranslated in a `values-<locale>` file, and must therefore not be adopted.
+///
+/// 47 of the Kotlin app's 1056 strings are byte-identical to their English in at
+/// least four of the five locales — `my_survey` is the literal token
+/// `mySurveys` in all five, `my_library` is `"mylibrary"` in all five. They are
+/// not translations, and adopting one *replaces* a translation with English:
+/// `app_ar.arb` holds `استطلاعاتي` for `mySurveys` and `app_fr.arb` holds
+/// `Mes enquêtes`, both of which such an adoption would overwrite.
+///
+/// The caller already drops a proposal equal to the *template's* English, which
+/// is the same idea — but only sound while every tier matches English that is
+/// byte-identical to the template's. The three whole-string tiers do:
+/// `_proposal`
+/// normalises a punctuation- or casing-tier value back toward the template, so
+/// an untranslated one collapses onto it and is caught. A tier matching on
+/// anything looser would not, and the `my*` compound family is exactly what
+/// such a tier reaches — the port re-spaced Kotlin's `myLibrary`/`mySurveys`
+/// into "My Library"/"My surveys", so those keys sit one notch below the
+/// ladder's floor with Kotlin translations that inherit the original defect.
+///
+/// The fourth adoptable tier, `composite`, does not go through `_proposal`
+/// at all: [deriveCompositeValue] asks this question of each piece itself,
+/// directly rather than through here, for the reason recorded there.
+///
+/// So the comparison that actually means "untranslated" is against the Kotlin
+/// string's *own* English, and only where that differs from the template's —
+/// otherwise this would reject the legitimately invariant values ("HTML",
+/// "PDF", "N/A"), which are translations that happen to equal their source.
+///
+/// **Judge the raw `values-<locale>` string, never the proposal.** The first
+/// cut of this took `_proposal`'s output and was inert: `_proposal` runs
+/// `_alignInitialCase` for every non-`exact` tier, so `values-ar`'s `mySurveys`
+/// arrives as `MySurveys` and no longer equals the `mySurveys` it is a copy of.
+/// The guard returned false on both examples its own comment names, and the
+/// unit test pinning it passed only because the fixture handed it a `proposal`
+/// the pipeline cannot produce — a fabricated join, which is the shape this
+/// project has been caught by before. Comparing the untransformed locale value
+/// is what makes the question answerable at all: "did this translator leave the
+/// source string in place" is a fact about the XML, not about our rendering
+/// of it.
+///
 /// No tier reaches this today; it is the guard that keeps the floor safe by
 /// construction rather than by luck. `test/l10n/format_derivation_test.dart`
 /// pins it against the real `values-*/strings.xml`, and
@@ -1240,9 +1344,13 @@ void _printCandidates(
     if (rows.isEmpty) continue;
     stdout.writeln('## $verdict (${rows.length})');
     for (final row in rows) {
+      // A composite's names are its parts in order, not alternatives, so they
+      // are joined with `+` to read as the concatenation they are. Every other
+      // tier's are candidates that had to agree, and read as a list.
+      final separator = row.match.segments == null ? ', ' : ' + ';
       final names = row.match.names
           .map((n) => '$n="${_oneLine(english[n])}"')
-          .join(', ');
+          .join(separator);
       // Every field on one line. A value with a newline in it would otherwise
       // split its own row in half, and this report is meant to be greppable.
       stdout.writeln(
