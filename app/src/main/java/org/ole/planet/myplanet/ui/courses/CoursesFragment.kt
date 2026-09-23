@@ -21,6 +21,9 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
@@ -366,12 +369,8 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
                 filterController.setGradeSubject(grade, subject)
             }
 
-            override suspend fun getFilteredCount(grade: String, subject: String): Int {
-                val state = filterController.currentState()
-                return viewModel.getFilteredCount(
-                    isMyCourseLib, model?.id, state.searchText, grade, subject, state.tagNames, state.progressFilter
-                )
-            }
+            override val resultCount: Flow<Int> =
+                viewModel.coursesState.map { it.courses.size }.distinctUntilChanged()
 
             override fun onClearRequested() {
                 filterController.clearAll()

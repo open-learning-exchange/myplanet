@@ -177,22 +177,6 @@ class CoursesViewModel @Inject constructor(
         }
     }
 
-    suspend fun getFilteredCount(
-        isMyCourseLib: Boolean,
-        userId: String?,
-        searchText: String,
-        selectedGrade: String,
-        selectedSubject: String,
-        tagNames: List<String>,
-        progressFilter: String = ""
-    ): Int = withContext(dispatcherProvider.io) {
-        val filteredCourses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
-        val myCourses = coursesRepository.getMyCourses(userId, filteredCourses)
-        val progressMap = _coursesState.value.progressMap
-        val baseCourses = if (isMyCourseLib) myCourses else filteredCourses
-        applyProgressFilter(baseCourses, progressMap, progressFilter).size
-    }
-
     private suspend fun filterCoursesInternal(
         isMyCourseLib: Boolean,
         userId: String?,

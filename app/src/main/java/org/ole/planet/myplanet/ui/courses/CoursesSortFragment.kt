@@ -21,6 +21,8 @@ class CoursesSortFragment : BaseSortBottomSheetFragment<CoursesViewModel.SortTyp
         currentType = type
     }
 
+    override fun hasListener(): Boolean = listener != null
+
     override fun currentSortValue(): CoursesViewModel.SortType? = currentType
 
     override fun onSortSelected(value: CoursesViewModel.SortType) {

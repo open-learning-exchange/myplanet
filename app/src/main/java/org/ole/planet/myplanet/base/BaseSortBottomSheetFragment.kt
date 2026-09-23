@@ -13,6 +13,7 @@ abstract class BaseSortBottomSheetFragment<T : Any> :
     protected abstract val dateSortValue: T
     protected abstract val titleSortValue: T
 
+    protected abstract fun hasListener(): Boolean
     protected abstract fun currentSortValue(): T?
     protected abstract fun onSortSelected(value: T)
     protected open fun dateLabel(): String = getString(R.string.order_by_date)
@@ -29,6 +30,10 @@ abstract class BaseSortBottomSheetFragment<T : Any> :
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        if (!hasListener()) {
+            dismissAllowingStateLoss()
+            return
+        }
         binding.ivCloseSort.setOnClickListener { dismiss() }
 
         when (currentSortValue()) {

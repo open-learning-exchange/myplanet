@@ -29,6 +29,8 @@ class ResourcesSortFragment : BaseSortBottomSheetFragment<ResourcesViewModel.Sor
         this.isTitleAscending = isTitleAscending
     }
 
+    override fun hasListener(): Boolean = listener != null
+
     override fun currentSortValue(): ResourcesViewModel.SortMode = currentMode
 
     override fun onSortSelected(value: ResourcesViewModel.SortMode) {

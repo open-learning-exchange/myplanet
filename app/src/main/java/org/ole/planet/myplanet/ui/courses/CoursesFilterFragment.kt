@@ -8,17 +8,17 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Spinner
-import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseBindingBottomSheetFragment
 import org.ole.planet.myplanet.databinding.FragmentCoursesFilterBinding
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 interface CoursesFilterSheetListener {
     fun onGradeSubjectChanged(grade: String, subject: String)
-    suspend fun getFilteredCount(grade: String, subject: String): Int
+    val resultCount: Flow<Int>
     fun onClearRequested()
     fun onCollectionsRequested()
 }
@@ -63,6 +63,11 @@ class CoursesFilterFragment : BaseBindingBottomSheetFragment<FragmentCoursesFilt
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        val currentListener = listener
+        if (currentListener == null) {
+            dismissAllowingStateLoss()
+            return
+        }
         setupSpinner(binding.spnGrade, R.array.grade_level, initialGrade)
         setupSpinner(binding.spnSubject, R.array.subject_level, initialSubject)
 
@@ -75,7 +80,9 @@ class CoursesFilterFragment : BaseBindingBottomSheetFragment<FragmentCoursesFilt
         binding.spnGrade.onItemSelectedListener = spinnerListener
         binding.spnSubject.onItemSelectedListener = spinnerListener
 
-        updateResultCount()
+        collectWhenStarted(currentListener.resultCount) { count ->
+            binding.btnConfirmFilters.text = getString(R.string.show_n_results, count)
+        }
     }
 
     private fun setupSpinner(spinner: Spinner, arrayRes: Int, initialValue: String) {
@@ -90,21 +97,10 @@ class CoursesFilterFragment : BaseBindingBottomSheetFragment<FragmentCoursesFilt
         }
     }
 
-    private fun selectedGrade(): String = binding.spnGrade.selectedItem?.toString()?.takeIf { it != "All" } ?: ""
-    private fun selectedSubject(): String = binding.spnSubject.selectedItem?.toString()?.takeIf { it != "All" } ?: ""
+    private fun selectedValue(spinner: Spinner): String =
+        if (spinner.selectedItemPosition <= 0) "" else spinner.selectedItem?.toString().orEmpty()
 
     private fun notifyChange() {
-        listener?.onGradeSubjectChanged(selectedGrade(), selectedSubject())
-        updateResultCount()
-    }
-
-    private fun updateResultCount() {
-        val currentListener = listener ?: return
-        viewLifecycleOwner.lifecycleScope.launch {
-            val count = currentListener.getFilteredCount(selectedGrade(), selectedSubject())
-            if (_binding != null) {
-                binding.btnConfirmFilters.text = getString(R.string.show_n_results, count)
-            }
-        }
+        listener?.onGradeSubjectChanged(selectedValue(binding.spnGrade), selectedValue(binding.spnSubject))
     }
 }
