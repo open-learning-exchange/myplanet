@@ -153,7 +153,7 @@ void main() {
     // family is the risky part), the rest of `SubmissionDao` above, `NewsDao`,
     // `CourseDao`/`CourseStepDao`, then `NotificationDao`.
     final uncovered = corpus.length - _compared.length;
-    expect(uncovered, 316 - 133);
+    expect(uncovered, 316 - 137);
   });
 }
 
@@ -257,7 +257,7 @@ const _corpusSize = 316;
 
 /// Entries in [_compared], stated separately so the map and the claim about it
 /// cannot drift apart.
-const _comparedCount = 133;
+const _comparedCount = 137;
 
 /// Queries a lane has read against the port's Drift builder and reached a
 /// verdict on, with the digest the statement had at that moment.
@@ -273,6 +273,16 @@ const _compared = <String, String>{
   'ExamDao.getByStepId': '2095e7c10090',
   'ExamDao.getByStepIds': '6ffcac1c67b0',
   'MyLibraryDao.getTeamPrivate': 'b71238974e8d',
+  // **Four queries Lane 1 read against the port and could not record**, this
+  // file being Lane 3's that round. Each is reasoned about by name in the
+  // succession work's doc comments, so the reading happened; recording it here
+  // is what turns the gate red if any of them changes upstream. Landed by the
+  // integrator, per *anything a lane reports because of a file boundary is the
+  // integrator's to land in the same round*.
+  'TeamLogDao.getTeamVisitsForUsers': '84569532cf8a',
+  'UserDao.getUsersByAnyIds': '85062f40b97d',
+  'TeamDao.getByTeamIdUserIdAndDocType': 'd0cbe64d50e2',
+  'TeamDao.getByTeamIdAndDocType': '144d788d1f94',
   'TeamDao.getEligibleNextLeaderCandidates': '8c8ad4450999',
   'TeamDao.teamNameExists': '16cc27e97d3e',
   'MeetupDao.getPendingUploads': '3ef3f76a9cac',

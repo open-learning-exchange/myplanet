@@ -1126,6 +1126,41 @@ Deliberate *deviations*, all flagged in code:
     effect whatsoever**. In Kotlin the *refused* share is the one that speaks and the
     successful one is silent; the port reports all three outcomes.
 
+
+  - **Succession runs when the departing member leads *or* when the team has no leader
+    at all; Kotlin's second condition is that it always runs.** `RequestsViewModel.leaveTeam`
+    calls `getNextLeaderCandidate` unconditionally and `updateTeamLeader` clears `isLeader`
+    on every row but the new one — so on Android *a rank-and-file member leaving demotes
+    the sitting leader*, reachable with one leader and two plain members. The port gates on
+    the leaver's own flag, which drops that, and then restores the useful half with a second
+    disjunct. **The disjunct is not decoration.** The port authors no teams, so every
+    `isLeader` it holds arrived in a server document; a team can *arrive* leaderless, and
+    once it has, `canManage` is false for everyone, so "Make leader" is never offered and no
+    leave could ever repair it. Gating purely on the leaver's flag would have produced the
+    exact outcome the succession work exists to prevent.
+
+  - **The candidate identity map is keyed on both `id` and `couchId`.** Kotlin fetches on
+    `id IN (…) OR _id IN (…)` and then keys the map on `id` alone, so a membership row
+    carrying the server id resolves to nobody, scores zero visits, and — if it wins —
+    promotes nobody. Both spellings genuinely reach CouchDB from the Android app, so
+    reproducing the asymmetry would have meant the port's succession silently no-opping for
+    those teams. Fixing it opened a second hole, closed in the same change: the exclusion
+    predicate matched one spelling where resolution matched two, so the departing member
+    could be promoted back into the team they had just left.
+
+  - **Feedback uploads stable English tokens where Kotlin uploads the localised radio
+    label.** `FeedbackFragment.kt:104-105` sends `rbUrgent.text`/`rbType.text`, so a Spanish
+    device POSTs `"priority": "Sí"`, `"type": "Error"` and an Arabic one `"نعم"`/`"خطأ"`.
+    The port sends `'Yes'`/`'No'` and `'Question'`/`'Bug'`/`'Suggestion'`. The port's
+    behaviour is better — matching Kotlin would corrupt server-side filtering — and it is
+    recorded here so a later parity pass does not "fix" it toward Kotlin. The port also
+    accumulates validation errors where `validateAndSaveData:88-109` shows one at a time.
+
+  - **The chat composer is not cleared until the send has been awaited.** Kotlin clears
+    eagerly (`ChatDetailFragment.kt:321`). The port holds the text until the outcome is
+    known so a refusal leaves it in the field rather than destroying it — a divergence, not
+    a parity fix, and worth naming because the reverse reads like an oversight.
+
 ## Write-back
 
 Phase 3 opened the write path with `ShelfRepository`, which pushes the user's shelf document

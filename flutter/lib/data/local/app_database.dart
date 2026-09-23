@@ -3454,6 +3454,29 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
             ..limit(1))
           .watchSingleOrNull();
 
+  /// Port of `SubmissionDao.getLatestPendingByUserAndParent`
+  /// (`SubmissionDao.kt:29`), `ORDER BY lastUpdateTime DESC LIMIT 1`.
+  ///
+  /// **Kotlin has two pending lookups and they are not interchangeable**, so
+  /// the name matters. This one's only Kotlin caller, `getOrCreateSubmission`,
+  /// has no caller anywhere in `app/` — it is a dead statement upstream. The
+  /// *live* one is `getPendingByUserAndParent` (`:26`), which orders by
+  /// `startTime DESC`, and both of Kotlin's real call sites
+  /// (`startExamSession`, `SubmissionListViewModel`) use it.
+  ///
+  /// **So do not reach for this method to resume a sheet.** Phase 159's first
+  /// cut did, and with two `pending` rows for one `(user, parent)` the two apps
+  /// would have resumed *different* rows — updating different CouchDB
+  /// documents, each carrying its own `_rev`.
+  /// `SubmissionsRepository.getOrCreateSurveySubmission` documents the split
+  /// in full; its resume path sorts on `startTime` instead. What this method
+  /// is still right for is the existence check at
+  /// `submissions_repository.dart:965`, where "is there any pending sheet"
+  /// does not depend on which one comes back.
+  ///
+  /// The `type = 'survey'` conjunct is the port's own and is deliberate — see
+  /// that same comment for why it is load-bearing on a mixed fleet rather than
+  /// redundant.
   Future<SubmissionRow?> latestPendingByUserAndParent(
     String userId,
     String parentId,
