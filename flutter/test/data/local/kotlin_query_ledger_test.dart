@@ -119,7 +119,7 @@ void main() {
     // kept at their entries rather than deleted, because the correction is the
     // useful record.
     //
-    // **242 of 316 after Phase 160 Lane 3**, taking the order the previous
+    // **243 of 317 after Phase 160 Lane 3**, taking the order the previous
     // round set down. **29 of the 37 DAOs are now complete, 23 of them
     // finished off this round**; the eight with anything left are listed
     // below. Those two figures were counted against the tree rather than
@@ -163,7 +163,7 @@ void main() {
     //    porting that table and there was nothing on this branch to read its
     //    queries against. It is the cheapest entry in the next round.
     final uncovered = corpus.length - _compared.length;
-    expect(uncovered, 316 - 242);
+    expect(uncovered, 317 - 243);
   });
 }
 
@@ -262,12 +262,12 @@ Map<String, String> _kotlinQueries() {
   return queries;
 }
 
-/// `@Query` annotations in `app/src/main/.../data/room/dao/`, as of Phase 158.
-const _corpusSize = 316;
+/// `@Query` annotations in `app/src/main/.../data/room/dao/`, as of Phase 160.
+const _corpusSize = 317;
 
 /// Entries in [_compared], stated separately so the map and the claim about it
 /// cannot drift apart.
-const _comparedCount = 242;
+const _comparedCount = 243;
 
 /// Queries a lane has read against the port's Drift builder and reached a
 /// verdict on, with the digest the statement had at that moment.
@@ -962,6 +962,32 @@ const _compared = <String, String>{
   // resolving a note from a server document would need it.
   'PersonalDao.deleteByIdOrDocId': '7978a7e331b5',
   'PersonalDao.updateUploadedStatus': 'f3d9ebf0ac14',
+  // **The ledger's third live catch, and it landed mid-round on the DAO this
+  // lane had just finished.** Master `2adbccd` ("smoother personals
+  // repository dao upload retrying", fixes #17465) added one statement, the
+  // corpus went 316 → 317, and the gate went red on a PR whose own tree still
+  // held 316 — the merge is what CI tests. It is
+  // `updateUploadedStatus` **minus `isUploaded = 1`**, and the point of it is
+  // the ordering around it:
+  //
+  // `uploadPersonalDocument` now records the id and rev through *this*
+  // statement rather than through `updatePersonalAfterSync`, so a document
+  // that POSTed successfully carries its server identity without yet being
+  // flagged uploaded; `uploadPersonal` resumes from a stored `_id`/`_rev`
+  // instead of re-POSTing; and `updatePersonalAfterSync` — the one that sets
+  // `isUploaded = 1` — moved to **after** the attachment PUT succeeds, with
+  // the attachment's own returned `rev` carried into it.
+  //
+  // **A Follow, and the port has the bug this fixes.**
+  // `personals_uploader.dart:117-118` calls `markUploaded(...)` — which writes
+  // `isUploaded: true` — and *then* `_uploadAttachment`, and the comment at
+  // `:27-29` states the intent outright: "an attachment failure does not roll
+  // the [document] back". So a personal note whose attachment upload fails is
+  // flagged uploaded, the file never reaches CouchDB, and nothing retries: the
+  // Phase 156 lost-attachment shape, for personals. Reported rather than
+  // fixed — `personals_uploader.dart` is a behaviour port, not a statement
+  // this lane may make true.
+  'PersonalDao.updateRemoteDocRef': '74b11cdce08e',
   // **This one corrected a wrong statement in the port**, which is the one
   // thing this lane is allowed to fix outside its file.
   // `personals_repository.dart`'s `update` carried a comment saying its
