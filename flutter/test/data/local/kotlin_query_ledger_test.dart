@@ -153,7 +153,7 @@ void main() {
     // family is the risky part), the rest of `SubmissionDao` above, `NewsDao`,
     // `CourseDao`/`CourseStepDao`, then `NotificationDao`.
     final uncovered = corpus.length - _compared.length;
-    expect(uncovered, 316 - 172);
+    expect(uncovered, 316 - 187);
   });
 }
 
@@ -257,7 +257,7 @@ const _corpusSize = 316;
 
 /// Entries in [_compared], stated separately so the map and the claim about it
 /// cannot drift apart.
-const _comparedCount = 172;
+const _comparedCount = 187;
 
 /// Queries a lane has read against the port's Drift builder and reached a
 /// verdict on, with the digest the statement had at that moment.
@@ -813,4 +813,67 @@ const _compared = <String, String>{
   'TeamNotificationDao.updateCount': '65344064e897',
   'TeamNotificationDao.getByTypeAndParentIds': '08049ab5c51a',
   'UserChallengeActionsDao.countByUserAndType': '6ecaa1081fc0',
+
+  // --- Eight DAOs finished off -----------------------------------------
+  // **No caller in `app/src/main`.** The community walk replaces rows through
+  // `upsertAll`, and nothing wipes the table.
+  'CommunityDao.deleteAll': '2535384f99ea',
+  // No by-question-id lookup in the port, and the behaviour it serves is
+  // there. Kotlin's one caller is `ProgressRepositoryImpl.submissionMap`
+  // (`:189`), which turns a submission's answers into the per-step mistake
+  // counts the My Progress **list row** renders. The port computes the same
+  // `stepMistakes` map in `courseProgressStreamProvider`
+  // (`courses_providers.dart:714-727,745`), reaching questions through
+  // `questionsForExams(examIds)` — the exam, not the question — and joining in
+  // Dart. `progress_repository.dart:69-72` documents the split and was
+  // checked rather than taken on trust.
+  'QuestionDao.getByIds': '6765d757a427',
+  'ResourceActivityDao.markUploaded': 'd72379b98ce9',
+  'CourseProgressDao.getByIds': '24038d7bf283',
+  'CourseProgressDao.markUploaded': '0306215a28a9',
+  'MyLifeDao.getByIds': '85ca3b21bcc6',
+  // **Three columns on one side, one on the other, and the port's table has no
+  // second column to offer.** Kotlin is
+  // `UPDATE my_life SET isVisible = :isVisible WHERE _id = :id OR imageId = :id
+  // OR title = :id`; the port's `setVisibility` matches the primary key alone,
+  // and `MyLifeEntries` has **no `imageId` column at all** (`tables.dart`), so
+  // the other two arms are not narrowed here, they are unrepresentable. Same
+  // rows for the caller either app actually uses: the port's chain is
+  // `life_screen.dart:105` → `life_provider.dart:27`, which passes `row.id`,
+  // and that column is `text().named('_id')` — Kotlin's primary key under its
+  // own name. The alternation is recorded rather than shrugged off because a
+  // future seeded-entry path that identified a row by title would silently
+  // stop toggling.
+  'MyLifeDao.updateVisibility': '2271b630aeaa',
+  'AchievementDao.getById': '6e05be068c0a',
+  // `_rev = COALESCE(:rev, _rev)` — a null revision leaves the column as it
+  // was. The port's `markUploaded` writes `Value.absent()` for a null `rev`,
+  // which is the drift spelling of exactly that, and the same rule Phase 56
+  // established after a null-returning fetch wiped a stored credential.
+  'AchievementDao.markUploaded': '44fb93b0a8cf',
+  'TeamLogDao.getPendingUploads': '7dc31c204117',
+  'TeamLogDao.markUploaded': 'cb1253e7f20d',
+  // **The port has a counterpart for a Kotlin method Kotlin never calls**, and
+  // that is the right way round. Phase 156 established `getByRemoteIds` has no
+  // caller in `app/src/main` — which is why Kotlin double-counts a pulled team
+  // visit against a locally authored one. The port's `getByCouchIds` is the
+  // same statement and it *is* wired, into the sync-in merge that avoids the
+  // double count. Recorded so a future round seeing this deleted upstream does
+  // not follow.
+  'TeamLogDao.getByRemoteIds': 'b9ff3bd839fa',
+  'RatingDao.findById': '8fc2395f7379',
+  'RatingDao.markUploaded': '9969623b0fc2',
+  // **The one real gap this batch found, and it is a whole table.**
+  // `rating_prompt_log` has no counterpart in the port — no table, no query,
+  // nothing. In Kotlin it is what makes the resource rating prompt *once per
+  // (user, resource)*: `ResourcesExitCoordinator:26-30` asks
+  // `shouldShowResourceRatingDialog` when the viewer closes, which refuses if
+  // the pair is already logged or already rated, and stamps the log when it
+  // shows. The port's only rating affordances are explicit buttons
+  // (`resource_detail_screen.dart:219`, `course_detail_screen.dart:169`,
+  // `take_course_screen.dart:481`); `resource_viewer_screen.dart` mentions
+  // rating nowhere. So the nudge that collects most resource ratings in the
+  // Android app does not exist here. Reported, not fixed — every file it
+  // touches belongs to another lane.
+  'RatingDao.isRatingPrompted': '21695a43707a',
 };
