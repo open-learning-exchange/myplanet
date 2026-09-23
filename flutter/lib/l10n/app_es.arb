@@ -2033,9 +2033,6 @@
   "arabic": "عربى",
   "french": "français",
   "activitySummary": "Actividad",
-  "@activitySummary": {
-    "x-mt": true
-  },
   "lastLogin": "Último inicio de sesión",
   "memberDetail": "Detalle de miembro",
   "@memberDetail": {
@@ -2177,5 +2174,8 @@
   "showLess": "mostrar menos",
   "youWantToConnectToADifferentServer": "¿Estás seguro de que deseas cambiar la configuración? Esta acción borrará los datos de la aplicación",
   "clearData": "Borrar datos",
-  "clearingData": "Borrando datos…"
+  "clearingData": "Borrando datos…",
+  "shareChat": "Compartir chat",
+  "shareWithTeamEnterprise": "Compartir con el equipo/empresa",
+  "addNoteOptional": "Agregar una nota (opcional)"
 }

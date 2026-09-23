@@ -540,5 +540,9 @@
   "showLess": "tus wax yar",
   "youWantToConnectToADifferentServer": "Waxaad rabtaa inaad ku xirto server kale. Tirtir xogta barnaamijka si aad u sii wadato",
   "clearData": "Tirtir Data",
-  "clearingData": "Tirtiridda xogta…"
+  "clearingData": "Tirtiridda xogta…",
+  "activitySummary": "Firfircoonaanta",
+  "shareChat": "La wadaag sheekaysiga",
+  "shareWithTeamEnterprise": "La wadaag kooxda/ganacsiga",
+  "addNoteOptional": "Ku dar falanqeey (ixtiyaacsi ah)"
 }

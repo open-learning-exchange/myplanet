@@ -2008,10 +2008,7 @@
   "nepali": "नेपाली",
   "arabic": "عربى",
   "french": "français",
-  "activitySummary": "نشاط",
-  "@activitySummary": {
-    "x-mt": true
-  },
+  "activitySummary": "النشاط",
   "lastLogin": "آخر تسجيل دخول",
   "memberDetail": "تفاصيل الأعضاء",
   "@memberDetail": {
@@ -2172,5 +2169,8 @@
   "showLess": "عرض أقل",
   "youWantToConnectToADifferentServer": "تريد الاتصال بخادم مختلف. امسح بيانات التطبيق للمتابعة",
   "clearData": "مسح البيانات",
-  "clearingData": "جارٍ مسح البيانات…"
+  "clearingData": "جارٍ مسح البيانات…",
+  "shareChat": "شارك الدردشة",
+  "shareWithTeamEnterprise": "مشاركة مع الفريق/المؤسسة",
+  "addNoteOptional": "إضافة ملاحظة (اختياري)"
 }
