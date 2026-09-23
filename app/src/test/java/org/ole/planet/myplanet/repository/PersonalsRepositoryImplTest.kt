@@ -17,6 +17,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -182,7 +184,8 @@ class PersonalsRepositoryImplTest {
 
         assertEquals("new-id", result?.first)
         assertEquals("rev-1", result?.second)
-        coVerify { personalDao.updateUploadedStatus("test-id", "new-id", "rev-1") }
+        coVerify { personalDao.updateRemoteDocRef("test-id", "new-id", "rev-1") }
+        coVerify(exactly = 0) { personalDao.updateUploadedStatus(any(), any(), any()) }
     }
 
     @Test
@@ -351,7 +354,7 @@ class PersonalsRepositoryImplTest {
         }
         val mockResponse = Response.success(mockResponseObject)
         coEvery { uploadRepository.postUpload(any(), any()) } returns mockResponse
-        coEvery { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) } returns mockk()
+        coEvery { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) } returns Response.success(JsonObject())
 
         val result = repository.uploadPersonal(personal)
 
@@ -366,6 +369,100 @@ class PersonalsRepositoryImplTest {
                 name = "test.txt"
             )
         }
+        coVerify(exactly = 1) { personalDao.updateUploadedStatus("test-id", "new-id", "new-rev") }
+    }
+
+    @Test
+    fun `uploadPersonal does not mark isUploaded when attachment upload fails`() = runTest {
+        val personal = Personal().apply {
+            id = "test-id"
+            isUploaded = false
+            path = "/local/path/to/test.txt"
+        }
+        val mockResponseObject = JsonObject().apply {
+            addProperty("rev", "new-rev")
+            addProperty("id", "new-id")
+        }
+        coEvery { uploadRepository.postUpload(any(), any()) } returns Response.success(mockResponseObject)
+        coEvery {
+            uploadRepository.uploadAttachment(any(), any(), any(), any(), any())
+        } throws RuntimeException("network dropped")
+
+        val result = repository.uploadPersonal(personal)
+
+        assertTrue(result.startsWith("Uploaded document but failed to upload attachment"))
+        coVerify(exactly = 1) { personalDao.updateRemoteDocRef("test-id", "new-id", "new-rev") }
+        coVerify(exactly = 0) { personalDao.updateUploadedStatus(any(), any(), any()) }
+    }
+
+    @Test
+    fun `uploadPersonal does not mark isUploaded when attachment upload returns HTTP error`() = runTest {
+        val personal = Personal().apply {
+            id = "test-id"
+            isUploaded = false
+            path = "/local/path/to/test.txt"
+            _id = "new-id"
+            _rev = "stale-rev"
+        }
+        coEvery {
+            uploadRepository.uploadAttachment(any(), any(), any(), any(), any())
+        } returns Response.error(409, "{\"error\":\"conflict\"}".toResponseBody("application/json".toMediaType()))
+
+        val result = repository.uploadPersonal(personal)
+
+        assertEquals("Uploaded document but failed to upload attachment: HTTP 409", result)
+        coVerify(exactly = 0) { personalDao.updateUploadedStatus(any(), any(), any()) }
+    }
+
+    @Test
+    fun `uploadPersonal persists the rev returned by the attachment upload`() = runTest {
+        val personal = Personal().apply {
+            id = "test-id"
+            isUploaded = false
+            path = "/local/path/to/test.txt"
+            _id = "new-id"
+            _rev = "1-doc"
+        }
+        val attachmentResponse = JsonObject().apply {
+            addProperty("ok", true)
+            addProperty("id", "new-id")
+            addProperty("rev", "2-attachment")
+        }
+        coEvery {
+            uploadRepository.uploadAttachment(any(), any(), any(), any(), any())
+        } returns Response.success(attachmentResponse)
+
+        val result = repository.uploadPersonal(personal)
+
+        assertEquals("Personal resource uploaded successfully", result)
+        coVerify(exactly = 1) { personalDao.updateUploadedStatus("test-id", "new-id", "2-attachment") }
+    }
+
+    @Test
+    fun `uploadPersonal retry reuses stored remote doc ref instead of re-posting`() = runTest {
+        val personal = Personal().apply {
+            id = "test-id"
+            isUploaded = false
+            path = "/local/path/to/test.txt"
+            _id = "new-id"
+            _rev = "new-rev"
+        }
+        coEvery { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) } returns Response.success(JsonObject())
+
+        val result = repository.uploadPersonal(personal)
+
+        assertEquals("Personal resource uploaded successfully", result)
+        coVerify(exactly = 0) { uploadRepository.postUpload(any(), any()) }
+        coVerify(exactly = 1) {
+            uploadRepository.uploadAttachment(
+                file = any(),
+                destinationFormat = "%s/resources/%s/%s",
+                id = "new-id",
+                rev = "new-rev",
+                name = "test.txt"
+            )
+        }
+        coVerify(exactly = 1) { personalDao.updateUploadedStatus("test-id", "new-id", "new-rev") }
     }
 
     @Test
