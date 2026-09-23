@@ -298,7 +298,7 @@ class RetryQueueWorkerTest {
         MainApplication.isSyncRunning.set(false)
         val mockRepo = mockk<RetryRepository>(relaxed = true)
 
-        val customWorker = RetryQueueWorker(context, workerParams, retryQueue, mockRepo)
+        val customWorker = RetryQueueWorker(context, workerParams, retryQueue, mockRepo, syncManager)
 
         coEvery { retryQueue.isCurrentlyProcessing() } returns false
         val operation = RetryOperation().apply {
