@@ -425,15 +425,14 @@ class SubmissionsRepository {
   /// refuses with *please select/write your answer to continue* (`:635-638`).
   /// Every question must be answered, survey or exam.
   ///
-  /// The port's survey screen gates on `question.required &&`
-  /// (`take_survey_screen.dart:174-178`), which Kotlin has no counterpart for
-  /// — and its sibling `public_survey_screen.dart:202-207` requires all
-  /// questions, so **the two port screens disagree and the survey-list one is
-  /// the one that diverges**. That gate is the real defect and it is not in
-  /// this lane's files; it is reported to the integrator. This carry-over
-  /// keeps the hole from *destroying* a stored answer in the meantime, which
-  /// is the Phase 143 distinction: without it the resume would relocate a data
-  /// loss rather than remove one.
+  /// The port's survey screen used to gate on `question.required &&`, which
+  /// Kotlin has no counterpart for, while its sibling required every question
+  /// — the two screens disagreed and the survey-list one was the one that
+  /// diverged. Both now share `ui/surveys/survey_answer_gate.dart`, so a blank
+  /// draft no longer arrives here from the screen. This carry-over stays: it
+  /// is about a draft that is blank for any reason, and without it a resume
+  /// would relocate a data loss rather than remove one — the Phase 143
+  /// distinction.
   SubmissionAnswersCompanion _surveyAnswer({
     required String submissionId,
     required SurveyQuestionRow question,

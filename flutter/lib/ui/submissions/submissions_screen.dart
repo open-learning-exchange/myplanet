@@ -93,10 +93,9 @@ class _SubmissionsScreenState extends ConsumerState<SubmissionsScreen> {
                           separatorBuilder: (_, _) => const Divider(height: 1),
                           itemBuilder: (context, index) => _SubmissionTile(
                             filtered[index],
-                            onTap: () => context.push(
-                              '${Routes.submissions}/'
-                              '${Uri.encodeComponent(filtered[index].row.id)}',
-                            ),
+                            onTap: () {
+                              _open(filtered[index]);
+                            },
                           ),
                         ),
                       ),
@@ -111,6 +110,56 @@ class _SubmissionsScreenState extends ConsumerState<SubmissionsScreen> {
         label: Text(l10n.newSubmission),
       ),
     );
+  }
+
+  /// Where a tapped row goes — the port of `SubmissionsAdapter`'s three-way
+  /// branch (`:93-103`):
+  ///
+  /// ```kotlin
+  /// if (count > 1) showAllSubmissions(submission)
+  /// else if (type == "survey") openSurvey(listener, submission.id, true, false, "")
+  /// else openSubmissionDetail(listener, submission.id)
+  /// ```
+  ///
+  /// **The survey arm had no counterpart here, and it is the only way back
+  /// into a half-finished survey from this screen.** Every tap went to the
+  /// read-only detail, so a learner who left a survey part-answered and came
+  /// to *My surveys* to finish it was shown what they had answered so far and
+  /// given no way to add to it. `home_screen.dart:253` was the port's one
+  /// pusher of the resume route, and it only offers the surveys the reminder
+  /// dialog lists.
+  ///
+  /// Kotlin branches on the **adapter's** type rather than the row's, but the
+  /// two are the same test: `SubmissionsFragment` is constructed per type and
+  /// `getSubmissions` filters to `it.type == "survey"` for the survey list and
+  /// `it.type != "survey"` for the other one
+  /// (`SubmissionsRepositoryImpl.kt:101-105`), so every row in a survey list
+  /// has `type == "survey"`. This screen is one type-agnostic list, so the
+  /// row's own type is what carries the distinction.
+  ///
+  /// The survey id comes off `parentId`, which is `"<surveyId>@<courseId>"`
+  /// for a course-attached survey and the bare id otherwise — Kotlin reduces
+  /// it the same way, `sub?.parentId?.substringBefore("@")`
+  /// (`BaseExamFragment.kt:88`). Phase 125 is why that compound key exists.
+  ///
+  /// **`count > 1` is still a gap and deliberately left as one:** Kotlin opens
+  /// `SubmissionListFragment` (every attempt for that parent, with a PDF
+  /// export), which the port has no screen or route for, and a route is not in
+  /// this lane's files. Until it exists a grouped row keeps going to the
+  /// newest attempt's detail, which is what it did before.
+  void _open(SubmissionListEntry entry) {
+    final row = entry.row;
+    if (entry.count == 1 && (row.type ?? '') == 'survey') {
+      final surveyId = (row.parentId ?? '').split('@').first;
+      if (surveyId.isNotEmpty) {
+        context.push(
+          '${Routes.surveys}/${Uri.encodeComponent(surveyId)}'
+          '?submission=${Uri.encodeComponent(row.id)}',
+        );
+        return;
+      }
+    }
+    context.push('${Routes.submissions}/${Uri.encodeComponent(row.id)}');
   }
 
   Future<void> _sync() async {

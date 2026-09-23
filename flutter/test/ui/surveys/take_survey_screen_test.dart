@@ -60,6 +60,33 @@ void main() {
     );
   }
 
+  /// Two questions: a choice one first, then a free-text one. A single
+  /// question cannot tell `any` from `first`, and putting the unanswered one
+  /// first cannot tell `any` from `all`.
+  Future<void> seedMixedSurvey() async {
+    final mapping = SurveyMapper.fromDoc({
+      '_id': 'survey-1',
+      'type': 'surveys',
+      'name': 'Community needs',
+      'questions': [
+        {
+          'id': 'q1',
+          'body': 'Which service?',
+          'type': 'select',
+          'choices': const [
+            {'id': 'water', 'text': 'Water'},
+            {'id': 'power', 'text': 'Power'},
+          ],
+        },
+        {'id': 'q2', 'body': 'How often?', 'type': 'input'},
+      ],
+    })!;
+    await db.surveyDao.upsertAll(
+      [mapping.survey],
+      {'survey-1': mapping.questions},
+    );
+  }
+
   Future<void> pumpScreen(WidgetTester tester) async {
     tester.view.physicalSize = const Size(1000, 3000);
     tester.view.devicePixelRatio = 1.0;
@@ -361,6 +388,94 @@ void main() {
 
     expect(find.text('This survey has no questions'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Submit survey'), findsNothing);
+  });
+
+  group('an unanswered sheet cannot be submitted', () {
+    /// `ExamTakingFragment` has no optional question: `isQuestionAnswered`
+    /// (`:289`) never looks at a `required` flag — `model/ExamQuestion.kt`
+    /// has none for it to look at — `btnNext` stays hidden while the current
+    /// question is unanswered (`:284`) and Submit toasts
+    /// *please select/write your answer to continue* (`:635-637`).
+    ///
+    /// This screen gated on `question.required &&` instead. **The fixture is
+    /// what makes these tests able to fail:** `seedSurvey` builds the survey
+    /// through the real `SurveyMapper` from a document with no `"required"`
+    /// key, which is the shape Planet sends, so the column is false and the
+    /// old conjunct short-circuited the whole guard. Seeding
+    /// `'required': true` would have passed either way — the decoy shape from
+    /// Phase 156.
+    Future<void> expectRefused(WidgetTester tester) async {
+      expect(
+        find.text('Answer all required questions'),
+        findsOneWidget,
+        reason: 'the gate should have refused and said so',
+      );
+      // And nothing was written. A snackbar with a row behind it would be the
+      // worse half of the defect, not the fix.
+      expect(await db.select(db.submissions).get(), isEmpty);
+      expect(await answers(), isEmpty);
+    }
+
+    testWidgets('an untouched choice question refuses', (tester) async {
+      await seedSurvey(type: 'select');
+      await pumpScreen(tester);
+
+      await tapSubmit(tester);
+
+      await expectRefused(tester);
+    });
+
+    testWidgets('an untouched text question refuses', (tester) async {
+      await seedSurvey(type: 'input', choices: const []);
+      await pumpScreen(tester);
+
+      expect(find.byType(TextField), findsOneWidget);
+      await tapSubmit(tester);
+
+      await expectRefused(tester);
+    });
+
+    testWidgets('a whitespace-only text answer does not count', (tester) async {
+      // Pins the `.trim()`, which is the difference between refusing and
+      // uploading a sheet that reads as answered.
+      await seedSurvey(type: 'input', choices: const []);
+      await pumpScreen(tester);
+
+      await tester.enterText(find.byType(TextField), '   ');
+      await tester.pumpAndSettle();
+      await tapSubmit(tester);
+
+      await expectRefused(tester);
+    });
+
+    testWidgets('one unanswered question among answered ones refuses', (
+      tester,
+    ) async {
+      // `any`, not `first`: the answered question comes first.
+      await seedMixedSurvey();
+      await pumpScreen(tester);
+
+      await tester.tap(find.text('Water'));
+      await tester.pumpAndSettle();
+      await tapSubmit(tester);
+
+      await expectRefused(tester);
+    });
+
+    testWidgets('answering every question submits', (tester) async {
+      // The other direction, so the group cannot pass by refusing everything.
+      await seedMixedSurvey();
+      await pumpScreen(tester);
+
+      await tester.tap(find.text('Water'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'Twice a week');
+      await tester.pumpAndSettle();
+      await tapSubmit(tester);
+
+      expect(find.text('Answer all required questions'), findsNothing);
+      expect(await answers(), hasLength(2));
+    });
   });
 }
 

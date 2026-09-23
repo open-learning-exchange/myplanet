@@ -12,6 +12,7 @@ import '../../providers/session_provider.dart';
 import '../../repository/submissions_repository.dart';
 import '../exam/user_information_screen.dart';
 import '../router.dart';
+import 'survey_answer_gate.dart';
 
 /// Port of `ui/surveys/PublicSurveyActivity.kt`.
 ///
@@ -192,17 +193,12 @@ class _PublicSurveyScreenState extends ConsumerState<PublicSurveyScreen> {
 
   Future<void> _submit() async {
     final l10n = AppLocalizations.of(context);
-    // `ExamTakingFragment` has no notion of an optional question: `btnNext` is
-    // hidden until the current one is answered, and submitting with a blank
-    // answer toasts `please_select_write_your_answer_to_continue`
-    // (`isQuestionAnswered`). The guard used to key on a `required` flag read
-    // off the document, but Planet never writes one — so it was false for every
-    // question of every real survey and an untouched answer sheet went to the
-    // server as a row of empty strings.
-    final missing = _questions.any(
-      (question) => question.choices.isEmpty
-          ? _textControllers[question.id]!.text.trim().isEmpty
-          : _choiceAnswers[question.id]!.isEmpty,
+    // Shared with `take_survey_screen`, which had the other half of this
+    // rule wrong for the same reason — see `survey_answer_gate.dart`.
+    final missing = surveyHasUnansweredQuestion(
+      _questions,
+      textFor: (question) => _textControllers[question.id]?.text ?? '',
+      selectedFor: (question) => _choiceAnswers[question.id]!,
     );
     if (missing) {
       ScaffoldMessenger.of(
@@ -220,7 +216,7 @@ class _PublicSurveyScreenState extends ConsumerState<PublicSurveyScreen> {
           questionId: question.questionId,
           value: _textControllers[question.id]!.text.trim(),
         );
-      } else if (_isSelectMultiple(question.type)) {
+      } else if (isSelectMultiple(question.type)) {
         final selected = _choiceAnswers[question.id]!;
         answers[question.id] = SubmissionDraftAnswer(
           questionId: question.questionId,
@@ -363,14 +359,6 @@ class _PublicSurveyScreenState extends ConsumerState<PublicSurveyScreen> {
   }
 }
 
-/// `ExamTakingFragment.startExam` compares the question type with
-/// `equals("selectMultiple", ignoreCase = true)`, and so does this port's own
-/// `SurveysRepository._buildPublicAnswers`. Matching case-sensitively here put
-/// the two halves out of step: a document spelling it `selectmultiple` drew
-/// radio buttons, so the respondent could pick exactly one, and everything else
-/// they meant to say was gone before the payload was built.
-bool _isSelectMultiple(String? type) => type?.toLowerCase() == 'selectmultiple';
-
 class _QuestionCard extends StatelessWidget {
   const _QuestionCard({
     required this.number,
@@ -388,7 +376,7 @@ class _QuestionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final multiple = _isSelectMultiple(question.type);
+    final multiple = isSelectMultiple(question.type);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(

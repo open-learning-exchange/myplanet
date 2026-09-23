@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/submissions_provider.dart';
 import 'package:myplanet/ui/submissions/submissions_screen.dart';
@@ -427,5 +428,126 @@ void main() {
     await tester.drag(find.byType(ListView), const Offset(0, -500));
     await tester.pumpAndSettle();
     expect(find.byIcon(Icons.check_circle), findsOneWidget);
+  });
+
+  group('where a tapped row goes', () {
+    /// `SubmissionsAdapter:93-103` sends a lone **survey** row back into the
+    /// survey form (`openSurvey(..., isMySurvey = true, ...)`) and everything
+    /// else to the detail view. The port sent every row to the detail view, so
+    /// *My surveys* — the screen a learner opens to finish a survey they left
+    /// part-answered — had no way to finish one.
+    ///
+    /// Both destinations render the location they were reached at, so these
+    /// assert on the whole URI rather than on "some other page appeared". A
+    /// screen-name assertion would pass for a resume route built with the
+    /// wrong survey id, which is the failure worth catching: `parentId` is
+    /// `"<surveyId>@<courseId>"` for a course-attached survey.
+    Future<void> pumpWith(WidgetTester tester, List<SubmissionRow> rows) async {
+      await tester.pumpWidget(
+        wrapScreen(
+          const SubmissionsScreen(),
+          pushTargets: {
+            '/life/surveys/:surveyId': (context) =>
+                Scaffold(body: Text('SURVEY ${GoRouterState.of(context).uri}')),
+            '/life/submissions/:id': (context) =>
+                Scaffold(body: Text('DETAIL ${GoRouterState.of(context).uri}')),
+          },
+          overrides: [
+            submissionsProvider.overrideWith((ref) => Stream.value(rows)),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    SubmissionRow survey({
+      String id = 'sub-1',
+      String? parentId = 'survey-7@course-3',
+      String? type = 'survey',
+      int lastUpdateTime = 10,
+    }) => SubmissionRow(
+      id: id,
+      type: type,
+      parentId: parentId,
+      parent: '{"_id":"survey-7","name":"Community needs"}',
+      startTime: 0,
+      lastUpdateTime: lastUpdateTime,
+      grade: 0,
+      uploaded: false,
+      isUpdated: true,
+    );
+
+    testWidgets('a lone survey row reopens the survey on its submission', (
+      tester,
+    ) async {
+      await pumpWith(tester, [survey()]);
+
+      await tester.tap(find.byType(ListTile));
+      await tester.pumpAndSettle();
+
+      // The `@course-3` half is Kotlin's `substringBefore("@")`
+      // (`BaseExamFragment.kt:88`); carrying it through would name a survey
+      // that does not exist and the form would come up empty.
+      expect(
+        find.text('SURVEY /life/surveys/survey-7?submission=sub-1'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a survey whose parentId carries no course still reopens', (
+      tester,
+    ) async {
+      await pumpWith(tester, [survey(parentId: 'survey-7')]);
+
+      await tester.tap(find.byType(ListTile));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('SURVEY /life/surveys/survey-7?submission=sub-1'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('an exam row still opens the detail view', (tester) async {
+      // Kotlin's branch is on the type, so this is the half that keeps the
+      // change from becoming "every row reopens a form".
+      await pumpWith(tester, [survey(type: 'exam')]);
+
+      await tester.tap(find.byType(ListTile));
+      await tester.pumpAndSettle();
+
+      expect(find.text('DETAIL /life/submissions/sub-1'), findsOneWidget);
+    });
+
+    testWidgets('a survey with no parentId opens the detail view', (
+      tester,
+    ) async {
+      // There is no survey id to reopen; `collapseSubmissionsByParent` leaves
+      // such a row ungrouped, and the list's own New submission button is what
+      // writes them.
+      await pumpWith(tester, [survey(parentId: null)]);
+
+      await tester.tap(find.byType(ListTile));
+      await tester.pumpAndSettle();
+
+      expect(find.text('DETAIL /life/submissions/sub-1'), findsOneWidget);
+    });
+
+    testWidgets('a grouped survey row opens the detail view', (tester) async {
+      // `count > 1` is Kotlin's `SubmissionListFragment` arm — every attempt
+      // for that parent, with a PDF export — which the port has no screen or
+      // route for. Pinned as the gap it is, so that porting it has to come
+      // here and delete this.
+      await pumpWith(tester, [
+        survey(id: 'couch-1', lastUpdateTime: 20),
+        survey(id: 'sha1', lastUpdateTime: 10),
+      ]);
+
+      expect(find.text('Community needs (2)'), findsOneWidget);
+      await tester.tap(find.byType(ListTile));
+      await tester.pumpAndSettle();
+
+      expect(find.text('DETAIL /life/submissions/couch-1'), findsOneWidget);
+    });
   });
 }
