@@ -69,6 +69,7 @@
   "search": "بحث",
   "sync": "مزامنة",
   "cancel": "إلغاء",
+  "cannotRemoveUser": "لم يتمكن من إزالة المستخدم",
   "settings": "الإعدادات",
   "backgroundSync": "مزامنة الخلفية",
   "@backgroundSync": {

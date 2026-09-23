@@ -106,7 +106,32 @@ class _MembersList extends ConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (row.isLeader) const Icon(Icons.star),
-                      if (canManage && !isOwnCard || isOwnCard)
+                      // `MembersAdapter.checkUserAndShowOverflowMenu`:
+                      // `(isLoggedInUserTeamLeader || isOwnCard)
+                      //   && itemCount > 1`.
+                      //
+                      // **The `items.length > 1` half is what actually keeps a
+                      // team from being left leaderless**, and the port had
+                      // neither it nor the succession behind it. Kotlin's
+                      // leave path promotes a successor when one exists and
+                      // then removes the member regardless
+                      // (`RequestsViewModel.kt:81-83`), so nothing downstream
+                      // refuses — the sole member is simply never offered the
+                      // action. Dropping this clause would put the hole back
+                      // whatever `leaveFromMembers` does.
+                      //
+                      // **`items.length` is not quite Kotlin's `itemCount`,
+                      // and the difference runs in the port's favour.**
+                      // Kotlin counts `getJoinedMembersWithVisitInfo`, which
+                      // drops memberships whose user row is missing locally
+                      // *and* appends community-leader admins who merely
+                      // authored some document for this team
+                      // (`TeamsRepositoryImpl:967-985`) — so a Kotlin team can
+                      // pass `> 1` on the strength of somebody who is not a
+                      // member and can never be promoted. `items` here is the
+                      // raw `membership` rows, which is the population the
+                      // succession actually draws from.
+                      if ((canManage || isOwnCard) && items.length > 1)
                         PopupMenuButton<String>(
                           icon: const Icon(Icons.more_vert),
                           onSelected: (value) => _handleMemberAction(
@@ -157,23 +182,74 @@ class _MembersList extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final actions = ref.read(teamMembershipActionsProvider);
     final messenger = ScaffoldMessenger.of(context);
-    bool success;
     String message;
     switch (action) {
       case 'leave':
-        success = await actions.leave(teamId);
-        message = success ? l10n.leftTeam : l10n.operationFailed;
+        // `MembersFragment.handleLeaveTeam` puts this behind a `confirm_exit`
+        // Yes/No dialog before it reaches the ViewModel, as the detail
+        // screen's leave already does in this port.
+        if (!await _confirmLeave(context)) return;
+        if (!context.mounted) return;
+        // `leaveFromMembers`, not `leave`: this is the path that promotes a
+        // successor. See the two-leave-paths note on it.
+        final outcome = await actions.leaveFromMembers(teamId);
+        message = _messageFor(l10n, outcome, l10n.leftTeam);
+        if (outcome == MemberActionOutcome.succeeded) {
+          // `MembersFragment:100-103` toasts and then
+          // `requireActivity().supportFragmentManager.popBackStack()`. The
+          // port stayed put, leaving the user looking at the member list of a
+          // team they had just left — a list their own row had vanished from,
+          // with the manage tab gone if they had been the leader.
+          if (!context.mounted) return;
+          messenger.showSnackBar(SnackBar(content: Text(message)));
+          if (context.canPop()) context.pop();
+          return;
+        }
       case 'remove':
-        success = await actions.removeMember(teamId, userId);
-        message = success ? l10n.memberRemoved : l10n.operationFailed;
+        final outcome = await actions.removeMember(teamId, userId);
+        message = _messageFor(l10n, outcome, l10n.memberRemoved);
       case 'make_leader':
-        success = await actions.makeLeader(teamId, userId);
+        final success = await actions.makeLeader(teamId, userId);
         message = success ? l10n.leaderUpdated : l10n.operationFailed;
       default:
         return;
     }
     if (!context.mounted) return;
     messenger.showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  /// `MemberActionResult` → the toast `MembersFragment` shows for it
+  /// (`:100-113`). The refusal gets `cannot_remove_user`, not the generic
+  /// error string, which is the whole reason the outcome is an enum.
+  String _messageFor(
+    AppLocalizations l10n,
+    MemberActionOutcome outcome,
+    String successMessage,
+  ) => switch (outcome) {
+    MemberActionOutcome.succeeded => successMessage,
+    MemberActionOutcome.cannotRemoveLastLeader => l10n.cannotRemoveUser,
+    MemberActionOutcome.failed => l10n.operationFailed,
+  };
+
+  Future<bool> _confirmLeave(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        content: Text(l10n.confirmLeaveTeam),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.no),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.yes),
+          ),
+        ],
+      ),
+    );
+    return confirmed == true;
   }
 }
 

@@ -66,6 +66,10 @@
   "search": "search",
   "sync": "Sync",
   "cancel": "Cancel",
+  "cannotRemoveUser": "User could not be removed",
+  "@cannotRemoveUser": {
+    "description": "Shown when a member cannot be removed from a team"
+  },
   "settings": "Settings",
   "backgroundSync": "Background sync",
   "backgroundSyncDescription": "Send pending changes and refresh learning data while the app is closed",
