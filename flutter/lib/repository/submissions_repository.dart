@@ -200,97 +200,130 @@ class SubmissionsRepository {
     // for the same reason the team surveys tab does; and were it ever to
     // arrive team-less, a `public_<millis>` owner is minted per submission and
     // could not match a stored row anyway.
-    final resumed = persistedTeamId == null
-        ? await _pendingSurveySheet(userId: userId, parentId: parentId)
-        : null;
-    // Kotlin's resume *prefills the form* (`populateCacheFromSavedAnswers`,
-    // `ExamTakingFragment.kt:157`) before the learner touches it, so an answer
-    // already on the sheet is carried forward by the submit that follows.
-    // `take_survey_screen` only prefills when the route named the submission,
-    // and on this path it did not — and its Submit button has no
-    // every-question-answered gate, unlike the public screen's. So without
-    // this, resuming would *replace* a stored answer with a blank one, which
-    // is the same class of loss the resume exists to prevent, moved one step
-    // along. Nothing is preserved over an answer the learner did give.
-    final carried = resumed == null
-        ? const <String, SubmissionAnswerRow>{}
-        : {for (final row in await _dao.answersFor(resumed.id)) row.id: row};
-    final id =
-        resumed?.id ??
-        sha1.convert(utf8.encode('$userId:$timestamp:${survey.id}')).toString();
-    final parentBlob = jsonEncode({'_id': survey.id, 'name': survey.name});
-    await _dao.upsertAll(
-      [
-        if (resumed == null)
-          SubmissionsCompanion.insert(
-            id: id,
-            parentId: Value(parentId),
-            parent: Value(parentBlob),
-            userId: Value(userId),
-            type: const Value('survey'),
-            teamId: Value(persistedTeamId),
-            startTime: Value(timestamp),
-            lastUpdateTime: Value(timestamp),
-            status: const Value('complete'),
-            uploaded: const Value(false),
-            isUpdated: const Value(true),
-          )
-        else
-          SubmissionsCompanion(
-            id: Value(id),
-            parentId: Value(parentId),
-            // The pending sheet [getOrCreateSurveySubmission] writes carries
-            // no `parent`, and `_parentDocument` prefers the live survey
-            // anyway; filling it keeps a resumed row indistinguishable from a
-            // freshly created one for every other reader.
-            parent: Value(parentBlob),
-            type: const Value('survey'),
-            lastUpdateTime: Value(timestamp),
-            status: const Value('complete'),
-            uploaded: const Value(false),
-            isUpdated: const Value(true),
+    //
+    // **One transaction around the lookup, the answer read and the write**,
+    // for the reason [saveExamAnswer] states 300 lines below: a read outside
+    // it lets two writers interleave read/read/write/write and revert the
+    // first. That became reachable when this method started resuming.
+    // `background_entrypoint.dart` runs the `submissions` pull in a second
+    // Flutter engine on the same SQLite file, and before the resume the sheet
+    // a learner wrote had a sha1 id no pull could target; a resumed sheet is
+    // keyed on the server `_id`, so `upsertDocuments` landing mid-method
+    // would either stale the carry map or write the server's `pending` back
+    // over the sheet just completed.
+    late final String id;
+    await _dao.transaction(() async {
+      final resumed = persistedTeamId == null
+          ? await _pendingSurveySheet(userId: userId, parentId: parentId)
+          : null;
+      // Every answer row the resumed sheet already holds, keyed by row id.
+      //
+      // **`SubmissionDao.upsertAll` deletes a submission's whole answer set
+      // and re-inserts what it is given**, which was harmless while this
+      // method always wrote to a fresh sha1 and is not once it resumes.
+      // Kotlin's `saveExamAnswer` upserts one answer at a time and never
+      // deletes, so two rows it keeps would otherwise be destroyed here: an
+      // answer whose question has since left the survey document, and an
+      // answer whose stored id does not match what this method re-mints (the
+      // sync-in writes `'$submissionId:${questionId ?? index}'` while the
+      // re-mint is `'$submissionId:${questionId ?? "$surveyId:$index"}'`, so
+      // a question document with no id of its own lands under a different
+      // key). Both are re-attached below rather than dropped.
+      final carried = resumed == null
+          ? const <String, SubmissionAnswerRow>{}
+          : {for (final row in await _dao.answersFor(resumed.id)) row.id: row};
+      id =
+          resumed?.id ??
+          sha1
+              .convert(utf8.encode('$userId:$timestamp:${survey.id}'))
+              .toString();
+      final answerRows = <SubmissionAnswersCompanion>[
+        for (final question in questions)
+          _surveyAnswer(
+            submissionId: id,
+            question: question,
+            draft: answers[question.id],
+            carried: carried['$id:${_rawQuestionId(question)}'],
           ),
-      ],
-      // A submission question row id is `submissionId:rawQuestionId`, and the
-      // exporter recovers `rawQuestionId` by stripping that prefix to look up
-      // the answer. A survey question's own row id is already composite
-      // (`surveyId:questionId`), so it must be reduced to the same raw id used
-      // for the answer's `questionId` — nesting the composite instead yields a
-      // key the answer map has no entry for, and every answer exports blank.
-      questions: {
-        id: [
-          for (final question in questions)
-            SubmissionQuestionsCompanion.insert(
-              id: '$id:${_rawQuestionId(question)}',
-              submissionId: id,
-              header: Value(question.header),
-              body: Value(question.body),
-              type: Value(question.type),
-              // The labels only, matching `createExamDraft`: this column is a
-              // display list (`availableChoices`), and `SubmissionQuestions`
-              // is a preserved table whose converter cannot change here.
-              choices: Value(
-                question.choices.map((choice) => choice.text).toList(),
+      ];
+      final minted = {for (final row in answerRows) row.id.value};
+      for (final row in carried.values) {
+        if (!minted.contains(row.id)) answerRows.add(row.toCompanion(false));
+      }
+      await _dao.upsertAll(
+        [
+          if (resumed == null)
+            SubmissionsCompanion.insert(
+              id: id,
+              parentId: Value(parentId),
+              parent: Value(
+                jsonEncode({'_id': survey.id, 'name': survey.name}),
               ),
-              position: question.position,
+              userId: Value(userId),
+              type: const Value('survey'),
+              teamId: Value(persistedTeamId),
+              startTime: Value(timestamp),
+              lastUpdateTime: Value(timestamp),
+              status: const Value('complete'),
+              uploaded: const Value(false),
+              isUpdated: const Value(true),
+            )
+          else
+            SubmissionsCompanion(
+              id: Value(id),
+              parentId: Value(parentId),
+              // **Only when the sheet has none.** A sheet pulled from Planet
+              // carries the server's whole exam document here, `questions`
+              // included — that is where `upsertDocuments` fills
+              // `submission_questions` from — and this method's blob is
+              // `{_id, name}`. Overwriting it re-creates Phase 120's "answers
+              // with no questions on the second handset" as soon as
+              // `SurveyDao.deleteNotIn` prunes the live survey row that
+              // `_parentDocument` currently prefers. Kotlin's resume does not
+              // touch `parent` at all.
+              parent: (resumed.parent ?? '').isEmpty
+                  ? Value(jsonEncode({'_id': survey.id, 'name': survey.name}))
+                  : const Value.absent(),
+              type: const Value('survey'),
+              lastUpdateTime: Value(timestamp),
+              status: const Value('complete'),
+              uploaded: const Value(false),
+              isUpdated: const Value(true),
             ),
         ],
-      },
-      answers: {
-        id: [
-          for (final question in questions)
-            _surveyAnswer(
-              submissionId: id,
-              question: question,
-              draft: answers[question.id],
-              carried: carried['$id:${_rawQuestionId(question)}'],
-            ),
-        ],
-      },
-    );
+        // A submission question row id is `submissionId:rawQuestionId`, and
+        // the exporter recovers `rawQuestionId` by stripping that prefix to
+        // look up the answer. A survey question's own row id is already
+        // composite (`surveyId:questionId`), so it must be reduced to the same
+        // raw id used for the answer's `questionId` — nesting the composite
+        // instead yields a key the answer map has no entry for, and every
+        // answer exports blank.
+        questions: {
+          id: [
+            for (final question in questions)
+              SubmissionQuestionsCompanion.insert(
+                id: '$id:${_rawQuestionId(question)}',
+                submissionId: id,
+                header: Value(question.header),
+                body: Value(question.body),
+                type: Value(question.type),
+                // The labels only, matching `createExamDraft`: this column is
+                // a display list (`availableChoices`), and
+                // `SubmissionQuestions` is a preserved table whose converter
+                // cannot change here.
+                choices: Value(
+                  question.choices.map((choice) => choice.text).toList(),
+                ),
+                position: question.position,
+              ),
+          ],
+        },
+        answers: {id: answerRows},
+      );
+    });
     // **No team gate.** `saveExamAnswer`'s arm is
     // `if (newStatus == "complete" && type == "survey")`
-    // (`SubmissionsRepositoryImpl.kt:610-612`) with no team condition at all —
+    // (`SubmissionsRepositoryImpl.kt:610-611`) with no team condition at all —
     // the scoping is the statement's own `teamId IS NULL`, which excludes the
     // team-scoped row just written and takes the learner's *individual*
     // pending sheets for the same survey. A gate here as well would leave the
@@ -300,7 +333,7 @@ class SubmissionsRepository {
     return id;
   }
 
-  /// Port of `SubmissionDao.deletePendingSurveyOrphans` (`SubmissionDao.kt:30`):
+  /// Port of `SubmissionDao.deletePendingSurveyOrphans` (`SubmissionDao.kt:40`):
   ///
   /// ```sql
   /// DELETE FROM submissions WHERE parentId IS :parentId AND userId IS :userId
@@ -309,7 +342,7 @@ class SubmissionsRepository {
   ///
   /// Kotlin runs it from the one place a survey sheet becomes `complete` —
   /// `saveExamAnswer`'s `newStatus == "complete" && type == "survey"` arm
-  /// (`SubmissionsRepositoryImpl.kt:608-610`) — passing the **completed row's
+  /// (`SubmissionsRepositoryImpl.kt:610-611`) — passing the **completed row's
   /// own** `parentId` and `userId`. The row just completed is no longer
   /// `pending`, so it is not what this deletes; what it deletes is every other
   /// individual pending sheet the same person holds for the same survey.
@@ -375,10 +408,32 @@ class SubmissionsRepository {
 
   /// One survey answer row, shaped by [AnswerShape] so it matches what the
   /// exam path writes — Kotlin has a single `saveExamAnswer` for both.
-  /// [carried] is the answer row already on a **resumed** sheet, and it is used
-  /// only when this question's draft is empty — the stand-in for Kotlin
-  /// prefilling the form before the learner sees it. A draft the learner did
-  /// fill in always wins, so this cannot resurrect an answer they cleared.
+  /// [carried] is the answer row already on a **resumed** sheet, used only
+  /// when this question's draft is empty. A draft the learner did fill in
+  /// always wins, so this cannot resurrect an answer they cleared.
+  ///
+  /// **It is not a port of Kotlin's prefill, and an earlier revision of this
+  /// comment said it was.** `populateCacheFromSavedAnswers`
+  /// (`ExamTakingFragment.kt:157`) sits in the `sub != null` arm — the port's
+  /// `?submission=` route, which prefills already via `_loadExistingAnswers`.
+  /// The branch this stands behind is `sub == null`, where Kotlin goes
+  /// straight to `startExamSession` and does **not** prefill.
+  ///
+  /// Kotlin does not need to, because it never produces a blank answer at all:
+  /// `isQuestionAnswered()` (`:289-321`) has **no `required` test**, `btnNext`
+  /// is hidden while the current question is unanswered (`:285`) and Submit
+  /// refuses with *please select/write your answer to continue* (`:635-638`).
+  /// Every question must be answered, survey or exam.
+  ///
+  /// The port's survey screen gates on `question.required &&`
+  /// (`take_survey_screen.dart:174-178`), which Kotlin has no counterpart for
+  /// — and its sibling `public_survey_screen.dart:202-207` requires all
+  /// questions, so **the two port screens disagree and the survey-list one is
+  /// the one that diverges**. That gate is the real defect and it is not in
+  /// this lane's files; it is reported to the integrator. This carry-over
+  /// keeps the hole from *destroying* a stored answer in the meantime, which
+  /// is the Phase 143 distinction: without it the resume would relocate a data
+  /// loss rather than remove one.
   SubmissionAnswersCompanion _surveyAnswer({
     required String submissionId,
     required SurveyQuestionRow question,
@@ -401,7 +456,7 @@ class SubmissionsRepository {
       id: '$submissionId:${_rawQuestionId(question)}',
       submissionId: submissionId,
       questionId: Value(_rawQuestionId(question)),
-      value: Value(shape.value),
+      value: Value(blank && carried != null ? carried.value : shape.value),
       valueChoices: Value(
         blank && carried != null ? carried.valueChoices : shape.valueChoices,
       ),

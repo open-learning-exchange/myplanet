@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
+import 'package:myplanet/data/local/converters.dart';
 import 'package:myplanet/repository/submissions_repository.dart';
 
 class MockPlanetApi extends Mock implements PlanetApi {}
@@ -51,6 +52,7 @@ void main() {
   Future<SurveyRow> seedSurvey({
     String? courseId = 'course-1',
     int questionCount = 1,
+    bool withMultiSelect = false,
   }) async {
     await database.surveyDao.upsertAll(
       [
@@ -70,6 +72,25 @@ void main() {
               header: Value('Question $i'),
               type: const Value('input'),
               position: i - 1,
+            ),
+          // A `selectMultiple`, because `AnswerShape` writes the **empty
+          // string** as such a question's `value` even when choices are
+          // picked. With only `input` questions in the fixture the
+          // `valueChoices` half of `_surveyAnswer`'s blank test could be
+          // deleted with the suite still green — it could, until a mutation
+          // pass found it.
+          if (withMultiSelect)
+            SurveyQuestionsCompanion.insert(
+              id: 'survey-1:qm',
+              surveyId: 'survey-1',
+              questionId: const Value('qm'),
+              header: const Value('Which sources do you use?'),
+              type: const Value('selectMultiple'),
+              choices: const Value([
+                ExamChoice(id: 'well', text: 'Well'),
+                ExamChoice(id: 'river', text: 'River'),
+              ]),
+              position: questionCount,
             ),
         ],
       },
@@ -524,8 +545,15 @@ void main() {
       survey: survey,
       questions: await questions(),
       userId: 'member-1',
-      // Only q2 this time.
+      // **q1 is present and empty, not absent**, because that is the only
+      // shape production makes: `take_survey_screen._submit:187-196` and
+      // `public_survey_screen._submit` both build an entry for *every*
+      // question, `value: ''` for the ones left blank. With q1 absent, the
+      // blank test could be written `draft == null` — which would disable the
+      // carry-over outright against the live callers — and this file stayed
+      // green. Caught by mutation, not by re-reading.
       answers: {
+        'survey-1:q1': const SubmissionDraftAnswer(value: ''),
         'survey-1:q2': const SubmissionDraftAnswer(value: 'Ten litres'),
       },
     );
@@ -544,6 +572,246 @@ void main() {
       byQuestion['q2'],
       'Ten litres',
       reason: 'and an answer the learner did give still wins',
+    );
+  });
+
+  test('an answered multi-select is not treated as blank', () async {
+    // `AnswerShape` gives a `selectMultiple` the **empty string** as its
+    // `value` even when choices are picked, so a blank test written on `value`
+    // alone would call this answered question blank and hand it the carried
+    // answer instead. Nothing in this file could see that until the fixture
+    // had a `selectMultiple` in it.
+    final survey = await seedSurvey(withMultiSelect: true);
+    await database.submissionDao.upsertAll(
+      [
+        SubmissionsCompanion.insert(
+          id: 'from-planet',
+          userId: const Value('member-1'),
+          parentId: const Value('survey-1@course-1'),
+          type: const Value('survey'),
+          status: const Value('pending'),
+        ),
+      ],
+      answers: {
+        'from-planet': [
+          SubmissionAnswersCompanion.insert(
+            id: 'from-planet:qm',
+            submissionId: 'from-planet',
+            questionId: const Value('qm'),
+            valueChoices: const Value(['{"id":"river","text":"River"}']),
+          ),
+        ],
+      },
+    );
+
+    await submissions.createSurveyDraft(
+      survey: survey,
+      questions: await questions(),
+      userId: 'member-1',
+      answers: {
+        'survey-1:q1': const SubmissionDraftAnswer(value: 'Two hours'),
+        'survey-1:qm': const SubmissionDraftAnswer(choices: ['well']),
+      },
+    );
+
+    final answer = (await database.submissionDao.answersFor(
+      'from-planet',
+    )).firstWhere((row) => row.questionId == 'qm');
+    expect(
+      answer.valueChoices.join(),
+      contains('well'),
+      reason: 'the learner\'s pick wins over the carried one',
+    );
+    expect(answer.valueChoices.join(), isNot(contains('river')));
+  });
+
+  test('a blank multi-select carries the stored picks', () async {
+    // The other half of the pair. Above, a *filled* multi-select must beat the
+    // carried answer; here a blank one must receive it — and without this the
+    // carry-over on `valueChoices` could be deleted outright with the suite
+    // green, because every other test in this file carries a text `value`.
+    final survey = await seedSurvey(withMultiSelect: true);
+    await database.submissionDao.upsertAll(
+      [
+        SubmissionsCompanion.insert(
+          id: 'from-planet',
+          userId: const Value('member-1'),
+          parentId: const Value('survey-1@course-1'),
+          type: const Value('survey'),
+          status: const Value('pending'),
+        ),
+      ],
+      answers: {
+        'from-planet': [
+          SubmissionAnswersCompanion.insert(
+            id: 'from-planet:qm',
+            submissionId: 'from-planet',
+            questionId: const Value('qm'),
+            valueChoices: const Value(['{"id":"river","text":"River"}']),
+          ),
+        ],
+      },
+    );
+
+    await submissions.createSurveyDraft(
+      survey: survey,
+      questions: await questions(),
+      userId: 'member-1',
+      answers: {
+        'survey-1:q1': const SubmissionDraftAnswer(value: 'Two hours'),
+        // Present and empty — the optional multi-select the learner skipped.
+        'survey-1:qm': const SubmissionDraftAnswer(choices: []),
+      },
+    );
+
+    final answer = (await database.submissionDao.answersFor(
+      'from-planet',
+    )).firstWhere((row) => row.questionId == 'qm');
+    expect(
+      answer.valueChoices.join(),
+      contains('river'),
+      reason: 'the stored picks survive a multi-select left blank',
+    );
+  });
+
+  group('the resume keeps answers Kotlin keeps', () {
+    /// `SubmissionDao.upsertAll` **deletes a submission's whole answer set**
+    /// and re-inserts what it is given. That was harmless while this method
+    /// always wrote to a fresh sha1; resuming points the delete at a sheet
+    /// that already has answers. Kotlin's `saveExamAnswer` upserts one answer
+    /// at a time and never deletes, so these two rows survive there and must
+    /// survive here.
+    Future<void> seedPulledSheet(List<SubmissionAnswersCompanion> answers) =>
+        database.submissionDao.upsertAll(
+          [
+            SubmissionsCompanion.insert(
+              id: 'from-planet',
+              userId: const Value('member-1'),
+              parentId: const Value('survey-1@course-1'),
+              type: const Value('survey'),
+              status: const Value('pending'),
+            ),
+          ],
+          answers: {'from-planet': answers},
+        );
+
+    test('an answer whose question has left the survey', () async {
+      final survey = await seedSurvey();
+      await seedPulledSheet([
+        // q9 is not in the survey document any more — edited server-side
+        // after this sheet was assigned.
+        SubmissionAnswersCompanion.insert(
+          id: 'from-planet:q9',
+          submissionId: 'from-planet',
+          questionId: const Value('q9'),
+          value: const Value('Answer to a retired question'),
+        ),
+      ]);
+
+      await submissions.createSurveyDraft(
+        survey: survey,
+        questions: await questions(),
+        userId: 'member-1',
+        answers: {
+          'survey-1:q1': const SubmissionDraftAnswer(value: 'Two hours'),
+        },
+      );
+
+      final byQuestion = {
+        for (final row in await database.submissionDao.answersFor(
+          'from-planet',
+        ))
+          row.questionId: row.value,
+      };
+      expect(byQuestion['q9'], 'Answer to a retired question');
+      expect(byQuestion['q1'], 'Two hours');
+    });
+
+    test('an answer stored under the sync-in\'s key', () async {
+      final survey = await seedSurvey();
+      await seedPulledSheet([
+        // `_answerFromJson` writes `'$submissionId:${questionId ?? index}'`,
+        // and a question document with no id of its own gets the positional
+        // fallback — a different key from the `'$surveyId:$index'` this
+        // method re-mints. The carry lookup misses it, so without the
+        // re-attach the delete would take it.
+        SubmissionAnswersCompanion.insert(
+          id: 'from-planet:0',
+          submissionId: 'from-planet',
+          value: const Value('Stored under the pulled key'),
+        ),
+      ]);
+
+      await submissions.createSurveyDraft(
+        survey: survey,
+        questions: await questions(),
+        userId: 'member-1',
+        answers: {
+          'survey-1:q1': const SubmissionDraftAnswer(value: 'Two hours'),
+        },
+      );
+
+      final ids = (await database.submissionDao.answersFor(
+        'from-planet',
+      )).map((row) => row.id);
+      expect(ids, containsAll(['from-planet:0', 'from-planet:q1']));
+    });
+  });
+
+  test('the resume leaves a pulled sheet\'s parent document alone', () async {
+    final survey = await seedSurvey();
+    // What Planet sends: the whole exam document, `questions` included. That
+    // is where `upsertDocuments` fills `submission_questions` from, and this
+    // method's own blob is only `{_id, name}` — so overwriting it re-creates
+    // Phase 120's "answers with no questions on the second handset" as soon
+    // as `SurveyDao.deleteNotIn` prunes the live survey row that
+    // `_parentDocument` currently prefers.
+    const serverParent =
+        '{"_id":"survey-1","name":"Water needs",'
+        '"questions":[{"id":"q1","header":"How far is the well?"}]}';
+    await database.submissionDao.upsertAll([
+      SubmissionsCompanion.insert(
+        id: 'from-planet',
+        userId: const Value('member-1'),
+        parentId: const Value('survey-1@course-1'),
+        parent: const Value(serverParent),
+        type: const Value('survey'),
+        status: const Value('pending'),
+      ),
+    ]);
+
+    await submissions.createSurveyDraft(
+      survey: survey,
+      questions: await questions(),
+      userId: 'member-1',
+      answers: {'survey-1:q1': const SubmissionDraftAnswer(value: 'Two hours')},
+    );
+
+    expect(
+      (await database.submissionDao.getById('from-planet'))!.parent,
+      serverParent,
+    );
+  });
+
+  test('a resumed sheet with no parent gets one', () async {
+    // The sheet `getOrCreateSurveySubmission` writes carries no `parent`, so
+    // there is nothing to lose and filling it keeps a resumed row
+    // indistinguishable from a freshly created one for every other reader.
+    // Without this the guard above could be written "never write parent" and
+    // stay green.
+    final survey = await seedSurvey();
+    await submissions.createBulkSurveySubmissions('survey-1', ['member-1']);
+
+    final id = await submissions.createSurveyDraft(
+      survey: survey,
+      questions: await questions(),
+      userId: 'member-1',
+      answers: {'survey-1:q1': const SubmissionDraftAnswer(value: 'Two hours')},
+    );
+
+    expect(
+      (await database.submissionDao.getById(id))!.parent,
+      contains('survey-1'),
     );
   });
 

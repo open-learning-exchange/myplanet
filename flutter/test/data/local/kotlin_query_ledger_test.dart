@@ -116,11 +116,41 @@ void main() {
     // below.
     //
     // **133 of 316 after Phase 159 Lane 3**, which took the ledger's own
-    // running order: `SubmissionDao` first (all 32 read), then
-    // `QuestionDao`/`AnswerDao`, `HealthExaminationDao` and `ChatDao`, then
-    // outward through the remaining `COLLATE NOCASE`, `IS :param` and
-    // `SUBSTR` statements. The 191 left are named in the lane's report; the
-    // next round's order is `TeamDao` (22 uncompared), `NewsDao`,
+    // running order: `SubmissionDao`, then `QuestionDao`/`AnswerDao`,
+    // `HealthExaminationDao` and `ChatDao`, then outward through the
+    // statements carrying `COLLATE NOCASE`, `IS :param`, `SUBSTR` and `LIKE`.
+    //
+    // **183 left**, and the four sentences this paragraph used to contain
+    // were each wrong in the ledger's own worst direction — overstating what
+    // had been looked at. They are corrected rather than deleted, because the
+    // correction is the useful record:
+    //
+    //  * "`SubmissionDao` first (all 32 read)" — the file has **33** `@Query`
+    //    statements and **16** are recorded here. The Kotlin side was read end
+    //    to end; what is recorded is the subset this lane also traced to a
+    //    port counterpart itself. Seventeen remain, and they are the next
+    //    round's first target because the reading is half done:
+    //    `getByIds`, `getByUserIdAndTeamId`, `getPendingSurveys`,
+    //    `countPendingSurveys`, `observePendingSurveys`,
+    //    `countPendingOfflineSubmissions`, `countPendingExamResults`,
+    //    `getByParentUserAndStatus`, `getByParentIdsAndTeamId`,
+    //    `getLatestByParentIdAndStatus`, `getLatestPendingByUser`,
+    //    `getFirstByParentIdContaining`, `getUnuploadedNonSurveyByParentIds`,
+    //    `updateStatus`, `updateStatusAndLastUpdate`, `deleteByParentAndUser`,
+    //    `deleteByIds`.
+    //  * "The 191 left" — 316 − 133 is **183**.
+    //  * "`COLLATE NOCASE`, all three instances of it in the corpus" — there
+    //    are **15**. Coverage of that class does happen to be complete, the
+    //    nine `NewsDao` ones having arrived with Phase 158, but the claim as
+    //    written was false and `DictionaryDao.count` sits under that heading
+    //    carrying no `COLLATE NOCASE` at all.
+    //  * "the remaining … `SUBSTR` statements" — `UserDao.getGuestUsersByNames`
+    //    is still uncompared, and it is the one with a port counterpart.
+    //
+    // Found by this lane's second `parity-auditor` pass, aimed at its own
+    // finished, green work. Next round's order: `TeamDao` (~22 uncompared,
+    // and its `IFNULL(status, '') != 'archived' ORDER BY createdDate DESC`
+    // family is the risky part), the rest of `SubmissionDao` above, `NewsDao`,
     // `CourseDao`/`CourseStepDao`, then `NotificationDao`.
     final uncovered = corpus.length - _compared.length;
     expect(uncovered, 316 - 133);
@@ -476,7 +506,10 @@ const _compared = <String, String>{
   'ChatDao.getByDocId': 'af0fad4b07fb',
   'ChatDao.findByDocId': 'b683ae64ac8f',
 
-  // **`COLLATE NOCASE`, all three instances of it in the corpus.** The port
+  // **The three `COLLATE NOCASE` statements outside `NewsDao`** — the corpus
+  // holds 15, the other twelve being `NewsDao`'s, already compared. (The
+  // `DictionaryDao.count` entry below carries no `COLLATE NOCASE`; it is here
+  // because the DAO was read whole.) The port
   // answers each with a stored normalized column plus a Dart-side
   // `toLowerCase()`, which is *stronger* than `NOCASE` — that collation folds
   // ASCII only, so Kotlin treats `ÉCOLE` and `école` as different words and
@@ -504,14 +537,24 @@ const _compared = <String, String>{
 
   // `SUBSTR(_id, 1, 6) = 'guest_'` done right: the port tests the prefix in
   // Dart precisely because `LIKE 'guest_%'` would read the underscore as
-  // LIKE's single-character wildcard (`app_database.dart:1603`).
+  // LIKE's single-character wildcard. The code that does so
+  // (`app_database.dart:1603`) belongs to the **plural**
+  // `getGuestUsersByNames`, which is the method with a port counterpart and is
+  // itself **not yet compared** — the singular one is recorded here because
+  // its statement was read, and the next round should take the plural.
   'UserDao.getGuestUserByName': 'd413ad67e2d1',
 
   // The port keys `removed_log` on a percent-encoded `type:user:doc` composite
   // and deletes by that key, so Kotlin's three `IS :param` predicates collapse
-  // into one primary-key match. Null components cannot arise — the port's
-  // `record`/`clear`/`removedDocIds` all take non-nullable strings, and every
-  // Kotlin caller passes a resolved `userId`. The bulk `deleteByTypeUserAndDocs`
+  // into one primary-key match, and the port's `record`/`clear`/`removedDocIds`
+  // all take non-nullable strings. **The reason first given for that being
+  // safe — "every Kotlin caller passes a resolved `userId`" — is wrong**:
+  // `ActivitiesRepository.markResourceAdded(userId: String?)` is nullable and
+  // so is `LocalResourceRequest.userId` (`ResourcesRepository.kt:34`), so
+  // `deleteByTypeUserAndDoc("resources", null, id)` is reachable from
+  // `AddResourceActivity`. The verdict stands on the port side, where no
+  // caller can supply a null; what does not stand is the claim about Kotlin.
+  // The bulk `deleteByTypeUserAndDocs`
   // has no single counterpart; the port's batch paths loop `clear`.
   'RemovedLogDao.deleteByTypeUserAndDoc': '5d6e6e8b7d9e',
   'RemovedLogDao.deleteByTypeUserAndDocs': 'd61e8ed27f41',

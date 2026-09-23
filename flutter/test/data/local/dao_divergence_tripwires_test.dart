@@ -106,48 +106,53 @@ void main() {
     /// sibling port in the same class — `countCompletedByUserAndExamId` — does
     /// it correctly with `isNull()`, so the two disagree about what a null
     /// means one method apart.
-    test('a null user finds nothing where Kotlin finds the NULL rows', () async {
+    test('a null user matches the empty-string owner, not the NULL one', () async {
       await database.submissionDao.upsertAll([
         SubmissionsCompanion.insert(
           id: 'ownerless',
-          // What `upsertDocuments` stores for a document with no `user._id`.
+          // What `upsertDocuments` stores for a document with no `user._id`,
+          // and what Kotlin's `userId IS :userId` returns for a null argument.
           userId: const Value(null),
           type: const Value('exam'),
         ),
-        // The decoy that makes this a test rather than an assertion about an
-        // empty table: if the port ever moved to `isNull()` *and* something
-        // started writing `''`, both readings would still return one row and
-        // the tripwire could not tell them apart. This row is what the port's
-        // current `?? ''` actually matches, and it must stay out of the
-        // result for the expectation below to mean `userId = ''` found
-        // nothing rather than `IS NULL` found nothing.
+        // **`type: 'exam'`, and that is the whole point.** The first cut of
+        // this decoy carried `type: 'survey'`, so the query's own
+        // `type = 'exam'` conjunct excluded it under *both* readings and it
+        // distinguished nothing — while its comment claimed it was what the
+        // port's `?? ''` matches. Phase 156's `ada`-vs-`axl`, inside the file
+        // that quotes Phase 156; caught by mutation, not by re-reading.
+        //
+        // With the type right, the assertion below names which row each
+        // reading returns rather than asserting an empty list, so "found the
+        // wrong row" and "found nothing" cannot be confused.
         SubmissionsCompanion.insert(
           id: 'empty-string-owner',
           userId: const Value(''),
-          type: const Value('survey'),
+          type: const Value('exam'),
         ),
       ]);
 
       expect(
-        await database.submissionDao.getExamSubmissionsByUser(null),
-        isEmpty,
+        (await database.submissionDao.getExamSubmissionsByUser(
+          null,
+        )).map((row) => row.id),
+        ['empty-string-owner'],
         reason:
             'TRIPWIRE — delete this group when the divergence is closed.\n'
             'Kotlin\'s `userId IS :userId` matches the NULL-owner rows for a '
             'null argument; the port\'s `equals(userId ?? \'\')` matches rows '
-            'whose owner is the empty string, of which there are none. '
-            'Unreachable from today\'s callers, but it is the `IS`-vs-`=` '
-            'class this round was sent to settle and it is inconsistent with '
+            'whose owner is the empty string instead. Unreachable from '
+            'today\'s callers, but it is the `IS`-vs-`=` class this round was '
+            'sent to settle and it is inconsistent with '
             '`countCompletedByUserAndExamId` one method away.\n'
-            'To close it: make `getExamSubmissionsByUser` take `String?` and '
-            'use `userId.equalsNullable(userId)` in '
+            'To close it: make `getExamSubmissionsByUser` use '
+            '`userId.equalsNullable(userId)` in '
             '`lib/data/local/app_database.dart` (Lane 1 owns it this round) — '
             'drift\'s `equalsNullable` is the spelling of SQL `IS`, as '
             '`CourseProgressDao` already uses it.\n'
             'BEFORE DELETING THIS GROUP, write the durable test that replaces '
-            'it: `getExamSubmissionsByUser(null)` returns the `type = \'exam\'` '
-            'row whose `userId` is NULL and not the one whose `userId` is '
-            '\'\'. Without it the fix is pinned by nothing (Phase 158).',
+            'it: the same two rows, and the result is `[\'ownerless\']`. '
+            'Without it the fix is pinned by nothing (Phase 158).',
       );
     });
   });
