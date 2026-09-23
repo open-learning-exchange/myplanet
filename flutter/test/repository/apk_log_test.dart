@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/core/config/server_config.dart';
@@ -109,7 +110,10 @@ void main() {
       time: '1700000000000',
     );
 
-    test('is the ten keys ApkLog.serialize puts, and no id of any kind', () {
+    test('is the eight row keys, and no id of any kind', () {
+      // Eight, not the ten `ApkLog.serialize` puts: `deviceName` and
+      // `customDeviceName` come from the device identity at queue time, which
+      // is `ApkLogUploader.serialize`'s job and is asserted there.
       final doc = DiagnosticsRepository.serialize(rowWith());
 
       expect(doc, {
@@ -308,6 +312,23 @@ void main() {
       );
     });
 
+    test(
+      'refuses a non-numeric time rather than writing an unreadable name',
+      () async {
+        // [_parse] requires an `int.tryParse`-able prefix, so a name this class
+        // cannot read back is a report written and then permanently invisible —
+        // worse than one not written. Sanitising would produce exactly that, so
+        // the seam is closed by refusing instead.
+        await CrashLogStore.prime();
+
+        expect(
+          CrashLogStore.save(type: 'crash', error: 'e', time: '../escape'),
+          isNull,
+        );
+        expect(await CrashLogStore.loadPending(), isEmpty);
+      },
+    );
+
     test('writes nothing when it was never primed', () async {
       expect(CrashLogStore.save(type: 'crash', error: 'e', time: '1'), isNull);
       expect(await CrashLogStore.loadPending(), isEmpty);
@@ -346,6 +367,29 @@ void main() {
       },
     );
 
+    test('keeps the file when the row could not be stored', () async {
+      // The guarantee the whole class exists for: a crash arriving while the
+      // database is locked or the disk is full must leave its file behind for
+      // the next start's sweep. Nothing pinned this — the refusing fixture
+      // overrode `saveLogs` only, so an unconditional delete was green.
+      final container = await containerFor(
+        repository: _RefusingDiagnosticsRepository(db.apkLogDao),
+      );
+      await CrashLogStore.prime();
+
+      ApkLogRecorder(
+        container,
+        now: () => DateTime.fromMillisecondsSinceEpoch(1700),
+      ).recordCrash(ApkLogRecorder.crashType, 'boom');
+      await pumpEventQueue();
+
+      expect(
+        Directory('${tempDir.path}/${CrashLogStore.dirName}').listSync(),
+        hasLength(1),
+        reason: 'a report that never reached the database must not be deleted',
+      );
+    });
+
     test('a sweep of an already-stored report is not a second row', () async {
       // Window 2 in [CrashLogStore]: the process dies between the row insert
       // and the file delete. Kotlin duplicates the report here, because
@@ -353,15 +397,30 @@ void main() {
       // key from `(time, type)` on both paths so the sweep is a no-op.
       final container = await containerFor();
       await CrashLogStore.prime();
+      // **An advancing clock, and that is the point.** A fixture pinned at a
+      // constant millisecond is green whether `recordCrash` reads the clock
+      // once or twice, so it could not pin the "one clock read where Kotlin
+      // has two" claim at all — Kotlin times the filename and the row from
+      // independent `timeProvider.now()` calls, and in production the two
+      // differ. With this clock a second read derives a different row id and
+      // the sweep files a duplicate.
+      var tick = 1700;
       final recorder = ApkLogRecorder(
         container,
-        now: () => DateTime.fromMillisecondsSinceEpoch(1700),
+        now: () => DateTime.fromMillisecondsSinceEpoch(tick++),
       );
 
       recorder.recordCrash(ApkLogRecorder.crashType, 'boom');
       await pumpEventQueue();
-      // Put the file back, as a death before the delete would have left it.
-      CrashLogStore.save(type: 'crash', error: 'boom', time: '1700');
+      final written = await db.apkLogDao.pendingUploads();
+      expect(written, hasLength(1));
+      // Put the file back under the name the write used, as a death before the
+      // delete would have left it.
+      CrashLogStore.save(
+        type: 'crash',
+        error: 'boom',
+        time: written.single.time,
+      );
       await recorder.sweepPendingFiles();
 
       expect(await db.apkLogDao.countAll(), 1);
@@ -387,6 +446,104 @@ void main() {
         (await db.apkLogDao.pendingUploads()).map((row) => row.error),
         contains('late'),
       );
+    });
+  });
+
+  group('observeForeground', () {
+    /// A cold start as the engine really delivers one: the binding reads the
+    /// initial lifecycle state from the native window during
+    /// `ensureInitialized`, so by the time `main()` builds a listener the state
+    /// is already `resumed` and no transition is generated.
+    ///
+    /// **This is the fixture half the first cut got wrong.** Driving
+    /// `inactive → resumed` alone models a transient interruption under every
+    /// reading and cannot tell `onShow` from `onResume`, nor establish whether
+    /// a cold start delivers anything at all.
+    void coldStart() {
+      TestWidgetsFlutterBinding
+              .instance
+              .platformDispatcher
+              .initialLifecycleStateTestValue =
+          'AppLifecycleState.resumed';
+      TestWidgetsFlutterBinding.instance
+          .readTestInitialLifecycleStateFromNativeWindow();
+    }
+
+    Future<void> drive(List<AppLifecycleState> states) async {
+      for (final state in states) {
+        TestWidgetsFlutterBinding.instance.handleAppLifecycleStateChanged(
+          state,
+        );
+      }
+      await pumpEventQueue();
+    }
+
+    /// Backgrounding and returning: the only transition Kotlin's
+    /// `ProcessLifecycleOwner.onStart` fires for.
+    Future<void> backgroundAndReturn() => drive(const [
+      AppLifecycleState.inactive,
+      AppLifecycleState.hidden,
+      AppLifecycleState.paused,
+      AppLifecycleState.hidden,
+      AppLifecycleState.inactive,
+      AppLifecycleState.resumed,
+    ]);
+
+    test('files nothing for a cold start', () async {
+      final container = await containerFor();
+      coldStart();
+      final listener = ApkLogRecorder(container).observeForeground();
+      addTearDown(listener.dispose);
+
+      await pumpEventQueue();
+
+      expect(
+        await db.apkLogDao.countAll(),
+        0,
+        reason:
+            'the first foreground is already counted by the "new login" row; '
+            'filing both would double every session in Planet\'s aggregation',
+      );
+    });
+
+    test('files one row per return from background', () async {
+      final container = await containerFor();
+      coldStart();
+      final listener = ApkLogRecorder(container).observeForeground();
+      addTearDown(listener.dispose);
+
+      await backgroundAndReturn();
+
+      final rows = await db.apkLogDao.pendingUploads();
+      expect(rows, hasLength(1));
+      expect(rows.single.type, 'foreground');
+      expect(
+        rows.single.error,
+        '',
+        reason: 'createLog defaults the error to "", which serializes as null',
+      );
+
+      await backgroundAndReturn();
+      expect(await db.apkLogDao.countAll(), 2);
+    });
+
+    test('files nothing for a transient loss of focus', () async {
+      // The whole reason this is `onShow` and not `onResume`: a notification
+      // shade, an incoming-call banner or a permission dialog takes and
+      // returns input focus without the app ever leaving the foreground.
+      // Kotlin's `ProcessLifecycleOwner.onStart` fires for none of them, and an
+      // `onResume` port would have filed a "session" for each — dozens a day.
+      final container = await containerFor();
+      coldStart();
+      final listener = ApkLogRecorder(container).observeForeground();
+      addTearDown(listener.dispose);
+
+      await drive(const [
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ]);
+
+      expect(await db.apkLogDao.countAll(), 0);
     });
   });
 
@@ -561,5 +718,17 @@ class _RefusingDiagnosticsRepository extends DiagnosticsRepository {
   Future<bool> saveLogs({
     required ApkLogContext context,
     required List<PendingCrashLog> logs,
+  }) async => false;
+
+  /// The single-row half refuses too. Overriding only [saveLogs] left
+  /// `recordCrash`'s `if (stored)` guard — the one line standing between a
+  /// failed insert and a deleted crash report — pinned by nothing.
+  @override
+  Future<bool> saveLog({
+    required ApkLogContext context,
+    required String type,
+    required String error,
+    required String time,
+    String? id,
   }) async => false;
 }

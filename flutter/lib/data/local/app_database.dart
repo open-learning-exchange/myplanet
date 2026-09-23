@@ -5836,19 +5836,28 @@ class ApkLogDao extends DatabaseAccessor<AppDatabase> with _$ApkLogDaoMixin {
   Future<List<ApkLog>> pendingUploads() =>
       (select(apkLogs)..where((row) => row.rev.equals(''))).get();
 
+  /// Test-only: no Kotlin counterpart and no production caller.
+  @visibleForTesting
   Future<ApkLog?> getById(String id) =>
       (select(apkLogs)..where((row) => row.id.equals(id))).getSingleOrNull();
 
+  /// Test-only: no Kotlin counterpart and no production caller.
+  @visibleForTesting
   Future<int> countAll() async => (await select(apkLogs).get()).length;
 
   /// Applies a batch of `(id, rev)` acknowledgements and returns the ids that
   /// matched no row — the contract `ApkLogDao.markUploadedBatch` holds.
   ///
-  /// The existence read happens **before** the writes and inside the same
-  /// transaction, exactly as the Kotlin `@Transaction` does. Reading after
-  /// would answer a different question (every id would then exist or not for
-  /// reasons the update caused), and reading outside the transaction would let
-  /// a concurrent delete fall between the two.
+  /// The read happens inside the same transaction as the writes, exactly as the
+  /// Kotlin `@Transaction` does, so a concurrent delete cannot fall between
+  /// them.
+  ///
+  /// The read also comes *first*, matching Kotlin — but unlike the transaction
+  /// that ordering is cosmetic and an earlier revision of this comment claimed
+  /// otherwise ("reading after would answer a different question"). It would
+  /// not: the write is an `UPDATE`, which can neither create nor delete a row,
+  /// so the id set is identical either side of it. Nothing pins the ordering
+  /// and nothing should.
   Future<Set<String>> markUploadedBatch(Map<String, String> revsById) async {
     if (revsById.isEmpty) return const <String>{};
     return transaction(() async {

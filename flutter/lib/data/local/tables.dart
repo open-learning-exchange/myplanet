@@ -1567,6 +1567,15 @@ class UserChallengeActions extends Table {
 ///    — the same field name every other Planet document uses for the
 ///    authoring planet — so a `DateTime` here would be a wire break, not a
 ///    tidy-up.
+///
+/// The `@TableIndex` mirrors `@Entity(indices = [Index("_rev")])`: the table is
+/// append-only and pruned by nothing in either app, so the pending scan is the
+/// one statement whose cost grows with the install's whole history. It is safe
+/// to declare on a preserved table only because the table is *new* — the
+/// upgrade's index-drop loop and `createAll` build both together, where an
+/// index added later onto a column an older install lacks would abort the
+/// whole upgrade. See the `surveys_course_id` block in `app_database.dart`.
+@TableIndex(name: 'apk_log_rev', columns: {#rev})
 class ApkLogs extends Table {
   @override
   String get tableName => 'apk_log';

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -47,10 +48,25 @@ class PendingCrashLog {
 ///    deliberate divergence in this class: [rowIdFor] derives the row's key
 ///    from the report's own `(time, type)` — the same pair the filename is
 ///    built from — so the immediate insert and a later sweep of the same file
-///    produce the *same* id and the sweep's `insertOnConflictUpdate` is a
-///    no-op rather than a duplicate. The derivation costs nothing and cannot
-///    collide more often than the filename already does: two reports sharing a
-///    millisecond and a type already overwrite one another's file in Kotlin.
+///    produce the *same* id, so the sweep's `insertOnConflictUpdate` lands back
+///    on the row already there instead of adding a second report. (It is not
+///    literally a no-op — it rewrites the identity columns with today's
+///    context, which is the same re-stamping the sweep does anyway.)
+///
+///    **This is a trade, not a free win, and an earlier revision of this
+///    comment claimed otherwise.** It argued the derivation "cannot collide
+///    more often than the filename already does, since two reports sharing a
+///    millisecond and a type already overwrite one another's file in Kotlin".
+///    The premise is true and the conclusion does not follow: in Kotlin a
+///    filename collision loses the *file*, while `buildApkLog` still mints a
+///    fresh `UUID.randomUUID()`, so both rows reach `apk_logs`. Deriving the
+///    key moves the collision from the file onto the row, where Kotlin never
+///    had one. So a frame that reports ten framework errors in the same
+///    millisecond under the same type files **one** row here where Kotlin
+///    would file ten. De-duplicating a burst of identical reports is the
+///    better behaviour for an operator reading this database, and closing
+///    window 2 is worth it — but it is a decision, and it is written down as
+///    one.
 /// 3. **Between the row insert and the outbox enqueue** — nothing is lost.
 ///    The row is durable in `apk_log` with `_rev = ''`, which is precisely the
 ///    pending predicate, and the sweep in `background_entrypoint.dart`
@@ -102,6 +118,7 @@ class CrashLogStore {
   }
 
   /// Forgets the primed directory. Tests only.
+  @visibleForTesting
   static void resetForTest() => _directory = null;
 
   /// The `apk_log` row key for a report — see window 2 in the class doc.
@@ -136,10 +153,27 @@ class CrashLogStore {
           .where((file) => _parse(file) != null)
           .length;
       if (valid >= maxPendingFiles) return null;
+      // [time] is not passed through [_segment] because it must stay exactly
+      // what [_parse] reads back — a `int.tryParse`-able prefix. Refusing a
+      // non-numeric one closes the same seam sanitising would, and does it
+      // without producing a name this class could no longer read: a sanitised
+      // `../x` would become `x`, which parses as no number and would make the
+      // report permanently invisible rather than merely unwritten.
+      if (int.tryParse(time) == null) return null;
       final file = File(
         p.join(dir.path, '${time}_${_segment(type)}$fileExtension'),
       );
-      file.writeAsStringSync(error, flush: true);
+      // **No `flush: true`.** Kotlin's `file.writeText(error)` does not
+      // `fsync`, and this write runs on the caller's thread — which for
+      // Kotlin is a thread already dying and for the port is the live UI
+      // thread, because `FlutterError.onError` fires for errors Flutter
+      // carries on from. An `fsync` is routinely 10–50 ms on cheap Android
+      // storage, so a frame reporting several recoverable errors would spend
+      // that many times over: jank, or an ANR, caused by the telemetry.
+      // Without it the bytes reach the OS page cache, which survives the
+      // process dying — which is the failure this store is for. Only a kernel
+      // panic or power loss loses them, and those lose the row too.
+      file.writeAsStringSync(error);
       return file;
     } catch (_) {
       // Kotlin logs and returns null. There is nowhere safer to report a

@@ -128,22 +128,29 @@ void main() {
     });
 
     test('chunks the existence read past the SQLite variable limit', () async {
-      // `ids.chunked(900)` in the Kotlin, for SQLite's 999-variable ceiling on
-      // `IN (:ids)`. Drift binds the same way, so the port chunks too — and
-      // without it this call throws rather than returning a wrong answer.
-      const total = 2000;
-      final updates = <String, String>{};
-      for (var i = 0; i < total; i++) {
-        if (i.isEven) await insert('row-$i');
-        updates['row-$i'] = '1-rev';
-      }
+      // `ids.chunked(900)` in the Kotlin, for SQLite's historical 999-variable
+      // ceiling on `IN (:ids)`. Drift binds the same way and the port keeps the
+      // number so the two chunk alike.
+      //
+      // **The first cut of this test seeded 2000 ids and was green with the
+      // chunking removed** — the Phase 156 shape, a fixture that cannot
+      // distinguish, found by mutating rather than by re-reading. This build's
+      // real ceiling is 32766 (probed: 32766 prepares, 32767 throws
+      // `SqliteException(1): too many SQL variables`), so a test below it
+      // exercises no chunking at all. Hence the size: it is the smallest that
+      // makes the claim testable, not an arbitrary large number.
+      const total = 33000;
+      await insert('present');
+      final updates = {
+        for (var i = 0; i < total; i++) 'row-$i': '1-rev',
+        'present': '1-rev',
+      };
 
       final unapplied = await dao.markUploadedBatch(updates);
 
-      expect(unapplied.length, total ~/ 2);
-      expect(unapplied.contains('row-1'), isTrue);
-      expect(unapplied.contains('row-0'), isFalse);
-      expect(await dao.pendingUploads(), isEmpty);
+      expect(unapplied.length, total);
+      expect(unapplied.contains('present'), isFalse);
+      expect((await dao.getById('present'))!.rev, '1-rev');
     });
   });
 

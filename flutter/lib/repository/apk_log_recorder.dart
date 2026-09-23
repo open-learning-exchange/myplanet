@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/system/crash_log_store.dart';
@@ -42,10 +43,38 @@ import 'diagnostics_repository.dart';
 ///    be a regression invented by the port rather than a behaviour ported into
 ///    it.
 ///
-/// Two Kotlin writers have **no port counterpart at all** and are not invented
-/// here: the ANR watchdog's `"anr"` reports (`MainApplication:312` —
-/// `ANRWatchdog` has no Dart equivalent) and `AudioRecorder:102`, which files a
-/// `"crash"` row *and* sends the user home when stopping a recording throws.
+/// ### Four Kotlin writers have no port counterpart, and none is invented here
+///
+/// Two have no Dart surface to hang off, and are unlikely ever to:
+/// the ANR watchdog's `"anr"` reports (`MainApplication:312` — `ANRWatchdog`
+/// has no Dart equivalent) and `AudioRecorder:102`, which files a `"crash"`
+/// row *and* sends the user home when stopping a recording throws.
+///
+/// **Two are genuine gaps and belong to files this lane does not own**, so
+/// they are named here rather than left for a later reader to rediscover:
+/// `DownloadRepositoryImpl:58,60` files a `"File Not Found"` row on every
+/// resource-download 404, and `SyncTimeLogger:102` files a `"sync summary"`
+/// row carrying `generateSummary()`'s performance breakdown at the end of
+/// every sync. Those are the two document classes an operator actually reads —
+/// *why is sync slow on these tablets* and *which attachments are missing from
+/// the server* — and until they land a Flutter fleet fills `apk_logs` with
+/// `crash`, `new login` and `foreground` only.
+///
+/// ### What counts as a crash here is broader than Kotlin, deliberately
+///
+/// Kotlin's hook fires only when a thread dies from an uncaught throwable.
+/// `FlutterError.onError` fires for a much larger, *recoverable* population
+/// that Flutter carries on from — an exception out of any `build`, any gesture
+/// callback, an `ImageStream` with no error listener, and every
+/// `FlutterError.reportError` call in this app's own bootstrap. So this port
+/// records strictly more than Kotlin does, and on a handset where a platform
+/// channel is missing it records a few rows on every launch.
+///
+/// That is recorded rather than filtered because the alternative — inventing a
+/// severity rule Kotlin has no counterpart for — is a design decision, not a
+/// port. What it costs is bounded: the twenty-file cap limits the disk side,
+/// and the rows are small. **What it must not cost is a frame**, which is why
+/// the file write does not `fsync` — see [CrashLogStore.save].
 class ApkLogRecorder {
   ApkLogRecorder(this._container, {DateTime Function()? now})
     : _now = now ?? DateTime.now;
@@ -60,12 +89,6 @@ class ApkLogRecorder {
   /// `MainApplication.onAppForegrounded` (`:463`), which the `isFirstLaunch`
   /// gate (`:459-465`) skips on the first foreground of a process.
   static const String foregroundType = 'foreground';
-
-  /// `SyncTimeLogger.saveSummaryToRoom` (`:102`).
-  static const String syncSummaryType = 'sync summary';
-
-  /// `DownloadRepositoryImpl` (`:58`, `:60`).
-  static const String fileNotFoundType = 'File Not Found';
 
   final ProviderContainer _container;
   final DateTime Function() _now;
@@ -110,6 +133,44 @@ class ApkLogRecorder {
     FlutterError.onError = _previousFlutterOnError;
     PlatformDispatcher.instance.onError = _previousPlatformOnError;
   }
+
+  /// Port of `MainApplication.onAppForegrounded` (`:463`) and the
+  /// `isFirstLaunch` gate at `:459-465` that skips the first foreground of a
+  /// process.
+  ///
+  /// An [AppLifecycleListener] rather than a `WidgetsBindingObserver` because
+  /// the caller is `main()`, where there is no widget to hang one off — the
+  /// same reason Kotlin puts this on `ProcessLifecycleOwner` rather than an
+  /// Activity. The returned listener is deliberately never disposed by
+  /// `main()`: it lives exactly as long as the process, which is what
+  /// `ProcessLifecycleOwner` gives the Kotlin. It is returned so a test can
+  /// dispose it.
+  ///
+  /// ### `onShow`, not `onResume`, and no gate
+  ///
+  /// Kotlin hangs this off `ProcessLifecycleOwner`'s **`onStart`**, and
+  /// Flutter's documented mapping for `onStart` is
+  /// [AppLifecycleListener.onShow] — *"just before the application replaces
+  /// another application in the foreground"* — not `onResume`, which fires on
+  /// **every regain of input focus**: dismissing the notification shade, an
+  /// incoming-call banner, a permission dialog, a split-screen focus change.
+  /// Kotlin files nothing for any of those, and an `onResume` port would have
+  /// filed a "session" for each one — dozens a day per user, straight into
+  /// Planet's aggregation.
+  ///
+  /// The `isFirstLaunch` gate then has nothing to do. `onShow` is reached only
+  /// from a `hidden → inactive` transition, and a cold start has none:
+  /// `ServicesBinding.initInstances` reads the initial state from the native
+  /// window during `WidgetsFlutterBinding.ensureInitialized()`, so the listener
+  /// is constructed already at `resumed` and no transition is generated. Flutter
+  /// gives for free exactly what Kotlin needs the gate to arrange, so keeping a
+  /// gate would have swallowed the first *real* return from background instead.
+  ///
+  /// That is measured rather than reasoned: the tests drive a cold start with
+  /// `initialLifecycleStateTestValue` set, and a fixture that only drives
+  /// `inactive → resumed` cannot tell the two readings apart.
+  AppLifecycleListener observeForeground() =>
+      AppLifecycleListener(onShow: () => unawaited(log(type: foregroundType)));
 
   /// Port of `persistCriticalLog`: the **synchronous** file write first, then
   /// the row, then the file delete — and only on a successful insert.

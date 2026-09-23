@@ -35,16 +35,32 @@ Future<void> main() async {
 
   // An explicit container, rather than letting the widget-tree scope build one
   // from `overrides:`, so the error hooks and the startup sweep — neither of
-  // which lives in a widget — can reach the graph. The scope below is the same
-  // root the tree would have built; nothing about the app's providers changes,
-  // and the retry policy moves onto the container, which is where
-  // `provider_retry_policy_test.dart` already expects to find it for an
-  // `UncontrolledProviderScope`.
+  // which lives in a widget — can reach the graph. The scope below wraps this
+  // same container, registers the same vsync and builds the same inherited
+  // widget, so every `containerOf` call site still resolves and scheduling is
+  // unchanged. The retry policy the scope would have supplied is passed here
+  // instead.
   //
-  // (That guard scans source text **without stripping comments**, so naming
-  // the widget it exempts — in the obvious `Name(` form — inside a comment
-  // makes it fire. Reported rather than worked around in its own file, which
-  // this lane does not own.)
+  // **One thing does change and cannot be matched**, so it is written down
+  // rather than claimed away: the scope passes its container an `onError` that
+  // routes an uncaught provider error to `FlutterError.reportError` with
+  // `library: 'riverpod'` (`provider_scope.dart:161-175`), and
+  // `ProviderContainer.onError` is `@internal` — application code cannot pass
+  // it (the analyzer refuses). Without it the container falls back to
+  // `Zone.current.handleUncaughtError` (`provider_container.dart:901`), so
+  // such an error leaves through the root zone and loses the label. It is
+  // still *recorded*, because `installErrorHandlers` below hooks that zone as
+  // well as `FlutterError.onError` — this phase closing the hole it opened,
+  // which is worth stating rather than relying on quietly.
+  //
+  // (`provider_retry_policy_test.dart` scans source text **without stripping
+  // comments**, so writing either root's constructor call — the bare class
+  // name followed by an open paren — inside a comment makes it fire, and this
+  // paragraph is deliberately phrased to avoid doing so. Its negative
+  // lookbehind exempts the `Uncontrolled…` spelling wherever that appears.
+  // `unwatched_provider_reads_test.dart` strips comments before scanning for
+  // exactly this reason; reported rather than worked around, since that file
+  // is outside this lane's set.)
   final container = ProviderContainer(
     retry: noProviderRetry,
     overrides: [planetPrefsProvider.overrideWithValue(prefs)],
@@ -67,7 +83,7 @@ Future<void> main() async {
   // `MainApplication.onAppStarted` (`:470`) — **once per process start**, not
   // once per login, whatever the type string says.
   unawaited(recorder.log(type: ApkLogRecorder.newLoginType));
-  _observeForeground(recorder);
+  recorder.observeForeground();
 
   // Scheduling is best-effort infrastructure, not an app-launch gate. A
   // plugin/OS registration failure must not leave the user staring at a blank
@@ -84,32 +100,6 @@ Future<void> main() async {
 
   runApp(
     UncontrolledProviderScope(container: container, child: const MyPlanetApp()),
-  );
-}
-
-/// `MainApplication.onAppForegrounded` (`:463`), behind the `isFirstLaunch`
-/// gate at `:459-465`.
-///
-/// An [AppLifecycleListener] rather than a `WidgetsBindingObserver` because
-/// there is no widget here to hang one off — the same reason Kotlin puts this
-/// on `ProcessLifecycleOwner` rather than an Activity. The listener is
-/// deliberately never disposed: it lives exactly as long as the process, which
-/// is what `ProcessLifecycleOwner` gives the Kotlin.
-///
-/// The skip-the-first gate is load-bearing rather than cosmetic. `resumed`
-/// fires on the first foreground too, so without it every launch would file
-/// both a `"new login"` and a `"foreground"` row and Planet's aggregation
-/// would read twice the sessions there were.
-void _observeForeground(ApkLogRecorder recorder) {
-  var seenFirstResume = false;
-  AppLifecycleListener(
-    onResume: () {
-      if (!seenFirstResume) {
-        seenFirstResume = true;
-        return;
-      }
-      unawaited(recorder.log(type: ApkLogRecorder.foregroundType));
-    },
   );
 }
 

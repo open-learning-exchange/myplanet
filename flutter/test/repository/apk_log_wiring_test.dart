@@ -26,16 +26,20 @@ class _MockPlanetApi extends Mock implements PlanetApi {}
 /// no UI rather than through a lane boundary, and these are the guards that
 /// make losing any of it loud.
 ///
-/// Four call sites hold the whole slice up, and every one of them lives in a
+/// Six call sites hold the whole slice up, and every one of them lives in a
 /// file some future lane will edit for an unrelated reason:
 ///
-///  1. `main.dart` installs the error hooks — without it nothing is ever
+///  1. `main.dart` primes the crash store — an unprimed store writes nothing,
+///     silently.
+///  2. `main.dart` installs the error hooks — without it nothing is ever
 ///     recorded.
-///  2. `main.dart` sweeps the crash files — without it a report written while
+///  3. `main.dart` sweeps the crash files — without it a report written while
 ///     the app was dying never becomes a row.
-///  3. `background_entrypoint.dart` queues the pending rows — without it
+///  4. `main.dart` files the process-start row and starts the foreground
+///     observer — the two rows Kotlin sends most of.
+///  5. `background_entrypoint.dart` queues the pending rows — without it
 ///     nothing ever leaves the handset.
-///  4. `app_providers.dart` registers the uploader's handler — without it the
+///  6. `app_providers.dart` registers the uploader's handler — without it the
 ///     drainer's *generic fallback* still POSTs the payload but never writes
 ///     `_rev` back, so the row stays pending and the next sweep files a
 ///     **second** crash document. That is precisely the Kotlin retry-path
@@ -208,7 +212,7 @@ void main() {
       // a `contains` here.
       final body = source.substring(
         source.indexOf('Future<void> main() async {'),
-        source.indexOf('void _observeForeground('),
+        source.indexOf('Future<void> _primeDeviceIdentity('),
       );
 
       expect(
@@ -224,6 +228,21 @@ void main() {
         reason:
             'a report written while the isolate was dying only becomes a row '
             'through the next start\'s sweep',
+      );
+      expect(
+        body,
+        contains('ApkLogRecorder.newLoginType'),
+        reason:
+            'Kotlin files one row per process start (MainApplication:470); '
+            'this assertion was missing while the header claimed four call '
+            'sites hold the slice up, so deleting the line stayed green',
+      );
+      expect(
+        body,
+        contains('observeForeground()'),
+        reason:
+            'without it the port files a "new login" row per process start '
+            'and never the "foreground" rows Kotlin sends on every return',
       );
       expect(
         body,

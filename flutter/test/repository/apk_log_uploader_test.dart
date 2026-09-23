@@ -169,28 +169,48 @@ void main() {
       expect(await repo.pendingUploads(), isEmpty);
     });
 
-    test('refuses a 2xx whose body carries no usable rev', () async {
-      // Kotlin's `JsonUtils.getString` returns `""` for a missing field, which
-      // is non-null, so `normalizeUploadResult` dequeues a row whose document
-      // may not exist. The port refuses instead, as the sibling uploaders do.
-      await seed('a');
-      when(
-        () => api.postJsonObject(
-          any(),
-          any(),
-          authHeader: any(named: 'authHeader'),
-        ),
-      ).thenAnswer((_) async => const NetworkSuccess({'ok': true}));
+    // **The empty-string case is the one Kotlin actually produces**, and the
+    // first cut of this group tested only the missing-key case — which is
+    // green whether the `rev.isEmpty` half of the guard exists or not, because
+    // a missing key is already `is! String`. Mutating the guard is what found
+    // that; re-reading the test would not have. Both cases run now, and the
+    // empty one is the load-bearing member of the pair.
+    for (final (label, body) in [
+      ('carries no rev at all', {'ok': true}),
+      (
+        'carries an empty rev, as JsonUtils.getString produces',
+        {'id': 'doc-1', 'rev': ''},
+      ),
+    ]) {
+      test('refuses a 2xx that $label', () async {
+        // Kotlin's `JsonUtils.getString` returns `""` for a missing or
+        // non-string field, which is non-null, so `normalizeUploadResult`
+        // dequeues a row whose document may not exist. The port refuses
+        // instead, as the sibling uploaders do.
+        await seed('a');
+        when(
+          () => api.postJsonObject(
+            any(),
+            any(),
+            authHeader: any(named: 'authHeader'),
+          ),
+        ).thenAnswer((_) async => NetworkSuccess(body));
 
-      final result = await uploader.handler(rowFor('a'), const {}, null);
+        final result = await uploader.handler(rowFor('a'), const {}, null);
 
-      expect(result, isA<NetworkError>());
-      expect(
-        await repo.pendingUploads(),
-        hasLength(1),
-        reason: 'a row must not be dequeued by a response that said nothing',
-      );
-    });
+        expect(result, isA<NetworkError>());
+        expect(
+          await repo.pendingUploads(),
+          hasLength(1),
+          reason: 'a row must not be dequeued by a response that said nothing',
+        );
+        expect(
+          (await db.apkLogDao.getById('a'))!.rev,
+          '',
+          reason: 'an empty rev must not be written as if it were one',
+        );
+      });
+    }
 
     test('refuses when the local update applied to no row', () async {
       // `markUploadedBatch`'s contract: the ids it could not apply come back,

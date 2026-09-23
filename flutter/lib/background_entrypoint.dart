@@ -149,10 +149,9 @@ Future<bool> executeBackgroundTask(String taskName) async {
           );
           // The crash/telemetry sweep, ahead of the drain for the same reason
           // as the three above: the rows it queues go out in this same
-          // invocation. Kotlin reaches `uploadCrashLog()` from
-          // `AutoSyncWorker:135` and `UserDataWorker:49` only — a manual full
-          // sync does **not** upload crash logs — so a background invocation
-          // is the faithful home for it, not the sync centre.
+          // invocation. See [sweepPendingApkLogs] for why this is currently
+          // the *only* home it has, and why that is half of Kotlin's answer
+          // rather than all of it.
           await sweepPendingApkLogs(
             container,
             config: config,
@@ -652,6 +651,26 @@ Future<void> sweepPendingFeedback(
 
 /// Queues every unsent `apk_log` row. Port of `UploadManager.uploadCrashLog()`
 /// as `AutoSyncWorker:135` and `UserDataWorker:49` reach it.
+///
+/// **This is half of Kotlin's answer, and the missing half belongs to a file
+/// this lane does not own.** `UserDataWorker` is not a background cadence: it
+/// is a `OneTimeWorkRequest` a *user-initiated* action enqueues
+/// (`SyncActivity:815 startUpload("")` → `ProcessUserDataActivity:172` →
+/// `SyncRepositoryImpl:57` → `UserDataUploadScheduler:30-38`), and its
+/// `UPLOAD_TYPE_BULK` branch runs `uploadSubmissions()` at `:48` and
+/// `uploadCrashLog()` at `:49`, one line apart. The port already sweeps `:48`
+/// from **both** `dashboard_sync_provider` and here (Phase 134); `:49` is
+/// swept only here, so a crash report leaves the handset only when WorkManager
+/// actually runs `autoSync` or `maintenance` — hours or days under Doze — and
+/// pressing Sync does nothing for it. `dashboard_sync_provider.dart` needs the
+/// matching call, and it is reported rather than written because that file is
+/// outside this lane's set.
+///
+/// (A third Kotlin call site exists and is inert: `SyncTimeLogger:123`'s
+/// `uploadManager?.uploadCrashLog()`, whose only caller — `SyncManager:209` —
+/// passes no `uploadManager`. Worth naming, because an earlier revision of
+/// this comment said there were two call sites "only", which a reader checking
+/// it would find contradicted.)
 ///
 /// This is the only caller of [ApkLogUploader.queuePending] that runs with no
 /// user present, and that is deliberate: a handset whose session has gone is
