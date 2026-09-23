@@ -17,6 +17,8 @@ import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.put
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -32,9 +34,6 @@ import org.ole.planet.myplanet.repository.SyncRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
-import retrofit2.Response
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
@@ -42,6 +41,7 @@ import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -184,8 +184,8 @@ class SyncManagerTest {
     fun `resourceTransactionSync skips removeDeletedResources when batch failure occurs`() = runTest {
         coEvery { transactionSyncManager.authenticate() } returns true
 
-        val totalRowsJson = JsonObject().apply {
-            addProperty("total_rows", 10)
+        val totalRowsJson = kotlinx.serialization.json.buildJsonObject {
+            put("total_rows", 10)
         }
         val totalRowsResponse = Response.success(totalRowsJson)
         coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?limit=0") }) } returns totalRowsResponse
@@ -200,22 +200,22 @@ class SyncManagerTest {
     fun `resourceTransactionSync calls removeDeletedResources with full id list when batch succeeds`() = runTest {
         coEvery { transactionSyncManager.authenticate() } returns true
 
-        val totalRowsJson = JsonObject().apply {
-            addProperty("total_rows", 2)
+        val totalRowsJson = kotlinx.serialization.json.buildJsonObject {
+            put("total_rows", 2)
         }
         val totalRowsResponse = Response.success(totalRowsJson)
         coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?limit=0") }) } returns totalRowsResponse
 
-        val doc1 = JsonObject().apply { addProperty("_id", "res_1") }
-        val doc2 = JsonObject().apply { addProperty("_id", "res_2") }
-        val row1 = JsonObject().apply { add("doc", doc1) }
-        val row2 = JsonObject().apply { add("doc", doc2) }
-        val rowsArray = JsonArray().apply {
+        val doc1 = kotlinx.serialization.json.buildJsonObject { put("_id", "res_1") }
+        val doc2 = kotlinx.serialization.json.buildJsonObject { put("_id", "res_2") }
+        val row1 = kotlinx.serialization.json.buildJsonObject { put("doc", doc1) }
+        val row2 = kotlinx.serialization.json.buildJsonObject { put("doc", doc2) }
+        val rowsArray = kotlinx.serialization.json.buildJsonArray {
             add(row1)
             add(row2)
         }
-        val batchJson = JsonObject().apply {
-            add("rows", rowsArray)
+        val batchJson = kotlinx.serialization.json.buildJsonObject {
+            put("rows", rowsArray)
         }
         val batchResponse = Response.success(batchJson)
         coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?include_docs=true") }) } returns batchResponse

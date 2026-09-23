@@ -30,6 +30,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.AchievementDao
@@ -53,13 +54,15 @@ import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
-import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.RetryUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.VersionUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
 @Singleton
@@ -383,7 +386,7 @@ class UserRepositoryImpl @Inject constructor(
             }
 
             if (response.isSuccessful && response.body() != null) {
-                val userDoc = response.body()
+                val userDoc = response.body()?.toGson()
                 val derivedKey = userDoc?.get("derived_key")?.asString
                 val salt = userDoc?.get("salt")?.asString
                 val passwordScheme = userDoc?.get("password_scheme")?.asString
@@ -555,15 +558,16 @@ class UserRepositoryImpl @Inject constructor(
                     apiInterface.getJsonObject(header, userUrl)
                 }
 
-                if (existsResponse.isSuccessful && existsResponse.body()?.has("_id") == true) {
+                if (existsResponse.isSuccessful && existsResponse.body()?.toGson()?.has("_id") == true) {
                     Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
                 } else {
                     val createResponse = withContext(dispatcherProvider.io) {
-                        apiInterface.putDoc(null, "application/json", userUrl, obj)
+                        apiInterface.putDoc(null, "application/json", userUrl, obj.toKotlinx().jsonObject)
                     }
+                    val createBody = createResponse.body()?.toGson()
 
-                    if (createResponse.isSuccessful && createResponse.body()?.has("id") == true) {
-                        val id = createResponse.body()?.get("id")?.asString ?: ""
+                    if (createResponse.isSuccessful && createBody?.has("id") == true) {
+                        val id = createBody.get("id")?.asString ?: ""
 
                         appScope.launch {
                             uploadToShelf(obj)
@@ -599,7 +603,7 @@ class UserRepositoryImpl @Inject constructor(
     private suspend fun uploadToShelf(obj: JsonObject) {
         try {
             val url = UrlUtils.getUrl() + "/shelf/org.couchdb.user:" + obj["name"].asString
-            apiInterface.putDoc(null, "application/json", url, JsonObject())
+            apiInterface.putDoc(null, "application/json", url, JsonObject().toKotlinx().jsonObject)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -616,7 +620,7 @@ class UserRepositoryImpl @Inject constructor(
                 ensureActive()
 
                 if (response.isSuccessful) {
-                    response.body()?.let { saveUser(it, null, null) }
+                    response.body()?.toGson()?.let { saveUser(it, null, null) }
                 } else {
                     null
                 }
@@ -643,7 +647,7 @@ class UserRepositoryImpl @Inject constructor(
         try {
             val response = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/${table}/_security")
             if (response.body() != null) {
-                val jsonObject = response.body()
+                val jsonObject = response.body()?.toGson()
                 val members = jsonObject?.getAsJsonObject("members")
                 val rolesArray: JsonArray = if (members?.has("roles") == true) {
                     members.getAsJsonArray("roles")
@@ -653,7 +657,7 @@ class UserRepositoryImpl @Inject constructor(
                 rolesArray.add("health")
                 members?.add("roles", rolesArray)
                 jsonObject?.add("members", members)
-                apiInterface.putDoc(header, "application/json", "${UrlUtils.getUrl()}/${table}/_security", jsonObject)
+                apiInterface.putDoc(header, "application/json", "${UrlUtils.getUrl()}/${table}/_security", jsonObject?.toKotlinx()?.jsonObject)
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -684,7 +688,7 @@ class UserRepositoryImpl @Inject constructor(
 
         withContext(dispatcherProvider.io) {
             try {
-                apiInterface.putDoc(header, "application/json", dbUrl, JsonObject())
+                apiInterface.putDoc(header, "application/json", dbUrl, JsonObject().toKotlinx().jsonObject)
             } catch (e: Exception) {
                 null
             }
@@ -696,7 +700,7 @@ class UserRepositoryImpl @Inject constructor(
                 delayMs = retryDelayMs,
                 shouldRetry = { resp -> resp == null || !resp.isSuccessful || resp.body() == null }
             ) {
-                apiInterface.postDoc(header, "application/json", "${UrlUtils.getUrl()}/$table", ob)
+                apiInterface.postDoc(header, "application/json", "${UrlUtils.getUrl()}/$table", ob.toKotlinx().jsonObject)
             }
         }
 
@@ -751,10 +755,10 @@ class UserRepositoryImpl @Inject constructor(
             val fetchDataResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/${model._id}")
 
             if (fetchDataResponse.isSuccessful) {
-                val passwordScheme = GsonUtils.getString("password_scheme", fetchDataResponse.body())
-                val derivedKey = GsonUtils.getString("derived_key", fetchDataResponse.body())
-                val salt = GsonUtils.getString("salt", fetchDataResponse.body())
-                val iterations = GsonUtils.getString("iterations", fetchDataResponse.body())
+                val passwordScheme = JsonUtils.getString("password_scheme", fetchDataResponse.body())
+                val derivedKey = JsonUtils.getString("derived_key", fetchDataResponse.body())
+                val salt = JsonUtils.getString("salt", fetchDataResponse.body())
+                val iterations = JsonUtils.getString("iterations", fetchDataResponse.body())
 
                 model.password_scheme = passwordScheme
                 model.derived_key = derivedKey
@@ -783,11 +787,11 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun uploadNewUser(model: UserEntity, updateHealthFn: suspend (String, String) -> Unit) {
         try {
             val obj = model.serialize()
-            val createResponse = apiInterface.putDoc(null, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj)
+            val createResponse = apiInterface.putDoc(null, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj.toKotlinx().jsonObject)
 
             if (createResponse.isSuccessful) {
-                val id = createResponse.body()?.get("id")?.asString
-                val rev = createResponse.body()?.get("rev")?.asString
+                val id = JsonUtils.getString("id", createResponse.body()).takeIf { it.isNotEmpty() }
+                val rev = JsonUtils.getString("rev", createResponse.body()).takeIf { it.isNotEmpty() }
                 model._id = id
                 model._rev = rev
 
@@ -806,7 +810,7 @@ class UserRepositoryImpl @Inject constructor(
             val latestDocResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
 
             if (latestDocResponse.isSuccessful) {
-                val latestRev = latestDocResponse.body()?.get("_rev")?.asString
+                val latestRev = JsonUtils.getString("_rev", latestDocResponse.body()).takeIf { it.isNotEmpty() }
                 val obj = model.serialize()
                 val objMap = obj.entrySet().associate { (key, value) -> key to value }
                 val mutableObj = mutableMapOf<String, Any>().apply { putAll(objMap) }
@@ -815,10 +819,10 @@ class UserRepositoryImpl @Inject constructor(
                 val jsonElement = GsonUtils.gson.toJsonTree(mutableObj)
                 val jsonObject = jsonElement.asJsonObject
 
-                val updateResponse = apiInterface.putDoc(header, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", jsonObject)
+                val updateResponse = apiInterface.putDoc(header, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", jsonObject.toKotlinx().jsonObject)
 
                 if (updateResponse.isSuccessful) {
-                    val updatedRev = updateResponse.body()?.get("rev")?.asString
+                    val updatedRev = JsonUtils.getString("rev", updateResponse.body()).takeIf { it.isNotEmpty() }
                     markUserRevUpdated(model.id ?: "", updatedRev)
                 }
             }
@@ -1183,7 +1187,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun uploadShelfData(user: UserEntity) {
         try {
-            val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${user._id}").body()
+            val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${user._id}").body()?.toGson()
             val myLibs = resourcesRepositoryLazy.get().getMyLibIds(user.id ?: "")
             val myCourseIds = coursesRepositoryLazy.get().getMyCourseIds(user.id ?: "")
             val shelfData = getShelfData(user.id, jsonDoc, myLibs, myCourseIds)
@@ -1192,7 +1196,7 @@ class UserRepositoryImpl @Inject constructor(
                 UrlUtils.header,
                 "application/json",
                 "${UrlUtils.getUrl()}/shelf/${user._id}",
-                shelfData
+                shelfData.toKotlinx().jsonObject
             )
         } catch (e: Throwable) {
             e.printStackTrace()
@@ -1208,8 +1212,13 @@ class UserRepositoryImpl @Inject constructor(
         }
 
         val response = org.ole.planet.myplanet.data.api.ApiClient.executeWithRetryAndWrap {
-            apiInterface.postDoc(org.ole.planet.myplanet.utils.UrlUtils.header, "application/json", "${org.ole.planet.myplanet.utils.UrlUtils.getUrl()}/shelf/_all_docs?include_docs=true", keysObject)
-        }?.body()
+            apiInterface.postDoc(
+                org.ole.planet.myplanet.utils.UrlUtils.header,
+                "application/json",
+                "${org.ole.planet.myplanet.utils.UrlUtils.getUrl()}/shelf/_all_docs?include_docs=true",
+                keysObject.toKotlinx().jsonObject
+            )
+        }?.body()?.toGson()
 
         response?.let { responseBody ->
             val rows = org.ole.planet.myplanet.utils.GsonUtils.getJsonArray("rows", responseBody)
