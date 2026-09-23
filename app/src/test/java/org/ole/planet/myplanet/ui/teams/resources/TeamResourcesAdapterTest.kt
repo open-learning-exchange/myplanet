@@ -2,8 +2,12 @@ package org.ole.planet.myplanet.ui.teams.resources
 
 import android.app.Application
 import android.content.Context
+import android.view.ContextThemeWrapper
 import android.widget.FrameLayout
+import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ApplicationProvider
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.Assert.assertEquals
@@ -11,15 +15,17 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnResourcesUpdateListener
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowLooper
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [36], application = Application::class)
+@Config(sdk = [32], application = Application::class)
 class TeamResourcesAdapterTest {
 
     private lateinit var context: Context
@@ -70,9 +76,12 @@ class TeamResourcesAdapterTest {
         }
 
         adapter.submitList(listOf(resource1, resource2))
+        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
         assertEquals(2, adapter.currentList.size)
 
         adapter.removeResourceAt(0)
+        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
+
         assertEquals(1, adapter.currentList.size)
         assertEquals("res_2", adapter.currentList[0].id)
         assertTrue(isUpdatedCalled)
@@ -80,9 +89,13 @@ class TeamResourcesAdapterTest {
 
     @Test
     fun testViewHolderJobCancellation() {
+        val themedContext = ContextThemeWrapper(
+            context,
+            com.google.android.material.R.style.Theme_MaterialComponents_Light_NoActionBar
+        )
         val binding = org.ole.planet.myplanet.databinding.RowTeamResourceBinding.inflate(
-            android.view.LayoutInflater.from(context),
-            FrameLayout(context),
+            android.view.LayoutInflater.from(themedContext),
+            FrameLayout(themedContext),
             false
         )
         val viewHolder = TeamResourcesAdapter.ViewHolderTeamResources(binding)
