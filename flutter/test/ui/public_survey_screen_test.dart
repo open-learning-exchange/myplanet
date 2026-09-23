@@ -134,7 +134,10 @@ void main() {
     stubFetch(null);
     await pumpScreen(tester);
 
-    expect(find.text('Survey could not be loaded'), findsOneWidget);
+    expect(
+      find.text("Couldn't load the survey. Please try again."),
+      findsOneWidget,
+    );
     expect(find.widgetWithText(FilledButton, 'Close'), findsOneWidget);
   });
 
@@ -160,7 +163,10 @@ void main() {
     stubFetch({'_id': 'survey-1', 'name': 'Community needs'});
     await pumpScreen(tester);
 
-    expect(find.text('Survey could not be loaded'), findsOneWidget);
+    expect(
+      find.text("Couldn't load the survey. Please try again."),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a survey with no questions cannot be submitted', (tester) async {

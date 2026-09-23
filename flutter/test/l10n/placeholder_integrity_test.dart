@@ -504,12 +504,51 @@ void main() {
     // merge rather than on a release, and the rule it enforces is the file's
     // own — count the tree, never increment a remembered number.
 
+    // Phase 160 lane 4 moves all five, by +38 in ar/ne/so, +31 in es and +37
+    // in fr, and every one of them is a translation **recovered** from
+    // `values-*/strings.xml` rather than generated. Three sources, in
+    // descending order of how much judgement they took:
+    //
+    //   * 26 template keys whose English was changed to the Kotlin app's own
+    //     wording, which is the whole of the judgement this round: the port
+    //     had paraphrased a string Kotlin already ships in five languages, so
+    //     `noTeams` says "Teams not available" where it said "No teams
+    //     available", `invalidEmail` says "Invalid email.", `privateResource`
+    //     gains the "(only visible to this team)" the Android switch carries.
+    //     The bar was **adopt unless Kotlin's English would mislead or lose
+    //     something the screen needs** — because for ne/so the alternative is
+    //     not worse English, it is English, and for ar/es/fr it is machine
+    //     output. `height`/`weight`/`bloodPressure` were refused under it
+    //     (Kotlin folds the unit into the label and the port appends it in
+    //     Dart, so adopting would render "Height (cm) (cm)").
+    //   * 5 keys the widened label-punctuation class reaches, `*` now being
+    //     stripped alongside `: . … !`: `note`, `levels`, `feedbackType`,
+    //     `yourFeedback` and `taskNotification`.
+    //   * 3 onboarding paragraphs the new composite rule reaches, each a
+    //     newline join of Kotlin strings that exists nowhere in the XML as one
+    //     string.
+    //
+    // es moves by less because three of the 26 hit an existing unflagged
+    // Spanish value and were left alone — `sendSurveyTo`, `surveySentToUsers`
+    // and `stepProgress` still read as translations of the superseded English,
+    // which is accurate about the same event and is not a reason to overwrite
+    // somebody's work.
+    //
+    // Two of ne/so's `x-mt` flags go as well: `feedbackTypeRequired` and
+    // `surveySentToUsers` held literal English under the flag in all five
+    // locales while Kotlin shipped `feedback_type_is_required` and
+    // `survey_sent_to_users` translated.
+    //
+    // Counted from the tree after the derivation run, not incremented from the
+    // previous line — which is the rule this map exists to enforce and the one
+    // Phase 159 broke by pinning from two branches at once.
+
     const humanReviewed = {
-      'ar': 434,
-      'es': 486,
-      'fr': 432,
-      'ne': 434,
-      'so': 434,
+      'ar': 472,
+      'es': 517,
+      'fr': 469,
+      'ne': 472,
+      'so': 472,
     };
 
     for (final code in locales) {

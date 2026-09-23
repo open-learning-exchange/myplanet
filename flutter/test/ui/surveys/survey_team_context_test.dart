@@ -354,7 +354,7 @@ void main() {
             // Overridden because the real notifier reads `planetPrefs`, which
             // is `UnimplementedError` in this harness — and `_submit` reads it
             // *inside* its `try`, so without this the screen writes the row
-            // and then shows "Could not save your answers". The existing
+            // and then shows the submit-failed refusal. The existing
             // tests in `take_survey_screen_test.dart` assert only on the row,
             // so they never saw the failure branch they were leaving the
             // screen in. A null config skips the queue step, which is what

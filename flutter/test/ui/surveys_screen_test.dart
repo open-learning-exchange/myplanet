@@ -45,6 +45,6 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.text('No surveys available'), findsOneWidget);
+    expect(find.text('Surveys not available'), findsOneWidget);
   });
 }

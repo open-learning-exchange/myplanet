@@ -220,7 +220,12 @@ void main(List<String> args) {
       }
 
       final sameText = byEnglishText[wanted] ?? const [];
-      if (sameText.isEmpty) continue;
+      // No `continue` on an empty `sameText`: the composite rule below is the
+      // last thing tried, and an early exit here made it unreachable in this
+      // path while `--adopt` reached it fine. Three onboarding paragraphs
+      // derived on one route and not the other, which is the shape a plain
+      // re-run would never have shown — `0 added` reads exactly like `nothing
+      // to add`.
       final candidates = sameText
           .map(
             (name) => derivePlainTextValue(
@@ -232,6 +237,23 @@ void main(List<String> args) {
           .toSet();
       if (candidates.length == 1) {
         derived[key] = candidates.single;
+        byText++;
+        continue;
+      }
+      // Last resort: the value is several Kotlin strings joined by newlines.
+      // Same function `--adopt` uses, so the two paths cannot disagree about
+      // what a composite derives to — the divergence that cost the port a
+      // character in ten places is documented at [derivePlainTextValue].
+      final composite = compositeSegments(templateValue, byEnglishText);
+      if (composite == null) continue;
+      final joined = deriveCompositeValue(
+        templateEnglish: templateValue,
+        segments: composite,
+        english: english,
+        translated: translated,
+      );
+      if (joined != null) {
+        derived[key] = joined;
         byText++;
       }
     }
@@ -425,21 +447,31 @@ enum MatchTier {
   exact,
   punctuation,
   casing,
+  composite,
   nameOnly,
   containment;
 
   /// Whether `--adopt` may write this tier. The two text-differs tiers are
   /// evidence for a human to read, not a derivation.
   bool get isAdoptable =>
-      this == exact || this == punctuation || this == casing;
+      this == exact ||
+      this == punctuation ||
+      this == casing ||
+      this == composite;
 }
 
 /// A Kotlin string (or several sharing one English text) matched to an ARB key.
 class _Match {
-  const _Match(this.tier, this.names);
+  const _Match(this.tier, this.names, {this.segments});
 
   final MatchTier tier;
   final List<String> names;
+
+  /// For [MatchTier.composite] only: the template value decomposed into the
+  /// Kotlin strings it joins. Null for every other tier, where [names] are
+  /// alternatives rather than parts — the two readings of one field is why
+  /// this exists separately.
+  final CompositeMatch? segments;
 }
 
 /// One key/locale decision, ready to print or to write.
@@ -500,7 +532,23 @@ void _recover(List<String> args, {required bool apply}) {
       // is the tiebreak — see below.
       final byKotlinName = <String, String>{};
       final isFormat = templateValue.contains('{');
-      for (final name in entry.value.names) {
+      final segments = entry.value.segments;
+      if (segments != null) {
+        // A composite's names are parts, not alternatives, so the loop below
+        // — which reads them as candidates that must agree with each other —
+        // would be asking the wrong question of them. One proposal or none.
+        final composite = deriveCompositeValue(
+          templateEnglish: templateValue,
+          segments: segments,
+          english: english,
+          translated: translated,
+        );
+        if (composite != null) {
+          byKotlinName[entry.value.names.join('+')] = composite;
+        }
+      }
+      for (final name
+          in segments != null ? const <String>[] : entry.value.names) {
         final value = translated[name];
         if (value == null || value.trim().isEmpty) continue;
         if (isFormat) {
@@ -655,6 +703,11 @@ Map<String, _Match> _matchTemplateToKotlin(
     byCamelCase.putIfAbsent(_camelCase(name), () => []).add(name);
   }
 
+  final byEnglishText = <String, List<String>>{};
+  for (final entry in english.entries) {
+    byEnglishText.putIfAbsent(entry.value.trim(), () => []).add(entry.key);
+  }
+
   final matches = <String, _Match>{};
   for (final key in template.keys) {
     final value = template[key];
@@ -689,26 +742,36 @@ Map<String, _Match> _matchTemplateToKotlin(
     final casing = <String>[];
     final containment = <String>[];
     final wanted = value.trim();
-    final wantedCore = _core(wanted);
+    final wantedCore = stripLabelPunctuation(wanted);
     for (final entry in english.entries) {
       final other = entry.value.trim();
       if (other.isEmpty) continue;
       if (other == wanted) {
         exact.add(entry.key);
-      } else if (_core(other) == wantedCore) {
+      } else if (stripLabelPunctuation(other) == wantedCore) {
         punctuation.add(entry.key);
-      } else if (_core(other).toLowerCase() == wantedCore.toLowerCase()) {
+      } else if (stripLabelPunctuation(other).toLowerCase() ==
+          wantedCore.toLowerCase()) {
         casing.add(entry.key);
       } else if (_contains(other, wantedCore)) {
         containment.add(entry.key);
       }
     }
+    final segments = compositeSegments(value, byEnglishText);
     if (exact.isNotEmpty) {
       matches[key] = _Match(MatchTier.exact, exact);
     } else if (punctuation.isNotEmpty) {
       matches[key] = _Match(MatchTier.punctuation, punctuation);
     } else if (casing.isNotEmpty) {
       matches[key] = _Match(MatchTier.casing, casing);
+    } else if (segments != null) {
+      // Below the whole-string tiers on purpose: a value that matches some
+      // Kotlin string outright is that string, whatever its newlines say.
+      matches[key] = _Match(
+        MatchTier.composite,
+        segments.names,
+        segments: segments,
+      );
     } else if (byCamelCase.containsKey(key)) {
       matches[key] = _Match(MatchTier.nameOnly, byCamelCase[key]!);
     } else if (containment.isNotEmpty) {
@@ -723,7 +786,7 @@ String _proposal(MatchTier tier, String translation, String templateEnglish) {
   if (tier == MatchTier.exact) {
     return _mirrorTrailingSpace(translation.trim(), templateEnglish);
   }
-  var value = _core(translation);
+  var value = stripLabelPunctuation(translation);
   // Give the template's own trailing punctuation back — but only onto a word.
   // Nepali ends a sentence with the danda `।`, which `_core` does not strip and
   // which must not be followed by a full stop: `CSV फाइल सुरक्षित गर्न असफल।.`
@@ -817,6 +880,112 @@ String _mirrorTrailingSpace(String value, String templateEnglish) =>
 /// source string in place" is a fact about the XML, not about our rendering
 /// of it.
 ///
+/// A template value recognised as several Kotlin strings joined by newlines.
+///
+/// The port writes some multi-line copy as one ARB value where the Android
+/// layout has a `TextView` per line: `onboardingOfflineDescription` is
+/// `ob_desc2_1` and `ob_desc2_2` joined with a newline, and the same holds for
+/// the other two onboarding paragraphs. Those are the port's longest
+/// user-facing prose and the worst place to leave machine output, and no
+/// whole-string rule can reach them because the whole string exists nowhere in
+/// `values/strings.xml`.
+class CompositeMatch {
+  const CompositeMatch(this.pieces, this.candidates);
+
+  /// The template value split on newlines, with **every** piece kept —
+  /// including the blank ones. `onboardingPowerDescription` separates its
+  /// paragraphs with `\n\n`, and a first cut that filtered blanks out before
+  /// rejoining silently reflowed a five-line screen into one block.
+  final List<String> pieces;
+
+  /// Per piece, the Kotlin names whose English says exactly that. Empty for a
+  /// blank piece, which is a separator reproduced verbatim rather than
+  /// translated.
+  final List<List<String>> candidates;
+
+  /// Every contributing Kotlin name, in order, for reporting.
+  List<String> get names => [for (final row in candidates) ...row];
+}
+
+/// [templateValue] decomposed, or null when it is not a composite.
+///
+/// This is a derivation, not a judgement: every non-blank piece must match some
+/// Kotlin English **exactly**, there must be more than one of them, and the
+/// caller then requires each piece's candidates to agree in the target locale.
+/// A single-piece value is rejected because that is just the exact tier, which
+/// has already had its turn.
+CompositeMatch? compositeSegments(
+  String templateValue,
+  Map<String, List<String>> byEnglishText,
+) {
+  if (!templateValue.contains('\n')) return null;
+  final pieces = templateValue.split('\n');
+  final candidates = <List<String>>[];
+  var matched = 0;
+  for (final piece in pieces) {
+    if (piece.trim().isEmpty) {
+      candidates.add(const []);
+      continue;
+    }
+    final names = byEnglishText[piece.trim()];
+    if (names == null || names.isEmpty) return null;
+    candidates.add(names);
+    matched++;
+  }
+  if (matched < 2) return null;
+  return CompositeMatch(pieces, candidates);
+}
+
+/// The value to write for a composite key, or null when any piece is missing,
+/// blank, untranslated or disputed in this locale.
+///
+/// Partial recovery is deliberately not offered. Half a paragraph in Nepali and
+/// half in English is worse than the English fallback, which is the same
+/// reasoning that makes a translation dropping a placeholder unusable.
+String? deriveCompositeValue({
+  required String templateEnglish,
+  required CompositeMatch segments,
+  required Map<String, String> english,
+  required Map<String, String> translated,
+}) {
+  final parts = <String>[];
+  for (var i = 0; i < segments.candidates.length; i++) {
+    final names = segments.candidates[i];
+    if (names.isEmpty) {
+      parts.add(segments.pieces[i]);
+      continue;
+    }
+    final proposals = <String>{};
+    for (final name in names) {
+      final value = translated[name]?.trim();
+      if (value == null || value.isEmpty) continue;
+      // The same floor the plain-text path has: a locale file that still
+      // holds the English is not a translation of it.
+      //
+      // Asked directly rather than through [isUntranslatedSource], whose
+      // "only where the Kotlin English differs from the template's" escape —
+      // there so an invariant value like "PDF" is not rejected — is vacuous
+      // here: a piece matches its Kotlin string exactly, so the two Englishes
+      // are always equal and the escape would always fire. A whole sentence
+      // that equals its source is untranslated, not invariant.
+      if (value == (english[name] ?? '').trim()) continue;
+      proposals.add(value);
+    }
+    if (proposals.length != 1) return null;
+    parts.add(proposals.single);
+  }
+  final joined = parts.join('\n');
+  // A translation is a separate string and may carry syntax of its own; the
+  // template here is placeholder-free by construction.
+  if (joined.contains('{') ||
+      joined.contains('}') ||
+      _printfSpecifier.hasMatch(joined)) {
+    return null;
+  }
+  if (joined.trim() == templateEnglish.trim()) return null;
+  return _mirrorTrailingSpace(joined, templateEnglish);
+}
+
 /// No tier reaches this today; it is the guard that keeps the floor safe by
 /// construction rather than by luck. `test/l10n/format_derivation_test.dart`
 /// pins it against the real `values-*/strings.xml`, and
@@ -872,7 +1041,12 @@ final _trailingLabelPunctuation = RegExp('[\\s ]*[:.…!*]+[\\s ]*\$');
 final _trailingPunctuationOnly = RegExp(r'[:.…!*]+$');
 
 /// [text] with every trailing run of label punctuation removed.
-String _core(String text) {
+///
+/// Exported so `test/l10n/format_derivation_test.dart` can pin the rule rather
+/// than only its output: the shipped `.arb` values stay correct after the
+/// character class is narrowed again, so a test reading them cannot fail on
+/// the change that matters.
+String stripLabelPunctuation(String text) {
   var value = text.trim();
   while (true) {
     final next = value.replaceFirst(_trailingLabelPunctuation, '').trim();

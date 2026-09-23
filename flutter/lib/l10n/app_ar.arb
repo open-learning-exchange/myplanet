@@ -271,10 +271,7 @@
     "x-mt": true
   },
   "gradeLevel": "مستوى الصف",
-  "subjectLevel": "موضوع",
-  "@subjectLevel": {
-    "x-mt": true
-  },
+  "subjectLevel": "مستوى الموضوع",
   "allLevels": "الكل",
   "clearFilters": "مسح المرشحات",
   "@clearFilters": {
@@ -347,10 +344,7 @@
   "@profileSaved": {
     "x-mt": true
   },
-  "invalidEmail": "أدخل عنوان بريد إلكتروني صالحًا",
-  "@invalidEmail": {
-    "x-mt": true
-  },
+  "invalidEmail": "بريد إلكتروني غير صالح",
   "appearance": "مظهر",
   "@appearance": {
     "x-mt": true
@@ -720,18 +714,9 @@
   "openLearning": "فتح التعلم",
   "unleashLearningPower": "اطلق قوة التعلم",
   "onboardingWelcomeDescription": "بوابتك إلى تعلم لا حدود له",
-  "onboardingOfflineDescription": "قم بتنزيل الموارد للتعلم دون الاتصال بالإنترنت. \nالوصول إلى المعرفة أثناء التنقل.",
-  "@onboardingOfflineDescription": {
-    "x-mt": true
-  },
-  "onboardingOpenDescription": "اختر اهتماماتك وانغمس في المحتوى التفاعلي. \nصمم رحلتك التعليمية الفريدة.",
-  "@onboardingOpenDescription": {
-    "x-mt": true
-  },
-  "onboardingPowerDescription": "اكتشف عالم المعرفة في متناول يدك. \n\n🌍 الوصول دون اتصال بالإنترنت: تعلم بلا حدود، في أي وقت. \n🎯 مخصص: صمم مسار التعلم الخاص بك. \n📚 تفاعلي: تفاعل مع مقاطع الفيديو والكتب والألعاب. \n\nابدأ رحلتك التعليمية اللامحدودة مع myPlanet!",
-  "@onboardingPowerDescription": {
-    "x-mt": true
-  },
+  "onboardingOfflineDescription": "قم بتنزيل الموارد للتعلم دون اتصال.\nالوصول إلى المعرفة أثناء التنقل.",
+  "onboardingOpenDescription": "اختر اهتماماتك وانغمس في محتوى تفاعلي.\nصقل رحلتك التعليمية الفريدة.",
+  "onboardingPowerDescription": "استكشاف عالم المعرفة بين يديك.\n\n🌍 الوصول غير المتصل بالإنترنت: تعلم بلا حدود، في أي وقت.\n🎯 مخصص: اصنع مسار تعلمك الشخصي.\n📚 تفاعلي: تفاعل مع الفيديوهات والكتب والألعاب.\n\nابدأ رحلتك التعليمية اللا حدود مع myPlanet!",
   "onboardingServerPrepHint": "قبل تسجيل الدخول، ستحتاج إلى عنوان خادم Planet ورقم التعريف الشخصي (PIN). اسأل مسؤول مجتمعك إذا لم تكن تملكهما بعد.",
   "meetups": "لقاءات",
   "@meetups": {
@@ -843,19 +828,13 @@
   "@surveysUnavailable": {
     "x-mt": true
   },
-  "noSurveys": "لا توجد استطلاعات متاحة",
-  "@noSurveys": {
-    "x-mt": true
-  },
+  "noSurveys": "لا تتوفر استطلاعات",
   "untitledSurvey": "استطلاع بدون عنوان",
   "@untitledSurvey": {
     "x-mt": true
   },
   "takeSurvey": "أداء الاستبيان",
-  "surveyLoadFailed": "لا يمكن تحميل الاستطلاع",
-  "@surveyLoadFailed": {
-    "x-mt": true
-  },
+  "surveyLoadFailed": "تعذر تحميل الاستبانة. حاول مرة أخرى.",
   "surveyHasNoQuestions": "هذا الاستطلاع ليس لديه أسئلة",
   "@surveyHasNoQuestions": {
     "x-mt": true
@@ -928,19 +907,10 @@
   "@thread": {
     "x-mt": true
   },
-  "surveySubmitFailed": "لا يمكن حفظ إجاباتك",
-  "@surveySubmitFailed": {
-    "x-mt": true
-  },
-  "sendSurveyTo": "حدد المستخدمين لإرسال الاستطلاع إليهم",
-  "@sendSurveyTo": {
-    "x-mt": true
-  },
+  "surveySubmitFailed": "تعذر إرسال الاستبانة. حاول مرة أخرى.",
+  "sendSurveyTo": "إرسال الاستبيان إلى",
   "sendSurvey": "إرسال الاستبيان",
-  "surveySentToUsers": "Survey sent to selected users",
-  "@surveySentToUsers": {
-    "x-mt": true
-  },
+  "surveySentToUsers": "تم إرسال الاستبيان للمستخدمين",
   "noUsersAvailable": "لا يوجد مستخدمين متاحين",
   "@noUsersAvailable": {
     "x-mt": true
@@ -958,10 +928,7 @@
   "@teamsUnavailable": {
     "x-mt": true
   },
-  "noTeams": "لا توجد فرق متاحة",
-  "@noTeams": {
-    "x-mt": true
-  },
+  "noTeams": "الفرق غير متوفرة",
   "untitledTeam": "فريق بلا عنوان",
   "@untitledTeam": {
     "x-mt": true
@@ -1104,10 +1071,7 @@
   "@resourcesUnavailable": {
     "x-mt": true
   },
-  "noTeamResources": "لا توجد موارد مرتبطة بهذا الفريق",
-  "@noTeamResources": {
-    "x-mt": true
-  },
+  "noTeamResources": "لا تتوفر موارد الفريق",
   "untitledResource": "مورد بلا عنوان",
   "@untitledResource": {
     "x-mt": true
@@ -1131,23 +1095,14 @@
   "@fileSelected": {
     "x-mt": true
   },
-  "privateResource": "الموارد الخاصة",
-  "@privateResource": {
-    "x-mt": true
-  },
+  "privateResource": "مورد خاص (مرئي لهذا الفريق فقط)",
   "saveChanges": "حفظ التغييرات",
   "selectOpenWith": "اختر فتح باستخدام",
   "@selectOpenWith": {
     "x-mt": true
   },
-  "selectMedia": "حدد الوسائط",
-  "@selectMedia": {
-    "x-mt": true
-  },
-  "selectResourceType": "حدد نوع المورد",
-  "@selectResourceType": {
-    "x-mt": true
-  },
+  "selectMedia": "وسائط",
+  "selectResourceType": "نوع المورد",
   "linkToLicense": "رابط الترخيص",
   "noResourcesToAdd": "جميع الموارد المتاحة مرتبطة بالفعل",
   "@noResourcesToAdd": {
@@ -1157,10 +1112,7 @@
   "@coursesUnavailable": {
     "x-mt": true
   },
-  "noTeamCourses": "لا توجد دورات مرتبطة بهذا الفريق",
-  "@noTeamCourses": {
-    "x-mt": true
-  },
+  "noTeamCourses": "لا تتوفر دورات الفريق",
   "untitledCourse": "دورة بدون عنوان",
   "addCourse": "إضافة دورة",
   "@addCourse": {
@@ -1178,10 +1130,7 @@
   "@reportsUnavailable": {
     "x-mt": true
   },
-  "noReports": "لا توجد تقارير مالية حتى الآن",
-  "@noReports": {
-    "x-mt": true
-  },
+  "noReports": "لا توجد تقارير متاحة",
   "addReport": "إضافة تقرير",
   "editReport": "تحرير التقرير",
   "@editReport": {
@@ -1202,9 +1151,6 @@
   "totalIncome": "إجمالي الدخل",
   "totalExpenses": "إجمالي المصروفات",
   "profitLoss": "الربح / الخسارة",
-  "@profitLoss": {
-    "x-mt": true
-  },
   "endingBalance": "الرصيد النهائي",
   "negativeBalance": "الرصيد الحالي سالب!",
   "chatHistory": "تاريخ الدردشة",
@@ -1217,10 +1163,7 @@
   "@searchChats": {
     "x-mt": true
   },
-  "noChats": "لا توجد محادثات بعد",
-  "@noChats": {
-    "x-mt": true
-  },
+  "noChats": "لا توجد محادثات سابقة",
   "noSearchResults": "لا توجد محادثات مطابقة",
   "@noSearchResults": {
     "x-mt": true
@@ -1261,21 +1204,12 @@
     "x-mt": true
   },
   "feedbackSaved": "تم حفظ التعليقات",
-  "isUrgent": "هل هذا أمر عاجل؟",
-  "@isUrgent": {
-    "x-mt": true
-  },
+  "isUrgent": "هل تحتاج ملاحظاتك إلى إجراء عاجل؟",
   "feedbackType": "نوع التعليق",
-  "feedbackTypeRequired": "Please select a feedback type",
-  "@feedbackTypeRequired": {
-    "x-mt": true
-  },
+  "feedbackTypeRequired": "يجب تحديد نوع التعليقات.",
   "feedbackPriorityRequired": "يجب تحديد أولوية التعليقات.",
   "yourFeedback": "تعليقك",
-  "pleaseEnterFeedback": "الرجاء إدخال ملاحظاتك",
-  "@pleaseEnterFeedback": {
-    "x-mt": true
-  },
+  "pleaseEnterFeedback": "يرجى إدخال التعليقات.",
   "question": "سؤال",
   "bug": "خطأ",
   "suggestion": "اقتراح",
@@ -1495,10 +1429,7 @@
   "@yearOfBirthRequired": {
     "x-mt": true
   },
-  "invalidYear": "الرجاء إدخال سنة صالحة",
-  "@invalidYear": {
-    "x-mt": true
-  },
+  "invalidYear": "يرجى إدخال سنة ميلاد صالحة",
   "thankYouForTakingSurvey": "شكرًا لك على إجراء هذا الاستبيان",
   "errorSavingProfile": "حدث خطأ أثناء حفظ الملف الشخصي",
   "@errorSavingProfile": {
@@ -1529,10 +1460,7 @@
     "x-mt": true
   },
   "healthRecordNotAvailable": "سجل الصحة غير متاح",
-  "updateHealth": "تحديث الصحة",
-  "@updateHealth": {
-    "x-mt": true
-  },
+  "updateHealth": "تحديث سجل الصحة",
   "addHealthRecord": "إضافة السجل الصحي",
   "@addHealthRecord": {
     "x-mt": true
@@ -1756,10 +1684,7 @@
   "@enterPassword": {
     "x-mt": true
   },
-  "retypePassword": "أعد كتابة كلمة المرور",
-  "@retypePassword": {
-    "x-mt": true
-  },
+  "retypePassword": "تأكيد كلمة المرور",
   "becomeMember": "أصبح عضوًا",
   "toAccessThisFeatureBecomeAMember": "أنت حاليًا مستخدم ضيف. للوصول إلى هذه الميزة، كن عضوًا.",
   "creatingMember": "إنشاء حساب العضو...",
@@ -1866,10 +1791,7 @@
   "progressFilterNotStarted": "لم يبدأ",
   "progressFilterInProgress": "قيد التنفيذ",
   "progressFilterCompleted": "مكتمل",
-  "stepProgress": "{current} من {max} الخطوات",
-  "@stepProgress": {
-    "x-mt": true
-  },
+  "stepProgress": "الخطوة الحالية: {current} من {max}",
   "noEnrolledCourses": "أنت غير مسجل في أي دورات",
   "@noEnrolledCourses": {
     "x-mt": true
@@ -1888,10 +1810,7 @@
   "@resourceInformation": {
     "x-mt": true
   },
-  "resourceFor": "لـ",
-  "@resourceFor": {
-    "x-mt": true
-  },
+  "resourceFor": "مصدر لـ",
   "mediaType": "نوع الوسائط",
   "@mediaType": {
     "x-mt": true
@@ -1966,10 +1885,7 @@
     "x-mt": true
   },
   "adoptSurvey": "تبنَّى الاستبيان",
-  "surveyAdopted": "اعتمد المسح",
-  "@surveyAdopted": {
-    "x-mt": true
-  },
+  "surveyAdopted": "تم تبني الاستبيان بنجاح!",
   "completedCourse": "دورة مكتملة",
   "remindMeLater": "ذكرني لاحقاً",
   "remindLater": "تذكير لاحقاً",
@@ -2157,5 +2073,6 @@
   "clearingData": "جارٍ مسح البيانات…",
   "shareChat": "شارك الدردشة",
   "shareWithTeamEnterprise": "مشاركة مع الفريق/المؤسسة",
-  "addNoteOptional": "إضافة ملاحظة (اختياري)"
+  "addNoteOptional": "إضافة ملاحظة (اختياري)",
+  "storageDeleteConfirm": "حذف جميع تنزيلات {category}؟"
 }

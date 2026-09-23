@@ -267,6 +267,173 @@ void main() {
     });
   });
 
+  group('the required-field asterisk', () {
+    // Phase 160. Android writes the required-field marker into the string
+    // because the layout has nowhere else to put it, exactly as it writes the
+    // colon a label draws: `note` is "Note *", `levels` is "Levels*",
+    // `feedback_type` is "Feedback Type: *". Every locale carries the marker
+    // through, the port marks a required field in its own widgets, so the
+    // marker is layout and not message.
+    //
+    // These pin the *rule*, not the shipped values. The five keys the change
+    // recovered stay correct in the `.arb` after the class is narrowed again —
+    // a test reading them could not fail on the change that matters, which is
+    // this file's own standing lesson about a fixture that cannot distinguish.
+
+    test('a trailing asterisk is label punctuation', () {
+      expect(stripLabelPunctuation(_kotlin('en', 'note')), 'Note');
+      expect(stripLabelPunctuation(_kotlin('en', 'levels')), 'Levels');
+      expect(
+        stripLabelPunctuation(_kotlin('en', 'your_feedback')),
+        'Your Feedback',
+      );
+      expect(stripLabelPunctuation(_kotlin('en', 'task')), 'Task');
+      // A run mixing the two, stripped whichever order they come in.
+      expect(
+        stripLabelPunctuation(_kotlin('en', 'feedback_type')),
+        'Feedback Type',
+      );
+    });
+
+    test('it is stripped out of the translation the same way', () {
+      // The marker is in the locale files too, so leaving it there would put a
+      // required-field asterisk on a screen that does not draw one.
+      expect(_kotlin('ne', 'note'), 'नोट *');
+      expect(stripLabelPunctuation(_kotlin('ne', 'note')), 'नोट');
+      expect(_readArb('ne')['note'], 'नोट');
+    });
+
+    test('only a trailing run, and only punctuation', () {
+      // An asterisk anywhere but the end is content.
+      expect(stripLabelPunctuation('2 * 3 = 6'), '2 * 3 = 6');
+      expect(stripLabelPunctuation('*emphasis* here'), '*emphasis* here');
+      // A question mark is not in the class and must not join it: "Is your
+      // feedback Urgent? *" keeps its question mark, which is why `isUrgent`
+      // needed a template edit rather than riding this rule.
+      expect(
+        stripLabelPunctuation(_kotlin('en', 'is_urgent')),
+        'Is your feedback Urgent?',
+      );
+      // And the widened class must not turn a near-miss into a match:
+      // `subject` is "Subject(s)*:", whose core is "Subject(s)" and not the
+      // template's "Subject".
+      expect(stripLabelPunctuation(_kotlin('en', 'subject')), 'Subject(s)');
+    });
+  });
+
+  group('composites', () {
+    // Phase 160. The port writes some multi-line copy as one ARB value where
+    // the Android layout has a TextView per line, so the whole string exists
+    // nowhere in `values/strings.xml` and no whole-string tier can reach it.
+    // The three onboarding paragraphs are the port's longest user-facing prose
+    // and were machine-translated in ar/fr and absent in ne/so.
+
+    Map<String, List<String>> byEnglish() {
+      final document = XmlDocument.parse(
+        File('../app/src/main/res/values/strings.xml').readAsStringSync(),
+      );
+      final out = <String, List<String>>{};
+      for (final element in document.findAllElements('string')) {
+        final name = element.getAttribute('name');
+        if (name == null) continue;
+        final raw = element.innerText;
+        final value = raw.length > 1 && raw.startsWith('"') && raw.endsWith('"')
+            ? raw.substring(1, raw.length - 1)
+            : raw;
+        out.putIfAbsent(value.trim(), () => []).add(name);
+      }
+      return out;
+    }
+
+    test('a paragraph decomposes into the Kotlin strings it joins', () {
+      final template =
+          _readArb('en')['onboardingOfflineDescription']! as String;
+      final match = compositeSegments(template, byEnglish());
+      expect(match, isNotNull);
+      expect(match!.names, ['ob_desc2_1', 'ob_desc2_2']);
+    });
+
+    test('blank lines are kept as separators, not dropped', () {
+      // The defect this test was written against: a first cut filtered the
+      // blank pieces out before rejoining, which silently reflowed a five-line
+      // onboarding screen into one block. `onboardingPowerDescription` splits
+      // into seven pieces, two of them blank.
+      final template = _readArb('en')['onboardingPowerDescription']! as String;
+      final match = compositeSegments(template, byEnglish())!;
+      expect(match.pieces.length, 7);
+      expect(match.candidates.where((row) => row.isEmpty).length, 2);
+
+      final derived = deriveCompositeValue(
+        templateEnglish: template,
+        segments: match,
+        english: _allKotlin('en'),
+        translated: _allKotlin('ne'),
+      );
+      expect(derived, isNotNull);
+      expect('\n'.allMatches(derived!).length, 6);
+      expect(derived.contains('\n\n'), isTrue);
+      expect(derived, _readArb('ne')['onboardingPowerDescription']);
+    });
+
+    test('a single-line value is not a composite', () {
+      expect(compositeSegments('Download', byEnglish()), isNull);
+      // Two pieces are needed, and a lone line with a trailing newline is one.
+      expect(compositeSegments('Download\n', byEnglish()), isNull);
+    });
+
+    test('a piece with no Kotlin counterpart derives nothing', () {
+      final template =
+          _readArb('en')['onboardingOfflineDescription']! as String;
+      expect(
+        compositeSegments(
+          '$template\nSomething the Kotlin app never said.',
+          byEnglish(),
+        ),
+        isNull,
+      );
+    });
+
+    test('a piece left in English derives nothing at all', () {
+      // Partial recovery is refused: half a paragraph in Nepali and half in
+      // English is worse than the English fallback.
+      final template =
+          _readArb('en')['onboardingOfflineDescription']! as String;
+      final match = compositeSegments(template, byEnglish())!;
+      final english = _allKotlin('en');
+      final crippled = Map<String, String>.from(_allKotlin('ne'))
+        ..['ob_desc2_2'] = english['ob_desc2_2']!;
+      expect(
+        deriveCompositeValue(
+          templateEnglish: template,
+          segments: match,
+          english: english,
+          translated: crippled,
+        ),
+        isNull,
+      );
+    });
+
+    test('both derivation paths call the shared composite rule', () {
+      // The merge path's branch was unreachable on its first cut — an early
+      // `continue` on an empty shared-English list exited before it — so
+      // `--adopt` derived the three paragraphs and a plain re-run reported
+      // `0 added`, which reads exactly like `nothing to add`. Neither the unit
+      // tests above nor the shipped values could see that, because `--adopt`
+      // had already written them.
+      final source = File('tool/arb_from_strings_xml.dart').readAsStringSync();
+      expect(
+        'compositeSegments('.allMatches(source).length,
+        greaterThanOrEqualTo(3),
+        reason: 'one declaration plus a call from each derivation path',
+      );
+      expect(
+        'deriveCompositeValue('.allMatches(source).length,
+        greaterThanOrEqualTo(3),
+        reason: 'one declaration plus a call from each derivation path',
+      );
+    });
+  });
+
   group('plain text', () {
     // Not a placeholder concern, but the same file: this is where the tool's
     // derivation rules are tested, and the plain-text rules turned out to
@@ -461,6 +628,24 @@ String _spacing(String value) =>
 Map<String, Object?> _readArb(String locale) =>
     jsonDecode(File('lib/l10n/app_$locale.arb').readAsStringSync())
         as Map<String, Object?>;
+
+/// Every string out of a `values*` directory, with Android's quoting undone.
+Map<String, String> _allKotlin(String locale) {
+  final dir = locale == 'en' ? 'values' : 'values-$locale';
+  final document = XmlDocument.parse(
+    File('../app/src/main/res/$dir/strings.xml').readAsStringSync(),
+  );
+  return {
+    for (final element in document.findAllElements('string'))
+      if (element.getAttribute('name') != null)
+        element.getAttribute('name')!: _unquote(element.innerText),
+  };
+}
+
+String _unquote(String raw) =>
+    raw.length > 1 && raw.startsWith('"') && raw.endsWith('"')
+    ? raw.substring(1, raw.length - 1)
+    : raw;
 
 /// One string out of a `values*` directory, with Android's quoting undone —
 /// the same reading `tool/arb_from_strings_xml.dart` does.
