@@ -380,7 +380,7 @@ Real `strings.xml` resources are used in assertions (`context.getString(R.string
 
 ### Plain Utility Functions
 
-If the utility is pure Kotlin with no Android dependency, a plain JUnit test with no `@RunWith` annotation is enough (`utils/TimeUtilsTest.kt`, `utils/JsonUtilsTest.kt`). If it touches `Context`, `SharedPreferences`, or other framework classes, add `@RunWith(RobolectricTestRunner::class)` and get the context from `ApplicationProvider` (`utils/ConstantsTest.kt`). Leave the SDK level alone — see [Robolectric SDK levels](#robolectric-sdk-levels) below.
+If the utility is pure Kotlin with no Android dependency, a plain JUnit test with no `@RunWith` annotation is enough (`utils/TimeUtilsTest.kt`, `utils/GsonUtilsTest.kt`). If it touches `Context`, `SharedPreferences`, or other framework classes, add `@RunWith(RobolectricTestRunner::class)` and get the context from `ApplicationProvider` (`utils/ConstantsTest.kt`). Leave the SDK level alone — see [Robolectric SDK levels](#robolectric-sdk-levels) below.
 
 ### DI Modules and the API/auth layer
 
@@ -454,7 +454,7 @@ The workflow also fails the job if a jar turns up in Robolectric's own runtime c
 | `CoroutineWorker` / WorkManager scheduling | `services/retry/RetryQueueWorkerTest.kt` | `mockkStatic(WorkManager::class)`, mock `Log.*` |
 | `RecyclerView`/`ListAdapter` | `ui/events/EventsAdapterTest.kt` | `RobolectricTestRunner` + MockK (avoid the Mockito legacy files) |
 | Abstract base class | `base/BaseRecyclerFragmentTest.kt` | Minimal private test subclass implementing only the abstract members |
-| Pure Kotlin utility | `utils/TimeUtilsTest.kt`, `utils/JsonUtilsTest.kt` | Plain JUnit, no `@RunWith` |
+| Pure Kotlin utility | `utils/TimeUtilsTest.kt`, `utils/GsonUtilsTest.kt` | Plain JUnit, no `@RunWith` |
 | Utility touching `Context`/`SharedPreferences` | `utils/ConstantsTest.kt` | `RobolectricTestRunner` + `ApplicationProvider.getApplicationContext()` |
 | Sync managers | `services/sync/SyncManagerTest.kt`, `services/sync/LoginSyncManagerTest.kt` | MockK + `TestDispatcherProvider` |
 

@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.user
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,6 +16,7 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.time.Instant
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -29,8 +31,8 @@ import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ImageUtils
-import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils.getString
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
@@ -74,8 +76,10 @@ class AchievementFragment : BaseContainerFragment() {
             try {
                 achievementData = loadAchievementDataAsync()
                 updateAchievementUI()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "refreshAchievementData failed", e)
             }
         }
     }
@@ -134,7 +138,7 @@ class AchievementFragment : BaseContainerFragment() {
             resource.id?.let { id -> id to resource }
         }.toMap()
         data.achievements.forEach { json ->
-            val element = JsonUtils.gson.fromJson(json, JsonElement::class.java)
+            val element = GsonUtils.gson.fromJson(json, JsonElement::class.java)
             val view = if (element is JsonObject) createAchievementView(element, resourcesMap) else null
             view?.let {
                 if (it.parent != null) {
@@ -238,5 +242,7 @@ class AchievementFragment : BaseContainerFragment() {
         }
     }
 
-
+    companion object {
+        private const val TAG = "AchievementFragment"
+    }
 }

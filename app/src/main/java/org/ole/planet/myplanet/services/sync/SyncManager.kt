@@ -46,10 +46,10 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils.getInt
-import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
-import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
-import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.GsonUtils.getInt
+import org.ole.planet.myplanet.utils.GsonUtils.getJsonArray
+import org.ole.planet.myplanet.utils.GsonUtils.getJsonObject
+import org.ole.planet.myplanet.utils.GsonUtils.getString
 import org.ole.planet.myplanet.utils.NotificationUtils.cancel
 import org.ole.planet.myplanet.utils.NotificationUtils.create
 import org.ole.planet.myplanet.utils.SyncTimeLogger

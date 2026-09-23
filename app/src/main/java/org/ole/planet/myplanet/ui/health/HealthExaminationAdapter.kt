@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.health.HealthExaminationAdapter.HealthExaminationViewHolder
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.GsonUtils.getString
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.Utilities
 

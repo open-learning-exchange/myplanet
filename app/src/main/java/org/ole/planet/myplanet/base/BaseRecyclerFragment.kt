@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.base
 
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
@@ -183,7 +185,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 postAddRefresh()
 
                 errorOccurred?.let {
-                    it.printStackTrace()
+                    if (it is CancellationException) throw it
+                    Log.w(TAG, "addToMyList failed", it)
                     toast(activity, "An error occurred: ${it.message}")
                     return@launch
                 }
@@ -262,6 +265,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     companion object {
+        private const val TAG = "BaseRecyclerFragment"
         private val noDataMessages = mapOf(
             "courses" to R.string.no_courses,
             "resources" to R.string.no_resources,

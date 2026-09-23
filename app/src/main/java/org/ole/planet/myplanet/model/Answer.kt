@@ -11,7 +11,7 @@ import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 
@@ -35,7 +35,7 @@ open class Answer(
             }
             return buildJsonArray {
                 for (choice in valueChoices ?: emptyList()) {
-                    val parsed = JsonUtils.gson.fromJson(choice, JsonObject::class.java)
+                    val parsed = GsonUtils.gson.fromJson(choice, JsonObject::class.java)
                     add(parsed?.toKotlinx() ?: JsonNull)
                 }
             }.toGson()

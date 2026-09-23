@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
@@ -146,10 +146,10 @@ class LoginSyncManager @Inject constructor(
                         val responseBody = response.body()
                         sharedPrefManager.setCommunityLeaders("$responseBody")
 
-                        val array = JsonUtils.getJsonArray("docs", responseBody)
+                        val array = GsonUtils.getJsonArray("docs", responseBody)
                         if (!array.isEmpty()) {
                             try {
-                                sharedPrefManager.setRawString("user_admin", JsonUtils.gson.toJson(array[0]))
+                                sharedPrefManager.setRawString("user_admin", GsonUtils.gson.toJson(array[0]))
                             } catch (e: Exception) {
                                 Log.e("LoginSyncManager", "Error saving user_admin JSON", e)
                             }
