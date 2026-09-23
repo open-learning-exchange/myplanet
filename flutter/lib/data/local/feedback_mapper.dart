@@ -298,11 +298,24 @@ class FeedbackMapper {
     final id = _generateId();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
 
+    // `state` is the branch key, and `item` rides with it: Kotlin assigns
+    // **both** inside `if (state != null)`
+    // (`FeedbackRepositoryImpl.kt:45-53`) and writes neither in the else arm.
+    // Writing `item` unconditionally here meant a bundle carrying only `item`
+    // produced a row Kotlin would have left `item`-less — the
+    // writer/reader-disagreement shape, where the reader (`getFeedbackByItem`
+    // and the detail screen's context line) would find a row the Kotlin app
+    // never files. No caller passes one without the other today; that is a
+    // property of the call sites, not of this function.
     String title;
     String url;
+    String? scopedItem;
+    String? scopedState;
     if (state != null) {
       title = 'Question regarding /$state';
       url = '/$state';
+      scopedState = state;
+      scopedItem = item;
     } else {
       title = 'Question regarding /';
       url = '/';
@@ -328,8 +341,8 @@ class FeedbackMapper {
       parentCode: const Value('dev'),
       isUploaded: const Value(false),
       messages: Value(messagesJson),
-      item: Value(item),
-      state: Value(state),
+      item: Value(scopedItem),
+      state: Value(scopedState),
     );
   }
 
