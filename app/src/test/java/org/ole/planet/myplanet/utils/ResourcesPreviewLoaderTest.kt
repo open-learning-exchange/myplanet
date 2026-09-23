@@ -1,9 +1,17 @@
 package org.ole.planet.myplanet.utils
 
+import android.media.MediaMetadataRetriever
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockkConstructor
+import io.mockk.runs
+import io.mockk.unmockkAll
+import io.mockk.verify
 import java.io.File
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
@@ -23,6 +31,11 @@ class ResourcesPreviewLoaderTest {
     @Before
     fun setup() {
         previewLoader = ResourcesPreviewLoader(dispatcherProvider)
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
     }
 
     @Test
@@ -133,11 +146,15 @@ class ResourcesPreviewLoaderTest {
     fun `getAudioPreview returns empty string for invalid audio file and is not cached`() = runTest {
         val file = tempFolder.newFile("fake.mp3")
         file.writeText("Not audio content")
+        mockkConstructor(MediaMetadataRetriever::class)
+        every { anyConstructed<MediaMetadataRetriever>().setDataSource(any<String>()) } throws IllegalArgumentException("not audio")
+        every { anyConstructed<MediaMetadataRetriever>().release() } just runs
 
         val firstCall = previewLoader.getAudioPreview(file)
         assertEquals("", firstCall)
 
         val secondCall = previewLoader.getAudioPreview(file)
         assertEquals("", secondCall)
+        verify(exactly = 2) { anyConstructed<MediaMetadataRetriever>().setDataSource(file.absolutePath) }
     }
 }
