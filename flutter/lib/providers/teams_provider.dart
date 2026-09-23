@@ -237,7 +237,7 @@ final teamFinancesActionsProvider = Provider<TeamFinancesActions>(
 bool _serverKnowsRow(String? rev) => rev != null && rev.trim().isNotEmpty;
 
 /// Outcome of a Members-screen membership action, porting
-/// `MemberActionResult` (`RequestsViewModel.kt:38-44`). A plain `bool` cannot
+/// `MemberActionResult` (`RequestsViewModel.kt:40-45`). A plain `bool` cannot
 /// carry the middle case: the last-leader refusal is not a failure, and
 /// Kotlin shows it its own string (`cannot_remove_user`) rather than the
 /// generic error toast.
@@ -303,7 +303,7 @@ class TeamMembershipActions {
   /// own leave, which is **not** the same action as [leave].
   ///
   /// Kotlin has two leave paths and only this one transfers leadership.
-  /// `TeamViewModel.leaveTeam` (`:143-146`), behind the team detail screen's
+  /// `TeamViewModel.leaveTeam` (`:143-151`), behind the team detail screen's
   /// button, calls `TeamsRepositoryImpl.leaveTeam` directly and promotes
   /// nobody; `RequestsViewModel.leaveTeam` (`:77-90`), behind the Members screen's
   /// overflow menu, resolves a successor first. [leave] is the port of the
@@ -320,6 +320,24 @@ class TeamMembershipActions {
   /// .checkUserAndShowOverflowMenu` only offers Leave while
   /// `itemCount > 1` — which `team_members_screen.dart` now carries too.
   Future<MemberActionOutcome> leaveFromMembers(String teamId) async {
+    // **Kotlin wraps all three of these actions in `try`/`catch` and emits
+    // `MemberActionResult.Failed`, which toasts the error
+    // (`RequestsViewModel:86-88`, `MembersFragment:115-122`). The port had no
+    // `try` anywhere on this path**, and the screen fires these unawaited from
+    // `onSelected`, so a throw became an unhandled zone error: no snackbar, no
+    // record, nothing the user could see. `failed` was returned only for a
+    // null session, endpoint or row — never for a throw. The realistic
+    // triggers are the drift writes and the outbox insert, and the state after
+    // a throw part-way through is the one worth telling someone about:
+    // successor promoted, old leader demoted, leaver still a member.
+    try {
+      return await _leaveFromMembers(teamId);
+    } catch (_) {
+      return MemberActionOutcome.failed;
+    }
+  }
+
+  Future<MemberActionOutcome> _leaveFromMembers(String teamId) async {
     final user = await resolveSession(ref);
     if (user == null) return MemberActionOutcome.failed;
     // Order matters and is Kotlin's: resolve and promote the successor
@@ -338,21 +356,46 @@ class TeamMembershipActions {
   /// member: the membership row is hard-deleted locally and a tombstone is
   /// enqueued, exactly as [leave] does for the current user.
   ///
-  /// **The `currentUser.id == userId` branch looks unreachable and is not.**
-  /// The menu offers Remove only on someone else's card, so a leader cannot
-  /// normally aim it at themselves — but `isOwnCard` is computed from a
-  /// session that is null until it resolves, so during that first frame a
-  /// leader's own card renders the *other* branch's menu. Kotlin has the
-  /// identical race (`membersAdapter?.setUserId(resolvedUser.id)` runs in a
-  /// coroutine launched after the adapter is attached) and guards it here,
-  /// which is why this branch is ported rather than dropped as dead code.
+  /// **The `currentUser.id == userId` branch is unreachable from this port's
+  /// UI today, and the first cut of this comment claimed otherwise.** It
+  /// argued that `isOwnCard` is false while the session loads, so a leader's
+  /// own card would briefly render the other branch's menu — which is Kotlin's
+  /// race (`MembersFragment:56` builds the adapter with `user?.id` before
+  /// `ensureUserResolved` completes) but not this port's. Here `canManage`
+  /// comes from `teamMembershipsProvider`, which watches the *same*
+  /// `sessionProvider`, so while it is unresolved `canManage` and `isOwnCard`
+  /// are both false and `(canManage || isOwnCard)` renders no menu at all.
+  ///
+  /// The guard is kept anyway, because it is Kotlin's and because this is a
+  /// public method whose only caller's gating could change — but it is
+  /// defensive, not live, and `MemberActionOutcome.cannotRemoveLastLeader`
+  /// is currently produced only in tests. The *reachable* last-leader case is
+  /// a leader using Leave, and neither app refuses that; what prevents it
+  /// there is the member-count gate on the menu.
   Future<MemberActionOutcome> removeMember(String teamId, String userId) async {
+    // See [leaveFromMembers] for why these three carry a `try`.
+    try {
+      return await _removeMember(teamId, userId);
+    } catch (_) {
+      return MemberActionOutcome.failed;
+    }
+  }
+
+  Future<MemberActionOutcome> _removeMember(
+    String teamId,
+    String userId,
+  ) async {
     final endpoint = _endpoint;
     final currentUser = await resolveSession(ref);
     if (endpoint == null || currentUser == null) {
       return MemberActionOutcome.failed;
     }
-    if (currentUser.id == userId && await _isLeaderOf(teamId, userId)) {
+    // Kotlin's condition exactly (`RequestsViewModel:96`): self-removal, with
+    // no leadership test. An earlier cut added one here for symmetry with
+    // `_needsSuccession`, which was a real narrowing of Kotlin bought for
+    // nothing — the branch is unreachable either way, so the version with
+    // less to justify is the right one.
+    if (currentUser.id == userId) {
       final successor = await _nextLeaderCandidate(teamId, userId);
       final successorUserId = successor?.userId;
       if (successorUserId == null) {
@@ -412,27 +455,71 @@ class TeamMembershipActions {
   /// `isDeletePending` clause. So in Kotlin a member who left while offline is
   /// still an eligible successor, and promoting one is a leaderless team:
   /// `MyTeam.serialize` short-circuits on that flag to `{_id, _rev, _deleted}`
-  /// (`MyTeam.kt:160-166`), so the `isLeader` never leaves the device and the
+  /// (`MyTeam.kt:161-167`), so the `isLeader` never leaves the device and the
   /// row is then deleted outright — after the real leader has already been
   /// demoted. The port has no such column and no such state, because [leave]
   /// hard-deletes and enqueues the tombstone, so a departed member is simply
   /// not in the pool. Nothing had written that down.
   Future<void> _succeedLeadership(String teamId, String leavingUserId) async {
-    if (!await _isLeaderOf(teamId, leavingUserId)) return;
+    final memberships = await ref
+        .read(teamsRepositoryProvider)
+        .memberships(teamId);
+    if (!_needsSuccession(memberships, leavingUserId)) return;
     final successor = await _nextLeaderCandidate(teamId, leavingUserId);
     final successorUserId = successor?.userId;
     if (successorUserId == null) return;
     // Kotlin discards `updateTeamLeader`'s boolean here
-    // (`nextLeader?.id?.let { ... }`, `:81`), so a no-op promotion is not a
-    // failed leave.
-    await _promoteLeader(teamId, successorUserId);
+    // (`nextLeader?.id?.let { ... }`, `:82`), so a no-op promotion is not a
+    // failed leave. Note the port's `false` covers one case Kotlin's does not
+    // — a null endpoint or session, i.e. "could not even try" — but both of
+    // those also fail [leave] a moment later, so the user is still told.
+    await _promoteLeader(teamId, successorUserId, skipUserId: leavingUserId);
   }
 
-  Future<bool> _isLeaderOf(String teamId, String userId) async {
-    final row = await ref
-        .read(teamsRepositoryProvider)
-        .membership(teamId, userId);
-    return row?.isLeader ?? false;
+  /// Whether [leavingUserId]'s departure should hand leadership to somebody.
+  ///
+  /// **This gate is the lane's one deliberate divergence from Kotlin, and the
+  /// second disjunct is what keeps the divergence honest.**
+  ///
+  /// `RequestsViewModel.leaveTeam` calls `getNextLeaderCandidate`
+  /// *unconditionally* (`:81`), and `updateTeamLeader` sets `isLeader = false`
+  /// on every membership but the new leader (`TeamsRepositoryImpl:1065-1074`).
+  /// Put those together and a rank-and-file member leaving an Android team
+  /// **demotes the sitting leader** and hands the team to whoever has visited
+  /// it most — on a departure that changed nothing about who leads it. That is
+  /// a defect rather than a design: the function is a *successor* lookup, and
+  /// there is no successor to find when the leaver was not a leader.
+  ///
+  /// **But "only when the leaver is a leader" alone is worse than Kotlin, and
+  /// that was this method's first cut.** Kotlin's unconditional call means a
+  /// leaderless team *self-heals* on the next departure. Gating purely on the
+  /// leaver's own flag removes that, and the port cannot afford it: leadership
+  /// here is **not** locally authored. The port creates no teams at all, so
+  /// every `isLeader` it holds arrived from a server document —
+  /// `TeamMapper.fromDoc` writes it on every pull (`team_mapper.dart:78`), as
+  /// does the catalog's `leaders` fan-out (`teams_repository.dart:124`). A
+  /// team can therefore *arrive* leaderless, and once it is, `canManage` is
+  /// false for everyone, so "Make leader" is never offered — leaving a team
+  /// that no leave can ever repair. That is the exact outcome this lane
+  /// exists to prevent, reached by the lane's own fix.
+  ///
+  /// So the question is asked of the team as well as of the leaver: promote a
+  /// successor when the leaver holds leadership, **or** when nobody does.
+  ///
+  /// Reading every membership row rather than one also settles the duplicate
+  /// case. `TeamDao.getTeamDocument` is `LIMIT 1` with no `ORDER BY`, and a
+  /// re-join can leave a user with two membership documents (see
+  /// `TeamDao.watchMemberCount`), so a `LIMIT 1` lookup would answer from
+  /// whichever row SQLite handed back first.
+  static bool _needsSuccession(
+    List<TeamRow> memberships,
+    String leavingUserId,
+  ) {
+    final leaverIsLeader = memberships.any(
+      (row) => row.userId == leavingUserId && row.isLeader,
+    );
+    if (leaverIsLeader) return true;
+    return !memberships.any((row) => row.isLeader);
   }
 
   /// Port of `TeamsRepositoryImpl.getNextLeaderCandidate` (`:1079-1104`) —
@@ -466,12 +553,37 @@ class TeamMembershipActions {
     if (userIds.isEmpty) return null;
     final users = await ref.read(userDaoProvider).getByAnyIds(userIds);
     if (users.isEmpty) return null;
+    // **The exclusion predicate matches one spelling; resolution matches two.**
+    // `eligibleNextLeaderCandidates` drops rows whose `userId` string equals
+    // [excludeUserId], but `getByAnyIds` resolves `id` *or* `couchId`. A user
+    // holding two membership documents under the two spellings — the state
+    // `TeamDao.watchMemberCount` documents as reachable — therefore leaves one
+    // of their own rows in the pool, and it resolves to them. Without this,
+    // the departing member could be promoted into the team they are leaving.
+    // Kotlin cannot reach it only because its one-keyed map resolves that row
+    // to nobody; having deliberately fixed that, the port has to close this
+    // too.
+    final leaving = excludeUserId == null
+        ? null
+        : await ref.read(userDaoProvider).getById(excludeUserId);
+    final eligible = leaving == null
+        ? candidates
+        : [
+            for (final row in candidates)
+              if (!users.any(
+                (user) =>
+                    user.id == leaving.id &&
+                    (user.id == row.userId || user.couchId == row.userId),
+              ))
+                row,
+          ];
+    if (eligible.isEmpty) return null;
     final names = leaderCandidateVisitNames(users);
     final visits = names.isEmpty
         ? const <TeamLogRow>[]
         : await repository.teamVisitsForUsers(teamId, names);
     return selectNextLeaderCandidate(
-      candidates: candidates,
+      candidates: eligible,
       users: users,
       visits: visits,
     );
@@ -488,7 +600,11 @@ class TeamMembershipActions {
   /// sweep — the outbox is the only route off the device — so enqueueing here
   /// is what makes the promotion reach the server at all, and the documents
   /// are identical either way.
-  Future<bool> _promoteLeader(String teamId, String newLeaderId) async {
+  Future<bool> _promoteLeader(
+    String teamId,
+    String newLeaderId, {
+    String? skipUserId,
+  }) async {
     final endpoint = _endpoint;
     final currentUser = await resolveSession(ref);
     if (endpoint == null || currentUser == null) return false;
@@ -497,6 +613,14 @@ class TeamMembershipActions {
         .updateTeamLeader(teamId, newLeaderId);
     if (changed.isEmpty) return false;
     for (final row in changed) {
+      // [skipUserId] is the departing member, whose row [leave] is about to
+      // delete. Their demotion is a change to a document that is on its way
+      // out, and enqueueing it is worse than useless: [leave] only writes a
+      // tombstone when the server already knows the row, so for a
+      // locally-authored membership the demotion would be the *only* thing
+      // left in the outbox under that id — a create-shaped POST that puts the
+      // leaver back into the team on the next pull.
+      if (skipUserId != null && row.userId == skipUserId) continue;
       await ref
           .read(outboxRepositoryProvider)
           .enqueue(
@@ -513,8 +637,14 @@ class TeamMembershipActions {
   /// Port of `MembersAdapter`'s make-leader overflow action. Flips
   /// `isLeader` on every membership (true for the new leader, false for the
   /// rest) and enqueues each changed row for upload.
-  Future<bool> makeLeader(String teamId, String newLeaderId) =>
-      _promoteLeader(teamId, newLeaderId);
+  Future<bool> makeLeader(String teamId, String newLeaderId) async {
+    // See [leaveFromMembers] for why these three carry a `try`.
+    try {
+      return await _promoteLeader(teamId, newLeaderId);
+    } catch (_) {
+      return false;
+    }
+  }
 
   Future<bool> respond(String requestId, {required bool accept}) async {
     final endpoint = _endpoint;

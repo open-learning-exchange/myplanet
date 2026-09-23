@@ -73,6 +73,15 @@ class TeamsRepository {
       _dao.watchMemberships(userId);
   Stream<int> watchMemberCount(String teamId) => _dao.watchMemberCount(teamId);
 
+  /// Every `membership` row of [teamId], one shot.
+  ///
+  /// [updateTeamLeader] already reads exactly this set; the leave path needs
+  /// it too, to ask both *"is the leaver a leader"* and *"does this team have
+  /// a leader at all"* off one read rather than a `LIMIT 1` lookup that picks
+  /// an arbitrary row when a user holds two membership documents.
+  Future<List<TeamRow>> memberships(String teamId) =>
+      _dao.watchTeamDocuments(teamId, 'membership').first;
+
   /// The pool of members who could take over leadership of [teamId] when
   /// [excludeUserId] leaves — `TeamDao.getEligibleNextLeaderCandidates`
   /// (`TeamDao.kt:22`), ranked by [selectNextLeaderCandidate].
@@ -848,9 +857,16 @@ class TeamsRepository {
     String teamId,
     String newLeaderId,
   ) async {
-    final memberships = await _dao
-        .watchTeamDocuments(teamId, 'membership')
-        .first;
+    final rows = await _dao.watchTeamDocuments(teamId, 'membership').first;
+    // `TeamsRepositoryImpl.kt:1063` —
+    // `memberships.firstOrNull { it.userId == newLeaderId } ?: return false`.
+    // Without it a `newLeaderId` matching no membership demotes **every**
+    // member and reports success, because the loop's `shouldBeLeader` is
+    // false for every row. Unreachable from today's callers, which all pass a
+    // `userId` read off a membership row of this team — but this round turned
+    // one call site into three.
+    if (!rows.any((row) => row.userId == newLeaderId)) return const [];
+    final memberships = rows;
     final changed = <TeamRow>[];
     for (final row in memberships) {
       final shouldBeLeader = row.userId == newLeaderId;
@@ -1173,10 +1189,11 @@ String _randomId() =>
 /// `userMap[successorMember.userId]` returns null and **nobody is promoted at
 /// all** — the team is left leaderless by the very code meant to prevent it.
 ///
-/// That state is reachable, and not only on Android. Kotlin writes a
-/// membership's `userId` from `user.id` in one place
-/// (`TeamsRepositoryImpl:620`) and from `user._id` in another (`:174`,
-/// `createTeamAndAddMember`), and `markUserUploaded` (`UserRepositoryImpl
+/// That state is reachable, and not only on Android. Kotlin spells a
+/// membership's `userId` two ways: a join request carries `user.id`
+/// (`TeamsRepositoryImpl:620`, promoted to a membership unchanged by
+/// `respondToMemberRequest` at `:641-647`), while `createTeamAndAddMember`
+/// writes `user._id` (`:174`). `markUserUploaded` (`UserRepositoryImpl
 /// :946-951`) never rewrites a local account's primary key — so both spellings
 /// reach CouchDB and both sync down here, where `TeamMapper` stores whatever
 /// the document says. Reproducing the asymmetry would mean this lane's fix
@@ -1193,9 +1210,6 @@ String _randomId() =>
 /// Kotlin does at `RequestsViewModel:82` — misses for the same rows. The
 /// requirement that the winner resolve to a real user is kept: an
 /// unresolvable candidate can never be promoted.
-UserRow? _resolve(Map<String, UserRow> userMap, String? userId) =>
-    userId == null ? null : userMap[userId];
-
 TeamRow? selectNextLeaderCandidate({
   required List<TeamRow> candidates,
   required List<UserRow> users,
@@ -1240,6 +1254,11 @@ TeamRow? selectNextLeaderCandidate({
   // promoted.
   return _resolve(userMap, best.userId) == null ? null : best;
 }
+
+/// A membership's `userId` looked up in the two-keyed identity map built by
+/// [selectNextLeaderCandidate]. Null `userId` resolves to nobody.
+UserRow? _resolve(Map<String, UserRow> userMap, String? userId) =>
+    userId == null ? null : userMap[userId];
 
 /// The distinct names [selectNextLeaderCandidate]'s `visits` argument must be
 /// fetched for — `users.mapNotNull { it.name }.distinct()` at

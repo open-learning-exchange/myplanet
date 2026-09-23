@@ -1,10 +1,14 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/repository/teams_repository.dart';
 
+class _MockPlanetApi extends Mock implements PlanetApi {}
+
 /// Leadership succession when a member leaves via the Members screen —
-/// `TeamsRepositoryImpl.getNextLeaderCandidate` (`:1079-1101`) and the query
+/// `TeamsRepositoryImpl.getNextLeaderCandidate` (`:1079-1104`) and the query
 /// behind it, `TeamDao.getEligibleNextLeaderCandidates` (`TeamDao.kt:22`).
 void main() {
   late AppDatabase database;
@@ -137,6 +141,33 @@ void main() {
         );
       },
     );
+  });
+
+  group('updateTeamLeader', () {
+    // Added because the mutation run found this guard pinned by nothing: the
+    // audit that proposed it also said it is unreachable from the three
+    // callers, all of which pass a `userId` read off a membership row of the
+    // team. An unpinned guard reads as coverage, so it gets a direct test.
+    test('a newLeaderId matching no membership changes nothing', () async {
+      // `TeamsRepositoryImpl.kt:1063` —
+      // `memberships.firstOrNull { it.userId == newLeaderId } ?: return false`.
+      // Without it the loop's `shouldBeLeader` is false for every row, so it
+      // **demotes the whole team** and reports success.
+      final repository = TeamsRepository(
+        _MockPlanetApi(),
+        database.teamDao,
+        database.teamLogDao,
+      );
+      await database.teamDao.upsertAll([
+        membership(id: 'm-ada', userId: 'ada', isLeader: true),
+        membership(id: 'm-bob', userId: 'bob'),
+      ]);
+
+      final changed = await repository.updateTeamLeader('team-1', 'nobody');
+
+      expect(changed, isEmpty);
+      expect((await database.teamDao.getById('m-ada'))?.isLeader, isTrue);
+    });
   });
 
   group('the successor ranking', () {

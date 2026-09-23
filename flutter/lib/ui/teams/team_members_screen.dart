@@ -70,6 +70,10 @@ class _MembersList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    // Watched once for the list rather than once per row: it is a property of
+    // the team, and an `itemBuilder` watch opens one identical drift stream
+    // per member.
+    final memberCount = ref.watch(teamMemberCountProvider(teamId)).value;
     return rows.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (_, _) => Center(child: Text(l10n.membersUnavailable)),
@@ -106,32 +110,48 @@ class _MembersList extends ConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (row.isLeader) const Icon(Icons.star),
-                      // `MembersAdapter.checkUserAndShowOverflowMenu`:
-                      // `(isLoggedInUserTeamLeader || isOwnCard)
+                      // `MembersAdapter.checkUserAndShowOverflowMenu`
+                      // (`:160`): `(isLoggedInUserTeamLeader || isOwnCard)
                       //   && itemCount > 1`.
                       //
-                      // **The `items.length > 1` half is what actually keeps a
-                      // team from being left leaderless**, and the port had
-                      // neither it nor the succession behind it. Kotlin's
-                      // leave path promotes a successor when one exists and
-                      // then removes the member regardless
-                      // (`RequestsViewModel.kt:81-83`), so nothing downstream
-                      // refuses — the sole member is simply never offered the
-                      // action. Dropping this clause would put the hole back
-                      // whatever `leaveFromMembers` does.
+                      // **The count half is what actually keeps a team from
+                      // being left leaderless**, and the port had neither it
+                      // nor the succession behind it. Kotlin's leave path
+                      // promotes a successor when one exists and then removes
+                      // the member regardless (`RequestsViewModel.kt:81-83`),
+                      // so nothing downstream refuses — the sole member is
+                      // simply never offered the action.
                       //
-                      // **`items.length` is not quite Kotlin's `itemCount`,
-                      // and the difference runs in the port's favour.**
-                      // Kotlin counts `getJoinedMembersWithVisitInfo`, which
-                      // drops memberships whose user row is missing locally
-                      // *and* appends community-leader admins who merely
-                      // authored some document for this team
-                      // (`TeamsRepositoryImpl:967-985`) — so a Kotlin team can
-                      // pass `> 1` on the strength of somebody who is not a
-                      // member and can never be promoted. `items` here is the
-                      // raw `membership` rows, which is the population the
-                      // succession actually draws from.
-                      if ((canManage || isOwnCard) && items.length > 1)
+                      // **It is `memberCount`, not `items.length`, and an
+                      // earlier cut of this comment had the difference
+                      // backwards.** It claimed `items` — the raw `membership`
+                      // rows — was "the population the succession draws
+                      // from". It is not: `_nextLeaderCandidate` drops every
+                      // candidate that does not resolve through
+                      // `UserDao.getByAnyIds`, so the population is the
+                      // *resolvable* members, which is exactly what Kotlin's
+                      // `itemCount` counts — `getJoinedMembersWithVisitInfo`
+                      // runs its ids through `mapUsersByAnyId`, which drops
+                      // the ones with no `users` row
+                      // (`TeamsRepositoryImpl:944-961`).
+                      //
+                      // Counting rows instead let a team through the gate on
+                      // the strength of a member this handset has never
+                      // synced: Leave was offered, no candidate resolved,
+                      // nobody was promoted, and the leader's row went — a
+                      // member and no leader, from the fix meant to prevent
+                      // exactly that. `teamMemberCountProvider` is the port's
+                      // spelling of `getJoinedMemberCount`
+                      // (`COUNT(DISTINCT user_id)` with `EXISTS (users …)`),
+                      // and it also collapses the duplicate-membership rows
+                      // that would otherwise pass `> 1` on their own.
+                      //
+                      // A null count has not resolved yet, and here that
+                      // hides the menu rather than showing it — the opposite
+                      // of `teams_screen.dart`'s leave button, because this
+                      // affordance is destructive in a way a not-yet-known
+                      // count cannot justify.
+                      if ((canManage || isOwnCard) && (memberCount ?? 0) > 1)
                         PopupMenuButton<String>(
                           icon: const Icon(Icons.more_vert),
                           onSelected: (value) => _handleMemberAction(
@@ -185,7 +205,7 @@ class _MembersList extends ConsumerWidget {
     String message;
     switch (action) {
       case 'leave':
-        // `MembersFragment.handleLeaveTeam` puts this behind a `confirm_exit`
+        // `MembersFragment.handleLeaveTeam` (`:131-138`) puts this behind a
         // Yes/No dialog before it reaches the ViewModel, as the detail
         // screen's leave already does in this port.
         if (!await _confirmLeave(context)) return;

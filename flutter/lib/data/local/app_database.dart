@@ -1234,7 +1234,7 @@ class TeamDao extends DatabaseAccessor<AppDatabase> with _$TeamDaoMixin {
   ///   AND (:excludeUserId IS NULL OR userId != :excludeUserId)
   /// ```
   ///
-  /// Four conjuncts, and the two written the long way are written that way
+  /// Five clauses, and the two written the long way are written that way
   /// because SQL's three-valued logic would otherwise drop rows:
   ///
   /// * `status IS NULL OR status != 'archived'` — a bare `status != 'archived'`
@@ -1245,9 +1245,13 @@ class TeamDao extends DatabaseAccessor<AppDatabase> with _$TeamDaoMixin {
   ///   Kotlin's `userId != :excludeUserId` is also NULL for a null `userId`,
   ///   so a membership with no user is excluded while someone is being
   ///   excluded and included when [excludeUserId] is null. That asymmetry is
-  ///   Kotlin's, it is harmless (a candidate with no `userId` resolves to no
-  ///   user and can never be promoted), and reproducing it keeps this
-  ///   statement comparable to the one in the ledger.
+  ///   Kotlin's, and reproducing it keeps this statement comparable to the
+  ///   one in the ledger. It is harmless here for a reason worth stating
+  ///   rather than asserting: both production call paths pass a non-null
+  ///   `excludeUserId`, which drops null-`userId` rows outright. Under a null
+  ///   exclusion such a row joins the pool, scores zero like everything else
+  ///   on a visitless team, and — being first — wins the tie and resolves to
+  ///   nobody, suppressing a promotion a resolvable candidate should have had.
   Future<List<TeamRow>> eligibleNextLeaderCandidates(
     String teamId,
     String? excludeUserId,

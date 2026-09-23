@@ -24,8 +24,8 @@ class _TestSessionNotifier extends SessionNotifier {
 }
 
 /// The Members screen's leave and remove, end to end — the pair of writes,
-/// not either half. `RequestsViewModel.leaveTeam` (`:75-86`) and
-/// `removeMember` (`:89-106`).
+/// not either half. `RequestsViewModel.leaveTeam` (`:77-90`) and
+/// `removeMember` (`:92-112`).
 void main() {
   late AppDatabase database;
   late ProviderContainer container;
@@ -255,73 +255,136 @@ void main() {
     );
   });
 
-  group('a residual hole this lane did not close', () {
+  group('a leaderless team heals rather than staying stuck', () {
+    test('any member leaving a leaderless team promotes a successor', () async {
+      // **The second audit pass caught this, and it is the inverse of the
+      // lane's purpose.** The first cut gated the succession purely on "is
+      // the leaver a leader", reasoning that the port could not reach a
+      // leaderless team because `updateTeamLeader` always leaves exactly one
+      // leader. Both halves were false: `TeamMapper.fromDoc`
+      // (`team_mapper.dart:78`) writes `isLeader` on every pull and the
+      // catalog's `leaders` fan-out writes it too, and the port authors no
+      // teams at all — so *every* leader it holds came from a server
+      // document and a team can simply arrive leaderless.
+      //
+      // Once it has, `canManage` is false for everyone, so "Make leader" is
+      // never offered; with a leaver-only gate the succession would never
+      // fire either, and the team would be unrecoverable in-app for ever.
+      // Kotlin self-heals here because it calls `getNextLeaderCandidate`
+      // unconditionally. The gate is therefore "the leaver leads **or**
+      // nobody does".
+      await open(session('bob', 'Bob'));
+      await seedMember(userId: 'ada', name: 'Ada', visits: 1);
+      await seedMember(userId: 'bob', name: 'Bob');
+      await seedMember(userId: 'cleo', name: 'Cleo', visits: 7);
+
+      final outcome = await container
+          .read(teamMembershipActionsProvider)
+          .leaveFromMembers('team-1');
+
+      expect(outcome, MemberActionOutcome.succeeded);
+      expect(await isLeaderOf('cleo'), isTrue, reason: 'the team has a leader');
+    });
+
     test(
-      'a leader can still leave a team whose other members are unknown here',
+      'a duplicate membership row cannot hide the leaver leadership',
       () async {
-        // **This test pins a gap, not a fix. It is a tripwire: when somebody
-        // closes the gap, this goes red and this comment is the hand-off.**
-        //
-        // `selectNextLeaderCandidate` returns null when *no* candidate
-        // resolves to a `users` row — Kotlin's `if (users.isEmpty()) return
-        // null` (`TeamsRepositoryImpl:1089`), reproduced. The leave then
-        // proceeds unconditionally, as Kotlin's does, so a leader whose
-        // fellow members have never been synced onto this handset leaves the
-        // team with a member and no leader. The screen's `items.length > 1`
-        // gate does not catch it: that counts raw `membership` rows, and the
-        // rows are there — it is the `users` rows that are missing.
-        //
-        // It is left open deliberately, because closing it is a design
-        // choice this lane had no warrant to make on its own, and both
-        // options cost something:
-        //
-        //   * **Refuse the leave** when the departing leader is a leader and
-        //     no successor resolves. Diverges from Kotlin a third time, and
-        //     traps a leader on a handset that simply has not finished
-        //     syncing — the team may be perfectly healthy elsewhere.
-        //   * **Promote the first candidate anyway**, skipping the
-        //     resolve-to-a-user requirement. Keeps the team led, but the
-        //     members list renders the new leader as a raw id until their
-        //     `users` row arrives.
-        //
-        // Whoever decides: delete this test, and make sure something else
-        // holds whichever behaviour you chose — an exemption is not retired
-        // when its entry is deleted, only when something else holds its
-        // subject.
+        // `_needsSuccession` reads every membership row rather than a `LIMIT 1`
+        // lookup with no `ORDER BY`. A user holding two membership documents —
+        // which `TeamDao.watchMemberCount` documents as reachable — would
+        // otherwise have leadership decided by whichever row SQLite returned.
         await open(session('ada', 'Ada'));
         await seedMember(userId: 'ada', name: 'Ada', isLeader: true);
-        // A membership row with no matching `users` row — the shape a team
-        // synced before its members' accounts were.
         await database.teamDao.upsert(
           TeamsCompanion.insert(
-            id: 'm-unknown',
+            id: 'm-ada-dup',
             teamId: const Value('team-1'),
-            userId: const Value('never-synced'),
+            userId: const Value('ada'),
             docType: const Value('membership'),
           ),
         );
+        await seedMember(userId: 'bob', name: 'Bob');
 
-        final outcome = await container
+        await container
             .read(teamMembershipActionsProvider)
             .leaveFromMembers('team-1');
 
-        expect(outcome, MemberActionOutcome.succeeded);
-        expect(await database.teamDao.getById('m-ada'), isNull);
-        expect(
-          (await database.teamDao.getById('m-unknown'))?.isLeader,
-          isFalse,
-          reason:
-              'the gap: nobody was promoted, so this team now has a member '
-              'and no leader. If this assertion fails, the gap has been '
-              'closed — read the comment above and delete this test.',
-        );
+        expect(await isLeaderOf('bob'), isTrue);
       },
     );
+
+    test('the departing member is never promoted back in', () async {
+      // The exclusion predicate matches one spelling of the leaver's id while
+      // resolution matches two, so a second membership row under the other
+      // spelling survives `eligibleNextLeaderCandidates` and resolves right
+      // back to the person leaving. Without the filter in
+      // `_nextLeaderCandidate` they are promoted into the team they just
+      // left. Kotlin cannot reach this only because its one-keyed map
+      // resolves that row to nobody; having deliberately fixed that, the port
+      // has to close this too.
+      await open(session('uuid-ada', 'Ada'));
+      await database.userDao.upsert(
+        UsersCompanion.insert(
+          id: 'uuid-ada',
+          couchId: const Value('org.couchdb.user:ada'),
+          name: const Value('Ada'),
+        ),
+      );
+      await database.teamDao.upsert(
+        TeamsCompanion.insert(
+          id: 'm-ada',
+          teamId: const Value('team-1'),
+          userId: const Value('uuid-ada'),
+          docType: const Value('membership'),
+          isLeader: const Value(true),
+        ),
+      );
+      // The same person, under their other id, as a plain member.
+      await database.teamDao.upsert(
+        TeamsCompanion.insert(
+          id: 'm-ada-couch',
+          teamId: const Value('team-1'),
+          userId: const Value('org.couchdb.user:ada'),
+          docType: const Value('membership'),
+        ),
+      );
+
+      await container
+          .read(teamMembershipActionsProvider)
+          .leaveFromMembers('team-1');
+
+      expect(
+        (await database.teamDao.getById('m-ada-couch'))?.isLeader,
+        isFalse,
+        reason: 'the leaver must not be promoted into the team they left',
+      );
+    });
+
+    test('the leaver own demotion is not enqueued', () async {
+      // `_promoteLeader(skipUserId:)`. The leaver's row is about to be
+      // deleted, and `leave` writes a tombstone only when the server already
+      // knows it — so for a locally-authored membership the demotion would be
+      // the only thing left in the outbox under that id: a create-shaped POST
+      // putting the leaver back into the team on the next pull.
+      await open(session('ada', 'Ada'));
+      await seedMember(userId: 'ada', name: 'Ada', isLeader: true);
+      await seedMember(userId: 'bob', name: 'Bob');
+
+      await container
+          .read(teamMembershipActionsProvider)
+          .leaveFromMembers('team-1');
+
+      final queued = await database.outboxDao.due(
+        DateTime.now().millisecondsSinceEpoch,
+      );
+      expect(queued.map((row) => row.itemId), ['m-bob']);
+    });
   });
 
   group('removing yourself through the remove action', () {
     test('refuses when there is no successor', () async {
-      // `RequestsViewModel.removeMember:93-99` — the only place Kotlin
+      // `RequestsViewModel.removeMember` — the refusal is `:101`, the only
+      // place Kotlin
       // refuses. Reachable through the session-still-loading race described
       // at the method.
       await open(session('ada', 'Ada'));
@@ -355,7 +418,7 @@ void main() {
 
     test('removing somebody else never refuses and never promotes', () async {
       // Kotlin's succession branch is gated on `currentUserId == memberId`
-      // (`:92`), so a leader removing a member touches no `isLeader` flag —
+      // (`:96`), so a leader removing a member touches no `isLeader` flag —
       // even when they are removing the team's *other* leader.
       await open(session('ada', 'Ada'));
       await seedMember(userId: 'ada', name: 'Ada', isLeader: true);

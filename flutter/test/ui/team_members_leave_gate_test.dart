@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/data/local/app_database.dart';
@@ -71,6 +72,7 @@ void main() {
     WidgetTester tester, {
     required List<TeamRow> members,
     TeamRow? membership,
+    int? memberCount,
   }) async {
     await tester.pumpWidget(
       wrapScreen(
@@ -87,6 +89,14 @@ void main() {
               membership == null ? const {} : {'team-1': membership},
             ),
           ),
+          // Kotlin's `itemCount` is `getJoinedMembersWithVisitInfo().size` —
+          // *resolvable* members, not membership rows — and
+          // `teamMemberCountProvider` is the port's spelling of it. Defaults
+          // to the row count so the ordinary cases read naturally; the tests
+          // that care pass the two apart.
+          teamMemberCountProvider(
+            'team-1',
+          ).overrideWith((ref) => Stream.value(memberCount ?? members.length)),
           teamMembershipActionsProvider.overrideWith((ref) => actions),
           sessionProvider.overrideWith(
             () => _TestSessionNotifier(_user('ada', 'Ada')),
@@ -133,10 +143,72 @@ void main() {
     expect(find.byIcon(Icons.more_vert), findsNWidgets(2));
   });
 
+  testWidgets('a member this handset cannot resolve does not unlock Leave', (
+    tester,
+  ) async {
+    // **The gate counts resolvable members, not membership rows, and this is
+    // the test that tells the two apart.** A team holding a membership row
+    // for somebody whose `users` row has never synced here has two rows and
+    // one resolvable member. Counting rows offered Leave, the successor
+    // lookup then resolved nobody, and the leader's row went anyway — a team
+    // with a member and no leader, produced by the fix meant to prevent
+    // exactly that. Kotlin's `itemCount` drops the unresolvable member
+    // (`mapUsersByAnyId`, `TeamsRepositoryImpl:952-961`) and hides the menu.
+    final leader = _member(id: 'm-ada', userId: 'ada', isLeader: true);
+    await pump(
+      tester,
+      members: [
+        leader,
+        _member(id: 'm-ghost', userId: 'ghost'),
+      ],
+      membership: leader,
+      memberCount: 1,
+    );
+
+    expect(find.byIcon(Icons.more_vert), findsNothing);
+  });
+
+  testWidgets('an unresolved count hides the menu rather than showing it', (
+    tester,
+  ) async {
+    // The opposite of `teams_screen.dart`'s leave button, which shows on a
+    // null count. This affordance is destructive and a not-yet-known count
+    // cannot justify it.
+    final leader = _member(id: 'm-ada', userId: 'ada', isLeader: true);
+    await tester.pumpWidget(
+      wrapScreen(
+        const TeamMembersScreen(teamId: 'team-1'),
+        overrides: [
+          teamMembersProvider('team-1').overrideWith(
+            (ref) =>
+                Stream.value([leader, _member(id: 'm-bob', userId: 'bob')]),
+          ),
+          teamRequestsProvider(
+            'team-1',
+          ).overrideWith((ref) => Stream.value(const <TeamRow>[])),
+          teamMembershipsProvider.overrideWith(
+            (ref) => Stream.value({'team-1': leader}),
+          ),
+          // Never emits: the count has not resolved.
+          teamMemberCountProvider(
+            'team-1',
+          ).overrideWith((ref) => const Stream<int>.empty()),
+          teamMembershipActionsProvider.overrideWith((ref) => actions),
+          sessionProvider.overrideWith(
+            () => _TestSessionNotifier(_user('ada', 'Ada')),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.more_vert), findsNothing);
+  });
+
   testWidgets('leaving asks for confirmation and declining does nothing', (
     tester,
   ) async {
-    // `MembersFragment.handleLeaveTeam:130-137` wraps the call in
+    // `MembersFragment.handleLeaveTeam:131-138` wraps the call in
     // `confirmDialog(message = confirm_exit)`; the port went straight to the
     // action, so one mis-tap dropped the membership and — now — handed the
     // team to somebody else.
@@ -191,6 +263,64 @@ void main() {
     verifyNever(() => actions.leave(any()));
   });
 
+  testWidgets('a successful leave reports it and leaves the screen', (
+    tester,
+  ) async {
+    // **Both halves of this were pinned by nothing until the second audit
+    // pass said so.** `wrapScreen` puts the screen at `/`, where
+    // `context.canPop()` is false, so the `context.pop()` never ran in any
+    // test and no test looked for the snackbar either — delete both lines and
+    // the suite stayed green, on one of the round's advertised fixes. Pushing
+    // the screen onto a route first is what makes the pop observable.
+    // Kotlin: `MembersFragment:100-103`, toast then `popBackStack()`.
+    final leader = _member(id: 'm-ada', userId: 'ada', isLeader: true);
+    await tester.pumpWidget(
+      wrapScreen(
+        const _Launcher(),
+        overrides: [
+          teamMembersProvider('team-1').overrideWith(
+            (ref) =>
+                Stream.value([leader, _member(id: 'm-bob', userId: 'bob')]),
+          ),
+          teamRequestsProvider(
+            'team-1',
+          ).overrideWith((ref) => Stream.value(const <TeamRow>[])),
+          teamMembershipsProvider.overrideWith(
+            (ref) => Stream.value({'team-1': leader}),
+          ),
+          teamMemberCountProvider(
+            'team-1',
+          ).overrideWith((ref) => Stream.value(2)),
+          teamMembershipActionsProvider.overrideWith((ref) => actions),
+          sessionProvider.overrideWith(
+            () => _TestSessionNotifier(_user('ada', 'Ada')),
+          ),
+        ],
+        pushTargets: {
+          '/members': (_) => const TeamMembersScreen(teamId: 'team-1'),
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(find.byType(TeamMembersScreen), findsOne);
+
+    await tester.tap(find.byIcon(Icons.more_vert).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Leave').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Yes'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Left team'), findsOne);
+    expect(
+      find.byType(TeamMembersScreen),
+      findsNothing,
+      reason: 'the screen popped, as MembersFragment does',
+    );
+  });
+
   testWidgets('the last-leader refusal gets its own message', (tester) async {
     // `MembersFragment:108-110` toasts `cannot_remove_user`, not the generic
     // error. Collapse the outcome back to a bool and this is what breaks:
@@ -218,4 +348,17 @@ void main() {
     expect(find.text('User could not be removed'), findsOne);
     expect(find.text('Operation failed'), findsNothing);
   });
+}
+
+class _Launcher extends StatelessWidget {
+  const _Launcher();
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    body: Center(
+      child: TextButton(
+        onPressed: () => GoRouter.of(context).push('/members'),
+        child: const Text('open'),
+      ),
+    ),
+  );
 }
