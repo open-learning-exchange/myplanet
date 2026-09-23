@@ -40,6 +40,25 @@ import '../../data/local/converters.dart';
 /// choices has no text field on either card, so `text.isEmpty && choices
 /// .isEmpty` would agree with this today and stop agreeing the moment one
 /// grew one.
+///
+/// **Two deliberate tightenings, recorded because an undocumented improvement
+/// is a finding.** Both predate this function — the public screen already had
+/// them — and neither is a port of a Kotlin line:
+///
+/// * **`.trim()`.** Kotlin's `input`/`textarea` arm is
+///   `binding.etAnswer.text.toString().isNotEmpty()` — `isNotEmpty`, never
+///   `isNotBlank` — so a single space is an accepted answer there. Here it is
+///   not. Uploading a space is uploading nothing with extra steps.
+/// * **Branching on the question rather than on `type`.** Kotlin's `when`
+///   matches the type string **exactly** (`"select"`, `"selectMultiple"`,
+///   `"input"`, `"textarea"`, `"ratingScale"`, `else -> false`) while
+///   everything that *renders* the same question folds case
+///   (`startExam` uses `equals(…, ignoreCase = true)`). So a document spelling
+///   the type `selectmultiple` draws checkboxes in the Kotlin app and is then
+///   permanently unanswerable: Next stays hidden and Submit toasts for ever.
+///   The same is true of any type Planet adds later. Branching on whether the
+///   question offers choices has no such dead end, and the port's cards make
+///   the same choice when they render.
 bool surveyQuestionAnswered(
   SurveyQuestionRow question, {
   required String text,
