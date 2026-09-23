@@ -5,20 +5,24 @@ import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.google.gson.JsonArray
-import com.google.gson.JsonNull
 import com.google.gson.JsonObject
-import kotlinx.serialization.Serializable
 import java.util.UUID
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonArray as KJsonArray
+import kotlinx.serialization.json.JsonNull as KJsonNull
+import kotlinx.serialization.json.JsonObject as KJsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 /**
  * Room replacement for the former `MyLibrary` model (resources).
@@ -164,16 +168,16 @@ open class MyLibrary {
             val existing: MyLibrary? = null
         )
 
-        private fun JsonArray?.mergeInto(target: MutableList<String>) {
+        private fun KJsonArray?.mergeInto(target: MutableList<String>) {
             this?.forEach { jsonElement ->
-                val value = jsonElement.takeIf { it !is JsonNull }?.asString ?: return@forEach
+                val value = (jsonElement as? JsonPrimitive)?.takeIf { it != KJsonNull }?.content ?: return@forEach
                 if (value !in target) {
                     target.add(value)
                 }
             }
         }
 
-        private fun mergedList(current: List<String>?, array: JsonArray?): List<String> {
+        private fun mergedList(current: List<String>?, array: KJsonArray?): List<String> {
             val target = current?.toMutableList() ?: mutableListOf()
             array.mergeInto(target)
             return target
@@ -184,8 +188,9 @@ open class MyLibrary {
          * [InsertParams.existing] when supplied (mirrors the former find-or-create logic).
          */
         fun insertMyLibrary(params: InsertParams): MyLibrary? {
-            if (params.doc.entrySet().isEmpty()) return null
-            val resourceId = JsonUtils.getString("_id", params.doc)
+            val kDoc = params.doc.toKotlinx().jsonObject
+            if (kDoc.isEmpty()) return null
+            val resourceId = JsonUtils.getString("_id", kDoc)
             val resource = params.existing ?: MyLibrary().apply { id = resourceId }
             val wasPrivate = params.existing?.isPrivate == true
             val hadPrivateFor = params.existing?.privateFor
@@ -201,29 +206,29 @@ open class MyLibrary {
                 if (!params.courseId.isNullOrBlank()) {
                     this.courseId = params.courseId
                 }
-                _rev = JsonUtils.getString("_rev", params.doc)
+                _rev = JsonUtils.getString("_rev", kDoc)
                 this.resourceId = resourceId
-                val titleString = JsonUtils.getString("title", params.doc)
+                val titleString = JsonUtils.getString("title", kDoc)
                 title = titleString
                 titleNormal = Utilities.normalizeText(titleString)
-                description = JsonUtils.getString("description", params.doc)
-                if (params.doc.has("_attachments")) {
-                    val attachmentsObj = params.doc["_attachments"].asJsonObject
+                description = JsonUtils.getString("description", kDoc)
+                if (kDoc.containsKey("_attachments")) {
+                    val attachmentsObj = kDoc.getValue("_attachments").jsonObject
                     val attachmentList = this.attachments?.toMutableList() ?: mutableListOf()
                     val existingNames = attachmentList.mapNotNullTo(mutableSetOf()) { it.name }
                     val couchdbUrl = params.spm.getCouchdbUrl().ifEmpty { "http://" }
 
-                    attachmentsObj.entrySet().forEach { (key, attachmentValue) ->
+                    attachmentsObj.entries.forEach { (key, attachmentValue) ->
                         if (key !in existingNames) {
-                            val attachmentObj = attachmentValue.asJsonObject
+                            val attachmentObj = attachmentValue.jsonObject
                             val realmAttachment = Attachment().apply {
                                 id = UUID.randomUUID().toString()
                                 name = key
-                                contentType = attachmentObj.get("content_type")?.asString
-                                length = attachmentObj.get("length")?.asLong ?: 0
-                                digest = attachmentObj.get("digest")?.asString
-                                isStub = attachmentObj.get("stub")?.asBoolean == true
-                                revpos = attachmentObj.get("revpos")?.asInt ?: 0
+                                contentType = JsonUtils.rawString("content_type", attachmentObj)
+                                length = JsonUtils.rawLong("length", attachmentObj) ?: 0
+                                digest = JsonUtils.rawString("digest", attachmentObj)
+                                isStub = JsonUtils.rawBoolean("stub", attachmentObj) == true
+                                revpos = JsonUtils.rawInt("revpos", attachmentObj) ?: 0
                             }
                             attachmentList.add(realmAttachment)
                             existingNames.add(key)
@@ -234,44 +239,44 @@ open class MyLibrary {
                             resourceLocalAddress = key
                             resourceOffline = FileUtils.checkFileExist(params.context, resourceRemoteAddress)
                             if (resourceOffline) {
-                                downloadedRev = JsonUtils.getString("_rev", params.doc)
+                                downloadedRev = JsonUtils.getString("_rev", kDoc)
                             }
                         }
                     }
                     this.attachments = attachmentList
                 }
-                filename = JsonUtils.getString("filename", params.doc)
-                averageRating = JsonUtils.getString("averageRating", params.doc)
-                uploadDate = JsonUtils.getString("uploadDate", params.doc)
-                year = JsonUtils.getString("year", params.doc)
-                addedBy = JsonUtils.getString("addedBy", params.doc)
-                publisher = JsonUtils.getString("publisher", params.doc)
-                linkToLicense = JsonUtils.getString("linkToLicense", params.doc)
-                openWith = JsonUtils.getString("openWith", params.doc)
-                openWhichFile = JsonUtils.getString("openWhichFile", params.doc).takeIf { it.isNotBlank() }
-                articleDate = JsonUtils.getString("articleDate", params.doc)
-                kind = JsonUtils.getString("kind", params.doc)
-                createdDate = JsonUtils.getLong("createdDate", params.doc)
-                language = JsonUtils.getString("language", params.doc)
-                author = JsonUtils.getString("author", params.doc)
-                mediaType = JsonUtils.getString("mediaType", params.doc)
-                resourceType = JsonUtils.getString("resourceType", params.doc)
-                timesRated = JsonUtils.getInt("timesRated", params.doc)
-                medium = JsonUtils.getString("medium", params.doc)
-                resourceFor = mergedList(resourceFor, JsonUtils.getJsonArray("resourceFor", params.doc))
-                subject = mergedList(subject, JsonUtils.getJsonArray("subject", params.doc))
-                level = mergedList(level, JsonUtils.getJsonArray("level", params.doc))
-                tag = mergedList(tag, JsonUtils.getJsonArray("tags", params.doc))
+                filename = JsonUtils.getString("filename", kDoc)
+                averageRating = JsonUtils.getString("averageRating", kDoc)
+                uploadDate = JsonUtils.getString("uploadDate", kDoc)
+                year = JsonUtils.getString("year", kDoc)
+                addedBy = JsonUtils.getString("addedBy", kDoc)
+                publisher = JsonUtils.getString("publisher", kDoc)
+                linkToLicense = JsonUtils.getString("linkToLicense", kDoc)
+                openWith = JsonUtils.getString("openWith", kDoc)
+                openWhichFile = JsonUtils.getString("openWhichFile", kDoc).takeIf { it.isNotBlank() }
+                articleDate = JsonUtils.getString("articleDate", kDoc)
+                kind = JsonUtils.getString("kind", kDoc)
+                createdDate = JsonUtils.getLong("createdDate", kDoc)
+                language = JsonUtils.getString("language", kDoc)
+                author = JsonUtils.getString("author", kDoc)
+                mediaType = JsonUtils.getString("mediaType", kDoc)
+                resourceType = JsonUtils.getString("resourceType", kDoc)
+                timesRated = JsonUtils.getInt("timesRated", kDoc)
+                medium = JsonUtils.getString("medium", kDoc)
+                resourceFor = mergedList(resourceFor, JsonUtils.getJsonArray("resourceFor", kDoc))
+                subject = mergedList(subject, JsonUtils.getJsonArray("subject", kDoc))
+                level = mergedList(level, JsonUtils.getJsonArray("level", kDoc))
+                tag = mergedList(tag, JsonUtils.getJsonArray("tags", kDoc))
                 if (!isLocalOnlyPrivate) {
-                    isPrivate = JsonUtils.getBoolean("private", params.doc)
-                    if (isPrivate && params.doc.has("privateFor")) {
-                        val privateForElement = params.doc.get("privateFor")
-                        if (privateForElement.isJsonObject) {
-                            privateFor = privateForElement.asJsonObject.get("teams")?.asString
+                    isPrivate = JsonUtils.getBoolean("private", kDoc)
+                    if (isPrivate && kDoc.containsKey("privateFor")) {
+                        val privateForElement = kDoc["privateFor"]
+                        if (privateForElement is KJsonObject) {
+                            privateFor = JsonUtils.rawString("teams", privateForElement)
                         }
                     }
                 }
-                languages = mergedList(languages, JsonUtils.getJsonArray("languages", params.doc))
+                languages = mergedList(languages, JsonUtils.getJsonArray("languages", kDoc))
             }
             return resource
         }

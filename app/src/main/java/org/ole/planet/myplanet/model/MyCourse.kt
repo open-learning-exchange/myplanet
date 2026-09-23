@@ -6,7 +6,6 @@ import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
@@ -14,7 +13,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.FileUtils.getOlePath
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 
@@ -98,7 +97,7 @@ open class MyCourse(
         fun saveConcatenatedLinksToPrefs(spm: SharedPrefManager) {
             val existingJsonLinks = spm.getConcatenatedLinks()
             val existingConcatenatedLinks = if (existingJsonLinks != null) {
-                JsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toHashSet()
+                GsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toHashSet()
             } else {
                 hashSetOf()
             }
@@ -107,7 +106,7 @@ open class MyCourse(
                 linksToProcess = concatenatedLinks.toList()
             }
             existingConcatenatedLinks.addAll(linksToProcess)
-            val jsonConcatenatedLinks = JsonUtils.gson.toJson(existingConcatenatedLinks)
+            val jsonConcatenatedLinks = GsonUtils.gson.toJson(existingConcatenatedLinks)
             spm.setConcatenatedLinks(jsonConcatenatedLinks)
         }
 

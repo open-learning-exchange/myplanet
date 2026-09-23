@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.VoicesEditActions
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 object VoicesActions {
@@ -63,8 +63,8 @@ object VoicesActions {
         if (!imageUrls.isNullOrEmpty()) {
             imageUrls.forEach { imageUrl ->
                 try {
-                    val imgObject = JsonUtils.gson.fromJson(imageUrl, JsonObject::class.java)
-                    val path = JsonUtils.getString("imageUrl", imgObject)
+                    val imgObject = GsonUtils.gson.fromJson(imageUrl, JsonObject::class.java)
+                    val path = GsonUtils.getString("imageUrl", imgObject)
                     if (path.isNotEmpty()) {
                         addImageWithRemoveIcon(context, path, imageLayout, imagesToRemove)
                     }

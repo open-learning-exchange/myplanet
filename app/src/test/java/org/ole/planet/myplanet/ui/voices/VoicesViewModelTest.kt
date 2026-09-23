@@ -286,7 +286,7 @@ class VoicesViewModelTest {
     }
 
     @Test
-    fun `test filtering falls back to JsonUtils when parsedSharedTeamName is null`() = runTest {
+    fun `test filtering falls back to GsonUtils when parsedSharedTeamName is null`() = runTest {
         val newsWithoutMemo = News().apply {
             parsedSharedTeamName = null
             viewIn = """[{"name":"Team Z"}, {"name":"Team Z"}]"""

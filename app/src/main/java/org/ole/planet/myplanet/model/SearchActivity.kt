@@ -7,7 +7,7 @@ import com.google.gson.JsonObject
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.toGson
@@ -33,7 +33,7 @@ open class SearchActivity(
     var parentCode: String = ""
 ) {
     fun serialize(androidId: String?, customDeviceName: String): JsonObject {
-        val filterJson = JsonUtils.gson.fromJson(filter, JsonObject::class.java)
+        val filterJson = GsonUtils.gson.fromJson(filter, JsonObject::class.java)
         val obj = buildJsonObject {
             put("text", text)
             put("type", type)

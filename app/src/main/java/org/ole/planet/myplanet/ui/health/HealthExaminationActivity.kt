@@ -30,8 +30,8 @@ import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DimenUtils.dpToPx
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils.getString
 import org.ole.planet.myplanet.utils.TimeUtils.getAge
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -257,7 +257,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             examination?.setWeight(getFloat("${binding.etWeight.text}".trim { it <= ' ' }))
             examination?.height = getFloat("${binding.etHeight.text}".trim { it <= ' ' })
             otherConditions
-            examination?.conditions = JsonUtils.gson.toJson(mapConditions)
+            examination?.conditions = GsonUtils.gson.toJson(mapConditions)
             examination?.hearing = "${binding.etHearing.text}".trim { it <= ' ' }
             sign.immunizations = "${binding.etImmunization.text}".trim { it <= ' ' }
             sign.tests = "${binding.etLabtest.text}".trim { it <= ' ' }
@@ -275,7 +275,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             try {
                 val key = user?.key ?: generateKey().also { user?.key = it }
                 val iv = user?.iv ?: generateIv().also { user?.iv = it }
-                examination?.data = encrypt(JsonUtils.gson.toJson(sign), key, iv)
+                examination?.data = encrypt(GsonUtils.gson.toJson(sign), key, iv)
             } catch (e: Exception) {
                 Log.w(TAG, "Encrypting examination data failed", e)
             }
@@ -376,7 +376,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             val userKey = user?.key
             val userIv = user?.iv
             if (userKey != null && userIv != null) {
-                pojo?.data = encrypt(JsonUtils.gson.toJson(health), userKey, userIv)
+                pojo?.data = encrypt(GsonUtils.gson.toJson(health), userKey, userIv)
             }
         } catch (e: Exception) {
             Log.w(TAG, "Creating health examination pojo failed", e)
