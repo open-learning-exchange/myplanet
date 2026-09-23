@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Log
 import com.google.gson.JsonObject
 import java.io.File
 import java.util.Date
@@ -125,12 +126,13 @@ class PersonalsRepositoryImpl @Inject constructor(
                 result
             }
 
+            var finalRev = rev
             val path = personal.path
             if (path != null) {
                 val file = File(path)
                 val name = FileUtils.getFileNameFromUrl(path)
 
-                try {
+                val response = try {
                     uploadRepository.uploadAttachment(
                         file = file,
                         destinationFormat = "%s/resources/%s/%s",
@@ -139,16 +141,26 @@ class PersonalsRepositoryImpl @Inject constructor(
                         name = name
                     )
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.w(TAG, "Attachment upload failed for ${personal.id}", e)
                     return "Uploaded document but failed to upload attachment: ${e.message}"
                 }
+                
+                if (!response.isSuccessful) {
+                    Log.w(TAG, "Attachment upload failed for ${personal.id}: HTTP ${response.code()}")
+                    return "Uploaded document but failed to upload attachment: HTTP ${response.code()}"
+                }
+                finalRev = getString("rev", response.body()).ifBlank { rev }
             }
 
-            updatePersonalAfterSync(personal.id, id, rev)
+            updatePersonalAfterSync(personal.id, id, finalRev)
             return "Personal resource uploaded successfully"
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "Unable to upload personal resource ${personal.id}", e)
             return "Unable to upload resource: ${e.message}"
         }
+    }
+
+    companion object {
+        private const val TAG = "PersonalsRepository"
     }
 }
