@@ -19,24 +19,51 @@
 
 ### Flutter port (in progress)
 
-**Migration progress: ≈96/100.** Report this figure whenever you report on the
+**Migration progress: ≈84/100.** Report this figure whenever you report on the
 port; it is the whole migration effort on a 1-to-100 scale, not a phase count.
 The basis, so it can be argued with rather than repeated:
 
-**Phase 159 moved parity 82 → 84 and left the headline at 96, for the third
-round running.** Localisation is unchanged at ~55 and is the binding constraint
+> **Corrected at the Phase 160 integration, from 96, and the correction is the
+> most useful thing in this section.** 96 was not derivable from the table
+> below and never had been: the rows are 95 / 84 / 93 / **55** / 95, whose
+> unweighted mean is **84.4** and whose shipping-weighted mean (parity and
+> localisation carrying most of it) is **81**. 96 sat above every row but two.
+> It was almost certainly set when *breadth* was the story — when "all 28 UI
+> packages have a screen" was the headline achievement — and then carried
+> forward unexamined for a dozen rounds while the rows underneath it moved.
+>
+> This file has a rule for exactly this and applied it everywhere except to its
+> own headline: *a figure that rises every round is not being measured.* **The
+> converse is equally true and was the live failure here — a figure that never
+> moves while its inputs do is not being measured either.** It took a reader
+> asking "thirty lanes and virtually no movement?" to expose it, and the answer
+> was that the lanes had moved the rows all along: parity 80 → 84 across those
+> rounds, the query ledger 77 → 243 of 317, localisation now moving for the
+> first time since Phase 121. The reporting was broken, not the work.
+>
+> **Derive the headline from the rows when you fold. Do not carry it forward.**
+> If it disagrees with the rows, the rows win.
+>
+> One further honesty, owed because the parity row is the largest single input:
+> **84 is an upper bound, not an estimate.** Every audit round so far has found
+> something, including this one, and a number that the next audit keeps
+> disproving is a ceiling. Treat it as such until a round audits and finds
+> nothing.
+
+**Phase 159 moved parity 82 → 84.** The headline read 96 through this round and
+three before it; see the correction above for why that was an artefact of the
+number rather than a fact about the port. Localisation is unchanged at ~55 and is the binding constraint
 on the composite rather than parity, so a round that closes leadership
 succession, a survey-resume duplication and three silent discards moves the row
 it belongs to and not the total. *A figure that rises every round is not being
 measured;* when parity finally passes the point where l10n dominates, the
 headline stops tracking it, and that is the table working.
 
-**Three rounds of a held headline is the table asking for a localisation
-round**, not evidence that the port has stopped improving. The arithmetic is
-public: parity is an estimate that has moved 6 points in three rounds and l10n
-has moved 0, so every further parity point buys less of the composite than the
-one before it. Phase 160 gives a whole lane to the l10n row for the first time
-since Phase 121 — see *What is actually left in localisation* below.
+**Localisation is the row to move, and the arithmetic is public**: parity has
+moved 6 points in three rounds and l10n moved 0, so every further parity point
+buys less of the composite than the one before it. Phase 160 gave a whole lane
+to the l10n row for the first time since Phase 121 — see *What is actually left
+in localisation* below — and it is the first round in which that row moves.
 
 **And the l10n ceiling has the mechanism wrong in every previous revision of
 this file, including the one that said the pool was "exhausted".** Measured at
