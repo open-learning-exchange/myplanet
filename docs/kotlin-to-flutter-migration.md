@@ -3571,14 +3571,32 @@ applies to the port:
   port's `?submission=` route and already prefills. On the arm Phase 159
   ported, Kotlin does not prefill either. It does not need to, because it never
   writes a blank answer: `isQuestionAnswered()` (`:289-321`) has **no
-  `required` test**, so Submit refuses until every question is answered. The
-  port's `take_survey_screen.dart:174-178` gates on `question.required &&`,
-  which Kotlin has no counterpart for, while its sibling
-  `public_survey_screen.dart:202-207` requires all of them — **the two port
-  screens disagree and the survey-list one is the one that diverges**, so a
-  learner there can upload `value: ''` to Planet where Kotlin cannot. That gate
-  is the open item; `_surveyAnswer`'s carry-over only keeps it from destroying
-  a resumed sheet's stored answer. The
+  `required` test** — it branches on the question's `type` and on the
+  `hasOtherOption` case, and `model/ExamQuestion.kt` has no such field for it
+  to read — so Submit refuses until every question is answered. The port's
+  `take_survey_screen.dart` gated on `question.required &&`, which Kotlin has
+  no counterpart for, while its sibling required all of them — **the two port
+  screens disagreed and the survey-list one was the one that diverged**, so a
+  learner there could upload `value: ''` to Planet where Kotlin cannot.
+  **Closed in Phase 160**: both screens now share
+  `ui/surveys/survey_answer_gate.dart`, which ignores the column in both
+  directions. `_surveyAnswer`'s carry-over stays, but note what it does and
+  does not cover: `createSurveyDraft` passes `carried`, **`updateSurveyAnswers`
+  does not**, and `SubmissionDao.upsertAll` replaces a submission's whole
+  answer set — so on the `?submission=` route the gate is the only thing
+  standing between a blank form and the stored answers it would overwrite.
+  `take_survey_screen_test.dart`'s *the gate on the resume path* group exists
+  because scoping the gate to the create path left the whole suite green.
+  Phase 160 also gave that route a second entry point: a lone **pending**
+  survey row in the submissions list reopens it, the port of
+  `SubmissionsAdapter:93-103`'s survey arm. It is narrowed to `pending`
+  because the port's one submissions list stands in for two Kotlin lists that
+  disagree about a finished sheet — `getSubmissionProjections` has three arms
+  (`SubmissionsRepositoryImpl.kt:100-106`), and `survey_submission`
+  (`status != "pending"`) opens the detail — and because the team-adoption
+  marker is a `type: 'survey'` row that must never be answered. Kotlin's
+  `count > 1` arm (`SubmissionListFragment`, every attempt plus a PDF export)
+  remains unported. The
   exam-resume path (a pending exam submission) remains a deliberate
   divergence: the port chose in-memory answers over per-question persistence.
 - `d64e98a30` (submissions repository detail view modelling) — removes the

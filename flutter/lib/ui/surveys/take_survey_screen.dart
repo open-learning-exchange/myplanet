@@ -11,6 +11,7 @@ import '../../providers/surveys_provider.dart';
 import '../../repository/submissions_repository.dart';
 import '../exam/user_information_screen.dart';
 import '../router.dart';
+import 'survey_answer_gate.dart';
 
 /// Offline survey-taking form, replacing the survey mode of
 /// `ExamTakingFragment.kt` for text and single/multiple-choice questions.
@@ -171,11 +172,10 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
 
   Future<void> _submit(List<SurveyQuestionRow> questions) async {
     final l10n = AppLocalizations.of(context);
-    final missing = questions.any(
-      (question) =>
-          question.required &&
-          textAnswers[question.id]!.text.trim().isEmpty &&
-          choiceAnswers[question.id]!.isEmpty,
+    final missing = surveyHasUnansweredQuestion(
+      questions,
+      textFor: (question) => textAnswers[question.id]!.text,
+      selectedFor: (question) => choiceAnswers[question.id]!,
     );
     if (missing) {
       ScaffoldMessenger.of(
@@ -428,12 +428,7 @@ class _QuestionCard extends StatelessWidget {
     final prompt = question.body?.isNotEmpty == true
         ? question.body!
         : question.header ?? '';
-    // `ExamTakingFragment.startExam` compares the type with
-    // `equals("selectMultiple", ignoreCase = true)`. Matching case-sensitively
-    // drew radio buttons for a document spelling it `selectmultiple`, so the
-    // respondent could pick exactly one of several intended answers — the same
-    // defect Phase 102 fixed in the public-survey screen.
-    final multiple = question.type?.toLowerCase() == 'selectmultiple';
+    final multiple = isSelectMultiple(question.type);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -442,7 +437,12 @@ class _QuestionCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '$number. $prompt${question.required ? ' *' : ''}',
+              // No asterisk: every question is required now, so marking
+              // some of them would be worse than marking none, and
+              // `ExamTakingFragment` marks none. The `required` column it read
+              // is false for every question of a survey Planet does not mark
+              // up, so this never rendered in practice either.
+              '$number. $prompt',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),

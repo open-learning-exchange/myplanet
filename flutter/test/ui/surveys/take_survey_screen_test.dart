@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -52,6 +53,33 @@ void main() {
           'type': type,
           'choices': choices,
         },
+      ],
+    })!;
+    await db.surveyDao.upsertAll(
+      [mapping.survey],
+      {'survey-1': mapping.questions},
+    );
+  }
+
+  /// Two questions: a choice one first, then a free-text one. A single
+  /// question cannot tell `any` from `first`, and putting the unanswered one
+  /// first cannot tell `any` from `all`.
+  Future<void> seedMixedSurvey() async {
+    final mapping = SurveyMapper.fromDoc({
+      '_id': 'survey-1',
+      'type': 'surveys',
+      'name': 'Community needs',
+      'questions': [
+        {
+          'id': 'q1',
+          'body': 'Which service?',
+          'type': 'select',
+          'choices': const [
+            {'id': 'water', 'text': 'Water'},
+            {'id': 'power', 'text': 'Power'},
+          ],
+        },
+        {'id': 'q2', 'body': 'How often?', 'type': 'input'},
       ],
     })!;
     await db.surveyDao.upsertAll(
@@ -361,6 +389,205 @@ void main() {
 
     expect(find.text('This survey has no questions'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Submit survey'), findsNothing);
+  });
+
+  group('the gate on the resume path', () {
+    /// **This is the path where a blank sheet does not merely upload noise —
+    /// it destroys what is already stored.**
+    ///
+    /// `SubmissionsRepository.updateSurveyAnswers` is the `?submission=`
+    /// writer, and unlike `createSurveyDraft` it calls `_surveyAnswer`
+    /// **without `carried`**. `SubmissionDao.upsertAll` replaces a
+    /// submission's whole answer set, so a draft that is blank for a question
+    /// overwrites that question's stored answer with `value: ''` and nothing
+    /// rescues it. The gate is the only thing standing there.
+    ///
+    /// Every other test in this file builds the screen with no
+    /// `submissionId`, so scoping the gate to the create path
+    /// (`widget.submissionId == null && surveyHasUnansweredQuestion(...)`)
+    /// left the whole suite green — measured. Hence this group.
+    ///
+    /// The fixture stores an answer under a `questionId` the live survey no
+    /// longer has, which is what makes it a test: `_loadExistingAnswers`
+    /// prefills nothing, so the form comes up empty over a populated row, and
+    /// only the gate stops Submit from writing the empty form over it.
+    Future<void> seedAnsweredSubmission() async {
+      await db
+          .into(db.submissions)
+          .insert(
+            SubmissionsCompanion.insert(
+              id: 'sub-1',
+              parentId: const Value('survey-1'),
+              userId: const Value('user-a'),
+              type: const Value('survey'),
+              status: const Value('pending'),
+              startTime: const Value(0),
+              lastUpdateTime: const Value(1),
+            ),
+          );
+      await db
+          .into(db.submissionAnswers)
+          .insert(
+            SubmissionAnswersCompanion.insert(
+              id: 'sub-1:stale-q',
+              submissionId: 'sub-1',
+              questionId: const Value('stale-q'),
+              value: const Value('the answer they already gave'),
+            ),
+          );
+    }
+
+    Future<void> pumpResume(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1000, 3000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        wrapScreen(
+          const TakeSurveyScreen(surveyId: 'survey-1', submissionId: 'sub-1'),
+          overrides: [
+            appDatabaseProvider.overrideWith((ref) {
+              ref.onDispose(db.close);
+              return db;
+            }),
+            planetApiProvider.overrideWithValue(MockPlanetApi()),
+            sessionProvider.overrideWith(
+              () => _StubSession(buildUserRow(id: 'user-a', name: 'jane')),
+            ),
+            serverConfigProvider.overrideWith(() => _StubServerConfig(null)),
+          ],
+          fallbackDatabase: false,
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a blank resumed sheet is refused, and the stored answer '
+        'survives', (tester) async {
+      await seedSurvey(type: 'input', choices: const []);
+      await seedAnsweredSubmission();
+      await pumpResume(tester);
+
+      // The form is empty — the stored answer is keyed to a question this
+      // survey no longer carries, so nothing prefilled it.
+      expect(find.byType(TextField), findsOneWidget);
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        isEmpty,
+      );
+
+      await tapSubmit(tester);
+
+      expect(find.text('Answer all required questions'), findsOneWidget);
+      final stored = await answers();
+      expect(stored, hasLength(1));
+      expect(stored.single.value, 'the answer they already gave');
+    });
+
+    testWidgets('answering the resumed sheet writes the new answer', (
+      tester,
+    ) async {
+      // The other direction, so the group cannot pass by refusing everything.
+      await seedSurvey(type: 'input', choices: const []);
+      await seedAnsweredSubmission();
+      await pumpResume(tester);
+
+      await tester.enterText(find.byType(TextField), 'a new answer');
+      await tester.pumpAndSettle();
+      await tapSubmit(tester);
+
+      expect(find.text('Answer all required questions'), findsNothing);
+      final stored = await answers();
+      expect(stored.map((row) => row.value), contains('a new answer'));
+    });
+  });
+
+  group('an unanswered sheet cannot be submitted', () {
+    /// `ExamTakingFragment` has no optional question: `isQuestionAnswered`
+    /// (`:289`) never looks at a `required` flag — `model/ExamQuestion.kt`
+    /// has none for it to look at — `btnNext` stays hidden while the current
+    /// question is unanswered (`:284`) and Submit toasts
+    /// *please select/write your answer to continue* (`:635-637`).
+    ///
+    /// This screen gated on `question.required &&` instead. **The fixture is
+    /// what makes these tests able to fail:** `seedSurvey` builds the survey
+    /// through the real `SurveyMapper` from a document with no `"required"`
+    /// key, which is the shape Planet sends, so the column is false and the
+    /// old conjunct short-circuited the whole guard. Seeding
+    /// `'required': true` would have passed either way — the decoy shape from
+    /// Phase 156.
+    Future<void> expectRefused() async {
+      expect(
+        find.text('Answer all required questions'),
+        findsOneWidget,
+        reason: 'the gate should have refused and said so',
+      );
+      // And nothing was written. A snackbar with a row behind it would be the
+      // worse half of the defect, not the fix.
+      expect(await db.select(db.submissions).get(), isEmpty);
+      expect(await answers(), isEmpty);
+    }
+
+    testWidgets('an untouched choice question refuses', (tester) async {
+      await seedSurvey(type: 'select');
+      await pumpScreen(tester);
+
+      await tapSubmit(tester);
+
+      await expectRefused();
+    });
+
+    testWidgets('an untouched text question refuses', (tester) async {
+      await seedSurvey(type: 'input', choices: const []);
+      await pumpScreen(tester);
+
+      expect(find.byType(TextField), findsOneWidget);
+      await tapSubmit(tester);
+
+      await expectRefused();
+    });
+
+    testWidgets('a whitespace-only text answer does not count', (tester) async {
+      // Pins the `.trim()`, which is the difference between refusing and
+      // uploading a sheet that reads as answered.
+      await seedSurvey(type: 'input', choices: const []);
+      await pumpScreen(tester);
+
+      await tester.enterText(find.byType(TextField), '   ');
+      await tester.pumpAndSettle();
+      await tapSubmit(tester);
+
+      await expectRefused();
+    });
+
+    testWidgets('one unanswered question among answered ones refuses', (
+      tester,
+    ) async {
+      // `any`, not `first`: the answered question comes first.
+      await seedMixedSurvey();
+      await pumpScreen(tester);
+
+      await tester.tap(find.text('Water'));
+      await tester.pumpAndSettle();
+      await tapSubmit(tester);
+
+      await expectRefused();
+    });
+
+    testWidgets('answering every question submits', (tester) async {
+      // The other direction, so the group cannot pass by refusing everything.
+      await seedMixedSurvey();
+      await pumpScreen(tester);
+
+      await tester.tap(find.text('Water'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'Twice a week');
+      await tester.pumpAndSettle();
+      await tapSubmit(tester);
+
+      expect(find.text('Answer all required questions'), findsNothing);
+      expect(await answers(), hasLength(2));
+    });
   });
 }
 
