@@ -153,7 +153,7 @@ void main() {
     // family is the risky part), the rest of `SubmissionDao` above, `NewsDao`,
     // `CourseDao`/`CourseStepDao`, then `NotificationDao`.
     final uncovered = corpus.length - _compared.length;
-    expect(uncovered, 316 - 187);
+    expect(uncovered, 316 - 198);
   });
 }
 
@@ -257,7 +257,7 @@ const _corpusSize = 316;
 
 /// Entries in [_compared], stated separately so the map and the claim about it
 /// cannot drift apart.
-const _comparedCount = 187;
+const _comparedCount = 198;
 
 /// Queries a lane has read against the port's Drift builder and reached a
 /// verdict on, with the digest the statement had at that moment.
@@ -876,4 +876,44 @@ const _compared = <String, String>{
   // Android app does not exist here. Reported, not fixed — every file it
   // touches belongs to another lane.
   'RatingDao.isRatingPrompted': '21695a43707a',
+
+  // --- FeedbackDao and PersonalDao finished off -------------------------
+  'FeedbackDao.getPending': '10f71ca95fc3',
+  'FeedbackDao.findById': '8665edb47fca',
+  'FeedbackDao.getByIds': '2e032cf2d3ac',
+  'FeedbackDao.closeById': 'ca3a7e93cd26',
+  // Kotlin sets `isUploaded = 1` alone; the port's `markUploaded(id, rev)`
+  // writes the revision with it, which `ConflictRecovery` needs and Kotlin
+  // takes from a separate path. A superset, and Phase 157's feedback fix is
+  // built on it.
+  'FeedbackDao.markUploaded': '6ef7bc2f6fa6',
+  'PersonalDao.getPendingUploads': 'bfc74c05a209',
+  'PersonalDao.findById': '4981b637eb70',
+  // **No caller in `app/src/main`** — the by-`_id` twin of `findById`, laid in
+  // and never wired. (The `findByDocId` hits a grep turns up are `ChatDao`'s.)
+  'PersonalDao.findByDocId': '5db571045ddf',
+  // `_id = :id OR id = :id`, against the port's primary-key `deleteById`. The
+  // port's caller chain hands it `row.id` throughout, so the `_id` arm is
+  // unreachable from it; recorded because the arm exists and a future caller
+  // resolving a note from a server document would need it.
+  'PersonalDao.deleteByIdOrDocId': '7978a7e331b5',
+  'PersonalDao.updateUploadedStatus': 'f3d9ebf0ac14',
+  // **This one corrected a wrong statement in the port**, which is the one
+  // thing this lane is allowed to fix outside its file.
+  // `personals_repository.dart`'s `update` carried a comment saying its
+  // whole-row write matches "Room's `@Update` in `PersonalDao`". There is no
+  // `@Update` in `PersonalDao` — one `@Insert` and nine `@Query`s
+  // (`PersonalDao.kt:20`) — and the edit path is this method, a targeted
+  // `SET title = COALESCE(:title, title), description = COALESCE(:description,
+  // description) WHERE _id = :id OR id = :id`.
+  //
+  // Reading it properly also found a real divergence the wrong citation was
+  // hiding: `updateFields` **never touches `isUploaded`**, so on Android
+  // editing an already-uploaded note leaves it flagged uploaded and the edit
+  // is never sent. The port writes `isUploaded: false`, so it is. Clearing a
+  // description works in both, but not for the reason `COALESCE` suggests —
+  // `PersonalsFragment.kt:120-122` passes the dialog's text rather than null,
+  // and `COALESCE('', …)` writes the empty string. The comment now says all
+  // of this.
+  'PersonalDao.updateFields': '44c2c177b1bf',
 };
