@@ -75,7 +75,9 @@ class ResourcesRepositoryLibrarySyncTest {
             mockk<org.ole.planet.myplanet.repository.ConfigurationsRepository>(relaxed = true),
             mockk<org.ole.planet.myplanet.utils.DispatcherProvider>(relaxed = true),
             mockk<org.ole.planet.myplanet.utils.DeviceNameProvider>(relaxed = true),
-            mockk<org.ole.planet.myplanet.utils.TimeProvider>(relaxed = true)
+            mockk<org.ole.planet.myplanet.utils.TimeProvider>(relaxed = true),
+            mockk<kotlinx.coroutines.CoroutineScope>(relaxed = true),
+            mockk<org.ole.planet.myplanet.utils.StoragePathResolver>(relaxed = true)
         )
     }
 

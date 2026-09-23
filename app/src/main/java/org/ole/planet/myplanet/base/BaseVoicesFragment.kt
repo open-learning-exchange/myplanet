@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -35,7 +36,7 @@ import org.ole.planet.myplanet.ui.voices.VoicesActions
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 
 abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickListener {
     lateinit var imageList: MutableList<String>
@@ -153,7 +154,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         val `object` = JsonObject()
         `object`.addProperty("imageUrl", path)
         `object`.addProperty("fileName", getFileNameFromUrl(path))
-        imageList.add(JsonUtils.gson.toJson(`object`))
+        imageList.add(GsonUtils.gson.toJson(`object`))
 
         try {
             llImage?.visibility = View.VISIBLE
@@ -164,18 +165,22 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
             llImage?.addView(imageBinding.root)
             if (resultCode == 102) adapterNews?.setImageList(imageList)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "processImageUri failed", e)
         }
     }
 
     private fun isImageAlreadyAdded(path: String): Boolean {
         return imageList.any { imageJson ->
             try {
-                val imgObject = JsonUtils.gson.fromJson(imageJson, JsonObject::class.java)
-                JsonUtils.getString("imageUrl", imgObject) == path
+                val imgObject = GsonUtils.gson.fromJson(imageJson, JsonObject::class.java)
+                GsonUtils.getString("imageUrl", imgObject) == path
             } catch (e: Exception) {
                 false
             }
         }
+    }
+
+    companion object {
+        private const val TAG = "BaseVoicesFragment"
     }
 }

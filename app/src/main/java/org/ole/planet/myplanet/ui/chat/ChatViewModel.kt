@@ -33,7 +33,7 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.ChatSearch
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.RetryUtils
 
 data class ChatUiState(
@@ -197,7 +197,7 @@ class ChatViewModel @Inject constructor(
         val parsedConversations = withContext(dispatcherProvider.io) {
             if (newsConversations.isNullOrBlank()) return@withContext emptyList()
             try {
-                JsonUtils.gson.fromJson(newsConversations, Array<Conversation>::class.java).toList()
+                GsonUtils.gson.fromJson(newsConversations, Array<Conversation>::class.java).toList()
             } catch (e: Exception) {
                 emptyList()
             }

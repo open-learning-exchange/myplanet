@@ -5,6 +5,7 @@ import android.app.Dialog
 import android.content.Context
 import android.os.Build
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -38,7 +39,7 @@ import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ImageUtils
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 import org.ole.planet.myplanet.utils.StableIdGenerator
@@ -115,6 +116,7 @@ class VoicesAdapter(
     )
 ) {
     companion object {
+        private const val TAG = "VoicesAdapter"
         const val PAYLOAD_TEAM_LEADER_CHANGED = "PAYLOAD_TEAM_LEADER_CHANGED"
         const val PAYLOAD_CURRENT_USER_CHANGED = "PAYLOAD_CURRENT_USER_CHANGED"
         const val PAYLOAD_NON_TEAM_MEMBER_CHANGED = "PAYLOAD_NON_TEAM_MEMBER_CHANGED"
@@ -312,7 +314,7 @@ class VoicesAdapter(
                         configureEditDeleteButtons(holder, news)
                     }
                     PAYLOAD_EDIT_ACTION -> {
-                        val sharedTeamName = news.parsedSharedTeamName ?: JsonUtils.extractSharedTeamName(news)
+                        val sharedTeamName = news.parsedSharedTeamName ?: GsonUtils.extractSharedTeamName(news)
                         setMessageAndDate(holder, news, sharedTeamName)
                         configureEditDeleteButtons(holder, news)
                         showReplyButton(holder, news, position)
@@ -320,7 +322,7 @@ class VoicesAdapter(
                     }
                     PAYLOAD_VIEW_IN_CHANGED -> {
                         showShareButton(holder, news)
-                        val sharedTeamName = news.parsedSharedTeamName ?: JsonUtils.extractSharedTeamName(news)
+                        val sharedTeamName = news.parsedSharedTeamName ?: GsonUtils.extractSharedTeamName(news)
                         setMessageAndDate(holder, news, sharedTeamName)
                     }
                 }
@@ -336,7 +338,7 @@ class VoicesAdapter(
             val news = getNews(holder, position)
 
             run {
-                val sharedTeamName = news.parsedSharedTeamName ?: JsonUtils.extractSharedTeamName(news)
+                val sharedTeamName = news.parsedSharedTeamName ?: GsonUtils.extractSharedTeamName(news)
                 resetViews(holder)
                 updateReplyCount(holder, news, position)
                 val userModel = configureUser(holder, news)
@@ -589,9 +591,9 @@ class VoicesAdapter(
     private fun parseViewIn(viewIn: String?): JsonArray? {
         if (TextUtils.isEmpty(viewIn)) return null
         return try {
-            JsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
+            GsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "parseViewIn failed", e)
             null
         }
     }
@@ -599,9 +601,9 @@ class VoicesAdapter(
     private fun parseConversations(conversations: String?): List<Conversation>? {
         if (conversations.isNullOrEmpty()) return null
         return try {
-            JsonUtils.gson.fromJson(conversations, Array<Conversation>::class.java).toList()
+            GsonUtils.gson.fromJson(conversations, Array<Conversation>::class.java).toList()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "parseConversations failed", e)
             null
         }
     }
@@ -609,9 +611,9 @@ class VoicesAdapter(
     private fun parseImageUrls(imageUrls: List<String>?): List<JsonObject>? {
         if (imageUrls.isNullOrEmpty()) return null
         return try {
-            imageUrls.map { JsonUtils.gson.fromJson(it, JsonObject::class.java) }
+            imageUrls.map { GsonUtils.gson.fromJson(it, JsonObject::class.java) }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "parseImageUrls failed", e)
             null
         }
     }
@@ -647,10 +649,10 @@ class VoicesAdapter(
                         it.rawImageUrls = null
                     }
                 }
-                it.parsedSharedTeamName = JsonUtils.extractSharedTeamName(it)
+                it.parsedSharedTeamName = GsonUtils.extractSharedTeamName(it)
             } catch (e: Exception) {
                 // Catch any parsing exceptions so one bad row doesn't break submitList
-                e.printStackTrace()
+                Log.w(TAG, "preParseNews failed", e)
             }
         }
     }
@@ -733,7 +735,7 @@ class VoicesAdapter(
                 replyCountCache[newsId] = replyCount
                 applyReplyCount(viewHolder.binding, replyCount, position)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "updateReplyCount failed", e)
             }
         }
     }
@@ -863,12 +865,12 @@ class VoicesAdapter(
         if (!parsedImageUrls.isNullOrEmpty()) {
             try {
                 if (parsedImageUrls.size == 1) {
-                    val path = JsonUtils.getString("imageUrl", parsedImageUrls[0])
+                    val path = GsonUtils.getString("imageUrl", parsedImageUrls[0])
                     loadSingleImage(binding, path)
                 } else {
                     binding.llNewsImages.visibility = View.VISIBLE
                     for (imgObject in parsedImageUrls) {
-                        val path = JsonUtils.getString("imageUrl", imgObject)
+                        val path = GsonUtils.getString("imageUrl", imgObject)
                         addImageToContainer(binding, path)
                     }
                 }
@@ -883,13 +885,13 @@ class VoicesAdapter(
             if (!imagesArray.isEmpty()) {
                 if (size == 1) {
                     val ob = imagesArray[0]?.asJsonObject
-                    val resourceId = JsonUtils.getString("resourceId", ob)
+                    val resourceId = GsonUtils.getString("resourceId", ob)
                     loadLibraryImage(binding, resourceId)
                 } else {
                     binding.llNewsImages.visibility = View.VISIBLE
                     for (i in 0 until size) {
                         val ob = imagesArray[i]?.asJsonObject
-                        val resourceId = JsonUtils.getString("resourceId", ob)
+                        val resourceId = GsonUtils.getString("resourceId", ob)
                         addLibraryImageToContainer(binding, resourceId)
                     }
                 }

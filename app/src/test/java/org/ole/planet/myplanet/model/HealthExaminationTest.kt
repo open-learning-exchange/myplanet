@@ -11,9 +11,9 @@ import org.junit.Test
 
 class HealthExaminationTest {
 
-    // JsonUtils.safeGet logs through android.util.Log on its fallback path, which the
+    // GsonUtils.safeGet logs through android.util.Log on its fallback path, which the
     // non-boolean/malformed cases below exercise, so Log needs stubbing even though
-    // formatConditions itself is pure. Mirrors JsonUtilsTest.
+    // formatConditions itself is pure. Mirrors GsonUtilsTest.
     @Before
     fun setUp() {
         mockkStatic(Log::class)
