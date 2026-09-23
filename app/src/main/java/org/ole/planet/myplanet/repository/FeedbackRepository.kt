@@ -17,5 +17,5 @@ interface FeedbackRepository {
     suspend fun getFeedbackById(id: String?): Feedback?
     suspend fun closeFeedback(id: String?)
     suspend fun addReply(id: String?, message: String, user: String?)
-    suspend fun markFeedbackUploaded(id: String): Boolean
+    suspend fun markFeedbackUploaded(id: String, remoteId: String, remoteRev: String): Boolean
 }

@@ -106,6 +106,31 @@ class FeedbackRepositoryImplTest {
     }
 
     @Test
+    fun insertFromJson_withPendingLocalClose_keepsClosedStatus() = runTest {
+        val existing = Feedback().apply {
+            id = "fb1"
+            status = "Closed"
+            isUploaded = false
+            messages = "[]"
+        }
+        coEvery { feedbackDao.findById("fb1") } returns existing
+
+        val serverDoc = JsonObject().apply {
+            addProperty("_id", "fb1")
+            addProperty("status", "Open")
+            add("messages", JsonArray())
+        }
+
+        val saved = slot<Feedback>()
+        coEvery { feedbackDao.upsert(capture(saved)) } returns Unit
+
+        repository.insertFromJson(serverDoc)
+
+        assertEquals("Closed", saved.captured.status)
+        assertFalse(saved.captured.isUploaded)
+    }
+
+    @Test
     fun insertFromJson_withNoPendingLocalChanges_overwritesFromServer() = runTest {
         coEvery { feedbackDao.findById("fb1") } returns null
 
