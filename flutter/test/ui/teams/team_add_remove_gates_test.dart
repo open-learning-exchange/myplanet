@@ -89,6 +89,15 @@ void main() {
             teamMembershipsProvider.overrideWith(
               (ref) => Stream.value(const {}),
             ),
+            // The overflow menu watches `teamMemberCountProvider` (Kotlin's
+            // `itemCount`). This test drives the list from an overridden
+            // provider rather than real rows, so the real count is 0 and the
+            // stream would stay open on the caller's own database — which
+            // surfaces as "A Timer is still pending". This test is about the
+            // name and avatar, not the menu, so the count is stubbed.
+            teamMemberCountProvider(
+              'team-1',
+            ).overrideWith((ref) => Stream.value(2)),
             sessionProvider.overrideWith(
               () =>
                   _TestSessionNotifier(buildUserRow(id: 'user-1', name: 'ada')),

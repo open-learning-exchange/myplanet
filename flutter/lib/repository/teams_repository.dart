@@ -72,6 +72,23 @@ class TeamsRepository {
   Stream<List<TeamRow>> watchMemberships(String userId) =>
       _dao.watchMemberships(userId);
   Stream<int> watchMemberCount(String teamId) => _dao.watchMemberCount(teamId);
+
+  /// Every `membership` row of [teamId], one shot.
+  ///
+  /// [updateTeamLeader] already reads exactly this set; the leave path needs
+  /// it too, to ask both *"is the leaver a leader"* and *"does this team have
+  /// a leader at all"* off one read rather than a `LIMIT 1` lookup that picks
+  /// an arbitrary row when a user holds two membership documents.
+  Future<List<TeamRow>> memberships(String teamId) =>
+      _dao.watchTeamDocuments(teamId, 'membership').first;
+
+  /// The pool of members who could take over leadership of [teamId] when
+  /// [excludeUserId] leaves — `TeamDao.getEligibleNextLeaderCandidates`
+  /// (`TeamDao.kt:22`), ranked by [selectNextLeaderCandidate].
+  Future<List<TeamRow>> eligibleNextLeaderCandidates(
+    String teamId,
+    String? excludeUserId,
+  ) => _dao.eligibleNextLeaderCandidates(teamId, excludeUserId);
   Stream<List<TeamRow>> watchMembers(String teamId) =>
       _dao.watchTeamDocuments(teamId, 'membership');
   Stream<List<TeamRow>> watchRequests(String teamId) =>
@@ -840,9 +857,16 @@ class TeamsRepository {
     String teamId,
     String newLeaderId,
   ) async {
-    final memberships = await _dao
-        .watchTeamDocuments(teamId, 'membership')
-        .first;
+    final rows = await _dao.watchTeamDocuments(teamId, 'membership').first;
+    // `TeamsRepositoryImpl.kt:1063` —
+    // `memberships.firstOrNull { it.userId == newLeaderId } ?: return false`.
+    // Without it a `newLeaderId` matching no membership demotes **every**
+    // member and reports success, because the loop's `shouldBeLeader` is
+    // false for every row. Unreachable from today's callers, which all pass a
+    // `userId` read off a membership row of this team — but this round turned
+    // one call site into three.
+    if (!rows.any((row) => row.userId == newLeaderId)) return const [];
+    final memberships = rows;
     final changed = <TeamRow>[];
     for (final row in memberships) {
       final shouldBeLeader = row.userId == newLeaderId;
@@ -1127,3 +1151,123 @@ String formatDateForCsv(int millis) {
 
 String _randomId() =>
     '${DateTime.now().microsecondsSinceEpoch}-${Random.secure().nextInt(1 << 32)}';
+
+/// Ranks the eligible successors to a departing team member and returns the
+/// **membership row** that should be promoted, or null when nobody can be.
+///
+/// Port of the tail of `TeamsRepositoryImpl.getNextLeaderCandidate`
+/// (`:1079-1104`), from the `getUsersByIds` call onwards. Pure — the three
+/// reads it needs are done by the caller — so the ranking can be pinned
+/// without a database, the way [sortTeamsCatalog] already is.
+///
+/// The algorithm, and every step of it is load-bearing:
+///
+/// 1. [users] keyed by identity — `users.associateBy { it.id }` at `:1091`,
+///    but see the divergence below.
+/// 2. `userNames = users.mapNotNull { it.name }.distinct()` (`:1092`) — the
+///    argument the caller passed to `teamVisitsForUsers`, which keys
+///    `team_log` on the user's **name**, not their id.
+/// 3. `visitCounts = logs.groupingBy { it.user }.eachCount()` (`:1098`).
+/// 4. `members.maxByOrNull { visitCounts[userMap[it.userId]?.name] ?: 0 }`
+///    (`:1100-1102`) — the successor is the remaining member with the most
+///    team visits, defaulting to zero.
+///
+/// **Ties go to the first candidate in [candidates].** Kotlin's `maxByOrNull`
+/// replaces its running maximum only on a strict `>` (verified against the
+/// compiled stdlib, not its documentation), so the earliest element wins — and
+/// `getEligibleNextLeaderCandidates` has no `ORDER BY`, so on a tie Kotlin
+/// promotes whoever SQLite happened to return first. The port cannot be more
+/// deterministic than that without inventing an ordering Kotlin does not have,
+/// so it reproduces the rule and leaves the order to the caller's query.
+///
+/// **The one place this deliberately does not reproduce Kotlin: the identity
+/// lookup.** Kotlin fetches users with `id IN (:ids) OR _id IN (:ids)`
+/// (`UserDao.kt:12-13`) and then keys the map on `it.id` alone, while looking
+/// up by `member.userId`. A membership whose `userId` holds the server's `_id`
+/// for an account still carrying a locally-minted `id` therefore resolves to
+/// no user: it scores zero, and if it wins, Kotlin's closing
+/// `userMap[successorMember.userId]` returns null and **nobody is promoted at
+/// all** — the team is left leaderless by the very code meant to prevent it.
+///
+/// That state is reachable, and not only on Android. Kotlin spells a
+/// membership's `userId` two ways: a join request carries `user.id`
+/// (`TeamsRepositoryImpl:620`, promoted to a membership unchanged by
+/// `respondToMemberRequest` at `:641-647`), while `createTeamAndAddMember`
+/// writes `user._id` (`:174`). `markUserUploaded` (`UserRepositoryImpl
+/// :946-951`) never rewrites a local account's primary key — so both spellings
+/// reach CouchDB and both sync down here, where `TeamMapper` stores whatever
+/// the document says. Reproducing the asymmetry would mean this lane's fix
+/// silently does nothing for exactly those teams, which is the defect it
+/// exists to close, so the map is keyed on **both** columns — the same pair
+/// `UserDao.getByAnyIds` matched on to fetch them, and the pair Kotlin's own
+/// `mapUsersByAnyId` (`:952-961`) uses 130 lines earlier in the same file for
+/// the members list. The effect is strictly to resolve candidates Kotlin
+/// loses; a candidate that resolves under `id` resolves identically here.
+///
+/// Returning the **membership row** rather than the user closes the second
+/// half of the same hole: the caller promotes with `updateTeamLeader`, which
+/// matches `row.userId == newLeaderId`, so handing it the *user's* `id` — as
+/// Kotlin does at `RequestsViewModel:82` — misses for the same rows. The
+/// requirement that the winner resolve to a real user is kept: an
+/// unresolvable candidate can never be promoted.
+TeamRow? selectNextLeaderCandidate({
+  required List<TeamRow> candidates,
+  required List<UserRow> users,
+  required List<TeamLogRow> visits,
+}) {
+  if (candidates.isEmpty) return null;
+  if (users.isEmpty) return null;
+  final userMap = <String, UserRow>{};
+  for (final user in users) {
+    userMap.putIfAbsent(user.id, () => user);
+    final couchId = user.couchId;
+    if (couchId != null && couchId.isNotEmpty) {
+      userMap.putIfAbsent(couchId, () => user);
+    }
+  }
+  final visitCounts = <String, int>{};
+  for (final log in visits) {
+    final name = log.user;
+    if (name == null) continue;
+    visitCounts[name] = (visitCounts[name] ?? 0) + 1;
+  }
+  int scoreOf(TeamRow member) {
+    final name = _resolve(userMap, member.userId)?.name;
+    if (name == null) return 0;
+    return visitCounts[name] ?? 0;
+  }
+
+  var best = candidates.first;
+  var bestScore = scoreOf(best);
+  for (final candidate in candidates.skip(1)) {
+    final score = scoreOf(candidate);
+    // Strictly greater, so the first candidate holding the maximum keeps it —
+    // `maxByOrNull`'s tie rule. `>=` here would silently promote the *last*
+    // most-active member instead.
+    if (score > bestScore) {
+      best = candidate;
+      bestScore = score;
+    }
+  }
+  // Kotlin's closing `successorMember?.userId?.let { userMap[it] }` — the
+  // winner has to be somebody this device actually knows, or nobody is
+  // promoted.
+  return _resolve(userMap, best.userId) == null ? null : best;
+}
+
+/// A membership's `userId` looked up in the two-keyed identity map built by
+/// [selectNextLeaderCandidate]. Null `userId` resolves to nobody.
+UserRow? _resolve(Map<String, UserRow> userMap, String? userId) =>
+    userId == null ? null : userMap[userId];
+
+/// The distinct names [selectNextLeaderCandidate]'s `visits` argument must be
+/// fetched for — `users.mapNotNull { it.name }.distinct()` at
+/// `TeamsRepositoryImpl.kt:1092`.
+List<String> leaderCandidateVisitNames(List<UserRow> users) {
+  final seen = <String>{};
+  for (final user in users) {
+    final name = user.name;
+    if (name != null) seen.add(name);
+  }
+  return seen.toList();
+}

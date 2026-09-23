@@ -73,6 +73,7 @@
   "search": "Rechercher",
   "sync": "Synchroniser",
   "cancel": "Annuler",
+  "cannotRemoveUser": "L'utilisateur n'a pas pu être supprimé",
   "settings": "Paramètres",
   "backgroundSync": "Synchronisation en arrière-plan",
   "@backgroundSync": {

@@ -66,6 +66,13 @@ void main() {
           teamRequestsProvider(
             'team-1',
           ).overrideWith((ref) => Stream.value(const <TeamRow>[])),
+          // The overflow menu now watches `teamMemberCountProvider`
+          // (Kotlin's `itemCount`, i.e. resolvable members). Unoverridden it
+          // opens a drift stream on the harness's fallback database, which
+          // surfaces as "A Timer is still pending".
+          teamMemberCountProvider(
+            'team-1',
+          ).overrideWith((ref) => Stream.value(2)),
           teamMembershipsProvider.overrideWith(
             (ref) => Stream.value(const <String, TeamRow>{}),
           ),
@@ -99,6 +106,13 @@ void main() {
           teamRequestsProvider(
             'team-1',
           ).overrideWith((ref) => Stream.value(const <TeamRow>[])),
+          // The overflow menu now watches `teamMemberCountProvider`
+          // (Kotlin's `itemCount`, i.e. resolvable members). Unoverridden it
+          // opens a drift stream on the harness's fallback database, which
+          // surfaces as "A Timer is still pending".
+          teamMemberCountProvider(
+            'team-1',
+          ).overrideWith((ref) => Stream.value(2)),
           teamMembershipsProvider.overrideWith(
             (ref) => Stream.value(const <String, TeamRow>{}),
           ),
@@ -131,6 +145,13 @@ void main() {
           teamRequestsProvider(
             'team-1',
           ).overrideWith((ref) => Stream.value(requests)),
+          // The overflow menu now watches `teamMemberCountProvider`
+          // (Kotlin's `itemCount`, i.e. resolvable members). Unoverridden it
+          // opens a drift stream on the harness's fallback database, which
+          // surfaces as "A Timer is still pending".
+          teamMemberCountProvider(
+            'team-1',
+          ).overrideWith((ref) => Stream.value(2)),
           teamMembershipsProvider.overrideWith(
             (ref) => Stream.value(memberships),
           ),
@@ -169,6 +190,13 @@ void main() {
           teamRequestsProvider(
             'team-1',
           ).overrideWith((ref) => Stream.value(const <TeamRow>[])),
+          // The overflow menu now watches `teamMemberCountProvider`
+          // (Kotlin's `itemCount`, i.e. resolvable members). Unoverridden it
+          // opens a drift stream on the harness's fallback database, which
+          // surfaces as "A Timer is still pending".
+          teamMemberCountProvider(
+            'team-1',
+          ).overrideWith((ref) => Stream.value(2)),
           teamMembershipsProvider.overrideWith(
             (ref) => Stream.value(memberships),
           ),
@@ -201,6 +229,13 @@ void main() {
           teamRequestsProvider(
             'team-1',
           ).overrideWith((ref) => Stream.value(const <TeamRow>[])),
+          // The overflow menu now watches `teamMemberCountProvider`
+          // (Kotlin's `itemCount`, i.e. resolvable members). Unoverridden it
+          // opens a drift stream on the harness's fallback database, which
+          // surfaces as "A Timer is still pending".
+          teamMemberCountProvider(
+            'team-1',
+          ).overrideWith((ref) => Stream.value(2)),
           teamMembershipsProvider.overrideWith(
             (ref) => Stream.value(const <String, TeamRow>{}),
           ),
@@ -236,6 +271,13 @@ void main() {
           teamRequestsProvider(
             'team-1',
           ).overrideWith((ref) => Stream.value(const <TeamRow>[])),
+          // The overflow menu now watches `teamMemberCountProvider`
+          // (Kotlin's `itemCount`, i.e. resolvable members). Unoverridden it
+          // opens a drift stream on the harness's fallback database, which
+          // surfaces as "A Timer is still pending".
+          teamMemberCountProvider(
+            'team-1',
+          ).overrideWith((ref) => Stream.value(2)),
           teamMembershipsProvider.overrideWith(
             (ref) => Stream.value(const <String, TeamRow>{}),
           ),
