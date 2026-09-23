@@ -124,23 +124,63 @@ class _SubmissionsScreenState extends ConsumerState<SubmissionsScreen> {
   /// **The survey arm had no counterpart here, and it is the only way back
   /// into a half-finished survey from this screen.** Every tap went to the
   /// read-only detail, so a learner who left a survey part-answered and came
-  /// to *My surveys* to finish it was shown what they had answered so far and
-  /// given no way to add to it. `home_screen.dart:253` was the port's one
-  /// pusher of the resume route, and it only offers the surveys the reminder
-  /// dialog lists.
+  /// to their submissions to finish it was shown what they had answered so
+  /// far and given no way to add to it. `home_screen.dart:252` was the port's
+  /// one pusher of the resume route, and it only offers the surveys the
+  /// reminder dialog lists.
   ///
-  /// Kotlin branches on the **adapter's** type rather than the row's, but the
-  /// two are the same test: `SubmissionsFragment` is constructed per type and
-  /// `getSubmissions` filters to `it.type == "survey"` for the survey list and
-  /// `it.type != "survey"` for the other one
-  /// (`SubmissionsRepositoryImpl.kt:101-105`), so every row in a survey list
-  /// has `type == "survey"`. This screen is one type-agnostic list, so the
-  /// row's own type is what carries the distinction.
+  /// **Why `status == 'pending'` when Kotlin's arm has no status test.**
+  /// Kotlin branches on the *adapter's* type, and an earlier revision of this
+  /// comment claimed the row's own type is the same test. It is not:
+  /// `getSubmissionProjections` (`SubmissionsRepositoryImpl.kt:100-106`) has
+  /// **three** arms, not two, and two of them are all-`type == "survey"` rows:
+  ///
+  /// ```kotlin
+  /// "survey"            -> it.type == "survey"
+  /// "survey_submission" -> it.type == "survey" && it.status != "pending"
+  /// else                -> it.type != "survey"
+  /// ```
+  ///
+  /// `"survey"` is *My surveys*, whose rows reopen the form. `survey_submission`
+  /// is the Survey radio on *My submissions* (`SubmissionsFragment.kt:70-90`,
+  /// reached from the no-argument `LifeAdapter.kt:180`), whose rows open the
+  /// detail. This screen is the port's only submissions list and has to stand
+  /// in for both, so it takes the behaviour they **agree** on: a *pending*
+  /// survey sheet appears only in the first list, which resumes it; a finished
+  /// one appears in both, and only the second is non-destructive, so it keeps
+  /// the detail.
+  ///
+  /// That is not pedantry about a filter. Without the status test:
+  ///
+  /// * A completed sheet whose survey has since gone — a pruned adopted clone,
+  ///   or one deleted upstream — would open `TakeSurveyScreen`, which reads the
+  ///   **live** survey, find no questions and render *This survey has no
+  ///   questions*. The learner could no longer see their own answers at all,
+  ///   where the detail renders the submission's own stored questions.
+  /// * The **team-adoption marker** would be reopened as if it were an answer
+  ///   sheet. `createSurveyAdoptionSubmission` writes `type: 'survey'`,
+  ///   `status: ''` and the **source** survey's bare id, and `watchForUser`
+  ///   filters neither, so it is in this list looking like a half-finished
+  ///   survey. Answering it would set `status: 'complete'`, which drops it out
+  ///   of `findExistingAdoption`'s `status.isEmpty` test and into
+  ///   `pendingUploads` — the adoption record destroyed and the answers
+  ///   uploaded stapled to its blobs. Kotlin's *My surveys* arm has the same
+  ///   hole, but the port's own `pendingSurveySubmissions` already decided the
+  ///   other way ("Adoption records … describe the act of copying a survey,
+  ///   not an answer sheet"), and two entry points disagreeing about one row
+  ///   is how this project loses data.
+  ///
+  /// `status` is compared exactly rather than through [_isComplete], because
+  /// what is wanted here is *this row is a sheet somebody is part-way through*
+  /// — the marker's `''` and a graded exam's `'requires grading'` are both
+  /// "not pending" and both belong on the detail.
   ///
   /// The survey id comes off `parentId`, which is `"<surveyId>@<courseId>"`
-  /// for a course-attached survey and the bare id otherwise — Kotlin reduces
-  /// it the same way, `sub?.parentId?.substringBefore("@")`
-  /// (`BaseExamFragment.kt:88`). Phase 125 is why that compound key exists.
+  /// for a course-attached survey and the bare id otherwise.
+  /// [SubmissionsRepository.parentBaseId] is the named port of Kotlin's
+  /// `sub?.parentId?.substringBefore("@")` (`BaseExamFragment.kt:90`) and
+  /// exists so there is one derivation rather than a split re-implemented per
+  /// reader — which is what the first cut of this method did.
   ///
   /// **`count > 1` is still a gap and deliberately left as one:** Kotlin opens
   /// `SubmissionListFragment` (every attempt for that parent, with a PDF
@@ -149,9 +189,16 @@ class _SubmissionsScreenState extends ConsumerState<SubmissionsScreen> {
   /// newest attempt's detail, which is what it did before.
   void _open(SubmissionListEntry entry) {
     final row = entry.row;
-    if (entry.count == 1 && (row.type ?? '') == 'survey') {
-      final surveyId = (row.parentId ?? '').split('@').first;
+    if (entry.count == 1 &&
+        (row.type ?? '') == 'survey' &&
+        (row.status ?? '') == 'pending') {
+      final surveyId = SubmissionsRepository.parentBaseId(row.parentId) ?? '';
       if (surveyId.isNotEmpty) {
+        // `push`, never `go`: `_thankAndLeave` pops when it can, and `go`
+        // would replace this list rather than stack on it, landing a learner
+        // who just finished on the surveys catalog instead of back here. The
+        // port already paid for that once — see the note at
+        // `take_survey_screen.dart`'s course-step return path.
         context.push(
           '${Routes.surveys}/${Uri.encodeComponent(surveyId)}'
           '?submission=${Uri.encodeComponent(row.id)}',

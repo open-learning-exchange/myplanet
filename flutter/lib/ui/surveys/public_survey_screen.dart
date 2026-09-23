@@ -195,6 +195,22 @@ class _PublicSurveyScreenState extends ConsumerState<PublicSurveyScreen> {
     final l10n = AppLocalizations.of(context);
     // Shared with `take_survey_screen`, which had the other half of this
     // rule wrong for the same reason — see `survey_answer_gate.dart`.
+    //
+    // The two accessors are not symmetrical, and the asymmetry is now
+    // load-bearing, so it is written down rather than left to be rediscovered.
+    // `_loadSurvey` fills `_textControllers` **only** for a choice-less
+    // question and `_choiceAnswers` **only** for a choice one, but `build`
+    // then backfills `_choiceAnswers` for every question through
+    // `putIfAbsent`, and never backfills `_textControllers` — the card takes a
+    // nullable controller. So `_choiceAnswers[...]!` is safe here *because the
+    // Submit button cannot exist before that build has run*, while
+    // `_textControllers[...]` genuinely is null for a choice question and the
+    // `?? ''` is doing real work.
+    //
+    // The old ternary dereferenced whichever map matched the question, so
+    // neither case arose; the shared helper evaluates both arguments eagerly,
+    // which is what makes the distinction matter. Do not "tidy" the `?? ''`
+    // into a `!`.
     final missing = surveyHasUnansweredQuestion(
       _questions,
       textFor: (question) => _textControllers[question.id]?.text ?? '',

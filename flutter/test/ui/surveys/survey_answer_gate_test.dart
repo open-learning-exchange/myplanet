@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/data/local/converters.dart';
@@ -134,7 +136,9 @@ void main() {
       expect(
         surveyHasUnansweredQuestion(
           [choice, text],
-          textFor: (q) => q == text ? '' : '',
+          // Both questions are unanswered on their own axis; only `choice`
+          // is answered, and it comes first.
+          textFor: (_) => '',
           selectedFor: (q) => q == choice ? {water} : const {},
         ),
         isTrue,
@@ -165,6 +169,75 @@ void main() {
         ),
         isFalse,
       );
+    });
+  });
+
+  group('both survey screens go through this file', () {
+    // Phase 158's lesson one layer up: the tests above prove the rule is
+    // right, and the screen tests prove each screen behaves. **Nothing proves
+    // a screen calls this file.** Re-inlining a private copy whose only
+    // difference is the branch shape is unobservable through any card the port
+    // renders today — the doc comment on `surveyQuestionAnswered` says so — so
+    // no behavioural test can be made to fail on it. A source-text guard can,
+    // and this is the `pending_submissions_sweep_test.dart` shape.
+    //
+    // These two screens are the port's whole survey-answering surface;
+    // `send_survey_screen` and `surveys_screen` are list screens that submit
+    // nothing. If a third answering screen lands, it belongs in this list.
+    const screens = [
+      'lib/ui/surveys/take_survey_screen.dart',
+      'lib/ui/surveys/public_survey_screen.dart',
+    ];
+
+    for (final path in screens) {
+      test('$path imports and calls the shared gate', () {
+        final source = File(path).readAsStringSync();
+        expect(
+          source,
+          contains("import 'survey_answer_gate.dart';"),
+          reason:
+              '$path must take its answered-everything rule from the shared '
+              'file. Two copies of this rule is how they drifted the first '
+              'time: one gated on `question.required &&`, which Kotlin has no '
+              'counterpart for, and uploaded blank answer sheets for months.',
+        );
+        expect(
+          source,
+          contains('surveyHasUnansweredQuestion('),
+          reason:
+              '$path must gate its submit on surveyHasUnansweredQuestion. A '
+              'private re-implementation is behaviourally identical today, so '
+              'nothing else in the suite can fail on it.',
+        );
+        expect(
+          source,
+          contains('isSelectMultiple('),
+          reason:
+              '$path must fold the question type through isSelectMultiple. '
+              'Each screen fixed the case-sensitivity bug separately, in '
+              'different rounds, which is why it lives in one place now.',
+        );
+      });
+    }
+
+    test('the shared gate is the only definition of these rules', () {
+      // The other half: an import plus a *shadowing* local definition would
+      // satisfy the checks above and still be two copies.
+      for (final path in screens) {
+        final source = File(path).readAsStringSync();
+        expect(
+          source,
+          isNot(contains('bool surveyQuestionAnswered(')),
+          reason: '$path defines its own copy of the gate.',
+        );
+        expect(
+          source,
+          isNot(contains('bool _isSelectMultiple(')),
+          reason:
+              '$path has re-grown the private `_isSelectMultiple` that was '
+              'lifted into survey_answer_gate.dart.',
+        );
+      }
     });
   });
 

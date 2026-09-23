@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -390,6 +391,117 @@ void main() {
     expect(find.widgetWithText(FilledButton, 'Submit survey'), findsNothing);
   });
 
+  group('the gate on the resume path', () {
+    /// **This is the path where a blank sheet does not merely upload noise —
+    /// it destroys what is already stored.**
+    ///
+    /// `SubmissionsRepository.updateSurveyAnswers` is the `?submission=`
+    /// writer, and unlike `createSurveyDraft` it calls `_surveyAnswer`
+    /// **without `carried`**. `SubmissionDao.upsertAll` replaces a
+    /// submission's whole answer set, so a draft that is blank for a question
+    /// overwrites that question's stored answer with `value: ''` and nothing
+    /// rescues it. The gate is the only thing standing there.
+    ///
+    /// Every other test in this file builds the screen with no
+    /// `submissionId`, so scoping the gate to the create path
+    /// (`widget.submissionId == null && surveyHasUnansweredQuestion(...)`)
+    /// left the whole suite green — measured. Hence this group.
+    ///
+    /// The fixture stores an answer under a `questionId` the live survey no
+    /// longer has, which is what makes it a test: `_loadExistingAnswers`
+    /// prefills nothing, so the form comes up empty over a populated row, and
+    /// only the gate stops Submit from writing the empty form over it.
+    Future<void> seedAnsweredSubmission() async {
+      await db
+          .into(db.submissions)
+          .insert(
+            SubmissionsCompanion.insert(
+              id: 'sub-1',
+              parentId: const Value('survey-1'),
+              userId: const Value('user-a'),
+              type: const Value('survey'),
+              status: const Value('pending'),
+              startTime: const Value(0),
+              lastUpdateTime: const Value(1),
+            ),
+          );
+      await db
+          .into(db.submissionAnswers)
+          .insert(
+            SubmissionAnswersCompanion.insert(
+              id: 'sub-1:stale-q',
+              submissionId: 'sub-1',
+              questionId: const Value('stale-q'),
+              value: const Value('the answer they already gave'),
+            ),
+          );
+    }
+
+    Future<void> pumpResume(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1000, 3000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        wrapScreen(
+          const TakeSurveyScreen(surveyId: 'survey-1', submissionId: 'sub-1'),
+          overrides: [
+            appDatabaseProvider.overrideWith((ref) {
+              ref.onDispose(db.close);
+              return db;
+            }),
+            planetApiProvider.overrideWithValue(MockPlanetApi()),
+            sessionProvider.overrideWith(
+              () => _StubSession(buildUserRow(id: 'user-a', name: 'jane')),
+            ),
+            serverConfigProvider.overrideWith(() => _StubServerConfig(null)),
+          ],
+          fallbackDatabase: false,
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a blank resumed sheet is refused, and the stored answer '
+        'survives', (tester) async {
+      await seedSurvey(type: 'input', choices: const []);
+      await seedAnsweredSubmission();
+      await pumpResume(tester);
+
+      // The form is empty — the stored answer is keyed to a question this
+      // survey no longer carries, so nothing prefilled it.
+      expect(find.byType(TextField), findsOneWidget);
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        isEmpty,
+      );
+
+      await tapSubmit(tester);
+
+      expect(find.text('Answer all required questions'), findsOneWidget);
+      final stored = await answers();
+      expect(stored, hasLength(1));
+      expect(stored.single.value, 'the answer they already gave');
+    });
+
+    testWidgets('answering the resumed sheet writes the new answer', (
+      tester,
+    ) async {
+      // The other direction, so the group cannot pass by refusing everything.
+      await seedSurvey(type: 'input', choices: const []);
+      await seedAnsweredSubmission();
+      await pumpResume(tester);
+
+      await tester.enterText(find.byType(TextField), 'a new answer');
+      await tester.pumpAndSettle();
+      await tapSubmit(tester);
+
+      expect(find.text('Answer all required questions'), findsNothing);
+      final stored = await answers();
+      expect(stored.map((row) => row.value), contains('a new answer'));
+    });
+  });
+
   group('an unanswered sheet cannot be submitted', () {
     /// `ExamTakingFragment` has no optional question: `isQuestionAnswered`
     /// (`:289`) never looks at a `required` flag — `model/ExamQuestion.kt`
@@ -404,7 +516,7 @@ void main() {
     /// old conjunct short-circuited the whole guard. Seeding
     /// `'required': true` would have passed either way — the decoy shape from
     /// Phase 156.
-    Future<void> expectRefused(WidgetTester tester) async {
+    Future<void> expectRefused() async {
       expect(
         find.text('Answer all required questions'),
         findsOneWidget,
@@ -422,7 +534,7 @@ void main() {
 
       await tapSubmit(tester);
 
-      await expectRefused(tester);
+      await expectRefused();
     });
 
     testWidgets('an untouched text question refuses', (tester) async {
@@ -432,7 +544,7 @@ void main() {
       expect(find.byType(TextField), findsOneWidget);
       await tapSubmit(tester);
 
-      await expectRefused(tester);
+      await expectRefused();
     });
 
     testWidgets('a whitespace-only text answer does not count', (tester) async {
@@ -445,7 +557,7 @@ void main() {
       await tester.pumpAndSettle();
       await tapSubmit(tester);
 
-      await expectRefused(tester);
+      await expectRefused();
     });
 
     testWidgets('one unanswered question among answered ones refuses', (
@@ -459,7 +571,7 @@ void main() {
       await tester.pumpAndSettle();
       await tapSubmit(tester);
 
-      await expectRefused(tester);
+      await expectRefused();
     });
 
     testWidgets('answering every question submits', (tester) async {

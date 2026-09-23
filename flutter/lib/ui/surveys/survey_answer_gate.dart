@@ -19,7 +19,7 @@ import '../../data/local/converters.dart';
 /// there is no `required` test in it, and `model/ExamQuestion.kt` carries no
 /// such field — `insertExamQuestions` never reads a `"required"` key off the
 /// document, so nothing in the Kotlin app could honour one if Planet sent it.
-/// Every question must be answered, survey or exam: `:284` hides `btnNext`
+/// Every question must be answered, survey or exam: `:285` hides `btnNext`
 /// while the current one is unanswered, and Submit toasts
 /// *please select/write your answer to continue* and returns (`:635-637`).
 ///
@@ -41,15 +41,18 @@ import '../../data/local/converters.dart';
 /// .isEmpty` would agree with this today and stop agreeing the moment one
 /// grew one.
 ///
-/// **Two deliberate tightenings, recorded because an undocumented improvement
+/// **Two deliberate deviations, recorded because an undocumented improvement
 /// is a finding.** Both predate this function — the public screen already had
-/// them — and neither is a port of a Kotlin line:
+/// them — and neither is a port of a Kotlin line. **One is a tightening and
+/// one is a loosening**, which matters, because this paragraph is what a
+/// future reader will use to decide whether the deviation is sanctioned:
 ///
-/// * **`.trim()`.** Kotlin's `input`/`textarea` arm is
+/// * **`.trim()` — a tightening.** Kotlin's `input`/`textarea` arm is
 ///   `binding.etAnswer.text.toString().isNotEmpty()` — `isNotEmpty`, never
 ///   `isNotBlank` — so a single space is an accepted answer there. Here it is
 ///   not. Uploading a space is uploading nothing with extra steps.
-/// * **Branching on the question rather than on `type`.** Kotlin's `when`
+/// * **Branching on the question rather than on `type` — a loosening.**
+///   Kotlin's `when`
 ///   matches the type string **exactly** (`"select"`, `"selectMultiple"`,
 ///   `"input"`, `"textarea"`, `"ratingScale"`, `else -> false`) while
 ///   everything that *renders* the same question folds case

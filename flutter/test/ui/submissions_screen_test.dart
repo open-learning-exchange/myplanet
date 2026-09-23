@@ -434,23 +434,36 @@ void main() {
     /// `SubmissionsAdapter:93-103` sends a lone **survey** row back into the
     /// survey form (`openSurvey(..., isMySurvey = true, ...)`) and everything
     /// else to the detail view. The port sent every row to the detail view, so
-    /// *My surveys* — the screen a learner opens to finish a survey they left
-    /// part-answered — had no way to finish one.
+    /// the screen a learner opens to finish a survey they left part-answered
+    /// had no way to finish one.
     ///
-    /// Both destinations render the location they were reached at, so these
-    /// assert on the whole URI rather than on "some other page appeared". A
-    /// screen-name assertion would pass for a resume route built with the
-    /// wrong survey id, which is the failure worth catching: `parentId` is
-    /// `"<surveyId>@<courseId>"` for a course-attached survey.
+    /// The port narrows it to a **pending** sheet, because this one list
+    /// stands in for two Kotlin lists that disagree about a finished one —
+    /// see the comment on `_open`. These tests pin both halves of that and the
+    /// two rows that must not be mistaken for an answer sheet.
+    ///
+    /// Both destinations render the location they were reached at **and
+    /// whether the list is still under them**, so they assert on the whole URI
+    /// rather than on "some other page appeared". A screen-name assertion
+    /// would pass for a resume route built with the wrong survey id, and for a
+    /// `go` that threw the list away.
     Future<void> pumpWith(WidgetTester tester, List<SubmissionRow> rows) async {
       await tester.pumpWidget(
         wrapScreen(
           const SubmissionsScreen(),
           pushTargets: {
-            '/life/surveys/:surveyId': (context) =>
-                Scaffold(body: Text('SURVEY ${GoRouterState.of(context).uri}')),
-            '/life/submissions/:id': (context) =>
-                Scaffold(body: Text('DETAIL ${GoRouterState.of(context).uri}')),
+            '/life/surveys/:surveyId': (context) => Scaffold(
+              body: Text(
+                'SURVEY ${GoRouterState.of(context).uri} '
+                'pop=${Navigator.of(context).canPop()}',
+              ),
+            ),
+            '/life/submissions/:id': (context) => Scaffold(
+              body: Text(
+                'DETAIL ${GoRouterState.of(context).uri} '
+                'pop=${Navigator.of(context).canPop()}',
+              ),
+            ),
           },
           overrides: [
             submissionsProvider.overrideWith((ref) => Stream.value(rows)),
@@ -464,20 +477,23 @@ void main() {
       String id = 'sub-1',
       String? parentId = 'survey-7@course-3',
       String? type = 'survey',
+      String? status = 'pending',
       int lastUpdateTime = 10,
+      bool uploaded = false,
     }) => SubmissionRow(
       id: id,
       type: type,
+      status: status,
       parentId: parentId,
       parent: '{"_id":"survey-7","name":"Community needs"}',
       startTime: 0,
       lastUpdateTime: lastUpdateTime,
       grade: 0,
-      uploaded: false,
+      uploaded: uploaded,
       isUpdated: true,
     );
 
-    testWidgets('a lone survey row reopens the survey on its submission', (
+    testWidgets('a lone pending survey reopens the survey on its submission', (
       tester,
     ) async {
       await pumpWith(tester, [survey()]);
@@ -486,54 +502,124 @@ void main() {
       await tester.pumpAndSettle();
 
       // The `@course-3` half is Kotlin's `substringBefore("@")`
-      // (`BaseExamFragment.kt:88`); carrying it through would name a survey
+      // (`BaseExamFragment.kt:90`); carrying it through would name a survey
       // that does not exist and the form would come up empty.
+      //
+      // `pop=true` pins `push` over `go`. They render the same location, so
+      // without it the two are indistinguishable here — and `go` would drop
+      // this list, landing a learner who finishes on the surveys catalog
+      // rather than back where they started.
       expect(
-        find.text('SURVEY /life/surveys/survey-7?submission=sub-1'),
+        find.text('SURVEY /life/surveys/survey-7?submission=sub-1 pop=true'),
         findsOneWidget,
       );
     });
 
-    testWidgets('a survey whose parentId carries no course still reopens', (
-      tester,
-    ) async {
+    testWidgets('a pending survey whose parentId carries no course still '
+        'reopens', (tester) async {
       await pumpWith(tester, [survey(parentId: 'survey-7')]);
 
       await tester.tap(find.byType(ListTile));
       await tester.pumpAndSettle();
 
       expect(
-        find.text('SURVEY /life/surveys/survey-7?submission=sub-1'),
+        find.textContaining('SURVEY /life/surveys/survey-7?submission=sub-1'),
         findsOneWidget,
       );
     });
 
-    testWidgets('an exam row still opens the detail view', (tester) async {
-      // Kotlin's branch is on the type, so this is the half that keeps the
-      // change from becoming "every row reopens a form".
+    testWidgets('a completed survey opens the detail view', (tester) async {
+      // Kotlin's `survey_submission` arm — `type == "survey" && status !=
+      // "pending"` (`SubmissionsRepositoryImpl.kt:102-104`) — opens the
+      // detail, and it is the non-destructive of the two: reopening the form
+      // reads the **live** survey, so a sheet whose survey has since been
+      // pruned would render "no questions" and the learner would lose sight
+      // of their own answers.
+      await pumpWith(tester, [survey(status: 'complete', uploaded: true)]);
+
+      await tester.tap(find.byType(ListTile));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('DETAIL /life/submissions/sub-1'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a team-adoption marker opens the detail view', (tester) async {
+      // `createSurveyAdoptionSubmission` writes `type: 'survey'`, `status: ''`
+      // and the **source** survey's bare id. `watchForUser` filters neither,
+      // so it sits in this list looking like a half-finished survey. Answering
+      // it would set `status: 'complete'`, dropping it out of
+      // `findExistingAdoption` and into `pendingUploads`.
+      await pumpWith(tester, [survey(status: '', parentId: 'survey-7')]);
+
+      await tester.tap(find.byType(ListTile));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('DETAIL /life/submissions/sub-1'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('an exam row opens the detail view', (tester) async {
       await pumpWith(tester, [survey(type: 'exam')]);
 
       await tester.tap(find.byType(ListTile));
       await tester.pumpAndSettle();
 
-      expect(find.text('DETAIL /life/submissions/sub-1'), findsOneWidget);
+      expect(
+        find.textContaining('DETAIL /life/submissions/sub-1'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('a survey with no parentId opens the detail view', (
+    testWidgets('a row with no type opens the detail view', (tester) async {
+      // `'exam'` alone cannot tell `== "survey"` from `!= "exam"`. A null type
+      // and the `'submission'` `_createDraft` writes are the values that can.
+      await pumpWith(tester, [survey(type: null)]);
+
+      await tester.tap(find.byType(ListTile));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('DETAIL /life/submissions/sub-1'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('an ad-hoc draft opens the detail view', (tester) async {
+      await pumpWith(tester, [survey(type: 'submission', parentId: null)]);
+
+      await tester.tap(find.byType(ListTile));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('DETAIL /life/submissions/sub-1'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a pending survey with no parentId opens the detail view', (
       tester,
     ) async {
       // There is no survey id to reopen; `collapseSubmissionsByParent` leaves
-      // such a row ungrouped, and the list's own New submission button is what
-      // writes them.
+      // such a row ungrouped.
       await pumpWith(tester, [survey(parentId: null)]);
 
       await tester.tap(find.byType(ListTile));
       await tester.pumpAndSettle();
 
-      expect(find.text('DETAIL /life/submissions/sub-1'), findsOneWidget);
+      expect(
+        find.textContaining('DETAIL /life/submissions/sub-1'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('a grouped survey row opens the detail view', (tester) async {
+    testWidgets('a grouped pending survey opens the detail view', (
+      tester,
+    ) async {
       // `count > 1` is Kotlin's `SubmissionListFragment` arm — every attempt
       // for that parent, with a PDF export — which the port has no screen or
       // route for. Pinned as the gap it is, so that porting it has to come
@@ -547,7 +633,10 @@ void main() {
       await tester.tap(find.byType(ListTile));
       await tester.pumpAndSettle();
 
-      expect(find.text('DETAIL /life/submissions/couch-1'), findsOneWidget);
+      expect(
+        find.textContaining('DETAIL /life/submissions/couch-1'),
+        findsOneWidget,
+      );
     });
   });
 }
