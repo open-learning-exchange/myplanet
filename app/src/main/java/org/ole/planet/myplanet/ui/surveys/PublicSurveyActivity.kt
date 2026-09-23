@@ -14,6 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityPublicSurveyBinding
@@ -66,9 +67,7 @@ class PublicSurveyActivity : AppCompatActivity() {
         backStackListener?.let { supportFragmentManager.addOnBackStackChangedListener(it) }
 
         observeViewModel()
-        if (savedInstanceState == null) {
-            viewModel.loadSurvey(baseUrl, teamId, surveyId)
-        }
+        viewModel.loadSurvey(baseUrl, teamId, surveyId)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -88,13 +87,17 @@ class PublicSurveyActivity : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
+                    combine(viewModel.loadState, viewModel.uploading) { loadState, uploading ->
+                        loadState is PublicSurveyViewModel.SurveyLoadState.Loading || uploading
+                    }.collect { isLoadingOrUploading ->
+                        binding.progressBar.visibility = if (isLoadingOrUploading) View.VISIBLE else View.GONE
+                    }
+                }
+
+                launch {
                     viewModel.loadState.collect { state ->
                         when (state) {
-                            is PublicSurveyViewModel.SurveyLoadState.Loading -> {
-                                binding.progressBar.visibility = View.VISIBLE
-                            }
                             is PublicSurveyViewModel.SurveyLoadState.Success -> {
-                                binding.progressBar.visibility = View.GONE
                                 if (!surveyStarted && supportFragmentManager.findFragmentById(R.id.fragment_container) == null) {
                                     surveyStarted = true
                                     val fragment = ExamTakingFragment().apply {
@@ -113,18 +116,11 @@ class PublicSurveyActivity : AppCompatActivity() {
                                 }
                             }
                             is PublicSurveyViewModel.SurveyLoadState.Error -> {
-                                binding.progressBar.visibility = View.GONE
                                 Toast.makeText(this@PublicSurveyActivity, R.string.survey_load_failed, Toast.LENGTH_LONG).show()
                                 finish()
                             }
-                            is PublicSurveyViewModel.SurveyLoadState.Idle -> {}
+                            else -> {}
                         }
-                    }
-                }
-
-                launch {
-                    viewModel.uploading.collect { uploading ->
-                        binding.progressBar.visibility = if (uploading) View.VISIBLE else View.GONE
                     }
                 }
 

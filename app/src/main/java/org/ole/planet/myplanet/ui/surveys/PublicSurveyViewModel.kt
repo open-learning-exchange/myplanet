@@ -72,27 +72,23 @@ class PublicSurveyViewModel @Inject constructor(
         if (_uploading.value) return
         _uploading.value = true
         viewModelScope.launch {
-            try {
-                val submission = submissionsRepository.getLatestSubmissionByParentId(surveyId, "complete")
-                if (submission == null || submission.lastUpdateTime < launchTime) {
-                    _uploadEvents.send(UploadEvent.NavigateOnward)
-                    return@launch
-                }
-                val questions = surveysRepository.getExamQuestions(surveyId)
-                val answers = payloadBuilder.buildPublicAnswers(questions, submission)
-                val respondent = submission.user?.takeIf { it.isNotBlank() && it != "{}" }?.let {
-                    try {
-                        JsonParser.parseString(it).asJsonObject.let(payloadBuilder::sanitizeRespondent)
-                    } catch (e: Exception) {
-                        null
-                    }
-                }
-                val success = surveysRepository.submitPublicSurvey(baseUrl, teamId, surveyId, answers, respondent)
-                val messageResId = if (success) R.string.survey_submitted else R.string.survey_submit_failed
-                _uploadEvents.send(UploadEvent.ShowToastAndNavigate(messageResId))
-            } finally {
-                _uploading.value = false
+            val submission = submissionsRepository.getLatestSubmissionByParentId(surveyId, "complete")
+            if (submission == null || submission.lastUpdateTime < launchTime) {
+                _uploadEvents.send(UploadEvent.NavigateOnward)
+                return@launch
             }
+            val questions = surveysRepository.getExamQuestions(surveyId)
+            val answers = payloadBuilder.buildPublicAnswers(questions, submission)
+            val respondent = submission.user?.takeIf { it.isNotBlank() && it != "{}" }?.let {
+                try {
+                    JsonParser.parseString(it).asJsonObject.let(payloadBuilder::sanitizeRespondent)
+                } catch (e: Exception) {
+                    null
+                }
+            }
+            val success = surveysRepository.submitPublicSurvey(baseUrl, teamId, surveyId, answers, respondent)
+            val messageResId = if (success) R.string.survey_submitted else R.string.survey_submit_failed
+            _uploadEvents.send(UploadEvent.ShowToastAndNavigate(messageResId))
         }
     }
 }
