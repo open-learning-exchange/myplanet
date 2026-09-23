@@ -38,8 +38,8 @@ import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 import org.ole.planet.myplanet.utils.StableIdGenerator

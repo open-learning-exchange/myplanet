@@ -21,6 +21,11 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject as KJsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -533,9 +538,9 @@ class ActivitiesRepositoryImplTest {
         }
         coEvery { offlineActivityDao.getPendingLoginUploads() } returns listOf(mockActivity)
 
-        val postedBodySlot = slot<JsonObject>()
-        val mockResponse = mockk<retrofit2.Response<JsonObject>>()
-        every { mockResponse.body() } returns JsonObject().apply { addProperty("ok", true) }
+        val postedBodySlot = slot<KJsonObject>()
+        val mockResponse = mockk<retrofit2.Response<KJsonObject>>()
+        every { mockResponse.body() } returns buildJsonObject { put("ok", true) }
         coEvery {
             apiInterface.postDoc(
                 any(),
@@ -548,7 +553,10 @@ class ActivitiesRepositoryImplTest {
 
         repository.uploadActivities()
 
-        assertEquals("mock_custom_device_provider", postedBodySlot.captured.get("customDeviceName")?.asString)
+        assertEquals(
+            "mock_custom_device_provider",
+            (postedBodySlot.captured["customDeviceName"] as? JsonPrimitive)?.content
+        )
     }
 
     @Test
@@ -557,10 +565,10 @@ class ActivitiesRepositoryImplTest {
         every { context.getSystemService(Context.USAGE_STATS_SERVICE) } returns usageStatsManager
         every { usageStatsManager.queryUsageStats(any(), any(), any()) } returns emptyList()
 
-        val mockResponseBody = JsonObject().apply {
-            add("usages", com.google.gson.JsonArray())
+        val mockResponseBody = buildJsonObject {
+            putJsonArray("usages") { }
         }
-        val mockResponse = mockk<retrofit2.Response<JsonObject>>()
+        val mockResponse = mockk<retrofit2.Response<KJsonObject>>()
         every { mockResponse.body() } returns mockResponseBody
         coEvery { apiInterface.getJsonObject(any(), any()) } returns mockResponse
 
@@ -581,7 +589,7 @@ class ActivitiesRepositoryImplTest {
         every { context.getSystemService(Context.USAGE_STATS_SERVICE) } returns usageStatsManager
         every { usageStatsManager.queryUsageStats(any(), any(), any()) } returns emptyList()
 
-        val mockResponse = mockk<retrofit2.Response<JsonObject>>()
+        val mockResponse = mockk<retrofit2.Response<KJsonObject>>()
         every { mockResponse.body() } returns null
         coEvery { apiInterface.getJsonObject(any(), any()) } returns mockResponse
 

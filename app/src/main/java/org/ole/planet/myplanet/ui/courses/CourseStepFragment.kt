@@ -2,8 +2,8 @@ package org.ole.planet.myplanet.ui.courses
 
 import android.os.Bundle
 import android.text.Spannable
-import android.util.Log
 import android.text.style.URLSpan
+import android.util.Log
 import android.view.ActionMode
 import android.view.LayoutInflater
 import android.view.Menu

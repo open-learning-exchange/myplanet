@@ -6,8 +6,9 @@ import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import java.util.Locale
+import kotlinx.serialization.json.JsonArray as KJsonArray
+import kotlinx.serialization.json.JsonObject as KJsonObject
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -18,8 +19,6 @@ import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
-import kotlinx.serialization.json.JsonArray as KJsonArray
-import kotlinx.serialization.json.JsonObject as KJsonObject
 
 @Entity(tableName = "exam_questions", indices = [Index("examId")])
 open class ExamQuestion(
