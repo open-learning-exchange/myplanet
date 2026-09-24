@@ -41,6 +41,7 @@ class DownloadWorker @AssistedInject constructor(
 ) : CoroutineWorker(context, workerParams) {
 
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    private var isForegroundPromoted = false
 
     override suspend fun doWork(): Result = withContext(dispatcherProvider.io) {
         try {
@@ -163,13 +164,14 @@ class DownloadWorker @AssistedInject constructor(
         val notification = DownloadUtils.buildProgressNotification(
             context, current + 1, total, text, forWorker = true, fileProgress = fileProgress
         )
-        if (DownloadUtils.canStartForegroundService(context)) {
+        if (isForegroundPromoted || DownloadUtils.canStartForegroundService(context)) {
             try {
                 setForeground(
                     ForegroundInfo(WORKER_NOTIFICATION_ID, notification,
                         ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
                     )
                 )
+                isForegroundPromoted = true
                 return
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to promote download worker to foreground, showing plain notification", e)
