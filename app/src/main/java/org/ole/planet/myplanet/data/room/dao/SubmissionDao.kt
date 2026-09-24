@@ -25,7 +25,13 @@ interface SubmissionDao {
     @Query("SELECT * FROM submissions WHERE parentId IS :parentId AND userId IS :userId AND (:status IS NULL OR status = :status) ORDER BY startTime DESC") suspend fun getByParentUserAndStatus(parentId: String?, userId: String?, status: String?): List<Submission>
     @Query("SELECT * FROM submissions WHERE parentId IS :parentId AND userId IS :userId AND status = 'pending' ORDER BY startTime DESC LIMIT 1") suspend fun getPendingByUserAndParent(parentId: String?, userId: String?): Submission?
     @Query("SELECT * FROM submissions WHERE teamId = :teamId") suspend fun getByTeamId(teamId: String): List<Submission>
-    @Query("SELECT * FROM submissions WHERE parentId IN (:parentIds) AND teamId = :teamId") suspend fun getByParentIdsAndTeamId(parentIds: List<String>, teamId: String): List<Submission>
+    @Query("SELECT * FROM submissions WHERE parentId IN (:parentIds) AND teamId = :teamId")
+    suspend fun getByParentIdsAndTeamIdInternal(parentIds: List<String>, teamId: String): List<Submission>
+
+    suspend fun getByParentIdsAndTeamId(parentIds: List<String>, teamId: String): List<Submission> {
+        if (parentIds.isEmpty()) return emptyList()
+        return parentIds.distinct().chunked(900).flatMap { getByParentIdsAndTeamIdInternal(it, teamId) }
+    }
     @Query("SELECT * FROM submissions WHERE userId IS :userId AND parentId = :parentId AND status = 'pending' ORDER BY lastUpdateTime DESC LIMIT 1") suspend fun getLatestPendingByUserAndParent(userId: String?, parentId: String): Submission?
     @Query("SELECT * FROM submissions WHERE parentId = :parentId AND status = :status ORDER BY lastUpdateTime DESC LIMIT 1") suspend fun getLatestByParentIdAndStatus(parentId: String, status: String): Submission?
     @Query("SELECT * FROM submissions WHERE userId IS :userId AND status = 'pending' ORDER BY startTime DESC LIMIT 1") suspend fun getLatestPendingByUser(userId: String?): Submission?
