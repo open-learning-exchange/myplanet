@@ -5,7 +5,9 @@ import android.os.Build
 import android.util.Log
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -26,6 +28,12 @@ class SecurePrefsTest {
     fun setup() {
         context = ApplicationProvider.getApplicationContext()
         ShadowLog.reset()
+        clearCachedPrimitives()
+    }
+
+    @After
+    fun tearDown() {
+        clearCachedPrimitives()
     }
 
     @Test
@@ -61,8 +69,23 @@ class SecurePrefsTest {
         SecurePrefs.warmUp(context)
     }
 
+    @Test
+    fun getLegacyEncryptedPrefsReturnsNullAndDoesNotCreateFileWhenFileDoesNotExist() {
+        val legacyFile = java.io.File(context.applicationInfo.dataDir, "shared_prefs/secure_prefs.xml")
+        if (legacyFile.exists()) {
+            legacyFile.delete()
+        }
+
+        val method = SecurePrefs::class.java.getDeclaredMethod("getLegacyEncryptedPrefs", Context::class.java)
+        method.isAccessible = true
+        val result = method.invoke(SecurePrefs, context)
+
+        assertNull(result)
+        assertFalse(legacyFile.exists())
+    }
+
     private fun clearCachedPrimitives() {
-        listOf("cachedAead", "cachedSecureStore").forEach { name ->
+        listOf("cachedAead", "cachedSecureStore", "cachedLegacyPrefs").forEach { name ->
             SecurePrefs::class.java.getDeclaredField(name).apply {
                 isAccessible = true
                 set(SecurePrefs, null)
