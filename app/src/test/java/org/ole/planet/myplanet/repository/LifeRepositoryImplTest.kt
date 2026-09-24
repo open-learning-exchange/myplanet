@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.SharedPreferences
-import com.google.gson.Gson
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -11,6 +10,8 @@ import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -25,7 +26,7 @@ class LifeRepositoryImplTest {
     private lateinit var sharedPrefManager: SharedPrefManager
     private lateinit var mockSharedPreferences: SharedPreferences
     private lateinit var mockEditor: SharedPreferences.Editor
-    private lateinit var gson: Gson
+    private lateinit var json: Json
     private lateinit var lifeCache: LifeCache
     private lateinit var repository: LifeRepositoryImpl
     private val testDispatcher = UnconfinedTestDispatcher()
@@ -42,8 +43,12 @@ class LifeRepositoryImplTest {
         every { mockEditor.putString(any(), any()) } returns mockEditor
         every { mockEditor.apply() } returns Unit
 
-        gson = Gson()
-        lifeCache = LifeCache(mockSharedPreferences, gson)
+        json = Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+            coerceInputValues = true
+        }
+        lifeCache = LifeCache(mockSharedPreferences, json)
         repository = LifeRepositoryImpl(
             myLifeDao,
             sharedPrefManager,
@@ -292,8 +297,8 @@ class LifeRepositoryImplTest {
             CachedMyLifeItem("img1", "Title 1", true, 1),
             CachedMyLifeItem("img2", "Title 2", false, 2)
         )
-        val json = Gson().toJson(expectedItems)
-        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns json
+        val jsonString = json.encodeToString(expectedItems)
+        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns jsonString
         coEvery { myLifeDao.getVisibleByUserId(userId) } returns emptyList()
 
         val result = repository.getMyLifeForDashboard(userId, emptyList())
