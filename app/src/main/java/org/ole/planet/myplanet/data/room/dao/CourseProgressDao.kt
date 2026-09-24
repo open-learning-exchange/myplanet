@@ -11,7 +11,12 @@ import org.ole.planet.myplanet.model.CourseProgress
 @Dao
 interface CourseProgressDao {
     @Query("SELECT * FROM course_progress WHERE userId IS :userId AND courseId IN (:courseIds)")
-    suspend fun getByUserAndCourseIds(userId: String?, courseIds: List<String>): List<CourseProgress>
+    suspend fun getByUserAndCourseIdsInternal(userId: String?, courseIds: List<String>): List<CourseProgress>
+
+    suspend fun getByUserAndCourseIds(userId: String?, courseIds: List<String>): List<CourseProgress> {
+        if (courseIds.isEmpty()) return emptyList()
+        return courseIds.distinct().chunked(899).flatMap { getByUserAndCourseIdsInternal(userId, it) }
+    }
 
     @Query("SELECT * FROM course_progress WHERE userId IS :userId AND courseId IS :courseId")
     suspend fun getByUserAndCourse(userId: String?, courseId: String?): List<CourseProgress>

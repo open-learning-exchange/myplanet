@@ -35,6 +35,22 @@ class ExamDaoTest {
     }
 
     @Test
+    fun getByCourseIds_handles1200Courses() = runBlocking {
+        val exams = (1..1200).map { i ->
+            StepExam().apply {
+                id = "exam_$i"
+                courseId = "course_$i"
+            }
+        }
+        examDao.upsertAll(exams)
+
+        val courseIds = (1..1200).map { "course_$it" }
+        val results = examDao.getByCourseIds(courseIds)
+
+        assertEquals(1200, results.size)
+    }
+
+    @Test
     fun getByTypeAndName_returnsMatch() = runBlocking {
         val exam1 = StepExam().apply {
             id = "1"
