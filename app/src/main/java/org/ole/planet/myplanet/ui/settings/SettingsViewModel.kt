@@ -41,8 +41,7 @@ class SettingsViewModel @Inject constructor(
     }
     fun clearAllData() {
         viewModelScope.launch(dispatcherProvider.io) {
-            configurationsRepository.clearAllData()
-            configurationsRepository.clearPreferences()
+            configurationsRepository.clearLocalAppData()
             _clearDataEvent.send(Unit)
         }
     }

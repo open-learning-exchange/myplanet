@@ -37,4 +37,6 @@ interface ConfigurationsRepository {
         data class Success(val id: String, val code: String, val url: String, val defaultUrl: String, val isAlternativeUrl: Boolean) : ConfigurationResult()
         data class Failure(val errorMessage: String, val url: String) : ConfigurationResult()
     }
+
+    suspend fun clearLocalAppData()
 }
