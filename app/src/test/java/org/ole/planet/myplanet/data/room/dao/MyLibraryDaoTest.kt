@@ -102,4 +102,46 @@ class MyLibraryDaoTest {
         assertEquals("Description 2", fetchedLib2?.description)
         assertEquals("Author 2", fetchedLib2?.author)
     }
+
+    @Test
+    fun getResourceTitlesByResourceIds_returnsTitlesOrderedByRowidAndHandlesMoreThan900Ids() = runBlocking {
+        val dup1 = MyLibrary().apply {
+            id = "pk1"
+            _id = "pk1"
+            resourceId = "shared_res"
+            title = "Old Title"
+        }
+        val dup2 = MyLibrary().apply {
+            id = "pk2"
+            _id = "pk2"
+            resourceId = "shared_res"
+            title = "New Title"
+        }
+
+        val items = (1..950).map { i ->
+            MyLibrary().apply {
+                id = "item_$i"
+                _id = "item_$i"
+                resourceId = "res_$i"
+                title = "Title $i"
+            }
+        }.toMutableList()
+
+        items.add(0, dup1)
+        items.add(dup2)
+
+        myLibraryDao.upsertAll(items)
+
+        val targetIds = (1..950).map { "res_$it" } + listOf("shared_res")
+        val results = myLibraryDao.getResourceTitlesByResourceIds(targetIds)
+
+        assertEquals(952, results.size)
+
+        val sharedResTitles = results.filter { it.resourceId == "shared_res" }.map { it.title }
+        assertEquals(listOf("Old Title", "New Title"), sharedResTitles)
+
+        val titleMap = results.associate { (it.resourceId ?: "") to (it.title ?: "") }
+        assertEquals("New Title", titleMap["shared_res"])
+        assertEquals("Title 950", titleMap["res_950"])
+    }
 }
