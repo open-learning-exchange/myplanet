@@ -869,4 +869,16 @@ class ConfigurationsRepositoryImplTest {
 
         verify { sharedPrefManager.clearPreferences() }
     }
+
+    @Test
+    fun `clearLocalAppData calls clearAllTables and then clearPreferences`() = runTest(testDispatcher) {
+        every { sharedPrefManager.clearPreferences() } just runs
+
+        repository.clearLocalAppData()
+
+        io.mockk.coVerifyOrder {
+            appDatabase.clearAllTables()
+            sharedPrefManager.clearPreferences()
+        }
+    }
 }

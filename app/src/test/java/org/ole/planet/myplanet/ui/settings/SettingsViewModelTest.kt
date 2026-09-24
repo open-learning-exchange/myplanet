@@ -41,9 +41,8 @@ class SettingsViewModelTest {
     private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
 
     @Test
-    fun `clearAllData calls clearAllData and clearPreferences on configurationsRepository and emits clearDataEvent`() = runTest {
-        coEvery { configurationsRepository.clearAllData() } just runs
-        every { configurationsRepository.clearPreferences() } just runs
+    fun `clearAllData calls clearLocalAppData on configurationsRepository and emits clearDataEvent`() = runTest {
+        coEvery { configurationsRepository.clearLocalAppData() } just runs
 
         val viewModel = SettingsViewModel(
             configurationsRepository,
@@ -58,7 +57,6 @@ class SettingsViewModelTest {
         val event = viewModel.clearDataEvent.first()
         assertNotNull(event)
 
-        coVerify { configurationsRepository.clearAllData() }
-        verify { configurationsRepository.clearPreferences() }
+        coVerify { configurationsRepository.clearLocalAppData() }
     }
 }
