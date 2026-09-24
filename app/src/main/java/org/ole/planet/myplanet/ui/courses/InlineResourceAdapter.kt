@@ -53,7 +53,6 @@ class InlineResourceAdapter(
 ) {
 
     private var externalFilesDir: File? = null
-    private val textCache = mutableMapOf<String, String>()
     private val htmlCoverCache = mutableMapOf<String, File?>()
 
     private var adapterScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
@@ -82,16 +81,11 @@ class InlineResourceAdapter(
 
     override fun onCurrentListChanged(previousList: MutableList<MyLibrary>, currentList: MutableList<MyLibrary>) {
         super.onCurrentListChanged(previousList, currentList)
-        val dir = externalFilesDir ?: return
         val currentMap = currentList.associateBy { it.id }
 
         previousList.forEach { prev ->
             val current = currentMap[prev.id]
             if (current == null || current.resourceLocalAddress != prev.resourceLocalAddress) {
-                val address = prev.resourceLocalAddress ?: return@forEach
-                val file = FileUtils.getLibraryFile(dir, prev.id, address)
-                val prefix = file.absolutePath
-                textCache.keys.removeAll { it.startsWith(prefix) }
                 htmlCoverCache.remove(prev.id)
             }
         }
@@ -108,7 +102,6 @@ class InlineResourceAdapter(
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
         super.onDetachedFromRecyclerView(recyclerView)
         adapterScope.cancel()
-        textCache.clear()
         htmlCoverCache.clear()
     }
 
@@ -196,31 +189,15 @@ class InlineResourceAdapter(
                     "ole/${resource.id}/${resource.resourceLocalAddress}"
                 )
 
-                val needsCacheKey = mimeType?.startsWith("audio") == true ||
-                    mimeType?.contains("csv") == true || resource.resourceLocalAddress?.endsWith(".csv") == true ||
-                    mimeType?.startsWith("text") == true || resource.resourceLocalAddress?.endsWith(".txt") == true || resource.resourceLocalAddress?.endsWith(".md") == true
-
-                var exists = false
-                var lastModified = 0L
-                var length = 0L
-
-                withContext(dispatcherProvider.io) {
-                    exists = resourceFile.exists()
-                    if (exists && needsCacheKey) {
-                        lastModified = resourceFile.lastModified()
-                        length = resourceFile.length()
-                    }
-                }
-
-                val cacheKey = if (exists && needsCacheKey) getCacheKey(resourceFile, lastModified, length) else null
+                val exists = withContext(dispatcherProvider.io) { resourceFile.exists() }
 
                 when {
                     mimeType?.startsWith("image") == true -> showImagePreview(binding, context, resourceFile, exists)
                     mimeType?.startsWith("video") == true -> showVideoPreview(binding, context, resourceFile, exists)
                     mimeType?.contains("pdf") == true -> showPdfPreview(holder, resourceFile, exists)
-                    mimeType?.startsWith("audio") == true -> showAudioPreview(holder, resourceFile, cacheKey)
-                    mimeType?.contains("csv") == true || resource.resourceLocalAddress?.endsWith(".csv") == true -> showCsvPreview(holder, resourceFile, cacheKey)
-                    mimeType?.startsWith("text") == true || resource.resourceLocalAddress?.endsWith(".txt") == true || resource.resourceLocalAddress?.endsWith(".md") == true -> showTextPreview(holder, resourceFile, cacheKey)
+                    mimeType?.startsWith("audio") == true -> showAudioPreview(holder, resourceFile, exists)
+                    mimeType?.contains("csv") == true || resource.resourceLocalAddress?.endsWith(".csv") == true -> showCsvPreview(holder, resourceFile, exists)
+                    mimeType?.startsWith("text") == true || resource.resourceLocalAddress?.endsWith(".txt") == true || resource.resourceLocalAddress?.endsWith(".md") == true -> showTextPreview(holder, resourceFile, exists)
                 }
             }
         })
@@ -290,49 +267,29 @@ class InlineResourceAdapter(
         }
     }
 
-    private suspend fun showAudioPreview(holder: ViewHolder, file: File, cacheKey: String?) {
+    private suspend fun showAudioPreview(holder: ViewHolder, file: File, exists: Boolean) {
         holder.binding.audioPreviewContainer.visibility = View.VISIBLE
-        val key = cacheKey ?: return
-        val cachedDuration = textCache[key]
-        val durationText = if (cachedDuration != null) {
-            cachedDuration
-        } else {
-            previewLoader.getAudioPreview(file).also { textCache[key] = it }
-        }
-        holder.binding.tvAudioDuration.text = durationText
+        if (!exists) return
+        holder.binding.tvAudioDuration.text = previewLoader.getAudioPreview(file)
     }
 
-    private suspend fun showCsvPreview(holder: ViewHolder, file: File, cacheKey: String?) {
-        val key = cacheKey ?: return
-        val cachedPreview = textCache[key]
-        val preview = if (cachedPreview != null) {
-            cachedPreview
-        } else {
-            previewLoader.getCsvPreview(file)?.also { textCache[key] = it }
-        }
+    private suspend fun showCsvPreview(holder: ViewHolder, file: File, exists: Boolean) {
+        if (!exists) return
+        val preview = previewLoader.getCsvPreview(file)
         if (!preview.isNullOrEmpty()) {
             holder.binding.tvTextPreview.visibility = View.VISIBLE
             holder.binding.tvTextPreview.text = preview
         }
     }
 
-    private suspend fun showTextPreview(holder: ViewHolder, file: File, cacheKey: String?) {
-        val key = cacheKey ?: return
-        val cachedText = textCache[key]
-        val text = if (cachedText != null) {
-            cachedText
-        } else {
-            previewLoader.getTextPreview(file)?.also { textCache[key] = it }
-        }
+    private suspend fun showTextPreview(holder: ViewHolder, file: File, exists: Boolean) {
+        if (!exists) return
+        val text = previewLoader.getTextPreview(file)
         if (!text.isNullOrEmpty()) {
             holder.binding.tvTextPreview.visibility = View.VISIBLE
             holder.binding.tvTextPreview.text = text
         }
     }
-
-    @VisibleForTesting
-    internal fun getCacheKey(file: File, lastModified: Long, length: Long): String =
-        "${file.absolutePath}_${lastModified}_${length}"
 
     private fun getPreviewDimensions(context: Context): Pair<Int, Int> {
         val widthPx = context.resources.displayMetrics.widthPixels

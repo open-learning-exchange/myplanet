@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.SearchActivity
+import org.ole.planet.myplanet.model.StorageCategoryType
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.model.UserEntity
@@ -879,6 +880,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
 
         return@withContext grouped.map { (resourceId, accumulator) ->
+            accumulator.filePaths.sort()
             val title = titleMap[resourceId]?.takeIf { it.isNotBlank() } ?: context.getString(R.string.storage_unknown_resource)
             OfflineResourceItem(resourceId, title, accumulator.filePaths, accumulator.totalSize)
         }.sortedBy { it.title }
@@ -895,6 +897,24 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
         val deletedIds = items.map { it.resourceId }.toSet()
         markResourcesAsNotOffline(deletedIds)
+    }
+
+    override suspend fun getStorageBreakdown(oleDir: File): StorageBreakdown = withContext(dispatcherProvider.io) {
+        val sizes = LongArray(StorageCategoryType.entries.size)
+        val counts = IntArray(StorageCategoryType.entries.size)
+
+        if (!oleDir.exists() || !oleDir.isDirectory) return@withContext StorageBreakdown(0L, sizes, counts)
+
+        var total = 0L
+
+        oleDir.walkTopDown().filter { it.isFile }.forEach { file ->
+            val index = StorageCategoryType.indexOf(file.extension)
+            val size = file.length()
+            total += size
+            sizes[index] += size
+            counts[index]++
+        }
+        StorageBreakdown(total, sizes, counts)
     }
 
     override suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String> {
