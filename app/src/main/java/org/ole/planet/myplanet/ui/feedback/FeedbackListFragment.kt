@@ -45,6 +45,7 @@ class FeedbackListFragment : BaseBindingFragment<FragmentFeedbackListBinding>(Fr
         super.onViewCreated(view, savedInstanceState)
         feedbackAdapter = FeedbackAdapter()
         binding.rvFeedback.layoutManager = LinearLayoutManager(activity)
+        binding.rvFeedback.setHasFixedSize(true)
         binding.rvFeedback.adapter = feedbackAdapter
         observeFeedbackList()
     }
