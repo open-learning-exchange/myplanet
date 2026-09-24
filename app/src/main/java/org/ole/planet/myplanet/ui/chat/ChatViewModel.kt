@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.ChatResult
 import org.ole.planet.myplanet.repository.ChatSearchMode
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
@@ -52,7 +53,8 @@ class ChatViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
     private val voicesRepository: VoicesRepository,
     private val dispatcherProvider: DispatcherProvider,
-    private val realtimeSyncManager: RealtimeSyncManager
+    private val realtimeSyncManager: RealtimeSyncManager,
+    private val configurationsRepository: ConfigurationsRepository
 ) : ViewModel() {
     companion object {
         const val PAGE_SIZE = 20
@@ -124,17 +126,16 @@ class ChatViewModel @Inject constructor(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ChatUiState())
     fun loadChatHistoryScreenData(
-        userId: String?,
-        parentCode: String?,
-        communityName: String?
+        userId: String?
     ) {
+        val config = configurationsRepository.getCommunityConfiguration()
         loadDataJob?.cancel()
         loadDataJob = viewModelScope.launch {
             val result = RetryUtils.retry(maxAttempts = 3, delayMs = 2000L) {
                 val currentUser = cachedUser ?: loadCurrentUser(userId).also { cachedUser = it }
                 val newsMessages = voicesRepository.getPlanetNewsMessages(currentUser?.planetCode)
                 val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
-                val targets = cachedShareTargets ?: loadShareTargets(parentCode, communityName, currentUser?._id).also { cachedShareTargets = it }
+                val targets = cachedShareTargets ?: loadShareTargets(config.parentCode, config.communityName, currentUser?._id).also { cachedShareTargets = it }
                 allChats = chatHistory
                 ChatHistoryScreenData(currentUser, chatHistory, newsMessages, targets, chatRepository.extractSharedViewInIds(newsMessages))
             }
