@@ -6,13 +6,12 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.widget.ArrayAdapter
+import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -36,10 +35,11 @@ class BecomeMemberActivity : BaseActivity() {
     @Inject
     override lateinit var dispatcherProvider: DispatcherProvider
 
+    private val viewModel: BecomeMemberViewModel by viewModels()
+
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     var dob: String = ""
     var guest: Boolean = false
-    private var usernameValidationJob: Job? = null
     private var usernameWatcher: TextWatcher? = null
     private var passwordWatcher: TextWatcher? = null
     private var rePasswordWatcher: TextWatcher? = null
@@ -112,7 +112,7 @@ class BecomeMemberActivity : BaseActivity() {
         }
 
         lifecycleScope.launch {
-            val result = userRepository.createMember(info)
+            val result = viewModel.createMember(info)
             withContext(dispatcherProvider.main) {
                 if (result.first) {
                     val userName = info.username
@@ -161,6 +161,25 @@ class BecomeMemberActivity : BaseActivity() {
 
         setupTextWatchers()
 
+        lifecycleScope.launch {
+            viewModel.usernameChecks.collect { check ->
+                if (activityBecomeMemberBinding.etUsername.text.toString() != check.input) {
+                    return@collect
+                }
+
+                if (check.error != null) {
+                    activityBecomeMemberBinding.etUsername.error = check.error
+                } else {
+                    val lowercase = check.input.lowercase()
+                    if (check.input != lowercase) {
+                        activityBecomeMemberBinding.etUsername.setText(lowercase)
+                        activityBecomeMemberBinding.etUsername.setSelection(lowercase.length)
+                    }
+                    activityBecomeMemberBinding.etUsername.error = null
+                }
+            }
+        }
+
         if (guest) {
             activityBecomeMemberBinding.etUsername.setText(username)
             activityBecomeMemberBinding.etUsername.isFocusable = false
@@ -174,7 +193,7 @@ class BecomeMemberActivity : BaseActivity() {
             activityBecomeMemberBinding.btnSubmit.isEnabled = false
             val info = collectMemberInfo()
             lifecycleScope.launch {
-                val error = userRepository.validateUsername(info.username)
+                val error = viewModel.validateUsername(info.username)
                 withContext(dispatcherProvider.main) {
                     if (error != null) {
                         activityBecomeMemberBinding.etUsername.error = error
@@ -190,8 +209,6 @@ class BecomeMemberActivity : BaseActivity() {
     }
 
     override fun onDestroy() {
-        usernameValidationJob?.cancel()
-        usernameValidationJob = null
         activityBecomeMemberBinding.etUsername.removeTextChangedListener(usernameWatcher)
         activityBecomeMemberBinding.etPassword.removeTextChangedListener(passwordWatcher)
         activityBecomeMemberBinding.etRePassword.removeTextChangedListener(rePasswordWatcher)
@@ -205,7 +222,7 @@ class BecomeMemberActivity : BaseActivity() {
 
     private fun autoLoginNewMember(username: String, password: String) {
         lifecycleScope.launch {
-            userRepository.cleanupDuplicateUsers()
+            viewModel.cleanupDuplicateUsers()
 
             sharedPrefManager.setNewLoginUsername(username)
             sharedPrefManager.setNewLoginPassword(password)
@@ -235,26 +252,7 @@ class BecomeMemberActivity : BaseActivity() {
                     return
                 }
 
-                usernameValidationJob?.cancel()
-                usernameValidationJob = lifecycleScope.launch {
-                    delay(300)
-                    val error = userRepository.validateUsername(input)
-
-                    if (activityBecomeMemberBinding.etUsername.text.toString() != input) {
-                        return@launch
-                    }
-
-                    if (error != null) {
-                        activityBecomeMemberBinding.etUsername.error = error
-                    } else {
-                        val lowercase = input.lowercase()
-                        if (input != lowercase) {
-                            activityBecomeMemberBinding.etUsername.setText(lowercase)
-                            activityBecomeMemberBinding.etUsername.setSelection(lowercase.length)
-                        }
-                        activityBecomeMemberBinding.etUsername.error = null
-                    }
-                }
+                viewModel.onUsernameChanged(input)
             }
         }
         activityBecomeMemberBinding.etUsername.addTextChangedListener(usernameWatcher)
