@@ -11,11 +11,14 @@ import io.mockk.spyk
 import io.mockk.unmockkObject
 import io.mockk.verify
 import io.mockk.verifyOrder
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.TimeUtils
+import org.robolectric.shadows.ShadowLooper
 
 @RunWith(AndroidJUnit4::class)
 class HealthUsersAdapterTest {
@@ -48,7 +51,7 @@ class HealthUsersAdapterTest {
         verify(exactly = 1) { viewHolder.bindName(testUser) }
         verify(exactly = 0) { viewHolder.bindImage(any()) }
         verify(exactly = 0) { viewHolder.bindDate(any()) }
-        verify(exactly = 0) { viewHolder.bind(any(), any()) }
+        verify(exactly = 0) { viewHolder.bind(any()) }
     }
 
     @Test
@@ -65,7 +68,7 @@ class HealthUsersAdapterTest {
             viewHolder.bindDate(testUser)
         }
         verify(exactly = 0) { viewHolder.bindImage(any()) }
-        verify(exactly = 0) { viewHolder.bind(any(), any()) }
+        verify(exactly = 0) { viewHolder.bind(any()) }
     }
 
     @Test
@@ -77,7 +80,7 @@ class HealthUsersAdapterTest {
         val payloads = mutableListOf<Any>(listOf("somethingElse"))
         adapter.onBindViewHolder(viewHolder, 0, payloads)
 
-        verify(exactly = 1) { viewHolder.bind(testUser, any()) }
+        verify(exactly = 1) { viewHolder.bind(testUser) }
     }
 
     @Test
@@ -89,7 +92,7 @@ class HealthUsersAdapterTest {
         val payloads = mutableListOf<Any>("somethingElse")
         adapter.onBindViewHolder(viewHolder, 0, payloads)
 
-        verify(exactly = 1) { viewHolder.bind(testUser, any()) }
+        verify(exactly = 1) { viewHolder.bind(testUser) }
     }
 
     @Test
@@ -104,7 +107,63 @@ class HealthUsersAdapterTest {
         verify(exactly = 1) { viewHolder.bindName(testUser) }
         verify(exactly = 0) { viewHolder.bindImage(any()) }
         verify(exactly = 0) { viewHolder.bindDate(any()) }
-        verify(exactly = 0) { viewHolder.bind(any(), any()) }
+        verify(exactly = 0) { viewHolder.bind(any()) }
+    }
+
+    @Test
+    @Suppress("UNCHECKED_CAST")
+    fun testFirstNameChange_yieldsNamePayloadAndAreContentsTheSameFalse() {
+        val u1 = UserEntity(id = "user1", name = "john", firstName = "John", lastName = "Doe", joinDate = 1000L)
+        val u1Updated = UserEntity(id = "user1", name = "john", firstName = "Johnny", lastName = "Doe", joinDate = 1000L)
+
+        val diffCallback = HealthUsersAdapter::class.java.getDeclaredField("DIFF_CALLBACK").apply {
+            isAccessible = true
+        }.get(null) as androidx.recyclerview.widget.DiffUtil.ItemCallback<UserEntity>
+
+        assertFalse(diffCallback.areContentsTheSame(u1, u1Updated))
+        val payload = diffCallback.getChangePayload(u1, u1Updated) as List<*>
+        assertEquals(listOf("name"), payload)
+    }
+
+    @Test
+    fun testClickListener_deliversUpdatedUserAfterPayloadBind() {
+        var clickedUser: UserEntity? = null
+        val testAdapter = HealthUsersAdapter { user -> clickedUser = user }
+
+        val u1 = UserEntity(id = "user1", name = "john", firstName = "John", lastName = "Doe", joinDate = 1000L)
+        val u1Updated = UserEntity(id = "user1", name = "john", firstName = "John", lastName = "Smith", joinDate = 1000L)
+
+        val recyclerView = androidx.recyclerview.widget.RecyclerView(context)
+        recyclerView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context)
+        recyclerView.adapter = testAdapter
+
+        var committed = false
+        testAdapter.submitList(listOf(u1)) {
+            committed = true
+        }
+        while (!committed) {
+            ShadowLooper.idleMainLooper()
+        }
+
+        recyclerView.measure(0, 0)
+        recyclerView.layout(0, 0, 1000, 1000)
+
+        val viewHolder = recyclerView.findViewHolderForAdapterPosition(0) as HealthUsersAdapter.ViewHolder
+
+        var committed2 = false
+        testAdapter.submitList(listOf(u1Updated)) {
+            committed2 = true
+        }
+        while (!committed2) {
+            ShadowLooper.idleMainLooper()
+        }
+
+        testAdapter.onBindViewHolder(viewHolder, 0, mutableListOf(listOf("name")))
+
+        viewHolder.itemView.performClick()
+
+        assertEquals(u1Updated, clickedUser)
+        assertEquals("Smith", clickedUser?.lastName)
     }
 
     @Test
