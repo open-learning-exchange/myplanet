@@ -102,4 +102,41 @@ class MyLibraryDaoTest {
         assertEquals("Description 2", fetchedLib2?.description)
         assertEquals("Author 2", fetchedLib2?.author)
     }
+
+    @Test
+    fun getByResourceIdsByRowid_returnsRowsInInsertionOrder() = runBlocking {
+        val lib1 = MyLibrary().apply { id = "pk1"; resourceId = "resA"; title = "First" }
+        val lib2 = MyLibrary().apply { id = "pk2"; resourceId = "resB"; title = "Second" }
+        val lib3 = MyLibrary().apply { id = "pk3"; resourceId = "resA"; title = "Third" }
+
+        myLibraryDao.upsert(lib1)
+        myLibraryDao.upsert(lib2)
+        myLibraryDao.upsert(lib3)
+
+        val results = myLibraryDao.getByResourceIdsByRowid(listOf("resA", "resB"))
+
+        assertEquals(3, results.size)
+        assertEquals("pk1", results[0].id)
+        assertEquals("pk2", results[1].id)
+        assertEquals("pk3", results[2].id)
+    }
+
+    @Test
+    fun getByResourceIdsByRowid_handles1200Ids() = runBlocking {
+        val items = (1..1200).map { i ->
+            MyLibrary().apply {
+                id = "pk_$i"
+                resourceId = "res_$i"
+                title = "Resource $i"
+            }
+        }
+        myLibraryDao.upsertAll(items)
+
+        val searchIds = items.map { it.resourceId!! }
+        val results = myLibraryDao.getByResourceIdsByRowid(searchIds)
+
+        assertEquals(1200, results.size)
+        assertEquals("pk_1", results.first().id)
+        assertEquals("pk_1200", results.last().id)
+    }
 }
