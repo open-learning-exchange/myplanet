@@ -5,6 +5,8 @@ import java.util.Locale
 import org.ole.planet.myplanet.R
 
 object MediumUtils {
+    private val KNOWN_CANONICALS = setOf("pdf", "video", "audio", "image", "html", "text/html", "book", "other")
+
     fun getCanonicalMedium(medium: String): String {
         val lower = medium.lowercase(Locale.ROOT).trim()
         return when {
@@ -16,6 +18,11 @@ object MediumUtils {
             lower.contains("book") || lower == "epub" || lower == "textbook" -> "book"
             else -> medium.trim()
         }
+    }
+
+    fun isKnownMedium(medium: String): Boolean {
+        val canonical = getCanonicalMedium(medium)
+        return KNOWN_CANONICALS.contains(canonical.lowercase(Locale.ROOT))
     }
 
     fun getMediumDisplayName(context: Context, medium: String): String {

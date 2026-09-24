@@ -89,33 +89,27 @@ class ResourcesListFilter {
 
     private fun matchesMedium(library: MyLibrary, selectedMediums: Set<String>): Boolean {
         val classifiedType = LibraryTypeClassifier.classify(library)
-        val mediaTypeLower = library.mediaType?.lowercase().orEmpty()
+        val isNonBook = LibraryTypeClassifier.isExplicitNonBook(library)
 
         return selectedMediums.any { selected ->
-            val selLower = selected.lowercase().trim()
-            val targetType = when {
-                selLower.contains("audio") || selLower == "mp3" -> LibraryType.AUDIO
-                selLower.contains("video") || selLower == "mp4" -> LibraryType.VIDEO
-                selLower.contains("pdf") -> LibraryType.PDF
-                selLower.contains("book") || selLower == "epub" || selLower == "textbook" -> LibraryType.BOOK
+            val canonicalSel = MediumUtils.getCanonicalMedium(selected)
+            val targetType = when (canonicalSel) {
+                "audio" -> LibraryType.AUDIO
+                "video" -> LibraryType.VIDEO
+                "pdf" -> LibraryType.PDF
+                "book" -> LibraryType.BOOK
                 else -> null
             }
 
             if (targetType != null) {
                 if (targetType == LibraryType.BOOK) {
-                    val extension = FileUtils.getFileExtension(
-                        library.resourceLocalAddress ?: library.resourceRemoteAddress
-                    ).lowercase()
-                    val isExplicitNonBook = mediaTypeLower.startsWith("image") ||
-                            mediaTypeLower.contains("html") ||
-                            mediaTypeLower.startsWith("text") ||
-                            extension in setOf("png", "jpg", "jpeg", "gif", "bmp", "webp", "html", "htm", "txt")
-                    classifiedType == LibraryType.BOOK && !isExplicitNonBook
+                    classifiedType == LibraryType.BOOK && !isNonBook
                 } else {
-                    classifiedType == targetType || mediaTypeLower == selLower || (mediaTypeLower.isNotBlank() && mediaTypeLower.contains(selLower))
+                    classifiedType == targetType
                 }
             } else {
-                mediaTypeLower == selLower || (mediaTypeLower.isNotBlank() && mediaTypeLower.contains(selLower))
+                val libCanonical = library.mediaType?.let { MediumUtils.getCanonicalMedium(it) }
+                libCanonical == canonicalSel
             }
         }
     }
