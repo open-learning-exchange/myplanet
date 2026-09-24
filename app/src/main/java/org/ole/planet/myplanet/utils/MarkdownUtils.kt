@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.utils
 import android.content.Context
 import android.text.Layout
 import android.text.Spannable
+import android.text.Spanned
 import android.text.TextPaint
 import android.text.method.LinkMovementMethod
 import android.text.style.AlignmentSpan
@@ -66,6 +67,17 @@ object MarkdownUtils {
     fun setMarkdownText(textView: TextView, markdown: String) {
         val markwon = create(textView.context)
         markwon.setMarkdown(textView, markdown)
+        textView.movementMethod = linkMovementMethod
+    }
+
+    fun parseMarkdown(context: Context, markdown: String): Spanned {
+        val markwon = create(context)
+        return markwon.toMarkdown(markdown)
+    }
+
+    fun setParsedMarkdown(textView: TextView, spanned: Spanned) {
+        val markwon = create(textView.context)
+        markwon.setParsedMarkdown(textView, spanned)
         textView.movementMethod = linkMovementMethod
     }
 
