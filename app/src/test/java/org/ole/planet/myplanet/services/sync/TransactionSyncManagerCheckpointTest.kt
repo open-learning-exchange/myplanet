@@ -26,8 +26,8 @@ import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatSyncWriter
-import org.ole.planet.myplanet.repository.CommunitySyncWriter
 import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.EventsSyncWriter
 import org.ole.planet.myplanet.repository.FeedbackSyncWriter
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
@@ -122,7 +122,7 @@ class TransactionSyncManagerCheckpointTest {
             ratingsRepository,
             mockk<SubmissionsRepository>(relaxed = true),
             mockk<CoursesRepository>(relaxed = true),
-            mockk<CommunitySyncWriter>(relaxed = true),
+            mockk<EventsSyncWriter>(relaxed = true),
             mockk<HealthRepository>(relaxed = true),
             mockk<ProgressRepository>(relaxed = true),
             mockk<SurveysRepository>(relaxed = true),

@@ -20,8 +20,8 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatSyncWriter
-import org.ole.planet.myplanet.repository.CommunitySyncWriter
 import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.EventsSyncWriter
 import org.ole.planet.myplanet.repository.FeedbackSyncWriter
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
@@ -58,7 +58,7 @@ class TransactionSyncManagerTest {
     private val ratingsRepository: RatingsRepository = mockk()
     private val submissionsRepository: SubmissionsRepository = mockk()
     private val coursesRepository: CoursesRepository = mockk()
-    private val communityRepository: CommunitySyncWriter = mockk()
+    private val eventsSyncWriter: EventsSyncWriter = mockk()
     private val healthRepository: HealthRepository = mockk()
     private val progressRepository: ProgressRepository = mockk()
     private val surveysRepository: SurveysRepository = mockk()
@@ -91,7 +91,7 @@ class TransactionSyncManagerTest {
             ratingsRepository,
             submissionsRepository,
             coursesRepository,
-            communityRepository,
+            eventsSyncWriter,
             healthRepository,
             progressRepository,
             surveysRepository,

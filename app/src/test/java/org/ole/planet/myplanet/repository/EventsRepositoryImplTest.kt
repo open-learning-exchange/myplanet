@@ -164,6 +164,19 @@ class EventsRepositoryImplTest {
     }
 
     @Test
+    fun insertMeetupsFromSyncPropagatesDaoException() = runTest {
+        val docs = listOf(JsonObject().apply { addProperty("_id", "m1") })
+        coEvery { meetupDao.getByMeetupIds(any()) } throws SilentException("boom")
+
+        try {
+            repository.insertMeetupsFromSync(docs)
+            org.junit.Assert.fail("Expected SilentException to be thrown")
+        } catch (_: SilentException) {
+            // Expected exception propagated
+        }
+    }
+
+    @Test
     fun batchInsertMeetupsException() = runTest {
         val docs = listOf(JsonObject().apply { addProperty("_id", "m1") })
         coEvery { meetupDao.getByMeetupIds(any()) } throws SilentException("boom")
