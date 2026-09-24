@@ -13,7 +13,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
-import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.NotificationPayload
@@ -32,7 +31,6 @@ class NotificationsRepositoryImpl @Inject constructor(
     private val timeProvider: TimeProvider,
     private val teamNotificationDao: TeamNotificationDao,
     private val notificationDao: NotificationDao,
-    private val teamTaskDao: TeamTaskDao,
     private val voicesRepository: VoicesRepository
 ) : NotificationsRepository {
     override suspend fun refresh() = Unit
@@ -241,7 +239,7 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     override suspend fun getTaskDetails(relatedId: String?): TaskNotificationResult? {
         return relatedId?.let {
-            val task = teamTaskDao.getById(it)
+            val task = teamsRepository.get().getTaskById(it)
             val linkJson = org.json.JSONObject(task?.link ?: "{}")
             val teamId = linkJson.optString("teams")
             if (teamId.isNotEmpty()) {
@@ -279,7 +277,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         if (taskIds.isEmpty()) return emptyMap()
         val map = mutableMapOf<String, String>()
 
-        val tasks = teamTaskDao.getByIds(taskIds)
+        val tasks = teamsRepository.get().getTasksByIds(taskIds)
 
         val teamIds = LinkedHashSet<String>()
         tasks.forEach { task -> task.teamId?.takeIf { it.isNotEmpty() }?.let { teamIds.add(it) } }
@@ -343,7 +341,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         if (taskTitles.isEmpty()) return emptyMap()
         val map = mutableMapOf<String, String>()
 
-        val tasks = teamTaskDao.getByTitles(taskTitles)
+        val tasks = teamsRepository.get().getTasksByTitles(taskTitles)
 
         val teamIds = LinkedHashSet<String>()
         tasks.forEach { task -> task.teamId?.takeIf { it.isNotEmpty() }?.let { teamIds.add(it) } }
@@ -393,7 +391,7 @@ class NotificationsRepositoryImpl @Inject constructor(
 
         val current = timeProvider.now()
         val tomorrow = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
-        val tasks = teamTaskDao.getTasksForUserBetween(userId, current, tomorrow.timeInMillis)
+        val tasks = teamsRepository.get().getTasksForUserBetween(userId, current, tomorrow.timeInMillis)
         val taskTeamIds = tasks.mapNotNull { it.teamId }.toSet()
 
         for (teamId in teamIds) {

@@ -1341,6 +1341,15 @@ class TeamsRepositoryImpl @Inject constructor(
         return teamLogDao.markUploaded(localId, remoteId, rev) != 0
     }
 
+    override suspend fun getTaskById(id: String): TeamTask? = teamTaskDao.getById(id)
+
+    override suspend fun getTasksByIds(ids: List<String>): List<TeamTask> = teamTaskDao.getByIds(ids)
+
+    override suspend fun getTasksByTitles(titles: List<String>): List<TeamTask> = teamTaskDao.getByTitles(titles)
+
+    override suspend fun getTasksForUserBetween(userId: String, start: Long, end: Long): List<TeamTask> =
+        teamTaskDao.getTasksForUserBetween(userId, start, end)
+
     companion object {
         private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("MMMM dd, yyyy hh:mm a", Locale.getDefault()).withZone(ZoneId.systemDefault())
     }

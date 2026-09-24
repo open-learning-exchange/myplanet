@@ -18,7 +18,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
-import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.model.TeamNotification
 import org.ole.planet.myplanet.utils.TestTimeProvider
@@ -30,21 +29,23 @@ import org.robolectric.annotation.Config
 @ExperimentalCoroutinesApi
 class NotificationsRepositoryImplTest {
 
+    private lateinit var realUserRepository: UserRepository
     private lateinit var userRepository: dagger.Lazy<UserRepository>
+    private lateinit var teamsNotificationsRepository: TeamsNotificationsRepository
     private lateinit var teamsRepository: dagger.Lazy<TeamsNotificationsRepository>
     private lateinit var repository: NotificationsRepositoryImpl
     private lateinit var teamNotificationDao: TeamNotificationDao
     private lateinit var notificationDao: NotificationDao
-    private lateinit var teamTaskDao: TeamTaskDao
     private lateinit var voicesRepository: VoicesRepository
 
     @Before
     fun setUp() {
-        userRepository = mockk(relaxed = true)
-        teamsRepository = mockk(relaxed = true)
+        realUserRepository = mockk(relaxed = true)
+        userRepository = dagger.Lazy { realUserRepository }
+        teamsNotificationsRepository = mockk(relaxed = true)
+        teamsRepository = dagger.Lazy { teamsNotificationsRepository }
         teamNotificationDao = mockk(relaxed = true)
         notificationDao = mockk(relaxed = true)
-        teamTaskDao = mockk(relaxed = true)
         voicesRepository = mockk(relaxed = true)
         repository = NotificationsRepositoryImpl(
             userRepository,
@@ -52,7 +53,6 @@ class NotificationsRepositoryImplTest {
             TestTimeProvider(),
             teamNotificationDao,
             notificationDao,
-            teamTaskDao,
             voicesRepository
         )
     }
@@ -276,8 +276,8 @@ class NotificationsRepositoryImplTest {
             id = "task1"
             link = "{\"teams\":\"team321\"}"
         }
-        coEvery { teamTaskDao.getById("task1") } returns task
-        coEvery { teamsRepository.get().getTeamLabelInfo("team321") } returns TeamLabelInfo("team321", "My Team", "team")
+        coEvery { teamsNotificationsRepository.getTaskById("task1") } returns task
+        coEvery { teamsNotificationsRepository.getTeamLabelInfo("team321") } returns TeamLabelInfo("team321", "My Team", "team")
 
         val result = repository.getTaskDetails("task1")
 
@@ -287,7 +287,7 @@ class NotificationsRepositoryImplTest {
 
     @Test
     fun `getTaskDetails returns null when relatedId is not a known task id`() = runTest {
-        coEvery { teamTaskDao.getById("team321") } returns null
+        coEvery { teamsNotificationsRepository.getTaskById("team321") } returns null
 
         val result = repository.getTaskDetails("team321")
 
@@ -296,7 +296,7 @@ class NotificationsRepositoryImplTest {
 
     @Test
     fun `getJoinRequestTeamId strips join_request_ prefix and resolves team id`() = runTest {
-        coEvery { teamsRepository.get().getJoinRequestInfo("req1") } returns JoinRequestInfo("req1", "team9", "user1")
+        coEvery { teamsNotificationsRepository.getJoinRequestInfo("req1") } returns JoinRequestInfo("req1", "team9", "user1")
 
         val result = repository.getJoinRequestTeamId("join_request_req1")
 
@@ -305,7 +305,7 @@ class NotificationsRepositoryImplTest {
 
     @Test
     fun `getJoinRequestTeamId returns null when relatedId is not a known join request id`() = runTest {
-        coEvery { teamsRepository.get().getJoinRequestInfo("team123") } returns null
+        coEvery { teamsNotificationsRepository.getJoinRequestInfo("team123") } returns null
 
         val result = repository.getJoinRequestTeamId("team123")
 
@@ -534,21 +534,21 @@ class NotificationsRepositoryImplTest {
             title = "Task 1"
             teamId = "teamA"
         }
-        coEvery { teamTaskDao.getByIds(listOf("rel1")) } returns listOf(taskEntity)
-        coEvery { teamTaskDao.getByTitles(listOf("Task 1")) } returns listOf(taskEntity)
-        coEvery { teamsRepository.get().getTeamNamesByIds(listOf("teamA")) } returns mapOf("teamA" to "Alpha Team")
+        coEvery { teamsNotificationsRepository.getTasksByIds(listOf("rel1")) } returns listOf(taskEntity)
+        coEvery { teamsNotificationsRepository.getTasksByTitles(listOf("Task 1")) } returns listOf(taskEntity)
+        coEvery { teamsNotificationsRepository.getTeamNamesByIds(listOf("teamA")) } returns mapOf("teamA" to "Alpha Team")
 
         val joinRequestInfo = JoinRequestInfo("rel2", "teamB", "user2")
         val fallbackRequestInfo = JoinRequestInfo("fallback_id", "teamC", "user3")
-        coEvery { teamsRepository.get().getJoinRequestsInfo(listOf("rel2")) } returns listOf(joinRequestInfo)
-        coEvery { teamsRepository.get().getJoinRequestInfo(null) } returns fallbackRequestInfo
-        coEvery { teamsRepository.get().getTeamNamesByIds(listOf("teamB")) } returns mapOf("teamB" to "Beta Team")
-        coEvery { teamsRepository.get().getTeamLabelInfo("teamC") } returns TeamLabelInfo("teamC", "Gamma Team", "team")
+        coEvery { teamsNotificationsRepository.getJoinRequestsInfo(listOf("rel2")) } returns listOf(joinRequestInfo)
+        coEvery { teamsNotificationsRepository.getJoinRequestInfo(null) } returns fallbackRequestInfo
+        coEvery { teamsNotificationsRepository.getTeamNamesByIds(listOf("teamB")) } returns mapOf("teamB" to "Beta Team")
+        coEvery { teamsNotificationsRepository.getTeamLabelInfo("teamC") } returns TeamLabelInfo("teamC", "Gamma Team", "team")
 
-        coEvery { userRepository.get().getUsersByIds(listOf("user2")) } returns listOf(
+        coEvery { realUserRepository.getUsersByIds(listOf("user2")) } returns listOf(
             org.ole.planet.myplanet.model.UserEntity(id = "user2", name = "Alice")
         )
-        coEvery { userRepository.get().getUserById("user3") } returns org.ole.planet.myplanet.model.UserEntity(id = "user3", name = "Bob")
+        coEvery { realUserRepository.getUserById("user3") } returns org.ole.planet.myplanet.model.UserEntity(id = "user3", name = "Bob")
 
         val enrichment = repository.getEnrichedNotifications("user1", "all", false)
 
@@ -559,10 +559,10 @@ class NotificationsRepositoryImplTest {
         assertEquals(Pair("Alice", "Beta Team"), enrichment.joinRequestDetails["rel2"])
         assertEquals(Pair("Bob", "Gamma Team"), enrichment.joinRequestDetails[""])
 
-        coVerify { teamTaskDao.getByIds(listOf("rel1")) }
-        coVerify { teamTaskDao.getByTitles(listOf("Task 1")) }
-        coVerify { teamsRepository.get().getJoinRequestsInfo(listOf("rel2")) }
-        coVerify { teamsRepository.get().getJoinRequestInfo(null) }
+        coVerify { teamsNotificationsRepository.getTasksByIds(listOf("rel1")) }
+        coVerify { teamsNotificationsRepository.getTasksByTitles(listOf("Task 1")) }
+        coVerify { teamsNotificationsRepository.getJoinRequestsInfo(listOf("rel2")) }
+        coVerify { teamsNotificationsRepository.getJoinRequestInfo(null) }
         coVerify { notificationDao.getUnreadCount("user1", false) }
     }
 
@@ -589,10 +589,10 @@ class NotificationsRepositoryImplTest {
             teamId = "teamTitleLoser"
         }
 
-        coEvery { teamTaskDao.getByIds(listOf("rel1")) } returns listOf(taskById)
-        coEvery { teamTaskDao.getByTitles(listOf("Task 1")) } returns listOf(taskByTitle)
-        coEvery { teamsRepository.get().getTeamNamesByIds(listOf("teamIdWinner")) } returns mapOf("teamIdWinner" to "Winner Team")
-        coEvery { teamsRepository.get().getTeamNamesByIds(listOf("teamTitleLoser")) } returns mapOf("teamTitleLoser" to "Loser Team")
+        coEvery { teamsNotificationsRepository.getTasksByIds(listOf("rel1")) } returns listOf(taskById)
+        coEvery { teamsNotificationsRepository.getTasksByTitles(listOf("Task 1")) } returns listOf(taskByTitle)
+        coEvery { teamsNotificationsRepository.getTeamNamesByIds(listOf("teamIdWinner")) } returns mapOf("teamIdWinner" to "Winner Team")
+        coEvery { teamsNotificationsRepository.getTeamNamesByIds(listOf("teamTitleLoser")) } returns mapOf("teamTitleLoser" to "Loser Team")
 
         val enrichment = repository.getEnrichedNotifications("user1", "all", false)
 
@@ -619,12 +619,12 @@ class NotificationsRepositoryImplTest {
             title = "Task without date"
             teamId = "teamA"
         }
-        coEvery { teamTaskDao.getByIds(listOf("rel1")) } returns listOf(taskById)
-        coEvery { teamsRepository.get().getTeamNamesByIds(listOf("teamA")) } returns mapOf("teamA" to "Alpha Team")
+        coEvery { teamsNotificationsRepository.getTasksByIds(listOf("rel1")) } returns listOf(taskById)
+        coEvery { teamsNotificationsRepository.getTeamNamesByIds(listOf("teamA")) } returns mapOf("teamA" to "Alpha Team")
 
         repository.getEnrichedNotifications("user1", "all", false)
 
-        coVerify(exactly = 0) { teamTaskDao.getByTitles(any()) }
+        coVerify(exactly = 0) { teamsNotificationsRepository.getTasksByTitles(any()) }
     }
 
     @Test
@@ -711,7 +711,7 @@ class NotificationsRepositoryImplTest {
 
         coEvery { teamNotificationDao.getByTypeAndParentIds("chat", teamIds) } returns emptyList()
         coEvery { voicesRepository.countTopLevelByTeams(emptyList()) } returns emptyMap()
-        coEvery { teamTaskDao.getTasksForUserBetween(eq(userId), any(), any()) } returns listOf(taskForTeam1)
+        coEvery { teamsNotificationsRepository.getTasksForUserBetween(eq(userId), any(), any()) } returns listOf(taskForTeam1)
 
         val result = repository.getTeamNotifications(teamIds, userId)
 
@@ -735,7 +735,7 @@ class NotificationsRepositoryImplTest {
 
         coEvery { teamNotificationDao.getByTypeAndParentIds("chat", teamIds) } returns listOf(chatNotification)
         coEvery { voicesRepository.countTopLevelByTeams(listOf(chatTrackedTeamId)) } returns mapOf(chatTrackedTeamId to 5L)
-        coEvery { teamTaskDao.getTasksForUserBetween(eq(userId), any(), any()) } returns emptyList()
+        coEvery { teamsNotificationsRepository.getTasksForUserBetween(eq(userId), any(), any()) } returns emptyList()
 
         val result = repository.getTeamNotifications(teamIds, userId)
 
@@ -770,7 +770,7 @@ class NotificationsRepositoryImplTest {
 
         coEvery { teamNotificationDao.getByTypeAndParentIds("chat", teamIds) } returns listOf(notif1, notif2, notif3)
         coEvery { voicesRepository.countTopLevelByTeams(teamIds) } returns mapOf(team1 to 5L, team2 to 3L, team3 to 10L)
-        coEvery { teamTaskDao.getTasksForUserBetween(eq(userId), any(), any()) } returns emptyList()
+        coEvery { teamsNotificationsRepository.getTasksForUserBetween(eq(userId), any(), any()) } returns emptyList()
 
         val result = repository.getTeamNotifications(teamIds, userId)
 
