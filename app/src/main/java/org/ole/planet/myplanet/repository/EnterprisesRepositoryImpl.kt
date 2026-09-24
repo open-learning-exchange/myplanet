@@ -4,16 +4,18 @@ import com.google.gson.JsonObject
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.room.dao.TeamDao
+import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
-import org.ole.planet.myplanet.utils.distinctByContent
 
 class EnterprisesRepositoryImpl @Inject constructor(
     private val storagePathResolver: StoragePathResolver,
@@ -84,17 +86,10 @@ class EnterprisesRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getReportsFlow(teamId: String): Flow<List<MyTeam>> {
+    override fun getReportsFlow(teamId: String): Flow<List<FinanceReport>> {
         return teamDao.observeNonArchivedReportsByTeamId(teamId)
-            .distinctByContent { old, new ->
-                old._id == new._id && old._rev == new._rev && old.status == new.status &&
-                    old.description == new.description && old.beginningBalance == new.beginningBalance &&
-                    old.sales == new.sales && old.otherIncome == new.otherIncome &&
-                    old.wages == new.wages && old.otherExpenses == new.otherExpenses &&
-                    old.startDate == new.startDate && old.endDate == new.endDate &&
-                    old.updatedDate == new.updatedDate && old.updated == new.updated &&
-                    old.imageName == new.imageName
-            }
+            .map { list -> list.map { it.toFinanceReport() } }
+            .distinctUntilChanged()
             .flowOn(dispatcherProvider.default)
     }
 
@@ -144,4 +139,24 @@ class EnterprisesRepositoryImpl @Inject constructor(
         teamDao.upsert(model)
         return true
     }
+}
+
+private fun MyTeam.toFinanceReport(): FinanceReport {
+    return FinanceReport(
+        _id = _id,
+        _rev = _rev,
+        status = status,
+        description = description,
+        beginningBalance = beginningBalance,
+        sales = sales,
+        otherIncome = otherIncome,
+        wages = wages,
+        otherExpenses = otherExpenses,
+        startDate = startDate,
+        endDate = endDate,
+        createdDate = createdDate,
+        updatedDate = updatedDate,
+        updated = updated,
+        imageName = imageName,
+    )
 }

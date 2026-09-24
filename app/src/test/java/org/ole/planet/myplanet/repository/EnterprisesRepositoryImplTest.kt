@@ -18,6 +18,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.EnterpriseReportCsvProjection
+import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -41,7 +42,7 @@ class EnterprisesRepositoryImplTest {
     @Test
     fun `getReportsFlow delegates to observeNonArchivedReportsByTeamId`() = runTest {
         val teamId = "team123"
-        val expectedReports = listOf(
+        val rawReports = listOf(
             MyTeam().apply {
                 _id = "report1"
                 createdDate = 2000L
@@ -51,8 +52,12 @@ class EnterprisesRepositoryImplTest {
                 createdDate = 1000L
             }
         )
+        val expectedReports = listOf(
+            FinanceReport(_id="report1", _rev=null, status=null, description=null, beginningBalance=0, sales=0, otherIncome=0, wages=0, otherExpenses=0, startDate=0L, endDate=0L, createdDate=2000L, updatedDate=0L, updated=false, imageName=null),
+            FinanceReport(_id="report2", _rev=null, status=null, description=null, beginningBalance=0, sales=0, otherIncome=0, wages=0, otherExpenses=0, startDate=0L, endDate=0L, createdDate=1000L, updatedDate=0L, updated=false, imageName=null)
+        )
 
-        every { teamDao.observeNonArchivedReportsByTeamId(teamId) } returns flowOf(expectedReports)
+        every { teamDao.observeNonArchivedReportsByTeamId(teamId) } returns flowOf(rawReports)
 
         val result = repository.getReportsFlow(teamId).first()
 
@@ -176,7 +181,7 @@ class EnterprisesRepositoryImplTest {
         every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
             flowOf(listOf(r1), listOf(r2))
 
-        val emissions = mutableListOf<List<MyTeam>>()
+        val emissions = mutableListOf<List<FinanceReport>>()
         repository.getReportsFlow("team1").collect { emissions.add(it) }
 
         assertEquals(1, emissions.size)
@@ -189,7 +194,7 @@ class EnterprisesRepositoryImplTest {
         every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
             flowOf(listOf(before), listOf(after))
 
-        val emissions = mutableListOf<List<MyTeam>>()
+        val emissions = mutableListOf<List<FinanceReport>>()
         repository.getReportsFlow("team1").collect { emissions.add(it) }
 
         assertEquals(2, emissions.size)
@@ -204,7 +209,7 @@ class EnterprisesRepositoryImplTest {
         every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
             flowOf(listOf(before), listOf(after))
 
-        val emissions = mutableListOf<List<MyTeam>>()
+        val emissions = mutableListOf<List<FinanceReport>>()
         repository.getReportsFlow("team1").collect { emissions.add(it) }
 
         assertEquals(2, emissions.size)
@@ -219,7 +224,7 @@ class EnterprisesRepositoryImplTest {
         every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
             flowOf(listOf(r1), listOf(r1, r2))
 
-        val emissions = mutableListOf<List<MyTeam>>()
+        val emissions = mutableListOf<List<FinanceReport>>()
         repository.getReportsFlow("team1").collect { emissions.add(it) }
 
         assertEquals(2, emissions.size)
@@ -234,11 +239,26 @@ class EnterprisesRepositoryImplTest {
         every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
             flowOf(listOf(r2, r1))
 
-        val emissions = mutableListOf<List<MyTeam>>()
+        val emissions = mutableListOf<List<FinanceReport>>()
         repository.getReportsFlow("team1").collect { emissions.add(it) }
 
         assertEquals(1, emissions.size)
         assertEquals(listOf("r2", "r1"), emissions[0].map { it._id })
+    }
+
+    @Test
+    fun `getReportsFlow emits when createdDate changes`() = runTest {
+        val before = report("r1", "rev1", createdDate = 100L)
+        val after = report("r1", "rev1", createdDate = 200L)
+        every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
+            flowOf(listOf(before), listOf(after))
+
+        val emissions = mutableListOf<List<FinanceReport>>()
+        repository.getReportsFlow("team1").collect { emissions.add(it) }
+
+        assertEquals(2, emissions.size)
+        assertEquals(100L, emissions[0][0].createdDate)
+        assertEquals(200L, emissions[1][0].createdDate)
     }
 
     private fun report(
