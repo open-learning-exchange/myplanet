@@ -8,6 +8,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestDispatcher
@@ -304,5 +305,17 @@ class SyncRepositoryImplTest {
         val retrievedShelves = syncRepository.getCachedShelvesWithData()
 
         assertEquals(inputShelves, retrievedShelves)
+    }
+
+    @Test(expected = CancellationException::class)
+    fun `processShelfParallel rethrows CancellationException when shelf fetch fails with CancellationException`() = runTest {
+        coEvery {
+            apiInterface.getJsonObject(any(), match { it.contains("/shelf/shelf123") })
+        } coAnswers {
+            coroutineContext[kotlinx.coroutines.Job]?.cancel()
+            throw CancellationException("Cancelled")
+        }
+
+        syncRepository.processShelfParallel("shelf123")
     }
 }

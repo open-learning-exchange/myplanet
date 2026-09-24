@@ -225,4 +225,29 @@ class SyncManagerTest {
 
         coVerify(exactly = 1) { resourcesRepository.removeDeletedResources(listOf("res_1", "res_2")) }
     }
+
+    @Test
+    fun `resource batch fetch cancellation stops processing and does not report failure`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns true
+
+        val totalRowsJson = kotlinx.serialization.json.buildJsonObject {
+            put("total_rows", 500)
+        }
+        val totalRowsResponse = Response.success(totalRowsJson)
+        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?limit=0") }) } returns totalRowsResponse
+
+        coEvery {
+            apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?include_docs=true") })
+        } coAnswers {
+            syncManager.cancelBackgroundSync()
+            awaitCancellation()
+        }
+
+        syncManager.start(listener, "sync", listOf())
+
+        coVerify(exactly = 1) {
+            apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?include_docs=true") })
+        }
+        verify(exactly = 0) { listener.onSyncFailed(any()) }
+    }
 }
