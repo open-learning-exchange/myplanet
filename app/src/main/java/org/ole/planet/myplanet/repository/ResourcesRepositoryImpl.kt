@@ -857,25 +857,40 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
 
         val grouped = mutableMapOf<String, ResourceAccumulator>()
-        oleDir.walkTopDown().filter { it.isFile }.forEach { file ->
-            val ext = file.extension.lowercase()
-            val matchesCategory = if (extensions.isEmpty()) {
-                ext !in allKnownExtensions
-            } else {
-                ext in extensions
-            }
-            if (matchesCategory) {
-                val resourceId = file.parentFile?.name ?: return@forEach
-                val accumulator = grouped.getOrPut(resourceId) { ResourceAccumulator() }
-                accumulator.filePaths.add(file.absolutePath)
-                accumulator.totalSize += file.length()
-            }
-        }
 
-        return@withContext grouped.map { (resourceId, accumulator) ->
-            val title = titleMap[resourceId]?.takeIf { it.isNotBlank() } ?: context.getString(R.string.storage_unknown_resource)
-            OfflineResourceItem(resourceId, title, accumulator.filePaths, accumulator.totalSize)
-        }.sortedBy { it.title }
+        oleDir.walkTopDown()
+            .filter { it.isFile }
+            .forEach { file ->
+                val ext = file.extension.lowercase()
+                val matchesCategory = if (extensions.isEmpty()) {
+                    ext !in allKnownExtensions
+                } else {
+                    ext in extensions
+                }
+
+                if (matchesCategory) {
+                    val resourceId = file.parentFile?.name ?: return@forEach
+                    val accumulator = grouped.getOrPut(resourceId) { ResourceAccumulator() }
+
+                    accumulator.filePaths.add(file.absolutePath)
+                    accumulator.totalSize += file.length()
+                }
+            }
+
+        return@withContext grouped
+            .map { (resourceId, accumulator) ->
+                val title = titleMap[resourceId]
+                    ?.takeIf { it.isNotBlank() }
+                    ?: context.getString(R.string.storage_unknown_resource)
+
+                OfflineResourceItem(
+                    resourceId = resourceId,
+                    title = title,
+                    filePaths = accumulator.filePaths.sorted(),
+                    totalSizeBytes = accumulator.totalSize
+                )
+            }
+            .sortedBy { it.title }
     }
 
     override suspend fun deleteOfflineResources(oleDirPath: String, items: List<OfflineResourceItem>) = withContext(dispatcherProvider.io) {

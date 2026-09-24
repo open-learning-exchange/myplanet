@@ -16,6 +16,8 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowLooper
+import java.util.concurrent.atomic.AtomicBoolean
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -70,9 +72,16 @@ class TeamResourcesAdapterTest {
         }
 
         adapter.submitList(listOf(resource1, resource2))
-        assertEquals(2, adapter.currentList.size)
 
-        adapter.removeResourceAt(0)
+        val removalCompleted = AtomicBoolean(false)
+
+        adapter.removeResourceAt(0) {
+            removalCompleted.set(true)
+        }
+
+        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
+
+        assertTrue(removalCompleted.get())
         assertEquals(1, adapter.currentList.size)
         assertEquals("res_2", adapter.currentList[0].id)
         assertTrue(isUpdatedCalled)

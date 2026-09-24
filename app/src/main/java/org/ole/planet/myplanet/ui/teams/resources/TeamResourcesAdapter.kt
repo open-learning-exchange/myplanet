@@ -70,62 +70,87 @@ class TeamResourcesAdapter(
         return ViewHolderTeamResources(binding)
     }
 
-    override fun onBindViewHolder(holder: ViewHolderTeamResources, position: Int) {
+    override fun onBindViewHolder(
+        holder: ViewHolderTeamResources,
+        position: Int
+    ) {
         val adapterPosition = holder.bindingAdapterPosition
         if (adapterPosition == RecyclerView.NO_POSITION) return
 
         val resource = getItem(adapterPosition)
         val type = LibraryTypeClassifier.classify(resource)
+
         holder.cancelPreviewJob()
-        ResourceCardHelper.showTypeIconOnly(context, holder.binding.ivCoverPreview, holder.binding.ivTypeIcon)
+        ResourceCardHelper.showTypeIconOnly(
+            context,
+            holder.binding.ivCoverPreview,
+            holder.binding.ivTypeIcon
+        )
 
         holder.binding.apply {
             tvTitle.text = resource.title
-            tvMeta.text = ResourceCardHelper.buildMetaLine(context, type, resource.language)
+            tvMeta.text = ResourceCardHelper.buildMetaLine(
+                context,
+                type,
+                resource.language
+            )
 
             ResourceCardHelper.setCoverColor(coverContainer, type)
             ivTypeIcon.setImageResource(ResourceCardHelper.typeIconRes(type))
 
-            val libraryId = resource.id.takeIf { !it.isNullOrBlank() } ?: resource.resourceId
+            val libraryId = resource.id
+                .takeIf { it.isNotBlank() }
+                ?: resource.resourceId
 
-            val address = resource.resourceLocalAddress
-
-            holder.setPreviewJob(adapterScope.launch {
-                ResourceCardHelper.bindCover(
-                    context = context,
-                    ivPreview = ivCoverPreview,
-                    ivTypeIcon = ivTypeIcon,
-                    isOffline = true,
-                    address = address,
-                    libraryId = libraryId,
-                    externalFilesDir = externalFilesDir,
-                    coverWidthDp = COVER_WIDTH_DP,
-                    dispatcherProvider = dispatcherProvider,
-                    htmlCoverCache = htmlCoverCache,
-                    fileLengthCache = fileLengthCache
-                )
-            })
+            holder.setPreviewJob(
+                adapterScope.launch {
+                    ResourceCardHelper.bindCover(
+                        context = context,
+                        ivPreview = ivCoverPreview,
+                        ivTypeIcon = ivTypeIcon,
+                        isOffline = true,
+                        address = resource.resourceLocalAddress,
+                        libraryId = libraryId,
+                        externalFilesDir = externalFilesDir,
+                        coverWidthDp = COVER_WIDTH_DP,
+                        dispatcherProvider = dispatcherProvider,
+                        htmlCoverCache = htmlCoverCache,
+                        fileLengthCache = fileLengthCache
+                    )
+                }
+            )
 
             root.setOnClickListener {
                 listener?.openLibraryDetailFragment(resource)
             }
 
-            flRemoveContainer.visibility = if (canRemoveResources) View.VISIBLE else View.GONE
-            val removeDescription = context.getString(R.string.remove) + " " + (resource.title ?: "")
-            flRemoveContainer.contentDescription = removeDescription
+            flRemoveContainer.visibility =
+                if (canRemoveResources) View.VISIBLE else View.GONE
+
+            flRemoveContainer.contentDescription =
+                context.getString(R.string.remove) + " " + resource.title.orEmpty()
 
             flRemoveContainer.setOnClickListener {
-            val currentPosition = holder.bindingAdapterPosition
-                    if (currentPosition != RecyclerView.NO_POSITION) {
-                        onRemoveResource(getItem(currentPosition), currentPosition)
-                    }
+                val currentPosition = holder.bindingAdapterPosition
+                if (currentPosition != RecyclerView.NO_POSITION) {
+                    onRemoveResource(
+                        getItem(currentPosition),
+                        currentPosition
+                    )
                 }
             }
         }
-    fun removeResourceAt(position: Int, onComplete: (() -> Unit)? = null) {
-        if (position < 0 || position >= currentList.size) return
+    }
+
+    fun removeResourceAt(
+        position: Int,
+        onComplete: (() -> Unit)? = null
+    ) {
+        if (position !in currentList.indices) return
+
         val newList = currentList.toMutableList()
         newList.removeAt(position)
+
         submitList(newList) {
             updateListener.onResourceListUpdated()
             onComplete?.invoke()
