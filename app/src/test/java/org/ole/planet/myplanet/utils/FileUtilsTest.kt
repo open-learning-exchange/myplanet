@@ -12,8 +12,10 @@ import android.net.Uri
 import android.os.Environment
 import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
+import android.webkit.MimeTypeMap
 import java.io.File
 import org.junit.After
+import org.robolectric.Shadows.shadowOf
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -467,5 +469,16 @@ class FileUtilsTest {
         // Based on test output, "no_extension" returns "no_extension" rather than null
         assertEquals("no_extension", FileUtils.nameWithoutExtension("no_extension"))
         assertNull(FileUtils.nameWithoutExtension(null))
+    }
+
+    @Test
+    fun getMimeType_returnsCorrectMimeType() {
+        shadowOf(MimeTypeMap.getSingleton()).addExtensionMimeTypeMapping("png", "image/png")
+
+        assertEquals("image/png", FileUtils.getMimeType("my photo.png"))
+        assertEquals("image/png", FileUtils.getMimeType("photo.PNG"))
+        assertNull(FileUtils.getMimeType("noext"))
+        assertNull(FileUtils.getMimeType(""))
+        assertNull(FileUtils.getMimeType(null))
     }
 }

@@ -21,7 +21,6 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
-import java.util.Locale
 import java.util.UUID
 import kotlin.math.roundToLong
 
@@ -232,8 +231,8 @@ object FileUtils {
 
     fun getMimeType(fileName: String?): String? {
         if (fileName.isNullOrBlank()) return null
-        val ext = MimeTypeMap.getFileExtensionFromUrl(fileName)?.lowercase(Locale.getDefault())
-        return if (!ext.isNullOrBlank()) {
+        val ext = getFileExtension(fileName)
+        return if (ext.isNotBlank()) {
             MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext)
         } else {
             null
