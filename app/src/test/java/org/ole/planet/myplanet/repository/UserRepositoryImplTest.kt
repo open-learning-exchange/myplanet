@@ -30,6 +30,7 @@ import kotlinx.serialization.json.put
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.R
@@ -43,6 +44,7 @@ import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
 import retrofit2.Response
@@ -461,5 +463,51 @@ class UserRepositoryImplTest {
         assertEquals("OriginalFirst", slot.captured.firstName)
         assertEquals("OriginalLast", slot.captured.lastName)
         assertEquals(true, slot.captured.isUpdated)
+    }
+
+    @Test
+    fun `checkIfUserExists properly encodes password containing special characters`() = runTest(testDispatcher) {
+        mockkObject(SecurePrefs)
+        try {
+            every { SecurePrefs.getPassword(context, settings) } returns "p\$a@s\\s"
+            every { UrlUtils.getUrl() } returns "http://admin:secret@localhost:5984"
+
+            val urlSlot = slot<String>()
+            coEvery { apiInterface.getJsonObject(any(), capture(urlSlot)) } returns Response.success(buildJsonObject { put("ok", true) })
+
+            val user = UserEntity().apply { name = "john" }
+            repository.checkIfUserExists("Basic auth", user)
+
+            assertTrue("URL missing %24", urlSlot.captured.contains("%24"))
+            assertTrue("URL missing %40", urlSlot.captured.contains("%40"))
+            assertTrue("URL missing %5C", urlSlot.captured.contains("%5C"))
+
+            val hostAfterAt = urlSlot.captured.substringAfterLast("@")
+            val expectedHostPath = "localhost:5984/_users/org.couchdb.user:john"
+            assertTrue("Host after last @ mismatch", hostAfterAt == expectedHostPath)
+        } finally {
+            unmockkObject(SecurePrefs)
+        }
+    }
+
+    @Test
+    fun `checkIfUserExists matches expected URL output for plain alphanumeric password`() = runTest(testDispatcher) {
+        mockkObject(SecurePrefs)
+        try {
+            every { SecurePrefs.getPassword(context, settings) } returns "plainpass123"
+            every { UrlUtils.getUrl() } returns "http://admin:secret@localhost:5984"
+
+            val urlSlot = slot<String>()
+            coEvery { apiInterface.getJsonObject(any(), capture(urlSlot)) } returns Response.success(buildJsonObject { put("ok", true) })
+
+            val user = UserEntity().apply { name = "john" }
+            repository.checkIfUserExists("Basic auth", user)
+
+            val expectedUrl = "http://john:plainpass123@localhost:5984/_users/org.couchdb.user:john"
+            val matches = urlSlot.captured == expectedUrl
+            assertTrue("URL mismatch for plain password", matches)
+        } finally {
+            unmockkObject(SecurePrefs)
+        }
     }
 }
