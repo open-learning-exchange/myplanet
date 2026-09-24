@@ -214,4 +214,22 @@ class TeamDaoTest {
         assertEquals(10, projections[1].wages)
         assertEquals(15, projections[1].otherExpenses)
     }
+
+    @Test
+    fun getRootTeamsByTypeAndIds_handlesLargeInputAndDeduplicates() = runBlocking {
+        val items = (0 until 10).map { i ->
+            MyTeam().apply {
+                _id = "team_$i"
+                type = "community"
+                status = "active"
+                teamId = ""
+            }
+        }
+        teamDao.upsertAll(items)
+
+        val queryIds = (0 until 10).map { "team_$it" }.toSet() + (10 until 1200).map { "dummy_$it" }.toSet()
+        val result = teamDao.getRootTeamsByTypeAndIds("community", queryIds)
+
+        assertEquals(10, result.size)
+    }
 }
