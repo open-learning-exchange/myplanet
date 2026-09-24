@@ -285,7 +285,6 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
             override fun onNothingSelected(p0: AdapterView<*>?) {}
 
             override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
-                // Matches @array/sort_member: Date Asc, Date Desc, Name Asc, Name Desc
                 val (sortBy, descending) = when (p2) {
                     0 -> "joinDate" to false
                     1 -> "joinDate" to true
