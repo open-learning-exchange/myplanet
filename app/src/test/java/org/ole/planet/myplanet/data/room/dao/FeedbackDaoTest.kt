@@ -70,4 +70,20 @@ class FeedbackDaoTest {
         assertEquals("fb1", row._id)
         assertEquals("2-def", row._rev)
     }
+
+    @Test
+    fun getByIds_handlesEmptyInputAndLargeChunkedList() = runBlocking {
+        val emptyResult = feedbackDao.getByIds(emptyList())
+        assertTrue(emptyResult.isEmpty())
+
+        val items = (1..1200).map { i ->
+            Feedback().apply { id = "fb_$i" }
+        }
+        feedbackDao.upsertAll(items)
+
+        val ids = items.map { it.id }
+        val result = feedbackDao.getByIds(ids)
+        assertEquals(1200, result.size)
+        assertEquals(ids.toSet(), result.map { it.id }.toSet())
+    }
 }

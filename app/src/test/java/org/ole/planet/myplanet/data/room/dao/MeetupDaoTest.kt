@@ -130,4 +130,20 @@ class MeetupDaoTest {
         val resultBlank = meetupDao.getJoinedMembersByMeetupId("")
         assertTrue(resultBlank.isEmpty())
     }
+
+    @Test
+    fun getByMeetupIds_handlesEmptyInputAndLargeChunkedList() = runBlocking {
+        val emptyResult = meetupDao.getByMeetupIds(emptyList())
+        assertTrue(emptyResult.isEmpty())
+
+        val items = (1..1200).map { i ->
+            createMeetup("id_$i", "meetup_$i", "user1")
+        }
+        meetupDao.upsertAll(items)
+
+        val meetupIds = items.mapNotNull { it.meetupId }
+        val result = meetupDao.getByMeetupIds(meetupIds)
+        assertEquals(1200, result.size)
+        assertEquals(meetupIds.toSet(), result.mapNotNull { it.meetupId }.toSet())
+    }
 }
