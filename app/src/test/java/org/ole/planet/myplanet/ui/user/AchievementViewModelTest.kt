@@ -21,6 +21,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.model.Achievement
+import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ProfileFieldsUpdate
@@ -179,5 +180,38 @@ class AchievementViewModelTest {
         assertEquals("user1", firstUser.id)
         assertEquals(achievement, firstAchievement)
         assertEquals(firstAchievement, viewModel.achievement.value)
+    }
+
+    @Test
+    fun `getAchievementData delegates to userRepository`() = runTest(testDispatcher) {
+        val achievementData = AchievementData()
+        coEvery { userRepository.getAchievementData("u1", "p1") } returns achievementData
+
+        val result = viewModel.getAchievementData("u1", "p1")
+
+        assertEquals(achievementData, result)
+        coVerify(exactly = 1) { userRepository.getAchievementData("u1", "p1") }
+    }
+
+    @Test
+    fun `getUserModel delegates to userRepository`() = runTest(testDispatcher) {
+        val user = UserEntity(id = "user1")
+        coEvery { userRepository.getUserModel() } returns user
+
+        val result = viewModel.getUserModel()
+
+        assertEquals(user, result)
+        coVerify(exactly = 1) { userRepository.getUserModel() }
+    }
+
+    @Test
+    fun `downloadResources delegates to resourcesRepository`() = runTest(testDispatcher) {
+        val libs = listOf(MyLibrary().apply { id = "r1" })
+        coEvery { resourcesRepository.downloadResources(libs) } returns true
+
+        val result = viewModel.downloadResources(libs)
+
+        assertEquals(true, result)
+        coVerify(exactly = 1) { resourcesRepository.downloadResources(libs) }
     }
 }
