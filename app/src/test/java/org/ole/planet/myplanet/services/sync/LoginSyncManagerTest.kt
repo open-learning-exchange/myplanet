@@ -5,6 +5,7 @@ import android.util.Base64
 import android.util.Log
 import com.google.gson.JsonObject
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -28,6 +29,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter
@@ -44,6 +46,7 @@ class LoginSyncManagerTest {
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val userSyncRepository: UserSyncRepository = mockk(relaxed = true)
     private val apiInterface: ApiInterface = mockk(relaxed = true)
+    private val configurationsRepository: ConfigurationsRepository = mockk(relaxed = true)
     private val testDispatcher = UnconfinedTestDispatcher()
     private val testScope = TestScope(testDispatcher)
     private val dispatcherProvider: DispatcherProvider = TestDispatcherProvider(testDispatcher)
@@ -72,6 +75,7 @@ class LoginSyncManagerTest {
             sharedPrefManager,
             userSyncRepository,
             apiInterface,
+            configurationsRepository,
             testScope,
             dispatcherProvider
         )
@@ -271,5 +275,12 @@ class LoginSyncManagerTest {
         loginSyncManager.login("testUser", "testPass", listener)
 
         verify { listener.onSyncFailed("Server not reachable. Check your internet connection.") }
+    }
+
+    @Test
+    fun `syncAdmin delegates to configurationsRepository syncCommunityLeaders`() = runTest {
+        loginSyncManager.syncAdmin()
+
+        coVerify(exactly = 1) { configurationsRepository.syncCommunityLeaders() }
     }
 }
