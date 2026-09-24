@@ -24,6 +24,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.model.DocumentResponse
+import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserDataUploadScheduler
 import org.ole.planet.myplanet.services.UserDataWorker
@@ -47,6 +49,7 @@ class SyncRepositoryImplTest {
     private val coursesRepository: CoursesRepository = mockk(relaxed = true)
     private val eventsRepository: EventsSyncWriter = mockk(relaxed = true)
     private val teamsSyncRepository: TeamsSyncRepository = mockk(relaxed = true)
+    private val userSyncRepository: dagger.Lazy<UserSyncRepository> = mockk(relaxed = true)
     private val transactionSyncManager: dagger.Lazy<TransactionSyncManager> = mockk(relaxed = true)
     private val syncTimeLogger: SyncTimeLogger = mockk(relaxed = true)
     private val userDataUploadScheduler: UserDataUploadScheduler = mockk(relaxed = true)
@@ -106,6 +109,7 @@ class SyncRepositoryImplTest {
             coursesRepository = coursesRepository,
             eventsRepository = eventsRepository,
             teamsSyncRepository = teamsSyncRepository,
+            userSyncRepository = userSyncRepository,
             transactionSyncManager = transactionSyncManager,
             syncTimeLogger = syncTimeLogger,
             sharedPrefManager = sharedPrefManager,
@@ -304,5 +308,56 @@ class SyncRepositoryImplTest {
         val retrievedShelves = syncRepository.getCachedShelvesWithData()
 
         assertEquals(inputShelves, retrievedShelves)
+    }
+
+    @Test
+    fun `getShelvesWithData returns cached shelves on cache hit without making network calls`() = runTest {
+        val now = 1000000000000L
+        (timeProvider as TestTimeProvider).currentTime = now
+        storedLongMap["shelves_cache_time"] = now - 1000L
+        storedStringMap["shelves_with_data"] = "shelf1,shelf2"
+
+        val result = syncRepository.getShelvesWithData()
+
+        assertEquals(listOf("shelf1", "shelf2"), result)
+        coVerify(exactly = 0) { apiInterface.getDocuments(any(), any()) }
+    }
+
+    @Test
+    fun `getShelvesWithData on cache miss fetches documents, performs batch check, caches, and returns result`() = runTest {
+        val now = 1000000000000L
+        (timeProvider as TestTimeProvider).currentTime = now
+
+        val docResponse = DocumentResponse().apply {
+            rows = listOf(
+                Rows().apply { id = "shelf1" },
+                Rows().apply { id = "shelf2" }
+            )
+        }
+        coEvery { apiInterface.getDocuments(any(), any()) } returns Response.success(docResponse)
+        coEvery { userSyncRepository.get().checkShelfBatchForDataOptimized(listOf("shelf1", "shelf2")) } returns listOf("shelf1")
+
+        val result = syncRepository.getShelvesWithData()
+
+        assertEquals(listOf("shelf1"), result)
+        coVerify(exactly = 1) { apiInterface.getDocuments(any(), any()) }
+        coVerify(exactly = 1) { userSyncRepository.get().checkShelfBatchForDataOptimized(listOf("shelf1", "shelf2")) }
+        assertEquals("shelf1", storedStringMap["shelves_with_data"])
+        assertEquals(now, storedLongMap["shelves_cache_time"])
+    }
+
+    @Test
+    fun `getShelvesWithData on all_docs failure returns empty list without caching`() = runTest {
+        val now = 1000000000000L
+        (timeProvider as TestTimeProvider).currentTime = now
+
+        coEvery { apiInterface.getDocuments(any(), any()) } returns Response.error(500, okhttp3.ResponseBody.create(null, ""))
+
+        val result = syncRepository.getShelvesWithData()
+
+        assertEquals(emptyList<String>(), result)
+        coVerify(atLeast = 1) { apiInterface.getDocuments(any(), any()) }
+        coVerify(exactly = 0) { userSyncRepository.get().checkShelfBatchForDataOptimized(any()) }
+        assertEquals(null, storedStringMap["shelves_with_data"])
     }
 }
