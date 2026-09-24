@@ -2,11 +2,7 @@ package org.ole.planet.myplanet.services.upload
 
 import com.google.gson.JsonObject
 import kotlin.reflect.KClass
-import org.ole.planet.myplanet.model.StepExam
-import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.UploadRepository
-import org.ole.planet.myplanet.repository.UploadUpdateContract
-import org.ole.planet.myplanet.repository.UploadUpdateType
 import org.ole.planet.myplanet.repository.UploadedItemResult
 
 data class UploadConfig<T : Any>(
@@ -31,7 +27,7 @@ data class UploadConfig<T : Any>(
     override val beforeUpload: (suspend (T) -> Unit)? = null,
     override val afterUpload: (suspend (T, UploadedItem) -> Unit)? = null,
 
-    val additionalUpdates: ((T, UploadedItem) -> Unit)? = null
+    val markUploaded: suspend (List<UploadedItemResult>) -> List<UploadedItemResult>
 ) : UploadPipelineConfig<T> {
 
     override val modelLabel: String
@@ -46,14 +42,7 @@ data class UploadConfig<T : Any>(
     override suspend fun persistUploaded(
         uploadRepository: UploadRepository,
         results: List<UploadedItemResult>
-    ): List<UploadedItemResult> {
-        val updateType = when (modelClass) {
-            StepExam::class -> UploadUpdateType.Exams
-            Submission::class -> UploadUpdateType.Submissions
-            else -> error("Unsupported upload update config: ${modelClass.qualifiedName}")
-        }
-        return uploadRepository.markUploaded(UploadUpdateContract(updateType), results)
-    }
+    ): List<UploadedItemResult> = markUploaded(results)
 }
 
 sealed class UploadSerializer<T : Any> {
