@@ -66,11 +66,7 @@ class PersonalsRepositoryImpl @Inject constructor(
         personalDao.updateFields(id, update.title, update.description)
     }
 
-    override suspend fun getPendingPersonalUploads(userId: String): List<Personal> {
-        return personalDao.getPendingUploads(userId)
-    }
-
-    override suspend fun updatePersonalAfterSync(id: String, newId: String, rev: String) {
+    private suspend fun updatePersonalAfterSync(id: String, newId: String, rev: String) {
         personalDao.updateUploadedStatus(id, newId, rev)
     }
 
