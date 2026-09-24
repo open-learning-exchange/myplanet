@@ -1,13 +1,11 @@
 package org.ole.planet.myplanet.services
 
-import android.content.Context
 import android.os.SystemClock
 import android.text.TextUtils
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -52,7 +50,6 @@ private inline fun <T> Iterable<T>.processInBatches(action: (List<T>) -> Unit) {
 
 @Singleton
 class UploadManager @Inject constructor(
-    @param:ApplicationContext private val context: Context,
     private val gson: Gson,
     private val uploadCoordinator: UploadCoordinator,
     private val uploadRepository: UploadRepository,
@@ -69,7 +66,6 @@ class UploadManager @Inject constructor(
     private val achievementUploader: AchievementUploader,
     private val timeProvider: TimeProvider
 ) : FileUploader(uploadRepository, scope) {
-
     private suspend fun uploadNewsActivities() {
         uploadCoordinator.uploadRoom(uploadConfigs.NewsActivities)
     }
@@ -165,13 +161,14 @@ class UploadManager @Inject constructor(
         }
     }
     private suspend fun uploadAttachments(items: List<UploadedItem>, listener: OnSuccessListener?) {
-        if (listener == null || items.isEmpty()) return
+        if (items.isEmpty()) return
+        val attachmentListener = listener ?: OnSuccessListener { }
         val libraryIds = items.map { it.localId }
         val libraries = resourcesRepository.getLibraryItemsByIds(libraryIds)
         val libMap = libraries.associateBy { it.id }
         items.forEach { item ->
             libMap[item.localId]?.let { library ->
-                uploadAttachment(item.remoteId, item.remoteRev, library, listener)
+                uploadAttachment(item.remoteId, item.remoteRev, library, attachmentListener)
             }
         }
     }
