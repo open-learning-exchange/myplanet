@@ -272,8 +272,6 @@ def robolectricSdkJars = [
     26: '8.0.0_r4-robolectric-r1-i7',
     27: '8.1.0-robolectric-4611349-i7',
     28: '9-robolectric-4913185-2-i7',
-    30: '11-robolectric-6757853-i7',
-    31: '12-robolectric-7732740-i7',
     32: '12.1-robolectric-8229987-i7',
     33: '13-robolectric-9030017-i7',
     34: '14-robolectric-10818077-i7',

@@ -147,11 +147,11 @@ Pin only when the assertion depends on the level, and say why in a comment so th
 | 28 (`P`) | `utils/VersionUtilsTest.kt` (one method) | `VersionUtils` branches on `SDK_INT >= P` |
 | 32 | `data/room/dao/CourseDaoTest.kt`, `data/room/dao/ExamDaoTest.kt`, `ui/resources/ResourcesAdapterTest.kt`, `ui/resources/ResourcesFilterFragmentTest.kt`, `ui/enterprises/EnterprisesReportsFragmentTest.kt` | no reason stated in any of the five |
 | 33 | `ui/chat/ChatAdapterTest.kt` | no reason stated |
-| 34 (`UPSIDE_DOWN_CAKE`) | `services/DownloadServiceTest.kt`, `services/DownloadServiceOnDownloadCompleteTest.kt`, `services/DownloadServiceResumeTest.kt`, `ui/life/LifeAdapterTest.kt`, `ui/sync/ServerAddressAdapterTest.kt`, `ui/voices/VoicesActionsTest.kt` | the three `DownloadService` classes assert the API-gated foreground-service/worker branches; the three UI ones state no reason |
+| 34 (`UPSIDE_DOWN_CAKE`) | `ui/life/LifeAdapterTest.kt`, `ui/sync/ServerAddressAdapterTest.kt`, `ui/voices/VoicesActionsTest.kt` | no reason stated in any of the three |
 
-The suite therefore needs sandboxes at 26, 27, 28, 32, 33, 34 and the default 36. Two things follow from that table: `robolectricSdkJars` in `app/build.gradle` still stages 30 and 31, which nothing pins any more, and the nine pins marked "no reason stated" are the ones to try deleting first — each is a sandbox per fork bought for an unrecorded reason.
+The suite therefore needs sandboxes at 26, 27, 28, 32, 33, 34 and the default 36.
 
-`DownloadServiceTest` shows the cheaper shape when one class covers several levels: pin the class once (34) and drive the individual branches with `ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", …)`, which costs one sandbox instead of three.
+`DownloadServiceTest` shows the cheaper shape when one class covers several levels: run on the default SDK and drive the individual branches with `ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", …)`.
 
 ### ViewModels
 
