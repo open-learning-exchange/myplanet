@@ -38,7 +38,6 @@ import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyCourse.Companion.saveConcatenatedLinksToPrefs
-import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SyncRepository
@@ -447,43 +446,6 @@ class SyncManager @Inject constructor(
         }
     }
 
-    private suspend fun getShelvesWithDataBatchOptimized(): List<String> {
-        val shelvesWithData = mutableListOf<String>()
-        val cachedShelves = syncRepository.getCachedShelvesWithData()
-        if (cachedShelves.isNotEmpty()) {
-            return cachedShelves
-        }
-
-        val url = UrlUtils.getUrl()
-        val header = UrlUtils.header
-
-        val allShelves = ApiClient.executeWithRetryAndWrap {
-            apiInterface.getDocuments(header, "$url/shelf/_all_docs")
-        }?.body()?.rows ?: return emptyList()
-
-        coroutineScope {
-            val semaphore = Semaphore(8)
-            val checkJobs = allShelves.chunked(25).map { shelfBatch ->
-                async(dispatcherProvider.io) {
-                    semaphore.withPermit {
-                        checkShelfBatchForDataOptimized(shelfBatch)
-                    }
-                }
-            }
-
-            checkJobs.awaitAll().flatten().let { validShelves ->
-                shelvesWithData.addAll(validShelves)
-            }
-        }
-
-        syncRepository.cacheShelvesWithData(shelvesWithData)
-        return shelvesWithData
-    }
-
-    private suspend fun checkShelfBatchForDataOptimized(shelfBatch: List<Rows>): List<String> {
-        return userSyncRepository.checkShelfBatchForDataOptimized(shelfBatch.mapNotNull { it.id })
-    }
-
     private suspend fun myLibraryTransactionSync() {
 
         val librarySyncStartTime = SystemClock.elapsedRealtime()
@@ -495,7 +457,7 @@ class SyncManager @Inject constructor(
         try {
             syncTimeLogger.startProcess("library_get_shelves")
             val shelvesStartTime = SystemClock.elapsedRealtime()
-            val shelvesWithData = getShelvesWithDataBatchOptimized()
+            val shelvesWithData = syncRepository.getShelvesWithData()
             val shelvesDuration = SystemClock.elapsedRealtime() - shelvesStartTime
             syncTimeLogger.endProcess("library_get_shelves", shelvesWithData.size)
             syncPerf { "    Library: Found ${shelvesWithData.size} shelves with data in ${shelvesDuration}ms" }
