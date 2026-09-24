@@ -19,6 +19,10 @@ class EventsRepositoryImpl @Inject constructor(
     private val gson: Gson
 ) : EventsRepository, EventsSyncWriter {
 
+    override suspend fun getMeetupsForUser(userId: String): List<Meetup> {
+        return meetupDao.getByUserId(userId)
+    }
+
     override suspend fun getMeetupsForTeam(teamId: String): List<Meetup> {
         return meetupDao.getByTeamId(teamId)
     }
