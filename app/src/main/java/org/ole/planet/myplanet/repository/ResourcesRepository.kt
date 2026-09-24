@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import java.io.File
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.model.MyLibrary
@@ -9,6 +10,29 @@ import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.UserEntity
+
+data class StorageBreakdown(
+    val totalBytes: Long,
+    val sizes: LongArray,
+    val counts: IntArray
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+        other as StorageBreakdown
+        if (totalBytes != other.totalBytes) return false
+        if (!sizes.contentEquals(other.sizes)) return false
+        if (!counts.contentEquals(other.counts)) return false
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = totalBytes.hashCode()
+        result = 31 * result + sizes.contentHashCode()
+        result = 31 * result + counts.contentHashCode()
+        return result
+    }
+}
 
 data class LibraryWithMetadata(
     val library: MyLibrary,
@@ -110,6 +134,7 @@ interface ResourcesRepository {
     suspend fun trackResourceOpen(item: MyLibrary)
     suspend fun getOfflineResourceItems(oleDirPath: String, extensions: Set<String>, allKnownExtensions: Set<String>): List<OfflineResourceItem>
     suspend fun deleteOfflineResources(oleDirPath: String, items: List<OfflineResourceItem>)
+    suspend fun getStorageBreakdown(oleDir: File): StorageBreakdown
     suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String>
     fun serializeForUpload(library: MyLibrary, user: UserEntity?): JsonObject
 }
