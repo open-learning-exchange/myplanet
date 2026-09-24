@@ -9,8 +9,15 @@ data class CommunityConfiguration(
     val planetType: String?
 )
 
+sealed interface HealthCheckResult {
+    data object NotConfigured : HealthCheckResult
+    data object Healthy : HealthCheckResult
+    data class Failed(val reason: String) : HealthCheckResult
+    data object InitFailed : HealthCheckResult
+}
+
 interface ConfigurationsRepository {
-    suspend fun checkHealth(): String
+    suspend fun checkHealth(): HealthCheckResult
     fun checkVersion(callback: CheckVersionCallback)
     suspend fun checkServerAvailability(): Boolean
     suspend fun checkServerAvailability(url: String): Boolean
