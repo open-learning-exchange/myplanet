@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.data.api.ApiClient
@@ -42,6 +43,7 @@ import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
 import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 class ConfigurationsRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -413,6 +415,39 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
     override fun getCommunityLeaders(): List<UserEntity> {
         return UserEntity.parseLeadersJson(sharedPrefManager.getCommunityLeaders())
+    }
+
+    override suspend fun syncCommunityLeaders() {
+        try {
+            val `object` = JsonObject()
+            val selector = JsonObject()
+            selector.addProperty("isUserAdmin", true)
+            `object`.add("selector", selector)
+
+            val header = UrlUtils.header
+            if (header.isBlank()) {
+                return
+            }
+
+            val url = try {
+                UrlUtils.getUrl() + "/_users/_find"
+            } catch (e: Exception) {
+                Log.e(TAG, "Error constructing find admin URL", e)
+                return
+            }
+
+            try {
+                val response = apiInterface.postDoc(header, "application/json", url, `object`.toKotlinx().jsonObject)
+                if (response.isSuccessful && response.body() != null) {
+                    val responseBody = response.body()?.toGson()
+                    sharedPrefManager.setCommunityLeaders("$responseBody")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Admin sync request failed", e)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in syncCommunityLeaders", e)
+        }
     }
 
     override fun clearPreferences() {

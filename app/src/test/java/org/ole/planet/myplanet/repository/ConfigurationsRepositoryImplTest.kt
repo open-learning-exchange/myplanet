@@ -869,4 +869,50 @@ class ConfigurationsRepositoryImplTest {
 
         verify { sharedPrefManager.clearPreferences() }
     }
+
+    @Test
+    fun `syncCommunityLeaders writes body JSON to setCommunityLeaders on success`() = runTest(testDispatcher) {
+        mockkObject(UrlUtils)
+        every { UrlUtils.header } returns "Basic header"
+        every { UrlUtils.getUrl() } returns "http://test.url"
+
+        val responseJson = kotlinx.serialization.json.buildJsonObject {
+            put("total_rows", 1)
+        }
+        coEvery { apiInterface.postDoc("Basic header", "application/json", "http://test.url/_users/_find", any()) } returns Response.success(responseJson)
+
+        repository.syncCommunityLeaders()
+
+        verify(exactly = 1) { sharedPrefManager.setCommunityLeaders("$responseJson") }
+
+        unmockkObject(UrlUtils)
+    }
+
+    @Test
+    fun `syncCommunityLeaders does not write when response is non-2xx`() = runTest(testDispatcher) {
+        mockkObject(UrlUtils)
+        every { UrlUtils.header } returns "Basic header"
+        every { UrlUtils.getUrl() } returns "http://test.url"
+
+        val errorResponseBody = "".toResponseBody("application/json".toMediaTypeOrNull())
+        coEvery { apiInterface.postDoc("Basic header", "application/json", "http://test.url/_users/_find", any()) } returns Response.error(500, errorResponseBody)
+
+        repository.syncCommunityLeaders()
+
+        verify(exactly = 0) { sharedPrefManager.setCommunityLeaders(any()) }
+
+        unmockkObject(UrlUtils)
+    }
+
+    @Test
+    fun `syncCommunityLeaders returns early and does not postDoc when header is blank`() = runTest(testDispatcher) {
+        mockkObject(UrlUtils)
+        every { UrlUtils.header } returns ""
+
+        repository.syncCommunityLeaders()
+
+        coVerify(exactly = 0) { apiInterface.postDoc(any(), any(), any(), any()) }
+
+        unmockkObject(UrlUtils)
+    }
 }

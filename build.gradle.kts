@@ -3,6 +3,8 @@ import org.gradle.api.tasks.Delete
 buildscript {
     repositories {
         google()
+        maven { url = uri("https://maven.aliyun.com/repository/public") }
+        gradlePluginPortal()
         mavenCentral()
     }
     dependencies {
