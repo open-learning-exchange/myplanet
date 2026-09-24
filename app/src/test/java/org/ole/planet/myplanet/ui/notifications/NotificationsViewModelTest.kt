@@ -9,6 +9,7 @@ import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -28,6 +29,7 @@ import org.ole.planet.myplanet.repository.EnrichedNotifications
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.TaskNotificationUtils
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class NotificationsViewModelTest {
@@ -43,7 +45,7 @@ class NotificationsViewModelTest {
     @Before
     fun setup() {
         repository = mockk(relaxed = true)
-        viewModel = NotificationsViewModel(repository, mockk<Context>(relaxed = true))
+        viewModel = NotificationsViewModel(repository, mockk<Context>(relaxed = true), TestDispatcherProvider(testDispatcher))
     }
 
     @Test
@@ -353,6 +355,43 @@ class NotificationsViewModelTest {
             .map { it.type }
 
         assertEquals(listOf("join_request", "task", "resource", "notification"), headerTypes)
+    }
+
+    @Test
+    fun testLoadNotifications_cancelsPreviousSlowLoadAndReflectsLatestResult() = runTest(testDispatcher) {
+        val payloadA = notification(id = "1", type = "task", isRead = false, message = "Old Task")
+        val payloadB = notification(id = "2", type = "resource", isRead = false, message = "New Resource")
+
+        val resultA = EnrichedNotifications(
+            payloads = listOf(payloadA),
+            taskTeamNames = emptyMap(),
+            joinRequestDetails = emptyMap(),
+            parsedTaskDates = emptyMap(),
+            unreadCount = 1
+        )
+        val resultB = EnrichedNotifications(
+            payloads = listOf(payloadB),
+            taskTeamNames = emptyMap(),
+            joinRequestDetails = emptyMap(),
+            parsedTaskDates = emptyMap(),
+            unreadCount = 1
+        )
+
+        coEvery { repository.getEnrichedNotifications(USER_ID, "filterA", false) } coAnswers {
+            delay(1_000)
+            resultA
+        }
+        coEvery { repository.getEnrichedNotifications(USER_ID, "filterB", false) } returns resultB
+        every { repository.resolveType(any(), any(), any()) } answers { firstArg<String>().lowercase() }
+
+        viewModel.loadNotifications(USER_ID, "filterA")
+        viewModel.loadNotifications(USER_ID, "filterB")
+
+        advanceUntilIdle()
+
+        val currentNotifications = viewModel.notifications.value
+        assertEquals(1, currentNotifications.size)
+        assertEquals("2", currentNotifications[0].id)
     }
 
     private fun item(id: String): NotificationListItem.Item =
