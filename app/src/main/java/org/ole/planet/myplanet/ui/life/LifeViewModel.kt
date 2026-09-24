@@ -34,7 +34,7 @@ class LifeViewModel @Inject constructor(
         viewModelScope.launch {
             val list = withContext(dispatcherProvider.io) {
                 val userId = resolveUserId()
-                lifeRepository.getMyLifeByUserId(userId, MyLife.defaultItems(userId, resolveLabel))
+                lifeRepository.getMyLifeByUserId(userId, LifeDefaults.defaultItems(userId, resolveLabel))
             }
             _myLifeList.value = list
         }

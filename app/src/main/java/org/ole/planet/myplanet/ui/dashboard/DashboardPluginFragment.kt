@@ -13,6 +13,7 @@ import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.ItemCourseHomeBinding
 import org.ole.planet.myplanet.databinding.ItemMyLifeBinding
 import org.ole.planet.myplanet.model.MyLife
+import org.ole.planet.myplanet.ui.life.LifeDefaults
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.health.MyHealthFragment
@@ -142,5 +143,5 @@ open class DashboardPluginFragment : BaseContainerFragment() {
         return v
     }
 
-    fun getMyLifeListBase(userId: String?): List<MyLife> = MyLife.defaultItems(userId, requireContext()::getString)
+    fun getMyLifeListBase(userId: String?): List<MyLife> = LifeDefaults.defaultItems(userId, requireContext()::getString)
 }
