@@ -6,6 +6,7 @@ import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LibraryType
 import org.ole.planet.myplanet.utils.LibraryTypeClassifier
+import org.ole.planet.myplanet.utils.MediumUtils
 import org.ole.planet.myplanet.utils.ResourcesSearchUtils
 
 data class ResourcesFilterCriteria(
