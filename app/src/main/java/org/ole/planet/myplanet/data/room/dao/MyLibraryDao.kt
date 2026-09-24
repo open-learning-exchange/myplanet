@@ -173,6 +173,14 @@ interface MyLibraryDao {
 
     @Query("DELETE FROM my_library WHERE _rev IS NOT NULL AND _rev != '' AND isPrivate = 0")
     suspend fun deleteAllStalePublic()
+
+    @Query("SELECT resourceId, title FROM my_library WHERE resourceId IN (:resourceIds) ORDER BY rowid")
+    suspend fun getResourceTitlesByResourceIdsInternal(resourceIds: List<String>): List<ResourceTitleProjection>
+
+    suspend fun getResourceTitlesByResourceIds(resourceIds: List<String>): List<ResourceTitleProjection> {
+        if (resourceIds.isEmpty()) return emptyList()
+        return resourceIds.chunked(900).flatMap { getResourceTitlesByResourceIdsInternal(it) }
+    }
 }
 
 data class ResourceTitleProjection(
