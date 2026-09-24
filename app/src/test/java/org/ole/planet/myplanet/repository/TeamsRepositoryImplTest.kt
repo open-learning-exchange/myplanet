@@ -730,4 +730,54 @@ class TeamsRepositoryImplTest {
         coVerify(exactly = 0) { teamDao.getByIds(any()) }
         coVerify(exactly = 0) { teamDao.getAll() }
     }
+
+    @Test
+    fun `test getTaskById delegates to teamTaskDao`() = runTest(testDispatcher) {
+        val taskId = "task_id_1"
+        val expectedTask = TeamTask().apply { id = taskId }
+        coEvery { teamTaskDao.getById(taskId) } returns expectedTask
+
+        val result = teamsRepository.getTaskById(taskId)
+
+        assertEquals(expectedTask, result)
+        coVerify(exactly = 1) { teamTaskDao.getById(taskId) }
+    }
+
+    @Test
+    fun `test getTasksByIds delegates to teamTaskDao`() = runTest(testDispatcher) {
+        val taskIds = listOf("task_id_1", "task_id_2")
+        val expectedTasks = listOf(TeamTask().apply { id = "task_id_1" })
+        coEvery { teamTaskDao.getByIds(taskIds) } returns expectedTasks
+
+        val result = teamsRepository.getTasksByIds(taskIds)
+
+        assertEquals(expectedTasks, result)
+        coVerify(exactly = 1) { teamTaskDao.getByIds(taskIds) }
+    }
+
+    @Test
+    fun `test getTasksByTitles delegates to teamTaskDao`() = runTest(testDispatcher) {
+        val titles = listOf("Title 1", "Title 2")
+        val expectedTasks = listOf(TeamTask().apply { title = "Title 1" })
+        coEvery { teamTaskDao.getByTitles(titles) } returns expectedTasks
+
+        val result = teamsRepository.getTasksByTitles(titles)
+
+        assertEquals(expectedTasks, result)
+        coVerify(exactly = 1) { teamTaskDao.getByTitles(titles) }
+    }
+
+    @Test
+    fun `test getTasksForUserBetween delegates to teamTaskDao`() = runTest(testDispatcher) {
+        val userId = "user_1"
+        val start = 1000L
+        val end = 2000L
+        val expectedTasks = listOf(TeamTask().apply { assignee = userId })
+        coEvery { teamTaskDao.getTasksForUserBetween(userId, start, end) } returns expectedTasks
+
+        val result = teamsRepository.getTasksForUserBetween(userId, start, end)
+
+        assertEquals(expectedTasks, result)
+        coVerify(exactly = 1) { teamTaskDao.getTasksForUserBetween(userId, start, end) }
+    }
 }
