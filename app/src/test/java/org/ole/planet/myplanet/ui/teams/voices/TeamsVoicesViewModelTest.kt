@@ -64,7 +64,7 @@ class TeamsVoicesViewModelTest {
         val result = viewModel.getFilteredNews(teamId)
 
         assertEquals(newsList, result)
-        coVerify(exactly = 1) { notificationsRepository.updateTeamNotification(teamId, newsList) }
+        coVerify(exactly = 1) { notificationsRepository.updateTeamNotification(teamId, newsList.size) }
         coVerify(exactly = 0) { voicesRepository.countTopLevelByTeam(teamId) }
         coVerify(exactly = 0) { voicesRepository.countTeamChats(teamId) }
     }
