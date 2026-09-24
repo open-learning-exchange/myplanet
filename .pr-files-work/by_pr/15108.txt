@@ -1,0 +1,10 @@
+app/src/main/java/org/ole/planet/myplanet/model/Meetup.kt
+app/src/main/java/org/ole/planet/myplanet/model/MeetupCreationParams.kt
+app/src/main/java/org/ole/planet/myplanet/repository/EventsRepository.kt
+app/src/main/java/org/ole/planet/myplanet/repository/EventsRepositoryImpl.kt
+app/src/main/java/org/ole/planet/myplanet/ui/events/EventsDetailFragment.kt
+app/src/main/java/org/ole/planet/myplanet/ui/events/EventsDetailViewModel.kt
+app/src/main/java/org/ole/planet/myplanet/ui/teams/TeamCalendarFragment.kt
+app/src/main/java/org/ole/planet/myplanet/ui/teams/TeamCalendarViewModel.kt
+app/src/main/res/layout/add_meetup.xml
+app/src/main/res/values/strings.xml

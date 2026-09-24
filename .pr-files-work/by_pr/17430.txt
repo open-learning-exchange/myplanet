@@ -1,0 +1,5 @@
+app/src/main/java/org/ole/planet/myplanet/MainApplication.kt
+app/src/main/java/org/ole/planet/myplanet/ui/teams/TeamDetailFragment.kt
+app/src/main/java/org/ole/planet/myplanet/ui/teams/TeamPagerAdapter.kt
+app/src/test/java/org/ole/planet/myplanet/ui/teams/TeamDetailFragmentTest.kt
+app/src/test/java/org/ole/planet/myplanet/ui/teams/TeamViewPagerListenerTest.kt

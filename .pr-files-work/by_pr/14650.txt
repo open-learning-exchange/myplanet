@@ -1,0 +1,10 @@
+app/src/main/java/org/ole/planet/myplanet/base/BaseDashboardFragment.kt
+app/src/main/java/org/ole/planet/myplanet/model/AssignedSurvey.kt
+app/src/main/java/org/ole/planet/myplanet/repository/SurveysRepository.kt
+app/src/main/java/org/ole/planet/myplanet/repository/SurveysRepositoryImpl.kt
+app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardViewModel.kt
+app/src/main/java/org/ole/planet/myplanet/ui/exam/ExamTakingFragment.kt
+app/src/main/java/org/ole/planet/myplanet/ui/submissions/SubmissionUiModel.kt
+app/src/main/java/org/ole/planet/myplanet/ui/submissions/SubmissionViewModel.kt
+app/src/main/java/org/ole/planet/myplanet/ui/submissions/SubmissionsAdapter.kt
+app/src/test/java/org/ole/planet/myplanet/ui/submissions/SubmissionViewModelTest.kt

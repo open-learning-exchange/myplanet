@@ -1,0 +1,2 @@
+app/src/main/res/layout/activity_become_member.xml
+app/src/main/res/layout/edit_profile_dialog.xml

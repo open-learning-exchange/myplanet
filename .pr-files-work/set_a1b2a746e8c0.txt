@@ -1,0 +1,7 @@
+app/src/main/java/org/ole/planet/myplanet/ui/resources/ResourceCardHelper.kt
+app/src/main/java/org/ole/planet/myplanet/ui/resources/ResourcesAdapter.kt
+app/src/main/java/org/ole/planet/myplanet/ui/teams/resources/TeamResourcesAdapter.kt
+app/src/main/java/org/ole/planet/myplanet/ui/teams/resources/TeamResourcesFragment.kt
+app/src/main/res/layout/row_team_resource.xml
+app/src/test/java/org/ole/planet/myplanet/ui/resources/ResourceCardHelperTest.kt
+app/src/test/java/org/ole/planet/myplanet/ui/resources/TeamResourcesAdapter.kt

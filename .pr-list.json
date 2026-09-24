@@ -1,0 +1,188 @@
+[
+  {
+    "number": 17435,
+    "title": "resources: added filter labels indications (fixes #16922)",
+    "headRefName": "16922-indicator-of-the-selected-filter",
+    "isDraft": true
+  },
+  {
+    "number": 17430,
+    "title": "Remove global MainApplication.listener cross-talk on team screens",
+    "headRefName": "remove-global-team-page-listener-17242120506134038151",
+    "isDraft": false
+  },
+  {
+    "number": 17356,
+    "title": "Refactor PublicSurveyActivity to PublicSurveyViewModel",
+    "headRefName": "refactor-public-survey-vm-15103383402460348122",
+    "isDraft": false
+  },
+  {
+    "number": 17254,
+    "title": "teams: refactored resources to match library (fixes #16927)",
+    "headRefName": "16927-update-team-resources-ui",
+    "isDraft": false
+  },
+  {
+    "number": 17187,
+    "title": "resources: refactored filter logic (fixes #16282)",
+    "headRefName": "16282-resources-not-filtering-all-the-available-resources",
+    "isDraft": false
+  },
+  {
+    "number": 16624,
+    "title": "search: smoother offline full text search matching (fixes #16615)",
+    "headRefName": "16615-offline-fulltext-search",
+    "isDraft": false
+  },
+  {
+    "number": 16623,
+    "title": "teams: smoother interactive team tasks status and board handling (fixes #16616)",
+    "headRefName": "16616-interactive-team-tasks",
+    "isDraft": false
+  },
+  {
+    "number": 16594,
+    "title": "actions: smoother size labeller fetching (fixes #16344)",
+    "headRefName": "openhands/labels-no-patch",
+    "isDraft": false
+  },
+  {
+    "number": 15951,
+    "title": "teams: smoother repository update requesting (fixes #15568)",
+    "headRefName": "15568-rework-the-design-of-team-to-enable-card-views-and-a-more-modern-look",
+    "isDraft": false
+  },
+  {
+    "number": 15825,
+    "title": "local event task reminders workmanager notifications (address #15115)",
+    "headRefName": "15115-local-event-task-reminders-workmanager-notifications",
+    "isDraft": false
+  },
+  {
+    "number": 15824,
+    "title": "gamification achievement hub offline badges streaks (address #15114)",
+    "headRefName": "15114-gamification-achievement-hub-offline-badges-streaks",
+    "isDraft": false
+  },
+  {
+    "number": 15820,
+    "title": "teams: smoother task and meetup comment threads managing (fixes #15112)",
+    "headRefName": "15112-team-tasks-meetups-comment-threads",
+    "isDraft": false
+  },
+  {
+    "number": 15808,
+    "title": "sync: intelligent incremental sync via couchdb  changes feed (fixes #15807)",
+    "headRefName": "15807-intelligent-incremental-sync-via-couchdb-_changes-feed",
+    "isDraft": true
+  },
+  {
+    "number": 15559,
+    "title": "exam: redesign UI with elapsed timer and cards (fixes #15558)",
+    "headRefName": "15558-redesign-exam-ui",
+    "isDraft": false
+  },
+  {
+    "number": 15267,
+    "title": "prevent download popup dialog cropping when text size is large (fixes #15263)",
+    "headRefName": "15263-download-popup-window-in-text-size-large-is-cropped",
+    "isDraft": false
+  },
+  {
+    "number": 15266,
+    "title": "prevent team calendar cropping in landscape mode by using NestedScrollView (fixes #15265)",
+    "headRefName": "15265-team-calendar-is-cropped-in-landscape-mode",
+    "isDraft": false
+  },
+  {
+    "number": 15226,
+    "title": "feat(flutter): Flutter/Dart port of myPlanet (phases 1\u201328)",
+    "headRefName": "claude/kotlin-flutter-dart-migration-d3gmrd",
+    "isDraft": true
+  },
+  {
+    "number": 15108,
+    "title": "fix event calendar marking (fixes #15107)",
+    "headRefName": "15107-fix-recurring-event-calendar-marking",
+    "isDraft": false
+  },
+  {
+    "number": 14883,
+    "title": "team: add leaderboard tab (fixes #14880)",
+    "headRefName": "14880-add-team-and-enterprise-leaderboards",
+    "isDraft": false
+  },
+  {
+    "number": 14650,
+    "title": "survey: smoother submissions display (fixes #14619)",
+    "headRefName": "14619-survey-shows-continue-progress-dialog-after-already-being-completed-and-submitted",
+    "isDraft": false
+  },
+  {
+    "number": 14427,
+    "title": "Course streak",
+    "headRefName": "course-streak",
+    "isDraft": true
+  },
+  {
+    "number": 13928,
+    "title": "Add baseline profile module and installer (fixes #13927)",
+    "headRefName": "13927-add-baseline-profile-to-reduce-cold-start-times",
+    "isDraft": false
+  },
+  {
+    "number": 13848,
+    "title": "all: introduce Course/Grade models and wire into UI (fixes #13802)",
+    "headRefName": "13802-refactor-string-resources-for-localization-consistency-and-reduce-fragility",
+    "isDraft": false
+  },
+  {
+    "number": 13657,
+    "title": "course: Archive course My Courses library (fixes #13559)",
+    "headRefName": "13559-archive-and-remove-course-actions-perform-identical-operations",
+    "isDraft": false
+  },
+  {
+    "number": 13604,
+    "title": "teams: Add sort by completeness option in Survey section (fixes #13590)",
+    "headRefName": "13590-add-incomplete-surveys-first-sort-option-in-survey-section",
+    "isDraft": false
+  },
+  {
+    "number": 13415,
+    "title": "voices: Add emoji reactions (fixes #13357)",
+    "headRefName": "13357-add-emoji-reactions-to-community-voices-and-teamenterprise-news",
+    "isDraft": false
+  },
+  {
+    "number": 13355,
+    "title": "Add P2P resource sharing (Wi\u2011Fi P2P) (fixes #13353)",
+    "headRefName": "13353-offline-p2p-resource-sharing-enable-resource-sharing-via-bluetooth-wi-fi-direct",
+    "isDraft": false
+  },
+  {
+    "number": 13287,
+    "title": "profile: no char limit for edit texts (fixes #13283)",
+    "headRefName": "13283-no-char-limit-for-edit-texts",
+    "isDraft": false
+  },
+  {
+    "number": 10993,
+    "title": "Voices video",
+    "headRefName": "voicesVideo",
+    "isDraft": false
+  },
+  {
+    "number": 8175,
+    "title": "roboscript update (fixes #7986)",
+    "headRefName": "7986-roboscript-update1",
+    "isDraft": false
+  },
+  {
+    "number": 4075,
+    "title": "robo movie (fixes #4074)",
+    "headRefName": "testrobo",
+    "isDraft": false
+  }
+]

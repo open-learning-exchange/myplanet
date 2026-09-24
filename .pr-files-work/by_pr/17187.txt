@@ -1,0 +1,8 @@
+app/src/main/java/org/ole/planet/myplanet/ui/resources/ResourcesAdapter.kt
+app/src/main/java/org/ole/planet/myplanet/ui/resources/ResourcesFilterFragment.kt
+app/src/main/java/org/ole/planet/myplanet/ui/resources/ResourcesListFilter.kt
+app/src/main/java/org/ole/planet/myplanet/ui/resources/ResourcesViewModel.kt
+app/src/main/java/org/ole/planet/myplanet/utils/FileUtils.kt
+app/src/main/java/org/ole/planet/myplanet/utils/LibraryTypeClassifier.kt
+app/src/main/java/org/ole/planet/myplanet/utils/MediumUtils.kt
+app/src/test/java/org/ole/planet/myplanet/ui/resources/ResourcesListFilterTest.kt

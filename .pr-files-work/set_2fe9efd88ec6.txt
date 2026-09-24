@@ -1,0 +1,5 @@
+app/src/main/java/org/ole/planet/myplanet/ui/surveys/PublicSurveyActivity.kt
+app/src/main/java/org/ole/planet/myplanet/ui/surveys/PublicSurveyPayloadBuilder.kt
+app/src/main/java/org/ole/planet/myplanet/ui/surveys/PublicSurveyViewModel.kt
+app/src/test/java/org/ole/planet/myplanet/ui/surveys/PublicSurveyPayloadBuilderTest.kt
+app/src/test/java/org/ole/planet/myplanet/ui/surveys/PublicSurveyViewModelTest.kt

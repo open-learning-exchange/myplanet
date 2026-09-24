@@ -1,0 +1,17 @@
+app/src/main/AndroidManifest.xml
+app/src/main/java/org/ole/planet/myplanet/callback/OnLibraryItemSelectedListener.kt
+app/src/main/java/org/ole/planet/myplanet/services/P2pTransferManager.kt
+app/src/main/java/org/ole/planet/myplanet/ui/resources/P2pTransferActivity.kt
+app/src/main/java/org/ole/planet/myplanet/ui/resources/ResourceDetailFragment.kt
+app/src/main/java/org/ole/planet/myplanet/ui/resources/ResourcesAdapter.kt
+app/src/main/java/org/ole/planet/myplanet/ui/resources/ResourcesFragment.kt
+app/src/main/res/layout/activity_p2p_transfer.xml
+app/src/main/res/layout/fragment_library_detail.xml
+app/src/main/res/layout/row_library.xml
+app/src/main/res/layout/row_p2p_peer.xml
+app/src/main/res/values-ar/strings.xml
+app/src/main/res/values-es/strings.xml
+app/src/main/res/values-fr/strings.xml
+app/src/main/res/values-ne/strings.xml
+app/src/main/res/values-so/strings.xml
+app/src/main/res/values/strings.xml

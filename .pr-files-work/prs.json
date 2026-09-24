@@ -1,0 +1,188 @@
+[
+  {
+    "number": 17435,
+    "title": "resources: added filter labels indications (fixes #16922)",
+    "head": "16922-indicator-of-the-selected-filter",
+    "draft": true
+  },
+  {
+    "number": 17430,
+    "title": "Remove global MainApplication.listener cross-talk on team screens",
+    "head": "remove-global-team-page-listener-17242120506134038151",
+    "draft": false
+  },
+  {
+    "number": 17356,
+    "title": "Refactor PublicSurveyActivity to PublicSurveyViewModel",
+    "head": "refactor-public-survey-vm-15103383402460348122",
+    "draft": false
+  },
+  {
+    "number": 17254,
+    "title": "teams: refactored resources to match library (fixes #16927)",
+    "head": "16927-update-team-resources-ui",
+    "draft": false
+  },
+  {
+    "number": 17187,
+    "title": "resources: refactored filter logic (fixes #16282)",
+    "head": "16282-resources-not-filtering-all-the-available-resources",
+    "draft": false
+  },
+  {
+    "number": 16624,
+    "title": "search: smoother offline full text search matching (fixes #16615)",
+    "head": "16615-offline-fulltext-search",
+    "draft": false
+  },
+  {
+    "number": 16623,
+    "title": "teams: smoother interactive team tasks status and board handling (fixes #16616)",
+    "head": "16616-interactive-team-tasks",
+    "draft": false
+  },
+  {
+    "number": 16594,
+    "title": "actions: smoother size labeller fetching (fixes #16344)",
+    "head": "openhands/labels-no-patch",
+    "draft": false
+  },
+  {
+    "number": 15951,
+    "title": "teams: smoother repository update requesting (fixes #15568)",
+    "head": "15568-rework-the-design-of-team-to-enable-card-views-and-a-more-modern-look",
+    "draft": false
+  },
+  {
+    "number": 15825,
+    "title": "local event task reminders workmanager notifications (address #15115)",
+    "head": "15115-local-event-task-reminders-workmanager-notifications",
+    "draft": false
+  },
+  {
+    "number": 15824,
+    "title": "gamification achievement hub offline badges streaks (address #15114)",
+    "head": "15114-gamification-achievement-hub-offline-badges-streaks",
+    "draft": false
+  },
+  {
+    "number": 15820,
+    "title": "teams: smoother task and meetup comment threads managing (fixes #15112)",
+    "head": "15112-team-tasks-meetups-comment-threads",
+    "draft": false
+  },
+  {
+    "number": 15808,
+    "title": "sync: intelligent incremental sync via couchdb  changes feed (fixes #15807)",
+    "head": "15807-intelligent-incremental-sync-via-couchdb-_changes-feed",
+    "draft": true
+  },
+  {
+    "number": 15559,
+    "title": "exam: redesign UI with elapsed timer and cards (fixes #15558)",
+    "head": "15558-redesign-exam-ui",
+    "draft": false
+  },
+  {
+    "number": 15267,
+    "title": "prevent download popup dialog cropping when text size is large (fixes #15263)",
+    "head": "15263-download-popup-window-in-text-size-large-is-cropped",
+    "draft": false
+  },
+  {
+    "number": 15266,
+    "title": "prevent team calendar cropping in landscape mode by using NestedScrollView (fixes #15265)",
+    "head": "15265-team-calendar-is-cropped-in-landscape-mode",
+    "draft": false
+  },
+  {
+    "number": 15226,
+    "title": "feat(flutter): Flutter/Dart port of myPlanet (phases 1\u201328)",
+    "head": "claude/kotlin-flutter-dart-migration-d3gmrd",
+    "draft": true
+  },
+  {
+    "number": 15108,
+    "title": "fix event calendar marking (fixes #15107)",
+    "head": "15107-fix-recurring-event-calendar-marking",
+    "draft": false
+  },
+  {
+    "number": 14883,
+    "title": "team: add leaderboard tab (fixes #14880)",
+    "head": "14880-add-team-and-enterprise-leaderboards",
+    "draft": false
+  },
+  {
+    "number": 14650,
+    "title": "survey: smoother submissions display (fixes #14619)",
+    "head": "14619-survey-shows-continue-progress-dialog-after-already-being-completed-and-submitted",
+    "draft": false
+  },
+  {
+    "number": 14427,
+    "title": "Course streak",
+    "head": "course-streak",
+    "draft": true
+  },
+  {
+    "number": 13928,
+    "title": "Add baseline profile module and installer (fixes #13927)",
+    "head": "13927-add-baseline-profile-to-reduce-cold-start-times",
+    "draft": false
+  },
+  {
+    "number": 13848,
+    "title": "all: introduce Course/Grade models and wire into UI (fixes #13802)",
+    "head": "13802-refactor-string-resources-for-localization-consistency-and-reduce-fragility",
+    "draft": false
+  },
+  {
+    "number": 13657,
+    "title": "course: Archive course My Courses library (fixes #13559)",
+    "head": "13559-archive-and-remove-course-actions-perform-identical-operations",
+    "draft": false
+  },
+  {
+    "number": 13604,
+    "title": "teams: Add sort by completeness option in Survey section (fixes #13590)",
+    "head": "13590-add-incomplete-surveys-first-sort-option-in-survey-section",
+    "draft": false
+  },
+  {
+    "number": 13415,
+    "title": "voices: Add emoji reactions (fixes #13357)",
+    "head": "13357-add-emoji-reactions-to-community-voices-and-teamenterprise-news",
+    "draft": false
+  },
+  {
+    "number": 13355,
+    "title": "Add P2P resource sharing (Wi\u2011Fi P2P) (fixes #13353)",
+    "head": "13353-offline-p2p-resource-sharing-enable-resource-sharing-via-bluetooth-wi-fi-direct",
+    "draft": false
+  },
+  {
+    "number": 13287,
+    "title": "profile: no char limit for edit texts (fixes #13283)",
+    "head": "13283-no-char-limit-for-edit-texts",
+    "draft": false
+  },
+  {
+    "number": 10993,
+    "title": "Voices video",
+    "head": "voicesVideo",
+    "draft": false
+  },
+  {
+    "number": 8175,
+    "title": "roboscript update (fixes #7986)",
+    "head": "7986-roboscript-update1",
+    "draft": false
+  },
+  {
+    "number": 4075,
+    "title": "robo movie (fixes #4074)",
+    "head": "testrobo",
+    "draft": false
+  }
+]

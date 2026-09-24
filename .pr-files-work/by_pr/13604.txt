@@ -1,0 +1,8 @@
+app/src/main/java/org/ole/planet/myplanet/ui/surveys/SurveyFragment.kt
+app/src/main/java/org/ole/planet/myplanet/ui/surveys/SurveysViewModel.kt
+app/src/main/res/values-ar/strings.xml
+app/src/main/res/values-es/strings.xml
+app/src/main/res/values-fr/strings.xml
+app/src/main/res/values-ne/strings.xml
+app/src/main/res/values-so/strings.xml
+app/src/main/res/values/strings.xml

@@ -1,0 +1,13 @@
+app/src/main/java/org/ole/planet/myplanet/model/CourseLevel.kt
+app/src/main/java/org/ole/planet/myplanet/model/GradeLevel.kt
+app/src/main/java/org/ole/planet/myplanet/ui/courses/CourseFilterController.kt
+app/src/main/java/org/ole/planet/myplanet/ui/exam/UserInformationFragment.kt
+app/src/main/java/org/ole/planet/myplanet/ui/resources/AddResourceActivity.kt
+app/src/main/java/org/ole/planet/myplanet/ui/user/BecomeMemberActivity.kt
+app/src/main/java/org/ole/planet/myplanet/ui/user/UserProfileFragment.kt
+app/src/main/res/values-ar/strings.xml
+app/src/main/res/values-es/strings.xml
+app/src/main/res/values-fr/strings.xml
+app/src/main/res/values-ne/strings.xml
+app/src/main/res/values-so/strings.xml
+app/src/main/res/values/strings.xml

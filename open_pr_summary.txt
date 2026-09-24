@@ -1,0 +1,48 @@
+total PRs: 31
+total unique files: 1032
+files under app/src/main/java/...: 165
+
+files per PR:
+  PR#17435: 1
+  PR#17430: 5
+  PR#17356: 5
+  PR#17254: 7
+  PR#17187: 8
+  PR#16624: 5
+  PR#16623: 19
+  PR#16594: 5
+  PR#15951: 23
+  PR#15825: 34
+  PR#15824: 40
+  PR#15820: 27
+  PR#15808: 50
+  PR#15559: 24
+  PR#15267: 10
+  PR#15266: 2
+  PR#15226: 716
+  PR#15108: 10
+  PR#14883: 28
+  PR#14650: 10
+  PR#14427: 24
+  PR#13928: 6
+  PR#13848: 13
+  PR#13657: 15
+  PR#13604: 8
+  PR#13415: 19
+  PR#13355: 17
+  PR#13287: 2
+  PR#10993: 24
+  PR#8175: 3
+  PR#4075: 1
+
+package-area counts (under app/src/main/java/org/ole/planet/myplanet/):
+  ui: 62
+  repository: 33
+  model: 21
+  data: 19
+  services: 10
+  utils: 9
+  base: 4
+  callback: 3
+  di: 3
+  (root): 1
