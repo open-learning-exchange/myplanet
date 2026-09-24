@@ -35,6 +35,7 @@ import org.junit.rules.TemporaryFolder
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
+import org.ole.planet.myplanet.repository.LibraryTitle
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.ResourceTitleProjection
@@ -318,15 +319,14 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
-    fun `getLibraryTitles returns list of LibraryTitleProjection`() = runTest {
+    fun `getLibraryTitles returns list of LibraryTitle`() = runTest {
         val mockProjection = LibraryTitleProjection("lib1", "Test Library")
         coEvery { myLibraryDao.getLibraryTitles() } returns listOf(mockProjection)
 
         val result = repository.getLibraryTitles()
 
         assertEquals(1, result.size)
-        assertEquals("lib1", result[0].id)
-        assertEquals("Test Library", result[0].title)
+        assertEquals(LibraryTitle("lib1", "Test Library"), result[0])
     }
 
     @Test
