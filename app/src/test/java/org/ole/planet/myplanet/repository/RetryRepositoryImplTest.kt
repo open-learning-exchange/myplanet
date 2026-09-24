@@ -14,6 +14,7 @@ import io.mockk.unmockkAll
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
@@ -64,12 +65,13 @@ class RetryRepositoryImplTest {
     }
 
     @Test
-    fun `enqueue inserts a created operation`() = runTest {
+    fun `recordFailure inserts when none exists`() = runTest {
+        coEvery { retryDao.findExisting("itemId", "testUploadType") } returns null
         val insertedSlot = slot<RetryOperation>()
         coEvery { retryDao.insert(capture(insertedSlot)) } returns Unit
 
         val retryFailure = RetryFailure("itemId", "test error", 500)
-        repository.enqueue(
+        repository.recordFailure(
             "testUploadType", retryFailure, "testPayload", "testEndpoint",
             "POST", "testDbId", "TestClass", "testUserId"
         )
@@ -86,15 +88,49 @@ class RetryRepositoryImplTest {
         assertEquals(RetryOperation.STATUS_PENDING, op.status)
         assertEquals(1, op.attemptCount)
         assertEquals(500, op.httpCode)
+        coVerify(exactly = 0) { retryDao.recordFailedAttempt(any(), any(), any(), any()) }
     }
 
     @Test
-    fun `updateAttempt delegates to recordFailedAttempt`() = runTest {
-        coEvery { retryDao.recordFailedAttempt("opId", "Test Error", 503, timeProvider.now()) } returns 1
+    fun `recordFailure marks failed when one exists`() = runTest {
+        val existing = RetryOperation().apply {
+            id = "existingOpId"
+            itemId = "itemId"
+            uploadType = "testUploadType"
+        }
+        coEvery { retryDao.findExisting("itemId", "testUploadType") } returns existing
+        coEvery { retryDao.recordFailedAttempt("existingOpId", "test error", 500, timeProvider.now()) } returns 1
 
-        repository.updateAttempt("opId", RetryFailure("itemId", "Test Error", 503))
+        val retryFailure = RetryFailure("itemId", "test error", 500)
+        repository.recordFailure(
+            "testUploadType", retryFailure, "testPayload", "testEndpoint",
+            "POST", "testDbId", "TestClass", "testUserId"
+        )
 
-        coVerify { retryDao.recordFailedAttempt("opId", "Test Error", 503, timeProvider.now()) }
+        coVerify { retryDao.recordFailedAttempt("existingOpId", "test error", 500, timeProvider.now()) }
+        coVerify(exactly = 0) { retryDao.insert(any()) }
+    }
+
+    @Test
+    fun `recordFailure concurrent calls for same item inserts only once`() = runTest {
+        var existingRow: RetryOperation? = null
+        coEvery { retryDao.findExisting("item1", "type1") } answers { existingRow }
+        coEvery { retryDao.insert(any()) } answers {
+            val op = firstArg<RetryOperation>()
+            existingRow = op
+        }
+
+        val failure = RetryFailure("item1", "error msg", 500)
+        val job1 = launch {
+            repository.recordFailure("type1", failure, "{}", "endpoint", "POST", null, "Model", null)
+        }
+        val job2 = launch {
+            repository.recordFailure("type1", failure, "{}", "endpoint", "POST", null, "Model", null)
+        }
+        job1.join()
+        job2.join()
+
+        coVerify(exactly = 1) { retryDao.insert(any()) }
     }
 
     @Test
@@ -282,16 +318,6 @@ class RetryRepositoryImplTest {
         val count = repository.getPendingCount()
 
         assertEquals(10L, count)
-    }
-
-    @Test
-    fun `getExistingOperation returns dao result`() = runTest {
-        val operation = RetryOperation()
-        coEvery { retryDao.findExisting("item123", "typeA") } returns operation
-
-        val result = repository.getExistingOperation("item123", "typeA")
-
-        assertEquals(operation, result)
     }
 
     @Test
