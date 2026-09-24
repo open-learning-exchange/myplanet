@@ -6,7 +6,6 @@ import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.MyLibrary
@@ -59,7 +58,11 @@ class ResourceDetailViewModelTest {
 
     @Test
     fun `resolveLibraryItem forwards id and returns library from resourcesRepository`() = runTest {
-        val library = MyLibrary(_id = "lib123", title = "Test Library")
+        val library = MyLibrary().apply {
+            id = "lib123"
+            _id = "lib123"
+            title = "Test Library"
+        }
         coEvery { resourcesRepository.resolveLibraryItem("lib123") } returns library
 
         val result = viewModel.resolveLibraryItem("lib123")
@@ -83,7 +86,11 @@ class ResourceDetailViewModelTest {
 
     @Test
     fun `setUserLibrary forwards parameters and returns library from resourcesRepository`() = runTest {
-        val library = MyLibrary(_id = "lib123", title = "Test Library")
+        val library = MyLibrary().apply {
+            id = "lib123"
+            _id = "lib123"
+            title = "Test Library"
+        }
         coEvery { resourcesRepository.setUserLibrary("lib123", true) } returns library
 
         val result = viewModel.setUserLibrary("lib123", true)
