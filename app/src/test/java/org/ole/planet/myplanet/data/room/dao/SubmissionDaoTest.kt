@@ -87,4 +87,24 @@ class SubmissionDaoTest {
         val result = submissionDao.getPendingByUserAndParent("parent1", "user1")
         assertNull(result)
     }
+
+    @Test
+    fun getByParentIdsAndTeamId_handlesMoreThan1000ParentIdsAndDuplicatesWithoutThrowing() = runBlocking {
+        val teamId = "team1"
+        val submissions = (0 until 1200).map { i ->
+            Submission(id = "sub_$i", parentId = "parent_$i", teamId = teamId)
+        }
+        submissionDao.upsertAll(submissions)
+
+        val parentIds = (0 until 1200).map { "parent_$it" }
+        val parentIdsWithDuplicates = parentIds + parentIds.take(100)
+
+        val result = submissionDao.getByParentIdsAndTeamId(parentIdsWithDuplicates, teamId)
+
+        assertEquals(1200, result.size)
+        assertEquals(1200, result.map { it.id }.distinct().size)
+
+        val emptyResult = submissionDao.getByParentIdsAndTeamId(emptyList(), teamId)
+        assertEquals(0, emptyResult.size)
+    }
 }
