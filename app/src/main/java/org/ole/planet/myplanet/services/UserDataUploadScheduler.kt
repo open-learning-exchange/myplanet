@@ -5,6 +5,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import androidx.work.await
 import androidx.work.workDataOf
 import dagger.Binds
 import dagger.Module
@@ -14,6 +15,8 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.repository.SyncUiState
 
@@ -31,13 +34,18 @@ class WorkManagerUserDataUploadScheduler @Inject constructor(
             .setInputData(workDataOf(UserDataWorker.KEY_UPLOAD_TYPE to uploadType))
             .build()
         val workManager = WorkManager.getInstance(context)
-        workManager.enqueueUniqueWork(
+        val operation = workManager.enqueueUniqueWork(
             uniqueWorkName,
-            ExistingWorkPolicy.REPLACE,
+            ExistingWorkPolicy.KEEP,
             workRequest
         )
-        return workManager.getWorkInfoByIdFlow(workRequest.id).map { workInfo ->
-            mapWorkInfoToState(workInfo)
+        return flow {
+            operation.await()
+            emitAll(
+                workManager.getWorkInfosForUniqueWorkFlow(uniqueWorkName).map { workInfos ->
+                    mapWorkInfoToState(workInfos.firstOrNull())
+                }
+            )
         }
     }
 
