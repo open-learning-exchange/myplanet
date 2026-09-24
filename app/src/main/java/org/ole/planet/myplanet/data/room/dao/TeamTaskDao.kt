@@ -15,7 +15,12 @@ interface TeamTaskDao {
     suspend fun getPendingTasksForUser(userId: String, start: Long, end: Long): List<TeamTask>
 
     @Query("UPDATE team_tasks SET isNotified = 1 WHERE id IN (:taskIds)")
-    suspend fun markTasksNotified(taskIds: List<String>)
+    suspend fun markTasksNotifiedInternal(taskIds: List<String>)
+
+    suspend fun markTasksNotified(taskIds: List<String>) {
+        if (taskIds.isEmpty()) return
+        taskIds.distinct().chunked(900).forEach { markTasksNotifiedInternal(it) }
+    }
 
     @Query("SELECT * FROM team_tasks WHERE teamId = :teamId AND (status IS NULL OR status != 'archived')")
     fun getTasksByTeamId(teamId: String): Flow<List<TeamTask>>
@@ -36,10 +41,20 @@ interface TeamTaskDao {
     suspend fun getById(taskId: String): TeamTask?
 
     @Query("SELECT * FROM team_tasks WHERE id IN (:taskIds)")
-    suspend fun getByIds(taskIds: List<String>): List<TeamTask>
+    suspend fun getByIdsInternal(taskIds: List<String>): List<TeamTask>
+
+    suspend fun getByIds(taskIds: List<String>): List<TeamTask> {
+        if (taskIds.isEmpty()) return emptyList()
+        return taskIds.distinct().chunked(900).flatMap { getByIdsInternal(it) }
+    }
 
     @Query("SELECT * FROM team_tasks WHERE title IN (:titles)")
-    suspend fun getByTitles(titles: List<String>): List<TeamTask>
+    suspend fun getByTitlesInternal(titles: List<String>): List<TeamTask>
+
+    suspend fun getByTitles(titles: List<String>): List<TeamTask> {
+        if (titles.isEmpty()) return emptyList()
+        return titles.distinct().chunked(900).flatMap { getByTitlesInternal(it) }
+    }
 
     @Query("SELECT * FROM team_tasks WHERE assignee = :userId AND deadline BETWEEN :start AND :end")
     suspend fun getTasksForUserBetween(userId: String, start: Long, end: Long): List<TeamTask>

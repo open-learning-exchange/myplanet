@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.data.room.dao
 
 import androidx.room.Dao
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Upsert
 import org.ole.planet.myplanet.model.UserEntity
 
@@ -18,7 +19,14 @@ interface UserDao {
     suspend fun search(namePattern: String): List<UserEntity>
     @Query("SELECT COUNT(*) FROM users") suspend fun count(): Int
     @Query("DELETE FROM users WHERE id = :id") suspend fun deleteById(id: String): Int
-    @Query("DELETE FROM users WHERE id IN (:ids)") suspend fun deleteByIds(ids: List<String>): Int
+    @Query("DELETE FROM users WHERE id IN (:ids)") suspend fun deleteByIdsInternal(ids: List<String>): Int
+
+    @Transaction
+    suspend fun deleteByIds(ids: List<String>): Int {
+        if (ids.isEmpty()) return 0
+        return ids.distinct().chunked(900).sumOf { deleteByIdsInternal(it) }
+    }
+
     @Upsert suspend fun upsert(item: UserEntity)
     @Upsert suspend fun upsertAll(items: List<UserEntity>)
 
