@@ -166,7 +166,7 @@ class MyLibraryDaoTest {
                 _id = "curr_doc_$idx"
                 resourceId = resId
                 _rev = "1-rev"
-                isPrivate = 0
+                isPrivate = false
             })
         }
 
@@ -176,21 +176,21 @@ class MyLibraryDaoTest {
             _id = "stale_doc_1"
             resourceId = "stale_res_1"
             _rev = "1-rev"
-            isPrivate = 0
+            isPrivate = false
         })
         items.add(MyLibrary().apply {
             id = "stale_2"
             _id = "stale_doc_2"
             resourceId = "stale_res_2"
             _rev = "1-rev"
-            isPrivate = 0
+            isPrivate = false
         })
         items.add(MyLibrary().apply {
             id = "stale_3"
             _id = "stale_doc_3"
             resourceId = "stale_res_3"
             _rev = "1-rev"
-            isPrivate = 0
+            isPrivate = false
         })
 
         // 1 stale private row
@@ -199,7 +199,7 @@ class MyLibraryDaoTest {
             _id = "private_doc_1"
             resourceId = "private_res_1"
             _rev = "1-rev"
-            isPrivate = 1
+            isPrivate = true
         })
 
         // 1 stale unsynced row (_rev = "")
@@ -208,7 +208,7 @@ class MyLibraryDaoTest {
             _id = "unsynced_doc_1"
             resourceId = "unsynced_res_1"
             _rev = ""
-            isPrivate = 0
+            isPrivate = false
         })
 
         // 1 row with a NULL resourceId
@@ -217,7 +217,7 @@ class MyLibraryDaoTest {
             _id = "null_res_doc_1"
             resourceId = null
             _rev = "1-rev"
-            isPrivate = 0
+            isPrivate = false
         })
 
         myLibraryDao.upsertAll(items)
