@@ -13,6 +13,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.CommunityRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
@@ -25,11 +26,13 @@ class LoginViewModelTest {
 
     private val teamsRepository: TeamsRepository = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
+    private val communityRepository: CommunityRepository = mockk(relaxed = true)
 
     private fun createViewModel(): LoginViewModel {
         return LoginViewModel(
             teamsRepository,
             userRepository,
+            communityRepository,
             TestDispatcherProvider(mainDispatcherRule.testDispatcher)
         )
     }
@@ -125,5 +128,63 @@ class LoginViewModelTest {
         }
         // verify reload
         coVerify(exactly = 2) { userRepository.getSavedUsers() } // init + reload
+    }
+
+    @Test
+    fun `getUserByName forwards argument and returns value from repository`() = runTest {
+        val expected = UserEntity().apply { id = "user1"; name = "john" }
+        coEvery { userRepository.getUserByName("john") } returns expected
+
+        val viewModel = createViewModel()
+        val result = viewModel.getUserByName("john")
+
+        assertEquals(expected, result)
+        coVerify(exactly = 1) { userRepository.getUserByName("john") }
+    }
+
+    @Test
+    fun `validateUsername forwards argument and returns value from repository`() = runTest {
+        coEvery { userRepository.validateUsername("invalid user") } returns "Invalid username"
+
+        val viewModel = createViewModel()
+        val result = viewModel.validateUsername("invalid user")
+
+        assertEquals("Invalid username", result)
+        coVerify(exactly = 1) { userRepository.validateUsername("invalid user") }
+    }
+
+    @Test
+    fun `findUserByName forwards argument and returns value from repository`() = runTest {
+        val expected = UserEntity().apply { id = "user2"; name = "guest1" }
+        coEvery { userRepository.findUserByName("guest1") } returns expected
+
+        val viewModel = createViewModel()
+        val result = viewModel.findUserByName("guest1")
+
+        assertEquals(expected, result)
+        coVerify(exactly = 1) { userRepository.findUserByName("guest1") }
+    }
+
+    @Test
+    fun `createGuestUser forwards argument and returns value from repository`() = runTest {
+        val expected = UserEntity().apply { id = "guest_123"; name = "guest1" }
+        coEvery { userRepository.createGuestUser("guest1") } returns expected
+
+        val viewModel = createViewModel()
+        val result = viewModel.createGuestUser("guest1")
+
+        assertEquals(expected, result)
+        coVerify(exactly = 1) { userRepository.createGuestUser("guest1") }
+    }
+
+    @Test
+    fun `syncCommunityDocs forwards call and returns value from repository`() = runTest {
+        coEvery { communityRepository.syncCommunityDocs() } returns true
+
+        val viewModel = createViewModel()
+        val result = viewModel.syncCommunityDocs()
+
+        assertTrue(result)
+        coVerify(exactly = 1) { communityRepository.syncCommunityDocs() }
     }
 }
