@@ -249,7 +249,7 @@ class MyLibraryDaoTest {
                 id = "off_id_$i"
                 _id = "off_doc_$i"
                 resourceId = "off_res_$i"
-                resourceOffline = 1
+                resourceOffline = true
             }
         }
         myLibraryDao.upsertAll(items)
@@ -260,7 +260,7 @@ class MyLibraryDaoTest {
         val allItems = myLibraryDao.getAll()
         assertEquals(count, allItems.size)
         allItems.forEach { item ->
-            assertEquals(0, item.resourceOffline)
+            assertEquals(false, item.resourceOffline)
         }
     }
 }
