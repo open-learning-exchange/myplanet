@@ -11,51 +11,23 @@ import com.github.mikephil.charting.data.BarEntry
 import com.github.mikephil.charting.formatter.ValueFormatter
 import dagger.hilt.android.AndroidEntryPoint
 import java.text.DateFormatSymbols
-import java.util.Calendar
-import javax.inject.Inject
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.databinding.FragmentActivitiesBinding
-import org.ole.planet.myplanet.model.OfflineActivity
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class ActivitiesFragment : BaseBindingFragment<FragmentActivitiesBinding>(FragmentActivitiesBinding::inflate) {
     private val months = DateFormatSymbols().months
     private val viewModel: ActivitiesViewModel by viewModels()
-    @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val daynightTextColor = ResourcesCompat.getColor(resources, R.color.daynight_textColor, null)
 
-        val endMillis = Calendar.getInstance().timeInMillis
-        val startMillis = Calendar.getInstance().apply { add(Calendar.YEAR, -1) }.timeInMillis
-
-        collectLatestWhenStarted(viewModel.offlineLogins) { logins ->
-            val monthlyCounts = computeMonthlyCounts(logins, startMillis, endMillis)
+        collectLatestWhenStarted(viewModel.monthlyLoginCounts) { monthlyCounts ->
             renderChart(monthlyCounts, daynightTextColor)
         }
-    }
-
-    internal suspend fun computeMonthlyCounts(
-        logins: List<OfflineActivity>,
-        startMillis: Long,
-        endMillis: Long
-    ): Map<Int, Int> = withContext(dispatcherProvider.default) {
-        val calendar = Calendar.getInstance()
-        logins.fold(mutableMapOf<Int, Int>()) { acc, activity ->
-            val loginTime = activity.loginTime
-            if (loginTime != null && loginTime in startMillis..endMillis) {
-                calendar.timeInMillis = loginTime
-                val month = calendar.get(Calendar.MONTH)
-                acc[month] = (acc[month] ?: 0) + 1
-            }
-            acc
-        }.toSortedMap()
     }
 
     private fun renderChart(monthlyCounts: Map<Int, Int>, textColor: Int) {
