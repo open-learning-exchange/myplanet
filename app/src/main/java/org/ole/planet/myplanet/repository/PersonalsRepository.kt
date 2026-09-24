@@ -22,7 +22,5 @@ interface PersonalsRepository {
     fun getPersonalResources(userId: String?): Flow<List<Personal>>
     suspend fun deletePersonalResource(id: String)
     suspend fun updatePersonalResource(id: String, update: PersonalUpdate)
-    suspend fun getPendingPersonalUploads(userId: String): List<Personal>
-    suspend fun updatePersonalAfterSync(id: String, newId: String, rev: String)
     suspend fun uploadPersonal(personal: Personal): String
 }

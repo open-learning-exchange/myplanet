@@ -154,23 +154,6 @@ class PersonalsRepositoryImplTest {
     }
 
     @Test
-    fun `getPendingPersonalUploads queries correctly`() = runTest {
-        coEvery { personalDao.getPendingUploads("user1") } returns listOf(Personal(), Personal())
-
-        val results = repository.getPendingPersonalUploads("user1")
-
-        assertEquals(2, results.size)
-        coVerify { personalDao.getPendingUploads("user1") }
-    }
-
-    @Test
-    fun `updatePersonalAfterSync updates fields properly`() = runTest {
-        repository.updatePersonalAfterSync("test-id", "new-id", "rev-1")
-
-        coVerify { personalDao.updateUploadedStatus("test-id", "new-id", "rev-1") }
-    }
-
-    @Test
     fun `uploadPersonalDocument returns Pair of id and rev on success`() = runTest {
         val personal = Personal().apply { id = "test-id" }
 
