@@ -7,8 +7,7 @@ import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody.Companion.asRequestBody
+import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.repository.TeamUploadData
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
@@ -106,11 +105,10 @@ class TeamsUploader @Inject constructor(
         if (!imageFile.exists()) return rev
         return try {
             val mimeType = FileUtils.getMimeType(imageName) ?: "image/*"
-            val body = imageFile.asRequestBody(mimeType.toMediaTypeOrNull())
             val encodedName = Uri.encode(imageName)
             val url = "${UrlUtils.getUrl()}/teams/$teamId/$encodedName"
-            val response = uploadRepository.uploadResource(FileUploader.getHeaderMap(mimeType, rev), url, body)
-            val newRev = response.body()?.get("rev")?.asString
+            val result = uploadRepository.uploadResource(FileUploader.getHeaderMap(mimeType, rev), url, imageFile, mimeType)
+            val newRev = (result as? NetworkResult.Success)?.data?.get("rev")?.asString
             if (!newRev.isNullOrEmpty()) {
                 newRev
             } else {

@@ -14,6 +14,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UploadedItemResult
 import org.ole.planet.myplanet.services.retry.RetryQueue
@@ -141,7 +142,7 @@ class UploadCoordinator @Inject constructor(
                             "$baseUrl/${config.endpoint}/${preparedItem.dbId}"
                         }
 
-                        val response = semaphore.withPermit {
+                        val result = semaphore.withPermit {
                             if (preparedItem.dbId.isNullOrEmpty()) {
                                 uploadRepository.postUpload(requestUrl, preparedItem.serialized)
                             } else {
@@ -149,68 +150,93 @@ class UploadCoordinator @Inject constructor(
                             }
                         }
 
-                        val responseBody = response.body()
-                        if (response.isSuccessful && responseBody != null) {
-                            val responseHandler = config.responseHandler
-                            val (idField, revField) = when (responseHandler) {
-                                is ResponseHandler.Standard -> "id" to "rev"
-                                is ResponseHandler.Custom -> responseHandler.idField to responseHandler.revField
-                            }
-
-                            val uploadedItem = normalizeUploadResult(
-                                preparedItem.localId,
-                                responseBody,
-                                idField,
-                                revField
-                            )
-
-                            config.afterUpload?.invoke(preparedItem.item, uploadedItem)
-                            BatchItemResult.Success(uploadedItem)
-                        } else if (response.code() == 409) {
-                            try {
-                                val docId = preparedItem.dbId ?: preparedItem.localId
-                                val getResponse = semaphore.withPermit {
-                                    uploadRepository.fetchExistingDoc("$baseUrl/${config.endpoint}/$docId")
+                        when (result) {
+                            is NetworkResult.Success -> {
+                                val responseHandler = config.responseHandler
+                                val (idField, revField) = when (responseHandler) {
+                                    is ResponseHandler.Standard -> "id" to "rev"
+                                    is ResponseHandler.Custom -> responseHandler.idField to responseHandler.revField
                                 }
-                                val existingDoc = getResponse.body()
-                                if (getResponse.isSuccessful && existingDoc != null) {
-                                    val uploadedItem = normalizeUploadResult(
-                                        preparedItem.localId,
-                                        existingDoc,
-                                        "_id",
-                                        "_rev"
-                                    )
-                                    config.afterUpload?.invoke(preparedItem.item, uploadedItem)
-                                    BatchItemResult.Success(uploadedItem)
-                                } else {
+
+                                val uploadedItem = normalizeUploadResult(
+                                    preparedItem.localId,
+                                    result.data,
+                                    idField,
+                                    revField
+                                )
+
+                                config.afterUpload?.invoke(preparedItem.item, uploadedItem)
+                                BatchItemResult.Success(uploadedItem)
+                            }
+                            is NetworkResult.Error -> if (result.code == 409) {
+                                try {
+                                    val docId = preparedItem.dbId ?: preparedItem.localId
+                                    val getResult = semaphore.withPermit {
+                                        uploadRepository.fetchExistingDoc("$baseUrl/${config.endpoint}/$docId")
+                                    }
+                                    when (getResult) {
+                                        is NetworkResult.Success -> {
+                                            val uploadedItem = normalizeUploadResult(
+                                                preparedItem.localId,
+                                                getResult.data,
+                                                "_id",
+                                                "_rev"
+                                            )
+                                            config.afterUpload?.invoke(preparedItem.item, uploadedItem)
+                                            BatchItemResult.Success(uploadedItem)
+                                        }
+                                        is NetworkResult.Error -> BatchItemResult.Error(UploadError(
+                                            preparedItem.localId,
+                                            Exception("Document exists (409) but couldn't fetch revision"),
+                                            retryable = false,
+                                            httpCode = 409
+                                        ))
+                                        is NetworkResult.Exception -> {
+                                            val e = getResult.exception
+                                            if (e is IOException) {
+                                                Log.w(TAG, "Network error fetching existing doc for 409 recovery on item ${preparedItem.localId}", e)
+                                                BatchItemResult.Error(UploadError(preparedItem.localId, e, retryable = true, httpCode = 409))
+                                            } else {
+                                                BatchItemResult.Error(UploadError(
+                                                    preparedItem.localId,
+                                                    Exception("Document exists (409) but fetch failed: ${e.message}"),
+                                                    retryable = false, httpCode = 409
+                                                ))
+                                            }
+                                        }
+                                    }
+                                } catch (e: CancellationException) {
+                                    throw e
+                                } catch (e: IOException) {
+                                    Log.w(TAG, "Network error fetching existing doc for 409 recovery on item ${preparedItem.localId}", e)
+                                    BatchItemResult.Error(UploadError(preparedItem.localId, e, retryable = true, httpCode = 409))
+                                } catch (e: Exception) {
                                     BatchItemResult.Error(UploadError(
                                         preparedItem.localId,
-                                        Exception("Document exists (409) but couldn't fetch revision"),
-                                        retryable = false,
-                                        httpCode = 409
+                                        Exception("Document exists (409) but fetch failed: ${e.message}"),
+                                        retryable = false, httpCode = 409
                                     ))
                                 }
-                            } catch (e: CancellationException) {
-                                throw e
-                            } catch (e: IOException) {
-                                Log.w(TAG, "Network error fetching existing doc for 409 recovery on item ${preparedItem.localId}", e)
-                                BatchItemResult.Error(UploadError(preparedItem.localId, e, retryable = true, httpCode = 409))
-                            } catch (e: Exception) {
+                            } else {
+                                val errorMsg = "Upload failed: HTTP ${result.code}"
+                                Log.w(TAG, "$errorMsg for item ${preparedItem.localId}")
                                 BatchItemResult.Error(UploadError(
                                     preparedItem.localId,
-                                    Exception("Document exists (409) but fetch failed: ${e.message}"),
-                                    retryable = false, httpCode = 409
+                                    Exception(errorMsg),
+                                    retryable = (result.code ?: 0) >= 500,
+                                    httpCode = result.code
                                 ))
                             }
-                        } else {
-                            val errorMsg = "Upload failed: HTTP ${response.code()}"
-                            Log.w(TAG, "$errorMsg for item ${preparedItem.localId}")
-                            BatchItemResult.Error(UploadError(
-                                preparedItem.localId,
-                                Exception(errorMsg),
-                                retryable = response.code() >= 500,
-                                httpCode = response.code()
-                            ))
+                            is NetworkResult.Exception -> {
+                                val e = result.exception as? Exception ?: Exception(result.exception)
+                                if (e is IOException) {
+                                    Log.w(TAG, "Network error uploading item ${preparedItem.localId}", e)
+                                    BatchItemResult.Error(UploadError(preparedItem.localId, e, retryable = true))
+                                } else {
+                                    Log.e(TAG, "Unexpected error uploading item ${preparedItem.localId}", e)
+                                    BatchItemResult.Error(UploadError(preparedItem.localId, e, retryable = false))
+                                }
+                            }
                         }
                     } catch (e: CancellationException) {
                         throw e

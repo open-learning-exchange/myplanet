@@ -21,6 +21,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.callback.OnSuccessListener
+import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.CourseActivity
@@ -264,7 +265,7 @@ class UploadManagerTest {
         }
 
         coEvery { submissionsRepository.getUnuploadedPhotos() } returns mockPhotosList
-        coEvery { uploadRepository.postUpload(any(), mockSerialized) } returns retrofit2.Response.success(mockResponseObject)
+        coEvery { uploadRepository.postUpload(any(), mockSerialized) } returns NetworkResult.Success(mockResponseObject)
         coEvery { submissionsRepository.getPhotosByIds(arrayOf(photoId)) } returns emptyList()
 
         val listener: OnSuccessListener = mockk(relaxed = true)
@@ -297,7 +298,7 @@ class UploadManagerTest {
         }
 
         coEvery { submissionsRepository.getUnuploadedPhotos() } returns mockPhotosList
-        coEvery { uploadRepository.postUpload(any(), mockSerialized) } returns retrofit2.Response.success(mockResponseObject)
+        coEvery { uploadRepository.postUpload(any(), mockSerialized) } returns NetworkResult.Success(mockResponseObject)
         coEvery { submissionsRepository.getPhotosByIds(any()) } returns emptyList()
 
         val listener: OnSuccessListener = mockk(relaxed = true)
@@ -351,9 +352,9 @@ class UploadManagerTest {
             addProperty("id", "res123")
             addProperty("rev", "rev123")
         }
-        coEvery { uploadRepository.postUpload("http://mock.url/resources", any()) } returns retrofit2.Response.success(imageResponseJson)
+        coEvery { uploadRepository.postUpload("http://mock.url/resources", any()) } returns NetworkResult.Success(imageResponseJson)
 
-        coEvery { uploadRepository.uploadResource(any(), any(), any()) } returns retrofit2.Response.success(JsonObject())
+        coEvery { uploadRepository.uploadResource(any(), any(), any(), any()) } returns NetworkResult.Success(JsonObject())
 
         val bulkResponse = com.google.gson.JsonArray().apply {
             add(JsonObject().apply {
@@ -361,7 +362,7 @@ class UploadManagerTest {
                 addProperty("rev", "rev2")
             })
         }
-        coEvery { uploadRepository.postUploadArray("http://mock.url/news/_bulk_docs", any()) } returns retrofit2.Response.success(bulkResponse)
+        coEvery { uploadRepository.postUploadArray("http://mock.url/news/_bulk_docs", any()) } returns NetworkResult.Success(bulkResponse)
 
         uploadManager.uploadNews()
         advanceUntilIdle()
@@ -370,6 +371,7 @@ class UploadManagerTest {
             uploadRepository.uploadResource(
                 match { headers -> headers["Content-Type"] == "image/png" && headers["If-Match"] == "rev123" },
                 "http://mock.url/resources/res123/test_image.png",
+                any(),
                 any()
             )
         }
@@ -445,7 +447,7 @@ class UploadManagerTest {
         }
         coEvery { uploadCoordinator.uploadRoom<MyLibrary>(any()) } returns UploadResult.Success(1, listOf(uploadedItem))
         coEvery { resourcesRepository.getLibraryItemsByIds(listOf("lib1")) } returns listOf(library)
-        coEvery { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) } returns retrofit2.Response.success(JsonObject())
+        coEvery { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) } returns NetworkResult.Success(JsonObject())
 
         uploadManager.uploadResource(null)
         advanceUntilIdle()

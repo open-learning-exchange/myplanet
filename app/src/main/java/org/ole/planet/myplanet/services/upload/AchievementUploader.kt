@@ -6,8 +6,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody.Companion.asRequestBody
+import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UserAchievementsRepository
 import org.ole.planet.myplanet.services.FileUploader
@@ -30,9 +29,9 @@ class AchievementUploader @Inject constructor(
                 val id = achievement.get("_id")?.asString ?: return@forEach
                 val url = "${UrlUtils.getUrl()}/achievements/$id"
                 try {
-                    val response = uploadRepository.putUpload(url, achievement)
-                    if (response.isSuccessful) {
-                        val rev = response.body()?.get("rev")?.asString
+                    val result = uploadRepository.putUpload(url, achievement)
+                    if (result is NetworkResult.Success) {
+                        val rev = result.data.get("rev")?.asString
                         userAchievementsRepository.markAchievementUploaded(id, rev)
                         val resumeFileName = achievement.get("resumeFileName")?.asString ?: ""
                         if (resumeFileName.isNotEmpty() && !rev.isNullOrEmpty()) {
@@ -50,10 +49,9 @@ class AchievementUploader @Inject constructor(
         val cvFile = File(FileUtils.getOlePath(context) + "cv/$resumeFileName")
         if (!cvFile.exists()) return
         try {
-            val body = cvFile.asRequestBody("application/pdf".toMediaTypeOrNull())
             // CouchDB attachment key is always "resume.pdf"
             val url = "${UrlUtils.getUrl()}/achievements/$docId/resume.pdf"
-            uploadRepository.uploadResource(FileUploader.getHeaderMap("application/pdf", rev), url, body)
+            uploadRepository.uploadResource(FileUploader.getHeaderMap("application/pdf", rev), url, cvFile, "application/pdf")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to upload CV attachment", e)
         }

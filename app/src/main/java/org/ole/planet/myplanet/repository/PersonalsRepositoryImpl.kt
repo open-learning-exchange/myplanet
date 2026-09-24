@@ -8,6 +8,7 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.utils.DeviceNameProvider
@@ -75,12 +76,12 @@ class PersonalsRepositoryImpl @Inject constructor(
     }
 
     internal suspend fun uploadPersonalDocument(personal: Personal): Pair<String, String>? {
-        val response = uploadRepository.postUpload(
+        val result = uploadRepository.postUpload(
             "${UrlUtils.getUrl()}/resources",
             serialize(personal)
         )
 
-        val `object` = response.body()
+        val `object` = (result as? NetworkResult.Success)?.data
         if (`object` != null) {
             val rev = getString("rev", `object`)
             val id = getString("id", `object`)
@@ -132,7 +133,7 @@ class PersonalsRepositoryImpl @Inject constructor(
                 val file = File(path)
                 val name = FileUtils.getFileNameFromUrl(path)
 
-                val response = try {
+                val result = try {
                     uploadRepository.uploadAttachment(
                         file = file,
                         destinationFormat = "%s/resources/%s/%s",
@@ -144,12 +145,20 @@ class PersonalsRepositoryImpl @Inject constructor(
                     Log.w(TAG, "Attachment upload failed for ${personal.id}", e)
                     return "Uploaded document but failed to upload attachment: ${e.message}"
                 }
-                
-                if (!response.isSuccessful) {
-                    Log.w(TAG, "Attachment upload failed for ${personal.id}: HTTP ${response.code()}")
-                    return "Uploaded document but failed to upload attachment: HTTP ${response.code()}"
+
+                when (result) {
+                    is NetworkResult.Success -> {
+                        finalRev = getString("rev", result.data).ifBlank { rev }
+                    }
+                    is NetworkResult.Error -> {
+                        Log.w(TAG, "Attachment upload failed for ${personal.id}: HTTP ${result.code}")
+                        return "Uploaded document but failed to upload attachment: HTTP ${result.code}"
+                    }
+                    is NetworkResult.Exception -> {
+                        Log.w(TAG, "Attachment upload failed for ${personal.id}", result.exception)
+                        return "Uploaded document but failed to upload attachment: ${result.exception.message}"
+                    }
                 }
-                finalRev = getString("rev", response.body()).ifBlank { rev }
             }
 
             updatePersonalAfterSync(personal.id, id, finalRev)

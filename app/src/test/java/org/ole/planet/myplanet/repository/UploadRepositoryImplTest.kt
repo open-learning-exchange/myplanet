@@ -12,6 +12,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
@@ -126,7 +127,7 @@ class UploadRepositoryImplTest {
 
         val result = repository.postUpload(url, data)
 
-        assertEquals(true, result.isSuccessful)
+        assertEquals(true, result is NetworkResult.Success)
         coVerify(exactly = 1) { apiInterface.postDoc(any(), eq("application/json"), eq(url), eq(kotlinxData)) }
     }
 
@@ -140,7 +141,7 @@ class UploadRepositoryImplTest {
 
         val result = repository.postUploadArray(url, data)
 
-        assertEquals(true, result.isSuccessful)
+        assertEquals(true, result is NetworkResult.Success)
         coVerify(exactly = 1) { apiInterface.postDocArray(any(), eq("application/json"), eq(url), eq(kotlinxData)) }
     }
 
@@ -154,7 +155,7 @@ class UploadRepositoryImplTest {
 
         val result = repository.putUpload(url, data)
 
-        assertEquals(true, result.isSuccessful)
+        assertEquals(true, result is NetworkResult.Success)
         coVerify(exactly = 1) { apiInterface.putDoc(any(), eq("application/json"), eq(url), eq(kotlinxData)) }
     }
 
@@ -166,8 +167,30 @@ class UploadRepositoryImplTest {
 
         val result = repository.fetchExistingDoc(url)
 
-        assertEquals(true, result.isSuccessful)
+        assertEquals(true, result is NetworkResult.Success)
         coVerify(exactly = 1) { apiInterface.getJsonObject(any(), eq(url)) }
+    }
+
+    @Test
+    fun `uploadResource builds a request body with the given mime type and calls ApiInterface`() = runTest {
+        val file = java.io.File.createTempFile("test", "png")
+        file.writeText("test content")
+        file.deleteOnExit()
+
+        val bodySlot = io.mockk.slot<okhttp3.RequestBody>()
+        val expectedResponse = retrofit2.Response.success(kotlinx.serialization.json.JsonObject(emptyMap()))
+        coEvery { apiInterface.uploadResource(any(), eq("testUrl"), capture(bodySlot)) } returns expectedResponse
+
+        val result = repository.uploadResource(
+            headerMap = mapOf("Authorization" to "mock"),
+            url = "testUrl",
+            file = file,
+            mimeType = "image/png"
+        )
+
+        assertEquals(true, result is NetworkResult.Success)
+        assertEquals("image/png", bodySlot.captured.contentType().toString())
+        coVerify(exactly = 1) { apiInterface.uploadResource(any(), eq("testUrl"), any()) }
     }
 
     @Test
@@ -187,7 +210,7 @@ class UploadRepositoryImplTest {
             name = "file.txt"
         )
 
-        assertEquals(true, result.isSuccessful)
+        assertEquals(true, result is NetworkResult.Success)
         coVerify(exactly = 1) { apiInterface.uploadResource(any(), any(), any()) }
     }
 

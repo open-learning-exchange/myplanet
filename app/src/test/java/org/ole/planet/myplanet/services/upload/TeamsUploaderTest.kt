@@ -18,6 +18,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.repository.TeamUploadData
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadRepository
@@ -77,7 +78,7 @@ class TeamsUploaderTest {
             add(JsonObject().apply { addProperty("id", "team2"); addProperty("error", "conflict") })
             add(JsonObject().apply { addProperty("id", "team3"); addProperty("rev", "rev3") })
         }
-        coEvery { uploadRepository.postUploadArray(any(), any()) } returns retrofit2.Response.success(bulkResponse)
+        coEvery { uploadRepository.postUploadArray(any(), any()) } returns NetworkResult.Success(bulkResponse)
 
         coEvery { retryQueue.queueFailedOperation(any(), any(), any(), any(), any(), any(), any()) } returns Unit
         coEvery { mockRepo.markTeamsUploaded(any()) } returns Unit
@@ -102,7 +103,7 @@ class TeamsUploaderTest {
         val bulkResponse = com.google.gson.JsonArray().apply {
             add(JsonObject().apply { addProperty("id", "serverGeneratedId1"); addProperty("rev", "rev1") })
         }
-        coEvery { uploadRepository.postUploadArray(any(), any()) } returns retrofit2.Response.success(bulkResponse)
+        coEvery { uploadRepository.postUploadArray(any(), any()) } returns NetworkResult.Success(bulkResponse)
         coEvery { mockRepo.markTeamsUploaded(any()) } returns Unit
 
         teamsUploader.uploadTeams()
@@ -119,8 +120,7 @@ class TeamsUploaderTest {
         val mockTeam = TeamUploadData("team1", JsonObject(), false, null)
         coEvery { mockRepo.getTeamsForUpload() } returns listOf(mockTeam)
 
-        val errorBody = okhttp3.ResponseBody.create(null, "Error")
-        coEvery { uploadRepository.postUploadArray(any(), any()) } returns retrofit2.Response.error(500, errorBody)
+        coEvery { uploadRepository.postUploadArray(any(), any()) } returns NetworkResult.Error(500, null)
         coEvery { retryQueue.queueFailedOperation(any(), any(), any(), any(), any(), any(), any()) } returns Unit
 
         teamsUploader.uploadTeams()
