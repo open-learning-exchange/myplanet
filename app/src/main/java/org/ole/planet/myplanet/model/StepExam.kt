@@ -40,7 +40,8 @@ open class StepExam(
         }
 
         fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject, parentId: String?): StepExam {
-            val kExam = exam.toKotlinx().jsonObject
+            val shallow = JsonObject().apply { exam.entrySet().forEach { (k, v) -> if (k != "questions") add(k, v) } }
+            val kExam = shallow.toKotlinx().jsonObject
             val examId = JsonUtils.getString("_id", kExam)
             val myExam = StepExam().apply {
                 id = (if (examId.isNullOrEmpty()) parentId else examId).orEmpty()
@@ -57,7 +58,7 @@ open class StepExam(
             myExam.updatedDate = JsonUtils.getLong("updatedDate", kExam)
             myExam.adoptionDate = JsonUtils.getLong("adoptionDate", kExam)
             myExam.totalMarks = JsonUtils.getInt("totalMarks", kExam)
-            myExam.noOfQuestions = JsonUtils.getJsonArray("questions", kExam).size
+            myExam.noOfQuestions = (exam.get("questions") as? com.google.gson.JsonArray)?.size() ?: 0
             myExam.isFromNation = !parentId.isNullOrEmpty()
             myExam.teamId = JsonUtils.getString("teamId", kExam)
             myExam.isTeamShareAllowed = JsonUtils.getBoolean("teamShareAllowed", kExam)
