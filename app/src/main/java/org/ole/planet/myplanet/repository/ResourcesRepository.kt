@@ -4,7 +4,6 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.File
 import kotlinx.coroutines.flow.Flow
-import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
@@ -39,6 +38,11 @@ data class LibraryWithMetadata(
     val tags: List<TagEntity>
 )
 
+data class LibraryTitle(
+    val id: String,
+    val title: String?
+)
+
 data class LocalResourceRequest(
     val title: String?,
     val addedBy: String?,
@@ -61,14 +65,13 @@ data class LocalResourceRequest(
 )
 
 interface ResourcesRepository {
-    suspend fun getLibraryTitles(): List<LibraryTitleProjection>
+    suspend fun getLibraryTitles(): List<LibraryTitle>
     suspend fun getLibraryItemById(id: String): MyLibrary?
     suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<MyLibrary>
     suspend fun getLibraryItemByResourceId(resourceId: String): MyLibrary?
     suspend fun getLibraryItemsByIds(ids: Collection<String>): List<MyLibrary>
     suspend fun getLibraryItemsByLocalAddress(localAddress: String): List<MyLibrary>
     suspend fun getLibraryListForUser(userId: String?): List<MyLibrary>
-    suspend fun getMyLibrary(userId: String?): List<MyLibrary>
     fun getMyLibraryFlow(userId: String?): Flow<List<MyLibrary>>
     suspend fun getAllStepResources(stepId: String?): List<MyLibrary>
     fun getRecentResources(userId: String): Flow<List<MyLibrary>>
@@ -76,9 +79,7 @@ interface ResourcesRepository {
     suspend fun countLibrariesNeedingUpdate(userId: String?): Int
     suspend fun resourceTitleExists(title: String): Boolean
     suspend fun resolveLibraryItem(id: String): MyLibrary?
-    suspend fun resolveLibraryItemByResourceId(resourceId: String): MyLibrary?
     suspend fun saveLocalResource(request: LocalResourceRequest): Result<Unit>
-    suspend fun updateUserLibrary(resourceId: String, userId: String, isAdd: Boolean): MyLibrary?
     suspend fun setUserLibrary(resourceId: String, add: Boolean): MyLibrary?
     suspend fun updateLibraryItem(id: String, updater: (MyLibrary) -> Unit)
     suspend fun markResourceOfflineByUrl(url: String)
@@ -123,11 +124,9 @@ interface ResourcesRepository {
     suspend fun batchInsertMyLibrary(shelfId: String?, documents: List<JsonObject>): Int
     suspend fun getResourceListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel>
     fun getCachedResourceListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel>?
-    fun clearResourceListCache()
     suspend fun getLibraryItemsByResourceIds(ids: Collection<String>): List<MyLibrary>
     suspend fun getTeamPrivateResources(teamId: String): List<MyLibrary>
     suspend fun getPublicLibraryItems(): List<MyLibrary>
-    suspend fun getResourceTitlesMap(): Map<String, String>
     suspend fun markResourcesAsNotOffline(resourceIds: Collection<String>)
     suspend fun getPendingResourceUploads(): List<MyLibrary>
     suspend fun markResourceUploaded(localId: String, remoteId: String, remoteRev: String, planetCode: String?): Boolean

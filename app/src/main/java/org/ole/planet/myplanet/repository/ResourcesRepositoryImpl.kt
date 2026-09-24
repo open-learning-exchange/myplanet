@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
@@ -80,8 +79,8 @@ class ResourcesRepositoryImpl @Inject constructor(
         return "%\"$escaped\"%"
     }
 
-    override suspend fun getLibraryTitles(): List<LibraryTitleProjection> {
-        return myLibraryDao.getLibraryTitles()
+    override suspend fun getLibraryTitles(): List<LibraryTitle> {
+        return myLibraryDao.getLibraryTitles().map { LibraryTitle(it.id, it.title) }
     }
 
     override suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<MyLibrary> {
@@ -176,7 +175,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         return getLibraryItemById(id) ?: getLibraryItemByResourceId(id)
     }
 
-    override suspend fun resolveLibraryItemByResourceId(resourceId: String): MyLibrary? {
+    internal suspend fun resolveLibraryItemByResourceId(resourceId: String): MyLibrary? {
         return getLibraryItemByResourceId(resourceId) ?: getLibraryItemById(resourceId)
     }
 
@@ -216,7 +215,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         return myLibraryDao.getPublicNeedingUpdateForUserPattern(userIdPattern(userId))
     }
 
-    override suspend fun getMyLibrary(userId: String?): List<MyLibrary> {
+    internal suspend fun getMyLibrary(userId: String?): List<MyLibrary> {
         if (userId.isNullOrBlank()) return emptyList()
         return myLibraryDao.getForUserPattern(userIdPattern(userId))
     }
@@ -342,7 +341,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         return if ((updated.userId?.contains(userId) == true) == add) updated else null
     }
 
-    override suspend fun updateUserLibrary(
+    internal suspend fun updateUserLibrary(
         resourceId: String,
         userId: String,
         isAdd: Boolean,
@@ -747,7 +746,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun clearResourceListCache() {
+    internal fun clearResourceListCache() {
         cachedMyCourseLibModels = null
         cachedPublicLibModels = null
     }
@@ -806,7 +805,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getResourceTitlesMap(): Map<String, String> {
+    internal suspend fun getResourceTitlesMap(): Map<String, String> {
         return myLibraryDao.getResourceTitles()
             .associate { (it.resourceId ?: "") to (it.title ?: "") }
     }
