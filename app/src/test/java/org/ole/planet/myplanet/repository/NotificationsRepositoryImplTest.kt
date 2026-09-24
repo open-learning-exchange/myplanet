@@ -628,6 +628,112 @@ class NotificationsRepositoryImplTest {
     }
 
     @Test
+    fun `getEnrichedNotifications maps join request to Unknown Team when team is absent from getTeamNamesByIds`() = runTest {
+        val joinNotif = AppNotification().apply {
+            id = "j1"
+            userId = "user1"
+            type = "join_request"
+            message = "Join 1"
+            relatedId = "rel1"
+        }
+
+        coEvery { notificationDao.getNotifications("user1", "", false) } returns listOf(joinNotif)
+        coEvery { notificationDao.getUnreadCount("user1", false) } returns 1
+
+        val joinRequestInfo = JoinRequestInfo("rel1", "teamMissing", "user2")
+        coEvery { teamsRepository.get().getJoinRequestsInfo(listOf("rel1")) } returns listOf(joinRequestInfo)
+        coEvery { teamsRepository.get().getTeamNamesByIds(listOf("teamMissing")) } returns emptyMap()
+
+        coEvery { userRepository.get().getUsersByIds(listOf("user2")) } returns listOf(
+            org.ole.planet.myplanet.model.UserEntity(id = "user2", name = "Alice")
+        )
+
+        val enrichment = repository.getEnrichedNotifications("user1", "all", false)
+
+        assertEquals(Pair("Alice", "Unknown Team"), enrichment.joinRequestDetails["rel1"])
+    }
+
+    @Test
+    fun `getEnrichedNotifications maps join request with empty userId to Unknown User and skips getUsersByIds`() = runTest {
+        val mockUserRepo = mockk<UserRepository>(relaxed = true)
+        io.mockk.every { userRepository.get() } returns mockUserRepo
+
+        val joinNotif = AppNotification().apply {
+            id = "j1"
+            userId = "user1"
+            type = "join_request"
+            message = "Join 1"
+            relatedId = "rel1"
+        }
+
+        coEvery { notificationDao.getNotifications("user1", "", false) } returns listOf(joinNotif)
+        coEvery { notificationDao.getUnreadCount("user1", false) } returns 1
+
+        val joinRequestInfo = JoinRequestInfo("rel1", "teamA", "")
+        coEvery { teamsRepository.get().getJoinRequestsInfo(listOf("rel1")) } returns listOf(joinRequestInfo)
+        coEvery { teamsRepository.get().getTeamNamesByIds(listOf("teamA")) } returns mapOf("teamA" to "Alpha Team")
+
+        val enrichment = repository.getEnrichedNotifications("user1", "all", false)
+
+        assertEquals(Pair("Unknown User", "Alpha Team"), enrichment.joinRequestDetails["rel1"])
+        coVerify(exactly = 0) { mockUserRepo.getUsersByIds(any()) }
+    }
+
+    @Test
+    fun `getEnrichedNotifications skips getJoinRequestsInfo when there are no join request notifications`() = runTest {
+        val mockTeamsRepo = mockk<TeamsNotificationsRepository>(relaxed = true)
+        io.mockk.every { teamsRepository.get() } returns mockTeamsRepo
+
+        val taskNotif = AppNotification().apply {
+            id = "t1"
+            userId = "user1"
+            type = "task"
+            message = "Task 1 Mon 12, Jan 2024"
+            relatedId = "rel1"
+        }
+
+        coEvery { notificationDao.getNotifications("user1", "", false) } returns listOf(taskNotif)
+        coEvery { notificationDao.getUnreadCount("user1", false) } returns 1
+
+        val taskEntity = org.ole.planet.myplanet.model.TeamTask().apply {
+            id = "rel1"
+            title = "Task 1"
+            teamId = "teamA"
+        }
+        coEvery { teamTaskDao.getByIds(listOf("rel1")) } returns listOf(taskEntity)
+        coEvery { teamTaskDao.getByTitles(listOf("Task 1")) } returns listOf(taskEntity)
+        coEvery { mockTeamsRepo.getTeamNamesByIds(listOf("teamA")) } returns mapOf("teamA" to "Alpha Team")
+
+        val enrichment = repository.getEnrichedNotifications("user1", "all", false)
+
+        assertTrue(enrichment.joinRequestDetails.isEmpty())
+        coVerify(exactly = 0) { mockTeamsRepo.getJoinRequestsInfo(any()) }
+    }
+
+    @Test
+    fun `getEnrichedNotifications maps join request to Unknown User when user is missing from getUsersByIds result`() = runTest {
+        val joinNotif = AppNotification().apply {
+            id = "j1"
+            userId = "user1"
+            type = "join_request"
+            message = "Join 1"
+            relatedId = "rel1"
+        }
+
+        coEvery { notificationDao.getNotifications("user1", "", false) } returns listOf(joinNotif)
+        coEvery { notificationDao.getUnreadCount("user1", false) } returns 1
+
+        val joinRequestInfo = JoinRequestInfo("rel1", "teamA", "userMissing")
+        coEvery { teamsRepository.get().getJoinRequestsInfo(listOf("rel1")) } returns listOf(joinRequestInfo)
+        coEvery { teamsRepository.get().getTeamNamesByIds(listOf("teamA")) } returns mapOf("teamA" to "Alpha Team")
+        coEvery { userRepository.get().getUsersByIds(listOf("userMissing")) } returns emptyList()
+
+        val enrichment = repository.getEnrichedNotifications("user1", "all", false)
+
+        assertEquals(Pair("Unknown User", "Alpha Team"), enrichment.joinRequestDetails["rel1"])
+    }
+
+    @Test
     fun `resolveType passes through known types lowercased`() {
         assertEquals("join_request", repository.resolveType("join_request", "anything", null))
         assertEquals("task", repository.resolveType("Task", "anything", null))
