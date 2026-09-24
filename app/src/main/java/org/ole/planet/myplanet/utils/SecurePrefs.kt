@@ -27,6 +27,7 @@ object SecurePrefs {
 
     @Volatile private var cachedAead: Aead? = null
     @Volatile private var cachedSecureStore: SharedPreferences? = null
+    @Volatile private var cachedLegacyPrefs: SharedPreferences? = null
 
     private const val TAG = "SecurePrefs"
 
@@ -150,20 +151,36 @@ object SecurePrefs {
 
     @Suppress("DEPRECATION")
     private fun getLegacyEncryptedPrefs(context: Context): SharedPreferences? {
-        return try {
-            val masterKey = MasterKey.Builder(context, MasterKey.DEFAULT_MASTER_KEY_ALIAS)
-                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                .build()
-            EncryptedSharedPreferences.create(
-                context,
-                LEGACY_FILE_NAME,
-                masterKey,
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            )
-        } catch (e: Exception) {
-            // If creation fails, maybe file is corrupted or key is lost.
-            null
+        cachedLegacyPrefs?.let { return it }
+
+        val appContext = context.applicationContext
+        val legacyPrefsFile = File(appContext.applicationInfo.dataDir, "shared_prefs/$LEGACY_FILE_NAME.xml")
+        if (!legacyPrefsFile.exists()) {
+            return null
+        }
+
+        return synchronized(this) {
+            cachedLegacyPrefs ?: try {
+                if (!legacyPrefsFile.exists()) {
+                    null
+                } else {
+                    val masterKey = MasterKey.Builder(appContext, MasterKey.DEFAULT_MASTER_KEY_ALIAS)
+                        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                        .build()
+                    EncryptedSharedPreferences.create(
+                        appContext,
+                        LEGACY_FILE_NAME,
+                        masterKey,
+                        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+                    ).also {
+                        cachedLegacyPrefs = it
+                    }
+                }
+            } catch (e: Exception) {
+                // If creation fails, maybe file is corrupted or key is lost.
+                null
+            }
         }
     }
 
