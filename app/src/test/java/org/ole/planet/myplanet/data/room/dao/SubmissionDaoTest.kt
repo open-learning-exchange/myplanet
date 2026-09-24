@@ -107,4 +107,15 @@ class SubmissionDaoTest {
         val emptyResult = submissionDao.getByParentIdsAndTeamId(emptyList(), teamId)
         assertEquals(0, emptyResult.size)
     }
+
+    @Test
+    fun getByIds_handlesLargeInputAndDeduplicates() = runBlocking {
+        val items = (0 until 10).map { Submission(id = "sub_$it") }
+        submissionDao.upsertAll(items)
+
+        val queryIds = (0 until 1200).map { "sub_${it % 10}" }
+        val result = submissionDao.getByIds(queryIds)
+
+        assertEquals(10, result.size)
+    }
 }

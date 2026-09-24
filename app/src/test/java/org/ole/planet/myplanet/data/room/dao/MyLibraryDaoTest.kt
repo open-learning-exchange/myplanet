@@ -265,4 +265,38 @@ class MyLibraryDaoTest {
             assertEquals(false, item.resourceOffline)
         }
     }
+
+    @Test
+    fun getByCourseIds_handlesLargeInputAndDeduplicates() = runBlocking {
+        val items = (0 until 10).map { i ->
+            MyLibrary().apply {
+                id = "pk_$i"
+                courseId = "course_$i"
+            }
+        }
+        myLibraryDao.upsertAll(items)
+
+        val queryIds = (0 until 1200).map { "course_${it % 10}" }
+        val result = myLibraryDao.getByCourseIds(queryIds)
+
+        assertEquals(10, result.size)
+    }
+
+    @Test
+    fun getOfflineResourcesForCourses_handlesLargeInputAndDeduplicates() = runBlocking {
+        val items = (0 until 10).map { i ->
+            MyLibrary().apply {
+                id = "pk_$i"
+                courseId = "course_$i"
+                resourceOffline = false
+                resourceLocalAddress = "local/path_$i"
+            }
+        }
+        myLibraryDao.upsertAll(items)
+
+        val queryIds = (0 until 1200).map { "course_${it % 10}" }
+        val result = myLibraryDao.getOfflineResourcesForCourses(queryIds)
+
+        assertEquals(10, result.size)
+    }
 }

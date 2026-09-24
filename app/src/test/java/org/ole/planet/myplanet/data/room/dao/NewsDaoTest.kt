@@ -337,4 +337,27 @@ class NewsDaoTest {
         assertEquals(1200, result.size)
         assertEquals(underscoreIds.toSet(), result.mapNotNull { it._id }.toSet())
     }
+
+    @Test
+    fun getByIds_handlesLargeInputAndDeduplicates() = runBlocking {
+        val items = (0 until 10).map { News().apply { id = "news_$it" } }
+        newsDao.upsertAll(items)
+
+        val queryIds = (0 until 1200).map { "news_${it % 10}" }
+        val result = newsDao.getByIds(queryIds)
+
+        assertEquals(10, result.size)
+    }
+
+    @Test
+    fun deleteByIds_handlesLargeInputAndDeduplicates() = runBlocking {
+        val items = (0 until 10).map { News().apply { id = "news_$it" } }
+        newsDao.upsertAll(items)
+
+        val queryIds = (0 until 1200).map { "news_${it % 10}" }
+        newsDao.deleteByIds(queryIds)
+
+        val remaining = newsDao.getAll()
+        assertTrue(remaining.isEmpty())
+    }
 }
