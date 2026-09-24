@@ -47,13 +47,15 @@ import org.robolectric.util.ReflectionHelpers
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [Build.VERSION_CODES.UPSIDE_DOWN_CAKE], application = Application::class)
+@Config(application = Application::class)
 class DownloadServiceTest {
 
+    private var originalSdkInt: Int = 0
     private lateinit var mockPreferences: SharedPreferences
 
     @Before
     fun setUp() {
+        originalSdkInt = Build.VERSION.SDK_INT
         mockPreferences = mockk(relaxed = true)
         mockkStatic(ContextCompat::class)
         mockkObject(DownloadUtils)
@@ -69,7 +71,7 @@ class DownloadServiceTest {
     fun tearDown() {
         unmockkAll()
         // Reset SDK version for other tests that might run in same VM
-        ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", 0)
+        ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", originalSdkInt)
     }
 
     // --- Tests for startService ---
