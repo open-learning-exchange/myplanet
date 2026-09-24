@@ -102,4 +102,114 @@ class MyLibraryDaoTest {
         assertEquals("Description 2", fetchedLib2?.description)
         assertEquals("Author 2", fetchedLib2?.author)
     }
+
+    @Test
+    fun deleteStalePublicNotIn_deletesOnlyStalePublicSyncedResources() = runBlocking {
+        val items = mutableListOf<MyLibrary>()
+
+        // 1,500 "current" public synced rows
+        val currentIds = (1..1500).map { i -> "current_res_$i" }
+        currentIds.forEachIndexed { idx, resId ->
+            items.add(MyLibrary().apply {
+                id = "curr_id_$idx"
+                _id = "curr_doc_$idx"
+                resourceId = resId
+                _rev = "1-rev"
+                isPrivate = false
+            })
+        }
+
+        // 3 stale public synced rows
+        items.add(MyLibrary().apply {
+            id = "stale_1"
+            _id = "stale_doc_1"
+            resourceId = "stale_res_1"
+            _rev = "1-rev"
+            isPrivate = false
+        })
+        items.add(MyLibrary().apply {
+            id = "stale_2"
+            _id = "stale_doc_2"
+            resourceId = "stale_res_2"
+            _rev = "1-rev"
+            isPrivate = false
+        })
+        items.add(MyLibrary().apply {
+            id = "stale_3"
+            _id = "stale_doc_3"
+            resourceId = "stale_res_3"
+            _rev = "1-rev"
+            isPrivate = false
+        })
+
+        // 1 stale private row
+        items.add(MyLibrary().apply {
+            id = "private_1"
+            _id = "private_doc_1"
+            resourceId = "private_res_1"
+            _rev = "1-rev"
+            isPrivate = true
+        })
+
+        // 1 stale unsynced row (_rev = "")
+        items.add(MyLibrary().apply {
+            id = "unsynced_1"
+            _id = "unsynced_doc_1"
+            resourceId = "unsynced_res_1"
+            _rev = ""
+            isPrivate = false
+        })
+
+        // 1 row with a NULL resourceId
+        items.add(MyLibrary().apply {
+            id = "null_res_1"
+            _id = "null_res_doc_1"
+            resourceId = null
+            _rev = "1-rev"
+            isPrivate = false
+        })
+
+        myLibraryDao.upsertAll(items)
+
+        myLibraryDao.deleteStalePublicNotIn(currentIds)
+
+        val remaining = myLibraryDao.getAll()
+        val remainingIds = remaining.map { it.id }.toSet()
+
+        // Assert exactly 1503 items remain (1500 current + 1 private + 1 unsynced + 1 null resourceId)
+        assertEquals(1503, remaining.size)
+
+        // Assert that stale public rows are deleted
+        org.junit.Assert.assertFalse(remainingIds.contains("stale_1"))
+        org.junit.Assert.assertFalse(remainingIds.contains("stale_2"))
+        org.junit.Assert.assertFalse(remainingIds.contains("stale_3"))
+
+        // Assert non-stale / non-candidate rows survive
+        org.junit.Assert.assertTrue(remainingIds.contains("private_1"))
+        org.junit.Assert.assertTrue(remainingIds.contains("unsynced_1"))
+        org.junit.Assert.assertTrue(remainingIds.contains("null_res_1"))
+    }
+
+    @Test
+    fun markAsNotOfflineByResourceIds_clearsResourceOfflineStatusForGivenIds() = runBlocking {
+        val count = 1200
+        val items = (1..count).map { i ->
+            MyLibrary().apply {
+                id = "off_id_$i"
+                _id = "off_doc_$i"
+                resourceId = "off_res_$i"
+                resourceOffline = true
+            }
+        }
+        myLibraryDao.upsertAll(items)
+
+        val idsToMark = items.map { it.resourceId!! }
+        myLibraryDao.markAsNotOfflineByResourceIds(idsToMark)
+
+        val allItems = myLibraryDao.getAll()
+        assertEquals(count, allItems.size)
+        allItems.forEach { item ->
+            assertEquals(false, item.resourceOffline)
+        }
+    }
 }
