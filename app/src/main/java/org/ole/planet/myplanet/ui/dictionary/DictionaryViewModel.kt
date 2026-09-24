@@ -55,8 +55,11 @@ class DictionaryViewModel @Inject constructor(
     }
 
     fun searchWord(word: String) {
+        // The lookup is an exact match, so drop the trailing space keyboards add after a suggestion
+        val query = word.trim()
+        if (query.isEmpty()) return
         viewModelScope.launch {
-            val entry = dictionaryRepository.findByWord(word)
+            val entry = dictionaryRepository.findByWord(query)
             _searchState.value = if (entry != null) {
                 DictionarySearchState.Found(entry)
             } else {
