@@ -19,8 +19,10 @@ class RetryQueue @Inject constructor(
 
     fun isCurrentlyProcessing(): Boolean = retryRepository.isCurrentlyProcessing()
 
-    internal fun setProcessing(processing: Boolean) {
-        retryRepository.setProcessing(processing)
+    internal fun tryStartProcessing(): Boolean = retryRepository.tryStartProcessing()
+
+    internal fun finishProcessing() {
+        retryRepository.finishProcessing()
     }
 
     suspend fun queueFailedOperation(

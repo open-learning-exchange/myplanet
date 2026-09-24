@@ -37,7 +37,8 @@ interface RetryRepository {
     suspend fun deletePendingAndAbandonedOperations()
     suspend fun recoverStuckOperations()
     fun isCurrentlyProcessing(): Boolean
-    fun setProcessing(processing: Boolean)
+    fun tryStartProcessing(): Boolean
+    fun finishProcessing()
     suspend fun safeClearQueue(): Boolean
     suspend fun getRetryQueueSnapshot(): RetryQueueDetails
 }
