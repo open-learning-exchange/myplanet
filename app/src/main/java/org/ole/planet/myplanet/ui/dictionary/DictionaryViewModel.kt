@@ -55,7 +55,6 @@ class DictionaryViewModel @Inject constructor(
     }
 
     fun searchWord(word: String) {
-        // The lookup is an exact match, so drop the trailing space keyboards add after a suggestion
         val query = word.trim()
         if (query.isEmpty()) return
         viewModelScope.launch {
