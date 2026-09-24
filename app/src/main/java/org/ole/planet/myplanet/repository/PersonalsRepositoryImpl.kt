@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.repository
 import android.util.Log
 import com.google.gson.JsonObject
 import java.io.File
-import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
@@ -13,6 +12,7 @@ import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.GsonUtils.getString
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.distinctByContent
@@ -20,7 +20,8 @@ import org.ole.planet.myplanet.utils.distinctByContent
 class PersonalsRepositoryImpl @Inject constructor(
     private val personalDao: PersonalDao,
     private val uploadRepository: UploadRepository,
-    private val deviceNameProvider: DeviceNameProvider
+    private val deviceNameProvider: DeviceNameProvider,
+    private val timeProvider: TimeProvider
 ) : PersonalsRepository {
 
     override suspend fun personalTitleExists(title: String, userId: String?): Boolean {
@@ -41,7 +42,7 @@ class PersonalsRepositoryImpl @Inject constructor(
             this.userId = userId
             this.userName = userName
             this.path = path
-            this.date = Date().time
+            this.date = timeProvider.now()
             this.description = description
         }
         personalDao.insert(personal)
@@ -93,7 +94,7 @@ class PersonalsRepositoryImpl @Inject constructor(
     private fun serialize(personal: Personal): JsonObject {
         val `object` = JsonObject()
         `object`.addProperty("title", personal.title)
-        `object`.addProperty("uploadDate", System.currentTimeMillis())
+        `object`.addProperty("uploadDate", timeProvider.now())
         `object`.addProperty("createdDate", personal.date)
         `object`.addProperty("filename", FileUtils.getFileNameFromUrl(personal.path))
         `object`.addProperty("author", personal.userName)
