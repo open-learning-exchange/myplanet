@@ -59,7 +59,12 @@ interface MyLibraryDao {
     suspend fun getByCourseId(courseId: String): List<MyLibrary>
 
     @Query("SELECT * FROM my_library WHERE courseId IN (:courseIds)")
-    suspend fun getByCourseIds(courseIds: List<String>): List<MyLibrary>
+    suspend fun getByCourseIdsInternal(courseIds: List<String>): List<MyLibrary>
+
+    suspend fun getByCourseIds(courseIds: List<String>): List<MyLibrary> {
+        if (courseIds.isEmpty()) return emptyList()
+        return courseIds.distinct().chunked(900).flatMap { getByCourseIdsInternal(it) }
+    }
 
     @Query(
         "SELECT * FROM my_library WHERE courseId IN (:courseIds) " +

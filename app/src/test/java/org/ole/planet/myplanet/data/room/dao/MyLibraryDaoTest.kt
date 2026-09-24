@@ -35,6 +35,22 @@ class MyLibraryDaoTest {
     }
 
     @Test
+    fun getByCourseIds_handles1200Courses() = runBlocking {
+        val libraries = (1..1200).map { i ->
+            MyLibrary().apply {
+                id = "lib_$i"
+                courseId = "course_$i"
+            }
+        }
+        myLibraryDao.upsertAll(libraries)
+
+        val courseIds = (1..1200).map { "course_$it" }
+        val results = myLibraryDao.getByCourseIds(courseIds)
+
+        assertEquals(1200, results.size)
+    }
+
+    @Test
     fun getLibraryTitles_returnsOneEntryPerRowWithIdAndTitle() = runBlocking {
         val lib1 = MyLibrary().apply {
             id = "pk1"

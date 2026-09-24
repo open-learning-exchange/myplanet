@@ -12,7 +12,11 @@ interface ExamDao {
     @Query("SELECT * FROM exams WHERE id = :id LIMIT 1") suspend fun getById(id: String): StepExam?
     @Query("SELECT * FROM exams WHERE stepId = :stepId LIMIT 1") suspend fun getFirstByStepId(stepId: String): StepExam?
     @Query("SELECT * FROM exams WHERE courseId = :courseId") suspend fun getByCourseId(courseId: String): List<StepExam>
-    @Query("SELECT * FROM exams WHERE courseId IN (:courseIds)") suspend fun getByCourseIds(courseIds: List<String>): List<StepExam>
+    @Query("SELECT * FROM exams WHERE courseId IN (:courseIds)") suspend fun getByCourseIdsInternal(courseIds: List<String>): List<StepExam>
+    suspend fun getByCourseIds(courseIds: List<String>): List<StepExam> {
+        if (courseIds.isEmpty()) return emptyList()
+        return courseIds.distinct().chunked(900).flatMap { getByCourseIdsInternal(it) }
+    }
     @Query("SELECT * FROM exams WHERE courseId = :courseId AND type = :type") suspend fun getByCourseIdAndType(courseId: String, type: String): List<StepExam>
     @Query("SELECT COUNT(*) FROM exams WHERE courseId = :courseId AND type = :type") suspend fun countByCourseIdAndType(courseId: String, type: String): Int
     @Query("SELECT * FROM exams WHERE stepId = :stepId") suspend fun getByStepId(stepId: String): List<StepExam>
