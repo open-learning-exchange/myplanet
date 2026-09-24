@@ -14,6 +14,7 @@ import io.mockk.unmockkAll
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import okhttp3.ResponseBody.Companion.toResponseBody
@@ -114,7 +115,10 @@ class RetryRepositoryImplTest {
     @Test
     fun `recordFailure concurrent calls for same item inserts only once`() = runTest {
         var existingRow: RetryOperation? = null
-        coEvery { retryDao.findExisting("item1", "type1") } answers { existingRow }
+        coEvery { retryDao.findExisting("item1", "type1") } coAnswers {
+            delay(10)
+            existingRow
+        }
         coEvery { retryDao.insert(any()) } answers {
             val op = firstArg<RetryOperation>()
             existingRow = op
