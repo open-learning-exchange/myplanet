@@ -41,6 +41,27 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__Claude_Code_Remote__create_session|mcp__Claude_Code_Remote__archive_session",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/spawned-session-ledger.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/spawned-session-ledger.sh"
+          }
+        ]
+      }
     ]
   }
 }
