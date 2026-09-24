@@ -14,9 +14,14 @@ import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.unmockkObject
+import io.mockk.coVerify
 import io.mockk.verify
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertTrue
@@ -140,6 +145,37 @@ class DownloadWorkerTest {
         val result = worker.doWork()
 
         assertTrue(result is androidx.work.ListenableWorker.Result.Success)
+
+        unmockkObject(FileUtils)
+    }
+
+    @Test
+    fun `doWork rethrows CancellationException when cancelled during download`() = runTest(testDispatcher) {
+        val url1 = "http://example.com/file1.txt"
+        val url2 = "http://example.com/file2.txt"
+        val url3 = "http://example.com/file3.txt"
+        every { preferences.getStringSet(any(), any()) } returns setOf(url1, url2, url3)
+        every { workerParams.inputData.getString("urls_key") } returns "url_list_key"
+        every { workerParams.inputData.getBoolean("fromSync", false) } returns false
+
+        mockkObject(FileUtils)
+        every { FileUtils.checkFileExist(context, any()) } returns false
+
+        coEvery { downloadRepository.downloadFileResponse(url1, any()) } coAnswers {
+            awaitCancellation()
+        }
+
+        val job = launch {
+            worker.doWork()
+        }
+
+        testScheduler.advanceUntilIdle()
+        job.cancel()
+        testScheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { downloadRepository.downloadFileResponse(any(), any()) }
+        coVerify(exactly = 0) { downloadRepository.downloadFileResponse(url2, any()) }
+        coVerify(exactly = 0) { downloadRepository.downloadFileResponse(url3, any()) }
 
         unmockkObject(FileUtils)
     }
