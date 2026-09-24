@@ -18,6 +18,7 @@ class CoursesProgressFragment : BaseBindingFragment<FragmentCoursesProgressBindi
         super.onViewCreated(view, savedInstanceState)
         progressAdapter = CoursesProgressAdapter(requireActivity())
         binding.rvMyprogress.layoutManager = LinearLayoutManager(requireActivity())
+        binding.rvMyprogress.setHasFixedSize(true)
         binding.rvMyprogress.adapter = progressAdapter
         progressViewModel.loadCourseData()
         observeCourseData()
