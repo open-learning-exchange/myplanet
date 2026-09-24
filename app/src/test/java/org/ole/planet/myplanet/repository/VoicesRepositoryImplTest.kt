@@ -295,4 +295,27 @@ class VoicesRepositoryImplTest {
         assertTrue(counts.isEmpty())
         coVerify(exactly = 0) { newsDao.getTopLevelTeamMembership(any()) }
     }
+
+    @Test
+    fun `countTopLevelByTeams handles mixed case viewIn and Teams viewableBy correctly`() = testScope.runTest {
+        val teamIds = listOf("team1", "Team2", "team3")
+        val rows = listOf(
+            TeamNewsMembership(
+                viewableBy = "Teams",
+                viewableId = "TEAM1",
+                viewIn = null
+            ),
+            TeamNewsMembership(
+                viewableBy = null,
+                viewableId = null,
+                viewIn = "[{\"_ID\":\"team1\"},{\"_id\":\"TEAM2\"}]"
+            )
+        )
+        coEvery { newsDao.getTopLevelTeamMembership(teamIds) } returns rows
+
+        val counts = repository.countTopLevelByTeams(teamIds)
+
+        val expected = mapOf("team1" to 2L, "Team2" to 1L, "team3" to 0L)
+        assertEquals(expected, counts)
+    }
 }
