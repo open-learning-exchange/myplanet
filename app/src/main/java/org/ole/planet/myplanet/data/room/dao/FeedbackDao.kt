@@ -24,7 +24,12 @@ interface FeedbackDao {
     suspend fun findById(id: String): Feedback?
 
     @Query("SELECT * FROM feedback WHERE id IN (:ids)")
-    suspend fun getByIds(ids: List<String>): List<Feedback>
+    suspend fun getByIdsInternal(ids: List<String>): List<Feedback>
+
+    suspend fun getByIds(ids: List<String>): List<Feedback> {
+        if (ids.isEmpty()) return emptyList()
+        return ids.distinct().chunked(900).flatMap { chunk -> getByIdsInternal(chunk) }
+    }
 
     // Clears isUploaded so the close is pushed to the server on the next upload
     @Query("UPDATE feedback SET status = 'Closed', isUploaded = 0 WHERE id = :id")

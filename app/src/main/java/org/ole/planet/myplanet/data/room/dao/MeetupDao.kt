@@ -38,7 +38,12 @@ interface MeetupDao {
     suspend fun getByUserId(userId: String): List<Meetup>
 
     @Query("SELECT * FROM meetup WHERE meetupId IN (:meetupIds)")
-    suspend fun getByMeetupIds(meetupIds: List<String>): List<Meetup>
+    suspend fun getByMeetupIdsInternal(meetupIds: List<String>): List<Meetup>
+
+    suspend fun getByMeetupIds(meetupIds: List<String>): List<Meetup> {
+        if (meetupIds.isEmpty()) return emptyList()
+        return meetupIds.distinct().chunked(900).flatMap { chunk -> getByMeetupIdsInternal(chunk) }
+    }
 
     // Pending uploads: meetup was created locally (no server id yet) or was edited locally.
     @Query(
