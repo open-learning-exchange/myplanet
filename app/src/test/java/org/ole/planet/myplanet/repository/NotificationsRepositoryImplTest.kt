@@ -967,17 +967,14 @@ class NotificationsRepositoryImplTest {
     }
 
     @Test
-    fun `updateTeamNotification creates new team notification using news list size`() = runTest {
+    fun `updateTeamNotification creates new team notification using count`() = runTest {
         val teamId = "team123"
-        val news = listOf(
-            org.ole.planet.myplanet.model.News(),
-            org.ole.planet.myplanet.model.News()
-        )
-        coEvery { teamNotificationDao.updateCount(teamId, "chat", 2) } returns 0
+        val count = 2
+        coEvery { teamNotificationDao.updateCount(teamId, "chat", count) } returns 0
         val slot = slot<TeamNotification>()
         coEvery { teamNotificationDao.insert(capture(slot)) } returns Unit
 
-        repository.updateTeamNotification(teamId, news)
+        repository.updateTeamNotification(teamId, count)
 
         val inserted = slot.captured
         assertEquals(teamId, inserted.parentId)
@@ -986,17 +983,24 @@ class NotificationsRepositoryImplTest {
     }
 
     @Test
-    fun `updateTeamNotification updates existing team notification using news list size`() = runTest {
+    fun `updateTeamNotification updates existing team notification using count`() = runTest {
         val teamId = "team123"
-        val news = listOf(
-            org.ole.planet.myplanet.model.News(),
-            org.ole.planet.myplanet.model.News(),
-            org.ole.planet.myplanet.model.News()
-        )
-        coEvery { teamNotificationDao.updateCount(teamId, "chat", 3) } returns 1
+        val count = 3
+        coEvery { teamNotificationDao.updateCount(teamId, "chat", count) } returns 1
 
-        repository.updateTeamNotification(teamId, news)
+        repository.updateTeamNotification(teamId, count)
 
+        coVerify(exactly = 0) { teamNotificationDao.insert(any()) }
+    }
+
+    @Test
+    fun `updateTeamNotification updates count to 0 for existing notification`() = runTest {
+        val teamId = "team123"
+        coEvery { teamNotificationDao.updateCount(teamId, "chat", 0) } returns 1
+
+        repository.updateTeamNotification(teamId, 0)
+
+        coVerify { teamNotificationDao.updateCount(teamId, "chat", 0) }
         coVerify(exactly = 0) { teamNotificationDao.insert(any()) }
     }
 }
