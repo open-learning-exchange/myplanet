@@ -38,6 +38,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -316,16 +317,49 @@ class DownloadServiceTest {
         prefsField.isAccessible = true
         prefsField.set(service, kotlin.lazyOf(mockPreferences))
 
-        val cleanupMethod = DownloadService::class.java.getDeclaredMethod("cleanupProcessedUrls")
+        val cleanupMethod = DownloadService::class.java.getDeclaredMethod("cleanupProcessedUrls", String::class.java)
         cleanupMethod.isAccessible = true
 
-        repeat(9) {
-            cleanupMethod.invoke(service)
+        repeat(9) { i ->
+            cleanupMethod.invoke(service, "http://example.com/file$i.pdf")
         }
         verify(exactly = 0) { mockPreferences.edit() }
 
-        cleanupMethod.invoke(service)
+        cleanupMethod.invoke(service, "http://example.com/file9.pdf")
         verify(exactly = 1) { mockPreferences.edit() }
+    }
+
+    @Test
+    fun `test onDestroy does not remove in-flight url from shared preferences`() {
+        val service = spyk(DownloadService())
+        val prefsField = DownloadService::class.java.getDeclaredField("preferences\$delegate")
+        prefsField.isAccessible = true
+        prefsField.set(service, kotlin.lazyOf(mockPreferences))
+
+        val pendingSet = mutableSetOf("http://example.com/completed.pdf", "http://example.com/in-flight.pdf")
+        every { mockPreferences.getStringSet(DownloadService.PENDING_DOWNLOADS_KEY, any()) } returns pendingSet
+        every { mockPreferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, any()) } returns emptySet()
+
+        val processedField = DownloadService::class.java.getDeclaredField("processedUrls")
+        processedField.isAccessible = true
+        val processedUrls = processedField.get(service) as MutableSet<String>
+        processedUrls.add("http://example.com/completed.pdf")
+        processedUrls.add("http://example.com/in-flight.pdf")
+
+        val cleanupMethod = DownloadService::class.java.getDeclaredMethod("cleanupProcessedUrls", String::class.java)
+        cleanupMethod.isAccessible = true
+        cleanupMethod.invoke(service, "http://example.com/completed.pdf")
+
+        val mockEditor = mockk<SharedPreferences.Editor>(relaxed = true)
+        every { mockPreferences.edit() } returns mockEditor
+
+        service.onDestroy()
+
+        val slotPending = slot<Set<String>>()
+        verify { mockEditor.putStringSet(DownloadService.PENDING_DOWNLOADS_KEY, capture(slotPending)) }
+        val remainingPending = slotPending.captured
+        assertFalse("Completed URL should be removed from SharedPreferences", remainingPending.contains("http://example.com/completed.pdf"))
+        assertTrue("In-flight URL should be retained in SharedPreferences for retry", remainingPending.contains("http://example.com/in-flight.pdf"))
     }
 
     @Test

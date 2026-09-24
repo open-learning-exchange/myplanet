@@ -26,6 +26,7 @@ import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Provider
 import kotlin.math.roundToInt
@@ -84,7 +85,8 @@ class DownloadService : Service() {
     private var fromSync = false
     private var lastNotificationUpdateTime = 0L
     private var currentFileProgress = 0
-    private val processedUrls = mutableSetOf<String>()
+    private val processedUrls: MutableSet<String> = ConcurrentHashMap.newKeySet()
+    private val completedUrls: MutableSet<String> = ConcurrentHashMap.newKeySet()
     private var sessionTotalCount = 0
     private var sessionCompletedCount = 0
     private var isCurrentDownloadPriority = false
@@ -162,7 +164,7 @@ class DownloadService : Service() {
 
             if (succeeded) sessionCompletedCount++
 
-            cleanupProcessedUrls()
+            cleanupProcessedUrls(nextUrl.url)
         }
     }
 
@@ -184,11 +186,11 @@ class DownloadService : Service() {
     }
 
     private fun persistProcessedUrls() {
-        val processed = processedUrls.toSet()
+        val completed = completedUrls.toSet()
         val remainingPriority = preferences.getStringSet(PRIORITY_DOWNLOADS_KEY, emptySet())?.toMutableSet() ?: mutableSetOf()
-        remainingPriority.removeAll(processed)
+        remainingPriority.removeAll(completed)
         val remainingPending = preferences.getStringSet(PENDING_DOWNLOADS_KEY, emptySet())?.toMutableSet() ?: mutableSetOf()
-        remainingPending.removeAll(processed)
+        remainingPending.removeAll(completed)
         preferences.edit {
             putStringSet(PRIORITY_DOWNLOADS_KEY, remainingPriority)
             putStringSet(PENDING_DOWNLOADS_KEY, remainingPending)
@@ -196,7 +198,10 @@ class DownloadService : Service() {
         processedSinceLastPersist = 0
     }
 
-    private fun cleanupProcessedUrls() {
+    private fun cleanupProcessedUrls(url: String = "") {
+        if (url.isNotEmpty()) {
+            completedUrls.add(url)
+        }
         processedSinceLastPersist++
         cachedRemainingCount = getRemainingCount()
         if (processedSinceLastPersist >= QUEUE_PERSIST_INTERVAL) {
