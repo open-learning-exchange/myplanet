@@ -17,6 +17,7 @@ import java.util.UUID
 import java.util.regex.Pattern
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -395,6 +396,8 @@ class UserRepositoryImpl @Inject constructor(
                 val rev = userDoc?.get("_rev")?.asString
                 updateSecurityData(name, userId, rev, derivedKey, salt, passwordScheme, iterations)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             e.printStackTrace()
         }
