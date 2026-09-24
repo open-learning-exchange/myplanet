@@ -15,6 +15,8 @@ import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -262,7 +264,7 @@ class RetryRepositoryImplTest {
     @Test
     fun `executeOperation valid object payload reaches apiInterface with equal kotlinx JsonObject`() = runTest {
         val payloadJson = """{"key":"value","num":123}"""
-        val expectedJsonObject = kotlinx.serialization.json.Json.parseToJsonElement(payloadJson).jsonObject
+        val expectedJsonObject = Json.parseToJsonElement(payloadJson).jsonObject
         val op = RetryOperation().apply {
             id = "op1"
             serializedPayload = payloadJson
