@@ -1020,17 +1020,22 @@ class TeamsRepositoryImpl @Inject constructor(
             stats.latestVisit = stats.latestVisit?.let { maxOf(it, logTime) } ?: logTime
         }
 
+        val memberNames = orderedMembers.map { it.name ?: "" }.distinct()
+        val memberIds = orderedMembers.map { it.id }.distinct()
+        val lastVisits = activitiesRepository.getLastVisits(memberNames)
+        val counts = activitiesRepository.getOfflineVisitCounts(memberIds)
+
         return orderedMembers.map { member ->
             val stats = visitStatsMap[member.name]
             val visitCount = stats?.count ?: 0L
             val lastVisitTimestamp = stats?.latestVisit
-            val lastLogoutTimestamp = activitiesRepository.getLastVisit(member.name ?: "")
+            val lastLogoutTimestamp = lastVisits[member.name ?: ""]
             val profileLastVisit = if (lastLogoutTimestamp != null) {
                 DATE_TIME_FORMATTER.format(Instant.ofEpochMilli(lastLogoutTimestamp))
             } else {
                 "No logout record found"
             }
-            val offlineVisits = "${member.id.let { activitiesRepository.getOfflineVisitCount(it) }}"
+            val offlineVisits = "${counts[member.id] ?: 0}"
             JoinedMemberData(
                 user = member,
                 visitCount = visitCount,
