@@ -244,6 +244,41 @@ class RetryRepositoryImplTest {
     }
 
     @Test
+    fun `executeOperation array payload returns TerminalFailure and records failure`() = runTest {
+        val op = RetryOperation().apply {
+            id = "op1"
+            serializedPayload = "[1,2]"
+            endpoint = "test"
+            httpMethod = "POST"
+        }
+
+        val result = repository.executeOperation(op)
+
+        assertTrue(result is RetryOperationResult.TerminalFailure)
+        assertEquals("Invalid payload", (result as RetryOperationResult.TerminalFailure).message)
+        coVerify { retryDao.recordFailedAttempt("op1", "Invalid payload", null, timeProvider.now()) }
+    }
+
+    @Test
+    fun `executeOperation valid object payload reaches apiInterface with equal kotlinx JsonObject`() = runTest {
+        val payloadJson = """{"key":"value","num":123}"""
+        val expectedJsonObject = kotlinx.serialization.json.Json.parseToJsonElement(payloadJson).jsonObject
+        val op = RetryOperation().apply {
+            id = "op1"
+            serializedPayload = payloadJson
+            endpoint = "test"
+            httpMethod = "POST"
+        }
+        val payloadSlot = slot<kotlinx.serialization.json.JsonObject>()
+        coEvery { apiInterface.postDoc(any(), any(), any(), capture(payloadSlot)) } returns Response.success(kotlinx.serialization.json.JsonObject(emptyMap()))
+
+        val result = repository.executeOperation(op)
+
+        assertTrue(result is RetryOperationResult.Success)
+        assertEquals(expectedJsonObject, payloadSlot.captured)
+    }
+
+    @Test
     fun `executeOperation CancellationException is rethrown without recording failure`() = runTest {
         val op = RetryOperation().apply {
             id = "op1"
