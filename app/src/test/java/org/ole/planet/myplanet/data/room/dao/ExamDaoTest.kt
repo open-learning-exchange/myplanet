@@ -185,11 +185,11 @@ class ExamDaoTest {
         }
         examDao.upsertAll(exams)
 
-        val queryIds = (1..1200).map { "exam_$i" } + listOf("exam_1", "exam_500", "exam_1200")
+        val queryIds = (1..1200).map { i -> "exam_$i" } + listOf("exam_1", "exam_500", "exam_1200")
         val results = examDao.getByIds(queryIds)
 
         assertEquals(1200, results.size)
-        assertEquals((1..1200).map { "exam_$i" }.toSet(), results.map { it.id }.toSet())
+        assertEquals((1..1200).map { i -> "exam_$i" }.toSet(), results.map { it.id }.toSet())
     }
 
     @Test
@@ -202,7 +202,7 @@ class ExamDaoTest {
         }
         examDao.upsertAll(exams)
 
-        val queryStepIds = (1..1200).map { "step_$i" } + listOf("step_10")
+        val queryStepIds = (1..1200).map { i -> "step_$i" } + listOf("step_10")
         val results = examDao.getByStepIds(queryStepIds)
 
         assertEquals(1200, results.size)
@@ -218,7 +218,7 @@ class ExamDaoTest {
         }
         examDao.upsertAll(exams)
 
-        val queryCourseIds = (1..1200).map { "course_$i" } + listOf("course_5")
+        val queryCourseIds = (1..1200).map { i -> "course_$i" } + listOf("course_5")
         val results = examDao.getByCourseIds(queryCourseIds)
 
         assertEquals(1200, results.size)
@@ -240,11 +240,11 @@ class ExamDaoTest {
         }
         examDao.upsertAll(listOf(teamExam) + submissionExams)
 
-        val querySubmissionIds = (1..1200).map { "sub_exam_$i" } + listOf("sub_exam_1", "sub_exam_100")
+        val querySubmissionIds = (1..1200).map { i -> "sub_exam_$i" } + listOf("sub_exam_1", "sub_exam_100")
         val results = examDao.getTeamOwnedSurveys("team1", querySubmissionIds)
 
         assertEquals(1201, results.size)
-        assertEquals((setOf("team_exam") + (1..1200).map { "sub_exam_$i" }), results.map { it.id }.toSet())
+        assertEquals((setOf("team_exam") + (1..1200).map { i -> "sub_exam_$i" }), results.map { it.id }.toSet())
     }
 
     @Test
