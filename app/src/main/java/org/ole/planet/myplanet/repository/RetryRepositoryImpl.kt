@@ -166,22 +166,24 @@ class RetryRepositoryImpl @Inject constructor(
 
     override fun isCurrentlyProcessing(): Boolean = isProcessing.get()
 
-    override fun setProcessing(processing: Boolean) {
-        isProcessing.set(processing)
+    override fun tryStartProcessing(): Boolean = isProcessing.compareAndSet(false, true)
+
+    override fun finishProcessing() {
+        isProcessing.set(false)
     }
 
     override suspend fun safeClearQueue(): Boolean {
-        if (isProcessing.get()) {
+        if (!isProcessing.compareAndSet(false, true)) {
             return false
         }
 
-        return mutex.withLock {
-            if (isProcessing.get()) {
-                return@withLock false
+        return try {
+            mutex.withLock {
+                deletePendingAndAbandonedOperations()
+                true
             }
-
-            deletePendingAndAbandonedOperations()
-            true
+        } finally {
+            isProcessing.set(false)
         }
     }
 

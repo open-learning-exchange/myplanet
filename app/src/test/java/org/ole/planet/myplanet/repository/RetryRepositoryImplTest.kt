@@ -317,8 +317,16 @@ class RetryRepositoryImplTest {
     }
 
     @Test
+    fun `tryStartProcessing returns true then false until finishProcessing`() {
+        assertEquals(true, repository.tryStartProcessing())
+        assertEquals(false, repository.tryStartProcessing())
+        repository.finishProcessing()
+        assertEquals(true, repository.tryStartProcessing())
+    }
+
+    @Test
     fun `safeClearQueue returns false and skips deletion while processing`() = runTest {
-        repository.setProcessing(true)
+        assertTrue(repository.tryStartProcessing())
 
         val result = repository.safeClearQueue()
 
@@ -327,8 +335,9 @@ class RetryRepositoryImplTest {
     }
 
     @Test
-    fun `safeClearQueue returns true and deletes pending and abandoned when idle`() = runTest {
-        repository.setProcessing(false)
+    fun `safeClearQueue returns true and deletes pending and abandoned after finishProcessing`() = runTest {
+        assertTrue(repository.tryStartProcessing())
+        repository.finishProcessing()
 
         val result = repository.safeClearQueue()
 
