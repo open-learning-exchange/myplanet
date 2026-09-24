@@ -4,6 +4,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.File
 import kotlinx.coroutines.flow.Flow
+import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.StepExam
@@ -75,4 +76,8 @@ interface SubmissionsRepository {
     suspend fun getPendingSubmitPhotosUploads(): List<SubmitPhotos>
     suspend fun markSubmitPhotosUploaded(localId: String, remoteId: String, rev: String): Boolean
     suspend fun startExamSession(examId: String, parentId: String?, userId: String?, request: CreateExamSubmissionRequest, recreate: Boolean, deleteStale: Boolean = recreate): Submission
+    suspend fun getExamSubmissionsByUser(userId: String?): List<Submission>
+    suspend fun getAnswersBySubmissionIds(ids: List<String>): List<Answer>
+    suspend fun getUnuploadedNonSurveySubmissionsByParentIds(parentIds: List<String>): List<Submission>
+    suspend fun deleteSubmissionsWithAnswers(ids: List<String>)
 }

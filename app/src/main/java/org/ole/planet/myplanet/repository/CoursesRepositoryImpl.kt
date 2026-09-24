@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.data.room.dao.CourseDao
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
@@ -25,7 +24,6 @@ import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
-import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.Certification
 import org.ole.planet.myplanet.model.CourseDetailModel
@@ -66,8 +64,6 @@ class CoursesRepositoryImpl @Inject constructor(
     private val courseStepDao: CourseStepDao,
     private val examDao: ExamDao,
     private val questionDao: QuestionDao,
-    private val submissionDao: SubmissionDao,
-    private val answerDao: AnswerDao,
     private val searchActivityDao: SearchActivityDao,
     private val courseProgressDao: CourseProgressDao,
     private val removedLogDao: RemovedLogDao,
@@ -466,7 +462,7 @@ class CoursesRepositoryImpl @Inject constructor(
         }
 
         val examIdsSet = examIds.toSet()
-        val relevantSubmissions = submissionDao.getExamSubmissionsByUser(userId)
+        val relevantSubmissions = submissionsRepository.getExamSubmissionsByUser(userId)
             .filter { sub -> examIdsSet.contains(getParentBaseId(sub.parentId)) }
 
         val submissionsByExamId = relevantSubmissions.groupBy { sub ->
@@ -477,7 +473,7 @@ class CoursesRepositoryImpl @Inject constructor(
         val answersBySubmissionId = if (submissionIds.isEmpty()) {
             emptyMap()
         } else {
-            answerDao.getBySubmissionIds(submissionIds)
+            submissionsRepository.getAnswersBySubmissionIds(submissionIds)
                 .groupBy { it.submissionId ?: "" }
                 .filterKeys { it.isNotEmpty() }
         }
@@ -616,14 +612,13 @@ class CoursesRepositoryImpl @Inject constructor(
         }
         if (examIds.isNotEmpty()) {
             val submissions = examIds.chunked(900).flatMap { chunk ->
-                submissionDao.getUnuploadedNonSurveyByParentIds(chunk)
+                submissionsRepository.getUnuploadedNonSurveySubmissionsByParentIds(chunk)
             }
             val submissionIds = submissions.map { it.id }
             if (submissionIds.isNotEmpty()) {
                 appDatabase.withTransaction {
                     submissionIds.chunked(900).forEach { chunk ->
-                        answerDao.deleteBySubmissionIds(chunk)
-                        submissionDao.deleteByIds(chunk)
+                        submissionsRepository.deleteSubmissionsWithAnswers(chunk)
                     }
                 }
             }

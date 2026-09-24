@@ -5,6 +5,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -1122,6 +1123,53 @@ class SubmissionsRepositoryImplTest {
 
         coVerify(exactly = 1) { answerDao.getBySubmissionIds(any()) }
         coVerify(exactly = 0) { answerDao.getBySubmissionId(any()) }
+    }
+
+    @Test
+    fun `getExamSubmissionsByUser delegates to submissionDao`() = runTest {
+        val expected = listOf(Submission(id = "sub1"))
+        coEvery { submissionDao.getExamSubmissionsByUser("user1") } returns expected
+
+        val result = repository.getExamSubmissionsByUser("user1")
+
+        assertEquals(expected, result)
+        coVerify(exactly = 1) { submissionDao.getExamSubmissionsByUser("user1") }
+    }
+
+    @Test
+    fun `getAnswersBySubmissionIds delegates to answerDao`() = runTest {
+        val expected = listOf(Answer(id = "ans1"))
+        coEvery { answerDao.getBySubmissionIds(listOf("sub1")) } returns expected
+
+        val result = repository.getAnswersBySubmissionIds(listOf("sub1"))
+
+        assertEquals(expected, result)
+        coVerify(exactly = 1) { answerDao.getBySubmissionIds(listOf("sub1")) }
+    }
+
+    @Test
+    fun `getUnuploadedNonSurveySubmissionsByParentIds delegates to submissionDao`() = runTest {
+        val expected = listOf(Submission(id = "sub1"))
+        coEvery { submissionDao.getUnuploadedNonSurveyByParentIds(listOf("p1")) } returns expected
+
+        val result = repository.getUnuploadedNonSurveySubmissionsByParentIds(listOf("p1"))
+
+        assertEquals(expected, result)
+        coVerify(exactly = 1) { submissionDao.getUnuploadedNonSurveyByParentIds(listOf("p1")) }
+    }
+
+    @Test
+    fun `deleteSubmissionsWithAnswers calls answerDao then submissionDao in order`() = runTest {
+        val ids = listOf("sub1", "sub2")
+        coEvery { answerDao.deleteBySubmissionIds(ids) } returns 2
+        coEvery { submissionDao.deleteByIds(ids) } returns 2
+
+        repository.deleteSubmissionsWithAnswers(ids)
+
+        coVerifyOrder {
+            answerDao.deleteBySubmissionIds(ids)
+            submissionDao.deleteByIds(ids)
+        }
     }
 
     @Test
