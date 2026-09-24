@@ -83,6 +83,7 @@ class DownloadWorkerTest {
 
         mockkObject(DownloadUtils)
         every { DownloadUtils.createChannels(any()) } returns Unit
+        every { DownloadUtils.canStartForegroundService(any()) } returns true
         every { DownloadUtils.buildProgressNotification(any(), any(), any(), any(), any(), any()) } returns mockk<Notification>(relaxed = true)
         every { DownloadUtils.buildCompletionNotification(any(), any(), any(), any(), any()) } returns mockk<Notification>(relaxed = true)
 
